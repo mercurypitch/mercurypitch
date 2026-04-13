@@ -2,6 +2,10 @@
 
 A browser-based voice pitch practice tool. Sing along with customizable melodies, get real-time feedback on your pitch accuracy, and track your progress.
 
+## Preview
+
+![PitchPerfect Main](assets/PitchPerfectMain.png)
+
 ## Features
 
 - **Real-time pitch detection** via Web Audio API
