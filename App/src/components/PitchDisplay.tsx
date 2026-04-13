@@ -1,96 +1,67 @@
 // ============================================================
-// PitchDisplay — Shows detected pitch with accuracy feedback
+// PitchDisplay — Shows detected pitch with cents indicator
+// (mirrors #pitch-reference in the original JS app)
 // ============================================================
 
-import { Component, createSignal, createMemo, Show } from 'solid-js';
-import type { PitchResult, AccuracyRating } from '@/types';
+import { Component, createMemo, Show } from 'solid-js';
+import type { PitchResult } from '@/types';
 
 interface PitchDisplayProps {
   pitch: () => PitchResult | null;
   targetNote: () => string | null;
-  rating?: () => AccuracyRating;
 }
 
-const RATING_COLORS: Record<AccuracyRating, string> = {
-  perfect: '#22c55e',
-  excellent: '#4ade80',
-  good: '#facc15',
-  okay: '#fb923c',
-  off: '#f87171',
-};
-
-const RATING_LABELS: Record<AccuracyRating, string> = {
-  perfect: 'Perfect!',
-  excellent: 'Excellent',
-  good: 'Good',
-  okay: 'Okay',
-  off: 'Off pitch',
-};
+// Map cents to a CSS class for the marker color
+function centsClass(cents: number): string {
+  const abs = Math.abs(cents);
+  if (abs <= 10) return 'in-tune';
+  if (cents > 0) return 'sharp';
+  return 'flat';
+}
 
 export const PitchDisplay: Component<PitchDisplayProps> = (props) => {
-  const noteName = createMemo(() => {
+  const noteDisplay = createMemo(() => {
     const p = props.pitch();
     if (!p || !p.noteName) return '--';
     return `${p.noteName}${p.octave}`;
   });
 
-  const centsDisplay = createMemo(() => {
+  const freqDisplay = createMemo(() => {
+    const p = props.pitch();
+    if (!p || !p.noteName) return '-- Hz';
+    return `${p.frequency.toFixed(1)} Hz`;
+  });
+
+  // Map cents (-50 to +50) to left percentage (0% to 100%)
+  const markerLeft = createMemo(() => {
+    const p = props.pitch();
+    if (!p || !p.noteName) return '50%';
+    const pct = ((p.cents + 50) / 100) * 100;
+    return `${Math.max(0, Math.min(100, pct))}%`;
+  });
+
+  const markerClass = createMemo(() => {
     const p = props.pitch();
     if (!p || !p.noteName) return '';
-    const sign = p.cents >= 0 ? '+' : '';
-    return `${sign}${p.cents}¢`;
-  });
-
-  const clarity = createMemo(() => {
-    const p = props.pitch();
-    if (!p) return 0;
-    return Math.round(p.clarity * 100);
-  });
-
-  const barWidth = createMemo(() => {
-    const p = props.pitch();
-    if (!p || !p.noteName) return 50; // center
-    // Map cents (-50 to +50) to percentage (0 to 100)
-    const pct = Math.round(((p.cents + 50) / 100) * 100);
-    return Math.max(0, Math.min(100, pct));
-  });
-
-  const ratingLabel = createMemo(() => {
-    const r = props.rating?.();
-    return r ? RATING_LABELS[r] : null;
-  });
-
-  const ratingColor = createMemo(() => {
-    const r = props.rating?.();
-    return r ? RATING_COLORS[r] : '#888';
+    return centsClass(p.cents);
   });
 
   return (
-    <div class="pitch-display">
-      <div class="pitch-note">
-        <span class="pitch-note-name">{noteName()}</span>
-        <Show when={centsDisplay()}>
-          <span class="pitch-cents">{centsDisplay()}</span>
-        </Show>
-      </div>
-
-      <div class="pitch-clarity-bar">
-        <div class="pitch-clarity-track">
-          <div class="pitch-center-mark" />
-          <div
-            class="pitch-clarity-fill"
-            style={{ width: `${barWidth()}%`, 'background-color': ratingColor() }}
-          />
+    <div id="pitch-reference">
+      <h3>Your Pitch</h3>
+      <div id="detected-note">{noteDisplay()}</div>
+      <div id="detected-freq">{freqDisplay()}</div>
+      <div id="cents-display">
+        <div id="cents-bar">
+          <div id="cents-marker" class={markerClass()} style={{ left: markerLeft() }} />
+          <div class="cents-center" />
+        </div>
+        <div class="cents-labels">
+          <span>-50</span>
+          <span>0</span>
+          <span>+50</span>
         </div>
       </div>
-
-      <Show when={ratingLabel()}>
-        <div class="pitch-rating" style={{ color: ratingColor() }}>
-          {ratingLabel()}
-        </div>
-      </Show>
-
-      <div class="pitch-clarity-pct">{clarity()}% clarity</div>
     </div>
   );
 };

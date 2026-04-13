@@ -13,7 +13,7 @@ export const MetronomeButton: Component<MetronomeButtonProps> = (props) => {
   return (
     <button
       id="btn-metronome"
-      class={`ctrl-btn ${props.active ? 'active' : ''}`}
+      class={`ctrl-btn metronome-btn ${props.active ? 'active' : ''}`}
       onClick={props.onClick}
       title="Toggle metronome"
     >
