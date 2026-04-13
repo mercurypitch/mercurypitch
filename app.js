@@ -10,6 +10,7 @@
         octave: 4,
         bpm: 80,
         sensitivity: 5,
+        volume: 70,
         melody: [],
         totalBeats: 0,
         isPlaying: false,
@@ -114,6 +115,8 @@
             dom.btnMetronome      = document.getElementById('btn-metronome');
             dom.sensitivitySlider = document.getElementById('sensitivity');
             dom.sensitivityValue  = document.getElementById('sensitivity-value');
+            dom.volumeSlider      = document.getElementById('volume');
+            dom.volumeValue       = document.getElementById('volume-value');
             dom.tabPractice      = document.getElementById('tab-practice');
             dom.tabEditor       = document.getElementById('tab-editor');
 
@@ -136,6 +139,7 @@
             dom.btnStop.addEventListener('click', stopPlayback);
             dom.btnMetronome.addEventListener('click', toggleMetronome);
             dom.sensitivitySlider.addEventListener('input', onSensitivityChange);
+            dom.volumeSlider.addEventListener('input', onVolumeChange);
 
             // Tab switching
             dom.tabPractice.addEventListener('click', function () { switchTab('practice'); });
@@ -182,6 +186,11 @@
             });
 
             // Build initial UI
+            // Load saved volume
+            let savedVol = parseInt(localStorage.getItem('pp_volume') || '70', 10);
+            state.volume = savedVol;
+            dom.volumeSlider.value = savedVol;
+            dom.volumeValue.textContent = savedVol;
             buildScale();
             populatePresetSelect();
 
@@ -302,6 +311,14 @@
         if (detector) {
             detector.setSensitivity(state.sensitivity);
         }
+    }
+
+    function onVolumeChange() {
+        let vol = parseInt(dom.volumeSlider.value, 10);
+        dom.volumeValue.textContent = vol;
+        state.volume = vol;
+        engine.setVolume(vol / 100);
+        localStorage.setItem('pp_volume', vol);
     }
 
     // ========== PRESET MANAGEMENT ==========

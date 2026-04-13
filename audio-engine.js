@@ -105,12 +105,23 @@ class AudioEngine {
         this.oscillator.type = 'sine';
         this.oscillator.frequency.setValueAtTime(freq, this.audioCtx.currentTime);
         this.oscGain.gain.setValueAtTime(0, this.audioCtx.currentTime);
-        this.oscGain.gain.linearRampToValueAtTime(0.15, this.audioCtx.currentTime + 0.02);
+        let targetGain = this._toneVolume !== undefined ? this._toneVolume : 0.15;
+        this.oscGain.gain.linearRampToValueAtTime(targetGain, this.audioCtx.currentTime + 0.02);
 
         this.oscillator.connect(this.oscGain);
         this.oscGain.connect(this.audioCtx.destination);
         this.oscillator.start();
         this.isPlaying = true;
+    }
+
+    /**
+     * Set the tone volume (0.0 - 1.0). Applies immediately to active oscillator.
+     */
+    setVolume(vol) {
+        this._toneVolume = Math.max(0, Math.min(1, vol));
+        if (this.oscGain && this.isPlaying) {
+            this.oscGain.gain.linearRampToValueAtTime(this._toneVolume, this.audioCtx.currentTime + 0.02);
+        }
     }
 
     /**

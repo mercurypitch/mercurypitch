@@ -612,6 +612,30 @@ header h1 {
     font-weight: 600;
 }
 
+/* ===== Volume Slider ===== */
+.volume-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.volume-group .opt-label {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+}
+
+.volume-slider {
+    width: 60px;
+    accent-color: var(--green);
+}
+
+#volume-value {
+    min-width: 26px;
+    text-align: right;
+    color: var(--green);
+    font-weight: 600;
+}
+
 /* ===== Utility ===== */
 .hidden {
     display: none !important;
