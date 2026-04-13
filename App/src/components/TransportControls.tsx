@@ -1,5 +1,5 @@
 // ============================================================
-// TransportControls — Play/Reset buttons with 3-state toggle
+// TransportControls — Play/Reset buttons
 // ============================================================
 
 import { Component, createMemo } from 'solid-js';
@@ -10,24 +10,6 @@ interface TransportControlsProps {
   onReset: () => void;
   disabled?: boolean;
 }
-
-const PlayIcon = () => (
-  <svg viewBox="0 0 24 24" width="18" height="18">
-    <path fill="currentColor" d="M8 5v14l11-7z" />
-  </svg>
-);
-
-const PauseIcon = () => (
-  <svg viewBox="0 0 24 24" width="18" height="18">
-    <path fill="currentColor" d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
-  </svg>
-);
-
-const ResetIcon = () => (
-  <svg viewBox="0 0 24 24" width="18" height="18">
-    <path fill="currentColor" d="M6 6h12v12H6z" />
-  </svg>
-);
 
 export const TransportControls: Component<TransportControlsProps> = (props) => {
   const handlePlayClick = () => {
@@ -52,7 +34,7 @@ export const TransportControls: Component<TransportControlsProps> = (props) => {
   const resetEnabled = createMemo(() => playback.resetEnabled());
 
   return (
-    <div class="transport-controls">
+    <>
       <button
         id="btn-play"
         class="ctrl-btn"
@@ -60,7 +42,11 @@ export const TransportControls: Component<TransportControlsProps> = (props) => {
         disabled={props.disabled}
         title={`${playLabel()} playback`}
       >
-        {playLabel() === 'Pause' ? <PauseIcon /> : <PlayIcon />}
+        {playLabel() === 'Pause' ? (
+          <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+        ) : (
+          <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>
+        )}
         <span>{playLabel()}</span>
       </button>
       <button
@@ -70,9 +56,9 @@ export const TransportControls: Component<TransportControlsProps> = (props) => {
         disabled={!resetEnabled() || props.disabled}
         title="Reset playback"
       >
-        <ResetIcon />
+        <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M6 6h12v12H6z"/></svg>
         <span>Reset</span>
       </button>
-    </div>
+    </>
   );
 };
