@@ -139,6 +139,7 @@
         this.pianoWidth = CONFIG.PIANO_WIDTH;
         this.rulerHeight = CONFIG.RULER_HEIGHT;
         this.totalRows = 0;
+        this.stretchedWidth = 0; // canvas width stretched to fill viewport
 
         // Canvas refs
         this.pianoCanvas = null;
@@ -324,7 +325,13 @@
     PianoRollEditor.prototype._calculateDimensions = function () {
         this.totalRows = this.scale.length;
         const totalHeight = this.totalRows * this.rowHeight;
-        const totalWidth = this.totalBeats * this.beatWidth;
+
+        // Stretch canvas to fill the viewport width (min: totalBeats, max: unlimited for scrolling)
+        const minWidth = this.totalBeats * this.beatWidth;
+        const containerWidth = this.gridContainer.clientWidth;
+        // Fallback to minWidth if container hasn't been laid out yet
+        this.stretchedWidth = containerWidth > 0 ? Math.max(minWidth, containerWidth - CONFIG.PIANO_WIDTH) : minWidth;
+        const totalWidth = this.stretchedWidth;
 
         // Set canvas sizes
         const dpr = window.devicePixelRatio || 1;
@@ -337,7 +344,7 @@
         // Ruler canvas
         this.rulerCanvas.width = totalWidth * dpr;
         this.rulerCanvas.height = CONFIG.RULER_HEIGHT * dpr;
-        this.rulerCanvas.style.width = totalWidth + 'px';
+        this.rulerCanvas.style.width = this.stretchedWidth + 'px';
         this.rulerCanvas.style.height = CONFIG.RULER_HEIGHT + 'px';
         this.rulerCtx = this.rulerCanvas.getContext('2d');
         this.rulerCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -345,7 +352,7 @@
         // Grid canvas
         this.gridCanvas.width = totalWidth * dpr;
         this.gridCanvas.height = totalHeight * dpr;
-        this.gridCanvas.style.width = totalWidth + 'px';
+        this.gridCanvas.style.width = this.stretchedWidth + 'px';
         this.gridCanvas.style.height = totalHeight + 'px';
 
         // Set context transforms
@@ -401,7 +408,7 @@
 
     PianoRollEditor.prototype._drawRuler = function () {
         const ctx = this.rulerCtx;
-        const totalWidth = this.totalBeats * this.beatWidth;
+        const totalWidth = this.stretchedWidth;
         ctx.clearRect(0, 0, totalWidth, CONFIG.RULER_HEIGHT);
         ctx.fillStyle = '#161b22';
         ctx.fillRect(0, 0, totalWidth, CONFIG.RULER_HEIGHT);
@@ -438,7 +445,7 @@
 
     PianoRollEditor.prototype._drawGrid = function () {
         const ctx = this.gridCtx;
-        const totalWidth = this.totalBeats * this.beatWidth;
+        const totalWidth = this.stretchedWidth;
         const totalHeight = this.totalRows * this.rowHeight;
 
         ctx.clearRect(0, 0, totalWidth, totalHeight);
@@ -1212,7 +1219,7 @@
 
     PianoRollEditor.prototype._drawGridWithPlayhead = function () {
         const ctx = this.gridCtx;
-        const totalWidth = this.totalBeats * this.beatWidth;
+        const totalWidth = this.stretchedWidth;
         const totalHeight = this.totalRows * this.rowHeight;
 
         ctx.clearRect(0, 0, totalWidth, totalHeight);
@@ -1255,6 +1262,67 @@
             let note = this.notes[n];
             const isActive = currentBeat >= note.startBeat && currentBeat < note.startBeat + note.duration;
             this._drawNoteBlock(ctx, note, false, isActive);
+        }
+
+        // Draw playhead line
+        const playheadX = currentBeat * this.beatWidth;
+        ctx.save();
+        ctx.strokeStyle = '#58a6ff';
+        ctx.lineWidth = 2;
+        ctx.shadowColor = 'rgba(88, 166, 255, 0.5)';
+        ctx.shadowBlur = 4;
+        ctx.beginPath();
+        ctx.moveTo(playheadX, 0);
+        ctx.lineTo(playheadX, totalHeight);
+        ctx.stroke();
+        ctx.restore();
+
+        // Draw playhead triangle on top of the ruler
+        if (this.rulerCtx) {
+            const rulerCtx = this.rulerCtx;
+            const rulerWidth = this.stretchedWidth;
+            rulerCtx.clearRect(0, 0, rulerWidth, CONFIG.RULER_HEIGHT);
+            rulerCtx.fillStyle = '#161b22';
+            rulerCtx.fillRect(0, 0, rulerWidth, CONFIG.RULER_HEIGHT);
+            // Redraw ruler bars
+            for (let b = 0; b <= this.totalBeats; b++) {
+                let x = b * this.beatWidth;
+                let isBar = b % CONFIG.BEATS_PER_BAR === 0;
+                rulerCtx.strokeStyle = isBar ? '#484f58' : '#30363d';
+                rulerCtx.lineWidth = isBar ? 1 : 0.5;
+                rulerCtx.beginPath();
+                rulerCtx.moveTo(x, 0);
+                rulerCtx.lineTo(x, CONFIG.RULER_HEIGHT);
+                rulerCtx.stroke();
+                if (isBar) {
+                    let barNum = Math.floor(b / CONFIG.BEATS_PER_BAR) + 1;
+                    rulerCtx.fillStyle = '#8b949e';
+                    rulerCtx.font = '10px sans-serif';
+                    rulerCtx.textAlign = 'center';
+                    rulerCtx.textBaseline = 'middle';
+                    rulerCtx.fillText(barNum + '', x + this.beatWidth * CONFIG.BEATS_PER_BAR / 2, CONFIG.RULER_HEIGHT / 2);
+                    rulerCtx.textBaseline = 'alphabetic';
+                }
+            }
+            rulerCtx.strokeStyle = '#30363d';
+            rulerCtx.lineWidth = 1;
+            rulerCtx.beginPath();
+            rulerCtx.moveTo(0, CONFIG.RULER_HEIGHT - 1);
+            rulerCtx.lineTo(rulerWidth, CONFIG.RULER_HEIGHT - 1);
+            rulerCtx.stroke();
+            // Playhead triangle on ruler
+            rulerCtx.save();
+            rulerCtx.fillStyle = '#58a6ff';
+            rulerCtx.shadowColor = 'rgba(88, 166, 255, 0.5)';
+            rulerCtx.shadowBlur = 4;
+            const triSize = 6;
+            rulerCtx.beginPath();
+            rulerCtx.moveTo(playheadX, CONFIG.RULER_HEIGHT);
+            rulerCtx.lineTo(playheadX - triSize, CONFIG.RULER_HEIGHT - triSize - 1);
+            rulerCtx.lineTo(playheadX + triSize, CONFIG.RULER_HEIGHT - triSize - 1);
+            rulerCtx.closePath();
+            rulerCtx.fill();
+            rulerCtx.restore();
         }
     };
 
