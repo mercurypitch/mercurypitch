@@ -18,7 +18,7 @@ A browser-based voice pitch practice tool. Sing along with customizable melodies
 
 ## Usage
 
-Open `index.html` in a modern browser.
+Open `public/index.html` in a modern browser.
 
 1. Click **Mic** to enable microphone input
 2. Select a **Key** and **Octave** (or choose a preset)
@@ -39,14 +39,24 @@ Open `index.html` in a modern browser.
 ## Project Structure
 
 ```
-├── index.html        # Main HTML
-├── app.js            # Application logic
-├── audio-engine.js   # Web Audio playback
-├── pitch-detector.js # Microphone input & pitch detection
-├── piano-roll.js     # Piano roll editor
-├── scale-data.js     # Music theory utilities
-└── style.css         # Styles
+├── public/           # Static site — deploy this folder to any hosting
+│   ├── index.html    # Main HTML
+│   ├── app.js        # Application logic
+│   ├── audio-engine.js   # Web Audio playback
+│   ├── pitch-detector.js # Microphone input & pitch detection
+│   ├── piano-roll.js     # Piano roll editor
+│   ├── scale-data.js     # Music theory utilities
+│   ├── style.css     # Styles
+│   └── package.json  # npm scripts for CI
+├── .github/          # GitHub Actions CI workflow
+├── assets/          # Images and static assets
+├── package.json     # Root package (empty)
+└── todo.md          # Feature ideas
 ```
+
+## Deployment
+
+Deploy the `public/` directory as a static site to any hosting provider (e.g. Deno Deploy, GitHub Pages, Netlify, Vercel).
 
 ## Requirements
 
