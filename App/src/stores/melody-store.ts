@@ -53,8 +53,10 @@ export function clearMelody(): void {
 const [currentScale, setCurrentScale] = createSignal<ScaleDegree[]>(
   buildMultiOctaveScale('C', 3, 2, 'major')
 );
+const [currentOctave, setCurrentOctave] = createSignal<number>(3);
 
 export function refreshScale(keyName: string, startOctave: number, scaleType: string): void {
+  setCurrentOctave(startOctave);
   setCurrentScale(buildMultiOctaveScale(keyName, startOctave, 2, scaleType));
 }
 
@@ -77,6 +79,8 @@ export const melodyStore = {
   currentScale,
   setCurrentScale,
   refreshScale,
+  currentOctave,
+  setCurrentOctave,
 
   // Playback position
   currentNoteIndex,
