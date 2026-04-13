@@ -297,10 +297,10 @@
         this.gridCanvas.className = 'roll-grid';
         this.gridContainer.appendChild(this.gridCanvas);
 
-        // Assemble: wrapper holds ruler (for positioning), piano + grid stacked
+        // Assemble: grid before piano keys so grid sits on top visually
         gridWrapper.appendChild(rulerContainer);
-        gridWrapper.appendChild(this.pianoCanvas);
         gridWrapper.appendChild(this.gridContainer);
+        gridWrapper.appendChild(this.pianoCanvas);
 
         mainArea.appendChild(gridWrapper);
 
