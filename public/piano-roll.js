@@ -341,10 +341,11 @@
         this.pianoCanvas.height = totalHeight * dpr;
         this.pianoCanvas.style.height = totalHeight + 'px';
 
-        // Ruler canvas
-        this.rulerCanvas.width = totalWidth * dpr;
+        // Ruler canvas spans full width (piano + grid) to match the ruler HTML layout
+        const rulerWidth = CONFIG.PIANO_WIDTH + totalWidth;
+        this.rulerCanvas.width = rulerWidth * dpr;
         this.rulerCanvas.height = CONFIG.RULER_HEIGHT * dpr;
-        this.rulerCanvas.style.width = this.stretchedWidth + 'px';
+        this.rulerCanvas.style.width = rulerWidth + 'px';
         this.rulerCanvas.style.height = CONFIG.RULER_HEIGHT + 'px';
         this.rulerCtx = this.rulerCanvas.getContext('2d');
         this.rulerCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -408,13 +409,14 @@
 
     PianoRollEditor.prototype._drawRuler = function () {
         const ctx = this.rulerCtx;
-        const totalWidth = this.stretchedWidth;
-        ctx.clearRect(0, 0, totalWidth, CONFIG.RULER_HEIGHT);
+        const rulerWidth = CONFIG.PIANO_WIDTH + this.stretchedWidth;
+        const pianoWidth = CONFIG.PIANO_WIDTH;
+        ctx.clearRect(0, 0, rulerWidth, CONFIG.RULER_HEIGHT);
         ctx.fillStyle = '#161b22';
-        ctx.fillRect(0, 0, totalWidth, CONFIG.RULER_HEIGHT);
+        ctx.fillRect(0, 0, rulerWidth, CONFIG.RULER_HEIGHT);
 
         for (let b = 0; b <= this.totalBeats; b++) {
-            let x = b * this.beatWidth;
+            let x = pianoWidth + b * this.beatWidth;
             let isBar = b % CONFIG.BEATS_PER_BAR === 0;
 
             ctx.strokeStyle = isBar ? '#484f58' : '#30363d';
@@ -439,7 +441,7 @@
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.moveTo(0, CONFIG.RULER_HEIGHT - 1);
-        ctx.lineTo(totalWidth, CONFIG.RULER_HEIGHT - 1);
+        ctx.lineTo(rulerWidth, CONFIG.RULER_HEIGHT - 1);
         ctx.stroke();
     };
 
@@ -1280,13 +1282,13 @@
         // Draw playhead triangle on top of the ruler
         if (this.rulerCtx) {
             const rulerCtx = this.rulerCtx;
-            const rulerWidth = this.stretchedWidth;
+            const rulerWidth = CONFIG.PIANO_WIDTH + this.stretchedWidth;
             rulerCtx.clearRect(0, 0, rulerWidth, CONFIG.RULER_HEIGHT);
             rulerCtx.fillStyle = '#161b22';
             rulerCtx.fillRect(0, 0, rulerWidth, CONFIG.RULER_HEIGHT);
             // Redraw ruler bars
             for (let b = 0; b <= this.totalBeats; b++) {
-                let x = b * this.beatWidth;
+                let x = CONFIG.PIANO_WIDTH + b * this.beatWidth;
                 let isBar = b % CONFIG.BEATS_PER_BAR === 0;
                 rulerCtx.strokeStyle = isBar ? '#484f58' : '#30363d';
                 rulerCtx.lineWidth = isBar ? 1 : 0.5;
@@ -1316,10 +1318,11 @@
             rulerCtx.shadowColor = 'rgba(88, 166, 255, 0.5)';
             rulerCtx.shadowBlur = 4;
             const triSize = 6;
+            const rulerPlayheadX = CONFIG.PIANO_WIDTH + playheadX;
             rulerCtx.beginPath();
-            rulerCtx.moveTo(playheadX, CONFIG.RULER_HEIGHT);
-            rulerCtx.lineTo(playheadX - triSize, CONFIG.RULER_HEIGHT - triSize - 1);
-            rulerCtx.lineTo(playheadX + triSize, CONFIG.RULER_HEIGHT - triSize - 1);
+            rulerCtx.moveTo(rulerPlayheadX, CONFIG.RULER_HEIGHT);
+            rulerCtx.lineTo(rulerPlayheadX - triSize, CONFIG.RULER_HEIGHT - triSize - 1);
+            rulerCtx.lineTo(rulerPlayheadX + triSize, CONFIG.RULER_HEIGHT - triSize - 1);
             rulerCtx.closePath();
             rulerCtx.fill();
             rulerCtx.restore();
