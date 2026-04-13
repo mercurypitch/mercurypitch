@@ -194,6 +194,7 @@
             state.volume = savedVol;
             dom.volumeSlider.value = savedVol;
             dom.volumeValue.textContent = savedVol;
+            engine.setVolume(savedVol / 100);
             buildScale();
             populatePresetSelect();
 
@@ -671,6 +672,7 @@
         dom.tempoSlider.style.pointerEvents = 'none';
 
         engine.init().then(function () {
+            engine.setVolume(state.volume / 100);
             // Handle metronome precount
             if (state.metronomeEnabled && !state.isPrecount) {
                 state.isPrecount = true;
