@@ -221,9 +221,12 @@
         let newOctave = state.octave + delta;
         if (newOctave < 1 || newOctave > 6) return;
 
+        state.octave = newOctave;
+        dom.octaveValue.textContent = state.octave;
+
         if (state.loadedPresetName) {
             // Transpose the preset melody by the octave delta
-            const MIDI_OCTAVE_SHIFT = ;
+            const MIDI_OCTAVE_SHIFT = 12;
             state.melody = state.loadedPresetMelody.map(function (item) {
                 let transposedNote = Object.assign({}, item.note, {
                     midi: item.note.midi + delta * MIDI_OCTAVE_SHIFT,
@@ -232,16 +235,13 @@
                 });
                 return { id: item.id, note: transposedNote, duration: item.duration };
             });
-            state.octave = newOctave;
             state.scale = buildMajorScale(state.key, state.octave);
             state.totalBeats = melodyTotalBeats(state.melody);
         } else {
             // No preset: rebuild sample melody for new octave
-            state.octave = newOctave;
             buildScale();
         }
 
-        dom.octaveValue.textContent = state.octave;
         resizeCanvases();
         renderNoteList();
         drawPitchCanvas();
