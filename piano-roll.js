@@ -9,7 +9,7 @@
     if (window.PianoRollEditor) return;
 
     // ========== DEFAULT MELODY ==========
-    var DEFAULT_MELODY = [
+    const DEFAULT_MELODY = [
         { note: { midi: 60, name: 'C', octave: 4, freq: 261.63 }, startBeat: 0, duration: 2 },
         { note: { midi: 64, name: 'E', octave: 4, freq: 329.63 }, startBeat: 2, duration: 2 },
         { note: { midi: 67, name: 'G', octave: 4, freq: 392.00 }, startBeat: 4, duration: 2 },
@@ -21,7 +21,7 @@
     ];
 
     // ========== PIANO ROLL CONFIG ==========
-    var CONFIG = {
+    const CONFIG = {
         // Piano range: 2 octaves starting from the scale's root octave
         ROW_HEIGHT: 22,
         BEAT_WIDTH: 48,
@@ -38,13 +38,13 @@
     };
 
     // ========== PRESET STORAGE ==========
-    var PRESETS_KEY = 'pitchperfect_presets';
-    var LAST_PRESET_KEY = 'pitchperfect_lastpreset';
-    var SELECTED_PRESET_KEY = 'pitchperfect_selected_preset';
+    const PRESETS_KEY = 'pitchperfect_presets';
+    const LAST_PRESET_KEY = 'pitchperfect_lastpreset';
+    const SELECTED_PRESET_KEY = 'pitchperfect_selected_preset';
 
     function loadPresets() {
         try {
-            var raw = localStorage.getItem(PRESETS_KEY);
+            let raw = localStorage.getItem(PRESETS_KEY);
             return raw ? JSON.parse(raw) : {};
         } catch (e) {
             return {};
@@ -84,8 +84,8 @@
     }
 
     function formatBeat(beat) {
-        var bar = Math.floor(beat / CONFIG.BEATS_PER_BAR) + 1;
-        var beatInBar = (beat % CONFIG.BEATS_PER_BAR) + 1;
+        let bar = Math.floor(beat / CONFIG.BEATS_PER_BAR) + 1;
+        let beatInBar = (beat % CONFIG.BEATS_PER_BAR) + 1;
         return 'Bar ' + bar + ', Beat ' + beatInBar;
     }
 
@@ -163,11 +163,11 @@
 
     // ========== DOM BUILD ==========
     PianoRollEditor.prototype._buildDOM = function () {
-        var el = this.container;
+        const el = this.container;
         el.innerHTML = '';
 
         // Tab bar
-        var toolbar = document.createElement('div');
+        const toolbar = document.createElement('div');
         toolbar.className = 'roll-toolbar';
 
         // Tool buttons
@@ -238,7 +238,7 @@
         el.appendChild(toolbar);
 
         // Ruler + main area
-        var mainArea = document.createElement('div');
+        const mainArea = document.createElement('div');
         mainArea.className = 'roll-main-area';
 
         // Piano (fixed left column)
@@ -248,7 +248,7 @@
         this.pianoCanvas.style.height = '0px';
 
         // Ruler (top, above grid)
-        var rulerContainer = document.createElement('div');
+        const rulerContainer = document.createElement('div');
         rulerContainer.className = 'roll-ruler-container';
         rulerContainer.style.marginLeft = CONFIG.PIANO_WIDTH + 'px';
 
@@ -271,7 +271,7 @@
         el.appendChild(mainArea);
 
         // Status bar
-        var statusBar = document.createElement('div');
+        const statusBar = document.createElement('div');
         statusBar.className = 'roll-status';
         statusBar.innerHTML =
             '<span id="roll-note-info">Click on the grid to place notes</span>' +
@@ -286,11 +286,11 @@
     // ========== DIMENSIONS ==========
     PianoRollEditor.prototype._calculateDimensions = function () {
         this.totalRows = this.scale.length;
-        var totalHeight = this.totalRows * this.rowHeight;
-        var totalWidth = this.totalBeats * this.beatWidth;
+        const totalHeight = this.totalRows * this.rowHeight;
+        const totalWidth = this.totalBeats * this.beatWidth;
 
         // Set canvas sizes
-        var dpr = window.devicePixelRatio || 1;
+        const dpr = window.devicePixelRatio || 1;
 
         // Piano canvas
         this.pianoCanvas.width = CONFIG.PIANO_WIDTH * dpr;
@@ -324,17 +324,17 @@
 
     // ========== DRAWING ==========
     PianoRollEditor.prototype._drawPiano = function () {
-        var ctx = this.pianoCtx;
-        var w = CONFIG.PIANO_WIDTH;
-        var h = this.totalRows * this.rowHeight;
+        const ctx = this.pianoCtx;
+        const w = CONFIG.PIANO_WIDTH;
+        const h = this.totalRows * this.rowHeight;
         ctx.clearRect(0, 0, w, h);
 
-        for (var i = 0; i < this.totalRows; i++) {
+        for (let i = 0; i < this.totalRows; i++) {
             // Draw from highest note at top to lowest at bottom
-            var scaleIdx = this.totalRows - 1 - i;
-            var note = this.scale[scaleIdx];
-            var y = i * this.rowHeight;
-            var isBlack = note.name.indexOf('#') !== -1;
+            let scaleIdx = this.totalRows - 1 - i;
+            let note = this.scale[scaleIdx];
+            let y = i * this.rowHeight;
+            let isBlack = note.name.indexOf('#') !== -1;
 
             ctx.fillStyle = isBlack ? '#1a1f27' : '#21262d';
             ctx.fillRect(0, y, w, this.rowHeight);
@@ -363,15 +363,15 @@
     };
 
     PianoRollEditor.prototype._drawRuler = function () {
-        var ctx = this.rulerCtx;
-        var totalWidth = this.totalBeats * this.beatWidth;
+        const ctx = this.rulerCtx;
+        const totalWidth = this.totalBeats * this.beatWidth;
         ctx.clearRect(0, 0, totalWidth, CONFIG.RULER_HEIGHT);
         ctx.fillStyle = '#161b22';
         ctx.fillRect(0, 0, totalWidth, CONFIG.RULER_HEIGHT);
 
-        for (var b = 0; b <= this.totalBeats; b++) {
-            var x = b * this.beatWidth;
-            var isBar = b % CONFIG.BEATS_PER_BAR === 0;
+        for (let b = 0; b <= this.totalBeats; b++) {
+            let x = b * this.beatWidth;
+            let isBar = b % CONFIG.BEATS_PER_BAR === 0;
 
             ctx.strokeStyle = isBar ? '#484f58' : '#30363d';
             ctx.lineWidth = isBar ? 1 : 0.5;
@@ -381,7 +381,7 @@
             ctx.stroke();
 
             if (isBar) {
-                var barNum = Math.floor(b / CONFIG.BEATS_PER_BAR) + 1;
+                let barNum = Math.floor(b / CONFIG.BEATS_PER_BAR) + 1;
                 ctx.fillStyle = '#8b949e';
                 ctx.font = '10px sans-serif';
                 ctx.textAlign = 'center';
@@ -400,9 +400,9 @@
     };
 
     PianoRollEditor.prototype._drawGrid = function () {
-        var ctx = this.gridCtx;
-        var totalWidth = this.totalBeats * this.beatWidth;
-        var totalHeight = this.totalRows * this.rowHeight;
+        const ctx = this.gridCtx;
+        const totalWidth = this.totalBeats * this.beatWidth;
+        const totalHeight = this.totalRows * this.rowHeight;
 
         ctx.clearRect(0, 0, totalWidth, totalHeight);
 
@@ -411,11 +411,11 @@
         ctx.fillRect(0, 0, totalWidth, totalHeight);
 
         // Horizontal lines (pitch lanes) - highest note at top
-        for (var i = 0; i <= this.totalRows; i++) {
-            var y = i * this.rowHeight;
-            var scaleIdx = i < this.totalRows ? this.totalRows - 1 - i : -1;
-            var note = scaleIdx >= 0 ? this.scale[scaleIdx] : null;
-            var isBlack = note && note.name.indexOf('#') !== -1;
+        for (let i = 0; i <= this.totalRows; i++) {
+            let y = i * this.rowHeight;
+            let scaleIdx = i < this.totalRows ? this.totalRows - 1 - i : -1;
+            let note = scaleIdx >= 0 ? this.scale[scaleIdx] : null;
+            let isBlack = note && note.name.indexOf('#') !== -1;
             ctx.fillStyle = isBlack ? 'rgba(26,31,39,0.5)' : 'transparent';
             if (isBlack) ctx.fillRect(0, y, totalWidth, this.rowHeight);
 
@@ -428,9 +428,9 @@
         }
 
         // Vertical lines (beat grid)
-        for (var b = 0; b <= this.totalBeats; b++) {
-            var x = b * this.beatWidth;
-            var isBar = b % CONFIG.BEATS_PER_BAR === 0;
+        for (let b = 0; b <= this.totalBeats; b++) {
+            let x = b * this.beatWidth;
+            let isBar = b % CONFIG.BEATS_PER_BAR === 0;
             ctx.strokeStyle = isBar ? '#30363d' : '#21262d';
             ctx.lineWidth = isBar ? 1 : 0.5;
             ctx.beginPath();
@@ -440,8 +440,8 @@
         }
 
         // Draw note blocks
-        for (var n = 0; n < this.notes.length; n++) {
-            var note = this.notes[n];
+        for (let n = 0; n < this.notes.length; n++) {
+            let note = this.notes[n];
             this._drawNoteBlock(ctx, note, false);
         }
 
@@ -452,19 +452,19 @@
     };
 
     PianoRollEditor.prototype._drawNoteBlock = function (ctx, note, isGhost) {
-        var rowIdx = this._midiToRow(note.midi);
+        const rowIdx = this._midiToRow(note.midi);
         if (rowIdx < 0) return;
 
-        var x = note.startBeat * this.beatWidth;
-        var y = rowIdx * this.rowHeight;
-        var w = note.duration * this.beatWidth;
-        var h = this.rowHeight - 2;
-        var ry = y + 1;
+        let x = note.startBeat * this.beatWidth;
+        let y = rowIdx * this.rowHeight;
+        const w = note.duration * this.beatWidth;
+        const h = this.rowHeight - 2;
+        const ry = y + 1;
 
         if (w < 2) return;
 
-        var isSelected = !isGhost && note.id === this.selectedNoteId;
-        var cornerRadius = 4;
+        const isSelected = !isGhost && note.id === this.selectedNoteId;
+        const cornerRadius = 4;
 
         // Shadow
         if (!isGhost) {
@@ -487,7 +487,7 @@
             ctx.strokeStyle = 'rgba(88,166,255,0.4)';
             ctx.lineWidth = 1;
         } else {
-            var color = isSelected ? CONFIG.NOTE_COLORS.selected : CONFIG.NOTE_COLORS.normal;
+            const color = isSelected ? CONFIG.NOTE_COLORS.selected : CONFIG.NOTE_COLORS.normal;
             ctx.fillStyle = color;
             ctx.strokeStyle = isSelected ? '#8fc9ff' : 'rgba(88,166,255,0.5)';
             ctx.lineWidth = isSelected ? 1.5 : 1;
@@ -500,7 +500,7 @@
 
         // Note name inside (if wide enough)
         if (w > 18 && !isGhost) {
-            var noteInfo = this._midiToNoteInfo(note.midi);
+            let noteInfo = this._midiToNoteInfo(note.midi);
             if (noteInfo) {
                 ctx.fillStyle = isSelected ? '#fff' : 'rgba(255,255,255,0.8)';
                 ctx.font = 'bold 9px sans-serif';
@@ -513,7 +513,7 @@
 
         // Resize handles (only on selected notes)
         if (isSelected && !isGhost && w > 12) {
-            var handleW = 6;
+            const handleW = 6;
             ctx.fillStyle = 'rgba(255,255,255,0.5)';
             // Left handle
             ctx.fillRect(x + 1, ry + h / 2 - 4, handleW, 8);
@@ -530,7 +530,7 @@
 
     // ========== HIT TESTING ==========
     PianoRollEditor.prototype._getRowAtY = function (y) {
-        var row = Math.floor(y / this.rowHeight);
+        let row = Math.floor(y / this.rowHeight);
         if (row < 0 || row >= this.totalRows) return -1;
         return row; // visual row (0=top=lowest note)
     };
@@ -540,14 +540,14 @@
     };
 
     PianoRollEditor.prototype._midiToRow = function (midi) {
-        for (var i = 0; i < this.scale.length; i++) {
+        for (let i = 0; i < this.scale.length; i++) {
             if (this.scale[i].midi === midi) return i;
         }
         return -1;
     };
 
     PianoRollEditor.prototype._midiToNoteInfo = function (midi) {
-        for (var i = 0; i < this.scale.length; i++) {
+        for (let i = 0; i < this.scale.length; i++) {
             if (this.scale[i].midi === midi) return this.scale[i];
         }
         return null;
@@ -559,15 +559,15 @@
     };
 
     PianoRollEditor.prototype._getNoteAt = function (x, y) {
-        var row = this._getRowAtY(y);
+        let row = this._getRowAtY(y);
         if (row < 0) return null;
-        var midi = this._rowToMidi(row);
+        let midi = this._rowToMidi(row);
         if (midi < 0) return null;
 
-        var beat = this._getBeatAtX(x);
+        let beat = this._getBeatAtX(x);
 
-        for (var i = 0; i < this.notes.length; i++) {
-            var note = this.notes[i];
+        for (let i = 0; i < this.notes.length; i++) {
+            let note = this.notes[i];
             if (note.midi !== midi) continue;
             if (beat >= note.startBeat && beat <= note.startBeat + note.duration) {
                 return note;
@@ -577,9 +577,9 @@
     };
 
     PianoRollEditor.prototype._getResizeHandle = function (x, y, note) {
-        var nx = note.startBeat * this.beatWidth;
-        var nw = note.duration * this.beatWidth;
-        var handleZone = 8;
+        const nx = note.startBeat * this.beatWidth;
+        const nw = note.duration * this.beatWidth;
+        const handleZone = 8;
 
         if (Math.abs(x - nx) <= handleZone) return 'left';
         if (Math.abs((x - nx) - nw) <= handleZone) return 'right';
@@ -588,7 +588,7 @@
 
     // ========== EVENTS ==========
     PianoRollEditor.prototype._bindEvents = function () {
-        var self = this;
+        const self = this;
 
         // Tool buttons
         this.container.querySelectorAll('.roll-tool-btn').forEach(function (btn) {
@@ -615,7 +615,7 @@
         // Octave controls
         var rollOctaveUp = document.getElementById('roll-octave-up');
         var rollOctaveDown = document.getElementById('roll-octave-down');
-        var rollOctaveValue = document.getElementById('roll-octave-value');
+        const rollOctaveValue = document.getElementById('roll-octave-value');
         if (rollOctaveUp) {
             rollOctaveUp.addEventListener('click', function () {
                 self._shiftOctave(1);
@@ -687,12 +687,12 @@
 
     // ========== MOUSE EVENTS ==========
     PianoRollEditor.prototype._onGridMouseDown = function (e) {
-        var rect = this.gridCanvas.getBoundingClientRect();
-        var x = e.clientX - rect.left;
-        var y = e.clientY - rect.top;
+        const rect = this.gridCanvas.getBoundingClientRect();
+        let x = e.clientX - rect.left;
+        let y = e.clientY - rect.top;
 
         if (this.activeTool === 'erase') {
-            var note = this._getNoteAt(x, y);
+            let note = this._getNoteAt(x, y);
             if (note) {
                 this._removeNote(note.id);
             }
@@ -700,12 +700,12 @@
         }
 
         if (this.activeTool === 'select' || this.activeTool === 'place') {
-            var hitNote = this._getNoteAt(x, y);
+            let hitNote = this._getNoteAt(x, y);
 
             if (hitNote) {
                 if (this.activeTool === 'select') {
                     // Check resize handles
-                    var handle = this._getResizeHandle(x, y, hitNote);
+                    let handle = this._getResizeHandle(x, y, hitNote);
                     if (handle) {
                         this.isResizing = true;
                         this.resizeHandle = handle;
@@ -719,7 +719,7 @@
                 } else {
                     // Place tool: select and allow resize
                     this.selectedNoteId = hitNote.id;
-                    var handle2 = this._getResizeHandle(x, y, hitNote);
+                    let handle2 = this._getResizeHandle(x, y, hitNote);
                     if (handle2) {
                         this.isResizing = true;
                         this.resizeHandle = handle2;
@@ -730,17 +730,17 @@
                 }
             } else if (this.activeTool === 'place') {
                 // Place new note
-                var row = this._getRowAtY(y);
+                let row = this._getRowAtY(y);
                 if (row < 0) return;
-                var midi = this._rowToMidi(row);
+                let midi = this._rowToMidi(row);
                 if (midi < 0) return;
 
-                var startBeat = snapToGrid(this._getBeatAtX(x), CONFIG.MIN_DURATION);
+                let startBeat = snapToGrid(this._getBeatAtX(x), CONFIG.MIN_DURATION);
                 if (startBeat < 0) startBeat = 0;
 
                 // Check if there's already a note at this position on this pitch
-                var conflict = false;
-                for (var i = 0; i < this.notes.length; i++) {
+                let conflict = false;
+                for (let i = 0; i < this.notes.length; i++) {
                     var n = this.notes[i];
                     if (n.midi === midi && startBeat < n.startBeat + n.duration && startBeat + this.selectedDuration > n.startBeat) {
                         conflict = true;
@@ -765,26 +765,26 @@
     };
 
     PianoRollEditor.prototype._onGridMouseMove = function (e) {
-        var rect = this.gridCanvas.getBoundingClientRect();
-        var x = e.clientX - rect.left;
-        var y = e.clientY - rect.top;
+        const rect = this.gridCanvas.getBoundingClientRect();
+        let x = e.clientX - rect.left;
+        let y = e.clientY - rect.top;
 
         if (this.isResizing && this.selectedNoteId !== null) {
-            var note = this._getNoteById(this.selectedNoteId);
+            let note = this._getNoteById(this.selectedNoteId);
             if (!note) return;
 
-            var deltaX = x - this.dragStartX;
-            var deltaBeat = deltaX / this.beatWidth;
+            const deltaX = x - this.dragStartX;
+            const deltaBeat = deltaX / this.beatWidth;
 
             if (this.resizeHandle === 'left') {
-                var newStart = snapToGrid(this.dragStartBeat + deltaBeat, CONFIG.MIN_DURATION);
-                var newDuration = this.dragStartDuration - (newStart - this.dragStartBeat);
+                let newStart = snapToGrid(this.dragStartBeat + deltaBeat, CONFIG.MIN_DURATION);
+                let newDuration = this.dragStartDuration - (newStart - this.dragStartBeat);
                 if (newDuration >= CONFIG.MIN_DURATION && newStart >= 0) {
                     note.startBeat = Math.max(0, newStart);
                     note.duration = newDuration;
                 }
             } else if (this.resizeHandle === 'right') {
-                var newDuration2 = snapToGrid(this.dragStartDuration + deltaBeat, CONFIG.MIN_DURATION);
+                let newDuration2 = snapToGrid(this.dragStartDuration + deltaBeat, CONFIG.MIN_DURATION);
                 if (newDuration2 >= CONFIG.MIN_DURATION) {
                     note.duration = newDuration2;
                 }
@@ -796,12 +796,12 @@
 
         // Ghost note preview
         if (this.activeTool === 'place') {
-            var hitNote2 = this._getNoteAt(x, y);
+            let hitNote2 = this._getNoteAt(x, y);
             if (!hitNote2) {
-                var row2 = this._getRowAtY(y);
+                let row2 = this._getRowAtY(y);
                 if (row2 >= 0) {
-                    var midi2 = this._rowToMidi(row2);
-                    var startBeat2 = snapToGrid(this._getBeatAtX(x), CONFIG.MIN_DURATION);
+                    let midi2 = this._rowToMidi(row2);
+                    let startBeat2 = snapToGrid(this._getBeatAtX(x), CONFIG.MIN_DURATION);
                     if (startBeat2 < 0) startBeat2 = 0;
                     this.ghostNote = { midi: midi2, startBeat: startBeat2, duration: this.selectedDuration };
                 } else {
@@ -816,7 +816,7 @@
 
     PianoRollEditor.prototype._onGridMouseUp = function (e) {
         if (this.isResizing) {
-            var note = this._getNoteById(this.selectedNoteId);
+            let note = this._getNoteById(this.selectedNoteId);
             if (note) {
                 note.duration = Math.max(CONFIG.MIN_DURATION, snapToGrid(note.duration, CONFIG.MIN_DURATION));
                 note.startBeat = Math.max(0, note.startBeat);
@@ -835,10 +835,10 @@
 
     PianoRollEditor.prototype._onRightClick = function (e) {
         e.preventDefault();
-        var rect = this.gridCanvas.getBoundingClientRect();
-        var x = e.clientX - rect.left;
-        var y = e.clientY - rect.top;
-        var note = this._getNoteAt(x, y);
+        const rect = this.gridCanvas.getBoundingClientRect();
+        let x = e.clientX - rect.left;
+        let y = e.clientY - rect.top;
+        let note = this._getNoteAt(x, y);
         if (note) {
             this._removeNote(note.id);
         }
@@ -847,16 +847,16 @@
     // ========== TOUCH EVENTS ==========
     PianoRollEditor.prototype._onTouchStart = function (e) {
         e.preventDefault();
-        var touch = e.touches[0];
-        var rect = this.gridCanvas.getBoundingClientRect();
-        var x = touch.clientX - rect.left;
-        var y = touch.clientY - rect.top;
+        const touch = e.touches[0];
+        const rect = this.gridCanvas.getBoundingClientRect();
+        let x = touch.clientX - rect.left;
+        let y = touch.clientY - rect.top;
         this._onGridMouseDown({ clientX: touch.clientX, clientY: touch.clientY, target: e.target });
     };
 
     PianoRollEditor.prototype._onTouchMove = function (e) {
         e.preventDefault();
-        var touch = e.touches[0];
+        const touch = e.touches[0];
         this._onGridMouseMove({ clientX: touch.clientX, clientY: touch.clientY, target: e.target });
     };
 
@@ -888,7 +888,7 @@
 
     // ========== NOTE MANAGEMENT ==========
     PianoRollEditor.prototype._addNote = function (midi, startBeat, duration) {
-        var note = {
+        let note = {
             id: generateId(),
             midi: midi,
             startBeat: startBeat,
@@ -900,7 +900,7 @@
     };
 
     PianoRollEditor.prototype._removeNote = function (id) {
-        for (var i = 0; i < this.notes.length; i++) {
+        for (let i = 0; i < this.notes.length; i++) {
             if (this.notes[i].id === id) {
                 this.notes.splice(i, 1);
                 if (this.selectedNoteId === id) this.selectedNoteId = null;
@@ -912,7 +912,7 @@
     };
 
     PianoRollEditor.prototype._getNoteById = function (id) {
-        for (var i = 0; i < this.notes.length; i++) {
+        for (let i = 0; i < this.notes.length; i++) {
             if (this.notes[i].id === id) return this.notes[i];
         }
         return null;
@@ -936,11 +936,11 @@
     };
 
     PianoRollEditor.prototype.removeBeats = function (count) {
-        var newTotal = this.totalBeats - count;
+        const newTotal = this.totalBeats - count;
         if (newTotal < 4) return;
         // Check if any notes would be cut off
-        var wouldCut = false;
-        for (var i = 0; i < this.notes.length; i++) {
+        let wouldCut = false;
+        for (let i = 0; i < this.notes.length; i++) {
             if (this.notes[i].startBeat + this.notes[i].duration > newTotal) {
                 wouldCut = true;
                 break;
@@ -965,10 +965,10 @@
     PianoRollEditor.prototype._updateHint = function () {
         if (!this.hintEl) return;
         if (this.selectedNoteId !== null) {
-            var note = this._getNoteById(this.selectedNoteId);
+            let note = this._getNoteById(this.selectedNoteId);
             if (note) {
-                var info = this._midiToNoteInfo(note.midi);
-                var name = info ? info.name + info.octave : '?';
+                const info = this._midiToNoteInfo(note.midi);
+                let name = info ? info.name + info.octave : '?';
                 this.hintEl.textContent = 'Selected: ' + name + ' | Duration: ' + note.duration + 'b | ' + formatBeat(note.startBeat) + ' — Right-click or Del to delete';
             }
         } else if (this.activeTool === 'place') {
@@ -987,12 +987,12 @@
 
     // ========== PRESETS ==========
     PianoRollEditor.prototype._populatePresetSelect = function () {
-        var sel = document.getElementById('roll-preset-select');
+        const sel = document.getElementById('roll-preset-select');
         if (!sel) return;
         sel.innerHTML = '<option value="">— Load Preset —</option>';
-        var names = Object.keys(this.presets).sort();
-        for (var i = 0; i < names.length; i++) {
-            var opt = document.createElement('option');
+        const names = Object.keys(this.presets).sort();
+        for (let i = 0; i < names.length; i++) {
+            const opt = document.createElement('option');
             opt.value = names[i];
             opt.textContent = names[i];
             sel.appendChild(opt);
@@ -1000,8 +1000,8 @@
     };
 
     PianoRollEditor.prototype._savePreset = function () {
-        var nameInput = document.getElementById('roll-preset-name');
-        var name = nameInput ? nameInput.value.trim() : '';
+        const nameInput = document.getElementById('roll-preset-name');
+        let name = nameInput ? nameInput.value.trim() : '';
         if (!name) {
             alert('Please enter a preset name.');
             return;
@@ -1025,7 +1025,7 @@
     };
 
     PianoRollEditor.prototype._loadPreset = function (name) {
-        var preset = this.presets[name];
+        const preset = this.presets[name];
         if (!preset) return;
         this.notes = preset.notes.map(function (n) {
             return { id: generateId(), midi: n.midi, startBeat: n.startBeat, duration: n.duration };
@@ -1043,7 +1043,7 @@
     };
 
     PianoRollEditor.prototype._loadLastPreset = function () {
-        var last = localStorage.getItem(LAST_PRESET_KEY);
+        const last = localStorage.getItem(LAST_PRESET_KEY);
         if (last && this.presets[last]) {
             this._loadPreset(last);
         } else if (this.notes.length === 0) {
@@ -1061,10 +1061,10 @@
             return;
         }
 
-        var self = this;
-        var sortedNotes = this.notes.slice().sort(function (a, b) { return a.startBeat - b.startBeat; });
-        var lastNote = sortedNotes[sortedNotes.length - 1];
-        var totalDuration = (lastNote.startBeat + lastNote.duration) * (60000 / this.bpm);
+        const self = this;
+        const sortedNotes = this.notes.slice().sort(function (a, b) { return a.startBeat - b.startBeat; });
+        const lastNote = sortedNotes[sortedNotes.length - 1];
+        const totalDuration = (lastNote.startBeat + lastNote.duration) * (60000 / this.bpm);
 
         this._isPlaying = true;
         this._playStartTime = performance.now();
@@ -1091,28 +1091,28 @@
 
     PianoRollEditor.prototype._animatePlayback = function () {
         if (!this._isPlaying) return;
-        var self = this;
+        const self = this;
 
-        var elapsed = performance.now() - this._playStartTime;
-        var currentBeat = (elapsed / 60000) * this.bpm;
-        var sortedNotes = this.notes.slice().sort(function (a, b) { return a.startBeat - b.startBeat; });
-        var lastNote = sortedNotes[sortedNotes.length - 1];
-        var totalDuration = (lastNote.startBeat + lastNote.duration) * (60000 / this.bpm);
+        const elapsed = performance.now() - this._playStartTime;
+        const currentBeat = (elapsed / 60000) * this.bpm;
+        const sortedNotes = this.notes.slice().sort(function (a, b) { return a.startBeat - b.startBeat; });
+        const lastNote = sortedNotes[sortedNotes.length - 1];
+        const totalDuration = (lastNote.startBeat + lastNote.duration) * (60000 / this.bpm);
 
         // Scroll grid to keep playhead visible
-        var playheadX = currentBeat * this.beatWidth;
-        var containerWidth = this.gridContainer.clientWidth;
-        var targetScroll = playheadX - containerWidth * 0.3;
+        const playheadX = currentBeat * this.beatWidth;
+        const containerWidth = this.gridContainer.clientWidth;
+        const targetScroll = playheadX - containerWidth * 0.3;
         if (targetScroll > 0) {
             this.gridContainer.scrollLeft = targetScroll;
         }
 
         // Play tones for notes that start at current beat
         if (window.pianoRollAudioEngine) {
-            for (var i = 0; i < sortedNotes.length; i++) {
-                var note = sortedNotes[i];
+            for (let i = 0; i < sortedNotes.length; i++) {
+                let note = sortedNotes[i];
                 if (Math.abs(note.startBeat - currentBeat) < 0.05) {
-                    var noteInfo = this._midiToNoteInfo(note.midi);
+                    let noteInfo = this._midiToNoteInfo(note.midi);
                     if (noteInfo) {
                         window.pianoRollAudioEngine.playTone(noteInfo.freq);
                     }
@@ -1133,9 +1133,9 @@
     };
 
     PianoRollEditor.prototype._drawGridWithPlayhead = function () {
-        var ctx = this.gridCtx;
-        var totalWidth = this.totalBeats * this.beatWidth;
-        var totalHeight = this.totalRows * this.rowHeight;
+        const ctx = this.gridCtx;
+        const totalWidth = this.totalBeats * this.beatWidth;
+        const totalHeight = this.totalRows * this.rowHeight;
 
         ctx.clearRect(0, 0, totalWidth, totalHeight);
 
@@ -1144,11 +1144,11 @@
         ctx.fillRect(0, 0, totalWidth, totalHeight);
 
         // Horizontal lines - highest note at top
-        for (var i = 0; i <= this.totalRows; i++) {
-            var y = i * this.rowHeight;
-            var scaleIdx = i < this.totalRows ? this.totalRows - 1 - i : -1;
-            var note = scaleIdx >= 0 ? this.scale[scaleIdx] : null;
-            var isBlack = note && note.name.indexOf('#') !== -1;
+        for (let i = 0; i <= this.totalRows; i++) {
+            let y = i * this.rowHeight;
+            let scaleIdx = i < this.totalRows ? this.totalRows - 1 - i : -1;
+            let note = scaleIdx >= 0 ? this.scale[scaleIdx] : null;
+            let isBlack = note && note.name.indexOf('#') !== -1;
             ctx.fillStyle = isBlack ? 'rgba(26,31,39,0.5)' : 'transparent';
             if (isBlack) ctx.fillRect(0, y, totalWidth, this.rowHeight);
             ctx.strokeStyle = '#21262d';
@@ -1160,9 +1160,9 @@
         }
 
         // Vertical lines
-        for (var b = 0; b <= this.totalBeats; b++) {
-            var x = b * this.beatWidth;
-            var isBar = b % CONFIG.BEATS_PER_BAR === 0;
+        for (let b = 0; b <= this.totalBeats; b++) {
+            let x = b * this.beatWidth;
+            let isBar = b % CONFIG.BEATS_PER_BAR === 0;
             ctx.strokeStyle = isBar ? '#30363d' : '#21262d';
             ctx.lineWidth = isBar ? 1 : 0.5;
             ctx.beginPath();
@@ -1172,28 +1172,28 @@
         }
 
         // Note blocks
-        var currentBeat = this._activeBeat || 0;
-        for (var n = 0; n < this.notes.length; n++) {
-            var note = this.notes[n];
-            var isActive = currentBeat >= note.startBeat && currentBeat < note.startBeat + note.duration;
+        const currentBeat = this._activeBeat || 0;
+        for (let n = 0; n < this.notes.length; n++) {
+            let note = this.notes[n];
+            const isActive = currentBeat >= note.startBeat && currentBeat < note.startBeat + note.duration;
             this._drawNoteBlock(ctx, note, false, isActive);
         }
     };
 
     PianoRollEditor.prototype._drawNoteBlock = function (ctx, note, isGhost, isActive) {
-        var rowIdx = this._midiToRow(note.midi);
+        const rowIdx = this._midiToRow(note.midi);
         if (rowIdx < 0) return;
 
-        var x = note.startBeat * this.beatWidth;
-        var y = rowIdx * this.rowHeight;
-        var w = note.duration * this.beatWidth;
-        var h = this.rowHeight - 2;
-        var ry = y + 1;
+        let x = note.startBeat * this.beatWidth;
+        let y = rowIdx * this.rowHeight;
+        const w = note.duration * this.beatWidth;
+        const h = this.rowHeight - 2;
+        const ry = y + 1;
 
         if (w < 2) return;
 
-        var isSelected = !isGhost && note.id === this.selectedNoteId;
-        var cornerRadius = 4;
+        const isSelected = !isGhost && note.id === this.selectedNoteId;
+        const cornerRadius = 4;
 
         if (isActive && !isGhost) {
             ctx.shadowColor = 'rgba(63,185,80,0.6)';
@@ -1223,7 +1223,7 @@
             ctx.strokeStyle = 'rgba(63,185,80,0.9)';
             ctx.lineWidth = 1.5;
         } else {
-            var color = isSelected ? CONFIG.NOTE_COLORS.selected : CONFIG.NOTE_COLORS.normal;
+            const color = isSelected ? CONFIG.NOTE_COLORS.selected : CONFIG.NOTE_COLORS.normal;
             ctx.fillStyle = color;
             ctx.strokeStyle = isSelected ? '#8fc9ff' : 'rgba(88,166,255,0.5)';
             ctx.lineWidth = isSelected ? 1.5 : 1;
@@ -1237,7 +1237,7 @@
 
         // Note name
         if (w > 18 && !isGhost) {
-            var noteInfo = this._midiToNoteInfo(note.midi);
+            let noteInfo = this._midiToNoteInfo(note.midi);
             if (noteInfo) {
                 ctx.fillStyle = isActive ? '#fff' : 'rgba(255,255,255,0.85)';
                 ctx.font = 'bold 9px sans-serif';
@@ -1250,7 +1250,7 @@
 
         // Resize handles
         if (isSelected && !isGhost && w > 12) {
-            var handleW = 6;
+            const handleW = 6;
             ctx.fillStyle = 'rgba(255,255,255,0.5)';
             ctx.fillRect(x + 1, ry + h / 2 - 4, handleW, 8);
             ctx.fillRect(x + w - handleW - 1, ry + h / 2 - 4, handleW, 8);
@@ -1259,9 +1259,9 @@
 
     // ========== PUBLIC API ==========
     PianoRollEditor.prototype.getMelody = function () {
-        var self = this;
+        const self = this;
         return this.notes.slice().sort(function (a, b) { return a.startBeat - b.startBeat; }).map(function (n) {
-            var noteInfo = self._midiToNoteInfo(n.midi);
+            let noteInfo = self._midiToNoteInfo(n.midi);
             return {
                 note: noteInfo || { midi: n.midi, name: '?', octave: 4, freq: 440 },
                 startBeat: n.startBeat,
@@ -1271,9 +1271,9 @@
     };
 
     PianoRollEditor.prototype.setMelody = function (melodyData) {
-        var self = this;
+        const self = this;
         this.notes = melodyData.map(function (item) {
-            var noteData = item.note || {};
+            const noteData = item.note || {};
             return {
                 id: generateId(),
                 midi: noteData.midi || (item.midi || 60),
@@ -1298,26 +1298,26 @@
 
     PianoRollEditor.prototype.setOctave = function (octave) {
         this.octave = octave;
-        var rollOctaveValue = document.getElementById('roll-octave-value');
+        const rollOctaveValue = document.getElementById('roll-octave-value');
         if (rollOctaveValue) rollOctaveValue.textContent = octave;
     };
 
     PianoRollEditor.prototype._shiftOctave = function (delta) {
-        var newOctave = this.octave + delta;
+        let newOctave = this.octave + delta;
         if (newOctave < 1 || newOctave > 6) return;
 
         this.octave = newOctave;
-        var rollOctaveValue = document.getElementById('roll-octave-value');
+        const rollOctaveValue = document.getElementById('roll-octave-value');
         if (rollOctaveValue) rollOctaveValue.textContent = newOctave;
 
         // Transpose all notes by the octave delta
         var MIDI_OCTAVE_SHIFT = 12;
-        for (var i = 0; i < this.notes.length; i++) {
+        for (let i = 0; i < this.notes.length; i++) {
             this.notes[i].midi += delta * MIDI_OCTAVE_SHIFT;
         }
 
         // Rebuild scale for the new octave
-        var app = window.pitchPerfectApp;
+        const app = window.pitchPerfectApp;
         if (app) {
             this.scale = buildMajorScale(app.key || 'C', this.octave);
         }
