@@ -697,6 +697,31 @@ header h1 {
     min-width: 340px;
     max-width: 420px;
     box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    position: relative;
+}
+
+.overlay-close {
+    position: absolute;
+    top: 12px;
+    right: 14px;
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 1.4rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.12s ease;
+    line-height: 1;
+}
+
+.overlay-close:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
 }
 
 #score-title {
