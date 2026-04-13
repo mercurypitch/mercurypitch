@@ -325,6 +325,17 @@ export class PianoRollEditor {
           </button>
         </div>
         <div class="roll-sep"></div>
+        <div class="roll-octave-group">
+          <button id="roll-octave-down" class="roll-octave-btn" title="Lower octave">-Oct</button>
+          <span id="roll-octave-value" class="roll-octave-value">4</span>
+          <button id="roll-octave-up" class="roll-octave-btn" title="Higher octave">+Oct</button>
+        </div>
+        <div class="roll-sep"></div>
+        <div class="roll-bars-group">
+          <button id="roll-bars-down" class="roll-bars-btn" title="Remove 4 bars">-4b</button>
+          <button id="roll-bars-up" class="roll-bars-btn" title="Add 4 bars">+4b</button>
+        </div>
+        <div class="roll-sep"></div>
         <div class="roll-preset-group">
           <select id="roll-preset-select" class="roll-preset-select">
             <option value="">— Load Preset —</option>
@@ -496,6 +507,35 @@ export class PianoRollEditor {
       if (nameInput) nameInput.value = '';
       this.currentPresetName = null;
       this.clearMelody();
+    });
+
+    // Octave controls
+    let octaveOffset = 0;
+    container.querySelector('#roll-octave-up')?.addEventListener('click', () => {
+      octaveOffset++;
+      const display = container.querySelector('#roll-octave-value');
+      if (display) display.textContent = String(octaveOffset >= 0 ? `+${octaveOffset}` : octaveOffset);
+      // Emit event for app to update scale
+      window.dispatchEvent(new CustomEvent('pitchperfect:octaveChange', { detail: { offset: octaveOffset } }));
+    });
+
+    container.querySelector('#roll-octave-down')?.addEventListener('click', () => {
+      octaveOffset--;
+      const display = container.querySelector('#roll-octave-value');
+      if (display) display.textContent = String(octaveOffset >= 0 ? `+${octaveOffset}` : octaveOffset);
+      // Emit event for app to update scale
+      window.dispatchEvent(new CustomEvent('pitchperfect:octaveChange', { detail: { offset: octaveOffset } }));
+    });
+
+    // Bar controls
+    container.querySelector('#roll-bars-up')?.addEventListener('click', () => {
+      this.addBeats(4);
+      this.updateBeatInfo();
+    });
+
+    container.querySelector('#roll-bars-down')?.addEventListener('click', () => {
+      this.removeBeats(4);
+      this.updateBeatInfo();
     });
 
     // Listen for preset changes from other tabs to refresh preset list
@@ -968,8 +1008,7 @@ export class PianoRollEditor {
     // Horizontal lines
     for (let i = 0; i <= this.totalRows; i++) {
       const y = i * this.rowHeight;
-      const scaleIdx = i < this.totalRows ? this.totalRows - 1 - i : -1;
-      const note = scaleIdx >= 0 ? this.scale[scaleIdx] : null;
+      const note = i < this.totalRows ? this.scale[i] : null;
       const isBlack = note && note.name.includes('#');
 
       if (isBlack) {
@@ -1013,8 +1052,7 @@ export class PianoRollEditor {
     // Horizontal lines
     for (let i = 0; i <= this.totalRows; i++) {
       const y = i * this.rowHeight;
-      const scaleIdx = i < this.totalRows ? this.totalRows - 1 - i : -1;
-      const note = scaleIdx >= 0 ? this.scale[scaleIdx] : null;
+      const note = i < this.totalRows ? this.scale[i] : null;
       const isBlack = note && note.name.includes('#');
 
       if (isBlack) {

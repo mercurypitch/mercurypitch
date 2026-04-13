@@ -613,6 +613,37 @@ header h1 {
     font-weight: 600;
 }
 
+/* ===== Preset Select ===== */
+.preset-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.preset-group .opt-label {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+}
+
+.preset-select {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text-primary);
+    padding: 4px 8px;
+    font-size: 0.78rem;
+    cursor: pointer;
+}
+
+.preset-select:hover {
+    border-color: var(--accent);
+}
+
+.preset-select option {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
 /* ===== Volume Slider ===== */
 .volume-group {
     display: flex;
@@ -635,6 +666,22 @@ header h1 {
     text-align: right;
     color: var(--green);
     font-weight: 600;
+}
+
+/* ===== Precount Button ===== */
+#btn-precount {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+#btn-precount svg {
+    flex-shrink: 0;
+}
+
+#btn-precount.active {
+    background: var(--accent);
+    color: #fff;
 }
 
 /* ===== Utility ===== */
@@ -1008,6 +1055,62 @@ header h1 {
     height: 22px;
     background: var(--border);
     flex-shrink: 0;
+}
+
+/* Octave controls */
+.roll-octave-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.roll-octave-btn {
+    padding: 4px 8px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 0.12s ease;
+    min-width: 36px;
+}
+
+.roll-octave-btn:hover {
+    border-color: var(--accent);
+    color: var(--text-primary);
+}
+
+.roll-octave-value {
+    font-size: 0.72rem;
+    color: var(--accent);
+    min-width: 20px;
+    text-align: center;
+    font-weight: 600;
+}
+
+/* Bar controls */
+.roll-bars-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.roll-bars-btn {
+    padding: 4px 8px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 0.12s ease;
+    min-width: 36px;
+}
+
+.roll-bars-btn:hover {
+    border-color: var(--accent);
+    color: var(--text-primary);
 }
 
 /* Duration buttons */
