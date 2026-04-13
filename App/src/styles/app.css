@@ -1,0 +1,543 @@
+/* ============================================================
+   PitchPerfect — Application Styles
+   ============================================================ */
+
+/* ── Reset & base ─────────────────────────────────────────── */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #0d1117;
+  color: #e6edf3;
+  height: 100vh;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── App layout ────────────────────────────────────────────── */
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #0d1117;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  height: 48px;
+  background: #161b22;
+  border-bottom: 1px solid #30363d;
+  flex-shrink: 0;
+  -webkit-app-region: drag;
+}
+
+.app-header h1 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #58a6ff;
+  letter-spacing: -0.3px;
+  -webkit-app-region: no-drag;
+}
+
+.app-nav {
+  display: flex;
+  gap: 4px;
+  -webkit-app-region: no-drag;
+}
+
+.app-nav button {
+  background: none;
+  border: none;
+  color: #8b949e;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  font-family: inherit;
+}
+
+.app-nav button:hover {
+  background: #1f2428;
+  color: #e6edf3;
+}
+
+.app-nav button.active {
+  background: #1f6feb22;
+  color: #58a6ff;
+}
+
+.app-main {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Practice panel ─────────────────────────────────────────── */
+
+.practice-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  gap: 0;
+}
+
+.practice-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 20px;
+  background: #161b22;
+  border-bottom: 1px solid #21262d;
+  flex-shrink: 0;
+}
+
+.practice-controls label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #8b949e;
+}
+
+.practice-controls select,
+.practice-controls input {
+  background: #0d1117;
+  border: 1px solid #30363d;
+  color: #e6edf3;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-family: inherit;
+  outline: none;
+  cursor: pointer;
+}
+
+.practice-controls select:focus,
+.practice-controls input:focus {
+  border-color: #388bfd;
+  box-shadow: 0 0 0 2px #388bfd33;
+}
+
+.practice-controls input[type="number"] {
+  width: 64px;
+}
+
+/* ── Toolbar ──────────────────────────────────────────────── */
+
+.practice-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  background: #161b22;
+  border-bottom: 1px solid #21262d;
+  flex-shrink: 0;
+}
+
+/* ── Control buttons (shared) ─────────────────────────────── */
+
+.ctrl-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  background: #21262d;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  color: #e6edf3;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s, box-shadow 0.15s;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.ctrl-btn:hover:not(:disabled) {
+  background: #30363d;
+  border-color: #484f58;
+  transform: translateY(-1px);
+}
+
+.ctrl-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.ctrl-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.ctrl-btn.active,
+.ctrl-btn.recording {
+  background: #1f6feb;
+  border-color: #388bfd;
+  color: #fff;
+  box-shadow: 0 0 12px #1f6feb55;
+}
+
+.ctrl-btn.recording svg circle:last-of-type {
+  animation: pulse-red 1s ease-in-out infinite;
+}
+
+@keyframes pulse-red {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* ── Transport controls ─────────────────────────────────────── */
+
+.transport-controls {
+  display: flex;
+  gap: 6px;
+}
+
+/* ── Pitch display ─────────────────────────────────────────── */
+
+.pitch-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 20px;
+  background: #161b22;
+  border-radius: 10px;
+  border: 1px solid #30363d;
+  min-width: 160px;
+}
+
+.pitch-note {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.pitch-note-name {
+  font-size: 28px;
+  font-weight: 700;
+  color: #e6edf3;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.5px;
+}
+
+.pitch-cents {
+  font-size: 14px;
+  color: #8b949e;
+  font-variant-numeric: tabular-nums;
+}
+
+.pitch-clarity-bar {
+  width: 100%;
+}
+
+.pitch-clarity-track {
+  position: relative;
+  height: 6px;
+  background: #21262d;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.pitch-center-mark {
+  position: absolute;
+  left: 50%;
+  top: -1px;
+  bottom: -1px;
+  width: 2px;
+  background: #484f58;
+  transform: translateX(-50%);
+  z-index: 1;
+}
+
+.pitch-clarity-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.05s linear, background-color 0.1s;
+}
+
+.pitch-rating {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.pitch-clarity-pct {
+  font-size: 10px;
+  color: #484f58;
+}
+
+/* ── Practice area ──────────────────────────────────────────── */
+
+.practice-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.pitch-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 20px;
+  background: #161b22;
+  border-bottom: 1px solid #21262d;
+  flex-shrink: 0;
+}
+
+.pitch-and-notes {
+  flex: 1;
+  display: flex;
+  gap: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.pitch-canvas-wrap {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  border-right: 1px solid #21262d;
+}
+
+.note-list-wrap {
+  width: 200px;
+  flex-shrink: 0;
+  overflow-y: auto;
+  background: #0d1117;
+  border-bottom: 1px solid #21262d;
+}
+
+.history-canvas-wrap {
+  height: 120px;
+  flex-shrink: 0;
+  background: #161b22;
+  border-top: 1px solid #21262d;
+  overflow: hidden;
+}
+
+/* ── Note list ─────────────────────────────────────────────── */
+
+.note-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 4px 0;
+}
+
+.note-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-left: 3px solid transparent;
+  transition: background 0.15s;
+  cursor: default;
+}
+
+.note-item:hover {
+  background: #161b22;
+}
+
+.note-item.active {
+  background: #1f6feb18;
+  border-left-color: #58a6ff;
+}
+
+.note-item.active .note-name {
+  color: #58a6ff;
+}
+
+.note-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #484f58;
+  flex-shrink: 0;
+}
+
+.note-item.active .note-dot {
+  background: #58a6ff;
+  box-shadow: 0 0 6px #58a6ff88;
+}
+
+.note-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #e6edf3;
+  flex: 1;
+}
+
+.note-freq {
+  font-size: 10px;
+  color: #484f58;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Band colors ─────────────────────────────────────────────── */
+
+.band-perfect .note-dot   { background: #22c55e; box-shadow: 0 0 6px #22c55e66; }
+.band-excellent .note-dot { background: #4ade80; box-shadow: 0 0 6px #4ade8066; }
+.band-good .note-dot      { background: #facc15; box-shadow: 0 0 6px #facc1566; }
+.band-okay .note-dot      { background: #fb923c; box-shadow: 0 0 6px #fb923c66; }
+.band-off .note-dot       { background: #6e7681; }
+
+.band-perfect   { border-left-color: #22c55e; }
+.band-excellent { border-left-color: #4ade80; }
+.band-good      { border-left-color: #facc15; }
+.band-okay      { border-left-color: #fb923c; }
+.band-off       { border-left-color: #6e7681; }
+
+/* ── Score overlay ───────────────────────────────────────────── */
+
+.score-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #161b22ee;
+  border: 2px solid #30363d;
+  border-radius: 16px;
+  padding: 28px 48px;
+  text-align: center;
+  z-index: 100;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 8px 32px #00000066;
+}
+
+.score-overlay.grade-perfect { border-color: #22c55e; }
+.score-overlay.grade-excellent { border-color: #4ade80; }
+.score-overlay.grade-good { border-color: #facc15; }
+.score-overlay.grade-okay { border-color: #fb923c; }
+.score-overlay.grade-needs-work { border-color: #f87171; }
+
+.score-value {
+  font-size: 52px;
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.grade-perfect   .score-value { color: #22c55e; }
+.grade-excellent .score-value { color: #4ade80; }
+.grade-good      .score-value { color: #facc15; }
+.grade-okay      .score-value { color: #fb923c; }
+.grade-needs-work .score-value { color: #f87171; }
+
+.score-label {
+  font-size: 18px;
+  font-weight: 600;
+  color: #8b949e;
+}
+
+/* ── Notifications ──────────────────────────────────────────── */
+
+.notifications {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 999;
+}
+
+.notification {
+  background: #161b22ee;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 13px;
+  color: #e6edf3;
+  box-shadow: 0 4px 16px #00000055;
+  backdrop-filter: blur(8px);
+  animation: slide-in 0.2s ease-out;
+  max-width: 320px;
+}
+
+.notification-success { border-color: #238636; }
+.notification-info   { border-color: #1f6feb; }
+.notification-warning { border-color: #9e6a03; }
+.notification-error   { border-color: #da3633; }
+
+@keyframes slide-in {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ── Editor panel ───────────────────────────────────────────── */
+
+.editor-panel {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── About panel ────────────────────────────────────────────── */
+
+.about-panel {
+  padding: 40px;
+  max-width: 600px;
+}
+
+.about-panel h2 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #e6edf3;
+  margin-bottom: 16px;
+}
+
+.about-panel p {
+  font-size: 15px;
+  color: #8b949e;
+  line-height: 1.7;
+  margin-bottom: 12px;
+}
+
+/* ── Scrollbar ──────────────────────────────────────────────── */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0d1117;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #30363d;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #484f58;
+}
+
+/* ── Selection ──────────────────────────────────────────────── */
+
+::selection {
+  background: #388bfd44;
+  color: #e6edf3;
+}

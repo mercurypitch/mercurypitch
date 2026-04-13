@@ -7,7 +7,7 @@ import type { PitchResult, AccuracyRating } from '@/types';
 
 interface PitchDisplayProps {
   pitch: () => PitchResult | null;
-  targetNote: () => string;
+  targetNote: () => string | null;
   rating?: () => AccuracyRating;
 }
 
