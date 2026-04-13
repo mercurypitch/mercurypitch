@@ -1212,7 +1212,7 @@ header h1 {
     align-self: flex-start;
     position: sticky;
     left: 0;
-    z-index: 2;
+    z-index: 1;
 }
 
 /* Ruler */
@@ -1239,6 +1239,7 @@ header h1 {
     overflow-y: hidden;
     position: relative;
     background: var(--bg-primary);
+    z-index: 2;
 }
 
 .roll-grid {
