@@ -133,6 +133,12 @@
         this.dragStartBeat = 0;
         this.dragStartDuration = 0;
 
+        // Playback state
+        this._playbackState = 'stopped'; // 'stopped' | 'playing' | 'paused'
+        this._playAnimationId = null;
+        this._playStartTime = 0;
+        this._pauseStartTime = 0;
+
         // Grid dimensions
         this.rowHeight = CONFIG.ROW_HEIGHT;
         this.beatWidth = CONFIG.BEAT_WIDTH;
@@ -257,13 +263,14 @@
             '</div>' +
             '<div class="roll-sep"></div>' +
             '<div class="roll-play-group">' +
-                '<button id="roll-play-btn" class="roll-play-btn" title="Play melody">' +
-                    '<svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>' +
-                    '<span>Play</span>' +
+                '<button id="roll-play-btn" class="roll-play-btn" title="Start playback">' +
+                    '<svg id="roll-play-icon" viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>' +
+                    '<svg id="roll-pause-icon" viewBox="0 0 24 24" width="16" height="16" style="display:none"><path fill="currentColor" d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>' +
+                    '<span>Start</span>' +
                 '</button>' +
-                '<button id="roll-stop-btn" class="roll-stop-btn" title="Stop" disabled>' +
+                '<button id="roll-reset-btn" class="roll-reset-btn" title="Reset playback" disabled>' +
                     '<svg viewBox="0 0 24 24" width="16" height="16"><rect x="6" y="6" width="12" height="12" fill="currentColor"/></svg>' +
-                    '<span>Stop</span>' +
+                    '<span>Reset</span>' +
                 '</button>' +
             '</div>';
 
@@ -716,8 +723,8 @@
         document.getElementById('roll-play-btn').addEventListener('click', function () {
             self._playMelody();
         });
-        document.getElementById('roll-stop-btn').addEventListener('click', function () {
-            self._stopMelody();
+        document.getElementById('roll-reset-btn').addEventListener('click', function () {
+            self._resetMelody();
         });
 
         // Grid canvas events
@@ -1143,26 +1150,58 @@
     // ========== PLAYBACK ==========
     PianoRollEditor.prototype._playMelody = function () {
         if (this.notes.length === 0) return;
-        if (this._isPlaying) {
-            this._stopMelody();
-            return;
-        }
 
+        const playBtn = document.getElementById('roll-play-btn');
+        const playIcon = document.getElementById('roll-play-icon');
+        const pauseIcon = document.getElementById('roll-pause-icon');
+        const resetBtn = document.getElementById('roll-reset-btn');
         const self = this;
-        const sortedNotes = this.notes.slice().sort(function (a, b) { return a.startBeat - b.startBeat; });
-        const lastNote = sortedNotes[sortedNotes.length - 1];
-        const totalDuration = (lastNote.startBeat + lastNote.duration) * (60000 / this.bpm);
 
-        this._isPlaying = true;
-        this._playStartTime = performance.now();
-        this._playAnimationId = requestAnimationFrame(function () { self._animatePlayback(); });
+        if (this._playbackState === 'stopped') {
+            // Start fresh playback
+            const sortedNotes = this.notes.slice().sort(function (a, b) { return a.startBeat - b.startBeat; });
+            const lastNote = sortedNotes[sortedNotes.length - 1];
+            // unused: var totalDuration = (lastNote.startBeat + lastNote.duration) * (60000 / this.bpm);
 
-        document.getElementById('roll-play-btn').querySelector('span').textContent = 'Stop';
-        document.getElementById('roll-stop-btn').disabled = false;
+            this._playbackState = 'playing';
+            this._playStartTime = performance.now();
+            this._pauseStartTime = 0;
+            this._playAnimationId = requestAnimationFrame(function () { self._animatePlayback(); });
+
+            playIcon.style.display = 'none';
+            pauseIcon.style.display = 'block';
+            playBtn.querySelector('span').textContent = 'Pause';
+            resetBtn.disabled = false;
+        } else if (this._playbackState === 'playing') {
+            // Pause
+            this._pauseStartTime = performance.now();
+            this._playbackState = 'paused';
+            if (this._playAnimationId) {
+                cancelAnimationFrame(this._playAnimationId);
+                this._playAnimationId = null;
+            }
+            if (window.pianoRollAudioEngine) {
+                window.pianoRollAudioEngine.stopTone();
+            }
+
+            playIcon.style.display = 'block';
+            pauseIcon.style.display = 'none';
+            playBtn.querySelector('span').textContent = 'Continue';
+        } else if (this._playbackState === 'paused') {
+            // Resume
+            const pauseDuration = performance.now() - this._pauseStartTime;
+            this._playStartTime += pauseDuration;
+            this._playbackState = 'playing';
+            this._playAnimationId = requestAnimationFrame(function () { self._animatePlayback(); });
+
+            playIcon.style.display = 'none';
+            pauseIcon.style.display = 'block';
+            playBtn.querySelector('span').textContent = 'Pause';
+        }
     };
 
-    PianoRollEditor.prototype._stopMelody = function () {
-        this._isPlaying = false;
+    PianoRollEditor.prototype._resetMelody = function () {
+        this._playbackState = 'stopped';
         if (this._playAnimationId) {
             cancelAnimationFrame(this._playAnimationId);
             this._playAnimationId = null;
@@ -1170,21 +1209,29 @@
         if (window.pianoRollAudioEngine) {
             window.pianoRollAudioEngine.stopTone();
         }
-        document.getElementById('roll-play-btn').querySelector('span').textContent = 'Play';
-        document.getElementById('roll-stop-btn').disabled = true;
+
+        const playBtn = document.getElementById('roll-play-btn');
+        const playIcon = document.getElementById('roll-play-icon');
+        const pauseIcon = document.getElementById('roll-pause-icon');
+        const resetBtn = document.getElementById('roll-reset-btn');
+        playIcon.style.display = 'block';
+        pauseIcon.style.display = 'none';
+        playBtn.querySelector('span').textContent = 'Start';
+        resetBtn.disabled = true;
+
         this.gridContainer.scrollLeft = 0;
         this._drawGrid();
     };
 
     PianoRollEditor.prototype._animatePlayback = function () {
-        if (!this._isPlaying) return;
+        if (this._playbackState !== 'playing') return;
         const self = this;
 
         const elapsed = performance.now() - this._playStartTime;
         const currentBeat = (elapsed / 60000) * this.bpm;
         const sortedNotes = this.notes.slice().sort(function (a, b) { return a.startBeat - b.startBeat; });
         const lastNote = sortedNotes[sortedNotes.length - 1];
-        const totalDuration = (lastNote.startBeat + lastNote.duration) * (60000 / this.bpm);
+        // unused: var totalDuration = (lastNote.startBeat + lastNote.duration) * (60000 / this.bpm);
 
         // Scroll grid to keep playhead visible
         const playheadX = currentBeat * this.beatWidth;
@@ -1212,7 +1259,7 @@
         this._drawGridWithPlayhead();
 
         if (currentBeat >= lastNote.startBeat + lastNote.duration) {
-            this._stopMelody();
+            this._resetMelody();
             return;
         }
 

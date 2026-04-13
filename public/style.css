@@ -1158,7 +1158,7 @@ header h1 {
     color: #fff;
 }
 
-.roll-stop-btn {
+.roll-reset-btn {
     display: flex;
     align-items: center;
     gap: 4px;
@@ -1172,12 +1172,12 @@ header h1 {
     transition: all 0.12s ease;
 }
 
-.roll-stop-btn:hover:not(:disabled) {
+.roll-reset-btn:hover:not(:disabled) {
     border-color: var(--red);
     color: var(--red);
 }
 
-.roll-stop-btn:disabled {
+.roll-reset-btn:disabled {
     opacity: 0.35;
     cursor: not-allowed;
 }
