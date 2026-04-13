@@ -35,6 +35,9 @@ export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
     editor.setBPM(props.bpm());
     editor.setTotalBeats(props.totalBeats());
 
+    // Load presets from localStorage
+    editor.loadPresets();
+
     // Expose on window for debugging
     (window as PitchPerfectWindow).pianoRollEditor = editor;
     (window as PitchPerfectWindow).pianoRollGenerateId = () => Date.now();

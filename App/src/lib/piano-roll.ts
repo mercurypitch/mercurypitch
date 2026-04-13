@@ -93,6 +93,15 @@ export class PianoRollEditor {
   private onMelodyChange?: (melody: MelodyItem[]) => void;
   private onNoteSelect?: (note: MelodyItem | null) => void;
 
+  // Presets
+  private presetData: Record<string, {
+    notes: Array<{ midi: number; startBeat: number; duration: number }>;
+    totalBeats: number;
+    bpm: number;
+    scale: Array<{ midi: number; name: string; octave: number; freq: number }>;
+  }> = {};
+  private currentPresetName: string | null = null;
+
   constructor(options: PianoRollOptions) {
     this.container = options.container;
     this.scale = options.scale ?? [];
@@ -177,6 +186,117 @@ export class PianoRollEditor {
     this.selectedNoteId = null;
     this.onNoteSelect?.(null);
     this.draw();
+  }
+
+  // ============================================================
+  // Preset Management
+  // ============================================================
+
+  loadPresets(): void {
+    try {
+      const raw = localStorage.getItem('pitchperfect_presets');
+      if (raw) {
+        this.presetData = JSON.parse(raw);
+      }
+    } catch {
+      this.presetData = {};
+    }
+    this.populatePresetSelect();
+  }
+
+  private populatePresetSelect(): void {
+    const select = this.container.querySelector('#roll-preset-select') as HTMLSelectElement | null;
+    if (!select) return;
+
+    select.innerHTML = '<option value="">— Load Preset —</option>';
+    const names = Object.keys(this.presetData).sort();
+    for (const name of names) {
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+      select.appendChild(opt);
+    }
+    if (this.currentPresetName) {
+      select.value = this.currentPresetName;
+    }
+  }
+
+  saveCurrentPreset(name: string): void {
+    if (!name.trim()) return;
+
+    this.presetData[name] = {
+      notes: this.melody.map((n) => ({
+        midi: n.note.midi,
+        startBeat: n.startBeat,
+        duration: n.duration,
+      })),
+      totalBeats: this.totalBeats,
+      bpm: this.bpm,
+      scale: this.scale.map((s) => ({ midi: s.midi, name: s.name, octave: s.octave, freq: s.freq })),
+    };
+
+    try {
+      localStorage.setItem('pitchperfect_presets', JSON.stringify(this.presetData));
+    } catch (e) {
+      console.warn('Failed to save preset:', e);
+    }
+
+    this.currentPresetName = name;
+    this.populatePresetSelect();
+    localStorage.setItem('pitchperfect_lastpreset', name);
+    localStorage.setItem('pitchperfect_selected_preset', name);
+
+    const select = this.container.querySelector('#roll-preset-select') as HTMLSelectElement | null;
+    if (select) select.value = name;
+
+    const nameInput = this.container.querySelector('#roll-preset-name') as HTMLInputElement | null;
+    if (nameInput) nameInput.value = name;
+
+    window.dispatchEvent(new CustomEvent('pitchperfect:presetSaved', { detail: { name } }));
+  }
+
+  loadPresetByName(name: string): void {
+    const preset = this.presetData[name];
+    if (!preset) return;
+
+    this.melody = preset.notes.map((n) => {
+      const noteInfo = this.scale.find((s) => s.midi === n.midi) ?? {
+        midi: n.midi,
+        name: '?',
+        octave: 4,
+        freq: 440,
+      };
+      return {
+        id: this.nextNoteId++,
+        note: { midi: n.midi, name: noteInfo.name, octave: noteInfo.octave, freq: noteInfo.freq },
+        startBeat: n.startBeat,
+        duration: n.duration,
+      };
+    });
+
+    this.totalBeats = preset.totalBeats || 16;
+    if (preset.bpm) {
+      this.bpm = preset.bpm;
+      // Notify app to update BPM
+      window.dispatchEvent(new CustomEvent('pitchperfect:presetLoaded', { detail: { name, bpm: this.bpm } }));
+    }
+
+    this.currentPresetName = name;
+    this.buildCanvases();
+    this.draw();
+    this.updateBeatInfo();
+    localStorage.setItem('pitchperfect_lastpreset', name);
+    localStorage.setItem('pitchperfect_selected_preset', name);
+
+    const nameInput = this.container.querySelector('#roll-preset-name') as HTMLInputElement | null;
+    if (nameInput) nameInput.value = name;
+
+    window.dispatchEvent(new CustomEvent('pitchperfect:presetLoaded', { detail: { name, bpm: this.bpm } }));
+  }
+
+  private updateBeatInfo(): void {
+    const info = this.container.querySelector('#roll-beat-info');
+    if (info) info.textContent = `${this.totalBeats} beats`;
   }
 
   destroy(): void {
@@ -352,6 +472,36 @@ export class PianoRollEditor {
       this.buildCanvases();
       this.draw();
     });
+
+    // Preset management
+    container.querySelector('#roll-preset-select')?.addEventListener('change', (e) => {
+      const name = (e.target as HTMLSelectElement).value;
+      if (name) {
+        this.loadPresetByName(name);
+        // Sync to melody store for practice tab
+        window.dispatchEvent(new CustomEvent('pitchperfect:presetLoaded', { detail: { name, bpm: this.bpm, melody: this.getMelody() } }));
+      }
+    });
+
+    container.querySelector('#roll-save-preset')?.addEventListener('click', () => {
+      const nameInput = container.querySelector('#roll-preset-name') as HTMLInputElement | null;
+      const name = nameInput?.value?.trim();
+      if (name) {
+        this.saveCurrentPreset(name);
+      }
+    });
+
+    container.querySelector('#roll-new-preset')?.addEventListener('click', () => {
+      const nameInput = container.querySelector('#roll-preset-name') as HTMLInputElement | null;
+      if (nameInput) nameInput.value = '';
+      this.currentPresetName = null;
+      this.clearMelody();
+    });
+
+    // Listen for preset changes from other tabs to refresh preset list
+    window.addEventListener('pitchperfect:presetSaved', () => {
+      this.loadPresets();
+    });
   }
 
   private onGridMouseDown(e: MouseEvent): void {
@@ -489,8 +639,7 @@ export class PianoRollEditor {
   // ============================================================
 
   private placeNote(beat: number, row: number, duration: number): void {
-    const scaleIdx = this.totalRows - 1 - row;
-    const scaleNote = this.scale[scaleIdx];
+    const scaleNote = this.scale[row];
     if (!scaleNote || scaleNote.name.includes('=')) return;
 
     const snappedBeat = Math.floor(beat) + (beat % 1 >= 0.5 ? 0.5 : 0);
@@ -529,10 +678,9 @@ export class PianoRollEditor {
   }
 
   private findNoteAt(beat: number, row: number): MelodyItem | null {
-    const scaleIdx = this.totalRows - 1 - row;
     for (const note of this.melody) {
       const noteRow = this.midiToRow(note.note.midi);
-      if (noteRow === scaleIdx && beat >= note.startBeat && beat < note.startBeat + note.duration) {
+      if (noteRow === row && beat >= note.startBeat && beat < note.startBeat + note.duration) {
         return note;
       }
     }
@@ -916,31 +1064,81 @@ export class PianoRollEditor {
       const rowIdx = this.midiToRow(note.note.midi);
       if (rowIdx < 0) continue;
 
-      const x = note.startBeat * this.beatWidth;
-      const y = rowIdx * this.rowHeight;
+      let x = note.startBeat * this.beatWidth;
+      let y = rowIdx * this.rowHeight;
       const w = note.duration * this.beatWidth;
       const h = this.rowHeight - 2;
       const ry = y + 1;
 
+      if (w < 2) continue;
+
       const isSelected = note.id === this.selectedNoteId;
       const isActive = highlightActive && this.activeBeat >= note.startBeat && this.activeBeat < note.startBeat + note.duration;
+      const cornerRadius = 4;
 
-      let fillStyle = this.config.noteColors.normal;
-      if (isActive) fillStyle = this.config.noteColors.active;
-      if (isSelected) fillStyle = this.config.noteColors.selected;
+      // Shadow for active vs normal notes
+      if (isActive) {
+        ctx.shadowColor = 'rgba(63,185,80,0.6)';
+        ctx.shadowBlur = 8;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 0;
+      } else {
+        ctx.shadowColor = 'rgba(0,0,0,0.3)';
+        ctx.shadowBlur = 3;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 1;
+      }
 
-      ctx.fillStyle = fillStyle;
+      // Draw rounded rect
       ctx.beginPath();
-      ctx.roundRect(x + 1, ry, w - 2, h, 2);
-      ctx.fill();
+      if (w < 2 * cornerRadius) {
+        ctx.roundRect(x, ry, 2 * cornerRadius, h, [cornerRadius, cornerRadius, cornerRadius, cornerRadius]);
+      } else {
+        ctx.roundRect(x, ry, w, h, cornerRadius);
+      }
 
-      // Selection border
-      if (isSelected) {
-        ctx.strokeStyle = '#fff';
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.roundRect(x + 1, ry, w - 2, h, 2);
-        ctx.stroke();
+      // Fill and stroke
+      let fillColor = this.config.noteColors.normal;
+      let strokeColor = 'rgba(88,166,255,0.5)';
+      let strokeWidth = 1;
+
+      if (isActive) {
+        fillColor = this.config.noteColors.active;
+        strokeColor = 'rgba(63,185,80,0.9)';
+        strokeWidth = 1.5;
+      } else if (isSelected) {
+        fillColor = this.config.noteColors.selected;
+        strokeColor = '#8fc9ff';
+        strokeWidth = 1.5;
+      }
+
+      ctx.fillStyle = fillColor;
+      ctx.strokeStyle = strokeColor;
+      ctx.lineWidth = strokeWidth;
+      ctx.fill();
+      ctx.stroke();
+
+      // Reset shadow
+      ctx.shadowColor = 'transparent';
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetY = 0;
+
+      // Note name text (only when wide enough and not active)
+      if (w > 18 && !isActive) {
+        ctx.fillStyle = 'rgba(255,255,255,0.85)';
+        ctx.font = 'bold 9px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(note.note.name, x + w / 2, ry + h / 2);
+        ctx.textBaseline = 'alphabetic';
+      }
+
+      // Resize handles on selected notes
+      if (isSelected && w > 12) {
+        const handleW = 6;
+        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        ctx.fillRect(x + 1, ry + h / 2 - 4, handleW, 8);
+        ctx.fillRect(x + w - handleW - 1, ry + h / 2 - 4, handleW, 8);
       }
     }
   }

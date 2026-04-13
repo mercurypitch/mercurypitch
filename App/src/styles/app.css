@@ -918,6 +918,12 @@ header h1 {
     background: var(--bg-primary);
 }
 
+/* Editor fullscreen — takes full main-layout when active */
+#editor-panel.editor-fullscreen {
+    width: 100%;
+    flex: 1;
+}
+
 #piano-roll-container {
     flex: 1;
     display: flex;
