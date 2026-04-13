@@ -8,6 +8,7 @@
     const state = {
         key: 'C',
         octave: 4,
+        numOctaves: 2,
         bpm: 80,
         sensitivity: 5,
         volume: 70,
@@ -251,7 +252,7 @@
     function buildScale() {
         state.key    = dom.keySelect.value;
         state.octave = parseInt(dom.octaveValue.textContent, 10);
-        state.scale  = buildMajorScale(state.key, state.octave);
+        state.scale  = buildMultiOctaveScale(state.key, state.octave, state.numOctaves);
         state.melody = buildSampleMelody(state.key, state.octave);
         state.totalBeats = melodyTotalBeats(state.melody);
     }
@@ -284,7 +285,7 @@
                 });
                 return { id: item.id, note: transposedNote, duration: item.duration };
             });
-            state.scale = buildMajorScale(state.key, state.octave);
+            state.scale = buildMultiOctaveScale(state.key, state.octave, state.numOctaves);
             state.totalBeats = melodyTotalBeats(state.melody);
         } else {
             // No preset: rebuild sample melody for new octave
@@ -484,7 +485,8 @@
         pianoRollEditor = new PianoRollEditor(container, {
             scale: state.scale,
             bpm: state.bpm,
-            octave: state.octave
+            octave: state.octave,
+            numOctaves: state.numOctaves || 1
         });
 
         // Load current melody into editor if it exists

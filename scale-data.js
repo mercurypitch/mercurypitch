@@ -75,6 +75,36 @@ function buildMajorScale(keyName, octave) {
 }
 
 /**
+ * Build a major scale spanning multiple octaves.
+ * Returns a flat array of notes from highest to lowest pitch.
+ * Each octave shares the same key pattern.
+ */
+function buildMultiOctaveScale(keyName, startOctave, numOctaves) {
+    const notes = [];
+    for (let o = 0; o < numOctaves; o++) {
+        const octave = startOctave + o;
+        const keyOffset = KEY_OFFSETS[keyName] || 0;
+        const baseMidi = noteToMidi('C', octave) + keyOffset;
+
+        for (let i = 0; i < MAJOR_SCALE_INTERVALS.length; i++) {
+            const midi = baseMidi + MAJOR_SCALE_INTERVALS[i];
+            const noteIndex = ((midi % 12) + 12) % 12;
+            const noteOctave = Math.floor(midi / 12) - 1;
+            // Skip the octave root (last interval) for all but the last octave
+            if (i === MAJOR_SCALE_INTERVALS.length - 1 && o < numOctaves - 1) continue;
+            notes.push({
+                name: NOTE_NAMES[noteIndex],
+                octave: noteOctave,
+                freq: midiToFreq(midi),
+                midi: midi,
+                degree: i + 1
+            });
+        }
+    }
+    return notes; // highest to lowest (MIDI descending)
+}
+
+/**
  * Generate a sample melody in the given key/octave.
  * Returns array of { note, duration } where duration is in beats.
  * This is a simple ascending-descending scale pattern.

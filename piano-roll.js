@@ -22,7 +22,7 @@
 
     // ========== PIANO ROLL CONFIG ==========
     const CONFIG = {
-        // Piano range: 2 octaves starting from the scale's root octave
+        // Piano range: controlled by numOctaves (1-3) starting from the scale's root octave
         ROW_HEIGHT: 22,
         BEAT_WIDTH: 48,
         PIANO_WIDTH: 62,
@@ -114,6 +114,7 @@
         this.scale = options.scale || [];
         this.bpm = options.bpm || 80;
         this.octave = options.octave || 4;
+        this.numOctaves = options.numOctaves || 1;
 
         // Note data
         this.notes = []; // { id, midi, startBeat, duration }
@@ -226,6 +227,17 @@
                         '<svg viewBox="0 0 24 24" width="12" height="12"><path fill="currentColor" d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg>' +
                     '</button>' +
                 '</div>' +
+            '</div>' +
+            '<div class="roll-sep"></div>' +
+            '<div class="roll-octaves-group">' +
+                '<label class="octaves-label" style="font-size:0.72rem;color:var(--text-secondary)">Rows:</label>' +
+                '<button id="roll-octaves-minus" class="octave-btn" title="Fewer octaves" style="width:18px;height:18px;">' +
+                    '<svg viewBox="0 0 24 24" width="12" height="12"><path fill="currentColor" d="M19 13H5v-2h14v2z"/></svg>' +
+                '</button>' +
+                '<span id="roll-octaves-value" class="octave-value" style="font-size:0.78rem;">1</span>' +
+                '<button id="roll-octaves-plus" class="octave-btn" title="More octaves" style="width:18px;height:18px;">' +
+                    '<svg viewBox="0 0 24 24" width="12" height="12"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>' +
+                '</button>' +
             '</div>' +
             '<div class="roll-sep"></div>' +
             '<div class="roll-grid-ctrl">' +
@@ -643,6 +655,23 @@
         if (rollOctaveDown) {
             rollOctaveDown.addEventListener('click', function () {
                 self._shiftOctave(-1);
+            });
+        }
+
+        // Octave count controls
+        var rollOctavesPlus = document.getElementById('roll-octaves-plus');
+        var rollOctavesMinus = document.getElementById('roll-octaves-minus');
+        const rollOctavesValue = document.getElementById('roll-octaves-value');
+        if (rollOctavesPlus) {
+            rollOctavesPlus.addEventListener('click', function () {
+                self.setNumOctaves(self.numOctaves + 1);
+                if (rollOctavesValue) rollOctavesValue.textContent = self.numOctaves;
+            });
+        }
+        if (rollOctavesMinus) {
+            rollOctavesMinus.addEventListener('click', function () {
+                self.setNumOctaves(self.numOctaves - 1);
+                if (rollOctavesValue) rollOctavesValue.textContent = self.numOctaves;
             });
         }
 
@@ -1335,6 +1364,22 @@
         this._drawAll();
     };
 
+    /**
+     * Set both scale key and octave count at once.
+     * Used when switching the scale key in app.js.
+     */
+    PianoRollEditor.prototype.setScaleKey = function (keyName, octave, numOctaves) {
+        this.octave = octave;
+        this.numOctaves = numOctaves;
+        this.scale = buildMultiOctaveScale(keyName, octave, numOctaves);
+        const rollOctaveValue = document.getElementById('roll-octave-value');
+        if (rollOctaveValue) rollOctaveValue.textContent = octave;
+        const rollOctavesValue = document.getElementById('roll-octaves-value');
+        if (rollOctavesValue) rollOctavesValue.textContent = numOctaves;
+        this._calculateDimensions();
+        this._drawAll();
+    };
+
     PianoRollEditor.prototype.setBPM = function (bpm) {
         this.bpm = bpm;
     };
@@ -1359,12 +1404,28 @@
             this.notes[i].midi += delta * MIDI_OCTAVE_SHIFT;
         }
 
-        // Rebuild scale for the new octave
+        // Rebuild multi-octave scale
         const app = window.pitchPerfectApp;
         if (app) {
-            this.scale = buildMajorScale(app.key || 'C', this.octave);
+            this.scale = buildMultiOctaveScale(app.key || 'C', this.octave, this.numOctaves);
         }
 
+        this._calculateDimensions();
+        this._drawAll();
+    };
+
+    /**
+     * Set the number of octaves displayed in the piano roll.
+     * Rebuilds the scale and redraws.
+     */
+    PianoRollEditor.prototype.setNumOctaves = function (n) {
+        n = Math.max(1, Math.min(3, Math.round(n)));
+        if (n === this.numOctaves) return;
+        this.numOctaves = n;
+        const app = window.pitchPerfectApp;
+        if (app) {
+            this.scale = buildMultiOctaveScale(app.key || 'C', this.octave, this.numOctaves);
+        }
         this._calculateDimensions();
         this._drawAll();
     };
