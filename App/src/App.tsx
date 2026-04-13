@@ -2,32 +2,244 @@
 // App — Main SolidJS application entry
 // ============================================================
 
-import { Component, createSignal, createMemo, Show } from 'solid-js';
+import {
+  Component,
+  createSignal,
+  createMemo,
+  createEffect,
+  onMount,
+  onCleanup,
+  Show,
+} from 'solid-js';
 import { TransportControls } from '@/components/TransportControls';
 import { PianoRollCanvas } from '@/components/PianoRollCanvas';
 import { PitchDisplay } from '@/components/PitchDisplay';
+import { PitchCanvas } from '@/components/PitchCanvas';
+import { NoteList } from '@/components/NoteList';
+import { MicButton } from '@/components/MicButton';
+import { MetronomeButton } from '@/components/MetronomeButton';
+import { HistoryCanvas } from '@/components/HistoryCanvas';
 import { appStore } from '@/stores/app-store';
 import { playback } from '@/stores/playback-store';
 import { melodyStore } from '@/stores/melody-store';
 import { melodyTotalBeats } from '@/lib/scale-data';
-import type { MelodyItem } from '@/types';
+import { AudioEngine } from '@/lib/audio-engine';
+import { MelodyEngine } from '@/lib/melody-engine';
+import { PracticeEngine } from '@/lib/practice-engine';
+import type { MelodyItem, PitchResult, NoteResult, PracticeResult } from '@/types';
 import type { PlaybackState } from '@/lib/piano-roll';
+import type { PitchSample } from '@/components/PitchCanvas';
+
+// ── Engine instances (single shared) ────────────────────────
+
+let audioEngine: AudioEngine;
+let melodyEngine: MelodyEngine;
+let practiceEngine: PracticeEngine;
 
 export const App: Component = () => {
+  // ── Derived state ──────────────────────────────────────────
+
   const totalBeats = createMemo(() => melodyTotalBeats(melodyStore.items));
 
-  const handlePlay = () => {
-    // In the full migration, this triggers the audio engine playback
-    // For now, the PianoRollCanvas handles transport internally
+  // ── Practice mode signals ───────────────────────────────────
+
+  const [isPlaying, setIsPlaying] = createSignal(false);
+  const [isPaused, setIsPaused] = createSignal(false);
+  const [currentBeat, setCurrentBeat] = createSignal(0);
+  const [currentNoteIndex, setCurrentNoteIndex] = createSignal(-1);
+  const [pitchHistory, setPitchHistory] = createSignal<PitchSample[]>([]);
+  const [currentPitch, setCurrentPitch] = createSignal<PitchResult | null>(null);
+  const [noteResults, setNoteResults] = createSignal<NoteResult[]>([]);
+  const [practiceResult, setPracticeResult] = createSignal<PracticeResult | null>(null);
+  const [liveScore, setLiveScore] = createSignal<number | null>(null);
+  const [frequencyData, setFrequencyData] = createSignal<Float32Array | null>(null);
+  const [metronomeActive, setMetronomeActive] = createSignal(false);
+
+  // ── Engine lifecycle ────────────────────────────────────────
+
+  onMount(() => {
+    audioEngine = new AudioEngine();
+    melodyEngine = new MelodyEngine({
+      bpm: appStore.bpm(),
+      melody: melodyStore.items,
+      onNoteStart: (note, noteIndex) => {
+        setCurrentNoteIndex(noteIndex);
+        melodyStore.setCurrentNoteIndex(noteIndex);
+        practiceEngine.onNoteStart(note, noteIndex);
+      },
+      onBeatUpdate: (beat) => {
+        setCurrentBeat(beat);
+      },
+      onComplete: () => {
+        const results = practiceEngine.onPlaybackComplete();
+        if (results) {
+          setNoteResults(results);
+          const pr = practiceEngine.calculatePracticeResult(results);
+          setPracticeResult(pr);
+          setLiveScore(pr.score);
+          appStore.setLastScore(pr.score);
+          appStore.setPracticeCount(appStore.practiceCount() + 1);
+          appStore.showNotification(
+            `Practice complete! Score: ${pr.score}%`,
+            pr.score >= 80 ? 'success' : pr.score >= 50 ? 'info' : 'warning'
+          );
+        }
+        handleStop();
+      },
+    });
+    practiceEngine = new PracticeEngine(audioEngine, { sensitivity: 5 });
+
+    // Link practice callbacks
+    practiceEngine.setCallbacks({
+      onPitchDetected: (pitch) => {
+        setCurrentPitch(pitch);
+        if (pitch.frequency > 0 && pitch.clarity >= 0.2) {
+          setFrequencyData(audioEngine.getFrequencyData());
+        }
+      },
+      onNoteComplete: (result) => {
+        setNoteResults((prev) => [...prev, result]);
+        // Update live score
+        const allResults = [...noteResults(), result];
+        setLiveScore(practiceEngine.calculateScore(allResults));
+      },
+      onMicStateChange: (active, error) => {
+        appStore.setMicActive(active);
+        if (error) {
+          appStore.setMicError(error);
+          appStore.showNotification(error, 'error');
+        }
+      },
+    });
+
+    onCleanup(() => {
+      melodyEngine.destroy();
+      practiceEngine.destroy();
+      audioEngine.destroy();
+    });
+  });
+
+  // ── Playback handlers ───────────────────────────────────────
+
+  const handlePlay = async () => {
+    if (isPaused()) {
+      handleResume();
+      return;
+    }
+
+    // Reset state
+    setPitchHistory([]);
+    setNoteResults([]);
+    setPracticeResult(null);
+    setLiveScore(null);
+    setCurrentBeat(0);
+    setCurrentNoteIndex(-1);
+    melodyStore.setCurrentNoteIndex(-1);
+
+    // Sync engine with current melody/bpm
+    melodyEngine.setMelody(melodyStore.items);
+    melodyEngine.setBPM(appStore.bpm());
+
+    practiceEngine.startSession();
+    setIsPlaying(true);
+    setIsPaused(false);
+    playback.startPlayback();
+
+    melodyEngine.start();
+  };
+
+  const handlePause = () => {
+    melodyEngine.pause();
+    setIsPlaying(false);
+    setIsPaused(true);
+    playback.pausePlayback();
+  };
+
+  const handleResume = () => {
+    melodyEngine.resume();
+    setIsPlaying(true);
+    setIsPaused(false);
+    playback.continuePlayback();
+  };
+
+  const handleStop = () => {
+    melodyEngine.stop();
+    practiceEngine.endSession();
+    setIsPlaying(false);
+    setIsPaused(false);
+    setCurrentBeat(0);
+    setCurrentNoteIndex(-1);
+    melodyStore.setCurrentNoteIndex(-1);
+    setPitchHistory([]);
+    playback.resetPlayback();
   };
 
   const handleReset = () => {
-    // Reset playback
+    handleStop();
+    setNoteResults([]);
+    setPracticeResult(null);
+    setLiveScore(null);
   };
+
+  // ── Mic handlers ─────────────────────────────────────────────
+
+  const handleMicToggle = async () => {
+    if (appStore.micActive()) {
+      practiceEngine.stopMic();
+    } else {
+      await practiceEngine.startMic();
+    }
+  };
+
+  // ── Metronome ──────────────────────────────────────────────
+
+  const handleMetronomeToggle = () => {
+    setMetronomeActive((prev) => !prev);
+    if (audioEngine) {
+      // Metronome playback is handled in melody engine
+    }
+  };
+
+  // ── Animation loop: update pitch history every frame ────────
+
+  let animId: number;
+  onMount(() => {
+    const loop = () => {
+      // Update pitch history for canvas trail
+      const pitch = practiceEngine.update();
+      if (pitch && pitch.frequency > 0 && pitch.clarity >= 0.2) {
+        const beat = melodyEngine.getCurrentBeat();
+        setPitchHistory((prev) => {
+          const next = [...prev, { beat, freq: pitch.frequency, confidence: pitch.clarity }];
+          // Keep last 800 samples
+          return next.length > 800 ? next.slice(-800) : next;
+        });
+      }
+      animId = requestAnimationFrame(loop);
+    };
+    animId = requestAnimationFrame(loop);
+    onCleanup(() => cancelAnimationFrame(animId));
+  });
+
+  // ── Melody change handler ────────────────────────────────────
 
   const handleMelodyChange = (melody: MelodyItem[]) => {
     melodyStore.setMelody(melody);
   };
+
+  // ── Target note for pitch display ───────────────────────────
+
+  const targetNote = createMemo(() => {
+    const idx = currentNoteIndex();
+    if (idx < 0 || idx >= melodyStore.items.length) return null;
+    return melodyStore.items[idx].note;
+  });
+
+  const targetNoteName = createMemo(() => {
+    const note = targetNote();
+    if (!note) return null;
+    return note.name + note.octave;
+  });
 
   return (
     <div class="app">
@@ -58,14 +270,16 @@ export const App: Component = () => {
       <main class="app-main">
         <Show when={appStore.activeTab() === 'practice'}>
           <section class="practice-panel">
+            {/* Controls row */}
             <div class="practice-controls">
               <label>
                 Key:
                 <select
                   value={appStore.keyName()}
                   onChange={(e) => {
-                    appStore.setKeyName(e.currentTarget.value);
-                    melodyStore.refreshScale(e.currentTarget.value, 3, appStore.scaleType());
+                    const key = e.currentTarget.value;
+                    appStore.setKeyName(key);
+                    melodyStore.refreshScale(key, 3, appStore.scaleType());
                   }}
                 >
                   <option value="C">C</option>
@@ -85,8 +299,9 @@ export const App: Component = () => {
                 <select
                   value={appStore.scaleType()}
                   onChange={(e) => {
-                    appStore.setScaleType(e.currentTarget.value);
-                    melodyStore.refreshScale(appStore.keyName(), 3, e.currentTarget.value);
+                    const st = e.currentTarget.value;
+                    appStore.setScaleType(st);
+                    melodyStore.refreshScale(appStore.keyName(), 3, st);
                   }}
                 >
                   <option value="major">Major</option>
@@ -112,15 +327,75 @@ export const App: Component = () => {
               </label>
             </div>
 
-            <TransportControls onPlay={handlePlay} onReset={handleReset} />
+            {/* Transport + mic row */}
+            <div class="practice-toolbar">
+              <TransportControls onPlay={handlePlay} onReset={handleReset} />
+              <MicButton
+                active={appStore.micActive()}
+                onClick={handleMicToggle}
+                disabled={isPlaying() || isPaused()}
+              />
+              <MetronomeButton
+                active={metronomeActive()}
+                onClick={handleMetronomeToggle}
+              />
+            </div>
 
-            <PitchDisplay
-              pitch={() => null}
-              targetNote={() => 'C4'}
-            />
+            {/* Score display */}
+            <Show when={practiceResult() !== null}>
+              <div class={`score-overlay grade-${practiceResult()!.score >= 90 ? 'perfect' : practiceResult()!.score >= 70 ? 'good' : practiceResult()!.score >= 50 ? 'okay' : 'needs-work'}`}>
+                <div class="score-value">{practiceResult()!.score}%</div>
+                <div class="score-label">
+                  {practiceResult()!.score >= 90 ? 'Pitch Perfect!' :
+                   practiceResult()!.score >= 80 ? 'Excellent!' :
+                   practiceResult()!.score >= 65 ? 'Good!' :
+                   practiceResult()!.score >= 50 ? 'Okay!' : 'Needs Work'}
+                </div>
+              </div>
+            </Show>
 
-            <div class="practice-hint">
-              Press the mic button to start singing. Match the melody notes displayed above.
+            {/* Main practice area */}
+            <div class="practice-area">
+              {/* Top: pitch display */}
+              <div class="pitch-section">
+                <PitchDisplay
+                  pitch={currentPitch}
+                  targetNote={targetNoteName}
+                />
+              </div>
+
+              {/* Middle: pitch canvas + note list */}
+              <div class="pitch-and-notes">
+                <div class="pitch-canvas-wrap">
+                  <PitchCanvas
+                    melody={() => melodyStore.items}
+                    scale={() => melodyStore.currentScale()}
+                    totalBeats={totalBeats}
+                    currentBeat={currentBeat}
+                    pitchHistory={pitchHistory}
+                    currentNoteIndex={currentNoteIndex}
+                    isPlaying={isPlaying}
+                    isPaused={isPaused}
+                    isScrolling={() => false}
+                  />
+                </div>
+                <div class="note-list-wrap">
+                  <NoteList
+                    melody={() => melodyStore.items}
+                    currentNoteIndex={currentNoteIndex}
+                    noteResults={noteResults}
+                    isPlaying={isPlaying}
+                  />
+                </div>
+              </div>
+
+              {/* Bottom: history canvas */}
+              <div class="history-canvas-wrap">
+                <HistoryCanvas
+                  frequencyData={frequencyData}
+                  liveScore={liveScore}
+                />
+              </div>
             </div>
           </section>
         </Show>
