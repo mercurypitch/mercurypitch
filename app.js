@@ -94,7 +94,8 @@
             dom.playhead          = document.getElementById('playhead');
             dom.canvasContainer   = document.getElementById('canvas-container');
             dom.scoreOverlay      = document.getElementById('score-overlay');
-            dom.scoreTitle        = document.getElementById('score-title');
+            dom.scoreClose       = document.getElementById('score-close');
+            dom.scoreTitle       = document.getElementById('score-title');
             dom.scoreGrade        = document.getElementById('score-grade');
             dom.scorePct         = document.getElementById('score-pct');
             dom.scoreDetail       = document.getElementById('score-detail');
@@ -151,6 +152,7 @@
             // Score overlay
             dom.btnRetry.addEventListener('click', onRetry);
             dom.btnNext.addEventListener('click', onNextRun);
+            dom.scoreClose.addEventListener('click', onScoreClose);
 
             // Preset sync from editor
             window.addEventListener('pitchperfect:presetSaved', function () {
@@ -998,6 +1000,11 @@
 
     function hideScoreOverlay() {
         dom.scoreOverlay.classList.add('hidden');
+    }
+
+    function onScoreClose() {
+        hideScoreOverlay();
+        stopPlayback();
     }
 
     function onRetry() {
