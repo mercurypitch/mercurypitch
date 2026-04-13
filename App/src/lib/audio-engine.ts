@@ -30,6 +30,12 @@ export class AudioEngine {
     this.masterGain = this.audioCtx.createGain();
     this.masterGain.gain.value = this.volume;
     this.masterGain.connect(this.audioCtx.destination);
+
+    // Initialize frequency data array with default size for visualizer
+    if (this._frequencyData.length === 0) {
+      this._frequencyData = new Float32Array(1024);
+      this._timeData = new Float32Array(1024);
+    }
   }
 
   /** Resume audio context if suspended (needed after user gesture) */
@@ -115,8 +121,8 @@ export class AudioEngine {
     }
 
     this.micAnalyser = null;
-    this._frequencyData = new Float32Array(0);
-    this._timeData = new Float32Array(0);
+    // Note: _frequencyData and _timeData intentionally not reset
+    // They still contain valid data for the visualizer
   }
 
   isMicActive(): boolean {

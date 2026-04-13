@@ -89,7 +89,14 @@ export const App: Component = () => {
   // ── Engine lifecycle ────────────────────────────────────────
 
   onMount(() => {
+    // Initialize presets from localStorage
+    appStore.initPresets();
+
+    // Load saved volume
+    const savedVol = parseInt(localStorage.getItem('pp_volume') || '80', 10);
     audioEngine = new AudioEngine();
+    audioEngine.setVolume(savedVol / 100);
+
     melodyEngine = new MelodyEngine({
       bpm: appStore.bpm(),
       melody: melodyStore.items,
@@ -530,11 +537,19 @@ export const App: Component = () => {
                 <span id="tempo-value">{appStore.bpm()}</span>
               </div>
 
-              {/* Metronome */}
-              <MetronomeButton
-                active={metronomeActive()}
+              {/* Precount (formerly metronome) */}
+              <button
+                id="btn-precount"
+                class={`ctrl-btn ${metronomeActive() ? 'active' : ''}`}
                 onClick={handleMetronomeToggle}
-              />
+                title="Pre-count before playback"
+              >
+                <svg viewBox="0 0 24 24" width="18" height="18">
+                  <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/>
+                  <path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>
+                </svg>
+                <span>Precount</span>
+              </button>
 
               {/* Sensitivity */}
               <div class="sensitivity-group">
@@ -548,6 +563,66 @@ export const App: Component = () => {
                   class="sensitivity-slider"
                 />
                 <span id="sensitivity-value">5</span>
+              </div>
+
+              {/* Preset */}
+              <div class="preset-group">
+                <label class="opt-label">Preset:</label>
+                <select
+                  id="preset-select"
+                  class="preset-select"
+                  onChange={(e) => {
+                    const name = e.currentTarget.value;
+                    if (name) {
+                      const preset = appStore.loadPreset(name);
+                      if (preset) {
+                        // Load preset melody
+                        const melody = preset.notes.map((n) => {
+                          const scaleNote = melodyStore.currentScale().find((s) => s.midi === n.midi);
+                          return {
+                            id: melodyStore.generateId(),
+                            note: {
+                              midi: n.midi,
+                              name: scaleNote?.name ?? '?',
+                              octave: scaleNote?.octave ?? 4,
+                              freq: scaleNote?.freq ?? 440,
+                            },
+                            startBeat: n.startBeat,
+                            duration: n.duration,
+                          };
+                        });
+                        melodyStore.setMelody(melody);
+                        if (preset.bpm) {
+                          appStore.setBpm(preset.bpm);
+                          melodyEngine.setBPM(preset.bpm);
+                        }
+                        appStore.showNotification(`Preset "${name}" loaded`, 'info');
+                      }
+                    }
+                  }}
+                >
+                  <option value="">— Load —</option>
+                </select>
+              </div>
+
+              {/* Volume */}
+              <div class="volume-group">
+                <label class="opt-label">Vol:</label>
+                <input
+                  type="range"
+                  id="volume"
+                  min="0"
+                  max="100"
+                  value="80"
+                  class="volume-slider"
+                  onInput={(e) => {
+                    const vol = parseInt(e.currentTarget.value) || 80;
+                    audioEngine?.setVolume(vol / 100);
+                    // Persist volume preference
+                    localStorage.setItem('pp_volume', String(vol));
+                  }}
+                />
+                <span id="volume-value">80</span>
               </div>
 
               {/* Run indicator */}
