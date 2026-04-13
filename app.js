@@ -63,7 +63,7 @@
 
     // ========== INSTANCES ==========
     const engine = new AudioEngine();
-    const detector = null;
+    let detector = null;
 
     // ========== DOM REFS ==========
     const dom = {};
@@ -268,14 +268,14 @@
 
     // ========== PRESET MANAGEMENT ==========
     function populatePresetSelect() {
-        const presets = {};
+        let presets = {};
         if (window.pianoRollPreset) {
             presets = window.pianoRollPreset.loadPresets();
         }
         let sel = dom.presetSelect;
         sel.innerHTML = '<option value="">— Select Preset —</option>';
         let names = Object.keys(presets).sort();
-        for (const i = ; i < names.length; i++) {
+        for (let i = 0; i < names.length; i++) {
             let opt = document.createElement('option');
             opt.value = names[i];
             opt.textContent = names[i];
@@ -303,7 +303,7 @@
             return;
         }
 
-        const presets = {};
+        let presets = {};
         if (window.pianoRollPreset) {
             presets = window.pianoRollPreset.loadPresets();
         }
@@ -337,7 +337,7 @@
     }
 
     function findNoteInScale(midi) {
-        for (const i = ; i < state.scale.length; i++) {
+        for (let i = 0; i < state.scale.length; i++) {
             if (state.scale[i].midi === midi) {
                 return state.scale[i];
             }
@@ -361,7 +361,7 @@
     }
 
     // ========== TAB SWITCHING ==========
-    const pianoRollEditor = null;
+    let pianoRollEditor = null;
 
     function switchTab(tab) {
         if (tab === state.activeTab) return;
@@ -545,7 +545,7 @@
 
     // ========== PRACTICE START ==========
     function onPracticeStart() {
-        let cycles = parseInt(dom.cyclesInput.value, 10);
+        let cycles = parseInt(dom.cyclesInput.value.toString(), 10);
         state.practiceCycles = Math.max(2, Math.min(20, cycles || 5));
         state.totalCycles   = state.practiceCycles;
         dom.cyclesInput.value = state.practiceCycles;
@@ -817,8 +817,8 @@
             if (isPracticeComplete) {
                 // Compute combined score and stats from all cycles
                 const allNotes = [];
-                for (const ai = ; ai < state.allCycleResults.length; ai++) {
-                    for (const aj = ; aj < state.allCycleResults[ai].length; aj++) {
+                for (let ai = 0; ai < state.allCycleResults.length; ai++) {
+                    for (let aj = 0; aj < state.allCycleResults[ai].length; aj++) {
                         allNotes.push(state.allCycleResults[ai][aj]);
                     }
                 }
@@ -854,8 +854,9 @@
             return;
         }
 
-        const sumCents = , validCount = 0;
-        for (const i = ; i < state.currentNoteSamples.length; i++) {
+        let sumCents = 0
+            let validCount = 0;
+        for (let i = 0; i < state.currentNoteSamples.length; i++) {
             let s = state.currentNoteSamples[i];
             if (s.confidence >= 0.2) {
                 sumCents += Math.abs(s.cents);
@@ -885,7 +886,7 @@
 
     function centsToBand(avgCents) {
         if (avgCents === null) return 'off';
-        for (const i = ; i < BANDS.length; i++) {
+        for (let i = 0; i < BANDS.length; i++) {
             if (avgCents <= BANDS[i].threshold) return BANDS[i].band;
         }
         return 0;
@@ -893,8 +894,8 @@
 
     function calculateScore(results) {
         if (results.length === 0) return 0;
-        const total = ;
-        for (const j = ; j < results.length; j++) {
+        let total = 0;
+        for (let j = 0; j < results.length; j++) {
             let r = results[j];
             let s;
             if (r.avgCents === null) {
@@ -940,7 +941,7 @@
         dom.scorePct.textContent   = score + '%';
 
         const countByBand = { 100: 0, 90: 0, 75: 0, 50: 0, 0: 0 };
-        for (const k = ; k < results.length; k++) {
+        for (let k = 0; k < results.length; k++) {
             let r2 = results[k];
             if (r2.band === 'off') countByBand[0]++;
             else countByBand[r2.band] = (countByBand[r2.band] || 0) + 1;
@@ -963,14 +964,14 @@
             { b: 50,  label: 'Okay' },
             { b: 0,   label: 'Off' }
         ];
-        for (const m = ; m < bands.length; m++) {
+        for (let m = 0; m < bands.length; m++) {
             let bnd = bands[m];
             let cnt = countByBand[bnd.b];
             if (cnt === 0 && bnd.b !== 0) continue;
             let div = document.createElement('div');
             div.className = 'score-stat score-stat-' + bnd.label.toLowerCase();
-            const color = ';
-            for (const n = ; n < BANDS.length; n++) {
+            let color = '';
+            for (let n = 0; n < BANDS.length; n++) {
                 if (BANDS[n].band === bnd.b) { color = BANDS[n].color; break; }
             }
             div.innerHTML =
@@ -1045,14 +1046,14 @@
 
     function updateStatsDisplay(results) {
         const counts = { 100: 0, 90: 0, 75: 0, 50: 0, 0: 0 };
-        for (const i = ; i < results.length; i++) {
+        for (let i = 0; i < results.length; i++) {
             let r = results[i];
             if (r.band === 'off') counts[0]++;
             else counts[r.band]++;
         }
         let total = Math.max(results.length, 1);
         const bandKeys = [100, 90, 75, 50, 0];
-        for (const j = ; j < bandKeys.length; j++) {
+        for (let j =0 ; j < bandKeys.length; j++) {
             let b = bandKeys[j];
             let pct = Math.round((counts[b] / total) * 100);
             let barEl = document.getElementById('bar-' + b);
@@ -1083,7 +1084,7 @@
             // Handle metronome precount
             if (state.isPrecount) {
                 let precountElapsed = performance.now() - state.precountStartTime;
-                const beatMs =  / state.bpm;
+                const beatMs =  60000 / state.bpm;
                 let currentPrecountBeat = Math.floor(precountElapsed / beatMs);
 
                 if (currentPrecountBeat > state.precountBeats) {
@@ -1160,8 +1161,8 @@
         }
 
         // Pitch detection
-        const detectedFreq = ;
-        const confidence = ;
+        let detectedFreq = 0;
+        let confidence = 0;
         if (state.micActive && detector) {
             let timeData = engine.getTimeData();
             let result = detector.detect(timeData);
@@ -1200,7 +1201,7 @@
 
         // Record sample for current note
         if (state.isPlaying && !state.isPaused && detectedFreq > 0 && confidence >= 0.2) {
-            const cents =  * Math.log2(detectedFreq / state.currentTargetFreq);
+            const cents = 1200 * Math.log2(detectedFreq / state.currentTargetFreq);
             state.currentNoteSamples.push({ freq: detectedFreq, cents: cents, confidence: confidence });
 
             if (state.pitchHistory.length < state.maxHistoryLen) {
@@ -1269,7 +1270,7 @@
         }
 
         // Grid lines
-        for (const i = ; i < state.scale.length; i++) {
+        for (let i = 0; i < state.scale.length; i++) {
             let note = state.scale[i];
             let y = freqToY(note.freq);
             ctx.strokeStyle = 'rgba(48,54,61,0.7)';
@@ -1295,8 +1296,8 @@
         let textOffset = isMobile ? 3 : 4;
         let minBoxWidthForText = isMobile ? 14 : 12;
 
-        const accum = ;
-        for (const j = ; j < state.melody.length; j++) {
+        let accum = 0;
+        for (let j = 0; j < state.melody.length; j++) {
             let item = state.melody[j];
             let x1 = beatToX(accum);
             let x2 = beatToX(accum + item.duration);
@@ -1352,7 +1353,7 @@
             ctx.lineCap = 'round';
             ctx.beginPath();
             let started = false;
-            for (const k = ; k < state.pitchHistory.length; k++) {
+            for (let k = 0; k < state.pitchHistory.length; k++) {
                 let pt = state.pitchHistory[k];
                 if (!pt.freq || pt.confidence < 0.2) { started = false; continue; }
                 let px = beatToX(pt.beat);
@@ -1451,7 +1452,7 @@
             if (freqData && freqData.length > 0) {
                 let barCount = Math.min(freqData.length, 128);
                 let barWidth = w / barCount;
-                for (const i = ; i < barCount; i++) {
+                for (let i = 0; i < barCount; i++) {
                     let val = freqData[i] / 255;
                     let barH = val * (h - 10);
                     const hue =  + val * 40;
