@@ -202,17 +202,6 @@ header h1 {
     cursor: default;
 }
 
-.note-item.active {
-    background: var(--accent-dim);
-    border-color: var(--accent);
-    box-shadow: 0 0 8px var(--accent-glow);
-}
-
-.note-item.hit {
-    border-color: var(--green);
-    box-shadow: 0 0 8px var(--green-glow);
-}
-
 .note-dot {
     width: 8px;
     height: 8px;
@@ -222,7 +211,43 @@ header h1 {
     transition: background 0.12s ease;
 }
 
+.note-item.hit .note-dot { background: var(--green); }
+
+/* Accuracy band coloring */
+.note-item.band-perfect {
+    background: rgba(63, 185, 80, 0.2);
+    border-color: var(--green);
+    box-shadow: 0 0 6px rgba(63, 185, 80, 0.4);
+}
+.note-item.band-excellent {
+    background: rgba(88, 166, 255, 0.2);
+    border-color: #58a6ff;
+    box-shadow: 0 0 6px rgba(88, 166, 255, 0.4);
+}
+.note-item.band-good {
+    background: rgba(45, 212, 191, 0.2);
+    border-color: #2dd4bf;
+    box-shadow: 0 0 6px rgba(45, 212, 191, 0.4);
+}
+.note-item.band-okay {
+    background: rgba(210, 153, 34, 0.2);
+    border-color: #d29922;
+    box-shadow: 0 0 6px rgba(210, 153, 34, 0.4);
+}
+.note-item.band-off {
+    background: rgba(248, 81, 73, 0.2);
+    border-color: #f85149;
+    box-shadow: 0 0 6px rgba(248, 81, 73, 0.4);
+}
+
+/* Active + hit glow (overrides band color during playback) */
+.note-item.active {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+    box-shadow: 0 0 12px var(--accent-glow);
+}
 .note-item.active .note-dot { background: var(--accent); }
+.note-item.hit { border-color: var(--green); box-shadow: 0 0 12px var(--green-glow); }
 .note-item.hit .note-dot { background: var(--green); }
 
 .note-name {

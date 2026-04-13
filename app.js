@@ -218,13 +218,13 @@
         let dpr = window.devicePixelRatio || 1;
         let pc = dom.canvasContainer;
 
-        // Pitch canvas: extend to full timeline width for auto-scroll
+        // Pitch canvas: always extend to full timeline width for auto-scroll
         let totalBeats = state.totalBeats || 16;
-        let minTimelineWidth = Math.max(pc.clientWidth, totalBeats * state.pitchBeatWidth);
+        let totalTimelineWidth = totalBeats * state.pitchBeatWidth;
 
-        dom.pitchCanvas.width  = minTimelineWidth * dpr;
+        dom.pitchCanvas.width  = totalTimelineWidth * dpr;
         dom.pitchCanvas.height = pc.clientHeight * dpr;
-        dom.pitchCanvas.style.width  = minTimelineWidth + 'px';
+        dom.pitchCanvas.style.width  = totalTimelineWidth + 'px';
         dom.pitchCanvas.style.height = pc.clientHeight + 'px';
         pitchCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
@@ -515,15 +515,50 @@
     // ========== NOTE LIST ==========
     function renderNoteList() {
         dom.noteList.innerHTML = '';
-        state.scale.forEach(function (note) {
+
+        // Collect distinct notes from the melody (preserves order and duplicates)
+        let melodyNotes = {};
+        state.melody.forEach(function (item) {
+            // Use note name + octave as key so C4 and C5 are separate
+            let key = item.note.midi;
+            if (!melodyNotes[key]) {
+                melodyNotes[key] = item.note;
+            }
+        });
+
+        // Render in ascending MIDI order
+        let midiKeys = Object.keys(melodyNotes).map(Number).sort(function (a, b) { return a - b; });
+
+        midiKeys.forEach(function (midi) {
+            let note = melodyNotes[midi];
             let el = document.createElement('div');
             el.className = 'note-item';
             el.dataset.midi = note.midi;
+            el.dataset.noteIndex = state.melody.findIndex(function (m) { return m.note.midi === note.midi; });
             el.innerHTML =
                 '<div class="note-dot"></div>' +
                 '<span class="note-name">' + note.name + (Math.floor(note.midi / 12) - 1) + '</span>' +
                 '<span class="note-freq">' + note.freq.toFixed(0) + 'Hz</span>';
             dom.noteList.appendChild(el);
+        });
+
+        // Apply any stored accuracy band results
+        state.noteResults.forEach(function (result) {
+            applyNoteListBand(result.targetMidi, result.band);
+        });
+    }
+
+    function applyNoteListBand(targetMidi, band) {
+        let items = dom.noteList.querySelectorAll('.note-item');
+        items.forEach(function (el) {
+            if (parseInt(el.dataset.midi, 10) === targetMidi) {
+                el.classList.remove('band-perfect', 'band-excellent', 'band-good', 'band-okay', 'band-off');
+                if (band === 100)      el.classList.add('band-perfect');
+                else if (band === 90)  el.classList.add('band-excellent');
+                else if (band === 75)  el.classList.add('band-good');
+                else if (band === 50)  el.classList.add('band-okay');
+                else if (band === 'off' || band === 0) el.classList.add('band-off');
+            }
         });
     }
 
@@ -535,6 +570,17 @@
                 el.classList.add('active');
                 if (isHit) el.classList.add('hit');
             }
+        });
+    }
+
+    function updateNoteListBand(targetMidi, band) {
+        applyNoteListBand(targetMidi, band);
+    }
+
+    function clearNoteListBands() {
+        let items = dom.noteList.querySelectorAll('.note-item');
+        items.forEach(function (el) {
+            el.classList.remove('band-perfect', 'band-excellent', 'band-good', 'band-okay', 'band-off');
         });
     }
 
@@ -654,6 +700,9 @@
         state.noteResults   = [];
         state.currentNoteSamples = [];
         state.currentNoteIndex  = -1;
+
+        // Clear accuracy band colors from sidebar at start of each run
+        clearNoteListBands();
 
         if (state.playMode === 'practice') {
             state.currentCycle = 1;
@@ -880,39 +929,43 @@
 
     // ========== NOTE TRACKING ==========
     function finalizeNoteResult() {
+        let band;
         if (state.currentNoteSamples.length === 0) {
+            band = 'off';
             state.noteResults.push({
                 noteName:  noteNameFromMidi(state.currentTargetMidi),
                 targetMidi: state.currentTargetMidi,
                 targetFreq: state.currentTargetFreq,
-                band: 'off',
+                band: band,
                 avgCents: null,
                 sampleCount: 0
             });
-            return;
-        }
-
-        let sumCents = 0
+        } else {
+            let sumCents = 0;
             let validCount = 0;
-        for (let i = 0; i < state.currentNoteSamples.length; i++) {
-            let s = state.currentNoteSamples[i];
-            if (s.confidence >= 0.2) {
-                sumCents += Math.abs(s.cents);
-                validCount++;
+            for (let i = 0; i < state.currentNoteSamples.length; i++) {
+                let s = state.currentNoteSamples[i];
+                if (s.confidence >= 0.2) {
+                    sumCents += Math.abs(s.cents);
+                    validCount++;
+                }
             }
+
+            let avgCents = validCount > 0 ? sumCents / validCount : null;
+            band = centsToBand(avgCents);
+
+            state.noteResults.push({
+                noteName:   noteNameFromMidi(state.currentTargetMidi),
+                targetMidi: state.currentTargetMidi,
+                targetFreq: state.currentTargetFreq,
+                band:       band,
+                avgCents:   avgCents,
+                sampleCount: state.currentNoteSamples.length
+            });
         }
 
-        let avgCents = validCount > 0 ? sumCents / validCount : null;
-        let band = centsToBand(avgCents);
-
-        state.noteResults.push({
-            noteName:   noteNameFromMidi(state.currentTargetMidi),
-            targetMidi: state.currentTargetMidi,
-            targetFreq: state.currentTargetFreq,
-            band:       band,
-            avgCents:   avgCents,
-            sampleCount: state.currentNoteSamples.length
-        });
+        // Update sidebar note list with accuracy band color
+        updateNoteListBand(state.currentTargetMidi, band);
     }
 
     function noteNameFromMidi(midi) {
