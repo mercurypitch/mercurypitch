@@ -1443,8 +1443,12 @@
             accum += item.duration;
         }
 
-        // Pitch trail
+        // Pitch trail — clip to visible canvas area so scrolling doesn't drift off-screen
         if (state.pitchHistory.length > 1) {
+            // Only draw points that fall within the visible canvas range
+            let visibleLeft = state.pitchScrollOffset;
+            let visibleRight = w + state.pitchScrollOffset;
+
             ctx.lineWidth = 2;
             ctx.strokeStyle = 'rgba(63,185,80,0.75)';
             ctx.lineJoin = 'round';
@@ -1456,6 +1460,8 @@
                 if (!pt.freq || pt.confidence < 0.2) { started = false; continue; }
                 let px = beatToX(pt.beat);
                 let py = freqToY(pt.freq);
+                // Skip points outside the visible canvas area
+                if (px < visibleLeft - 10 || px > visibleRight + 10) continue;
                 if (!started) { ctx.moveTo(px, py); started = true; }
                 else ctx.lineTo(px, py);
             }
@@ -1466,24 +1472,26 @@
             if (last && last.freq && last.confidence >= 0.2) {
                 let lx = beatToX(last.beat);
                 let ly = freqToY(last.freq);
+                // Only draw dot if it's within the visible canvas
+                if (lx >= visibleLeft - 20 && lx <= visibleRight + 20) {
+                    let grad = ctx.createRadialGradient(lx, ly, 0, lx, ly, 12);
+                    grad.addColorStop(0, 'rgba(63,185,80,0.55)');
+                    grad.addColorStop(1, 'rgba(63,185,80,0)');
+                    ctx.fillStyle = grad;
+                    ctx.beginPath();
+                    ctx.arc(lx, ly, 12, 0, Math.PI * 2);
+                    ctx.fill();
 
-                let grad = ctx.createRadialGradient(lx, ly, 0, lx, ly, 12);
-                grad.addColorStop(0, 'rgba(63,185,80,0.55)');
-                grad.addColorStop(1, 'rgba(63,185,80,0)');
-                ctx.fillStyle = grad;
-                ctx.beginPath();
-                ctx.arc(lx, ly, 12, 0, Math.PI * 2);
-                ctx.fill();
+                    ctx.fillStyle = '#3fb950';
+                    ctx.beginPath();
+                    ctx.arc(lx, ly, 5, 0, Math.PI * 2);
+                    ctx.fill();
 
-                ctx.fillStyle = '#3fb950';
-                ctx.beginPath();
-                ctx.arc(lx, ly, 5, 0, Math.PI * 2);
-                ctx.fill();
-
-                ctx.fillStyle = '#fff';
-                ctx.beginPath();
-                ctx.arc(lx, ly, 2, 0, Math.PI * 2);
-                ctx.fill();
+                    ctx.fillStyle = '#fff';
+                    ctx.beginPath();
+                    ctx.arc(lx, ly, 2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
             }
         }
 
