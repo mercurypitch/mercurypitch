@@ -1193,53 +1193,59 @@ header h1 {
     position: relative;
 }
 
-/* Grid wrapper: stacks ruler on top of piano keys + grid */
+/* Grid wrapper: CSS Grid layout — ruler + piano keys + grid */
 .roll-grid-wrapper {
     flex: 1;
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    /* Columns: piano keys | grid area (scrollable) */
+    /* Rows: ruler | grid rows */
+    grid-template-columns: var(--piano-width, 62px) 1fr;
+    grid-template-rows: var(--ruler-height, 28px) 1fr;
     min-height: 0;
     overflow: hidden;
     position: relative;
 }
 
-/* Piano keys (fixed left column, below ruler) */
-.roll-piano {
-    flex-shrink: 0;
-    background: #161b22;
-    border-right: 1px solid var(--border);
-    border-bottom: 1px solid var(--border);
-    align-self: flex-start;
-    position: sticky;
-    left: 0;
-    z-index: 1;
-}
-
-/* Ruler */
+/* Ruler spans full width at top */
 .roll-ruler-container {
-    flex-shrink: 0;
-    height: 28px;
+    grid-column: 1 / -1;
+    grid-row: 1;
     overflow: hidden;
     position: relative;
     background: var(--bg-secondary);
     border-bottom: 1px solid var(--border);
 }
 
-.roll-ruler {
-    position: absolute;
-    top: 0;
+/* Piano keys column */
+.roll-piano {
+    grid-column: 1;
+    grid-row: 2;
+    align-self: stretch;
+    background: #161b22;
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    z-index: 1;
+    position: sticky;
     left: 0;
-    display: block;
 }
 
-/* Grid container (scrollable) */
+/* Grid container fills remaining space */
 .roll-grid-container {
-    flex: 1;
+    grid-column: 2;
+    grid-row: 2;
     overflow-x: auto;
     overflow-y: hidden;
     position: relative;
     background: var(--bg-primary);
     z-index: 2;
+}
+
+/* Ruler canvas */
+.roll-ruler {
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: block;
 }
 
 .roll-grid {
