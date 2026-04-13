@@ -7,6 +7,7 @@ import {
   Component,
   createSignal,
   createMemo,
+  createEffect,
   onMount,
   onCleanup,
   Show,
@@ -53,6 +54,37 @@ export const App: Component = () => {
   const [liveScore, setLiveScore] = createSignal<number | null>(null);
   const [frequencyData, setFrequencyData] = createSignal<Float32Array | null>(null);
   const [metronomeActive, setMetronomeActive] = createSignal(false);
+
+  // ── Stats panel ──────────────────────────────────────────────
+
+  const statsCounts = createMemo(() => {
+    const results = noteResults();
+    return {
+      perfect: results.filter((r) => r.rating === 'perfect').length,
+      excellent: results.filter((r) => r.rating === 'excellent').length,
+      good: results.filter((r) => r.rating === 'good').length,
+      okay: results.filter((r) => r.rating === 'okay').length,
+      off: results.filter((r) => r.rating === 'off').length,
+    };
+  });
+
+  createEffect(() => {
+    const counts = statsCounts();
+    const total = Math.max(1, counts.perfect + counts.excellent + counts.good + counts.okay + counts.off);
+
+    const updateBar = (id: string, count: number) => {
+      const el = document.getElementById(id);
+      if (el) el.style.width = `${(count / total) * 100}%`;
+      const cntEl = document.getElementById(`cnt-${id}`);
+      if (cntEl) cntEl.textContent = String(count);
+    };
+
+    updateBar('bar-100', counts.perfect);
+    updateBar('bar-90', counts.excellent);
+    updateBar('bar-75', counts.good);
+    updateBar('bar-50', counts.okay);
+    updateBar('bar-0', counts.off);
+  });
 
   // ── Engine lifecycle ────────────────────────────────────────
 
@@ -303,7 +335,7 @@ export const App: Component = () => {
               onChange={(e) => {
                 const key = e.currentTarget.value;
                 appStore.setKeyName(key);
-                melodyStore.refreshScale(key, 3, appStore.scaleType());
+                melodyStore.refreshScale(key, melodyStore.currentOctave(), appStore.scaleType());
               }}
             >
               <option value="C">C</option>
@@ -318,11 +350,11 @@ export const App: Component = () => {
 
             <span class="octave-label">Oct:</span>
             <div class="octave-ctrl">
-              <button class="octave-btn" title="Lower octave" onClick={() => melodyStore.refreshScale(appStore.keyName(), Math.max(1, 3 - 1), appStore.scaleType())}>
+              <button class="octave-btn" title="Lower octave" onClick={() => melodyStore.refreshScale(appStore.keyName(), Math.max(1, melodyStore.currentOctave() - 1), appStore.scaleType())}>
                 <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg>
               </button>
-              <span class="octave-value">3</span>
-              <button class="octave-btn" title="Higher octave" onClick={() => melodyStore.refreshScale(appStore.keyName(), Math.min(6, 3 + 1), appStore.scaleType())}>
+              <span class="octave-value">{melodyStore.currentOctave()}</span>
+              <button class="octave-btn" title="Higher octave" onClick={() => melodyStore.refreshScale(appStore.keyName(), Math.min(6, melodyStore.currentOctave() + 1), appStore.scaleType())}>
                 <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg>
               </button>
             </div>
@@ -334,7 +366,7 @@ export const App: Component = () => {
               onChange={(e) => {
                 const st = e.currentTarget.value;
                 appStore.setScaleType(st);
-                melodyStore.refreshScale(appStore.keyName(), 3, st);
+                melodyStore.refreshScale(appStore.keyName(), melodyStore.currentOctave(), st);
               }}
             >
               <option value="major">Major</option>
