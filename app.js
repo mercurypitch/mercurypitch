@@ -5,7 +5,7 @@
     'use strict';
 
     // ========== STATE ==========
-    var state = {
+    const state = {
         key: 'C',
         octave: 4,
         bpm: 80,
@@ -53,7 +53,7 @@
     };
 
     // ========== ACCURACY BANDS ==========
-    var BANDS = [
+    const BANDS = [
         { threshold: 0,   band: 100, color: '#3fb950' },
         { threshold: 10,  band: 90,  color: '#58a6ff' },
         { threshold: 25,  band: 75,  color: '#2dd4bf' },
@@ -62,12 +62,12 @@
     ];
 
     // ========== INSTANCES ==========
-    var engine = new AudioEngine();
-    var detector = null;
+    const engine = new AudioEngine();
+    const detector = null;
 
     // ========== DOM REFS ==========
-    var dom = {};
-    var pitchCtx, historyCtx;
+    const dom = {};
+    let pitchCtx, historyCtx;
 
     // ========== INIT ==========
     function init() {
@@ -177,12 +177,12 @@
 
     // ========== CANVAS RESIZE ==========
     function resizeCanvases() {
-        var dpr = window.devicePixelRatio || 1;
-        var pc = dom.canvasContainer;
+        let dpr = window.devicePixelRatio || 1;
+        let pc = dom.canvasContainer;
 
         // Pitch canvas: extend to full timeline width for auto-scroll
-        var totalBeats = state.totalBeats || 16;
-        var minTimelineWidth = Math.max(pc.clientWidth, totalBeats * state.pitchBeatWidth);
+        let totalBeats = state.totalBeats || 16;
+        let minTimelineWidth = Math.max(pc.clientWidth, totalBeats * state.pitchBeatWidth);
 
         dom.pitchCanvas.width  = minTimelineWidth * dpr;
         dom.pitchCanvas.height = pc.clientHeight * dpr;
@@ -190,7 +190,7 @@
         dom.pitchCanvas.style.height = pc.clientHeight + 'px';
         pitchCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-        var hc = document.getElementById('history-container');
+        let hc = document.getElementById('history-container');
         dom.historyCanvas.width  = hc.clientWidth  * dpr;
         dom.historyCanvas.height = hc.clientHeight * dpr;
         dom.historyCanvas.style.width  = hc.clientWidth  + 'px';
@@ -218,14 +218,14 @@
 
     function onOctaveShift(delta) {
         if (state.isPlaying) stopPlayback();
-        var newOctave = state.octave + delta;
+        let newOctave = state.octave + delta;
         if (newOctave < 1 || newOctave > 6) return;
 
         if (state.loadedPresetName) {
             // Transpose the preset melody by the octave delta
-            var MIDI_OCTAVE_SHIFT = 12;
+            const MIDI_OCTAVE_SHIFT = ;
             state.melody = state.loadedPresetMelody.map(function (item) {
-                var transposedNote = Object.assign({}, item.note, {
+                let transposedNote = Object.assign({}, item.note, {
                     midi: item.note.midi + delta * MIDI_OCTAVE_SHIFT,
                     octave: item.note.octave + delta,
                     freq: midiToFreq(item.note.midi + delta * MIDI_OCTAVE_SHIFT)
@@ -268,22 +268,22 @@
 
     // ========== PRESET MANAGEMENT ==========
     function populatePresetSelect() {
-        var presets = {};
+        const presets = {};
         if (window.pianoRollPreset) {
             presets = window.pianoRollPreset.loadPresets();
         }
-        var sel = dom.presetSelect;
+        let sel = dom.presetSelect;
         sel.innerHTML = '<option value="">— Select Preset —</option>';
-        var names = Object.keys(presets).sort();
-        for (var i = 0; i < names.length; i++) {
-            var opt = document.createElement('option');
+        let names = Object.keys(presets).sort();
+        for (const i = ; i < names.length; i++) {
+            let opt = document.createElement('option');
             opt.value = names[i];
             opt.textContent = names[i];
             sel.appendChild(opt);
         }
         // Sync selected preset from shared state
         if (window.pianoRollPreset) {
-            var selected = window.pianoRollPreset.getSelectedPresetName();
+            let selected = window.pianoRollPreset.getSelectedPresetName();
             if (selected) {
                 sel.value = selected;
             } else {
@@ -293,7 +293,7 @@
     }
 
     function onPresetChange() {
-        var name = dom.presetSelect.value;
+        let name = dom.presetSelect.value;
         if (window.pianoRollPreset) {
             window.pianoRollPreset.setSelectedPresetName(name);
         }
@@ -303,19 +303,19 @@
             return;
         }
 
-        var presets = {};
+        const presets = {};
         if (window.pianoRollPreset) {
             presets = window.pianoRollPreset.loadPresets();
         }
-        var preset = presets[name];
+        let preset = presets[name];
         if (!preset) return;
 
         // Apply preset notes to current melody
         state.melody = preset.notes.map(function (n) {
             // Find the matching note in current scale by MIDI
-            var noteInfo = findNoteInScale(n.midi);
+            let noteInfo = findNoteInScale(n.midi);
             if (noteInfo) {
-                var id = window.pianoRollGenerateId ? window.pianoRollGenerateId() : Date.now() + Math.floor(Math.random() * 10000);
+                let id = window.pianoRollGenerateId ? window.pianoRollGenerateId() : Date.now() + Math.floor(Math.random() * 10000);
                 return { id: id, note: noteInfo, duration: n.duration, startBeat: n.startBeat };
             }
             return null;
@@ -337,7 +337,7 @@
     }
 
     function findNoteInScale(midi) {
-        for (var i = 0; i < state.scale.length; i++) {
+        for (const i = ; i < state.scale.length; i++) {
             if (state.scale[i].midi === midi) {
                 return state.scale[i];
             }
@@ -361,7 +361,7 @@
     }
 
     // ========== TAB SWITCHING ==========
-    var pianoRollEditor = null;
+    const pianoRollEditor = null;
 
     function switchTab(tab) {
         if (tab === state.activeTab) return;
@@ -376,10 +376,10 @@
         dom.tabPractice.classList.toggle('active', tab === 'practice');
         dom.tabEditor.classList.toggle('active', tab === 'editor');
 
-        var mainLayout = document.getElementById('main-layout');
-        var notesPanel = document.getElementById('notes-panel');
-        var pitchArea = document.getElementById('pitch-area');
-        var editorPanel = document.getElementById('editor-panel');
+        let mainLayout = document.getElementById('main-layout');
+        let notesPanel = document.getElementById('notes-panel');
+        let pitchArea = document.getElementById('pitch-area');
+        let editorPanel = document.getElementById('editor-panel');
 
         if (tab === 'practice') {
             notesPanel.classList.remove('hidden');
@@ -390,7 +390,7 @@
 
             // Sync melody from editor to practice
             if (pianoRollEditor) {
-                var melody = pianoRollEditor.getMelody();
+                let melody = pianoRollEditor.getMelody();
                 if (melody.length > 0) {
                     state.melody = melody;
                     state.totalBeats = melodyTotalBeats(state.melody);
@@ -414,7 +414,7 @@
     }
 
     function initPianoRoll() {
-        var container = document.getElementById('piano-roll-container');
+        let container = document.getElementById('piano-roll-container');
         if (!container || pianoRollEditor) {
             if (pianoRollEditor) {
                 pianoRollEditor.setScale(state.scale);
@@ -478,7 +478,7 @@
     function renderNoteList() {
         dom.noteList.innerHTML = '';
         state.scale.forEach(function (note) {
-            var el = document.createElement('div');
+            let el = document.createElement('div');
             el.className = 'note-item';
             el.dataset.midi = note.midi;
             el.innerHTML =
@@ -490,7 +490,7 @@
     }
 
     function updateNoteListHighlight(targetMidi, isHit) {
-        var items = dom.noteList.querySelectorAll('.note-item');
+        let items = dom.noteList.querySelectorAll('.note-item');
         items.forEach(function (el) {
             el.classList.remove('active', 'hit');
             if (parseInt(el.dataset.midi, 10) === targetMidi) {
@@ -516,7 +516,7 @@
         } else {
             await engine.init();
             await engine.resume();
-            var ok = await engine.startMic();
+            let ok = await engine.startMic();
             if (ok) {
                 state.micActive = true;
                 detector = new PitchDetector(engine.getSampleRate(), 2048, 0.15, state.sensitivity);
@@ -545,7 +545,7 @@
 
     // ========== PRACTICE START ==========
     function onPracticeStart() {
-        var cycles = parseInt(dom.cyclesInput.value, 10);
+        let cycles = parseInt(dom.cyclesInput.value, 10);
         state.practiceCycles = Math.max(2, Math.min(20, cycles || 5));
         state.totalCycles   = state.practiceCycles;
         dom.cyclesInput.value = state.practiceCycles;
@@ -590,9 +590,9 @@
     function playPrecountClick() {
         // Play a click sound using oscillator
         engine.stopTone();
-        var ctx = engine.audioCtx;
-        var osc = ctx.createOscillator();
-        var gain = ctx.createGain();
+        let ctx = engine.audioCtx;
+        let osc = ctx.createOscillator();
+        let gain = ctx.createGain();
         osc.type = 'square';
         osc.frequency.value = 800;
         gain.gain.setValueAtTime(0.3, ctx.currentTime);
@@ -637,7 +637,7 @@
         updateScoreDisplay(null);
         updateStatsDisplay([]);
 
-        var first = state.melody[0];
+        let first = state.melody[0];
         state.currentTargetMidi = first.note.midi;
         state.currentTargetFreq = first.note.freq;
         state.currentNoteSamples = [];
@@ -656,7 +656,7 @@
             dom.btnPlay.querySelector('span').textContent = 'Playing';
             dom.btnPlay.classList.add('active');
             engine.resume().then(function () {
-                var ni = melodyNoteAtBeat(state.melody, state.currentBeat);
+                let ni = melodyNoteAtBeat(state.melody, state.currentBeat);
                 engine.playTone(ni.note.freq);
             });
         } else {
@@ -716,8 +716,8 @@
         }
         engine.stopTone();
 
-        var results = state.noteResults;
-        var isPracticeComplete = false;
+        let results = state.noteResults;
+        let isPracticeComplete = false;
 
         if (results.length > 0) {
             state.runsCompleted++;
@@ -773,7 +773,7 @@
                         dom.btnPause.disabled = false;
                         dom.btnStop.disabled = false;
 
-                        var first = state.melody[0];
+                        let first = state.melody[0];
                         state.currentTargetMidi = first.note.midi;
                         state.currentTargetFreq = first.note.freq;
                         engine.playTone(first.note.freq);
@@ -786,7 +786,7 @@
                 }
             }
 
-            var score = calculateScore(results);
+            let score = calculateScore(results);
             if (state.playMode !== 'practice') {
                 showScoreOverlay(results, score);
             }
@@ -816,13 +816,13 @@
         if (state.playMode === 'practice') {
             if (isPracticeComplete) {
                 // Compute combined score and stats from all cycles
-                var allNotes = [];
-                for (var ai = 0; ai < state.allCycleResults.length; ai++) {
-                    for (var aj = 0; aj < state.allCycleResults[ai].length; aj++) {
+                const allNotes = [];
+                for (const ai = ; ai < state.allCycleResults.length; ai++) {
+                    for (const aj = ; aj < state.allCycleResults[ai].length; aj++) {
                         allNotes.push(state.allCycleResults[ai][aj]);
                     }
                 }
-                var totalScore = calculateScore(allNotes);
+                let totalScore = calculateScore(allNotes);
                 showScoreOverlay(allNotes, totalScore, true);
                 updateScoreDisplay(totalScore);
                 updateStatsDisplay(allNotes);
@@ -854,17 +854,17 @@
             return;
         }
 
-        var sumCents = 0, validCount = 0;
-        for (var i = 0; i < state.currentNoteSamples.length; i++) {
-            var s = state.currentNoteSamples[i];
+        const sumCents = , validCount = 0;
+        for (const i = ; i < state.currentNoteSamples.length; i++) {
+            let s = state.currentNoteSamples[i];
             if (s.confidence >= 0.2) {
                 sumCents += Math.abs(s.cents);
                 validCount++;
             }
         }
 
-        var avgCents = validCount > 0 ? sumCents / validCount : null;
-        var band = centsToBand(avgCents);
+        let avgCents = validCount > 0 ? sumCents / validCount : null;
+        let band = centsToBand(avgCents);
 
         state.noteResults.push({
             noteName:   noteNameFromMidi(state.currentTargetMidi),
@@ -877,15 +877,15 @@
     }
 
     function noteNameFromMidi(midi) {
-        var names = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-        var idx   = ((midi % 12) + 12) % 12;
-        var oct   = Math.floor(midi / 12) - 1;
+        const names = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+        let idx = ((midi % 12) + 12) % 12;
+        let oct = Math.floor(midi / 12) - 1;
         return names[idx] + oct;
     }
 
     function centsToBand(avgCents) {
         if (avgCents === null) return 'off';
-        for (var i = 0; i < BANDS.length; i++) {
+        for (const i = ; i < BANDS.length; i++) {
             if (avgCents <= BANDS[i].threshold) return BANDS[i].band;
         }
         return 0;
@@ -893,10 +893,10 @@
 
     function calculateScore(results) {
         if (results.length === 0) return 0;
-        var total = 0;
-        for (var j = 0; j < results.length; j++) {
-            var r = results[j];
-            var s;
+        const total = ;
+        for (const j = ; j < results.length; j++) {
+            let r = results[j];
+            let s;
             if (r.avgCents === null) {
                 s = 0;
             } else if (r.avgCents <= 5) {
@@ -929,7 +929,7 @@
     function showScoreOverlay(results, score, isFinal) {
         dom.scoreOverlay.classList.remove('hidden');
 
-        var grade = scoreGrade(score);
+        let grade = scoreGrade(score);
         if (isFinal) {
             dom.scoreTitle.textContent = 'Practice Complete!';
         } else {
@@ -939,14 +939,14 @@
         dom.scoreGrade.className   = grade.cls;
         dom.scorePct.textContent   = score + '%';
 
-        var countByBand = { 100: 0, 90: 0, 75: 0, 50: 0, 0: 0 };
-        for (var k = 0; k < results.length; k++) {
-            var r2 = results[k];
+        const countByBand = { 100: 0, 90: 0, 75: 0, 50: 0, 0: 0 };
+        for (const k = ; k < results.length; k++) {
+            let r2 = results[k];
             if (r2.band === 'off') countByBand[0]++;
             else countByBand[r2.band] = (countByBand[r2.band] || 0) + 1;
         }
 
-        var parts = [];
+        const parts = [];
         if (countByBand[100] > 0) parts.push(countByBand[100] + ' pitch perfect');
         if (countByBand[90]  > 0) parts.push(countByBand[90]  + ' excellent');
         if (countByBand[75]  > 0) parts.push(countByBand[75]  + ' good');
@@ -956,21 +956,21 @@
 
         // Build stat chips
         dom.scoreStats.innerHTML = '';
-        var bands = [
+        const bands = [
             { b: 100, label: 'Perfect' },
             { b: 90,  label: 'Excellent' },
             { b: 75,  label: 'Good' },
             { b: 50,  label: 'Okay' },
             { b: 0,   label: 'Off' }
         ];
-        for (var m = 0; m < bands.length; m++) {
-            var bnd = bands[m];
-            var cnt = countByBand[bnd.b];
+        for (const m = ; m < bands.length; m++) {
+            let bnd = bands[m];
+            let cnt = countByBand[bnd.b];
             if (cnt === 0 && bnd.b !== 0) continue;
-            var div = document.createElement('div');
+            let div = document.createElement('div');
             div.className = 'score-stat score-stat-' + bnd.label.toLowerCase();
-            var color = '#888';
-            for (var n = 0; n < BANDS.length; n++) {
+            const color = ';
+            for (const n = ; n < BANDS.length; n++) {
                 if (BANDS[n].band === bnd.b) { color = BANDS[n].color; break; }
             }
             div.innerHTML =
@@ -1044,19 +1044,19 @@
     }
 
     function updateStatsDisplay(results) {
-        var counts = { 100: 0, 90: 0, 75: 0, 50: 0, 0: 0 };
-        for (var i = 0; i < results.length; i++) {
-            var r = results[i];
+        const counts = { 100: 0, 90: 0, 75: 0, 50: 0, 0: 0 };
+        for (const i = ; i < results.length; i++) {
+            let r = results[i];
             if (r.band === 'off') counts[0]++;
             else counts[r.band]++;
         }
-        var total = Math.max(results.length, 1);
-        var bandKeys = [100, 90, 75, 50, 0];
-        for (var j = 0; j < bandKeys.length; j++) {
-            var b = bandKeys[j];
-            var pct = Math.round((counts[b] / total) * 100);
-            var barEl = document.getElementById('bar-' + b);
-            var cntEl = document.getElementById('cnt-' + b);
+        let total = Math.max(results.length, 1);
+        const bandKeys = [100, 90, 75, 50, 0];
+        for (const j = ; j < bandKeys.length; j++) {
+            let b = bandKeys[j];
+            let pct = Math.round((counts[b] / total) * 100);
+            let barEl = document.getElementById('bar-' + b);
+            let cntEl = document.getElementById('cnt-' + b);
             if (barEl) barEl.style.width = pct + '%';
             if (cntEl) cntEl.textContent = counts[b];
         }
@@ -1082,9 +1082,9 @@
         if (state.isPlaying && !state.isPaused) {
             // Handle metronome precount
             if (state.isPrecount) {
-                var precountElapsed = performance.now() - state.precountStartTime;
-                var beatMs = 60000 / state.bpm;
-                var currentPrecountBeat = Math.floor(precountElapsed / beatMs);
+                let precountElapsed = performance.now() - state.precountStartTime;
+                const beatMs =  / state.bpm;
+                let currentPrecountBeat = Math.floor(precountElapsed / beatMs);
 
                 if (currentPrecountBeat > state.precountBeats) {
                     state.precountBeats = currentPrecountBeat;
@@ -1099,18 +1099,18 @@
                 return;
             }
 
-            var elapsed = performance.now() - state.playStartTime;
-            var beatsPerMs = state.bpm / 60000;
+            let elapsed = performance.now() - state.playStartTime;
+            let beatsPerMs = state.bpm / 60000;
             state.currentBeat = elapsed * beatsPerMs;
 
             // Calculate playhead position in canvas coordinates
-            var containerWidth = dom.canvasContainer.clientWidth;
-            var totalTimelineWidth = dom.pitchCanvas.clientWidth;
-            var playheadX = (state.currentBeat / state.totalBeats) * totalTimelineWidth;
+            let containerWidth = dom.canvasContainer.clientWidth;
+            let totalTimelineWidth = dom.pitchCanvas.clientWidth;
+            let playheadX = (state.currentBeat / state.totalBeats) * totalTimelineWidth;
 
             // Auto-scroll: translate the canvas so the playhead (fixed at left edge)
             // always shows the current beat. Scroll begins once notes approach the right edge.
-            var targetScroll = playheadX - containerWidth * 0.7;
+            let targetScroll = playheadX - containerWidth * 0.7;
             state.pitchScrollOffset = Math.max(0, Math.min(targetScroll, totalTimelineWidth - containerWidth));
 
             // Playhead moves with the note until canvas starts scrolling.
@@ -1127,7 +1127,7 @@
                 return;
             }
 
-            var newIndex = melodyIndexAtBeat(state.melody, state.currentBeat);
+            let newIndex = melodyIndexAtBeat(state.melody, state.currentBeat);
 
             if (newIndex !== state.currentNoteIndex) {
                 if (state.currentNoteIndex >= 0 && state.currentNoteSamples.length > 0) {
@@ -1135,14 +1135,14 @@
                 }
                 // Trigger hop animation from old note to new note
                 if (state.currentNoteIndex >= 0 && newIndex >= 0) {
-                    var oldNote = state.melody[state.currentNoteIndex];
-                    var newNote = state.melody[newIndex];
+                    let oldNote = state.melody[state.currentNoteIndex];
+                    let newNote = state.melody[newIndex];
                     // freqToY is defined locally in drawPitchCanvas, so compute it here
-                    var logMin = Math.log2(Math.min.apply(null, state.scale.map(function(n){return n.freq;})) * 0.82);
-                    var logMax = Math.log2(Math.max.apply(null, state.scale.map(function(n){return n.freq;})) * 1.22);
-                    var h = dom.pitchCanvas.clientHeight;
+                    let logMin = Math.log2(Math.min.apply(null, state.scale.map(function(n){return n.freq;})) * 0.82);
+                    let logMax = Math.log2(Math.max.apply(null, state.scale.map(function(n){return n.freq;})) * 1.22);
+                    let h = dom.pitchCanvas.clientHeight;
                     function localFreqToY(freq) {
-                        var pct = (Math.log2(freq) - logMin) / (logMax - logMin);
+                        let pct = (Math.log2(freq) - logMin) / (logMax - logMin);
                         return h - pct * (h - 40) - 20;
                     }
                     state.hopFromY = localFreqToY(oldNote.note.freq);
@@ -1151,7 +1151,7 @@
                     state.hopStartTime = performance.now();
                 }
                 state.currentNoteIndex = newIndex;
-                var noteItem = state.melody[newIndex];
+                let noteItem = state.melody[newIndex];
                 state.currentTargetMidi = noteItem.note.midi;
                 state.currentTargetFreq = noteItem.note.freq;
                 state.currentNoteSamples = [];
@@ -1160,11 +1160,11 @@
         }
 
         // Pitch detection
-        var detectedFreq = 0;
-        var confidence = 0;
+        const detectedFreq = ;
+        const confidence = ;
         if (state.micActive && detector) {
-            var timeData = engine.getTimeData();
-            var result = detector.detect(timeData);
+            let timeData = engine.getTimeData();
+            let result = detector.detect(timeData);
             detectedFreq = result.freq;
             confidence = result.confidence;
         }
@@ -1173,13 +1173,13 @@
 
         // Update left-panel pitch display
         if (detectedFreq > 0 && confidence > 0.2) {
-            var noteInfo = freqToNote(detectedFreq);
+            let noteInfo = freqToNote(detectedFreq);
             state.detectedNote = noteInfo;
 
             dom.detectedNote.textContent = noteInfo.name + noteInfo.octave;
             dom.detectedFreq.textContent = detectedFreq.toFixed(1) + ' Hz';
 
-            var centsPct = 50 + (noteInfo.cents / 50) * 50;
+            const centsPct =  + (noteInfo.cents / 50) * 50;
             dom.centsMarker.style.left = Math.max(5, Math.min(95, centsPct)) + '%';
 
             if (Math.abs(noteInfo.cents) <= 10)       dom.centsMarker.className = 'in-tune';
@@ -1200,7 +1200,7 @@
 
         // Record sample for current note
         if (state.isPlaying && !state.isPaused && detectedFreq > 0 && confidence >= 0.2) {
-            var cents = 1200 * Math.log2(detectedFreq / state.currentTargetFreq);
+            const cents =  * Math.log2(detectedFreq / state.currentTargetFreq);
             state.currentNoteSamples.push({ freq: detectedFreq, cents: cents, confidence: confidence });
 
             if (state.pitchHistory.length < state.maxHistoryLen) {
@@ -1215,8 +1215,8 @@
 
         // Update note highlighting during playback
         if (state.isPlaying && !state.isPaused && state.currentNoteIndex >= 0) {
-            var targetNote = state.melody[state.currentNoteIndex].note;
-            var isHit = state.detectedNote &&
+            let targetNote = state.melody[state.currentNoteIndex].note;
+            let isHit = state.detectedNote &&
                         state.detectedNote.midi === targetNote.midi &&
                         Math.abs(state.detectedNote.cents) <= 20;
             updateNoteListHighlight(targetNote.midi, isHit);
@@ -1234,10 +1234,10 @@
 
     // ========== PITCH CANVAS ==========
     function drawPitchCanvas() {
-        var canvas = dom.pitchCanvas;
-        var ctx = pitchCtx;
-        var w = canvas.clientWidth;
-        var h = canvas.clientHeight;
+        let canvas = dom.pitchCanvas;
+        let ctx = pitchCtx;
+        let w = canvas.clientWidth;
+        let h = canvas.clientHeight;
 
         ctx.clearRect(0, 0, w, h);
         ctx.fillStyle = '#0d1117';
@@ -1253,14 +1253,14 @@
             return;
         }
 
-        var allFreqs = state.scale.map(function (n) { return n.freq; });
-        var minFreq = Math.min.apply(null, allFreqs) * 0.82;
-        var maxFreq = Math.max.apply(null, allFreqs) * 1.22;
+        let allFreqs = state.scale.map(function (n) { return n.freq; });
+        let minFreq = Math.min.apply(null, allFreqs) * 0.82;
+        let maxFreq = Math.max.apply(null, allFreqs) * 1.22;
 
         function freqToY(freq) {
-            var logMin = Math.log2(minFreq);
-            var logMax = Math.log2(maxFreq);
-            var pct = (Math.log2(freq) - logMin) / (logMax - logMin);
+            let logMin = Math.log2(minFreq);
+            let logMax = Math.log2(maxFreq);
+            let pct = (Math.log2(freq) - logMin) / (logMax - logMin);
             return h - pct * (h - 40) - 20;
         }
 
@@ -1269,9 +1269,9 @@
         }
 
         // Grid lines
-        for (var i = 0; i < state.scale.length; i++) {
-            var note = state.scale[i];
-            var y = freqToY(note.freq);
+        for (const i = ; i < state.scale.length; i++) {
+            let note = state.scale[i];
+            let y = freqToY(note.freq);
             ctx.strokeStyle = 'rgba(48,54,61,0.7)';
             ctx.lineWidth = 1;
             ctx.beginPath();
@@ -1286,27 +1286,27 @@
         }
 
         // Melody blocks — responsive sizing
-        var isMobile = w < 480;
-        var boxH = isMobile ? 18 : 20;
-        var boxHalf = boxH / 2;
-        var cornerRadius = Math.min(5, boxHalf);
-        var fontSize = isMobile ? 9 : 11;
-        var activeFontSize = isMobile ? 9 : 12;
-        var textOffset = isMobile ? 3 : 4;
-        var minBoxWidthForText = isMobile ? 14 : 12;
+        let isMobile = w < 480;
+        let boxH = isMobile ? 18 : 20;
+        let boxHalf = boxH / 2;
+        let cornerRadius = Math.min(5, boxHalf);
+        let fontSize = isMobile ? 9 : 11;
+        let activeFontSize = isMobile ? 9 : 12;
+        let textOffset = isMobile ? 3 : 4;
+        let minBoxWidthForText = isMobile ? 14 : 12;
 
-        var accum = 0;
-        for (var j = 0; j < state.melody.length; j++) {
-            var item = state.melody[j];
-            var x1 = beatToX(accum);
-            var x2 = beatToX(accum + item.duration);
-            var bw = x2 - x1;
-            var y  = freqToY(item.note.freq);
-            var isActive = state.isPlaying && j === state.currentNoteIndex && !state.isPaused;
+        const accum = ;
+        for (const j = ; j < state.melody.length; j++) {
+            let item = state.melody[j];
+            let x1 = beatToX(accum);
+            let x2 = beatToX(accum + item.duration);
+            let bw = x2 - x1;
+            let y = freqToY(item.note.freq);
+            let isActive = state.isPlaying && j === state.currentNoteIndex && !state.isPaused;
 
             // Use rounded rectangles
             if (bw > 2) {
-                var rx = x1, ry = y - boxHalf, rw = bw, rh = boxH;
+                let rx = x1, ry = y - boxHalf, rw = bw, rh = boxH;
                 if (rw > 0 && rw < 2 * cornerRadius) {
                     rw = 2 * cornerRadius;
                 }
@@ -1351,24 +1351,24 @@
             ctx.lineJoin = 'round';
             ctx.lineCap = 'round';
             ctx.beginPath();
-            var started = false;
-            for (var k = 0; k < state.pitchHistory.length; k++) {
-                var pt = state.pitchHistory[k];
+            let started = false;
+            for (const k = ; k < state.pitchHistory.length; k++) {
+                let pt = state.pitchHistory[k];
                 if (!pt.freq || pt.confidence < 0.2) { started = false; continue; }
-                var px = beatToX(pt.beat);
-                var py = freqToY(pt.freq);
+                let px = beatToX(pt.beat);
+                let py = freqToY(pt.freq);
                 if (!started) { ctx.moveTo(px, py); started = true; }
                 else ctx.lineTo(px, py);
             }
             ctx.stroke();
 
             // Glowing dot
-            var last = state.pitchHistory[state.pitchHistory.length - 1];
+            let last = state.pitchHistory[state.pitchHistory.length - 1];
             if (last && last.freq && last.confidence >= 0.2) {
-                var lx = beatToX(last.beat);
-                var ly = freqToY(last.freq);
+                let lx = beatToX(last.beat);
+                let ly = freqToY(last.freq);
 
-                var grad = ctx.createRadialGradient(lx, ly, 0, lx, ly, 12);
+                let grad = ctx.createRadialGradient(lx, ly, 0, lx, ly, 12);
                 grad.addColorStop(0, 'rgba(63,185,80,0.55)');
                 grad.addColorStop(1, 'rgba(63,185,80,0)');
                 ctx.fillStyle = grad;
@@ -1390,22 +1390,22 @@
 
         // Moving target dot
         if (state.isPlaying && !state.isPaused && state.currentNoteIndex >= 0) {
-            var noteItem2 = state.melody[state.currentNoteIndex];
-            var tx = beatToX(state.currentBeat);
-            var ty = freqToY(noteItem2.note.freq);
+            let noteItem2 = state.melody[state.currentNoteIndex];
+            let tx = beatToX(state.currentBeat);
+            let ty = freqToY(noteItem2.note.freq);
 
             // Hop / bounce effect: arc away then settle on the new note
             if (state.hopActive) {
-                var hopElapsed = performance.now() - state.hopStartTime;
-                var hopPct = Math.min(1, hopElapsed / state.hopDuration);
+                let hopElapsed = performance.now() - state.hopStartTime;
+                let hopPct = Math.min(1, hopElapsed / state.hopDuration);
                 // Damped bounce: quick arc up/down past target, then settle
-                var bounce = Math.sin(hopPct * Math.PI) * Math.exp(-hopPct * 3);
-                var diff = state.hopToY - state.hopFromY;
+                let bounce = Math.sin(hopPct * Math.PI) * Math.exp(-hopPct * 3);
+                let diff = state.hopToY - state.hopFromY;
                 ty = state.hopToY + bounce * diff * 0.5;
                 if (hopPct >= 1) state.hopActive = false;
             }
 
-            var grad2 = ctx.createRadialGradient(tx, ty, 0, tx, ty, 18);
+            let grad2 = ctx.createRadialGradient(tx, ty, 0, tx, ty, 18);
             grad2.addColorStop(0, 'rgba(88,166,255,0.45)');
             grad2.addColorStop(1, 'rgba(88,166,255,0)');
             ctx.fillStyle = grad2;
@@ -1429,10 +1429,10 @@
 
     // ========== HISTORY CANVAS ==========
     function drawHistoryCanvas() {
-        var canvas = dom.historyCanvas;
-        var ctx = historyCtx;
-        var w = canvas.clientWidth;
-        var h = canvas.clientHeight;
+        let canvas = dom.historyCanvas;
+        let ctx = historyCtx;
+        let w = canvas.clientWidth;
+        let h = canvas.clientHeight;
 
         ctx.clearRect(0, 0, w, h);
         ctx.fillStyle = '#161b22';
@@ -1447,14 +1447,14 @@
         }
 
         if (state.micActive) {
-            var freqData = engine.getFreqData();
+            let freqData = engine.getFreqData();
             if (freqData && freqData.length > 0) {
-                var barCount = Math.min(freqData.length, 128);
-                var barWidth = w / barCount;
-                for (var i = 0; i < barCount; i++) {
-                    var val = freqData[i] / 255;
-                    var barH = val * (h - 10);
-                    var hue = 210 + val * 40;
+                let barCount = Math.min(freqData.length, 128);
+                let barWidth = w / barCount;
+                for (const i = ; i < barCount; i++) {
+                    let val = freqData[i] / 255;
+                    let barH = val * (h - 10);
+                    const hue =  + val * 40;
                     ctx.fillStyle = 'hsla(' + hue + ',80%,' + (50 + val * 20) + '%,' + (0.4 + val * 0.5) + ')';
                     ctx.fillRect(i * barWidth + 1, h - barH - 2, barWidth - 2, barH);
                 }
@@ -1463,8 +1463,8 @@
 
         // Live score
         if (state.isPlaying && state.noteResults.length > 0) {
-            var liveScore = calculateScore(state.noteResults);
-            var color = liveScore >= 80 ? '#3fb950' : liveScore >= 50 ? '#d29922' : '#f85149';
+            let liveScore = calculateScore(state.noteResults);
+            let color = liveScore >= 80 ? '#3fb950' : liveScore >= 50 ? '#d29922' : '#f85149';
             ctx.fillStyle = color;
             ctx.font = 'bold 15px sans-serif';
             ctx.textAlign = 'right';
