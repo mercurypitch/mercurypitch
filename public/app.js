@@ -87,8 +87,7 @@
             dom.centsMarker       = document.getElementById('cents-marker');
             dom.btnMic            = document.getElementById('btn-mic');
             dom.btnPlay           = document.getElementById('btn-play');
-            dom.btnPause          = document.getElementById('btn-pause');
-            dom.btnStop           = document.getElementById('btn-stop');
+            dom.btnReset          = document.getElementById('btn-reset');
             dom.tempoSlider       = document.getElementById('tempo');
             dom.tempoValue        = document.getElementById('tempo-value');
             dom.pitchCanvas       = document.getElementById('pitch-canvas');
@@ -137,8 +136,7 @@
             dom.tempoSlider.addEventListener('input', onTempoChange);
             dom.btnMic.addEventListener('click', toggleMic);
             dom.btnPlay.addEventListener('click', onPlayClick);
-            dom.btnPause.addEventListener('click', togglePause);
-            dom.btnStop.addEventListener('click', stopPlayback);
+            dom.btnReset.addEventListener('click', stopPlayback);
             dom.btnMetronome.addEventListener('click', toggleMetronome);
             dom.sensitivitySlider.addEventListener('input', onSensitivityChange);
             dom.volumeSlider.addEventListener('input', onVolumeChange);
@@ -642,11 +640,15 @@
         }
     }
 
-    // ========== PLAY BUTTON ==========
+    // ========== PLAY BUTTON (Start / Pause / Continue) ==========
     function onPlayClick() {
-        // In practice mode, Play button is disabled — only Start should work
+        // In practice mode, Play button is disabled — only Start Practice should work
         if (state.playMode === 'practice') return;
-        startPlayback();
+        if (!state.isPlaying) {
+            startPlayback();
+        } else {
+            togglePause();
+        }
     }
 
     // ========== PRACTICE START ==========
@@ -681,8 +683,7 @@
                 state.isPlaying = true;
                 dom.btnPlay.classList.add('active');
                 dom.btnPlay.querySelector('span').textContent = 'Counting';
-                dom.btnPause.disabled = false;
-                dom.btnStop.disabled = false;
+                dom.btnReset.disabled = false;
                 dom.playhead.style.display = 'block';
                 updateRunIndicator();
                 playPrecountClick();
@@ -738,9 +739,8 @@
         }
 
         dom.btnPlay.classList.add('active');
-        dom.btnPlay.querySelector('span').textContent = 'Playing';
-        dom.btnPause.disabled = false;
-        dom.btnStop.disabled  = false;
+        dom.btnPlay.querySelector('span').textContent = 'Pause';
+        dom.btnReset.disabled  = false;
         dom.playhead.style.display = 'block';
 
         hideScoreOverlay();
@@ -762,8 +762,7 @@
         if (state.isPaused) {
             state.isPaused = false;
             state.playStartTime = performance.now() - state.pauseOffset;
-            dom.btnPause.querySelector('span').textContent = 'Pause';
-            dom.btnPlay.querySelector('span').textContent = 'Playing';
+            dom.btnPlay.querySelector('span').textContent = 'Pause';
             dom.btnPlay.classList.add('active');
             engine.resume().then(function () {
                 let ni = melodyNoteAtBeat(state.melody, state.currentBeat);
@@ -772,8 +771,7 @@
         } else {
             state.isPaused   = true;
             state.pauseOffset = performance.now() - state.playStartTime;
-            dom.btnPause.querySelector('span').textContent = 'Resume';
-            dom.btnPlay.querySelector('span').textContent = 'Paused';
+            dom.btnPlay.querySelector('span').textContent = 'Continue';
             dom.btnPlay.classList.remove('active');
             engine.stopTone();
         }
@@ -796,10 +794,8 @@
         engine.stopTone();
 
         dom.btnPlay.classList.remove('active');
-        dom.btnPlay.querySelector('span').textContent = 'Play';
-        dom.btnPause.querySelector('span').textContent = 'Pause';
-        dom.btnPause.disabled = true;
-        dom.btnStop.disabled  = true;
+        dom.btnPlay.querySelector('span').textContent = 'Start';
+        dom.btnReset.disabled  = true;
         dom.playhead.style.display = 'none';
         dom.playhead.style.left = '0px';
 
@@ -849,11 +845,9 @@
                     engine.stopTone();
 
                     dom.btnPlay.classList.remove('active');
-                    dom.btnPlay.querySelector('span').textContent = 'Playing';
-                    dom.btnPause.querySelector('span').textContent = 'Pause';
-                    dom.btnPause.disabled = false;
-                    dom.btnStop.disabled  = false;
-                    dom.playhead.style.display = 'block';
+                    dom.btnPlay.querySelector('span').textContent = 'Start';
+                    dom.btnReset.disabled  = true;
+                    dom.playhead.style.display = 'none';
                     dom.playhead.style.left = '0px';
                     dom.tempoSlider.disabled = false;
                     dom.tempoSlider.style.opacity = '';
@@ -879,9 +873,8 @@
 
                         // Re-enable playback controls
                         dom.btnPlay.classList.add('active');
-                        dom.btnPlay.querySelector('span').textContent = 'Playing';
-                        dom.btnPause.disabled = false;
-                        dom.btnStop.disabled = false;
+                        dom.btnPlay.querySelector('span').textContent = 'Pause';
+                        dom.btnReset.disabled = false;
 
                         let first = state.melody[0];
                         state.currentTargetMidi = first.note.midi;
@@ -912,10 +905,8 @@
         state.pitchScrollOffset = 0;
 
         dom.btnPlay.classList.remove('active');
-        dom.btnPlay.querySelector('span').textContent = 'Play';
-        dom.btnPause.querySelector('span').textContent = 'Pause';
-        dom.btnPause.disabled = true;
-        dom.btnStop.disabled  = true;
+        dom.btnPlay.querySelector('span').textContent = 'Start';
+        dom.btnReset.disabled  = true;
         dom.playhead.style.display = 'none';
 
         dom.tempoSlider.disabled = false;
