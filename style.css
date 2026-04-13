@@ -931,7 +931,6 @@ header h1 {
 #app-tabs {
     display: flex;
     gap: 4px;
-    margin-left: auto;
 }
 
 .app-tab {
@@ -1266,7 +1265,6 @@ header h1 {
 
 /* ===== Mobile Piano Roll ===== */
 @media (max-width: 768px) {
-    #app-tabs { margin-left: 8px; }
     .app-tab { padding: 4px 10px; font-size: 0.72rem; }
     .roll-toolbar { padding: 6px 8px; gap: 4px; }
     .roll-durations { display: none; }
