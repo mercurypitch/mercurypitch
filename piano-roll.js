@@ -151,7 +151,25 @@
         this.presets = loadPresets();
         this.currentPresetName = null;
 
+        // Create Example1 preset with default melody if no presets exist
+        if (Object.keys(this.presets).length === 0) {
+            this._createDefaultPreset();
+        }
+
         this._init();
+    };
+
+    PianoRollEditor.prototype._createDefaultPreset = function () {
+        const defaultNotes = getDefaultMelody();
+        this.presets['Example1'] = {
+            notes: defaultNotes.map(function (n) {
+                return { midi: n.midi, startBeat: n.startBeat, duration: n.duration };
+            }),
+            totalBeats: 20,
+            bpm: 80,
+            scale: this.scale.map(function (s) { return { midi: s.midi, name: s.name, octave: s.octave, freq: s.freq }; })
+        };
+        savePresets(this.presets);
     };
 
     PianoRollEditor.prototype._init = function () {
@@ -219,6 +237,7 @@
                 '<select id="roll-preset-select" class="roll-preset-select">' +
                     '<option value="">— Load Preset —</option>' +
                 '</select>' +
+                '<button id="roll-new-preset" class="roll-new-btn" title="New empty preset">+</button>' +
                 '<input type="text" id="roll-preset-name" class="roll-preset-name" placeholder="Preset name">' +
                 '<button id="roll-save-preset" class="roll-save-btn" title="Save preset">Save</button>' +
                 '<button id="roll-clear-all" class="roll-ctrl-btn danger" title="Clear all notes">Clear</button>' +
@@ -645,6 +664,9 @@
         document.getElementById('roll-preset-select').addEventListener('change', function (e) {
             if (e.target.value) self._loadPreset(e.target.value);
         });
+        document.getElementById('roll-new-preset').addEventListener('click', function () {
+            self._newPreset();
+        });
 
         // Play controls
         document.getElementById('roll-play-btn').addEventListener('click', function () {
@@ -1011,6 +1033,7 @@
                 return { midi: n.midi, startBeat: n.startBeat, duration: n.duration };
             }),
             totalBeats: this.totalBeats,
+            bpm: this.bpm,
             scale: this.scale.map(function (s) { return { midi: s.midi, name: s.name, octave: s.octave, freq: s.freq }; })
         };
         savePresets(this.presets);
@@ -1031,6 +1054,9 @@
             return { id: generateId(), midi: n.midi, startBeat: n.startBeat, duration: n.duration };
         });
         this.totalBeats = preset.totalBeats || 16;
+        if (preset.bpm) {
+            this.bpm = preset.bpm;
+        }
         this.selectedNoteId = null;
         this._calculateDimensions();
         this._drawAll();
@@ -1040,6 +1066,9 @@
         localStorage.setItem(LAST_PRESET_KEY, name);
         setSelectedPresetName(name);
         document.getElementById('roll-preset-name').value = name;
+
+        // Notify practice tab that preset was loaded (with BPM)
+        window.dispatchEvent(new CustomEvent('pitchperfect:presetLoaded', { detail: { name: name, bpm: this.bpm } }));
     };
 
     PianoRollEditor.prototype._loadLastPreset = function () {
@@ -1051,6 +1080,20 @@
             this._drawGrid();
             this._updateBeatInfo();
         }
+    };
+
+    PianoRollEditor.prototype._newPreset = function () {
+        this.notes = [];
+        this.totalBeats = 16;
+        this.selectedNoteId = null;
+        this.currentPresetName = '';
+        localStorage.removeItem(LAST_PRESET_KEY);
+        setSelectedPresetName('');
+        document.getElementById('roll-preset-select').value = '';
+        document.getElementById('roll-preset-name').value = '';
+        this._calculateDimensions();
+        this._drawAll();
+        this._updateBeatInfo();
     };
 
     // ========== PLAYBACK ==========
