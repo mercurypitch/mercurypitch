@@ -1050,6 +1050,24 @@ header h1 {
     border-color: var(--accent);
 }
 
+.roll-new-btn {
+    padding: 5px 10px;
+    border: 1px solid var(--green);
+    border-radius: 5px;
+    background: var(--green-dim);
+    color: var(--green);
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.12s ease;
+    min-width: 30px;
+}
+
+.roll-new-btn:hover {
+    background: var(--green);
+    color: #fff;
+}
+
 .roll-save-btn {
     padding: 5px 10px;
     border: 1px solid var(--border);

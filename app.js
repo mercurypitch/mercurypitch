@@ -159,9 +159,45 @@
                 populatePresetSelect();
             });
 
+            // Listen for preset load (with BPM)
+            window.addEventListener('pitchperfect:presetLoaded', function (e) {
+                populatePresetSelect();
+                // Sync BPM from preset to app UI
+                if (e.detail && e.detail.bpm) {
+                    state.bpm = e.detail.bpm;
+                    dom.tempoSlider.value = state.bpm;
+                    dom.tempoValue.textContent = state.bpm;
+                }
+                // Sync preset melody to practice
+                if (pianoRollEditor) {
+                    let melody = pianoRollEditor.getMelody();
+                    if (melody.length > 0) {
+                        state.melody = melody;
+                        state.totalBeats = melodyTotalBeats(state.melody);
+                        resizeCanvases();
+                        renderNoteList();
+                        drawPitchCanvas();
+                    }
+                }
+            });
+
             // Build initial UI
             buildScale();
             populatePresetSelect();
+
+            // Init piano roll briefly to ensure Example1 is created and loaded
+            switchTab('editor');
+            if (pianoRollEditor) {
+                pianoRollEditor._loadPreset('Example1');
+                // Sync to practice tab
+                let melody = pianoRollEditor.getMelody();
+                if (melody.length > 0) {
+                    state.melody = melody;
+                    state.totalBeats = melodyTotalBeats(state.melody);
+                }
+            }
+            switchTab('practice');
+
             dom.octaveValue.textContent = state.octave;
             renderNoteList();
             updateScoreDisplay(null);
