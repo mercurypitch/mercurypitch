@@ -272,16 +272,18 @@
         const mainArea = document.createElement('div');
         mainArea.className = 'roll-main-area';
 
-        // Piano (fixed left column)
+        // Grid wrapper (contains piano keys + grid, stacked vertically)
+        const gridWrapper = document.createElement('div');
+        gridWrapper.className = 'roll-grid-wrapper';
+
+        // Piano (fixed left column, inside wrapper below ruler)
         this.pianoCanvas = document.createElement('canvas');
         this.pianoCanvas.className = 'roll-piano';
         this.pianoCanvas.style.width = CONFIG.PIANO_WIDTH + 'px';
-        this.pianoCanvas.style.height = '0px';
 
-        // Ruler (top, above grid)
+        // Ruler (top, full width above grid)
         const rulerContainer = document.createElement('div');
         rulerContainer.className = 'roll-ruler-container';
-        rulerContainer.style.marginLeft = CONFIG.PIANO_WIDTH + 'px';
 
         this.rulerCanvas = document.createElement('canvas');
         this.rulerCanvas.className = 'roll-ruler';
@@ -295,9 +297,12 @@
         this.gridCanvas.className = 'roll-grid';
         this.gridContainer.appendChild(this.gridCanvas);
 
-        mainArea.appendChild(this.pianoCanvas);
-        mainArea.appendChild(rulerContainer);
-        mainArea.appendChild(this.gridContainer);
+        // Assemble: wrapper holds ruler (for positioning), piano + grid stacked
+        gridWrapper.appendChild(rulerContainer);
+        gridWrapper.appendChild(this.pianoCanvas);
+        gridWrapper.appendChild(this.gridContainer);
+
+        mainArea.appendChild(gridWrapper);
 
         el.appendChild(mainArea);
 
