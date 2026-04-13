@@ -159,7 +159,6 @@
         this._bindEvents();
         this._calculateDimensions();
         this._drawAll();
-        this._loadLastPreset();
     };
 
     // ========== DOM BUILD ==========
