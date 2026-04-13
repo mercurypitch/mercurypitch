@@ -19,7 +19,7 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies
-        run: npm install
+        run: cd public && npm install
 
       - name: Syntax check (Node.js --check)
         run: cd public && npm run check:syntax
