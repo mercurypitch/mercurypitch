@@ -430,6 +430,11 @@
             octave: state.octave
         });
 
+        // Load current melody into editor if it exists
+        if (state.melody.length > 0) {
+            pianoRollEditor.setMelody(state.melody);
+        }
+
         // Wire up audio engine for playback
         window.pianoRollAudioEngine = engine;
 
