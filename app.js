@@ -116,6 +116,7 @@
             dom.sensitivityValue  = document.getElementById('sensitivity-value');
             dom.tabPractice      = document.getElementById('tab-practice');
             dom.tabEditor       = document.getElementById('tab-editor');
+            dom.appTitle         = document.getElementById('app-title');
 
             pitchCtx   = dom.pitchCanvas.getContext('2d');
             historyCtx = dom.historyCanvas.getContext('2d');
@@ -140,6 +141,7 @@
             // Tab switching
             dom.tabPractice.addEventListener('click', function () { switchTab('practice'); });
             dom.tabEditor.addEventListener('click', function () { switchTab('editor'); });
+            dom.appTitle.addEventListener('click', function () { switchTab('practice'); });
 
             // Mode buttons
             dom.btnOnce.addEventListener('click', function () { onModeChange('once'); });
