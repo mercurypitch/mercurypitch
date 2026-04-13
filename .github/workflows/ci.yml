@@ -23,18 +23,3 @@ jobs:
 
       - name: Syntax check (Node.js --check)
         run: npm run check:syntax
-
-  deploy-preview:
-    needs: check
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Deploy PR preview to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./
-          destination_dir: previews/pr-${{ github.event.number }}
