@@ -30,3 +30,4 @@ build/
 .cache/
 *.tmp
 .deploy.log
+info.md
