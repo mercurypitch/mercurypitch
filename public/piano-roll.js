@@ -296,6 +296,17 @@
                 '</button>' +
             '</div>' +
             '<div class="roll-sep"></div>' +
+            '<div class="roll-instrument-group">' +
+                '<label class="instrument-label" style="font-size:0.72rem;color:var(--text-secondary)">Instr:</label>' +
+                '<select id="roll-instrument-select" class="roll-instrument-select">' +
+                    '<option value="sine">Sine</option>' +
+                    '<option value="piano">Piano</option>' +
+                    '<option value="organ">Organ</option>' +
+                    '<option value="strings">Strings</option>' +
+                    '<option value="synth">Synth</option>' +
+                '</select>' +
+            '</div>' +
+            '<div class="roll-sep"></div>' +
             '<div class="roll-play-group">' +
                 '<button id="roll-play-btn" class="roll-play-btn" title="Start playback">' +
                     '<svg id="roll-play-icon" viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>' +
@@ -851,6 +862,14 @@
         document.getElementById('roll-reset-btn').addEventListener('click', function () {
             self._resetMelody();
         });
+
+        // Instrument selection
+        const instrumentSelect = document.getElementById('roll-instrument-select');
+        if (instrumentSelect) {
+            instrumentSelect.addEventListener('change', function (e) {
+                self.setInstrument(e.target.value);
+            });
+        }
 
         // Grid canvas events
         this.gridCanvas.addEventListener('mousedown', function (e) { self._onGridMouseDown(e); });
@@ -1674,7 +1693,8 @@
                 if (Math.abs(note.startBeat - currentBeat) < 0.05) {
                     let noteInfo = this._midiToNoteInfo(note.midi);
                     if (noteInfo) {
-                        window.pianoRollAudioEngine.playTone(noteInfo.freq);
+                        let durationMs = note.duration * (60000 / this.bpm);
+                        window.pianoRollAudioEngine.playNote(noteInfo.freq, durationMs);
                     }
                 }
             }
@@ -1984,6 +2004,16 @@
         }
         this._calculateDimensions();
         this._drawAll();
+    };
+
+    /**
+     * Set the instrument for audio playback.
+     * Passes through to the audio engine.
+     */
+    PianoRollEditor.prototype.setInstrument = function (type) {
+        if (window.pianoRollAudioEngine) {
+            window.pianoRollAudioEngine.setInstrument(type);
+        }
     };
 
     PianoRollEditor.prototype.destroy = function () {

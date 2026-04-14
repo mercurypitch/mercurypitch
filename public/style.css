@@ -1182,6 +1182,28 @@ header h1 {
     cursor: not-allowed;
 }
 
+/* Instrument select */
+.roll-instrument-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.roll-instrument-select {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--text-primary);
+    padding: 4px 8px;
+    font-size: 0.72rem;
+    max-width: 100px;
+    outline: none;
+}
+
+.roll-instrument-select:focus {
+    border-color: var(--accent);
+}
+
 /* Action buttons for vocal techniques */
 .roll-action-group {
     display: flex;
