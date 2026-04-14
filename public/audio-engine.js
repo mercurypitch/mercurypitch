@@ -21,6 +21,198 @@ class AudioEngine {
         this.bufferSize = 2048;
         this.timeBuffer = new Float32Array(this.bufferSize);
         this.freqBuffer = null;
+
+        // Instrument synthesizer
+        this.currentInstrument = 'sine';
+        this._activeVoices = new Map(); // Note ID -> { oscillators, gain }
+    }
+
+    /**
+     * Set the current instrument type.
+     * Options: 'sine', 'piano', 'organ', 'strings', 'synth'
+     */
+    setInstrument(type) {
+        this.currentInstrument = type;
+    }
+
+    /**
+     * Get available instrument names.
+     */
+    getInstruments() {
+        return ['sine', 'piano', 'organ', 'strings', 'synth'];
+    }
+
+    /**
+     * Create a voice (oscillator stack) for an instrument.
+     * Returns { oscillators, gain }
+     */
+    _createVoice(freq) {
+        const ctx = this.audioCtx;
+        const now = ctx.currentTime;
+
+        const masterGain = ctx.createGain();
+        masterGain.gain.value = 0;
+        masterGain.connect(ctx.destination);
+
+        const oscillators = [];
+
+        switch (this.currentInstrument) {
+            case 'piano': {
+                // Piano: fundamental + harmonics (additive synthesis)
+                const harmonics = [1, 2, 3, 4, 5, 6];
+                const amplitudes = [1, 0.5, 0.3, 0.2, 0.1, 0.05];
+                harmonics.forEach((h, i) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.value = freq * h;
+                    gain.gain.value = amplitudes[i] * 0.15;
+                    osc.connect(gain);
+                    gain.connect(masterGain);
+                    osc.start(now);
+                    oscillators.push(osc);
+                });
+                // ADSR envelope for piano
+                masterGain.gain.setValueAtTime(0, now);
+                masterGain.gain.linearRampToValueAtTime(0.8, now + 0.01); // Attack
+                masterGain.gain.exponentialRampToValueAtTime(0.4, now + 0.1); // Decay
+                masterGain.gain.linearRampToValueAtTime(0.3, now + 0.2); // Sustain
+                break;
+            }
+            case 'organ': {
+                // Organ: fundamental + 5th + octave (drawbar style)
+                const ratios = [1, 1.5, 2, 3, 4];
+                const levels = [0.5, 0.3, 0.4, 0.2, 0.15];
+                ratios.forEach((r, i) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.value = freq * r;
+                    gain.gain.value = levels[i] * 0.2;
+                    osc.connect(gain);
+                    gain.connect(masterGain);
+                    osc.start(now);
+                    oscillators.push(osc);
+                });
+                masterGain.gain.setValueAtTime(0.7, now);
+                break;
+            }
+            case 'strings': {
+                // Strings: two detuned oscillators + warmth
+                const detunes = [0, -8, 8];
+                const levels = [0.4, 0.3, 0.3];
+                detunes.forEach((detune, i) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.value = freq;
+                    osc.detune.value = detune;
+                    gain.gain.value = levels[i] * 0.1;
+                    osc.connect(gain);
+                    gain.connect(masterGain);
+                    osc.start(now);
+                    oscillators.push(osc);
+                });
+                // Slow attack
+                masterGain.gain.setValueAtTime(0, now);
+                masterGain.gain.linearRampToValueAtTime(0.6, now + 0.15);
+                break;
+            }
+            case 'synth': {
+                // Synth: square + sawtooth combo
+                const osc1 = ctx.createOscillator();
+                const gain1 = ctx.createGain();
+                osc1.type = 'square';
+                osc1.frequency.value = freq;
+                gain1.gain.value = 0.08;
+                osc1.connect(gain1);
+                gain1.connect(masterGain);
+                osc1.start(now);
+                oscillators.push(osc1);
+
+                const osc2 = ctx.createOscillator();
+                const gain2 = ctx.createGain();
+                osc2.type = 'sawtooth';
+                osc2.frequency.value = freq;
+                osc2.detune.value = 5;
+                gain2.gain.value = 0.06;
+                osc2.connect(gain2);
+                gain2.connect(masterGain);
+                osc2.start(now);
+                oscillators.push(osc2);
+
+                masterGain.gain.setValueAtTime(0.5, now);
+                break;
+            }
+            default: // sine
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.value = freq;
+                gain.gain.value = 0.15;
+                osc.connect(gain);
+                gain.connect(masterGain);
+                osc.start(now);
+                oscillators.push(osc);
+                masterGain.gain.setValueAtTime(0.7, now);
+                break;
+        }
+
+        return { oscillators, gain: masterGain };
+    }
+
+    /**
+     * Play a note with the current instrument.
+     * Returns a note ID for stopping.
+     */
+    playNote(freq, durationMs) {
+        if (!this.audioCtx) return null;
+
+        const noteId = Date.now() + Math.random();
+        const voice = this._createVoice(freq);
+        this._activeVoices.set(noteId, voice);
+
+        // Auto-stop after duration
+        if (durationMs) {
+            setTimeout(() => this.stopNote(noteId), durationMs);
+        }
+
+        return noteId;
+    }
+
+    /**
+     * Stop a specific note by ID.
+     */
+    stopNote(noteId) {
+        const voice = this._activeVoices.get(noteId);
+        if (!voice) return;
+
+        const ctx = this.audioCtx;
+        const now = ctx.currentTime;
+
+        // Release envelope
+        voice.gain.gain.cancelScheduledValues(now);
+        voice.gain.gain.setValueAtTime(voice.gain.gain.value, now);
+        voice.gain.gain.linearRampToValueAtTime(0, now + 0.1);
+
+        // Stop oscillators after release
+        setTimeout(() => {
+            voice.oscillators.forEach(osc => {
+                try { osc.stop(); osc.disconnect(); } catch (e) {}
+            });
+            try { voice.gain.disconnect(); } catch (e) {}
+        }, 150);
+
+        this._activeVoices.delete(noteId);
+    }
+
+    /**
+     * Stop all active notes.
+     */
+    stopAllNotes() {
+        this._activeVoices.forEach((voice, noteId) => {
+            this.stopNote(noteId);
+        });
     }
 
     /**
