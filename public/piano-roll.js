@@ -1683,13 +1683,13 @@
         const self = this;
 
         if (this._playbackState === 'stopped') {
-            // Start fresh playback
+            // Start fresh playback — use playhead position if user dragged it while stopped
             const sortedNotes = this.notes.slice().sort(function (a, b) { return a.startBeat - b.startBeat; });
             const lastNote = sortedNotes[sortedNotes.length - 1];
             // unused: var totalDuration = (lastNote.startBeat + lastNote.duration) * (60000 / this.bpm);
 
             this._playbackState = 'playing';
-            this._playStartTime = performance.now();
+            this._playStartTime = performance.now() - (this._activeBeat / this.bpm) * 60000;
             this._pauseStartTime = 0;
             this._playAnimationId = requestAnimationFrame(function () { self._animatePlayback(); });
 
@@ -1793,7 +1793,7 @@
                     let noteInfo = this._midiToNoteInfo(note.midi);
                     if (noteInfo) {
                         let durationMs = note.duration * (60000 / this.bpm);
-                        window.pianoRollAudioEngine.playNote(noteInfo.freq, durationMs);
+                        window.pianoRollAudioEngine.playNote(noteInfo.freq, durationMs, note.effectType);
                     }
                 }
             }

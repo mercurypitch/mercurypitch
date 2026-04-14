@@ -44,9 +44,11 @@ class AudioEngine {
 
     /**
      * Create a voice (oscillator stack) for an instrument.
-     * Returns { oscillators, gain }
+     * Returns { oscillators, gain, lfo }
+     * @param {number} freq - Base frequency
+     * @param {string} effectType - Optional effect: 'vibrato', 'slide-up', 'slide-down', 'ease-in', 'ease-out'
      */
-    _createVoice(freq) {
+    _createVoice(freq, effectType) {
         const ctx = this.audioCtx;
         const now = ctx.currentTime;
 
@@ -158,18 +160,82 @@ class AudioEngine {
                 break;
         }
 
-        return { oscillators, gain: masterGain };
+        // Apply effect modulation (vibrato LFO or slide frequency sweep)
+        if (effectType) {
+            const mainOsc = oscillators[0];
+            if (!mainOsc) {
+                // For sine default, oscillators[0] is the single oscillator
+                const osc = oscillators.length > 0 ? oscillators[0] : null;
+                if (osc) this._applyEffectModulation(osc, effectType, freq, durationMs, now);
+            } else {
+                this._applyEffectModulation(mainOsc, effectType, freq, durationMs, now);
+            }
+        }
+
+        return { oscillators, gain: masterGain, lfo: osc._effectLfo };
+    }
+
+    /**
+     * Apply audio effect modulation to an oscillator.
+     */
+    _applyEffectModulation(osc, effectType, freq, durationMs, now) {
+        if (!osc) return;
+
+        switch (effectType) {
+            case 'vibrato': {
+                // Vibrato: LFO modulates frequency ±5 cents for a wobble effect
+                const lfo = this.audioCtx.createOscillator();
+                const lfoGain = this.audioCtx.createGain();
+                lfo.type = 'sine';
+                lfo.frequency.value = 5; // 5 Hz wobble
+                lfoGain.gain.value = freq * 0.005; // ±0.5% frequency deviation
+                lfo.connect(lfoGain);
+                lfoGain.connect(osc.frequency);
+                lfo.start(now);
+                osc._effectLfo = lfo;
+                osc._effectLfoGain = lfoGain;
+                break;
+            }
+            case 'slide-up': {
+                // Slide up: frequency ramps from -1 octave to +0.5 octave over duration
+                const slideDur = durationMs ? durationMs / 1000 : 0.5;
+                osc.frequency.setValueAtTime(freq * 0.5, now);
+                osc.frequency.exponentialRampToValueAtTime(freq * 1.5, now + slideDur);
+                break;
+            }
+            case 'slide-down': {
+                // Slide down: frequency ramps from +1 octave to -0.5 octave over duration
+                const slideDur = durationMs ? durationMs / 1000 : 0.5;
+                osc.frequency.setValueAtTime(freq * 2, now);
+                osc.frequency.exponentialRampToValueAtTime(freq * 0.75, now + slideDur);
+                break;
+            }
+            case 'ease-in': {
+                // Ease in: start flat, slide up in the second half of the note
+                const slideDur = durationMs ? durationMs / 1000 : 0.5;
+                osc.frequency.setValueAtTime(freq, now);
+                osc.frequency.exponentialRampToValueAtTime(freq * 1.25, now + slideDur);
+                break;
+            }
+            case 'ease-out': {
+                // Ease out: start at +0.5 octave, ease back to target frequency
+                const slideDur = durationMs ? durationMs / 1000 : 0.5;
+                osc.frequency.setValueAtTime(freq * 1.5, now);
+                osc.frequency.exponentialRampToValueAtTime(freq, now + slideDur);
+                break;
+            }
+        }
     }
 
     /**
      * Play a note with the current instrument.
      * Returns a note ID for stopping.
      */
-    playNote(freq, durationMs) {
+    playNote(freq, durationMs, effectType) {
         if (!this.audioCtx) return null;
 
         const noteId = Date.now() + Math.random();
-        const voice = this._createVoice(freq);
+        const voice = this._createVoice(freq, effectType);
         this._activeVoices.set(noteId, voice);
 
         // Auto-stop after duration
@@ -199,7 +265,12 @@ class AudioEngine {
         setTimeout(() => {
             voice.oscillators.forEach(osc => {
                 try { osc.stop(); osc.disconnect(); } catch (e) {}
+                try { if (osc._effectLfo) { osc._effectLfo.stop(); osc._effectLfo.disconnect(); } } catch (e) {}
+                try { if (osc._effectLfoGain) { osc._effectLfoGain.disconnect(); } } catch (e) {}
             });
+            if (voice.lfo) {
+                try { voice.lfo.stop(); voice.lfo.disconnect(); } catch (e) {}
+            }
             try { voice.gain.disconnect(); } catch (e) {}
         }, 150);
 
