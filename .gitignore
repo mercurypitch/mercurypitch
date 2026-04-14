@@ -29,4 +29,4 @@ build/
 # Cache and temp
 .cache/
 *.tmp
-*.temp
+.deploy.log
