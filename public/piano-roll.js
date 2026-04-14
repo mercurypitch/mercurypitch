@@ -1683,6 +1683,11 @@
         const self = this;
 
         if (this._playbackState === 'stopped') {
+            // Initialize audio context on first play (browser requirement)
+            if (window.pianoRollAudioEngine) {
+                window.pianoRollAudioEngine.init();
+            }
+
             // Start fresh playback — use playhead position if user dragged it while stopped
             const sortedNotes = this.notes.slice().sort(function (a, b) { return a.startBeat - b.startBeat; });
             const lastNote = sortedNotes[sortedNotes.length - 1];

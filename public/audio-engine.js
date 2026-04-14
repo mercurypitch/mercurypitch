@@ -163,16 +163,20 @@ class AudioEngine {
         // Apply effect modulation (vibrato LFO or slide frequency sweep)
         if (effectType) {
             const mainOsc = oscillators[0];
-            if (!mainOsc) {
-                // For sine default, oscillators[0] is the single oscillator
-                const osc = oscillators.length > 0 ? oscillators[0] : null;
-                if (osc) this._applyEffectModulation(osc, effectType, freq, durationMs, now);
-            } else {
+            if (mainOsc) {
                 this._applyEffectModulation(mainOsc, effectType, freq, durationMs, now);
             }
         }
 
-        return { oscillators, gain: masterGain, lfo: osc._effectLfo };
+        // Collect all LFOs attached to oscillators so they can be stopped later
+        const lfos = [];
+        const lfoGains = [];
+        for (const osc of oscillators) {
+            if (osc._effectLfo) lfos.push(osc._effectLfo);
+            if (osc._effectLfoGain) lfoGains.push(osc._effectLfoGain);
+        }
+
+        return { oscillators, gain: masterGain, lfos, lfoGains };
     }
 
     /**
@@ -261,16 +265,17 @@ class AudioEngine {
         voice.gain.gain.setValueAtTime(voice.gain.gain.value, now);
         voice.gain.gain.linearRampToValueAtTime(0, now + 0.1);
 
-        // Stop oscillators after release
+        // Stop oscillators and LFOs after release
         setTimeout(() => {
             voice.oscillators.forEach(osc => {
                 try { osc.stop(); osc.disconnect(); } catch (e) {}
-                try { if (osc._effectLfo) { osc._effectLfo.stop(); osc._effectLfo.disconnect(); } } catch (e) {}
-                try { if (osc._effectLfoGain) { osc._effectLfoGain.disconnect(); } } catch (e) {}
             });
-            if (voice.lfo) {
-                try { voice.lfo.stop(); voice.lfo.disconnect(); } catch (e) {}
-            }
+            (voice.lfos || []).forEach(lfo => {
+                try { lfo.stop(); lfo.disconnect(); } catch (e) {}
+            });
+            (voice.lfoGains || []).forEach(g => {
+                try { g.disconnect(); } catch (e) {}
+            });
             try { voice.gain.disconnect(); } catch (e) {}
         }, 150);
 
