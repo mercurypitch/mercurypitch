@@ -397,13 +397,17 @@ export const App: Component = () => {
                 }}
               >
                 <option value="major">Major</option>
-                <option value="minor">Minor</option>
-                <option value="pentatonic-maj">Pentatonic Major</option>
-                <option value="pentatonic-min">Pentatonic Minor</option>
-                <option value="blues">Blues</option>
-                <option value="chromatic">Chromatic</option>
+                <option value="natural-minor">Minor (Natural)</option>
+                <option value="harmonic-minor">Harmonic Minor</option>
+                <option value="melodic-minor">Melodic Minor</option>
                 <option value="dorian">Dorian</option>
                 <option value="mixolydian">Mixolydian</option>
+                <option value="phrygian">Phrygian</option>
+                <option value="lydian">Lydian</option>
+                <option value="pentatonic-major">Pentatonic Major</option>
+                <option value="pentatonic-minor">Pentatonic Minor</option>
+                <option value="blues">Blues</option>
+                <option value="chromatic">Chromatic</option>
               </select>
 
               <button

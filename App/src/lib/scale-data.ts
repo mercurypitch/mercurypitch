@@ -47,18 +47,43 @@ export const SCALE_DEFINITIONS: Record<string, ScaleDefinition> = {
     degrees: [0, 2, 4, 5, 7, 9, 11, 12],
     description: 'Bright and happy — the most common scale',
   },
-  'minor': {
-    name: 'minor',
+  'natural-minor': {
+    name: 'natural-minor',
     degrees: [0, 2, 3, 5, 7, 8, 10, 12],
     description: 'Sad and introspective',
   },
-  'pentatonic-maj': {
-    name: 'pentatonic-maj',
+  'harmonic-minor': {
+    name: 'harmonic-minor',
+    degrees: [0, 2, 3, 5, 7, 8, 11, 12],
+    description: 'Minor with raised 7th — exotic tension',
+  },
+  'melodic-minor': {
+    name: 'melodic-minor',
+    degrees: [0, 2, 3, 5, 7, 9, 11, 12],
+    description: 'Jazz minor — raised 6th and 7th ascending',
+  },
+  'phrygian': {
+    name: 'phrygian',
+    degrees: [0, 1, 3, 5, 7, 8, 10, 12],
+    description: 'Dark, flamenco-style — flat 2nd',
+  },
+  'lydian': {
+    name: 'lydian',
+    degrees: [0, 2, 4, 6, 7, 9, 11, 12],
+    description: 'Dreamy, floating — raised 4th',
+  },
+  'locrian': {
+    name: 'locrian',
+    degrees: [0, 1, 3, 5, 6, 8, 10, 12],
+    description: 'Diminished, unstable — half-diminished',
+  },
+  'pentatonic-major': {
+    name: 'pentatonic-major',
     degrees: [0, 2, 4, 7, 9, 12],
     description: 'Folk and rock, no half steps',
   },
-  'pentatonic-min': {
-    name: 'pentatonic-min',
+  'pentatonic-minor': {
+    name: 'pentatonic-minor',
     degrees: [0, 3, 5, 7, 10, 12],
     description: 'Blues and rock, expressive',
   },
