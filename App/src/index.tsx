@@ -11,4 +11,5 @@ if (!root) {
   throw new Error('#root element not found');
 }
 
-render(() => <App />, root);
+// Add loaded class once app mounts to prevent FOUC
+render(() => <App onMounted={() => root.classList.add('loaded')} />, root);

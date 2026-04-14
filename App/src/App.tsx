@@ -36,7 +36,11 @@ let audioEngine: AudioEngine;
 let melodyEngine: MelodyEngine;
 let practiceEngine: PracticeEngine;
 
-export const App: Component = () => {
+interface AppProps {
+  onMounted?: () => void;
+}
+
+export const App: Component<AppProps> = (props) => {
   // ── Derived state ──────────────────────────────────────────
 
   const totalBeats = createMemo(() => melodyTotalBeats(melodyStore.items));
@@ -189,6 +193,9 @@ export const App: Component = () => {
       window.removeEventListener('pitchperfect:presetSaved', handlePresetSaved as EventListener);
       window.removeEventListener('pitchperfect:presetLoaded', handlePresetLoaded as EventListener);
     });
+
+    // Signal that app has fully initialized (for FOUC prevention)
+    props.onMounted?.();
   });
 
   // ── Playback handlers ───────────────────────────────────────
