@@ -1727,6 +1727,7 @@
 
     PianoRollEditor.prototype._resetMelody = function () {
         this._playbackState = 'stopped';
+        this._activeBeat = 0;
         if (this._playAnimationId) {
             cancelAnimationFrame(this._playAnimationId);
             this._playAnimationId = null;
