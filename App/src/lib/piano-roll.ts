@@ -43,6 +43,7 @@ export interface PianoRollOptions {
 
 export type PlaybackState = 'stopped' | 'playing' | 'paused';
 export type ActiveTool = 'place' | 'erase' | 'select';
+export type EffectType = 'slide-up' | 'slide-down' | 'ease-in' | 'ease-out' | 'vibrato';
 
 export class PianoRollEditor {
   private container: HTMLElement;
@@ -89,13 +90,16 @@ export class PianoRollEditor {
   private selectedDuration = 1;
   private nextNoteId = 1;
 
+  // Effect state
+  private selectedEffect: EffectType | null = null;
+
   // Callbacks
   private onMelodyChange?: (melody: MelodyItem[]) => void;
   private onNoteSelect?: (note: MelodyItem | null) => void;
 
   // Presets
   private presetData: Record<string, {
-    notes: Array<{ midi: number; startBeat: number; duration: number }>;
+    notes: Array<{ midi: number; startBeat: number; duration: number; effectType?: string; linkedTo?: number[] }>;
     totalBeats: number;
     bpm: number;
     scale: Array<{ midi: number; name: string; octave: number; freq: number }>;
@@ -229,6 +233,8 @@ export class PianoRollEditor {
         midi: n.note.midi,
         startBeat: n.startBeat,
         duration: n.duration,
+        effectType: n.effectType,
+        linkedTo: n.linkedTo,
       })),
       totalBeats: this.totalBeats,
       bpm: this.bpm,
@@ -266,12 +272,20 @@ export class PianoRollEditor {
         octave: 4,
         freq: 440,
       };
-      return {
+      const item: MelodyItem = {
         id: this.nextNoteId++,
         note: { midi: n.midi, name: noteInfo.name, octave: noteInfo.octave, freq: noteInfo.freq },
         startBeat: n.startBeat,
         duration: n.duration,
       };
+      // Restore effect data if present
+      if (n.effectType) {
+        item.effectType = n.effectType as EffectType;
+      }
+      if (n.linkedTo) {
+        item.linkedTo = n.linkedTo;
+      }
+      return item;
     });
 
     this.totalBeats = preset.totalBeats || 16;
@@ -323,6 +337,15 @@ export class PianoRollEditor {
           <button class="roll-tool-btn" data-tool="select" title="Select notes">
             <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M3 5h2V3c-1.1 0-2 .9-2 2zm0 8h2v-2H3v2zm4 8h2v-2H7v2zM3 9h2V7H3v2zm10-6h-2v2h2V3zm6 0v2h2c0-1.1-.9-2-2-2z"/></svg>
           </button>
+        </div>
+        <div class="roll-sep"></div>
+        <div class="roll-effects-group">
+          <span class="roll-effects-label">Effects:</span>
+          <button class="roll-effect-btn slide-up" data-effect="slide-up" title="Slide up to next note">↑Slide</button>
+          <button class="roll-effect-btn slide-down" data-effect="slide-down" title="Slide down to next note">↓Slide</button>
+          <button class="roll-effect-btn ease-in" data-effect="ease-in" title="Ease in">EaseIn</button>
+          <button class="roll-effect-btn ease-out" data-effect="ease-out" title="Ease out">EaseOut</button>
+          <button class="roll-effect-btn vibrato" data-effect="vibrato" title="Vibrato effect">Vibrato</button>
         </div>
         <div class="roll-sep"></div>
         <div class="roll-octave-group">
@@ -440,6 +463,22 @@ export class PianoRollEditor {
         this.activeTool = tool;
         container.querySelectorAll('.roll-tool-btn').forEach((b) => b.classList.remove('active'));
         btn.classList.add('active');
+      });
+    });
+
+    // Effect buttons
+    container.querySelectorAll('.roll-effect-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const effect = (btn as HTMLElement).dataset.effect as EffectType;
+        // Toggle effect selection
+        if (this.selectedEffect === effect) {
+          this.selectedEffect = null;
+          btn.classList.remove('active');
+        } else {
+          this.selectedEffect = effect;
+          container.querySelectorAll('.roll-effect-btn').forEach((b) => b.classList.remove('active'));
+          btn.classList.add('active');
+        }
       });
     });
 
@@ -696,6 +735,14 @@ export class PianoRollEditor {
       duration,
       startBeat: snappedBeat,
     };
+
+    // Apply effect if one is selected
+    if (this.selectedEffect) {
+      item.effectType = this.selectedEffect;
+      if (this.selectedEffect === 'slide-up' || this.selectedEffect === 'slide-down') {
+        item.linkedTo = [];
+      }
+    }
 
     this.melody.push(item);
     this.selectedNoteId = id;
@@ -1104,15 +1151,27 @@ export class PianoRollEditor {
 
       let x = note.startBeat * this.beatWidth;
       let y = rowIdx * this.rowHeight;
-      const w = note.duration * this.beatWidth;
+      let w = note.duration * this.beatWidth;
       const h = this.rowHeight - 2;
-      const ry = y + 1;
+      let ry = y + 1;
 
       if (w < 2) continue;
 
       const isSelected = note.id === this.selectedNoteId;
       const isActive = highlightActive && this.activeBeat >= note.startBeat && this.activeBeat < note.startBeat + note.duration;
       const cornerRadius = 4;
+
+      // Diagonal rendering for slide notes
+      let diagY = 0;
+      if (!isActive && note.effectType && (note.effectType === 'slide-up' || note.effectType === 'slide-down') && note.linkedTo && note.linkedTo.length > 0) {
+        const targetId = note.linkedTo[0];
+        const target = this.melody.find((n) => n.id === targetId);
+        if (target) {
+          const targetRow = this.midiToRow(target.note.midi);
+          diagY = (targetRow - rowIdx) * this.rowHeight;
+          diagY = Math.max(-h * 0.45, Math.min(h * 0.45, diagY));
+        }
+      }
 
       // Shadow for active vs normal notes
       if (isActive) {
@@ -1127,9 +1186,21 @@ export class PianoRollEditor {
         ctx.shadowOffsetY = 1;
       }
 
-      // Draw rounded rect
+      // Draw note block with diagonal skew for slides
       ctx.beginPath();
-      if (w < 2 * cornerRadius) {
+      if (diagY !== 0) {
+        // Draw parallelogram shape for slides
+        ctx.moveTo(x + cornerRadius, ry + diagY / 2);
+        ctx.lineTo(x + w - cornerRadius, ry + diagY / 2);
+        ctx.quadraticCurveTo(x + w, ry + diagY / 2, x + w, ry + diagY / 2 + cornerRadius);
+        ctx.lineTo(x + w, ry + h + diagY / 2 - cornerRadius);
+        ctx.quadraticCurveTo(x + w, ry + h + diagY / 2, x + w - cornerRadius, ry + h + diagY / 2);
+        ctx.lineTo(x + cornerRadius, ry + h + diagY / 2);
+        ctx.quadraticCurveTo(x, ry + h + diagY / 2, x, ry + h + diagY / 2 - cornerRadius);
+        ctx.lineTo(x, ry + diagY / 2 + cornerRadius);
+        ctx.quadraticCurveTo(x, ry + diagY / 2, x + cornerRadius, ry + diagY / 2);
+        ctx.closePath();
+      } else if (w < 2 * cornerRadius) {
         ctx.roundRect(x, ry, 2 * cornerRadius, h, [cornerRadius, cornerRadius, cornerRadius, cornerRadius]);
       } else {
         ctx.roundRect(x, ry, w, h, cornerRadius);
@@ -1160,6 +1231,35 @@ export class PianoRollEditor {
       ctx.shadowColor = 'transparent';
       ctx.shadowBlur = 0;
       ctx.shadowOffsetY = 0;
+
+      // Wavy top edge for vibrato notes
+      if (!isActive && note.effectType === 'vibrato' && w > 14) {
+        const waveAmp = 2.5;
+        const wavePeriod = w / 3;
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        for (let wx = 0; wx <= w; wx++) {
+          const wy = ry + 2 + Math.sin((wx / wavePeriod) * Math.PI * 2) * waveAmp;
+          if (wx === 0) {
+            ctx.moveTo(x + wx, wy);
+          } else {
+            ctx.lineTo(x + wx, wy);
+          }
+        }
+        ctx.stroke();
+      }
+
+      // Effect badge on top-right of notes with effects
+      if (note.effectType && w > 18) {
+        const badgeColor = note.effectType === 'vibrato' ? '#ff6b6b' :
+          note.effectType === 'slide-up' || note.effectType === 'slide-down' ? '#4ecdc4' :
+            '#ffe66d';
+        ctx.fillStyle = badgeColor;
+        ctx.beginPath();
+        ctx.arc(x + w - 5, ry + 5, 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
 
       // Note name text (only when wide enough and not active)
       if (w > 18 && !isActive) {

@@ -27,6 +27,9 @@ export interface MelodyNote {
   freq: number;
 }
 
+/** Effect type for note modifications */
+export type EffectType = 'slide-up' | 'slide-down' | 'ease-in' | 'ease-out' | 'vibrato';
+
 /** A melody item used by the audio engine and piano roll */
 export interface MelodyItem {
   /** Unique identifier for the note block */
@@ -39,6 +42,10 @@ export interface MelodyItem {
   startBeat: number;
   /** Velocity (0-127, default 100) */
   velocity?: number;
+  /** Effect type applied to this note */
+  effectType?: EffectType;
+  /** IDs of linked notes (for slides/ease: next note; for vibrato: start note) */
+  linkedTo?: number[];
 }
 
 /** Scale degree definition */

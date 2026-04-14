@@ -1050,6 +1050,51 @@ header h1 {
     color: var(--accent);
 }
 
+/* Effect buttons */
+.roll-effects-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.roll-effects-label {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-right: 2px;
+}
+
+.roll-effect-btn {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 5px 8px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 0.12s ease;
+}
+
+.roll-effect-btn:hover {
+    border-color: var(--accent);
+    color: var(--text-primary);
+}
+
+.roll-effect-btn.active {
+    border-color: var(--accent);
+    background: var(--accent-dim);
+    color: var(--accent);
+}
+
+/* Effect-specific colors */
+.roll-effect-btn.slide-up { border-left: 2px solid #4ecdc4; }
+.roll-effect-btn.slide-down { border-left: 2px solid #4ecdc4; }
+.roll-effect-btn.ease-in { border-left: 2px solid #ffe66d; }
+.roll-effect-btn.ease-out { border-left: 2px solid #ffe66d; }
+.roll-effect-btn.vibrato { border-left: 2px solid #ff6b6b; }
+
 .roll-sep {
     width: 1px;
     height: 22px;
