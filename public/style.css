@@ -1133,6 +1133,22 @@ header h1 {
     color: #fff;
 }
 
+.roll-share-btn {
+    padding: 5px 10px;
+    border: 1px solid var(--green);
+    border-radius: 5px;
+    background: var(--green-dim);
+    color: var(--green);
+    font-size: 0.72rem;
+    cursor: pointer;
+    transition: all 0.12s ease;
+}
+
+.roll-share-btn:hover {
+    background: var(--green);
+    color: #fff;
+}
+
 /* Play controls in toolbar */
 .roll-play-group {
     display: flex;
@@ -1180,6 +1196,45 @@ header h1 {
 .roll-reset-btn:disabled {
     opacity: 0.35;
     cursor: not-allowed;
+}
+
+/* Share button */
+.roll-share-btn {
+    padding: 5px 10px;
+    border: 1px solid var(--green);
+    border-radius: 5px;
+    background: var(--green-dim);
+    color: var(--green);
+    font-size: 0.72rem;
+    cursor: pointer;
+    transition: all 0.12s ease;
+}
+
+.roll-share-btn:hover {
+    background: var(--green);
+    color: #fff;
+}
+
+/* Scale mode select */
+.roll-mode-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.roll-mode-select {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--text-primary);
+    padding: 4px 8px;
+    font-size: 0.72rem;
+    max-width: 140px;
+    outline: none;
+}
+
+.roll-mode-select:focus {
+    border-color: var(--accent);
 }
 
 /* Action buttons for vocal techniques */

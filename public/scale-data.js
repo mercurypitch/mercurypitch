@@ -8,6 +8,40 @@ const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 
 // Semitone offsets from C for a major scale (W-W-H-W-W-W-H)
 const MAJOR_SCALE_INTERVALS = [0, 2, 4, 5, 7, 9, 11, 12];
 
+// Scale mode definitions (semitone intervals from root)
+const SCALE_MODES = {
+    'major': [0, 2, 4, 5, 7, 9, 11, 12],
+    'natural-minor': [0, 2, 3, 5, 7, 8, 10, 12],
+    'harmonic-minor': [0, 2, 3, 5, 7, 8, 11, 12],
+    'melodic-minor': [0, 2, 3, 5, 7, 9, 11, 12],
+    'dorian': [0, 2, 3, 5, 7, 9, 10, 12],
+    'mixolydian': [0, 2, 4, 5, 7, 9, 10, 12],
+    'phrygian': [0, 1, 3, 5, 7, 8, 10, 12],
+    'lydian': [0, 2, 4, 6, 7, 9, 11, 12],
+    'locrian': [0, 1, 3, 5, 6, 8, 10, 12],
+    'pentatonic-major': [0, 2, 4, 7, 9, 12],
+    'pentatonic-minor': [0, 3, 5, 7, 10, 12],
+    'blues': [0, 3, 5, 6, 7, 10, 12],
+    'chromatic': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+};
+
+// Scale mode display names
+const SCALE_MODE_NAMES = {
+    'major': 'Major (Ionian)',
+    'natural-minor': 'Natural Minor (Aeolian)',
+    'harmonic-minor': 'Harmonic Minor',
+    'melodic-minor': 'Melodic Minor',
+    'dorian': 'Dorian',
+    'mixolydian': 'Mixolydian',
+    'phrygian': 'Phrygian',
+    'lydian': 'Lydian',
+    'locrian': 'Locrian',
+    'pentatonic-major': 'Pentatonic Major',
+    'pentatonic-minor': 'Pentatonic Minor',
+    'blues': 'Blues',
+    'chromatic': 'Chromatic (Free)'
+};
+
 // Map key name to semitone offset from C
 const KEY_OFFSETS = {
     'C': 0, 'D': 2, 'E': 4, 'F': 5, 'G': 7, 'A': 9, 'Bb': 10
@@ -75,23 +109,57 @@ function buildMajorScale(keyName, octave) {
 }
 
 /**
- * Build a major scale spanning multiple octaves.
- * Returns a flat array of notes from highest to lowest pitch.
- * Each octave shares the same key pattern.
+ * Build a scale for a given key, octave, and mode.
+ * Returns array of { name, freq, midi, degree } objects.
+ * Includes the octave note at the top.
  */
-function buildMultiOctaveScale(keyName, startOctave, numOctaves) {
+function buildScale(keyName, octave, mode) {
+    mode = mode || 'major';
+    const keyOffset = KEY_OFFSETS[keyName] || 0;
+    const intervals = SCALE_MODES[mode] || SCALE_MODES['major'];
+    const baseMidi = noteToMidi('C', octave) + keyOffset;
+
+    return intervals.map((interval, i) => {
+        const midi = baseMidi + interval;
+        const noteIndex = ((midi % 12) + 12) % 12;
+        const noteOctave = Math.floor(midi / 12) - 1;
+        return {
+            name: NOTE_NAMES[noteIndex],
+            octave: noteOctave,
+            freq: midiToFreq(midi),
+            midi: midi,
+            degree: i + 1
+        };
+    });
+}
+
+/**
+ * Build a major scale (for backwards compatibility).
+ */
+function buildMajorScale(keyName, octave) {
+    return buildScale(keyName, octave, 'major');
+}
+
+/**
+ * Build a scale spanning multiple octaves.
+ * Returns a flat array of notes from highest to lowest pitch.
+ * Each octave shares the same key/mode pattern.
+ */
+function buildMultiOctaveScale(keyName, startOctave, numOctaves, mode) {
+    mode = mode || 'major';
     const notes = [];
+    const intervals = SCALE_MODES[mode] || SCALE_MODES['major'];
     for (let o = 0; o < numOctaves; o++) {
         const octave = startOctave + o;
         const keyOffset = KEY_OFFSETS[keyName] || 0;
         const baseMidi = noteToMidi('C', octave) + keyOffset;
 
-        for (let i = 0; i < MAJOR_SCALE_INTERVALS.length; i++) {
-            const midi = baseMidi + MAJOR_SCALE_INTERVALS[i];
+        for (let i = 0; i < intervals.length; i++) {
+            const midi = baseMidi + intervals[i];
             const noteIndex = ((midi % 12) + 12) % 12;
             const noteOctave = Math.floor(midi / 12) - 1;
             // Skip the octave root (last interval) for all but the last octave
-            if (i === MAJOR_SCALE_INTERVALS.length - 1 && o < numOctaves - 1) continue;
+            if (i === intervals.length - 1 && o < numOctaves - 1) continue;
             notes.push({
                 name: NOTE_NAMES[noteIndex],
                 octave: noteOctave,
@@ -102,6 +170,39 @@ function buildMultiOctaveScale(keyName, startOctave, numOctaves) {
         }
     }
     return notes; // highest to lowest (MIDI descending)
+}
+
+/**
+ * Check if a MIDI note is in the given scale/mode.
+ * Returns true if the note's pitch class is part of the scale.
+ */
+function isNoteInScale(midi, keyName, mode) {
+    mode = mode || 'major';
+    const keyOffset = KEY_OFFSETS[keyName] || 0;
+    const intervals = SCALE_MODES[mode] || SCALE_MODES['major'];
+    const pitchClass = ((midi - keyOffset) % 12 + 12) % 12;
+    return intervals.includes(pitchClass);
+}
+
+/**
+ * Get all 12 semitones for chromatic/free mode.
+ */
+function buildChromaticScale(startOctave) {
+    const notes = [];
+    const baseMidi = noteToMidi('C', startOctave);
+    for (let i = 0; i < 12; i++) {
+        const midi = baseMidi + i;
+        const noteIndex = ((midi % 12) + 12) % 12;
+        const noteOctave = Math.floor(midi / 12) - 1;
+        notes.push({
+            name: NOTE_NAMES[noteIndex],
+            octave: noteOctave,
+            freq: midiToFreq(midi),
+            midi: midi,
+            degree: i + 1
+        });
+    }
+    return notes;
 }
 
 /**
