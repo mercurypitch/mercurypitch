@@ -266,6 +266,7 @@
                 '<button id="roll-new-preset" class="roll-new-btn" title="New empty preset">+</button>' +
                 '<input type="text" id="roll-preset-name" class="roll-preset-name" placeholder="Preset name">' +
                 '<button id="roll-save-preset" class="roll-save-btn" title="Save preset">Save</button>' +
+                '<button id="roll-share-preset" class="roll-share-btn" title="Share preset (copy URL)">Share</button>' +
                 '<button id="roll-clear-all" class="roll-ctrl-btn danger" title="Clear all notes">Clear</button>' +
             '</div>' +
             '<div class="roll-sep"></div>' +
@@ -828,6 +829,9 @@
         document.getElementById('roll-save-preset').addEventListener('click', function () {
             self._savePreset();
         });
+        document.getElementById('roll-share-preset').addEventListener('click', function () {
+            self._sharePreset();
+        });
         document.getElementById('roll-clear-all').addEventListener('click', function () {
             self._clearAll();
         });
@@ -884,6 +888,9 @@
 
         // Populate preset select
         this._populatePresetSelect();
+
+        // Load preset from URL if present (shareable URL feature)
+        this._loadFromUrl();
     };
 
     // ========== MOUSE EVENTS ==========
@@ -1520,6 +1527,70 @@
         this._calculateDimensions();
         this._drawAll();
         this._updateBeatInfo();
+    };
+
+    // ========== SHARE PRESET URL ==========
+    PianoRollEditor.prototype._sharePreset = function () {
+        const presetData = {
+            n: this.notes.map(function (note) {
+                return {
+                    m: note.midi,
+                    s: note.startBeat,
+                    d: note.duration,
+                    e: note.effectType || null,
+                    l: note.linkedTo || []
+                };
+            }),
+            b: this.totalBeats,
+            p: this.bpm
+        };
+        const json = JSON.stringify(presetData);
+        const encoded = btoa(unescape(encodeURIComponent(json)));
+        const url = window.location.origin + window.location.pathname + '?preset=' + encoded;
+
+        // Copy to clipboard
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(url).then(function () {
+                alert('Share URL copied to clipboard!');
+            }).catch(function () {
+                prompt('Copy this URL:', url);
+            });
+        } else {
+            prompt('Copy this URL:', url);
+        }
+    };
+
+    /** Load preset from URL parameter on page load */
+    PianoRollEditor.prototype._loadFromUrl = function () {
+        const params = new URLSearchParams(window.location.search);
+        const encoded = params.get('preset');
+        if (!encoded) return;
+
+        try {
+            const json = decodeURIComponent(escape(atob(encoded)));
+            const data = JSON.parse(json);
+            if (!data.n || !Array.isArray(data.n)) return;
+
+            this.notes = data.n.map(function (n) {
+                return {
+                    id: generateId(),
+                    midi: n.m,
+                    startBeat: n.s,
+                    duration: n.d,
+                    effectType: n.e || null,
+                    linkedTo: Array.isArray(n.l) ? n.l : []
+                };
+            });
+            this.totalBeats = data.b || 16;
+            if (data.p) this.bpm = data.p;
+            this._clearSelection();
+            this._calculateDimensions();
+            this._drawAll();
+            this._updateBeatInfo();
+            this._updateHint();
+        } catch (e) {
+            console.warn('Failed to load preset from URL:', e);
+        }
     };
 
     // ========== PLAYBACK ==========

@@ -1133,6 +1133,22 @@ header h1 {
     color: #fff;
 }
 
+.roll-share-btn {
+    padding: 5px 10px;
+    border: 1px solid var(--green);
+    border-radius: 5px;
+    background: var(--green-dim);
+    color: var(--green);
+    font-size: 0.72rem;
+    cursor: pointer;
+    transition: all 0.12s ease;
+}
+
+.roll-share-btn:hover {
+    background: var(--green);
+    color: #fff;
+}
+
 /* Play controls in toolbar */
 .roll-play-group {
     display: flex;
