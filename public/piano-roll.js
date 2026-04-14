@@ -115,6 +115,7 @@
         this.bpm = options.bpm || 80;
         this.octave = options.octave || 4;
         this.numOctaves = options.numOctaves || 1;
+        this.mode = options.mode || 'major'; // Scale mode: major, natural-minor, etc.
 
         // Note data
         this.notes = []; // { id, midi, startBeat, duration }
@@ -258,6 +259,24 @@
                 '</button>' +
             '</div>' +
             '<div class="roll-sep"></div>' +
+            '<div class="roll-mode-group">' +
+                '<label class="mode-label" style="font-size:0.72rem;color:var(--text-secondary)">Scale:</label>' +
+                '<select id="roll-mode-select" class="roll-mode-select">' +
+                    '<option value="major">Major</option>' +
+                    '<option value="natural-minor">Natural Minor</option>' +
+                    '<option value="harmonic-minor">Harmonic Minor</option>' +
+                    '<option value="melodic-minor">Melodic Minor</option>' +
+                    '<option value="dorian">Dorian</option>' +
+                    '<option value="mixolydian">Mixolydian</option>' +
+                    '<option value="phrygian">Phrygian</option>' +
+                    '<option value="lydian">Lydian</option>' +
+                    '<option value="pentatonic-major">Pentatonic</option>' +
+                    '<option value="pentatonic-minor">Minor Pentatonic</option>' +
+                    '<option value="blues">Blues</option>' +
+                    '<option value="chromatic">Chromatic</option>' +
+                '</select>' +
+            '</div>' +
+            '<div class="roll-sep"></div>' +
             '<div class="roll-grid-ctrl">' +
                 '<button class="roll-ctrl-btn" id="roll-add-beat" title="Add 4 beats">+4b</button>' +
                 '<button class="roll-ctrl-btn" id="roll-remove-beat" title="Remove last 4 beats">-4b</button>' +
@@ -270,6 +289,7 @@
                 '<button id="roll-new-preset" class="roll-new-btn" title="New empty preset">+</button>' +
                 '<input type="text" id="roll-preset-name" class="roll-preset-name" placeholder="Preset name">' +
                 '<button id="roll-save-preset" class="roll-save-btn" title="Save preset">Save</button>' +
+                '<button id="roll-share-preset" class="roll-share-btn" title="Share preset (copy URL)">Share</button>' +
                 '<button id="roll-clear-all" class="roll-ctrl-btn danger" title="Clear all notes">Clear</button>' +
             '</div>' +
             '<div class="roll-sep"></div>' +
@@ -822,6 +842,15 @@
             });
         }
 
+        // Scale mode controls
+        const rollModeSelect = document.getElementById('roll-mode-select');
+        if (rollModeSelect) {
+            rollModeSelect.value = this.mode;
+            rollModeSelect.addEventListener('change', function (e) {
+                self.setMode(e.target.value);
+            });
+        }
+
         // Grid controls
         document.getElementById('roll-add-beat').addEventListener('click', function () {
             self.addBeats(4);
@@ -833,6 +862,9 @@
         // Preset management
         document.getElementById('roll-save-preset').addEventListener('click', function () {
             self._savePreset();
+        });
+        document.getElementById('roll-share-preset').addEventListener('click', function () {
+            self._sharePreset();
         });
         document.getElementById('roll-clear-all').addEventListener('click', function () {
             self._clearAll();
@@ -907,6 +939,9 @@
 
         // Populate preset select
         this._populatePresetSelect();
+
+        // Load preset from URL if present (shareable URL feature)
+        this._loadFromUrl();
     };
 
     // ========== MOUSE EVENTS ==========
@@ -1554,6 +1589,70 @@
         this._updateBeatInfo();
     };
 
+    // ========== SHARE PRESET URL ==========
+    PianoRollEditor.prototype._sharePreset = function () {
+        const presetData = {
+            n: this.notes.map(function (note) {
+                return {
+                    m: note.midi,
+                    s: note.startBeat,
+                    d: note.duration,
+                    e: note.effectType || null,
+                    l: note.linkedTo || []
+                };
+            }),
+            b: this.totalBeats,
+            p: this.bpm
+        };
+        const json = JSON.stringify(presetData);
+        const encoded = btoa(unescape(encodeURIComponent(json)));
+        const url = window.location.origin + window.location.pathname + '?preset=' + encoded;
+
+        // Copy to clipboard
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(url).then(function () {
+                alert('Share URL copied to clipboard!');
+            }).catch(function () {
+                prompt('Copy this URL:', url);
+            });
+        } else {
+            prompt('Copy this URL:', url);
+        }
+    };
+
+    /** Load preset from URL parameter on page load */
+    PianoRollEditor.prototype._loadFromUrl = function () {
+        const params = new URLSearchParams(window.location.search);
+        const encoded = params.get('preset');
+        if (!encoded) return;
+
+        try {
+            const json = decodeURIComponent(escape(atob(encoded)));
+            const data = JSON.parse(json);
+            if (!data.n || !Array.isArray(data.n)) return;
+
+            this.notes = data.n.map(function (n) {
+                return {
+                    id: generateId(),
+                    midi: n.m,
+                    startBeat: n.s,
+                    duration: n.d,
+                    effectType: n.e || null,
+                    linkedTo: Array.isArray(n.l) ? n.l : []
+                };
+            });
+            this.totalBeats = data.b || 16;
+            if (data.p) this.bpm = data.p;
+            this._clearSelection();
+            this._calculateDimensions();
+            this._drawAll();
+            this._updateBeatInfo();
+            this._updateHint();
+        } catch (e) {
+            console.warn('Failed to load preset from URL:', e);
+        }
+    };
+
     // ========== PLAYBACK ==========
     PianoRollEditor.prototype._playMelody = function () {
         if (this.notes.length === 0) return;
@@ -1980,7 +2079,22 @@
         this.numOctaves = n;
         const app = window.pitchPerfectApp;
         if (app) {
-            this.scale = buildMultiOctaveScale(app.key || 'C', this.octave, this.numOctaves);
+            this.scale = buildMultiOctaveScale(app.key || 'C', this.octave, this.numOctaves, this.mode);
+        }
+        this._calculateDimensions();
+        this._drawAll();
+    };
+
+    /**
+     * Set the scale mode (major, minor, etc.)
+     * Rebuilds the scale and redraws.
+     */
+    PianoRollEditor.prototype.setMode = function (mode) {
+        if (mode === this.mode) return;
+        this.mode = mode;
+        const app = window.pitchPerfectApp;
+        if (app) {
+            this.scale = buildMultiOctaveScale(app.key || 'C', this.octave, this.numOctaves, this.mode);
         }
         this._calculateDimensions();
         this._drawAll();
