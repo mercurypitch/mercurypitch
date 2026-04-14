@@ -140,6 +140,10 @@
         this.boxEndX = 0;
         this.boxEndY = 0;
 
+        // Seeking state (ruler drag-to-seek)
+        this.isSeeking = false;
+        this.seekStartX = 0;
+
         // Playback state
         this._playbackState = 'stopped'; // 'stopped' | 'playing' | 'paused'
         this._playAnimationId = null;
@@ -350,12 +354,14 @@
         statusBar.className = 'roll-status';
         statusBar.innerHTML =
             '<span id="roll-note-info">Click on the grid to place notes</span>' +
+            '<span id="roll-timeline-info">Bar 1/' + Math.ceil(this.totalBeats / CONFIG.BEATS_PER_BAR) + ' | Beat 1</span>' +
             '<span id="roll-beat-info">' + this.totalBeats + ' beats</span>';
         el.appendChild(statusBar);
 
         // Context hint
         this.hintEl = statusBar.querySelector('#roll-note-info');
         this.beatInfoEl = statusBar.querySelector('#roll-beat-info');
+        this.timelineInfoEl = statusBar.querySelector('#roll-timeline-info');
     };
 
     // ========== DIMENSIONS ==========
@@ -874,6 +880,23 @@
         this.gridContainer.addEventListener('scroll', function () {
             self.rulerCanvas.style.transform = 'translateX(' + (-self.gridContainer.scrollLeft) + 'px)';
             self.gridScrollX = self.gridContainer.scrollLeft;
+        });
+
+        // Ruler drag-to-seek (click and drag on ruler to scrub playback position)
+        this.rulerCanvas.addEventListener('mousedown', function (e) {
+            self.isSeeking = true;
+            self.seekStartX = e.clientX;
+            self._seekToRulerPosition(e);
+        });
+
+        document.addEventListener('mousemove', function (e) {
+            if (self.isSeeking) {
+                self._seekToRulerPosition(e);
+            }
+        });
+
+        document.addEventListener('mouseup', function () {
+            self.isSeeking = false;
         });
 
         // Window resize
@@ -1420,6 +1443,15 @@
         this.beatInfoEl.textContent = this.totalBeats + ' beats | ' + (this.totalBeats / CONFIG.BEATS_PER_BAR) + ' bars | ' + this.notes.length + ' notes';
     };
 
+    /** Update the timeline info display (bar/beat position during playback) */
+    PianoRollEditor.prototype._updateTimelineInfo = function (beat) {
+        if (!this.timelineInfoEl) return;
+        const totalBars = Math.ceil(this.totalBeats / CONFIG.BEATS_PER_BAR);
+        const currentBar = Math.floor(beat / CONFIG.BEATS_PER_BAR) + 1;
+        const currentBeat = Math.floor(beat % CONFIG.BEATS_PER_BAR) + 1;
+        this.timelineInfoEl.textContent = 'Bar ' + currentBar + '/' + totalBars + ' | Beat ' + currentBeat;
+    };
+
     // ========== PRESETS ==========
     PianoRollEditor.prototype._populatePresetSelect = function () {
         const sel = document.getElementById('roll-preset-select');
@@ -1598,6 +1630,25 @@
         this._drawGrid();
     };
 
+    PianoRollEditor.prototype._seekToRulerPosition = function (e) {
+        const rect = this.rulerCanvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const beat = Math.max(0, Math.min(this.totalBeats, x / this.beatWidth));
+        const targetScroll = beat * this.beatWidth - rect.width / 2;
+        this.gridContainer.scrollLeft = Math.max(0, targetScroll);
+
+        // Update playhead position visually and timeline
+        this._activeBeat = beat;
+        this._updateTimelineInfo(beat);
+        this._drawGridWithPlayhead();
+
+        // If playback is active, also update the playback start time so
+        // playback continues from the new position on mouseup
+        if (this._playbackState === 'playing') {
+            this._playStartTime = performance.now() - (beat / this.bpm) * 60000;
+        }
+    };
+
     PianoRollEditor.prototype._animatePlayback = function () {
         if (this._playbackState !== 'playing') return;
         const self = this;
@@ -1631,6 +1682,7 @@
 
         // Highlight active notes
         this._activeBeat = currentBeat;
+        this._updateTimelineInfo(currentBeat);
         this._drawGridWithPlayhead();
 
         if (currentBeat >= lastNote.startBeat + lastNote.duration) {
