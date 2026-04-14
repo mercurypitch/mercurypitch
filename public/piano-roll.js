@@ -115,6 +115,7 @@
         this.bpm = options.bpm || 80;
         this.octave = options.octave || 4;
         this.numOctaves = options.numOctaves || 1;
+        this.mode = options.mode || 'major'; // Scale mode: major, natural-minor, etc.
 
         // Note data
         this.notes = []; // { id, midi, startBeat, duration }
@@ -256,6 +257,24 @@
                 '<button id="roll-octaves-plus" class="octave-btn" title="More octaves" style="width:18px;height:18px;">' +
                     '<svg viewBox="0 0 24 24" width="12" height="12"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>' +
                 '</button>' +
+            '</div>' +
+            '<div class="roll-sep"></div>' +
+            '<div class="roll-mode-group">' +
+                '<label class="mode-label" style="font-size:0.72rem;color:var(--text-secondary)">Scale:</label>' +
+                '<select id="roll-mode-select" class="roll-mode-select">' +
+                    '<option value="major">Major</option>' +
+                    '<option value="natural-minor">Natural Minor</option>' +
+                    '<option value="harmonic-minor">Harmonic Minor</option>' +
+                    '<option value="melodic-minor">Melodic Minor</option>' +
+                    '<option value="dorian">Dorian</option>' +
+                    '<option value="mixolydian">Mixolydian</option>' +
+                    '<option value="phrygian">Phrygian</option>' +
+                    '<option value="lydian">Lydian</option>' +
+                    '<option value="pentatonic-major">Pentatonic</option>' +
+                    '<option value="pentatonic-minor">Minor Pentatonic</option>' +
+                    '<option value="blues">Blues</option>' +
+                    '<option value="chromatic">Chromatic</option>' +
+                '</select>' +
             '</div>' +
             '<div class="roll-sep"></div>' +
             '<div class="roll-grid-ctrl">' +
@@ -820,6 +839,15 @@
             rollOctavesMinus.addEventListener('click', function () {
                 self.setNumOctaves(self.numOctaves - 1);
                 if (rollOctavesValue) rollOctavesValue.textContent = self.numOctaves;
+            });
+        }
+
+        // Scale mode controls
+        const rollModeSelect = document.getElementById('roll-mode-select');
+        if (rollModeSelect) {
+            rollModeSelect.value = this.mode;
+            rollModeSelect.addEventListener('change', function (e) {
+                self.setMode(e.target.value);
             });
         }
 
@@ -2051,7 +2079,22 @@
         this.numOctaves = n;
         const app = window.pitchPerfectApp;
         if (app) {
-            this.scale = buildMultiOctaveScale(app.key || 'C', this.octave, this.numOctaves);
+            this.scale = buildMultiOctaveScale(app.key || 'C', this.octave, this.numOctaves, this.mode);
+        }
+        this._calculateDimensions();
+        this._drawAll();
+    };
+
+    /**
+     * Set the scale mode (major, minor, etc.)
+     * Rebuilds the scale and redraws.
+     */
+    PianoRollEditor.prototype.setMode = function (mode) {
+        if (mode === this.mode) return;
+        this.mode = mode;
+        const app = window.pitchPerfectApp;
+        if (app) {
+            this.scale = buildMultiOctaveScale(app.key || 'C', this.octave, this.numOctaves, this.mode);
         }
         this._calculateDimensions();
         this._drawAll();
