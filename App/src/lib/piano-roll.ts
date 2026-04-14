@@ -491,10 +491,12 @@ export class PianoRollEditor {
     // Playback controls
     container.querySelector('#roll-play-btn')?.addEventListener('click', () => {
       this.handlePlayClick();
+      this.onPlayClick?.();
     });
 
     container.querySelector('#roll-reset-btn')?.addEventListener('click', () => {
       this.resetPlayback();
+      this.onResetClick?.();
     });
 
     // Grid mouse events
