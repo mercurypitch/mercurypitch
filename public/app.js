@@ -51,7 +51,12 @@
         hopToY: 0,
         hopDuration: 280,
         loadedPresetName: '',
-        loadedPresetMelody: []
+        loadedPresetMelody: [],
+
+        // Settings config (exposed in Settings tab)
+        detectionThreshold: 0.10,
+        minConfidence: 0.50,
+        minAmplitude: 5
     };
 
     // ========== ACCURACY BANDS ==========
@@ -119,12 +124,32 @@
             dom.volumeValue       = document.getElementById('volume-value');
             dom.tabPractice      = document.getElementById('tab-practice');
             dom.tabEditor       = document.getElementById('tab-editor');
+            dom.tabSettings     = document.getElementById('tab-settings');
             dom.appTitle         = document.getElementById('app-title');
+
+            // Settings panel DOM refs
+            dom.setThreshold      = document.getElementById('set-threshold');
+            dom.setThresholdVal   = document.getElementById('set-threshold-val');
+            dom.setSensitivity    = document.getElementById('set-sensitivity');
+            dom.setSensitivityVal  = document.getElementById('set-sensitivity-val');
+            dom.setMinConfidence  = document.getElementById('set-min-confidence');
+            dom.setMinConfidenceVal = document.getElementById('set-min-confidence-val');
+            dom.setAmplitude      = document.getElementById('set-amplitude');
+            dom.setAmplitudeVal   = document.getElementById('set-amplitude-val');
+            dom.bandPerfect       = document.getElementById('band-perfect');
+            dom.bandExcellent     = document.getElementById('band-excellent');
+            dom.bandGood          = document.getElementById('band-good');
+            dom.bandOkay          = document.getElementById('band-okay');
+            dom.infoThreshold     = document.getElementById('info-threshold');
+            dom.infoSensitivity   = document.getElementById('info-sensitivity');
+            dom.infoConfidence    = document.getElementById('info-confidence');
+            dom.infoAmplitude     = document.getElementById('info-amplitude');
 
             pitchCtx   = dom.pitchCanvas.getContext('2d');
             historyCtx = dom.historyCanvas.getContext('2d');
 
             resizeCanvases();
+            syncSettingsSliders();
             window.addEventListener('resize', resizeCanvases);
 
             // === Event listeners ===
@@ -144,7 +169,18 @@
             // Tab switching
             dom.tabPractice.addEventListener('click', function () { switchTab('practice'); });
             dom.tabEditor.addEventListener('click', function () { switchTab('editor'); });
+            dom.tabSettings.addEventListener('click', function () { switchTab('settings'); });
             dom.appTitle.addEventListener('click', function () { switchTab('practice'); });
+
+            // Settings panel listeners
+            dom.setThreshold.addEventListener('input', onSetThresholdChange);
+            dom.setSensitivity.addEventListener('input', onSetSensitivityChange);
+            dom.setMinConfidence.addEventListener('input', onSetMinConfidenceChange);
+            dom.setAmplitude.addEventListener('input', onSetAmplitudeChange);
+            dom.bandPerfect.addEventListener('change', onBandChange);
+            dom.bandExcellent.addEventListener('change', onBandChange);
+            dom.bandGood.addEventListener('change', onBandChange);
+            dom.bandOkay.addEventListener('change', onBandChange);
 
             // Mode buttons
             dom.btnOnce.addEventListener('click', function () { onModeChange('once'); });
@@ -323,6 +359,90 @@
         localStorage.setItem('pp_volume', vol);
     }
 
+    // ========== SETTINGS PANEL ==========
+    function updateSettingsInfo() {
+        if (!dom.infoThreshold) return;
+        dom.infoThreshold.textContent = state.detectionThreshold.toFixed(2);
+        dom.infoSensitivity.textContent = state.sensitivity;
+        dom.infoConfidence.textContent = Math.round(state.minConfidence * 100) + '%';
+        dom.infoAmplitude.textContent = state.minAmplitude;
+    }
+
+    function syncSettingsSliders() {
+        if (!dom.setThreshold) return;
+        dom.setThreshold.value = Math.round(state.detectionThreshold * 100);
+        dom.setThresholdVal.textContent = state.detectionThreshold.toFixed(2);
+        dom.setSensitivity.value = state.sensitivity;
+        dom.setSensitivityVal.textContent = state.sensitivity;
+        dom.setMinConfidence.value = Math.round(state.minConfidence * 100);
+        dom.setMinConfidenceVal.textContent = Math.round(state.minConfidence * 100) + '%';
+        dom.setAmplitude.value = state.minAmplitude;
+        dom.setAmplitudeVal.textContent = state.minAmplitude;
+        updateSettingsInfo();
+    }
+
+    function onSetThresholdChange() {
+        const val = parseInt(dom.setThreshold.value, 10) / 100;
+        state.detectionThreshold = Math.max(0.05, Math.min(0.20, val));
+        dom.setThresholdVal.textContent = state.detectionThreshold.toFixed(2);
+        updateSettingsInfo();
+        // Recreate detector with new threshold
+        if (detector) {
+            detector = new PitchDetector(engine.getSampleRate(), 2048, state.detectionThreshold, state.sensitivity);
+        }
+    }
+
+    function onSetSensitivityChange() {
+        state.sensitivity = parseInt(dom.setSensitivity.value, 10);
+        dom.setSensitivityVal.textContent = state.sensitivity;
+        updateSettingsInfo();
+        // Sync with main sensitivity slider
+        dom.sensitivitySlider.value = state.sensitivity;
+        dom.sensitivityValue.textContent = state.sensitivity;
+        if (detector) {
+            detector.setSensitivity(state.sensitivity);
+        }
+    }
+
+    function onSetMinConfidenceChange() {
+        const val = parseInt(dom.setMinConfidence.value, 10) / 100;
+        state.minConfidence = Math.max(0.30, Math.min(0.90, val));
+        dom.setMinConfidenceVal.textContent = Math.round(state.minConfidence * 100) + '%';
+        updateSettingsInfo();
+    }
+
+    function onSetAmplitudeChange() {
+        state.minAmplitude = parseInt(dom.setAmplitude.value, 10);
+        dom.setAmplitudeVal.textContent = state.minAmplitude;
+        updateSettingsInfo();
+    }
+
+    function onBandChange() {
+        // Update BANDS array from settings inputs
+        if (dom.bandPerfect && dom.bandExcellent && dom.bandGood && dom.bandOkay) {
+            // Bands array: [0] = perfect (threshold 0), [1] = excellent, [2] = good, [3] = okay, [4] = off
+            const perfectVal = parseInt(dom.bandPerfect.value, 10) || 0;
+            const excellentVal = parseInt(dom.bandExcellent.value, 10) || 10;
+            const goodVal = parseInt(dom.bandGood.value, 10) || 25;
+            const okayVal = parseInt(dom.bandOkay.value, 10) || 50;
+
+            // Re-order: thresholds must be ascending
+            const sorted = [
+                { band: 100, val: perfectVal },
+                { band: 90, val: excellentVal },
+                { band: 75, val: goodVal },
+                { band: 50, val: okayVal }
+            ].sort(function(a, b) { return a.val - b.val; });
+
+            // Rebuild BANDS
+            BANDS.length = 0;
+            for (let i = 0; i < sorted.length; i++) {
+                BANDS.push({ threshold: sorted[i].val, band: sorted[i].band, color: BANDS[i] ? BANDS[i].color : '#58a6ff' });
+            }
+            BANDS.push({ threshold: 999, band: 0, color: '#f85149' });
+        }
+    }
+
     // ========== PRESET MANAGEMENT ==========
     function populatePresetSelect() {
         let presets = {};
@@ -432,16 +552,19 @@
 
         dom.tabPractice.classList.toggle('active', tab === 'practice');
         dom.tabEditor.classList.toggle('active', tab === 'editor');
+        dom.tabSettings.classList.toggle('active', tab === 'settings');
 
         let mainLayout = document.getElementById('main-layout');
         let notesPanel = document.getElementById('notes-panel');
         let pitchArea = document.getElementById('pitch-area');
         let editorPanel = document.getElementById('editor-panel');
+        let settingsPanel = document.getElementById('settings-panel');
 
         if (tab === 'practice') {
             notesPanel.classList.remove('hidden');
             pitchArea.classList.remove('hidden');
             editorPanel.classList.add('hidden');
+            if (settingsPanel) settingsPanel.classList.add('hidden');
             populatePresetSelect();
             mainLayout.style.display = 'flex';
 
@@ -459,14 +582,21 @@
                 dom.octaveValue.textContent = pianoRollEditor.octave;
                 state.octave = pianoRollEditor.octave;
             }
-        } else {
+        } else if (tab === 'editor') {
             notesPanel.classList.add('hidden');
             pitchArea.classList.add('hidden');
+            if (settingsPanel) settingsPanel.classList.add('hidden');
             editorPanel.classList.remove('hidden');
             mainLayout.style.display = 'flex';
 
             // Init piano roll lazily
             initPianoRoll();
+        } else if (tab === 'settings') {
+            notesPanel.classList.add('hidden');
+            pitchArea.classList.add('hidden');
+            editorPanel.classList.add('hidden');
+            if (settingsPanel) settingsPanel.classList.remove('hidden');
+            mainLayout.style.display = 'flex';
         }
     }
 

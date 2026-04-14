@@ -18,6 +18,8 @@ class PitchDetector {
         this.bufferSize = bufferSize;
         this.threshold = threshold;
         this.sensitivity = sensitivity;
+        this.minConfidence = 0.5; // adjustable via setMinConfidence or settings
+        this.minAmplitude = 5; // adjustable, 1-10 scale (lower = more sensitive)
         this.halfBuffer = Math.floor(bufferSize / 2);
 
         // Pre-allocate working arrays
@@ -45,6 +47,20 @@ class PitchDetector {
     }
 
     /**
+     * Update minimum confidence threshold (0.0 - 1.0)
+     */
+    setMinConfidence(conf) {
+        this.minConfidence = Math.max(0, Math.min(1, conf));
+    }
+
+    /**
+     * Update minimum amplitude threshold (1-10, lower = more sensitive)
+     */
+    setMinAmplitude(level) {
+        this.minAmplitude = Math.max(1, Math.min(10, level));
+    }
+
+    /**
      * Detect pitch from a Float32Array audio buffer.
      * Returns { freq, confidence } or { freq: 0, confidence: 0 } if no pitch found.
      */
@@ -53,9 +69,10 @@ class PitchDetector {
         const len = this.halfBuffer;
         const yinBuf = this.yinBuffer;
 
-        // Calculate amplitude threshold based on sensitivity
+        // Calculate amplitude threshold based on sensitivity and minAmplitude setting
         // Higher sensitivity = lower threshold = catches quieter signals
-        const amplitudeThreshold = 0.02 - (this.sensitivity * 0.0018);
+        // minAmplitude 1 = most sensitive (0.02), 10 = least sensitive (0.002)
+        const amplitudeThreshold = (0.02 - (this.sensitivity * 0.0018)) * (this.minAmplitude / 5);
 
         // Step 1: Check if signal is loud enough (RMS)
         let rms = 0;
@@ -149,10 +166,12 @@ class PitchDetector {
         const conf = 1 - yinBuf[tauEstimate];
         this.confidence = Math.max(0, Math.min(1, conf));
 
-        // Improved stability: require minimum confidence based on sensitivity
-        // Lower sensitivity = higher confidence required
-        const minConfidence = 0.7 - (this.sensitivity * 0.04);
-        if (this.confidence < minConfidence) {
+        // Apply minimum confidence threshold (use instance value, default 0.5)
+        const minConf = this.minConfidence !== undefined ? this.minConfidence : 0.5;
+        // Combine with sensitivity-based floor (lower sens = stricter)
+        const sensitivityFloor = 0.7 - (this.sensitivity * 0.04);
+        const effectiveMinConf = Math.max(minConf, sensitivityFloor);
+        if (this.confidence < effectiveMinConf) {
             return { freq: 0, confidence: 0 };
         }
 
