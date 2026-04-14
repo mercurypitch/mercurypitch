@@ -38,6 +38,7 @@
         practiceComplete: false,
         animFrameId: null,
         scale: [],
+        scaleMode: 'major',
         activeTab: 'practice',
         pitchScrollOffset: 0,
         pitchBeatWidth: 40,
@@ -81,6 +82,7 @@
         try {
             // Cache DOM refs
             dom.keySelect      = document.getElementById('key-select');
+            dom.modeSelect     = document.getElementById('mode-select');
             dom.octaveValue    = document.getElementById('octave-value');
             dom.btnOctaveUp    = document.getElementById('btn-octave-up');
             dom.btnOctaveDown  = document.getElementById('btn-octave-down');
@@ -154,6 +156,7 @@
 
             // === Event listeners ===
             dom.keySelect.addEventListener('change', onKeyChange);
+            dom.modeSelect.addEventListener('change', onScaleModeChange);
             dom.btnOctaveUp.addEventListener('click', function () { onOctaveShift(1); });
             dom.btnOctaveDown.addEventListener('click', function () { onOctaveShift(-1); });
             dom.presetSelect.addEventListener('change', onPresetChange);
@@ -285,10 +288,11 @@
 
     // ========== SCALE / MELODY ==========
     function buildScale() {
-        state.key    = dom.keySelect.value;
-        state.octave = parseInt(dom.octaveValue.textContent, 10);
-        state.scale  = buildMultiOctaveScale(state.key, state.octave, state.numOctaves);
-        state.melody = buildSampleMelody(state.key, state.octave);
+        state.key      = dom.keySelect.value;
+        state.scaleMode = dom.modeSelect.value || 'major';
+        state.octave   = parseInt(dom.octaveValue.textContent, 10);
+        state.scale    = buildMultiOctaveScale(state.key, state.octave, state.numOctaves, state.scaleMode);
+        state.melody   = buildSampleMelody(state.key, state.octave);
         state.totalBeats = melodyTotalBeats(state.melody);
     }
 
@@ -296,6 +300,14 @@
         if (state.isPlaying) stopPlayback();
         buildScale();
         // Octave display is already synced — no extra call needed
+        resizeCanvases();
+        renderNoteList();
+        drawPitchCanvas();
+    }
+
+    function onScaleModeChange() {
+        if (state.isPlaying) stopPlayback();
+        buildScale();
         resizeCanvases();
         renderNoteList();
         drawPitchCanvas();
@@ -607,6 +619,7 @@
                 pianoRollEditor.setScale(state.scale);
                 pianoRollEditor.setBPM(state.bpm);
                 pianoRollEditor.setOctave(state.octave);
+                pianoRollEditor.setMode(state.scaleMode);
             }
             return;
         }
@@ -615,7 +628,8 @@
             scale: state.scale,
             bpm: state.bpm,
             octave: state.octave,
-            numOctaves: state.numOctaves || 1
+            numOctaves: state.numOctaves || 1,
+            scaleMode: state.scaleMode
         });
 
         // Load current melody into editor if it exists
