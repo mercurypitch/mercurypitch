@@ -2,7 +2,7 @@
 // Audio Engine — Web Audio API playback and microphone input
 // ============================================================
 
-import type { MelodyItem, MelodyNote, AudioEngineCallbacks } from '@/types';
+import type { MelodyItem, MelodyNote, AudioEngineCallbacks, EffectType } from '@/types';
 
 export class AudioEngine {
   private audioCtx: AudioContext | null = null;
@@ -18,6 +18,7 @@ export class AudioEngine {
   private volume = 0.8;
   private _frequencyData = new Float32Array(0);
   private _timeData = new Float32Array(0);
+  private _activeVoices = new Map<number, { oscillators: OscillatorNode[]; gains: GainNode[]; stopTime: number }>();
 
   // ============================================================
   // Lifecycle
@@ -221,8 +222,95 @@ export class AudioEngine {
   // ============================================================
 
   /** Play a single note for a given duration (ms) */
-  playNote(frequency: number, durationMs: number): void {
-    this.playTone(frequency, durationMs);
+  playNote(frequency: number, durationMs: number, effectType?: EffectType): void {
+    if (!this.audioCtx || !this.masterGain) return;
+
+    const now = this.audioCtx.currentTime;
+    const noteId = Date.now() + Math.random();
+
+    // Create main oscillator
+    const mainOsc = this.audioCtx.createOscillator();
+    const mainGain = this.audioCtx.createGain();
+
+    mainOsc.type = 'sine';
+    mainOsc.frequency.value = frequency;
+
+    // Fade in
+    mainGain.gain.setValueAtTime(0, now);
+    mainGain.gain.linearRampToValueAtTime(this.volume, now + 0.01);
+
+    // Apply effect modulation
+    this._applyEffectModulation(mainOsc, effectType, frequency, durationMs, now);
+
+    mainOsc.connect(mainGain);
+    mainGain.connect(this.masterGain);
+    mainOsc.start();
+    mainOsc.stop(now + durationMs / 1000 + 0.1);
+
+    // Store voice reference
+    this._activeVoices.set(noteId, {
+      oscillators: [mainOsc],
+      gains: [mainGain],
+      stopTime: now + durationMs / 1000,
+    });
+
+    // Auto-cleanup
+    setTimeout(() => this._activeVoices.delete(noteId), durationMs + 200);
+  }
+
+  /**
+   * Apply effect modulation (vibrato, slide, ease)
+   */
+  private _applyEffectModulation(
+    osc: OscillatorNode,
+    effectType: EffectType | undefined,
+    freq: number,
+    durationMs: number,
+    now: number
+  ): void {
+    if (!effectType) return;
+
+    const dur = durationMs / 1000;
+
+    switch (effectType) {
+      case 'vibrato': {
+        // Vibrato: LFO modulates frequency ±5 cents for a wobble effect
+        const lfo = this.audioCtx!.createOscillator();
+        const lfoGain = this.audioCtx!.createGain();
+        lfo.type = 'sine';
+        lfo.frequency.value = 5; // 5 Hz wobble
+        lfoGain.gain.value = freq * 0.003; // ±0.3% pitch wobble (~5 cents)
+        lfo.connect(lfoGain);
+        lfoGain.connect(osc.frequency);
+        lfo.start(now);
+        lfo.stop(now + dur);
+        break;
+      }
+      case 'slide-up': {
+        // Slide up: frequency ramps from -1 octave to +0.5 octave over duration
+        osc.frequency.setValueAtTime(freq * 0.5, now);
+        osc.frequency.exponentialRampToValueAtTime(freq * 1.5, now + dur);
+        break;
+      }
+      case 'slide-down': {
+        // Slide down: frequency ramps from +1 octave to -0.5 octave over duration
+        osc.frequency.setValueAtTime(freq * 2, now);
+        osc.frequency.exponentialRampToValueAtTime(freq * 0.75, now + dur);
+        break;
+      }
+      case 'ease-in': {
+        // Ease in: start flat, slide up in the second half of the note
+        osc.frequency.setValueAtTime(freq, now);
+        osc.frequency.exponentialRampToValueAtTime(freq * 1.25, now + dur);
+        break;
+      }
+      case 'ease-out': {
+        // Ease out: start at +0.5 octave, ease back to target frequency
+        osc.frequency.setValueAtTime(freq * 1.5, now);
+        osc.frequency.exponentialRampToValueAtTime(freq, now + dur);
+        break;
+      }
+    }
   }
 
   /** Play a beep sound */
