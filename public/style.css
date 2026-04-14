@@ -1182,6 +1182,68 @@ header h1 {
     cursor: not-allowed;
 }
 
+/* Action buttons for vocal techniques */
+.roll-action-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.roll-action-btn {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    padding: 4px 8px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    font-size: 0.68rem;
+    cursor: pointer;
+    transition: all 0.12s ease;
+    white-space: nowrap;
+}
+
+.roll-action-btn:hover {
+    border-color: var(--purple);
+    color: var(--purple);
+    background: rgba(188, 140, 255, 0.08);
+}
+
+.roll-action-btn:active {
+    transform: scale(0.96);
+}
+
+.roll-action-btn.slide-up:hover {
+    border-color: var(--teal);
+    color: var(--teal);
+    background: rgba(45, 212, 191, 0.08);
+}
+
+.roll-action-btn.slide-down:hover {
+    border-color: var(--orange);
+    color: var(--orange);
+    background: rgba(219, 109, 40, 0.08);
+}
+
+.roll-action-btn.ease-in:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-dim);
+}
+
+.roll-action-btn.ease-out:hover {
+    border-color: var(--yellow);
+    color: var(--yellow);
+    background: rgba(210, 153, 34, 0.08);
+}
+
+.roll-action-btn.vibrato:hover {
+    border-color: var(--purple);
+    color: var(--purple);
+    background: rgba(188, 140, 255, 0.08);
+}
+
 /* Piano roll main area */
 .roll-main-area {
     flex: 1;

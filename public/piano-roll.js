@@ -122,7 +122,7 @@
         this.nextNoteId = 1;
 
         // Interaction state
-        this.selectedNoteId = null;
+        this.selectedNoteIds = []; // Support multi-select: array of note IDs
         this.selectedDuration = 1; // in beats
         this.activeTool = 'place'; // 'place' | 'erase' | 'select'
         this.isDragging = false;
@@ -132,6 +132,13 @@
         this.dragStartY = 0;
         this.dragStartBeat = 0;
         this.dragStartDuration = 0;
+
+        // Box selection state
+        this.isBoxSelecting = false;
+        this.boxStartX = 0;
+        this.boxStartY = 0;
+        this.boxEndX = 0;
+        this.boxEndY = 0;
 
         // Playback state
         this._playbackState = 'stopped'; // 'stopped' | 'playing' | 'paused'
@@ -260,6 +267,29 @@
                 '<input type="text" id="roll-preset-name" class="roll-preset-name" placeholder="Preset name">' +
                 '<button id="roll-save-preset" class="roll-save-btn" title="Save preset">Save</button>' +
                 '<button id="roll-clear-all" class="roll-ctrl-btn danger" title="Clear all notes">Clear</button>' +
+            '</div>' +
+            '<div class="roll-sep"></div>' +
+            '<div class="roll-action-group">' +
+                '<button id="roll-action-slide-up" class="roll-action-btn" title="Create ascending slide between selected notes">' +
+                    '<svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M4 20l8-16 8 16z"/></svg>' +
+                    '<span>↑Slide</span>' +
+                '</button>' +
+                '<button id="roll-action-slide-down" class="roll-action-btn" title="Create descending slide between selected notes">' +
+                    '<svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M4 4l8 16 8-16z"/></svg>' +
+                    '<span>↓Slide</span>' +
+                '</button>' +
+                '<button id="roll-action-ease-in" class="roll-action-btn" title="Create ease-in slide (starts level, slides down)">' +
+                    '<svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M4 12h4l4-6 8 10z"/></svg>' +
+                    '<span>Ease In</span>' +
+                '</button>' +
+                '<button id="roll-action-ease-out" class="roll-action-btn" title="Create ease-out slide (slides up, eases to level)">' +
+                    '<svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M4 12l4-6 4 6h12z"/></svg>' +
+                    '<span>Ease Out</span>' +
+                '</button>' +
+                '<button id="roll-action-vibrato" class="roll-action-btn" title="Create vibrato on selected note">' +
+                    '<svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M3 12c3-4 6 4 9 0s6 4 9 0"/></svg>' +
+                    '<span>Vibrato</span>' +
+                '</button>' +
             '</div>' +
             '<div class="roll-sep"></div>' +
             '<div class="roll-play-group">' +
@@ -495,13 +525,102 @@
         // Draw note blocks
         for (let n = 0; n < this.notes.length; n++) {
             let note = this.notes[n];
+            // Draw connection lines for multi-note effects
+            this._drawNoteConnections(ctx, note);
+        }
+        for (let n = 0; n < this.notes.length; n++) {
+            let note = this.notes[n];
             this._drawNoteBlock(ctx, note, false);
+        }
+
+        // Draw selection box if box selecting
+        if (this.isBoxSelecting) {
+            this._drawSelectionBox(ctx);
         }
 
         // Draw ghost note preview
         if (this.ghostNote) {
             this._drawNoteBlock(ctx, this.ghostNote, true);
         }
+    };
+
+    PianoRollEditor.prototype._drawNoteConnections = function (ctx, note) {
+        if (!note.linkedTo || note.linkedTo.length === 0) return;
+
+        const fromX = note.startBeat * this.beatWidth;
+        const fromY = this._midiToRow(note.midi) * this.rowHeight + this.rowHeight / 2;
+        const fromW = note.duration * this.beatWidth;
+
+        for (let i = 0; i < note.linkedTo.length; i++) {
+            const targetId = note.linkedTo[i];
+            const targetNote = this._getNoteById(targetId);
+            if (!targetNote) continue;
+
+            const toX = targetNote.startBeat * this.beatWidth;
+            const toY = this._midiToRow(targetNote.midi) * this.rowHeight + this.rowHeight / 2;
+            const toW = targetNote.duration * this.beatWidth;
+
+            const startX = fromX + fromW;
+            const endX = toX;
+            const startY = fromY;
+            const endY = toY;
+
+            ctx.save();
+            ctx.strokeStyle = 'rgba(255, 180, 50, 0.7)';
+            ctx.lineWidth = 3;
+
+            if (note.effectType === 'slide-up' || note.effectType === 'slide-down') {
+                // Straight diagonal line
+                ctx.beginPath();
+                ctx.moveTo(startX, startY);
+                ctx.lineTo(endX, endY);
+                ctx.stroke();
+            } else if (note.effectType === 'ease-in') {
+                // Bezier curve: level start, diagonal middle, level end
+                const ctrlX = (startX + endX) / 2;
+                ctx.beginPath();
+                ctx.moveTo(startX, startY);
+                ctx.quadraticCurveTo(ctrlX, endY, endX, endY);
+                ctx.stroke();
+            } else if (note.effectType === 'ease-out') {
+                // Bezier curve: diagonal start, level end
+                const ctrlX = (startX + endX) / 2;
+                ctx.beginPath();
+                ctx.moveTo(startX, startY);
+                ctx.quadraticCurveTo(ctrlX, startY, endX, endY);
+                ctx.stroke();
+            } else if (note.effectType === 'vibrato') {
+                // Wavy line (S-curve)
+                const amplitude = Math.abs(endY - startY) * 0.3 || 5;
+                ctx.beginPath();
+                ctx.moveTo(startX, startY);
+                const steps = 8;
+                for (let s = 0; s <= steps; s++) {
+                    const t = s / steps;
+                    const x = startX + (endX - startX) * t;
+                    const y = startY + (endY - startY) * t + Math.sin(t * Math.PI * 4) * amplitude;
+                    ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+    };
+
+    PianoRollEditor.prototype._drawSelectionBox = function (ctx) {
+        const x = Math.min(this.boxStartX, this.boxEndX);
+        const y = Math.min(this.boxStartY, this.boxEndY);
+        const w = Math.abs(this.boxEndX - this.boxStartX);
+        const h = Math.abs(this.boxEndY - this.boxStartY);
+
+        ctx.save();
+        ctx.fillStyle = 'rgba(88, 166, 255, 0.15)';
+        ctx.fillRect(x, y, w, h);
+        ctx.strokeStyle = 'rgba(88, 166, 255, 0.6)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]);
+        ctx.strokeRect(x, y, w, h);
+        ctx.restore();
     };
 
     PianoRollEditor.prototype._drawNoteBlock = function (ctx, note, isGhost) {
@@ -516,7 +635,7 @@
 
         if (w < 2) return;
 
-        const isSelected = !isGhost && note.id === this.selectedNoteId;
+        const isSelected = !isGhost && this._isNoteSelected(note.id);
         const cornerRadius = 4;
 
         // Shadow
@@ -649,7 +768,7 @@
                 self.activeTool = btn.dataset.tool;
                 self.container.querySelectorAll('.roll-tool-btn').forEach(function (b) { b.classList.remove('active'); });
                 btn.classList.add('active');
-                self.selectedNoteId = null;
+                self._clearSelection();
                 self._drawGrid();
                 self._updateHint();
             });
@@ -730,9 +849,18 @@
         // Grid canvas events
         this.gridCanvas.addEventListener('mousedown', function (e) { self._onGridMouseDown(e); });
         this.gridCanvas.addEventListener('mousemove', function (e) { self._onGridMouseMove(e); });
-        this.gridCanvas.addEventListener('mouseup', function (e) { self._onGridMouseUp(e); });
         this.gridCanvas.addEventListener('mouseleave', function (e) { self._onGridMouseLeave(e); });
         this.gridCanvas.addEventListener('contextmenu', function (e) { e.preventDefault(); self._onRightClick(e); });
+
+        // Document-level mouseup for box selection
+        document.addEventListener('mouseup', function (e) { self._onMouseUp(e); });
+
+        // Action buttons for vocal techniques
+        document.getElementById('roll-action-slide-up')?.addEventListener('click', function () { self._applyEffect('slide-up'); });
+        document.getElementById('roll-action-slide-down')?.addEventListener('click', function () { self._applyEffect('slide-down'); });
+        document.getElementById('roll-action-ease-in')?.addEventListener('click', function () { self._applyEffect('ease-in'); });
+        document.getElementById('roll-action-ease-out')?.addEventListener('click', function () { self._applyEffect('ease-out'); });
+        document.getElementById('roll-action-vibrato')?.addEventListener('click', function () { self._applyEffect('vibrato'); });
 
         // Touch events
         this.gridCanvas.addEventListener('touchstart', function (e) { e.preventDefault(); self._onTouchStart(e); }, { passive: false });
@@ -772,36 +900,62 @@
             return;
         }
 
-        if (this.activeTool === 'select' || this.activeTool === 'place') {
+        if (this.activeTool === 'select') {
             let hitNote = this._getNoteAt(x, y);
 
             if (hitNote) {
-                if (this.activeTool === 'select') {
-                    // Check resize handles
-                    let handle = this._getResizeHandle(x, y, hitNote);
-                    if (handle) {
-                        this.isResizing = true;
-                        this.resizeHandle = handle;
-                        this.selectedNoteId = hitNote.id;
-                        this.dragStartX = x;
-                        this.dragStartBeat = hitNote.startBeat;
-                        this.dragStartDuration = hitNote.duration;
-                    } else {
-                        this.selectedNoteId = hitNote.id;
-                    }
+                // Check resize handles first
+                let handle = this._getResizeHandle(x, y, hitNote);
+                if (handle) {
+                    this.isResizing = true;
+                    this.resizeHandle = handle;
+                    // Operate on the first selected note for resize
+                    const firstSelected = this._getFirstSelectedNote();
+                    this._selectNote(hitNote.id, false);
+                    this.dragStartX = x;
+                    this.dragStartBeat = hitNote.startBeat;
+                    this.dragStartDuration = hitNote.duration;
                 } else {
-                    // Place tool: select and allow resize
-                    this.selectedNoteId = hitNote.id;
-                    let handle2 = this._getResizeHandle(x, y, hitNote);
-                    if (handle2) {
-                        this.isResizing = true;
-                        this.resizeHandle = handle2;
-                        this.dragStartX = x;
-                        this.dragStartBeat = hitNote.startBeat;
-                        this.dragStartDuration = hitNote.duration;
+                    // Toggle selection with Shift, otherwise replace
+                    if (e.shiftKey) {
+                        if (this._isNoteSelected(hitNote.id)) {
+                            this._deselectNote(hitNote.id);
+                        } else {
+                            this._selectNote(hitNote.id, true);
+                        }
+                    } else {
+                        this._selectNote(hitNote.id, false);
                     }
+                    this.dragStartX = x;
+                    this.dragStartY = y;
+                    this.isDragging = true;
                 }
-            } else if (this.activeTool === 'place') {
+            } else {
+                // No note hit — start box selection
+                if (!e.shiftKey) {
+                    this._clearSelection();
+                }
+                this.isBoxSelecting = true;
+                this.boxStartX = x;
+                this.boxStartY = y;
+                this.boxEndX = x;
+                this.boxEndY = y;
+            }
+        } else if (this.activeTool === 'place') {
+            let hitNote = this._getNoteAt(x, y);
+
+            if (hitNote) {
+                // Select note and check resize handles
+                this._selectNote(hitNote.id, false);
+                let handle2 = this._getResizeHandle(x, y, hitNote);
+                if (handle2) {
+                    this.isResizing = true;
+                    this.resizeHandle = handle2;
+                    this.dragStartX = x;
+                    this.dragStartBeat = hitNote.startBeat;
+                    this.dragStartDuration = hitNote.duration;
+                }
+            } else {
                 // Place new note
                 let row = this._getRowAtY(y);
                 if (row < 0) return;
@@ -823,16 +977,11 @@
 
                 if (!conflict) {
                     this._addNote(midi, startBeat, this.selectedDuration);
-                    this.selectedNoteId = this.notes[this.notes.length - 1].id;
+                    this._selectNote(this.notes[this.notes.length - 1].id, false);
                 }
-            } else {
-                this.selectedNoteId = null;
             }
         }
 
-        this.isDragging = false;
-        this.dragStartX = x;
-        this.dragStartY = y;
         this._drawGrid();
         this._updateHint();
     };
@@ -842,8 +991,17 @@
         let x = e.clientX - rect.left;
         let y = e.clientY - rect.top;
 
-        if (this.isResizing && this.selectedNoteId !== null) {
-            let note = this._getNoteById(this.selectedNoteId);
+        // Box selection
+        if (this.isBoxSelecting) {
+            this.boxEndX = x;
+            this.boxEndY = y;
+            this._drawGrid();
+            return;
+        }
+
+        // Resizing
+        if (this.isResizing) {
+            let note = this._getNoteById(this.selectedNoteIds[0]);
             if (!note) return;
 
             const deltaX = x - this.dragStartX;
@@ -867,6 +1025,31 @@
             return;
         }
 
+        // Dragging notes
+        if (this.isDragging && this.selectedNoteIds.length > 0) {
+            const deltaX = x - this.dragStartX;
+            const deltaBeat = snapToGrid(deltaX / this.beatWidth, CONFIG.MIN_DURATION);
+            const deltaRow = Math.round((y - this.dragStartY) / this.rowHeight);
+            const self2 = this;
+
+            this._getSelectedNotes().forEach(function (note) {
+                // We need the original values — store them on first drag
+                if (!note._origStartBeat) note._origStartBeat = note.startBeat;
+                if (!note._origMidi) note._origMidi = note.midi;
+
+                let newStart = note._origStartBeat + deltaBeat;
+                let newMidi = note._origMidi + deltaRow;
+                // Clamp within scale
+                let newRow = self2._midiToRow(newMidi);
+                if (newRow >= 0 && newRow < self2.scale.length) {
+                    note.startBeat = Math.max(0, newStart);
+                    note.midi = self2._rowToMidi(newRow);
+                }
+            });
+            this._drawGrid();
+            return;
+        }
+
         // Ghost note preview
         if (this.activeTool === 'place') {
             let hitNote2 = this._getNoteAt(x, y);
@@ -887,21 +1070,49 @@
         }
     };
 
-    PianoRollEditor.prototype._onGridMouseUp = function (e) {
+    PianoRollEditor.prototype._onMouseUp = function (e) {
+        if (this.isBoxSelecting) {
+            // Select all notes in the box
+            this._selectNotesInBox(this.boxStartX, this.boxStartY, this.boxEndX, this.boxEndY);
+            this.isBoxSelecting = false;
+            this._drawGrid();
+            this._updateHint();
+        }
+
         if (this.isResizing) {
-            let note = this._getNoteById(this.selectedNoteId);
+            let note = this._getNoteById(this.selectedNoteIds[0]);
             if (note) {
                 note.duration = Math.max(CONFIG.MIN_DURATION, snapToGrid(note.duration, CONFIG.MIN_DURATION));
                 note.startBeat = Math.max(0, note.startBeat);
             }
         }
+
+        if (this.isDragging) {
+            // Clear original position markers
+            this._getSelectedNotes().forEach(function (note) {
+                delete note._origStartBeat;
+                delete note._origMidi;
+            });
+        }
+
         this.isResizing = false;
         this.resizeHandle = null;
+        this.isDragging = false;
         this.ghostNote = null;
         this._drawGrid();
     };
 
+    PianoRollEditor.prototype._onGridMouseUp = function (e) {
+        // Mouse up on canvas — delegate to document handler
+        this._onMouseUp(e);
+    };
+
     PianoRollEditor.prototype._onGridMouseLeave = function (e) {
+        // Only cancel box selection if mouse truly left the canvas
+        if (this.isBoxSelecting) {
+            this.isBoxSelecting = false;
+            this._drawGrid();
+        }
         this.ghostNote = null;
         this._drawGrid();
     };
@@ -944,22 +1155,90 @@
         if (!this.container.offsetParent) return;
 
         if (e.key === 'Delete' || e.key === 'Backspace') {
-            if (this.selectedNoteId !== null) {
+            if (this.selectedNoteIds.length > 0) {
                 e.preventDefault();
-                this._removeNote(this.selectedNoteId);
-                this.selectedNoteId = null;
+                // Remove all selected notes
+                var idsToRemove = this.selectedNoteIds.slice();
+                var self2 = this;
+                idsToRemove.forEach(function (id) { self2._removeNote(id); });
+                this._clearSelection();
                 this._drawGrid();
                 this._updateHint();
             }
         }
         if (e.key === 'Escape') {
-            this.selectedNoteId = null;
+            this._clearSelection();
+            this._drawGrid();
+            this._updateHint();
+        }
+        // Select all with Ctrl+A
+        if (e.key === 'a' && (e.ctrlKey || e.metaKey)) {
+            e.preventDefault();
+            var allIds = this.notes.map(function (n) { return n.id; });
+            this.selectedNoteIds = allIds;
             this._drawGrid();
             this._updateHint();
         }
     };
 
     // ========== NOTE MANAGEMENT ==========
+    PianoRollEditor.prototype._getSelectedNotes = function () {
+        const self = this;
+        return this.notes.filter(function (n) { return self.selectedNoteIds.indexOf(n.id) !== -1; });
+    };
+
+    PianoRollEditor.prototype._getFirstSelectedNote = function () {
+        for (let i = 0; i < this.notes.length; i++) {
+            if (this.selectedNoteIds.indexOf(this.notes[i].id) !== -1) return this.notes[i];
+        }
+        return null;
+    };
+
+    PianoRollEditor.prototype._isNoteSelected = function (id) {
+        return this.selectedNoteIds.indexOf(id) !== -1;
+    };
+
+    PianoRollEditor.prototype._selectNote = function (id, addToSelection) {
+        if (addToSelection) {
+            if (this.selectedNoteIds.indexOf(id) === -1) {
+                this.selectedNoteIds.push(id);
+            }
+        } else {
+            this.selectedNoteIds = [id];
+        }
+    };
+
+    PianoRollEditor.prototype._deselectNote = function (id) {
+        const idx = this.selectedNoteIds.indexOf(id);
+        if (idx !== -1) this.selectedNoteIds.splice(idx, 1);
+    };
+
+    PianoRollEditor.prototype._selectNotesInBox = function (x1, y1, x2, y2) {
+        const minX = Math.min(x1, x2);
+        const maxX = Math.max(x1, x2);
+        const minY = Math.min(y1, y2);
+        const maxY = Math.max(y1, y2);
+
+        const self = this;
+        this.notes.forEach(function (note) {
+            const noteX = note.startBeat * self.beatWidth;
+            const noteW = note.duration * self.beatWidth;
+            const noteY = self._midiToRow(note.midi) * self.rowHeight;
+            const noteH = self.rowHeight;
+
+            // Check if note overlaps with box
+            if (noteX + noteW > minX && noteX < maxX && noteY + noteH > minY && noteY < maxY) {
+                if (self.selectedNoteIds.indexOf(note.id) === -1) {
+                    self.selectedNoteIds.push(note.id);
+                }
+            }
+        });
+    };
+
+    PianoRollEditor.prototype._clearSelection = function () {
+        this.selectedNoteIds = [];
+    };
+
     PianoRollEditor.prototype._addNote = function (midi, startBeat, duration) {
         let note = {
             id: generateId(),
@@ -975,8 +1254,15 @@
     PianoRollEditor.prototype._removeNote = function (id) {
         for (let i = 0; i < this.notes.length; i++) {
             if (this.notes[i].id === id) {
+                // Remove from any linkedTo references in other notes
+                for (let j = 0; j < this.notes.length; j++) {
+                    if (this.notes[j].linkedTo) {
+                        const idx = this.notes[j].linkedTo.indexOf(id);
+                        if (idx !== -1) this.notes[j].linkedTo.splice(idx, 1);
+                    }
+                }
                 this.notes.splice(i, 1);
-                if (this.selectedNoteId === id) this.selectedNoteId = null;
+                this._deselectNote(id);
                 break;
             }
         }
@@ -995,9 +1281,81 @@
         if (this.notes.length === 0) return;
         if (!confirm('Clear all notes?')) return;
         this.notes = [];
-        this.selectedNoteId = null;
+        this._clearSelection();
         this._drawGrid();
         this._updateBeatInfo();
+    };
+
+    // ========== VOCAL TECHNIQUE EFFECTS ==========
+    /**
+     * Apply a vocal technique effect to selected notes.
+     * Requires exactly 2 notes selected for slides.
+     * Requires exactly 1 note selected for vibrato.
+     */
+    PianoRollEditor.prototype._applyEffect = function (effectType) {
+        const selected = this._getSelectedNotes();
+        if (selected.length === 0) {
+            this._updateHint();
+            return;
+        }
+
+        if (effectType === 'vibrato') {
+            // Apply vibrato to each selected note
+            selected.forEach(function (note) {
+                note.effectType = 'vibrato';
+                note.linkedTo = [];
+            });
+        } else if (selected.length === 2) {
+            // Sort by start beat to determine direction
+            const sorted = selected.slice().sort(function (a, b) { return a.startBeat - b.startBeat; });
+            const first = sorted[0];
+            const second = sorted[1];
+
+            if (effectType === 'slide-up') {
+                // Second note must be higher pitch
+                if (second.midi <= first.midi) {
+                    alert('Ascending slide requires the second note to be higher than the first.');
+                    return;
+                }
+                first.effectType = 'slide-up';
+                first.linkedTo = [second.id];
+                // Extend first note's duration to meet second note
+                first.duration = Math.max(first.duration, second.startBeat - first.startBeat + 0.5);
+            } else if (effectType === 'slide-down') {
+                // Second note must be lower pitch
+                if (second.midi >= first.midi) {
+                    alert('Descending slide requires the second note to be lower than the first.');
+                    return;
+                }
+                first.effectType = 'slide-down';
+                first.linkedTo = [second.id];
+                first.duration = Math.max(first.duration, second.startBeat - first.startBeat + 0.5);
+            } else if (effectType === 'ease-in') {
+                // Ease in: first note level, slides to second note at middle
+                if (second.midi === first.midi) {
+                    alert('Ease In requires two notes at different pitches.');
+                    return;
+                }
+                first.effectType = 'ease-in';
+                first.linkedTo = [second.id];
+                first.duration = Math.max(first.duration, second.startBeat - first.startBeat + 0.5);
+            } else if (effectType === 'ease-out') {
+                // Ease out: slides from first to second, then levels
+                if (second.midi === first.midi) {
+                    alert('Ease Out requires two notes at different pitches.');
+                    return;
+                }
+                first.effectType = 'ease-out';
+                first.linkedTo = [second.id];
+                first.duration = Math.max(first.duration, second.startBeat - first.startBeat + 0.5);
+            }
+        } else {
+            alert('Slides require exactly 2 notes selected (order by time). Vibrato works on 1 or more notes.');
+            return;
+        }
+
+        this._drawGrid();
+        this._updateHint();
     };
 
     // ========== BEAT MANAGEMENT ==========
@@ -1037,12 +1395,16 @@
     // ========== HINT / STATUS ==========
     PianoRollEditor.prototype._updateHint = function () {
         if (!this.hintEl) return;
-        if (this.selectedNoteId !== null) {
-            let note = this._getNoteById(this.selectedNoteId);
-            if (note) {
-                const info = this._midiToNoteInfo(note.midi);
-                let name = info ? info.name + info.octave : '?';
-                this.hintEl.textContent = 'Selected: ' + name + ' | Duration: ' + note.duration + 'b | ' + formatBeat(note.startBeat) + ' — Right-click or Del to delete';
+        if (this.selectedNoteIds.length > 0) {
+            if (this.selectedNoteIds.length === 1) {
+                let note = this._getFirstSelectedNote();
+                if (note) {
+                    const info = this._midiToNoteInfo(note.midi);
+                    let name = info ? info.name + info.octave : '?';
+                    this.hintEl.textContent = 'Selected: ' + name + ' | Duration: ' + note.duration + 'b | ' + formatBeat(note.startBeat) + ' — Right-click or Del to delete';
+                }
+            } else {
+                this.hintEl.textContent = this.selectedNoteIds.length + ' notes selected | Shift+click to toggle | Drag to multi-move | Del to delete | Action buttons create slides';
             }
         } else if (this.activeTool === 'place') {
             this.hintEl.textContent = 'Click to place a ' + this.selectedDuration + 'b note | Right-click to delete';
@@ -1081,7 +1443,13 @@
         }
         this.presets[name] = {
             notes: this.notes.map(function (n) {
-                return { midi: n.midi, startBeat: n.startBeat, duration: n.duration };
+                return {
+                    midi: n.midi,
+                    startBeat: n.startBeat,
+                    duration: n.duration,
+                    effectType: n.effectType || null,
+                    linkedTo: n.linkedTo || []
+                };
             }),
             totalBeats: this.totalBeats,
             bpm: this.bpm,
@@ -1102,13 +1470,20 @@
         const preset = this.presets[name];
         if (!preset) return;
         this.notes = preset.notes.map(function (n) {
-            return { id: generateId(), midi: n.midi, startBeat: n.startBeat, duration: n.duration };
+            return {
+                id: generateId(),
+                midi: n.midi,
+                startBeat: n.startBeat,
+                duration: n.duration,
+                effectType: n.effectType || null,
+                linkedTo: n.linkedTo || []
+            };
         });
         this.totalBeats = preset.totalBeats || 16;
         if (preset.bpm) {
             this.bpm = preset.bpm;
         }
-        this.selectedNoteId = null;
+        this._clearSelection();
         this._calculateDimensions();
         this._drawAll();
         this._updateBeatInfo();
@@ -1136,7 +1511,7 @@
     PianoRollEditor.prototype._newPreset = function () {
         this.notes = [];
         this.totalBeats = 16;
-        this.selectedNoteId = null;
+        this._clearSelection();
         this.currentPresetName = '';
         localStorage.removeItem(LAST_PRESET_KEY);
         setSelectedPresetName('');
@@ -1305,6 +1680,11 @@
             ctx.stroke();
         }
 
+        // Draw note connections first (below the note blocks)
+        for (let n = 0; n < this.notes.length; n++) {
+            this._drawNoteConnections(ctx, this.notes[n]);
+        }
+
         // Note blocks
         const currentBeat = this._activeBeat || 0;
         for (let n = 0; n < this.notes.length; n++) {
@@ -1388,7 +1768,7 @@
 
         if (w < 2) return;
 
-        const isSelected = !isGhost && note.id === this.selectedNoteId;
+        const isSelected = !isGhost && this._isNoteSelected(note.id);
         const cornerRadius = 4;
 
         if (isActive && !isGhost) {
