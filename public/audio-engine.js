@@ -48,7 +48,7 @@ class AudioEngine {
      * @param {number} freq - Base frequency
      * @param {string} effectType - Optional effect: 'vibrato', 'slide-up', 'slide-down', 'ease-in', 'ease-out'
      */
-    _createVoice(freq, effectType) {
+    _createVoice(freq, durationMs, effectType) {
         const ctx = this.audioCtx;
         const now = ctx.currentTime;
 
@@ -239,7 +239,7 @@ class AudioEngine {
         if (!this.audioCtx) return null;
 
         const noteId = Date.now() + Math.random();
-        const voice = this._createVoice(freq, effectType);
+        const voice = this._createVoice(freq, durationMs, effectType);
         this._activeVoices.set(noteId, voice);
 
         // Auto-stop after duration

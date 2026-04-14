@@ -293,24 +293,25 @@
                 '<button id="roll-clear-all" class="roll-ctrl-btn danger" title="Clear all notes">Clear</button>' +
             '</div>' +
             '<div class="roll-sep"></div>' +
-            '<div class="roll-action-group">' +
-                '<button id="roll-action-slide-up" class="roll-action-btn" title="Create ascending slide between selected notes">' +
+            '<div class="roll-effects-row">' +
+                '<span class="roll-effects-label">Effects:</span>' +
+                '<button id="roll-action-slide-up" class="roll-action-btn slide-up" title="Create ascending slide between selected notes">' +
                     '<svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M4 20l8-16 8 16z"/></svg>' +
                     '<span>↑Slide</span>' +
                 '</button>' +
-                '<button id="roll-action-slide-down" class="roll-action-btn" title="Create descending slide between selected notes">' +
+                '<button id="roll-action-slide-down" class="roll-action-btn slide-down" title="Create descending slide between selected notes">' +
                     '<svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M4 4l8 16 8-16z"/></svg>' +
                     '<span>↓Slide</span>' +
                 '</button>' +
-                '<button id="roll-action-ease-in" class="roll-action-btn" title="Create ease-in slide (starts level, slides down)">' +
+                '<button id="roll-action-ease-in" class="roll-action-btn ease-in" title="Create ease-in slide (starts level, slides down)">' +
                     '<svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M4 12h4l4-6 8 10z"/></svg>' +
                     '<span>Ease In</span>' +
                 '</button>' +
-                '<button id="roll-action-ease-out" class="roll-action-btn" title="Create ease-out slide (slides up, eases to level)">' +
+                '<button id="roll-action-ease-out" class="roll-action-btn ease-out" title="Create ease-out slide (slides up, eases to level)">' +
                     '<svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M4 12l4-6 4 6h12z"/></svg>' +
                     '<span>Ease Out</span>' +
                 '</button>' +
-                '<button id="roll-action-vibrato" class="roll-action-btn" title="Create vibrato on selected note">' +
+                '<button id="roll-action-vibrato" class="roll-action-btn vibrato" title="Create vibrato on selected note">' +
                     '<svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M3 12c3-4 6 4 9 0s6 4 9 0"/></svg>' +
                     '<span>Vibrato</span>' +
                 '</button>' +
@@ -567,7 +568,7 @@
         }
         for (let n = 0; n < this.notes.length; n++) {
             let note = this.notes[n];
-            this._drawNoteBlock(ctx, note, false);
+            this._drawNoteBlock(ctx, note, false, false);
         }
 
         // Draw selection box if box selecting
@@ -660,76 +661,6 @@
         ctx.restore();
     };
 
-    PianoRollEditor.prototype._drawNoteBlock = function (ctx, note, isGhost) {
-        const rowIdx = this._midiToRow(note.midi);
-        if (rowIdx < 0) return;
-
-        let x = note.startBeat * this.beatWidth;
-        let y = rowIdx * this.rowHeight;
-        const w = note.duration * this.beatWidth;
-        const h = this.rowHeight - 2;
-        const ry = y + 1;
-
-        if (w < 2) return;
-
-        const isSelected = !isGhost && this._isNoteSelected(note.id);
-        const cornerRadius = 4;
-
-        // Shadow
-        if (!isGhost) {
-            ctx.shadowColor = 'rgba(0,0,0,0.4)';
-            ctx.shadowBlur = 4;
-            ctx.shadowOffsetX = 0;
-            ctx.shadowOffsetY = 2;
-        }
-
-        ctx.beginPath();
-        if (w < 2 * cornerRadius) {
-            ctx.roundRect(x, ry, 2 * cornerRadius, h, [cornerRadius, cornerRadius, cornerRadius, cornerRadius]);
-            ctx.rect(x, ry, 2 * cornerRadius, h);
-        } else {
-            ctx.roundRect(x, ry, w, h, cornerRadius);
-        }
-
-        if (isGhost) {
-            ctx.fillStyle = CONFIG.NOTE_COLORS.ghost;
-            ctx.strokeStyle = 'rgba(88,166,255,0.4)';
-            ctx.lineWidth = 1;
-        } else {
-            const color = isSelected ? CONFIG.NOTE_COLORS.selected : CONFIG.NOTE_COLORS.normal;
-            ctx.fillStyle = color;
-            ctx.strokeStyle = isSelected ? '#8fc9ff' : 'rgba(88,166,255,0.5)';
-            ctx.lineWidth = isSelected ? 1.5 : 1;
-        }
-        ctx.fill();
-        ctx.stroke();
-
-        ctx.shadowColor = 'transparent';
-        ctx.shadowBlur = 0;
-
-        // Note name inside (if wide enough)
-        if (w > 18 && !isGhost) {
-            let noteInfo = this._midiToNoteInfo(note.midi);
-            if (noteInfo) {
-                ctx.fillStyle = isSelected ? '#fff' : 'rgba(255,255,255,0.8)';
-                ctx.font = 'bold 9px sans-serif';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText(noteInfo.name, x + w / 2, ry + h / 2);
-                ctx.textBaseline = 'alphabetic';
-            }
-        }
-
-        // Resize handles (only on selected notes)
-        if (isSelected && !isGhost && w > 12) {
-            const handleW = 6;
-            ctx.fillStyle = 'rgba(255,255,255,0.5)';
-            // Left handle
-            ctx.fillRect(x + 1, ry + h / 2 - 4, handleW, 8);
-            // Right handle
-            ctx.fillRect(x + w - handleW - 1, ry + h / 2 - 4, handleW, 8);
-        }
-    };
 
     PianoRollEditor.prototype._drawAll = function () {
         this._drawPiano();
@@ -1941,7 +1872,7 @@
         let y = rowIdx * this.rowHeight;
         const w = note.duration * this.beatWidth;
         const h = this.rowHeight - 2;
-        const ry = y + 1;
+        let ry = y + 1;
 
         if (w < 2) return;
 
@@ -1960,9 +1891,32 @@
             ctx.shadowOffsetY = 1;
         }
 
+        // --- Compute diagonal offset for slide notes ---
+        let diagY = 0;
+        if (!isGhost && note.effectType && (note.effectType === 'slide-up' || note.effectType === 'slide-down') && note.linkedTo && note.linkedTo.length > 0) {
+            const target = this._getNoteById(note.linkedTo[0]);
+            if (target) {
+                const targetRow = this._midiToRow(target.midi);
+                diagY = (targetRow - rowIdx) * this.rowHeight;
+                diagY = Math.max(-h * 0.45, Math.min(h * 0.45, diagY));
+            }
+        }
+        ry += diagY / 2;
+
         ctx.beginPath();
         if (w < 2 * cornerRadius) {
             ctx.roundRect(x, ry, 2 * cornerRadius, h, [cornerRadius, cornerRadius, cornerRadius, cornerRadius]);
+        } else if (diagY !== 0) {
+            // Parallelogram for slides
+            ctx.moveTo(x + cornerRadius, ry);
+            ctx.lineTo(x + w - cornerRadius, ry - diagY);
+            ctx.quadraticCurveTo(x + w, ry - diagY, x + w, ry - diagY + cornerRadius);
+            ctx.lineTo(x + w, ry + h - cornerRadius);
+            ctx.quadraticCurveTo(x + w, ry + h, x + w - cornerRadius, ry + h);
+            ctx.lineTo(x + cornerRadius, ry + h);
+            ctx.quadraticCurveTo(x, ry + h, x, ry + h - cornerRadius);
+            ctx.lineTo(x, ry + cornerRadius);
+            ctx.quadraticCurveTo(x, ry, x + cornerRadius, ry);
         } else {
             ctx.roundRect(x, ry, w, h, cornerRadius);
         }
@@ -1984,6 +1938,24 @@
         ctx.fill();
         ctx.stroke();
 
+        // Wavy top edge for vibrato notes
+        if (!isGhost && note.effectType === 'vibrato' && w > 14) {
+            ctx.save();
+            ctx.strokeStyle = isSelected ? '#c084fc' : 'rgba(188,140,255,0.7)';
+            ctx.lineWidth = 1.5;
+            ctx.lineCap = 'round';
+            const waveAmp = 2.5;
+            const wavePeriod = w / 3;
+            ctx.beginPath();
+            for (let wx = 0; wx <= w; wx++) {
+                const wy = ry + 2 + Math.sin((wx / wavePeriod) * Math.PI * 2) * waveAmp;
+                if (wx === 0) ctx.moveTo(x + wx, wy);
+                else ctx.lineTo(x + wx, wy);
+            }
+            ctx.stroke();
+            ctx.restore();
+        }
+
         ctx.shadowColor = 'transparent';
         ctx.shadowBlur = 0;
         ctx.shadowOffsetY = 0;
@@ -1999,6 +1971,22 @@
                 ctx.fillText(noteInfo.name, x + w / 2, ry + h / 2);
                 ctx.textBaseline = 'alphabetic';
             }
+        }
+
+        // Effect type badge
+        if (!isGhost && note.effectType && w > 22) {
+            const badgeColors = {
+                'slide-up': '#2dd4bf',
+                'slide-down': '#db6d28',
+                'ease-in': '#58a6ff',
+                'ease-out': '#d29922',
+                'vibrato': '#a371f7'
+            };
+            const badgeColor = badgeColors[note.effectType] || '#888';
+            ctx.fillStyle = badgeColor;
+            ctx.beginPath();
+            ctx.arc(x + w - 5, ry + 5, 3, 0, Math.PI * 2);
+            ctx.fill();
         }
 
         // Resize handles
@@ -2018,7 +2006,9 @@
             return {
                 note: noteInfo || { midi: n.midi, name: '?', octave: 4, freq: 440 },
                 startBeat: n.startBeat,
-                duration: n.duration
+                duration: n.duration,
+                effectType: n.effectType || null,
+                linkedTo: n.linkedTo || []
             };
         });
     };

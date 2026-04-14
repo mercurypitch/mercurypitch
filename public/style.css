@@ -1266,6 +1266,22 @@ header h1 {
     gap: 4px;
 }
 
+.roll-effects-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.roll-effects-label {
+    font-size: 0.68rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding-right: 2px;
+    flex-shrink: 0;
+}
+
 .roll-action-btn {
     display: flex;
     align-items: center;
