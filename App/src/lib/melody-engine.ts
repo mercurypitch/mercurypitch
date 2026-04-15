@@ -10,6 +10,8 @@ export interface MelodyEngineCallbacks {
   onNoteEnd?: (note: MelodyNote, noteIndex: number) => void;
   onBeatUpdate?: (currentBeat: number) => void;
   onComplete?: () => void;
+  onCountIn?: (beat: number) => void;  // Called during count-in beats
+  onCountInComplete?: () => void;     // Called when count-in finishes
 }
 
 export interface MelodyEngineOptions {
@@ -19,6 +21,8 @@ export interface MelodyEngineOptions {
   onNoteEnd?: (note: MelodyNote, noteIndex: number) => void;
   onBeatUpdate?: (currentBeat: number) => void;
   onComplete?: () => void;
+  onCountIn?: (beat: number) => void;
+  onCountInComplete?: () => void;
 }
 
 export class MelodyEngine {
@@ -39,6 +43,10 @@ export class MelodyEngine {
   private hopToY = 0;
   private hopDuration = 280;
 
+  // Count-in
+  private countInBeats = 0;
+  private countInBeat = 0;
+
   constructor(options: MelodyEngineOptions) {
     this.bpm = options.bpm;
     this.melody = options.melody;
@@ -47,6 +55,8 @@ export class MelodyEngine {
       onNoteEnd: options.onNoteEnd,
       onBeatUpdate: options.onBeatUpdate,
       onComplete: options.onComplete,
+      onCountIn: options.onCountIn,
+      onCountInComplete: options.onCountInComplete,
     };
   }
 
@@ -58,6 +68,10 @@ export class MelodyEngine {
 
   setBPM(bpm: number): void {
     this.bpm = bpm;
+  }
+
+  setCountIn(beats: number): void {
+    this.countInBeats = Math.max(0, Math.min(4, beats));
   }
 
   getMelody(): MelodyItem[] {
@@ -91,14 +105,33 @@ export class MelodyEngine {
     return this.currentNoteIndex;
   }
 
+  isInCountIn(): boolean {
+    return this.countInBeats > 0 && this.currentBeat < 0;
+  }
+
+  getCountInBeat(): number {
+    return this.countInBeat;
+  }
+
   // ── Playback ──────────────────────────────────────────────
 
-  start(): void {
+  start(countInBeats = 0): void {
     if (this.isPlaying) return;
 
     this.isPlaying = true;
     this.isPaused = false;
-    this.currentBeat = 0;
+    this.countInBeat = 0;
+
+    if (countInBeats > 0) {
+      // Start with count-in phase
+      this.currentBeat = -countInBeats; // Negative beats for count-in
+      this.countInBeats = countInBeats;
+    } else {
+      // Start immediately
+      this.currentBeat = 0;
+      this.countInBeats = 0;
+    }
+
     this.pauseOffset = 0;
     this.playStartTime = performance.now();
     this.hopActive = false;
@@ -148,7 +181,35 @@ export class MelodyEngine {
 
     const elapsed = performance.now() - this.playStartTime;
     const beatsPerMs = this.bpm / 60000;
-    this.currentBeat = elapsed * beatsPerMs;
+    const rawBeat = elapsed * beatsPerMs;
+
+    // Handle count-in phase
+    if (this.countInBeats > 0 && rawBeat < 0) {
+      // Still in count-in phase
+      const countInPos = rawBeat + this.countInBeats; // 0 to countInBeats-1
+      const currentCountInBeat = Math.floor(countInPos);
+
+      // Check if count-in beat changed
+      if (currentCountInBeat !== this.countInBeat) {
+        this.countInBeat = currentCountInBeat;
+        // Callback for count-in beat (play tick sound, show "1", "2", etc.)
+        this.callbacks.onCountIn?.(this.countInBeat + 1);
+      }
+
+      this.currentBeat = rawBeat;
+      this.callbacks.onBeatUpdate?.(this.currentBeat);
+      this._tick();
+      return;
+    }
+
+    // Transition from count-in to actual playback
+    if (this.countInBeats > 0 && rawBeat >= 0 && this.countInBeats > 0) {
+      // Count-in just completed
+      this.callbacks.onCountInComplete?.();
+      this.countInBeats = 0;
+    }
+
+    this.currentBeat = rawBeat;
 
     const total = this.totalBeats();
 

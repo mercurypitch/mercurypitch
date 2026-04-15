@@ -72,6 +72,33 @@ export class AudioEngine {
   }
 
   // ============================================================
+  // Count-in click
+  // ============================================================
+
+  /**
+   * Play a short click sound for count-in beat
+   */
+  playClick(): void {
+    if (!this.audioCtx || !this.masterGain) return;
+
+    const osc = this.audioCtx.createOscillator();
+    const gain = this.audioCtx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.value = 880; // A5 click
+
+    gain.gain.value = 0.3;
+    gain.gain.setValueAtTime(0.3, this.audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + 0.05);
+
+    osc.connect(gain);
+    gain.connect(this.masterGain);
+
+    osc.start(this.audioCtx.currentTime);
+    osc.stop(this.audioCtx.currentTime + 0.05);
+  }
+
+  // ============================================================
   // Microphone
   // ============================================================
 

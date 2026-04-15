@@ -18,6 +18,12 @@ const [isRecording, setIsRecording] = createSignal<boolean>(false);
 const [micActive, setMicActive] = createSignal<boolean>(false);
 const [micError, setMicError] = createSignal<string | null>(null);
 
+// ── Count-in ────────────────────────────────────────────────
+
+export type CountInOption = 0 | 1 | 2 | 4;
+
+const [countIn, setCountIn] = createSignal<CountInOption>(0);
+
 // ── Practice ────────────────────────────────────────────────
 
 const [practiceCount, setPracticeCount] = createSignal<number>(0);
@@ -146,6 +152,10 @@ export const appStore = {
   setPracticeCount,
   lastScore,
   setLastScore,
+
+  // Count-in
+  countIn,
+  setCountIn,
 
   // Navigation
   activeTab,

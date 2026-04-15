@@ -58,7 +58,8 @@ export const App: Component<AppProps> = (props) => {
   const [practiceResult, setPracticeResult] = createSignal<PracticeResult | null>(null);
   const [liveScore, setLiveScore] = createSignal<number | null>(null);
   const [frequencyData, setFrequencyData] = createSignal<Float32Array | null>(null);
-  const [metronomeActive, setMetronomeActive] = createSignal(false);
+  const [countInBeat, setCountInBeat] = createSignal<number>(0);
+  const [isCountingIn, setIsCountingIn] = createSignal(false);
 
   // ── Stats panel ──────────────────────────────────────────────
 
@@ -130,6 +131,16 @@ export const App: Component<AppProps> = (props) => {
       },
       onBeatUpdate: (beat) => {
         setCurrentBeat(beat);
+      },
+      onCountIn: (beat) => {
+        setCountInBeat(beat);
+        setIsCountingIn(true);
+        // Play a click sound for count-in
+        audioEngine?.playClick();
+      },
+      onCountInComplete: () => {
+        setIsCountingIn(false);
+        setCountInBeat(0);
       },
       onComplete: () => {
         const results = practiceEngine.onPlaybackComplete();
@@ -244,7 +255,8 @@ export const App: Component<AppProps> = (props) => {
     setIsPaused(false);
     playback.startPlayback();
 
-    melodyEngine.start();
+    // Start with count-in if configured
+    melodyEngine.start(appStore.countIn());
   };
 
   const handlePause = () => {
@@ -289,13 +301,6 @@ export const App: Component<AppProps> = (props) => {
       await practiceEngine.startMic();
     }
   };
-
-  // ── Metronome ──────────────────────────────────────────────
-
-  const handleMetronomeToggle = () => {
-    setMetronomeActive((prev) => !prev);
-  };
-
 
   // ── Tab switching ─────────────────────────────────────────────
 
@@ -568,19 +573,21 @@ export const App: Component<AppProps> = (props) => {
                 <span id="tempo-value">{appStore.bpm()}</span>
               </div>
 
-              {/* Precount (formerly metronome) */}
-              <button
-                id="btn-precount"
-                class={`ctrl-btn ${metronomeActive() ? 'active' : ''}`}
-                onClick={handleMetronomeToggle}
-                title="Pre-count before playback"
-              >
-                <svg viewBox="0 0 24 24" width="18" height="18">
-                  <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/>
-                  <path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>
-                </svg>
-                <span>Precount</span>
-              </button>
+              {/* Count-in options */}
+              <div class="countin-group">
+                <label class="opt-label">Count-in:</label>
+                <select
+                  id="countin-select"
+                  value={appStore.countIn()}
+                  onChange={(e) => appStore.setCountIn(parseInt(e.currentTarget.value) as any)}
+                  class="countin-select"
+                >
+                  <option value="0">Off</option>
+                  <option value="1">1 beat</option>
+                  <option value="2">2 beats</option>
+                  <option value="4">4 beats</option>
+                </select>
+              </div>
 
               {/* Sensitivity */}
               <div class="sensitivity-group">
@@ -683,6 +690,13 @@ export const App: Component<AppProps> = (props) => {
                 <span id="run-counter">Run 1</span>
                 <span id="cycle-counter" />
               </div>
+
+              {/* Count-in display */}
+              <Show when={isCountingIn()}>
+                <div id="countin-display" class="countin-badge">
+                  {countInBeat()}
+                </div>
+              </Show>
             </div>
 
             {/* Canvas */}
