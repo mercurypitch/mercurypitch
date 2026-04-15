@@ -67,6 +67,7 @@ export class PianoRollEditor {
   private readonly config = PIANO_ROLL_CONFIG;
   private rowHeight: number;
   private beatWidth: number;
+  private zoomLevel: number;
   private pianoWidth: number;
   private rulerHeight: number;
   private totalRows = 0;
@@ -132,6 +133,7 @@ export class PianoRollEditor {
     this.onNoteSelect = options.onNoteSelect;
     this.onInstrumentChange = options.onInstrumentChange;
     this.rowHeight = this.config.rowHeight;
+    this.zoomLevel = 1.0;
     this.beatWidth = this.config.beatWidth;
     this.pianoWidth = this.config.pianoWidth;
     this.rulerHeight = this.config.rulerHeight;
@@ -245,6 +247,41 @@ export class PianoRollEditor {
     this.totalBeats = beats;
     this.buildCanvases();
     this.draw();
+  }
+
+  zoomIn(): void {
+    this.zoomLevel = Math.min(3.0, this.zoomLevel + 0.2);
+    this.beatWidth = this.config.beatWidth * this.zoomLevel;
+    this.buildCanvases();
+    this.draw();
+  }
+
+  zoomOut(): void {
+    this.zoomLevel = Math.max(0.3, this.zoomLevel - 0.2);
+    this.beatWidth = this.config.beatWidth * this.zoomLevel;
+    this.buildCanvases();
+    this.draw();
+  }
+
+  setZoom(level: number): void {
+    this.zoomLevel = Math.max(0.3, Math.min(3.0, level));
+    this.beatWidth = this.config.beatWidth * this.zoomLevel;
+    this.buildCanvases();
+    this.draw();
+  }
+
+  updateZoomDisplay(): void {
+    const el = this.container.querySelector('#roll-zoom-value');
+    if (el) el.textContent = Math.round(this.zoomLevel * 100) + '%';
+  }
+
+  fitToView(): void {
+    if (!this.gridContainer) return;
+    const containerWidth = this.gridContainer.clientWidth - this.pianoWidth;
+    const minWidth = this.totalBeats * this.config.beatWidth;
+    if (containerWidth > 0 && minWidth > 0) {
+      this.setZoom(containerWidth / minWidth);
+    }
   }
 
   setCurrentNote(index: number): void {
@@ -484,6 +521,13 @@ export class PianoRollEditor {
           <button id="roll-bars-up" class="roll-bars-btn" title="Add 4 bars">+4b</button>
         </div>
         <div class="roll-sep"></div>
+        <div class="roll-zoom-group">
+          <button id="roll-zoom-out" class="roll-zoom-btn" title="Zoom out (Ctrl+-)">-</button>
+          <span id="roll-zoom-value" class="zoom-value">100%</span>
+          <button id="roll-zoom-in" class="roll-zoom-btn" title="Zoom in (Ctrl++)">+</button>
+          <button id="roll-zoom-fit" class="roll-zoom-btn" title="Fit to view">Fit</button>
+        </div>
+        <div class="roll-sep"></div>
         <div class="roll-preset-group">
           <select id="roll-preset-select" class="roll-preset-select">
             <option value="">— Load Preset —</option>
@@ -570,7 +614,7 @@ export class PianoRollEditor {
     const dpr = window.devicePixelRatio || 1;
     const totalHeight = this.totalRows * this.rowHeight;
 
-    const minWidth = this.totalBeats * this.beatWidth;
+    const minWidth = this.totalBeats * this.beatWidth * this.zoomLevel;
     const containerWidth = this.gridContainer?.clientWidth ?? 0;
     this.stretchedWidth = containerWidth > 0 ? Math.max(minWidth, containerWidth - this.pianoWidth) : minWidth;
 
@@ -771,6 +815,20 @@ export class PianoRollEditor {
       this.updateBeatInfo();
     });
 
+    // Zoom controls
+    container.querySelector('#roll-zoom-in')?.addEventListener('click', () => {
+      this.zoomIn();
+      this.updateZoomDisplay();
+    });
+    container.querySelector('#roll-zoom-out')?.addEventListener('click', () => {
+      this.zoomOut();
+      this.updateZoomDisplay();
+    });
+    container.querySelector('#roll-zoom-fit')?.addEventListener('click', () => {
+      this.fitToView();
+      this.updateZoomDisplay();
+    });
+
     // Undo/redo buttons
     container.querySelector('#roll-undo-btn')?.addEventListener('click', () => {
       this.updateUndoRedoButtons();
@@ -786,6 +844,9 @@ export class PianoRollEditor {
     window.addEventListener('pitchperfect:presetSaved', () => {
       this.loadPresets();
     });
+
+    // Initialize zoom display
+    this.updateZoomDisplay();
   }
 
   private onGridMouseDown(e: MouseEvent): void {
@@ -909,6 +970,20 @@ export class PianoRollEditor {
   }
 
   private onKeyDown(e: KeyboardEvent): void {
+    // Zoom: Ctrl++ / Ctrl+- (or Ctrl+scroll)
+    if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '=')) {
+      e.preventDefault();
+      this.zoomIn();
+      this.updateZoomDisplay();
+      return;
+    }
+    if ((e.ctrlKey || e.metaKey) && (e.key === '-' || e.key === '_')) {
+      e.preventDefault();
+      this.zoomOut();
+      this.updateZoomDisplay();
+      return;
+    }
+
     // Undo: Ctrl+Z (or Cmd+Z on Mac)
     if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
       e.preventDefault();

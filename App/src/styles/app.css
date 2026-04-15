@@ -1518,6 +1518,37 @@ header h1 {
     color: var(--text-primary);
 }
 
+/* Zoom controls */
+.roll-zoom-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.roll-zoom-btn {
+    padding: 4px 8px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 0.12s ease;
+    min-width: 30px;
+}
+
+.roll-zoom-btn:hover {
+    border-color: var(--accent);
+    color: var(--text-primary);
+}
+
+.zoom-value {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    min-width: 40px;
+    text-align: center;
+}
+
 /* Duration buttons */
 .roll-durations {
     display: flex;
