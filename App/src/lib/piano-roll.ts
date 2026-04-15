@@ -2,7 +2,7 @@
 // Piano Roll Editor — Canvas-based note editor
 // ============================================================
 
-import type { MelodyItem, ScaleDegree, PianoRollConfig } from '@/types';
+import type { MelodyItem, ScaleDegree, PianoRollConfig, NoteName } from '@/types';
 
 export const PIANO_ROLL_CONFIG: PianoRollConfig = {
   rowHeight: 22,
@@ -101,6 +101,8 @@ export class PianoRollEditor {
   // Callbacks
   private onMelodyChange?: (melody: MelodyItem[]) => void;
   private onNoteSelect?: (note: MelodyItem | null) => void;
+  private onPlayClick?: () => void;
+  private onResetClick?: () => void;
 
   // Presets
   private presetData: Record<string, {
@@ -347,7 +349,7 @@ export class PianoRollEditor {
       };
       const item: MelodyItem = {
         id: this.nextNoteId++,
-        note: { midi: n.midi, name: noteInfo.name, octave: noteInfo.octave, freq: noteInfo.freq },
+        note: { midi: n.midi, name: noteInfo.name as NoteName, octave: noteInfo.octave, freq: noteInfo.freq },
         startBeat: n.startBeat,
         duration: n.duration,
       };

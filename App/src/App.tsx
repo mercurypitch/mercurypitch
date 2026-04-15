@@ -27,7 +27,7 @@ import { melodyTotalBeats } from '@/lib/scale-data';
 import { AudioEngine } from '@/lib/audio-engine';
 import { MelodyEngine } from '@/lib/melody-engine';
 import { PracticeEngine } from '@/lib/practice-engine';
-import type { PitchResult, NoteResult, PracticeResult } from '@/types';
+import type { PitchResult, NoteResult, PracticeResult, NoteName } from '@/types';
 import type { PlaybackState } from '@/lib/piano-roll';
 import type { PitchSample } from '@/components/PitchCanvas';
 
@@ -621,7 +621,7 @@ export const App: Component<AppProps> = (props) => {
                             id: melodyStore.generateId(),
                             note: {
                               midi: n.midi,
-                              name: scaleNote?.name ?? '?',
+                              name: (scaleNote?.name ?? 'C') as NoteName,
                               octave: scaleNote?.octave ?? 4,
                               freq: scaleNote?.freq ?? 440,
                             },

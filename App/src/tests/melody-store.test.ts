@@ -103,7 +103,7 @@ describe('MelodyStore', () => {
   describe('removeMelodyNote', () => {
     it('removes note by ID', () => {
       const noteToRemove = melodyStore.items[0];
-      removeMelodyNote(noteToRemove.id);
+      removeMelodyNote(noteToRemove.id!);
       expect(melodyStore.items.find(n => n.id === noteToRemove.id)).toBeUndefined();
     });
 
@@ -117,14 +117,14 @@ describe('MelodyStore', () => {
   describe('updateMelodyNote', () => {
     it('updates note properties', () => {
       const noteToUpdate = melodyStore.items[0];
-      updateMelodyNote(noteToUpdate.id, { startBeat: 10 });
+      updateMelodyNote(noteToUpdate.id!, { startBeat: 10 });
       const updated = melodyStore.items.find(n => n.id === noteToUpdate.id);
       expect(updated?.startBeat).toBe(10);
     });
 
     it('updates multiple properties', () => {
       const noteToUpdate = melodyStore.items[0];
-      updateMelodyNote(noteToUpdate.id, { startBeat: 5, duration: 4 });
+      updateMelodyNote(noteToUpdate.id!, { startBeat: 5, duration: 4 });
       const updated = melodyStore.items.find(n => n.id === noteToUpdate.id);
       expect(updated?.startBeat).toBe(5);
       expect(updated?.duration).toBe(4);
