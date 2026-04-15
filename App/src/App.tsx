@@ -425,6 +425,35 @@ export const App: Component<AppProps> = (props) => {
     }
   };
 
+  // ── Octave shift ─────────────────────────────────────────────
+
+  const handleOctaveShift = (delta: number) => {
+    const newOctave = melodyStore.currentOctave() + delta;
+    if (newOctave < 1 || newOctave > 6) return;
+
+    const keyName = appStore.keyName();
+    const scaleType = appStore.scaleType();
+
+    // Check if we have notes that can be transposed
+    if (melodyStore.items.length > 0) {
+      // Transpose all notes by the octave delta
+      const MIDI_OCTAVE_SHIFT = 12;
+      const transposed = melodyStore.items.map(item => ({
+        ...item,
+        note: {
+          ...item.note,
+          midi: item.note.midi + delta * MIDI_OCTAVE_SHIFT,
+          octave: item.note.octave + delta,
+          freq: 440 * Math.pow(2, (item.note.midi + delta * MIDI_OCTAVE_SHIFT - 69) / 12),
+        },
+      }));
+      melodyStore.setMelody(transposed);
+    }
+
+    // Rebuild scale with new octave
+    melodyStore.refreshScale(keyName, newOctave, scaleType);
+  };
+
   // ── Tab switching ─────────────────────────────────────────────
 
   const handleTabPractice = () => {
@@ -548,11 +577,11 @@ export const App: Component<AppProps> = (props) => {
 
               <span class="octave-label">Oct:</span>
               <div class="octave-ctrl">
-                <button class="octave-btn" title="Lower octave" onClick={() => melodyStore.refreshScale(appStore.keyName(), Math.max(1, melodyStore.currentOctave() - 1), appStore.scaleType())}>
+                <button class="octave-btn" title="Lower octave" onClick={() => handleOctaveShift(-1)}>
                   <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg>
                 </button>
                 <span class="octave-value">{melodyStore.currentOctave()}</span>
-                <button class="octave-btn" title="Higher octave" onClick={() => melodyStore.refreshScale(appStore.keyName(), Math.min(6, melodyStore.currentOctave() + 1), appStore.scaleType())}>
+                <button class="octave-btn" title="Higher octave" onClick={() => handleOctaveShift(1)}>
                   <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg>
                 </button>
               </div>
