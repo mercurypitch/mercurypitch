@@ -375,6 +375,9 @@ export const App: Component<AppProps> = (props) => {
             onClick={handleTabEditor}
           >
             Editor
+            <Show when={melodyStore.items.length > 0}>
+              <span class="tab-badge">{melodyStore.items.length}</span>
+            </Show>
           </button>
         </nav>
       </header>
