@@ -166,6 +166,9 @@
         this.gridCtx = null;
         this.gridContainer = null;
         this.gridScrollX = 0;
+        this.pitchTrackCanvas = null;
+        this.pitchTrackVisible = false;
+        this.pitchDetector = null;
 
         // Presets
         this.presets = loadPresets();
@@ -328,6 +331,10 @@
                 '</select>' +
             '</div>' +
             '<div class="roll-sep"></div>' +
+            '<button id="roll-pitch-track-btn" class="roll-pitch-track-btn" title="Toggle pitch track visualization">' +
+                'Pitch Track' +
+            '</button>' +
+            '<div class="roll-sep"></div>' +
             '<div class="roll-play-group">' +
                 '<button id="roll-play-btn" class="roll-play-btn" title="Start playback">' +
                     '<svg id="roll-play-icon" viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>' +
@@ -378,6 +385,12 @@
         gridWrapper.appendChild(this.gridContainer);
 
         mainArea.appendChild(gridWrapper);
+
+        // Pitch track canvas (below grid, hidden by default)
+        this.pitchTrackCanvas = document.createElement('canvas');
+        this.pitchTrackCanvas.className = 'roll-pitch-track';
+        this.pitchTrackCanvas.style.display = 'none';
+        mainArea.appendChild(this.pitchTrackCanvas);
 
         el.appendChild(mainArea);
 
@@ -835,6 +848,11 @@
             });
         }
 
+        // Pitch track toggle
+        document.getElementById('roll-pitch-track-btn')?.addEventListener('click', function () {
+            self._togglePitchTrack();
+        });
+
         // Grid canvas events
         this.gridCanvas.addEventListener('mousedown', function (e) { self._onGridMouseDown(e); });
         this.gridCanvas.addEventListener('mousemove', function (e) { self._onGridMouseMove(e); });
@@ -886,6 +904,9 @@
         window.addEventListener('resize', function () {
             self._calculateDimensions();
             self._drawAll();
+            if (self.pitchTrackVisible) {
+                self._resizePitchTrackCanvas();
+            }
         });
 
         // Populate preset select
@@ -1752,12 +1773,145 @@
         this._updateTimelineInfo(currentBeat);
         this._drawGridWithPlayhead();
 
+        // Update pitch track visualization during playback
+        if (this.pitchTrackVisible) {
+            this._updatePitchTrack();
+        }
+
         if (currentBeat >= lastNote.startBeat + lastNote.duration) {
             this._resetMelody();
             return;
         }
 
         this._playAnimationId = requestAnimationFrame(function () { self._animatePlayback(); });
+    };
+
+    // ========== PITCH TRACK ==========
+    PianoRollEditor.prototype._togglePitchTrack = function () {
+        this.pitchTrackVisible = !this.pitchTrackVisible;
+        const btn = document.getElementById('roll-pitch-track-btn');
+        if (btn) {
+            btn.classList.toggle('active', this.pitchTrackVisible);
+        }
+        if (this.pitchTrackCanvas) {
+            this.pitchTrackCanvas.style.display = this.pitchTrackVisible ? 'block' : 'none';
+        }
+        if (this.pitchTrackVisible) {
+            this._initPitchTrack();
+        }
+    };
+
+    PianoRollEditor.prototype._initPitchTrack = function () {
+        if (!this.pitchTrackCanvas) return;
+
+        // Initialize pitch detector using the audio engine's analyser
+        if (window.pianoRollAudioEngine) {
+            const engine = window.pianoRollAudioEngine;
+            if (engine.init) {
+                engine.init().then(() => {
+                    if (!this.pitchDetector) {
+                        this.pitchDetector = new PitchDetector(44100, 2048, 0.10, 5);
+                    }
+                    this._resizePitchTrackCanvas();
+                });
+            } else {
+                if (!this.pitchDetector) {
+                    this.pitchDetector = new PitchDetector(44100, 2048, 0.10, 5);
+                }
+                this._resizePitchTrackCanvas();
+            }
+        } else {
+            // Fallback: create detector without analyser
+            if (!this.pitchDetector) {
+                this.pitchDetector = new PitchDetector(44100, 2048, 0.10, 5);
+            }
+            this._resizePitchTrackCanvas();
+        }
+    };
+
+    PianoRollEditor.prototype._resizePitchTrackCanvas = function () {
+        if (!this.pitchTrackCanvas) return;
+        const dpr = window.devicePixelRatio || 1;
+        const w = this.gridContainer.clientWidth;
+        const h = 80;
+        this.pitchTrackCanvas.width = w * dpr;
+        this.pitchTrackCanvas.height = h * dpr;
+        this.pitchTrackCanvas.style.width = w + 'px';
+        this.pitchTrackCanvas.style.height = h + 'px';
+        // Draw empty state
+        const ctx = this.pitchTrackCanvas.getContext('2d');
+        if (ctx) {
+            ctx.scale(dpr, dpr);
+            ctx.fillStyle = '#0d1117';
+            ctx.fillRect(0, 0, w, h);
+            ctx.fillStyle = 'rgba(88, 166, 255, 0.3)';
+            ctx.font = '11px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('Pitch Track — press Play to start', w / 2, h / 2 + 4);
+        }
+    };
+
+    PianoRollEditor.prototype._updatePitchTrack = function () {
+        if (!this.pitchTrackCanvas || !this.pitchDetector) return;
+
+        const engine = window.pianoRollAudioEngine;
+        if (!engine) return;
+
+        // Get time domain data from playback analyser
+        const timeData = engine.getPlaybackTimeData();
+        const result = this.pitchDetector.detect(timeData);
+
+        const ctx = this.pitchTrackCanvas.getContext('2d');
+        if (!ctx) return;
+
+        const w = this.pitchTrackCanvas.clientWidth;
+        const h = this.pitchTrackCanvas.clientHeight;
+
+        // Scroll left for rolling display
+        ctx.fillStyle = 'rgba(13, 17, 23, 0.15)';
+        ctx.fillRect(0, 0, w - 2, h);
+
+        // Draw center line
+        ctx.strokeStyle = 'rgba(88, 166, 255, 0.2)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(0, h / 2);
+        ctx.lineTo(w, h / 2);
+        ctx.stroke();
+
+        if (result.freq > 0 && result.confidence > 0.5) {
+            // Map frequency to Y position (invert: higher freq = lower Y)
+            const minFreq = 65;
+            const maxFreq = 2100;
+            const y = h - ((Math.log(result.freq) - Math.log(minFreq)) / (Math.log(maxFreq) - Math.log(minFreq))) * h;
+
+            // Draw a point at the current pitch
+            ctx.fillStyle = 'rgba(63, 185, 80, 0.9)';
+            ctx.beginPath();
+            ctx.arc(w - 2, y, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Draw the waveform across the canvas width (rolling)
+            const waveformData = engine.getPlaybackTimeData();
+            ctx.beginPath();
+            ctx.moveTo(0, h / 2);
+            const step = Math.floor(waveformData.length / w);
+            for (let x = 0; x < w; x++) {
+                const sampleIdx = x * step;
+                const sample = waveformData[sampleIdx] || 0;
+                const waveY = (h / 2) + sample * h * 4;
+                ctx.lineTo(x, waveY);
+            }
+            ctx.strokeStyle = 'rgba(88, 166, 255, 0.6)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            // Draw frequency label
+            ctx.fillStyle = '#58a6ff';
+            ctx.font = '10px monospace';
+            ctx.textAlign = 'right';
+            ctx.fillText(Math.round(result.freq) + ' Hz', w - 4, 12);
+        }
     };
 
     PianoRollEditor.prototype._drawGridWithPlayhead = function () {

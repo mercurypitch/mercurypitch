@@ -22,6 +22,9 @@ class AudioEngine {
         this.timeBuffer = new Float32Array(this.bufferSize);
         this.freqBuffer = null;
 
+        // Playback analyser (routes output through analyser for pitch visualization)
+        this.playbackAnalyser = null;
+
         // Instrument synthesizer
         this.currentInstrument = 'sine';
         this._activeVoices = new Map(); // Note ID -> { oscillators, gain }
@@ -54,7 +57,10 @@ class AudioEngine {
 
         const masterGain = ctx.createGain();
         masterGain.gain.value = 0;
-        masterGain.connect(ctx.destination);
+        masterGain.connect(this.playbackAnalyser || ctx.destination);
+        if (this.playbackAnalyser) {
+            this.playbackAnalyser.connect(ctx.destination);
+        }
 
         const oscillators = [];
 
@@ -304,6 +310,11 @@ class AudioEngine {
         this.analyser = this.audioCtx.createAnalyser();
         this.analyser.fftSize = this.bufferSize * 2;
         this.analyser.smoothingTimeConstant = 0.1;
+
+        // Playback analyser for pitch track visualization
+        this.playbackAnalyser = this.audioCtx.createAnalyser();
+        this.playbackAnalyser.fftSize = this.bufferSize * 2;
+        this.playbackAnalyser.smoothingTimeConstant = 0.0;
         this.freqBuffer = new Uint8Array(this.analyser.frequencyBinCount);
     }
 
@@ -434,6 +445,15 @@ class AudioEngine {
     getTimeData() {
         if (!this.analyser) return this.timeBuffer;
         this.analyser.getFloatTimeDomainData(this.timeBuffer);
+        return this.timeBuffer;
+    }
+
+    /**
+     * Get the playback time-domain buffer for pitch track visualization.
+     */
+    getPlaybackTimeData() {
+        if (!this.playbackAnalyser) return this.timeBuffer;
+        this.playbackAnalyser.getFloatTimeDomainData(this.timeBuffer);
         return this.timeBuffer;
     }
 
