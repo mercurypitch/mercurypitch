@@ -78,6 +78,8 @@ export class PianoRollEditor {
   private playStartTime = 0;
   private pauseStartTime = 0;
   private activeBeat = 0;
+  private isSeeking = false;
+  private seekStartX = 0;
 
   // Interaction
   private selectedNoteId: number | null = null;
@@ -669,6 +671,23 @@ export class PianoRollEditor {
       this.onRightClick(e);
     });
 
+    // Ruler drag-to-seek (click and drag on ruler to scrub playback position)
+    this.rulerCanvas?.addEventListener('mousedown', (e) => {
+      this.isSeeking = true;
+      this.seekStartX = e.clientX;
+      this.seekToRulerPosition(e);
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (this.isSeeking) {
+        this.seekToRulerPosition(e);
+      }
+    });
+
+    document.addEventListener('mouseup', () => {
+      this.isSeeking = false;
+    });
+
     // Scroll sync ruler
     this.gridContainer?.addEventListener('scroll', () => {
       if (this.rulerCanvas && this.gridContainer) {
@@ -1119,6 +1138,19 @@ export class PianoRollEditor {
 
       self.drawWithPlayhead();
 
+      // Play tones for notes that start at current beat
+      const win = window as Window & { pianoRollAudioEngine?: { playNote: (freq: number, durationMs: number, effectType?: string) => void } };
+      if (win.pianoRollAudioEngine) {
+        const sortedNotes = [...self.melody].sort((a, b) => a.startBeat - b.startBeat);
+        const durationMs = self.beatWidth * (60000 / self.bpm);
+        for (const note of sortedNotes) {
+          if (Math.abs(note.startBeat - self.activeBeat) < 0.05) {
+            const freq = note.note.freq;
+            win.pianoRollAudioEngine.playNote(freq, note.duration * durationMs, note.effectType);
+          }
+        }
+      }
+
       // Check if playback is done
       const sortedNotes = [...self.melody].sort((a, b) => a.startBeat - b.startBeat);
       const lastNote = sortedNotes[sortedNotes.length - 1];
@@ -1131,6 +1163,26 @@ export class PianoRollEditor {
     };
 
     this.playAnimationId = requestAnimationFrame(animate);
+  }
+
+  private seekToRulerPosition(e: MouseEvent): void {
+    const rect = this.rulerCanvas?.getBoundingClientRect();
+    if (!rect || !this.gridContainer) return;
+
+    const x = e.clientX - rect.left;
+    const beat = Math.max(0, Math.min(this.totalBeats, x / this.beatWidth));
+    const targetScroll = beat * this.beatWidth - rect.width / 2;
+    this.gridContainer.scrollLeft = Math.max(0, targetScroll);
+
+    // Update playhead position visually
+    this.activeBeat = beat;
+    this.drawGridWithPlayhead();
+
+    // If playback is active, also update the playback start time so
+    // playback continues from the new position on mouseup
+    if (this.playbackState === 'playing') {
+      this.playStartTime = performance.now() - (beat / this.bpm) * 60000;
+    }
   }
 
   // ============================================================

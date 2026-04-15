@@ -7,6 +7,7 @@ import { PianoRollEditor } from '@/lib/piano-roll';
 import type { PlaybackState } from '@/lib/piano-roll';
 import type { MelodyItem, ScaleDegree } from '@/types';
 import type { PitchPerfectWindow } from '@/types';
+import { AudioEngine } from '@/lib/audio-engine';
 
 interface PianoRollCanvasProps {
   melody: () => MelodyItem[];
@@ -25,11 +26,19 @@ export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
   let containerRef: HTMLDivElement | undefined;
   let editor: PianoRollEditor | null = null;
   let _onMelodyChange: ((melody: MelodyItem[]) => void) | null = null;
+  let audioEngine: AudioEngine | null = null;
 
   onMount(() => {
     if (!containerRef) return;
 
-    editor = new PianoRollEditor({ container: containerRef, onInstrumentChange: props.onInstrumentChange });
+    // Create and expose audio engine for piano roll playback
+    audioEngine = new AudioEngine();
+    (window as PitchPerfectWindow).pianoRollAudioEngine = audioEngine;
+
+    editor = new PianoRollEditor({
+      container: containerRef,
+      onInstrumentChange: props.onInstrumentChange
+    });
     _onMelodyChange = props.onMelodyChange;
     editor.setMelody(props.melody());
     editor.setScale(props.scale());
@@ -80,6 +89,8 @@ export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
     editor?.destroy();
     delete (window as PitchPerfectWindow).pianoRollEditor;
     delete (window as PitchPerfectWindow).pianoRollGenerateId;
+    audioEngine?.destroy();
+    delete (window as PitchPerfectWindow).pianoRollAudioEngine;
   });
 
   return <div ref={containerRef} class="piano-roll-container" />;
