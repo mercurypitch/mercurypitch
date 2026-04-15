@@ -16,11 +16,12 @@ import { PitchDetector } from './pitch-detector';
 import { freqToNote } from './scale-data';
 
 // Accuracy bands (threshold in cents → band score)
-const BANDS: { threshold: number; band: number }[] = [
-  { threshold: 10,  band: 100 },
-  { threshold: 25,  band: 90 },
-  { threshold: 50,  band: 75 },
-  { threshold: 999, band: 50 },
+const DEFAULT_BANDS: { threshold: number; band: number }[] = [
+  { threshold: 0,  band: 100 },
+  { threshold: 10, band: 90 },
+  { threshold: 25, band: 75 },
+  { threshold: 50, band: 50 },
+  { threshold: 999, band: 0 },
 ];
 
 export interface PracticeEngineCallbacks {
@@ -41,6 +42,7 @@ export class PracticeEngine {
   private sensitivity = 5;
   private sampleRate = 44100;
   private bufferSize = 2048;
+  private bands: { threshold: number; band: number }[] = [...DEFAULT_BANDS];
 
   // Playback state (shared with melody engine)
   private isPlaying = false;
@@ -73,6 +75,29 @@ export class PracticeEngine {
   setSensitivity(value: number): void {
     this.sensitivity = Math.max(1, Math.min(10, value));
     this.detector.setSensitivity(this.sensitivity);
+  }
+
+  /** Apply all settings at once (called when settings change) */
+  syncSettings(config: {
+    detectionThreshold?: number;
+    sensitivity?: number;
+    minConfidence?: number;
+    minAmplitude?: number;
+    bands?: { threshold: number; band: number }[];
+  }): void {
+    if (config.sensitivity !== undefined) {
+      this.sensitivity = Math.max(1, Math.min(10, config.sensitivity));
+      this.detector.setSensitivity(this.sensitivity);
+    }
+    if (config.minConfidence !== undefined) {
+      this.detector.setMinConfidence(config.minConfidence);
+    }
+    if (config.minAmplitude !== undefined) {
+      this.detector.setMinAmplitude(config.minAmplitude);
+    }
+    if (config.bands !== undefined) {
+      this.bands = [...config.bands];
+    }
   }
 
   setCallbacks(callbacks: PracticeEngineCallbacks): void {
@@ -201,7 +226,7 @@ export class PracticeEngine {
       totalError = sumCents;
     }
 
-    const rating = centsToRating(avgCents);
+    const rating = centsToRating(avgCents, this.bands);
 
     const result: NoteResult = {
       targetNote: this.currentTargetNote,
@@ -279,7 +304,9 @@ export class PracticeEngine {
 // Utility functions
 // ============================================================
 
-export function centsToRating(avgCents: number | null): AccuracyRating {
+export function centsToRating(avgCents: number | null, bands?: { threshold: number; band: number }[]): AccuracyRating {
+  // Use fixed thresholds matching the old app (not configurable) for rating labels
+  // Bands are used only for the numeric score calculation
   if (avgCents === null) return 'off';
   if (avgCents <= 5)  return 'perfect';
   if (avgCents <= 15) return 'excellent';
@@ -288,9 +315,10 @@ export function centsToRating(avgCents: number | null): AccuracyRating {
   return 'off';
 }
 
-export function centsToBand(avgCents: number | null): number {
+export function centsToBand(avgCents: number | null, bands?: { threshold: number; band: number }[]): number {
+  const useBands = bands ?? DEFAULT_BANDS;
   if (avgCents === null) return 0;
-  for (const b of BANDS) {
+  for (const b of useBands) {
     if (avgCents <= b.threshold) return b.band;
   }
   return 0;

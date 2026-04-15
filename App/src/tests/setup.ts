@@ -51,12 +51,13 @@ global.AudioContext = MockAudioContext as any;
   getUserMedia: () => Promise.resolve({ getTracks: () => [] }),
 };
 
-// Mock localStorage
+// Mock localStorage (functional per-key storage)
+const localStorageStore: Record<string, string> = {};
 const localStorageMock = {
-  getItem: () => null,
-  setItem: () => {},
-  removeItem: () => {},
-  clear: () => {},
+  getItem: (key: string) => localStorageStore[key] ?? null,
+  setItem: (key: string, value: string) => { localStorageStore[key] = value; },
+  removeItem: (key: string) => { delete localStorageStore[key]; },
+  clear: () => { Object.keys(localStorageStore).forEach(k => delete localStorageStore[k]); },
 };
 global.localStorage = localStorageMock as any;
 

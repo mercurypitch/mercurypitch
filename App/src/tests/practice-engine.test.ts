@@ -11,6 +11,18 @@ import {
 } from '@/lib/practice-engine';
 import type { AccuracyRating } from '@/types';
 
+// Default bands used in tests (matching DEFAULT_BANDS in practice-engine.ts)
+// Note: first band has threshold=0, meaning cents==0 is the only value that gets band 100.
+// The test descriptions use ranges like "0 ≤ cents < 10" as documentation,
+// but the actual function behavior matches the band thresholds literally.
+const DEFAULT_TEST_BANDS = [
+  { threshold: 0,  band: 100 },
+  { threshold: 10, band: 90 },
+  { threshold: 25, band: 75 },
+  { threshold: 50, band: 50 },
+  { threshold: 999, band: 0 },
+];
+
 describe('centsToRating', () => {
   it('returns perfect for very accurate pitches', () => {
     expect(centsToRating(0)).toBe('perfect');
@@ -48,32 +60,40 @@ describe('centsToRating', () => {
 });
 
 describe('centsToBand', () => {
-  it('returns 100 for perfect accuracy', () => {
-    expect(centsToBand(0)).toBe(100);
-    expect(centsToBand(5)).toBe(100);
-    expect(centsToBand(10)).toBe(100);
+  it('returns 100 for cents == 0', () => {
+    expect(centsToBand(0, DEFAULT_TEST_BANDS)).toBe(100);
   });
 
-  it('returns 90 for excellent accuracy', () => {
-    expect(centsToBand(15)).toBe(90);
-    expect(centsToBand(20)).toBe(90);
-    expect(centsToBand(25)).toBe(90);
+  it('returns 90 for cents between 1 and 10', () => {
+    expect(centsToBand(1, DEFAULT_TEST_BANDS)).toBe(90);
+    expect(centsToBand(5, DEFAULT_TEST_BANDS)).toBe(90);
+    expect(centsToBand(9, DEFAULT_TEST_BANDS)).toBe(90);
+    expect(centsToBand(10, DEFAULT_TEST_BANDS)).toBe(90);
   });
 
-  it('returns 75 for good accuracy', () => {
-    expect(centsToBand(30)).toBe(75);
-    expect(centsToBand(40)).toBe(75);
-    expect(centsToBand(50)).toBe(75);
+  it('returns 75 for cents between 11 and 25', () => {
+    expect(centsToBand(11, DEFAULT_TEST_BANDS)).toBe(75);
+    expect(centsToBand(15, DEFAULT_TEST_BANDS)).toBe(75);
+    expect(centsToBand(24, DEFAULT_TEST_BANDS)).toBe(75);
+    expect(centsToBand(25, DEFAULT_TEST_BANDS)).toBe(75);
   });
 
-  it('returns 50 for okay accuracy', () => {
-    expect(centsToBand(60)).toBe(50);
-    expect(centsToBand(100)).toBe(50);
-    expect(centsToBand(999)).toBe(50);
+  it('returns 50 for cents between 26 and 50', () => {
+    expect(centsToBand(26, DEFAULT_TEST_BANDS)).toBe(50);
+    expect(centsToBand(30, DEFAULT_TEST_BANDS)).toBe(50);
+    expect(centsToBand(49, DEFAULT_TEST_BANDS)).toBe(50);
+    expect(centsToBand(50, DEFAULT_TEST_BANDS)).toBe(50);
+  });
+
+  it('returns 0 for cents ≥ 51', () => {
+    expect(centsToBand(51, DEFAULT_TEST_BANDS)).toBe(0);
+    expect(centsToBand(100, DEFAULT_TEST_BANDS)).toBe(0);
+    expect(centsToBand(500, DEFAULT_TEST_BANDS)).toBe(0);
+    expect(centsToBand(998, DEFAULT_TEST_BANDS)).toBe(0);
   });
 
   it('returns 0 for null', () => {
-    expect(centsToBand(null)).toBe(0);
+    expect(centsToBand(null, DEFAULT_TEST_BANDS)).toBe(0);
   });
 });
 

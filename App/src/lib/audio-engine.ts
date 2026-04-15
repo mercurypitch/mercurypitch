@@ -80,6 +80,8 @@ export class AudioEngine {
    */
   playClick(): void {
     if (!this.audioCtx || !this.masterGain) return;
+    // Ensure AudioContext is ready
+    this.resume().catch(() => {});
 
     const osc = this.audioCtx.createOscillator();
     const gain = this.audioCtx.createGain();
@@ -178,7 +180,9 @@ export class AudioEngine {
   // ============================================================
 
   /** Play a tone at the given frequency */
-  playTone(frequency: number, duration?: number): void {
+  async playTone(frequency: number, duration?: number): Promise<void> {
+    await this.init();
+    await this.resume();
     if (!this.audioCtx || !this.masterGain) return;
 
     // Stop any existing oscillator
@@ -249,7 +253,9 @@ export class AudioEngine {
   // ============================================================
 
   /** Play a single note for a given duration (ms) */
-  playNote(frequency: number, durationMs: number, effectType?: EffectType): void {
+  async playNote(frequency: number, durationMs: number, effectType?: EffectType): Promise<void> {
+    await this.init();
+    await this.resume();
     if (!this.audioCtx || !this.masterGain) return;
 
     const now = this.audioCtx.currentTime;
@@ -342,6 +348,14 @@ export class AudioEngine {
 
   /** Play a beep sound */
   playBeep(type: 'start' | 'stop' = 'start'): void {
+    if (!this.audioCtx || !this.masterGain) {
+      this.init().then(() => this._doPlayBeep(type));
+      return;
+    }
+    this._doPlayBeep(type);
+  }
+
+  private _doPlayBeep(type: 'start' | 'stop'): void {
     if (!this.audioCtx || !this.masterGain) return;
 
     const osc = this.audioCtx.createOscillator();

@@ -158,6 +158,16 @@ export interface Preset {
   scale: ScaleDefinition[];
 }
 
+/** Accuracy band definition */
+export interface AccuracyBand {
+  /** Cents threshold for this band */
+  threshold: number;
+  /** Score band (100=perfect, 90=excellent, 75=good, 50=okay, 0=off) */
+  band: number;
+  /** Display color */
+  color: string;
+}
+
 /** Piano roll configuration */
 export interface PianoRollConfig {
   /** Row height in pixels */

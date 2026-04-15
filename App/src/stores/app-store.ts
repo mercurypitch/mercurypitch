@@ -4,7 +4,7 @@
 
 import { createSignal } from 'solid-js';
 import { createStore } from 'solid-js/store';
-import type { KeySignature } from '@/types';
+import type { AccuracyBand } from '@/types';
 
 // ── Key / Scale ─────────────────────────────────────────────
 
@@ -31,8 +31,112 @@ const [lastScore, setLastScore] = createSignal<number | null>(null);
 
 // ── Active tab ───────────────────────────────────────────────
 
-export type ActiveTab = 'practice' | 'editor' | 'about';
+export type ActiveTab = 'practice' | 'editor' | 'settings';
 const [activeTab, setActiveTab] = createSignal<ActiveTab>('practice');
+
+// ── Settings ───────────────────────────────────────────────────
+
+const SETTINGS_KEY = 'pitchperfect_settings';
+
+export interface SettingsConfig {
+  detectionThreshold: number; // 0.05–0.20 (default 0.10)
+  sensitivity: number;        // 1–10 (default 5)
+  minConfidence: number;      // 0.30–0.90 (default 0.50)
+  minAmplitude: number;      // 1–10 (default 5)
+  bands: AccuracyBand[];
+}
+
+const DEFAULT_BANDS: AccuracyBand[] = [
+  { threshold: 0,   band: 100, color: '#3fb950' },
+  { threshold: 10,  band: 90,  color: '#58a6ff' },
+  { threshold: 25,  band: 75,  color: '#2dd4bf' },
+  { threshold: 50,  band: 50,  color: '#d29922' },
+  { threshold: 999, band: 0,  color: '#f85149' },
+];
+
+const DEFAULT_SETTINGS: SettingsConfig = {
+  detectionThreshold: 0.10,
+  sensitivity: 5,
+  minConfidence: 0.50,
+  minAmplitude: 5,
+  bands: DEFAULT_BANDS,
+};
+
+const [settings, setSettings] = createSignal<SettingsConfig>(DEFAULT_SETTINGS);
+
+function loadSettingsFromStorage(): SettingsConfig {
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    return raw ? JSON.parse(raw) : DEFAULT_SETTINGS;
+  } catch {
+    return DEFAULT_SETTINGS;
+  }
+}
+
+function saveSettingsToStorage(data: SettingsConfig): void {
+  try {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(data));
+  } catch (e) {
+    console.warn('Failed to save settings:', e);
+  }
+}
+
+export function initSettings(): void {
+  setSettings(loadSettingsFromStorage());
+}
+
+export function setDetectionThreshold(value: number): void {
+  setSettings((s) => {
+    const updated = { ...s, detectionThreshold: Math.max(0.05, Math.min(0.20, value)) };
+    saveSettingsToStorage(updated);
+    return updated;
+  });
+}
+
+export function setSensitivity(value: number): void {
+  setSettings((s) => {
+    const updated = { ...s, sensitivity: Math.max(1, Math.min(10, value)) };
+    saveSettingsToStorage(updated);
+    return updated;
+  });
+}
+
+export function setMinConfidence(value: number): void {
+  setSettings((s) => {
+    const updated = { ...s, minConfidence: Math.max(0.30, Math.min(0.90, value)) };
+    saveSettingsToStorage(updated);
+    return updated;
+  });
+}
+
+export function setMinAmplitude(value: number): void {
+  setSettings((s) => {
+    const updated = { ...s, minAmplitude: Math.max(1, Math.min(10, value)) };
+    saveSettingsToStorage(updated);
+    return updated;
+  });
+}
+
+export function setBand(index: number, threshold: number): void {
+  setSettings((s) => {
+    const bands = [...s.bands];
+    // Keep sorted by threshold
+    bands[index] = { ...bands[index], threshold };
+    bands.sort((a, b) => a.threshold - b.threshold);
+    const updated = { ...s, bands };
+    saveSettingsToStorage(updated);
+    return updated;
+  });
+}
+
+export function getBandRating(avgCents: number | null): number {
+  const currentBands = settings().bands;
+  if (avgCents === null) return 0;
+  for (const b of currentBands) {
+    if (avgCents <= b.threshold) return b.band;
+  }
+  return 0;
+}
 
 // ── Presets ──────────────────────────────────────────────────
 
@@ -251,4 +355,14 @@ export const appStore = {
   loadPreset,
   getPresetNames,
   deletePreset,
+
+  // Settings
+  settings,
+  initSettings,
+  setDetectionThreshold,
+  setSensitivity,
+  setMinConfidence,
+  setMinAmplitude,
+  setBand,
+  getBandRating,
 };

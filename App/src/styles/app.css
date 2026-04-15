@@ -728,6 +728,29 @@ header h1 {
     display: none !important;
 }
 
+/* ===== Cycles Input ===== */
+.cycles-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.cycles-input {
+    width: 50px;
+    padding: 3px 6px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-primary);
+    font-size: 0.78rem;
+    text-align: center;
+}
+
+.cycles-input::-webkit-inner-spin-button,
+.cycles-input::-webkit-outer-spin-button {
+    width: 14px;
+}
+
 /* ===== Run Indicator ===== */
 #run-indicator {
     margin-left: auto;
@@ -1535,4 +1558,111 @@ header h1 {
     .roll-preset-name { width: 90px; }
     .roll-sep { display: none; }
     .roll-play-group { margin-left: auto; }
+}
+
+/* ===== Settings Panel ===== */
+#settings-panel {
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    background: var(--bg-primary);
+}
+
+.settings-panel {
+    width: 100%;
+    height: 100%;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.settings-content {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.settings-title {
+    font-size: 1.2rem;
+    color: var(--text-primary);
+    margin: 0 0 20px 0;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+}
+
+.settings-section {
+    margin-bottom: 30px;
+}
+
+.settings-section-title {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin: 0 0 12px 0;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.settings-desc {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin: -8px 0 12px 0;
+}
+
+.settings-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+
+.settings-row label {
+    min-width: 160px;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+}
+
+.settings-row input[type="range"] {
+    flex: 1;
+    min-width: 120px;
+    accent-color: var(--accent);
+}
+
+.settings-row input[type="number"] {
+    width: 60px;
+    padding: 4px 8px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    border-radius: 4px;
+    font-size: 0.85rem;
+    text-align: center;
+}
+
+.settings-val {
+    min-width: 40px;
+    text-align: right;
+    font-size: 0.85rem;
+    color: var(--accent);
+}
+
+.settings-row small {
+    width: 100%;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-top: -4px;
+}
+
+.settings-info {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 12px;
+    background: var(--bg-secondary);
+    border-radius: 6px;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.settings-info span {
+    color: var(--accent);
+    font-weight: bold;
 }
