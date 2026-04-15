@@ -301,8 +301,18 @@ export const App: Component<AppProps> = (props) => {
       }
       appStore.showNotification(`Preset "${e.detail.name}" loaded`, 'info');
     };
+    const handleOctaveChange = (e: CustomEvent) => {
+      // Sync octave and numOctaves to the scale builder
+      melodyStore.setOctave(e.detail.octave);
+      melodyStore.setNumOctaves(e.detail.numOctaves);
+    };
+    const handleModeChange = (e: CustomEvent) => {
+      appStore.setScaleType(e.detail.mode);
+    };
     window.addEventListener('pitchperfect:presetSaved', handlePresetSaved as EventListener);
     window.addEventListener('pitchperfect:presetLoaded', handlePresetLoaded as EventListener);
+    window.addEventListener('pitchperfect:octaveChange', handleOctaveChange as EventListener);
+    window.addEventListener('pitchperfect:modeChange', handleModeChange as EventListener);
 
     // Animation loop for pitch history
     let animId: number;
@@ -326,6 +336,8 @@ export const App: Component<AppProps> = (props) => {
       audioEngine.destroy();
       window.removeEventListener('pitchperfect:presetSaved', handlePresetSaved as EventListener);
       window.removeEventListener('pitchperfect:presetLoaded', handlePresetLoaded as EventListener);
+      window.removeEventListener('pitchperfect:octaveChange', handleOctaveChange as EventListener);
+      window.removeEventListener('pitchperfect:modeChange', handleModeChange as EventListener);
     });
 
     // Signal that app has fully initialized (for FOUC prevention)
@@ -607,6 +619,33 @@ export const App: Component<AppProps> = (props) => {
               >
                 <option value="">— Select —</option>
               </select>
+            </div>
+
+            {/* Share button */}
+            <div id="share-preset">
+              <button
+                id="btn-share"
+                class="share-btn"
+                title="Copy share link to clipboard"
+                onClick={async () => {
+                  const totalBeats = melodyStore.items.length > 0
+                    ? Math.max(...melodyStore.items.map(n => n.startBeat + n.duration))
+                    : undefined;
+                  const ok = await copyShareURL(
+                    melodyStore.items,
+                    appStore.bpm(),
+                    appStore.keyName(),
+                    appStore.scaleType(),
+                    totalBeats
+                  );
+                  appStore.showNotification(
+                    ok ? 'Share URL copied to clipboard!' : 'Failed to copy URL',
+                    ok ? 'success' : 'error'
+                  );
+                }}
+              >
+                Share
+              </button>
             </div>
 
             {/* Note list */}
@@ -892,6 +931,7 @@ export const App: Component<AppProps> = (props) => {
               onMelodyChange={(melody) => melodyStore.setMelody(melody)}
               onPlayClick={handlePlay}
               onResetClick={handleReset}
+              onInstrumentChange={(instrument) => audioEngine.setInstrument(instrument as any)}
             />
           </div>
         </Show>

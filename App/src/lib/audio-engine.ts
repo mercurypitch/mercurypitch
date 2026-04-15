@@ -4,6 +4,8 @@
 
 import type { MelodyItem, MelodyNote, AudioEngineCallbacks, EffectType } from '@/types';
 
+export type InstrumentType = 'sine' | 'piano' | 'organ' | 'strings' | 'synth';
+
 export class AudioEngine {
   private audioCtx: AudioContext | null = null;
   private masterGain: GainNode | null = null;
@@ -16,6 +18,7 @@ export class AudioEngine {
   private isPlaying = false;
   private callbacks: AudioEngineCallbacks = {};
   private volume = 0.8;
+  private currentInstrument: InstrumentType = 'sine';
   private _frequencyData = new Float32Array(0);
   private _timeData = new Float32Array(0);
   private _activeVoices = new Map<number, { oscillators: OscillatorNode[]; gains: GainNode[]; stopTime: number }>();
@@ -69,6 +72,25 @@ export class AudioEngine {
 
   getVolume(): number {
     return this.volume;
+  }
+
+  // ============================================================
+  // Instrument selection
+  // ============================================================
+
+  /** Set the instrument for note playback */
+  setInstrument(type: InstrumentType): void {
+    this.currentInstrument = type;
+  }
+
+  /** Get the current instrument */
+  getInstrument(): InstrumentType {
+    return this.currentInstrument;
+  }
+
+  /** Get available instrument names */
+  getInstruments(): InstrumentType[] {
+    return ['sine', 'piano', 'organ', 'strings', 'synth'];
   }
 
   // ============================================================
@@ -261,34 +283,139 @@ export class AudioEngine {
     const now = this.audioCtx.currentTime;
     const noteId = Date.now() + Math.random();
 
-    // Create main oscillator
-    const mainOsc = this.audioCtx.createOscillator();
-    const mainGain = this.audioCtx.createGain();
+    // Create oscillators based on instrument
+    const { oscillators, gain: mainGain } = this._createVoice(frequency, durationMs, effectType);
 
-    mainOsc.type = 'sine';
-    mainOsc.frequency.value = frequency;
-
-    // Fade in
     mainGain.gain.setValueAtTime(0, now);
     mainGain.gain.linearRampToValueAtTime(this.volume, now + 0.01);
 
-    // Apply effect modulation
-    this._applyEffectModulation(mainOsc, effectType, frequency, durationMs, now);
-
-    mainOsc.connect(mainGain);
+    for (const osc of oscillators) {
+      osc.connect(mainGain);
+      osc.start(now);
+      osc.stop(now + durationMs / 1000 + 0.1);
+    }
     mainGain.connect(this.masterGain);
-    mainOsc.start();
-    mainOsc.stop(now + durationMs / 1000 + 0.1);
 
     // Store voice reference
     this._activeVoices.set(noteId, {
-      oscillators: [mainOsc],
+      oscillators,
       gains: [mainGain],
       stopTime: now + durationMs / 1000,
     });
 
     // Auto-cleanup
     setTimeout(() => this._activeVoices.delete(noteId), durationMs + 200);
+  }
+
+  /**
+   * Create oscillators for an instrument. Returns oscillators and a master gain node.
+   */
+  private _createVoice(freq: number, durationMs: number, effectType?: EffectType): { oscillators: OscillatorNode[]; gain: GainNode } {
+    const ctx = this.audioCtx!;
+    const now = ctx.currentTime;
+    const dur = durationMs / 1000;
+
+    const masterGain = ctx.createGain();
+    const oscillators: OscillatorNode[] = [];
+
+    switch (this.currentInstrument) {
+      case 'piano': {
+        // Piano: fundamental + harmonics (additive synthesis)
+        const harmonics = [1, 2, 3, 4, 5, 6];
+        const amplitudes = [1, 0.5, 0.3, 0.2, 0.1, 0.05];
+        harmonics.forEach((h, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.value = freq * h;
+          gain.gain.value = amplitudes[i] * 0.15;
+          osc.connect(gain);
+          gain.connect(masterGain);
+          oscillators.push(osc);
+        });
+        // ADSR envelope for piano
+        masterGain.gain.setValueAtTime(0, now);
+        masterGain.gain.linearRampToValueAtTime(0.8, now + 0.01); // Attack
+        masterGain.gain.exponentialRampToValueAtTime(0.4, now + 0.1); // Decay
+        masterGain.gain.linearRampToValueAtTime(0.3, now + 0.2); // Sustain
+        break;
+      }
+      case 'organ': {
+        // Organ: fundamental + 5th + octave (drawbar style)
+        const ratios = [1, 1.5, 2, 3, 4];
+        const levels = [0.5, 0.3, 0.4, 0.2, 0.15];
+        ratios.forEach((r, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.value = freq * r;
+          gain.gain.value = levels[i] * 0.2;
+          osc.connect(gain);
+          gain.connect(masterGain);
+          oscillators.push(osc);
+        });
+        masterGain.gain.setValueAtTime(0.7, now);
+        break;
+      }
+      case 'strings': {
+        // Strings: two detuned oscillators + warmth
+        const detunes = [0, -8, 8];
+        const levels = [0.4, 0.3, 0.3];
+        detunes.forEach((detune, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.value = freq;
+          osc.detune.value = detune;
+          gain.gain.value = levels[i] * 0.1;
+          osc.connect(gain);
+          gain.connect(masterGain);
+          oscillators.push(osc);
+        });
+        // Slow fade in/out for strings feel
+        masterGain.gain.setValueAtTime(0, now);
+        masterGain.gain.linearRampToValueAtTime(0.6, now + 0.1);
+        masterGain.gain.setValueAtTime(0.6, now + dur - 0.1);
+        masterGain.gain.linearRampToValueAtTime(0, now + dur);
+        break;
+      }
+      case 'synth': {
+        // Synth: square + sawtooth blend
+        const osc1 = ctx.createOscillator();
+        osc1.type = 'square';
+        osc1.frequency.value = freq;
+        const gain1 = ctx.createGain();
+        gain1.gain.value = 0.08;
+        osc1.connect(gain1);
+        gain1.connect(masterGain);
+        oscillators.push(osc1);
+
+        const osc2 = ctx.createOscillator();
+        osc2.type = 'sawtooth';
+        osc2.frequency.value = freq;
+        const gain2 = ctx.createGain();
+        gain2.gain.value = 0.05;
+        osc2.connect(gain2);
+        gain2.connect(masterGain);
+        oscillators.push(osc2);
+        break;
+      }
+      default: {
+        // Sine (default)
+        const osc = ctx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        oscillators.push(osc);
+        break;
+      }
+    }
+
+    // Apply effect modulation to the primary oscillator (index 0)
+    if (effectType && oscillators.length > 0) {
+      this._applyEffectModulation(oscillators[0], effectType, freq, durationMs, now);
+    }
+
+    return { oscillators, gain: masterGain };
   }
 
   /**
