@@ -9,10 +9,10 @@ A living list of proposed features and improvements for PitchPerfect.
 - [ ] **Copy/paste notes** — Select one or more notes, copy them, and paste at a new beat position in the piano roll
 - [ ] **Snap-to-grid toggle** — Allow free placement (no snapping) for expressive timing
 - [ ] **Note velocity / velocity curve** — Visual velocity editing on note blocks (thicker/thinner or colour intensity)
-- [ ] **Keyboard shortcut for note entry** — Arrow keys navigate pitch lanes, Space/Enter place note
-- [ ] **Undo/redo for note edits** — Maintain a history stack of edit operations in the piano roll
+- [x] **Keyboard shortcut for note entry** — Arrow keys navigate pitch lanes, Space/Enter place note  **(DONE - PR #76)**
+- [x] **Undo/redo for note edits** — Maintain a history stack of edit operations in the piano roll  **(GH #73, DONE)**
 - [ ] **Multiple selection and bulk move/delete** — Shift-select or Ctrl-select multiple notes and drag or delete together
-- [ ] **Zoom controls for piano roll** — Zoom in/out on the time axis (horizontal) and pitch axis (vertical)
+- [ ] **Zoom controls for piano roll** — Zoom in/out on the time axis (horizontal) and pitch axis (vertical)  **(GH #74)**
 
 ---
 
@@ -28,12 +28,12 @@ A living list of proposed features and improvements for PitchPerfect.
 
 ## Practice & Feedback
 
-- [ ] **Session history** — Store past practice sessions with timestamps, scores, and accuracy per run
-- [ ] **Progress chart** — Visual line/bar chart of score improvement over time
-- [ ] **Pitch accuracy heatmap on piano keys** — Colour-code piano keys showing weak/strong notes based on history
-- [ ] **Target pitch overlay** — Show the target frequency as a horizontal guide line on the pitch canvas during Practice mode
+- [x] **Session history** — Store past practice sessions with timestamps, scores, and accuracy per run  **(DONE - PR #76)**
+- [x] **Progress chart** — Visual line/bar chart of score improvement over time  **(DONE - PR #76)**
+- [ ] **Pitch accuracy heatmap on piano keys** — Colour-code piano keys showing weak/strong notes based on history  **(GH #77)**
+- [ ] **Target pitch overlay** — Show the target frequency as a horizontal guide line on the pitch canvas during Practice mode  **(DONE - PR #76)**
 - [ ] **Custom practice modes** — e.g., "Random notes" (skip practising known notes), "Focus mode" (practice only recent errors)
-- [ ] **Count-in options** — Choose number of count-in beats (1, 2, 4, or off)
+- [x] **Count-in options** — Choose number of count-in beats (1, 2, 4, or off)  **(DONE - PR #76)**
 
 ---
 
@@ -52,28 +52,28 @@ A living list of proposed features and improvements for PitchPerfect.
 - [ ] **Responsive layout improvements** — Better mobile layout for the piano roll (touch gestures for note editing)
 - [ ] **Piano key width based on octave count** — Auto-size the piano key column to fit 2-3 octaves comfortably
 - [ ] **Waveform display during recording** — Show a live audio waveform in the pitch area while the mic is active
-- [ ] **Tab badges** — Show a count badge on the Editor tab when notes are present
+- [ ] **Tab badges** — Show a count badge on the Editor tab when notes are present  **(DONE - PR #76)**
 
 ---
 
 ## Data & Export
 
-- [ ] **Export melody as MIDI file** — Download the current preset melody as a standard .mid file
+- [ ] **Export melody as MIDI file** — Download the current preset melody as a standard .mid file  **(GH #75)**
 - [ ] **Export melody as audio (WAV/MP3)** — Render the current melody to an audio file
 - [ ] **Import MIDI file into editor** — Load a .mid file and populate the piano roll
 - [ ] **Cloud preset sync** — Save and load presets to/from a server (optional authentication)
-- [ ] **Shareable preset URLs** — Encode preset data in a URL query string for easy sharing
+- [x] **Shareable preset URLs** — Encode preset data in a URL query string for easy sharing  **(DONE - PR #77)**
 
 ---
 
 ## Infrastructure
 
 - [ ] **TypeScript migration** — Move all JS to TypeScript with strict types (see issue #33)
-- [ ] **Unit tests** — Add Jest/Vitest tests for scale-data.js, pitch-detector.js, and audio engine helpers
+- [ ] **Unit tests** — Add Jest/Vitest tests for scale-data.js, pitch-detector.js, and audio engine helpers  **(DONE - 105 tests added via Vitest, see PR #76)**
 - [ ] **E2E tests** — Playwright tests for critical flows: preset save/load, playback, note entry
-- [ ] **CI/CD pipeline** — GitHub Actions for lint, type-check, test, and build on every PR
+- [x] **CI/CD pipeline** — GitHub Actions for lint, type-check, test, and build on every PR  **(DONE - tests.yml + build.yml, see PR #76)**
 - [ ] **Bundle / build step** — Add a simple bundler (esbuild or Rollup) to produce a single JS bundle for production
 
 ---
 
-_Last updated: 2026-04-13_
+_Last updated: 2026-04-14_

@@ -15,18 +15,19 @@ import {
 import { PianoRollCanvas } from '@/components/PianoRollCanvas';
 import { PitchDisplay } from '@/components/PitchDisplay';
 import { PitchCanvas } from '@/components/PitchCanvas';
+import { loadFromURL, hasSharedPresetInURL, copyShareURL } from '@/lib/share-url';
 import { NoteList } from '@/components/NoteList';
 import { MicButton } from '@/components/MicButton';
 import { MetronomeButton } from '@/components/MetronomeButton';
 import { HistoryCanvas } from '@/components/HistoryCanvas';
-import { appStore } from '@/stores/app-store';
+import { appStore, getNoteAccuracyMap } from '@/stores/app-store';
 import { playback } from '@/stores/playback-store';
 import { melodyStore } from '@/stores/melody-store';
 import { melodyTotalBeats } from '@/lib/scale-data';
 import { AudioEngine } from '@/lib/audio-engine';
 import { MelodyEngine } from '@/lib/melody-engine';
 import { PracticeEngine } from '@/lib/practice-engine';
-import type { PitchResult, NoteResult, PracticeResult } from '@/types';
+import type { PitchResult, NoteResult, PracticeResult, NoteName } from '@/types';
 import type { PlaybackState } from '@/lib/piano-roll';
 import type { PitchSample } from '@/components/PitchCanvas';
 
@@ -57,7 +58,9 @@ export const App: Component<AppProps> = (props) => {
   const [practiceResult, setPracticeResult] = createSignal<PracticeResult | null>(null);
   const [liveScore, setLiveScore] = createSignal<number | null>(null);
   const [frequencyData, setFrequencyData] = createSignal<Float32Array | null>(null);
-  const [metronomeActive, setMetronomeActive] = createSignal(false);
+  const [countInBeat, setCountInBeat] = createSignal<number>(0);
+  const [isCountingIn, setIsCountingIn] = createSignal(false);
+  const [targetPitch, setTargetPitch] = createSignal<number | null>(null);
 
   // ── Stats panel ──────────────────────────────────────────────
 
@@ -95,6 +98,26 @@ export const App: Component<AppProps> = (props) => {
   onMount(() => {
     // Initialize presets from localStorage
     appStore.initPresets();
+    appStore.initSessionHistory();
+
+    // Check for shared preset in URL
+    if (hasSharedPresetInURL()) {
+      const sharedData = loadFromURL();
+      if (sharedData) {
+        // Load shared preset into melody store
+        melodyStore.setMelody(sharedData.melody);
+        if (sharedData.bpm) {
+          appStore.setBpm(sharedData.bpm);
+        }
+        if (sharedData.key) {
+          appStore.setKeyName(sharedData.key);
+        }
+        if (sharedData.scaleType) {
+          appStore.setScaleType(sharedData.scaleType);
+        }
+        appStore.showNotification('Shared preset loaded from URL', 'info');
+      }
+    }
 
     // Load saved volume
     const savedVol = parseInt(localStorage.getItem('pp_volume') || '80', 10);
@@ -106,10 +129,21 @@ export const App: Component<AppProps> = (props) => {
       melody: melodyStore.items,
       onNoteStart: (note, noteIndex) => {
         setCurrentNoteIndex(noteIndex);
+        setTargetPitch(note.freq);
         practiceEngine.onNoteStart(note, noteIndex);
       },
       onBeatUpdate: (beat) => {
         setCurrentBeat(beat);
+      },
+      onCountIn: (beat) => {
+        setCountInBeat(beat);
+        setIsCountingIn(true);
+        // Play a click sound for count-in
+        audioEngine?.playClick();
+      },
+      onCountInComplete: () => {
+        setIsCountingIn(false);
+        setCountInBeat(0);
       },
       onComplete: () => {
         const results = practiceEngine.onPlaybackComplete();
@@ -120,6 +154,19 @@ export const App: Component<AppProps> = (props) => {
           setLiveScore(pr.score);
           appStore.setLastScore(pr.score);
           appStore.setPracticeCount(appStore.practiceCount() + 1);
+
+          // Save to session history
+          appStore.saveSession({
+            score: pr.score,
+            avgCents: pr.avgCents,
+            noteCount: pr.noteCount,
+            noteResults: pr.noteResults.map((r) => ({
+              midi: r.targetNote.midi,
+              avgCents: r.avgCents,
+              rating: r.rating,
+            })),
+          });
+
           appStore.showNotification(
             `Practice complete! Score: ${pr.score}%`,
             pr.score >= 80 ? 'success' : pr.score >= 50 ? 'info' : 'warning'
@@ -224,7 +271,8 @@ export const App: Component<AppProps> = (props) => {
     setIsPaused(false);
     playback.startPlayback();
 
-    melodyEngine.start();
+    // Start with count-in if configured
+    melodyEngine.start(appStore.countIn());
   };
 
   const handlePause = () => {
@@ -270,13 +318,6 @@ export const App: Component<AppProps> = (props) => {
     }
   };
 
-  // ── Metronome ──────────────────────────────────────────────
-
-  const handleMetronomeToggle = () => {
-    setMetronomeActive((prev) => !prev);
-  };
-
-
   // ── Tab switching ─────────────────────────────────────────────
 
   const handleTabPractice = () => {
@@ -301,7 +342,13 @@ export const App: Component<AppProps> = (props) => {
     return note.name + note.octave;
   });
 
-  // ── Score overlay ──────────────────────────────────────────
+  // ── Accuracy heatmap ───────────────────────────────────────
+
+  const noteAccuracyMap = createMemo(() => {
+    // Track session history so this recomputes when history changes
+    void appStore.sessionHistory.length;
+    return getNoteAccuracyMap();
+  });
 
   const scoreGrade = createMemo(() => {
     const pr = practiceResult();
@@ -348,6 +395,9 @@ export const App: Component<AppProps> = (props) => {
             onClick={handleTabEditor}
           >
             Editor
+            <Show when={melodyStore.items.length > 0}>
+              <span class="tab-badge">{melodyStore.items.length}</span>
+            </Show>
           </button>
         </nav>
       </header>
@@ -548,19 +598,43 @@ export const App: Component<AppProps> = (props) => {
                 <span id="tempo-value">{appStore.bpm()}</span>
               </div>
 
-              {/* Precount (formerly metronome) */}
-              <button
-                id="btn-precount"
-                class={`ctrl-btn ${metronomeActive() ? 'active' : ''}`}
-                onClick={handleMetronomeToggle}
-                title="Pre-count before playback"
-              >
-                <svg viewBox="0 0 24 24" width="18" height="18">
-                  <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/>
-                  <path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>
-                </svg>
-                <span>Precount</span>
-              </button>
+              {/* Count-in options */}
+              <div class="countin-group">
+                <label class="opt-label">Count-in:</label>
+                <select
+                  id="countin-select"
+                  value={appStore.countIn()}
+                  onChange={(e) => appStore.setCountIn(parseInt(e.currentTarget.value) as any)}
+                  class="countin-select"
+                >
+                  <option value="0">Off</option>
+                  <option value="1">1 beat</option>
+                  <option value="2">2 beats</option>
+                  <option value="4">4 beats</option>
+                </select>
+              </div>
+
+              {/* Speed control */}
+              <div class="speed-group">
+                <label class="opt-label">Speed:</label>
+                <select
+                  id="speed-select"
+                  value="1"
+                  class="speed-select"
+                  onChange={(e) => {
+                    const speed = parseFloat(e.currentTarget.value);
+                    melodyEngine?.setPlaybackSpeed(speed);
+                  }}
+                >
+                  <option value="0.25">0.25x</option>
+                  <option value="0.5">0.5x</option>
+                  <option value="0.75">0.75x</option>
+                  <option value="1">1x</option>
+                  <option value="1.25">1.25x</option>
+                  <option value="1.5">1.5x</option>
+                  <option value="2">2x</option>
+                </select>
+              </div>
 
               {/* Sensitivity */}
               <div class="sensitivity-group">
@@ -594,7 +668,7 @@ export const App: Component<AppProps> = (props) => {
                             id: melodyStore.generateId(),
                             note: {
                               midi: n.midi,
-                              name: scaleNote?.name ?? '?',
+                              name: (scaleNote?.name ?? 'C') as NoteName,
                               octave: scaleNote?.octave ?? 4,
                               freq: scaleNote?.freq ?? 440,
                             },
@@ -614,6 +688,28 @@ export const App: Component<AppProps> = (props) => {
                 >
                   <option value="">— Load —</option>
                 </select>
+
+                <button
+                  id="btn-share"
+                  class="ctrl-btn small"
+                  title="Copy shareable URL"
+                  onClick={async () => {
+                    const success = await copyShareURL(
+                      melodyStore.items,
+                      appStore.bpm(),
+                      appStore.keyName(),
+                      appStore.scaleType()
+                    );
+                    if (success) {
+                      appStore.showNotification('Share URL copied to clipboard!', 'success');
+                    } else {
+                      appStore.showNotification('Failed to copy URL', 'error');
+                    }
+                  }}
+                >
+                  <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/></svg>
+                  Share
+                </button>
               </div>
 
               {/* Volume */}
@@ -641,6 +737,13 @@ export const App: Component<AppProps> = (props) => {
                 <span id="run-counter">Run 1</span>
                 <span id="cycle-counter" />
               </div>
+
+              {/* Count-in display */}
+              <Show when={isCountingIn()}>
+                <div id="countin-display" class="countin-badge">
+                  {countInBeat()}
+                </div>
+              </Show>
             </div>
 
             {/* Canvas */}
@@ -655,6 +758,8 @@ export const App: Component<AppProps> = (props) => {
                 isPlaying={isPlaying}
                 isPaused={isPaused}
                 isScrolling={() => false}
+                targetPitch={targetPitch}
+                noteAccuracyMap={noteAccuracyMap}
               />
               <div id="playhead" style={{ display: (isPlaying() || isPaused()) ? 'block' : 'none' }} />
             </div>
@@ -738,6 +843,22 @@ export const App: Component<AppProps> = (props) => {
                 Close
               </button>
             </div>
+
+            {/* Session history mini chart */}
+            <Show when={appStore.sessionHistory.length > 1}>
+              <div id="score-history">
+                <h3 class="history-title">Recent Progress</h3>
+                <div class="history-chart">
+                  {appStore.sessionHistory.slice(0, 10).map((session, idx) => (
+                    <div
+                      class="history-bar"
+                      style={{ height: `${session.score}%` }}
+                      title={`Score: ${session.score}%`}
+                    />
+                  ))}
+                </div>
+              </div>
+            </Show>
           </div>
         </div>
       </Show>

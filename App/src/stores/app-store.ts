@@ -18,6 +18,12 @@ const [isRecording, setIsRecording] = createSignal<boolean>(false);
 const [micActive, setMicActive] = createSignal<boolean>(false);
 const [micError, setMicError] = createSignal<string | null>(null);
 
+// ── Count-in ────────────────────────────────────────────────
+
+export type CountInOption = 0 | 1 | 2 | 4;
+
+const [countIn, setCountIn] = createSignal<CountInOption>(0);
+
 // ── Practice ────────────────────────────────────────────────
 
 const [practiceCount, setPracticeCount] = createSignal<number>(0);
@@ -122,6 +128,76 @@ export function showNotification(message: string, type: Notification['type'] = '
   }, 3000);
 }
 
+// ── Session History ──────────────────────────────────────────
+
+export interface SessionHistoryEntry {
+  id: number;
+  timestamp: number;
+  score: number;
+  avgCents: number;
+  noteCount: number;
+  noteResults: Array<{ midi: number; avgCents: number; rating: string }>;
+}
+
+const SESSION_HISTORY_KEY = 'pitchperfect_session_history';
+const MAX_HISTORY_ENTRIES = 50;
+
+const [sessionHistory, setSessionHistory] = createStore<SessionHistoryEntry[]>([]);
+
+function loadSessionHistory(): SessionHistoryEntry[] {
+  try {
+    const raw = localStorage.getItem(SESSION_HISTORY_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveSessionHistoryToStorage(data: SessionHistoryEntry[]): void {
+  try {
+    localStorage.setItem(SESSION_HISTORY_KEY, JSON.stringify(data));
+  } catch (e) {
+    console.warn('Failed to save session history:', e);
+  }
+}
+
+export function initSessionHistory(): void {
+  setSessionHistory(loadSessionHistory());
+}
+
+export function saveSession(entry: Omit<SessionHistoryEntry, 'id' | 'timestamp'>): void {
+  const id = Date.now();
+  const newEntry: SessionHistoryEntry = { ...entry, id, timestamp: Date.now() };
+  const updated = [newEntry, ...sessionHistory].slice(0, MAX_HISTORY_ENTRIES);
+  setSessionHistory(updated);
+  saveSessionHistoryToStorage(updated);
+}
+
+export function clearSessionHistory(): void {
+  setSessionHistory([]);
+  localStorage.removeItem(SESSION_HISTORY_KEY);
+}
+
+export function getSessionHistory(): SessionHistoryEntry[] {
+  return sessionHistory;
+}
+
+// Compute per-note accuracy map from session history (midi -> avg score %)
+export function getNoteAccuracyMap(): Map<number, number> {
+  const accMap = new Map<number, number[]>();
+  for (const entry of sessionHistory) {
+    for (const nr of entry.noteResults) {
+      if (!accMap.has(nr.midi)) accMap.set(nr.midi, []);
+      accMap.get(nr.midi)!.push(nr.avgCents >= -5 ? 100 : Math.max(0, 100 - Math.abs(nr.avgCents) * 5));
+    }
+  }
+  const result = new Map<number, number>();
+  for (const [midi, scores] of accMap) {
+    result.set(midi, Math.round(scores.reduce((a, b) => a + b, 0) / scores.length));
+  }
+  return result;
+}
+
 export const appStore = {
   // Key / scale
   keyName,
@@ -147,6 +223,10 @@ export const appStore = {
   lastScore,
   setLastScore,
 
+  // Count-in
+  countIn,
+  setCountIn,
+
   // Navigation
   activeTab,
   setActiveTab,
@@ -154,6 +234,14 @@ export const appStore = {
   // Notifications
   notifications,
   showNotification,
+
+  // Session History
+  sessionHistory,
+  initSessionHistory,
+  saveSession,
+  clearSessionHistory,
+  getSessionHistory,
+  getNoteAccuracyMap,
 
   // Presets
   presets,

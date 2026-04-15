@@ -2,7 +2,7 @@
 // Piano Roll Editor — Canvas-based note editor
 // ============================================================
 
-import type { MelodyItem, ScaleDegree, PianoRollConfig } from '@/types';
+import type { MelodyItem, ScaleDegree, PianoRollConfig, NoteName } from '@/types';
 
 export const PIANO_ROLL_CONFIG: PianoRollConfig = {
   rowHeight: 22,
@@ -93,9 +93,16 @@ export class PianoRollEditor {
   // Effect state
   private selectedEffect: EffectType | null = null;
 
+  // Undo/redo history
+  private historyStack: MelodyItem[][] = [];
+  private redoStack: MelodyItem[][] = [];
+  private readonly maxHistorySize = 50;
+
   // Callbacks
   private onMelodyChange?: (melody: MelodyItem[]) => void;
   private onNoteSelect?: (note: MelodyItem | null) => void;
+  private onPlayClick?: () => void;
+  private onResetClick?: () => void;
 
   // Presets
   private presetData: Record<string, {
@@ -129,6 +136,7 @@ export class PianoRollEditor {
   // ============================================================
 
   setMelody(melody: MelodyItem[]): void {
+    this.clearHistory();
     this.melody = melody.map((item) => ({
       ...item,
       id: item.id ?? this.nextNoteId++,
@@ -138,6 +146,73 @@ export class PianoRollEditor {
 
   getMelody(): MelodyItem[] {
     return [...this.melody];
+  }
+
+  // ============================================================
+  // Undo/Redo
+  // ============================================================
+
+  /** Push current state to history stack before making changes */
+  private pushHistory(): void {
+    // Save a deep copy of current melody
+    this.historyStack.push(JSON.parse(JSON.stringify(this.melody)));
+    // Limit history size
+    if (this.historyStack.length > this.maxHistorySize) {
+      this.historyStack.shift();
+    }
+    // Clear redo stack on new action
+    this.redoStack = [];
+  }
+
+  /** Undo the last action */
+  undo(): boolean {
+    if (this.historyStack.length === 0) return false;
+    // Save current state to redo stack
+    this.redoStack.push(JSON.parse(JSON.stringify(this.melody)));
+    // Restore previous state
+    this.melody = this.historyStack.pop()!;
+    this.emitMelodyChange();
+    this.draw();
+    this.updateUndoRedoButtons();
+    return true;
+  }
+
+  /** Redo the last undone action */
+  redo(): boolean {
+    if (this.redoStack.length === 0) return false;
+    // Save current state to history stack
+    this.historyStack.push(JSON.parse(JSON.stringify(this.melody)));
+    // Restore next state
+    this.melody = this.redoStack.pop()!;
+    this.emitMelodyChange();
+    this.draw();
+    this.updateUndoRedoButtons();
+    return true;
+  }
+
+  /** Check if undo is available */
+  canUndo(): boolean {
+    return this.historyStack.length > 0;
+  }
+
+  /** Check if redo is available */
+  canRedo(): boolean {
+    return this.redoStack.length > 0;
+  }
+
+  /** Clear all history (call on preset load or melody clear) */
+  clearHistory(): void {
+    this.historyStack = [];
+    this.redoStack = [];
+    this.updateUndoRedoButtons();
+  }
+
+  /** Update undo/redo button disabled states */
+  private updateUndoRedoButtons(): void {
+    const undoBtn = this.container.querySelector('#roll-undo-btn') as HTMLButtonElement;
+    const redoBtn = this.container.querySelector('#roll-redo-btn') as HTMLButtonElement;
+    if (undoBtn) undoBtn.disabled = !this.canUndo();
+    if (redoBtn) redoBtn.disabled = !this.canRedo();
   }
 
   setScale(scale: ScaleDegree[]): void {
@@ -274,7 +349,7 @@ export class PianoRollEditor {
       };
       const item: MelodyItem = {
         id: this.nextNoteId++,
-        note: { midi: n.midi, name: noteInfo.name, octave: noteInfo.octave, freq: noteInfo.freq },
+        note: { midi: n.midi, name: noteInfo.name as NoteName, octave: noteInfo.octave, freq: noteInfo.freq },
         startBeat: n.startBeat,
         duration: n.duration,
       };
@@ -352,6 +427,11 @@ export class PianoRollEditor {
           <button id="roll-octave-down" class="roll-octave-btn" title="Lower octave">-Oct</button>
           <span id="roll-octave-value" class="roll-octave-value">4</span>
           <button id="roll-octave-up" class="roll-octave-btn" title="Higher octave">+Oct</button>
+        </div>
+        <div class="roll-sep"></div>
+        <div class="roll-undo-group">
+          <button id="roll-undo-btn" class="roll-ctrl-btn" title="Undo (Ctrl+Z)" disabled>Undo</button>
+          <button id="roll-redo-btn" class="roll-ctrl-btn" title="Redo (Ctrl+Shift+Z)" disabled>Redo</button>
         </div>
         <div class="roll-sep"></div>
         <div class="roll-bars-group">
@@ -491,10 +571,12 @@ export class PianoRollEditor {
     // Playback controls
     container.querySelector('#roll-play-btn')?.addEventListener('click', () => {
       this.handlePlayClick();
+      this.onPlayClick?.();
     });
 
     container.querySelector('#roll-reset-btn')?.addEventListener('click', () => {
       this.resetPlayback();
+      this.onResetClick?.();
     });
 
     // Grid mouse events
@@ -577,6 +659,17 @@ export class PianoRollEditor {
       this.updateBeatInfo();
     });
 
+    // Undo/redo buttons
+    container.querySelector('#roll-undo-btn')?.addEventListener('click', () => {
+      this.updateUndoRedoButtons();
+      this.undo();
+    });
+
+    container.querySelector('#roll-redo-btn')?.addEventListener('click', () => {
+      this.updateUndoRedoButtons();
+      this.redo();
+    });
+
     // Listen for preset changes from other tabs to refresh preset list
     window.addEventListener('pitchperfect:presetSaved', () => {
       this.loadPresets();
@@ -590,6 +683,14 @@ export class PianoRollEditor {
     const y = e.clientY - rect.top;
     const beat = x / this.beatWidth;
     const row = Math.floor(y / this.rowHeight);
+
+    // Capture history for potential drag/resize operations
+    if (this.activeTool === 'place' || this.activeTool === 'select') {
+      const existingNote = this.findNoteAt(beat, row);
+      if (existingNote) {
+        this.pushHistory();
+      }
+    }
 
     if (this.activeTool === 'place') {
       const existingNote = this.findNoteAt(beat, row);
@@ -696,6 +797,16 @@ export class PianoRollEditor {
   }
 
   private onKeyDown(e: KeyboardEvent): void {
+    // Undo: Ctrl+Z (or Cmd+Z on Mac)
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+      e.preventDefault();
+      if (this.undo()) return;
+    }
+    // Redo: Ctrl+Shift+Z or Ctrl+Y
+    if ((e.ctrlKey || e.metaKey) && ((e.key === 'z' && e.shiftKey) || e.key === 'y')) {
+      e.preventDefault();
+      if (this.redo()) return;
+    }
     if (e.key === 'Delete' || e.key === 'Backspace') {
       if (this.selectedNoteId !== null) {
         const note = this.melody.find((n) => (n.id ?? 0) === this.selectedNoteId);
@@ -710,6 +821,39 @@ export class PianoRollEditor {
       this.selectedNoteId = null;
       this.onNoteSelect?.(null);
       this.draw();
+    } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      // Navigate to next/prev note in melody
+      const sortedNotes = [...this.melody].sort((a, b) => a.startBeat - b.startBeat);
+      if (sortedNotes.length === 0) return;
+
+      const currentIdx = this.selectedNoteId !== null
+        ? sortedNotes.findIndex((n) => (n.id ?? 0) === this.selectedNoteId)
+        : -1;
+
+      let newIdx: number;
+      if (e.key === 'ArrowUp') {
+        newIdx = currentIdx <= 0 ? sortedNotes.length - 1 : currentIdx - 1;
+      } else {
+        newIdx = currentIdx >= sortedNotes.length - 1 ? 0 : currentIdx + 1;
+      }
+      const noteToSelect = sortedNotes[newIdx];
+      this.selectedNoteId = noteToSelect.id ?? null;
+      this.onNoteSelect?.(noteToSelect);
+      this.draw();
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      e.preventDefault();
+      // Move selected note by half beat
+      if (this.selectedNoteId !== null) {
+        const note = this.melody.find((n) => (n.id ?? 0) === this.selectedNoteId);
+        if (note) {
+          this.pushHistory();
+          const delta = e.key === 'ArrowLeft' ? -0.5 : 0.5;
+          note.startBeat = Math.max(0, note.startBeat + delta);
+          this.emitMelodyChange();
+          this.draw();
+        }
+      }
     }
   }
 
@@ -720,6 +864,8 @@ export class PianoRollEditor {
   private placeNote(beat: number, row: number, duration: number): void {
     const scaleNote = this.scale[row];
     if (!scaleNote || scaleNote.name.includes('=')) return;
+
+    this.pushHistory();
 
     const snappedBeat = Math.floor(beat) + (beat % 1 >= 0.5 ? 0.5 : 0);
     const id = this.nextNoteId++;
@@ -752,6 +898,7 @@ export class PianoRollEditor {
   }
 
   private eraseNote(note: MelodyItem): void {
+    this.pushHistory();
     const idx = this.melody.indexOf(note);
     if (idx !== -1) {
       this.melody.splice(idx, 1);
