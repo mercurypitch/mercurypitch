@@ -1590,6 +1590,11 @@ export class PianoRollEditor {
   // Effect application
   // ============================================================
 
+  private _getSelectedNotes(): MelodyItem[] {
+    if (this.selectedNoteId === null) return [];
+    return this.melody.filter((n) => n.id === this.selectedNoteId);
+  }
+
   private _applyEffect(type: EffectType): void {
     if (this.selectedNoteId === null) return;
     const note = this.melody.find((n) => n.id === this.selectedNoteId);
@@ -1601,7 +1606,7 @@ export class PianoRollEditor {
       // Apply vibrato to selected notes (if multiple selected)
       const selected = this._getSelectedNotes();
       if (selected.length > 1) {
-        selected.forEach((n) => {
+        selected.forEach((n: MelodyItem) => {
           n.effectType = 'vibrato';
           n.linkedTo = [];
         });
