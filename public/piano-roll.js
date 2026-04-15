@@ -822,6 +822,7 @@
         document.getElementById('roll-play-btn').addEventListener('click', function () {
             self._playMelody();
         });
+
         document.getElementById('roll-reset-btn').addEventListener('click', function () {
             self._resetMelody();
         });
@@ -897,7 +898,7 @@
     // ========== MOUSE EVENTS ==========
     PianoRollEditor.prototype._onGridMouseDown = function (e) {
         const rect = this.gridCanvas.getBoundingClientRect();
-        let x = e.clientX - rect.left;
+        let x = e.clientX - rect.left + this.gridScrollX;
         let y = e.clientY - rect.top;
 
         if (this.activeTool === 'erase') {
@@ -1128,7 +1129,7 @@
     PianoRollEditor.prototype._onRightClick = function (e) {
         e.preventDefault();
         const rect = this.gridCanvas.getBoundingClientRect();
-        let x = e.clientX - rect.left;
+        let x = e.clientX - rect.left + this.gridScrollX;
         let y = e.clientY - rect.top;
         let note = this._getNoteAt(x, y);
         if (note) {
@@ -1615,24 +1616,34 @@
 
         if (this._playbackState === 'stopped') {
             // Initialize audio context on first play (browser requirement)
+            // Use .then() so playback starts only after audio context is ready
+            const startPlayback = () => {
+                const sortedNotes = this.notes.slice().sort(function (a, b) { return a.startBeat - b.startBeat; });
+                const lastNote = sortedNotes[sortedNotes.length - 1];
+                // unused: var totalDuration = (lastNote.startBeat + lastNote.duration) * (60000 / this.bpm);
+
+                this._playbackState = 'playing';
+                this._playStartTime = performance.now() - (this._activeBeat / this.bpm) * 60000;
+                this._pauseStartTime = 0;
+                this._playAnimationId = requestAnimationFrame(function () { self._animatePlayback(); });
+
+                playIcon.style.display = 'none';
+                pauseIcon.style.display = 'block';
+                playBtn.querySelector('span').textContent = 'Pause';
+                resetBtn.disabled = false;
+            };
+
             if (window.pianoRollAudioEngine) {
-                window.pianoRollAudioEngine.init();
+                const initPromise = window.pianoRollAudioEngine.init();
+                if (initPromise && typeof initPromise.then === 'function') {
+                    initPromise.then(startPlayback);
+                } else {
+                    startPlayback();
+                }
+            } else {
+                startPlayback();
             }
-
-            // Start fresh playback — use playhead position if user dragged it while stopped
-            const sortedNotes = this.notes.slice().sort(function (a, b) { return a.startBeat - b.startBeat; });
-            const lastNote = sortedNotes[sortedNotes.length - 1];
-            // unused: var totalDuration = (lastNote.startBeat + lastNote.duration) * (60000 / this.bpm);
-
-            this._playbackState = 'playing';
-            this._playStartTime = performance.now() - (this._activeBeat / this.bpm) * 60000;
-            this._pauseStartTime = 0;
-            this._playAnimationId = requestAnimationFrame(function () { self._animatePlayback(); });
-
-            playIcon.style.display = 'none';
-            pauseIcon.style.display = 'block';
-            playBtn.querySelector('span').textContent = 'Pause';
-            resetBtn.disabled = false;
+            return;
         } else if (this._playbackState === 'playing') {
             // Pause
             this._pauseStartTime = performance.now();
