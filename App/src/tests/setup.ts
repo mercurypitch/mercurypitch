@@ -47,9 +47,9 @@ class MockAnalyser {
 class MockMediaStreamAudioSourceNode {}
 
 global.AudioContext = MockAudioContext as any;
-global.navigator.mediaDevices = {
+(global.navigator as any).mediaDevices = {
   getUserMedia: () => Promise.resolve({ getTracks: () => [] }),
-} as any;
+};
 
 // Mock localStorage
 const localStorageMock = {

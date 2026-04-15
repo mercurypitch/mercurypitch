@@ -15,6 +15,7 @@ import {
 import { PianoRollCanvas } from '@/components/PianoRollCanvas';
 import { PitchDisplay } from '@/components/PitchDisplay';
 import { PitchCanvas } from '@/components/PitchCanvas';
+import { loadFromURL, hasSharedPresetInURL, copyShareURL } from '@/lib/share-url';
 import { NoteList } from '@/components/NoteList';
 import { MicButton } from '@/components/MicButton';
 import { MetronomeButton } from '@/components/MetronomeButton';
@@ -95,6 +96,25 @@ export const App: Component<AppProps> = (props) => {
   onMount(() => {
     // Initialize presets from localStorage
     appStore.initPresets();
+
+    // Check for shared preset in URL
+    if (hasSharedPresetInURL()) {
+      const sharedData = loadFromURL();
+      if (sharedData) {
+        // Load shared preset into melody store
+        melodyStore.setMelody(sharedData.melody);
+        if (sharedData.bpm) {
+          appStore.setBpm(sharedData.bpm);
+        }
+        if (sharedData.key) {
+          appStore.setKeyName(sharedData.key);
+        }
+        if (sharedData.scaleType) {
+          appStore.setScaleType(sharedData.scaleType);
+        }
+        appStore.showNotification('Shared preset loaded from URL', 'info');
+      }
+    }
 
     // Load saved volume
     const savedVol = parseInt(localStorage.getItem('pp_volume') || '80', 10);
@@ -614,6 +634,28 @@ export const App: Component<AppProps> = (props) => {
                 >
                   <option value="">— Load —</option>
                 </select>
+
+                <button
+                  id="btn-share"
+                  class="ctrl-btn small"
+                  title="Copy shareable URL"
+                  onClick={async () => {
+                    const success = await copyShareURL(
+                      melodyStore.items,
+                      appStore.bpm(),
+                      appStore.keyName(),
+                      appStore.scaleType()
+                    );
+                    if (success) {
+                      appStore.showNotification('Share URL copied to clipboard!', 'success');
+                    } else {
+                      appStore.showNotification('Failed to copy URL', 'error');
+                    }
+                  }}
+                >
+                  <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/></svg>
+                  Share
+                </button>
               </div>
 
               {/* Volume */}

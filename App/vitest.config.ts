@@ -3,7 +3,7 @@ import solidPlugin from 'vite-plugin-solid';
 import path from 'path';
 
 export default defineConfig({
-  plugins: [solidPlugin()],
+  plugins: [solidPlugin() as any],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

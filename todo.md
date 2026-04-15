@@ -62,18 +62,18 @@ A living list of proposed features and improvements for PitchPerfect.
 - [ ] **Export melody as audio (WAV/MP3)** — Render the current melody to an audio file
 - [ ] **Import MIDI file into editor** — Load a .mid file and populate the piano roll
 - [ ] **Cloud preset sync** — Save and load presets to/from a server (optional authentication)
-- [ ] **Shareable preset URLs** — Encode preset data in a URL query string for easy sharing
+- [x] **Shareable preset URLs** — Encode preset data in a URL query string for easy sharing  **(DONE - PR #77)**
 
 ---
 
 ## Infrastructure
 
 - [ ] **TypeScript migration** — Move all JS to TypeScript with strict types (see issue #33)
-- [ ] **Unit tests** — Add Jest/Vitest tests for scale-data.js, pitch-detector.js, and audio engine helpers
+- [ ] **Unit tests** — Add Jest/Vitest tests for scale-data.js, pitch-detector.js, and audio engine helpers  **(DONE - 105 tests added via Vitest, see PR #76)**
 - [ ] **E2E tests** — Playwright tests for critical flows: preset save/load, playback, note entry
-- [ ] **CI/CD pipeline** — GitHub Actions for lint, type-check, test, and build on every PR
+- [x] **CI/CD pipeline** — GitHub Actions for lint, type-check, test, and build on every PR  **(DONE - tests.yml + build.yml, see PR #76)**
 - [ ] **Bundle / build step** — Add a simple bundler (esbuild or Rollup) to produce a single JS bundle for production
 
 ---
 
-_Last updated: 2026-04-13_
+_Last updated: 2026-04-14_
