@@ -814,6 +814,22 @@ export const App: Component<AppProps> = (props) => {
                 Close
               </button>
             </div>
+
+            {/* Session history mini chart */}
+            <Show when={appStore.sessionHistory.length > 1}>
+              <div id="score-history">
+                <h3 class="history-title">Recent Progress</h3>
+                <div class="history-chart">
+                  {appStore.sessionHistory.slice(0, 10).map((session, idx) => (
+                    <div
+                      class="history-bar"
+                      style={{ height: `${session.score}%` }}
+                      title={`Score: ${session.score}%`}
+                    />
+                  ))}
+                </div>
+              </div>
+            </Show>
           </div>
         </div>
       </Show>
