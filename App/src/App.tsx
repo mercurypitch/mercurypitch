@@ -60,6 +60,7 @@ export const App: Component<AppProps> = (props) => {
   const [frequencyData, setFrequencyData] = createSignal<Float32Array | null>(null);
   const [countInBeat, setCountInBeat] = createSignal<number>(0);
   const [isCountingIn, setIsCountingIn] = createSignal(false);
+  const [targetPitch, setTargetPitch] = createSignal<number | null>(null);
 
   // ── Stats panel ──────────────────────────────────────────────
 
@@ -127,6 +128,7 @@ export const App: Component<AppProps> = (props) => {
       melody: melodyStore.items,
       onNoteStart: (note, noteIndex) => {
         setCurrentNoteIndex(noteIndex);
+        setTargetPitch(note.freq);
         practiceEngine.onNoteStart(note, noteIndex);
       },
       onBeatUpdate: (beat) => {
@@ -711,6 +713,7 @@ export const App: Component<AppProps> = (props) => {
                 isPlaying={isPlaying}
                 isPaused={isPaused}
                 isScrolling={() => false}
+                targetPitch={targetPitch}
               />
               <div id="playhead" style={{ display: (isPlaying() || isPaused()) ? 'block' : 'none' }} />
             </div>

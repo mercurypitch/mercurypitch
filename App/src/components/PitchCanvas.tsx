@@ -21,6 +21,7 @@ interface PitchCanvasProps {
   isPlaying: () => boolean;
   isPaused: () => boolean;
   isScrolling: () => boolean;
+  targetPitch?: () => number | null;
 }
 
 export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
@@ -80,6 +81,41 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     return (beat / Math.max(1, props.totalBeats())) * w;
   };
 
+  const drawTargetPitch = (h: number) => {
+    const target = props.targetPitch?.();
+    if (!target || target <= 0) return;
+    const ty = freqToY(target, h);
+
+    // Threshold bands (±10 cents = ±0.58% in frequency)
+    const centsBand = 0.1;
+    const freqLow = target / Math.pow(2, centsBand / 1200);
+    const freqHigh = target * Math.pow(2, centsBand / 1200);
+    const yLow = freqToY(freqLow, h);
+    const yHigh = freqToY(freqHigh, h);
+
+    // Shaded zone
+    ctx!.fillStyle = 'rgba(88,166,255,0.08)';
+    ctx!.fillRect(0, yHigh, ctx!.canvas.clientWidth, yLow - yHigh);
+
+    // Target line
+    ctx!.strokeStyle = 'rgba(88,166,255,0.5)';
+    ctx!.lineWidth = 2;
+    ctx!.setLineDash([6, 4]);
+    ctx!.beginPath();
+    ctx!.moveTo(0, ty);
+    ctx!.lineTo(ctx!.canvas.clientWidth, ty);
+    ctx!.stroke();
+    ctx!.setLineDash([]);
+
+    // Label
+    ctx!.fillStyle = '#58a6ff';
+    ctx!.font = 'bold 10px sans-serif';
+    ctx!.textAlign = 'left';
+    ctx!.textBaseline = 'middle';
+    const label = `♪ ${Math.round(target)} Hz`;
+    ctx!.fillText(label, 8, ty);
+  };
+
   const draw = () => {
     if (!ctx || !canvasRef) return;
     const w = canvasRef.clientWidth;
@@ -110,6 +146,9 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       ctx.textAlign = 'right';
       ctx.fillText(note.name + note.octave, w - 6, y - 3);
     }
+
+    // Target pitch overlay
+    drawTargetPitch(h);
 
     // Melody blocks
     let accum = 0;
@@ -227,6 +266,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     props.currentNoteIndex();
     props.isPlaying();
     props.melody();
+    props.targetPitch?.();
   });
 
   return <canvas ref={canvasRef} style={{ display: 'block', width: '100%', height: '100%' }} />;
