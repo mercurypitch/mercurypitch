@@ -142,6 +142,8 @@ export const App: Component<AppProps> = (props) => {
         setCurrentNoteIndex(noteIndex);
         setTargetPitch(note.freq);
         practiceEngine.onNoteStart(note, noteIndex);
+        // Play tone for the note
+        audioEngine.playTone(note.freq);
       },
       onBeatUpdate: (beat) => {
         setCurrentBeat(beat);
@@ -347,6 +349,10 @@ export const App: Component<AppProps> = (props) => {
     setCurrentNoteIndex(-1);
     melodyStore.setCurrentNoteIndex(-1);
 
+    // Initialize audio engine
+    await audioEngine.init();
+    await audioEngine.resume();
+
     // Sync engine with current melody/bpm
     melodyEngine.setMelody(melodyStore.items);
     melodyEngine.setBPM(appStore.bpm());
@@ -541,7 +547,7 @@ export const App: Component<AppProps> = (props) => {
 
               <span class="preset-label">Scale:</span>
               <select
-                id="preset-select"
+                id="scale-select"
                 value={appStore.scaleType()}
                 onChange={(e) => {
                   const st = e.currentTarget.value;
@@ -562,14 +568,45 @@ export const App: Component<AppProps> = (props) => {
                 <option value="blues">Blues</option>
                 <option value="chromatic">Chromatic</option>
               </select>
+            </div>
 
-              <button
-                class="ctrl-btn small"
-                title="Clear melody"
-                onClick={() => melodyStore.clearMelody()}
+            {/* Preset selector */}
+            <div id="preset-info">
+              <span class="preset-label">Preset:</span>
+              <select
+                id="preset-select"
+                onChange={(e) => {
+                  const name = e.currentTarget.value;
+                  if (name) {
+                    const preset = appStore.loadPreset(name);
+                    if (preset) {
+                      // Load preset melody
+                      const melody = preset.notes.map((n) => {
+                        const scaleNote = melodyStore.currentScale().find((s) => s.midi === n.midi);
+                        return {
+                          id: melodyStore.generateId(),
+                          note: {
+                            midi: n.midi,
+                            name: (scaleNote?.name ?? 'C') as NoteName,
+                            octave: scaleNote?.octave ?? 4,
+                            freq: scaleNote?.freq ?? 440,
+                          },
+                          startBeat: n.startBeat,
+                          duration: n.duration,
+                        };
+                      });
+                      melodyStore.setMelody(melody);
+                      if (preset.bpm) {
+                        appStore.setBpm(preset.bpm);
+                        melodyEngine.setBPM(preset.bpm);
+                      }
+                      appStore.showNotification(`Preset "${name}" loaded`, 'info');
+                    }
+                  }
+                }}
               >
-                Clear
-              </button>
+                <option value="">— Select —</option>
+              </select>
             </div>
 
             {/* Note list */}
@@ -677,6 +714,29 @@ export const App: Component<AppProps> = (props) => {
                 <button id="btn-practice" class={`mode-btn ${playMode() === 'practice' ? 'active' : ''}`} onClick={() => setPlayMode('practice')}>Practice</button>
               </div>
 
+              {/* Practice options (shown when practice mode) */}
+              <Show when={playMode() === 'practice'}>
+                <div class="practice-options">
+                  <label class="opt-label">Cycles:</label>
+                  <input
+                    type="number"
+                    id="cycles"
+                    min="2"
+                    max="20"
+                    value={practiceCycles()}
+                    onInput={(e) => setPracticeCycles(Math.max(2, Math.min(20, parseInt(e.currentTarget.value) || 5)))}
+                    class="cycles-input"
+                  />
+                  <button
+                    id="btn-start-practice"
+                    class="ctrl-btn accent"
+                    onClick={handlePlay}
+                  >
+                    Start
+                  </button>
+                </div>
+              </Show>
+
               <div class="ctrl-sep" />
 
               {/* Tempo */}
@@ -752,68 +812,6 @@ export const App: Component<AppProps> = (props) => {
                 <span id="sensitivity-value">5</span>
               </div>
 
-              {/* Preset */}
-              <div class="preset-group">
-                <label class="opt-label">Preset:</label>
-                <select
-                  id="preset-select"
-                  class="preset-select"
-                  onChange={(e) => {
-                    const name = e.currentTarget.value;
-                    if (name) {
-                      const preset = appStore.loadPreset(name);
-                      if (preset) {
-                        // Load preset melody
-                        const melody = preset.notes.map((n) => {
-                          const scaleNote = melodyStore.currentScale().find((s) => s.midi === n.midi);
-                          return {
-                            id: melodyStore.generateId(),
-                            note: {
-                              midi: n.midi,
-                              name: (scaleNote?.name ?? 'C') as NoteName,
-                              octave: scaleNote?.octave ?? 4,
-                              freq: scaleNote?.freq ?? 440,
-                            },
-                            startBeat: n.startBeat,
-                            duration: n.duration,
-                          };
-                        });
-                        melodyStore.setMelody(melody);
-                        if (preset.bpm) {
-                          appStore.setBpm(preset.bpm);
-                          melodyEngine.setBPM(preset.bpm);
-                        }
-                        appStore.showNotification(`Preset "${name}" loaded`, 'info');
-                      }
-                    }
-                  }}
-                >
-                  <option value="">— Load —</option>
-                </select>
-
-                <button
-                  id="btn-share"
-                  class="ctrl-btn small"
-                  title="Copy shareable URL"
-                  onClick={async () => {
-                    const success = await copyShareURL(
-                      melodyStore.items,
-                      appStore.bpm(),
-                      appStore.keyName(),
-                      appStore.scaleType()
-                    );
-                    if (success) {
-                      appStore.showNotification('Share URL copied to clipboard!', 'success');
-                    } else {
-                      appStore.showNotification('Failed to copy URL', 'error');
-                    }
-                  }}
-                >
-                  <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/></svg>
-                  Share
-                </button>
-              </div>
-
               {/* Volume */}
               <div class="volume-group">
                 <label class="opt-label">Vol:</label>
@@ -841,22 +839,6 @@ export const App: Component<AppProps> = (props) => {
                   {playMode() === 'practice' ? `Cycle ${currentCycle()}/${practiceCycles()}` : playMode() === 'repeat' ? 'Repeat' : ''}
                 </span>
               </div>
-
-              {/* Practice cycles (shown in practice mode) */}
-              <Show when={playMode() === 'practice'}>
-                <div class="cycles-group">
-                  <label class="opt-label">Cycles:</label>
-                  <input
-                    type="number"
-                    id="cycles"
-                    min="2"
-                    max="20"
-                    value={practiceCycles()}
-                    onInput={(e) => setPracticeCycles(Math.max(2, Math.min(20, parseInt(e.currentTarget.value) || 5)))}
-                    class="cycles-input"
-                  />
-                </div>
-              </Show>
 
               {/* Count-in display */}
               <Show when={isCountingIn()}>
