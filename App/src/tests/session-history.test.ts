@@ -3,7 +3,7 @@
 // ============================================================
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { appStore, saveSession, clearSessionHistory, getSessionHistory, initSessionHistory, type SessionHistoryEntry } from '@/stores/app-store';
+import { appStore, saveSession, clearSessionHistory, getSessionHistory, initSessionHistory, getNoteAccuracyMap, type SessionHistoryEntry } from '@/stores/app-store';
 
 // Mock localStorage
 const localStorageMock = (() => {
@@ -103,6 +103,54 @@ describe('Session History', () => {
 
       expect(() => initSessionHistory()).not.toThrow();
       expect(getSessionHistory().length).toBe(0);
+    });
+  });
+
+  describe('getNoteAccuracyMap', () => {
+    it('returns empty map when no sessions', () => {
+      const map = getNoteAccuracyMap();
+      expect(map.size).toBe(0);
+    });
+
+    it('computes average accuracy per MIDI note', () => {
+      saveSession({
+        score: 90,
+        avgCents: 5,
+        noteCount: 2,
+        noteResults: [
+          { midi: 60, avgCents: 0, rating: 'perfect' },
+          { midi: 64, avgCents: 0, rating: 'perfect' },
+        ],
+      });
+      saveSession({
+        score: 70,
+        avgCents: 15,
+        noteCount: 2,
+        noteResults: [
+          { midi: 60, avgCents: 20, rating: 'good' },
+          { midi: 67, avgCents: 0, rating: 'perfect' },
+        ],
+      });
+
+      const map = getNoteAccuracyMap();
+      // midi 60: 100 (0¢) and max(0, 0) (20¢) = 100 and 0 -> avg 50
+      // midi 64: 100 (0¢) only -> 100
+      // midi 67: 100 (0¢) only -> 100
+      expect(map.get(60)).toBeDefined();
+      expect(map.get(64)).toBeDefined();
+      expect(map.get(67)).toBeDefined();
+    });
+
+    it('clamps negative cents to max score', () => {
+      saveSession({
+        score: 100,
+        avgCents: -3,
+        noteCount: 1,
+        noteResults: [{ midi: 60, avgCents: -3, rating: 'perfect' }],
+      });
+      const map = getNoteAccuracyMap();
+      // -3¢ >= -5, so score = 100
+      expect(map.get(60)).toBe(100);
     });
   });
 

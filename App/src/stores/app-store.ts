@@ -182,6 +182,22 @@ export function getSessionHistory(): SessionHistoryEntry[] {
   return sessionHistory;
 }
 
+// Compute per-note accuracy map from session history (midi -> avg score %)
+export function getNoteAccuracyMap(): Map<number, number> {
+  const accMap = new Map<number, number[]>();
+  for (const entry of sessionHistory) {
+    for (const nr of entry.noteResults) {
+      if (!accMap.has(nr.midi)) accMap.set(nr.midi, []);
+      accMap.get(nr.midi)!.push(nr.avgCents >= -5 ? 100 : Math.max(0, 100 - Math.abs(nr.avgCents) * 5));
+    }
+  }
+  const result = new Map<number, number>();
+  for (const [midi, scores] of accMap) {
+    result.set(midi, Math.round(scores.reduce((a, b) => a + b, 0) / scores.length));
+  }
+  return result;
+}
+
 export const appStore = {
   // Key / scale
   keyName,
@@ -225,6 +241,7 @@ export const appStore = {
   saveSession,
   clearSessionHistory,
   getSessionHistory,
+  getNoteAccuracyMap,
 
   // Presets
   presets,

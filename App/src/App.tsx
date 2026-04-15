@@ -20,7 +20,7 @@ import { NoteList } from '@/components/NoteList';
 import { MicButton } from '@/components/MicButton';
 import { MetronomeButton } from '@/components/MetronomeButton';
 import { HistoryCanvas } from '@/components/HistoryCanvas';
-import { appStore } from '@/stores/app-store';
+import { appStore, getNoteAccuracyMap } from '@/stores/app-store';
 import { playback } from '@/stores/playback-store';
 import { melodyStore } from '@/stores/melody-store';
 import { melodyTotalBeats } from '@/lib/scale-data';
@@ -342,7 +342,13 @@ export const App: Component<AppProps> = (props) => {
     return note.name + note.octave;
   });
 
-  // ── Score overlay ──────────────────────────────────────────
+  // ── Accuracy heatmap ───────────────────────────────────────
+
+  const noteAccuracyMap = createMemo(() => {
+    // Track session history so this recomputes when history changes
+    void appStore.sessionHistory.length;
+    return getNoteAccuracyMap();
+  });
 
   const scoreGrade = createMemo(() => {
     const pr = practiceResult();
@@ -608,6 +614,28 @@ export const App: Component<AppProps> = (props) => {
                 </select>
               </div>
 
+              {/* Speed control */}
+              <div class="speed-group">
+                <label class="opt-label">Speed:</label>
+                <select
+                  id="speed-select"
+                  value="1"
+                  class="speed-select"
+                  onChange={(e) => {
+                    const speed = parseFloat(e.currentTarget.value);
+                    melodyEngine?.setPlaybackSpeed(speed);
+                  }}
+                >
+                  <option value="0.25">0.25x</option>
+                  <option value="0.5">0.5x</option>
+                  <option value="0.75">0.75x</option>
+                  <option value="1">1x</option>
+                  <option value="1.25">1.25x</option>
+                  <option value="1.5">1.5x</option>
+                  <option value="2">2x</option>
+                </select>
+              </div>
+
               {/* Sensitivity */}
               <div class="sensitivity-group">
                 <label class="opt-label">Sens:</label>
@@ -731,6 +759,7 @@ export const App: Component<AppProps> = (props) => {
                 isPaused={isPaused}
                 isScrolling={() => false}
                 targetPitch={targetPitch}
+                noteAccuracyMap={noteAccuracyMap}
               />
               <div id="playhead" style={{ display: (isPlaying() || isPaused()) ? 'block' : 'none' }} />
             </div>

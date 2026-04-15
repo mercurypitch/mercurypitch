@@ -28,6 +28,7 @@ export interface MelodyEngineOptions {
 export class MelodyEngine {
   private melody: MelodyItem[] = [];
   private bpm: number;
+  private playbackSpeed = 1.0;
   private callbacks: MelodyEngineCallbacks;
 
   private isPlaying = false;
@@ -72,6 +73,14 @@ export class MelodyEngine {
 
   setCountIn(beats: number): void {
     this.countInBeats = Math.max(0, Math.min(4, beats));
+  }
+
+  setPlaybackSpeed(speed: number): void {
+    this.playbackSpeed = Math.max(0.25, Math.min(2.0, speed));
+  }
+
+  getPlaybackSpeed(): number {
+    return this.playbackSpeed;
   }
 
   getMelody(): MelodyItem[] {
@@ -179,7 +188,7 @@ export class MelodyEngine {
   private _onFrame(): void {
     if (!this.isPlaying || this.isPaused) return;
 
-    const elapsed = performance.now() - this.playStartTime;
+    const elapsed = (performance.now() - this.playStartTime) * this.playbackSpeed;
     const beatsPerMs = this.bpm / 60000;
     const rawBeat = elapsed * beatsPerMs;
 
