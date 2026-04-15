@@ -1561,20 +1561,3 @@ header h1 {
     border-top: 1px solid var(--border);
     background: #0d1117;
 }
-
-/* MIDI export button */
-.roll-export-btn {
-    padding: 5px 10px;
-    font-size: 0.7rem;
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    background: var(--bg-tertiary);
-    color: var(--text-secondary);
-    cursor: pointer;
-    transition: all 0.12s ease;
-    flex-shrink: 0;
-}
-.roll-export-btn:hover {
-    border-color: var(--accent);
-    color: var(--accent);
-}
