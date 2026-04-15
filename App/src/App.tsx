@@ -560,7 +560,7 @@ export const App: Component<AppProps> = (props) => {
       {/* Main layout */}
       <div class="main-layout" id="main-layout">
         {/* Practice tab — notes panel + pitch area side by side */}
-        <Show when={appStore.activeTab() !== 'editor'}>
+        <Show when={appStore.activeTab() === 'practice'}>
           {/* Left panel — scale info and note list */}
           <aside id="notes-panel">
             <h2 class="panel-title">Scale</h2>
