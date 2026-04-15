@@ -821,6 +821,39 @@ export class PianoRollEditor {
       this.selectedNoteId = null;
       this.onNoteSelect?.(null);
       this.draw();
+    } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      // Navigate to next/prev note in melody
+      const sortedNotes = [...this.melody].sort((a, b) => a.startBeat - b.startBeat);
+      if (sortedNotes.length === 0) return;
+
+      const currentIdx = this.selectedNoteId !== null
+        ? sortedNotes.findIndex((n) => (n.id ?? 0) === this.selectedNoteId)
+        : -1;
+
+      let newIdx: number;
+      if (e.key === 'ArrowUp') {
+        newIdx = currentIdx <= 0 ? sortedNotes.length - 1 : currentIdx - 1;
+      } else {
+        newIdx = currentIdx >= sortedNotes.length - 1 ? 0 : currentIdx + 1;
+      }
+      const noteToSelect = sortedNotes[newIdx];
+      this.selectedNoteId = noteToSelect.id ?? null;
+      this.onNoteSelect?.(noteToSelect);
+      this.draw();
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      e.preventDefault();
+      // Move selected note by half beat
+      if (this.selectedNoteId !== null) {
+        const note = this.melody.find((n) => (n.id ?? 0) === this.selectedNoteId);
+        if (note) {
+          this.pushHistory();
+          const delta = e.key === 'ArrowLeft' ? -0.5 : 0.5;
+          note.startBeat = Math.max(0, note.startBeat + delta);
+          this.emitMelodyChange();
+          this.draw();
+        }
+      }
     }
   }
 
