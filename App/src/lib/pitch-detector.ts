@@ -18,6 +18,10 @@ export interface PitchDetectorOptions {
   maxFrequency?: number;
   /** Sensitivity 1-10 (default: 5) */
   sensitivity?: number;
+  /** Minimum confidence to accept pitch (0-1, default: 0.50) */
+  minConfidence?: number;
+  /** Minimum amplitude (RMS) threshold (0-1, default: 0.05) */
+  minAmplitude?: number;
 }
 
 const DEFAULT_OPTIONS: Required<PitchDetectorOptions> = {
@@ -27,6 +31,8 @@ const DEFAULT_OPTIONS: Required<PitchDetectorOptions> = {
   minFrequency: 65,
   maxFrequency: 2100,
   sensitivity: 5,
+  minConfidence: 0.50,
+  minAmplitude: 0.05,
 };
 
 export class PitchDetector {
@@ -36,6 +42,8 @@ export class PitchDetector {
   private readonly minFrequency: number;
   private readonly maxFrequency: number;
   private sensitivity: number;
+  private minConfidence: number;
+  private minAmplitude: number;
   private readonly yinBuffer: Float32Array;
   private readonly pitchHistory: number[] = [];
   private readonly maxHistory = 5;
@@ -48,14 +56,32 @@ export class PitchDetector {
     this.minFrequency = opts.minFrequency;
     this.maxFrequency = opts.maxFrequency;
     this.sensitivity = opts.sensitivity;
+    this.minConfidence = opts.minConfidence;
+    this.minAmplitude = opts.minAmplitude;
     this.yinBuffer = new Float32Array(Math.floor(this.bufferSize / 2));
   }
 
   /** Detect pitch from a time-domain buffer (e.g., AnalyserNode.getFloatTimeDomainData) */
   detect(timeDomainBuffer: Float32Array): PitchResult {
+    // First check amplitude threshold
+    let rms = 0;
+    for (let i = 0; i < timeDomainBuffer.length; i++) {
+      rms += timeDomainBuffer[i] * timeDomainBuffer[i];
+    }
+    rms = Math.sqrt(rms / timeDomainBuffer.length);
+    if (rms < this.minAmplitude) {
+      return {
+        frequency: 0,
+        clarity: 0,
+        noteName: '',
+        octave: 0,
+        cents: 0,
+      };
+    }
+
     const result = this.analyzeBuffer(timeDomainBuffer);
 
-    if (result.confidence < this.adjustedThreshold()) {
+    if (result.confidence < this.adjustedThreshold() || result.confidence < this.minConfidence) {
       return {
         frequency: 0,
         clarity: 0,
@@ -186,6 +212,17 @@ export class PitchDetector {
   setSensitivity(value: number): void {
     const p = this as PitchDetector;
     p.sensitivity = Math.max(1, Math.min(10, value));
+  }
+
+  /** Set minimum confidence threshold (0-1) */
+  setMinConfidence(value: number): void {
+    this.minConfidence = Math.max(0, Math.min(1, value));
+  }
+
+  /** Set minimum amplitude (RMS) threshold (0-1) */
+  setMinAmplitude(value: number): void {
+    // Convert 1-10 scale to 0.01-0.20 range
+    this.minAmplitude = Math.max(0.01, Math.min(0.20, (value / 10) * 0.20));
   }
 
   /** Reset pitch history (call when sound starts) */

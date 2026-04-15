@@ -15,6 +15,7 @@ import {
 import { PianoRollCanvas } from '@/components/PianoRollCanvas';
 import { PitchDisplay } from '@/components/PitchDisplay';
 import { PitchCanvas } from '@/components/PitchCanvas';
+import { SettingsPanel } from '@/components/SettingsPanel';
 import { loadFromURL, hasSharedPresetInURL, copyShareURL } from '@/lib/share-url';
 import { NoteList } from '@/components/NoteList';
 import { MicButton } from '@/components/MicButton';
@@ -60,7 +61,16 @@ export const App: Component<AppProps> = (props) => {
   const [frequencyData, setFrequencyData] = createSignal<Float32Array | null>(null);
   const [countInBeat, setCountInBeat] = createSignal<number>(0);
   const [isCountingIn, setIsCountingIn] = createSignal(false);
+  const [metronomeEnabled, setMetronomeEnabled] = createSignal(false);
   const [targetPitch, setTargetPitch] = createSignal<number | null>(null);
+
+  // ── Play mode ────────────────────────────────────────────────
+  type PlayMode = 'once' | 'repeat' | 'practice';
+  const [playMode, setPlayMode] = createSignal<PlayMode>('once');
+  const [practiceCycles, setPracticeCycles] = createSignal<number>(5);
+  const [currentCycle, setCurrentCycle] = createSignal<number>(1);
+  const [allCycleResults, setAllCycleResults] = createSignal<NoteResult[][]>([]);
+  const [isPracticeComplete, setIsPracticeComplete] = createSignal<boolean>(false);
 
   // ── Stats panel ──────────────────────────────────────────────
 
@@ -99,6 +109,7 @@ export const App: Component<AppProps> = (props) => {
     // Initialize presets from localStorage
     appStore.initPresets();
     appStore.initSessionHistory();
+    appStore.initSettings();
 
     // Check for shared preset in URL
     if (hasSharedPresetInURL()) {
@@ -138,8 +149,10 @@ export const App: Component<AppProps> = (props) => {
       onCountIn: (beat) => {
         setCountInBeat(beat);
         setIsCountingIn(true);
-        // Play a click sound for count-in
-        audioEngine?.playClick();
+        // Play a click sound for count-in when metronome is enabled
+        if (metronomeEnabled()) {
+          audioEngine?.playClick();
+        }
       },
       onCountInComplete: () => {
         setIsCountingIn(false);
@@ -147,35 +160,107 @@ export const App: Component<AppProps> = (props) => {
       },
       onComplete: () => {
         const results = practiceEngine.onPlaybackComplete();
-        if (results) {
-          setNoteResults(results);
-          const pr = practiceEngine.calculatePracticeResult(results);
-          setPracticeResult(pr);
-          setLiveScore(pr.score);
-          appStore.setLastScore(pr.score);
-          appStore.setPracticeCount(appStore.practiceCount() + 1);
+        const mode = playMode();
 
-          // Save to session history
-          appStore.saveSession({
-            score: pr.score,
-            avgCents: pr.avgCents,
-            noteCount: pr.noteCount,
-            noteResults: pr.noteResults.map((r) => ({
-              midi: r.targetNote.midi,
-              avgCents: r.avgCents,
-              rating: r.rating,
-            })),
-          });
+        if (mode === 'practice') {
+          // Accumulate results for practice mode
+          const currentResults = noteResults();
+          setAllCycleResults((prev) => [...prev, currentResults]);
+          const currentC = currentCycle();
 
-          appStore.showNotification(
-            `Practice complete! Score: ${pr.score}%`,
-            pr.score >= 80 ? 'success' : pr.score >= 50 ? 'info' : 'warning'
-          );
+          if (currentC < practiceCycles()) {
+            // More cycles coming — reset silently and restart
+            setCurrentCycle(currentC + 1);
+            setNoteResults([]);
+            setLiveScore(null);
+            setCurrentBeat(0);
+            setCurrentNoteIndex(-1);
+            melodyStore.setCurrentNoteIndex(-1);
+            setPitchHistory([]);
+            practiceEngine.resetSession();
+            setTimeout(() => melodyEngine.start(appStore.countIn()), 600);
+            return;
+          } else {
+            // All cycles done — compute combined result
+            setIsPracticeComplete(true);
+            const allResults = [...allCycleResults(), currentResults];
+            const allNotes = allResults.flat();
+            const combinedScore = practiceEngine.calculateScore(allNotes);
+            const combinedPr: PracticeResult = {
+              noteResults: allNotes,
+              score: combinedScore,
+              avgCents: allNotes.length > 0
+                ? allNotes.reduce((s, r) => s + Math.abs(r.avgCents), 0) / allNotes.length
+                : 0,
+              noteCount: allNotes.length,
+            };
+            setPracticeResult(combinedPr);
+            setLiveScore(combinedScore);
+            appStore.setLastScore(combinedScore);
+            appStore.setPracticeCount(appStore.practiceCount() + 1);
+            appStore.saveSession({
+              score: combinedScore,
+              avgCents: combinedPr.avgCents,
+              noteCount: combinedPr.noteCount,
+              noteResults: allNotes.map((r) => ({
+                midi: r.targetNote.midi,
+                avgCents: r.avgCents,
+                rating: r.rating,
+              })),
+            });
+            appStore.showNotification(`Practice complete! Score: ${combinedScore}%`, combinedScore >= 80 ? 'success' : combinedScore >= 50 ? 'info' : 'warning');
+            handleStop();
+          }
+        } else if (mode === 'repeat') {
+          // Auto-restart for repeat mode
+          setNoteResults([]);
+          setLiveScore(null);
+          setCurrentBeat(0);
+          setCurrentNoteIndex(-1);
+          melodyStore.setCurrentNoteIndex(-1);
+          setPitchHistory([]);
+          practiceEngine.resetSession();
+          handleStop();
+          setTimeout(() => handlePlay(), 300);
+        } else {
+          // Once mode
+          if (results) {
+            const pr = practiceEngine.calculatePracticeResult(results);
+            setPracticeResult(pr);
+            setLiveScore(pr.score);
+            appStore.setLastScore(pr.score);
+            appStore.setPracticeCount(appStore.practiceCount() + 1);
+            appStore.saveSession({
+              score: pr.score,
+              avgCents: pr.avgCents,
+              noteCount: pr.noteCount,
+              noteResults: pr.noteResults.map((r) => ({
+                midi: r.targetNote.midi,
+                avgCents: r.avgCents,
+                rating: r.rating,
+              })),
+            });
+            appStore.showNotification(
+              `Practice complete! Score: ${pr.score}%`,
+              pr.score >= 80 ? 'success' : pr.score >= 50 ? 'info' : 'warning'
+            );
+          }
+          handleStop();
         }
-        handleStop();
       },
     });
     practiceEngine = new PracticeEngine(audioEngine, { sensitivity: 5 });
+
+    // Sync settings to PracticeEngine
+    createEffect(() => {
+      const s = appStore.settings();
+      practiceEngine.syncSettings({
+        sensitivity: s.sensitivity,
+        minConfidence: s.minConfidence,
+        minAmplitude: s.minAmplitude,
+        bands: s.bands.map(b => ({ threshold: b.threshold, band: b.band })),
+      });
+    });
 
     // Link practice callbacks
     practiceEngine.setCallbacks({
@@ -306,6 +391,10 @@ export const App: Component<AppProps> = (props) => {
     setNoteResults([]);
     setPracticeResult(null);
     setLiveScore(null);
+    // Reset practice mode state
+    setAllCycleResults([]);
+    setCurrentCycle(1);
+    setIsPracticeComplete(false);
   };
 
   // ── Mic handlers ─────────────────────────────────────────────
@@ -398,6 +487,13 @@ export const App: Component<AppProps> = (props) => {
             <Show when={melodyStore.items.length > 0}>
               <span class="tab-badge">{melodyStore.items.length}</span>
             </Show>
+          </button>
+          <button
+            id="tab-settings"
+            class={`app-tab ${appStore.activeTab() === 'settings' ? 'active' : ''}`}
+            onClick={() => appStore.setActiveTab('settings')}
+          >
+            Settings
           </button>
         </nav>
       </header>
@@ -576,9 +672,9 @@ export const App: Component<AppProps> = (props) => {
 
               {/* Mode toggles */}
               <div id="mode-group">
-                <button id="btn-once" class="mode-btn active">Once</button>
-                <button id="btn-repeat" class="mode-btn">Repeat</button>
-                <button id="btn-practice" class="mode-btn">Practice</button>
+                <button id="btn-once" class={`mode-btn ${playMode() === 'once' ? 'active' : ''}`} onClick={() => setPlayMode('once')}>Once</button>
+                <button id="btn-repeat" class={`mode-btn ${playMode() === 'repeat' ? 'active' : ''}`} onClick={() => setPlayMode('repeat')}>Repeat</button>
+                <button id="btn-practice" class={`mode-btn ${playMode() === 'practice' ? 'active' : ''}`} onClick={() => setPlayMode('practice')}>Practice</button>
               </div>
 
               <div class="ctrl-sep" />
@@ -613,6 +709,12 @@ export const App: Component<AppProps> = (props) => {
                   <option value="4">4 beats</option>
                 </select>
               </div>
+
+              {/* Metronome toggle */}
+              <MetronomeButton
+                active={metronomeEnabled()}
+                onClick={() => setMetronomeEnabled(!metronomeEnabled())}
+              />
 
               {/* Speed control */}
               <div class="speed-group">
@@ -735,8 +837,26 @@ export const App: Component<AppProps> = (props) => {
               {/* Run indicator */}
               <div id="run-indicator">
                 <span id="run-counter">Run 1</span>
-                <span id="cycle-counter" />
+                <span id="cycle-counter">
+                  {playMode() === 'practice' ? `Cycle ${currentCycle()}/${practiceCycles()}` : playMode() === 'repeat' ? 'Repeat' : ''}
+                </span>
               </div>
+
+              {/* Practice cycles (shown in practice mode) */}
+              <Show when={playMode() === 'practice'}>
+                <div class="cycles-group">
+                  <label class="opt-label">Cycles:</label>
+                  <input
+                    type="number"
+                    id="cycles"
+                    min="2"
+                    max="20"
+                    value={practiceCycles()}
+                    onInput={(e) => setPracticeCycles(Math.max(2, Math.min(20, parseInt(e.currentTarget.value) || 5)))}
+                    class="cycles-input"
+                  />
+                </div>
+              </Show>
 
               {/* Count-in display */}
               <Show when={isCountingIn()}>
@@ -761,7 +881,10 @@ export const App: Component<AppProps> = (props) => {
                 targetPitch={targetPitch}
                 noteAccuracyMap={noteAccuracyMap}
               />
-              <div id="playhead" style={{ display: (isPlaying() || isPaused()) ? 'block' : 'none' }} />
+              <div id="playhead" style={{
+                display: (isPlaying() || isPaused()) ? 'block' : 'none',
+                left: `${(currentBeat() / Math.max(1, totalBeats())) * 100}%`
+              }} />
             </div>
 
             {/* History */}
@@ -788,6 +911,13 @@ export const App: Component<AppProps> = (props) => {
               onPlayClick={handlePlay}
               onResetClick={handleReset}
             />
+          </div>
+        </Show>
+
+        {/* Settings tab */}
+        <Show when={appStore.activeTab() === 'settings'}>
+          <div id="settings-panel">
+            <SettingsPanel />
           </div>
         </Show>
       </div>

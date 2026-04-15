@@ -1346,7 +1346,7 @@
                     playPrecountClick();
                 }
 
-                if (state.precountBeats >= 4) {
+                if (state.precountBeats >= 5) {
                     // Precount finished, start actual playback
                     state.isPrecount = false;
                     startActualPlayback();
