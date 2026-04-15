@@ -37,6 +37,150 @@
         }
     };
 
+    // ========== MIDI EXPORT ==========
+    /**
+     * Encode a melody as a Standard MIDI File (Format 1).
+     * @param {Array} melody - Array of {note: {midi}, startBeat, duration, effectType}
+     * @param {number} bpm - Tempo in beats per minute
+     * @returns {Uint8Array} - The complete MIDI file as bytes
+     */
+    function exportMelodyToMIDI(melody, bpm) {
+        if (!melody || melody.length === 0) {
+            alert('No melody to export. Add some notes first.');
+            return null;
+        }
+
+        // MIDI delta-time variable-length quantity helper
+        function writeVarLen(value) {
+            const bytes = [];
+            let v = Math.floor(value);
+            bytes.push(v & 0x7f);
+            while ((v >>= 7) > 0) {
+                bytes.push((v & 0x7f) | 0x80);
+            }
+            bytes.reverse();
+            return bytes;
+        }
+
+        function writeString(str) {
+            const bytes = [];
+            for (let i = 0; i < str.length; i++) {
+                bytes.push(str.charCodeAt(i) & 0xff);
+            }
+            return bytes;
+        }
+
+        // Collect all events: { delta, type, channel, data }
+        // type: 0x90 = note on, 0x80 = note off
+        const events = [];
+
+        // Tempo: meta event 0x51 (tempo)
+        // Format 1 MIDI needs a tempo event at delta 0
+        const microsecondsPerBeat = Math.round(60000000 / bpm);
+        events.push({ delta: 0, type: 0xff, subtype: 0x51, data: [
+            (microsecondsPerBeat >> 16) & 0xff,
+            (microsecondsPerBeat >> 8) & 0xff,
+            microsecondsPerBeat & 0xff
+        ]});
+
+        // Time signature: meta event 0x58
+        events.push({ delta: 0, type: 0xff, subtype: 0x58, data: [0x04, 0x02, 0x18, 0x08] });
+
+        // End of track: meta event 0x2f
+        events.push({ delta: 0, type: 0xff, subtype: 0x2f, data: [] });
+
+        // Note events: delta in ticks (480 per beat)
+        const TICKS_PER_BEAT = 480;
+        melody.forEach(function (item) {
+            const midi = item.note ? item.note.midi : (item.midi || 60);
+            const deltaOn = Math.round(item.startBeat * TICKS_PER_BEAT);
+            const deltaOff = Math.round((item.startBeat + item.duration) * TICKS_PER_BEAT);
+
+            events.push({ delta: deltaOn, type: 0x90, note: midi, velocity: 80 });
+            events.push({ delta: deltaOff, type: 0x80, note: midi, velocity: 0 });
+        });
+
+        // Sort events by absolute time (delta order is preserved during sorting)
+        // Convert delta to absolute ticks
+        let currentTick = 0;
+        const absEvents = [];
+        events.forEach(function (evt) {
+            currentTick += evt.delta;
+            absEvents.push({ tick: currentTick, delta: evt.delta, type: evt.type, evt: evt });
+        });
+        absEvents.sort(function (a, b) { return a.tick - b.tick; });
+
+        // Recompute deltas after sorting
+        let prevTick = 0;
+        absEvents.forEach(function (e) {
+            e.delta = e.tick - prevTick;
+            prevTick = e.tick;
+        });
+
+        // Build track chunk
+        const trackData = [];
+        absEvents.forEach(function (e) {
+            const deltaBytes = writeVarLen(e.delta);
+            trackData.push.apply(trackData, deltaBytes);
+
+            if (e.type === 0xff) {
+                // Meta event
+                trackData.push(e.evt.subtype);
+                if (e.evt.data) {
+                    trackData.push(e.evt.data.length);
+                    trackData.push.apply(trackData, e.evt.data);
+                } else {
+                    trackData.push(0);
+                }
+            } else if (e.type === 0x90 || e.type === 0x80) {
+                // Note on/off
+                trackData.push(e.type);
+                trackData.push(e.evt.note);
+                trackData.push(e.evt.velocity);
+            }
+        });
+
+        // Header chunk: MThd + length (6) + format (1) + ntracks (1) + division (480)
+        const header = [0x4d, 0x54, 0x68, 0x64, // MThd
+                        0x00, 0x00, 0x00, 0x06, // chunk length
+                        0x00, 0x01,             // format 1
+                        0x00, 0x01,             // 1 track
+                        0x01, 0xe0];            // 480 ticks/beat
+
+        // Track chunk: MTrk + length + data
+        const trackLen = trackData.length;
+        const track = [0x4d, 0x54, 0x72, 0x6b, // MTrk
+                       (trackLen >> 24) & 0xff,
+                       (trackLen >> 16) & 0xff,
+                       (trackLen >> 8) & 0xff,
+                       trackLen & 0xff];
+        track.push.apply(track, trackData);
+
+        const midiData = new Uint8Array(header.length + track.length);
+        midiData.set(header, 0);
+        midiData.set(track, header.length);
+
+        return midiData;
+    }
+
+    function downloadMIDI(melody, bpm, filename) {
+        const midiData = exportMelodyToMIDI(melody, bpm);
+        if (!midiData) return;
+
+        const blob = new Blob([midiData], { type: 'audio/midi' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename || 'pitchperfect-melody.mid';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    // Expose globally
+    window.pianoRollExportMIDI = downloadMIDI;
+
     // ========== PRESET STORAGE ==========
     const PRESETS_KEY = 'pitchperfect_presets';
     const LAST_PRESET_KEY = 'pitchperfect_lastpreset';
@@ -294,6 +438,7 @@
                 '<button id="roll-save-preset" class="roll-save-btn" title="Save preset">Save</button>' +
                 '<button id="roll-share-preset" class="roll-share-btn" title="Share preset (copy URL)">Share</button>' +
                 '<button id="roll-clear-all" class="roll-ctrl-btn danger" title="Clear all notes">Clear</button>' +
+                '<button id="roll-export-midi" class="roll-export-btn" title="Export melody as MIDI file">Export MIDI</button>' +
             '</div>' +
             '<div class="roll-sep"></div>' +
             '<div class="roll-effects-row">' +
@@ -823,6 +968,11 @@
         });
         document.getElementById('roll-clear-all').addEventListener('click', function () {
             self._clearAll();
+        });
+        document.getElementById('roll-export-midi')?.addEventListener('click', function () {
+            const melody = self.getMelody();
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+            downloadMIDI(melody, self.bpm, 'pitchperfect-' + timestamp + '.mid');
         });
         document.getElementById('roll-preset-select').addEventListener('change', function (e) {
             if (e.target.value) self._loadPreset(e.target.value);

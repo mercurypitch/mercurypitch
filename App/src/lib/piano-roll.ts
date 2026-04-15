@@ -21,6 +21,143 @@ export const PIANO_ROLL_CONFIG: PianoRollConfig = {
 };
 
 // ============================================================
+// MIDI Export
+// ============================================================
+
+/** Encode a melody as a Standard MIDI File (Format 1). */
+export function exportMelodyToMIDI(
+  melody: MelodyItem[],
+  bpm: number
+): Uint8Array | null {
+  if (!melody || melody.length === 0) return null;
+
+  const TICKS_PER_BEAT = 480;
+
+  function writeVarLen(value: number): number[] {
+    const bytes: number[] = [];
+    let v = Math.floor(value);
+    bytes.push(v & 0x7f);
+    while ((v >>= 7) > 0) {
+      bytes.push((v & 0x7f) | 0x80);
+    }
+    bytes.reverse();
+    return bytes;
+  }
+
+  // Build absolute event list
+  const absEvents: Array<{
+    tick: number;
+    delta: number;
+    type: number;
+    subtype?: number;
+    note?: number;
+    velocity?: number;
+    data?: number[];
+  }> = [];
+
+  // Tempo meta event (0xFF 0x51)
+  const microsecondsPerBeat = Math.round(60000000 / bpm);
+  absEvents.push({
+    tick: 0,
+    delta: 0,
+    type: 0xff,
+    subtype: 0x51,
+    data: [
+      (microsecondsPerBeat >> 16) & 0xff,
+      (microsecondsPerBeat >> 8) & 0xff,
+      microsecondsPerBeat & 0xff,
+    ],
+  });
+
+  // Time signature (0xFF 0x58)
+  absEvents.push({ tick: 0, delta: 0, type: 0xff, subtype: 0x58, data: [0x04, 0x02, 0x18, 0x08] });
+
+  // Note events
+  melody.forEach((item) => {
+    const midi = item.note?.midi ?? 60;
+    const tickOn = Math.round(item.startBeat * TICKS_PER_BEAT);
+    const tickOff = Math.round((item.startBeat + item.duration) * TICKS_PER_BEAT);
+    absEvents.push({ tick: tickOn, delta: 0, type: 0x90, note: midi, velocity: 80 });
+    absEvents.push({ tick: tickOff, delta: 0, type: 0x80, note: midi, velocity: 0 });
+  });
+
+  // Sort by tick
+  absEvents.sort((a, b) => a.tick - b.tick);
+
+  // Recompute deltas
+  let prevTick = 0;
+  absEvents.forEach((e) => {
+    const d = e.tick - prevTick;
+    e.delta = d;
+    prevTick = e.tick;
+  });
+
+  // Serialize track
+  const trackData: number[] = [];
+  absEvents.forEach((e) => {
+    trackData.push(...writeVarLen(e.delta));
+    if (e.type === 0xff) {
+      trackData.push(e.subtype!);
+      if (e.data) {
+        trackData.push(e.data.length);
+        trackData.push(...e.data);
+      } else {
+        trackData.push(0);
+      }
+    } else {
+      trackData.push(e.type, e.note!, e.velocity!);
+    }
+  });
+
+  // End of track (0xFF 0x2F 0x00)
+  trackData.push(0xff, 0x2f, 0x00);
+
+  // Header chunk
+  const header = [
+    0x4d, 0x54, 0x68, 0x64, // MThd
+    0x00, 0x00, 0x00, 0x06, // length 6
+    0x00, 0x01,             // format 1
+    0x00, 0x01,             // 1 track
+    0x01, 0xe0,             // 480 ticks/beat
+  ];
+
+  // Track chunk
+  const trackLen = trackData.length;
+  const track = [
+    0x4d, 0x54, 0x72, 0x6b, // MTrk
+    (trackLen >> 24) & 0xff,
+    (trackLen >> 16) & 0xff,
+    (trackLen >> 8) & 0xff,
+    trackLen & 0xff,
+    ...trackData,
+  ];
+
+  const midiData = new Uint8Array(header.length + track.length);
+  midiData.set(header, 0);
+  midiData.set(track, header.length);
+  return midiData;
+}
+
+/** Trigger a browser download of a MIDI file. */
+export function downloadMIDI(melody: MelodyItem[], bpm: number, filename?: string): boolean {
+  const data = exportMelodyToMIDI(melody, bpm);
+  if (!data) {
+    alert('No melody to export. Add some notes first.');
+    return false;
+  }
+  const blob = new Blob([data], { type: 'audio/midi' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename || 'pitchperfect-melody.mid';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  return true;
+}
+
+// ============================================================
 // Note ID generation
 // ============================================================
 
@@ -536,6 +673,7 @@ export class PianoRollEditor {
           <input type="text" id="roll-preset-name" class="roll-preset-name" placeholder="Preset name">
           <button id="roll-save-preset" class="roll-save-btn" title="Save preset">Save</button>
           <button id="roll-share-preset" class="roll-share-btn" title="Share preset (copy URL)">Share</button>
+          <button id="roll-export-midi" class="roll-export-btn" title="Export melody as MIDI file">Export MIDI</button>
           <button id="roll-clear-all" class="roll-ctrl-btn danger" title="Clear all notes">Clear</button>
         </div>
         <div class="roll-sep"></div>
@@ -802,6 +940,13 @@ export class PianoRollEditor {
     // Share preset button
     container.querySelector('#roll-share-preset')?.addEventListener('click', () => {
       this._sharePreset();
+    });
+
+    // Export MIDI button
+    container.querySelector('#roll-export-midi')?.addEventListener('click', () => {
+      const melody = this.getMelody();
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      downloadMIDI(melody, this.bpm, `pitchperfect-${timestamp}.mid`);
     });
 
     // Bar controls
