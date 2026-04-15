@@ -30,10 +30,10 @@ A living list of proposed features and improvements for PitchPerfect.
 
 - [ ] **Session history** — Store past practice sessions with timestamps, scores, and accuracy per run
 - [ ] **Progress chart** — Visual line/bar chart of score improvement over time
-- [ ] **Pitch accuracy heatmap on piano keys** — Colour-code piano keys showing weak/strong notes based on history
-- [ ] **Target pitch overlay** — Show the target frequency as a horizontal guide line on the pitch canvas during Practice mode
+- [ ] **Pitch accuracy heatmap on piano keys** — Colour-code piano keys showing weak/strong notes based on history  **(GH #77)**
+- [ ] **Target pitch overlay** — Show the target frequency as a horizontal guide line on the pitch canvas during Practice mode  **(GH #78)**
 - [ ] **Custom practice modes** — e.g., "Random notes" (skip practising known notes), "Focus mode" (practice only recent errors)
-- [ ] **Count-in options** — Choose number of count-in beats (1, 2, 4, or off)
+- [x] **Count-in options** — Choose number of count-in beats (1, 2, 4, or off)  **(DONE - PR #76)**
 
 ---
 
@@ -52,7 +52,7 @@ A living list of proposed features and improvements for PitchPerfect.
 - [ ] **Responsive layout improvements** — Better mobile layout for the piano roll (touch gestures for note editing)
 - [ ] **Piano key width based on octave count** — Auto-size the piano key column to fit 2-3 octaves comfortably
 - [ ] **Waveform display during recording** — Show a live audio waveform in the pitch area while the mic is active
-- [ ] **Tab badges** — Show a count badge on the Editor tab when notes are present
+- [ ] **Tab badges** — Show a count badge on the Editor tab when notes are present  **(DONE - PR #76)**
 
 ---
 
