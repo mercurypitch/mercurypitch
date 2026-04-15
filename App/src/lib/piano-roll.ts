@@ -3,6 +3,7 @@
 // ============================================================
 
 import type { MelodyItem, ScaleDegree, PianoRollConfig, NoteName } from '@/types';
+import type { InstrumentType } from '@/lib/audio-engine';
 
 export const PIANO_ROLL_CONFIG: PianoRollConfig = {
   rowHeight: 22,
@@ -39,6 +40,7 @@ export interface PianoRollOptions {
   totalBeats?: number;
   onMelodyChange?: (melody: MelodyItem[]) => void;
   onNoteSelect?: (note: MelodyItem | null) => void;
+  onInstrumentChange?: (instrument: InstrumentType) => void;
 }
 
 export type PlaybackState = 'stopped' | 'playing' | 'paused';
@@ -90,6 +92,11 @@ export class PianoRollEditor {
   private selectedDuration = 1;
   private nextNoteId = 1;
 
+  // Scale/Octave state (matches old app)
+  private octave = 4;
+  private numOctaves = 1;
+  private mode = 'major';
+
   // Effect state
   private selectedEffect: EffectType | null = null;
 
@@ -103,6 +110,7 @@ export class PianoRollEditor {
   private onNoteSelect?: (note: MelodyItem | null) => void;
   private onPlayClick?: () => void;
   private onResetClick?: () => void;
+  private onInstrumentChange?: (instrument: InstrumentType) => void;
 
   // Presets
   private presetData: Record<string, {
@@ -120,6 +128,7 @@ export class PianoRollEditor {
     this.totalBeats = options.totalBeats ?? 16;
     this.onMelodyChange = options.onMelodyChange;
     this.onNoteSelect = options.onNoteSelect;
+    this.onInstrumentChange = options.onInstrumentChange;
     this.rowHeight = this.config.rowHeight;
     this.beatWidth = this.config.beatWidth;
     this.pianoWidth = this.config.pianoWidth;
@@ -226,6 +235,10 @@ export class PianoRollEditor {
     this.bpm = bpm;
   }
 
+  setInstrument(instrument: InstrumentType): void {
+    this.onInstrumentChange?.(instrument);
+  }
+
   setTotalBeats(beats: number): void {
     this.totalBeats = beats;
     this.buildCanvases();
@@ -255,7 +268,15 @@ export class PianoRollEditor {
   }
 
   removeBeats(count: number): void {
-    this.totalBeats = Math.max(4, this.totalBeats - count);
+    const newTotal = Math.max(4, this.totalBeats - count);
+    // Check if any notes would be trimmed
+    const wouldTrim = this.melody.some(n => n.startBeat + n.duration > newTotal);
+    if (wouldTrim && !confirm('This will trim some notes. Continue?')) return;
+    // Trim notes that extend beyond the new total
+    this.melody = this.melody
+      .filter(n => n.startBeat < newTotal)
+      .map(n => n.startBeat + n.duration > newTotal ? { ...n, duration: newTotal - n.startBeat } : n);
+    this.totalBeats = newTotal;
     this.buildCanvases();
     this.draw();
   }
@@ -414,24 +435,46 @@ export class PianoRollEditor {
           </button>
         </div>
         <div class="roll-sep"></div>
-        <div class="roll-effects-group">
-          <span class="roll-effects-label">Effects:</span>
-          <button class="roll-effect-btn slide-up" data-effect="slide-up" title="Slide up to next note">↑Slide</button>
-          <button class="roll-effect-btn slide-down" data-effect="slide-down" title="Slide down to next note">↓Slide</button>
-          <button class="roll-effect-btn ease-in" data-effect="ease-in" title="Ease in">EaseIn</button>
-          <button class="roll-effect-btn ease-out" data-effect="ease-out" title="Ease out">EaseOut</button>
-          <button class="roll-effect-btn vibrato" data-effect="vibrato" title="Vibrato effect">Vibrato</button>
+        <div class="roll-durations">
+          <label class="dur-label">Dur:</label>
+          <button class="dur-btn" data-dur="0.25">1/16</button>
+          <button class="dur-btn" data-dur="0.5">1/8</button>
+          <button class="dur-btn active" data-dur="1">1/4</button>
+          <button class="dur-btn" data-dur="2">1/2</button>
+          <button class="dur-btn" data-dur="3">3/4</button>
+          <button class="dur-btn" data-dur="4">1</button>
         </div>
         <div class="roll-sep"></div>
         <div class="roll-octave-group">
-          <button id="roll-octave-down" class="roll-octave-btn" title="Lower octave">-Oct</button>
-          <span id="roll-octave-value" class="roll-octave-value">4</span>
-          <button id="roll-octave-up" class="roll-octave-btn" title="Higher octave">+Oct</button>
+          <label class="octave-label">Oct:</label>
+          <button id="roll-octave-down" class="octave-btn" title="Lower octave">-</button>
+          <span id="roll-octave-value" class="octave-value">${this.octave}</span>
+          <button id="roll-octave-up" class="octave-btn" title="Higher octave">+</button>
         </div>
         <div class="roll-sep"></div>
-        <div class="roll-undo-group">
-          <button id="roll-undo-btn" class="roll-ctrl-btn" title="Undo (Ctrl+Z)" disabled>Undo</button>
-          <button id="roll-redo-btn" class="roll-ctrl-btn" title="Redo (Ctrl+Shift+Z)" disabled>Redo</button>
+        <div class="roll-octaves-group">
+          <label class="octaves-label">Rows:</label>
+          <button id="roll-octaves-minus" class="octave-btn" title="Fewer octaves">-</button>
+          <span id="roll-octaves-value" class="octave-value">${this.numOctaves}</span>
+          <button id="roll-octaves-plus" class="octave-btn" title="More octaves">+</button>
+        </div>
+        <div class="roll-sep"></div>
+        <div class="roll-mode-group">
+          <label class="mode-label">Scale:</label>
+          <select id="roll-mode-select" class="roll-mode-select">
+            <option value="major">Major</option>
+            <option value="natural-minor">Natural Minor</option>
+            <option value="harmonic-minor">Harmonic Minor</option>
+            <option value="melodic-minor">Melodic Minor</option>
+            <option value="dorian">Dorian</option>
+            <option value="mixolydian">Mixolydian</option>
+            <option value="phrygian">Phrygian</option>
+            <option value="lydian">Lydian</option>
+            <option value="pentatonic-major">Pentatonic</option>
+            <option value="pentatonic-minor">Minor Pentatonic</option>
+            <option value="blues">Blues</option>
+            <option value="chromatic">Chromatic</option>
+          </select>
         </div>
         <div class="roll-sep"></div>
         <div class="roll-bars-group">
@@ -446,7 +489,38 @@ export class PianoRollEditor {
           <button id="roll-new-preset" class="roll-new-btn" title="New empty preset">+</button>
           <input type="text" id="roll-preset-name" class="roll-preset-name" placeholder="Preset name">
           <button id="roll-save-preset" class="roll-save-btn" title="Save preset">Save</button>
+          <button id="roll-share-preset" class="roll-share-btn" title="Share preset (copy URL)">Share</button>
           <button id="roll-clear-all" class="roll-ctrl-btn danger" title="Clear all notes">Clear</button>
+        </div>
+        <div class="roll-sep"></div>
+        <div class="roll-effects-row">
+          <span class="roll-effects-label">Effects:</span>
+          <button id="roll-action-slide-up" class="roll-action-btn slide-up" title="Create ascending slide between selected notes">
+            <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M4 20l8-16 8 16z"/></svg>
+          </button>
+          <button id="roll-action-slide-down" class="roll-action-btn slide-down" title="Create descending slide between selected notes">
+            <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M4 4l8 16 8-16z"/></svg>
+          </button>
+          <button id="roll-action-ease-in" class="roll-action-btn ease-in" title="Create ease-in slide">
+            <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M4 12h4l4-6 8 10z"/></svg>
+          </button>
+          <button id="roll-action-ease-out" class="roll-action-btn ease-out" title="Create ease-out slide">
+            <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M4 12l4-6 4 6h12z"/></svg>
+          </button>
+          <button id="roll-action-vibrato" class="roll-action-btn vibrato" title="Create vibrato on selected note">
+            <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M3 12c3-4 6 4 9 0s6 4 9 0"/></svg>
+          </button>
+        </div>
+        <div class="roll-sep"></div>
+        <div class="roll-instrument-group">
+          <label class="instrument-label">Instr:</label>
+          <select id="roll-instrument-select" class="roll-instrument-select">
+            <option value="sine">Sine</option>
+            <option value="piano">Piano</option>
+            <option value="organ">Organ</option>
+            <option value="strings">Strings</option>
+            <option value="synth">Synth</option>
+          </select>
         </div>
         <div class="roll-sep"></div>
         <div class="roll-play-group">
@@ -546,26 +620,32 @@ export class PianoRollEditor {
       });
     });
 
-    // Effect buttons
-    container.querySelectorAll('.roll-effect-btn').forEach((btn) => {
+    // Duration buttons
+    container.querySelectorAll('.dur-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
-        const effect = (btn as HTMLElement).dataset.effect as EffectType;
-        // Toggle effect selection
-        if (this.selectedEffect === effect) {
-          this.selectedEffect = null;
-          btn.classList.remove('active');
-        } else {
-          this.selectedEffect = effect;
-          container.querySelectorAll('.roll-effect-btn').forEach((b) => b.classList.remove('active'));
-          btn.classList.add('active');
-        }
+        this.selectedDuration = parseFloat((btn as HTMLElement).dataset.dur ?? '1');
+        container.querySelectorAll('.dur-btn').forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
       });
     });
+
+    // Effect action buttons
+    container.querySelector('#roll-action-slide-up')?.addEventListener('click', () => this._applyEffect('slide-up'));
+    container.querySelector('#roll-action-slide-down')?.addEventListener('click', () => this._applyEffect('slide-down'));
+    container.querySelector('#roll-action-ease-in')?.addEventListener('click', () => this._applyEffect('ease-in'));
+    container.querySelector('#roll-action-ease-out')?.addEventListener('click', () => this._applyEffect('ease-out'));
+    container.querySelector('#roll-action-vibrato')?.addEventListener('click', () => this._applyEffect('vibrato'));
 
     // Clear
     container.querySelector('#roll-clear-all')?.addEventListener('click', () => {
       this.clearMelody();
       this.onMelodyChange?.([]);
+    });
+
+    // Instrument selection
+    container.querySelector('#roll-instrument-select')?.addEventListener('change', (e) => {
+      const target = e.target as HTMLSelectElement;
+      this.setInstrument(target.value as any);
     });
 
     // Playback controls
@@ -631,21 +711,34 @@ export class PianoRollEditor {
     });
 
     // Octave controls
-    let octaveOffset = 0;
     container.querySelector('#roll-octave-up')?.addEventListener('click', () => {
-      octaveOffset++;
-      const display = container.querySelector('#roll-octave-value');
-      if (display) display.textContent = String(octaveOffset >= 0 ? `+${octaveOffset}` : octaveOffset);
-      // Emit event for app to update scale
-      window.dispatchEvent(new CustomEvent('pitchperfect:octaveChange', { detail: { offset: octaveOffset } }));
+      this._shiftOctave(1);
+    });
+    container.querySelector('#roll-octave-down')?.addEventListener('click', () => {
+      this._shiftOctave(-1);
     });
 
-    container.querySelector('#roll-octave-down')?.addEventListener('click', () => {
-      octaveOffset--;
-      const display = container.querySelector('#roll-octave-value');
-      if (display) display.textContent = String(octaveOffset >= 0 ? `+${octaveOffset}` : octaveOffset);
-      // Emit event for app to update scale
-      window.dispatchEvent(new CustomEvent('pitchperfect:octaveChange', { detail: { offset: octaveOffset } }));
+    // Rows (numOctaves) controls
+    container.querySelector('#roll-octaves-plus')?.addEventListener('click', () => {
+      this.setNumOctaves(this.numOctaves + 1);
+      const display = container.querySelector('#roll-octaves-value');
+      if (display) display.textContent = String(this.numOctaves);
+    });
+    container.querySelector('#roll-octaves-minus')?.addEventListener('click', () => {
+      this.setNumOctaves(this.numOctaves - 1);
+      const display = container.querySelector('#roll-octaves-value');
+      if (display) display.textContent = String(this.numOctaves);
+    });
+
+    // Scale mode select
+    container.querySelector('#roll-mode-select')?.addEventListener('change', (e) => {
+      const target = e.target as HTMLSelectElement;
+      this.setMode(target.value);
+    });
+
+    // Share preset button
+    container.querySelector('#roll-share-preset')?.addEventListener('click', () => {
+      this._sharePreset();
     });
 
     // Bar controls
@@ -899,6 +992,15 @@ export class PianoRollEditor {
 
   private eraseNote(note: MelodyItem): void {
     this.pushHistory();
+    const noteId = note.id;
+    if (noteId === undefined) return;
+    // Remove from any linkedTo references in other notes (matches old app behavior)
+    for (const n of this.melody) {
+      if (n.linkedTo) {
+        const idx = n.linkedTo.indexOf(noteId);
+        if (idx !== -1) n.linkedTo.splice(idx, 1);
+      }
+    }
     const idx = this.melody.indexOf(note);
     if (idx !== -1) {
       this.melody.splice(idx, 1);
@@ -1426,5 +1528,134 @@ export class PianoRollEditor {
         ctx.fillRect(x + w - handleW - 1, ry + h / 2 - 4, handleW, 8);
       }
     }
+  }
+
+  // ============================================================
+  // Octave / Scale methods (matching old app interface)
+  // ============================================================
+
+  /**
+   * Shift all notes by an octave and rebuild the scale.
+   */
+  private _shiftOctave(delta: number): void {
+    const newOctave = this.octave + delta;
+    if (newOctave < 1 || newOctave > 6) return;
+    this.octave = newOctave;
+
+    const display = this.container.querySelector('#roll-octave-value');
+    if (display) display.textContent = String(this.octave);
+
+    // Transpose all notes by the octave delta
+    const MIDI_OCTAVE_SHIFT = 12;
+    for (const note of this.melody) {
+      note.note.midi += delta * MIDI_OCTAVE_SHIFT;
+      note.note.freq = 440 * Math.pow(2, (note.note.midi - 69) / 12);
+    }
+
+    // Rebuild scale with new octave
+    window.dispatchEvent(new CustomEvent('pitchperfect:octaveChange', {
+      detail: { octave: this.octave, numOctaves: this.numOctaves }
+    }));
+
+    this.draw();
+    this.onMelodyChange?.(this.melody);
+  }
+
+  /**
+   * Set the number of octave rows displayed (1-3).
+   */
+  setNumOctaves(n: number): void {
+    n = Math.max(1, Math.min(3, Math.round(n)));
+    if (n === this.numOctaves) return;
+    this.numOctaves = n;
+
+    window.dispatchEvent(new CustomEvent('pitchperfect:octaveChange', {
+      detail: { octave: this.octave, numOctaves: this.numOctaves }
+    }));
+  }
+
+  /**
+   * Set the scale mode (major, minor, etc.) and rebuild scale.
+   */
+  setMode(mode: string): void {
+    if (mode === this.mode) return;
+    this.mode = mode;
+
+    window.dispatchEvent(new CustomEvent('pitchperfect:modeChange', {
+      detail: { mode }
+    }));
+  }
+
+  // ============================================================
+  // Effect application
+  // ============================================================
+
+  private _applyEffect(type: EffectType): void {
+    if (this.selectedNoteId === null) return;
+    const note = this.melody.find((n) => n.id === this.selectedNoteId);
+    if (!note) return;
+
+    this.pushHistory();
+
+    if (type === 'vibrato') {
+      // Single note vibrato
+      note.effectType = 'vibrato';
+      note.linkedTo = [];
+    } else {
+      // Slides and ease need 2 selected notes
+      const otherNotes = this.melody.filter((n) => n.id !== this.selectedNoteId);
+      // Find nearest note after current note
+      const nextNote = otherNotes
+        .filter((n) => n.startBeat >= note.startBeat)
+        .sort((a, b) => a.startBeat - b.startBeat)[0];
+      if (!nextNote) return;
+
+      note.effectType = type;
+      note.linkedTo = [nextNote.id!];
+      nextNote.linkedTo = [];
+    }
+
+    this.draw();
+    this.onMelodyChange?.(this.melody);
+  }
+
+  // ============================================================
+  // Share preset
+  // ============================================================
+
+  private _sharePreset(): void {
+    const url = this._buildShareURL();
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(() => {
+        // Brief visual feedback
+        const btn = this.container.querySelector('#roll-share-preset');
+        if (btn) {
+          const orig = btn.textContent;
+          btn.textContent = 'Copied!';
+          setTimeout(() => { btn.textContent = orig; }, 1500);
+        }
+      }).catch(() => {
+        window.prompt('Copy this URL:', url);
+      });
+    } else {
+      window.prompt('Copy this URL:', url);
+    }
+  }
+
+  private _buildShareURL(): string {
+    const presetData = {
+      n: this.melody.map((note) => ({
+        m: note.note.midi,
+        s: note.startBeat,
+        d: note.duration,
+        e: note.effectType || null,
+        l: note.linkedTo || [],
+      })),
+      b: this.totalBeats,
+      p: this.bpm,
+    };
+    const json = JSON.stringify(presetData);
+    const encoded = btoa(unescape(encodeURIComponent(json)));
+    return window.location.origin + window.location.pathname + '?preset=' + encoded;
   }
 }

@@ -180,6 +180,28 @@ header h1 {
     max-width: 140px;
 }
 
+#share-preset {
+    padding: 6px 12px;
+    display: flex;
+    align-items: center;
+}
+
+.share-btn {
+    padding: 5px 10px;
+    border: 1px solid var(--green);
+    border-radius: 5px;
+    background: transparent;
+    color: var(--green);
+    font-size: 0.72rem;
+    cursor: pointer;
+    transition: all 0.12s ease;
+}
+
+.share-btn:hover {
+    background: var(--green);
+    color: #fff;
+}
+
 .ctrl-btn.small {
     padding: 3px 8px;
     font-size: 0.75rem;
@@ -1266,6 +1288,212 @@ header h1 {
     font-weight: 600;
 }
 
+/* Duration buttons */
+.roll-durations {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.dur-label {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    margin-right: 2px;
+}
+
+.dur-btn {
+    padding: 4px 7px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    font-size: 0.68rem;
+    cursor: pointer;
+    transition: all 0.12s ease;
+    min-width: 32px;
+}
+
+.dur-btn:hover {
+    border-color: var(--accent);
+    color: var(--text-primary);
+}
+
+.dur-btn.active {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: #fff;
+}
+
+/* Rows (numOctaves) controls */
+.roll-octaves-group {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.octaves-label {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    margin-right: 2px;
+}
+
+.octave-btn {
+    padding: 3px 6px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    font-size: 0.68rem;
+    cursor: pointer;
+    transition: all 0.12s ease;
+    min-width: 24px;
+    font-weight: 600;
+}
+
+.octave-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+/* Scale mode select */
+.roll-mode-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.mode-label {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+}
+
+.roll-mode-select {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--text-primary);
+    padding: 4px 8px;
+    font-size: 0.72rem;
+    max-width: 140px;
+    outline: none;
+}
+
+.roll-mode-select:focus {
+    border-color: var(--accent);
+}
+
+/* Share button */
+.roll-share-btn {
+    padding: 5px 10px;
+    border: 1px solid var(--green);
+    border-radius: 5px;
+    background: var(--green-dim);
+    color: var(--green);
+    font-size: 0.72rem;
+    cursor: pointer;
+    transition: all 0.12s ease;
+}
+
+.roll-share-btn:hover {
+    background: var(--green);
+    color: #fff;
+}
+
+/* Effect action buttons row */
+.roll-effects-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.roll-action-btn {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    padding: 4px 8px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    font-size: 0.68rem;
+    cursor: pointer;
+    transition: all 0.12s ease;
+    white-space: nowrap;
+}
+
+.roll-action-btn:hover {
+    border-color: var(--purple);
+    color: var(--purple);
+    background: rgba(188, 140, 255, 0.08);
+}
+
+.roll-action-btn:active {
+    transform: scale(0.96);
+}
+
+.roll-action-btn.slide-up:hover {
+    border-color: var(--teal);
+    color: var(--teal);
+    background: rgba(45, 212, 191, 0.08);
+}
+
+.roll-action-btn.slide-down:hover {
+    border-color: var(--orange);
+    color: var(--orange);
+    background: rgba(219, 109, 40, 0.08);
+}
+
+.roll-action-btn.ease-in:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-dim);
+}
+
+.roll-action-btn.ease-out:hover {
+    border-color: var(--yellow);
+    color: var(--yellow);
+    background: rgba(210, 153, 34, 0.08);
+}
+
+.roll-action-btn.vibrato:hover {
+    border-color: var(--purple);
+    color: var(--purple);
+    background: rgba(188, 140, 255, 0.08);
+}
+
+/* Instrument label */
+.instrument-label {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+}
+
+.octave-label {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+}
+
+.roll-instrument-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.roll-instrument-select {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--text-primary);
+    padding: 4px 8px;
+    font-size: 0.72rem;
+    max-width: 100px;
+    outline: none;
+}
+
+.roll-instrument-select:focus {
+    border-color: var(--accent);
+}
+
 /* Bar controls */
 .roll-bars-group {
     display: flex;
@@ -1553,9 +1781,9 @@ header h1 {
 @media (max-width: 768px) {
     .app-tab { padding: 4px 10px; font-size: 0.72rem; }
     .roll-toolbar { padding: 6px 8px; gap: 4px; }
-    .roll-durations { display: none; }
     .roll-preset-select { max-width: 100px; }
     .roll-preset-name { width: 90px; }
+    .roll-mode-select { max-width: 100px; }
     .roll-sep { display: none; }
     .roll-play-group { margin-left: auto; }
 }

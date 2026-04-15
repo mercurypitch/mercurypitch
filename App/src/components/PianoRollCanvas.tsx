@@ -18,6 +18,7 @@ interface PianoRollCanvasProps {
   onMelodyChange: (melody: MelodyItem[]) => void;
   onPlayClick: () => void;
   onResetClick: () => void;
+  onInstrumentChange?: (instrument: string) => void;
 }
 
 export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
@@ -28,7 +29,7 @@ export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
   onMount(() => {
     if (!containerRef) return;
 
-    editor = new PianoRollEditor({ container: containerRef });
+    editor = new PianoRollEditor({ container: containerRef, onInstrumentChange: props.onInstrumentChange });
     _onMelodyChange = props.onMelodyChange;
     editor.setMelody(props.melody());
     editor.setScale(props.scale());

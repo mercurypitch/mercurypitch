@@ -6,6 +6,7 @@ import { createSignal } from 'solid-js';
 import { createStore } from 'solid-js/store';
 import type { MelodyItem, ScaleDegree, MelodyNote } from '@/types';
 import { buildSampleMelody, buildMultiOctaveScale } from '@/lib/scale-data';
+import { appStore } from './app-store';
 
 // ── Melody items ─────────────────────────────────────────────
 
@@ -60,6 +61,14 @@ export function refreshScale(keyName: string, startOctave: number, scaleType: st
   setCurrentScale(buildMultiOctaveScale(keyName, startOctave, 2, scaleType));
 }
 
+export function setOctave(octave: number): void {
+  setCurrentOctave(octave);
+}
+
+export function setNumOctaves(num: number): void {
+  setCurrentScale(buildMultiOctaveScale('C', currentOctave(), num, appStore.scaleType()));
+}
+
 // ── Current note index (during playback) ────────────────────
 
 const [currentNoteIndex, setCurrentNoteIndex] = createSignal<number>(-1);
@@ -79,6 +88,8 @@ export const melodyStore = {
   currentScale,
   setCurrentScale,
   refreshScale,
+  setOctave,
+  setNumOctaves,
   currentOctave,
   setCurrentOctave,
 
