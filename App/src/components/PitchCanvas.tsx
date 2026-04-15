@@ -29,11 +29,24 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
   let canvasRef: HTMLCanvasElement | undefined;
   let ctx: CanvasRenderingContext2D | null = null;
   let animFrameId: number | null = null;
+  let isSeeking = false;
 
   onMount(() => {
     if (!canvasRef) return;
     ctx = canvasRef.getContext('2d');
     resizeCanvas();
+
+    // Mouse handlers for dragging the playhead
+    canvasRef.addEventListener('mousedown', (e) => {
+      isSeeking = true;
+      handleSeek(e);
+    });
+    document.addEventListener('mousemove', (e) => {
+      if (isSeeking) handleSeek(e);
+    });
+    document.addEventListener('mouseup', () => {
+      isSeeking = false;
+    });
 
     const ro = new ResizeObserver(() => resizeCanvas());
     ro.observe(canvasRef!.parentElement!);
@@ -45,6 +58,19 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       if (animFrameId !== null) cancelAnimationFrame(animFrameId);
     });
   });
+
+  const handleSeek = (e: MouseEvent) => {
+    if (!canvasRef || !props.isPlaying() && !props.isPaused()) return;
+    const rect = canvasRef.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    // Map x position to a beat and trigger a seek
+    const w = canvasRef.clientWidth;
+    const totalBeats = props.totalBeats();
+    const seekBeat = (x / w) * totalBeats;
+    // Update currentBeat signal - this will trigger playback to seek
+    // For now, emit a custom event that App.tsx can handle
+    window.dispatchEvent(new CustomEvent('pitchperfect:seekToBeat', { detail: { beat: seekBeat } }));
+  };
 
   const resizeCanvas = () => {
     if (!canvasRef) return;

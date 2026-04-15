@@ -314,6 +314,17 @@ export const App: Component<AppProps> = (props) => {
     window.addEventListener('pitchperfect:octaveChange', handleOctaveChange as EventListener);
     window.addEventListener('pitchperfect:modeChange', handleModeChange as EventListener);
 
+    // Listen for seek events from PitchCanvas (playhead drag)
+    const handleSeek = (e: CustomEvent) => {
+      if (!isPlaying() && !isPaused()) return;
+      const targetBeat = e.detail.beat as number;
+      const beatDurationMs = 60000 / appStore.bpm();
+      const targetTime = targetBeat * beatDurationMs;
+      melodyEngine.seekTo(targetBeat);
+      setCurrentBeat(targetBeat);
+    };
+    window.addEventListener('pitchperfect:seekToBeat', handleSeek as EventListener);
+
     // Animation loop for pitch history
     let animId: number;
     const loop = () => {
@@ -338,6 +349,7 @@ export const App: Component<AppProps> = (props) => {
       window.removeEventListener('pitchperfect:presetLoaded', handlePresetLoaded as EventListener);
       window.removeEventListener('pitchperfect:octaveChange', handleOctaveChange as EventListener);
       window.removeEventListener('pitchperfect:modeChange', handleModeChange as EventListener);
+      window.removeEventListener('pitchperfect:seekToBeat', handleSeek as EventListener);
     });
 
     // Signal that app has fully initialized (for FOUC prevention)
