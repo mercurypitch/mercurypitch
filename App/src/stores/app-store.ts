@@ -128,6 +128,60 @@ export function showNotification(message: string, type: Notification['type'] = '
   }, 3000);
 }
 
+// ── Session History ──────────────────────────────────────────
+
+export interface SessionHistoryEntry {
+  id: number;
+  timestamp: number;
+  score: number;
+  avgCents: number;
+  noteCount: number;
+  noteResults: Array<{ midi: number; avgCents: number; rating: string }>;
+}
+
+const SESSION_HISTORY_KEY = 'pitchperfect_session_history';
+const MAX_HISTORY_ENTRIES = 50;
+
+const [sessionHistory, setSessionHistory] = createStore<SessionHistoryEntry[]>([]);
+
+function loadSessionHistory(): SessionHistoryEntry[] {
+  try {
+    const raw = localStorage.getItem(SESSION_HISTORY_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveSessionHistoryToStorage(data: SessionHistoryEntry[]): void {
+  try {
+    localStorage.setItem(SESSION_HISTORY_KEY, JSON.stringify(data));
+  } catch (e) {
+    console.warn('Failed to save session history:', e);
+  }
+}
+
+export function initSessionHistory(): void {
+  setSessionHistory(loadSessionHistory());
+}
+
+export function saveSession(entry: Omit<SessionHistoryEntry, 'id' | 'timestamp'>): void {
+  const id = Date.now();
+  const newEntry: SessionHistoryEntry = { ...entry, id, timestamp: Date.now() };
+  const updated = [newEntry, ...sessionHistory].slice(0, MAX_HISTORY_ENTRIES);
+  setSessionHistory(updated);
+  saveSessionHistoryToStorage(updated);
+}
+
+export function clearSessionHistory(): void {
+  setSessionHistory([]);
+  localStorage.removeItem(SESSION_HISTORY_KEY);
+}
+
+export function getSessionHistory(): SessionHistoryEntry[] {
+  return sessionHistory;
+}
+
 export const appStore = {
   // Key / scale
   keyName,
@@ -164,6 +218,13 @@ export const appStore = {
   // Notifications
   notifications,
   showNotification,
+
+  // Session History
+  sessionHistory,
+  initSessionHistory,
+  saveSession,
+  clearSessionHistory,
+  getSessionHistory,
 
   // Presets
   presets,

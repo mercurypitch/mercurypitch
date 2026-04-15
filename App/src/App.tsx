@@ -98,6 +98,7 @@ export const App: Component<AppProps> = (props) => {
   onMount(() => {
     // Initialize presets from localStorage
     appStore.initPresets();
+    appStore.initSessionHistory();
 
     // Check for shared preset in URL
     if (hasSharedPresetInURL()) {
@@ -153,6 +154,19 @@ export const App: Component<AppProps> = (props) => {
           setLiveScore(pr.score);
           appStore.setLastScore(pr.score);
           appStore.setPracticeCount(appStore.practiceCount() + 1);
+
+          // Save to session history
+          appStore.saveSession({
+            score: pr.score,
+            avgCents: pr.avgCents,
+            noteCount: pr.noteCount,
+            noteResults: pr.noteResults.map((r) => ({
+              midi: r.targetNote.midi,
+              avgCents: r.avgCents,
+              rating: r.rating,
+            })),
+          });
+
           appStore.showNotification(
             `Practice complete! Score: ${pr.score}%`,
             pr.score >= 80 ? 'success' : pr.score >= 50 ? 'info' : 'warning'
