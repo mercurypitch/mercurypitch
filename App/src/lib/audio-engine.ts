@@ -11,7 +11,6 @@ export class AudioEngine {
   private masterGain: GainNode | null = null;
   private micStream: MediaStream | null = null;
   private micAnalyser: AnalyserNode | null = null;
-  private micContext: AudioContext | null = null;
   private toneOscillator: OscillatorNode | null = null;
   private toneGain: GainNode | null = null;
   private isRecording = false;
@@ -129,6 +128,7 @@ export class AudioEngine {
   async startMic(): Promise<boolean> {
     try {
       await this.init();
+      await this.resume();
 
       this.micStream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -138,10 +138,12 @@ export class AudioEngine {
         },
       });
 
-      this.micContext = new AudioContext();
-      const source = this.micContext.createMediaStreamSource(this.micStream);
+      const ctx = this.audioCtx;
+      if (!ctx) return false;
 
-      this.micAnalyser = this.micContext.createAnalyser();
+      const source = ctx.createMediaStreamSource(this.micStream);
+
+      this.micAnalyser = ctx.createAnalyser();
       this.micAnalyser.fftSize = 2048;
       this.micAnalyser.smoothingTimeConstant = 0.1;
 
@@ -165,11 +167,6 @@ export class AudioEngine {
     if (this.micStream) {
       this.micStream.getTracks().forEach((track) => track.stop());
       this.micStream = null;
-    }
-
-    if (this.micContext) {
-      this.micContext.close();
-      this.micContext = null;
     }
 
     this.micAnalyser = null;

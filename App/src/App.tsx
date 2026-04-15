@@ -145,6 +145,9 @@ export const App: Component<AppProps> = (props) => {
         // Play tone for the note
         audioEngine.playTone(note.freq);
       },
+      onNoteEnd: () => {
+        audioEngine.stopTone();
+      },
       onBeatUpdate: (beat) => {
         setCurrentBeat(beat);
       },
