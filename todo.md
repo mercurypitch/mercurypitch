@@ -29,7 +29,7 @@ A living list of proposed features and improvements for PitchPerfect.
 ## Practice & Feedback
 
 - [x] **Session history** — Store past practice sessions with timestamps, scores, and accuracy per run  **(DONE - PR #76)**
-- [ ] **Progress chart** — Visual line/bar chart of score improvement over time
+- [x] **Progress chart** — Visual line/bar chart of score improvement over time  **(DONE - PR #76)**
 - [ ] **Pitch accuracy heatmap on piano keys** — Colour-code piano keys showing weak/strong notes based on history  **(GH #77)**
 - [ ] **Target pitch overlay** — Show the target frequency as a horizontal guide line on the pitch canvas during Practice mode  **(DONE - PR #76)**
 - [ ] **Custom practice modes** — e.g., "Random notes" (skip practising known notes), "Focus mode" (practice only recent errors)
