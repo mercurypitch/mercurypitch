@@ -1598,21 +1598,49 @@ export class PianoRollEditor {
     this.pushHistory();
 
     if (type === 'vibrato') {
-      // Single note vibrato
-      note.effectType = 'vibrato';
-      note.linkedTo = [];
+      // Apply vibrato to selected notes (if multiple selected)
+      const selected = this._getSelectedNotes();
+      if (selected.length > 1) {
+        selected.forEach((n) => {
+          n.effectType = 'vibrato';
+          n.linkedTo = [];
+        });
+      } else {
+        // Single note vibrato
+        note.effectType = 'vibrato';
+        note.linkedTo = [];
+      }
     } else {
       // Slides and ease need 2 selected notes
-      const otherNotes = this.melody.filter((n) => n.id !== this.selectedNoteId);
-      // Find nearest note after current note
-      const nextNote = otherNotes
-        .filter((n) => n.startBeat >= note.startBeat)
-        .sort((a, b) => a.startBeat - b.startBeat)[0];
-      if (!nextNote) return;
+      const selected = this._getSelectedNotes();
+      if (selected.length !== 2) {
+        window.alert('Slides require exactly 2 notes selected (order by time). Vibrato works on 1 or more notes.');
+        return;
+      }
 
-      note.effectType = type;
-      note.linkedTo = [nextNote.id!];
-      nextNote.linkedTo = [];
+      // Sort by start beat to determine direction
+      const sorted = [...selected].sort((a, b) => a.startBeat - b.startBeat);
+      const first = sorted[0];
+      const second = sorted[1];
+
+      // Validation based on effect type
+      if (type === 'slide-up' && second.note.midi <= first.note.midi) {
+        window.alert('Ascending slide requires the second note to be higher than the first.');
+        return;
+      }
+      if (type === 'slide-down' && second.note.midi >= first.note.midi) {
+        window.alert('Descending slide requires the second note to be lower than the first.');
+        return;
+      }
+      if ((type === 'ease-in' || type === 'ease-out') && second.note.midi === first.note.midi) {
+        window.alert('Ease In/Out requires two notes at different pitches.');
+        return;
+      }
+
+      // Apply effect and extend first note's duration to meet second note
+      first.effectType = type;
+      first.linkedTo = [second.id!];
+      first.duration = Math.max(first.duration, second.startBeat - first.startBeat + 0.5);
     }
 
     this.draw();
