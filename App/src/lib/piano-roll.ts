@@ -665,6 +665,15 @@ export class PianoRollEditor {
           <button id="roll-zoom-fit" class="roll-zoom-btn" title="Fit to view">Fit</button>
         </div>
         <div class="roll-sep"></div>
+        <div class="roll-undo-group">
+          <button id="roll-undo-btn" class="roll-undo-btn" title="Undo (Ctrl+Z)" disabled>
+            <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/></svg>
+          </button>
+          <button id="roll-redo-btn" class="roll-redo-btn" title="Redo (Ctrl+Y)" disabled>
+            <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M18.4 10.6C16.55 8.99 14.15 8 11.5 8c-4.65 0-8.58 3.03-9.96 7.22L3.9 16c1.05-3.19 4.05-5.5 7.6-5.5 1.95 0 3.73.72 5.12 1.88L13 16h9V7l-3.6 3.6z"/></svg>
+          </button>
+        </div>
+        <div class="roll-sep"></div>
         <div class="roll-preset-group">
           <select id="roll-preset-select" class="roll-preset-select">
             <option value="">— Load Preset —</option>
