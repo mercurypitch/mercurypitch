@@ -10,9 +10,9 @@ A living list of proposed features and improvements for PitchPerfect.
 - [ ] **Snap-to-grid toggle** — Allow free placement (no snapping) for expressive timing
 - [ ] **Note velocity / velocity curve** — Visual velocity editing on note blocks (thicker/thinner or colour intensity)
 - [ ] **Keyboard shortcut for note entry** — Arrow keys navigate pitch lanes, Space/Enter place note
-- [ ] **Undo/redo for note edits** — Maintain a history stack of edit operations in the piano roll
+- [x] **Undo/redo for note edits** — Maintain a history stack of edit operations in the piano roll  **(GH #73, DONE)**
 - [ ] **Multiple selection and bulk move/delete** — Shift-select or Ctrl-select multiple notes and drag or delete together
-- [ ] **Zoom controls for piano roll** — Zoom in/out on the time axis (horizontal) and pitch axis (vertical)
+- [ ] **Zoom controls for piano roll** — Zoom in/out on the time axis (horizontal) and pitch axis (vertical)  **(GH #74)**
 
 ---
 
@@ -58,7 +58,7 @@ A living list of proposed features and improvements for PitchPerfect.
 
 ## Data & Export
 
-- [ ] **Export melody as MIDI file** — Download the current preset melody as a standard .mid file
+- [ ] **Export melody as MIDI file** — Download the current preset melody as a standard .mid file  **(GH #75)**
 - [ ] **Export melody as audio (WAV/MP3)** — Render the current melody to an audio file
 - [ ] **Import MIDI file into editor** — Load a .mid file and populate the piano roll
 - [ ] **Cloud preset sync** — Save and load presets to/from a server (optional authentication)
