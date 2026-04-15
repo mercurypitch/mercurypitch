@@ -9,7 +9,7 @@ A living list of proposed features and improvements for PitchPerfect.
 - [ ] **Copy/paste notes** — Select one or more notes, copy them, and paste at a new beat position in the piano roll
 - [ ] **Snap-to-grid toggle** — Allow free placement (no snapping) for expressive timing
 - [ ] **Note velocity / velocity curve** — Visual velocity editing on note blocks (thicker/thinner or colour intensity)
-- [ ] **Keyboard shortcut for note entry** — Arrow keys navigate pitch lanes, Space/Enter place note
+- [x] **Keyboard shortcut for note entry** — Arrow keys navigate pitch lanes, Space/Enter place note  **(DONE - PR #76)**
 - [x] **Undo/redo for note edits** — Maintain a history stack of edit operations in the piano roll  **(GH #73, DONE)**
 - [ ] **Multiple selection and bulk move/delete** — Shift-select or Ctrl-select multiple notes and drag or delete together
 - [ ] **Zoom controls for piano roll** — Zoom in/out on the time axis (horizontal) and pitch axis (vertical)  **(GH #74)**
