@@ -84,7 +84,64 @@ header h1 {
     overflow: hidden;
 }
 
-/* ===== Notes Panel (Left) ===== */
+/* ===== Shared Sidebar ===== */
+.app-sidebar {
+    width: 270px;
+    min-width: 270px;
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border);
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow-y: auto;
+}
+
+.sidebar-section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+/* ===== Shared Header Bar ===== */
+.app-header-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.app-header-sep {
+    width: 1px;
+    height: 22px;
+    background: var(--border);
+    flex-shrink: 0;
+}
+
+.app-header-score {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: 4px;
+}
+
+.app-score-value {
+    font-weight: 700;
+    color: var(--green);
+    font-size: 0.9rem;
+}
+
+/* ===== Main Content Area ===== */
+.main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* ===== Notes Panel (Legacy — kept for NoteList component) ===== */
 #notes-panel {
     width: 270px;
     min-width: 270px;
@@ -1071,13 +1128,17 @@ header h1 {
 /* ===== Responsive ===== */
 @media (max-width: 768px) {
     .main-layout { flex-direction: column; }
-    #notes-panel {
+    .app-sidebar {
         width: 100%;
         min-width: unset;
         max-height: 220px;
         border-right: none;
         border-bottom: 1px solid var(--border);
+        flex-direction: row;
+        flex-wrap: wrap;
+        overflow-y: auto;
     }
+    .main-content { min-height: 0; }
     #note-list { flex-direction: row; flex-wrap: wrap; }
     #score-card { min-width: unset; margin: 16px; padding: 24px 20px; }
     #history-container { height: 60px; }
@@ -1085,6 +1146,7 @@ header h1 {
     .ctrl-btn { padding: 5px 8px; font-size: 0.72rem; }
     .mode-btn { padding: 5px 8px; font-size: 0.72rem; }
     #run-indicator { display: none; }
+    .app-header-bar { gap: 4px; }
     /* Larger playhead triangle on mobile for visibility */
     #playhead::after {
         left: -9px;

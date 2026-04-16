@@ -16,12 +16,11 @@ import { PianoRollCanvas } from '@/components/PianoRollCanvas';
 import { PitchDisplay } from '@/components/PitchDisplay';
 import { PitchCanvas } from '@/components/PitchCanvas';
 import { SettingsPanel } from '@/components/SettingsPanel';
-import { loadFromURL, hasSharedPresetInURL, copyShareURL } from '@/lib/share-url';
+import { loadFromURL, hasSharedPresetInURL } from '@/lib/share-url';
 import { NoteList } from '@/components/NoteList';
-import { PresetSelector } from '@/components/PresetSelector';
-import { MicButton } from '@/components/MicButton';
+import { AppSidebar } from '@/components/AppSidebar';
+import { AppHeader } from '@/components/AppHeader';
 import type { PresetData } from '@/stores/app-store';
-import { MetronomeButton } from '@/components/MetronomeButton';
 import { HistoryCanvas } from '@/components/HistoryCanvas';
 import { appStore, getNoteAccuracyMap } from '@/stores/app-store';
 import { playback } from '@/stores/playback-store';
@@ -553,8 +552,10 @@ export const App: Component<AppProps> = (props) => {
     <div id="app">
       {/* Header */}
       <header>
-        <h1 id="app-title">PitchPerfect</h1>
-        <p class="subtitle">Voice Pitch Practice</p>
+        <div class="header-left">
+          <h1 id="app-title">PitchPerfect</h1>
+          <p class="subtitle">Voice Pitch Practice</p>
+        </div>
         <nav id="app-tabs">
           <button
             id="tab-practice"
@@ -581,326 +582,92 @@ export const App: Component<AppProps> = (props) => {
             Settings
           </button>
         </nav>
+        {/* Shared header controls */}
+        <AppHeader
+          isPlaying={isPlaying}
+          isPaused={isPaused}
+          metronomeEnabled={metronomeEnabled}
+          liveScore={liveScore}
+          volume={savedVol}
+          onMicToggle={handleMicToggle}
+          onPlayPauseStop={() => {
+            if (isPlaying()) {
+              handlePause();
+            } else if (isPaused()) {
+              handleResume();
+            } else {
+              handlePlay();
+            }
+          }}
+          onReset={handleReset}
+          onMetronomeToggle={() => setMetronomeEnabled(!metronomeEnabled())}
+          onSpeedChange={(speed) => melodyEngine?.setPlaybackSpeed(speed)}
+          onVolumeChange={(vol) => {
+            setSavedVol(vol);
+            audioEngine?.setVolume(vol / 100);
+          }}
+        />
       </header>
 
-      {/* Main layout */}
+      {/* Main layout: sidebar + content */}
       <div class="main-layout" id="main-layout">
-        {/* Practice tab — notes panel + pitch area side by side */}
-        <Show when={appStore.activeTab() === 'practice'}>
-          {/* Left panel — scale info and note list */}
-          <aside id="notes-panel">
-            <h2 class="panel-title">Scale</h2>
+        {/* Shared sidebar */}
+        <AppSidebar
+          onPresetLoad={(preset) => {
+            melodyStore.setMelody(presetToMelody(preset));
+            if (preset.bpm) {
+              appStore.setBpm(preset.bpm);
+              melodyEngine?.setBPM(preset.bpm);
+            }
+          }}
+          onOctaveShift={handleOctaveShift}
+        />
 
-            {/* Scale controls */}
-            <div id="scale-info">
-              <span class="key-label">Key:</span>
-              <select
-                id="key-select"
-                value={appStore.keyName()}
-                onChange={(e) => {
-                  const key = e.currentTarget.value;
-                  appStore.setKeyName(key);
-                  melodyStore.refreshScale(key, melodyStore.currentOctave(), appStore.scaleType());
-                }}
-              >
-                <option value="C">C</option>
-                <option value="G">G</option>
-                <option value="D">D</option>
-                <option value="A">A</option>
-                <option value="E">E</option>
-                <option value="B">B</option>
-                <option value="F">F</option>
-                <option value="Bb">Bb</option>
-              </select>
-
-              <span class="octave-label">Oct:</span>
-              <div class="octave-ctrl">
-                <button class="octave-btn" title="Lower octave" onClick={() => handleOctaveShift(-1)}>
-                  <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg>
-                </button>
-                <span class="octave-value">{melodyStore.currentOctave()}</span>
-                <button class="octave-btn" title="Higher octave" onClick={() => handleOctaveShift(1)}>
-                  <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg>
-                </button>
-              </div>
-
-              <span class="preset-label">Scale:</span>
-              <select
-                id="scale-select"
-                value={appStore.scaleType()}
-                onChange={(e) => {
-                  const st = e.currentTarget.value;
-                  appStore.setScaleType(st);
-                  melodyStore.refreshScale(appStore.keyName(), melodyStore.currentOctave(), st);
-                }}
-              >
-                <option value="major">Major</option>
-                <option value="natural-minor">Minor (Natural)</option>
-                <option value="harmonic-minor">Harmonic Minor</option>
-                <option value="melodic-minor">Melodic Minor</option>
-                <option value="dorian">Dorian</option>
-                <option value="mixolydian">Mixolydian</option>
-                <option value="phrygian">Phrygian</option>
-                <option value="lydian">Lydian</option>
-                <option value="pentatonic-major">Pentatonic Major</option>
-                <option value="pentatonic-minor">Pentatonic Minor</option>
-                <option value="blues">Blues</option>
-                <option value="chromatic">Chromatic</option>
-              </select>
-            </div>
-
-            {/* Preset selector — shared between both tabs */}
-            <PresetSelector
-              onLoad={(preset) => {
-                melodyStore.setMelody(presetToMelody(preset));
-                if (preset.bpm) {
-                  appStore.setBpm(preset.bpm);
-                  melodyEngine?.setBPM(preset.bpm);
-                }
-              }}
-            />
-
-            {/* Note list */}
-            <NoteList
-              melody={() => melodyStore.items}
-              currentNoteIndex={currentNoteIndex}
-              noteResults={noteResults}
-              isPlaying={isPlaying}
-            />
-
-            {/* Pitch reference */}
-            <PitchDisplay
-              pitch={currentPitch}
-              targetNote={targetNoteName}
-            />
-
-            {/* Stats panel */}
-            <div id="stats-panel">
-              <h3>Accuracy</h3>
-              <div id="stats-bars">
-                <div class="stat-row" data-band="100">
-                  <span class="stat-label">Perfect</span>
-                  <div class="stat-bar-bg"><div class="stat-bar" id="bar-100" /></div>
-                  <span class="stat-count" id="cnt-100">0</span>
-                </div>
-                <div class="stat-row" data-band="90">
-                  <span class="stat-label">Excellent</span>
-                  <div class="stat-bar-bg"><div class="stat-bar" id="bar-90" /></div>
-                  <span class="stat-count" id="cnt-90">0</span>
-                </div>
-                <div class="stat-row" data-band="75">
-                  <span class="stat-label">Good</span>
-                  <div class="stat-bar-bg"><div class="stat-bar" id="bar-75" /></div>
-                  <span class="stat-count" id="cnt-75">0</span>
-                </div>
-                <div class="stat-row" data-band="50">
-                  <span class="stat-label">Okay</span>
-                  <div class="stat-bar-bg"><div class="stat-bar" id="bar-50" /></div>
-                  <span class="stat-count" id="cnt-50">0</span>
-                </div>
-                <div class="stat-row" data-band="0">
-                  <span class="stat-label">Off</span>
-                  <div class="stat-bar-bg"><div class="stat-bar" id="bar-0" /></div>
-                  <span class="stat-count" id="cnt-0">0</span>
-                </div>
-              </div>
-              <div id="score-display">
-                <span id="score-label">Score:</span>
-                <span id="score-value">
-                  {liveScore() !== null ? `${liveScore()}%` : '--'}
-                </span>
-              </div>
-            </div>
-          </aside>
-
-          {/* Right panel — pitch area */}
-          <main id="pitch-area">
-            {/* Controls bar */}
-            <div id="controls">
-              {/* Transport */}
-              <MicButton
-                active={appStore.micActive()}
-                onClick={handleMicToggle}
-                disabled={isPlaying() || isPaused()}
-              />
-
-              {/* Inline play/reset instead of TransportControls wrapper */}
-              <button
-                id="btn-play"
-                class="ctrl-btn"
-                onClick={() => {
-                  if (isPlaying()) {
-                    handlePause();
-                  } else if (isPaused()) {
-                    handleResume();
-                  } else {
-                    handlePlay();
-                  }
-                }}
-              >
-                {isPlaying() ? (
-                  <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-                ) : (
-                  <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>
-                )}
-                <span>{isPlaying() ? 'Pause' : isPaused() ? 'Continue' : 'Start'}</span>
-              </button>
-
-              <button
-                id="btn-reset"
-                class="ctrl-btn"
-                onClick={handleReset}
-                disabled={!isPlaying() && !isPaused()}
-              >
-                <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M6 6h12v12H6z"/></svg>
-                <span>Reset</span>
-              </button>
-
-              <div class="ctrl-sep" />
-
-              {/* Mode toggles */}
-              <div id="mode-group">
-                <button id="btn-once" class={`mode-btn ${playMode() === 'once' ? 'active' : ''}`} onClick={() => setPlayMode('once')}>Once</button>
-                <button id="btn-repeat" class={`mode-btn ${playMode() === 'repeat' ? 'active' : ''}`} onClick={() => setPlayMode('repeat')}>Repeat</button>
-                <button id="btn-practice" class={`mode-btn ${playMode() === 'practice' ? 'active' : ''}`} onClick={() => setPlayMode('practice')}>Practice</button>
-              </div>
-
-              {/* Practice options (shown when practice mode) */}
+        {/* Tab content */}
+        <div class="main-content">
+          {/* Practice tab */}
+          <Show when={appStore.activeTab() === 'practice'}>
+            {/* Mode toggles (Practice-specific) */}
+            <div id="mode-group" class="content-toolbar">
+              <button id="btn-once" class={`mode-btn ${playMode() === 'once' ? 'active' : ''}`} onClick={() => setPlayMode('once')}>Once</button>
+              <button id="btn-repeat" class={`mode-btn ${playMode() === 'repeat' ? 'active' : ''}`} onClick={() => setPlayMode('repeat')}>Repeat</button>
+              <button id="btn-practice" class={`mode-btn ${playMode() === 'practice' ? 'active' : ''}`} onClick={() => setPlayMode('practice')}>Practice</button>
               <Show when={playMode() === 'practice'}>
-                <div class="practice-options">
-                  <label class="opt-label">Cycles:</label>
-                  <input
-                    type="number"
-                    id="cycles"
-                    min="2"
-                    max="20"
-                    value={practiceCycles()}
-                    onInput={(e) => setPracticeCycles(Math.max(2, Math.min(20, parseInt(e.currentTarget.value) || 5)))}
-                    class="cycles-input"
-                  />
-                  <button
-                    id="btn-start-practice"
-                    class="ctrl-btn accent"
-                    onClick={handlePlay}
-                  >
-                    Start
-                  </button>
-                </div>
+                <label class="opt-label">Cycles:</label>
+                <input
+                  type="number"
+                  id="cycles"
+                  min="2"
+                  max="20"
+                  value={practiceCycles()}
+                  onInput={(e) => setPracticeCycles(Math.max(2, Math.min(20, parseInt(e.currentTarget.value) || 5)))}
+                  class="cycles-input"
+                />
               </Show>
-
-              <div class="ctrl-sep" />
-
-              {/* Tempo */}
-              <div class="tempo-group">
-                <label class="opt-label">BPM:</label>
-                <input
-                  type="range"
-                  id="tempo"
-                  min="40"
-                  max="280"
-                  value={appStore.bpm()}
-                  class="tempo-slider"
-                  onInput={(e) => appStore.setBpm(parseInt(e.currentTarget.value) || 80)}
-                />
-                <span id="tempo-value">{appStore.bpm()}</span>
-              </div>
-
-              {/* Count-in options */}
-              <div class="countin-group">
-                <label class="opt-label">Count-in:</label>
-                <select
-                  id="countin-select"
-                  value={appStore.countIn()}
-                  onChange={(e) => appStore.setCountIn(parseInt(e.currentTarget.value) as any)}
-                  class="countin-select"
-                >
-                  <option value="0">Off</option>
-                  <option value="1">1 beat</option>
-                  <option value="2">2 beats</option>
-                  <option value="4">4 beats</option>
-                </select>
-              </div>
-
-              {/* Metronome toggle */}
-              <MetronomeButton
-                active={metronomeEnabled()}
-                onClick={() => setMetronomeEnabled(!metronomeEnabled())}
-              />
-
-              {/* Speed control */}
-              <div class="speed-group">
-                <label class="opt-label">Speed:</label>
-                <select
-                  id="speed-select"
-                  value="1"
-                  class="speed-select"
-                  onChange={(e) => {
-                    const speed = parseFloat(e.currentTarget.value);
-                    melodyEngine?.setPlaybackSpeed(speed);
-                  }}
-                >
-                  <option value="0.25">0.25x</option>
-                  <option value="0.5">0.5x</option>
-                  <option value="0.75">0.75x</option>
-                  <option value="1">1x</option>
-                  <option value="1.25">1.25x</option>
-                  <option value="1.5">1.5x</option>
-                  <option value="2">2x</option>
-                </select>
-              </div>
-
-              {/* Sensitivity */}
-              <div class="sensitivity-group">
-                <label class="opt-label">Sens:</label>
-                <input
-                  type="range"
-                  id="sensitivity"
-                  min="1"
-                  max="10"
-                  value={appStore.settings().sensitivity}
-                  class="sensitivity-slider"
-                  onInput={(e) => {
-                    const val = parseInt(e.currentTarget.value) || 5;
-                    appStore.setSensitivity(val);
-                  }}
-                />
-                <span id="sensitivity-value">{appStore.settings().sensitivity}</span>
-              </div>
-
-              {/* Volume */}
-              <div class="volume-group">
-                <label class="opt-label">Vol:</label>
-                <input
-                  type="range"
-                  id="volume"
-                  min="0"
-                  max="100"
-                  value={savedVol()}
-                  class="volume-slider"
-                  onInput={(e) => {
-                    const vol = parseInt(e.currentTarget.value) || 80;
-                    setSavedVol(vol);
-                    audioEngine?.setVolume(vol / 100);
-                    localStorage.setItem('pp_volume', String(vol));
-                  }}
-                />
-                <span id="volume-value">{savedVol()}</span>
-              </div>
-
-              {/* Run indicator */}
               <div id="run-indicator">
-                <span id="run-counter">Run 1</span>
                 <span id="cycle-counter">
                   {playMode() === 'practice' ? `Cycle ${currentCycle()}/${practiceCycles()}` : playMode() === 'repeat' ? 'Repeat' : ''}
                 </span>
               </div>
-
-              {/* Count-in display */}
               <Show when={isCountingIn()}>
                 <div id="countin-display" class="countin-badge">
                   {countInBeat()}
                 </div>
               </Show>
+            </div>
+
+            {/* Note list + pitch reference */}
+            <div id="notes-content">
+              <NoteList
+                melody={() => melodyStore.items}
+                currentNoteIndex={currentNoteIndex}
+                noteResults={noteResults}
+                isPlaying={isPlaying}
+              />
+              <PitchDisplay
+                pitch={currentPitch}
+                targetNote={targetNoteName}
+              />
             </div>
 
             {/* Canvas */}
@@ -931,12 +698,10 @@ export const App: Component<AppProps> = (props) => {
                 liveScore={liveScore}
               />
             </div>
-          </main>
-        </Show>
+          </Show>
 
-        {/* Editor tab — full-screen piano roll */}
-        <Show when={appStore.activeTab() === 'editor'}>
-          <div id="editor-panel" class="editor-fullscreen">
+          {/* Editor tab */}
+          <Show when={appStore.activeTab() === 'editor'}>
             <PianoRollCanvas
               melody={() => melodyStore.items}
               scale={() => melodyStore.currentScale()}
@@ -948,65 +713,16 @@ export const App: Component<AppProps> = (props) => {
               onPlayClick={handlePlay}
               onResetClick={handleReset}
               onInstrumentChange={(instrument) => audioEngine.setInstrument(instrument as any)}
-              headerSlot={() => (
-                <div class="editor-header-bar">
-                  {/* Shared preset selector with save/new controls */}
-                  <PresetSelector
-                    showControls={true}
-                    onLoad={(preset) => {
-                      const editor = (window as any).pianoRollEditor;
-                      if (editor) {
-                        editor.melody = preset.notes.map((n) => ({
-                          id: editor.nextNoteId++,
-                          note: {
-                            midi: n.midi,
-                            name: '?',
-                            octave: 4,
-                            freq: 440,
-                          },
-                          startBeat: n.startBeat,
-                          duration: n.duration,
-                          effectType: n.effectType,
-                          linkedTo: n.linkedTo,
-                        }));
-                        editor.totalBeats = preset.totalBeats || 16;
-                        editor.bpm = preset.bpm || 120;
-                        editor.buildCanvases();
-                        editor.draw();
-                      }
-                    }}
-                  />
-                  {/* Editor playback controls */}
-                  <div class="editor-playback-controls">
-                    <button
-                      id="roll-play-btn"
-                      class="ctrl-btn play-btn"
-                      title="Play melody"
-                      onClick={handlePlay}
-                    >
-                      ▶ Play
-                    </button>
-                    <button
-                      id="roll-reset-btn"
-                      class="ctrl-btn"
-                      title="Reset playback"
-                      onClick={handleReset}
-                    >
-                      ■ Stop
-                    </button>
-                  </div>
-                </div>
-              )}
             />
-          </div>
-        </Show>
+          </Show>
 
-        {/* Settings tab */}
-        <Show when={appStore.activeTab() === 'settings'}>
-          <div id="settings-panel">
-            <SettingsPanel />
-          </div>
-        </Show>
+          {/* Settings tab */}
+          <Show when={appStore.activeTab() === 'settings'}>
+            <div id="settings-panel">
+              <SettingsPanel />
+            </div>
+          </Show>
+        </div>
       </div>
 
       {/* Score overlay */}

@@ -255,6 +255,9 @@ export class PianoRollEditor {
   private numOctaves = 1;
   private mode = 'major';
 
+  // Grid visibility
+  private showGrid = true;
+
   // Effect state
   private selectedEffect: EffectType | null = null;
 
@@ -1113,6 +1116,12 @@ export class PianoRollEditor {
     container.querySelector('#roll-reset-btn')?.addEventListener('click', () => {
       this.resetPlayback();
       this.onResetClick?.();
+    });
+
+    // Grid toggle from app header/sidebar
+    window.addEventListener('pitchperfect:gridToggle', (e) => {
+      this.showGrid = (e as CustomEvent<{ visible: boolean }>).detail.visible;
+      this.draw();
     });
 
     // Grid mouse events
@@ -2061,16 +2070,18 @@ export class PianoRollEditor {
       ctx.stroke();
     }
 
-    // Vertical lines
-    for (let b = 0; b <= this.totalBeats; b++) {
-      const x = b * this.beatWidth;
-      const isBar = b % this.config.beatsPerBar === 0;
-      ctx.strokeStyle = isBar ? '#30363d' : '#21262d';
-      ctx.lineWidth = isBar ? 1 : 0.5;
-      ctx.beginPath();
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x, totalHeight);
-      ctx.stroke();
+    // Vertical lines (only when grid is visible)
+    if (this.showGrid) {
+      for (let b = 0; b <= this.totalBeats; b++) {
+        const x = b * this.beatWidth;
+        const isBar = b % this.config.beatsPerBar === 0;
+        ctx.strokeStyle = isBar ? '#30363d' : '#21262d';
+        ctx.lineWidth = isBar ? 1 : 0.5;
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, totalHeight);
+        ctx.stroke();
+      }
     }
 
     // Note blocks
@@ -2122,16 +2133,18 @@ export class PianoRollEditor {
       ctx.stroke();
     }
 
-    // Vertical lines
-    for (let b = 0; b <= this.totalBeats; b++) {
-      const x = b * this.beatWidth;
-      const isBar = b % this.config.beatsPerBar === 0;
-      ctx.strokeStyle = isBar ? '#30363d' : '#21262d';
-      ctx.lineWidth = isBar ? 1 : 0.5;
-      ctx.beginPath();
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x, totalHeight);
-      ctx.stroke();
+    // Vertical lines (only when grid is visible)
+    if (this.showGrid) {
+      for (let b = 0; b <= this.totalBeats; b++) {
+        const x = b * this.beatWidth;
+        const isBar = b % this.config.beatsPerBar === 0;
+        ctx.strokeStyle = isBar ? '#30363d' : '#21262d';
+        ctx.lineWidth = isBar ? 1 : 0.5;
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, totalHeight);
+        ctx.stroke();
+      }
     }
 
     // Note connection lines (below note blocks)
