@@ -163,7 +163,73 @@ export const SettingsPanel: Component = () => {
             <div>Min Amplitude: <span>{s().minAmplitude}</span></div>
           </div>
         </div>
-      </div>
+     
+        {/* ADSR Envelope Section */}
+        <div class="settings-section">
+          <h3 class="settings-section-title">Tone Envelope (ADSR)</h3>
+          <p class="settings-desc">Adjust the Attack, Decay, Sustain, Release envelope for note playback.</p>
+
+          <div class="settings-row">
+            <label for="adsr-attack">Attack</label>
+            <input
+              type="range"
+              id="adsr-attack"
+              min="0"
+              max="1000"
+              step="10"
+              value={appStore.adsr().attack}
+              onInput={(e) => appStore.setAttack(parseInt(e.currentTarget.value))}
+            />
+            <span class="settings-val">{appStore.adsr().attack}ms</span>
+            <small>Time to reach full volume</small>
+          </div>
+
+          <div class="settings-row">
+            <label for="adsr-decay">Decay</label>
+            <input
+              type="range"
+              id="adsr-decay"
+              min="0"
+              max="1000"
+              step="10"
+              value={appStore.adsr().decay}
+              onInput={(e) => appStore.setDecay(parseInt(e.currentTarget.value))}
+            />
+            <span class="settings-val">{appStore.adsr().decay}ms</span>
+            <small>Time to fall to sustain level</small>
+          </div>
+
+          <div class="settings-row">
+            <label for="adsr-sustain">Sustain</label>
+            <input
+              type="range"
+              id="adsr-sustain"
+              min="0"
+              max="100"
+              step="5"
+              value={appStore.adsr().sustain}
+              onInput={(e) => appStore.setSustain(parseInt(e.currentTarget.value))}
+            />
+            <span class="settings-val">{appStore.adsr().sustain}%</span>
+            <small>Volume during note held</small>
+          </div>
+
+          <div class="settings-row">
+            <label for="adsr-release">Release</label>
+            <input
+              type="range"
+              id="adsr-release"
+              min="0"
+              max="2000"
+              step="50"
+              value={appStore.adsr().release}
+              onInput={(e) => appStore.setRelease(parseInt(e.currentTarget.value))}
+            />
+            <span class="settings-val">{appStore.adsr().release}ms</span>
+            <small>Time to fade after note ends</small>
+          </div>
+        </div>
+ </div>
     </div>
   );
 };

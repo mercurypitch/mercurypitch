@@ -277,6 +277,78 @@ export function deletePreset(name: string): void {
   window.dispatchEvent(new CustomEvent('pitchperfect:presetDeleted', { detail: { name } }));
 }
 
+// ── ADSR Envelope ─────────────────────────────────────────────
+
+export interface ADSRConfig {
+  attack: number;  // 0–1000 ms (default 10)
+  decay: number;    // 0–1000 ms (default 100)
+  sustain: number;  // 0–100 (percentage, default 70)
+  release: number;  // 0–2000 ms (default 200)
+}
+
+const ADSR_KEY = 'pitchperfect_adsr';
+const DEFAULT_ADSR: ADSRConfig = {
+  attack: 10,
+  decay: 100,
+  sustain: 70,
+  release: 200,
+};
+
+function loadADSRFromStorage(): ADSRConfig {
+  try {
+    const raw = localStorage.getItem(ADSR_KEY);
+    return raw ? JSON.parse(raw) : DEFAULT_ADSR;
+  } catch {
+    return DEFAULT_ADSR;
+  }
+}
+
+const [adsr, setAdsr] = createSignal<ADSRConfig>(loadADSRFromStorage());
+
+function saveADSRToStorage(data: ADSRConfig): void {
+  try {
+    localStorage.setItem(ADSR_KEY, JSON.stringify(data));
+  } catch (e) {
+    console.warn('Failed to save ADSR settings:', e);
+  }
+}
+
+export function initADSR(): void {
+  setAdsr(loadADSRFromStorage());
+}
+
+export function setAttack(value: number): void {
+  setAdsr((a) => {
+    const updated = { ...a, attack: Math.max(0, Math.min(1000, value)) };
+    saveADSRToStorage(updated);
+    return updated;
+  });
+}
+
+export function setDecay(value: number): void {
+  setAdsr((a) => {
+    const updated = { ...a, decay: Math.max(0, Math.min(1000, value)) };
+    saveADSRToStorage(updated);
+    return updated;
+  });
+}
+
+export function setSustain(value: number): void {
+  setAdsr((a) => {
+    const updated = { ...a, sustain: Math.max(0, Math.min(100, value)) };
+    saveADSRToStorage(updated);
+    return updated;
+  });
+}
+
+export function setRelease(value: number): void {
+  setAdsr((a) => {
+    const updated = { ...a, release: Math.max(0, Math.min(2000, value)) };
+    saveADSRToStorage(updated);
+    return updated;
+  });
+}
+
 // ── Notifications ────────────────────────────────────────────
 
 interface Notification {
@@ -441,4 +513,12 @@ export const appStore = {
   setTheme,
   toggleTheme,
   initTheme,
+
+  // ADSR Envelope
+  adsr,
+  initADSR,
+  setAttack,
+  setDecay,
+  setSustain,
+  setRelease,
 };

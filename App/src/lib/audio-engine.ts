@@ -32,6 +32,12 @@ export class AudioEngine {
   private _frequencyByteData = new Uint8Array(0);
   private _activeVoices = new Map<number, { oscillators: OscillatorNode[]; gains: GainNode[]; stopTime: number; lfos?: OscillatorNode[]; lfoGains?: GainNode[] }>();
 
+  // ADSR Envelope configuration (default values)
+  private adsrAttack = 0.010;   // seconds (10ms)
+  private adsrDecay = 0.100;    // seconds (100ms)
+  private adsrSustain = 0.70;   // 0-1 level (70%)
+  private adsrRelease = 0.200;  // seconds (200ms)
+
   // ============================================================
   // Lifecycle
   // ============================================================
@@ -118,6 +124,36 @@ export class AudioEngine {
   /** Get available instrument names */
   getInstruments(): InstrumentType[] {
     return ['sine', 'piano', 'organ', 'strings', 'synth'];
+  }
+
+  // ============================================================
+  // ADSR Envelope
+  // ============================================================
+
+  /** Set ADSR envelope parameters (values in ms) */
+  setADSR(attack: number, decay: number, sustain: number, release: number): void {
+    this.adsrAttack = Math.max(0.001, attack / 1000);  // ms to seconds, min 1ms
+    this.adsrDecay = Math.max(0.001, decay / 1000);
+    this.adsrSustain = Math.max(0, Math.min(1, sustain / 100));  // percentage to 0-1
+    this.adsrRelease = Math.max(0.001, release / 1000);
+  }
+
+  /** Get current ADSR values (returns ms and percentage) */
+  getADSR(): { attack: number; decay: number; sustain: number; release: number } {
+    return {
+      attack: Math.round(this.adsrAttack * 1000),
+      decay: Math.round(this.adsrDecay * 1000),
+      sustain: Math.round(this.adsrSustain * 100),
+      release: Math.round(this.adsrRelease * 1000),
+    };
+  }
+
+  /** Sync ADSR settings from appStore (call on init and when ADSR changes) */
+  syncFromAppStore(adsrConfig: { attack: number; decay: number; sustain: number; release: number }): void {
+    this.adsrAttack = adsrConfig.attack / 1000;
+    this.adsrDecay = adsrConfig.decay / 1000;
+    this.adsrSustain = adsrConfig.sustain / 100;
+    this.adsrRelease = adsrConfig.release / 1000;
   }
 
   // ============================================================
@@ -400,11 +436,11 @@ export class AudioEngine {
           gain.connect(masterGain);
           oscillators.push(osc);
         });
-        // ADSR envelope for piano
+        // Piano has custom envelope, skip base ADSR
         masterGain.gain.setValueAtTime(0, now);
-        masterGain.gain.linearRampToValueAtTime(0.8, now + 0.01); // Attack
-        masterGain.gain.exponentialRampToValueAtTime(0.4, now + 0.1); // Decay
-        masterGain.gain.linearRampToValueAtTime(0.3, now + 0.2); // Sustain
+        masterGain.gain.linearRampToValueAtTime(0.8, now + this.adsrAttack); // Attack
+        masterGain.gain.exponentialRampToValueAtTime(0.4, now + this.adsrAttack + this.adsrDecay); // Decay
+        masterGain.gain.linearRampToValueAtTime(0.3, now + this.adsrAttack + this.adsrDecay + 0.1); // Sustain
         break;
       }
       case 'organ': {
@@ -488,7 +524,27 @@ export class AudioEngine {
       }
     }
 
+    // Apply configurable ADSR envelope (unless instrument has custom envelope)
+    this._applyADSREnvelope(masterGain, now, dur);
+
     return { oscillators, gain: masterGain, lfos, lfoGains };
+  }
+
+  /**
+   * Apply ADSR envelope to a gain node. Override in subclasses for custom envelopes.
+   */
+  protected _applyADSREnvelope(gainNode: GainNode, now: number, duration: number): void {
+    // Override per-instrument in _createVoice or use this default for sine/synth
+    const attackTime = this.adsrAttack;
+    const decayTime = this.adsrDecay;
+    const sustainLevel = this.adsrSustain;
+
+    gainNode.gain.setValueAtTime(0, now);
+    gainNode.gain.linearRampToValueAtTime(1.0, now + attackTime);
+    gainNode.gain.exponentialRampToValueAtTime(sustainLevel, now + attackTime + decayTime);
+    // Sustain until release phase (near end of note)
+    gainNode.gain.setValueAtTime(sustainLevel, now + duration - this.adsrRelease);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
   }
 
   /**

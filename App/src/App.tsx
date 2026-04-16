@@ -158,6 +158,8 @@ export const App: Component<AppProps> = (props) => {
     setSavedVol(savedVol);
     audioEngine = new AudioEngine();
     audioEngine.setVolume(savedVol / 100);
+    // Sync ADSR settings from appStore
+    audioEngine.syncFromAppStore(appStore.adsr());
 
     melodyEngine = new MelodyEngine({
       bpm: appStore.bpm(),
@@ -289,6 +291,14 @@ export const App: Component<AppProps> = (props) => {
         minAmplitude: s.minAmplitude,
         bands: s.bands.map(b => ({ threshold: b.threshold, band: b.band })),
       });
+    });
+
+    // Sync ADSR settings to AudioEngine when they change
+    createEffect(() => {
+      const adsr = appStore.adsr();
+      if (audioEngine) {
+        audioEngine.syncFromAppStore(adsr);
+      }
     });
 
     // Link practice callbacks
