@@ -29,6 +29,27 @@ const [countIn, setCountIn] = createSignal<CountInOption>(0);
 const [practiceCount, setPracticeCount] = createSignal<number>(0);
 const [lastScore, setLastScore] = createSignal<number | null>(null);
 
+// ── Grid ──────────────────────────────────────────────────────
+
+const GRID_KEY = 'pitchperfect_grid';
+function loadGridVisibility(): boolean {
+  try { return localStorage.getItem(GRID_KEY) !== 'false'; } catch { return true; }
+}
+const [gridLinesVisible, setGridLinesVisible] = createSignal<boolean>(loadGridVisibility());
+
+export function toggleGridLines(): void {
+  const next = !gridLinesVisible();
+  setGridLinesVisible(next);
+  try { localStorage.setItem(GRID_KEY, String(next)); } catch {}
+  window.dispatchEvent(new CustomEvent('pitchperfect:gridToggle', { detail: { visible: next } }));
+}
+
+export function setGridLines(visible: boolean): void {
+  setGridLinesVisible(visible);
+  try { localStorage.setItem(GRID_KEY, String(visible)); } catch {}
+  window.dispatchEvent(new CustomEvent('pitchperfect:gridToggle', { detail: { visible } }));
+}
+
 // ── Active tab ───────────────────────────────────────────────
 
 export type ActiveTab = 'practice' | 'editor' | 'settings';
@@ -342,6 +363,11 @@ export const appStore = {
   // Navigation
   activeTab,
   setActiveTab,
+
+  // Grid
+  gridLinesVisible,
+  toggleGridLines,
+  setGridLines,
 
   // Notifications
   notifications,

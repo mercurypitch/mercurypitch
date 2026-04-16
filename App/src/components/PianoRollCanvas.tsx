@@ -20,8 +20,6 @@ interface PianoRollCanvasProps {
   onPlayClick: () => void;
   onResetClick: () => void;
   onInstrumentChange?: (instrument: string) => void;
-  /** Slot element rendered above the piano roll — used to inject shared controls */
-  headerSlot?: () => any;
 }
 
 export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
@@ -97,7 +95,6 @@ export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
 
   return (
     <div class="piano-roll-wrapper">
-      {props.headerSlot?.()}
       <div ref={containerRef} class="piano-roll-container" />
     </div>
   );
