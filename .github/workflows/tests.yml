@@ -33,11 +33,3 @@ jobs:
       - name: Run tests
         run: npm run test:run
         working-directory: App
-
-      - name: Upload coverage
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report
-          path: App/coverage/
-          retention-days: 7
