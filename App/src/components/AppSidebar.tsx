@@ -1,31 +1,37 @@
 // ============================================================
 // AppSidebar — Shared sidebar component
-// Contains: Key/Scale controls, Grid toggle, PresetSelector, Stats
-// Visible in all tabs; stats wrapped in Show for Practice only
+// Contains: Key/Scale controls, Grid toggle, PresetSelector, NoteList, PitchDisplay, Stats
+// Visible in all tabs; NoteList, PitchDisplay, stats wrapped in Show for Practice only
 // ============================================================
 
-import { Component, Show, For } from 'solid-js';
+import { Component, Show } from 'solid-js';
 import {
   appStore,
   getNoteAccuracyMap,
 } from '@/stores/app-store';
 import { melodyStore } from '@/stores/melody-store';
 import { PresetSelector } from '@/components/PresetSelector';
+import { NoteList } from '@/components/NoteList';
+import { PitchDisplay } from '@/components/PitchDisplay';
 import type { PresetData } from '@/stores/app-store';
-import type { NoteName } from '@/types';
+import type { MelodyItem, NoteResult, PitchResult } from '@/types';
 
 interface AppSidebarProps {
   /** Called when a preset is loaded */
   onPresetLoad?: (preset: PresetData) => void;
   /** For octave shift handler from parent */
   onOctaveShift?: (delta: number) => void;
+  /** Note list props (Practice tab) */
+  melody: () => MelodyItem[];
+  currentNoteIndex: () => number;
+  noteResults: () => NoteResult[];
+  isPlaying: () => boolean;
+  /** Pitch display props (Practice tab) */
+  pitch: () => PitchResult | null;
+  targetNoteName: () => string | null;
 }
 
 export const AppSidebar: Component<AppSidebarProps> = (props) => {
-  // Stats counts derived from noteResults (passed via context or lifted)
-  // Since stats bars are managed via DOM effects in App.tsx, we keep them there.
-  // Here we render the stats panel structure that App.tsx manages via createEffect.
-
   return (
     <aside class="app-sidebar">
       {/* Scale section */}
@@ -122,7 +128,23 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
         />
       </div>
 
-      {/* Stats panel — only visible in Practice tab */}
+      {/* Note list + pitch reference — Practice tab only */}
+      <Show when={appStore.activeTab() === 'practice'}>
+        <div class="sidebar-section sidebar-notes">
+          <NoteList
+            melody={props.melody}
+            currentNoteIndex={props.currentNoteIndex}
+            noteResults={props.noteResults}
+            isPlaying={props.isPlaying}
+          />
+          <PitchDisplay
+            pitch={props.pitch}
+            targetNote={props.targetNoteName}
+          />
+        </div>
+      </Show>
+
+      {/* Stats panel — Practice tab only */}
       <Show when={appStore.activeTab() === 'practice'}>
         <div class="sidebar-section">
           <div id="stats-panel">

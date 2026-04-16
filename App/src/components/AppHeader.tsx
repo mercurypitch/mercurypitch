@@ -1,64 +1,78 @@
 // ============================================================
 // AppHeader — Shared header component
-// Contains: Mic button, Play/Stop toggle, BPM, Count-in, Volume, Speed, Sensitivity
-// Visible in all tabs; Sensitivity only shown in Practice tab
+// Contains: Play/Pause/Continue/Stop, BPM, Count-in, Volume, Speed, Sensitivity
+// Play/Pause/Continue/Stop visible in all tabs
+// Sensitivity, metronome visible in Practice tab only
 // ============================================================
 
 import { Component, Show } from 'solid-js';
 import { appStore } from '@/stores/app-store';
-import { MicButton } from '@/components/MicButton';
 import { MetronomeButton } from '@/components/MetronomeButton';
 
 interface AppHeaderProps {
   isPlaying: () => boolean;
   isPaused: () => boolean;
   metronomeEnabled: () => boolean;
-  liveScore: () => number | null;
   volume: () => number;
-  onMicToggle: () => void;
-  onPlayPauseStop: () => void;
-  onReset: () => void;
+  onPlay: () => void;
+  onPause: () => void;
+  onResume: () => void;
+  onStop: () => void;
   onMetronomeToggle: () => void;
   onSpeedChange?: (speed: number) => void;
   onVolumeChange: (vol: number) => void;
 }
 
 export const AppHeader: Component<AppHeaderProps> = (props) => {
-  const isActive = () => props.isPlaying() || props.isPaused();
+  const isStopped = () => !props.isPlaying() && !props.isPaused();
 
   return (
     <div class="app-header-bar">
-      {/* Mic */}
-      <MicButton
-        active={appStore.micActive()}
-        onClick={props.onMicToggle}
-        disabled={isActive()}
-      />
+      {/* Play — shown when stopped */}
+      <Show when={isStopped()}>
+        <button
+          id="app-play-btn"
+          class="ctrl-btn app-play-btn play"
+          onClick={props.onPlay}
+          title="Play melody"
+        >
+          <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>
+          Play
+        </button>
+      </Show>
 
-      <div class="app-header-sep" />
+      {/* Pause — shown when playing */}
+      <Show when={props.isPlaying()}>
+        <button
+          id="app-pause-btn"
+          class="ctrl-btn app-play-btn pause"
+          onClick={props.onPause}
+          title="Pause playback"
+        >
+          <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+          Pause
+        </button>
+      </Show>
 
-      {/* Play / Stop toggle */}
-      <Show
-        when={isActive()}
-        fallback={
-          <button
-            id="app-play-btn"
-            class="ctrl-btn app-play-btn play"
-            onClick={props.onPlayPauseStop}
-            title="Play melody"
-          >
-            <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>
-            Play
-          </button>
-        }
-      >
+      {/* Continue — shown when paused */}
+      <Show when={props.isPaused()}>
+        <button
+          id="app-play-btn"
+          class="ctrl-btn app-play-btn play"
+          onClick={props.onResume}
+          title="Continue playback"
+        >
+          <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>
+          Continue
+        </button>
+      </Show>
+
+      {/* Stop — shown when playing or paused */}
+      <Show when={props.isPlaying() || props.isPaused()}>
         <button
           id="app-stop-btn"
           class="ctrl-btn app-play-btn stop"
-          onClick={() => {
-            // Stop: same as reset
-            props.onReset();
-          }}
+          onClick={props.onStop}
           title="Stop playback"
         >
           <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M6 6h12v12H6z"/></svg>
@@ -139,8 +153,14 @@ export const AppHeader: Component<AppHeaderProps> = (props) => {
         </select>
       </div>
 
-      {/* Sensitivity — Practice tab only */}
+      {/* Metronome — Practice tab only */}
       <Show when={appStore.activeTab() === 'practice'}>
+        <MetronomeButton
+          active={props.metronomeEnabled()}
+          onClick={props.onMetronomeToggle}
+        />
+
+        {/* Sensitivity */}
         <div class="sensitivity-group">
           <label class="opt-label">Sens:</label>
           <input
@@ -156,22 +176,6 @@ export const AppHeader: Component<AppHeaderProps> = (props) => {
             }}
           />
           <span id="sensitivity-value">{appStore.settings().sensitivity}</span>
-        </div>
-      </Show>
-
-      {/* Metronome */}
-      <MetronomeButton
-        active={props.metronomeEnabled()}
-        onClick={props.onMetronomeToggle}
-      />
-
-      {/* Live score */}
-      <Show when={appStore.activeTab() === 'practice'}>
-        <div class="app-header-score">
-          <span class="opt-label">Score:</span>
-          <span class="app-score-value">
-            {props.liveScore() !== null ? `${props.liveScore()}%` : '--'}
-          </span>
         </div>
       </Show>
     </div>

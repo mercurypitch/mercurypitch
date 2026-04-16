@@ -118,6 +118,44 @@ header h1 {
     flex-shrink: 0;
 }
 
+/* ===== Practice Tab Header ===== */
+.tab-header-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 6px 16px;
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+}
+
+#mode-group {
+    display: flex;
+    gap: 4px;
+}
+
+.cycles-input {
+    width: 52px;
+    padding: 3px 6px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 0.8rem;
+}
+
+#run-indicator {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+#cycle-counter {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
 .app-header-score {
     display: flex;
     align-items: center;

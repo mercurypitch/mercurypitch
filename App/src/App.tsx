@@ -13,13 +13,12 @@ import {
   Show,
 } from 'solid-js';
 import { PianoRollCanvas } from '@/components/PianoRollCanvas';
-import { PitchDisplay } from '@/components/PitchDisplay';
 import { PitchCanvas } from '@/components/PitchCanvas';
 import { SettingsPanel } from '@/components/SettingsPanel';
 import { loadFromURL, hasSharedPresetInURL } from '@/lib/share-url';
-import { NoteList } from '@/components/NoteList';
 import { AppSidebar } from '@/components/AppSidebar';
 import { AppHeader } from '@/components/AppHeader';
+import { PracticeTabHeader } from '@/components/PracticeTabHeader';
 import type { PresetData } from '@/stores/app-store';
 import { HistoryCanvas } from '@/components/HistoryCanvas';
 import { appStore, getNoteAccuracyMap } from '@/stores/app-store';
@@ -587,19 +586,11 @@ export const App: Component<AppProps> = (props) => {
           isPlaying={isPlaying}
           isPaused={isPaused}
           metronomeEnabled={metronomeEnabled}
-          liveScore={liveScore}
           volume={savedVol}
-          onMicToggle={handleMicToggle}
-          onPlayPauseStop={() => {
-            if (isPlaying()) {
-              handlePause();
-            } else if (isPaused()) {
-              handleResume();
-            } else {
-              handlePlay();
-            }
-          }}
-          onReset={handleReset}
+          onPlay={handlePlay}
+          onPause={handlePause}
+          onResume={handleResume}
+          onStop={handleReset}
           onMetronomeToggle={() => setMetronomeEnabled(!metronomeEnabled())}
           onSpeedChange={(speed) => melodyEngine?.setPlaybackSpeed(speed)}
           onVolumeChange={(vol) => {
@@ -621,54 +612,31 @@ export const App: Component<AppProps> = (props) => {
             }
           }}
           onOctaveShift={handleOctaveShift}
+          melody={() => melodyStore.items}
+          currentNoteIndex={currentNoteIndex}
+          noteResults={noteResults}
+          isPlaying={isPlaying}
+          pitch={currentPitch}
+          targetNoteName={targetNoteName}
         />
 
         {/* Tab content */}
         <div class="main-content">
           {/* Practice tab */}
           <Show when={appStore.activeTab() === 'practice'}>
-            {/* Mode toggles (Practice-specific) */}
-            <div id="mode-group" class="content-toolbar">
-              <button id="btn-once" class={`mode-btn ${playMode() === 'once' ? 'active' : ''}`} onClick={() => setPlayMode('once')}>Once</button>
-              <button id="btn-repeat" class={`mode-btn ${playMode() === 'repeat' ? 'active' : ''}`} onClick={() => setPlayMode('repeat')}>Repeat</button>
-              <button id="btn-practice" class={`mode-btn ${playMode() === 'practice' ? 'active' : ''}`} onClick={() => setPlayMode('practice')}>Practice</button>
-              <Show when={playMode() === 'practice'}>
-                <label class="opt-label">Cycles:</label>
-                <input
-                  type="number"
-                  id="cycles"
-                  min="2"
-                  max="20"
-                  value={practiceCycles()}
-                  onInput={(e) => setPracticeCycles(Math.max(2, Math.min(20, parseInt(e.currentTarget.value) || 5)))}
-                  class="cycles-input"
-                />
-              </Show>
-              <div id="run-indicator">
-                <span id="cycle-counter">
-                  {playMode() === 'practice' ? `Cycle ${currentCycle()}/${practiceCycles()}` : playMode() === 'repeat' ? 'Repeat' : ''}
-                </span>
-              </div>
-              <Show when={isCountingIn()}>
-                <div id="countin-display" class="countin-badge">
-                  {countInBeat()}
-                </div>
-              </Show>
-            </div>
-
-            {/* Note list + pitch reference */}
-            <div id="notes-content">
-              <NoteList
-                melody={() => melodyStore.items}
-                currentNoteIndex={currentNoteIndex}
-                noteResults={noteResults}
-                isPlaying={isPlaying}
-              />
-              <PitchDisplay
-                pitch={currentPitch}
-                targetNote={targetNoteName}
-              />
-            </div>
+            {/* Practice-specific header: mic + mode toggles */}
+            <PracticeTabHeader
+              isPlaying={isPlaying}
+              isPaused={isPaused}
+              playMode={playMode}
+              practiceCycles={practiceCycles}
+              currentCycle={currentCycle}
+              isCountingIn={isCountingIn}
+              countInBeat={countInBeat}
+              onMicToggle={handleMicToggle}
+              onPlayModeChange={setPlayMode}
+              onCyclesChange={setPracticeCycles}
+            />
 
             {/* Canvas */}
             <div id="canvas-container">
