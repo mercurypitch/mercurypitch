@@ -1,28 +1,58 @@
 // ============================================================
-// PresetSelector — Shared preset management component
-// Used in both Practice and Editor tabs
+// PresetSelector — Shared melody management component
+// Used in sidebar for both Practice and Editor tabs
 // ============================================================
 
-import { Component, createSignal, createMemo, onCleanup } from 'solid-js';
+import { Component, createSignal, createMemo, onMount } from 'solid-js';
 import {
   appStore,
   savePreset,
   loadPreset,
   deletePreset,
+  initPresets,
   type PresetData,
 } from '@/stores/app-store';
 import { melodyStore } from '@/stores/melody-store';
 import { copyShareURL } from '@/lib/share-url';
+import { buildSampleMelody } from '@/lib/scale-data';
 
 interface PresetSelectorProps {
   /** Called when a preset is loaded */
   onLoad?: (preset: PresetData) => void;
-  /** Whether to show save/new/delete controls (editor tab), not shown in practice tab */
-  showControls?: boolean;
 }
 
 export const PresetSelector: Component<PresetSelectorProps> = (props) => {
   const [saveName, setSaveName] = createSignal<string>('');
+
+  // Create default preset if none exist
+  onMount(() => {
+    initPresets();
+    const presets = Object.keys(appStore.presets());
+    if (presets.length === 0) {
+      // Create a default melody preset
+      const defaultMelody = buildSampleMelody('C', 4);
+      melodyStore.setMelody(defaultMelody);
+      const data: PresetData = {
+        notes: defaultMelody.map((n) => ({
+          midi: n.note.midi,
+          startBeat: n.startBeat,
+          duration: n.duration,
+          effectType: n.effectType,
+          linkedTo: n.linkedTo,
+        })),
+        totalBeats: 20,
+        bpm: appStore.bpm(),
+        scale: melodyStore.currentScale().map((s) => ({
+          midi: s.midi,
+          name: s.name,
+          octave: s.octave,
+          freq: s.freq,
+        })),
+      };
+      savePreset('Default Melody', data);
+      setSaveName('Default Melody');
+    }
+  });
 
   // Reactive preset names from appStore
   const presetNames = createMemo(() => {
@@ -70,12 +100,13 @@ export const PresetSelector: Component<PresetSelectorProps> = (props) => {
     };
 
     savePreset(name, data);
-    appStore.showNotification(`Preset "${name}" saved`, 'success');
+    appStore.showNotification(`Melody "${name}" saved`, 'success');
   };
 
   const handleNew = () => {
     setSaveName('');
     melodyStore.setMelody([]);
+    appStore.setCurrentPresetName(null);
     appStore.showNotification('Melody cleared', 'info');
   };
 
@@ -84,7 +115,7 @@ export const PresetSelector: Component<PresetSelectorProps> = (props) => {
     if (!name) return;
     deletePreset(name);
     setSaveName('');
-    appStore.showNotification(`Preset "${name}" deleted`, 'info');
+    appStore.showNotification(`Melody "${name}" deleted`, 'info');
   };
 
   const handleShare = async () => {
@@ -124,24 +155,20 @@ export const PresetSelector: Component<PresetSelectorProps> = (props) => {
         +
       </button>
 
-      {props.showControls && (
-        <>
-          <input
-            type="text"
-            id="preset-name-input"
-            placeholder="Melody name"
-            value={saveName()}
-            onInput={(e) => setSaveName(e.currentTarget.value)}
-          />
-          <button class="ctrl-btn small" onClick={handleSave} title="Save melody">
-            Save
-          </button>
-          {currentName() && (
-            <button class="ctrl-btn small danger" onClick={handleDelete} title="Delete melody">
-              ×
-            </button>
-          )}
-        </>
+      <input
+        type="text"
+        id="preset-name-input"
+        placeholder="Melody name"
+        value={saveName()}
+        onInput={(e) => setSaveName(e.currentTarget.value)}
+      />
+      <button class="ctrl-btn small" onClick={handleSave} title="Save melody">
+        Save
+      </button>
+      {currentName() && (
+        <button class="ctrl-btn small danger" onClick={handleDelete} title="Delete melody">
+          ×
+        </button>
       )}
 
       <button class="share-btn small" onClick={handleShare} title="Copy share link">

@@ -6,7 +6,6 @@ import type { MelodyItem, ScaleDegree, PianoRollConfig, NoteName } from '@/types
 import type { InstrumentType } from '@/lib/audio-engine';
 import { PitchDetector } from '@/lib/pitch-detector';
 import { buildMultiOctaveScale } from '@/lib/scale-data';
-import { savePreset, loadPreset } from '@/stores/app-store';
 
 export const PIANO_ROLL_CONFIG: PianoRollConfig = {
   rowHeight: 22,
@@ -273,15 +272,6 @@ export class PianoRollEditor {
   private onResetClick?: () => void;
   private onInstrumentChange?: (instrument: InstrumentType) => void;
 
-  // Presets
-  private presetData: Record<string, {
-    notes: Array<{ midi: number; startBeat: number; duration: number; effectType?: string; linkedTo?: number[] }>;
-    totalBeats: number;
-    bpm: number;
-    scale: Array<{ midi: number; name: string; octave: number; freq: number }>;
-  }> = {};
-  private currentPresetName: string | null = null;
-
   constructor(options: PianoRollOptions) {
     this.container = options.container;
     this.scale = options.scale ?? [];
@@ -537,107 +527,6 @@ export class PianoRollEditor {
     this.selectedNoteIds.clear();
     this.onNoteSelect?.(null);
     this.draw();
-  }
-
-  // ============================================================
-  // Preset Management
-  // ============================================================
-
-  loadPresets(): void {
-    try {
-      const raw = localStorage.getItem('pitchperfect_presets');
-      if (raw) {
-        this.presetData = JSON.parse(raw);
-      }
-    } catch {
-      this.presetData = {};
-    }
-    this.populatePresetSelect();
-  }
-
-  private populatePresetSelect(): void {
-    const select = this.container.querySelector('#roll-preset-select') as HTMLSelectElement | null;
-    if (!select) return;
-
-    select.innerHTML = '<option value="">— Load Preset —</option>';
-    const names = Object.keys(this.presetData).sort();
-    for (const name of names) {
-      const opt = document.createElement('option');
-      opt.value = name;
-      opt.textContent = name;
-      select.appendChild(opt);
-    }
-    if (this.currentPresetName) {
-      select.value = this.currentPresetName;
-    }
-  }
-
-  saveCurrentPreset(name: string): void {
-    if (!name.trim()) return;
-
-    const presetData = {
-      notes: this.melody.map((n) => ({
-        midi: n.note.midi,
-        startBeat: n.startBeat,
-        duration: n.duration,
-        effectType: n.effectType,
-        linkedTo: n.linkedTo,
-      })),
-      totalBeats: this.totalBeats,
-      bpm: this.bpm,
-      scale: this.scale.map((s) => ({ midi: s.midi, name: s.name, octave: s.octave, freq: s.freq })),
-    };
-
-    // Delegate to appStore so it's the single source of truth
-    savePreset(name, presetData);
-
-    this.currentPresetName = name;
-    // Update the local copy for compatibility
-    this.presetData = { ...this.presetData, [name]: presetData };
-  }
-
-  loadPresetByName(name: string): void {
-    let preset = loadPreset(name);
-    if (!preset) {
-      // Fallback to local cache
-      preset = this.presetData[name];
-    }
-    if (!preset) return;
-
-    this.melody = preset.notes.map((n) => {
-      const noteInfo = this.scale.find((s) => s.midi === n.midi) ?? {
-        midi: n.midi,
-        name: '?',
-        octave: 4,
-        freq: 440,
-      };
-      const item: MelodyItem = {
-        id: this.nextNoteId++,
-        note: { midi: n.midi, name: noteInfo.name as NoteName, octave: noteInfo.octave, freq: noteInfo.freq },
-        startBeat: n.startBeat,
-        duration: n.duration,
-      };
-      // Restore effect data if present
-      if (n.effectType) {
-        item.effectType = n.effectType as EffectType;
-      }
-      if (n.linkedTo) {
-        item.linkedTo = n.linkedTo;
-      }
-      return item;
-    });
-
-    this.totalBeats = preset.totalBeats || 16;
-    if (preset.bpm) {
-      this.bpm = preset.bpm;
-    }
-
-    this.currentPresetName = name;
-    this.buildCanvases();
-    this.draw();
-    this.updateBeatInfo();
-
-    window.dispatchEvent(new CustomEvent('pitchperfect:presetLoaded', { detail: { name, bpm: this.bpm, melody: this.getMelody() } }));
   }
 
   private updateBeatInfo(): void {
@@ -926,18 +815,6 @@ export class PianoRollEditor {
           </button>
         </div>
         <div class="roll-sep"></div>
-        <div class="roll-preset-group">
-          <select id="roll-preset-select" class="roll-preset-select">
-            <option value="">— Load Preset —</option>
-          </select>
-          <button id="roll-new-preset" class="roll-new-btn" title="New empty preset">+</button>
-          <input type="text" id="roll-preset-name" class="roll-preset-name" placeholder="Preset name">
-          <button id="roll-save-preset" class="roll-save-btn" title="Save preset">Save</button>
-          <button id="roll-share-preset" class="roll-share-btn" title="Share preset (copy URL)">Share</button>
-          <button id="roll-export-midi" class="roll-export-btn" title="Export melody as MIDI file">Export MIDI</button>
-          <button id="roll-clear-all" class="roll-ctrl-btn danger" title="Clear all notes">Clear</button>
-        </div>
-        <div class="roll-sep"></div>
         <div class="roll-effects-row">
           <span class="roll-effects-label">Effects:</span>
           <button id="roll-action-slide-up" class="roll-action-btn slide-up" title="Create ascending slide between selected notes">
@@ -972,6 +849,9 @@ export class PianoRollEditor {
             <option value="synth">Synth</option>
           </select>
         </div>
+        <div class="roll-sep"></div>
+        <button id="roll-export-midi" class="roll-export-btn" title="Export melody as MIDI file">Export MIDI</button>
+        <button id="roll-clear-all" class="roll-ctrl-btn danger" title="Clear all notes">Clear</button>
         <div class="roll-sep"></div>
         <button id="roll-pitch-track-btn" class="roll-pitch-track-btn" title="Toggle pitch track visualization">Pitch Track</button>
         <div class="roll-sep"></div>
@@ -1207,31 +1087,6 @@ export class PianoRollEditor {
       }
     });
 
-    // Preset management
-    container.querySelector('#roll-preset-select')?.addEventListener('change', (e) => {
-      const name = (e.target as HTMLSelectElement).value;
-      if (name) {
-        this.loadPresetByName(name);
-        // Sync to melody store for practice tab
-        window.dispatchEvent(new CustomEvent('pitchperfect:presetLoaded', { detail: { name, bpm: this.bpm, melody: this.getMelody() } }));
-      }
-    });
-
-    container.querySelector('#roll-save-preset')?.addEventListener('click', () => {
-      const nameInput = container.querySelector('#roll-preset-name') as HTMLInputElement | null;
-      const name = nameInput?.value?.trim();
-      if (name) {
-        this.saveCurrentPreset(name);
-      }
-    });
-
-    container.querySelector('#roll-new-preset')?.addEventListener('click', () => {
-      const nameInput = container.querySelector('#roll-preset-name') as HTMLInputElement | null;
-      if (nameInput) nameInput.value = '';
-      this.currentPresetName = null;
-      this.clearMelody();
-    });
-
     // Octave controls
     container.querySelector('#roll-octave-up')?.addEventListener('click', () => {
       this._shiftOctave(1);
@@ -1256,11 +1111,6 @@ export class PianoRollEditor {
     container.querySelector('#roll-mode-select')?.addEventListener('change', (e) => {
       const target = e.target as HTMLSelectElement;
       this.setMode(target.value);
-    });
-
-    // Share preset button
-    container.querySelector('#roll-share-preset')?.addEventListener('click', () => {
-      this._sharePreset();
     });
 
     // Export MIDI button
@@ -1309,11 +1159,6 @@ export class PianoRollEditor {
     container.querySelector('#roll-redo-btn')?.addEventListener('click', () => {
       this.updateUndoRedoButtons();
       this.redo();
-    });
-
-    // Listen for preset changes from other tabs to refresh preset list
-    window.addEventListener('pitchperfect:presetSaved', () => {
-      this.loadPresets();
     });
 
     // Initialize zoom display
@@ -2493,45 +2338,5 @@ export class PianoRollEditor {
       this.emitMelodyChange();
       this.draw();
     }
-  }
-
-  // ============================================================
-  // Share preset
-  // ============================================================
-
-  private _sharePreset(): void {
-    const url = this._buildShareURL();
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(url).then(() => {
-        // Brief visual feedback
-        const btn = this.container.querySelector('#roll-share-preset');
-        if (btn) {
-          const orig = btn.textContent;
-          btn.textContent = 'Copied!';
-          setTimeout(() => { btn.textContent = orig; }, 1500);
-        }
-      }).catch(() => {
-        window.prompt('Copy this URL:', url);
-      });
-    } else {
-      window.prompt('Copy this URL:', url);
-    }
-  }
-
-  private _buildShareURL(): string {
-    const presetData = {
-      n: this.melody.map((note) => ({
-        m: note.note.midi,
-        s: note.startBeat,
-        d: note.duration,
-        e: note.effectType || null,
-        l: note.linkedTo || [],
-      })),
-      b: this.totalBeats,
-      p: this.bpm,
-    };
-    const json = JSON.stringify(presetData);
-    const encoded = btoa(unescape(encodeURIComponent(json)));
-    return window.location.origin + window.location.pathname + '?preset=' + encoded;
   }
 }
