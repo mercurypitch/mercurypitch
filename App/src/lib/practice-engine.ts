@@ -159,6 +159,11 @@ export class PracticeEngine {
     return this.micActive;
   }
 
+  /** Get waveform time-domain data from microphone (for visualization) */
+  getWaveformData(): Float32Array {
+    return this.audioEngine.getTimeData();
+  }
+
   // ── Pitch Detection ──────────────────────────────────────
 
   detectPitch(): PitchResult | null {

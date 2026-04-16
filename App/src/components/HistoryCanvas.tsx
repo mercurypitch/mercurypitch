@@ -6,6 +6,7 @@ import { Component, onMount, onCleanup } from 'solid-js';
 
 interface HistoryCanvasProps {
   frequencyData: () => Float32Array | null;
+  waveformData: () => Float32Array | null;
   liveScore: () => number | null;
 }
 
@@ -54,12 +55,96 @@ export const HistoryCanvas: Component<HistoryCanvasProps> = (props) => {
     ctx.fillStyle = '#161b22';
     ctx.fillRect(0, 0, w, h);
 
+    const waveform = props.waveformData();
     const freqData = props.frequencyData();
-    if (freqData && freqData.length > 0) {
+
+    // Show waveform when mic is active and has data
+    if (waveform && waveform.length > 0) {
+      // Draw waveform as a filled area in the upper portion
+      const waveH = Math.floor(h * 0.6);
+      const centerY = waveH / 2;
+      const step = Math.max(1, Math.floor(waveform.length / w));
+
+      // Gradient for the waveform
+      const gradient = ctx.createLinearGradient(0, 0, 0, waveH);
+      gradient.addColorStop(0, 'rgba(0, 200, 120, 0.15)');
+      gradient.addColorStop(0.5, 'rgba(0, 200, 120, 0.6)');
+      gradient.addColorStop(1, 'rgba(0, 200, 120, 0.15)');
+
+      ctx.beginPath();
+      ctx.moveTo(0, centerY);
+      for (let x = 0; x < w; x++) {
+        let sum = 0;
+        let count = 0;
+        for (let j = 0; j < step; j++) {
+          const idx = Math.floor(x * step / w * waveform.length) + j;
+          if (idx < waveform.length) {
+            sum += waveform[idx];
+            count++;
+          }
+        }
+        const avg = count > 0 ? sum / count : 0;
+        const y = centerY - avg * centerY * 0.9;
+        ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = 'rgba(0, 200, 120, 0.8)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // Mirror for filled area
+      ctx.beginPath();
+      ctx.moveTo(0, centerY);
+      for (let x = 0; x < w; x++) {
+        let sum = 0;
+        let count = 0;
+        for (let j = 0; j < step; j++) {
+          const idx = Math.floor(x * step / w * waveform.length) + j;
+          if (idx < waveform.length) {
+            sum += waveform[idx];
+            count++;
+          }
+        }
+        const avg = count > 0 ? sum / count : 0;
+        const y = centerY + avg * centerY * 0.9;
+        ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = 'rgba(0, 200, 120, 0.4)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // Divider line
+      ctx.beginPath();
+      ctx.moveTo(0, waveH);
+      ctx.lineTo(w, waveH);
+      ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // Frequency bars below waveform
+      if (freqData && freqData.length > 0) {
+        const barCount = Math.min(freqData.length, 64);
+        const barWidth = w / barCount;
+        const barAreaH = h - waveH - 1;
+        for (let i = 0; i < barCount; i++) {
+          const val = (freqData[i] + 140) / 140;
+          const barH = Math.max(0, val * (barAreaH - 2));
+          const hue = 120 + val * 40;
+          ctx.fillStyle = `hsla(${hue},80%,${50 + val * 20}%,${0.3 + val * 0.4})`;
+          ctx.fillRect(i * barWidth + 1, waveH + barAreaH - barH, barWidth - 2, barH);
+        }
+      }
+
+      // "Live" indicator
+      ctx.fillStyle = '#00c878';
+      ctx.font = '9px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('● LIVE', 6, 12);
+    } else if (freqData && freqData.length > 0) {
+      // Fallback: frequency bars only
       const barCount = Math.min(freqData.length, 128);
       const barWidth = w / barCount;
       for (let i = 0; i < barCount; i++) {
-        const val = (freqData[i] + 140) / 140; // Normalize from dB range (-140 to 0)
+        const val = (freqData[i] + 140) / 140;
         const barH = Math.max(0, val * (h - 10));
         const hue = 120 + val * 40;
         ctx.fillStyle = `hsla(${hue},80%,${50 + val * 20}%,${0.4 + val * 0.5})`;

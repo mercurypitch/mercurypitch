@@ -81,6 +81,7 @@ export const App: Component<AppProps> = (props) => {
   const [practiceResult, setPracticeResult] = createSignal<PracticeResult | null>(null);
   const [liveScore, setLiveScore] = createSignal<number | null>(null);
   const [frequencyData, setFrequencyData] = createSignal<Float32Array | null>(null);
+  const [waveformData, setWaveformData] = createSignal<Float32Array | null>(null);
   const [countInBeat, setCountInBeat] = createSignal<number>(0);
   const [isCountingIn, setIsCountingIn] = createSignal(false);
   const [metronomeEnabled, setMetronomeEnabled] = createSignal(false);
@@ -384,6 +385,10 @@ export const App: Component<AppProps> = (props) => {
           return next.length > 800 ? next.slice(-800) : next;
         });
       }
+      // Capture waveform data when mic is active
+      if (practiceEngine.isMicActive()) {
+        setWaveformData(practiceEngine.getWaveformData());
+      }
       animId = requestAnimationFrame(loop);
     };
     animId = requestAnimationFrame(loop);
@@ -683,6 +688,7 @@ export const App: Component<AppProps> = (props) => {
             <div id="history-container">
               <HistoryCanvas
                 frequencyData={frequencyData}
+                waveformData={waveformData}
                 liveScore={liveScore}
               />
             </div>
