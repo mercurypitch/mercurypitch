@@ -257,6 +257,9 @@ export class PianoRollEditor {
   // Grid visibility
   private showGrid = true;
 
+  // Snap to grid
+  private snapToGrid = true;
+
   // Effect state
   private selectedEffect: EffectType | null = null;
 
@@ -308,6 +311,16 @@ export class PianoRollEditor {
 
   getMelody(): MelodyItem[] {
     return [...this.melody];
+  }
+
+  // Snap helpers
+  private snapBeat(beat: number): number {
+    if (!this.snapToGrid) return beat;
+    return Math.round(beat);
+  }
+
+  getSnapToGrid(): boolean {
+    return this.snapToGrid;
   }
 
   // ============================================================
@@ -422,6 +435,28 @@ export class PianoRollEditor {
   updateZoomDisplay(): void {
     const el = this.container.querySelector('#roll-zoom-value');
     if (el) el.textContent = Math.round(this.zoomLevel * 100) + '%';
+  }
+
+  toggleSnapToGrid(): void {
+    this.snapToGrid = !this.snapToGrid;
+    this.updateSnapButton();
+  }
+
+  setSnapToGrid(snap: boolean): void {
+    this.snapToGrid = snap;
+    this.updateSnapButton();
+  }
+
+  isSnapEnabled(): boolean {
+    return this.snapToGrid;
+  }
+
+  private updateSnapButton(): void {
+    const btn = this.container.querySelector('#roll-snap-toggle');
+    if (btn) {
+      btn.classList.toggle('active', this.snapToGrid);
+      btn.setAttribute('title', this.snapToGrid ? 'Snap to grid ON' : 'Snap to grid OFF');
+    }
   }
 
   fitToView(): void {
@@ -748,6 +783,8 @@ export class PianoRollEditor {
           <span id="roll-octaves-value" class="octave-value">${this.numOctaves}</span>
           <button id="roll-octaves-plus" class="octave-btn" title="More octaves">+</button>
         </div>
+        <div class="roll-sep"></div>
+        <button id="roll-snap-toggle" class="roll-snap-btn active" title="Snap to grid ON">Snap</button>
         <div class="roll-sep"></div>
         <div class="roll-mode-group">
           <label class="mode-label">Scale:</label>
@@ -1100,6 +1137,11 @@ export class PianoRollEditor {
       this.updateZoomDisplay();
     });
 
+    // Snap to grid toggle
+    container.querySelector('#roll-snap-toggle')?.addEventListener('click', () => {
+      this.toggleSnapToGrid();
+    });
+
     // Undo/redo buttons
     container.querySelector('#roll-undo-btn')?.addEventListener('click', () => {
       this.updateUndoRedoButtons();
@@ -1163,7 +1205,10 @@ export class PianoRollEditor {
         this.isDragging = true;
         this.dragStartX = x;
         this.dragStartY = y;
-        this.dragStartBeat = Math.floor(beat) + (beat % 1 >= 0.5 ? 0.5 : 0);
+        // When snap is disabled, use exact beat position for free placement
+        this.dragStartBeat = this.snapToGrid
+          ? Math.floor(beat) + (beat % 1 >= 0.5 ? 0.5 : 0)
+          : beat;
         this.dragStartRow = row;
       }
     } else if (this.activeTool === 'erase') {
@@ -1212,7 +1257,7 @@ export class PianoRollEditor {
     }
 
     if (this.isDragging && this.selectedNoteIds.size > 0) {
-      const deltaBeat = Math.round((x - this.dragStartX) / this.beatWidth);
+      const deltaBeat = this.snapToGrid ? Math.round((x - this.dragStartX) / this.beatWidth) : (x - this.dragStartX) / this.beatWidth;
       const deltaRow = Math.round((y - this.dragStartY) / this.rowHeight);
       if (deltaBeat !== 0 || deltaRow !== 0) {
         for (const noteId of this.selectedNoteIds) {
@@ -1236,10 +1281,10 @@ export class PianoRollEditor {
         const note = this.melody.find((n) => (n.id ?? 0) === noteId);
         if (!note) continue;
         if (this.resizeHandle === 'right') {
-          const endBeat = Math.round(x / this.beatWidth);
+          const endBeat = this.snapToGrid ? Math.round(x / this.beatWidth) : x / this.beatWidth;
           note.duration = Math.max(this.config.minDuration, endBeat - note.startBeat);
         } else if (this.resizeHandle === 'left') {
-          const newStart = Math.round(x / this.beatWidth);
+          const newStart = this.snapToGrid ? Math.round(x / this.beatWidth) : x / this.beatWidth;
           const oldEnd = note.startBeat + note.duration;
           note.startBeat = Math.max(0, Math.min(newStart, oldEnd - this.config.minDuration));
           note.duration = oldEnd - note.startBeat;

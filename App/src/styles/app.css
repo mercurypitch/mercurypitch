@@ -799,6 +799,29 @@ header h1 {
     color: white;
 }
 
+/* ===== Snap to Grid Toggle ===== */
+.roll-snap-btn {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.roll-snap-btn:hover {
+    color: var(--text-primary);
+    border-color: var(--text-secondary);
+}
+
+.roll-snap-btn.active {
+    background: var(--accent-dim);
+    color: var(--accent);
+    border-color: var(--accent);
+}
+
 /* ===== Speed Select ===== */
 .speed-group {
     display: flex;
