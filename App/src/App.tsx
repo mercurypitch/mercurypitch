@@ -24,7 +24,7 @@ import { HistoryCanvas } from '@/components/HistoryCanvas';
 import { appStore, getNoteAccuracyMap } from '@/stores/app-store';
 import { playback } from '@/stores/playback-store';
 import { melodyStore } from '@/stores/melody-store';
-import { melodyTotalBeats } from '@/lib/scale-data';
+import { melodyTotalBeats, buildSampleMelody } from '@/lib/scale-data';
 import { AudioEngine } from '@/lib/audio-engine';
 import { MelodyEngine } from '@/lib/melody-engine';
 import { PracticeEngine } from '@/lib/practice-engine';
@@ -664,6 +664,26 @@ export const App: Component<AppProps> = (props) => {
               >
                 <option value="">— Select —</option>
               </select>
+              <button
+                id="btn-clear-preset"
+                class="ctrl-btn small"
+                title="Clear melody and reset to sample"
+                onClick={() => {
+                  const sample = buildSampleMelody(appStore.keyName(), melodyStore.currentOctave());
+                  melodyStore.setMelody(sample);
+                  const presetSelect = document.getElementById('preset-select') as HTMLSelectElement;
+                  if (presetSelect) presetSelect.value = '';
+                  const pianoRoll = (window as any).pianoRollEditor;
+                  if (pianoRoll) {
+                    pianoRoll.melody = sample.map(n => ({ ...n, effectType: undefined, linkedTo: undefined }));
+                    pianoRoll._resizeCanvas();
+                    pianoRoll._render();
+                  }
+                  appStore.showNotification('Melody cleared', 'info');
+                }}
+              >
+                Clear
+              </button>
             </div>
 
             {/* Share button */}
