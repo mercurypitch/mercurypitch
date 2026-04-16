@@ -54,10 +54,9 @@ export const PresetSelector: Component<PresetSelectorProps> = (props) => {
     }
   });
 
-  // Reactive preset names from appStore
+  // Reactive preset names from appStore - must call presets() to track signal changes
   const presetNames = createMemo(() => {
-    void appStore.presets; // track changes
-    return Object.keys(appStore.presets).sort();
+    return Object.keys(appStore.presets()).sort();
   });
 
   const currentName = createMemo(() => appStore.currentPresetName() ?? '');
