@@ -1312,6 +1312,12 @@ export class PianoRollEditor {
         this.playAnimationId = null;
       }
 
+      // Stop all active notes when pausing
+      const win = window as Window & { pianoRollAudioEngine?: { stopAllNotes: () => void } };
+      if (win.pianoRollAudioEngine) {
+        win.pianoRollAudioEngine.stopAllNotes();
+      }
+
       playIcon.style.display = 'block';
       pauseIcon.style.display = 'none';
       playBtn.querySelector('span')!.textContent = 'Continue';
@@ -1332,6 +1338,12 @@ export class PianoRollEditor {
     if (this.playAnimationId !== null) {
       cancelAnimationFrame(this.playAnimationId);
       this.playAnimationId = null;
+    }
+
+    // Stop all active notes immediately
+    const win = window as Window & { pianoRollAudioEngine?: { stopAllNotes: () => void } };
+    if (win.pianoRollAudioEngine) {
+      win.pianoRollAudioEngine.stopAllNotes();
     }
 
     const playBtn = this.container.querySelector('#roll-play-btn') as HTMLButtonElement;
