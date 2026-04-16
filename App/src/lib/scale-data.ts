@@ -174,6 +174,34 @@ export function buildMajorScale(keyName: string, octave: number): ScaleDegree[] 
   return scale;
 }
 
+/**
+ * Parse a custom scale type string like "custom:name:C,C#,D,..."
+ * Returns an array of semitone degrees (0-11) relative to the root.
+ */
+function parseCustomScaleDegrees(scaleType: string): number[] | null {
+  if (!scaleType.startsWith('custom:')) return null;
+  const parts = scaleType.split(':');
+  if (parts.length < 3) return null;
+  const noteList = parts[2];
+  if (!noteList) return null;
+  const noteNames = noteList.split(',');
+  const degrees: number[] = [];
+  for (const noteName of noteNames) {
+    const noteIndex = NOTE_NAMES.indexOf(noteName.trim());
+    if (noteIndex === -1) continue;
+    degrees.push(noteIndex);
+  }
+  // Sort ascending and deduplicate
+  degrees.sort((a, b) => a - b);
+  const unique: number[] = [];
+  for (const d of degrees) {
+    if (unique.length === 0 || unique[unique.length - 1] !== d) {
+      unique.push(d);
+    }
+  }
+  return unique.length >= 2 ? unique : null;
+}
+
 /** Build a multi-octave scale (high to low for piano roll display) */
 export function buildMultiOctaveScale(
   keyName: string,
@@ -182,7 +210,11 @@ export function buildMultiOctaveScale(
   scaleType: string = 'major'
 ): ScaleDegree[] {
   const rootOffset = KEY_OFFSETS[keyName] ?? 0;
-  const intervals = SCALE_DEFINITIONS[scaleType]?.degrees ?? MAJOR_SCALE_INTERVALS;
+
+  // Handle custom scales
+  const customDegrees = parseCustomScaleDegrees(scaleType);
+  const intervals = customDegrees ?? SCALE_DEFINITIONS[scaleType]?.degrees ?? MAJOR_SCALE_INTERVALS;
+
   const scale: ScaleDegree[] = [];
 
   for (let oct = startOctave + numOctaves - 1; oct >= startOctave - 1; oct--) {

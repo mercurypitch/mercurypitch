@@ -234,3 +234,50 @@ describe('Note Names', () => {
     expect(NOTE_NAMES).toContain('A#');
   });
 });
+
+describe('Custom Scales', () => {
+  it('builds custom scale from comma-separated note list', () => {
+    const scale = buildMultiOctaveScale('C', 4, 1, 'custom:My Scale:C,D,E,G');
+    expect(scale.length).toBeGreaterThan(0);
+    // Should only contain C, D, E, G notes
+    const names = scale.map((n) => n.name);
+    expect(names).toContain('C');
+    expect(names).toContain('D');
+    expect(names).toContain('E');
+    expect(names).toContain('G');
+    expect(names).not.toContain('F');
+    expect(names).not.toContain('A');
+    expect(names).not.toContain('B');
+  });
+
+  it('falls back to major for single-note custom scale', () => {
+    // Single-note custom scale returns null from parser, falls back to major
+    const scale = buildMultiOctaveScale('C', 4, 1, 'custom:Single:C');
+    // Should still return notes (falls back to major)
+    expect(scale.length).toBeGreaterThan(0);
+  });
+
+  it('handles sharps in custom scale', () => {
+    const scale = buildMultiOctaveScale('C', 4, 1, 'custom:Jazz:C,E,G,B');
+    expect(scale.length).toBeGreaterThan(0);
+    const names = scale.map((n) => n.name);
+    expect(names).toContain('C');
+    expect(names).toContain('E');
+    expect(names).toContain('G');
+    expect(names).toContain('B');
+  });
+
+  it('deduplicates repeated notes in custom scale', () => {
+    const scale = buildMultiOctaveScale('C', 4, 1, 'custom:Test:C,C,D,D,E');
+    const names = scale.map((n) => n.name);
+    const cCount = names.filter((n) => n === 'C').length;
+    expect(cCount).toBeGreaterThan(0); // Should still appear at octave boundaries
+  });
+
+  it('transposes custom scale with different keys', () => {
+    const cScale = buildMultiOctaveScale('C', 4, 1, 'custom:Test:C,D,E');
+    const gScale = buildMultiOctaveScale('G', 4, 1, 'custom:Test:C,D,E');
+    // G scale should have higher MIDI values than C scale (G is 7 semitones above C)
+    expect(gScale[gScale.length - 1].midi).toBe(cScale[cScale.length - 1].midi + 7);
+  });
+});

@@ -22,6 +22,8 @@ interface AppSidebarProps {
   onPresetLoad?: (preset: PresetData) => void;
   /** For octave shift handler from parent */
   onOctaveShift?: (delta: number) => void;
+  /** Open scale builder modal */
+  onOpenScaleBuilder?: () => void;
   /** Note list props (Practice tab) */
   melody: () => MelodyItem[];
   currentNoteIndex: () => number;
@@ -130,6 +132,17 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
             <option value="blues">Blues</option>
             <option value="chromatic">Chromatic</option>
           </select>
+          <button
+            id="open-scale-builder"
+            class="ctrl-btn roll-ctrl-btn"
+            title="Build custom scale"
+            onClick={() => props.onOpenScaleBuilder?.()}
+          >
+            <svg viewBox="0 0 24 24" width="14" height="14" style={{ "margin-right": "4px" }}>
+              <path fill="currentColor" d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"/>
+            </svg>
+            Custom
+          </button>
         </div>
       </div>
 

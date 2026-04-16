@@ -17,6 +17,7 @@ import { PitchCanvas } from '@/components/PitchCanvas';
 import { SettingsPanel } from '@/components/SettingsPanel';
 import { loadFromURL, hasSharedPresetInURL } from '@/lib/share-url';
 import { AppSidebar } from '@/components/AppSidebar';
+import { ScaleBuilder } from '@/components/ScaleBuilder';
 import { PracticeTabHeader } from '@/components/PracticeTabHeader';
 import type { PresetData } from '@/stores/app-store';
 import { HistoryCanvas } from '@/components/HistoryCanvas';
@@ -93,6 +94,7 @@ export const App: Component<AppProps> = (props) => {
   const [allCycleResults, setAllCycleResults] = createSignal<NoteResult[][]>([]);
   const [isPracticeComplete, setIsPracticeComplete] = createSignal<boolean>(false);
   const [savedVol, setSavedVol] = createSignal<number>(80);
+  const [showScaleBuilder, setShowScaleBuilder] = createSignal<boolean>(false);
 
   // ── Stats panel ──────────────────────────────────────────────
 
@@ -617,6 +619,7 @@ export const App: Component<AppProps> = (props) => {
             }
           }}
           onOctaveShift={handleOctaveShift}
+          onOpenScaleBuilder={() => setShowScaleBuilder(true)}
           melody={() => melodyStore.items}
           currentNoteIndex={currentNoteIndex}
           noteResults={noteResults}
@@ -778,6 +781,12 @@ export const App: Component<AppProps> = (props) => {
           </div>
         </div>
       </Show>
+
+      {/* Scale Builder Modal */}
+      <ScaleBuilder
+        isOpen={showScaleBuilder()}
+        onClose={() => setShowScaleBuilder(false)}
+      />
     </div>
   );
 };
