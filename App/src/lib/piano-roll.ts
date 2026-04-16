@@ -5,6 +5,7 @@
 import type { MelodyItem, ScaleDegree, PianoRollConfig, NoteName } from '@/types';
 import type { InstrumentType } from '@/lib/audio-engine';
 import { PitchDetector } from '@/lib/pitch-detector';
+import { buildMultiOctaveScale } from '@/lib/scale-data';
 
 export const PIANO_ROLL_CONFIG: PianoRollConfig = {
   rowHeight: 22,
@@ -1169,6 +1170,22 @@ export class PianoRollEditor {
 
     document.addEventListener('mouseup', () => {
       this.isSeeking = false;
+      // Always finalize box selection regardless of where mouse was released
+      if (this.isBoxSelecting) {
+        const boxX1 = Math.min(this.boxStartX, this.boxEndX);
+        const boxY1 = Math.min(this.boxStartY, this.boxEndY);
+        const boxX2 = Math.max(this.boxStartX, this.boxEndX);
+        const boxY2 = Math.max(this.boxStartY, this.boxEndY);
+        if (boxX2 - boxX1 > 3 && boxY2 - boxY1 > 3) {
+          this.selectNotesInBox(boxX1, boxY1, boxX2, boxY2);
+        }
+        this.isBoxSelecting = false;
+        this.isDragging = false;
+      }
+      // Also handle dragging/resizing that started on the canvas
+      this.isDragging = false;
+      this.isResizing = false;
+      this.resizeHandle = null;
     });
 
     // Scroll sync ruler
@@ -1320,25 +1337,19 @@ export class PianoRollEditor {
     }
 
     if (this.activeTool === 'place') {
+      // Place new note on empty space; clicking existing notes switches to select behavior for resize/drag
       const existingNote = this.findNoteAt(beat, row);
       if (existingNote) {
-        // Select existing note (toggle in Set, start resize/drag)
+        // Delegate to select behavior: select the note and allow resize/drag via select tool
         const noteId = existingNote.id ?? 0;
-        if (e.shiftKey) {
-          // Shift+click: toggle in selection
-          if (this.selectedNoteIds.has(noteId)) {
-            this.selectedNoteIds.delete(noteId);
-          } else {
-            this.selectedNoteIds.add(noteId);
-          }
-          const first = this.melody.find((n) => n.id !== undefined && this.selectedNoteIds.has(n.id));
-          this.onNoteSelect?.(first ?? null);
-        } else {
-          // Normal click: single select
-          this.selectedNoteIds.clear();
-          this.selectedNoteIds.add(noteId);
-          this.onNoteSelect?.(existingNote);
-        }
+        this.selectedNoteIds.clear();
+        this.selectedNoteIds.add(noteId);
+        this.onNoteSelect?.(existingNote);
+        this.isDragging = true;
+        this.dragStartX = x;
+        this.dragStartY = y;
+        this.dragStartBeat = existingNote.startBeat;
+        this.dragStartRow = this.midiToRow(existingNote.note.midi);
         const noteX = existingNote.startBeat * this.beatWidth;
         const noteW = existingNote.duration * this.beatWidth;
         if (x - noteX < 6) {
@@ -1347,17 +1358,8 @@ export class PianoRollEditor {
         } else if (noteX + noteW - x < 6) {
           this.isResizing = true;
           this.resizeHandle = 'right';
-        } else {
-          this.isDragging = true;
-          this.dragStartX = x;
-          this.dragStartY = y;
-          this.dragStartBeat = existingNote.startBeat;
-          this.dragStartRow = this.midiToRow(existingNote.note.midi);
         }
       } else {
-        // Place new note (start box selection if dragging on empty area)
-        this.selectedNoteIds.clear();
-        this.onNoteSelect?.(null);
         this.isBoxSelecting = true;
         this.boxStartX = x;
         this.boxStartY = y;
@@ -1462,6 +1464,9 @@ export class PianoRollEditor {
       const boxY2 = Math.max(this.boxStartY, this.boxEndY);
       if (boxX2 - boxX1 > 3 && boxY2 - boxY1 > 3) {
         this.selectNotesInBox(boxX1, boxY1, boxX2, boxY2);
+      } else if (this.activeTool === 'place') {
+        // Click on empty space (not a box drag) — place the note
+        this.placeNote(this.dragStartBeat, this.dragStartRow, this.selectedDuration);
       }
       this.isBoxSelecting = false;
       this.isDragging = false;
@@ -2410,6 +2415,18 @@ export class PianoRollEditor {
   setMode(mode: string): void {
     if (mode === this.mode) return;
     this.mode = mode;
+
+    // Rebuild the internal scale so note rows update immediately
+    const appWindow = window as Window & { pitchPerfectApp?: { key: string } };
+    const key = appWindow.pitchPerfectApp?.key ?? 'C';
+    const newScale = buildMultiOctaveScale(key, this.octave, this.numOctaves, this.mode);
+    this.scale = newScale;
+    this.totalRows = newScale.length;
+    // Remove notes whose pitch is no longer in the scale
+    const scaleMidiSet = new Set(newScale.map((s) => s.midi));
+    this.melody = this.melody.filter((n) => scaleMidiSet.has(n.note.midi));
+    this.emitMelodyChange();
+    this.draw();
 
     window.dispatchEvent(new CustomEvent('pitchperfect:modeChange', {
       detail: { mode }

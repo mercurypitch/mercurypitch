@@ -71,6 +71,7 @@ export const App: Component<AppProps> = (props) => {
   const [currentCycle, setCurrentCycle] = createSignal<number>(1);
   const [allCycleResults, setAllCycleResults] = createSignal<NoteResult[][]>([]);
   const [isPracticeComplete, setIsPracticeComplete] = createSignal<boolean>(false);
+  const [savedVol, setSavedVol] = createSignal<number>(80);
 
   // ── Stats panel ──────────────────────────────────────────────
 
@@ -132,6 +133,7 @@ export const App: Component<AppProps> = (props) => {
 
     // Load saved volume
     const savedVol = parseInt(localStorage.getItem('pp_volume') || '80', 10);
+    setSavedVol(savedVol);
     audioEngine = new AudioEngine();
     audioEngine.setVolume(savedVol / 100);
 
@@ -910,10 +912,14 @@ export const App: Component<AppProps> = (props) => {
                   id="sensitivity"
                   min="1"
                   max="10"
-                  value="5"
+                  value={appStore.settings().sensitivity}
                   class="sensitivity-slider"
+                  onInput={(e) => {
+                    const val = parseInt(e.currentTarget.value) || 5;
+                    appStore.setSensitivity(val);
+                  }}
                 />
-                <span id="sensitivity-value">5</span>
+                <span id="sensitivity-value">{appStore.settings().sensitivity}</span>
               </div>
 
               {/* Volume */}
@@ -924,16 +930,16 @@ export const App: Component<AppProps> = (props) => {
                   id="volume"
                   min="0"
                   max="100"
-                  value="80"
+                  value={savedVol()}
                   class="volume-slider"
                   onInput={(e) => {
                     const vol = parseInt(e.currentTarget.value) || 80;
+                    setSavedVol(vol);
                     audioEngine?.setVolume(vol / 100);
-                    // Persist volume preference
                     localStorage.setItem('pp_volume', String(vol));
                   }}
                 />
-                <span id="volume-value">80</span>
+                <span id="volume-value">{savedVol()}</span>
               </div>
 
               {/* Run indicator */}
