@@ -9,7 +9,13 @@ export type InstrumentType = 'sine' | 'piano' | 'organ' | 'strings' | 'synth';
 export class AudioEngine {
   private audioCtx: AudioContext | null = null;
   private masterGain: GainNode | null = null;
+  // Microphone
   private micStream: MediaStream | null = null;
+  private micSource: MediaStreamAudioSourceNode | null = null;
+  // Shared analyser used for both mic input and pitch detection (mirrors old JS behavior)
+  private analyser: AnalyserNode | null = null;
+  private micGain: GainNode | null = null;
+  // Legacy aliases for compatibility
   private micAnalyser: AnalyserNode | null = null;
   private toneOscillator: OscillatorNode | null = null;
   private toneGain: GainNode | null = null;
@@ -18,9 +24,10 @@ export class AudioEngine {
   private callbacks: AudioEngineCallbacks = {};
   private volume = 0.8;
   private currentInstrument: InstrumentType = 'sine';
+  private bufferSize = 2048;
   private _frequencyData = new Float32Array(0);
   private _timeData = new Float32Array(0);
-  private _activeVoices = new Map<number, { oscillators: OscillatorNode[]; gains: GainNode[]; stopTime: number }>();
+  private _activeVoices = new Map<number, { oscillators: OscillatorNode[]; gains: GainNode[]; stopTime: number; lfos?: OscillatorNode[]; lfoGains?: GainNode[] }>();
 
   // ============================================================
   // Lifecycle
@@ -34,10 +41,17 @@ export class AudioEngine {
     this.masterGain.gain.value = this.volume;
     this.masterGain.connect(this.audioCtx.destination);
 
+    // Create shared analyser for mic input and pitch detection (mirrors old JS)
+    this.analyser = this.audioCtx.createAnalyser();
+    this.analyser.fftSize = this.bufferSize * 2;
+    this.analyser.smoothingTimeConstant = 0.1;
+    // Alias for compatibility
+    this.micAnalyser = this.analyser;
+
     // Initialize frequency data array with default size for visualizer
     if (this._frequencyData.length === 0) {
-      this._frequencyData = new Float32Array(1024);
-      this._timeData = new Float32Array(1024);
+      this._frequencyData = new Float32Array(this.analyser.frequencyBinCount);
+      this._timeData = new Float32Array(this.analyser.frequencyBinCount);
     }
   }
 
@@ -130,6 +144,8 @@ export class AudioEngine {
       await this.init();
       await this.resume();
 
+      if (this.isRecording) return true;
+
       this.micStream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: false,
@@ -139,20 +155,15 @@ export class AudioEngine {
       });
 
       const ctx = this.audioCtx;
-      if (!ctx) return false;
+      if (!ctx || !this.analyser) return false;
 
-      const source = ctx.createMediaStreamSource(this.micStream);
+      // Connect mic stream to shared analyser (mirrors old JS behavior)
+      this.micSource = ctx.createMediaStreamSource(this.micStream);
+      this.micGain = ctx.createGain();
+      this.micGain.gain.value = 1.0;
 
-      this.micAnalyser = ctx.createAnalyser();
-      this.micAnalyser.fftSize = 2048;
-      this.micAnalyser.smoothingTimeConstant = 0.1;
-
-      source.connect(this.micAnalyser);
-      // Don't connect to destination — avoid feedback
-
-      const bufferLength = this.micAnalyser.frequencyBinCount;
-      this._frequencyData = new Float32Array(bufferLength);
-      this._timeData = new Float32Array(bufferLength);
+      this.micSource.connect(this.micGain);
+      this.micGain.connect(this.analyser);
 
       this.isRecording = true;
       return true;
@@ -164,14 +175,20 @@ export class AudioEngine {
   stopMic(): void {
     this.isRecording = false;
 
+    // Disconnect mic chain but keep analyser for visualization
+    if (this.micSource) {
+      this.micSource.disconnect();
+      this.micSource = null;
+    }
+    if (this.micGain) {
+      this.micGain.disconnect();
+      this.micGain = null;
+    }
     if (this.micStream) {
       this.micStream.getTracks().forEach((track) => track.stop());
       this.micStream = null;
     }
-
-this.micAnalyser = null;
-    // Note: _frequencyData and _timeData intentionally not reset
-    // They still contain valid data for the visualizer
+    // Note: analyser stays active for visualization
   }
 
   isMicActive(): boolean {
@@ -272,16 +289,16 @@ this.micAnalyser = null;
   // ============================================================
 
   /** Play a single note for a given duration (ms) */
-  async playNote(frequency: number, durationMs: number, effectType?: EffectType): Promise<void> {
+  async playNote(frequency: number, durationMs: number, effectType?: EffectType): Promise<number | undefined> {
     await this.init();
     await this.resume();
-    if (!this.audioCtx || !this.masterGain) return;
+    if (!this.audioCtx || !this.masterGain) return undefined;
 
     const now = this.audioCtx.currentTime;
     const noteId = Date.now() + Math.random();
 
     // Create oscillators based on instrument
-    const { oscillators, gain: mainGain } = this._createVoice(frequency, durationMs, effectType);
+    const { oscillators, gain: mainGain, lfos, lfoGains } = this._createVoice(frequency, durationMs, effectType);
 
     mainGain.gain.setValueAtTime(0, now);
     mainGain.gain.linearRampToValueAtTime(this.volume, now + 0.01);
@@ -293,21 +310,27 @@ this.micAnalyser = null;
     }
     mainGain.connect(this.masterGain);
 
-    // Store voice reference
+    // Store voice reference (with optional LFOs)
     this._activeVoices.set(noteId, {
       oscillators,
       gains: [mainGain],
       stopTime: now + durationMs / 1000,
+      lfos,
+      lfoGains,
     });
 
-    // Auto-cleanup
-    setTimeout(() => this._activeVoices.delete(noteId), durationMs + 200);
+    // Auto-stop after duration
+    if (durationMs) {
+      setTimeout(() => this.stopNote(noteId), durationMs);
+    }
+
+    return noteId;
   }
 
   /**
    * Create oscillators for an instrument. Returns oscillators and a master gain node.
    */
-  private _createVoice(freq: number, durationMs: number, effectType?: EffectType): { oscillators: OscillatorNode[]; gain: GainNode } {
+  private _createVoice(freq: number, durationMs: number, effectType?: EffectType): { oscillators: OscillatorNode[]; gain: GainNode; lfos: OscillatorNode[]; lfoGains: GainNode[] } {
     const ctx = this.audioCtx!;
     const now = ctx.currentTime;
     const dur = durationMs / 1000;
@@ -408,11 +431,17 @@ this.micAnalyser = null;
     }
 
     // Apply effect modulation to the primary oscillator (index 0)
+    let lfos: OscillatorNode[] = [];
+    let lfoGains: GainNode[] = [];
     if (effectType && oscillators.length > 0) {
-      this._applyEffectModulation(oscillators[0], effectType, freq, durationMs, now);
+      const result = this._applyEffectModulation(oscillators[0], effectType, freq, durationMs, now);
+      if (result) {
+        lfos = result.lfos;
+        lfoGains = result.lfoGains;
+      }
     }
 
-    return { oscillators, gain: masterGain };
+    return { oscillators, gain: masterGain, lfos, lfoGains };
   }
 
   /**
@@ -424,10 +453,12 @@ this.micAnalyser = null;
     freq: number,
     durationMs: number,
     now: number
-  ): void {
-    if (!effectType) return;
+  ): { lfos: OscillatorNode[]; lfoGains: GainNode[] } | null {
+    if (!effectType) return null;
 
     const dur = durationMs / 1000;
+    const lfos: OscillatorNode[] = [];
+    const lfoGains: GainNode[] = [];
 
     switch (effectType) {
       case 'vibrato': {
@@ -441,6 +472,8 @@ this.micAnalyser = null;
         lfoGain.connect(osc.frequency);
         lfo.start(now);
         lfo.stop(now + dur);
+        lfos.push(lfo);
+        lfoGains.push(lfoGain);
         break;
       }
       case 'slide-up': {
@@ -468,6 +501,8 @@ this.micAnalyser = null;
         break;
       }
     }
+
+    return { lfos, lfoGains };
   }
 
   /** Play a beep sound */
@@ -499,6 +534,48 @@ this.micAnalyser = null;
   // ============================================================
   // Callbacks
   // ============================================================
+
+  /**
+   * Stop a specific note by ID (called automatically by setTimeout in playNote).
+   */
+  stopNote(noteId: number): void {
+    const voice = this._activeVoices.get(noteId);
+    if (!voice) return;
+
+    const ctx = this.audioCtx;
+    if (!ctx) return;
+
+    const now = ctx.currentTime;
+
+    // Release envelope
+    voice.gains[0].gain.cancelScheduledValues(now);
+    voice.gains[0].gain.setValueAtTime(voice.gains[0].gain.value, now);
+    voice.gains[0].gain.linearRampToValueAtTime(0, now + 0.1);
+
+    // Stop oscillators and LFOs after release
+    setTimeout(() => {
+      for (const osc of voice.oscillators) {
+        try { osc.stop(); osc.disconnect(); } catch { /* already stopped */ }
+      }
+      (voice.lfos || []).forEach((lfo) => {
+        try { lfo.stop(); lfo.disconnect(); } catch { /* already stopped */ }
+      });
+      (voice.lfoGains || []).forEach((g) => {
+        try { g.disconnect(); } catch { /* already stopped */ }
+      });
+      try { voice.gains[0].disconnect(); } catch { /* already stopped */ }
+      this._activeVoices.delete(noteId);
+    }, 150);
+  }
+
+  /**
+   * Stop all active notes.
+   */
+  stopAllNotes(): void {
+    for (const noteId of this._activeVoices.keys()) {
+      this.stopNote(noteId);
+    }
+  }
 
   onNoteChange(callback: (note: MelodyNote, noteIndex: number) => void): void {
     this.callbacks.onNoteChange = callback;

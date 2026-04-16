@@ -1407,10 +1407,14 @@ export class PianoRollEditor {
     this.activeBeat = beat;
     this.drawGridWithPlayhead();
 
-    // If playback is active, also update the playback start time so
+    // If playback is active or paused, update the playback start time so
     // playback continues from the new position on mouseup
     if (this.playbackState === 'playing') {
       this.playStartTime = performance.now() - (beat / this.bpm) * 60000;
+    } else if (this.playbackState === 'paused') {
+      // For paused state, update both playStartTime and activeBeat for proper resume
+      this.playStartTime = performance.now() - (beat / this.bpm) * 60000;
+      this.pauseStartTime = performance.now(); // Reset pause point to now
     }
   }
 
