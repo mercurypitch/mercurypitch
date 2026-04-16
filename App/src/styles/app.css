@@ -1820,6 +1820,26 @@ header h1 {
     cursor: not-allowed;
 }
 
+/* ===== Copy/Cut/Paste Buttons ===== */
+.roll-clipboard-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.roll-clipboard-group .roll-ctrl-btn {
+    padding: 4px 6px;
+    border-radius: 4px;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+}
+
+.roll-clipboard-group .roll-ctrl-btn:hover {
+    color: var(--text-primary);
+    border-color: var(--text-secondary);
+}
+
 /* Preset controls */
 .roll-preset-group {
     display: flex;

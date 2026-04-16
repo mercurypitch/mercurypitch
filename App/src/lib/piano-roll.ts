@@ -268,6 +268,10 @@ export class PianoRollEditor {
   private redoStack: MelodyItem[][] = [];
   private readonly maxHistorySize = 50;
 
+  // Copy/paste clipboard
+  private clipboard: MelodyItem[] = [];
+  private clipboardOffset = { beat: 0, row: 0 };
+
   // Callbacks
   private onMelodyChange?: (melody: MelodyItem[]) => void;
   private onNoteSelect?: (note: MelodyItem | null) => void;
@@ -389,6 +393,96 @@ export class PianoRollEditor {
     if (undoBtn) undoBtn.disabled = !this.canUndo();
     if (redoBtn) redoBtn.disabled = !this.canRedo();
   }
+
+  // ============================================================
+  // Copy/Paste
+  // ============================================================
+
+  /** Copy selected notes to clipboard */
+  copySelected(): number {
+    if (this.selectedNoteIds.size === 0) return 0;
+    this.clipboard = this.melody
+      .filter((n) => this.selectedNoteIds.has(n.id ?? 0))
+      .map((n) => ({ ...n, id: undefined as any })); // Clear IDs for new paste
+    if (this.clipboard.length > 0) {
+      const beats = this.clipboard.map((n) => n.startBeat);
+      const rows = this.clipboard.map((n) => this.midiToRow(n.note.midi));
+      this.clipboardOffset = {
+        beat: Math.min(...beats),
+        row: Math.min(...rows),
+      };
+    }
+    return this.clipboard.length;
+  }
+
+  /** Cut selected notes (copy + delete) */
+  cutSelected(): number {
+    const count = this.copySelected();
+    if (count > 0) {
+      this.pushHistory();
+      for (const noteId of this.selectedNoteIds) {
+        const note = this.melody.find((n) => (n.id ?? 0) === noteId);
+        if (note) this.eraseNoteInternal(note);
+      }
+      this.emitMelodyChange();
+      this.draw();
+    }
+    return count;
+  }
+
+  /** Paste clipboard notes at current cursor or selection position */
+  pasteAt(cursorBeat?: number, cursorRow?: number): number {
+    if (this.clipboard.length === 0) return 0;
+    this.pushHistory();
+    const targetBeat = cursorBeat ?? this.clipboardOffset.beat;
+    const targetRow = cursorRow ?? this.clipboardOffset.row;
+    const deltaBeat = targetBeat - this.clipboardOffset.beat;
+    const deltaRow = targetRow - this.clipboardOffset.row;
+    const newNotes: MelodyItem[] = [];
+    for (const note of this.clipboard) {
+      const newBeat = note.startBeat + deltaBeat;
+      if (newBeat < 0 || newBeat >= this.totalBeats) continue;
+      const newRow = Math.max(0, Math.min(this.totalRows - 1, this.midiToRow(note.note.midi) + deltaRow));
+      const scaleNote = this.scale[newRow];
+      if (!scaleNote) continue;
+      const newNote: MelodyItem = {
+        id: this.nextNoteId++,
+        note: {
+          midi: scaleNote.midi,
+          name: scaleNote.name as any,
+          octave: scaleNote.octave,
+          freq: scaleNote.freq,
+        },
+        startBeat: newBeat,
+        duration: note.duration,
+      };
+      newNotes.push(newNote);
+      this.melody.push(newNote);
+    }
+    if (newNotes.length > 0) {
+      this.selectedNoteIds.clear();
+      for (const n of newNotes) {
+        this.selectedNoteIds.add(n.id);
+      }
+    }
+    this.emitMelodyChange();
+    this.draw();
+    return newNotes.length;
+  }
+
+  /** Check if clipboard has notes */
+  hasClipboard(): boolean {
+    return this.clipboard.length > 0;
+  }
+
+  /** Get clipboard size */
+  getClipboardSize(): number {
+    return this.clipboard.length;
+  }
+
+  // ============================================================
+  // Scale & Config
+  // ============================================================
 
   setScale(scale: ScaleDegree[]): void {
     this.scale = scale;
@@ -825,6 +919,18 @@ export class PianoRollEditor {
           </button>
         </div>
         <div class="roll-sep"></div>
+        <div class="roll-clipboard-group">
+          <button id="roll-copy-btn" class="roll-ctrl-btn" title="Copy (Ctrl+C)">
+            <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+          </button>
+          <button id="roll-cut-btn" class="roll-ctrl-btn" title="Cut (Ctrl+X)">
+            <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M9.64 7.64c.23-.5.36-1.05.36-1.64 0-2.21-1.79-4-4-4-.59 0-1.14.13-1.64.36L10 12H2v-2l3.36-3.36c-.23-.5-.36-1.05-.36-1.64 0-2.21 1.79-4 4-4 .59 0 1.14.13 1.64.36L12 2v2l2.36-2.36c.23.5.36 1.05.36 1.64 0 2.21-1.79 4-4 4-.59 0-1.14-.13-1.64-.36L7 8.64V14h2V8.64l-2.36 2.36c.5.23 1.05.36 1.64.36 2.21 0 4-1.79 4-4 0-.59-.13-1.14-.36-1.64L14 2v2l3.64-3.64c-.5-.23-1.05-.36-1.64-.36-2.21 0-4 1.79-4 4 0 .59.13 1.14.36 1.64L14 10.64V14h2V8.64z"/></svg>
+          </button>
+          <button id="roll-paste-btn" class="roll-ctrl-btn" title="Paste (Ctrl+V)">
+            <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M19 2h-4.18C14.4.84 13.3 0 12 0c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm7 18H5V4h2v3h10V4h2v16z"/></svg>
+          </button>
+        </div>
+        <div class="roll-sep"></div>
         <div class="roll-effects-row">
           <span class="roll-effects-label">Effects:</span>
           <button id="roll-action-slide-up" class="roll-action-btn slide-up" title="Create ascending slide between selected notes">
@@ -1155,6 +1261,20 @@ export class PianoRollEditor {
 
     // Initialize zoom display
     this.updateZoomDisplay();
+
+    // Copy/cut/paste buttons
+    container.querySelector('#roll-copy-btn')?.addEventListener('click', () => {
+      const count = this.copySelected();
+      if (count > 0) this._updateHint(`Copied ${count} note(s)`);
+    });
+    container.querySelector('#roll-cut-btn')?.addEventListener('click', () => {
+      const count = this.cutSelected();
+      if (count > 0) this._updateHint(`Cut ${count} note(s)`);
+    });
+    container.querySelector('#roll-paste-btn')?.addEventListener('click', () => {
+      const count = this.pasteAt();
+      if (count > 0) this._updateHint(`Pasted ${count} note(s)`);
+    });
   }
 
   private onGridMouseDown(e: MouseEvent): void {
@@ -1361,6 +1481,28 @@ export class PianoRollEditor {
   }
 
   private onKeyDown(e: KeyboardEvent): void {
+    // Copy: Ctrl+C / Cmd+C
+    if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+      e.preventDefault();
+      const count = this.copySelected();
+      if (count > 0) this._updateHint(`Copied ${count} note(s)`);
+      return;
+    }
+    // Cut: Ctrl+X / Cmd+X
+    if ((e.ctrlKey || e.metaKey) && e.key === 'x') {
+      e.preventDefault();
+      const count = this.cutSelected();
+      if (count > 0) this._updateHint(`Cut ${count} note(s)`);
+      return;
+    }
+    // Paste: Ctrl+V / Cmd+V
+    if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+      e.preventDefault();
+      const count = this.pasteAt();
+      if (count > 0) this._updateHint(`Pasted ${count} note(s)`);
+      return;
+    }
+
     // Zoom: Ctrl++ / Ctrl+- (or Ctrl+scroll)
     if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '=')) {
       e.preventDefault();
