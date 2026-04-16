@@ -43,10 +43,14 @@ export class AudioEngine {
     this.playbackAnalyser = this.audioCtx.createAnalyser();
     this.playbackAnalyser.fftSize = this.bufferSize * 2;
     this.playbackAnalyser.smoothingTimeConstant = 0.0;
-    this.playbackAnalyser.connect(this.audioCtx.destination);
+    if (this.audioCtx.destination && typeof this.playbackAnalyser.connect === 'function') {
+      this.playbackAnalyser.connect(this.audioCtx.destination);
+    }
     this.masterGain = this.audioCtx.createGain();
     this.masterGain.gain.value = this.volume;
-    this.masterGain.connect(this.playbackAnalyser);
+    if (this.playbackAnalyser && typeof this.masterGain.connect === 'function') {
+      this.masterGain.connect(this.playbackAnalyser);
+    }
 
     // Create shared analyser for mic input and pitch detection (mirrors old JS)
     this.analyser = this.audioCtx.createAnalyser();
