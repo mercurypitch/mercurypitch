@@ -18,7 +18,9 @@ import { PitchCanvas } from '@/components/PitchCanvas';
 import { SettingsPanel } from '@/components/SettingsPanel';
 import { loadFromURL, hasSharedPresetInURL, copyShareURL } from '@/lib/share-url';
 import { NoteList } from '@/components/NoteList';
+import { PresetSelector } from '@/components/PresetSelector';
 import { MicButton } from '@/components/MicButton';
+import type { PresetData } from '@/stores/app-store';
 import { MetronomeButton } from '@/components/MetronomeButton';
 import { HistoryCanvas } from '@/components/HistoryCanvas';
 import { appStore, getNoteAccuracyMap } from '@/stores/app-store';
@@ -37,6 +39,24 @@ import type { PitchSample } from '@/components/PitchCanvas';
 let audioEngine: AudioEngine;
 let melodyEngine: MelodyEngine;
 let practiceEngine: PracticeEngine;
+
+/** Convert preset note data to melody items, mapping midi to current scale */
+function presetToMelody(preset: PresetData): import('@/types').MelodyItem[] {
+  return preset.notes.map((n) => {
+    const scaleNote = melodyStore.currentScale().find((s) => s.midi === n.midi);
+    return {
+      id: melodyStore.generateId(),
+      note: {
+        midi: n.midi,
+        name: (scaleNote?.name ?? 'C') as NoteName,
+        octave: scaleNote?.octave ?? 4,
+        freq: scaleNote?.freq ?? 440,
+      },
+      startBeat: n.startBeat,
+      duration: n.duration,
+    };
+  });
+}
 
 interface AppProps {
   onMounted?: () => void;
@@ -629,91 +649,16 @@ export const App: Component<AppProps> = (props) => {
               </select>
             </div>
 
-            {/* Preset selector */}
-            <div id="preset-info">
-              <span class="preset-label">Preset:</span>
-              <select
-                id="preset-select"
-                onChange={(e) => {
-                  const name = e.currentTarget.value;
-                  if (name) {
-                    const preset = appStore.loadPreset(name);
-                    if (preset) {
-                      // Load preset melody
-                      const melody = preset.notes.map((n) => {
-                        const scaleNote = melodyStore.currentScale().find((s) => s.midi === n.midi);
-                        return {
-                          id: melodyStore.generateId(),
-                          note: {
-                            midi: n.midi,
-                            name: (scaleNote?.name ?? 'C') as NoteName,
-                            octave: scaleNote?.octave ?? 4,
-                            freq: scaleNote?.freq ?? 440,
-                          },
-                          startBeat: n.startBeat,
-                          duration: n.duration,
-                        };
-                      });
-                      melodyStore.setMelody(melody);
-                      if (preset.bpm) {
-                        appStore.setBpm(preset.bpm);
-                        melodyEngine.setBPM(preset.bpm);
-                      }
-                      appStore.showNotification(`Preset "${name}" loaded`, 'info');
-                    }
-                  }
-                }}
-              >
-                <option value="">— Select —</option>
-              </select>
-              <button
-                id="btn-clear-preset"
-                class="ctrl-btn small"
-                title="Clear melody and reset to sample"
-                onClick={() => {
-                  const sample = buildSampleMelody(appStore.keyName(), melodyStore.currentOctave());
-                  melodyStore.setMelody(sample);
-                  const presetSelect = document.getElementById('preset-select') as HTMLSelectElement;
-                  if (presetSelect) presetSelect.value = '';
-                  const pianoRoll = (window as any).pianoRollEditor;
-                  if (pianoRoll) {
-                    pianoRoll.melody = sample.map(n => ({ ...n, effectType: undefined, linkedTo: undefined }));
-                    pianoRoll._resizeCanvas();
-                    pianoRoll._render();
-                  }
-                  appStore.showNotification('Melody cleared', 'info');
-                }}
-              >
-                Clear
-              </button>
-            </div>
-
-            {/* Share button */}
-            <div id="share-preset">
-              <button
-                id="btn-share"
-                class="share-btn"
-                title="Copy share link to clipboard"
-                onClick={async () => {
-                  const totalBeats = melodyStore.items.length > 0
-                    ? Math.max(...melodyStore.items.map(n => n.startBeat + n.duration))
-                    : undefined;
-                  const ok = await copyShareURL(
-                    melodyStore.items,
-                    appStore.bpm(),
-                    appStore.keyName(),
-                    appStore.scaleType(),
-                    totalBeats
-                  );
-                  appStore.showNotification(
-                    ok ? 'Share URL copied to clipboard!' : 'Failed to copy URL',
-                    ok ? 'success' : 'error'
-                  );
-                }}
-              >
-                Share
-              </button>
-            </div>
+            {/* Preset selector — shared between both tabs */}
+            <PresetSelector
+              onLoad={(preset) => {
+                melodyStore.setMelody(presetToMelody(preset));
+                if (preset.bpm) {
+                  appStore.setBpm(preset.bpm);
+                  melodyEngine?.setBPM(preset.bpm);
+                }
+              }}
+            />
 
             {/* Note list */}
             <NoteList
@@ -1003,6 +948,55 @@ export const App: Component<AppProps> = (props) => {
               onPlayClick={handlePlay}
               onResetClick={handleReset}
               onInstrumentChange={(instrument) => audioEngine.setInstrument(instrument as any)}
+              headerSlot={() => (
+                <div class="editor-header-bar">
+                  {/* Shared preset selector with save/new controls */}
+                  <PresetSelector
+                    showControls={true}
+                    onLoad={(preset) => {
+                      const editor = (window as any).pianoRollEditor;
+                      if (editor) {
+                        editor.melody = preset.notes.map((n) => ({
+                          id: editor.nextNoteId++,
+                          note: {
+                            midi: n.midi,
+                            name: '?',
+                            octave: 4,
+                            freq: 440,
+                          },
+                          startBeat: n.startBeat,
+                          duration: n.duration,
+                          effectType: n.effectType,
+                          linkedTo: n.linkedTo,
+                        }));
+                        editor.totalBeats = preset.totalBeats || 16;
+                        editor.bpm = preset.bpm || 120;
+                        editor.buildCanvases();
+                        editor.draw();
+                      }
+                    }}
+                  />
+                  {/* Editor playback controls */}
+                  <div class="editor-playback-controls">
+                    <button
+                      id="roll-play-btn"
+                      class="ctrl-btn play-btn"
+                      title="Play melody"
+                      onClick={handlePlay}
+                    >
+                      ▶ Play
+                    </button>
+                    <button
+                      id="roll-reset-btn"
+                      class="ctrl-btn"
+                      title="Reset playback"
+                      onClick={handleReset}
+                    >
+                      ■ Stop
+                    </button>
+                  </div>
+                </div>
+              )}
             />
           </div>
         </Show>

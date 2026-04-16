@@ -6,6 +6,7 @@ import type { MelodyItem, ScaleDegree, PianoRollConfig, NoteName } from '@/types
 import type { InstrumentType } from '@/lib/audio-engine';
 import { PitchDetector } from '@/lib/pitch-detector';
 import { buildMultiOctaveScale } from '@/lib/scale-data';
+import { savePreset, loadPreset } from '@/stores/app-store';
 
 export const PIANO_ROLL_CONFIG: PianoRollConfig = {
   rowHeight: 22,
@@ -571,7 +572,7 @@ export class PianoRollEditor {
   saveCurrentPreset(name: string): void {
     if (!name.trim()) return;
 
-    this.presetData[name] = {
+    const presetData = {
       notes: this.melody.map((n) => ({
         midi: n.note.midi,
         startBeat: n.startBeat,
@@ -584,28 +585,20 @@ export class PianoRollEditor {
       scale: this.scale.map((s) => ({ midi: s.midi, name: s.name, octave: s.octave, freq: s.freq })),
     };
 
-    try {
-      localStorage.setItem('pitchperfect_presets', JSON.stringify(this.presetData));
-    } catch (e) {
-      console.warn('Failed to save preset:', e);
-    }
+    // Delegate to appStore so it's the single source of truth
+    savePreset(name, presetData);
 
     this.currentPresetName = name;
-    this.populatePresetSelect();
-    localStorage.setItem('pitchperfect_lastpreset', name);
-    localStorage.setItem('pitchperfect_selected_preset', name);
-
-    const select = this.container.querySelector('#roll-preset-select') as HTMLSelectElement | null;
-    if (select) select.value = name;
-
-    const nameInput = this.container.querySelector('#roll-preset-name') as HTMLInputElement | null;
-    if (nameInput) nameInput.value = name;
-
-    window.dispatchEvent(new CustomEvent('pitchperfect:presetSaved', { detail: { name } }));
+    // Update the local copy for compatibility
+    this.presetData = { ...this.presetData, [name]: presetData };
   }
 
   loadPresetByName(name: string): void {
-    const preset = this.presetData[name];
+    let preset = loadPreset(name);
+    if (!preset) {
+      // Fallback to local cache
+      preset = this.presetData[name];
+    }
     if (!preset) return;
 
     this.melody = preset.notes.map((n) => {
@@ -634,21 +627,14 @@ export class PianoRollEditor {
     this.totalBeats = preset.totalBeats || 16;
     if (preset.bpm) {
       this.bpm = preset.bpm;
-      // Notify app to update BPM
-      window.dispatchEvent(new CustomEvent('pitchperfect:presetLoaded', { detail: { name, bpm: this.bpm } }));
     }
 
     this.currentPresetName = name;
     this.buildCanvases();
     this.draw();
     this.updateBeatInfo();
-    localStorage.setItem('pitchperfect_lastpreset', name);
-    localStorage.setItem('pitchperfect_selected_preset', name);
 
-    const nameInput = this.container.querySelector('#roll-preset-name') as HTMLInputElement | null;
-    if (nameInput) nameInput.value = name;
-
-    window.dispatchEvent(new CustomEvent('pitchperfect:presetLoaded', { detail: { name, bpm: this.bpm } }));
+    window.dispatchEvent(new CustomEvent('pitchperfect:presetLoaded', { detail: { name, bpm: this.bpm, melody: this.getMelody() } }));
   }
 
   private updateBeatInfo(): void {

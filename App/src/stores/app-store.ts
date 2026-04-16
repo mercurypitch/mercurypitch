@@ -145,7 +145,7 @@ const LAST_PRESET_KEY = 'pitchperfect_lastpreset';
 const SELECTED_PRESET_KEY = 'pitchperfect_selected_preset';
 
 export interface PresetData {
-  notes: Array<{ midi: number; startBeat: number; duration: number }>;
+  notes: Array<{ midi: number; startBeat: number; duration: number; effectType?: string; linkedTo?: number[] }>;
   totalBeats: number;
   bpm: number;
   scale: Array<{ midi: number; name: string; octave: number; freq: number }>;
@@ -198,6 +198,14 @@ export function loadPreset(name: string): PresetData | null {
 
 export function getPresetNames(): string[] {
   return Object.keys(presets()).sort();
+}
+
+export function getPresets(): PresetsStore {
+  return presets();
+}
+
+export function getCurrentPresetName(): string | null {
+  return currentPresetName();
 }
 
 export function deletePreset(name: string): void {
