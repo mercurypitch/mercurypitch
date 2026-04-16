@@ -223,7 +223,7 @@ export class PianoRollEditor {
   private externalPlayback = false;
 
   // Interaction
-  private selectedNoteId: number | null = null;
+  private selectedNoteIds: Set<number> = new Set();
   private activeTool: ActiveTool = 'place';
   private isDragging = false;
   private isResizing = false;
@@ -234,6 +234,12 @@ export class PianoRollEditor {
   private dragStartDuration = 0;
   private selectedDuration = 1;
   private nextNoteId = 1;
+  private isBoxSelecting = false;
+  private boxStartX = 0;
+  private boxStartY = 0;
+  private boxEndX = 0;
+  private boxEndY = 0;
+  private dragStartRow = 0;
 
   // Scale/Octave state (matches old app)
   private octave = 4;
@@ -516,7 +522,7 @@ export class PianoRollEditor {
 
   clearMelody(): void {
     this.melody = [];
-    this.selectedNoteId = null;
+    this.selectedNoteIds.clear();
     this.onNoteSelect?.(null);
     this.draw();
   }
@@ -1079,10 +1085,23 @@ export class PianoRollEditor {
     if (this.activeTool === 'place') {
       const existingNote = this.findNoteAt(beat, row);
       if (existingNote) {
-        // Select existing note
-        this.selectedNoteId = existingNote.id ?? null;
-        this.onNoteSelect?.(existingNote);
-        // Start resize if near edges
+        // Select existing note (toggle in Set, start resize/drag)
+        const noteId = existingNote.id ?? 0;
+        if (e.shiftKey) {
+          // Shift+click: toggle in selection
+          if (this.selectedNoteIds.has(noteId)) {
+            this.selectedNoteIds.delete(noteId);
+          } else {
+            this.selectedNoteIds.add(noteId);
+          }
+          const first = this.melody.find((n) => n.id !== undefined && this.selectedNoteIds.has(n.id));
+          this.onNoteSelect?.(first ?? null);
+        } else {
+          // Normal click: single select
+          this.selectedNoteIds.clear();
+          this.selectedNoteIds.add(noteId);
+          this.onNoteSelect?.(existingNote);
+        }
         const noteX = existingNote.startBeat * this.beatWidth;
         const noteW = existingNote.duration * this.beatWidth;
         if (x - noteX < 6) {
@@ -1094,13 +1113,24 @@ export class PianoRollEditor {
         } else {
           this.isDragging = true;
           this.dragStartX = x;
+          this.dragStartY = y;
           this.dragStartBeat = existingNote.startBeat;
+          this.dragStartRow = this.midiToRow(existingNote.note.midi);
         }
       } else {
-        // Place new note
-        this.selectedNoteId = null;
+        // Place new note (start box selection if dragging on empty area)
+        this.selectedNoteIds.clear();
         this.onNoteSelect?.(null);
-        this.placeNote(beat, row, this.selectedDuration);
+        this.isBoxSelecting = true;
+        this.boxStartX = x;
+        this.boxStartY = y;
+        this.boxEndX = x;
+        this.boxEndY = y;
+        this.isDragging = true;
+        this.dragStartX = x;
+        this.dragStartY = y;
+        this.dragStartBeat = Math.floor(beat) + (beat % 1 >= 0.5 ? 0.5 : 0);
+        this.dragStartRow = row;
       }
     } else if (this.activeTool === 'erase') {
       const note = this.findNoteAt(beat, row);
@@ -1110,11 +1140,24 @@ export class PianoRollEditor {
     } else if (this.activeTool === 'select') {
       const note = this.findNoteAt(beat, row);
       if (note) {
-        this.selectedNoteId = note.id ?? null;
-        this.onNoteSelect?.(note);
+        const noteId = note.id ?? 0;
+        if (e.shiftKey) {
+          if (this.selectedNoteIds.has(noteId)) {
+            this.selectedNoteIds.delete(noteId);
+          } else {
+            this.selectedNoteIds.add(noteId);
+          }
+        } else {
+          this.selectedNoteIds.clear();
+          this.selectedNoteIds.add(noteId);
+        }
+        const first = this.melody.find((n) => n.id !== undefined && this.selectedNoteIds.has(n.id));
+        this.onNoteSelect?.(first ?? null);
       } else {
-        this.selectedNoteId = null;
-        this.onNoteSelect?.(null);
+        if (!e.shiftKey) {
+          this.selectedNoteIds.clear();
+          this.onNoteSelect?.(null);
+        }
       }
     }
 
@@ -1127,17 +1170,37 @@ export class PianoRollEditor {
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    if (this.isDragging && this.selectedNoteId !== null) {
-      const note = this.melody.find((n) => (n.id ?? 0) === this.selectedNoteId);
-      if (note) {
-        const deltaBeat = Math.round((x - this.dragStartX) / this.beatWidth);
-        note.startBeat = Math.max(0, this.dragStartBeat + deltaBeat);
+    if (this.isBoxSelecting) {
+      this.boxEndX = x;
+      this.boxEndY = y;
+      this.draw();
+      return;
+    }
+
+    if (this.isDragging && this.selectedNoteIds.size > 0) {
+      const deltaBeat = Math.round((x - this.dragStartX) / this.beatWidth);
+      const deltaRow = Math.round((y - this.dragStartY) / this.rowHeight);
+      if (deltaBeat !== 0 || deltaRow !== 0) {
+        for (const noteId of this.selectedNoteIds) {
+          const note = this.melody.find((n) => (n.id ?? 0) === noteId);
+          if (!note) continue;
+          const newStartBeat = Math.max(0, this.dragStartBeat + deltaBeat);
+          const newRow = Math.max(0, Math.min(this.totalRows - 1, this.dragStartRow + deltaRow));
+          const newScaleNote = this.scale[newRow];
+          if (!newScaleNote) continue;
+          note.startBeat = newStartBeat;
+          note.note.midi = newScaleNote.midi;
+          note.note.name = newScaleNote.name as any;
+          note.note.octave = newScaleNote.octave;
+          note.note.freq = newScaleNote.freq;
+        }
         this.emitMelodyChange();
         this.draw();
       }
-    } else if (this.isResizing && this.selectedNoteId !== null) {
-      const note = this.melody.find((n) => (n.id ?? 0) === this.selectedNoteId);
-      if (note) {
+    } else if (this.isResizing && this.selectedNoteIds.size > 0) {
+      for (const noteId of this.selectedNoteIds) {
+        const note = this.melody.find((n) => (n.id ?? 0) === noteId);
+        if (!note) continue;
         if (this.resizeHandle === 'right') {
           const endBeat = Math.round(x / this.beatWidth);
           note.duration = Math.max(this.config.minDuration, endBeat - note.startBeat);
@@ -1147,24 +1210,59 @@ export class PianoRollEditor {
           note.startBeat = Math.max(0, Math.min(newStart, oldEnd - this.config.minDuration));
           note.duration = oldEnd - note.startBeat;
         }
-        this.emitMelodyChange();
-        this.draw();
       }
-    } else if (this.isDragging) {
-      // Placing a note
+      this.emitMelodyChange();
       this.draw();
     }
   }
 
-  private onGridMouseUp(e: MouseEvent): void {
+  private onGridMouseUp(_e: MouseEvent): void {
+    if (this.isBoxSelecting) {
+      // Finalize box selection
+      const boxX1 = Math.min(this.boxStartX, this.boxEndX);
+      const boxY1 = Math.min(this.boxStartY, this.boxEndY);
+      const boxX2 = Math.max(this.boxStartX, this.boxEndX);
+      const boxY2 = Math.max(this.boxStartY, this.boxEndY);
+      if (boxX2 - boxX1 > 3 && boxY2 - boxY1 > 3) {
+        this.selectNotesInBox(boxX1, boxY1, boxX2, boxY2);
+      }
+      this.isBoxSelecting = false;
+      this.isDragging = false;
+    }
     this.isDragging = false;
     this.isResizing = false;
     this.resizeHandle = null;
   }
 
   private onGridMouseLeave(_e: MouseEvent): void {
+    if (this.isBoxSelecting) {
+      this.isBoxSelecting = false;
+      this.isDragging = false;
+    }
     this.isDragging = false;
     this.isResizing = false;
+  }
+
+  /** Select all notes whose blocks intersect the given pixel box */
+  private selectNotesInBox(x1: number, y1: number, x2: number, y2: number): void {
+    const startBeat = x1 / this.beatWidth;
+    const endBeat = x2 / this.beatWidth;
+    const startRow = Math.floor(y1 / this.rowHeight);
+    const endRow = Math.floor(y2 / this.rowHeight);
+    const r1 = Math.min(startRow, endRow);
+    const r2 = Math.max(startRow, endRow);
+    for (const note of this.melody) {
+      const noteRow = this.midiToRow(note.note.midi);
+      if (noteRow < r1 || noteRow > r2) continue;
+      const noteX1 = note.startBeat * this.beatWidth;
+      const noteX2 = (note.startBeat + note.duration) * this.beatWidth;
+      if (noteX2 < x1 || noteX1 > x2) continue;
+      if (note.id !== undefined) {
+        this.selectedNoteIds.add(note.id);
+      }
+    }
+    const first = this.melody.find((n) => n.id !== undefined && this.selectedNoteIds.has(n.id)) ?? null;
+    this.onNoteSelect?.(first);
   }
 
   private onRightClick(e: MouseEvent): void {
@@ -1205,28 +1303,41 @@ export class PianoRollEditor {
       e.preventDefault();
       if (this.redo()) return;
     }
+    // Select all: Ctrl+A
+    if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+      e.preventDefault();
+      this.selectedNoteIds.clear();
+      for (const note of this.melody) {
+        if (note.id !== undefined) this.selectedNoteIds.add(note.id);
+      }
+      const first = this.melody.find((n) => n.id !== undefined) ?? null;
+      this.onNoteSelect?.(first);
+      this.draw();
+      return;
+    }
     if (e.key === 'Delete' || e.key === 'Backspace') {
-      if (this.selectedNoteId !== null) {
-        const note = this.melody.find((n) => (n.id ?? 0) === this.selectedNoteId);
-        if (note) {
-          this.eraseNote(note);
-          this.selectedNoteId = null;
-          this.onNoteSelect?.(null);
-          this.draw();
+      if (this.selectedNoteIds.size > 0) {
+        this.pushHistory();
+        for (const noteId of this.selectedNoteIds) {
+          const note = this.melody.find((n) => (n.id ?? 0) === noteId);
+          if (note) this.eraseNoteInternal(note);
         }
+        this.selectedNoteIds.clear();
+        this.onNoteSelect?.(null);
+        this.draw();
       }
     } else if (e.key === 'Escape') {
-      this.selectedNoteId = null;
+      this.selectedNoteIds.clear();
       this.onNoteSelect?.(null);
       this.draw();
     } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
       e.preventDefault();
-      // Navigate to next/prev note in melody
       const sortedNotes = [...this.melody].sort((a, b) => a.startBeat - b.startBeat);
       if (sortedNotes.length === 0) return;
 
-      const currentIdx = this.selectedNoteId !== null
-        ? sortedNotes.findIndex((n) => (n.id ?? 0) === this.selectedNoteId)
+      const firstSelectedId = [...this.selectedNoteIds][0] ?? -1;
+      const currentIdx = this.selectedNoteIds.size > 0
+        ? sortedNotes.findIndex((n) => (n.id ?? 0) === firstSelectedId)
         : -1;
 
       let newIdx: number;
@@ -1236,21 +1347,23 @@ export class PianoRollEditor {
         newIdx = currentIdx >= sortedNotes.length - 1 ? 0 : currentIdx + 1;
       }
       const noteToSelect = sortedNotes[newIdx];
-      this.selectedNoteId = noteToSelect.id ?? null;
+      this.selectedNoteIds.clear();
+      this.selectedNoteIds.add(noteToSelect.id ?? 0);
       this.onNoteSelect?.(noteToSelect);
       this.draw();
     } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
       e.preventDefault();
-      // Move selected note by half beat
-      if (this.selectedNoteId !== null) {
-        const note = this.melody.find((n) => (n.id ?? 0) === this.selectedNoteId);
-        if (note) {
-          this.pushHistory();
-          const delta = e.key === 'ArrowLeft' ? -0.5 : 0.5;
-          note.startBeat = Math.max(0, note.startBeat + delta);
-          this.emitMelodyChange();
-          this.draw();
+      if (this.selectedNoteIds.size > 0) {
+        this.pushHistory();
+        const delta = e.key === 'ArrowLeft' ? -0.5 : 0.5;
+        for (const noteId of this.selectedNoteIds) {
+          const note = this.melody.find((n) => (n.id ?? 0) === noteId);
+          if (note) {
+            note.startBeat = Math.max(0, note.startBeat + delta);
+          }
         }
+        this.emitMelodyChange();
+        this.draw();
       }
     }
   }
@@ -1289,7 +1402,7 @@ export class PianoRollEditor {
     }
 
     this.melody.push(item);
-    this.selectedNoteId = id;
+    this.selectedNoteIds.add(id);
     this.onNoteSelect?.(item);
     this.emitMelodyChange();
     this.draw();
@@ -1309,12 +1422,27 @@ export class PianoRollEditor {
     const idx = this.melody.indexOf(note);
     if (idx !== -1) {
       this.melody.splice(idx, 1);
-      if (this.selectedNoteId === note.id) {
-        this.selectedNoteId = null;
-        this.onNoteSelect?.(null);
+      if (this.selectedNoteIds.has(noteId)) {
+        this.selectedNoteIds.delete(noteId);
       }
       this.emitMelodyChange();
       this.draw();
+    }
+  }
+
+  /** Internal erase — no history push, no selection clear (caller handles both) */
+  private eraseNoteInternal(note: MelodyItem): void {
+    const noteId = note.id;
+    if (noteId === undefined) return;
+    for (const n of this.melody) {
+      if (n.linkedTo) {
+        const idx = n.linkedTo.indexOf(noteId);
+        if (idx !== -1) n.linkedTo.splice(idx, 1);
+      }
+    }
+    const idx = this.melody.indexOf(note);
+    if (idx !== -1) {
+      this.melody.splice(idx, 1);
     }
   }
 
@@ -1703,6 +1831,22 @@ export class PianoRollEditor {
     // Note blocks
     this.drawNoteConnections(ctx);
     this.drawNoteBlocks(ctx, false);
+
+    // Box selection rectangle
+    if (this.isBoxSelecting) {
+      const bx = Math.min(this.boxStartX, this.boxEndX);
+      const by = Math.min(this.boxStartY, this.boxEndY);
+      const bw = Math.abs(this.boxEndX - this.boxStartX);
+      const bh = Math.abs(this.boxEndY - this.boxStartY);
+      ctx.save();
+      ctx.fillStyle = 'rgba(88, 166, 255, 0.1)';
+      ctx.fillRect(bx, by, bw, bh);
+      ctx.strokeStyle = 'rgba(88, 166, 255, 0.5)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 3]);
+      ctx.strokeRect(bx, by, bw, bh);
+      ctx.restore();
+    }
   }
 
   private drawGridWithPlayhead(): void {
@@ -1838,7 +1982,7 @@ export class PianoRollEditor {
 
       if (w < 2) continue;
 
-      const isSelected = note.id === this.selectedNoteId;
+      const isSelected = note.id !== undefined && this.selectedNoteIds.has(note.id);
       const isActive = highlightActive && this.activeBeat >= note.startBeat && this.activeBeat < note.startBeat + note.duration;
       const cornerRadius = 4;
 
@@ -2023,33 +2167,26 @@ export class PianoRollEditor {
   // ============================================================
 
   private _getSelectedNotes(): MelodyItem[] {
-    if (this.selectedNoteId === null) return [];
-    return this.melody.filter((n) => n.id === this.selectedNoteId);
+    if (this.selectedNoteIds.size === 0) return [];
+    return this.melody.filter((n) => n.id !== undefined && this.selectedNoteIds.has(n.id));
   }
 
   private _applyEffect(type: EffectType): void {
-    if (this.selectedNoteId === null) return;
-    const note = this.melody.find((n) => n.id === this.selectedNoteId);
-    if (!note) return;
+    const selected = this._getSelectedNotes();
+    if (selected.length === 0) return;
 
     this.pushHistory();
 
     if (type === 'vibrato') {
-      // Apply vibrato to selected notes (if multiple selected)
-      const selected = this._getSelectedNotes();
-      if (selected.length > 1) {
-        selected.forEach((n: MelodyItem) => {
-          n.effectType = 'vibrato';
-          n.linkedTo = [];
-        });
-      } else {
-        // Single note vibrato
-        note.effectType = 'vibrato';
-        note.linkedTo = [];
-      }
+      // Apply vibrato to all selected notes
+      selected.forEach((n: MelodyItem) => {
+        n.effectType = 'vibrato';
+        n.linkedTo = [];
+      });
+      this.emitMelodyChange();
+      this.draw();
     } else {
       // Slides and ease need 2 selected notes
-      const selected = this._getSelectedNotes();
       if (selected.length !== 2) {
         window.alert('Slides require exactly 2 notes selected (order by time). Vibrato works on 1 or more notes.');
         return;
@@ -2078,10 +2215,9 @@ export class PianoRollEditor {
       first.effectType = type;
       first.linkedTo = [second.id!];
       first.duration = Math.max(first.duration, second.startBeat - first.startBeat + 0.5);
+      this.emitMelodyChange();
+      this.draw();
     }
-
-    this.draw();
-    this.onMelodyChange?.(this.melody);
   }
 
   // ============================================================
