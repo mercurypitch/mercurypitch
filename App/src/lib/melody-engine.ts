@@ -122,6 +122,12 @@ export class MelodyEngine {
     return this.countInBeat;
   }
 
+  /** Returns the performance.now() timestamp when playback started (count-in adjusted).
+   *  Used by the piano roll editor to sync its animation timeline. */
+  getPlayStartTime(): number {
+    return this.playStartTime;
+  }
+
   // ── Playback ──────────────────────────────────────────────
 
   start(countInBeats = 0): void {

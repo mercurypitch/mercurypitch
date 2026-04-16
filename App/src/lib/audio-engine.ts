@@ -144,7 +144,12 @@ export class AudioEngine {
       await this.init();
       await this.resume();
 
-      if (this.isRecording) return true;
+      if (this.isRecording) {
+        console.log('[AudioEngine] Mic already active, returning true');
+        return true;
+      }
+
+      console.log('[AudioEngine] Requesting microphone access...');
 
       this.micStream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -155,7 +160,10 @@ export class AudioEngine {
       });
 
       const ctx = this.audioCtx;
-      if (!ctx || !this.analyser) return false;
+      if (!ctx || !this.analyser) {
+        console.error('[AudioEngine] AudioContext or analyser not available');
+        return false;
+      }
 
       // Connect mic stream to shared analyser (mirrors old JS behavior)
       this.micSource = ctx.createMediaStreamSource(this.micStream);
@@ -166,14 +174,22 @@ export class AudioEngine {
       this.micGain.connect(this.analyser);
 
       this.isRecording = true;
+      console.log('[AudioEngine] Microphone started successfully');
       return true;
-    } catch {
+    } catch (err) {
+      console.error('[AudioEngine] Microphone access denied:', err);
       return false;
     }
   }
 
   stopMic(): void {
+    if (!this.isRecording) {
+      console.log('[AudioEngine] Mic already stopped');
+      return;
+    }
+
     this.isRecording = false;
+    console.log('[AudioEngine] Stopping microphone...');
 
     // Disconnect mic chain but keep analyser for visualization
     if (this.micSource) {
@@ -188,6 +204,7 @@ export class AudioEngine {
       this.micStream.getTracks().forEach((track) => track.stop());
       this.micStream = null;
     }
+    console.log('[AudioEngine] Microphone stopped');
     // Note: analyser stays active for visualization
   }
 

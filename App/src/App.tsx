@@ -282,6 +282,7 @@ export const App: Component<AppProps> = (props) => {
         setLiveScore(practiceEngine.calculateScore(allResults));
       },
       onMicStateChange: (active, error) => {
+        console.log('[App] Mic state changed:', active ? 'ACTIVE' : 'INACTIVE', error ? 'Error: ' + error : '');
         appStore.setMicActive(active);
         if (error) {
           appStore.setMicError(error);

@@ -216,8 +216,11 @@ export class PianoRollEditor {
   private playStartTime = 0;
   private pauseStartTime = 0;
   private activeBeat = 0;
+  private startedNoteIds = new Set<number>();
   private isSeeking = false;
   private seekStartX = 0;
+  // Track whether playback was started externally (Practice tab) vs internally (Editor tab)
+  private externalPlayback = false;
 
   // Interaction
   private selectedNoteId: number | null = null;
@@ -433,8 +436,62 @@ export class PianoRollEditor {
     this.drawWithPlayhead();
   }
 
-  setPlaybackState(state: PlaybackState): void {
+  /** Called by App to sync the editor's playhead animation to the melody engine's timeline.
+   *  When Practice tab playback is active, this ensures the editor's playhead moves
+   *  in lockstep with the melody engine. */
+  syncPlayhead(melodyEngineStartTime: number): void {
+    if (this.playbackState !== 'playing') return;
+    // Update playStartTime so the animation loop computes the same beat as the melody engine
+    this.playStartTime = melodyEngineStartTime;
+  }
+
+  setPlaybackState(state: PlaybackState, playStartTime?: number): void {
+    const wasStopped = this.playbackState === 'stopped';
     this.playbackState = state;
+
+    if (state === 'playing' && wasStopped) {
+      // External start (from Practice tab) — reset animation and begin
+      // Use the provided playStartTime for proper sync with melody engine timing.
+      // If not provided (editor tab Start button), use local time.
+      this.externalPlayback = playStartTime !== undefined;
+      this.playStartTime = playStartTime ?? performance.now();
+      this.pauseStartTime = 0;
+      this.startedNoteIds.clear();
+      this.activeBeat = 0;
+      this.startAnimation();
+
+      const playBtn = this.container.querySelector('#roll-play-btn') as HTMLButtonElement;
+      const playIcon = this.container.querySelector('#roll-play-icon') as SVGElement;
+      const pauseIcon = this.container.querySelector('#roll-pause-icon') as SVGElement;
+      const resetBtn = this.container.querySelector('#roll-reset-btn') as HTMLButtonElement;
+      if (playBtn && playIcon && pauseIcon && resetBtn) {
+        playIcon.style.display = 'none';
+        pauseIcon.style.display = 'block';
+        playBtn.querySelector('span')!.textContent = 'Pause';
+        resetBtn.disabled = false;
+      }
+    } else if (state === 'paused') {
+      if (this.playAnimationId !== null) {
+        cancelAnimationFrame(this.playAnimationId);
+        this.playAnimationId = null;
+      }
+      const win = window as Window & { pianoRollAudioEngine?: { stopAllNotes: () => void } };
+      if (win.pianoRollAudioEngine) {
+        win.pianoRollAudioEngine.stopAllNotes();
+      }
+
+      const playBtn = this.container.querySelector('#roll-play-btn') as HTMLButtonElement;
+      const playIcon = this.container.querySelector('#roll-play-icon') as SVGElement;
+      const pauseIcon = this.container.querySelector('#roll-pause-icon') as SVGElement;
+      if (playBtn && playIcon && pauseIcon) {
+        playIcon.style.display = 'block';
+        pauseIcon.style.display = 'none';
+        playBtn.querySelector('span')!.textContent = 'Continue';
+      }
+    } else if (state === 'stopped') {
+      this.externalPlayback = false;
+      this.resetPlayback();
+    }
   }
 
   addBeats(count: number): void {
@@ -1298,6 +1355,7 @@ export class PianoRollEditor {
       this.playbackState = 'playing';
       this.playStartTime = performance.now();
       this.pauseStartTime = 0;
+      this.startedNoteIds.clear();
       this.startAnimation();
 
       playIcon.style.display = 'none';
@@ -1357,6 +1415,7 @@ export class PianoRollEditor {
     resetBtn.disabled = true;
 
     this.activeBeat = 0;
+    this.startedNoteIds.clear();
     this.gridContainer!.scrollLeft = 0;
     this.draw();
   }
@@ -1366,6 +1425,9 @@ export class PianoRollEditor {
     const animate = () => {
       if (self.playbackState !== 'playing') return;
 
+      // When in external playback (Practice tab), syncPlayhead() keeps playStartTime
+      // in sync with the melody engine's timeline, so the formula below correctly
+      // computes the current beat. In internal playback (Editor tab), we self-advance.
       const elapsed = performance.now() - self.playStartTime;
       self.activeBeat = (elapsed / 60000) * self.bpm;
 
@@ -1379,25 +1441,34 @@ export class PianoRollEditor {
 
       self.drawWithPlayhead();
 
-      // Play tones for notes that start at current beat
-      const win = window as Window & { pianoRollAudioEngine?: { playNote: (freq: number, durationMs: number, effectType?: string) => void } };
-      if (win.pianoRollAudioEngine) {
-        const sortedNotes = [...self.melody].sort((a, b) => a.startBeat - b.startBeat);
+      // Play tones for notes that start at current beat (one-shot trigger per note)
+      const win = window as Window & { pianoRollAudioEngine?: { playNote: (freq: number, durationMs: number, effectType?: string) => number | undefined } };
+      if (win.pianoRollAudioEngine && self.melody.length > 0) {
         const durationMs = self.beatWidth * (60000 / self.bpm);
-        for (const note of sortedNotes) {
-          if (Math.abs(note.startBeat - self.activeBeat) < 0.05) {
-            const freq = note.note.freq;
-            win.pianoRollAudioEngine.playNote(freq, note.duration * durationMs, note.effectType);
+        for (const note of self.melody) {
+          const noteId = note.id ?? -1;
+          // One-shot: trigger exactly once when activeBeat crosses the note's start beat.
+          // We use the fraction of the beat to detect the moment of crossing — when
+          // the fraction transitions from near 1 (approaching from below) to near 0.
+          // Guard: only trigger when activeBeat is within 0.02 beats of the start and the
+          // note has not been started yet.
+          if (!self.startedNoteIds.has(noteId) &&
+              Math.abs(self.activeBeat - note.startBeat) < 0.02 &&
+              note.startBeat <= self.activeBeat) {
+            self.startedNoteIds.add(noteId);
+            win.pianoRollAudioEngine.playNote(note.note.freq, note.duration * durationMs, note.effectType);
           }
         }
       }
 
       // Check if playback is done
-      const sortedNotes = [...self.melody].sort((a, b) => a.startBeat - b.startBeat);
-      const lastNote = sortedNotes[sortedNotes.length - 1];
-      if (self.activeBeat >= lastNote.startBeat + lastNote.duration) {
-        self.resetPlayback();
-        return;
+      if (self.melody.length > 0) {
+        const sortedNotes = [...self.melody].sort((a, b) => a.startBeat - b.startBeat);
+        const lastNote = sortedNotes[sortedNotes.length - 1];
+        if (self.activeBeat >= lastNote.startBeat + lastNote.duration) {
+          self.resetPlayback();
+          return;
+        }
       }
 
       self.playAnimationId = requestAnimationFrame(animate);
@@ -1630,6 +1701,7 @@ export class PianoRollEditor {
     }
 
     // Note blocks
+    this.drawNoteConnections(ctx);
     this.drawNoteBlocks(ctx, false);
   }
 
@@ -1673,21 +1745,84 @@ export class PianoRollEditor {
       ctx.stroke();
     }
 
+    // Note connection lines (below note blocks)
+    this.drawNoteConnections(ctx);
+
     // Note blocks with active highlight
     this.drawNoteBlocks(ctx, true);
 
-    // Playhead line
-    const playheadX = this.activeBeat * this.beatWidth;
-    ctx.save();
-    ctx.strokeStyle = '#58a6ff';
-    ctx.lineWidth = 2;
-    ctx.shadowColor = 'rgba(88, 166, 255, 0.5)';
-    ctx.shadowBlur = 4;
-    ctx.beginPath();
-    ctx.moveTo(playheadX, 0);
-    ctx.lineTo(playheadX, totalHeight);
-    ctx.stroke();
-    ctx.restore();
+    // Playhead line — only draw when activeBeat is non-negative (not during count-in)
+    if (this.activeBeat >= 0) {
+      const playheadX = this.activeBeat * this.beatWidth;
+      ctx.save();
+      ctx.strokeStyle = '#58a6ff';
+      ctx.lineWidth = 2;
+      ctx.shadowColor = 'rgba(88, 166, 255, 0.5)';
+      ctx.shadowBlur = 4;
+      ctx.beginPath();
+      ctx.moveTo(playheadX, 0);
+      ctx.lineTo(playheadX, totalHeight);
+      ctx.stroke();
+      ctx.restore();
+
+      // Also draw ruler with playhead triangle
+      this.drawRulerWithPlayhead();
+    } else {
+      // During count-in, draw the regular ruler without playhead
+      this.drawRuler();
+    }
+  }
+
+  /** Draw connection lines between linked notes (slides/ease effects) */
+  private drawNoteConnections(ctx: CanvasRenderingContext2D): void {
+    for (const note of this.melody) {
+      if (!note.linkedTo || note.linkedTo.length === 0) continue;
+
+      const fromX = note.startBeat * this.beatWidth;
+      const fromRow = this.midiToRow(note.note.midi);
+      const fromY = fromRow * this.rowHeight + this.rowHeight / 2;
+      const fromW = note.duration * this.beatWidth;
+
+      for (const targetId of note.linkedTo) {
+        const target = this.melody.find((n) => n.id === targetId);
+        if (!target) continue;
+
+        const toX = target.startBeat * this.beatWidth;
+        const toRow = this.midiToRow(target.note.midi);
+        const toY = toRow * this.rowHeight + this.rowHeight / 2;
+        const toW = target.duration * this.beatWidth;
+
+        const startX = fromX + fromW;
+        const startY = fromY;
+        const endX = toX;
+        const endY = toY;
+
+        ctx.save();
+        ctx.strokeStyle = 'rgba(255, 180, 50, 0.7)';
+        ctx.lineWidth = 3;
+
+        if (note.effectType === 'slide-up' || note.effectType === 'slide-down') {
+          ctx.beginPath();
+          ctx.moveTo(startX, startY);
+          ctx.lineTo(endX, endY);
+          ctx.stroke();
+        } else if (note.effectType === 'ease-in') {
+          const ctrlX = (startX + endX) / 2;
+          ctx.beginPath();
+          ctx.moveTo(startX, startY);
+          ctx.quadraticCurveTo(ctrlX, endY, endX, endY);
+          ctx.stroke();
+        } else if (note.effectType === 'ease-out') {
+          const ctrlX = (startX + endX) / 2;
+          ctx.beginPath();
+          ctx.moveTo(startX, startY);
+          ctx.quadraticCurveTo(ctrlX, startY, endX, endY);
+          ctx.stroke();
+        }
+
+        ctx.restore();
+      }
+    }
   }
 
   private drawNoteBlocks(ctx: CanvasRenderingContext2D, highlightActive: boolean): void {
