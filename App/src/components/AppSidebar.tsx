@@ -128,22 +128,6 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
         />
       </div>
 
-      {/* Note list + pitch reference — Practice tab only */}
-      <Show when={appStore.activeTab() === 'practice'}>
-        <div class="sidebar-section sidebar-notes">
-          <NoteList
-            melody={props.melody}
-            currentNoteIndex={props.currentNoteIndex}
-            noteResults={props.noteResults}
-            isPlaying={props.isPlaying}
-          />
-          <PitchDisplay
-            pitch={props.pitch}
-            targetNote={props.targetNoteName}
-          />
-        </div>
-      </Show>
-
       {/* Stats panel — Practice tab only */}
       <Show when={appStore.activeTab() === 'practice'}>
         <div class="sidebar-section">
@@ -181,6 +165,22 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
               <span id="score-value" class="live-score-value">--</span>
             </div>
           </div>
+        </div>
+      </Show>
+
+      {/* Note list + pitch reference — Practice tab only (bottom-anchored) */}
+      <Show when={appStore.activeTab() === 'practice'}>
+        <div class="sidebar-section sidebar-notes-bottom">
+          <NoteList
+            melody={props.melody}
+            currentNoteIndex={props.currentNoteIndex}
+            noteResults={props.noteResults}
+            isPlaying={props.isPlaying}
+          />
+          <PitchDisplay
+            pitch={props.pitch}
+            targetNote={props.targetNoteName}
+          />
         </div>
       </Show>
     </aside>

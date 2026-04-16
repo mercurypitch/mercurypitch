@@ -103,6 +103,13 @@ header h1 {
     gap: 6px;
 }
 
+/* Bottom-anchored sections in sidebar */
+.sidebar-section.sidebar-notes-bottom {
+    margin-top: auto;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+}
+
 /* ===== Shared Header Bar ===== */
 .app-header-bar {
     display: flex;
@@ -118,8 +125,8 @@ header h1 {
     flex-shrink: 0;
 }
 
-/* ===== Practice Tab Header ===== */
-.tab-header-bar {
+/* ===== Practice Tab Header (second header bar) ===== */
+.practice-header-bar {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -130,7 +137,7 @@ header h1 {
     flex-shrink: 0;
 }
 
-#mode-group {
+.mode-group {
     display: flex;
     gap: 4px;
 }

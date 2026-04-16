@@ -17,7 +17,6 @@ import { PitchCanvas } from '@/components/PitchCanvas';
 import { SettingsPanel } from '@/components/SettingsPanel';
 import { loadFromURL, hasSharedPresetInURL } from '@/lib/share-url';
 import { AppSidebar } from '@/components/AppSidebar';
-import { AppHeader } from '@/components/AppHeader';
 import { PracticeTabHeader } from '@/components/PracticeTabHeader';
 import type { PresetData } from '@/stores/app-store';
 import { HistoryCanvas } from '@/components/HistoryCanvas';
@@ -581,23 +580,6 @@ export const App: Component<AppProps> = (props) => {
             Settings
           </button>
         </nav>
-        {/* Shared header controls */}
-        <AppHeader
-          isPlaying={isPlaying}
-          isPaused={isPaused}
-          metronomeEnabled={metronomeEnabled}
-          volume={savedVol}
-          onPlay={handlePlay}
-          onPause={handlePause}
-          onResume={handleResume}
-          onStop={handleReset}
-          onMetronomeToggle={() => setMetronomeEnabled(!metronomeEnabled())}
-          onSpeedChange={(speed) => melodyEngine?.setPlaybackSpeed(speed)}
-          onVolumeChange={(vol) => {
-            setSavedVol(vol);
-            audioEngine?.setVolume(vol / 100);
-          }}
-        />
       </header>
 
       {/* Main layout: sidebar + content */}
@@ -624,7 +606,7 @@ export const App: Component<AppProps> = (props) => {
         <div class="main-content">
           {/* Practice tab */}
           <Show when={appStore.activeTab() === 'practice'}>
-            {/* Practice-specific header: mic + mode toggles */}
+            {/* Practice-specific header: mic + mode toggles + playback controls */}
             <PracticeTabHeader
               isPlaying={isPlaying}
               isPaused={isPaused}
@@ -633,9 +615,21 @@ export const App: Component<AppProps> = (props) => {
               currentCycle={currentCycle}
               isCountingIn={isCountingIn}
               countInBeat={countInBeat}
+              metronomeEnabled={metronomeEnabled}
+              volume={savedVol}
               onMicToggle={handleMicToggle}
               onPlayModeChange={setPlayMode}
               onCyclesChange={setPracticeCycles}
+              onPlay={handlePlay}
+              onPause={handlePause}
+              onResume={handleResume}
+              onStop={handleReset}
+              onMetronomeToggle={() => setMetronomeEnabled(!metronomeEnabled())}
+              onSpeedChange={(speed) => melodyEngine?.setPlaybackSpeed(speed)}
+              onVolumeChange={(vol) => {
+                setSavedVol(vol);
+                audioEngine?.setVolume(vol / 100);
+              }}
             />
 
             {/* Canvas */}
