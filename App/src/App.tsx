@@ -301,6 +301,14 @@ export const App: Component<AppProps> = (props) => {
       }
     });
 
+    // Sync playback speed to MelodyEngine when it changes
+    createEffect(() => {
+      const speed = appStore.playbackSpeed();
+      if (melodyEngine) {
+        melodyEngine.setPlaybackSpeed(speed);
+      }
+    });
+
     // Link practice callbacks
     practiceEngine.setCallbacks({
       onPitchDetected: (pitch) => {

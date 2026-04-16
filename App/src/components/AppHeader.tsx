@@ -136,10 +136,11 @@ export const AppHeader: Component<AppHeaderProps> = (props) => {
         <label class="opt-label">Speed:</label>
         <select
           id="speed-select"
-          value="1"
+          value={appStore.playbackSpeed()}
           class="speed-select"
           onChange={(e) => {
             const speed = parseFloat(e.currentTarget.value);
+            appStore.setPlaybackSpeed(speed);
             props.onSpeedChange?.(speed);
           }}
         >

@@ -349,6 +349,34 @@ export function setRelease(value: number): void {
   });
 }
 
+// ── Playback Speed ──────────────────────────────────────────
+
+const PLAYBACK_SPEED_KEY = 'pitchperfect_playback_speed';
+const [playbackSpeed, setPlaybackSpeedSignal] = createSignal<number>(1.0);
+
+function loadPlaybackSpeed(): number {
+  try {
+    const stored = localStorage.getItem(PLAYBACK_SPEED_KEY);
+    if (stored) {
+      const speed = parseFloat(stored);
+      if (!isNaN(speed) && speed >= 0.25 && speed <= 2.0) return speed;
+    }
+  } catch {}
+  return 1.0;
+}
+
+export function initPlaybackSpeed(): void {
+  setPlaybackSpeedSignal(loadPlaybackSpeed());
+}
+
+export function setPlaybackSpeed(speed: number): void {
+  const clamped = Math.max(0.25, Math.min(2.0, speed));
+  setPlaybackSpeedSignal(clamped);
+  try {
+    localStorage.setItem(PLAYBACK_SPEED_KEY, String(clamped));
+  } catch {}
+}
+
 // ── Notifications ────────────────────────────────────────────
 
 interface Notification {
@@ -521,4 +549,9 @@ export const appStore = {
   setDecay,
   setSustain,
   setRelease,
+
+  // Playback Speed
+  playbackSpeed,
+  initPlaybackSpeed,
+  setPlaybackSpeed,
 };
