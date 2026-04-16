@@ -14,6 +14,7 @@ export class AudioEngine {
   private micSource: MediaStreamAudioSourceNode | null = null;
   // Shared analyser used for both mic input and pitch detection (mirrors old JS behavior)
   private analyser: AnalyserNode | null = null;
+  private playbackAnalyser: AnalyserNode | null = null;
   private micGain: GainNode | null = null;
   // Legacy aliases for compatibility
   private micAnalyser: AnalyserNode | null = null;
@@ -27,6 +28,7 @@ export class AudioEngine {
   private bufferSize = 2048;
   private _frequencyData = new Float32Array(0);
   private _timeData = new Float32Array(0);
+  private _playbackTimeData = new Float32Array(0);
   private _activeVoices = new Map<number, { oscillators: OscillatorNode[]; gains: GainNode[]; stopTime: number; lfos?: OscillatorNode[]; lfoGains?: GainNode[] }>();
 
   // ============================================================
@@ -37,9 +39,14 @@ export class AudioEngine {
     if (this.audioCtx) return;
 
     this.audioCtx = new AudioContext();
+    // Playback analyser for pitch track visualization (mirrors old JS)
+    this.playbackAnalyser = this.audioCtx.createAnalyser();
+    this.playbackAnalyser.fftSize = this.bufferSize * 2;
+    this.playbackAnalyser.smoothingTimeConstant = 0.0;
+    this.playbackAnalyser.connect(this.audioCtx.destination);
     this.masterGain = this.audioCtx.createGain();
     this.masterGain.gain.value = this.volume;
-    this.masterGain.connect(this.audioCtx.destination);
+    this.masterGain.connect(this.playbackAnalyser);
 
     // Create shared analyser for mic input and pitch detection (mirrors old JS)
     this.analyser = this.audioCtx.createAnalyser();
@@ -52,6 +59,7 @@ export class AudioEngine {
     if (this._frequencyData.length === 0) {
       this._frequencyData = new Float32Array(this.analyser.frequencyBinCount);
       this._timeData = new Float32Array(this.analyser.frequencyBinCount);
+      this._playbackTimeData = new Float32Array(this.playbackAnalyser.frequencyBinCount);
     }
   }
 
@@ -226,6 +234,14 @@ export class AudioEngine {
       this.micAnalyser.getFloatTimeDomainData(this._timeData);
     }
     return this._timeData;
+  }
+
+  /** Get playback time-domain buffer for pitch track visualization */
+  getPlaybackTimeData(): Float32Array {
+    if (this.playbackAnalyser) {
+      this.playbackAnalyser.getFloatTimeDomainData(this._playbackTimeData);
+    }
+    return this._playbackTimeData;
   }
 
   // ============================================================
