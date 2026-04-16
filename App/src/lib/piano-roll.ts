@@ -1353,6 +1353,20 @@ export class PianoRollEditor {
         const first = this.melody.find((n) => n.id !== undefined && this.selectedNoteIds.has(n.id));
         this.onNoteSelect?.(first ?? null);
       } else {
+        // Box select on empty space
+        this.isBoxSelecting = true;
+        this.boxStartX = x;
+        this.boxStartY = y;
+        this.boxEndX = x;
+        this.boxEndY = y;
+        this.isDragging = true;
+        this.dragStartX = x;
+        this.dragStartY = y;
+        this.dragStartBeat = this.snapToGrid
+          ? Math.floor(beat) + (beat % 1 >= 0.5 ? 0.5 : 0)
+          : beat;
+        this.dragStartRow = row;
+        // Clear existing selection unless Shift is held (additive box select)
         if (!e.shiftKey) {
           this.selectedNoteIds.clear();
           this.onNoteSelect?.(null);
