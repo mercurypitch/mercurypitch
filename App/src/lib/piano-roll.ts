@@ -4,6 +4,7 @@
 
 import type { MelodyItem, ScaleDegree, PianoRollConfig, NoteName } from '@/types';
 import type { InstrumentType } from '@/lib/audio-engine';
+import { PitchDetector } from '@/lib/pitch-detector';
 
 export const PIANO_ROLL_CONFIG: PianoRollConfig = {
   rowHeight: 22,
@@ -202,6 +203,9 @@ export class PianoRollEditor {
   private hintEl: HTMLElement | null = null;
   private timelineInfoEl: HTMLElement | null = null;
   private beatInfoEl: HTMLElement | null = null;
+  private pitchTrackCanvas: HTMLCanvasElement | null = null;
+  private pitchTrackVisible = false;
+  private pitchDetector: PitchDetector | null = null;
 
   // Dimensions
   private readonly config = PIANO_ROLL_CONFIG;
@@ -685,6 +689,164 @@ export class PianoRollEditor {
     this.timelineInfoEl.textContent = `Bar ${currentBar}/${totalBars} | Beat ${currentBeat}`;
   }
 
+  // ============================================================
+  // Pitch Track
+  // ============================================================
+
+  private _togglePitchTrack(): void {
+    this.pitchTrackVisible = !this.pitchTrackVisible;
+    const btn = this.container.querySelector('#roll-pitch-track-btn');
+    if (btn) {
+      btn.classList.toggle('active', this.pitchTrackVisible);
+    }
+    if (this.pitchTrackCanvas) {
+      this.pitchTrackCanvas.style.display = this.pitchTrackVisible ? 'block' : 'none';
+    }
+    if (this.pitchTrackVisible) {
+      this._initPitchTrack();
+    }
+  }
+
+  private _initPitchTrack(): void {
+    if (!this.pitchTrackCanvas) return;
+
+    const win = window as Window & {
+      pianoRollAudioEngine?: {
+        init?: () => Promise<void>;
+        getPlaybackTimeData?: () => Float32Array;
+      };
+    };
+
+    if (win.pianoRollAudioEngine) {
+      const engine = win.pianoRollAudioEngine;
+      if (engine.init) {
+        engine.init().then(() => {
+          if (!this.pitchDetector) {
+            this.pitchDetector = new PitchDetector({
+              sampleRate: 44100,
+              bufferSize: 2048,
+              threshold: 0.10,
+              sensitivity: 5,
+            });
+          }
+          this._resizePitchTrackCanvas();
+        });
+      } else {
+        if (!this.pitchDetector) {
+          this.pitchDetector = new PitchDetector({
+            sampleRate: 44100,
+            bufferSize: 2048,
+            threshold: 0.10,
+            sensitivity: 5,
+          });
+        }
+        this._resizePitchTrackCanvas();
+      }
+    } else {
+      if (!this.pitchDetector) {
+        this.pitchDetector = new PitchDetector({
+          sampleRate: 44100,
+          bufferSize: 2048,
+          threshold: 0.10,
+          sensitivity: 5,
+        });
+      }
+      this._resizePitchTrackCanvas();
+    }
+  }
+
+  private _resizePitchTrackCanvas(): void {
+    if (!this.pitchTrackCanvas) return;
+    const dpr = window.devicePixelRatio || 1;
+    const w = this.gridContainer?.clientWidth ?? 300;
+    const h = 80;
+    this.pitchTrackCanvas.width = w * dpr;
+    this.pitchTrackCanvas.height = h * dpr;
+    this.pitchTrackCanvas.style.width = w + 'px';
+    this.pitchTrackCanvas.style.height = h + 'px';
+    // Draw empty state
+    const ctx = this.pitchTrackCanvas.getContext('2d');
+    if (ctx) {
+      ctx.scale(dpr, dpr);
+      ctx.fillStyle = '#0d1117';
+      ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = 'rgba(88, 166, 255, 0.3)';
+      ctx.font = '11px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('Pitch Track — press Play to start', w / 2, h / 2 + 4);
+    }
+  }
+
+  private _updatePitchTrack(): void {
+    if (!this.pitchTrackCanvas || !this.pitchDetector) return;
+
+    const win = window as Window & {
+      pianoRollAudioEngine?: {
+        getPlaybackTimeData?: () => Float32Array;
+      };
+    };
+
+    const engine = win.pianoRollAudioEngine;
+    if (!engine?.getPlaybackTimeData) return;
+
+    const timeData = engine.getPlaybackTimeData();
+    const result = this.pitchDetector.detect(timeData);
+
+    const ctx = this.pitchTrackCanvas.getContext('2d');
+    if (!ctx) return;
+
+    const w = this.pitchTrackCanvas.clientWidth;
+    const h = this.pitchTrackCanvas.clientHeight;
+
+    // Scroll left for rolling display
+    ctx.fillStyle = 'rgba(13, 17, 23, 0.15)';
+    ctx.fillRect(0, 0, w - 2, h);
+
+    // Draw center line
+    ctx.strokeStyle = 'rgba(88, 166, 255, 0.2)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, h / 2);
+    ctx.lineTo(w, h / 2);
+    ctx.stroke();
+
+    if (result.frequency > 0 && result.clarity > 0.5) {
+      // Map frequency to Y position (invert: higher freq = lower Y)
+      const minFreq = 65;
+      const maxFreq = 2100;
+      const y = h - ((Math.log(result.frequency) - Math.log(minFreq)) / (Math.log(maxFreq) - Math.log(minFreq))) * h;
+
+      // Draw a point at the current pitch
+      ctx.fillStyle = 'rgba(63, 185, 80, 0.9)';
+      ctx.beginPath();
+      ctx.arc(w - 2, y, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Draw the waveform across the canvas width (rolling)
+      const waveformData = engine.getPlaybackTimeData();
+      if (waveformData && waveformData.length > 0) {
+        ctx.beginPath();
+        ctx.moveTo(0, h / 2);
+        const step = Math.floor(waveformData.length / w);
+        for (let x = 0; x < w; x++) {
+          const sampleIdx = x * step;
+          const sample = waveformData[sampleIdx] || 0;
+          const waveY = (h / 2) + sample * h * 4;
+          ctx.lineTo(x, waveY);
+        }
+        ctx.strokeStyle = 'rgba(88, 166, 255, 0.6)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+
+      // Draw frequency label
+      ctx.fillStyle = '#58a6ff';
+      ctx.font = '10px monospace';
+      ctx.textAlign = 'right';
+      ctx.fillText(Math.round(result.frequency) + ' Hz', w - 4, 12);
+    }
+  }
+
   destroy(): void {
     if (this.playAnimationId !== null) {
       cancelAnimationFrame(this.playAnimationId);
@@ -816,6 +978,8 @@ export class PianoRollEditor {
           </select>
         </div>
         <div class="roll-sep"></div>
+        <button id="roll-pitch-track-btn" class="roll-pitch-track-btn" title="Toggle pitch track visualization">Pitch Track</button>
+        <div class="roll-sep"></div>
         <div class="roll-play-group">
           <button id="roll-play-btn" class="roll-play-btn" title="Start playback">
             <svg id="roll-play-icon" viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>
@@ -839,6 +1003,7 @@ export class PianoRollEditor {
           </div>
         </div>
       </div>
+      <canvas id="roll-pitch-track-canvas" class="roll-pitch-track" style="display:none"></canvas>
       <div class="roll-status">
         <span id="roll-note-info">Click on the grid to place notes</span>
         <span id="roll-timeline-info">Bar 1/${Math.ceil(this.totalBeats / PIANO_ROLL_CONFIG.beatsPerBar)} | Beat 1</span>
@@ -850,6 +1015,7 @@ export class PianoRollEditor {
     this.gridCanvas = this.container.querySelector('.roll-grid') as HTMLCanvasElement;
     this.rulerCanvas = this.container.querySelector('.roll-ruler') as HTMLCanvasElement;
     this.gridContainer = this.container.querySelector('.roll-grid-container') as HTMLElement;
+    this.pitchTrackCanvas = this.container.querySelector('#roll-pitch-track-canvas') as HTMLCanvasElement;
 
     this.pianoCtx = this.pianoCanvas.getContext('2d');
     this.gridCtx = this.gridCanvas.getContext('2d');
@@ -1003,6 +1169,9 @@ export class PianoRollEditor {
     window.addEventListener('resize', () => {
       this.buildCanvases();
       this.draw();
+      if (this.pitchTrackVisible) {
+        this._resizePitchTrackCanvas();
+      }
     });
 
     // Preset management
@@ -1066,6 +1235,11 @@ export class PianoRollEditor {
       const melody = this.getMelody();
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
       downloadMIDI(melody, this.bpm, `pitchperfect-${timestamp}.mid`);
+    });
+
+    // Pitch track toggle
+    container.querySelector('#roll-pitch-track-btn')?.addEventListener('click', () => {
+      this._togglePitchTrack();
     });
 
     // Bar controls
@@ -1647,6 +1821,11 @@ export class PianoRollEditor {
 
       // Update timeline info during playback
       self._updateTimelineInfo(self.activeBeat);
+
+      // Update pitch track visualization during playback
+      if (self.pitchTrackVisible) {
+        self._updatePitchTrack();
+      }
 
       // Check if playback is done
       if (self.melody.length > 0) {
