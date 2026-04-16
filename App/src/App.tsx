@@ -128,7 +128,8 @@ export const App: Component<AppProps> = (props) => {
   // ── Engine lifecycle ────────────────────────────────────────
 
   onMount(() => {
-    // Initialize presets from localStorage
+    // Initialize theme and settings from localStorage
+    appStore.initTheme();
     appStore.initPresets();
     appStore.initSessionHistory();
     appStore.initSettings();

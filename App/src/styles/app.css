@@ -36,6 +36,30 @@
     --note-active: #58a6ff;
 }
 
+/* Light theme overrides */
+[data-theme="light"] {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f6f8fa;
+    --bg-tertiary: #eaeef2;
+    --bg-card: #ffffff;
+    --border: #d0d7de;
+    --text-primary: #1f2328;
+    --text-secondary: #656d76;
+    --text-muted: #8c959f;
+    --accent: #0969da;
+    --accent-dim: rgba(9, 105, 218, 0.1);
+    --accent-glow: rgba(9, 105, 218, 0.2);
+    --green: #1a7f37;
+    --green-dim: rgba(26, 127, 55, 0.1);
+    --green-glow: rgba(26, 127, 55, 0.2);
+    --red: #cf222e;
+    --yellow: #9a6700;
+    --orange: #bc4c00;
+    --purple: #8250df;
+    --teal: #0a6460;
+    --note-active: #0969da;
+}
+
 html, body {
     height: 100%;
     font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -743,6 +767,36 @@ header h1 {
     text-align: right;
     color: var(--yellow);
     font-weight: 600;
+}
+
+/* ===== Theme Toggle ===== */
+.theme-toggle-btn {
+    padding: 6px 10px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.theme-toggle-btn.dark {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+}
+
+.theme-toggle-btn.dark:hover {
+    background: var(--accent-dim);
+    color: var(--accent);
+    border-color: var(--accent);
+}
+
+.theme-toggle-btn.light {
+    background: var(--accent-dim);
+    color: var(--accent);
+    border: 1px solid var(--accent);
+}
+
+.theme-toggle-btn.light:hover {
+    background: var(--accent);
+    color: white;
 }
 
 /* ===== Speed Select ===== */

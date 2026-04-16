@@ -13,6 +13,41 @@ const [scaleType, setScaleType] = createSignal<string>('major');
 const [bpm, setBpm] = createSignal<number>(120);
 const [isRecording, setIsRecording] = createSignal<boolean>(false);
 
+// ── Theme ────────────────────────────────────────────────────
+
+export type ThemeMode = 'dark' | 'light';
+
+const THEME_KEY = 'pitchperfect_theme';
+
+function loadThemeFromStorage(): ThemeMode {
+  try {
+    const stored = localStorage.getItem(THEME_KEY);
+    if (stored === 'light' || stored === 'dark') return stored;
+  } catch {}
+  return 'dark'; // default to dark
+}
+
+const [theme, setThemeInternal] = createSignal<ThemeMode>(loadThemeFromStorage());
+
+export function setTheme(mode: ThemeMode): void {
+  setThemeInternal(mode);
+  try {
+    localStorage.setItem(THEME_KEY, mode);
+  } catch {}
+  // Apply theme to document
+  document.documentElement.setAttribute('data-theme', mode);
+  window.dispatchEvent(new CustomEvent('pitchperfect:themeChange', { detail: { theme: mode } }));
+}
+
+export function toggleTheme(): void {
+  const next = theme() === 'dark' ? 'light' : 'dark';
+  setTheme(next);
+}
+
+export function initTheme(): void {
+  document.documentElement.setAttribute('data-theme', theme());
+}
+
 // ── Mic ──────────────────────────────────────────────────────
 
 const [micActive, setMicActive] = createSignal<boolean>(false);
@@ -400,4 +435,10 @@ export const appStore = {
   setMinAmplitude,
   setBand,
   getBandRating,
+
+  // Theme
+  theme,
+  setTheme,
+  toggleTheme,
+  initTheme,
 };
