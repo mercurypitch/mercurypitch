@@ -1269,6 +1269,37 @@ header h1 {
     .mode-btn { padding: 5px 8px; font-size: 0.72rem; }
     #run-indicator { display: none; }
     .app-header-bar { gap: 4px; }
+    .practice-header-bar {
+        padding: 5px 8px;
+        gap: 4px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        flex-wrap: nowrap;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+    .practice-header-bar::-webkit-scrollbar { display: none; }
+    .practice-header-bar .opt-label { font-size: 0.65rem; }
+    .practice-header-bar .ctrl-btn { padding: 4px 7px; font-size: 0.68rem; }
+    .mode-group { gap: 2px; }
+    .mode-btn { padding: 4px 7px; font-size: 0.68rem; }
+    .cycles-input { width: 44px; padding: 2px 5px; font-size: 0.68rem; }
+    .practice-sub-mode-select { font-size: 0.68rem; padding: 2px 5px; }
+    .countin-badge { font-size: 0.8rem; padding: 2px 6px; }
+    .tempo-group { flex-shrink: 0; }
+    .tempo-slider { width: 70px; }
+    #tempo-value { font-size: 0.65rem; min-width: 24px; }
+    .countin-group { flex-shrink: 0; }
+    .countin-select { font-size: 0.68rem; padding: 2px 5px; }
+    .volume-group { flex-shrink: 0; }
+    .volume-slider { width: 60px; }
+    #volume-value { font-size: 0.65rem; min-width: 20px; }
+    .speed-group { flex-shrink: 0; }
+    .speed-select { font-size: 0.68rem; padding: 2px 5px; }
+    .sensitivity-group { flex-shrink: 0; }
+    .sensitivity-slider { width: 60px; }
+    #sensitivity-value { font-size: 0.65rem; min-width: 14px; }
+    .app-header-sep { display: none; }
     /* Larger playhead triangle on mobile for visibility */
     #playhead::after {
         left: -9px;
@@ -1564,6 +1595,61 @@ header h1 {
 
 .roll-mode-select:focus {
     border-color: var(--accent);
+}
+
+/* Custom scale builder */
+.roll-custom-scale {
+    display: flex;
+    gap: 2px;
+    flex-wrap: wrap;
+    max-width: 200px;
+    padding: 4px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+}
+
+.scale-note-btn {
+    width: 24px;
+    height: 24px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    font-size: 0.6rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: all 0.1s ease;
+}
+
+.scale-note-btn:hover {
+    border-color: var(--accent);
+    color: var(--text-primary);
+}
+
+.scale-note-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #0d1117;
+    font-weight: 700;
+}
+
+.scale-note-btn.black {
+    background: rgba(0, 0, 0, 0.3);
+    color: var(--text-muted);
+}
+
+.scale-note-btn.black:hover {
+    background: rgba(0, 0, 0, 0.5);
+    color: var(--text-primary);
+}
+
+.scale-note-btn.black.active {
+    background: var(--accent);
+    color: #0d1117;
 }
 
 /* Share button */
@@ -2075,12 +2161,92 @@ header h1 {
 /* ===== Mobile Piano Roll ===== */
 @media (max-width: 768px) {
     .app-tab { padding: 4px 10px; font-size: 0.72rem; }
-    .roll-toolbar { padding: 6px 8px; gap: 4px; }
-    .roll-preset-select { max-width: 100px; }
-    .roll-preset-name { width: 90px; }
-    .roll-mode-select { max-width: 100px; }
+    .roll-toolbar {
+        padding: 6px 8px;
+        gap: 3px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        flex-wrap: nowrap;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+    .roll-toolbar::-webkit-scrollbar { display: none; }
+    .roll-tool-group { flex-shrink: 0; }
+    .roll-tool-btn {
+        padding: 4px 7px;
+        font-size: 0.68rem;
+    }
+    .roll-tool-btn svg { width: 12px; height: 12px; }
+    .roll-durations {
+        flex-shrink: 0;
+        gap: 2px;
+    }
+    .dur-label { font-size: 0.65rem; }
+    .dur-btn {
+        padding: 3px 5px;
+        font-size: 0.65rem;
+    }
+    .roll-octave-group,
+    .roll-octaves-group {
+        flex-shrink: 0;
+        gap: 2px;
+    }
+    .octave-label, .octaves-label { font-size: 0.65rem; }
+    .octave-btn { padding: 3px 6px; font-size: 0.7rem; }
+    .octave-value { font-size: 0.68rem; min-width: 16px; }
+    .roll-snap-btn { padding: 3px 7px; font-size: 0.65rem; }
+    .roll-mode-group { flex-shrink: 0; }
+    .mode-label { font-size: 0.65rem; }
+    .roll-mode-select {
+        max-width: 100px;
+        font-size: 0.68rem;
+        padding: 3px 6px;
+    }
+    .roll-custom-scale { max-width: 160px; }
+    .scale-note-btn { width: 20px; height: 20px; font-size: 0.55rem; }
+    .roll-bars-group { flex-shrink: 0; }
+    .roll-bars-btn { padding: 3px 6px; font-size: 0.65rem; }
+    .roll-zoom-group { flex-shrink: 0; gap: 2px; }
+    .roll-zoom-btn { padding: 3px 6px; font-size: 0.65rem; }
+    .zoom-value { font-size: 0.65rem; min-width: 32px; }
+    .roll-undo-group, .roll-clipboard-group { flex-shrink: 0; }
+    .roll-undo-btn, .roll-redo-btn, .roll-ctrl-btn {
+        padding: 4px 6px;
+    }
+    .roll-ctrl-btn svg { width: 12px; height: 12px; }
+    .roll-effects-label { font-size: 0.65rem; }
+    .roll-action-btn {
+        padding: 3px 6px;
+        font-size: 0.65rem;
+    }
+    .roll-action-btn svg { width: 12px; height: 12px; }
+    .roll-effects-row { flex-shrink: 0; gap: 3px; }
+    .roll-preset-select { max-width: 90px; font-size: 0.68rem; }
+    .roll-preset-name { width: 80px; font-size: 0.68rem; }
     .roll-sep { display: none; }
-    .roll-play-group { margin-left: auto; }
+    .roll-play-group { flex-shrink: 0; }
+    .roll-play-btn { padding: 4px 10px; font-size: 0.72rem; }
+    .roll-reset-btn { padding: 4px 8px; font-size: 0.68rem; }
+    .roll-instrument-group { flex-shrink: 0; }
+    .roll-instrument-select { max-width: 90px; font-size: 0.68rem; }
+    /* Piano keys narrower on mobile */
+    .roll-grid-wrapper {
+        grid-template-columns: 44px 1fr;
+    }
+    /* Smaller piano labels on mobile */
+    .roll-piano canvas { width: 44px !important; }
+    /* Ruler and grid canvas scale appropriately */
+    .roll-ruler-container { height: 24px; }
+    /* Status bar smaller text */
+    .roll-status {
+        padding: 4px 10px;
+        font-size: 0.65rem;
+    }
+    /* Effect text labels smaller on mobile */
+    .roll-action-btn span { font-size: 0.6rem; }
+    /* Hide pitch track on very small screens */
+    .roll-pitch-track { height: 60px; }
+    .roll-pitch-track-btn { padding: 3px 8px; font-size: 0.65rem; }
 }
 
 /* ===== Settings Panel ===== */

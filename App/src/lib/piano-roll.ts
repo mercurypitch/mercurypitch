@@ -171,7 +171,7 @@ export function importMelodyFromMIDI(data: Uint8Array): MelodyItem[] | null {
       return null;
     }
 
-    const format = (data[9] << 8) | data[10];
+    const format = (data[8] << 8) | data[9];
     // Support format 0 (single track) and format 1 (multi-track)
     if (format !== 0 && format !== 1) return null;
 
@@ -201,9 +201,9 @@ export function importMelodyFromMIDI(data: Uint8Array): MelodyItem[] | null {
       offset += 8;
 
       let tick = 0;
+      let lastStatus = 0;
       let trackEnd = offset + trackLen;
       while (offset < trackEnd && offset < data.length) {
-        const startOffset = offset;
         // Read variable-length delta time
         let delta = 0;
         let b: number;
@@ -216,7 +216,15 @@ export function importMelodyFromMIDI(data: Uint8Array): MelodyItem[] | null {
         tick += delta;
 
         if (offset >= data.length) break;
-        const status = data[offset++];
+        let status = data[offset++];
+
+        // Running status: if high bit not set, use last status byte
+        if ((status & 0x80) === 0) {
+          status = lastStatus;
+          offset--; // step back so next read gets the data byte we just "consumed"
+        } else {
+          lastStatus = status;
+        }
 
         // End of track
         if (status === 0xFF && offset < data.length && data[offset] === 0x2F) {
@@ -241,7 +249,6 @@ export function importMelodyFromMIDI(data: Uint8Array): MelodyItem[] | null {
           continue;
         }
 
-        // Running status: if high bit not set, status = last status byte
         const channel = status & 0x0F;
         const msgType = status & 0xF0;
 
@@ -270,14 +277,8 @@ export function importMelodyFromMIDI(data: Uint8Array): MelodyItem[] | null {
           if (offset + 1 > data.length) break;
           offset += 1;
         } else {
-          // Unknown — skip variable-length based on type
-          let skipBytes = 0;
-          if (msgType >= 0x80 && msgType <= 0xE0) skipBytes = 2;
-          else if (status < 0x80) {
-            // Running status, adjust back
-            offset--;
-            continue;
-          }
+          // Unknown message type — skip 2 data bytes if in channel voice range
+          const skipBytes = (msgType >= 0x80 && msgType <= 0xE0) ? 2 : 0;
           if (skipBytes > 0 && offset + skipBytes > data.length) break;
           offset += skipBytes;
         }
@@ -449,6 +450,9 @@ export class PianoRollEditor {
   // Copy/paste clipboard
   private clipboard: MelodyItem[] = [];
   private clipboardOffset = { beat: 0, row: 0 };
+
+  // Custom scale builder
+  private customScaleNotes: Set<string> = new Set();
 
   // Callbacks
   private onMelodyChange?: (melody: MelodyItem[]) => void;
@@ -1073,7 +1077,11 @@ export class PianoRollEditor {
             <option value="pentatonic-minor">Minor Pentatonic</option>
             <option value="blues">Blues</option>
             <option value="chromatic">Chromatic</option>
+            <option value="custom">Custom...</option>
           </select>
+          <div id="roll-custom-scale" class="roll-custom-scale" style="display:none">
+            ${['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'].map(n => `<button class="scale-note-btn${n.includes('#') ? ' black' : ''}" data-note="${n}" title="${n}">${n}</button>`).join('')}
+          </div>
         </div>
         <div class="roll-sep"></div>
         <div class="roll-bars-group">
@@ -1382,7 +1390,46 @@ export class PianoRollEditor {
     // Scale mode select
     container.querySelector('#roll-mode-select')?.addEventListener('change', (e) => {
       const target = e.target as HTMLSelectElement;
-      this.setMode(target.value);
+      const mode = target.value;
+      const customDiv = container.querySelector('#roll-custom-scale') as HTMLElement;
+      if (mode === 'custom') {
+        if (customDiv) customDiv.style.display = 'flex';
+        // Initialize with chromatic if empty
+        if (this.customScaleNotes.size === 0) {
+          ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'].forEach(n => this.customScaleNotes.add(n));
+          this._updateCustomScaleButtons(container);
+        }
+        // Apply current custom scale
+        const notes = Array.from(this.customScaleNotes);
+        if (notes.length >= 2) {
+          const customMode = `custom:${notes.join(',')}`;
+          this.setMode(customMode);
+        }
+      } else {
+        if (customDiv) customDiv.style.display = 'none';
+        this.setMode(mode);
+      }
+    });
+
+    // Custom scale note buttons
+    container.querySelectorAll('.scale-note-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const note = (btn as HTMLElement).dataset.note!;
+        if (this.customScaleNotes.has(note)) {
+          this.customScaleNotes.delete(note);
+        } else {
+          this.customScaleNotes.add(note);
+        }
+        this._updateCustomScaleButtons(container);
+        const notes = Array.from(this.customScaleNotes);
+        if (notes.length >= 2) {
+          const customMode = `custom:${notes.join(',')}`;
+          this.setMode(customMode);
+        } else if (notes.length === 1) {
+          // Single note — show as is, scale needs at least 2 notes
+          this._updateHint(`Custom scale needs at least 2 notes (${notes.length}/2)`);
+        }
+      });
     });
 
     // Import MIDI button
@@ -2679,6 +2726,16 @@ export class PianoRollEditor {
     window.dispatchEvent(new CustomEvent('pitchperfect:octaveChange', {
       detail: { octave: this.octave, numOctaves: this.numOctaves }
     }));
+  }
+
+  /**
+   * Update the visual state of custom scale note buttons.
+   */
+  private _updateCustomScaleButtons(container: Element): void {
+    container.querySelectorAll('.scale-note-btn').forEach((btn) => {
+      const note = (btn as HTMLElement).dataset.note!;
+      btn.classList.toggle('active', this.customScaleNotes.has(note));
+    });
   }
 
   /**

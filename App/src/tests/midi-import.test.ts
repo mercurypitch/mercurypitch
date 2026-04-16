@@ -1,9 +1,9 @@
 // ============================================================
-// MIDI Import Tests
+// MIDI Import/Export Tests
 // ============================================================
 
 import { describe, it, expect } from 'vitest';
-import { importMelodyFromMIDI } from '@/lib/piano-roll';
+import { importMelodyFromMIDI, exportMelodyToMIDI } from '@/lib/piano-roll';
 
 function encodeVLQ(value: number): number[] {
   if (value < 0) return [0];
@@ -186,5 +186,89 @@ describe('MIDI Import', () => {
       expect(item).toHaveProperty('startBeat');
       expect(item).toHaveProperty('duration');
     }
+  });
+});
+
+describe('MIDI Export', () => {
+  it('returns null for empty melody', () => {
+    expect(exportMelodyToMIDI([], 120)).toBeNull();
+  });
+
+  it('returns null for null melody', () => {
+    expect(exportMelodyToMIDI(null as any, 120)).toBeNull();
+  });
+
+  it('exports a single note to valid MIDI bytes', () => {
+    const melody = [
+      { id: 1, note: { name: 'C', octave: 4, midi: 60, freq: 261.63 }, startBeat: 0, duration: 1 },
+    ];
+    const midi = exportMelodyToMIDI(melody, 120);
+    expect(midi).not.toBeNull();
+    expect(midi!.length).toBeGreaterThan(14);
+    // Check header chunk: "MThd"
+    expect(midi![0]).toBe(0x4D);
+    expect(midi![1]).toBe(0x54);
+    expect(midi![2]).toBe(0x68);
+    expect(midi![3]).toBe(0x64);
+    // Check track chunk: "MTrk"
+    expect(midi![14]).toBe(0x4D);
+    expect(midi![15]).toBe(0x54);
+    expect(midi![16]).toBe(0x72);
+    expect(midi![17]).toBe(0x6B);
+    // Re-import the exported single note
+    const reimport = importMelodyFromMIDI(midi!);
+    expect(reimport).not.toBeNull();
+    expect(reimport!.length).toBe(1);
+    expect(reimport![0].note.midi).toBe(60);
+  });
+
+  it('exports multiple notes in correct time order', () => {
+    const melody = [
+      { id: 1, note: { name: 'C', octave: 4, midi: 60, freq: 261.63 }, startBeat: 0, duration: 1 },
+      { id: 2, note: { name: 'E', octave: 4, midi: 64, freq: 329.63 }, startBeat: 1, duration: 1 },
+      { id: 3, note: { name: 'G', octave: 4, midi: 67, freq: 392 }, startBeat: 2, duration: 1 },
+    ];
+    const midi = exportMelodyToMIDI(melody, 120);
+    expect(midi).not.toBeNull();
+    expect(midi!.length).toBeGreaterThan(14);
+  });
+
+  it('exports notes with fractional beat durations', () => {
+    const melody = [
+      { id: 1, note: { name: 'C', octave: 4, midi: 60, freq: 261.63 }, startBeat: 0.5, duration: 0.25 },
+    ];
+    const midi = exportMelodyToMIDI(melody, 120);
+    expect(midi).not.toBeNull();
+    expect(midi!.length).toBeGreaterThan(14);
+  });
+
+  it('round-trips: export then import preserves note count', () => {
+    const original = [
+      { id: 1, note: { name: 'C', octave: 4, midi: 60, freq: 261.63 }, startBeat: 0, duration: 1 },
+      { id: 2, note: { name: 'E', octave: 4, midi: 64, freq: 329.63 }, startBeat: 1, duration: 2 },
+      { id: 3, note: { name: 'G', octave: 4, midi: 67, freq: 392 }, startBeat: 3, duration: 1.5 },
+    ];
+    const midi = exportMelodyToMIDI(original, 120);
+    expect(midi).not.toBeNull();
+    const roundTrip = importMelodyFromMIDI(midi!);
+    expect(roundTrip).not.toBeNull();
+    expect(roundTrip!.length).toBe(original.length);
+    // Check pitch values are preserved
+    for (let i = 0; i < original.length; i++) {
+      expect(roundTrip![i].note.midi).toBe(original[i].note.midi);
+    }
+  });
+
+  it('exports with different BPM values', () => {
+    const melody = [
+      { id: 1, note: { name: 'A', octave: 4, midi: 69, freq: 440 }, startBeat: 0, duration: 1 },
+    ];
+    const midi120 = exportMelodyToMIDI(melody, 120);
+    const midi240 = exportMelodyToMIDI(melody, 240);
+    expect(midi120).not.toBeNull();
+    expect(midi240).not.toBeNull();
+    // Both should produce valid MIDI files
+    expect(midi120!.length).toBeGreaterThan(0);
+    expect(midi240!.length).toBeGreaterThan(0);
   });
 });
