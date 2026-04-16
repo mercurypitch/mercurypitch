@@ -5,7 +5,7 @@
 import type { MelodyItem, ScaleDegree, PianoRollConfig, NoteName } from '@/types';
 import type { InstrumentType } from '@/lib/audio-engine';
 import { PitchDetector } from '@/lib/pitch-detector';
-import { buildMultiOctaveScale } from '@/lib/scale-data';
+import { buildMultiOctaveScale, midiToNote, midiToFreq } from '@/lib/scale-data';
 
 export const PIANO_ROLL_CONFIG: PianoRollConfig = {
   rowHeight: 22,
@@ -157,6 +157,184 @@ const blob = new Blob([new Uint8Array(data)], { type: 'audio/midi' });
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
   return true;
+}
+
+/** Import a melody from a Standard MIDI File (Format 0 or 1).
+ *  Parses Note On/Off events and converts them to MelodyItems.
+ *  Returns null on parse error.
+ */
+export function importMelodyFromMIDI(data: Uint8Array): MelodyItem[] | null {
+  try {
+    // Validate MIDI header
+    if (data.length < 14) return null;
+    if (data[0] !== 0x4D || data[1] !== 0x54 || data[2] !== 0x68 || data[3] !== 0x64) {
+      return null;
+    }
+
+    const format = (data[9] << 8) | data[10];
+    // Support format 0 (single track) and format 1 (multi-track)
+    if (format !== 0 && format !== 1) return null;
+
+    const ticksPerBeat = (data[12] << 8) | data[13];
+    if (ticksPerBeat === 0) return null;
+
+    let offset = 14; // After header chunk
+
+    // Collect all note events across tracks
+    interface MidiNoteEvent {
+      tick: number;
+      type: 'on' | 'off';
+      channel: number;
+      note: number;
+      velocity: number;
+    }
+    const allEvents: MidiNoteEvent[] = [];
+
+    // Read tracks
+    let trackIndex = 0;
+    while (offset < data.length) {
+      if (offset + 8 > data.length) break;
+      if (data[offset] !== 0x4D || data[offset + 1] !== 0x54 || data[offset + 2] !== 0x72 || data[offset + 3] !== 0x6B) {
+        break; // Not a track chunk
+      }
+      const trackLen = (data[offset + 4] << 24) | (data[offset + 5] << 16) | (data[offset + 6] << 8) | data[offset + 7];
+      offset += 8;
+
+      let tick = 0;
+      let trackEnd = offset + trackLen;
+      while (offset < trackEnd && offset < data.length) {
+        const startOffset = offset;
+        // Read variable-length delta time
+        let delta = 0;
+        let b: number;
+        do {
+          if (offset >= data.length) break;
+          b = data[offset++];
+          delta = (delta << 7) | (b & 0x7f);
+        } while (b & 0x80);
+
+        tick += delta;
+
+        if (offset >= data.length) break;
+        const status = data[offset++];
+
+        // End of track
+        if (status === 0xFF && offset < data.length && data[offset] === 0x2F) {
+          break;
+        }
+
+        // Skip meta events (0xFF)
+        if (status === 0xFF) {
+          if (offset >= data.length) break;
+          const metaType = data[offset++];
+          if (offset >= data.length) break;
+          let len = data[offset++];
+          offset += len;
+          continue;
+        }
+
+        // Skip sysex events (0xF0, 0xF7)
+        if (status === 0xF0 || status === 0xF7) {
+          if (offset >= data.length) break;
+          let len = data[offset++];
+          offset += len;
+          continue;
+        }
+
+        // Running status: if high bit not set, status = last status byte
+        const channel = status & 0x0F;
+        const msgType = status & 0xF0;
+
+        if (msgType === 0x80) {
+          // Note Off: read note + velocity
+          if (offset + 2 > data.length) break;
+          const note = data[offset++];
+          const velocity = data[offset++];
+          allEvents.push({ tick, type: 'off', channel, note, velocity });
+        } else if (msgType === 0x90) {
+          // Note On: read note + velocity
+          if (offset + 2 > data.length) break;
+          const note = data[offset++];
+          const velocity = data[offset++];
+          if (velocity === 0) {
+            allEvents.push({ tick, type: 'off', channel, note, velocity });
+          } else {
+            allEvents.push({ tick, type: 'on', channel, note, velocity });
+          }
+        } else if (msgType === 0xA0 || msgType === 0xB0 || msgType === 0xE0) {
+          // Aftertouch, Control Change, Pitch Bend — 2 data bytes
+          if (offset + 2 > data.length) break;
+          offset += 2;
+        } else if (msgType === 0xC0 || msgType === 0xD0) {
+          // Program Change, Channel Pressure — 1 data byte
+          if (offset + 1 > data.length) break;
+          offset += 1;
+        } else {
+          // Unknown — skip variable-length based on type
+          let skipBytes = 0;
+          if (msgType >= 0x80 && msgType <= 0xE0) skipBytes = 2;
+          else if (status < 0x80) {
+            // Running status, adjust back
+            offset--;
+            continue;
+          }
+          if (skipBytes > 0 && offset + skipBytes > data.length) break;
+          offset += skipBytes;
+        }
+      }
+      offset = trackEnd;
+      trackIndex++;
+    }
+
+    // Build note-on map: for each (channel, note), track start tick
+    interface NoteOnInfo { tick: number; velocity: number; }
+    const activeNotes = new Map<string, NoteOnInfo>();
+    interface NoteOnOff { startBeat: number; duration: number; midi: number; velocity: number; }
+    const noteItems: NoteOnOff[] = [];
+
+    for (const ev of allEvents) {
+      const key = `${ev.channel}:${ev.note}`;
+      if (ev.type === 'on') {
+        activeNotes.set(key, { tick: ev.tick, velocity: ev.velocity });
+      } else {
+        const onInfo = activeNotes.get(key);
+        if (onInfo) {
+          const startBeat = onInfo.tick / ticksPerBeat;
+          const duration = Math.max(0.25, (ev.tick - onInfo.tick) / ticksPerBeat);
+          noteItems.push({
+            startBeat,
+            duration,
+            midi: ev.note,
+            velocity: onInfo.velocity,
+          });
+          activeNotes.delete(key);
+        }
+      }
+    }
+
+    if (noteItems.length === 0) return null;
+
+    // Sort by start time, deduplicate overlapping same-pitch notes on same channel
+    noteItems.sort((a, b) => a.startBeat - b.startBeat);
+
+    // Assign IDs and convert to MelodyItems
+    return noteItems.map((n) => {
+      const { name, octave } = midiToNote(n.midi);
+      return {
+        id: generateNoteId(),
+        note: {
+          name,
+          octave,
+          midi: n.midi,
+          freq: midiToFreq(n.midi),
+        },
+        startBeat: n.startBeat,
+        duration: n.duration,
+      };
+    });
+  } catch {
+    return null;
+  }
 }
 
 // ============================================================
@@ -967,6 +1145,7 @@ export class PianoRollEditor {
         </div>
         <div class="roll-sep"></div>
         <button id="roll-export-midi" class="roll-export-btn" title="Export melody as MIDI file">Export MIDI</button>
+        <button id="roll-import-midi" class="roll-export-btn" title="Import melody from MIDI file">Import MIDI</button>
         <button id="roll-clear-all" class="roll-ctrl-btn danger" title="Clear all notes">Clear</button>
         <div class="roll-sep"></div>
         <button id="roll-pitch-track-btn" class="roll-pitch-track-btn" title="Toggle pitch track visualization">Pitch Track</button>
@@ -1204,6 +1383,37 @@ export class PianoRollEditor {
     container.querySelector('#roll-mode-select')?.addEventListener('change', (e) => {
       const target = e.target as HTMLSelectElement;
       this.setMode(target.value);
+    });
+
+    // Import MIDI button
+    const importMidiInput = document.createElement('input');
+    importMidiInput.type = 'file';
+    importMidiInput.accept = '.mid,.midi,audio/midi,audio/x-midi';
+    importMidiInput.style.display = 'none';
+    container.querySelector('.roll-toolbar')?.appendChild(importMidiInput);
+
+    container.querySelector('#roll-import-midi')?.addEventListener('click', () => {
+      importMidiInput.click();
+    });
+
+    importMidiInput.addEventListener('change', async () => {
+      const file = importMidiInput.files?.[0];
+      if (!file) return;
+      try {
+        const buffer = await file.arrayBuffer();
+        const data = new Uint8Array(buffer);
+        const melody = importMelodyFromMIDI(data);
+        if (melody && melody.length > 0) {
+          this.clearMelody();
+          this.onMelodyChange?.(melody);
+          this._updateHint(`Imported ${melody.length} note(s) from MIDI`);
+        } else {
+          this._updateHint('Could not parse MIDI file');
+        }
+      } catch {
+        this._updateHint('Error reading MIDI file');
+      }
+      importMidiInput.value = '';
     });
 
     // Export MIDI button
