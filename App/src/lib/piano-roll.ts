@@ -145,7 +145,7 @@ export function downloadMIDI(melody: MelodyItem[], bpm: number, filename?: strin
     alert('No melody to export. Add some notes first.');
     return false;
   }
-  const blob = new Blob([data], { type: 'audio/midi' });
+  const blob = new Blob([new Uint8Array(data)], { type: 'audio/midi' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
