@@ -169,7 +169,7 @@ export class AudioEngine {
       this.micStream = null;
     }
 
-    this.micAnalyser = null;
+this.micAnalyser = null;
     // Note: _frequencyData and _timeData intentionally not reset
     // They still contain valid data for the visualizer
   }
