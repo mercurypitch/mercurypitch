@@ -1138,6 +1138,22 @@ export class PianoRollEditor {
       this.onRightClick(e);
     });
 
+    // Touch events (mobile support — delegates to mouse handlers)
+    this.gridCanvas?.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      this.onGridMouseDown({ clientX: touch.clientX, clientY: touch.clientY, target: e.target } as MouseEvent);
+    }, { passive: false });
+    this.gridCanvas?.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      this.onGridMouseMove({ clientX: touch.clientX, clientY: touch.clientY, target: e.target } as MouseEvent);
+    }, { passive: false });
+    this.gridCanvas?.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      this.onGridMouseUp({} as MouseEvent);
+    }, { passive: false });
+
     // Ruler drag-to-seek (click and drag on ruler to scrub playback position)
     this.rulerCanvas?.addEventListener('mousedown', (e) => {
       this.isSeeking = true;
