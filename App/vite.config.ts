@@ -4,6 +4,7 @@ import { resolve } from 'path';
 
 export default defineConfig({
   plugins: [solidPlugin()],
+  base: '/solid/',
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),
@@ -14,7 +15,6 @@ export default defineConfig({
   },
   build: {
     target: 'esnext',
-    base: '/solid/',
   },
   test: {
     globals: true,

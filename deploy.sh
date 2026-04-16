@@ -88,7 +88,23 @@ run_syntax_check() {
 }
 
 #-------------------------------------------------------------------------------
-# Step 2: Verify required files exist
+# Step 2: Rebuild SolidJS app
+#-------------------------------------------------------------------------------
+rebuild_solidjs() {
+    info "Rebuilding SolidJS app..."
+    if [[ -f "$REPO_DIR/App/package.json" ]]; then
+        cd "$REPO_DIR/App"
+        if npm run build >/dev/null 2>&1; then
+            info "  ✓ SolidJS app rebuilt"
+        else
+            warn "  ! SolidJS build failed — continuing anyway"
+        fi
+        cd "$REPO_DIR"
+    fi
+}
+
+#-------------------------------------------------------------------------------
+# Step 3: Verify required files exist
 #-------------------------------------------------------------------------------
 verify_files() {
     info "Verifying required files..."
@@ -190,6 +206,7 @@ main() {
     fi
 
     run_syntax_check
+    rebuild_solidjs
     verify_files
 
     if [[ "${1:-}" != "--check-only" ]]; then
