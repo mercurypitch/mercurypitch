@@ -24,7 +24,7 @@ import { HistoryCanvas } from '@/components/HistoryCanvas';
 import { appStore, getNoteAccuracyMap } from '@/stores/app-store';
 import { playback } from '@/stores/playback-store';
 import { melodyStore } from '@/stores/melody-store';
-import { melodyTotalBeats, buildSampleMelody } from '@/lib/scale-data';
+import { melodyTotalBeats, buildSampleMelody, keyTonicFreq } from '@/lib/scale-data';
 import { AudioEngine } from '@/lib/audio-engine';
 import { MelodyEngine } from '@/lib/melody-engine';
 import { PracticeEngine } from '@/lib/practice-engine';
@@ -438,6 +438,14 @@ export const App: Component<AppProps> = (props) => {
     setIsPlaying(true);
     setIsPaused(false);
     playback.startPlayback();
+
+    // Play tonic anchor tone if enabled — helps singer lock in to the key
+    if (appStore.settings().tonicAnchor) {
+      const tonicFreq = keyTonicFreq(appStore.keyName(), melodyStore.currentOctave());
+      const bpm = appStore.bpm();
+      const tonicDuration = Math.round(60000 / bpm); // 1 beat
+      audioEngine.playTone(tonicFreq, tonicDuration);
+    }
 
     // Start with count-in if configured
     melodyEngine.start(appStore.countIn());

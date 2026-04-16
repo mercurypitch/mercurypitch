@@ -18,6 +18,7 @@ import {
   melodyMidiRange,
   SCALE_DEFINITIONS,
   NOTE_NAMES,
+  keyTonicFreq,
 } from '@/lib/scale-data';
 import type { MelodyItem } from '@/types';
 
@@ -72,6 +73,17 @@ describe('MIDI/Frequency Conversion', () => {
     const sharp = freqToNote(446);
     expect(Math.abs(sharp.cents)).toBeGreaterThan(20);
     expect(Math.abs(sharp.cents)).toBeLessThan(30);
+  });
+
+  it('returns correct tonic frequency for each key', () => {
+    // C4 tonic = 261.63 Hz
+    expect(keyTonicFreq('C', 4)).toBeCloseTo(261.63, 1);
+    // G4 tonic = 392 Hz
+    expect(keyTonicFreq('G', 4)).toBeCloseTo(392, 1);
+    // A4 tonic = 440 Hz
+    expect(keyTonicFreq('A', 4)).toBeCloseTo(440, 1);
+    // F4 tonic ≈ 349.23 Hz
+    expect(keyTonicFreq('F', 4)).toBeCloseTo(349.23, 1);
   });
 });
 

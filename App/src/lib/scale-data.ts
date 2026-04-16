@@ -40,6 +40,13 @@ export const KEY_OFFSETS: Record<string, number> = {
   'B': 11, 'Cb': 11, 'B#': 0,
 };
 
+/** Get the frequency of the tonic (root note) for a given key at a given octave. */
+export function keyTonicFreq(keyName: string, octave: number): number {
+  const offset = KEY_OFFSETS[keyName] ?? 0;
+  const midi = (octave + 1) * 12 + offset;
+  return midiToFreq(midi);
+}
+
 // Scale definitions
 export const SCALE_DEFINITIONS: Record<string, ScaleDefinition> = {
   'major': {

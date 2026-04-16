@@ -99,6 +99,22 @@ export const SettingsPanel: Component = () => {
           </div>
         </div>
 
+        {/* Practice Aids Section */}
+        <div class="settings-section">
+          <h3 class="settings-section-title">Practice Aids</h3>
+
+          <div class="settings-row">
+            <label for="set-tonic-anchor">Tonic Anchor Tone</label>
+            <input
+              type="checkbox"
+              id="set-tonic-anchor"
+              checked={s().tonicAnchor}
+              onChange={(e) => appStore.setTonicAnchor(e.currentTarget.checked)}
+            />
+            <small>Play a reference tone at the start of each run to help lock in to the key</small>
+          </div>
+        </div>
+
         {/* Accuracy Bands Section */}
         <div class="settings-section">
           <h3 class="settings-section-title">Accuracy Bands</h3>

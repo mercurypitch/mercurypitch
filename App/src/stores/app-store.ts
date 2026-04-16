@@ -100,6 +100,7 @@ export interface SettingsConfig {
   minConfidence: number;      // 0.30–0.90 (default 0.50)
   minAmplitude: number;      // 1–10 (default 5)
   bands: AccuracyBand[];
+  tonicAnchor: boolean;       // Play tonic reference tone before each run
 }
 
 const DEFAULT_BANDS: AccuracyBand[] = [
@@ -116,6 +117,7 @@ const DEFAULT_SETTINGS: SettingsConfig = {
   minConfidence: 0.50,
   minAmplitude: 5,
   bands: DEFAULT_BANDS,
+  tonicAnchor: false,
 };
 
 const [settings, setSettings] = createSignal<SettingsConfig>(DEFAULT_SETTINGS);
@@ -168,6 +170,14 @@ export function setMinConfidence(value: number): void {
 export function setMinAmplitude(value: number): void {
   setSettings((s) => {
     const updated = { ...s, minAmplitude: Math.max(1, Math.min(10, value)) };
+    saveSettingsToStorage(updated);
+    return updated;
+  });
+}
+
+export function setTonicAnchor(enabled: boolean): void {
+  setSettings((s) => {
+    const updated = { ...s, tonicAnchor: enabled };
     saveSettingsToStorage(updated);
     return updated;
   });
@@ -533,6 +543,7 @@ export const appStore = {
   setSensitivity,
   setMinConfidence,
   setMinAmplitude,
+  setTonicAnchor,
   setBand,
   getBandRating,
 
