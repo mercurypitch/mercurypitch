@@ -199,6 +199,9 @@ export class PianoRollEditor {
   private gridCtx: CanvasRenderingContext2D | null = null;
   private rulerCtx: CanvasRenderingContext2D | null = null;
   private gridContainer: HTMLElement | null = null;
+  private hintEl: HTMLElement | null = null;
+  private timelineInfoEl: HTMLElement | null = null;
+  private beatInfoEl: HTMLElement | null = null;
 
   // Dimensions
   private readonly config = PIANO_ROLL_CONFIG;
@@ -644,8 +647,42 @@ export class PianoRollEditor {
   }
 
   private updateBeatInfo(): void {
-    const info = this.container.querySelector('#roll-beat-info');
-    if (info) info.textContent = `${this.totalBeats} beats`;
+    if (this.beatInfoEl) {
+      this.beatInfoEl.textContent = `${this.totalBeats} beats | ${Math.ceil(this.totalBeats / PIANO_ROLL_CONFIG.beatsPerBar)} bars | ${this.melody.length} notes`;
+    }
+  }
+
+  private _updateHint(): void {
+    if (!this.hintEl) return;
+    if (this.selectedNoteIds.size > 0) {
+      if (this.selectedNoteIds.size === 1) {
+        const id = [...this.selectedNoteIds][0];
+        const note = this.melody.find((n) => n.id === id);
+        if (note) {
+          const info = this.scale.find((s) => s.midi === note.note.midi);
+          const name = info ? `${info.name}${info.octave}` : '?';
+          const startBar = Math.floor(note.startBeat / PIANO_ROLL_CONFIG.beatsPerBar) + 1;
+          const startBeat = Math.floor(note.startBeat % PIANO_ROLL_CONFIG.beatsPerBar) + 1;
+          this.hintEl.textContent = `Selected: ${name} | Duration: ${note.duration}b | Bar ${startBar}/${startBeat} — Right-click or Del to delete`;
+        }
+      } else {
+        this.hintEl.textContent = `${this.selectedNoteIds.size} notes selected | Shift+click to toggle | Drag to multi-move | Del to delete | Action buttons create slides`;
+      }
+    } else if (this.activeTool === 'place') {
+      this.hintEl.textContent = `Click to place a ${this.selectedDuration}b note | Right-click to delete`;
+    } else if (this.activeTool === 'erase') {
+      this.hintEl.textContent = 'Click on a note to erase it';
+    } else {
+      this.hintEl.textContent = 'Click and drag note edges to resize | Del to delete selected';
+    }
+  }
+
+  private _updateTimelineInfo(beat: number): void {
+    if (!this.timelineInfoEl) return;
+    const totalBars = Math.ceil(this.totalBeats / PIANO_ROLL_CONFIG.beatsPerBar);
+    const currentBar = Math.floor(beat / PIANO_ROLL_CONFIG.beatsPerBar) + 1;
+    const currentBeat = Math.floor(beat % PIANO_ROLL_CONFIG.beatsPerBar) + 1;
+    this.timelineInfoEl.textContent = `Bar ${currentBar}/${totalBars} | Beat ${currentBeat}`;
   }
 
   destroy(): void {
@@ -804,6 +841,7 @@ export class PianoRollEditor {
       </div>
       <div class="roll-status">
         <span id="roll-note-info">Click on the grid to place notes</span>
+        <span id="roll-timeline-info">Bar 1/${Math.ceil(this.totalBeats / PIANO_ROLL_CONFIG.beatsPerBar)} | Beat 1</span>
         <span id="roll-beat-info">${this.totalBeats} beats</span>
       </div>
     `;
@@ -857,6 +895,11 @@ export class PianoRollEditor {
       this.gridCtx = this.gridCanvas.getContext('2d');
       if (this.gridCtx) this.gridCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
+
+    // Cache status bar elements
+    this.hintEl = this.container.querySelector('#roll-note-info');
+    this.timelineInfoEl = this.container.querySelector('#roll-timeline-info');
+    this.beatInfoEl = this.container.querySelector('#roll-beat-info');
   }
 
   // ============================================================
@@ -873,6 +916,9 @@ export class PianoRollEditor {
         this.activeTool = tool;
         container.querySelectorAll('.roll-tool-btn').forEach((b) => b.classList.remove('active'));
         btn.classList.add('active');
+        this.selectedNoteIds.clear();
+        this.draw();
+        this._updateHint();
       });
     });
 
@@ -882,6 +928,7 @@ export class PianoRollEditor {
         this.selectedDuration = parseFloat((btn as HTMLElement).dataset.dur ?? '1');
         container.querySelectorAll('.dur-btn').forEach((b) => b.classList.remove('active'));
         btn.classList.add('active');
+        this._updateHint();
       });
     });
 
@@ -1313,6 +1360,7 @@ export class PianoRollEditor {
       const first = this.melody.find((n) => n.id !== undefined) ?? null;
       this.onNoteSelect?.(first);
       this.draw();
+      this._updateHint();
       return;
     }
     if (e.key === 'Delete' || e.key === 'Backspace') {
@@ -1325,11 +1373,13 @@ export class PianoRollEditor {
         this.selectedNoteIds.clear();
         this.onNoteSelect?.(null);
         this.draw();
+        this._updateHint();
       }
     } else if (e.key === 'Escape') {
       this.selectedNoteIds.clear();
       this.onNoteSelect?.(null);
       this.draw();
+      this._updateHint();
     } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
       e.preventDefault();
       const sortedNotes = [...this.melody].sort((a, b) => a.startBeat - b.startBeat);
@@ -1406,6 +1456,7 @@ export class PianoRollEditor {
     this.onNoteSelect?.(item);
     this.emitMelodyChange();
     this.draw();
+    this._updateHint();
   }
 
   private eraseNote(note: MelodyItem): void {
@@ -1427,6 +1478,7 @@ export class PianoRollEditor {
       }
       this.emitMelodyChange();
       this.draw();
+      this._updateHint();
     }
   }
 
@@ -1546,6 +1598,10 @@ export class PianoRollEditor {
     this.startedNoteIds.clear();
     this.gridContainer!.scrollLeft = 0;
     this.draw();
+    if (this.timelineInfoEl) {
+      const totalBars = Math.ceil(this.totalBeats / PIANO_ROLL_CONFIG.beatsPerBar);
+      this.timelineInfoEl.textContent = `Bar 1/${totalBars} | Beat 1`;
+    }
   }
 
   private startAnimation(): void {
@@ -1588,6 +1644,9 @@ export class PianoRollEditor {
           }
         }
       }
+
+      // Update timeline info during playback
+      self._updateTimelineInfo(self.activeBeat);
 
       // Check if playback is done
       if (self.melody.length > 0) {
