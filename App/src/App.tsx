@@ -37,20 +37,24 @@ let audioEngine: AudioEngine;
 let melodyEngine: MelodyEngine;
 let practiceEngine: PracticeEngine;
 
-/** Convert preset note data to melody items, mapping midi to current scale */
+/** Convert preset note data to melody items, preserving exact note properties */
 function presetToMelody(preset: PresetData): import('@/types').MelodyItem[] {
   return preset.notes.map((n) => {
-    const scaleNote = melodyStore.currentScale().find((s) => s.midi === n.midi);
+    // Use the scale data stored with the preset for accurate note lookup
+    const scaleNote = preset.scale.find((s) => s.midi === n.midi);
     return {
       id: melodyStore.generateId(),
       note: {
         midi: n.midi,
-        name: (scaleNote?.name ?? 'C') as NoteName,
-        octave: scaleNote?.octave ?? 4,
-        freq: scaleNote?.freq ?? 440,
+        // Use stored scale data, fallback to computed from current scale
+        name: (scaleNote?.name ?? melodyStore.currentScale().find((s) => s.midi === n.midi)?.name ?? 'C') as NoteName,
+        octave: scaleNote?.octave ?? melodyStore.currentScale().find((s) => s.midi === n.midi)?.octave ?? 4,
+        freq: scaleNote?.freq ?? melodyStore.currentScale().find((s) => s.midi === n.midi)?.freq ?? 440,
       },
       startBeat: n.startBeat,
       duration: n.duration,
+      effectType: n.effectType,
+      linkedTo: n.linkedTo,
     };
   });
 }

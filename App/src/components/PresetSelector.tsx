@@ -73,8 +73,11 @@ export const PresetSelector: Component<PresetSelectorProps> = (props) => {
   };
 
   const handleSave = () => {
-    const name = saveName().trim() || currentName();
-    if (!name) return;
+    const name = saveName().trim();
+    if (!name) {
+      appStore.showNotification('Please enter a melody name before saving', 'warning');
+      return;
+    }
 
     const melody = melodyStore.items;
     const totalBeats = melody.length > 0
@@ -100,6 +103,7 @@ export const PresetSelector: Component<PresetSelectorProps> = (props) => {
     };
 
     savePreset(name, data);
+    setSaveName(name);
     appStore.showNotification(`Melody "${name}" saved`, 'success');
   };
 
