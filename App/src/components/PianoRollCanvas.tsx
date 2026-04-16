@@ -4,6 +4,7 @@
 
 import { Component, onMount, onCleanup, createEffect } from 'solid-js';
 import { PianoRollEditor } from '@/lib/piano-roll';
+import { downloadMIDI } from '@/lib/piano-roll';
 import type { PlaybackState } from '@/lib/piano-roll';
 import type { MelodyItem, ScaleDegree } from '@/types';
 import type { PitchPerfectWindow } from '@/types';
