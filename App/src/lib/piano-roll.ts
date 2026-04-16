@@ -289,6 +289,7 @@ export class PianoRollEditor {
 
     this.buildDOM();
     this.attachEventListeners();
+    this.updateUndoRedoButtons();
     this.draw();
   }
 
@@ -454,50 +455,22 @@ export class PianoRollEditor {
   }
 
   setPlaybackState(state: PlaybackState, playStartTime?: number): void {
-    const wasStopped = this.playbackState === 'stopped';
     this.playbackState = state;
 
-    if (state === 'playing' && wasStopped) {
+    if (state === 'playing') {
       // External start (from Practice tab) — reset animation and begin
-      // Use the provided playStartTime for proper sync with melody engine timing.
-      // If not provided (editor tab Start button), use local time.
-      this.externalPlayback = playStartTime !== undefined;
       this.playStartTime = playStartTime ?? performance.now();
       this.pauseStartTime = 0;
       this.startedNoteIds.clear();
-      this.activeBeat = 0;
-      this.startAnimation();
-
-      const playBtn = this.container.querySelector('#roll-play-btn') as HTMLButtonElement;
-      const playIcon = this.container.querySelector('#roll-play-icon') as SVGElement;
-      const pauseIcon = this.container.querySelector('#roll-pause-icon') as SVGElement;
-      const resetBtn = this.container.querySelector('#roll-reset-btn') as HTMLButtonElement;
-      if (playBtn && playIcon && pauseIcon && resetBtn) {
-        playIcon.style.display = 'none';
-        pauseIcon.style.display = 'block';
-        playBtn.querySelector('span')!.textContent = 'Pause';
-        resetBtn.disabled = false;
+      if (this.playAnimationId === null) {
+        this.startAnimation();
       }
     } else if (state === 'paused') {
       if (this.playAnimationId !== null) {
         cancelAnimationFrame(this.playAnimationId);
         this.playAnimationId = null;
       }
-      const win = window as Window & { pianoRollAudioEngine?: { stopAllNotes: () => void } };
-      if (win.pianoRollAudioEngine) {
-        win.pianoRollAudioEngine.stopAllNotes();
-      }
-
-      const playBtn = this.container.querySelector('#roll-play-btn') as HTMLButtonElement;
-      const playIcon = this.container.querySelector('#roll-play-icon') as SVGElement;
-      const pauseIcon = this.container.querySelector('#roll-pause-icon') as SVGElement;
-      if (playBtn && playIcon && pauseIcon) {
-        playIcon.style.display = 'block';
-        pauseIcon.style.display = 'none';
-        playBtn.querySelector('span')!.textContent = 'Continue';
-      }
     } else if (state === 'stopped') {
-      this.externalPlayback = false;
       this.resetPlayback();
     }
   }
@@ -854,18 +827,6 @@ export class PianoRollEditor {
         <button id="roll-clear-all" class="roll-ctrl-btn danger" title="Clear all notes">Clear</button>
         <div class="roll-sep"></div>
         <button id="roll-pitch-track-btn" class="roll-pitch-track-btn" title="Toggle pitch track visualization">Pitch Track</button>
-        <div class="roll-sep"></div>
-        <div class="roll-play-group">
-          <button id="roll-play-btn" class="roll-play-btn" title="Start playback">
-            <svg id="roll-play-icon" viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>
-            <svg id="roll-pause-icon" viewBox="0 0 24 24" width="16" height="16" style="display:none"><path fill="currentColor" d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-            <span>Start</span>
-          </button>
-          <button id="roll-reset-btn" class="roll-reset-btn" title="Reset playback" disabled>
-            <svg viewBox="0 0 24 24" width="16" height="16"><rect x="6" y="6" width="12" height="12" fill="currentColor"/></svg>
-            <span>Reset</span>
-          </button>
-        </div>
       </div>
       <div class="roll-main-area">
         <div class="roll-grid-wrapper">
@@ -990,17 +951,6 @@ export class PianoRollEditor {
     container.querySelector('#roll-instrument-select')?.addEventListener('change', (e) => {
       const target = e.target as HTMLSelectElement;
       this.setInstrument(target.value as any);
-    });
-
-    // Playback controls
-    container.querySelector('#roll-play-btn')?.addEventListener('click', () => {
-      this.handlePlayClick();
-      this.onPlayClick?.();
-    });
-
-    container.querySelector('#roll-reset-btn')?.addEventListener('click', () => {
-      this.resetPlayback();
-      this.onResetClick?.();
     });
 
     // Grid toggle from app header/sidebar

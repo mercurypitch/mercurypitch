@@ -672,8 +672,6 @@ export const App: Component<AppProps> = (props) => {
               playbackState={() => playback.state() as PlaybackState}
               currentNoteIndex={() => melodyStore.currentNoteIndex()}
               onMelodyChange={(melody) => melodyStore.setMelody(melody)}
-              onPlayClick={handlePlay}
-              onResetClick={handleReset}
               onInstrumentChange={(instrument) => audioEngine.setInstrument(instrument as any)}
             />
           </Show>

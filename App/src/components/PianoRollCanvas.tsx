@@ -17,8 +17,6 @@ interface PianoRollCanvasProps {
   playbackState: () => PlaybackState;
   currentNoteIndex: () => number;
   onMelodyChange: (melody: MelodyItem[]) => void;
-  onPlayClick: () => void;
-  onResetClick: () => void;
   onInstrumentChange?: (instrument: string) => void;
 }
 
@@ -44,9 +42,6 @@ export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
     editor.setScale(props.scale());
     editor.setBPM(props.bpm());
     editor.setTotalBeats(props.totalBeats());
-
-    // Load presets from localStorage
-    editor.loadPresets();
 
     // Expose on window for debugging
     (window as PitchPerfectWindow).pianoRollEditor = editor;

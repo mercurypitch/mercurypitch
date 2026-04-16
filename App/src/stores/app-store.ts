@@ -384,6 +384,7 @@ export const appStore = {
   // Presets
   presets,
   currentPresetName,
+  setCurrentPresetName,
   initPresets,
   savePreset,
   loadPreset,
