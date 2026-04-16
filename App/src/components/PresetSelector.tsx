@@ -114,29 +114,30 @@ export const PresetSelector: Component<PresetSelectorProps> = (props) => {
         value={currentName()}
         onChange={(e) => handleLoad(e.currentTarget.value)}
       >
-        <option value="">— Select Preset —</option>
+        <option value="">— Select Melody —</option>
         {presetNames().map((name) => (
           <option value={name}>{name}</option>
         ))}
       </select>
+
+      <button class="ctrl-btn small" onClick={handleNew} title="New melody">
+        +
+      </button>
 
       {props.showControls && (
         <>
           <input
             type="text"
             id="preset-name-input"
-            placeholder="Preset name"
+            placeholder="Melody name"
             value={saveName()}
             onInput={(e) => setSaveName(e.currentTarget.value)}
           />
-          <button class="ctrl-btn small" onClick={handleSave} title="Save preset">
+          <button class="ctrl-btn small" onClick={handleSave} title="Save melody">
             Save
           </button>
-          <button class="ctrl-btn small" onClick={handleNew} title="New preset">
-            +
-          </button>
           {currentName() && (
-            <button class="ctrl-btn small danger" onClick={handleDelete} title="Delete preset">
+            <button class="ctrl-btn small danger" onClick={handleDelete} title="Delete melody">
               ×
             </button>
           )}

@@ -13,6 +13,7 @@ import { melodyStore } from '@/stores/melody-store';
 import { PresetSelector } from '@/components/PresetSelector';
 import { NoteList } from '@/components/NoteList';
 import { PitchDisplay } from '@/components/PitchDisplay';
+import { KEY_OFFSETS, midiToFreq, midiToNote } from '@/lib/scale-data';
 import type { PresetData } from '@/stores/app-store';
 import type { MelodyItem, NoteResult, PitchResult } from '@/types';
 
@@ -44,9 +45,37 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
             id="key-select"
             value={appStore.keyName()}
             onChange={(e) => {
-              const key = e.currentTarget.value;
-              appStore.setKeyName(key);
-              melodyStore.refreshScale(key, melodyStore.currentOctave(), appStore.scaleType());
+              const newKey = e.currentTarget.value;
+              const currentKey = appStore.keyName();
+
+              // Transpose existing melody notes if any
+              const melody = melodyStore.items;
+              if (melody.length > 0) {
+                const currentOffset = KEY_OFFSETS[currentKey] ?? 0;
+                const newOffset = KEY_OFFSETS[newKey] ?? 0;
+                const delta = newOffset - currentOffset;
+
+                if (delta !== 0) {
+                  const transposed = melody.map((item) => {
+                    const newMidi = item.note.midi + delta;
+                    const { name, octave } = midiToNote(newMidi);
+                    return {
+                      ...item,
+                      note: {
+                        ...item.note,
+                        midi: newMidi,
+                        name,
+                        octave,
+                        freq: midiToFreq(newMidi),
+                      },
+                    };
+                  });
+                  melodyStore.setMelody(transposed);
+                }
+              }
+
+              appStore.setKeyName(newKey);
+              melodyStore.refreshScale(newKey, melodyStore.currentOctave(), appStore.scaleType());
             }}
           >
             <option value="C">C</option>

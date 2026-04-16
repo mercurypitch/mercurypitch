@@ -30,7 +30,7 @@ export const KEY_SIGNATURES: Record<string, { sharps: number; flats: number }> =
 };
 
 // Key → root note index (0=C, 1=C#, etc.)
-const KEY_OFFSETS: Record<string, number> = {
+export const KEY_OFFSETS: Record<string, number> = {
   'C': 0, 'C#': 1, 'Db': 1,
   'D': 2, 'D#': 3, 'Eb': 3,
   'E': 4, 'Fb': 4, 'E#': 5,
