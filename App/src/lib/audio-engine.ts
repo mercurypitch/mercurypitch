@@ -29,6 +29,7 @@ export class AudioEngine {
   private _frequencyData = new Float32Array(0);
   private _timeData = new Float32Array(0);
   private _playbackTimeData = new Float32Array(0);
+  private _frequencyByteData = new Uint8Array(0);
   private _activeVoices = new Map<number, { oscillators: OscillatorNode[]; gains: GainNode[]; stopTime: number; lfos?: OscillatorNode[]; lfoGains?: GainNode[] }>();
 
   // ============================================================
@@ -64,6 +65,7 @@ export class AudioEngine {
       this._frequencyData = new Float32Array(this.analyser.frequencyBinCount);
       this._timeData = new Float32Array(this.analyser.frequencyBinCount);
       this._playbackTimeData = new Float32Array(this.playbackAnalyser.frequencyBinCount);
+      this._frequencyByteData = new Uint8Array(this.analyser.frequencyBinCount);
     }
   }
 
@@ -134,7 +136,7 @@ export class AudioEngine {
     const gain = this.audioCtx.createGain();
 
     osc.type = 'sine';
-    osc.frequency.value = 880; // A5 click
+    osc.frequency.value = 800; // 800 Hz click (matches old app)
 
     gain.gain.value = 0.3;
     gain.gain.setValueAtTime(0.3, this.audioCtx.currentTime);
@@ -230,6 +232,14 @@ export class AudioEngine {
       this.micAnalyser.getFloatFrequencyData(this._frequencyData);
     }
     return this._frequencyData;
+  }
+
+  /** Get frequency-domain byte data from microphone (Uint8Array, 0-255 per bin) */
+  getFrequencyDataBytes(): Uint8Array {
+    if (this.micAnalyser) {
+      this.micAnalyser.getByteFrequencyData(this._frequencyByteData);
+    }
+    return this._frequencyByteData;
   }
 
   /** Get time-domain data from microphone */
