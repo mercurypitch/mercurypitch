@@ -171,7 +171,7 @@ export function importMelodyFromMIDI(data: Uint8Array): MelodyItem[] | null {
       return null;
     }
 
-    const format = (data[8] << 8) | data[9];
+    const format = (data[9] << 8) | data[10];
     // Support format 0 (single track) and format 1 (multi-track)
     if (format !== 0 && format !== 1) return null;
 
@@ -201,9 +201,9 @@ export function importMelodyFromMIDI(data: Uint8Array): MelodyItem[] | null {
       offset += 8;
 
       let tick = 0;
-      let lastStatus = 0;
       let trackEnd = offset + trackLen;
       while (offset < trackEnd && offset < data.length) {
+        const startOffset = offset;
         // Read variable-length delta time
         let delta = 0;
         let b: number;
@@ -216,15 +216,7 @@ export function importMelodyFromMIDI(data: Uint8Array): MelodyItem[] | null {
         tick += delta;
 
         if (offset >= data.length) break;
-        let status = data[offset++];
-
-        // Running status: if high bit not set, use last status byte
-        if ((status & 0x80) === 0) {
-          status = lastStatus;
-          offset--; // step back so next read gets the data byte we just "consumed"
-        } else {
-          lastStatus = status;
-        }
+        const status = data[offset++];
 
         // End of track
         if (status === 0xFF && offset < data.length && data[offset] === 0x2F) {
@@ -249,6 +241,7 @@ export function importMelodyFromMIDI(data: Uint8Array): MelodyItem[] | null {
           continue;
         }
 
+        // Running status: if high bit not set, status = last status byte
         const channel = status & 0x0F;
         const msgType = status & 0xF0;
 
@@ -277,8 +270,14 @@ export function importMelodyFromMIDI(data: Uint8Array): MelodyItem[] | null {
           if (offset + 1 > data.length) break;
           offset += 1;
         } else {
-          // Unknown message type — skip 2 data bytes if in channel voice range
-          const skipBytes = (msgType >= 0x80 && msgType <= 0xE0) ? 2 : 0;
+          // Unknown — skip variable-length based on type
+          let skipBytes = 0;
+          if (msgType >= 0x80 && msgType <= 0xE0) skipBytes = 2;
+          else if (status < 0x80) {
+            // Running status, adjust back
+            offset--;
+            continue;
+          }
           if (skipBytes > 0 && offset + skipBytes > data.length) break;
           offset += skipBytes;
         }
@@ -436,9 +435,6 @@ export class PianoRollEditor {
   // Grid visibility
   private showGrid = true;
 
-  // Snap to grid
-  private snapToGrid = true;
-
   // Effect state
   private selectedEffect: EffectType | null = null;
 
@@ -446,13 +442,6 @@ export class PianoRollEditor {
   private historyStack: MelodyItem[][] = [];
   private redoStack: MelodyItem[][] = [];
   private readonly maxHistorySize = 50;
-
-  // Copy/paste clipboard
-  private clipboard: MelodyItem[] = [];
-  private clipboardOffset = { beat: 0, row: 0 };
-
-  // Custom scale builder
-  private customScaleNotes: Set<string> = new Set();
 
   // Callbacks
   private onMelodyChange?: (melody: MelodyItem[]) => void;
@@ -497,16 +486,6 @@ export class PianoRollEditor {
 
   getMelody(): MelodyItem[] {
     return [...this.melody];
-  }
-
-  // Snap helpers
-  private snapBeat(beat: number): number {
-    if (!this.snapToGrid) return beat;
-    return Math.round(beat);
-  }
-
-  getSnapToGrid(): boolean {
-    return this.snapToGrid;
   }
 
   // ============================================================
@@ -576,96 +555,6 @@ export class PianoRollEditor {
     if (redoBtn) redoBtn.disabled = !this.canRedo();
   }
 
-  // ============================================================
-  // Copy/Paste
-  // ============================================================
-
-  /** Copy selected notes to clipboard */
-  copySelected(): number {
-    if (this.selectedNoteIds.size === 0) return 0;
-    this.clipboard = this.melody
-      .filter((n) => this.selectedNoteIds.has(n.id ?? 0))
-      .map((n) => ({ ...n, id: undefined as any })); // Clear IDs for new paste
-    if (this.clipboard.length > 0) {
-      const beats = this.clipboard.map((n) => n.startBeat);
-      const rows = this.clipboard.map((n) => this.midiToRow(n.note.midi));
-      this.clipboardOffset = {
-        beat: Math.min(...beats),
-        row: Math.min(...rows),
-      };
-    }
-    return this.clipboard.length;
-  }
-
-  /** Cut selected notes (copy + delete) */
-  cutSelected(): number {
-    const count = this.copySelected();
-    if (count > 0) {
-      this.pushHistory();
-      for (const noteId of this.selectedNoteIds) {
-        const note = this.melody.find((n) => (n.id ?? 0) === noteId);
-        if (note) this.eraseNoteInternal(note);
-      }
-      this.emitMelodyChange();
-      this.draw();
-    }
-    return count;
-  }
-
-  /** Paste clipboard notes at current cursor or selection position */
-  pasteAt(cursorBeat?: number, cursorRow?: number): number {
-    if (this.clipboard.length === 0) return 0;
-    this.pushHistory();
-    const targetBeat = cursorBeat ?? this.clipboardOffset.beat;
-    const targetRow = cursorRow ?? this.clipboardOffset.row;
-    const deltaBeat = targetBeat - this.clipboardOffset.beat;
-    const deltaRow = targetRow - this.clipboardOffset.row;
-    const newNotes: MelodyItem[] = [];
-    for (const note of this.clipboard) {
-      const newBeat = note.startBeat + deltaBeat;
-      if (newBeat < 0 || newBeat >= this.totalBeats) continue;
-      const newRow = Math.max(0, Math.min(this.totalRows - 1, this.midiToRow(note.note.midi) + deltaRow));
-      const scaleNote = this.scale[newRow];
-      if (!scaleNote) continue;
-      const newNote: MelodyItem = {
-        id: this.nextNoteId++,
-        note: {
-          midi: scaleNote.midi,
-          name: scaleNote.name as any,
-          octave: scaleNote.octave,
-          freq: scaleNote.freq,
-        },
-        startBeat: newBeat,
-        duration: note.duration,
-      };
-      newNotes.push(newNote);
-      this.melody.push(newNote);
-    }
-    if (newNotes.length > 0) {
-      this.selectedNoteIds.clear();
-      for (const n of newNotes) {
-        this.selectedNoteIds.add(n.id);
-      }
-    }
-    this.emitMelodyChange();
-    this.draw();
-    return newNotes.length;
-  }
-
-  /** Check if clipboard has notes */
-  hasClipboard(): boolean {
-    return this.clipboard.length > 0;
-  }
-
-  /** Get clipboard size */
-  getClipboardSize(): number {
-    return this.clipboard.length;
-  }
-
-  // ============================================================
-  // Scale & Config
-  // ============================================================
-
   setScale(scale: ScaleDegree[]): void {
     this.scale = scale;
     this.totalRows = scale.length;
@@ -711,28 +600,6 @@ export class PianoRollEditor {
   updateZoomDisplay(): void {
     const el = this.container.querySelector('#roll-zoom-value');
     if (el) el.textContent = Math.round(this.zoomLevel * 100) + '%';
-  }
-
-  toggleSnapToGrid(): void {
-    this.snapToGrid = !this.snapToGrid;
-    this.updateSnapButton();
-  }
-
-  setSnapToGrid(snap: boolean): void {
-    this.snapToGrid = snap;
-    this.updateSnapButton();
-  }
-
-  isSnapEnabled(): boolean {
-    return this.snapToGrid;
-  }
-
-  private updateSnapButton(): void {
-    const btn = this.container.querySelector('#roll-snap-toggle');
-    if (btn) {
-      btn.classList.toggle('active', this.snapToGrid);
-      btn.setAttribute('title', this.snapToGrid ? 'Snap to grid ON' : 'Snap to grid OFF');
-    }
   }
 
   fitToView(): void {
@@ -1060,8 +927,6 @@ export class PianoRollEditor {
           <button id="roll-octaves-plus" class="octave-btn" title="More octaves">+</button>
         </div>
         <div class="roll-sep"></div>
-        <button id="roll-snap-toggle" class="roll-snap-btn active" title="Snap to grid ON">Snap</button>
-        <div class="roll-sep"></div>
         <div class="roll-mode-group">
           <label class="mode-label">Scale:</label>
           <select id="roll-mode-select" class="roll-mode-select">
@@ -1077,11 +942,7 @@ export class PianoRollEditor {
             <option value="pentatonic-minor">Minor Pentatonic</option>
             <option value="blues">Blues</option>
             <option value="chromatic">Chromatic</option>
-            <option value="custom">Custom...</option>
           </select>
-          <div id="roll-custom-scale" class="roll-custom-scale" style="display:none">
-            ${['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'].map(n => `<button class="scale-note-btn${n.includes('#') ? ' black' : ''}" data-note="${n}" title="${n}">${n}</button>`).join('')}
-          </div>
         </div>
         <div class="roll-sep"></div>
         <div class="roll-bars-group">
@@ -1102,18 +963,6 @@ export class PianoRollEditor {
           </button>
           <button id="roll-redo-btn" class="roll-redo-btn" title="Redo (Ctrl+Y)" disabled>
             <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M18.4 10.6C16.55 8.99 14.15 8 11.5 8c-4.65 0-8.58 3.03-9.96 7.22L3.9 16c1.05-3.19 4.05-5.5 7.6-5.5 1.95 0 3.73.72 5.12 1.88L13 16h9V7l-3.6 3.6z"/></svg>
-          </button>
-        </div>
-        <div class="roll-sep"></div>
-        <div class="roll-clipboard-group">
-          <button id="roll-copy-btn" class="roll-ctrl-btn" title="Copy (Ctrl+C)">
-            <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
-          </button>
-          <button id="roll-cut-btn" class="roll-ctrl-btn" title="Cut (Ctrl+X)">
-            <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M9.64 7.64c.23-.5.36-1.05.36-1.64 0-2.21-1.79-4-4-4-.59 0-1.14.13-1.64.36L10 12H2v-2l3.36-3.36c-.23-.5-.36-1.05-.36-1.64 0-2.21 1.79-4 4-4 .59 0 1.14.13 1.64.36L12 2v2l2.36-2.36c.23.5.36 1.05.36 1.64 0 2.21-1.79 4-4 4-.59 0-1.14-.13-1.64-.36L7 8.64V14h2V8.64l-2.36 2.36c.5.23 1.05.36 1.64.36 2.21 0 4-1.79 4-4 0-.59-.13-1.14-.36-1.64L14 2v2l3.64-3.64c-.5-.23-1.05-.36-1.64-.36-2.21 0-4 1.79-4 4 0 .59.13 1.14.36 1.64L14 10.64V14h2V8.64z"/></svg>
-          </button>
-          <button id="roll-paste-btn" class="roll-ctrl-btn" title="Paste (Ctrl+V)">
-            <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M19 2h-4.18C14.4.84 13.3 0 12 0c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm7 18H5V4h2v3h10V4h2v16z"/></svg>
           </button>
         </div>
         <div class="roll-sep"></div>
@@ -1390,46 +1239,7 @@ export class PianoRollEditor {
     // Scale mode select
     container.querySelector('#roll-mode-select')?.addEventListener('change', (e) => {
       const target = e.target as HTMLSelectElement;
-      const mode = target.value;
-      const customDiv = container.querySelector('#roll-custom-scale') as HTMLElement;
-      if (mode === 'custom') {
-        if (customDiv) customDiv.style.display = 'flex';
-        // Initialize with chromatic if empty
-        if (this.customScaleNotes.size === 0) {
-          ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'].forEach(n => this.customScaleNotes.add(n));
-          this._updateCustomScaleButtons(container);
-        }
-        // Apply current custom scale
-        const notes = Array.from(this.customScaleNotes);
-        if (notes.length >= 2) {
-          const customMode = `custom:${notes.join(',')}`;
-          this.setMode(customMode);
-        }
-      } else {
-        if (customDiv) customDiv.style.display = 'none';
-        this.setMode(mode);
-      }
-    });
-
-    // Custom scale note buttons
-    container.querySelectorAll('.scale-note-btn').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const note = (btn as HTMLElement).dataset.note!;
-        if (this.customScaleNotes.has(note)) {
-          this.customScaleNotes.delete(note);
-        } else {
-          this.customScaleNotes.add(note);
-        }
-        this._updateCustomScaleButtons(container);
-        const notes = Array.from(this.customScaleNotes);
-        if (notes.length >= 2) {
-          const customMode = `custom:${notes.join(',')}`;
-          this.setMode(customMode);
-        } else if (notes.length === 1) {
-          // Single note — show as is, scale needs at least 2 notes
-          this._updateHint(`Custom scale needs at least 2 notes (${notes.length}/2)`);
-        }
-      });
+      this.setMode(target.value);
     });
 
     // Import MIDI button
@@ -1500,11 +1310,6 @@ export class PianoRollEditor {
       this.updateZoomDisplay();
     });
 
-    // Snap to grid toggle
-    container.querySelector('#roll-snap-toggle')?.addEventListener('click', () => {
-      this.toggleSnapToGrid();
-    });
-
     // Undo/redo buttons
     container.querySelector('#roll-undo-btn')?.addEventListener('click', () => {
       this.updateUndoRedoButtons();
@@ -1518,20 +1323,6 @@ export class PianoRollEditor {
 
     // Initialize zoom display
     this.updateZoomDisplay();
-
-    // Copy/cut/paste buttons
-    container.querySelector('#roll-copy-btn')?.addEventListener('click', () => {
-      const count = this.copySelected();
-      if (count > 0) this._updateHint(`Copied ${count} note(s)`);
-    });
-    container.querySelector('#roll-cut-btn')?.addEventListener('click', () => {
-      const count = this.cutSelected();
-      if (count > 0) this._updateHint(`Cut ${count} note(s)`);
-    });
-    container.querySelector('#roll-paste-btn')?.addEventListener('click', () => {
-      const count = this.pasteAt();
-      if (count > 0) this._updateHint(`Pasted ${count} note(s)`);
-    });
   }
 
   private onGridMouseDown(e: MouseEvent): void {
@@ -1582,10 +1373,7 @@ export class PianoRollEditor {
         this.isDragging = true;
         this.dragStartX = x;
         this.dragStartY = y;
-        // When snap is disabled, use exact beat position for free placement
-        this.dragStartBeat = this.snapToGrid
-          ? Math.floor(beat) + (beat % 1 >= 0.5 ? 0.5 : 0)
-          : beat;
+        this.dragStartBeat = Math.floor(beat) + (beat % 1 >= 0.5 ? 0.5 : 0);
         this.dragStartRow = row;
       }
     } else if (this.activeTool === 'erase') {
@@ -1610,20 +1398,6 @@ export class PianoRollEditor {
         const first = this.melody.find((n) => n.id !== undefined && this.selectedNoteIds.has(n.id));
         this.onNoteSelect?.(first ?? null);
       } else {
-        // Box select on empty space
-        this.isBoxSelecting = true;
-        this.boxStartX = x;
-        this.boxStartY = y;
-        this.boxEndX = x;
-        this.boxEndY = y;
-        this.isDragging = true;
-        this.dragStartX = x;
-        this.dragStartY = y;
-        this.dragStartBeat = this.snapToGrid
-          ? Math.floor(beat) + (beat % 1 >= 0.5 ? 0.5 : 0)
-          : beat;
-        this.dragStartRow = row;
-        // Clear existing selection unless Shift is held (additive box select)
         if (!e.shiftKey) {
           this.selectedNoteIds.clear();
           this.onNoteSelect?.(null);
@@ -1648,7 +1422,7 @@ export class PianoRollEditor {
     }
 
     if (this.isDragging && this.selectedNoteIds.size > 0) {
-      const deltaBeat = this.snapToGrid ? Math.round((x - this.dragStartX) / this.beatWidth) : (x - this.dragStartX) / this.beatWidth;
+      const deltaBeat = Math.round((x - this.dragStartX) / this.beatWidth);
       const deltaRow = Math.round((y - this.dragStartY) / this.rowHeight);
       if (deltaBeat !== 0 || deltaRow !== 0) {
         for (const noteId of this.selectedNoteIds) {
@@ -1672,10 +1446,10 @@ export class PianoRollEditor {
         const note = this.melody.find((n) => (n.id ?? 0) === noteId);
         if (!note) continue;
         if (this.resizeHandle === 'right') {
-          const endBeat = this.snapToGrid ? Math.round(x / this.beatWidth) : x / this.beatWidth;
+          const endBeat = Math.round(x / this.beatWidth);
           note.duration = Math.max(this.config.minDuration, endBeat - note.startBeat);
         } else if (this.resizeHandle === 'left') {
-          const newStart = this.snapToGrid ? Math.round(x / this.beatWidth) : x / this.beatWidth;
+          const newStart = Math.round(x / this.beatWidth);
           const oldEnd = note.startBeat + note.duration;
           note.startBeat = Math.max(0, Math.min(newStart, oldEnd - this.config.minDuration));
           note.duration = oldEnd - note.startBeat;
@@ -1752,28 +1526,6 @@ export class PianoRollEditor {
   }
 
   private onKeyDown(e: KeyboardEvent): void {
-    // Copy: Ctrl+C / Cmd+C
-    if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
-      e.preventDefault();
-      const count = this.copySelected();
-      if (count > 0) this._updateHint(`Copied ${count} note(s)`);
-      return;
-    }
-    // Cut: Ctrl+X / Cmd+X
-    if ((e.ctrlKey || e.metaKey) && e.key === 'x') {
-      e.preventDefault();
-      const count = this.cutSelected();
-      if (count > 0) this._updateHint(`Cut ${count} note(s)`);
-      return;
-    }
-    // Paste: Ctrl+V / Cmd+V
-    if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
-      e.preventDefault();
-      const count = this.pasteAt();
-      if (count > 0) this._updateHint(`Pasted ${count} note(s)`);
-      return;
-    }
-
     // Zoom: Ctrl++ / Ctrl+- (or Ctrl+scroll)
     if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '=')) {
       e.preventDefault();
@@ -2145,43 +1897,10 @@ export class PianoRollEditor {
   // Drawing
   // ============================================================
 
-  // Accuracy heatmap data (midi -> accuracy percentage)
-  private noteAccuracy: Map<number, number> = new Map();
-
-  // Accuracy band colors (matches app settings)
-  private readonly ACCURACY_COLORS: { threshold: number; color: string }[] = [
-    { threshold: 0, color: '#f85149' },    // Off (< 50%)
-    { threshold: 50, color: '#d29922' },   // Okay (50-75%)
-    { threshold: 75, color: '#2dd4bf' },   // Good (75-90%)
-    { threshold: 90, color: '#58a6ff' },   // Excellent (90-100%)
-    { threshold: 100, color: '#3fb950' },  // Perfect (100%)
-  ];
-
   draw(): void {
     this.drawPiano();
     this.drawRuler();
     this.drawGrid();
-  }
-
-  /** Set note accuracy data for heatmap visualization */
-  setNoteAccuracy(accuracyMap: Map<number, number>): void {
-    this.noteAccuracy = accuracyMap;
-    this.drawPiano();
-  }
-
-  /** Clear note accuracy data */
-  clearNoteAccuracy(): void {
-    this.noteAccuracy = new Map();
-    this.drawPiano();
-  }
-
-  /** Get color for a given accuracy percentage */
-  private getAccuracyColor(accuracy: number): string {
-    for (const band of this.ACCURACY_COLORS) {
-      if (accuracy < band.threshold) continue;
-      return band.color;
-    }
-    return this.ACCURACY_COLORS[0].color;
   }
 
   private drawWithPlayhead(): void {
@@ -2206,17 +1925,6 @@ export class PianoRollEditor {
       if (!scaleNote) continue;
 
       const isBlack = scaleNote.name.includes('#');
-      const midi = scaleNote.midi;
-      const accuracy = this.noteAccuracy.get(midi);
-
-      // Apply accuracy heatmap overlay if data exists
-      if (accuracy !== undefined) {
-        const color = this.getAccuracyColor(accuracy);
-        ctx.fillStyle = color;
-        ctx.globalAlpha = 0.3;
-        ctx.fillRect(0, y, this.pianoWidth, this.rowHeight);
-        ctx.globalAlpha = 1.0;
-      }
 
       // White key background for black keys
       if (isBlack) {
@@ -2230,24 +1938,6 @@ export class PianoRollEditor {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(scaleNote.name, this.pianoWidth / 2, y + this.rowHeight / 2);
-
-      // Accuracy indicator bar at bottom of key
-      if (accuracy !== undefined) {
-        const barWidth = this.pianoWidth * 0.8;
-        const barHeight = 3;
-        const barX = (this.pianoWidth - barWidth) / 2;
-        const barY = y + this.rowHeight - barHeight - 2;
-
-        // Background
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
-        ctx.fillRect(barX, barY, barWidth, barHeight);
-
-        // Filled portion
-        const fillWidth = barWidth * (accuracy / 100);
-        const fillColor = this.getAccuracyColor(accuracy);
-        ctx.fillStyle = fillColor;
-        ctx.fillRect(barX, barY, fillWidth, barHeight);
-      }
 
       // Bottom border
       ctx.strokeStyle = '#21262d';
@@ -2726,16 +2416,6 @@ export class PianoRollEditor {
     window.dispatchEvent(new CustomEvent('pitchperfect:octaveChange', {
       detail: { octave: this.octave, numOctaves: this.numOctaves }
     }));
-  }
-
-  /**
-   * Update the visual state of custom scale note buttons.
-   */
-  private _updateCustomScaleButtons(container: Element): void {
-    container.querySelectorAll('.scale-note-btn').forEach((btn) => {
-      const note = (btn as HTMLElement).dataset.note!;
-      btn.classList.toggle('active', this.customScaleNotes.has(note));
-    });
   }
 
   /**
