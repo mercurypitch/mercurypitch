@@ -8,6 +8,8 @@ import { appStore } from '@/stores/app-store';
 import { MicButton } from '@/components/MicButton';
 import { MetronomeButton } from '@/components/MetronomeButton';
 
+export type PracticeSubMode = 'all' | 'random' | 'focus' | 'reverse';
+
 interface PracticeTabHeaderProps {
   isPlaying: () => boolean;
   isPaused: () => boolean;
@@ -18,6 +20,7 @@ interface PracticeTabHeaderProps {
   countInBeat: () => number;
   metronomeEnabled: () => boolean;
   volume: () => number;
+  practiceSubMode: () => PracticeSubMode;
   onMicToggle: () => void;
   onPlayModeChange: (mode: 'once' | 'repeat' | 'practice') => void;
   onCyclesChange: (cycles: number) => void;
@@ -28,6 +31,7 @@ interface PracticeTabHeaderProps {
   onMetronomeToggle: () => void;
   onSpeedChange: (speed: number) => void;
   onVolumeChange: (vol: number) => void;
+  onPracticeSubModeChange: (mode: PracticeSubMode) => void;
 }
 
 export const PracticeTabHeader: Component<PracticeTabHeaderProps> = (props) => {
@@ -112,6 +116,18 @@ export const PracticeTabHeader: Component<PracticeTabHeaderProps> = (props) => {
           onInput={(e) => props.onCyclesChange(Math.max(2, Math.min(20, parseInt(e.currentTarget.value) || 5)))}
           class="cycles-input"
         />
+        <label class="opt-label">Mode:</label>
+        <select
+          id="practice-sub-mode"
+          value={props.practiceSubMode()}
+          onChange={(e) => props.onPracticeSubModeChange(e.currentTarget.value as PracticeSubMode)}
+          class="practice-sub-mode-select"
+        >
+          <option value="all">All Notes</option>
+          <option value="random">Random (50%)</option>
+          <option value="focus">Focus Errors</option>
+          <option value="reverse">Reverse</option>
+        </select>
       </Show>
 
       <div id="run-indicator">

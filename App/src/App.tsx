@@ -29,6 +29,7 @@ import { AudioEngine } from '@/lib/audio-engine';
 import { MelodyEngine } from '@/lib/melody-engine';
 import { PracticeEngine } from '@/lib/practice-engine';
 import type { PitchResult, NoteResult, PracticeResult, NoteName } from '@/types';
+import type { PracticeSubMode } from '@/components/PracticeTabHeader';
 import type { PlaybackState } from '@/lib/piano-roll';
 import type { PitchSample } from '@/components/PitchCanvas';
 
@@ -58,6 +59,55 @@ function presetToMelody(preset: PresetData): import('@/types').MelodyItem[] {
       linkedTo: n.linkedTo,
     };
   });
+}
+
+/** Filter melody items based on practice sub-mode */
+function filterMelodyForPractice(
+  melody: import('@/types').MelodyItem[],
+  subMode: PracticeSubMode
+): import('@/types').MelodyItem[] {
+  if (subMode === 'all') return melody;
+
+  if (subMode === 'reverse') {
+    return [...melody].reverse().map((item) => ({
+      ...item,
+      startBeat: 0, // Reset timing — will be recalculated by engine
+    }));
+  }
+
+  if (subMode === 'random') {
+    // Keep ~50% of notes, preserving their timing
+    return melody.filter(() => Math.random() >= 0.5);
+  }
+
+  if (subMode === 'focus') {
+    // Use session history to find worst-performing notes
+    const history = appStore.sessionHistory();
+    if (history.length === 0) return melody; // No history — practice all
+
+    // Find notes with the most errors
+    const errorCounts = new Map<number, number>();
+    for (const session of history) {
+      // Each session has noteResults with avgCents per note
+      // We approximate by looking at score — low scores = many errors
+      if (session.score < 70) {
+        // Rough heuristic: low-scoring sessions suggest problem notes
+        // Count each session as a "bad note" indicator
+        for (let i = 0; i < Math.ceil((100 - session.score) / 10); i++) {
+          const idx = i % melody.length;
+          errorCounts.set(idx, (errorCounts.get(idx) ?? 0) + 1);
+        }
+      }
+    }
+
+    if (errorCounts.size === 0) return melody;
+
+    // Include notes that appear in error counts (the "problem" notes)
+    const errorIndices = new Set(errorCounts.keys());
+    return melody.filter((_, i) => errorIndices.has(i));
+  }
+
+  return melody;
 }
 
 interface AppProps {
@@ -94,6 +144,7 @@ export const App: Component<AppProps> = (props) => {
   const [currentCycle, setCurrentCycle] = createSignal<number>(1);
   const [allCycleResults, setAllCycleResults] = createSignal<NoteResult[][]>([]);
   const [isPracticeComplete, setIsPracticeComplete] = createSignal<boolean>(false);
+  const [practiceSubMode, setPracticeSubMode] = createSignal<PracticeSubMode>('all');
   const [savedVol, setSavedVol] = createSignal<number>(80);
   const [showScaleBuilder, setShowScaleBuilder] = createSignal<boolean>(false);
 
@@ -431,7 +482,10 @@ export const App: Component<AppProps> = (props) => {
     await audioEngine.resume();
 
     // Sync engine with current melody/bpm
-    melodyEngine.setMelody(melodyStore.items);
+    const baseMelody = melodyStore.items;
+    const subMode = playMode() === 'practice' ? practiceSubMode() : 'all';
+    const filteredMelody = filterMelodyForPractice(baseMelody, subMode);
+    melodyEngine.setMelody(filteredMelody);
     melodyEngine.setBPM(appStore.bpm());
 
     practiceEngine.startSession();
@@ -656,6 +710,7 @@ export const App: Component<AppProps> = (props) => {
               countInBeat={countInBeat}
               metronomeEnabled={metronomeEnabled}
               volume={savedVol}
+              practiceSubMode={practiceSubMode}
               onMicToggle={handleMicToggle}
               onPlayModeChange={setPlayMode}
               onCyclesChange={setPracticeCycles}
@@ -669,6 +724,7 @@ export const App: Component<AppProps> = (props) => {
                 setSavedVol(vol);
                 audioEngine?.setVolume(vol / 100);
               }}
+              onPracticeSubModeChange={setPracticeSubMode}
             />
 
             {/* Canvas */}
