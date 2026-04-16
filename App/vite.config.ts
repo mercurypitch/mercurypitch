@@ -14,6 +14,7 @@ export default defineConfig({
   },
   build: {
     target: 'esnext',
+    base: '/solid/',
   },
   test: {
     globals: true,
