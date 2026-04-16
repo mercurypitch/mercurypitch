@@ -1874,10 +1874,43 @@ export class PianoRollEditor {
   // Drawing
   // ============================================================
 
+  // Accuracy heatmap data (midi -> accuracy percentage)
+  private noteAccuracy: Map<number, number> = new Map();
+
+  // Accuracy band colors (matches app settings)
+  private readonly ACCURACY_COLORS: { threshold: number; color: string }[] = [
+    { threshold: 0, color: '#f85149' },    // Off (< 50%)
+    { threshold: 50, color: '#d29922' },   // Okay (50-75%)
+    { threshold: 75, color: '#2dd4bf' },   // Good (75-90%)
+    { threshold: 90, color: '#58a6ff' },   // Excellent (90-100%)
+    { threshold: 100, color: '#3fb950' },  // Perfect (100%)
+  ];
+
   draw(): void {
     this.drawPiano();
     this.drawRuler();
     this.drawGrid();
+  }
+
+  /** Set note accuracy data for heatmap visualization */
+  setNoteAccuracy(accuracyMap: Map<number, number>): void {
+    this.noteAccuracy = accuracyMap;
+    this.drawPiano();
+  }
+
+  /** Clear note accuracy data */
+  clearNoteAccuracy(): void {
+    this.noteAccuracy = new Map();
+    this.drawPiano();
+  }
+
+  /** Get color for a given accuracy percentage */
+  private getAccuracyColor(accuracy: number): string {
+    for (const band of this.ACCURACY_COLORS) {
+      if (accuracy < band.threshold) continue;
+      return band.color;
+    }
+    return this.ACCURACY_COLORS[0].color;
   }
 
   private drawWithPlayhead(): void {
@@ -1902,6 +1935,17 @@ export class PianoRollEditor {
       if (!scaleNote) continue;
 
       const isBlack = scaleNote.name.includes('#');
+      const midi = scaleNote.midi;
+      const accuracy = this.noteAccuracy.get(midi);
+
+      // Apply accuracy heatmap overlay if data exists
+      if (accuracy !== undefined) {
+        const color = this.getAccuracyColor(accuracy);
+        ctx.fillStyle = color;
+        ctx.globalAlpha = 0.3;
+        ctx.fillRect(0, y, this.pianoWidth, this.rowHeight);
+        ctx.globalAlpha = 1.0;
+      }
 
       // White key background for black keys
       if (isBlack) {
@@ -1915,6 +1959,24 @@ export class PianoRollEditor {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(scaleNote.name, this.pianoWidth / 2, y + this.rowHeight / 2);
+
+      // Accuracy indicator bar at bottom of key
+      if (accuracy !== undefined) {
+        const barWidth = this.pianoWidth * 0.8;
+        const barHeight = 3;
+        const barX = (this.pianoWidth - barWidth) / 2;
+        const barY = y + this.rowHeight - barHeight - 2;
+
+        // Background
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+        ctx.fillRect(barX, barY, barWidth, barHeight);
+
+        // Filled portion
+        const fillWidth = barWidth * (accuracy / 100);
+        const fillColor = this.getAccuracyColor(accuracy);
+        ctx.fillStyle = fillColor;
+        ctx.fillRect(barX, barY, fillWidth, barHeight);
+      }
 
       // Bottom border
       ctx.strokeStyle = '#21262d';
