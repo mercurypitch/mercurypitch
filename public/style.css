@@ -1531,3 +1531,50 @@ header h1 {
     font-weight: bold;
 }
 
+/* Pitch track button */
+.roll-pitch-track-btn {
+    padding: 5px 10px;
+    font-size: 0.7rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.12s ease;
+    flex-shrink: 0;
+}
+.roll-pitch-track-btn:hover {
+    border-color: var(--accent);
+    color: var(--text-primary);
+}
+.roll-pitch-track-btn.active {
+    border-color: var(--accent);
+    background: rgba(88, 166, 255, 0.1);
+    color: var(--accent);
+}
+
+/* Pitch track canvas */
+.roll-pitch-track {
+    width: 100%;
+    height: 80px;
+    display: block;
+    border-top: 1px solid var(--border);
+    background: #0d1117;
+}
+
+/* MIDI export button */
+.roll-export-btn {
+    padding: 5px 10px;
+    font-size: 0.7rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.12s ease;
+    flex-shrink: 0;
+}
+.roll-export-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}

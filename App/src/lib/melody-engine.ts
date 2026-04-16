@@ -174,6 +174,23 @@ export class MelodyEngine {
     this.currentNoteIndex = -1;
   }
 
+  /** Seek to a specific beat position (while playing or paused) */
+  seekTo(targetBeat: number): void {
+    const beatDurationMs = 60000 / this.bpm;
+    this.playStartTime = performance.now() - targetBeat * beatDurationMs / this.playbackSpeed;
+    this.currentBeat = targetBeat;
+    // Recalculate current note index based on new beat position
+    const sorted = [...this.melody].sort((a, b) => a.startBeat - b.startBeat);
+    let newNoteIndex = -1;
+    for (let i = 0; i < sorted.length; i++) {
+      if (sorted[i].startBeat <= targetBeat && sorted[i].startBeat + sorted[i].duration > targetBeat) {
+        newNoteIndex = this.melody.findIndex(m => m.id === sorted[i].id);
+        break;
+      }
+    }
+    this.currentNoteIndex = newNoteIndex;
+  }
+
   private _tick(): void {
     this.animFrameId = requestAnimationFrame(() => this._onFrame());
   }

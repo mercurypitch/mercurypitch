@@ -269,8 +269,9 @@
         let pc = dom.canvasContainer;
 
         // Pitch canvas: always extend to full timeline width for auto-scroll
+        // Ensure minimum width fills the container so small melodies still stretch
         let totalBeats = state.totalBeats || 16;
-        let totalTimelineWidth = totalBeats * state.pitchBeatWidth;
+        let totalTimelineWidth = Math.max(pc.clientWidth, totalBeats * state.pitchBeatWidth);
 
         dom.pitchCanvas.width  = totalTimelineWidth * dpr;
         dom.pitchCanvas.height = pc.clientHeight * dpr;
@@ -1346,7 +1347,7 @@
                     playPrecountClick();
                 }
 
-                if (state.precountBeats >= 5) {
+                if (state.precountBeats >= 4) {
                     // Precount finished, start actual playback
                     state.isPrecount = false;
                     startActualPlayback();

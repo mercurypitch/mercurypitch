@@ -37,6 +37,150 @@
         }
     };
 
+    // ========== MIDI EXPORT ==========
+    /**
+     * Encode a melody as a Standard MIDI File (Format 1).
+     * @param {Array} melody - Array of {note: {midi}, startBeat, duration, effectType}
+     * @param {number} bpm - Tempo in beats per minute
+     * @returns {Uint8Array} - The complete MIDI file as bytes
+     */
+    function exportMelodyToMIDI(melody, bpm) {
+        if (!melody || melody.length === 0) {
+            alert('No melody to export. Add some notes first.');
+            return null;
+        }
+
+        // MIDI delta-time variable-length quantity helper
+        function writeVarLen(value) {
+            const bytes = [];
+            let v = Math.floor(value);
+            bytes.push(v & 0x7f);
+            while ((v >>= 7) > 0) {
+                bytes.push((v & 0x7f) | 0x80);
+            }
+            bytes.reverse();
+            return bytes;
+        }
+
+        function writeString(str) {
+            const bytes = [];
+            for (let i = 0; i < str.length; i++) {
+                bytes.push(str.charCodeAt(i) & 0xff);
+            }
+            return bytes;
+        }
+
+        // Collect all events: { delta, type, channel, data }
+        // type: 0x90 = note on, 0x80 = note off
+        const events = [];
+
+        // Tempo: meta event 0x51 (tempo)
+        // Format 1 MIDI needs a tempo event at delta 0
+        const microsecondsPerBeat = Math.round(60000000 / bpm);
+        events.push({ delta: 0, type: 0xff, subtype: 0x51, data: [
+            (microsecondsPerBeat >> 16) & 0xff,
+            (microsecondsPerBeat >> 8) & 0xff,
+            microsecondsPerBeat & 0xff
+        ]});
+
+        // Time signature: meta event 0x58
+        events.push({ delta: 0, type: 0xff, subtype: 0x58, data: [0x04, 0x02, 0x18, 0x08] });
+
+        // End of track: meta event 0x2f
+        events.push({ delta: 0, type: 0xff, subtype: 0x2f, data: [] });
+
+        // Note events: delta in ticks (480 per beat)
+        const TICKS_PER_BEAT = 480;
+        melody.forEach(function (item) {
+            const midi = item.note ? item.note.midi : (item.midi || 60);
+            const deltaOn = Math.round(item.startBeat * TICKS_PER_BEAT);
+            const deltaOff = Math.round((item.startBeat + item.duration) * TICKS_PER_BEAT);
+
+            events.push({ delta: deltaOn, type: 0x90, note: midi, velocity: 80 });
+            events.push({ delta: deltaOff, type: 0x80, note: midi, velocity: 0 });
+        });
+
+        // Sort events by absolute time (delta order is preserved during sorting)
+        // Convert delta to absolute ticks
+        let currentTick = 0;
+        const absEvents = [];
+        events.forEach(function (evt) {
+            currentTick += evt.delta;
+            absEvents.push({ tick: currentTick, delta: evt.delta, type: evt.type, evt: evt });
+        });
+        absEvents.sort(function (a, b) { return a.tick - b.tick; });
+
+        // Recompute deltas after sorting
+        let prevTick = 0;
+        absEvents.forEach(function (e) {
+            e.delta = e.tick - prevTick;
+            prevTick = e.tick;
+        });
+
+        // Build track chunk
+        const trackData = [];
+        absEvents.forEach(function (e) {
+            const deltaBytes = writeVarLen(e.delta);
+            trackData.push.apply(trackData, deltaBytes);
+
+            if (e.type === 0xff) {
+                // Meta event
+                trackData.push(e.evt.subtype);
+                if (e.evt.data) {
+                    trackData.push(e.evt.data.length);
+                    trackData.push.apply(trackData, e.evt.data);
+                } else {
+                    trackData.push(0);
+                }
+            } else if (e.type === 0x90 || e.type === 0x80) {
+                // Note on/off
+                trackData.push(e.type);
+                trackData.push(e.evt.note);
+                trackData.push(e.evt.velocity);
+            }
+        });
+
+        // Header chunk: MThd + length (6) + format (1) + ntracks (1) + division (480)
+        const header = [0x4d, 0x54, 0x68, 0x64, // MThd
+                        0x00, 0x00, 0x00, 0x06, // chunk length
+                        0x00, 0x01,             // format 1
+                        0x00, 0x01,             // 1 track
+                        0x01, 0xe0];            // 480 ticks/beat
+
+        // Track chunk: MTrk + length + data
+        const trackLen = trackData.length;
+        const track = [0x4d, 0x54, 0x72, 0x6b, // MTrk
+                       (trackLen >> 24) & 0xff,
+                       (trackLen >> 16) & 0xff,
+                       (trackLen >> 8) & 0xff,
+                       trackLen & 0xff];
+        track.push.apply(track, trackData);
+
+        const midiData = new Uint8Array(header.length + track.length);
+        midiData.set(header, 0);
+        midiData.set(track, header.length);
+
+        return midiData;
+    }
+
+    function downloadMIDI(melody, bpm, filename) {
+        const midiData = exportMelodyToMIDI(melody, bpm);
+        if (!midiData) return;
+
+        const blob = new Blob([midiData], { type: 'audio/midi' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename || 'pitchperfect-melody.mid';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    // Expose globally
+    window.pianoRollExportMIDI = downloadMIDI;
+
     // ========== PRESET STORAGE ==========
     const PRESETS_KEY = 'pitchperfect_presets';
     const LAST_PRESET_KEY = 'pitchperfect_lastpreset';
@@ -166,6 +310,9 @@
         this.gridCtx = null;
         this.gridContainer = null;
         this.gridScrollX = 0;
+        this.pitchTrackCanvas = null;
+        this.pitchTrackVisible = false;
+        this.pitchDetector = null;
 
         // Presets
         this.presets = loadPresets();
@@ -291,6 +438,7 @@
                 '<button id="roll-save-preset" class="roll-save-btn" title="Save preset">Save</button>' +
                 '<button id="roll-share-preset" class="roll-share-btn" title="Share preset (copy URL)">Share</button>' +
                 '<button id="roll-clear-all" class="roll-ctrl-btn danger" title="Clear all notes">Clear</button>' +
+                '<button id="roll-export-midi" class="roll-export-btn" title="Export melody as MIDI file">Export MIDI</button>' +
             '</div>' +
             '<div class="roll-sep"></div>' +
             '<div class="roll-effects-row">' +
@@ -327,6 +475,10 @@
                     '<option value="synth">Synth</option>' +
                 '</select>' +
             '</div>' +
+            '<div class="roll-sep"></div>' +
+            '<button id="roll-pitch-track-btn" class="roll-pitch-track-btn" title="Toggle pitch track visualization">' +
+                'Pitch Track' +
+            '</button>' +
             '<div class="roll-sep"></div>' +
             '<div class="roll-play-group">' +
                 '<button id="roll-play-btn" class="roll-play-btn" title="Start playback">' +
@@ -378,6 +530,12 @@
         gridWrapper.appendChild(this.gridContainer);
 
         mainArea.appendChild(gridWrapper);
+
+        // Pitch track canvas (below grid, hidden by default)
+        this.pitchTrackCanvas = document.createElement('canvas');
+        this.pitchTrackCanvas.className = 'roll-pitch-track';
+        this.pitchTrackCanvas.style.display = 'none';
+        mainArea.appendChild(this.pitchTrackCanvas);
 
         el.appendChild(mainArea);
 
@@ -811,6 +969,11 @@
         document.getElementById('roll-clear-all').addEventListener('click', function () {
             self._clearAll();
         });
+        document.getElementById('roll-export-midi')?.addEventListener('click', function () {
+            const melody = self.getMelody();
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+            downloadMIDI(melody, self.bpm, 'pitchperfect-' + timestamp + '.mid');
+        });
         document.getElementById('roll-preset-select').addEventListener('change', function (e) {
             if (e.target.value) self._loadPreset(e.target.value);
         });
@@ -822,6 +985,7 @@
         document.getElementById('roll-play-btn').addEventListener('click', function () {
             self._playMelody();
         });
+
         document.getElementById('roll-reset-btn').addEventListener('click', function () {
             self._resetMelody();
         });
@@ -833,6 +997,11 @@
                 self.setInstrument(e.target.value);
             });
         }
+
+        // Pitch track toggle
+        document.getElementById('roll-pitch-track-btn')?.addEventListener('click', function () {
+            self._togglePitchTrack();
+        });
 
         // Grid canvas events
         this.gridCanvas.addEventListener('mousedown', function (e) { self._onGridMouseDown(e); });
@@ -885,6 +1054,9 @@
         window.addEventListener('resize', function () {
             self._calculateDimensions();
             self._drawAll();
+            if (self.pitchTrackVisible) {
+                self._resizePitchTrackCanvas();
+            }
         });
 
         // Populate preset select
@@ -897,7 +1069,7 @@
     // ========== MOUSE EVENTS ==========
     PianoRollEditor.prototype._onGridMouseDown = function (e) {
         const rect = this.gridCanvas.getBoundingClientRect();
-        let x = e.clientX - rect.left;
+        let x = e.clientX - rect.left + this.gridScrollX;
         let y = e.clientY - rect.top;
 
         if (this.activeTool === 'erase') {
@@ -1128,7 +1300,7 @@
     PianoRollEditor.prototype._onRightClick = function (e) {
         e.preventDefault();
         const rect = this.gridCanvas.getBoundingClientRect();
-        let x = e.clientX - rect.left;
+        let x = e.clientX - rect.left + this.gridScrollX;
         let y = e.clientY - rect.top;
         let note = this._getNoteAt(x, y);
         if (note) {
@@ -1615,24 +1787,34 @@
 
         if (this._playbackState === 'stopped') {
             // Initialize audio context on first play (browser requirement)
+            // Use .then() so playback starts only after audio context is ready
+            const startPlayback = () => {
+                const sortedNotes = this.notes.slice().sort(function (a, b) { return a.startBeat - b.startBeat; });
+                const lastNote = sortedNotes[sortedNotes.length - 1];
+                // unused: var totalDuration = (lastNote.startBeat + lastNote.duration) * (60000 / this.bpm);
+
+                this._playbackState = 'playing';
+                this._playStartTime = performance.now() - (this._activeBeat / this.bpm) * 60000;
+                this._pauseStartTime = 0;
+                this._playAnimationId = requestAnimationFrame(function () { self._animatePlayback(); });
+
+                playIcon.style.display = 'none';
+                pauseIcon.style.display = 'block';
+                playBtn.querySelector('span').textContent = 'Pause';
+                resetBtn.disabled = false;
+            };
+
             if (window.pianoRollAudioEngine) {
-                window.pianoRollAudioEngine.init();
+                const initPromise = window.pianoRollAudioEngine.init();
+                if (initPromise && typeof initPromise.then === 'function') {
+                    initPromise.then(startPlayback);
+                } else {
+                    startPlayback();
+                }
+            } else {
+                startPlayback();
             }
-
-            // Start fresh playback — use playhead position if user dragged it while stopped
-            const sortedNotes = this.notes.slice().sort(function (a, b) { return a.startBeat - b.startBeat; });
-            const lastNote = sortedNotes[sortedNotes.length - 1];
-            // unused: var totalDuration = (lastNote.startBeat + lastNote.duration) * (60000 / this.bpm);
-
-            this._playbackState = 'playing';
-            this._playStartTime = performance.now() - (this._activeBeat / this.bpm) * 60000;
-            this._pauseStartTime = 0;
-            this._playAnimationId = requestAnimationFrame(function () { self._animatePlayback(); });
-
-            playIcon.style.display = 'none';
-            pauseIcon.style.display = 'block';
-            playBtn.querySelector('span').textContent = 'Pause';
-            resetBtn.disabled = false;
+            return;
         } else if (this._playbackState === 'playing') {
             // Pause
             this._pauseStartTime = performance.now();
@@ -1741,12 +1923,145 @@
         this._updateTimelineInfo(currentBeat);
         this._drawGridWithPlayhead();
 
+        // Update pitch track visualization during playback
+        if (this.pitchTrackVisible) {
+            this._updatePitchTrack();
+        }
+
         if (currentBeat >= lastNote.startBeat + lastNote.duration) {
             this._resetMelody();
             return;
         }
 
         this._playAnimationId = requestAnimationFrame(function () { self._animatePlayback(); });
+    };
+
+    // ========== PITCH TRACK ==========
+    PianoRollEditor.prototype._togglePitchTrack = function () {
+        this.pitchTrackVisible = !this.pitchTrackVisible;
+        const btn = document.getElementById('roll-pitch-track-btn');
+        if (btn) {
+            btn.classList.toggle('active', this.pitchTrackVisible);
+        }
+        if (this.pitchTrackCanvas) {
+            this.pitchTrackCanvas.style.display = this.pitchTrackVisible ? 'block' : 'none';
+        }
+        if (this.pitchTrackVisible) {
+            this._initPitchTrack();
+        }
+    };
+
+    PianoRollEditor.prototype._initPitchTrack = function () {
+        if (!this.pitchTrackCanvas) return;
+
+        // Initialize pitch detector using the audio engine's analyser
+        if (window.pianoRollAudioEngine) {
+            const engine = window.pianoRollAudioEngine;
+            if (engine.init) {
+                engine.init().then(() => {
+                    if (!this.pitchDetector) {
+                        this.pitchDetector = new PitchDetector(44100, 2048, 0.10, 5);
+                    }
+                    this._resizePitchTrackCanvas();
+                });
+            } else {
+                if (!this.pitchDetector) {
+                    this.pitchDetector = new PitchDetector(44100, 2048, 0.10, 5);
+                }
+                this._resizePitchTrackCanvas();
+            }
+        } else {
+            // Fallback: create detector without analyser
+            if (!this.pitchDetector) {
+                this.pitchDetector = new PitchDetector(44100, 2048, 0.10, 5);
+            }
+            this._resizePitchTrackCanvas();
+        }
+    };
+
+    PianoRollEditor.prototype._resizePitchTrackCanvas = function () {
+        if (!this.pitchTrackCanvas) return;
+        const dpr = window.devicePixelRatio || 1;
+        const w = this.gridContainer.clientWidth;
+        const h = 80;
+        this.pitchTrackCanvas.width = w * dpr;
+        this.pitchTrackCanvas.height = h * dpr;
+        this.pitchTrackCanvas.style.width = w + 'px';
+        this.pitchTrackCanvas.style.height = h + 'px';
+        // Draw empty state
+        const ctx = this.pitchTrackCanvas.getContext('2d');
+        if (ctx) {
+            ctx.scale(dpr, dpr);
+            ctx.fillStyle = '#0d1117';
+            ctx.fillRect(0, 0, w, h);
+            ctx.fillStyle = 'rgba(88, 166, 255, 0.3)';
+            ctx.font = '11px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('Pitch Track — press Play to start', w / 2, h / 2 + 4);
+        }
+    };
+
+    PianoRollEditor.prototype._updatePitchTrack = function () {
+        if (!this.pitchTrackCanvas || !this.pitchDetector) return;
+
+        const engine = window.pianoRollAudioEngine;
+        if (!engine) return;
+
+        // Get time domain data from playback analyser
+        const timeData = engine.getPlaybackTimeData();
+        const result = this.pitchDetector.detect(timeData);
+
+        const ctx = this.pitchTrackCanvas.getContext('2d');
+        if (!ctx) return;
+
+        const w = this.pitchTrackCanvas.clientWidth;
+        const h = this.pitchTrackCanvas.clientHeight;
+
+        // Scroll left for rolling display
+        ctx.fillStyle = 'rgba(13, 17, 23, 0.15)';
+        ctx.fillRect(0, 0, w - 2, h);
+
+        // Draw center line
+        ctx.strokeStyle = 'rgba(88, 166, 255, 0.2)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(0, h / 2);
+        ctx.lineTo(w, h / 2);
+        ctx.stroke();
+
+        if (result.freq > 0 && result.confidence > 0.5) {
+            // Map frequency to Y position (invert: higher freq = lower Y)
+            const minFreq = 65;
+            const maxFreq = 2100;
+            const y = h - ((Math.log(result.freq) - Math.log(minFreq)) / (Math.log(maxFreq) - Math.log(minFreq))) * h;
+
+            // Draw a point at the current pitch
+            ctx.fillStyle = 'rgba(63, 185, 80, 0.9)';
+            ctx.beginPath();
+            ctx.arc(w - 2, y, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Draw the waveform across the canvas width (rolling)
+            const waveformData = engine.getPlaybackTimeData();
+            ctx.beginPath();
+            ctx.moveTo(0, h / 2);
+            const step = Math.floor(waveformData.length / w);
+            for (let x = 0; x < w; x++) {
+                const sampleIdx = x * step;
+                const sample = waveformData[sampleIdx] || 0;
+                const waveY = (h / 2) + sample * h * 4;
+                ctx.lineTo(x, waveY);
+            }
+            ctx.strokeStyle = 'rgba(88, 166, 255, 0.6)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            // Draw frequency label
+            ctx.fillStyle = '#58a6ff';
+            ctx.font = '10px monospace';
+            ctx.textAlign = 'right';
+            ctx.fillText(Math.round(result.freq) + ' Hz', w - 4, 12);
+        }
     };
 
     PianoRollEditor.prototype._drawGridWithPlayhead = function () {

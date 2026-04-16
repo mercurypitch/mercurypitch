@@ -21,6 +21,143 @@ export const PIANO_ROLL_CONFIG: PianoRollConfig = {
 };
 
 // ============================================================
+// MIDI Export
+// ============================================================
+
+/** Encode a melody as a Standard MIDI File (Format 1). */
+export function exportMelodyToMIDI(
+  melody: MelodyItem[],
+  bpm: number
+): Uint8Array | null {
+  if (!melody || melody.length === 0) return null;
+
+  const TICKS_PER_BEAT = 480;
+
+  function writeVarLen(value: number): number[] {
+    const bytes: number[] = [];
+    let v = Math.floor(value);
+    bytes.push(v & 0x7f);
+    while ((v >>= 7) > 0) {
+      bytes.push((v & 0x7f) | 0x80);
+    }
+    bytes.reverse();
+    return bytes;
+  }
+
+  // Build absolute event list
+  const absEvents: Array<{
+    tick: number;
+    delta: number;
+    type: number;
+    subtype?: number;
+    note?: number;
+    velocity?: number;
+    data?: number[];
+  }> = [];
+
+  // Tempo meta event (0xFF 0x51)
+  const microsecondsPerBeat = Math.round(60000000 / bpm);
+  absEvents.push({
+    tick: 0,
+    delta: 0,
+    type: 0xff,
+    subtype: 0x51,
+    data: [
+      (microsecondsPerBeat >> 16) & 0xff,
+      (microsecondsPerBeat >> 8) & 0xff,
+      microsecondsPerBeat & 0xff,
+    ],
+  });
+
+  // Time signature (0xFF 0x58)
+  absEvents.push({ tick: 0, delta: 0, type: 0xff, subtype: 0x58, data: [0x04, 0x02, 0x18, 0x08] });
+
+  // Note events
+  melody.forEach((item) => {
+    const midi = item.note?.midi ?? 60;
+    const tickOn = Math.round(item.startBeat * TICKS_PER_BEAT);
+    const tickOff = Math.round((item.startBeat + item.duration) * TICKS_PER_BEAT);
+    absEvents.push({ tick: tickOn, delta: 0, type: 0x90, note: midi, velocity: 80 });
+    absEvents.push({ tick: tickOff, delta: 0, type: 0x80, note: midi, velocity: 0 });
+  });
+
+  // Sort by tick
+  absEvents.sort((a, b) => a.tick - b.tick);
+
+  // Recompute deltas
+  let prevTick = 0;
+  absEvents.forEach((e) => {
+    const d = e.tick - prevTick;
+    e.delta = d;
+    prevTick = e.tick;
+  });
+
+  // Serialize track
+  const trackData: number[] = [];
+  absEvents.forEach((e) => {
+    trackData.push(...writeVarLen(e.delta));
+    if (e.type === 0xff) {
+      trackData.push(e.subtype!);
+      if (e.data) {
+        trackData.push(e.data.length);
+        trackData.push(...e.data);
+      } else {
+        trackData.push(0);
+      }
+    } else {
+      trackData.push(e.type, e.note!, e.velocity!);
+    }
+  });
+
+  // End of track (0xFF 0x2F 0x00)
+  trackData.push(0xff, 0x2f, 0x00);
+
+  // Header chunk
+  const header = [
+    0x4d, 0x54, 0x68, 0x64, // MThd
+    0x00, 0x00, 0x00, 0x06, // length 6
+    0x00, 0x01,             // format 1
+    0x00, 0x01,             // 1 track
+    0x01, 0xe0,             // 480 ticks/beat
+  ];
+
+  // Track chunk
+  const trackLen = trackData.length;
+  const track = [
+    0x4d, 0x54, 0x72, 0x6b, // MTrk
+    (trackLen >> 24) & 0xff,
+    (trackLen >> 16) & 0xff,
+    (trackLen >> 8) & 0xff,
+    trackLen & 0xff,
+    ...trackData,
+  ];
+
+  const midiData = new Uint8Array(header.length + track.length);
+  midiData.set(header, 0);
+  midiData.set(track, header.length);
+  return midiData;
+}
+
+/** Trigger a browser download of a MIDI file. */
+export function downloadMIDI(melody: MelodyItem[], bpm: number, filename?: string): boolean {
+  const data = exportMelodyToMIDI(melody, bpm);
+  if (!data) {
+    alert('No melody to export. Add some notes first.');
+    return false;
+  }
+  const blob = new Blob([new Uint8Array(data)], { type: 'audio/midi' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename || 'pitchperfect-melody.mid';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  return true;
+}
+
+// ============================================================
 // Note ID generation
 // ============================================================
 
@@ -67,6 +204,7 @@ export class PianoRollEditor {
   private readonly config = PIANO_ROLL_CONFIG;
   private rowHeight: number;
   private beatWidth: number;
+  private zoomLevel: number;
   private pianoWidth: number;
   private rulerHeight: number;
   private totalRows = 0;
@@ -78,6 +216,8 @@ export class PianoRollEditor {
   private playStartTime = 0;
   private pauseStartTime = 0;
   private activeBeat = 0;
+  private isSeeking = false;
+  private seekStartX = 0;
 
   // Interaction
   private selectedNoteId: number | null = null;
@@ -130,6 +270,7 @@ export class PianoRollEditor {
     this.onNoteSelect = options.onNoteSelect;
     this.onInstrumentChange = options.onInstrumentChange;
     this.rowHeight = this.config.rowHeight;
+    this.zoomLevel = 1.0;
     this.beatWidth = this.config.beatWidth;
     this.pianoWidth = this.config.pianoWidth;
     this.rulerHeight = this.config.rulerHeight;
@@ -243,6 +384,41 @@ export class PianoRollEditor {
     this.totalBeats = beats;
     this.buildCanvases();
     this.draw();
+  }
+
+  zoomIn(): void {
+    this.zoomLevel = Math.min(3.0, this.zoomLevel + 0.2);
+    this.beatWidth = this.config.beatWidth * this.zoomLevel;
+    this.buildCanvases();
+    this.draw();
+  }
+
+  zoomOut(): void {
+    this.zoomLevel = Math.max(0.3, this.zoomLevel - 0.2);
+    this.beatWidth = this.config.beatWidth * this.zoomLevel;
+    this.buildCanvases();
+    this.draw();
+  }
+
+  setZoom(level: number): void {
+    this.zoomLevel = Math.max(0.3, Math.min(3.0, level));
+    this.beatWidth = this.config.beatWidth * this.zoomLevel;
+    this.buildCanvases();
+    this.draw();
+  }
+
+  updateZoomDisplay(): void {
+    const el = this.container.querySelector('#roll-zoom-value');
+    if (el) el.textContent = Math.round(this.zoomLevel * 100) + '%';
+  }
+
+  fitToView(): void {
+    if (!this.gridContainer) return;
+    const containerWidth = this.gridContainer.clientWidth - this.pianoWidth;
+    const minWidth = this.totalBeats * this.config.beatWidth;
+    if (containerWidth > 0 && minWidth > 0) {
+      this.setZoom(containerWidth / minWidth);
+    }
   }
 
   setCurrentNote(index: number): void {
@@ -482,6 +658,22 @@ export class PianoRollEditor {
           <button id="roll-bars-up" class="roll-bars-btn" title="Add 4 bars">+4b</button>
         </div>
         <div class="roll-sep"></div>
+        <div class="roll-zoom-group">
+          <button id="roll-zoom-out" class="roll-zoom-btn" title="Zoom out (Ctrl+-)">-</button>
+          <span id="roll-zoom-value" class="zoom-value">100%</span>
+          <button id="roll-zoom-in" class="roll-zoom-btn" title="Zoom in (Ctrl++)">+</button>
+          <button id="roll-zoom-fit" class="roll-zoom-btn" title="Fit to view">Fit</button>
+        </div>
+        <div class="roll-sep"></div>
+        <div class="roll-undo-group">
+          <button id="roll-undo-btn" class="roll-undo-btn" title="Undo (Ctrl+Z)" disabled>
+            <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/></svg>
+          </button>
+          <button id="roll-redo-btn" class="roll-redo-btn" title="Redo (Ctrl+Y)" disabled>
+            <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M18.4 10.6C16.55 8.99 14.15 8 11.5 8c-4.65 0-8.58 3.03-9.96 7.22L3.9 16c1.05-3.19 4.05-5.5 7.6-5.5 1.95 0 3.73.72 5.12 1.88L13 16h9V7l-3.6 3.6z"/></svg>
+          </button>
+        </div>
+        <div class="roll-sep"></div>
         <div class="roll-preset-group">
           <select id="roll-preset-select" class="roll-preset-select">
             <option value="">— Load Preset —</option>
@@ -490,6 +682,7 @@ export class PianoRollEditor {
           <input type="text" id="roll-preset-name" class="roll-preset-name" placeholder="Preset name">
           <button id="roll-save-preset" class="roll-save-btn" title="Save preset">Save</button>
           <button id="roll-share-preset" class="roll-share-btn" title="Share preset (copy URL)">Share</button>
+          <button id="roll-export-midi" class="roll-export-btn" title="Export melody as MIDI file">Export MIDI</button>
           <button id="roll-clear-all" class="roll-ctrl-btn danger" title="Clear all notes">Clear</button>
         </div>
         <div class="roll-sep"></div>
@@ -568,7 +761,7 @@ export class PianoRollEditor {
     const dpr = window.devicePixelRatio || 1;
     const totalHeight = this.totalRows * this.rowHeight;
 
-    const minWidth = this.totalBeats * this.beatWidth;
+    const minWidth = this.totalBeats * this.beatWidth * this.zoomLevel;
     const containerWidth = this.gridContainer?.clientWidth ?? 0;
     this.stretchedWidth = containerWidth > 0 ? Math.max(minWidth, containerWidth - this.pianoWidth) : minWidth;
 
@@ -669,6 +862,23 @@ export class PianoRollEditor {
       this.onRightClick(e);
     });
 
+    // Ruler drag-to-seek (click and drag on ruler to scrub playback position)
+    this.rulerCanvas?.addEventListener('mousedown', (e) => {
+      this.isSeeking = true;
+      this.seekStartX = e.clientX;
+      this.seekToRulerPosition(e);
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (this.isSeeking) {
+        this.seekToRulerPosition(e);
+      }
+    });
+
+    document.addEventListener('mouseup', () => {
+      this.isSeeking = false;
+    });
+
     // Scroll sync ruler
     this.gridContainer?.addEventListener('scroll', () => {
       if (this.rulerCanvas && this.gridContainer) {
@@ -741,6 +951,13 @@ export class PianoRollEditor {
       this._sharePreset();
     });
 
+    // Export MIDI button
+    container.querySelector('#roll-export-midi')?.addEventListener('click', () => {
+      const melody = this.getMelody();
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      downloadMIDI(melody, this.bpm, `pitchperfect-${timestamp}.mid`);
+    });
+
     // Bar controls
     container.querySelector('#roll-bars-up')?.addEventListener('click', () => {
       this.addBeats(4);
@@ -750,6 +967,20 @@ export class PianoRollEditor {
     container.querySelector('#roll-bars-down')?.addEventListener('click', () => {
       this.removeBeats(4);
       this.updateBeatInfo();
+    });
+
+    // Zoom controls
+    container.querySelector('#roll-zoom-in')?.addEventListener('click', () => {
+      this.zoomIn();
+      this.updateZoomDisplay();
+    });
+    container.querySelector('#roll-zoom-out')?.addEventListener('click', () => {
+      this.zoomOut();
+      this.updateZoomDisplay();
+    });
+    container.querySelector('#roll-zoom-fit')?.addEventListener('click', () => {
+      this.fitToView();
+      this.updateZoomDisplay();
     });
 
     // Undo/redo buttons
@@ -767,6 +998,9 @@ export class PianoRollEditor {
     window.addEventListener('pitchperfect:presetSaved', () => {
       this.loadPresets();
     });
+
+    // Initialize zoom display
+    this.updateZoomDisplay();
   }
 
   private onGridMouseDown(e: MouseEvent): void {
@@ -890,6 +1124,20 @@ export class PianoRollEditor {
   }
 
   private onKeyDown(e: KeyboardEvent): void {
+    // Zoom: Ctrl++ / Ctrl+- (or Ctrl+scroll)
+    if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '=')) {
+      e.preventDefault();
+      this.zoomIn();
+      this.updateZoomDisplay();
+      return;
+    }
+    if ((e.ctrlKey || e.metaKey) && (e.key === '-' || e.key === '_')) {
+      e.preventDefault();
+      this.zoomOut();
+      this.updateZoomDisplay();
+      return;
+    }
+
     // Undo: Ctrl+Z (or Cmd+Z on Mac)
     if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
       e.preventDefault();
@@ -1119,6 +1367,19 @@ export class PianoRollEditor {
 
       self.drawWithPlayhead();
 
+      // Play tones for notes that start at current beat
+      const win = window as Window & { pianoRollAudioEngine?: { playNote: (freq: number, durationMs: number, effectType?: string) => void } };
+      if (win.pianoRollAudioEngine) {
+        const sortedNotes = [...self.melody].sort((a, b) => a.startBeat - b.startBeat);
+        const durationMs = self.beatWidth * (60000 / self.bpm);
+        for (const note of sortedNotes) {
+          if (Math.abs(note.startBeat - self.activeBeat) < 0.05) {
+            const freq = note.note.freq;
+            win.pianoRollAudioEngine.playNote(freq, note.duration * durationMs, note.effectType);
+          }
+        }
+      }
+
       // Check if playback is done
       const sortedNotes = [...self.melody].sort((a, b) => a.startBeat - b.startBeat);
       const lastNote = sortedNotes[sortedNotes.length - 1];
@@ -1131,6 +1392,26 @@ export class PianoRollEditor {
     };
 
     this.playAnimationId = requestAnimationFrame(animate);
+  }
+
+  private seekToRulerPosition(e: MouseEvent): void {
+    const rect = this.rulerCanvas?.getBoundingClientRect();
+    if (!rect || !this.gridContainer) return;
+
+    const x = e.clientX - rect.left;
+    const beat = Math.max(0, Math.min(this.totalBeats, x / this.beatWidth));
+    const targetScroll = beat * this.beatWidth - rect.width / 2;
+    this.gridContainer.scrollLeft = Math.max(0, targetScroll);
+
+    // Update playhead position visually
+    this.activeBeat = beat;
+    this.drawGridWithPlayhead();
+
+    // If playback is active, also update the playback start time so
+    // playback continues from the new position on mouseup
+    if (this.playbackState === 'playing') {
+      this.playStartTime = performance.now() - (beat / this.bpm) * 60000;
+    }
   }
 
   // ============================================================
