@@ -58,6 +58,16 @@ export class PracticeEngine {
   private allCycleResults: NoteResult[][] = [];
   private runsCompleted = 0;
 
+  // Mic health check (prevents AudioContext suspension drops)
+  // Check every ~10 frames (~167ms at 60fps) — aggressive enough to catch suspensions fast
+  private micHealthCounter = 0;
+  private static readonly MIC_HEALTH_INTERVAL = 10;
+  // Track consecutive health failures to detect genuine mic drops
+  private micHealthFailures = 0;
+  private static readonly MIC_DROP_THRESHOLD = 5; // Treat as dropped after 5 consecutive failures
+  // Last detected pitch to detect mic silence (vs suspension)
+  private lastDetectedPitch: PitchResult | null = null;
+
   constructor(audioEngine: AudioEngine, options: { sensitivity?: number; sampleRate?: number; bufferSize?: number } = {}) {
     this.audioEngine = audioEngine;
     this.sensitivity = options.sensitivity ?? 5;
@@ -114,24 +124,38 @@ export class PracticeEngine {
       if (ok) {
         this.micActive = true;
         this.detector.resetHistory();
+        console.log('[PracticeEngine] Mic started successfully');
         this.callbacks.onMicStateChange?.(true);
         return true;
       }
+      console.warn('[PracticeEngine] Mic start failed - access denied');
       this.callbacks.onMicStateChange?.(false, 'Microphone access denied');
       return false;
     } catch (err) {
+      console.error('[PracticeEngine] Mic start error:', err);
       this.callbacks.onMicStateChange?.(false, String(err));
       return false;
     }
   }
 
   stopMic(): void {
+    if (!this.micActive) {
+      console.log('[PracticeEngine] Mic already stopped');
+      return;
+    }
+    console.log('[PracticeEngine] Stopping mic...');
     this.audioEngine.stopMic();
     this.micActive = false;
     this.callbacks.onMicStateChange?.(false);
   }
 
   isMicActive(): boolean {
+    // Also check audioEngine state for consistency
+    const engineActive = this.audioEngine.isMicActive();
+    if (engineActive !== this.micActive) {
+      console.warn('[PracticeEngine] Mic state mismatch: practiceEngine=', this.micActive, 'audioEngine=', engineActive);
+      this.micActive = engineActive;
+    }
     return this.micActive;
   }
 
@@ -160,7 +184,31 @@ export class PracticeEngine {
 
   /** Call this every animation frame while playing */
   update(): PitchResult | null {
+    if (!this.micActive) {
+      this.callbacks.onPitchDetected?.({
+        frequency: 0,
+        clarity: 0,
+        noteName: '',
+        octave: 0,
+        cents: 0,
+      });
+      return null;
+    }
+
+    // Periodic AudioContext health check — resume if suspended (prevents mic drops)
+    this.micHealthCounter++;
+    if (this.micHealthCounter >= PracticeEngine.MIC_HEALTH_INTERVAL) {
+      this.micHealthCounter = 0;
+      this.audioEngine.resume().catch(() => {});
+    }
+
     const pitch = this.detectPitch();
+
+    // Track last detected pitch for genuine mic drop detection
+    if (pitch && pitch.frequency !== 0) {
+      this.lastDetectedPitch = pitch;
+      this.micHealthFailures = 0;
+    }
 
     if (pitch && this.isPlaying && this.currentTargetNote) {
       // Compute cents relative to target

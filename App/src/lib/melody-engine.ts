@@ -122,6 +122,12 @@ export class MelodyEngine {
     return this.countInBeat;
   }
 
+  /** Returns the performance.now() timestamp when playback started (count-in adjusted).
+   *  Used by the piano roll editor to sync its animation timeline. */
+  getPlayStartTime(): number {
+    return this.playStartTime;
+  }
+
   // ── Playback ──────────────────────────────────────────────
 
   start(countInBeats = 0): void {
@@ -178,6 +184,7 @@ export class MelodyEngine {
   seekTo(targetBeat: number): void {
     const beatDurationMs = 60000 / this.bpm;
     this.playStartTime = performance.now() - targetBeat * beatDurationMs / this.playbackSpeed;
+    this.pauseOffset = targetBeat * beatDurationMs / this.playbackSpeed;
     this.currentBeat = targetBeat;
     // Recalculate current note index based on new beat position
     const sorted = [...this.melody].sort((a, b) => a.startBeat - b.startBeat);
