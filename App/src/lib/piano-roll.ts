@@ -1144,13 +1144,11 @@ export class PianoRollEditor {
       const touch = e.touches[0];
       this.onGridMouseDown({ clientX: touch.clientX, clientY: touch.clientY, target: e.target } as MouseEvent);
     }, { passive: false });
-
     this.gridCanvas?.addEventListener('touchmove', (e) => {
       e.preventDefault();
       const touch = e.touches[0];
       this.onGridMouseMove({ clientX: touch.clientX, clientY: touch.clientY, target: e.target } as MouseEvent);
     }, { passive: false });
-
     this.gridCanvas?.addEventListener('touchend', (e) => {
       e.preventDefault();
       this.onGridMouseUp({} as MouseEvent);
