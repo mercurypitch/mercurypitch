@@ -1263,12 +1263,12 @@ export class PianoRollEditor {
         if (melody && melody.length > 0) {
           this.setMelody(melody);
           this.onMelodyChange?.(melody);
-          this._updateHint(`Imported ${melody.length} note(s) from MIDI`);
+          if (this.hintEl) this.hintEl.textContent = `Imported ${melody.length} note(s) from MIDI`;
         } else {
-          this._updateHint('Could not parse MIDI file');
+          if (this.hintEl) this.hintEl.textContent = 'Could not parse MIDI file';
         }
       } catch {
-        this._updateHint('Error reading MIDI file');
+        if (this.hintEl) this.hintEl.textContent = 'Error reading MIDI file';
       }
       importMidiInput.value = '';
     });

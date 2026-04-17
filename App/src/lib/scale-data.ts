@@ -194,7 +194,7 @@ function parseCustomScaleDegrees(scaleType: string): number[] | null {
   const noteNames = noteList.split(',');
   const degrees: number[] = [];
   for (const noteName of noteNames) {
-    const noteIndex = NOTE_NAMES.indexOf(noteName.trim());
+    const noteIndex = NOTE_NAMES.indexOf(noteName.trim() as NoteName);
     if (noteIndex === -1) continue;
     degrees.push(noteIndex);
   }

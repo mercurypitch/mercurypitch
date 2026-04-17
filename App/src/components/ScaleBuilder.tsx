@@ -6,7 +6,7 @@ import { Component, createSignal, createMemo, createEffect, For, Show } from 'so
 import { appStore } from '@/stores/app-store';
 import { melodyStore } from '@/stores/melody-store';
 import { NOTE_NAMES } from '@/lib/scale-data';
-import type { ScaleDegree } from '@/types';
+import type { ScaleDegree, NoteName } from '@/types';
 
 interface ScaleBuilderProps {
   isOpen: boolean;
@@ -49,7 +49,7 @@ export const ScaleBuilder: Component<ScaleBuilderProps> = (props) => {
 
   // Clear all selections
   const clearAll = () => {
-    setCustomNotes(new Set());
+    setCustomNotes(new Set<string>());
   };
 
   // Save the custom scale
@@ -113,7 +113,7 @@ export const ScaleBuilder: Component<ScaleBuilderProps> = (props) => {
   // Preview the scale as a list of notes
   const previewScale = createMemo(() => {
     const notes = Array.from(customNotes()).sort((a, b) => {
-      return NOTE_NAMES.indexOf(a) - NOTE_NAMES.indexOf(b);
+      return NOTE_NAMES.indexOf(a as NoteName) - NOTE_NAMES.indexOf(b as NoteName);
     });
     return notes;
   });

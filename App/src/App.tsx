@@ -24,11 +24,11 @@ import { HistoryCanvas } from '@/components/HistoryCanvas';
 import { appStore, getNoteAccuracyMap } from '@/stores/app-store';
 import { playback } from '@/stores/playback-store';
 import { melodyStore } from '@/stores/melody-store';
-import { melodyTotalBeats, buildSampleMelody, keyTonicFreq } from '@/lib/scale-data';
+import { melodyTotalBeats, buildSampleMelody, keyTonicFreq, midiToNote } from '@/lib/scale-data';
 import { AudioEngine } from '@/lib/audio-engine';
 import { MelodyEngine } from '@/lib/melody-engine';
 import { PracticeEngine } from '@/lib/practice-engine';
-import type { PitchResult, NoteResult, PracticeResult, NoteName } from '@/types';
+import type { PitchResult, NoteResult, PracticeResult, NoteName, MelodyItem, EffectType } from '@/types';
 import type { PracticeSubMode } from '@/components/PracticeTabHeader';
 import type { PlaybackState } from '@/lib/piano-roll';
 import type { PitchSample } from '@/components/PitchCanvas';
@@ -40,7 +40,7 @@ let melodyEngine: MelodyEngine;
 let practiceEngine: PracticeEngine;
 
 /** Convert preset note data to melody items, preserving exact note properties */
-function presetToMelody(preset: PresetData): import('@/types').MelodyItem[] {
+function presetToMelody(preset: PresetData): MelodyItem[] {
   return preset.notes.map((n) => {
     // Use the scale data stored with the preset for accurate note lookup
     const scaleNote = preset.scale.find((s) => s.midi === n.midi);
@@ -55,7 +55,7 @@ function presetToMelody(preset: PresetData): import('@/types').MelodyItem[] {
       },
       startBeat: n.startBeat,
       duration: n.duration,
-      effectType: n.effectType,
+      effectType: n.effectType as EffectType | undefined,
       linkedTo: n.linkedTo,
     };
   });
@@ -63,9 +63,9 @@ function presetToMelody(preset: PresetData): import('@/types').MelodyItem[] {
 
 /** Filter melody items based on practice sub-mode */
 function filterMelodyForPractice(
-  melody: import('@/types').MelodyItem[],
+  melody: MelodyItem[],
   subMode: PracticeSubMode
-): import('@/types').MelodyItem[] {
+): MelodyItem[] {
   if (subMode === 'all') return melody;
 
   if (subMode === 'reverse') {
@@ -82,7 +82,7 @@ function filterMelodyForPractice(
 
   if (subMode === 'focus') {
     // Use session history to find worst-performing notes
-    const history = appStore.sessionHistory();
+    const history = appStore.sessionHistory;
     if (history.length === 0) return melody; // No history — practice all
 
     // Find notes with the most errors
@@ -453,7 +453,7 @@ export const App: Component<AppProps> = (props) => {
             // New pitch detected — finalize previous note
             if (currentNoteMidi > 0 && currentNoteStartBeat > 0) {
               const duration = Math.max(0.25, beat - currentNoteStartBeat);
-              const note = melodyStore.getNoteFromMidi(currentNoteMidi);
+              const note = midiToNote(currentNoteMidi);
               setRecordedMelody((prev) => [
                 ...prev,
                 {
@@ -475,7 +475,7 @@ export const App: Component<AppProps> = (props) => {
         if (silenceFrames >= 10 && currentNoteMidi > 0) {
           const beat = melodyEngine.getCurrentBeat();
           const duration = Math.max(0.25, beat - currentNoteStartBeat);
-          const note = melodyStore.getNoteFromMidi(currentNoteMidi);
+          const note = midiToNote(currentNoteMidi);
           setRecordedMelody((prev) => [
             ...prev,
             {
@@ -613,7 +613,7 @@ export const App: Component<AppProps> = (props) => {
       if (currentNoteMidi > 0 && currentNoteStartBeat > 0) {
         const beat = melodyEngine.getCurrentBeat();
         const duration = Math.max(0.25, beat - currentNoteStartBeat);
-        const note = melodyStore.getNoteFromMidi(currentNoteMidi);
+        const note = midiToNote(currentNoteMidi);
         setRecordedMelody((prev) => [
           ...prev,
           {
