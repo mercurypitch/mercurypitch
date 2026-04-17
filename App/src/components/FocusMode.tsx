@@ -6,7 +6,9 @@ import { Component, Show, createMemo } from 'solid-js';
 import { appStore } from '@/stores/app-store';
 import { PitchCanvas } from '@/components/PitchCanvas';
 import { HistoryCanvas } from '@/components/HistoryCanvas';
-import type { PitchResult, NoteResult, PracticeResult } from '@/types';
+import { melodyStore } from '@/stores/melody-store';
+import { melodyTotalBeats } from '@/lib/scale-data';
+import type { MelodyItem, PitchResult, NoteResult, PracticeResult } from '@/types';
 
 interface FocusModeProps {
   isPlaying: () => boolean;
@@ -18,6 +20,7 @@ interface FocusModeProps {
   liveScore: () => number | null;
   countInBeat: () => number;
   isCountingIn: () => boolean;
+  currentBeat: () => number;
   onPlay: () => void;
   onPause: () => void;
   onResume: () => void;
@@ -29,29 +32,81 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
     () => `${appStore.keyName()} ${appStore.scaleType()}`
   );
 
+  const totalBeats = createMemo(() => melodyTotalBeats(melodyStore.items));
+  const totalBars = createMemo(() => Math.ceil(totalBeats() / 4));
+  const currentBar = createMemo(() => Math.floor(props.currentBeat() / 4) + 1);
+  const progress = createMemo(() => {
+    const beats = props.currentBeat();
+    const total = totalBeats();
+    return total > 0 ? Math.min(100, (beats / total) * 100) : 0;
+  });
+
+  // Session info
+  const isSession = createMemo(() => appStore.sessionActive());
+  const sessionItem = createMemo(() => appStore.sessionItemIndex());
+  const sessionRepeat = createMemo(() => appStore.sessionItemRepeat());
+
   return (
     <div class="focus-mode">
-      {/* History canvas — thin strip at top */}
-      <div id="history-container">
+      {/* Top stats bar */}
+      <div class="focus-topbar">
+        <div class="focus-topbar-left">
+          <span class="focus-key-badge">{keyDisplay()}</span>
+          <Show when={isSession()}>
+            <span class="focus-session-badge">
+              Run {sessionItem() + 1}
+              <Show when={sessionRepeat() > 0}>
+                <span class="focus-repeat-count"> ×{sessionRepeat() + 1}</span>
+              </Show>
+            </span>
+          </Show>
+        </div>
+
+        <div class="focus-topbar-center">
+          <div class="focus-progress-container">
+            <div class="focus-progress-bar">
+              <div
+                class="focus-progress-fill"
+                style={{ width: `${progress()}%` }}
+              />
+            </div>
+            <span class="focus-progress-label">
+              Bar {Math.max(1, currentBar())} / {totalBars()}
+            </span>
+          </div>
+        </div>
+
+        <div class="focus-topbar-right">
+          <Show when={props.liveScore() !== null}>
+            <span class="focus-score">
+              {Math.round(props.liveScore() ?? 0)}
+              <span class="focus-score-unit">pts</span>
+            </span>
+          </Show>
+        </div>
+      </div>
+
+      {/* History canvas — thin strip below top bar */}
+      <div id="history-container" class="focus-history">
         <HistoryCanvas />
       </div>
 
       {/* Main pitch canvas fills remaining space */}
       <div class="focus-canvas">
         <PitchCanvas
-          pitch={props.currentPitch}
+          melody={() => melodyStore.items}
+          scale={() => melodyStore.currentScale()}
+          totalBeats={totalBeats}
+          currentBeat={props.currentBeat}
           pitchHistory={props.pitchHistory}
-          noteResults={props.noteResults}
-          practiceResult={props.practiceResult}
-          liveScore={props.liveScore}
-          countInBeat={props.countInBeat}
-          isCountingIn={props.isCountingIn}
+          currentNoteIndex={() => 0}
           isPlaying={props.isPlaying}
           isPaused={props.isPaused}
+          isScrolling={() => false}
         />
       </div>
 
-      {/* Floating toolbar */}
+      {/* Bottom floating toolbar */}
       <div class="focus-toolbar">
         {/* Exit button */}
         <button
@@ -67,7 +122,7 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
           </svg>
         </button>
 
-        {/* Play/Pause — shown when stopped or playing */}
+        {/* Play/Pause — shown when stopped */}
         <Show when={!props.isPlaying() && !props.isPaused()}>
           <button class="focus-play" onClick={props.onPlay} title="Play">
             <svg viewBox="0 0 24 24" width="24" height="24">
@@ -95,11 +150,8 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
           </button>
         </Show>
 
-        {/* Key info */}
-        <div>
-          <div class="focus-info">{keyDisplay()}</div>
-          <div class="focus-key-hint">Space = play/pause</div>
-        </div>
+        {/* Keyboard hint */}
+        <div class="focus-key-hint">Space = play/pause</div>
       </div>
     </div>
   );

@@ -1165,6 +1165,7 @@ export const App: Component<AppProps> = (props) => {
           liveScore={liveScore}
           countInBeat={countInBeat}
           isCountingIn={isCountingIn}
+          currentBeat={currentBeat}
           onPlay={handlePlay}
           onPause={handlePause}
           onResume={handleResume}
