@@ -8,7 +8,7 @@ export type InstrumentType = 'sine' | 'piano' | 'organ' | 'strings' | 'synth';
 
 export class AudioEngine {
   private audioCtx: AudioContext | null = null;
-  private masterGain: GainNode | null = null;
+  private mainGain: GainNode | null = null;
   // Microphone
   private micStream: MediaStream | null = null;
   private micSource: MediaStreamAudioSourceNode | null = null;
@@ -53,10 +53,10 @@ export class AudioEngine {
     if (this.audioCtx.destination && typeof this.playbackAnalyser.connect === 'function') {
       this.playbackAnalyser.connect(this.audioCtx.destination);
     }
-    this.masterGain = this.audioCtx.createGain();
-    this.masterGain.gain.value = this.volume;
-    if (this.playbackAnalyser && typeof this.masterGain.connect === 'function') {
-      this.masterGain.connect(this.playbackAnalyser);
+    this.mainGain = this.audioCtx.createGain();
+    this.mainGain.gain.value = this.volume;
+    if (this.playbackAnalyser && typeof this.mainGain.connect === 'function') {
+      this.mainGain.connect(this.playbackAnalyser);
     }
 
     // Create shared analyser for mic input and pitch detection (mirrors old JS)
@@ -103,8 +103,8 @@ export class AudioEngine {
 
   setVolume(value: number): void {
     this.volume = Math.max(0, Math.min(1, value));
-    if (this.masterGain) {
-      this.masterGain.gain.value = this.volume;
+    if (this.mainGain) {
+      this.mainGain.gain.value = this.volume;
     }
   }
 
@@ -169,7 +169,7 @@ export class AudioEngine {
    * Play a short click sound for count-in beat
    */
   playClick(): void {
-    if (!this.audioCtx || !this.masterGain) return;
+    if (!this.audioCtx || !this.mainGain) return;
     // Ensure AudioContext is ready
     this.resume().catch(() => {});
 
@@ -184,7 +184,7 @@ export class AudioEngine {
     gain.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + 0.05);
 
     osc.connect(gain);
-    gain.connect(this.masterGain);
+    gain.connect(this.mainGain);
 
     osc.start(this.audioCtx.currentTime);
     osc.stop(this.audioCtx.currentTime + 0.05);
@@ -194,7 +194,7 @@ export class AudioEngine {
    * Play metronome click - high frequency for downbeat, lower for other beats
    */
   playMetronomeClick(isDownbeat: boolean): void {
-    if (!this.audioCtx || !this.masterGain) return;
+    if (!this.audioCtx || !this.mainGain) return;
     this.resume().catch(() => {});
 
     const osc = this.audioCtx.createOscillator();
@@ -209,7 +209,7 @@ export class AudioEngine {
     gain.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + 0.08);
 
     osc.connect(gain);
-    gain.connect(this.masterGain);
+    gain.connect(this.mainGain);
 
     osc.start(this.audioCtx.currentTime);
     osc.stop(this.audioCtx.currentTime + 0.08);
@@ -332,7 +332,7 @@ export class AudioEngine {
   async playTone(frequency: number, duration?: number): Promise<void> {
     await this.init();
     await this.resume();
-    if (!this.audioCtx || !this.masterGain) return;
+    if (!this.audioCtx || !this.mainGain) return;
 
     // Stop any existing oscillator
     this.stopTone();
@@ -348,7 +348,7 @@ export class AudioEngine {
     this.toneGain.gain.linearRampToValueAtTime(this.volume, this.audioCtx.currentTime + 0.01);
 
     this.toneOscillator.connect(this.toneGain);
-    this.toneGain.connect(this.masterGain);
+    this.toneGain.connect(this.mainGain);
     this.toneOscillator.start();
 
     this.isPlaying = true;
@@ -405,7 +405,7 @@ export class AudioEngine {
   async playNote(frequency: number, durationMs: number, effectType?: EffectType): Promise<number | undefined> {
     await this.init();
     await this.resume();
-    if (!this.audioCtx || !this.masterGain) return undefined;
+    if (!this.audioCtx || !this.mainGain) return undefined;
 
     const now = this.audioCtx.currentTime;
     const noteId = Date.now() + Math.random();
@@ -423,7 +423,7 @@ export class AudioEngine {
       osc.start(now);
       osc.stop(now + durationMs / 1000 + 0.1);
     }
-    mainGain.connect(this.masterGain);
+    mainGain.connect(this.mainGain);
 
     // Store voice reference (with optional LFOs)
     this._activeVoices.set(noteId, {
@@ -452,7 +452,7 @@ export class AudioEngine {
     const now = ctx.currentTime;
     const dur = durationMs / 1000;
 
-    const masterGain = ctx.createGain();
+    const mainGain = ctx.createGain();
     const oscillators: OscillatorNode[] = [];
     let hasCustomEnvelope = false;
 
@@ -468,14 +468,14 @@ export class AudioEngine {
           osc.frequency.value = freq * h;
           gain.gain.value = amplitudes[i] * 0.15;
           osc.connect(gain);
-          gain.connect(masterGain);
+          gain.connect(mainGain);
           oscillators.push(osc);
         });
         // Piano has its own envelope — smooth attack, decay, sustain
-        masterGain.gain.setValueAtTime(0, now);
-        masterGain.gain.linearRampToValueAtTime(0.8, now + this.adsrAttack);
-        masterGain.gain.exponentialRampToValueAtTime(0.4, now + this.adsrAttack + this.adsrDecay);
-        masterGain.gain.setValueAtTime(0.3, now + this.adsrAttack + this.adsrDecay + 0.1);
+        mainGain.gain.setValueAtTime(0, now);
+        mainGain.gain.linearRampToValueAtTime(0.8, now + this.adsrAttack);
+        mainGain.gain.exponentialRampToValueAtTime(0.4, now + this.adsrAttack + this.adsrDecay);
+        mainGain.gain.setValueAtTime(0.3, now + this.adsrAttack + this.adsrDecay + 0.1);
         hasCustomEnvelope = true;
         break;
       }
@@ -490,14 +490,14 @@ export class AudioEngine {
           osc.frequency.value = freq * r;
           gain.gain.value = levels[i] * 0.2;
           osc.connect(gain);
-          gain.connect(masterGain);
+          gain.connect(mainGain);
           oscillators.push(osc);
         });
         // Smooth attack to prevent click at note start, hold, then release
-        masterGain.gain.setValueAtTime(0, now);
-        masterGain.gain.linearRampToValueAtTime(0.7, now + 0.015);
-        masterGain.gain.setValueAtTime(0.7, now + dur - 0.1);
-        masterGain.gain.linearRampToValueAtTime(0, now + dur);
+        mainGain.gain.setValueAtTime(0, now);
+        mainGain.gain.linearRampToValueAtTime(0.7, now + 0.015);
+        mainGain.gain.setValueAtTime(0.7, now + dur - 0.1);
+        mainGain.gain.linearRampToValueAtTime(0, now + dur);
         hasCustomEnvelope = true;
         break;
       }
@@ -513,14 +513,14 @@ export class AudioEngine {
           osc.detune.value = detune;
           gain.gain.value = levels[i] * 0.1;
           osc.connect(gain);
-          gain.connect(masterGain);
+          gain.connect(mainGain);
           oscillators.push(osc);
         });
         // Slow fade in/out for strings feel
-        masterGain.gain.setValueAtTime(0, now);
-        masterGain.gain.linearRampToValueAtTime(0.6, now + 0.1);
-        masterGain.gain.setValueAtTime(0.6, now + dur - 0.1);
-        masterGain.gain.linearRampToValueAtTime(0, now + dur);
+        mainGain.gain.setValueAtTime(0, now);
+        mainGain.gain.linearRampToValueAtTime(0.6, now + 0.1);
+        mainGain.gain.setValueAtTime(0.6, now + dur - 0.1);
+        mainGain.gain.linearRampToValueAtTime(0, now + dur);
         hasCustomEnvelope = true;
         break;
       }
@@ -532,7 +532,7 @@ export class AudioEngine {
         const gain1 = ctx.createGain();
         gain1.gain.value = 0.08;
         osc1.connect(gain1);
-        gain1.connect(masterGain);
+        gain1.connect(mainGain);
         oscillators.push(osc1);
 
         const osc2 = ctx.createOscillator();
@@ -541,13 +541,13 @@ export class AudioEngine {
         const gain2 = ctx.createGain();
         gain2.gain.value = 0.05;
         osc2.connect(gain2);
-        gain2.connect(masterGain);
+        gain2.connect(mainGain);
         oscillators.push(osc2);
         // Smooth attack to prevent click, sustain at 70%, then release
-        masterGain.gain.setValueAtTime(0, now);
-        masterGain.gain.linearRampToValueAtTime(1.0, now + 0.015);
-        masterGain.gain.setValueAtTime(1.0, now + dur - 0.1);
-        masterGain.gain.linearRampToValueAtTime(0, now + dur);
+        mainGain.gain.setValueAtTime(0, now);
+        mainGain.gain.linearRampToValueAtTime(1.0, now + 0.015);
+        mainGain.gain.setValueAtTime(1.0, now + dur - 0.1);
+        mainGain.gain.linearRampToValueAtTime(0, now + dur);
         hasCustomEnvelope = true;
         break;
       }
@@ -660,7 +660,7 @@ export class AudioEngine {
 
   /** Play a beep sound */
   playBeep(type: 'start' | 'stop' = 'start'): void {
-    if (!this.audioCtx || !this.masterGain) {
+    if (!this.audioCtx || !this.mainGain) {
       this.init().then(() => this._doPlayBeep(type));
       return;
     }
@@ -668,7 +668,7 @@ export class AudioEngine {
   }
 
   private _doPlayBeep(type: 'start' | 'stop'): void {
-    if (!this.audioCtx || !this.masterGain) return;
+    if (!this.audioCtx || !this.mainGain) return;
 
     const osc = this.audioCtx.createOscillator();
     const gain = this.audioCtx.createGain();
@@ -679,7 +679,7 @@ export class AudioEngine {
     gain.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + 0.1);
 
     osc.connect(gain);
-    gain.connect(this.masterGain);
+    gain.connect(this.mainGain);
     osc.start();
     osc.stop(this.audioCtx.currentTime + 0.1);
   }
@@ -757,6 +757,6 @@ export class AudioEngine {
       this.audioCtx.close();
       this.audioCtx = null;
     }
-    this.masterGain = null;
+    this.mainGain = null;
   }
 }
