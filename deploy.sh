@@ -58,15 +58,11 @@ run_syntax_check() {
     info "Running syntax checks..."
 
     local js_files=(
-        "$WEB_DIR/app.js"
-        "$WEB_DIR/audio-engine.js"
-        "$WEB_DIR/pitch-detector.js"
-        "$WEB_DIR/scale-data.js"
-        "$WEB_DIR/piano-roll.js"
+        "$WEB_DIR/assets/"*.js
     )
 
     local failed=0
-    for file in "${js_files[@]}"; do
+    for file in $js_files; do
         if [[ -f "$file" ]]; then
             if node --check "$file" 2>/dev/null; then
                 info "  ✓ $(basename "$file")"
@@ -74,8 +70,6 @@ run_syntax_check() {
                 err "  ✗ $(basename "$file") — syntax error"
                 failed=1
             fi
-        else
-            warn "  ? $(basename "$file") — not found"
         fi
     done
 
@@ -88,18 +82,28 @@ run_syntax_check() {
 }
 
 #-------------------------------------------------------------------------------
-# Step 2: Rebuild SolidJS app
+# Step 2: Rebuild SolidJS app and deploy to public/
 #-------------------------------------------------------------------------------
 rebuild_solidjs() {
     info "Rebuilding SolidJS app..."
+
     if [[ -f "$REPO_DIR/App/package.json" ]]; then
         cd "$REPO_DIR/App"
         if npm run build >/dev/null 2>&1; then
-            info "  ✓ SolidJS app rebuilt"
+            info "  ✓ SolidJS app built"
         else
-            warn "  ! SolidJS build failed — continuing anyway"
+            warn "  ! SolidJS build failed"
         fi
         cd "$REPO_DIR"
+    fi
+
+    # Copy built files from App/dist to public/
+    if [[ -d "$REPO_DIR/App/dist" ]]; then
+        info "Deploying SolidJS build to public/..."
+        cp "$REPO_DIR/App/dist/index.html" "$WEB_DIR/index.html"
+        cp "$REPO_DIR/App/dist/assets/"*.css "$WEB_DIR/assets/" 2>/dev/null || true
+        cp "$REPO_DIR/App/dist/assets/"*.js "$WEB_DIR/assets/" 2>/dev/null || true
+        info "  ✓ Files deployed to public/"
     fi
 }
 
@@ -109,26 +113,19 @@ rebuild_solidjs() {
 verify_files() {
     info "Verifying required files..."
 
-    local required_files=(
-        "$WEB_DIR/index.html"
-        "$WEB_DIR/app.js"
-        "$WEB_DIR/audio-engine.js"
-        "$WEB_DIR/pitch-detector.js"
-        "$WEB_DIR/piano-roll.js"
-        "$WEB_DIR/style.css"
-    )
-
-    for file in "${required_files[@]}"; do
-        if [[ -f "$file" ]]; then
-            local size
-            size=$(stat -c%s "$file" 2>/dev/null || echo 0)
-            info "  ✓ $(basename "$file") (${size}B)"
-        else
-            err "  ✗ $(basename "$file") — MISSING"
-            exit 1
-        fi
-    done
-
+    # Verify required files exist
+    if [[ ! -f "$WEB_DIR/index.html" ]]; then
+        err "  ✗ index.html — MISSING"
+        exit 1
+    fi
+    if [[ ! -d "$WEB_DIR/assets" ]]; then
+        err "  ✗ assets/ — MISSING"
+        exit 1
+    fi
+    local js_count=$(ls "$WEB_DIR/assets/"*.js 2>/dev/null | wc -l)
+    local css_count=$(ls "$WEB_DIR/assets/"*.css 2>/dev/null | wc -l)
+    info "  ✓ index.html ($(wc -c < "$WEB_DIR/index.html")B)"
+    info "  ✓ assets/ ($js_count JS files, $css_count CSS files)"
     log "File verification passed"
 }
 
