@@ -121,6 +121,26 @@ header h1 {
     overflow-y: auto;
 }
 
+/* Sidebar close button — shown on mobile when sidebar is open */
+.sidebar-close-btn {
+    display: none;
+    background: none;
+    border: none;
+    color: var(--text-color);
+    cursor: pointer;
+    align-self: flex-end;
+    padding: 4px;
+    border-radius: 4px;
+    opacity: 0.6;
+    transition: opacity 0.15s;
+}
+.sidebar-close-btn:hover { opacity: 1; }
+
+/* Sidebar toggle FAB — hidden on desktop by default */
+.sidebar-toggle-btn {
+    display: none;
+}
+
 
 /* Preset Selector Grid */
 .preset-selector {
@@ -1302,27 +1322,77 @@ header h1 {
 ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
 /* ===== Responsive ===== */
+/* ===== Mobile Layout (768px) — collapsible sidebar ===== */
 @media (max-width: 768px) {
     .main-layout { flex-direction: column; }
+
+    /* Sidebar: collapsible off-canvas panel */
     .app-sidebar {
-        width: 100%;
-        min-width: unset;
-        max-height: 220px;
-        border-right: none;
-        border-bottom: 1px solid var(--border);
-        flex-direction: row;
-        flex-wrap: wrap;
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: 270px;
+        z-index: 200;
+        transform: translateX(-100%);
+        transition: transform 0.22s ease;
+        background: var(--bg-secondary);
+        border-right: 1px solid var(--border);
+        border-bottom: none;
+        flex-direction: column;
         overflow-y: auto;
+        max-height: 100vh;
     }
-    .main-content { min-height: 0; }
-    #note-list { flex-direction: row; flex-wrap: wrap; }
-    #score-card { min-width: unset; margin: 16px; padding: 24px 20px; }
-    #history-container { height: 60px; }
-    #controls { padding: 8px 10px; gap: 4px; }
-    .ctrl-btn { padding: 5px 8px; font-size: 0.72rem; }
-    .mode-btn { padding: 5px 8px; font-size: 0.72rem; }
-    #run-indicator { display: none; }
+    .app-sidebar.open {
+        transform: translateX(0);
+    }
+    /* Reset sidebar layout when open */
+    .app-sidebar > * { width: 100%; }
+
+    /* Sidebar toggle FAB — always visible on mobile */
+    .sidebar-toggle-btn {
+        display: flex !important;
+        position: fixed;
+        top: 8px;
+        left: 8px;
+        z-index: 199;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 8px 10px;
+        cursor: pointer;
+        color: var(--text-color);
+        font-size: 0.8rem;
+        align-items: center;
+        gap: 4px;
+        min-width: 44px;
+        min-height: 44px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+    .sidebar-toggle-btn:hover { background: var(--bg-tertiary); }
+
+    /* Sidebar backdrop */
+    .sidebar-backdrop {
+        display: block;
+        position: fixed;
+        inset: 0;
+        z-index: 199;
+        background: rgba(0,0,0,0.4);
+    }
+
+    /* Main content: full width */
+    .main-content { min-height: 0; flex: 1; }
+
+    /* Score card: compact */
+    #score-card { min-width: unset; margin: 8px; padding: 16px 12px; }
+
+    /* History: shorter */
+    #history-container { height: 50px; }
+
+    /* Header: compact gap */
     .app-header-bar { gap: 4px; }
+
+    /* Practice header: two-row layout */
     .practice-header-bar {
         padding: 5px 8px;
         gap: 4px;
@@ -1331,12 +1401,19 @@ header h1 {
         flex-wrap: nowrap;
         -webkit-overflow-scrolling: touch;
         scrollbar-width: none;
+        flex-direction: row;
     }
     .practice-header-bar::-webkit-scrollbar { display: none; }
     .practice-header-bar .opt-label { font-size: 0.65rem; }
-    .practice-header-bar .ctrl-btn { padding: 4px 7px; font-size: 0.68rem; }
+    .practice-header-bar .ctrl-btn {
+        padding: 6px 8px;
+        font-size: 0.72rem;
+        min-height: 44px;
+        min-width: 44px;
+    }
+    .practice-header-bar .record-btn { min-width: auto; }
     .mode-group { gap: 2px; }
-    .mode-btn { padding: 4px 7px; font-size: 0.68rem; }
+    .mode-btn { padding: 6px 8px; font-size: 0.72rem; min-height: 44px; }
     .cycles-input { width: 44px; padding: 2px 5px; font-size: 0.68rem; }
     .practice-sub-mode-select { font-size: 0.68rem; padding: 2px 5px; }
     .countin-badge { font-size: 0.8rem; padding: 2px 6px; }
@@ -1361,6 +1438,8 @@ header h1 {
     .sensitivity-slider { width: 60px; }
     #sensitivity-value { font-size: 0.65rem; min-width: 14px; }
     .app-header-sep { display: none; }
+    #run-indicator { font-size: 0.7rem; }
+
     /* Larger playhead triangle on mobile for visibility */
     #playhead::after {
         left: -9px;
@@ -1370,6 +1449,65 @@ header h1 {
     /* Mobile: pitch reference above note list */
     #pitch-reference { order: 1; }
     #note-list { order: 2; }
+}
+
+/* ===== Large Phones (480px) — hide secondary elements ===== */
+@media (max-width: 480px) {
+    .app-sidebar { top: 0; }
+    #history-container { display: none; }
+    .stats-panel { display: none; }
+    #note-list { display: none; }
+
+    /* Practice header: hide secondary controls by default */
+    .practice-header-bar .secondary-controls { display: none; }
+    .practice-header-bar .essential-controls { display: flex; }
+
+    /* Session player: compact */
+    .session-player { flex-wrap: wrap; gap: 4px; }
+    .session-player-info { font-size: 0.72rem; }
+
+    /* App header: hide subtitle */
+    .subtitle { display: none; }
+
+    /* Count-in badge: smaller */
+    .countin-badge { font-size: 0.75rem; padding: 2px 5px; }
+}
+
+/* ===== Small Phones (390px) — iPhone 13/15 Pro ===== */
+@media (max-width: 390px) {
+    /* Header: minimal */
+    .app-sidebar { top: 0; }
+    header h1 { font-size: 1rem; }
+    .subtitle { display: none; }
+    .app-tab { padding: 4px 8px; font-size: 0.72rem; }
+
+    /* Practice header: single essential row only */
+    .practice-header-bar {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        scrollbar-width: none;
+        -webkit-overflow-scrolling: touch;
+    }
+    .practice-header-bar::-webkit-scrollbar { display: none; }
+    /* Keep only: mic, record, play/stop, sessions, mode toggles, count-in badge */
+    .practice-header-bar .tempo-group,
+    .practice-header-bar .countin-group,
+    .practice-header-bar .volume-group,
+    .practice-header-bar .speed-group,
+    .practice-header-bar .sensitivity-group {
+        display: none;
+    }
+    .practice-header-bar .ctrl-btn {
+        padding: 6px 8px;
+        font-size: 0.75rem;
+        min-height: 44px;
+        min-width: 44px;
+    }
+    .practice-header-bar .record-btn { min-width: auto; }
+    .mode-group { gap: 2px; }
+    .mode-btn { padding: 6px 8px; font-size: 0.72rem; min-height: 44px; }
+    #run-indicator { font-size: 0.65rem; }
+    .countin-badge { font-size: 0.75rem; }
 }
 
 /* ===== Piano Roll Editor ===== */
@@ -2833,6 +2971,95 @@ header h1 {
     font-size: 0.82rem;
     font-weight: 600;
     color: var(--accent-success);
+}
+
+/* ===== Focus Mode — full-screen minimal practice UI ===== */
+.focus-mode {
+    position: fixed;
+    inset: 0;
+    z-index: 500;
+    background: var(--bg-primary);
+    display: flex;
+    flex-direction: column;
+}
+
+.focus-canvas {
+    flex: 1;
+    min-height: 0;
+}
+
+.focus-toolbar {
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 40px;
+    padding: 10px 20px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+}
+
+.focus-exit {
+    background: none;
+    border: none;
+    color: var(--text-color);
+    cursor: pointer;
+    font-size: 1.2rem;
+    padding: 6px 10px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    opacity: 0.7;
+    transition: opacity 0.15s;
+}
+.focus-exit:hover { opacity: 1; }
+
+.focus-play {
+    background: var(--accent-color);
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    font-size: 1.2rem;
+    padding: 8px 16px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 56px;
+    min-height: 56px;
+    transition: background 0.15s;
+}
+.focus-play:hover { filter: brightness(1.15); }
+.focus-play svg { width: 24px; height: 24px; }
+
+.focus-info {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-color);
+    min-width: 60px;
+    text-align: center;
+}
+
+.focus-key-hint {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-align: center;
+    margin-top: 2px;
+}
+
+@media (max-width: 480px) {
+    .focus-toolbar {
+        bottom: 16px;
+        padding: 8px 16px;
+        gap: 8px;
+    }
 }
 
 .session-player-progress {

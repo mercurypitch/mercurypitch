@@ -32,11 +32,21 @@ interface AppSidebarProps {
   /** Pitch display props (Practice tab) */
   pitch: () => PitchResult | null;
   targetNoteName: () => string | null;
+  /** Additional CSS class (e.g. 'open' for mobile toggle) */
+  class?: string;
+  /** Called when mobile close button is clicked */
+  onClose?: () => void;
 }
 
 export const AppSidebar: Component<AppSidebarProps> = (props) => {
   return (
-    <aside class="app-sidebar">
+    <aside class={`app-sidebar${props.class ? ' ' + props.class : ''}`}>
+      {/* Mobile close button */}
+      <button class="sidebar-close-btn" onClick={props.onClose} title="Close menu">
+        <svg viewBox="0 0 24 24" width="18" height="18">
+          <path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+        </svg>
+      </button>
       {/* Scale section */}
       <div class="sidebar-section">
         <h2 class="panel-title">Scale</h2>

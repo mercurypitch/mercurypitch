@@ -22,6 +22,7 @@ import { PracticeTabHeader } from '@/components/PracticeTabHeader';
 import { SessionBrowser } from '@/components/SessionBrowser';
 import { SessionPlayer } from '@/components/SessionPlayer';
 import { EditorTabHeader } from '@/components/EditorTabHeader';
+import { FocusMode } from '@/components/FocusMode';
 import type { PresetData } from '@/stores/app-store';
 import { HistoryCanvas } from '@/components/HistoryCanvas';
 import { appStore, getNoteAccuracyMap } from '@/stores/app-store';
@@ -170,6 +171,11 @@ export const App: Component<AppProps> = (props) => {
   const [showSessionBrowser, setShowSessionBrowser] = createSignal(false);
   const [sessionSummary, setSessionSummary] = createSignal<{ score: number; items: number; name: string } | null>(null);
 
+  // ── Mobile sidebar toggle ─────────────────────────────────────
+  const [sidebarOpen, setSidebarOpen] = createSignal(false);
+  const toggleSidebar = () => setSidebarOpen(!sidebarOpen());
+  const closeSidebar = () => setSidebarOpen(false);
+
   // ── Stats panel ──────────────────────────────────────────────
 
   const statsCounts = createMemo(() => {
@@ -209,6 +215,19 @@ export const App: Component<AppProps> = (props) => {
     appStore.initPresets();
     appStore.initSessionHistory();
     appStore.initSettings();
+
+    // Space key handler for play/pause (Focus Mode friendly)
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.code === 'Space' && !e.target?.closest('input,textarea,select,[contenteditable]')) {
+        e.preventDefault();
+        if (appStore.focusMode()) {
+          if (isPlaying()) handlePause();
+          else if (isPaused()) handleResume();
+          else handlePlay();
+        }
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
 
     // Check for shared preset in URL
     if (hasSharedPresetInURL()) {
@@ -608,6 +627,7 @@ export const App: Component<AppProps> = (props) => {
       melodyEngine.destroy();
       practiceEngine.destroy();
       audioEngine.destroy();
+      window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('pitchperfect:presetSaved', handlePresetSaved as EventListener);
       window.removeEventListener('pitchperfect:presetLoaded', handlePresetLoaded as EventListener);
       window.removeEventListener('pitchperfect:octaveChange', handleOctaveChange as EventListener);
@@ -902,60 +922,77 @@ export const App: Component<AppProps> = (props) => {
 
   return (
     <div id="app">
-      {/* Header */}
-      <header>
-        <div class="header-left">
-          <h1 id="app-title">PitchPerfect</h1>
-          <p class="subtitle">Voice Pitch Practice</p>
-        </div>
-        <nav id="app-tabs">
-          <button
-            id="tab-practice"
-            class={`app-tab ${appStore.activeTab() === 'practice' ? 'active' : ''}`}
-            onClick={handleTabPractice}
-          >
-            Practice
-          </button>
-          <button
-            id="tab-editor"
-            class={`app-tab ${appStore.activeTab() === 'editor' ? 'active' : ''}`}
-            onClick={handleTabEditor}
-          >
-            Editor
-            <Show when={melodyStore.items.length > 0}>
-              <span class="tab-badge">{melodyStore.items.length}</span>
-            </Show>
-          </button>
-          <button
-            id="tab-settings"
-            class={`app-tab ${appStore.activeTab() === 'settings' ? 'active' : ''}`}
-            onClick={() => appStore.setActiveTab('settings')}
-          >
-            Settings
-          </button>
-        </nav>
-      </header>
+      {/* Sidebar backdrop (mobile) */}
+      <Show when={sidebarOpen()}>
+        <div class="sidebar-backdrop" onClick={closeSidebar} />
+      </Show>
 
-      {/* Main layout: sidebar + content */}
-      <div class="main-layout" id="main-layout">
-        {/* Shared sidebar */}
-        <AppSidebar
-          onPresetLoad={(preset) => {
-            melodyStore.setMelody(presetToMelody(preset));
-            if (preset.bpm) {
-              appStore.setBpm(preset.bpm);
-              melodyEngine?.setBPM(preset.bpm);
-            }
-          }}
-          onOctaveShift={handleOctaveShift}
-          onOpenScaleBuilder={() => setShowScaleBuilder(true)}
-          melody={() => melodyStore.items}
-          currentNoteIndex={currentNoteIndex}
-          noteResults={noteResults}
-          isPlaying={isPlaying}
-          pitch={currentPitch}
-          targetNoteName={targetNoteName}
-        />
+      {/* Sidebar toggle (mobile only — CSS hides on desktop) */}
+      <button class="sidebar-toggle-btn" onClick={toggleSidebar} title="Menu">
+        <svg viewBox="0 0 24 24" width="16" height="16">
+          <path fill="currentColor" d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
+        </svg>
+        Menu
+      </button>
+
+      {/* Full app UI — hidden when in Focus Mode */}
+      <Show when={!appStore.focusMode()}>
+        {/* Header */}
+        <header>
+          <div class="header-left">
+            <h1 id="app-title">PitchPerfect</h1>
+            <p class="subtitle">Voice Pitch Practice</p>
+          </div>
+          <nav id="app-tabs">
+            <button
+              id="tab-practice"
+              class={`app-tab ${appStore.activeTab() === 'practice' ? 'active' : ''}`}
+              onClick={handleTabPractice}
+            >
+              Practice
+            </button>
+            <button
+              id="tab-editor"
+              class={`app-tab ${appStore.activeTab() === 'editor' ? 'active' : ''}`}
+              onClick={handleTabEditor}
+            >
+              Editor
+              <Show when={melodyStore.items.length > 0}>
+                <span class="tab-badge">{melodyStore.items.length}</span>
+              </Show>
+            </button>
+            <button
+              id="tab-settings"
+              class={`app-tab ${appStore.activeTab() === 'settings' ? 'active' : ''}`}
+              onClick={() => appStore.setActiveTab('settings')}
+            >
+              Settings
+            </button>
+          </nav>
+        </header>
+
+        {/* Main layout: sidebar + content */}
+        <div class="main-layout" id="main-layout">
+          {/* Shared sidebar — with mobile open class */}
+          <AppSidebar
+            class={sidebarOpen() ? 'open' : ''}
+            onPresetLoad={(preset) => {
+              melodyStore.setMelody(presetToMelody(preset));
+              if (preset.bpm) {
+                appStore.setBpm(preset.bpm);
+                melodyEngine?.setBPM(preset.bpm);
+              }
+            }}
+            onOctaveShift={handleOctaveShift}
+            onOpenScaleBuilder={() => setShowScaleBuilder(true)}
+            melody={() => melodyStore.items}
+            currentNoteIndex={currentNoteIndex}
+            noteResults={noteResults}
+            isPlaying={isPlaying}
+            pitch={currentPitch}
+            targetNoteName={targetNoteName}
+            onClose={closeSidebar}
+          />
 
         {/* Tab content */}
         <div class="main-content">
@@ -1090,6 +1127,26 @@ export const App: Component<AppProps> = (props) => {
           </Show>
         </div>
       </div>
+      </Show>
+
+      {/* Focus Mode — full-screen minimal practice UI */}
+      <Show when={appStore.focusMode()}>
+        <FocusMode
+          isPlaying={isPlaying}
+          isPaused={isPaused}
+          currentPitch={currentPitch}
+          pitchHistory={pitchHistory}
+          noteResults={noteResults}
+          practiceResult={practiceResult}
+          liveScore={liveScore}
+          countInBeat={countInBeat}
+          isCountingIn={isCountingIn}
+          onPlay={handlePlay}
+          onPause={handlePause}
+          onResume={handleResume}
+          onStop={handleReset}
+        />
+      </Show>
 
       {/* Score overlay */}
       <Show when={practiceResult() !== null}>

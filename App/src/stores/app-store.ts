@@ -90,6 +90,11 @@ export function setGridLines(visible: boolean): void {
 export type ActiveTab = 'practice' | 'editor' | 'settings';
 const [activeTab, setActiveTab] = createSignal<ActiveTab>('practice');
 
+// ── Focus Mode ─────────────────────────────────────────────────
+const [focusMode, setFocusMode] = createSignal(false);
+export function enterFocusMode(): void { setFocusMode(true); }
+export function exitFocusMode(): void { setFocusMode(false); }
+
 // ── Settings ───────────────────────────────────────────────────
 
 const SETTINGS_KEY = 'pitchperfect_settings';
@@ -632,6 +637,11 @@ export const appStore = {
   // Navigation
   activeTab,
   setActiveTab,
+
+  // Focus Mode
+  focusMode,
+  enterFocusMode,
+  exitFocusMode,
 
   // Grid
   gridLinesVisible,
