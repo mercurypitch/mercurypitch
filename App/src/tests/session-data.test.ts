@@ -83,4 +83,61 @@ describe('PRACTICE_SESSIONS — static data integrity', () => {
       }
     }
   });
+
+  /**
+   * Estimate session duration in seconds based on BPM and item parameters.
+   * Assumes BPM=120, scales play at 1 beat per note, rests use restMs.
+   */
+  const estimateDuration = (session: typeof PRACTICE_SESSIONS[0], bpm = 120) => {
+    let total = 0;
+    for (const item of session.items) {
+      const repeat = item.repeat ?? 1;
+      if (item.type === 'scale') {
+        total += (item.beats ?? 8) * (60 / bpm) * repeat;
+      } else if (item.type === 'rest') {
+        total += (item.restMs ?? 2000) * repeat / 1000;
+      }
+    }
+    return total;
+  };
+
+  it('2-minute session should last at least 90 seconds', () => {
+    const warmup = PRACTICE_SESSIONS.find(s => s.id === 'warmup-2min');
+    expect(warmup).toBeDefined();
+    const duration = estimateDuration(warmup!);
+    expect(duration).toBeGreaterThanOrEqual(90);
+  });
+
+  it('5-minute sessions should last at least 240 seconds', () => {
+    const fiveMin = PRACTICE_SESSIONS.filter(s =>
+      s.name.includes('5-Minute') || s.name.includes('5 minute')
+    );
+    expect(fiveMin.length).toBeGreaterThanOrEqual(2);
+    for (const s of fiveMin) {
+      const duration = estimateDuration(s);
+      expect(duration).toBeGreaterThanOrEqual(240);
+    }
+  });
+
+  it('all scale items have repeat >= 1', () => {
+    for (const session of PRACTICE_SESSIONS) {
+      for (const item of session.items) {
+        if (item.type === 'scale') {
+          expect(item.repeat).toBeDefined();
+          expect(item.repeat!).toBeGreaterThanOrEqual(1);
+        }
+      }
+    }
+  });
+
+  it('all rest items have repeat >= 1', () => {
+    for (const session of PRACTICE_SESSIONS) {
+      for (const item of session.items) {
+        if (item.type === 'rest') {
+          expect(item.repeat).toBeDefined();
+          expect(item.repeat!).toBeGreaterThanOrEqual(1);
+        }
+      }
+    }
+  });
 });

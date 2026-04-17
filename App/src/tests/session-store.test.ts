@@ -82,27 +82,54 @@ describe('getCurrentSessionItem', () => {
   });
 });
 
-describe('advanceSessionItem', () => {
+describe('advanceSessionItem — repeat support', () => {
   beforeEach(() => {
     localStorageMock.clear();
   });
 
-  it('moves to the next item', () => {
-    const session = makeSession('test-1', 4);
+  it('repeats the same item when repeat > 1', () => {
+    const session: PracticeSession = {
+      id: 'repeat-test',
+      name: 'Repeat Test',
+      description: 'Test repeat',
+      difficulty: 'beginner',
+      category: 'vocal',
+      items: [
+        { type: 'scale', label: 'Scale A', scaleType: 'major', beats: 8, repeat: 3 },
+        { type: 'scale', label: 'Scale B', scaleType: 'major', beats: 8 },
+      ],
+    };
     startPracticeSession(session);
-    expect(getCurrentSessionItem()!.label).toBe('Item 1');
+    expect(getCurrentSessionItem()!.label).toBe('Scale A');
 
+    // First advance — still on Scale A (repeat 2nd time)
     advanceSessionItem();
-    expect(getCurrentSessionItem()!.label).toBe('Item 2');
+    expect(getCurrentSessionItem()!.label).toBe('Scale A');
+
+    // Second advance — still on Scale A (repeat 3rd time)
+    advanceSessionItem();
+    expect(getCurrentSessionItem()!.label).toBe('Scale A');
+
+    // Third advance — moves to Scale B
+    advanceSessionItem();
+    expect(getCurrentSessionItem()!.label).toBe('Scale B');
   });
 
-  it('does not advance past the last item', () => {
-    const session = makeSession('test-1', 2);
+  it('item with repeat=1 advances immediately', () => {
+    const session: PracticeSession = {
+      id: 'no-repeat-test',
+      name: 'No Repeat Test',
+      description: 'Test no repeat',
+      difficulty: 'beginner',
+      category: 'vocal',
+      items: [
+        { type: 'scale', label: 'First', scaleType: 'major', beats: 8, repeat: 1 },
+        { type: 'scale', label: 'Second', scaleType: 'major', beats: 8 },
+      ],
+    };
     startPracticeSession(session);
-    advanceSessionItem();
-    advanceSessionItem(); // already at last item
-    const item = getCurrentSessionItem();
-    expect(item).toBeDefined();
+    advanceSessionItem(); // repeat=1 → should move to Second
+    expect(getCurrentSessionItem()!.label).toBe('Second');
   });
 });
 

@@ -415,6 +415,7 @@ const [sessionResultsStore, setSessionResultsStore] = createStore<SessionResult[
 
 const [practiceSession, setPracticeSession] = createSignal<PracticeSession | null>(null);
 const [sessionItemIndex, setSessionItemIndex] = createSignal(0);
+const [sessionItemRepeat, setSessionItemRepeat] = createSignal(0); // how many times current item has repeated
 const [sessionActive, setSessionActive] = createSignal(false);
 const [sessionResults, setSessionResults] = createSignal<{ score: number }[]>([]);
 const [sessionMode, setSessionMode] = createSignal(false); // true when in session flow
@@ -447,6 +448,7 @@ export function initSessionHistory(): void {
 export function startPracticeSession(session: PracticeSession): void {
   setPracticeSession(session);
   setSessionItemIndex(0);
+  setSessionItemRepeat(0);
   setSessionActive(true);
   setSessionMode(true);
   setSessionResults([]);
@@ -463,9 +465,19 @@ export function getCurrentSessionItem(): PracticeSession['items'][0] | null {
 export function advanceSessionItem(): void {
   const session = practiceSession();
   if (!session) return;
-  const next = sessionItemIndex() + 1;
-  if (next < session.items.length) {
-    setSessionItemIndex(next);
+  const currentItem = getCurrentSessionItem();
+  const repeatCount = currentItem?.repeat ?? 1;
+  const currentRepeat = sessionItemRepeat();
+  if (currentRepeat < repeatCount - 1) {
+    // Repeat this item
+    setSessionItemRepeat(currentRepeat + 1);
+  } else {
+    // Move to next item
+    const next = sessionItemIndex() + 1;
+    if (next < session.items.length) {
+      setSessionItemIndex(next);
+      setSessionItemRepeat(0);
+    }
   }
 }
 
@@ -501,6 +513,7 @@ export function endPracticeSession(): SessionResult | null {
   setSessionActive(false);
   setPracticeSession(null);
   setSessionItemIndex(0);
+  setSessionItemRepeat(0);
   setSessionMode(false);
   setSessionResults([]);
 
@@ -677,6 +690,7 @@ export const appStore = {
   // Session state (signals)
   sessionActive,
   sessionItemIndex,
+  sessionItemRepeat,
   practiceSession,
   sessionResults,
   sessionMode,

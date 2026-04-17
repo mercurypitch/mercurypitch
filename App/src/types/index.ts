@@ -218,6 +218,8 @@ export interface SessionItem {
   beats?: number;
   /** Duration in ms (for type='rest') */
   restMs?: number;
+  /** Number of times to repeat this item (default 1) */
+  repeat?: number;
 }
 
 /** A structured practice session with multiple items */
