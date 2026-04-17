@@ -142,6 +142,86 @@ describe('MelodyEngine', () => {
     });
   });
 
+  describe('callbacks', () => {
+    it('onNoteStart callback receives MelodyItem with duration (GH #128 fix)', () => {
+      // GH #128 fix: onNoteStart now passes the full MelodyItem (including duration)
+      // rather than just MelodyNote. We test by mocking RAF and manually driving it.
+      const callArgs: any[] = [];
+      const e = new MelodyEngine({
+        bpm: 120,
+        melody,
+        onNoteStart: (item) => callArgs.push(item),
+      });
+
+      // Mock RAF so we can drive it manually with fake time
+      const pendingCallbacks: Array<(time: number) => void> = [];
+      vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => {
+        pendingCallbacks.push(cb);
+        return pendingCallbacks.length;
+      });
+
+      // Mock performance.now() so elapsed time advances
+      let fakeNow = 1000; // Start at 1000ms so playStartTime = 1000 (set during start())
+      vi.spyOn(performance, 'now').mockImplementation(() => fakeNow);
+
+      e.start();
+      // Trigger first RAF to enter _onFrame; time=1000, elapsed=0, beat=0 — no note change yet
+      if (pendingCallbacks.length > 0) pendingCallbacks.shift()!(fakeNow);
+
+      // Advance time by 1 full beat at 120 BPM = 500ms -> beat should be ~1
+      fakeNow += 600; // 1600ms total, elapsed=600ms, beat=1
+      if (pendingCallbacks.length > 0) pendingCallbacks.shift()!(fakeNow);
+
+      // Advance past second beat
+      fakeNow += 600; // 2200ms, elapsed=1200ms, beat=2
+      if (pendingCallbacks.length > 0) pendingCallbacks.shift()!(fakeNow);
+
+      expect(callArgs.length).toBeGreaterThanOrEqual(1);
+      const firstNote = callArgs[0];
+      // Verify it's a MelodyItem with duration (not just MelodyNote)
+      expect(firstNote).toHaveProperty('duration');
+      expect(firstNote).toHaveProperty('startBeat');
+      expect(firstNote).toHaveProperty('note');
+      expect(typeof firstNote.duration).toBe('number');
+      expect(firstNote.duration).toBe(2); // First note has duration 2
+      e.destroy();
+      vi.spyOn(performance, 'now').mockRestore();
+    });
+
+    it('onNoteEnd callback receives MelodyItem with duration', () => {
+      const callArgs: any[] = [];
+      const e = new MelodyEngine({
+        bpm: 120,
+        melody,
+        onNoteEnd: (item) => callArgs.push(item),
+      });
+
+      const pendingCallbacks: Array<(time: number) => void> = [];
+      vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => {
+        pendingCallbacks.push(cb);
+        return pendingCallbacks.length;
+      });
+
+      let fakeNow = 1000;
+      vi.spyOn(performance, 'now').mockImplementation(() => fakeNow);
+
+      e.start();
+      // Advance to beat ~1 (first note should start)
+      fakeNow += 600;
+      if (pendingCallbacks.length > 0) pendingCallbacks.shift()!(fakeNow);
+      // Advance to beat ~2 (first note ends, second starts)
+      fakeNow += 600;
+      if (pendingCallbacks.length > 0) pendingCallbacks.shift()!(fakeNow);
+
+      expect(callArgs.length).toBeGreaterThanOrEqual(1);
+      const endedNote = callArgs[0];
+      expect(endedNote).toHaveProperty('duration');
+      expect(endedNote.duration).toBe(2);
+      e.destroy();
+      vi.spyOn(performance, 'now').mockRestore();
+    });
+  });
+
   describe('totalBeats', () => {
     it('calculates total beats in melody', () => {
       expect(engine.totalBeats()).toBe(6); // Last note ends at beat 4 + 2 = 6

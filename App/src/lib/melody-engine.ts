@@ -6,8 +6,8 @@ import type { MelodyItem, MelodyNote } from '@/types';
 import { melodyIndexAtBeat } from './scale-data';
 
 export interface MelodyEngineCallbacks {
-  onNoteStart?: (note: MelodyNote, noteIndex: number) => void;
-  onNoteEnd?: (note: MelodyNote, noteIndex: number) => void;
+  onNoteStart?: (item: MelodyItem, noteIndex: number) => void;
+  onNoteEnd?: (item: MelodyItem, noteIndex: number) => void;
   onBeatUpdate?: (currentBeat: number) => void;
   onComplete?: () => void;
   onCountIn?: (beat: number) => void;  // Called during count-in beats
@@ -18,8 +18,8 @@ export interface MelodyEngineCallbacks {
 export interface MelodyEngineOptions {
   bpm: number;
   melody: MelodyItem[];
-  onNoteStart?: (note: MelodyNote, noteIndex: number) => void;
-  onNoteEnd?: (note: MelodyNote, noteIndex: number) => void;
+  onNoteStart?: (item: MelodyItem, noteIndex: number) => void;
+  onNoteEnd?: (item: MelodyItem, noteIndex: number) => void;
   onBeatUpdate?: (currentBeat: number) => void;
   onComplete?: () => void;
   onCountIn?: (beat: number) => void;
@@ -275,7 +275,7 @@ export class MelodyEngine {
       // End previous note
       if (this.currentNoteIndex >= 0) {
         this.callbacks.onNoteEnd?.(
-          this.melody[this.currentNoteIndex].note,
+          this.melody[this.currentNoteIndex],
           this.currentNoteIndex
         );
       }
@@ -290,7 +290,7 @@ export class MelodyEngine {
 
       this.currentNoteIndex = newIndex;
       if (newIndex >= 0) {
-        this.callbacks.onNoteStart?.(this.melody[newIndex].note, newIndex);
+        this.callbacks.onNoteStart?.(this.melody[newIndex], newIndex);
       }
     }
 

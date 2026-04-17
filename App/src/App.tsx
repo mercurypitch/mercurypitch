@@ -263,13 +263,14 @@ export const App: Component<AppProps> = (props) => {
     melodyEngine = new MelodyEngine({
       bpm: appStore.bpm(),
       melody: melodyStore.items,
-      onNoteStart: (note, noteIndex) => {
+      onNoteStart: (item, noteIndex) => {
         setCurrentNoteIndex(noteIndex);
-        setTargetPitch(note.freq);
-        practiceEngine.onNoteStart(note, noteIndex);
-        // Play tone for the note — use full beat duration for correct timing
+        setTargetPitch(item.note.freq);
+        practiceEngine.onNoteStart(item.note, noteIndex);
+        // Play tone for the note — use the full note duration from the melody item
         const beatDurationMs = 60000 / appStore.bpm();
-        audioEngine.playTone(note.freq, beatDurationMs);
+        const noteDurationMs = item.duration * beatDurationMs;
+        audioEngine.playTone(item.note.freq, noteDurationMs);
       },
       onNoteEnd: () => {
         audioEngine.stopTone();
