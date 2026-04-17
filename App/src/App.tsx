@@ -140,12 +140,11 @@ export const App: Component<AppProps> = (props) => {
   // ── Recording ────────────────────────────────────────────────
   const [isRecording, setIsRecording] = createSignal(false);
   const [recordedMelody, setRecordedMelody] = createSignal<MelodyItem[]>([]);
-  let lastRecordedBeat = -1;
-  let lastRecordedMidi = -1;
   let silenceFrames = 0;
   let currentNoteStartBeat = -1;
   let currentNoteMidi = -1;
   let pendingNoteId = 0;
+  let freeRecordStartTime = 0; // performance.now() when recording started, for free recording
 
   // ── Play mode ────────────────────────────────────────────────
   type PlayMode = 'once' | 'repeat' | 'practice';
@@ -445,8 +444,12 @@ export const App: Component<AppProps> = (props) => {
     let animId: number;
     const loop = () => {
       const pitch = practiceEngine.update();
+      // During free recording, compute beat from performance.now() independently.
+      // During playback-backed recording, use melodyEngine's beat position.
+      const beat = isRecording()
+        ? ((performance.now() - freeRecordStartTime) / 60000) * appStore.bpm()
+        : melodyEngine.getCurrentBeat();
       if (pitch && pitch.frequency > 0 && pitch.clarity >= 0.2) {
-        const beat = melodyEngine.getCurrentBeat();
         setPitchHistory((prev) => {
           const next = [...prev, { beat, freq: pitch.frequency, confidence: pitch.clarity }];
           return next.length > 800 ? next.slice(-800) : next;
@@ -479,7 +482,6 @@ export const App: Component<AppProps> = (props) => {
         silenceFrames++;
         // 10+ frames of silence ends the current note
         if (silenceFrames >= 10 && currentNoteMidi > 0) {
-          const beat = melodyEngine.getCurrentBeat();
           const duration = Math.max(0.25, beat - currentNoteStartBeat);
           const note = midiToNote(currentNoteMidi);
           setRecordedMelody((prev) => [
@@ -566,6 +568,8 @@ export const App: Component<AppProps> = (props) => {
 
   const handlePause = () => {
     melodyEngine.pause();
+    audioEngine.stopAllNotes();
+    audioEngine.stopTone();
     setIsPlaying(false);
     setIsPaused(true);
     playback.pausePlayback();
@@ -648,6 +652,7 @@ export const App: Component<AppProps> = (props) => {
       currentNoteMidi = -1;
       currentNoteStartBeat = -1;
       silenceFrames = 0;
+      freeRecordStartTime = performance.now();
       setIsRecording(true);
     }
   };
