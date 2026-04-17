@@ -31,3 +31,8 @@ build/
 *.tmp
 .deploy.log
 info.md
+
+# Playwright
+playwright-report/
+test-results/
+

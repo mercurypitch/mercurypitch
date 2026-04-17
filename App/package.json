@@ -10,12 +10,15 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
+    "test:e2e": "playwright test",
+    "serve": "npx http-server dist -p 4173 -c-1",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "solid-js": "^1.8.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "@solidjs/testing-library": "^0.8.0",
     "@testing-library/jest-dom": "^6.4.0",
     "@types/node": "^22.0.0",

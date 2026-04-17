@@ -6,12 +6,12 @@ A living list of proposed features and improvements for PitchPerfect.
 
 ## Editor Enhancements
 
-- [ ] **Copy/paste notes** — Select one or more notes, copy them, and paste at a new beat position in the piano roll
+- [ ] **Copy/paste notes** — Select one or more notes, copy them, and paste at a new beat position in the piano roll  **(partially done — multi-select via PR #96)**
 - [x] **Snap-to-grid toggle** — Allow free placement (no snapping) for expressive timing  **(DONE - PR #125)**
 - [x] **Note velocity / velocity curve** — Visual velocity editing on note blocks (thicker/thinner or colour intensity)  **(DONE - PR #76)**
 - [x] **Keyboard shortcut for note entry** — Arrow keys navigate pitch lanes, Space/Enter place note  **(DONE - PR #76)**
 - [x] **Undo/redo for note edits** — Maintain a history stack of edit operations in the piano roll  **(GH #73, DONE)**
-- [ ] **Multiple selection and bulk move/delete** — Shift-select or Ctrl-select multiple notes and drag or delete together
+- [ ] **Multiple selection and bulk move/delete** — Shift-select or Ctrl-select multiple notes and drag or delete together  **(box selection done - PR #96, bulk delete pending)**
 - [x] **Zoom controls for piano roll** — Zoom in/out on the time axis (horizontal) and pitch axis (vertical)  **(GH #74, DONE - PR #125)**
 
 ---
@@ -31,7 +31,7 @@ A living list of proposed features and improvements for PitchPerfect.
 - [x] **Session history** — Store past practice sessions with timestamps, scores, and accuracy per run  **(DONE - PR #76)**
 - [x] **Progress chart** — Visual line/bar chart of score improvement over time  **(DONE - PR #76)**
 - [x] **Pitch accuracy heatmap on piano keys** — Colour-code piano keys showing weak/strong notes based on history  **(DONE - PR #125)**
-- [ ] **Target pitch overlay** — Show the target frequency as a horizontal guide line on the pitch canvas during Practice mode  **(DONE - PR #76)**
+- [x] **Target pitch overlay** — Show the target frequency as a horizontal guide line on the pitch canvas during Practice mode  **(DONE - PR #76)**
 - [x] **Custom practice modes** — e.g., "Random notes" (skip practising known notes), "Focus mode" (practice only recent errors)  **(DONE - PR #122)**
 - [x] **Count-in options** — Choose number of count-in beats (1, 2, 4, or off)  **(DONE - PR #76)**
 
@@ -41,7 +41,7 @@ A living list of proposed features and improvements for PitchPerfect.
 
 - [x] **Minor scales and modes** — Add natural/harmonic/melodic minor, Dorian, Mixolydian, etc.
 - [x] **Chromatic / note range mode** — Allow free pitch detection across all 12 semitones (not limited to the current scale)  **(DONE - PR #120)**
-- [ ] **Custom scale builder** — Let the user define a custom scale by selecting notes from the 12-tone grid
+- [x] **Custom scale builder** — Let the user define a custom scale by selecting notes from the 12-tone grid  **(DONE - PR #127)**
 - [x] **Tonic anchor tone** — Play a reference tone at the start of each run to help the singer lock in  **(DONE - PR #124)**
 
 ---
@@ -52,13 +52,13 @@ A living list of proposed features and improvements for PitchPerfect.
 - [x] **Responsive layout improvements** — Better mobile layout for the piano roll (touch gestures for note editing)  **(DONE - PR #123)**
 - [x] **Piano key width based on octave count** — Auto-size the piano key column to fit 2-3 octaves comfortably  **(DONE - PR #76)**
 - [ ] **Waveform display during recording** — Show a live audio waveform in the pitch area while the mic is active
-- [ ] **Tab badges** — Show a count badge on the Editor tab when notes are present  **(DONE - PR #76)**
+- [x] **Tab badges** — Show a count badge on the Editor tab when notes are present  **(DONE - PR #76)**
 
 ---
 
 ## Data & Export
 
-- [ ] **Export melody as MIDI file** — Download the current preset melody as a standard .mid file  **(GH #75)**
+- [x] **Export melody as MIDI file** — Download the current preset melody as a standard .mid file  **(DONE - export/import wired in piano-roll.ts)**
 - [ ] **Export melody as audio (WAV/MP3)** — Render the current melody to an audio file
 - [x] **Import MIDI file into editor** — Load a .mid file and populate the piano roll  **(DONE - PR #121)**
 - [ ] **Cloud preset sync** — Save and load presets to/from a server (optional authentication)
