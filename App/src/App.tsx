@@ -26,7 +26,7 @@ import { HistoryCanvas } from '@/components/HistoryCanvas';
 import { appStore, getNoteAccuracyMap } from '@/stores/app-store';
 import { playback } from '@/stores/playback-store';
 import { melodyStore } from '@/stores/melody-store';
-import { melodyTotalBeats, buildSampleMelody, keyTonicFreq, midiToNote } from '@/lib/scale-data';
+import { melodyTotalBeats, buildSampleMelody, buildMultiOctaveScale, keyTonicFreq, midiToNote } from '@/lib/scale-data';
 import { AudioEngine } from '@/lib/audio-engine';
 import { MelodyEngine } from '@/lib/melody-engine';
 import { PracticeEngine } from '@/lib/practice-engine';
@@ -661,7 +661,7 @@ export const App: Component<AppProps> = (props) => {
 
   /** Build a scale-based melody for session items */
   const buildScaleMelody = (scaleType: string, beats: number, label?: string) => {
-    const scale = melodyStore.getScale(appStore.keyName(), melodyStore.currentOctave(), scaleType);
+    const scale = buildMultiOctaveScale(appStore.keyName(), melodyStore.currentOctave(), 1, scaleType);
     if (!scale || scale.length === 0) return;
 
     // Build one octave of the scale as melody items
