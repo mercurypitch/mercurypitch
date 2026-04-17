@@ -45,10 +45,10 @@ export class AudioEngine {
   async init(): Promise<void> {
     if (this.audioCtx) return;
 
-    this.audioCtx = new AudioContext();
+    this.audioCtx = new AudioContext({ latencyHint: 'interactive' });
     // Playback analyser for pitch track visualization (mirrors old JS)
     this.playbackAnalyser = this.audioCtx.createAnalyser();
-    this.playbackAnalyser.fftSize = this.bufferSize * 2;
+    this.playbackAnalyser.fftSize = this.bufferSize;
     this.playbackAnalyser.smoothingTimeConstant = 0.0;
     if (this.audioCtx.destination && typeof this.playbackAnalyser.connect === 'function') {
       this.playbackAnalyser.connect(this.audioCtx.destination);
@@ -61,7 +61,7 @@ export class AudioEngine {
 
     // Create shared analyser for mic input and pitch detection (mirrors old JS)
     this.analyser = this.audioCtx.createAnalyser();
-    this.analyser.fftSize = this.bufferSize * 2;
+    this.analyser.fftSize = this.bufferSize;
     this.analyser.smoothingTimeConstant = 0.1;
     // Alias for compatibility
     this.micAnalyser = this.analyser;
@@ -69,8 +69,8 @@ export class AudioEngine {
     // Initialize frequency data array with default size for visualizer
     if (this._frequencyData.length === 0) {
       this._frequencyData = new Float32Array(this.analyser.frequencyBinCount);
-      this._timeData = new Float32Array(this.analyser.frequencyBinCount);
-      this._playbackTimeData = new Float32Array(this.playbackAnalyser.frequencyBinCount);
+      this._timeData = new Float32Array(this.analyser.fftSize);
+      this._playbackTimeData = new Float32Array(this.playbackAnalyser.fftSize);
       this._frequencyByteData = new Uint8Array(this.analyser.frequencyBinCount);
     }
   }
@@ -90,6 +90,11 @@ export class AudioEngine {
   /** Get the sample rate */
   getSampleRate(): number {
     return this.audioCtx?.sampleRate ?? 44100;
+  }
+
+  /** Get the analyser buffer size (fftSize) */
+  getBufferSize(): number {
+    return this.bufferSize;
   }
 
   // ============================================================

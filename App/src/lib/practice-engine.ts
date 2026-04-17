@@ -120,6 +120,22 @@ export class PracticeEngine {
     try {
       await this.audioEngine.init();
       await this.audioEngine.resume();
+
+      // Reinitialize PitchDetector with the actual AudioContext sample rate
+      // This is critical for Android where the sample rate may differ from the default 44100
+      const actualSampleRate = this.audioEngine.getSampleRate();
+      const actualBufferSize = this.audioEngine.getBufferSize();
+      if (actualSampleRate !== this.sampleRate || actualBufferSize !== this.bufferSize) {
+        console.log(`[PracticeEngine] Reinitializing PitchDetector: ${this.sampleRate}Hz → ${actualSampleRate}Hz, buffer ${this.bufferSize} → ${actualBufferSize}`);
+        this.sampleRate = actualSampleRate;
+        this.bufferSize = actualBufferSize;
+        this.detector = new PitchDetector({
+          sampleRate: this.sampleRate,
+          bufferSize: this.bufferSize,
+          sensitivity: this.sensitivity,
+        });
+      }
+
       const ok = await this.audioEngine.startMic();
       if (ok) {
         this.micActive = true;

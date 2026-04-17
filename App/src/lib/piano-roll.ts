@@ -1005,17 +1005,6 @@ export class PianoRollEditor {
         <button id="roll-import-midi" class="roll-export-btn" title="Import melody from MIDI file">Import MIDI</button>
         <button id="roll-clear-all" class="roll-ctrl-btn danger" title="Clear all notes">Clear</button>
         <div class="roll-sep"></div>
-        <div class="roll-play-group">
-          <button id="roll-play-btn" class="roll-play-btn" title="Play melody">
-            <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>
-            <span id="roll-play-label">Play</span>
-          </button>
-          <button id="roll-stop-btn" class="roll-reset-btn" title="Stop playback">
-            <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M6 6h12v12H6z"/></svg>
-            <span>Stop</span>
-          </button>
-        </div>
-        <div class="roll-sep"></div>
         <button id="roll-pitch-track-btn" class="roll-pitch-track-btn" title="Toggle pitch track visualization">Pitch Track</button>
       </div>
       <div class="roll-main-area">
@@ -1296,15 +1285,6 @@ export class PianoRollEditor {
       this._togglePitchTrack();
     });
 
-    // Play button (piano roll toolbar)
-    container.querySelector('#roll-play-btn')?.addEventListener('click', () => {
-      this.handlePlayClick();
-    });
-
-    // Stop button (piano roll toolbar)
-    container.querySelector('#roll-stop-btn')?.addEventListener('click', () => {
-      this.resetPlayback();
-    });
 
     // Bar controls
     container.querySelector('#roll-bars-up')?.addEventListener('click', () => {
@@ -1760,87 +1740,6 @@ export class PianoRollEditor {
   // ============================================================
   // Playback
   // ============================================================
-
-  private handlePlayClick(): void {
-    if (this.melody.length === 0) return;
-
-    const playBtn = this.container.querySelector('#roll-play-btn') as HTMLButtonElement;
-    const playIcon = this.container.querySelector('#roll-play-icon') as SVGElement;
-    const pauseIcon = this.container.querySelector('#roll-pause-icon') as SVGElement;
-    const resetBtn = this.container.querySelector('#roll-reset-btn') as HTMLButtonElement;
-
-    if (this.playbackState === 'stopped') {
-      this.playbackState = 'playing';
-      this.playStartTime = performance.now();
-      this.pauseStartTime = 0;
-      this.startedNoteIds.clear();
-      this.startAnimation();
-
-      playIcon.style.display = 'none';
-      pauseIcon.style.display = 'block';
-      playBtn.querySelector('span')!.textContent = 'Pause';
-      resetBtn.disabled = false;
-    } else if (this.playbackState === 'playing') {
-      this.pauseStartTime = performance.now();
-      this.playbackState = 'paused';
-      if (this.playAnimationId !== null) {
-        cancelAnimationFrame(this.playAnimationId);
-        this.playAnimationId = null;
-      }
-
-      // Stop all active notes when pausing
-      const win = window as Window & { pianoRollAudioEngine?: { stopAllNotes: () => void } };
-      if (win.pianoRollAudioEngine) {
-        win.pianoRollAudioEngine.stopAllNotes();
-      }
-
-      playIcon.style.display = 'block';
-      pauseIcon.style.display = 'none';
-      playBtn.querySelector('span')!.textContent = 'Continue';
-    } else if (this.playbackState === 'paused') {
-      const pauseDuration = performance.now() - this.pauseStartTime;
-      this.playStartTime += pauseDuration;
-      this.playbackState = 'playing';
-      this.startAnimation();
-
-      playIcon.style.display = 'none';
-      pauseIcon.style.display = 'block';
-      playBtn.querySelector('span')!.textContent = 'Pause';
-    }
-  }
-
-  private resetPlayback(): void {
-    this.playbackState = 'stopped';
-    if (this.playAnimationId !== null) {
-      cancelAnimationFrame(this.playAnimationId);
-      this.playAnimationId = null;
-    }
-
-    // Stop all active notes immediately
-    const win = window as Window & { pianoRollAudioEngine?: { stopAllNotes: () => void } };
-    if (win.pianoRollAudioEngine) {
-      win.pianoRollAudioEngine.stopAllNotes();
-    }
-
-    const playBtn = this.container.querySelector('#roll-play-btn') as HTMLButtonElement;
-    const playIcon = this.container.querySelector('#roll-play-icon') as SVGElement;
-    const pauseIcon = this.container.querySelector('#roll-pause-icon') as SVGElement;
-    const resetBtn = this.container.querySelector('#roll-reset-btn') as HTMLButtonElement;
-
-    playIcon.style.display = 'block';
-    pauseIcon.style.display = 'none';
-    playBtn.querySelector('span')!.textContent = 'Start';
-    resetBtn.disabled = true;
-
-    this.activeBeat = 0;
-    this.startedNoteIds.clear();
-    this.gridContainer!.scrollLeft = 0;
-    this.draw();
-    if (this.timelineInfoEl) {
-      const totalBars = Math.ceil(this.totalBeats / PIANO_ROLL_CONFIG.beatsPerBar);
-      this.timelineInfoEl.textContent = `Bar 1/${totalBars} | Beat 1`;
-    }
-  }
 
   private startAnimation(): void {
     const self = this;
