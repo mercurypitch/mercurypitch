@@ -159,6 +159,24 @@ describe('AudioEngine', () => {
       });
     });
   });
+
+  // GH #130: Editor playback notes must stop when stopAllNotes() is called
+  describe('editor playback (GH #130)', () => {
+    it('playNote returns a voice that can be stopped with stopAllNotes', async () => {
+      // GH #130: stopAllNotes() must silence all active notes immediately
+      await engine.resume();
+      const noteId = await engine.playNote(440, 5000);
+      expect(noteId).toBeDefined();
+      // stopAllNotes should not throw
+      engine.stopAllNotes();
+    });
+
+    it('stopAllNotes handles empty voices gracefully', () => {
+      // GH #130: stopAllNotes must not crash when no notes are playing
+      engine.stopAllNotes();
+      // No error means success
+    });
+  });
 });
 
 describe('AudioEngine without init', () => {

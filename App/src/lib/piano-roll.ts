@@ -412,6 +412,7 @@ export class PianoRollEditor {
   private pauseStartTime = 0;
   private activeBeat = 0;
   private startedNoteIds = new Set<number>();
+  private currentNoteRow = -1; // GH #129: tracks current note row for glowing dot
   private isSeeking = false;
   private seekStartX = 0;
   // Track whether playback was started externally (Practice tab) vs internally (Editor tab)
@@ -658,11 +659,17 @@ export class PianoRollEditor {
         this.startAnimation();
       }
     } else if (state === 'paused') {
+      // GH #130: Stop all active notes when pausing
+      const win = window as Window & { pianoRollAudioEngine?: { stopAllNotes: () => void } };
+      win.pianoRollAudioEngine?.stopAllNotes();
       if (this.playAnimationId !== null) {
         cancelAnimationFrame(this.playAnimationId);
         this.playAnimationId = null;
       }
     } else if (state === 'stopped') {
+      // GH #130: Stop all active audio notes so they don't keep playing
+      const win = window as Window & { pianoRollAudioEngine?: { stopAllNotes: () => void } };
+      win.pianoRollAudioEngine?.stopAllNotes();
       // Stop animation and reset playback position
       if (this.playAnimationId !== null) {
         cancelAnimationFrame(this.playAnimationId);
@@ -670,6 +677,7 @@ export class PianoRollEditor {
       }
       this.activeBeat = 0;
       this.startedNoteIds.clear();
+      this.currentNoteRow = -1;
       this.playbackState = 'stopped';
       this.draw();
     }
@@ -1817,6 +1825,17 @@ export class PianoRollEditor {
       const elapsed = performance.now() - self.playStartTime;
       self.activeBeat = (elapsed / 60000) * self.bpm;
 
+      // GH #129: Track the current note row for vertical glow dot
+      const sortedNotes = [...self.melody].sort((a, b) => a.startBeat - b.startBeat);
+      let foundRow = -1;
+      for (const note of sortedNotes) {
+        if (note.startBeat <= self.activeBeat && note.startBeat + note.duration > self.activeBeat) {
+          foundRow = self.midiToRow(note.note.midi);
+          break;
+        }
+      }
+      self.currentNoteRow = foundRow;
+
       // Scroll grid to keep playhead visible
       const playheadX = self.activeBeat * self.beatWidth;
       const containerWidth = self.gridContainer?.clientWidth ?? 0;
@@ -1865,8 +1884,12 @@ export class PianoRollEditor {
             cancelAnimationFrame(self.playAnimationId);
             self.playAnimationId = null;
           }
+          // GH #130: Stop all notes when playback ends naturally
+          const win = window as Window & { pianoRollAudioEngine?: { stopAllNotes: () => void } };
+          win.pianoRollAudioEngine?.stopAllNotes();
           self.activeBeat = 0;
           self.startedNoteIds.clear();
+          self.currentNoteRow = -1;
           self.playbackState = 'stopped';
           self.onPlaybackStateChange?.('stopped');
           self.draw();
@@ -2190,6 +2213,25 @@ export class PianoRollEditor {
 
       // Also draw ruler with playhead triangle
       this.drawRulerWithPlayhead();
+
+      // GH #129: Draw glowing dot at current note row's Y position (vertical movement)
+      if (this.currentNoteRow >= 0) {
+        const dotX = playheadX;
+        const dotY = this.currentNoteRow * this.rowHeight + this.rowHeight / 2;
+        ctx.save();
+        ctx.shadowColor = 'rgba(63, 185, 80, 0.9)';
+        ctx.shadowBlur = 12;
+        ctx.fillStyle = '#3fb950';
+        ctx.beginPath();
+        ctx.arc(dotX, dotY, 5, 0, Math.PI * 2);
+        ctx.fill();
+        // White core for extra glow
+        ctx.fillStyle = 'rgba(255,255,255,0.7)';
+        ctx.beginPath();
+        ctx.arc(dotX, dotY, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
     } else {
       // During count-in, draw the regular ruler without playhead
       this.drawRuler();
@@ -2365,8 +2407,8 @@ export class PianoRollEditor {
         ctx.fill();
       }
 
-      // Note name text (only when wide enough and not active)
-      if (w > 18 && !isActive) {
+      // Note name text (always show when wide enough, GH #129 fix)
+      if (w > 18) {
         ctx.fillStyle = 'rgba(255,255,255,0.85)';
         ctx.font = 'bold 9px sans-serif';
         ctx.textAlign = 'center';

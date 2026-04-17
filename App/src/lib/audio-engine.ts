@@ -844,10 +844,15 @@ export class AudioEngine {
 
     const now = ctx.currentTime;
 
-    // Release envelope
-    voice.gains[0].gain.cancelScheduledValues(now);
-    voice.gains[0].gain.setValueAtTime(voice.gains[0].gain.value, now);
-    voice.gains[0].gain.linearRampToValueAtTime(0, now + 0.1);
+    // Release envelope (GH #130 fix: guard for voices with no/null gains, e.g. metronome)
+    const firstGain = voice.gains[0];
+    if (firstGain) {
+      try {
+        firstGain.gain.cancelScheduledValues(now);
+        firstGain.gain.setValueAtTime(firstGain.gain.value, now);
+        firstGain.gain.linearRampToValueAtTime(0, now + 0.1);
+      } catch { /* gain may be disconnected */ }
+    }
 
     // Stop oscillators and LFOs after release
     setTimeout(() => {
@@ -860,7 +865,10 @@ export class AudioEngine {
       (voice.lfoGains || []).forEach((g) => {
         try { g.disconnect(); } catch { /* already stopped */ }
       });
-      try { voice.gains[0].disconnect(); } catch { /* already stopped */ }
+      // Only disconnect if gains exist (GH #130 fix)
+      if (firstGain) {
+        try { firstGain.disconnect(); } catch { /* already stopped */ }
+      }
       this._activeVoices.delete(noteId);
     }, 150);
   }
