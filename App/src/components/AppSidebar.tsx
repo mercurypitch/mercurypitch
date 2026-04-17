@@ -156,21 +156,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
         </div>
       </div>
 
-      {/* Grid lines toggle */}
-      <div class="sidebar-section">
-        <button
-          id="grid-toggle-btn"
-          class={`ctrl-btn roll-ctrl-btn ${appStore.gridLinesVisible() ? 'active' : ''}`}
-          onClick={() => appStore.toggleGridLines()}
-          title="Toggle grid lines"
-        >
-          <svg viewBox="0 0 24 24" width="14" height="14" style={{ "margin-right": "4px" }}>
-            <path fill="currentColor" d="M20 2H4c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM8 20H4v-4h4v4zm0-6H4v-4h4v4zm0-6H4V4h4v4zm6 12h-4v-4h4v4zm0-6h-4v-4h4v4zm0-6h-4V4h4v4zm6 12h-4v-4h4v4zm0-6h-4v-4h4v4zm0-6h-4V4h4v4z"/>
-          </svg>
-          Grid
-        </button>
-      </div>
-
+      
       {/* Preset selector */}
       <div class="sidebar-section">
         <PresetSelector

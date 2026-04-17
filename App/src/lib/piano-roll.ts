@@ -996,6 +996,13 @@ export class PianoRollEditor {
           <button id="roll-zoom-fit" class="roll-zoom-btn" title="Fit to view">Fit</button>
         </div>
         <div class="roll-sep"></div>
+        <div class="roll-grid-toggle-group">
+          <button id="roll-grid-toggle" class="roll-grid-toggle-btn" title="Toggle grid lines">
+            <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M20 2H4c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM8 20H4v-4h4v4zm0-6H4v-4h4v4zm0-6H4V4h4v4zm6 12h-4v-4h4v4zm0-6h-4v-4h4v4zm0-6h-4V4h4v4zm6 12h-4v-4h4v4zm0-6h-4v-4h4v4zm0-6h-4V4h4v4z"/></svg>
+            <span>Grid</span>
+          </button>
+        </div>
+        <div class="roll-sep"></div>
         <div class="roll-undo-group">
           <button id="roll-undo-btn" class="roll-undo-btn" title="Undo (Ctrl+Z)" disabled>
             <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/></svg>
@@ -1376,6 +1383,14 @@ export class PianoRollEditor {
     container.querySelector('#roll-zoom-fit')?.addEventListener('click', () => {
       this.fitToView();
       this.updateZoomDisplay();
+    });
+
+    // Grid toggle button
+    container.querySelector('#roll-grid-toggle')?.addEventListener('click', (e) => {
+      const btn = e.currentTarget as HTMLButtonElement;
+      this.showGrid = !this.showGrid;
+      btn.classList.toggle('active', this.showGrid);
+      this.draw();
     });
 
     // Undo/redo buttons

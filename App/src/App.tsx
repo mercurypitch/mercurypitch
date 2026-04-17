@@ -1019,7 +1019,14 @@ export const App: Component<AppProps> = (props) => {
         {/* Header */}
         <header>
           <div class="header-left">
-            <h1 id="app-title">PitchPerfect</h1>
+            <button
+              id="app-title"
+              class="logo-btn"
+              onClick={handleTabPractice}
+              title="Go to Practice"
+            >
+              <h1 id="app-title-text">PitchPerfect</h1>
+            </button>
             <p class="subtitle">Voice Pitch Practice</p>
           </div>
           <nav id="app-tabs">

@@ -100,18 +100,47 @@ header h1 {
     color: var(--text-secondary);
 }
 
+/* Logo button in header — makes title clickable to navigate home */
+.logo-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    text-align: left;
+}
+.logo-btn #app-title-text {
+    font-size: 1.3rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--accent), var(--purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin: 0;
+    line-height: 1.2;
+}
+.logo-btn:hover #app-title-text {
+    opacity: 0.85;
+}
+.logo-btn:active #app-title-text {
+    opacity: 0.7;
+}
+
 /* ===== Main Layout ===== */
 .main-layout {
     display: flex;
     flex: 1;
     min-height: 0;
     overflow: hidden;
+    height: 100%;
 }
 
 /* ===== Shared Sidebar ===== */
 .app-sidebar {
     width: 270px;
     min-width: 270px;
+    flex-shrink: 0;
+    min-height: 0;
+    height: 100%;
     background: var(--bg-secondary);
     border-right: 1px solid var(--border);
     padding: 14px;
@@ -291,7 +320,8 @@ header h1 {
     flex-direction: column;
     min-width: 0;
     min-height: 0;
-    overflow: visible;
+    overflow: auto;
+    height: 100%;
 }
 
 /* ===== Notes Panel (Legacy — kept for NoteList component) ===== */
@@ -2022,6 +2052,30 @@ header h1 {
 .roll-zoom-btn:hover {
     border-color: var(--accent);
     color: var(--text-primary);
+}
+
+/* Grid toggle button in piano roll toolbar */
+.roll-grid-toggle-btn {
+    padding: 4px 10px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    font-size: 0.68rem;
+    cursor: pointer;
+    transition: all 0.12s ease;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.roll-grid-toggle-btn:hover {
+    border-color: var(--accent);
+    color: var(--text-primary);
+}
+.roll-grid-toggle-btn.active {
+    border-color: var(--accent);
+    background: var(--accent-dim);
+    color: var(--accent);
 }
 
 .zoom-value {
