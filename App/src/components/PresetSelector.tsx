@@ -158,7 +158,7 @@ export const PresetSelector: Component<PresetSelectorProps> = (props) => {
         ))}
       </datalist>
 
-      <button class="ctrl-btn small" onClick={handleNew} title="New melody">
+      <button class="ctrl-btn small preset-new-btn" onClick={handleNew} title="New melody">
         +
       </button>
 
@@ -169,11 +169,11 @@ export const PresetSelector: Component<PresetSelectorProps> = (props) => {
         value={saveName()}
         onInput={(e) => setSaveName(e.currentTarget.value)}
       />
-      <button class="ctrl-btn small" onClick={handleSave} title="Save melody">
+      <button class="ctrl-btn small preset-save-btn" onClick={handleSave} title="Save melody">
         Save
       </button>
       {currentName() && (
-        <button class="ctrl-btn small danger" onClick={handleDelete} title="Delete melody">
+        <button class="ctrl-btn small danger preset-delete-btn" onClick={handleDelete} title="Delete melody">
           ×
         </button>
       )}

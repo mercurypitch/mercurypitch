@@ -125,21 +125,40 @@ header h1 {
 /* Preset Selector Grid */
 .preset-selector {
     display: grid;
-    grid-template-columns: 1fr auto;
+    grid-template-columns: auto 1fr auto auto;
     grid-template-rows: auto auto;
     gap: 6px;
     align-items: center;
 }
 
-/* Row 1: combobox spans both columns */
-.preset-selector input[type="text"]#preset-name-input,
-.preset-selector input[list] {
-    grid-column: 1 / 3;
+/* Row 1: preset name input spans all 4 columns */
+.preset-selector input[list]#preset-select {
+    grid-column: 1 / 5;
+    grid-row: 1;
 }
 
-/* Row 2: buttons laid out in the 2-column grid */
-.preset-selector button {
-    grid-column: auto;
+/* Row 2: + button (col 1), name input (cols 2-3), Save (col 4) */
+.preset-selector .preset-new-btn {
+    grid-column: 1;
+    grid-row: 2;
+}
+.preset-selector input[type="text"]#preset-name-input {
+    grid-column: 2 / 4;
+    grid-row: 2;
+}
+.preset-selector .preset-save-btn {
+    grid-column: 4;
+    grid-row: 2;
+}
+
+/* Row 3: delete + share (only rendered when a preset is loaded) */
+.preset-selector .preset-delete-btn {
+    grid-column: 3;
+    grid-row: 3;
+}
+.preset-selector .share-btn {
+    grid-column: 4;
+    grid-row: 3;
 }
 
 /* Sidebar Sections */
