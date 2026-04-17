@@ -62,7 +62,7 @@ A living list of proposed features and improvements for PitchPerfect.
 
 - [x] **Export melody as MIDI file** — Download the current preset melody as a standard .mid file  **(DONE - export/import wired in piano-roll.ts)**
 - [x] **Export melody as audio (WAV/MP3)** — Render the current melody to an audio file  **(DONE - PR #125, WAV export wired to toolbar)**
-- [ ] **E2E tests** — Playwright tests for critical flows: preset save/load, playback, note entry  **(GH #121)**
+- [x] **E2E tests** — Playwright tests for critical flows: preset save/load, playback, note entry  **(GH #121 + GH #126, 20 tests + E2E CI job, DONE)**
 - [x] **Import MIDI file into editor** — Load a .mid file and populate the piano roll  **(DONE - PR #121)**
 - [ ] **Cloud preset sync** — Save and load presets to/from a server (optional authentication)
 - [x] **Shareable preset URLs** — Encode preset data in a URL query string for easy sharing  **(DONE - PR #77)**
@@ -72,9 +72,7 @@ A living list of proposed features and improvements for PitchPerfect.
 ## Infrastructure
 
 - [ ] **TypeScript migration** — Move all JS to TypeScript with strict types (see issue #33)
-- [ ] **Unit tests** — Add Jest/Vitest tests for scale-data.js, pitch-detector.js, and audio engine helpers  **(DONE - 105 tests added via Vitest, see PR #76)**
-- [x] **Unit tests** — 256 tests covering app-store, melody-engine, practice-engine, audio-engine, pitch-detector, scale-data, preset save/load, MIDI import/export, session data, share-url, theme store  **(DONE - 2026-04-17)**
-- [ ] **E2E tests** — Playwright tests for critical flows: preset save/load, playback, note entry
+- [x] **Unit tests** — 256 tests covering app-store, melody-engine, practice-engine, audio-engine, pitch-detector, scale-data, preset save/load, MIDI import/export, session data, share-url, theme store  **(DONE - Vitest, see PR #76)**
 - [x] **CI/CD pipeline** — GitHub Actions for lint, type-check, test, and build on every PR  **(DONE - tests.yml + build.yml, see PR #76)**
 - [x] **Bundle / build step** — Add a simple bundler (esbuild or Rollup) to produce a single JS bundle for production  **(DONE - Vite bundler configured)**
 - [x] **Refactoring** — Removed all `as any` type casts, consolidated duplicate `centsToBand` implementations, moved module-level `_nextId` into class, removed unused exports  **(GH #115, DONE - 2026-04-17)**
