@@ -49,7 +49,8 @@ A living list of proposed features and improvements for PitchPerfect.
 ## UI / UX
 
 - [x] **Dark/light theme toggle** — Switch between dark and light colour schemes  **(DONE - PR #76)**
-- [x] **Responsive layout improvements** — Better mobile layout for the piano roll (touch gestures for note editing)  **(DONE - PR #123)**
+- [x] **Responsive layout improvements** — Better mobile layout for the piano roll (touch gestures for note editing)  **(DONE - PR #123, mobile overhaul)**
+- [x] **Focus Mode** — Distraction-free full-screen practice UI with pitch canvas + minimal toolbar + Space key play/pause  **(GH #123, PR #123)**
 - [x] **Piano key width based on octave count** — Auto-size the piano key column to fit 2-3 octaves comfortably  **(DONE - PR #76)**
 - [ ] **Waveform display during recording** — Show a live audio waveform in the pitch area while the mic is active  **(GH #122)**
 - [x] **Tab badges** — Show a count badge on the Editor tab when notes are present  **(DONE - PR #76)**
@@ -59,7 +60,7 @@ A living list of proposed features and improvements for PitchPerfect.
 ## Data & Export
 
 - [x] **Export melody as MIDI file** — Download the current preset melody as a standard .mid file  **(DONE - export/import wired in piano-roll.ts)**
-- [ ] **Export melody as audio (WAV/MP3)** — Render the current melody to an audio file  **(GH #119)**
+- [x] **Export melody as audio (WAV/MP3)** — Render the current melody to an audio file  **(DONE - PR #125, WAV export wired to toolbar)**
 - [ ] **E2E tests** — Playwright tests for critical flows: preset save/load, playback, note entry  **(GH #121)**
 - [x] **Import MIDI file into editor** — Load a .mid file and populate the piano roll  **(DONE - PR #121)**
 - [ ] **Cloud preset sync** — Save and load presets to/from a server (optional authentication)
