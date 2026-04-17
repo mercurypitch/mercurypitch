@@ -1074,6 +1074,8 @@ export const App: Component<AppProps> = (props) => {
                 isScrolling={() => false}
                 targetPitch={targetPitch}
                 noteAccuracyMap={noteAccuracyMap}
+                isRecording={isRecording}
+                getWaveform={() => audioEngine?.getWaveformData() ?? null}
               />
               <div id="playhead" style={{
                 display: (isPlaying() || isPaused()) ? 'block' : 'none',

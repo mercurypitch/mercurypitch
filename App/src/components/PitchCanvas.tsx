@@ -23,6 +23,8 @@ interface PitchCanvasProps {
   isScrolling: () => boolean;
   targetPitch?: () => number | null;
   noteAccuracyMap?: () => Map<number, number>;
+  isRecording?: () => boolean;
+  getWaveform?: () => Float32Array | null;
 }
 
 export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
@@ -179,6 +181,46 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     ctx.save();
     ctx.translate(-props.isScrolling() ? props.currentBeat() * (w / Math.max(1, props.totalBeats())) * 0.3 : 0, 0);
 
+    // Waveform display during recording
+    if (props.isRecording && props.isRecording() && props.getWaveform) {
+      const waveform = props.getWaveform();
+      if (waveform && waveform.length > 0) {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(219,112,219,0.6)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        const step = Math.max(1, Math.floor(waveform.length / w));
+        for (let i = 0; i < w; i++) {
+          const sampleIdx = i * step;
+          const sample = waveform[sampleIdx] ?? 0;
+          const y = h / 2 + sample * (h / 2) * 0.8;
+          if (i === 0) ctx.moveTo(i, y);
+          else ctx.lineTo(i, y);
+        }
+        ctx.stroke();
+
+        // Filled area under the waveform
+        ctx.fillStyle = 'rgba(219,112,219,0.08)';
+        ctx.beginPath();
+        for (let i = 0; i < w; i++) {
+          const sampleIdx = i * step;
+          const sample = waveform[sampleIdx] ?? 0;
+          const y = h / 2 + sample * (h / 2) * 0.8;
+          if (i === 0) ctx.moveTo(i, h / 2);
+          else ctx.lineTo(i, y);
+        }
+        for (let i = w - 1; i >= 0; i--) {
+          const sampleIdx = i * step;
+          const sample = waveform[sampleIdx] ?? 0;
+          const y = h / 2 - sample * (h / 2) * 0.8;
+          ctx.lineTo(i, y);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
     const scale = props.scale();
     const melody = props.melody();
 
@@ -320,6 +362,8 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     props.melody();
     props.targetPitch?.();
     props.noteAccuracyMap?.();
+    props.isRecording?.();
+    props.getWaveform?.();
   });
 
   return <canvas ref={canvasRef} style={{ display: 'block', width: '100%', height: '100%' }} />;

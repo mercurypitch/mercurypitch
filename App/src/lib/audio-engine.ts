@@ -424,6 +424,18 @@ export class AudioEngine {
     return this.isRecording;
   }
 
+  isMicRecording(): boolean {
+    return this.isRecording;
+  }
+
+  /** Get waveform data from microphone (for live visualization) */
+  getWaveformData(): Float32Array {
+    if (this.micAnalyser) {
+      this.micAnalyser.getFloatTimeDomainData(this._timeData);
+    }
+    return this._timeData;
+  }
+
   /** Get frequency data from microphone (for pitch detection) */
   getFrequencyData(): Float32Array {
     if (this.micAnalyser) {
