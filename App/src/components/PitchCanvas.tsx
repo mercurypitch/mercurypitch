@@ -181,8 +181,8 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     ctx.save();
     ctx.translate(-props.isScrolling() ? props.currentBeat() * (w / Math.max(1, props.totalBeats())) * 0.3 : 0, 0);
 
-    // Waveform display during recording
-    if (props.isRecording && props.isRecording() && props.getWaveform) {
+    // Waveform display during mic recording
+    if (props.getWaveform) {
       const waveform = props.getWaveform();
       if (waveform && waveform.length > 0) {
         ctx.save();

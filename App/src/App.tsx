@@ -1147,6 +1147,8 @@ export const App: Component<AppProps> = (props) => {
               onPlaybackStateChange={(state) => {
                 setEditorPlaybackState(state);
               }}
+              isRecording={isRecording}
+              getWaveform={() => audioEngine?.getWaveformData() ?? null}
             />
           </Show>
 

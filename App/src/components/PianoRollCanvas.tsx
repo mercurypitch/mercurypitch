@@ -21,6 +21,8 @@ interface PianoRollCanvasProps {
   onInstrumentChange?: (instrument: string) => void;
   /** Called when the editor's internal playback state changes */
   onPlaybackStateChange?: (state: PlaybackState) => void;
+  isRecording?: () => boolean;
+  getWaveform?: () => Float32Array | null;
 }
 
 export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
@@ -82,6 +84,11 @@ export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
   // Propagate current note index
   createEffect(() => {
     editor?.setCurrentNote(props.currentNoteIndex());
+  });
+
+  // Propagate waveform props for recording visualization
+  createEffect(() => {
+    editor?.setWaveformProps(props.isRecording, props.getWaveform);
   });
 
   onCleanup(() => {

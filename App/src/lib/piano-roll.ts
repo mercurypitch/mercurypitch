@@ -418,6 +418,10 @@ export class PianoRollEditor {
   // Track whether playback was started externally (Practice tab) vs internally (Editor tab)
   private externalPlayback = false;
 
+  // Waveform props for recording visualization
+  private isRecording: (() => boolean) | null = null;
+  private getWaveform: (() => Float32Array | null) | null = null;
+
   // Interaction
   private selectedNoteIds: Set<number> = new Set();
   private activeTool: ActiveTool = 'place';
@@ -636,6 +640,11 @@ export class PianoRollEditor {
       }
     }
     this.drawWithPlayhead();
+  }
+
+  setWaveformProps(isRecording: (() => boolean) | null, getWaveform: (() => Float32Array | null) | null): void {
+    this.isRecording = isRecording;
+    this.getWaveform = getWaveform;
   }
 
   /** Called by App to sync the editor's playhead animation to the melody engine's timeline.
@@ -2158,6 +2167,9 @@ export class PianoRollEditor {
     ctx.fillStyle = '#0d1117';
     ctx.fillRect(0, 0, this.stretchedWidth, totalHeight);
 
+    // GH #122: Waveform background during mic recording
+    this.drawWaveformBackground(ctx, this.stretchedWidth, totalHeight);
+
     // Horizontal lines
     for (let i = 0; i <= this.totalRows; i++) {
       const y = i * this.rowHeight;
@@ -2236,6 +2248,49 @@ export class PianoRollEditor {
       // During count-in, draw the regular ruler without playhead
       this.drawRuler();
     }
+  }
+
+  /** GH #122: Draw waveform visualization during mic recording */
+  private drawWaveformBackground(ctx: CanvasRenderingContext2D, w: number, h: number): void {
+    if (!this.getWaveform) return;
+    const wf = this.getWaveform();
+    if (!wf || wf.length === 0) return;
+    const isRec = this.isRecording?.();
+    if (!isRec) return;
+
+    ctx.save();
+    ctx.strokeStyle = 'rgba(219,112,219,0.55)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    const step = Math.max(1, Math.floor(wf.length / w));
+    for (let i = 0; i < w; i++) {
+      const sampleIdx = i * step;
+      const sample = wf[sampleIdx] ?? 0;
+      const y = h / 2 + sample * (h / 2) * 0.7;
+      if (i === 0) ctx.moveTo(i, y);
+      else ctx.lineTo(i, y);
+    }
+    ctx.stroke();
+
+    // Filled area
+    ctx.fillStyle = 'rgba(219,112,219,0.06)';
+    ctx.beginPath();
+    for (let i = 0; i < w; i++) {
+      const sampleIdx = i * step;
+      const sample = wf[sampleIdx] ?? 0;
+      const y = h / 2 + sample * (h / 2) * 0.7;
+      if (i === 0) ctx.moveTo(i, h / 2);
+      else ctx.lineTo(i, y);
+    }
+    for (let i = w - 1; i >= 0; i--) {
+      const sampleIdx = i * step;
+      const sample = wf[sampleIdx] ?? 0;
+      const y = h / 2 - sample * (h / 2) * 0.7;
+      ctx.lineTo(i, y);
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
   }
 
   /** Draw connection lines between linked notes (slides/ease effects) */
