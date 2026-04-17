@@ -673,4 +673,15 @@ export const appStore = {
 
   // Session Results
   sessionResultsStore,
+
+  // Session state (signals)
+  sessionActive,
+  practiceSession,
+  sessionMode,
+  getCurrentSessionItem,
+  startPracticeSession,
+  advanceSessionItem,
+  recordSessionItemResult,
+  endPracticeSession,
+  isInSessionMode,
 };
