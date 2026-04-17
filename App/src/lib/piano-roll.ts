@@ -1261,7 +1261,7 @@ export class PianoRollEditor {
         const data = new Uint8Array(buffer);
         const melody = importMelodyFromMIDI(data);
         if (melody && melody.length > 0) {
-          this.clearMelody();
+          this.setMelody(melody);
           this.onMelodyChange?.(melody);
           this._updateHint(`Imported ${melody.length} note(s) from MIDI`);
         } else {
