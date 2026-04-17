@@ -100,6 +100,7 @@ rebuild_solidjs() {
     # Copy built files from App/dist to public/
     if [[ -d "$REPO_DIR/App/dist" ]]; then
         info "Deploying SolidJS build to public/..."
+        mkdir -p "$WEB_DIR/assets"
         rm -f "$WEB_DIR/assets/"*.js "$WEB_DIR/assets/"*.css
         cp "$REPO_DIR/App/dist/index.html" "$WEB_DIR/index.html"
         cp "$REPO_DIR/App/dist/assets/"*.css "$WEB_DIR/assets/" 2>/dev/null || true
