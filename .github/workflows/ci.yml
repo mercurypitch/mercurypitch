@@ -33,6 +33,7 @@ jobs:
       contents: write
 
     steps:
+      - uses: actions/checkout@v4
       - name: Delete merged PR branch
         run: |
           git push origin --delete "${{ github.head_ref }}"
