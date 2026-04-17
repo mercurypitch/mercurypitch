@@ -4,7 +4,7 @@
 // Visible in all tabs; NoteList, PitchDisplay, stats wrapped in Show for Practice only
 // ============================================================
 
-import { Component, Show } from 'solid-js';
+import { Component, For, Show } from 'solid-js';
 import {
   appStore,
   getNoteAccuracyMap,
@@ -206,6 +206,25 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
               <span id="score-label">Score:</span>
               <span id="score-value" class="live-score-value">--</span>
             </div>
+
+            {/* Session history — practice tab only */}
+            <Show when={appStore.sessionResultsStore.length > 0}>
+              <div id="session-history-panel">
+                <h3>Sessions</h3>
+                <div id="session-history-list">
+                  <For each={appStore.sessionResultsStore}>
+                    {(entry) => (
+                      <div class="session-history-entry">
+                        <span class="session-history-name">{entry.sessionName}</span>
+                        <span class={`session-history-score ${entry.score >= 80 ? 'score-high' : entry.score >= 50 ? 'score-mid' : 'score-low'}`}>
+                          {entry.score}%
+                        </span>
+                      </div>
+                    )}
+                  </For>
+                </div>
+              </div>
+            </Show>
           </div>
         </div>
       </Show>

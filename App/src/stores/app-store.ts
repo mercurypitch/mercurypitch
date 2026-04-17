@@ -406,6 +406,115 @@ export function showNotification(message: string, type: Notification['type'] = '
   }, 3000);
 }
 
+// ── Session Results (reactive store for sidebar) ───────────────
+
+import type { PracticeSession, SessionResult } from '@/types';
+const [sessionResultsStore, setSessionResultsStore] = createStore<SessionResult[]>([]);
+
+// ── Practice Session State ────────────────────────────────────
+
+const [practiceSession, setPracticeSession] = createSignal<PracticeSession | null>(null);
+const [sessionItemIndex, setSessionItemIndex] = createSignal(0);
+const [sessionActive, setSessionActive] = createSignal(false);
+const [sessionResults, setSessionResults] = createSignal<{ score: number }[]>([]);
+const [sessionMode, setSessionMode] = createSignal(false); // true when in session flow
+
+const SESSION_RESULTS_KEY = 'pitchperfect_session_results';
+
+function loadSessionResults(): SessionResult[] {
+  try {
+    const raw = localStorage.getItem(SESSION_RESULTS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveSessionResultsToStorage(data: SessionResult[]): void {
+  try {
+    localStorage.setItem(SESSION_RESULTS_KEY, JSON.stringify(data));
+  } catch (e) {
+    console.warn('Failed to save session results:', e);
+  }
+}
+
+export function initSessionHistory(): void {
+  setSessionHistory(loadSessionHistory());
+  // Also load session results into reactive store
+  setSessionResultsStore(loadSessionResults().slice(0, 5));
+}
+
+export function startPracticeSession(session: PracticeSession): void {
+  setPracticeSession(session);
+  setSessionItemIndex(0);
+  setSessionActive(true);
+  setSessionMode(true);
+  setSessionResults([]);
+}
+
+export function getCurrentSessionItem(): PracticeSession['items'][0] | null {
+  const session = practiceSession();
+  if (!session) return null;
+  const idx = sessionItemIndex();
+  if (idx < 0 || idx >= session.items.length) return null;
+  return session.items[idx];
+}
+
+export function advanceSessionItem(): void {
+  const session = practiceSession();
+  if (!session) return;
+  const next = sessionItemIndex() + 1;
+  if (next < session.items.length) {
+    setSessionItemIndex(next);
+  }
+}
+
+export function recordSessionItemResult(score: number): void {
+  setSessionResults((prev) => [...prev, { score }]);
+}
+
+export function endPracticeSession(): SessionResult | null {
+  const session = practiceSession();
+  if (!session) return null;
+
+  const scores = sessionResults();
+  const totalScore = scores.length > 0
+    ? Math.round(scores.reduce((s, r) => s + r.score, 0) / scores.length)
+    : 0;
+
+  const result: SessionResult = {
+    sessionId: session.id,
+    sessionName: session.name,
+    completedAt: Date.now(),
+    itemsCompleted: scores.length,
+    totalItems: session.items.length,
+    score: totalScore,
+  };
+
+  // Persist to localStorage
+  const existing = loadSessionResults();
+  saveSessionResultsToStorage([result, ...existing].slice(0, 50));
+
+  // Update reactive store for sidebar display
+  setSessionResultsStore([result, ...sessionResultsStore].slice(0, 5));
+
+  setSessionActive(false);
+  setPracticeSession(null);
+  setSessionItemIndex(0);
+  setSessionMode(false);
+  setSessionResults([]);
+
+  return result;
+}
+
+export function isInSessionMode(): boolean {
+  return sessionMode();
+}
+
+export function getSessionHistoryEntries(): SessionResult[] {
+  return loadSessionResults();
+}
+
 // ── Session History ──────────────────────────────────────────
 
 export interface SessionHistoryEntry {
@@ -437,10 +546,6 @@ function saveSessionHistoryToStorage(data: SessionHistoryEntry[]): void {
   } catch (e) {
     console.warn('Failed to save session history:', e);
   }
-}
-
-export function initSessionHistory(): void {
-  setSessionHistory(loadSessionHistory());
 }
 
 export function saveSession(entry: Omit<SessionHistoryEntry, 'id' | 'timestamp'>): void {
@@ -565,4 +670,7 @@ export const appStore = {
   playbackSpeed,
   initPlaybackSpeed,
   setPlaybackSpeed,
+
+  // Session Results
+  sessionResultsStore,
 };
