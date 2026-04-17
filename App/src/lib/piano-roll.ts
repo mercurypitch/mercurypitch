@@ -1005,6 +1005,17 @@ export class PianoRollEditor {
         <button id="roll-import-midi" class="roll-export-btn" title="Import melody from MIDI file">Import MIDI</button>
         <button id="roll-clear-all" class="roll-ctrl-btn danger" title="Clear all notes">Clear</button>
         <div class="roll-sep"></div>
+        <div class="roll-play-group">
+          <button id="roll-play-btn" class="roll-play-btn" title="Play melody">
+            <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>
+            <span id="roll-play-label">Play</span>
+          </button>
+          <button id="roll-stop-btn" class="roll-reset-btn" title="Stop playback">
+            <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M6 6h12v12H6z"/></svg>
+            <span>Stop</span>
+          </button>
+        </div>
+        <div class="roll-sep"></div>
         <button id="roll-pitch-track-btn" class="roll-pitch-track-btn" title="Toggle pitch track visualization">Pitch Track</button>
       </div>
       <div class="roll-main-area">
@@ -1283,6 +1294,16 @@ export class PianoRollEditor {
     // Pitch track toggle
     container.querySelector('#roll-pitch-track-btn')?.addEventListener('click', () => {
       this._togglePitchTrack();
+    });
+
+    // Play button (piano roll toolbar)
+    container.querySelector('#roll-play-btn')?.addEventListener('click', () => {
+      this.handlePlayClick();
+    });
+
+    // Stop button (piano roll toolbar)
+    container.querySelector('#roll-stop-btn')?.addEventListener('click', () => {
+      this.resetPlayback();
     });
 
     // Bar controls

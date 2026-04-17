@@ -12,6 +12,7 @@ export interface MelodyEngineCallbacks {
   onComplete?: () => void;
   onCountIn?: (beat: number) => void;  // Called during count-in beats
   onCountInComplete?: () => void;     // Called when count-in finishes
+  onMetronomeTick?: (beat: number, isDownbeat: boolean) => void; // Called for metronome during playback
 }
 
 export interface MelodyEngineOptions {
@@ -23,6 +24,7 @@ export interface MelodyEngineOptions {
   onComplete?: () => void;
   onCountIn?: (beat: number) => void;
   onCountInComplete?: () => void;
+  onMetronomeTick?: (beat: number, isDownbeat: boolean) => void;
 }
 
 export class MelodyEngine {
@@ -48,6 +50,9 @@ export class MelodyEngine {
   private countInBeats = 0;
   private countInBeat = 0;
 
+  // Metronome
+  private metronomeLastBeat = -1;
+
   constructor(options: MelodyEngineOptions) {
     this.bpm = options.bpm;
     this.melody = options.melody;
@@ -58,6 +63,7 @@ export class MelodyEngine {
       onComplete: options.onComplete,
       onCountIn: options.onCountIn,
       onCountInComplete: options.onCountInComplete,
+      onMetronomeTick: options.onMetronomeTick,
     };
   }
 
@@ -136,6 +142,7 @@ export class MelodyEngine {
     this.isPlaying = true;
     this.isPaused = false;
     this.countInBeat = 0;
+    this.metronomeLastBeat = -1;
 
     if (countInBeats > 0) {
       // Start with count-in phase
@@ -243,6 +250,14 @@ export class MelodyEngine {
     }
 
     this.currentBeat = rawBeat;
+
+    // Metronome tick on each beat during playback
+    const currentBeatInt = Math.floor(this.currentBeat);
+    if (currentBeatInt !== this.metronomeLastBeat && this.metronomeLastBeat >= 0) {
+      const isDownbeat = currentBeatInt % 4 === 0;
+      this.callbacks.onMetronomeTick?.(currentBeatInt, isDownbeat);
+    }
+    this.metronomeLastBeat = currentBeatInt;
 
     const total = this.totalBeats();
 

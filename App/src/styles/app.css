@@ -1289,8 +1289,15 @@ header h1 {
     .tempo-group { flex-shrink: 0; }
     .tempo-slider { width: 70px; }
     #tempo-value { font-size: 0.65rem; min-width: 24px; }
-    .countin-group { flex-shrink: 0; }
-    .countin-select { font-size: 0.68rem; padding: 2px 5px; }
+    .countin-group { flex-shrink: 0; display: flex; align-items: center; gap: 4px; }
+    .countin-select {
+      font-size: 0.68rem;
+      padding: 2px 5px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      color: var(--text-color);
+    }
     .volume-group { flex-shrink: 0; }
     .volume-slider { width: 60px; }
     #volume-value { font-size: 0.65rem; min-width: 20px; }
