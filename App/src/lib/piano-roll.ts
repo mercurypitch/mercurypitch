@@ -4,6 +4,7 @@
 
 import type { MelodyItem, ScaleDegree, PianoRollConfig, NoteName } from '@/types';
 import type { InstrumentType } from '@/lib/audio-engine';
+import { AudioEngine } from '@/lib/audio-engine';
 import { PitchDetector } from '@/lib/pitch-detector';
 import { buildMultiOctaveScale, midiToNote, midiToFreq } from '@/lib/scale-data';
 
@@ -1023,6 +1024,7 @@ export class PianoRollEditor {
         </div>
         <div class="roll-sep"></div>
         <button id="roll-export-midi" class="roll-export-btn" title="Export melody as MIDI file">Export MIDI</button>
+        <button id="roll-export-wav" class="roll-export-btn" title="Export melody as WAV file">Export WAV</button>
         <button id="roll-import-midi" class="roll-export-btn" title="Import melody from MIDI file">Import MIDI</button>
         <button id="roll-clear-all" class="roll-ctrl-btn danger" title="Clear all notes">Clear</button>
         <div class="roll-sep"></div>
@@ -1299,6 +1301,29 @@ export class PianoRollEditor {
       const melody = this.getMelody();
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
       downloadMIDI(melody, this.bpm, `pitchperfect-${timestamp}.mid`);
+    });
+
+    // Export WAV button
+    container.querySelector('#roll-export-wav')?.addEventListener('click', async () => {
+      const melody = this.getMelody();
+      if (!melody || melody.length === 0) {
+        alert('No melody to export. Add some notes first.');
+        return;
+      }
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      // Use the window-exposed audio engine instance
+      const engine = (window as Window & { pianoRollAudioEngine?: AudioEngine }).pianoRollAudioEngine;
+      if (!engine) {
+        alert('Audio engine not ready. Please try again.');
+        return;
+      }
+      // Get instrument from the toolbar select
+      const instrumentSelect = container.querySelector('#roll-instrument-select') as HTMLSelectElement | null;
+      const instrument = (instrumentSelect?.value as InstrumentType) || 'sine';
+      const success = await engine.downloadMelodyAsWAV(melody, this.bpm, `pitchperfect-${timestamp}.wav`, instrument);
+      if (!success) {
+        alert('Failed to render WAV. Please try again.');
+      }
     });
 
     // Pitch track toggle
