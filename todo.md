@@ -11,7 +11,7 @@ A living list of proposed features and improvements for PitchPerfect.
 - [x] **Note velocity / velocity curve** — Visual velocity editing on note blocks (thicker/thinner or colour intensity)  **(DONE - PR #76)**
 - [x] **Keyboard shortcut for note entry** — Arrow keys navigate pitch lanes, Space/Enter place note  **(DONE - PR #76)**
 - [x] **Undo/redo for note edits** — Maintain a history stack of edit operations in the piano roll  **(GH #73, DONE)**
-- [ ] **Multiple selection and bulk delete** — Select multiple notes and delete them together  **(GH #120 — bulk delete via Delete key + toolbar button)**
+- [x] **Multiple selection and bulk delete** — Select multiple notes and delete them together  **(GH #120 — bulk delete via Delete key + toolbar button, DONE)**
 - [x] **Zoom controls for piano roll** — Zoom in/out on the time axis (horizontal) and pitch axis (vertical)  **(GH #74, DONE - PR #125)**
 
 ---
@@ -54,6 +54,7 @@ A living list of proposed features and improvements for PitchPerfect.
 - [x] **Piano key width based on octave count** — Auto-size the piano key column to fit 2-3 octaves comfortably  **(DONE - PR #76)**
 - [ ] **Waveform display during recording** — Show a live audio waveform in the pitch area while the mic is active  **(GH #122)**
 - [x] **Tab badges** — Show a count badge on the Editor tab when notes are present  **(DONE - PR #76)**
+- [x] **About section** — App info panel in Settings with version, features, and credits  **(GH #124, DONE)**
 
 ---
 
