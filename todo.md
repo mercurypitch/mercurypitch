@@ -20,7 +20,7 @@ A living list of proposed features and improvements for PitchPerfect.
 
 - [x] **Instrument sounds** — Replace the sine-wave oscillator with a lightweight sampler or Web Audio synthesizer (e.g., piano, organ, strings)  **(DONE - additive synthesis for piano/organ/strings/synth in audio-engine.ts)**
 - [x] **Reverb / effects chain** — Add a simple reverb or EQ to the practice playback  **(DONE - PR #127, reverb types + wet/dry mix in Settings)**
-- [ ] **Record from microphone to piano roll** — Real-time MIDI capture: sing or play and convert to note blocks
+- [x] **Record from microphone to piano roll** — Real-time MIDI capture: sing or play and convert to note blocks  **(DONE - Record button + pitch-to-note conversion, see GH #122)**
 - [x] **Adjustable tone envelope** — Attack, decay, sustain, release (ADSR) control for the oscillator  **(DONE - PR #76)**
 - [x] **Play preview speed** — Slow down the melody (0.5x, 0.75x) for practice without changing BPM  **(DONE - PR #76)**
 
@@ -71,7 +71,7 @@ A living list of proposed features and improvements for PitchPerfect.
 
 ## Infrastructure
 
-- [ ] **TypeScript migration** — Move all JS to TypeScript with strict types (see issue #33)
+- [x] **TypeScript migration** — Move all JS to TypeScript with strict types (see issue #33)  **(DONE - entire codebase is TypeScript + SolidJS)**
 - [x] **Unit tests** — 256 tests covering app-store, melody-engine, practice-engine, audio-engine, pitch-detector, scale-data, preset save/load, MIDI import/export, session data, share-url, theme store  **(DONE - Vitest, see PR #76)**
 - [x] **CI/CD pipeline** — GitHub Actions for lint, type-check, test, and build on every PR  **(DONE - tests.yml + build.yml, see PR #76)**
 - [x] **Bundle / build step** — Add a simple bundler (esbuild or Rollup) to produce a single JS bundle for production  **(DONE - Vite bundler configured)**
