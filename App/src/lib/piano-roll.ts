@@ -1312,12 +1312,10 @@ export class PianoRollEditor {
 
     // Undo/redo buttons
     container.querySelector('#roll-undo-btn')?.addEventListener('click', () => {
-      this.updateUndoRedoButtons();
       this.undo();
     });
 
     container.querySelector('#roll-redo-btn')?.addEventListener('click', () => {
-      this.updateUndoRedoButtons();
       this.redo();
     });
 
@@ -1365,14 +1363,12 @@ export class PianoRollEditor {
           this.resizeHandle = 'right';
         }
       } else {
+        // Empty space — start box selection for area-select, or place note on click
         this.isBoxSelecting = true;
         this.boxStartX = x;
         this.boxStartY = y;
         this.boxEndX = x;
         this.boxEndY = y;
-        this.isDragging = true;
-        this.dragStartX = x;
-        this.dragStartY = y;
         this.dragStartBeat = Math.floor(beat) + (beat % 1 >= 0.5 ? 0.5 : 0);
         this.dragStartRow = row;
       }
@@ -1395,6 +1391,21 @@ export class PianoRollEditor {
           this.selectedNoteIds.clear();
           this.selectedNoteIds.add(noteId);
         }
+        // Enable drag for selected notes
+        this.isDragging = true;
+        this.dragStartX = x;
+        this.dragStartY = y;
+        this.dragStartBeat = note.startBeat;
+        this.dragStartRow = this.midiToRow(note.note.midi);
+        const noteX = note.startBeat * this.beatWidth;
+        const noteW = note.duration * this.beatWidth;
+        if (x - noteX < 6) {
+          this.isResizing = true;
+          this.resizeHandle = 'left';
+        } else if (noteX + noteW - x < 6) {
+          this.isResizing = true;
+          this.resizeHandle = 'right';
+        }
         const first = this.melody.find((n) => n.id !== undefined && this.selectedNoteIds.has(n.id));
         this.onNoteSelect?.(first ?? null);
       } else {
@@ -1402,6 +1413,12 @@ export class PianoRollEditor {
           this.selectedNoteIds.clear();
           this.onNoteSelect?.(null);
         }
+        // Start box selection on empty space in select tool
+        this.isBoxSelecting = true;
+        this.boxStartX = x;
+        this.boxStartY = y;
+        this.boxEndX = x;
+        this.boxEndY = y;
       }
     }
 
@@ -1932,12 +1949,12 @@ export class PianoRollEditor {
         ctx.fillRect(0, y, this.pianoWidth, this.rowHeight);
       }
 
-      // Key label
+      // Key label with octave number (e.g. "C4", "F#3")
       ctx.fillStyle = isBlack ? '#484f58' : '#8b949e';
       ctx.font = '9px sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(scaleNote.name, this.pianoWidth / 2, y + this.rowHeight / 2);
+      ctx.fillText(`${scaleNote.name}${scaleNote.octave}`, this.pianoWidth / 2, y + this.rowHeight / 2);
 
       // Bottom border
       ctx.strokeStyle = '#21262d';
