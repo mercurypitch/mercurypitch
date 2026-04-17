@@ -3355,3 +3355,128 @@ header h1 {
 .session-history-score.score-high { color: var(--accent-success); }
 .session-history-score.score-mid { color: var(--accent-warning); }
 .session-history-score.score-low { color: var(--accent-danger); }
+
+/* ===== Welcome Screen (GH #131) ===== */
+.welcome-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(13, 17, 23, 0.92);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    backdrop-filter: blur(6px);
+    animation: welcome-fadein 0.3s ease;
+}
+
+@keyframes welcome-fadein {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.welcome-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 40px 44px;
+    text-align: center;
+    min-width: 380px;
+    max-width: 480px;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+    position: relative;
+    animation: welcome-slidein 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes welcome-slidein {
+    from { transform: translateY(20px) scale(0.96); opacity: 0; }
+    to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.welcome-hero {
+    margin-bottom: 28px;
+}
+
+.welcome-icon {
+    color: var(--accent);
+    margin-bottom: 12px;
+    filter: drop-shadow(0 0 12px var(--accent));
+}
+
+.welcome-title {
+    font-size: 1.65rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 8px;
+    letter-spacing: -0.02em;
+}
+
+.welcome-subtitle {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.welcome-features {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-bottom: 28px;
+    text-align: left;
+}
+
+.welcome-feature {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 14px;
+    background: var(--bg-tertiary);
+    border-radius: 10px;
+    border: 1px solid var(--border);
+}
+
+.welcome-feature svg {
+    flex-shrink: 0;
+    color: var(--accent);
+    margin-top: 2px;
+}
+
+.welcome-feature strong {
+    display: block;
+    font-size: 0.88rem;
+    color: var(--text-primary);
+    margin-bottom: 3px;
+}
+
+.welcome-feature p {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin: 0;
+    line-height: 1.4;
+}
+
+.welcome-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 28px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    box-shadow: 0 4px 16px rgba(88, 166, 255, 0.3);
+}
+
+.welcome-cta:hover {
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(88, 166, 255, 0.4);
+}
+
+.welcome-cta:active {
+    transform: translateY(0);
+}
+

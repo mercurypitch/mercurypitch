@@ -95,6 +95,27 @@ const [focusMode, setFocusMode] = createSignal(false);
 export function enterFocusMode(): void { setFocusMode(true); }
 export function exitFocusMode(): void { setFocusMode(false); }
 
+// ── Welcome Screen (GH #131) ────────────────────────────────────
+const WELCOME_KEY = 'pitchperfect_welcome_version';
+const APP_VERSION = '0.1';
+
+function shouldShowWelcome(): boolean {
+  try {
+    const shown = localStorage.getItem(WELCOME_KEY);
+    // Show welcome on first visit or if version changed
+    return shown !== APP_VERSION;
+  } catch { return true; }
+}
+
+const [showWelcome, setShowWelcome] = createSignal(shouldShowWelcome());
+
+export function dismissWelcome(): void {
+  setShowWelcome(false);
+  try {
+    localStorage.setItem(WELCOME_KEY, APP_VERSION);
+  } catch {}
+}
+
 // ── Settings ───────────────────────────────────────────────────
 
 const SETTINGS_KEY = 'pitchperfect_settings';
@@ -696,6 +717,10 @@ export const appStore = {
   focusMode,
   enterFocusMode,
   exitFocusMode,
+
+  // Welcome Screen
+  showWelcome,
+  dismissWelcome,
 
   // Grid
   gridLinesVisible,

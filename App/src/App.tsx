@@ -23,6 +23,7 @@ import { SessionBrowser } from '@/components/SessionBrowser';
 import { SessionPlayer } from '@/components/SessionPlayer';
 import { EditorTabHeader } from '@/components/EditorTabHeader';
 import { FocusMode } from '@/components/FocusMode';
+import { WelcomeScreen } from '@/components/WelcomeScreen';
 import type { PresetData } from '@/stores/app-store';
 import { HistoryCanvas } from '@/components/HistoryCanvas';
 import { appStore, getNoteAccuracyMap } from '@/stores/app-store';
@@ -945,6 +946,11 @@ export const App: Component<AppProps> = (props) => {
 
   return (
     <div id="app">
+      {/* Welcome screen overlay (GH #131) */}
+      <Show when={appStore.showWelcome()}>
+        <WelcomeScreen />
+      </Show>
+
       {/* Sidebar backdrop (mobile) */}
       <Show when={sidebarOpen()}>
         <div class="sidebar-backdrop" onClick={closeSidebar} />
