@@ -19,6 +19,8 @@ import { loadFromURL, hasSharedPresetInURL } from '@/lib/share-url';
 import { AppSidebar } from '@/components/AppSidebar';
 import { ScaleBuilder } from '@/components/ScaleBuilder';
 import { PracticeTabHeader } from '@/components/PracticeTabHeader';
+import { SessionBrowser } from '@/components/SessionBrowser';
+import { SessionPlayer } from '@/components/SessionPlayer';
 import type { PresetData } from '@/stores/app-store';
 import { HistoryCanvas } from '@/components/HistoryCanvas';
 import { appStore, getNoteAccuracyMap } from '@/stores/app-store';
@@ -157,6 +159,10 @@ export const App: Component<AppProps> = (props) => {
   const [savedVol, setSavedVol] = createSignal<number>(80);
   const [showScaleBuilder, setShowScaleBuilder] = createSignal<boolean>(false);
 
+  // ── Session state ────────────────────────────────────────────
+  const [showSessionBrowser, setShowSessionBrowser] = createSignal(false);
+  const [sessionSummary, setSessionSummary] = createSignal<{ score: number; items: number; name: string } | null>(null);
+
   // ── Stats panel ──────────────────────────────────────────────
 
   const statsCounts = createMemo(() => {
@@ -261,6 +267,53 @@ export const App: Component<AppProps> = (props) => {
       onComplete: () => {
         const results = practiceEngine.onPlaybackComplete();
         const mode = playMode();
+
+        // Handle session mode: record result and advance/end session
+        if (appStore.sessionMode() && mode === 'practice') {
+          const currentScore = liveScore();
+          if (currentScore !== null) {
+            appStore.recordSessionItemResult(currentScore);
+          }
+
+          // Check if more items remain
+          const current = appStore.getCurrentSessionItem();
+          if (current) {
+            const session = appStore.practiceSession();
+            const idx = appStore.sessionItemIndex();
+            if (idx < (session?.items.length ?? 0) - 1) {
+              // More items — reset and advance
+              appStore.advanceSessionItem();
+              setNoteResults([]);
+              setLiveScore(null);
+              setCurrentBeat(0);
+              setCurrentNoteIndex(-1);
+              melodyStore.setCurrentNoteIndex(-1);
+              setPitchHistory([]);
+              practiceEngine.resetSession();
+              handleStop();
+              // Load next item and auto-start after delay
+              const nextItem = appStore.getCurrentSessionItem();
+              if (nextItem && nextItem.type === 'rest') {
+                // Rest item — skip it automatically
+                appStore.advanceSessionItem();
+                setTimeout(() => handlePlay(), (nextItem.restMs ?? 2000));
+              } else if (nextItem && nextItem.type === 'scale') {
+                buildScaleMelody(nextItem.scaleType ?? 'major', nextItem.beats ?? 8, nextItem.label);
+                setTimeout(() => handlePlay(), 500);
+              }
+              return;
+            } else {
+              // Session complete — end and show summary
+              handleStop();
+              const summary = appStore.endPracticeSession();
+              if (summary) {
+                setSessionSummary({ score: summary.score, items: summary.itemsCompleted, name: summary.sessionName });
+                appStore.showNotification(`Session complete! Score: ${summary.score}%`, summary.score >= 80 ? 'success' : 'info');
+              }
+              return;
+            }
+          }
+        }
 
         if (mode === 'practice') {
           // Accumulate results for practice mode
@@ -606,6 +659,63 @@ export const App: Component<AppProps> = (props) => {
     setIsPracticeComplete(false);
   };
 
+  /** Build a scale-based melody for session items */
+  const buildScaleMelody = (scaleType: string, beats: number, label?: string) => {
+    const scale = melodyStore.getScale(appStore.keyName(), melodyStore.currentOctave(), scaleType);
+    if (!scale || scale.length === 0) return;
+
+    // Build one octave of the scale as melody items
+    const items: MelodyItem[] = scale.slice(0, Math.min(8, scale.length)).map((note, i) => ({
+      id: melodyStore.generateId(),
+      note: { midi: note.midi, name: note.name as NoteName, octave: note.octave, freq: note.freq },
+      startBeat: i,
+      duration: 1,
+    }));
+    melodyStore.setMelody(items);
+  };
+
+  /** Handle session skip — advance to next item or end session */
+  const handleSessionSkip = () => {
+    handleStop();
+    const session = appStore.practiceSession();
+    const idx = appStore.sessionItemIndex();
+    if (session && idx < session.items.length - 1) {
+      appStore.advanceSessionItem();
+      const nextItem = appStore.getCurrentSessionItem();
+      if (nextItem) {
+        if (nextItem.type === 'scale') {
+          buildScaleMelody(nextItem.scaleType ?? 'major', nextItem.beats ?? 8, nextItem.label);
+          setTimeout(() => handlePlay(), 500);
+        } else if (nextItem.type === 'rest') {
+          setTimeout(() => handleSessionSkip(), nextItem.restMs ?? 2000);
+        }
+      }
+    } else {
+      const summary = appStore.endPracticeSession();
+      if (summary) setSessionSummary({ score: summary.score, items: summary.itemsCompleted, name: summary.sessionName });
+    }
+  };
+
+  /** Handle session end — end session early */
+  const handleSessionEnd = () => {
+    handleStop();
+    const summary = appStore.endPracticeSession();
+    if (summary) setSessionSummary({ score: summary.score, items: summary.itemsCompleted, name: summary.sessionName });
+  };
+
+  /** Auto-start session when session mode becomes active */
+  createEffect(() => {
+    if (appStore.sessionMode() && appStore.practiceSession()) {
+      const item = appStore.getCurrentSessionItem();
+      if (item && item.type === 'scale') {
+        buildScaleMelody(item.scaleType ?? 'major', item.beats ?? 8, item.label);
+        setPlayMode('practice');
+        setPracticeCycles(1);
+        setTimeout(() => handlePlay(), 500);
+      }
+    }
+  });
+
   // ── Mic handlers ─────────────────────────────────────────────
 
   const handleMicToggle = async () => {
@@ -832,7 +942,17 @@ export const App: Component<AppProps> = (props) => {
               onPracticeSubModeChange={setPracticeSubMode}
               isRecording={isRecording}
               onRecordToggle={handleRecordToggle}
+              onOpenSessions={() => setShowSessionBrowser(true)}
+              sessionActive={appStore.sessionActive}
             />
+
+            {/* Session Player — shown when a session is active */}
+            <Show when={appStore.sessionActive()}>
+              <SessionPlayer
+                onSkip={handleSessionSkip}
+                onEnd={handleSessionEnd}
+              />
+            </Show>
 
             {/* Canvas */}
             <div id="canvas-container">
@@ -964,6 +1084,46 @@ export const App: Component<AppProps> = (props) => {
         isOpen={showScaleBuilder()}
         onClose={() => setShowScaleBuilder(false)}
       />
+
+      {/* Session Browser Modal */}
+      <Show when={showSessionBrowser()}>
+        <SessionBrowser
+          onClose={() => setShowSessionBrowser(false)}
+          onStartSession={(session) => {
+            appStore.startPracticeSession(session);
+            setShowSessionBrowser(false);
+          }}
+        />
+      </Show>
+
+      {/* Session Summary Overlay */}
+      <Show when={sessionSummary() !== null}>
+        <div class="overlay" onClick={() => setSessionSummary(null)}>
+          <div id="session-summary-card" onClick={(e) => e.stopPropagation()}>
+            <button class="overlay-close" onClick={() => setSessionSummary(null)}>&times;</button>
+            <h2>Session Complete!</h2>
+            <p id="session-summary-name">{sessionSummary()!.name}</p>
+            <div id="session-summary-score">{sessionSummary()!.score}%</div>
+            <div id="session-summary-items">
+              {sessionSummary()!.items} items completed
+            </div>
+            <div id="score-actions">
+              <button
+                class="overlay-btn primary"
+                onClick={() => {
+                  setSessionSummary(null);
+                  setShowSessionBrowser(true);
+                }}
+              >
+                New Session
+              </button>
+              <button class="overlay-btn" onClick={() => setSessionSummary(null)}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      </Show>
     </div>
   );
 };

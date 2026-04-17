@@ -197,3 +197,57 @@ export interface PitchPerfectWindow extends Window {
   pianoRollAudioEngine?: import('../lib/audio-engine').AudioEngine;
   pianoRollGenerateId?: () => number;
 }
+
+// ── Practice Sessions ─────────────────────────────────────────
+
+export type SessionDifficulty = 'beginner' | 'intermediate' | 'advanced';
+export type SessionCategory = 'vocal' | 'instrumental' | 'ear-training' | 'general';
+export type SessionItemType = 'preset' | 'scale' | 'rest';
+
+/** A single item within a practice session */
+export interface SessionItem {
+  /** Item type */
+  type: SessionItemType;
+  /** Preset ID (for type='preset') */
+  presetId?: string;
+  /** Scale type (for type='scale') */
+  scaleType?: string;
+  /** Custom display label */
+  label?: string;
+  /** Duration in beats (for type='scale') */
+  beats?: number;
+  /** Duration in ms (for type='rest') */
+  restMs?: number;
+}
+
+/** A structured practice session with multiple items */
+export interface PracticeSession {
+  /** Unique session ID */
+  id: string;
+  /** Display name */
+  name: string;
+  /** Description */
+  description: string;
+  /** Difficulty level */
+  difficulty: SessionDifficulty;
+  /** Category */
+  category: SessionCategory;
+  /** Session items */
+  items: SessionItem[];
+}
+
+/** Result of completing a practice session */
+export interface SessionResult {
+  /** Session ID */
+  sessionId: string;
+  /** Session display name */
+  sessionName: string;
+  /** Completion timestamp */
+  completedAt: number;
+  /** Number of items completed */
+  itemsCompleted: number;
+  /** Total items in session */
+  totalItems: number;
+  /** Average score across items */
+  score: number;
+}
