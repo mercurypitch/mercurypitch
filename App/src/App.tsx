@@ -215,6 +215,7 @@ export const App: Component<AppProps> = (props) => {
     appStore.initPresets();
     appStore.initSessionHistory();
     appStore.initSettings();
+    appStore.initReverb();
 
     // Space key handler for play/pause (Focus Mode friendly)
     const onKeyDown = (e: KeyboardEvent) => {
@@ -255,6 +256,9 @@ export const App: Component<AppProps> = (props) => {
     audioEngine.setVolume(savedVol / 100);
     // Sync ADSR settings from appStore
     audioEngine.syncFromAppStore(appStore.adsr());
+    // Apply saved reverb settings to audio engine
+    audioEngine.setReverbType(appStore.reverb().type);
+    audioEngine.setReverbWetness(appStore.reverb().wetness);
 
     melodyEngine = new MelodyEngine({
       bpm: appStore.bpm(),
@@ -484,6 +488,24 @@ export const App: Component<AppProps> = (props) => {
       const adsr = appStore.adsr();
       if (audioEngine) {
         audioEngine.syncFromAppStore(adsr);
+      }
+    });
+
+    // Sync reverb wetness to AudioEngine when it changes
+    createEffect(() => {
+      const wetness = appStore.reverb().wetness;
+      if (audioEngine) {
+        audioEngine.setReverbWetness(wetness);
+      }
+    });
+
+    // Sync reverb type to AudioEngine when it changes (async, avoid on wetness changes)
+    let lastReverbType = appStore.reverb().type;
+    createEffect(() => {
+      const type = appStore.reverb().type;
+      if (audioEngine && type !== lastReverbType) {
+        lastReverbType = type;
+        audioEngine.setReverbType(type);
       }
     });
 

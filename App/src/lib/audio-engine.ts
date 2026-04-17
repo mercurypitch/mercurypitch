@@ -38,6 +38,13 @@ export class AudioEngine {
   private adsrSustain = 0.70;   // 0-1 level (70%)
   private adsrRelease = 0.200;  // seconds (200ms)
 
+  // Reverb configuration
+  private reverbNode: ConvolverNode | null = null;
+  private reverbSendGain: GainNode | null = null;
+  private reverbReturnGain: GainNode | null = null;
+  private currentReverbType: 'off' | 'room' | 'hall' | 'cathedral' = 'room';
+  private currentReverbWetness = 0.3;
+
   // ============================================================
   // Lifecycle
   // ============================================================
@@ -55,8 +62,18 @@ export class AudioEngine {
     }
     this.mainGain = this.audioCtx.createGain();
     this.mainGain.gain.value = this.volume;
+
+    // Reverb send/return gain nodes for dry/wet mix
+    this.reverbSendGain = this.audioCtx.createGain();
+    this.reverbReturnGain = this.audioCtx.createGain();
+    this.reverbSendGain.gain.value = 0;
+    this.reverbReturnGain.gain.value = 0;
+
     if (this.playbackAnalyser && typeof this.mainGain.connect === 'function') {
+      // Dry path: mainGain → playbackAnalyser (always full volume)
       this.mainGain.connect(this.playbackAnalyser);
+      // Wet send tap: mainGain → reverbSendGain (gain = wetness, only active when reverb on)
+      this.mainGain.connect(this.reverbSendGain);
     }
 
     // Create shared analyser for mic input and pitch detection (mirrors old JS)
@@ -106,6 +123,121 @@ export class AudioEngine {
     if (this.mainGain) {
       this.mainGain.gain.value = this.volume;
     }
+  }
+
+  // ============================================================
+  // Reverb / Effects
+  // ============================================================
+
+  /**
+   * Set the reverb wet mix (0–100). The dry signal always goes through at
+   * full volume; this only controls how much of the signal is fed into reverb.
+   */
+  setReverbWetness(wetness: number): void {
+    this.currentReverbWetness = Math.max(0, Math.min(100, wetness)) / 100;
+    if (this.reverbSendGain && this.reverbReturnGain) {
+      this.reverbSendGain.gain.value = this.currentReverbWetness;
+      this.reverbReturnGain.gain.value = this.currentReverbWetness;
+    }
+  }
+
+  /**
+   * Set the reverb type and generate the corresponding impulse response.
+   */
+  async setReverbType(type: 'off' | 'room' | 'hall' | 'cathedral'): Promise<void> {
+    this.currentReverbType = type;
+    if (!this.audioCtx) return;
+
+    if (type === 'off') {
+      this.reverbNode = null;
+      this._connectReverbChain();
+      return;
+    }
+
+    const sampleRate = this.audioCtx.sampleRate;
+    const ir = this._generateImpulseResponse(type, sampleRate);
+    const irBuffer = this.audioCtx.createBuffer(2, ir[0].length, sampleRate);
+    irBuffer.copyToChannel(ir[0], 0);
+    irBuffer.copyToChannel(ir[1], 1);
+    this.reverbNode = this.audioCtx.createConvolver();
+    this.reverbNode.buffer = irBuffer;
+    this._connectReverbChain();
+    // Re-apply wetness now that the convolver exists
+    this.setReverbWetness(this.currentReverbWetness * 100);
+  }
+
+  /**
+   * Generate a stereo impulse response buffer for a given reverb type.
+   * Uses exponential-decay noise — no external files required.
+   */
+  private _generateImpulseResponse(
+    type: 'room' | 'hall' | 'cathedral',
+    sampleRate: number,
+  ): [Float32Array, Float32Array] {
+    const durations: Record<string, number> = {
+      room: 0.15,
+      hall: 0.6,
+      cathedral: 2.0,
+    };
+    const decayRates: Record<string, number> = {
+      room: 8,
+      hall: 4,
+      cathedral: 2,
+    };
+    const duration = durations[type] ?? 0.5;
+    const decayRate = decayRates[type] ?? 5;
+    const length = Math.floor(sampleRate * duration);
+    const left = new Float32Array(length);
+    const right = new Float32Array(length);
+
+    for (let i = 0; i < length; i++) {
+      // Exponential decay with random noise for natural reverb tail
+      const decay = Math.exp(-i / (sampleRate * duration / decayRate));
+      left[i] = (Math.random() * 2 - 1) * decay;
+      right[i] = (Math.random() * 2 - 1) * decay;
+    }
+
+    // Normalize to prevent clipping
+    let maxAmp = 0;
+    for (let i = 0; i < length; i++) {
+      const a = Math.abs(left[i]);
+      if (a > maxAmp) maxAmp = a;
+      const b = Math.abs(right[i]);
+      if (b > maxAmp) maxAmp = b;
+    }
+    if (maxAmp > 0) {
+      const norm = 0.9 / maxAmp;
+      for (let i = 0; i < length; i++) {
+        left[i] *= norm;
+        right[i] *= norm;
+      }
+    }
+
+    return [left, right];
+  }
+
+  /**
+   * Connect the reverb chain: send → convolver → return → playbackAnalyser.
+   * Disconnects old chain first to avoid duplicate connections.
+   */
+  private _connectReverbChain(): void {
+    if (!this.audioCtx) return;
+
+    // Disconnect any existing reverb connections
+    if (this.reverbSendGain && this.reverbNode) {
+      try { this.reverbSendGain.disconnect(this.reverbNode); } catch {}
+    }
+    if (this.reverbNode && this.reverbReturnGain) {
+      try { this.reverbNode.disconnect(this.reverbReturnGain); } catch {}
+    }
+
+    if (!this.reverbNode || !this.reverbSendGain || !this.reverbReturnGain) return;
+    if (!this.playbackAnalyser) return;
+
+    // Wire: mainGain → reverbSendGain → reverbNode → reverbReturnGain → playbackAnalyser
+    try { this.reverbSendGain.connect(this.reverbNode); } catch {}
+    try { this.reverbNode.connect(this.reverbReturnGain); } catch {}
+    try { this.reverbReturnGain.connect(this.playbackAnalyser); } catch {}
   }
 
   getVolume(): number {
@@ -758,5 +890,288 @@ export class AudioEngine {
       this.audioCtx = null;
     }
     this.mainGain = null;
+    this.reverbNode = null;
+    this.reverbSendGain = null;
+    this.reverbReturnGain = null;
+  }
+
+  // ============================================================
+  // WAV Export
+  // ============================================================
+
+  /**
+   * Render a melody to a WAV file using offline audio rendering.
+   * Returns a Blob containing the WAV audio data.
+   *
+   * @param melody - Array of melody items to render
+   * @param bpm - Beats per minute for timing
+   * @param instrument - Instrument type to use (defaults to current)
+   */
+  async renderMelodyToWAV(
+    melody: MelodyItem[],
+    bpm: number,
+    instrument?: InstrumentType
+  ): Promise<Blob | null> {
+    if (!melody || melody.length === 0) return null;
+
+    const sampleRate = 44100;
+    const beatDuration = 60 / bpm; // seconds per beat
+    const totalBeats = Math.max(
+      ...melody.map((item) => item.startBeat + item.duration),
+      4
+    );
+    const totalDuration = totalBeats * beatDuration + 0.5; // +0.5s tail for release
+    const totalSamples = Math.ceil(totalDuration * sampleRate);
+
+    // Create offline context
+    const offlineCtx = new OfflineAudioContext(1, totalSamples, sampleRate);
+    const offlineGain = offlineCtx.createGain();
+    offlineGain.gain.value = this.volume;
+    offlineGain.connect(offlineCtx.destination);
+
+    // Save current instrument and temporarily switch if needed
+    const prevInstrument = this.currentInstrument;
+    if (instrument) this.currentInstrument = instrument;
+
+    // Schedule all notes
+    for (const item of melody) {
+      const freq = item.note.freq;
+      const startTime = item.startBeat * beatDuration;
+      const durationMs = item.duration * beatDuration * 1000;
+
+      // Render each note using the same voice creation logic
+      await this._renderNoteToContext(offlineCtx, offlineGain, freq, startTime, durationMs);
+    }
+
+    // Restore instrument
+    this.currentInstrument = prevInstrument;
+
+    // Render
+    const renderedBuffer = await offlineCtx.startRendering();
+
+    // Convert to WAV
+    return this._bufferToWAV(renderedBuffer);
+  }
+
+  /**
+   * Download a melody as a WAV file.
+   */
+  async downloadMelodyAsWAV(
+    melody: MelodyItem[],
+    bpm: number,
+    filename = 'melody.wav',
+    instrument?: InstrumentType
+  ): Promise<boolean> {
+    const blob = await this.renderMelodyToWAV(melody, bpm, instrument);
+    if (!blob) return false;
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    return true;
+  }
+
+  /**
+   * Render a single note to an offline context.
+   */
+  private async _renderNoteToContext(
+    ctx: OfflineAudioContext | AudioContext,
+    destination: AudioNode,
+    freq: number,
+    startTime: number,
+    durationMs: number
+  ): Promise<void> {
+    const dur = durationMs / 1000;
+    const now = startTime;
+
+    const { oscillators, gain: mainGain } = this._createVoiceForContext(ctx, freq, durationMs);
+
+    mainGain.connect(destination);
+
+    for (const osc of oscillators) {
+      osc.start(now);
+      osc.stop(now + dur + 0.1);
+    }
+  }
+
+  /**
+   * Create oscillators for offline rendering (same logic as _createVoice but for any context).
+   */
+  private _createVoiceForContext(
+    ctx: OfflineAudioContext | AudioContext,
+    freq: number,
+    durationMs: number
+  ): { oscillators: OscillatorNode[]; gain: GainNode } {
+    const now = ctx.currentTime;
+    const dur = durationMs / 1000;
+
+    const mainGain = ctx.createGain();
+    const oscillators: OscillatorNode[] = [];
+
+    switch (this.currentInstrument) {
+      case 'piano': {
+        const harmonics = [1, 2, 3, 4, 5, 6];
+        const amplitudes = [1, 0.5, 0.3, 0.2, 0.1, 0.05];
+        harmonics.forEach((h, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.value = freq * h;
+          gain.gain.value = amplitudes[i] * 0.15;
+          osc.connect(gain);
+          gain.connect(mainGain);
+          oscillators.push(osc);
+        });
+        // Piano envelope
+        mainGain.gain.setValueAtTime(0, now);
+        mainGain.gain.linearRampToValueAtTime(0.8, now + this.adsrAttack);
+        mainGain.gain.exponentialRampToValueAtTime(0.4, now + this.adsrAttack + this.adsrDecay);
+        mainGain.gain.setValueAtTime(0.3, now + this.adsrAttack + this.adsrDecay + 0.1);
+        break;
+      }
+      case 'organ': {
+        const ratios = [1, 1.5, 2, 3, 4];
+        const levels = [0.5, 0.3, 0.4, 0.2, 0.15];
+        ratios.forEach((r, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.value = freq * r;
+          gain.gain.value = levels[i] * 0.25;
+          osc.connect(gain);
+          gain.connect(mainGain);
+          oscillators.push(osc);
+        });
+        // Organ: slow attack, no decay
+        mainGain.gain.setValueAtTime(0, now);
+        mainGain.gain.linearRampToValueAtTime(0.9, now + 0.02);
+        break;
+      }
+      case 'strings': {
+        // Strings: detuned sawtooth for warmth
+        for (let i = 0; i < 3; i++) {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.value = freq * (1 + (i - 1) * 0.003);
+          gain.gain.value = 0.07 / 3;
+          osc.connect(gain);
+          gain.connect(mainGain);
+          oscillators.push(osc);
+        }
+        // Strings: slow attack (vibrato starts after attack)
+        mainGain.gain.setValueAtTime(0, now);
+        mainGain.gain.linearRampToValueAtTime(0.8, now + 0.08);
+        // Slight vibrato via detune modulation
+        break;
+      }
+      case 'synth': {
+        // Synth: square + sine for rich tone
+        const osc1 = ctx.createOscillator();
+        const gain1 = ctx.createGain();
+        osc1.type = 'square';
+        osc1.frequency.value = freq;
+        gain1.gain.value = 0.15;
+        osc1.connect(gain1);
+        gain1.connect(mainGain);
+        oscillators.push(osc1);
+
+        const osc2 = ctx.createOscillator();
+        const gain2 = ctx.createGain();
+        osc2.type = 'sine';
+        osc2.frequency.value = freq;
+        gain2.gain.value = 0.2;
+        osc2.connect(gain2);
+        gain2.connect(mainGain);
+        oscillators.push(osc2);
+        // Synth envelope
+        mainGain.gain.setValueAtTime(0, now);
+        mainGain.gain.linearRampToValueAtTime(0.7, now + 0.005);
+        mainGain.gain.exponentialRampToValueAtTime(0.5, now + 0.05);
+        break;
+      }
+      case 'sine':
+      default: {
+        const osc = ctx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        oscillators.push(osc);
+        // Simple sine with release
+        mainGain.gain.setValueAtTime(0, now);
+        mainGain.gain.linearRampToValueAtTime(0.8, now + 0.01);
+        break;
+      }
+    }
+
+    return { oscillators, gain: mainGain };
+  }
+
+  /**
+   * Encode an AudioBuffer as a WAV Blob.
+   */
+  private _bufferToWAV(buffer: AudioBuffer): Blob {
+    const numChannels = buffer.numberOfChannels;
+    const sampleRate = buffer.sampleRate;
+    const format = 1; // PCM
+    const bitDepth = 16;
+
+    let interleaved: Float32Array;
+    if (numChannels === 1) {
+      interleaved = buffer.getChannelData(0);
+    } else {
+      // Interleave channels (average stereo to mono if needed)
+      const left = buffer.getChannelData(0);
+      const right = buffer.numberOfChannels > 1 ? buffer.getChannelData(1) : left;
+      interleaved = new Float32Array(left.length);
+      for (let i = 0; i < left.length; i++) {
+        interleaved[i] = (left[i] + right[i]) / 2;
+      }
+    }
+
+    const dataLength = interleaved.length * (bitDepth / 8);
+    const bufferLength = 44 + dataLength;
+    const arrayBuffer = new ArrayBuffer(bufferLength);
+    const view = new DataView(arrayBuffer);
+
+    // RIFF header
+    this._writeString(view, 0, 'RIFF');
+    view.setUint32(4, 36 + dataLength, true);
+    this._writeString(view, 8, 'WAVE');
+
+    // fmt chunk
+    this._writeString(view, 12, 'fmt ');
+    view.setUint32(16, 16, true); // chunk size
+    view.setUint16(20, format, true);
+    view.setUint16(22, 1, true); // mono
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * numChannels * (bitDepth / 8), true); // byte rate
+    view.setUint16(32, numChannels * (bitDepth / 8), true); // block align
+    view.setUint16(34, bitDepth, true);
+
+    // data chunk
+    this._writeString(view, 36, 'data');
+    view.setUint32(40, dataLength, true);
+
+    // Write PCM samples (clip to [-1, 1])
+    let offset = 44;
+    for (let i = 0; i < interleaved.length; i++) {
+      const sample = Math.max(-1, Math.min(1, interleaved[i]));
+      const int16 = sample < 0 ? sample * 0x8000 : sample * 0x7fff;
+      view.setInt16(offset, int16, true);
+      offset += 2;
+    }
+
+    return new Blob([arrayBuffer], { type: 'audio/wav' });
+  }
+
+  private _writeString(view: DataView, offset: number, str: string): void {
+    for (let i = 0; i < str.length; i++) {
+      view.setUint8(offset + i, str.charCodeAt(i));
+    }
   }
 }

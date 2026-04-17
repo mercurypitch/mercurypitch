@@ -370,6 +370,60 @@ export function setRelease(value: number): void {
   });
 }
 
+// ── Reverb / Effects ────────────────────────────────────────
+
+export type ReverbType = 'off' | 'room' | 'hall' | 'cathedral';
+
+export interface ReverbConfig {
+  wetness: number;   // 0–100 (percentage)
+  type: ReverbType;
+}
+
+const REVERB_KEY = 'pitchperfect_reverb';
+const DEFAULT_REVERB: ReverbConfig = {
+  wetness: 30,
+  type: 'room',
+};
+
+function loadReverbFromStorage(): ReverbConfig {
+  try {
+    const raw = localStorage.getItem(REVERB_KEY);
+    return raw ? JSON.parse(raw) : DEFAULT_REVERB;
+  } catch {
+    return DEFAULT_REVERB;
+  }
+}
+
+const [reverbConfig, setReverbConfigSignal] = createSignal<ReverbConfig>(loadReverbFromStorage());
+
+function saveReverbToStorage(data: ReverbConfig): void {
+  try {
+    localStorage.setItem(REVERB_KEY, JSON.stringify(data));
+  } catch (e) {
+    console.warn('Failed to save reverb settings:', e);
+  }
+}
+
+export function initReverb(): void {
+  setReverbConfigSignal(loadReverbFromStorage());
+}
+
+export function setReverbWetness(value: number): void {
+  setReverbConfigSignal((c) => {
+    const updated = { ...c, wetness: Math.max(0, Math.min(100, value)) };
+    saveReverbToStorage(updated);
+    return updated;
+  });
+}
+
+export function setReverbType(type: ReverbType): void {
+  setReverbConfigSignal((c) => {
+    const updated = { ...c, type };
+    saveReverbToStorage(updated);
+    return updated;
+  });
+}
+
 // ── Playback Speed ──────────────────────────────────────────
 
 const PLAYBACK_SPEED_KEY = 'pitchperfect_playback_speed';
@@ -695,6 +749,12 @@ export const appStore = {
   setDecay,
   setSustain,
   setRelease,
+
+  // Reverb / Effects
+  reverb: reverbConfig,
+  initReverb,
+  setReverbWetness,
+  setReverbType,
 
   // Playback Speed
   playbackSpeed,

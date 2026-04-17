@@ -245,6 +245,41 @@ export const SettingsPanel: Component = () => {
             <small>Time to fade after note ends</small>
           </div>
         </div>
+
+        {/* Reverb Section */}
+        <div class="settings-section">
+          <h3 class="settings-section-title">Reverb</h3>
+          <p class="settings-desc">Add reverb (echo) to the practice playback for a richer sound.</p>
+
+          <div class="settings-row">
+            <label for="reverb-type">Type</label>
+            <select
+              id="reverb-type"
+              value={appStore.reverb().type}
+              onChange={(e) => appStore.setReverbType(e.currentTarget.value as 'off' | 'room' | 'hall' | 'cathedral')}
+            >
+              <option value="off">Off</option>
+              <option value="room">Room</option>
+              <option value="hall">Hall</option>
+              <option value="cathedral">Cathedral</option>
+            </select>
+          </div>
+
+          <div class="settings-row">
+            <label for="reverb-wetness">Wet Mix</label>
+            <input
+              type="range"
+              id="reverb-wetness"
+              min="0"
+              max="100"
+              step="5"
+              value={appStore.reverb().wetness}
+              onInput={(e) => appStore.setReverbWetness(parseInt(e.currentTarget.value))}
+            />
+            <span class="settings-val">{appStore.reverb().wetness}%</span>
+            <small>How much reverb vs dry signal</small>
+          </div>
+        </div>
  </div>
     </div>
   );
