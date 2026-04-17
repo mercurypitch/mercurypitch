@@ -52,7 +52,7 @@ A living list of proposed features and improvements for PitchPerfect.
 - [x] **Responsive layout improvements** — Better mobile layout for the piano roll (touch gestures for note editing)  **(DONE - PR #123, mobile overhaul)**
 - [x] **Focus Mode** — Distraction-free full-screen practice UI with pitch canvas + minimal toolbar + Space key play/pause  **(GH #123, PR #123)**
 - [x] **Piano key width based on octave count** — Auto-size the piano key column to fit 2-3 octaves comfortably  **(DONE - PR #76)**
-- [ ] **Waveform display during recording** — Show a live audio waveform in the pitch area while the mic is active  **(GH #122)**
+- [x] **Waveform display during recording** — Show a live audio waveform in the pitch area while the mic is active  **(GH #122, DONE - purple waveform overlay on PitchCanvas)**
 - [x] **Tab badges** — Show a count badge on the Editor tab when notes are present  **(DONE - PR #76)**
 - [x] **About section** — App info panel in Settings with version, features, and credits  **(GH #124, DONE)**
 
