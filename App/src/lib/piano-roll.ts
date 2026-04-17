@@ -1012,6 +1012,10 @@ export class PianoRollEditor {
           </button>
         </div>
         <div class="roll-sep"></div>
+        <div class="roll-selection-group">
+          <button id="roll-delete-selected-btn" class="roll-delete-btn" title="Delete selected notes (Del)">Delete Selected</button>
+        </div>
+        <div class="roll-sep"></div>
         <div class="roll-instrument-group">
           <label class="instrument-label">Instr:</label>
           <select id="roll-instrument-select" class="roll-instrument-select">
@@ -1364,6 +1368,21 @@ export class PianoRollEditor {
 
     container.querySelector('#roll-redo-btn')?.addEventListener('click', () => {
       this.redo();
+    });
+
+    // Delete selected button
+    container.querySelector('#roll-delete-selected-btn')?.addEventListener('click', () => {
+      if (this.selectedNoteIds.size > 0) {
+        this.pushHistory();
+        for (const noteId of this.selectedNoteIds) {
+          const note = this.melody.find((n) => (n.id ?? 0) === noteId);
+          if (note) this.eraseNoteInternal(note);
+        }
+        this.selectedNoteIds.clear();
+        this.emitMelodyChange();
+        this.draw();
+        this._updateHint();
+      }
     });
 
     // Initialize zoom display

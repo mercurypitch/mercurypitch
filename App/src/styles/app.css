@@ -2108,6 +2108,31 @@ header h1 {
     cursor: not-allowed;
 }
 
+/* Delete Selected button */
+.roll-selection-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.roll-delete-btn {
+    padding: 5px 10px;
+    border: 1px solid var(--red);
+    border-radius: 5px;
+    background: var(--bg-tertiary);
+    color: var(--red);
+    cursor: pointer;
+    font-size: 0.78rem;
+    transition: all 0.12s ease;
+}
+.roll-delete-btn:hover {
+    background: var(--red);
+    color: var(--bg-primary);
+}
+.roll-delete-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
 /* ===== Copy/Cut/Paste Buttons ===== */
 .roll-clipboard-group {
     display: flex;
