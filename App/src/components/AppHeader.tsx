@@ -67,18 +67,16 @@ export const AppHeader: Component<AppHeaderProps> = (props) => {
         </button>
       </Show>
 
-      {/* Stop — shown when playing or paused */}
-      <Show when={props.isPlaying() || props.isPaused()}>
-        <button
-          id="app-stop-btn"
-          class="ctrl-btn app-play-btn stop"
-          onClick={props.onStop}
-          title="Stop playback"
-        >
-          <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M6 6h12v12H6z"/></svg>
-          Stop
-        </button>
-      </Show>
+      {/* Stop — always rendered per issue #7 */}
+      <button
+        id="app-stop-btn"
+        class={`ctrl-btn app-play-btn stop ${props.isPlaying() || props.isPaused() ? '' : 'inactive'}`}
+        onClick={props.onStop}
+        title="Stop playback"
+      >
+        <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M6 6h12v12H6z"/></svg>
+        Stop
+      </button>
 
       <div class="app-header-sep" />
 

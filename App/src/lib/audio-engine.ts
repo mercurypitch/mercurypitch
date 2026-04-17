@@ -157,7 +157,7 @@ export class AudioEngine {
   }
 
   // ============================================================
-  // Count-in click
+  // Count-in and metronome clicks
   // ============================================================
 
   /**
@@ -183,6 +183,31 @@ export class AudioEngine {
 
     osc.start(this.audioCtx.currentTime);
     osc.stop(this.audioCtx.currentTime + 0.05);
+  }
+
+  /**
+   * Play metronome click - high frequency for downbeat, lower for other beats
+   */
+  playMetronomeClick(isDownbeat: boolean): void {
+    if (!this.audioCtx || !this.masterGain) return;
+    this.resume().catch(() => {});
+
+    const osc = this.audioCtx.createOscillator();
+    const gain = this.audioCtx.createGain();
+
+    osc.type = 'triangle';
+    // Downbeat gets a higher pitch (440Hz = A4), other beats lower (220Hz = A3)
+    osc.frequency.value = isDownbeat ? 880 : 440;
+
+    gain.gain.value = 0.4;
+    gain.gain.setValueAtTime(0.4, this.audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + 0.08);
+
+    osc.connect(gain);
+    gain.connect(this.masterGain);
+
+    osc.start(this.audioCtx.currentTime);
+    osc.stop(this.audioCtx.currentTime + 0.08);
   }
 
   // ============================================================

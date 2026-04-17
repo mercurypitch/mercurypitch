@@ -253,6 +253,12 @@ export const App: Component<AppProps> = (props) => {
         setIsCountingIn(false);
         setCountInBeat(0);
       },
+      onMetronomeTick: (beat, isDownbeat) => {
+        // Play metronome click during playback (not during count-in)
+        if (metronomeEnabled()) {
+          audioEngine?.playMetronomeClick(isDownbeat);
+        }
+      },
       onComplete: () => {
         const results = practiceEngine.onPlaybackComplete();
         const mode = playMode();
@@ -575,6 +581,7 @@ export const App: Component<AppProps> = (props) => {
   const handleStop = () => {
     melodyEngine.stop();
     practiceEngine.endSession();
+    audioEngine.stopTone();
     setIsPlaying(false);
     setIsPaused(false);
     setCurrentBeat(0);
