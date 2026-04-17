@@ -219,13 +219,63 @@ export const App: Component<AppProps> = (props) => {
     appStore.initReverb();
 
     // Space key handler for play/pause (Focus Mode friendly)
+    // Additional shortcuts: Escape (stop), Home (go to beginning), R (repeat), P (practice)
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.code === 'Space' && !e.target?.closest('input,textarea,select,[contenteditable]')) {
+      // Skip if typing in input/select/textarea
+      const isTyping = e.target?.closest('input,textarea,select,[contenteditable]');
+
+      if (e.code === 'Space' && !isTyping) {
         e.preventDefault();
         if (appStore.focusMode()) {
           if (isPlaying()) handlePause();
           else if (isPaused()) handleResume();
           else handlePlay();
+        }
+      }
+
+      // Escape → stop playback
+      if (e.code === 'Escape' && !isTyping) {
+        e.preventDefault();
+        handleStop();
+        setCurrentBeat(0);
+        melodyEngine.seekTo(0);
+      }
+
+      // Home → go to beginning
+      if (e.code === 'Home' && !isTyping) {
+        e.preventDefault();
+        setCurrentBeat(0);
+        melodyEngine.seekTo(0);
+        if (isPlaying()) {
+          melodyEngine.seekTo(0);
+          setCurrentBeat(0);
+        }
+      }
+
+      // R → toggle Repeat mode
+      if (e.code === 'KeyR' && !isTyping) {
+        e.preventDefault();
+        if (appStore.playMode() !== 'repeat') {
+          appStore.setPlayMode('repeat');
+          appStore.showNotification('Mode: Repeat', 'info');
+        }
+      }
+
+      // P → toggle Practice mode
+      if (e.code === 'KeyP' && !isTyping) {
+        e.preventDefault();
+        if (appStore.playMode() !== 'practice') {
+          appStore.setPlayMode('practice');
+          appStore.showNotification('Mode: Practice', 'info');
+        }
+      }
+
+      // O → Once mode
+      if (e.code === 'KeyO' && !isTyping) {
+        e.preventDefault();
+        if (appStore.playMode() !== 'once') {
+          appStore.setPlayMode('once');
+          appStore.showNotification('Mode: Once', 'info');
         }
       }
     };
