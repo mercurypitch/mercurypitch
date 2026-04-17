@@ -143,16 +143,20 @@ export const PresetSelector: Component<PresetSelectorProps> = (props) => {
 
   return (
     <div class="preset-selector">
-      <select
+      <input
+        type="text"
+        list="preset-datalist"
         id="preset-select"
+        placeholder="— Select or type melody —"
         value={currentName()}
         onChange={(e) => handleLoad(e.currentTarget.value)}
-      >
-        <option value="">— Select Melody —</option>
+        onBlur={(e) => setSaveName(e.currentTarget.value)}
+      />
+      <datalist id="preset-datalist">
         {presetNames().map((name) => (
-          <option value={name}>{name}</option>
+          <option value={name} />
         ))}
-      </select>
+      </datalist>
 
       <button class="ctrl-btn small" onClick={handleNew} title="New melody">
         +
