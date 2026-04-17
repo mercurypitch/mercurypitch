@@ -2583,6 +2583,57 @@ header h1 {
     font-weight: bold;
 }
 
+/* ===== About Section ===== */
+.about-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 8px 16px 16px;
+    gap: 8px;
+}
+.about-logo {
+    color: var(--accent);
+    margin-bottom: 4px;
+}
+.about-name {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: var(--text-primary);
+    margin: 0;
+}
+.about-version {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin: 0;
+}
+.about-desc {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    max-width: 340px;
+    line-height: 1.5;
+    margin: 0;
+}
+.about-features {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+.about-features span {
+    background: var(--bg-secondary);
+    padding: 4px 8px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+}
+.about-credits {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin: 4px 0 0;
+}
+
 /* ===== Modal ===== */
 .modal-overlay {
     position: fixed;

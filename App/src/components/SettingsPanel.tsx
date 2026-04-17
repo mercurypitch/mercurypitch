@@ -280,7 +280,39 @@ export const SettingsPanel: Component = () => {
             <small>How much reverb vs dry signal</small>
           </div>
         </div>
- </div>
+
+        {/* About Section */}
+        <div class="settings-section">
+          <h3 class="settings-section-title">About PitchPerfect</h3>
+          <div class="about-content">
+            <div class="about-logo">
+              <svg viewBox="0 0 48 48" width="40" height="40">
+                <circle cx="24" cy="24" r="22" fill="none" stroke="currentColor" stroke-width="2"/>
+                <path d="M24 8 L24 40 M12 16 Q18 10 24 16 Q30 22 36 16" fill="none" stroke="currentColor" stroke-width="2"/>
+                <circle cx="24" cy="32" r="4" fill="currentColor"/>
+              </svg>
+            </div>
+            <p class="about-name">PitchPerfect</p>
+            <p class="about-version">Version 1.0.0</p>
+            <p class="about-desc">
+              A web-based vocal pitch practice tool. Sing into your microphone and see your accuracy
+              on the pitch canvas. Use the piano roll editor to compose melodies, then practice
+              singing them with real-time feedback.
+            </p>
+            <div class="about-features">
+              <span>🎤 Real-time pitch detection</span>
+              <span>🎹 Piano roll editor</span>
+              <span>📊 Progress tracking</span>
+              <span>🎵 MIDI import/export</span>
+              <span>🔊 ADSR envelope</span>
+              <span>🏛️ Reverb effects</span>
+            </div>
+            <p class="about-credits">
+              Built with SolidJS + TypeScript. Audio powered by Web Audio API.
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
