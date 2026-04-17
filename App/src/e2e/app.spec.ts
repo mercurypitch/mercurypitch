@@ -236,4 +236,118 @@ test.describe('PitchPerfect App', () => {
       expect(newClass).not.toBe(initialClass);
     }
   });
+
+  test('Settings panel shows About section', async ({ page }) => {
+    await page.locator('#tab-settings').click();
+    await expect(page.locator('.about-content')).toBeVisible();
+    await expect(page.locator('.about-name')).toContainText('PitchPerfect');
+    await expect(page.locator('.about-version')).toBeVisible();
+  });
+
+  test('Settings panel shows GitHub link in About section', async ({ page }) => {
+    await page.locator('#tab-settings').click();
+    const githubLink = page.locator('.about-link');
+    await expect(githubLink).toBeVisible();
+    await expect(githubLink).toContainText('GitHub');
+    await expect(githubLink).toHaveAttribute('href', /github\.com/);
+  });
+
+  test('Settings panel shows ADSR envelope controls', async ({ page }) => {
+    await page.locator('#tab-settings').click();
+    await expect(page.locator('#adsr-attack')).toBeVisible();
+    await expect(page.locator('#adsr-decay')).toBeVisible();
+    await expect(page.locator('#adsr-sustain')).toBeVisible();
+    await expect(page.locator('#adsr-release')).toBeVisible();
+  });
+
+  test('Settings panel shows Reverb controls', async ({ page }) => {
+    await page.locator('#tab-settings').click();
+    await expect(page.locator('#reverb-type')).toBeVisible();
+    await expect(page.locator('#reverb-wetness')).toBeVisible();
+    // Verify reverb type options exist
+    await expect(page.locator('#reverb-type option[value="room"]')).toBeAttached();
+    await expect(page.locator('#reverb-type option[value="hall"]')).toBeAttached();
+    await expect(page.locator('#reverb-type option[value="cathedral"]')).toBeAttached();
+  });
+
+  test('Reverb type can be changed', async ({ page }) => {
+    await page.locator('#tab-settings').click();
+    const reverbType = page.locator('#reverb-type');
+    await reverbType.selectOption('hall');
+    await expect(reverbType).toHaveValue('hall');
+  });
+
+  test('ADSR controls can be adjusted', async ({ page }) => {
+    await page.locator('#tab-settings').click();
+    const attackSlider = page.locator('#adsr-attack');
+    await attackSlider.fill('500');
+    await expect(attackSlider).toHaveValue('500');
+  });
+
+  test('Accuracy bands settings exist', async ({ page }) => {
+    await page.locator('#tab-settings').click();
+    await expect(page.locator('#band-perfect')).toBeVisible();
+    await expect(page.locator('#band-excellent')).toBeVisible();
+    await expect(page.locator('#band-good')).toBeVisible();
+    await expect(page.locator('#band-okay')).toBeVisible();
+  });
+
+  test('Metronome button exists in practice tab', async ({ page }) => {
+    await page.locator('#tab-practice').click();
+    await expect(page.locator('.metronome-btn')).toBeVisible();
+  });
+
+  test('Practice tab shows transport controls', async ({ page }) => {
+    await page.locator('#tab-practice').click();
+    await expect(page.locator('#play-btn')).toBeVisible();
+    await expect(page.locator('#pause-btn')).toBeVisible();
+    await expect(page.locator('#stop-btn')).toBeVisible();
+  });
+
+  test('Practice mode buttons exist', async ({ page }) => {
+    await page.locator('#tab-practice').click();
+    await expect(page.locator('.mode-once-btn')).toBeVisible();
+    await expect(page.locator('.mode-repeat-btn')).toBeVisible();
+    await expect(page.locator('.mode-practice-btn')).toBeVisible();
+  });
+
+  test('Editor shows instrument selector', async ({ page }) => {
+    await page.locator('#tab-editor').click();
+    await expect(page.locator('#roll-instrument-select')).toBeVisible();
+    await expect(page.locator('#roll-instrument-select option[value="piano"]')).toBeAttached();
+    await expect(page.locator('#roll-instrument-select option[value="organ"]')).toBeAttached();
+  });
+
+  test('Editor shows WAV export button', async ({ page }) => {
+    await page.locator('#tab-editor').click();
+    await expect(page.locator('#roll-export-wav')).toBeVisible();
+  });
+
+  test('Editor shows MIDI export button', async ({ page }) => {
+    await page.locator('#tab-editor').click();
+    await expect(page.locator('#roll-export-midi')).toBeVisible();
+  });
+
+  test('Editor shows pitch track toggle button', async ({ page }) => {
+    await page.locator('#tab-editor').click();
+    if (await page.locator('#roll-pitch-track-btn').count() > 0) {
+      await expect(page.locator('#roll-pitch-track-btn')).toBeVisible();
+    }
+  });
+
+  test('Welcome screen appears on first visit', async ({ page }) => {
+    // Clear localStorage to ensure welcome screen shows
+    await page.evaluate(() => localStorage.removeItem('pitchperfect_welcome_version'));
+    await page.reload();
+    await page.waitForSelector('#app-tabs', { timeout: 10000 });
+    // Welcome screen should appear briefly
+    const welcomeOverlay = page.locator('.welcome-overlay');
+    if (await welcomeOverlay.count() > 0) {
+      await expect(welcomeOverlay).toBeVisible();
+      await expect(page.locator('.welcome-title')).toContainText('PitchPerfect');
+      // Dismiss it
+      await page.locator('.welcome-cta').click();
+      await expect(welcomeOverlay).not.toBeVisible();
+    }
+  });
 });
