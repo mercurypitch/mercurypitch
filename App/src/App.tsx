@@ -137,6 +137,16 @@ export const App: Component<AppProps> = (props) => {
   const [metronomeEnabled, setMetronomeEnabled] = createSignal(false);
   const [targetPitch, setTargetPitch] = createSignal<number | null>(null);
 
+  // ── Recording ────────────────────────────────────────────────
+  const [isRecording, setIsRecording] = createSignal(false);
+  const [recordedMelody, setRecordedMelody] = createSignal<MelodyItem[]>([]);
+  let lastRecordedBeat = -1;
+  let lastRecordedMidi = -1;
+  let silenceFrames = 0;
+  let currentNoteStartBeat = -1;
+  let currentNoteMidi = -1;
+  let pendingNoteId = 0;
+
   // ── Play mode ────────────────────────────────────────────────
   type PlayMode = 'once' | 'repeat' | 'practice';
   const [playMode, setPlayMode] = createSignal<PlayMode>('once');
@@ -435,6 +445,49 @@ export const App: Component<AppProps> = (props) => {
           const next = [...prev, { beat, freq: pitch.frequency, confidence: pitch.clarity }];
           return next.length > 800 ? next.slice(-800) : next;
         });
+
+        // Record to piano roll
+        if (isRecording()) {
+          const midi = Math.round(69 + 12 * Math.log2(pitch.frequency / 440));
+          if (midi !== currentNoteMidi) {
+            // New pitch detected — finalize previous note
+            if (currentNoteMidi > 0 && currentNoteStartBeat > 0) {
+              const duration = Math.max(0.25, beat - currentNoteStartBeat);
+              const note = melodyStore.getNoteFromMidi(currentNoteMidi);
+              setRecordedMelody((prev) => [
+                ...prev,
+                {
+                  id: pendingNoteId++,
+                  note: { name: note?.name ?? '', octave: note?.octave ?? 4, midi: currentNoteMidi, freq: 440 * Math.pow(2, (currentNoteMidi - 69) / 12) },
+                  duration,
+                  startBeat: currentNoteStartBeat,
+                },
+              ]);
+            }
+            currentNoteMidi = midi;
+            currentNoteStartBeat = beat;
+          }
+          silenceFrames = 0;
+        }
+      } else if (isRecording()) {
+        silenceFrames++;
+        // 10+ frames of silence ends the current note
+        if (silenceFrames >= 10 && currentNoteMidi > 0) {
+          const beat = melodyEngine.getCurrentBeat();
+          const duration = Math.max(0.25, beat - currentNoteStartBeat);
+          const note = melodyStore.getNoteFromMidi(currentNoteMidi);
+          setRecordedMelody((prev) => [
+            ...prev,
+            {
+              id: pendingNoteId++,
+              note: { name: note?.name ?? '', octave: note?.octave ?? 4, midi: currentNoteMidi, freq: 440 * Math.pow(2, (currentNoteMidi - 69) / 12) },
+              duration,
+              startBeat: currentNoteStartBeat,
+            },
+          ]);
+          currentNoteMidi = -1;
+          currentNoteStartBeat = -1;
+        }
       }
       // Capture waveform data when mic is active
       if (practiceEngine.isMicActive()) {
@@ -549,6 +602,46 @@ export const App: Component<AppProps> = (props) => {
       practiceEngine.stopMic();
     } else {
       await practiceEngine.startMic();
+    }
+  };
+
+  // ── Recording ────────────────────────────────────────────────
+
+  const handleRecordToggle = async () => {
+    if (isRecording()) {
+      // Stop recording — finalize any pending note
+      if (currentNoteMidi > 0 && currentNoteStartBeat > 0) {
+        const beat = melodyEngine.getCurrentBeat();
+        const duration = Math.max(0.25, beat - currentNoteStartBeat);
+        const note = melodyStore.getNoteFromMidi(currentNoteMidi);
+        setRecordedMelody((prev) => [
+          ...prev,
+          {
+            id: pendingNoteId++,
+            note: { name: note?.name ?? '', octave: note?.octave ?? 4, midi: currentNoteMidi, freq: 440 * Math.pow(2, (currentNoteMidi - 69) / 12) },
+            duration,
+            startBeat: currentNoteStartBeat,
+          },
+        ]);
+      }
+      const items = recordedMelody();
+      if (items.length > 0) {
+        melodyStore.setMelody([...melodyStore.items, ...items]);
+      }
+      setRecordedMelody([]);
+      currentNoteMidi = -1;
+      currentNoteStartBeat = -1;
+      setIsRecording(false);
+      appStore.setActiveTab('editor');
+    } else {
+      // Start recording
+      const micOk = await practiceEngine.startMic();
+      if (!micOk) return;
+      setRecordedMelody([]);
+      currentNoteMidi = -1;
+      currentNoteStartBeat = -1;
+      silenceFrames = 0;
+      setIsRecording(true);
     }
   };
 
@@ -725,6 +818,8 @@ export const App: Component<AppProps> = (props) => {
                 audioEngine?.setVolume(vol / 100);
               }}
               onPracticeSubModeChange={setPracticeSubMode}
+              isRecording={isRecording}
+              onRecordToggle={handleRecordToggle}
             />
 
             {/* Canvas */}

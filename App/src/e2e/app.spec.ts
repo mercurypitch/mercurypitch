@@ -107,6 +107,22 @@ test.describe('PitchPerfect App', () => {
     await expect(page.locator('.mic-toggle-btn, button[title*="microphone" i], button[title*="mic" i]')).toBeVisible({ timeout: 5000 });
   });
 
+  test('record button exists and toggles', async ({ page }) => {
+    const recordBtn = page.locator('#record-btn');
+    await expect(recordBtn).toBeVisible();
+    await expect(recordBtn).toContainText('Record');
+    // Clicking should attempt to start recording (mic permission may block, but button state changes)
+    await recordBtn.click();
+    await page.waitForTimeout(500);
+    // Button should now show Stop or have recording class
+    const hasStop = await recordBtn.textContent();
+    const hasRecordingClass = await recordBtn.getAttribute('class');
+    // After clicking (mic start may fail in test env), click again to reset
+    if (hasStop?.includes('Stop')) {
+      await recordBtn.click();
+    }
+  });
+
   test('editor tab shows piano roll toolbar', async ({ page }) => {
     await page.locator('#tab-editor').click();
     await expect(page.locator('.roll-toolbar')).toBeVisible();

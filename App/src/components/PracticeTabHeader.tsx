@@ -32,6 +32,8 @@ interface PracticeTabHeaderProps {
   onSpeedChange: (speed: number) => void;
   onVolumeChange: (vol: number) => void;
   onPracticeSubModeChange: (mode: PracticeSubMode) => void;
+  isRecording: () => boolean;
+  onRecordToggle: () => void;
 }
 
 export const PracticeTabHeader: Component<PracticeTabHeaderProps> = (props) => {
@@ -46,6 +48,18 @@ export const PracticeTabHeader: Component<PracticeTabHeaderProps> = (props) => {
         onClick={props.onMicToggle}
         disabled={isActive()}
       />
+
+      {/* Record to piano roll */}
+      <button
+        id="record-btn"
+        class={`ctrl-btn record-btn ${props.isRecording() ? 'recording' : ''}`}
+        onClick={props.onRecordToggle}
+        disabled={isActive()}
+        title="Record to piano roll"
+      >
+        <svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="12" r="6" fill="currentColor"/></svg>
+        {props.isRecording() ? 'Stop' : 'Record'}
+      </button>
 
       <div class="app-header-sep" />
 
