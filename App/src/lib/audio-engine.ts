@@ -406,10 +406,12 @@ export class AudioEngine {
     const noteId = Date.now() + Math.random();
 
     // Create oscillators based on instrument
-    const { oscillators, gain: mainGain, lfos, lfoGains } = this._createVoice(frequency, durationMs, effectType);
+    const { oscillators, gain: mainGain, lfos, lfoGains, hasCustomEnvelope } = this._createVoice(frequency, durationMs, effectType);
 
-    mainGain.gain.setValueAtTime(0, now);
-    mainGain.gain.linearRampToValueAtTime(this.volume, now + 0.01);
+    if (!hasCustomEnvelope) {
+      mainGain.gain.setValueAtTime(0, now);
+      mainGain.gain.linearRampToValueAtTime(this.volume, now + 0.01);
+    }
 
     for (const osc of oscillators) {
       osc.connect(mainGain);
@@ -437,14 +439,17 @@ export class AudioEngine {
 
   /**
    * Create oscillators for an instrument. Returns oscillators and a master gain node.
+   * The returned `hasCustomEnvelope` flag indicates whether this instrument already
+   * schedules its own gain envelope — if so, callers should NOT apply the default ADSR.
    */
-  private _createVoice(freq: number, durationMs: number, effectType?: EffectType): { oscillators: OscillatorNode[]; gain: GainNode; lfos: OscillatorNode[]; lfoGains: GainNode[] } {
+  private _createVoice(freq: number, durationMs: number, effectType?: EffectType): { oscillators: OscillatorNode[]; gain: GainNode; lfos: OscillatorNode[]; lfoGains: GainNode[]; hasCustomEnvelope: boolean } {
     const ctx = this.audioCtx!;
     const now = ctx.currentTime;
     const dur = durationMs / 1000;
 
     const masterGain = ctx.createGain();
     const oscillators: OscillatorNode[] = [];
+    let hasCustomEnvelope = false;
 
     switch (this.currentInstrument) {
       case 'piano': {
@@ -461,11 +466,12 @@ export class AudioEngine {
           gain.connect(masterGain);
           oscillators.push(osc);
         });
-        // Piano has custom envelope, skip base ADSR
+        // Piano has its own envelope — smooth attack, decay, sustain
         masterGain.gain.setValueAtTime(0, now);
-        masterGain.gain.linearRampToValueAtTime(0.8, now + this.adsrAttack); // Attack
-        masterGain.gain.exponentialRampToValueAtTime(0.4, now + this.adsrAttack + this.adsrDecay); // Decay
-        masterGain.gain.linearRampToValueAtTime(0.3, now + this.adsrAttack + this.adsrDecay + 0.1); // Sustain
+        masterGain.gain.linearRampToValueAtTime(0.8, now + this.adsrAttack);
+        masterGain.gain.exponentialRampToValueAtTime(0.4, now + this.adsrAttack + this.adsrDecay);
+        masterGain.gain.setValueAtTime(0.3, now + this.adsrAttack + this.adsrDecay + 0.1);
+        hasCustomEnvelope = true;
         break;
       }
       case 'organ': {
@@ -482,11 +488,16 @@ export class AudioEngine {
           gain.connect(masterGain);
           oscillators.push(osc);
         });
-        masterGain.gain.setValueAtTime(0.7, now);
+        // Smooth attack to prevent click at note start, hold, then release
+        masterGain.gain.setValueAtTime(0, now);
+        masterGain.gain.linearRampToValueAtTime(0.7, now + 0.015);
+        masterGain.gain.setValueAtTime(0.7, now + dur - 0.1);
+        masterGain.gain.linearRampToValueAtTime(0, now + dur);
+        hasCustomEnvelope = true;
         break;
       }
       case 'strings': {
-        // Strings: two detuned oscillators + warmth
+        // Strings: three detuned oscillators for warmth and richness
         const detunes = [0, -8, 8];
         const levels = [0.4, 0.3, 0.3];
         detunes.forEach((detune, i) => {
@@ -505,6 +516,7 @@ export class AudioEngine {
         masterGain.gain.linearRampToValueAtTime(0.6, now + 0.1);
         masterGain.gain.setValueAtTime(0.6, now + dur - 0.1);
         masterGain.gain.linearRampToValueAtTime(0, now + dur);
+        hasCustomEnvelope = true;
         break;
       }
       case 'synth': {
@@ -526,10 +538,16 @@ export class AudioEngine {
         osc2.connect(gain2);
         gain2.connect(masterGain);
         oscillators.push(osc2);
+        // Smooth attack to prevent click, sustain at 70%, then release
+        masterGain.gain.setValueAtTime(0, now);
+        masterGain.gain.linearRampToValueAtTime(1.0, now + 0.015);
+        masterGain.gain.setValueAtTime(1.0, now + dur - 0.1);
+        masterGain.gain.linearRampToValueAtTime(0, now + dur);
+        hasCustomEnvelope = true;
         break;
       }
       default: {
-        // Sine (default)
+        // Sine (default) — smooth attack via ADSR
         const osc = ctx.createOscillator();
         osc.type = 'sine';
         osc.frequency.value = freq;
@@ -549,10 +567,12 @@ export class AudioEngine {
       }
     }
 
-    // Apply configurable ADSR envelope (unless instrument has custom envelope)
-    this._applyADSREnvelope(masterGain, now, dur);
+    // Apply configurable ADSR envelope only for instruments without a custom envelope
+    if (!hasCustomEnvelope) {
+      this._applyADSREnvelope(mainGain, now, dur);
+    }
 
-    return { oscillators, gain: masterGain, lfos, lfoGains };
+    return { oscillators, gain: mainGain, lfos, lfoGains, hasCustomEnvelope };
   }
 
   /**

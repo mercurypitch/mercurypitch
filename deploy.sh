@@ -204,8 +204,8 @@ main() {
         pull_latest
     fi
 
-    run_syntax_check
     rebuild_solidjs
+    run_syntax_check
     verify_files
 
     if [[ "${1:-}" != "--check-only" ]]; then
