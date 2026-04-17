@@ -137,6 +137,54 @@ const DEFAULT_BANDS: AccuracyBand[] = [
   { threshold: 999, band: 0,  color: '#f85149' },
 ];
 
+// ── Sensitivity Presets (UX feature) ─────────────────────────
+
+export type SensitivityPreset = 'quiet' | 'home' | 'noisy';
+export const SENSITIVITY_PRESETS: Record<SensitivityPreset, SettingsConfig> = {
+  quiet: {
+    detectionThreshold: 0.05,
+    sensitivity: 9,
+    minConfidence: 0.30,
+    minAmplitude: 1,
+    bands: DEFAULT_BANDS,
+    tonicAnchor: false,
+  },
+  home: {
+    detectionThreshold: 0.10,
+    sensitivity: 5,
+    minConfidence: 0.50,
+    minAmplitude: 3,
+    bands: DEFAULT_BANDS,
+    tonicAnchor: false,
+  },
+  noisy: {
+    detectionThreshold: 0.15,
+    sensitivity: 8,
+    minConfidence: 0.60,
+    minAmplitude: 5,
+    bands: DEFAULT_BANDS,
+    tonicAnchor: false,
+  },
+};
+
+const SENSITIVITY_PRESET_KEY = 'pitchperfect_sensitivity_preset';
+
+function loadSensitivityPreset(): SensitivityPreset {
+  try {
+    const stored = localStorage.getItem(SENSITIVITY_PRESET_KEY);
+    if (stored === 'quiet' || stored === 'home' || stored === 'noisy') return stored;
+  } catch {}
+  return 'home'; // default: some noise (home environment)
+}
+
+export function applySensitivityPreset(preset: SensitivityPreset): void {
+  const config = SENSITIVITY_PRESETS[preset];
+  setSettings(config);
+  saveSettingsToStorage(config);
+  try { localStorage.setItem(SENSITIVITY_PRESET_KEY, preset); } catch {}
+  window.dispatchEvent(new CustomEvent('pitchperfect:sensitivityPresetChange', { detail: { preset } }));
+}
+
 const DEFAULT_SETTINGS: SettingsConfig = {
   detectionThreshold: 0.10,
   sensitivity: 5,
@@ -760,6 +808,11 @@ export const appStore = {
   setTonicAnchor,
   setBand,
   getBandRating,
+
+  // Sensitivity Presets
+  SENSITIVITY_PRESETS,
+  applySensitivityPreset,
+  sensitivityPreset: createSignal(loadSensitivityPreset()),
 
   // Theme
   theme,

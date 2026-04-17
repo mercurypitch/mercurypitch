@@ -2,10 +2,29 @@
 // WelcomeScreen — first-run welcome overlay (GH #131)
 // ============================================================
 
-import { Component } from 'solid-js';
+import { Component, createSignal } from 'solid-js';
 import { appStore } from '@/stores/app-store';
 
-export const WelcomeScreen: Component = () => {
+interface WelcomeScreenProps {
+  onEnableMic?: () => Promise<void>;
+}
+
+export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
+  const [micEnabled, setMicEnabled] = createSignal(false);
+  const [micError, setMicError] = createSignal<string | null>(null);
+
+  const handleEnableMic = async () => {
+    try {
+      if (props.onEnableMic) {
+        await props.onEnableMic();
+      }
+      setMicEnabled(true);
+      setMicError(null);
+    } catch (err) {
+      setMicError('Microphone access denied. Please enable it in your browser settings.');
+    }
+  };
+
   return (
     <div class="welcome-overlay" onClick={() => appStore.dismissWelcome()}>
       <div class="welcome-card" onClick={(e) => e.stopPropagation()}>
@@ -27,6 +46,32 @@ export const WelcomeScreen: Component = () => {
           </svg>
           <h1 class="welcome-title">Welcome to PitchPerfect</h1>
           <p class="welcome-subtitle">Your voice, visualized and refined</p>
+        </div>
+
+        {/* Mic Permission */}
+        <div class="welcome-mic-section">
+          <h3>Microphone Access</h3>
+          <p>PitchPerfect needs microphone access to detect your singing pitch in real-time.</p>
+          {!micEnabled() && !micError() && (
+            <button class="welcome-mic-btn" onClick={handleEnableMic}>
+              <svg viewBox="0 0 24 24" width="18" height="18">
+                <path fill="currentColor" d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+                <path fill="currentColor" d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+              </svg>
+              Enable Microphone
+            </button>
+          )}
+          {micEnabled() && (
+            <div class="welcome-mic-success">
+              <svg viewBox="0 0 24 24" width="18" height="18">
+                <path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+              </svg>
+              Microphone enabled
+            </div>
+          )}
+          {micError() && (
+            <div class="welcome-mic-error">{micError()}</div>
+          )}
         </div>
 
         {/* Features */}

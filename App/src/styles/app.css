@@ -227,11 +227,21 @@ header h1 {
 .practice-header-bar {
     display: flex;
     align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-    padding: 6px 16px;
+    gap: 6px;
+    padding: 5px 12px;
     background: var(--bg-tertiary);
     border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+.practice-header-bar::-webkit-scrollbar { display: none; }
+.practice-header-bar .essential-controls,
+.practice-header-bar .secondary-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
     flex-shrink: 0;
 }
 
@@ -281,7 +291,7 @@ header h1 {
     flex-direction: column;
     min-width: 0;
     min-height: 0;
-    overflow: hidden;
+    overflow: visible;
 }
 
 /* ===== Notes Panel (Legacy — kept for NoteList component) ===== */
@@ -3244,6 +3254,43 @@ header h1 {
     text-align: center;
 }
 
+.focus-speed-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.focus-speed-btn {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+}
+
+.focus-speed-btn:hover:not(:disabled) {
+    background: var(--accent-color);
+    color: #fff;
+}
+
+.focus-speed-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.focus-speed-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-color);
+    min-width: 48px;
+    text-align: center;
+}
+
 @media (max-width: 480px) {
     .focus-topbar {
         padding: 8px 12px;
@@ -3415,6 +3462,66 @@ header h1 {
 
 .welcome-hero {
     margin-bottom: 28px;
+}
+
+.welcome-mic-section {
+    text-align: center;
+    padding: 16px 20px;
+    margin-bottom: 24px;
+    background: var(--bg-tertiary);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+}
+
+.welcome-mic-section h3 {
+    font-size: 1rem;
+    color: var(--text-primary);
+    margin: 0 0 8px;
+}
+
+.welcome-mic-section p {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    margin: 0 0 14px;
+    line-height: 1.4;
+}
+
+.welcome-mic-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: var(--accent-color);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.welcome-mic-btn:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.welcome-mic-success {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--success-color);
+    font-size: 0.88rem;
+    font-weight: 500;
+}
+
+.welcome-mic-error {
+    color: var(--error-color);
+    font-size: 0.8rem;
+    padding: 8px 12px;
+    background: rgba(248, 81, 73, 0.1);
+    border-radius: 6px;
+    margin-top: 8px;
 }
 
 .welcome-icon {

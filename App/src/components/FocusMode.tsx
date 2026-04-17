@@ -27,6 +27,8 @@ interface FocusModeProps {
   onStop: () => void;
 }
 
+const SPEED_STEPS = [0.25, 0.5, 0.75, 1.0, 1.5, 2.0];
+
 export const FocusMode: Component<FocusModeProps> = (props) => {
   const keyDisplay = createMemo(
     () => `${appStore.keyName()} ${appStore.scaleType()}`
@@ -45,6 +47,27 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
   const isSession = createMemo(() => appStore.sessionActive());
   const sessionItem = createMemo(() => appStore.sessionItemIndex());
   const sessionRepeat = createMemo(() => appStore.sessionItemRepeat());
+
+  // Playback speed
+  const currentSpeedIndex = createMemo(() => {
+    const speed = appStore.playbackSpeed();
+    const idx = SPEED_STEPS.indexOf(speed);
+    return idx >= 0 ? idx : 3; // default to 1.0x
+  });
+
+  const speedUp = () => {
+    const idx = currentSpeedIndex();
+    if (idx < SPEED_STEPS.length - 1) {
+      appStore.setPlaybackSpeed(SPEED_STEPS[idx + 1]);
+    }
+  };
+
+  const speedDown = () => {
+    const idx = currentSpeedIndex();
+    if (idx > 0) {
+      appStore.setPlaybackSpeed(SPEED_STEPS[idx - 1]);
+    }
+  };
 
   return (
     <div class="focus-mode">
@@ -152,6 +175,31 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
 
         {/* Keyboard hint */}
         <div class="focus-key-hint">Space = play/pause</div>
+
+        {/* Playback speed controls */}
+        <div class="focus-speed-controls">
+          <button
+            class="focus-speed-btn"
+            onClick={speedUp}
+            disabled={currentSpeedIndex() === SPEED_STEPS.length - 1}
+            title="Faster (↑)"
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16">
+              <path fill="currentColor" d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z" />
+            </svg>
+          </button>
+          <span class="focus-speed-label">{appStore.playbackSpeed().toFixed(2)}x</span>
+          <button
+            class="focus-speed-btn"
+            onClick={speedDown}
+            disabled={currentSpeedIndex() === 0}
+            title="Slower (↓)"
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16">
+              <path fill="currentColor" d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z" />
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
   );

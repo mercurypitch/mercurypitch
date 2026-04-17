@@ -34,6 +34,25 @@ export const SettingsPanel: Component = () => {
       <div class="settings-content">
         <h2 class="settings-title">Settings</h2>
 
+        {/* Sensitivity Presets Section */}
+        <div class="settings-section">
+          <h3 class="settings-section-title">Sensitivity Presets</h3>
+          <p class="settings-desc">Quick presets for different environments.</p>
+
+          <div class="settings-row">
+            <label for="preset-select">Environment</label>
+            <select
+              id="preset-select"
+              value={appStore.sensitivityPreset()}
+              onChange={(e) => appStore.applySensitivityPreset(e.currentTarget.value as 'quiet' | 'home' | 'noisy')}
+            >
+              <option value="quiet">Quiet Room (Studio)</option>
+              <option value="home">Some Noise (At Home)</option>
+              <option value="noisy">High Noise (Outside)</option>
+            </select>
+          </div>
+        </div>
+
         {/* Pitch Detection Section */}
         <div class="settings-section">
           <h3 class="settings-section-title">Pitch Detection</h3>
@@ -243,6 +262,57 @@ export const SettingsPanel: Component = () => {
             />
             <span class="settings-val">{appStore.adsr().release}ms</span>
             <small>Time to fade after note ends</small>
+          </div>
+        </div>
+
+        {/* Visibility Toggles */}
+        <div class="settings-section">
+          <h3 class="settings-section-title">Visibility</h3>
+          <p class="settings-desc">Show or hide interface elements.</p>
+
+          <div class="settings-row">
+            <label for="vis-gridlines">Grid Lines</label>
+            <input
+              type="checkbox"
+              id="vis-gridlines"
+              checked={appStore.gridLinesVisible()}
+              onChange={(e) => appStore.setGridLines(e.currentTarget.checked)}
+            />
+            <small>Show horizontal and vertical grid lines</small>
+          </div>
+
+          <div class="settings-row">
+            <label for="vis-theme">Theme</label>
+            <select
+              id="vis-theme"
+              value={appStore.theme()}
+              onChange={(e) => appStore.setTheme(e.currentTarget.value as 'dark' | 'light')}
+            >
+              <option value="dark">Dark</option>
+              <option value="light">Light</option>
+            </select>
+            <small>Switch between dark and light mode</small>
+          </div>
+        </div>
+
+        {/* Playback Speed Section */}
+        <div class="settings-section">
+          <h3 class="settings-section-title">Playback Speed</h3>
+          <p class="settings-desc">Adjust the playback speed of the practice melody.</p>
+
+          <div class="settings-row">
+            <label for="playback-speed">Speed</label>
+            <input
+              type="range"
+              id="playback-speed"
+              min="25"
+              max="200"
+              step="25"
+              value={Math.round(appStore.playbackSpeed() * 100)}
+              onInput={(e) => appStore.setPlaybackSpeed(parseInt(e.currentTarget.value) / 100)}
+            />
+            <span class="settings-val">{appStore.playbackSpeed().toFixed(2)}x</span>
+            <small>0.25x = slowest, 2.0x = fastest</small>
           </div>
         </div>
 

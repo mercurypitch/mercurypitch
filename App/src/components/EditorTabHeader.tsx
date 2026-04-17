@@ -54,11 +54,11 @@ export const EditorTabHeader: Component<EditorTabHeaderProps> = (props) => {
 
   return (
     <div class="practice-header-bar">
-      {/* Mic */}
+      {/* Mic — enabled even during playback (UX requirement) */}
       <MicButton
         active={appStore.micActive()}
         onClick={props.onMicToggle}
-        disabled={isActive()}
+        disabled={false}
       />
 
       {/* Record to piano roll */}

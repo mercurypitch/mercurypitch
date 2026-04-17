@@ -46,11 +46,11 @@ export const PracticeTabHeader: Component<PracticeTabHeaderProps> = (props) => {
     <div class="practice-header-bar">
       {/* Essential controls (always visible on mobile) */}
       <div class="essential-controls">
-        {/* Mic */}
+        {/* Mic — enabled even during playback (UX requirement) */}
         <MicButton
           active={appStore.micActive()}
           onClick={props.onMicToggle}
-          disabled={isActive()}
+          disabled={false}
         />
 
         {/* Record to piano roll */}
@@ -249,10 +249,11 @@ export const PracticeTabHeader: Component<PracticeTabHeaderProps> = (props) => {
           <label class="opt-label">Speed:</label>
           <select
             id="speed-select"
-            value="1"
+            value={appStore.playbackSpeed().toString()}
             class="speed-select"
             onChange={(e) => {
               const speed = parseFloat(e.currentTarget.value);
+              appStore.setPlaybackSpeed(speed);
               props.onSpeedChange(speed);
             }}
           >

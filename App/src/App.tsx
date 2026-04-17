@@ -998,7 +998,7 @@ export const App: Component<AppProps> = (props) => {
     <div id="app">
       {/* Welcome screen overlay (GH #131) */}
       <Show when={appStore.showWelcome()}>
-        <WelcomeScreen />
+        <WelcomeScreen onEnableMic={handleMicToggle} />
       </Show>
 
       {/* Sidebar backdrop (mobile) */}
