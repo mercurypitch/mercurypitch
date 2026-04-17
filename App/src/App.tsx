@@ -21,16 +21,17 @@ import { ScaleBuilder } from '@/components/ScaleBuilder';
 import { PracticeTabHeader } from '@/components/PracticeTabHeader';
 import { SessionBrowser } from '@/components/SessionBrowser';
 import { SessionPlayer } from '@/components/SessionPlayer';
+import { EditorTabHeader } from '@/components/EditorTabHeader';
 import type { PresetData } from '@/stores/app-store';
 import { HistoryCanvas } from '@/components/HistoryCanvas';
 import { appStore, getNoteAccuracyMap } from '@/stores/app-store';
 import { playback } from '@/stores/playback-store';
 import { melodyStore } from '@/stores/melody-store';
 import { melodyTotalBeats, buildSampleMelody, buildMultiOctaveScale, keyTonicFreq, midiToNote } from '@/lib/scale-data';
-import { AudioEngine } from '@/lib/audio-engine';
+import { AudioEngine, type InstrumentType } from '@/lib/audio-engine';
 import { MelodyEngine } from '@/lib/melody-engine';
 import { PracticeEngine } from '@/lib/practice-engine';
-import type { PitchResult, NoteResult, PracticeResult, NoteName, MelodyItem, EffectType } from '@/types';
+import type { PitchResult, NoteResult, PracticeResult, NoteName, MelodyItem, EffectType, PitchPerfectWindow } from '@/types';
 import type { PracticeSubMode } from '@/components/PracticeTabHeader';
 import type { PlaybackState } from '@/lib/piano-roll';
 import type { PitchSample } from '@/components/PitchCanvas';
@@ -125,6 +126,12 @@ export const App: Component<AppProps> = (props) => {
 
   const [isPlaying, setIsPlaying] = createSignal(false);
   const [isPaused, setIsPaused] = createSignal(false);
+
+  // ── Editor tab playback state ───────────────────────────────
+  const [editorPlaybackState, setEditorPlaybackState] = createSignal<PlaybackState>('stopped');
+  const editorIsPlaying = () => editorPlaybackState() === 'playing';
+  const editorIsPaused = () => editorPlaybackState() === 'paused';
+
   const [currentBeat, setCurrentBeat] = createSignal(0);
   const [currentNoteIndex, setCurrentNoteIndex] = createSignal(-1);
   const [pitchHistory, setPitchHistory] = createSignal<PitchSample[]>([]);
@@ -237,8 +244,9 @@ export const App: Component<AppProps> = (props) => {
         setCurrentNoteIndex(noteIndex);
         setTargetPitch(note.freq);
         practiceEngine.onNoteStart(note, noteIndex);
-        // Play tone for the note
-        audioEngine.playTone(note.freq);
+        // Play tone for the note — use full beat duration for correct timing
+        const beatDurationMs = 60000 / appStore.bpm();
+        audioEngine.playTone(note.freq, beatDurationMs);
       },
       onNoteEnd: () => {
         audioEngine.stopTone();
@@ -267,22 +275,27 @@ export const App: Component<AppProps> = (props) => {
       onComplete: () => {
         const results = practiceEngine.onPlaybackComplete();
         const mode = playMode();
+        console.log('[onComplete] fired, mode:', mode, 'sessionMode:', appStore.sessionMode(), 'idx:', appStore.sessionItemIndex());
 
         // Handle session mode: record result and advance/end session
         if (appStore.sessionMode() && mode === 'practice') {
           const currentScore = liveScore();
+          console.log('[onComplete] session handler, score:', currentScore, 'idx:', appStore.sessionItemIndex());
           if (currentScore !== null) {
             appStore.recordSessionItemResult(currentScore);
           }
 
           // Check if more items remain
           const current = appStore.getCurrentSessionItem();
+          console.log('[onComplete] current:', current?.label, current?.type);
           if (current) {
             const session = appStore.practiceSession();
             const idx = appStore.sessionItemIndex();
+            console.log('[onComplete] idx:', idx, 'total:', session?.items.length);
             if (idx < (session?.items.length ?? 0) - 1) {
-              // More items — reset and advance
+              // More items — advance to next session item, rebuild melody, restart engine
               appStore.advanceSessionItem();
+              console.log('[onComplete] advanced, new idx:', appStore.sessionItemIndex(), 'repeat:', appStore.sessionItemRepeat());
               setNoteResults([]);
               setLiveScore(null);
               setCurrentBeat(0);
@@ -290,20 +303,52 @@ export const App: Component<AppProps> = (props) => {
               melodyStore.setCurrentNoteIndex(-1);
               setPitchHistory([]);
               practiceEngine.resetSession();
-              handleStop();
-              // Load next item and auto-start after delay
+              // Load next item and restart engine (don't call handleStop — it resets isPlaying)
               const nextItem = appStore.getCurrentSessionItem();
+              console.log('[onComplete] nextItem:', nextItem?.label, nextItem?.type);
               if (nextItem && nextItem.type === 'rest') {
-                // Rest item — skip it automatically
-                appStore.advanceSessionItem();
-                setTimeout(() => handlePlay(), (nextItem.restMs ?? 2000));
+                // Rest item — start the melody engine so onComplete fires (rest has a silent note)
+                // Then in onComplete, we'll handle the rest delay before building the real scale
+                const restDuration = nextItem.restMs ?? 2000;
+                console.log('[onComplete] starting rest item, duration:', restDuration, 'ms');
+                melodyEngine.stop();
+                melodyEngine.setMelody(melodyStore.items);
+                melodyEngine.setBPM(appStore.bpm());
+                melodyEngine.start(appStore.countIn());
+                // Store the rest duration so onComplete knows to wait before loading next scale
+                // We do this by setting a flag on the melodyStore or checking the item repeat count
+                // Actually, let's use a simpler approach: the onComplete for rest items will
+                // detect rest items by checking if getCurrentSessionItem().type === 'rest'
+                // and call advanceSessionItem() then wait restDuration before loading the scale
+                console.log('[onComplete] rest timeout for', restDuration, 'ms');
+                setTimeout(() => {
+                  console.log('[onComplete rest timeout] firing, idx:', appStore.sessionItemIndex());
+                  const afterRest = appStore.getCurrentSessionItem();
+                  console.log('[onComplete rest timeout] afterRest:', afterRest?.label, afterRest?.type);
+                  if (afterRest && afterRest.type === 'scale') {
+                    console.log('[onComplete rest timeout] building scale:', afterRest.label);
+                    buildScaleMelody(afterRest.scaleType ?? 'major', afterRest.beats ?? 8, afterRest.label);
+                    melodyEngine.stop();
+                    melodyEngine.setMelody(melodyStore.items);
+                    melodyEngine.setBPM(appStore.bpm());
+                    console.log('[onComplete rest timeout] starting melody engine');
+                    melodyEngine.start(appStore.countIn());
+                  }
+                  // If afterRest is still 'rest', onComplete will handle it on the next cycle
+                }, restDuration);
               } else if (nextItem && nextItem.type === 'scale') {
+                console.log('[onComplete] building scale:', nextItem.label);
                 buildScaleMelody(nextItem.scaleType ?? 'major', nextItem.beats ?? 8, nextItem.label);
-                setTimeout(() => handlePlay(), 500);
+                melodyEngine.stop();
+                melodyEngine.setMelody(melodyStore.items);
+                melodyEngine.setBPM(appStore.bpm());
+                console.log('[onComplete] starting melody engine');
+                melodyEngine.start(appStore.countIn());
               }
               return;
             } else {
               // Session complete — end and show summary
+              console.log('[onComplete] session complete!');
               handleStop();
               const summary = appStore.endPracticeSession();
               if (summary) {
@@ -989,6 +1034,39 @@ export const App: Component<AppProps> = (props) => {
 
           {/* Editor tab */}
           <Show when={appStore.activeTab() === 'editor'}>
+            <EditorTabHeader
+              isPlaying={editorIsPlaying}
+              isPaused={editorIsPaused}
+              onMicToggle={handleMicToggle}
+              onPlay={() => {
+                playback.startPlayback();
+              }}
+              onPause={() => {
+                playback.pausePlayback();
+              }}
+              onResume={() => {
+                playback.continuePlayback();
+              }}
+              onStop={() => {
+                playback.resetPlayback();
+              }}
+              onMetronomeToggle={() => setMetronomeEnabled(!metronomeEnabled())}
+              onSpeedChange={(speed) => {
+                const engine = (window as PitchPerfectWindow).pianoRollAudioEngine;
+                if (engine) engine.setPlaybackSpeed?.(speed);
+              }}
+              metronomeEnabled={metronomeEnabled}
+              isRecording={isRecording}
+              onRecordToggle={handleRecordToggle}
+              volume={savedVol}
+              onVolumeChange={(vol) => {
+                setSavedVol(vol);
+                audioEngine?.setVolume(vol / 100);
+              }}
+              onPlaybackStateChange={(state) => {
+                setEditorPlaybackState(state);
+              }}
+            />
             <PianoRollCanvas
               melody={() => melodyStore.items}
               scale={() => melodyStore.currentScale()}
@@ -997,7 +1075,10 @@ export const App: Component<AppProps> = (props) => {
               playbackState={() => playback.state() as PlaybackState}
               currentNoteIndex={() => melodyStore.currentNoteIndex()}
               onMelodyChange={(melody) => melodyStore.setMelody(melody)}
-              onInstrumentChange={(instrument) => audioEngine.setInstrument(instrument as any)}
+              onInstrumentChange={(instrument) => audioEngine.setInstrument(instrument as InstrumentType)}
+              onPlaybackStateChange={(state) => {
+                setEditorPlaybackState(state);
+              }}
             />
           </Show>
 

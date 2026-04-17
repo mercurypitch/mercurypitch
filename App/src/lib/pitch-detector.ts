@@ -30,9 +30,9 @@ const DEFAULT_OPTIONS: Required<PitchDetectorOptions> = {
   threshold: 0.10,
   minFrequency: 65,
   maxFrequency: 2100,
-  sensitivity: 5,
-  minConfidence: 0.50,
-  minAmplitude: 0.05,
+  sensitivity: 7,
+  minConfidence: 0.30,
+  minAmplitude: 0.02,
 };
 
 export class PitchDetector {
@@ -210,8 +210,7 @@ export class PitchDetector {
 
   /** Set sensitivity (1-10) */
   setSensitivity(value: number): void {
-    const p = this as PitchDetector;
-    p.sensitivity = Math.max(1, Math.min(10, value));
+    this.sensitivity = Math.max(1, Math.min(10, value));
   }
 
   /** Set minimum confidence threshold (0-1) */

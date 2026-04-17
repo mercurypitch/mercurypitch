@@ -6,7 +6,7 @@
 // ============================================================
 
 import { Component, Show } from 'solid-js';
-import { appStore } from '@/stores/app-store';
+import { appStore, type CountInOption } from '@/stores/app-store';
 import { MetronomeButton } from '@/components/MetronomeButton';
 
 interface AppHeaderProps {
@@ -101,7 +101,7 @@ export const AppHeader: Component<AppHeaderProps> = (props) => {
         <select
           id="countin-select"
           value={appStore.countIn()}
-          onChange={(e) => appStore.setCountIn(parseInt(e.currentTarget.value) as any)}
+          onChange={(e) => appStore.setCountIn(parseInt(e.currentTarget.value) as CountInOption)}
           class="countin-select"
         >
           <option value="0">Off</option>

@@ -19,6 +19,8 @@ interface PianoRollCanvasProps {
   currentNoteIndex: () => number;
   onMelodyChange: (melody: MelodyItem[]) => void;
   onInstrumentChange?: (instrument: string) => void;
+  /** Called when the editor's internal playback state changes */
+  onPlaybackStateChange?: (state: PlaybackState) => void;
 }
 
 export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
@@ -36,7 +38,8 @@ export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
 
     editor = new PianoRollEditor({
       container: containerRef,
-      onInstrumentChange: props.onInstrumentChange
+      onInstrumentChange: props.onInstrumentChange,
+      onPlaybackStateChange: props.onPlaybackStateChange,
     });
     _onMelodyChange = props.onMelodyChange;
     editor.setMelody(props.melody());

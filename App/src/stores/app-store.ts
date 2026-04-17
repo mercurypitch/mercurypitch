@@ -114,8 +114,8 @@ const DEFAULT_BANDS: AccuracyBand[] = [
 const DEFAULT_SETTINGS: SettingsConfig = {
   detectionThreshold: 0.10,
   sensitivity: 5,
-  minConfidence: 0.50,
-  minAmplitude: 5,
+  minConfidence: 0.30,
+  minAmplitude: 1,
   bands: DEFAULT_BANDS,
   tonicAnchor: false,
 };
@@ -246,6 +246,12 @@ export function initPresets(): void {
   }
   const last = localStorage.getItem(LAST_PRESET_KEY);
   if (last) setCurrentPresetName(last);
+}
+
+/** Reset presets signal (used by tests) */
+export function _resetPresets(): void {
+  setPresets({});
+  setCurrentPresetName(null);
 }
 
 export function savePreset(name: string, data: PresetData): void {
@@ -653,6 +659,7 @@ export const appStore = {
   loadPreset,
   getPresetNames,
   deletePreset,
+  _resetPresets,
 
   // Settings
   settings,

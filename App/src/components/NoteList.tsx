@@ -4,21 +4,13 @@
 
 import { Component, createMemo, For } from 'solid-js';
 import type { MelodyItem, NoteResult } from '@/types';
+import { centsToBand } from '@/lib/practice-engine';
 
 interface NoteListProps {
   melody: () => MelodyItem[];
   currentNoteIndex: () => number;
   noteResults: () => NoteResult[];
   isPlaying: () => boolean;
-}
-
-function centsToBand(avgCents: number): number {
-  if (avgCents === null) return 0;
-  if (avgCents <= 10) return 100;
-  if (avgCents <= 25) return 90;
-  if (avgCents <= 50) return 75;
-  if (avgCents <= 999) return 50;
-  return 0;
 }
 
 const BAND_CLASSES: Record<number | 'off', string> = {

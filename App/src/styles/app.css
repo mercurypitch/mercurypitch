@@ -141,24 +141,34 @@ header h1 {
 .preset-selector .preset-new-btn {
     grid-column: 1;
     grid-row: 2;
+    width: auto;
+    flex-shrink: 0;
 }
 .preset-selector input[type="text"]#preset-name-input {
     grid-column: 2 / 4;
     grid-row: 2;
+    min-width: 0;
+    max-width: 100px;
 }
 .preset-selector .preset-save-btn {
     grid-column: 4;
     grid-row: 2;
+    width: auto;
+    flex-shrink: 0;
 }
 
 /* Row 3: delete + share (only rendered when a preset is loaded) */
 .preset-selector .preset-delete-btn {
     grid-column: 3;
     grid-row: 3;
+    width: auto;
+    flex-shrink: 0;
 }
 .preset-selector .share-btn {
     grid-column: 4;
     grid-row: 3;
+    width: auto;
+    flex-shrink: 0;
 }
 
 /* Sidebar Sections */

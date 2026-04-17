@@ -24,8 +24,8 @@ describe('Settings — init and defaults', () => {
     const s = appStore.settings();
     expect(s.detectionThreshold).toBe(0.10);
     expect(s.sensitivity).toBe(5);
-    expect(s.minConfidence).toBe(0.50);
-    expect(s.minAmplitude).toBe(5);
+    expect(s.minConfidence).toBe(0.30);
+    expect(s.minAmplitude).toBe(1);
     expect(s.bands).toHaveLength(5);
   });
 

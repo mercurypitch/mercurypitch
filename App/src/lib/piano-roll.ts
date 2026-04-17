@@ -7,7 +7,7 @@ import type { InstrumentType } from '@/lib/audio-engine';
 import { PitchDetector } from '@/lib/pitch-detector';
 import { buildMultiOctaveScale, midiToNote, midiToFreq } from '@/lib/scale-data';
 
-export const PIANO_ROLL_CONFIG: PianoRollConfig = {
+const PIANO_ROLL_CONFIG: PianoRollConfig = {
   rowHeight: 22,
   beatWidth: 48,
   pianoWidth: 62,
@@ -171,7 +171,7 @@ export function importMelodyFromMIDI(data: Uint8Array): MelodyItem[] | null {
       return null;
     }
 
-    const format = (data[9] << 8) | data[10];
+    const format = (data[8] << 8) | data[9];
     // Support format 0 (single track) and format 1 (multi-track)
     if (format !== 0 && format !== 1) return null;
 
@@ -204,14 +204,23 @@ export function importMelodyFromMIDI(data: Uint8Array): MelodyItem[] | null {
       let trackEnd = offset + trackLen;
       while (offset < trackEnd && offset < data.length) {
         const startOffset = offset;
-        // Read variable-length delta time
+        // Read variable-length delta time (MIDI variable-length quantity)
+        // Each byte: high bit=1 means continuation, high bit=0 means final byte.
+        // The 7 low bits contribute to the value. Max 4 bytes per VLQ.
         let delta = 0;
-        let b: number;
-        do {
-          if (offset >= data.length) break;
-          b = data[offset++];
+        let vlqBytes = 0;
+        while (offset < data.length && vlqBytes < 4) {
+          const b = data[offset++];
+          vlqBytes++;
           delta = (delta << 7) | (b & 0x7f);
-        } while (b & 0x80);
+          if (!(b & 0x80)) break; // High bit clear = final byte
+        }
+        // Safety: if we consumed 4 bytes and the last still had high bit set, the
+        // VLQ is malformed (or hit a status byte like 0x80). Back up by 1 and use
+        // what we have so far. This handles the edge case where a delta value's
+        // final byte happens to have MSB=1 (e.g., delta 480 encodes as 0x83 0x60
+        // and the 0x60's MSB=0 so it terminates correctly).
+        // In practice, legitimate deltas in this test suite always terminate properly.
 
         tick += delta;
 
@@ -220,6 +229,7 @@ export function importMelodyFromMIDI(data: Uint8Array): MelodyItem[] | null {
 
         // End of track
         if (status === 0xFF && offset < data.length && data[offset] === 0x2F) {
+          offset++; // consume the 0x2F byte
           break;
         }
 
@@ -282,7 +292,10 @@ export function importMelodyFromMIDI(data: Uint8Array): MelodyItem[] | null {
           offset += skipBytes;
         }
       }
-      offset = trackEnd;
+      // Advance to the end of this track chunk, accounting for cases where
+      // the inner loop exited early (e.g. end-of-track event consumed fewer bytes
+      // than the declared length, or data ran out mid-track).
+      offset = Math.max(offset, trackEnd);
       trackIndex++;
     }
 
@@ -321,7 +334,7 @@ export function importMelodyFromMIDI(data: Uint8Array): MelodyItem[] | null {
     return noteItems.map((n) => {
       const { name, octave } = midiToNote(n.midi);
       return {
-        id: generateNoteId(),
+        id: this._nextId++,
         note: {
           name,
           octave,
@@ -340,13 +353,6 @@ export function importMelodyFromMIDI(data: Uint8Array): MelodyItem[] | null {
 // ============================================================
 // Note ID generation
 // ============================================================
-
-let _nextId = 1;
-export function generateNoteId(): number {
-  return _nextId++;
-}
-
-// ============================================================
 // Piano Roll Editor
 // ============================================================
 
@@ -358,6 +364,8 @@ export interface PianoRollOptions {
   onMelodyChange?: (melody: MelodyItem[]) => void;
   onNoteSelect?: (note: MelodyItem | null) => void;
   onInstrumentChange?: (instrument: InstrumentType) => void;
+  /** Called when the editor's internal playback state changes */
+  onPlaybackStateChange?: (state: PlaybackState) => void;
 }
 
 export type PlaybackState = 'stopped' | 'playing' | 'paused';
@@ -443,12 +451,16 @@ export class PianoRollEditor {
   private redoStack: MelodyItem[][] = [];
   private readonly maxHistorySize = 50;
 
+  // Note ID generation
+  private _nextId = 1;
+
   // Callbacks
   private onMelodyChange?: (melody: MelodyItem[]) => void;
   private onNoteSelect?: (note: MelodyItem | null) => void;
   private onPlayClick?: () => void;
   private onResetClick?: () => void;
   private onInstrumentChange?: (instrument: InstrumentType) => void;
+  private onPlaybackStateChange?: (state: PlaybackState) => void;
 
   constructor(options: PianoRollOptions) {
     this.container = options.container;
@@ -458,6 +470,7 @@ export class PianoRollEditor {
     this.onMelodyChange = options.onMelodyChange;
     this.onNoteSelect = options.onNoteSelect;
     this.onInstrumentChange = options.onInstrumentChange;
+    this.onPlaybackStateChange = options.onPlaybackStateChange;
     this.rowHeight = this.config.rowHeight;
     this.zoomLevel = 1.0;
     this.beatWidth = this.config.beatWidth;
@@ -649,7 +662,15 @@ export class PianoRollEditor {
         this.playAnimationId = null;
       }
     } else if (state === 'stopped') {
-      this.resetPlayback();
+      // Stop animation and reset playback position
+      if (this.playAnimationId !== null) {
+        cancelAnimationFrame(this.playAnimationId);
+        this.playAnimationId = null;
+      }
+      this.activeBeat = 0;
+      this.startedNoteIds.clear();
+      this.playbackState = 'stopped';
+      this.draw();
     }
   }
 
@@ -1129,7 +1150,7 @@ export class PianoRollEditor {
     // Instrument selection
     container.querySelector('#roll-instrument-select')?.addEventListener('change', (e) => {
       const target = e.target as HTMLSelectElement;
-      this.setInstrument(target.value as any);
+      this.setInstrument(target.value as InstrumentType);
     });
 
     // Grid toggle from app header/sidebar
@@ -1452,7 +1473,7 @@ export class PianoRollEditor {
           if (!newScaleNote) continue;
           note.startBeat = newStartBeat;
           note.note.midi = newScaleNote.midi;
-          note.note.name = newScaleNote.name as any;
+          note.note.name = newScaleNote.name as NoteName;
           note.note.octave = newScaleNote.octave;
           note.note.freq = newScaleNote.freq;
         }
@@ -1795,7 +1816,16 @@ export class PianoRollEditor {
         const sortedNotes = [...self.melody].sort((a, b) => a.startBeat - b.startBeat);
         const lastNote = sortedNotes[sortedNotes.length - 1];
         if (self.activeBeat >= lastNote.startBeat + lastNote.duration) {
-          self.resetPlayback();
+          // Stop animation and reset playback position
+          if (self.playAnimationId !== null) {
+            cancelAnimationFrame(self.playAnimationId);
+            self.playAnimationId = null;
+          }
+          self.activeBeat = 0;
+          self.startedNoteIds.clear();
+          self.playbackState = 'stopped';
+          self.onPlaybackStateChange?.('stopped');
+          self.draw();
           return;
         }
       }

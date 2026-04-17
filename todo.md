@@ -70,10 +70,12 @@ A living list of proposed features and improvements for PitchPerfect.
 
 - [ ] **TypeScript migration** — Move all JS to TypeScript with strict types (see issue #33)
 - [ ] **Unit tests** — Add Jest/Vitest tests for scale-data.js, pitch-detector.js, and audio engine helpers  **(DONE - 105 tests added via Vitest, see PR #76)**
+- [x] **Unit tests** — 256 tests covering app-store, melody-engine, practice-engine, audio-engine, pitch-detector, scale-data, preset save/load, MIDI import/export, session data, share-url, theme store  **(DONE - 2026-04-17)**
 - [ ] **E2E tests** — Playwright tests for critical flows: preset save/load, playback, note entry
 - [x] **CI/CD pipeline** — GitHub Actions for lint, type-check, test, and build on every PR  **(DONE - tests.yml + build.yml, see PR #76)**
 - [x] **Bundle / build step** — Add a simple bundler (esbuild or Rollup) to produce a single JS bundle for production  **(DONE - Vite bundler configured)**
+- [x] **Refactoring** — Removed all `as any` type casts, consolidated duplicate `centsToBand` implementations, moved module-level `_nextId` into class, removed unused exports  **(GH #115, DONE - 2026-04-17)**
 
 ---
 
-_Last updated: 2026-04-14_
+_Last updated: 2026-04-17_

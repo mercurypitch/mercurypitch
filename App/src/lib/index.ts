@@ -1,10 +1,11 @@
 // ============================================================
-// Library barrel export
+// Library barrel export — only used by internal modules
+// Note: most components import directly from submodules to enable
+// better tree-shaking and explicit dependencies.
 // ============================================================
 
 export { AudioEngine } from './audio-engine';
 export { PitchDetector } from './pitch-detector';
-export { PianoRollEditor } from './piano-roll';
 export {
   NOTE_NAMES,
   WHITE_NOTE_NAMES,
