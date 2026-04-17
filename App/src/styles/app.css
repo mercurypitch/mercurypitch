@@ -2633,6 +2633,27 @@ header h1 {
     color: var(--text-muted);
     margin: 4px 0 0;
 }
+.about-links {
+    display: flex;
+    justify-content: center;
+    margin-top: 12px;
+}
+.about-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.82rem;
+    padding: 6px 12px;
+    border-radius: 4px;
+    border: 1px solid var(--accent);
+    transition: background 0.2s, color 0.2s;
+}
+.about-link:hover {
+    background: var(--accent);
+    color: #fff;
+}
 
 /* ===== Modal ===== */
 .modal-overlay {
