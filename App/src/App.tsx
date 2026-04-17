@@ -661,11 +661,13 @@ export const App: Component<AppProps> = (props) => {
 
   /** Build a scale-based melody for session items */
   const buildScaleMelody = (scaleType: string, beats: number, label?: string) => {
-    const scale = buildMultiOctaveScale(appStore.keyName(), melodyStore.currentOctave(), 1, scaleType);
+    const numOctaves = beats > 12 ? 2 : 1;
+    const scale = buildMultiOctaveScale(appStore.keyName(), melodyStore.currentOctave(), numOctaves, scaleType);
     if (!scale || scale.length === 0) return;
 
-    // Build one octave of the scale as melody items
-    const items: MelodyItem[] = scale.slice(0, Math.min(8, scale.length)).map((note, i) => ({
+    // Use ALL notes from the scale (no 8-note cap) — respect the beats parameter
+    const noteCount = Math.min(scale.length, beats);
+    const items: MelodyItem[] = scale.slice(0, noteCount).map((note, i) => ({
       id: melodyStore.generateId(),
       note: { midi: note.midi, name: note.name as NoteName, octave: note.octave, freq: note.freq },
       startBeat: i,
