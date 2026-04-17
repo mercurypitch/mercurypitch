@@ -117,10 +117,10 @@ describe('Scale Building', () => {
   });
 
   it('builds multi-octave scale correctly', () => {
-    // Note: buildMultiOctaveScale includes startOctave - 1, so 2 octaves means 3 octave ranges
+    // numOctaves=N means exactly N octave ranges
     const scale = buildMultiOctaveScale('C', 4, 2, 'major');
-    // Should have 24 notes (3 octave ranges × 8 notes each based on implementation)
-    expect(scale.length).toBe(24);
+    // Should have 16 notes (2 octaves × 8 notes each)
+    expect(scale.length).toBe(16);
     // First note should be highest pitch (top of piano roll)
     expect(scale[0].midi).toBeGreaterThan(scale[scale.length - 1].midi);
   });

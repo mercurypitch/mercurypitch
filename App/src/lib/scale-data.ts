@@ -224,7 +224,7 @@ export function buildMultiOctaveScale(
 
   const scale: ScaleDegree[] = [];
 
-  for (let oct = startOctave + numOctaves - 1; oct >= startOctave - 1; oct--) {
+  for (let oct = startOctave + numOctaves - 1; oct >= startOctave; oct--) {
     for (let i = intervals.length - 1; i >= 0; i--) {
       const semitone = intervals[i];
       const midi = (oct + 1) * 12 + rootOffset + semitone;
