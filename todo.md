@@ -19,7 +19,7 @@ A living list of proposed features and improvements for PitchPerfect.
 ## Playback & Audio
 
 - [ ] **Instrument sounds** — Replace the sine-wave oscillator with a lightweight sampler or Web Audio synthesizer (e.g., piano, organ, strings)
-- [ ] **Reverb / effects chain** — Add a simple reverb or EQ to the practice playback
+- [x] **Reverb / effects chain** — Add a simple reverb or EQ to the practice playback  **(DONE - PR #127, reverb types + wet/dry mix in Settings)**
 - [ ] **Record from microphone to piano roll** — Real-time MIDI capture: sing or play and convert to note blocks
 - [x] **Adjustable tone envelope** — Attack, decay, sustain, release (ADSR) control for the oscillator  **(DONE - PR #76)**
 - [x] **Play preview speed** — Slow down the melody (0.5x, 0.75x) for practice without changing BPM  **(DONE - PR #76)**
