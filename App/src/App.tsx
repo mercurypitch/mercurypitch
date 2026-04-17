@@ -21,6 +21,8 @@ import { ScaleBuilder } from '@/components/ScaleBuilder';
 import { PracticeTabHeader } from '@/components/PracticeTabHeader';
 import type { PresetData } from '@/stores/app-store';
 import { HistoryCanvas } from '@/components/HistoryCanvas';
+import { SessionBrowser } from '@/components/SessionBrowser';
+import { SessionPlayer } from '@/components/SessionPlayer';
 import { appStore, getNoteAccuracyMap } from '@/stores/app-store';
 import { playback } from '@/stores/playback-store';
 import { melodyStore } from '@/stores/melody-store';
@@ -110,6 +112,51 @@ function filterMelodyForPractice(
   return melody;
 }
 
+/** Build a melody from a session item (scale type) for playback */
+function buildSessionItemMelody(scaleType: string, beats: number): MelodyItem[] {
+  const octave = melodyStore.currentOctave();
+  const scale = melodyStore.currentScale();
+  if (scale.length === 0) return [];
+
+  // Build ascending scale for the given number of beats
+  const melody: MelodyItem[] = [];
+  let beatPos = 0;
+
+  for (const degree of scale) {
+    if (beatPos >= beats) break;
+    melody.push({
+      id: melodyStore.generateId(),
+      note: {
+        midi: degree.midi,
+        name: degree.name as NoteName,
+        octave: degree.octave,
+        freq: degree.freq,
+      },
+      startBeat: beatPos,
+      duration: 1,
+    });
+    beatPos++;
+  }
+
+  return melody;
+}
+
+/** Load the current session item's melody into melodyStore */
+function loadSessionItemMelody(): MelodyItem[] {
+  const item = appStore.getCurrentSessionItem();
+  if (!item) return melodyStore.items;
+
+  if (item.type === 'scale' && item.scaleType) {
+    // Set the app scale type to match the session item
+    appStore.setScaleType(item.scaleType);
+    const beats = item.beats ?? 8;
+    return buildSessionItemMelody(item.scaleType, beats);
+  }
+
+  // Default: return current melody
+  return melodyStore.items;
+}
+
 interface AppProps {
   onMounted?: () => void;
 }
@@ -156,6 +203,8 @@ export const App: Component<AppProps> = (props) => {
   const [practiceSubMode, setPracticeSubMode] = createSignal<PracticeSubMode>('all');
   const [savedVol, setSavedVol] = createSignal<number>(80);
   const [showScaleBuilder, setShowScaleBuilder] = createSignal<boolean>(false);
+  const [showSessionBrowser, setShowSessionBrowser] = createSignal<boolean>(false);
+  const [sessionSummary, setSessionSummary] = createSignal<{ sessionName: string; score: number; itemsCompleted: number; totalItems: number } | null>(null);
 
   // ── Stats panel ──────────────────────────────────────────────
 
@@ -308,6 +357,35 @@ export const App: Component<AppProps> = (props) => {
                 rating: r.rating,
               })),
             });
+
+            // Session mode: record item result, advance or end session
+            if (appStore.isInSessionMode()) {
+              appStore.recordSessionItemResult(combinedScore);
+              const session = appStore.practiceSession();
+              if (session && appStore.sessionItemIndex() < session.items.length - 1) {
+                // More items remain — advance and auto-restart
+                appStore.advanceSessionItem();
+                const nextMelody = loadSessionItemMelody();
+                melodyStore.setMelody(nextMelody);
+                handleStop();
+                setTimeout(() => handlePlay(), 1000);
+                return;
+              } else {
+                // Session complete
+                const result = appStore.endPracticeSession();
+                if (result) {
+                  setSessionSummary({
+                    sessionName: result.sessionName,
+                    score: result.score,
+                    itemsCompleted: result.itemsCompleted,
+                    totalItems: result.totalItems,
+                  });
+                }
+                handleStop();
+                return;
+              }
+            }
+
             appStore.showNotification(`Practice complete! Score: ${combinedScore}%`, combinedScore >= 80 ? 'success' : combinedScore >= 50 ? 'info' : 'warning');
             handleStop();
           }
@@ -375,6 +453,25 @@ export const App: Component<AppProps> = (props) => {
       const speed = appStore.playbackSpeed();
       if (melodyEngine) {
         melodyEngine.setPlaybackSpeed(speed);
+      }
+    });
+
+    // Auto-start playback when a practice session begins
+    createEffect(() => {
+      if (appStore.sessionMode() && appStore.practiceSession() !== null) {
+        // Load the first session item's melody
+        const melody = loadSessionItemMelody();
+        melodyStore.setMelody(melody);
+        // Switch to practice mode with 1 cycle
+        setPlayMode('practice');
+        setPracticeCycles(1);
+        setCurrentCycle(1);
+        setAllCycleResults([]);
+        setNoteResults([]);
+        setLiveScore(null);
+        setPracticeResult(null);
+        // Small delay to let the UI update
+        setTimeout(() => handlePlay(), 200);
       }
     });
 
@@ -606,6 +703,44 @@ export const App: Component<AppProps> = (props) => {
     setIsPracticeComplete(false);
   };
 
+  const handleSessionSkip = () => {
+    // Advance to next item immediately
+    const session = appStore.practiceSession();
+    if (!session) return;
+    if (appStore.sessionItemIndex() < session.items.length - 1) {
+      appStore.advanceSessionItem();
+      const nextMelody = loadSessionItemMelody();
+      melodyStore.setMelody(nextMelody);
+      handleStop();
+      setTimeout(() => handlePlay(), 1000);
+    } else {
+      // Last item — end session
+      const result = appStore.endPracticeSession();
+      if (result) {
+        setSessionSummary({
+          sessionName: result.sessionName,
+          score: result.score,
+          itemsCompleted: result.itemsCompleted,
+          totalItems: result.totalItems,
+        });
+      }
+      handleStop();
+    }
+  };
+
+  const handleSessionEnd = () => {
+    const result = appStore.endPracticeSession();
+    if (result) {
+      setSessionSummary({
+        sessionName: result.sessionName,
+        score: result.score,
+        itemsCompleted: result.itemsCompleted,
+        totalItems: result.totalItems,
+      });
+    }
+    handleStop();
+  };
+
   // ── Mic handlers ─────────────────────────────────────────────
 
   const handleMicToggle = async () => {
@@ -832,6 +967,14 @@ export const App: Component<AppProps> = (props) => {
               onPracticeSubModeChange={setPracticeSubMode}
               isRecording={isRecording}
               onRecordToggle={handleRecordToggle}
+              onOpenSessions={() => setShowSessionBrowser(true)}
+              sessionActive={appStore.sessionActive}
+            />
+
+            {/* Session player (replaces practice controls when in session) */}
+            <SessionPlayer
+              onSkip={handleSessionSkip}
+              onEnd={handleSessionEnd}
             />
 
             {/* Canvas */}
@@ -964,6 +1107,40 @@ export const App: Component<AppProps> = (props) => {
         isOpen={showScaleBuilder()}
         onClose={() => setShowScaleBuilder(false)}
       />
+
+      {/* Session Browser Modal */}
+      <SessionBrowser
+        isOpen={showSessionBrowser()}
+        onClose={() => setShowSessionBrowser(false)}
+      />
+
+      {/* Session Summary Overlay */}
+      <Show when={sessionSummary() !== null}>
+        <div class="overlay" onClick={() => setSessionSummary(null)}>
+          <div id="score-card" onClick={(e) => e.stopPropagation()}>
+            <button class="overlay-close" onClick={() => setSessionSummary(null)}>&times;</button>
+            <h2 id="score-title">Session Complete!</h2>
+            <div id="score-grade" class={sessionSummary()!.score >= 80 ? 'grade-excellent' : sessionSummary()!.score >= 65 ? 'grade-good' : 'grade-okay'}>
+              {sessionSummary()!.score >= 80 ? 'Excellent!' : sessionSummary()!.score >= 65 ? 'Good!' : 'Okay!'}
+            </div>
+            <div id="score-pct">{sessionSummary()!.score}%</div>
+            <div id="score-detail">
+              {sessionSummary()!.itemsCompleted} of {sessionSummary()!.totalItems} items completed
+            </div>
+            <div id="session-name-display">
+              <strong>{sessionSummary()!.sessionName}</strong>
+            </div>
+            <div id="score-actions">
+              <button class="overlay-btn primary" onClick={() => { setSessionSummary(null); setShowSessionBrowser(true); }}>
+                New Session
+              </button>
+              <button class="overlay-btn" onClick={() => setSessionSummary(null)}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      </Show>
     </div>
   );
 };

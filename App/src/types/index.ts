@@ -191,6 +191,46 @@ export interface PianoRollConfig {
   };
 }
 
+// ============================================================
+// Practice Sessions
+// ============================================================
+
+export type SessionDifficulty = 'beginner' | 'intermediate' | 'advanced';
+export type SessionCategory = 'vocal' | 'instrumental' | 'ear-training';
+export type SessionItemType = 'preset' | 'scale' | 'rest';
+
+export interface SessionItem {
+  type: SessionItemType;
+  /** Preset ID for type 'preset' */
+  presetId?: string;
+  /** Scale type for type 'scale' (e.g., 'major', 'chromatic') */
+  scaleType?: string;
+  /** Display name override */
+  label?: string;
+  /** Number of beats for type 'scale' */
+  beats?: number;
+  /** Rest duration in ms for type 'rest' */
+  restMs?: number;
+}
+
+export interface PracticeSession {
+  id: string;
+  name: string;
+  description: string;
+  difficulty: SessionDifficulty;
+  category: SessionCategory;
+  items: SessionItem[];
+}
+
+export interface SessionResult {
+  sessionId: string;
+  sessionName: string;
+  completedAt: number;
+  itemsCompleted: number;
+  totalItems: number;
+  score: number;
+}
+
 /** Window extensions for global references */
 export interface PitchPerfectWindow extends Window {
   pianoRollEditor?: import('../lib/piano-roll').PianoRollEditor;
