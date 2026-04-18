@@ -821,7 +821,7 @@ export const App: Component<AppProps> = (props) => {
       const pitch = practiceEngine.update()
       // During free recording, compute beat from performance.now() independently.
       // During playback-backed recording, use melodyEngine's beat position.
-      // eslint-disable-next-line no-restricted-globals
+
       const perfNow = (performance as unknown as { now: () => number }).now()
       const beat = isRecording()
         ? ((perfNow - freeRecordStartTime) / 60000) * appStore.bpm()
@@ -1155,7 +1155,7 @@ export const App: Component<AppProps> = (props) => {
       currentNoteMidi = -1
       currentNoteStartBeat = -1
       silenceFrames = 0
-      // eslint-disable-next-line no-restricted-globals
+
       freeRecordStartTime = (
         performance as unknown as { now: () => number }
       ).now()

@@ -177,7 +177,7 @@ describe('MelodyEngine', () => {
 
       // Mock performance.now() so elapsed time advances
       let fakeNow = 1000 // Start at 1000ms so playStartTime = 1000 (set during start())
-      // eslint-disable-next-line no-restricted-globals
+
       vi.spyOn(performance, 'now').mockImplementation(() => fakeNow)
 
       e.start()
@@ -201,7 +201,7 @@ describe('MelodyEngine', () => {
       expect(typeof firstNote.duration).toBe('number')
       expect(firstNote.duration).toBe(2) // First note has duration 2
       e.destroy()
-      // eslint-disable-next-line no-restricted-globals
+
       vi.spyOn(performance, 'now').mockRestore()
     })
 
@@ -220,7 +220,7 @@ describe('MelodyEngine', () => {
       })
 
       let fakeNow = 1000
-      // eslint-disable-next-line no-restricted-globals
+
       vi.spyOn(performance, 'now').mockImplementation(() => fakeNow)
 
       e.start()
@@ -236,7 +236,7 @@ describe('MelodyEngine', () => {
       expect(endedNote).toHaveProperty('duration')
       expect(endedNote.duration).toBe(2)
       e.destroy()
-      // eslint-disable-next-line no-restricted-globals
+
       vi.spyOn(performance, 'now').mockRestore()
     })
   })

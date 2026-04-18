@@ -248,7 +248,7 @@ export class PracticeEngine {
       if (pitch.clarity >= 0.2) {
         this.currentSamples.push({
           freq: pitch.frequency,
-          // eslint-disable-next-line no-restricted-globals
+
           time: (performance as unknown as { now: () => number }).now(),
           cents,
         })

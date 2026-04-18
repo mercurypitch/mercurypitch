@@ -182,7 +182,6 @@ export async function copyShareURL(
 ): Promise<boolean> {
   const url = generateShareURL(melody, bpm, key, scaleType, totalBeats)
   try {
-    // eslint-disable-next-line no-restricted-globals
     await (
       navigator as unknown as {
         clipboard: { writeText: (text: string) => Promise<void> }

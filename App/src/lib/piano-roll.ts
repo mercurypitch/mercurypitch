@@ -740,7 +740,7 @@ export class PianoRollEditor {
 
     if (state === 'playing') {
       // External start (from Practice tab) — reset animation and begin
-      // eslint-disable-next-line no-restricted-globals
+
       this.playStartTime =
         playStartTime ?? (performance as unknown as { now: () => number }).now()
       this.pauseStartTime = 0
@@ -2130,7 +2130,7 @@ export class PianoRollEditor {
       // When in external playback (Practice tab), syncPlayhead() keeps playStartTime
       // in sync with the melody engine's timeline, so the formula below correctly
       // computes the current beat. In internal playback (Editor tab), we self-advance.
-      // eslint-disable-next-line no-restricted-globals
+
       const elapsed =
         (performance as unknown as { now: () => number }).now() -
         this.playStartTime
@@ -2253,17 +2253,16 @@ export class PianoRollEditor {
     // If playback is active or paused, update the playback start time so
     // playback continues from the new position on mouseup
     if (this.playbackState === 'playing') {
-      // eslint-disable-next-line no-restricted-globals
       this.playStartTime =
         (performance as unknown as { now: () => number }).now() -
         (beat / this.bpm) * 60000
     } else if (this.playbackState === 'paused') {
       // For paused state, update both playStartTime and activeBeat for proper resume
-      // eslint-disable-next-line no-restricted-globals
+
       this.playStartTime =
         (performance as unknown as { now: () => number }).now() -
         (beat / this.bpm) * 60000
-      // eslint-disable-next-line no-restricted-globals
+
       this.pauseStartTime = (
         performance as unknown as { now: () => number }
       ).now() // Reset pause point to now

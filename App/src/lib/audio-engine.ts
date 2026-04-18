@@ -424,7 +424,6 @@ export class AudioEngine {
 
       console.info('[AudioEngine] Requesting microphone access...')
 
-      // eslint-disable-next-line no-restricted-globals
       this.micStream = await (
         navigator as unknown as {
           mediaDevices: { getUserMedia: (opts: object) => Promise<MediaStream> }

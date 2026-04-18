@@ -155,7 +155,7 @@ export class MelodyEngine {
     }
 
     this.pauseOffset = 0
-    // eslint-disable-next-line no-restricted-globals
+
     this.playStartTime = (performance as unknown as { now: () => number }).now()
     this.hopActive = false
     this.hopStartTime = 0
@@ -168,7 +168,7 @@ export class MelodyEngine {
     if (!this.isPlaying || this.isPaused) return
 
     this.isPaused = true
-    // eslint-disable-next-line no-restricted-globals
+
     this.pauseOffset =
       (performance as unknown as { now: () => number }).now() -
       this.playStartTime
@@ -179,7 +179,7 @@ export class MelodyEngine {
     if (!this.isPlaying || !this.isPaused) return
 
     this.isPaused = false
-    // eslint-disable-next-line no-restricted-globals
+
     this.playStartTime =
       (performance as unknown as { now: () => number }).now() - this.pauseOffset
     this._tick()
@@ -196,7 +196,7 @@ export class MelodyEngine {
   /** Seek to a specific beat position (while playing or paused) */
   seekTo(targetBeat: number): void {
     const beatDurationMs = 60000 / this.bpm
-    // eslint-disable-next-line no-restricted-globals
+
     const perfNow = (performance as unknown as { now: () => number }).now()
     this.playStartTime =
       perfNow - (targetBeat * beatDurationMs) / this.playbackSpeed
@@ -233,7 +233,6 @@ export class MelodyEngine {
   private _onFrame(): void {
     if (!this.isPlaying || this.isPaused) return
 
-    // eslint-disable-next-line no-restricted-globals
     const perfNow = (performance as unknown as { now: () => number }).now()
     const elapsed = (perfNow - this.playStartTime) * this.playbackSpeed
     const beatsPerMs = this.bpm / 60000
@@ -304,7 +303,7 @@ export class MelodyEngine {
         this.hopFromY = this.currentNoteIndex
         this.hopToY = newIndex
         this.hopActive = true
-        // eslint-disable-next-line no-restricted-globals
+
         this.hopStartTime = (
           performance as unknown as { now: () => number }
         ).now()
@@ -331,7 +330,7 @@ export class MelodyEngine {
     if (!this.hopActive) {
       return { active: false, progress: 0, from: 0, to: 0 }
     }
-    // eslint-disable-next-line no-restricted-globals
+
     const elapsed =
       (performance as unknown as { now: () => number }).now() -
       this.hopStartTime
