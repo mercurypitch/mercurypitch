@@ -7,7 +7,7 @@ import type { Component } from 'solid-js'
 import { Show } from 'solid-js'
 import { MetronomeButton } from '@/components/MetronomeButton'
 import { MicButton } from '@/components/MicButton'
-import type { CountInOption } from '@/stores/app-store'
+import { PrecCountButton } from '@/components/PrecCountButton'
 import { appStore } from '@/stores/app-store'
 
 export type PracticeSubMode = 'all' | 'random' | 'focus' | 'reverse'
@@ -256,24 +256,7 @@ export const PracticeTabHeader: Component<PracticeTabHeaderProps> = (props) => {
         </div>
 
         {/* Count-in */}
-        <div class="countin-group">
-          <label class="opt-label">Precount:</label>
-          <select
-            id="countin-select"
-            value={appStore.countIn()}
-            onChange={(e) =>
-              appStore.setCountIn(
-                parseInt(e.currentTarget.value) as CountInOption,
-              )
-            }
-            class="countin-select"
-          >
-            <option value="0">Off</option>
-            <option value="1">1</option>
-            <option value="2">2</option>
-            <option value="4">4</option>
-          </select>
-        </div>
+        <PrecCountButton />
 
         {/* Volume */}
         <div class="volume-group">
