@@ -1,0 +1,74 @@
+/* ============================================================
+   Tooltip — Custom tooltip styles
+   ============================================================ */
+
+.tooltipWrapper {
+  position: relative;
+  display: inline-block;
+}
+
+/* Tooltip text */
+.tooltip {
+  position: absolute;
+  z-index: 1000;
+  background: rgba(30, 41, 59, 0.95);
+  backdrop-filter: blur(4px);
+  color: var(--text-primary);
+  font-size: 0.75rem;
+  padding: 5px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.tooltip.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Tooltip positions */
+.tooltip-top {
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-4px);
+}
+
+.tooltip-top.show {
+  transform: translateX(-50%) translateY(0);
+}
+
+.tooltip-bottom {
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+}
+
+.tooltip-bottom.show {
+  transform: translateX(-50%) translateY(0);
+}
+
+.tooltip-left {
+  left: 100%;
+  top: 50%;
+  transform: translateY(-50%) translateX(-4px);
+}
+
+.tooltip-left.show {
+  transform: translateY(-50%) translateX(0);
+}
+
+.tooltip-right {
+  right: 100%;
+  top: 50%;
+  transform: translateY(-50%) translateX(4px);
+}
+
+.tooltip-right.show {
+  transform: translateY(-50%) translateX(0);
+}

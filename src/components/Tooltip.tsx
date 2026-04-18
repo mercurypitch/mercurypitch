@@ -4,6 +4,7 @@
 
 import type { Component, ParentProps } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
+import styles from './Tooltip.module.css'
 
 type Placement = 'top' | 'bottom' | 'left' | 'right'
 
@@ -36,13 +37,16 @@ export const Tooltip: Component<TooltipProps> = (props) => {
 
   return (
     <span
-      class="tooltip-wrapper"
+      class={styles.tooltipWrapper}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
       {props.children}
       <Show when={visible() && props.text}>
-        <span class={`tooltip tooltip-${placement()}`} role="tooltip">
+        <span
+          class={`${styles.tooltip} ${styles[`tooltip-${placement()}`]}`}
+          role="tooltip"
+        >
           {props.text}
         </span>
       </Show>

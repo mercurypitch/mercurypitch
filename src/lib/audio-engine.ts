@@ -314,7 +314,11 @@ export class AudioEngine {
 
   /** Set the instrument for note playback */
   setInstrument(type: InstrumentType): void {
-    this.currentInstrument = type
+    const validInstruments = this.getInstruments()
+    if (validInstruments.includes(type)) {
+      this.currentInstrument = type
+    }
+    // Invalid instruments are silently ignored
   }
 
   /** Get the current instrument */
@@ -1259,6 +1263,12 @@ export class AudioEngine {
     // Save current instrument and temporarily switch if needed
     const prevInstrument = this.currentInstrument
     if (instrument) this.currentInstrument = instrument
+
+    // TODO: Check if we need this! Validate melody items before rendering
+    const hasValidFreq = melody.some((item) => item.note !== null && item.note.freq !== null)
+    if (!hasValidFreq) {
+      return null
+    }
 
     // Schedule all notes
     for (const item of melody) {

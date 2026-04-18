@@ -12,7 +12,7 @@ import { NoteList } from '@/components/NoteList'
 import { PitchDisplay } from '@/components/PitchDisplay'
 import { StatsBars } from '@/components/StatsBars'
 import { KEY_OFFSETS, midiToFreq, midiToNote } from '@/lib/scale-data'
-import { activeTab as appActiveTab, sessionResults, showNotification, } from '@/stores'
+import { activeTab as appActiveTab, appStore, sessionResults, showNotification, } from '@/stores'
 import { keyName, scaleType, setKeyName, setScaleType } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import { showSidebarNoteList } from '@/stores/settings-store'
@@ -65,6 +65,8 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
     melodyStore.setOctave(nextOctave)
     melodyStore.refreshScale(keyName(), nextOctave, scaleType())
   }
+  const isPracticeOrSettingsTab = () =>
+    ['practice', 'settings'].includes(activeTab())
 
   return (
     <aside
@@ -118,150 +120,152 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
         onSelect={(name) => showNotification(`Selected ${name}!`, 'info')}
       />
 
-      {/* Scale section */}
-      <div class="sidebar-section">
-        <h2 class="panel-title">Playback Setup</h2>
+      {/* Playback Setup section */}
+      <Show when={appStore.showPlaybackSetupInfo()}>
+        <div class="sidebar-section">
+          <h2 class="panel-title">Playback Setup</h2>
 
-        <div id="scale-info">
-          <select
-            class="dropdown-select-style"
-            id="key-select"
-            value={keyName()}
-            onChange={(e) => {
-              const newKey = e.currentTarget.value
-              const currentKey = keyName()
+          <div id="scale-info">
+            <select
+              class="dropdown-select-style"
+              id="key-select"
+              value={keyName()}
+              onChange={(e) => {
+                const newKey = e.currentTarget.value
+                const currentKey = keyName()
 
-              // In Editor tab, the key dropdown is an editing operation and
-              // may transpose the actual melody. In Practice/sidebar usage it
-              // must be view-only: update key/scale display, but never write
-              // transposed notes back into the user's melody.
-              const melody = melodyStore.getCurrentItems()
-              if (activeTab() === 'editor' && melody.length > 0) {
-                const currentOffset = KEY_OFFSETS[currentKey] ?? 0
-                const newOffset = KEY_OFFSETS[newKey] ?? 0
-                const delta = newOffset - currentOffset
+                // In Editor tab, the key dropdown is an editing operation and
+                // may transpose the actual melody. In Practice/sidebar usage it
+                // must be view-only: update key/scale display, but never write
+                // transposed notes back into the user's melody.
+                const melody = melodyStore.getCurrentItems()
+                if (activeTab() === 'editor' && melody.length > 0) {
+                  const currentOffset = KEY_OFFSETS[currentKey] ?? 0
+                  const newOffset = KEY_OFFSETS[newKey] ?? 0
+                  const delta = newOffset - currentOffset
 
-                if (delta !== 0) {
-                  const transposed = melody.map((item) => {
-                    const newMidi = item.note.midi + delta
-                    const { name, octave } = midiToNote(newMidi)
-                    return {
-                      ...item,
-                      note: {
-                        ...item.note,
-                        midi: newMidi,
-                        name,
-                        octave,
-                        freq: midiToFreq(newMidi),
-                      },
-                    }
-                  })
-                  melodyStore.setMelody(transposed)
+                  if (delta !== 0) {
+                    const transposed = melody.map((item) => {
+                      const newMidi = item.note.midi + delta
+                      const { name, octave } = midiToNote(newMidi)
+                      return {
+                        ...item,
+                        note: {
+                          ...item.note,
+                          midi: newMidi,
+                          name,
+                          octave,
+                          freq: midiToFreq(newMidi),
+                        },
+                      }
+                    })
+                    melodyStore.setMelody(transposed)
+                  }
                 }
-              }
 
-              setKeyName(newKey)
-              melodyStore.refreshScale(
-                newKey,
-                melodyStore.getCurrentOctave(),
-                scaleType(),
-              )
-            }}
-          >
-            <option value="C">C</option>
-            <option value="G">G</option>
-            <option value="D">D</option>
-            <option value="A">A</option>
-            <option value="E">E</option>
-            <option value="B">B</option>
-            <option value="F">F</option>
-            <option value="Bb">Bb</option>
-          </select>
-
-          <div class="octave-ctrl">
-            <button
-              class="octave-btn"
-              title="Lower octave"
-              onClick={() => handleViewOctaveShift(-1)}
+                setKeyName(newKey)
+                melodyStore.refreshScale(
+                  newKey,
+                  melodyStore.getCurrentOctave(),
+                  scaleType(),
+                )
+              }}
             >
-              <svg viewBox="0 0 24 24" width="14" height="14">
+              <option value="C">C</option>
+              <option value="G">G</option>
+              <option value="D">D</option>
+              <option value="A">A</option>
+              <option value="E">E</option>
+              <option value="B">B</option>
+              <option value="F">F</option>
+              <option value="Bb">Bb</option>
+            </select>
+
+            <div class="octave-ctrl">
+              <button
+                class="octave-btn"
+                title="Lower octave"
+                onClick={() => handleViewOctaveShift(-1)}
+              >
+                <svg viewBox="0 0 24 24" width="14" height="14">
+                  <path
+                    fill="currentColor"
+                    d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"
+                  />
+                </svg>
+              </button>
+              <span class="octave-value">{viewOctave()}</span>
+              <button
+                class="octave-btn"
+                title="Higher octave"
+                onClick={() => handleViewOctaveShift(1)}
+              >
+                <svg viewBox="0 0 24 24" width="14" height="14">
+                  <path
+                    fill="currentColor"
+                    d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            <select
+              id="scale-select"
+              class="dropdown-select-style"
+              value={scaleType()}
+              onChange={(e) => {
+                const st = e.currentTarget.value
+                setScaleType(st)
+                melodyStore.refreshScale(
+                  keyName(),
+                  melodyStore.getCurrentOctave(),
+                  st,
+                )
+              }}
+            >
+              <option value="major">Major</option>
+              <option value="natural-minor">Minor (Natural)</option>
+              <option value="harmonic-minor">Harmonic Minor</option>
+              <option value="melodic-minor">Melodic Minor</option>
+              <option value="dorian">Dorian</option>
+              <option value="mixolydian">Mixolydian</option>
+              <option value="phrygian">Phrygian</option>
+              <option value="lydian">Lydian</option>
+              <option value="pentatonic-major">Pentatonic Major</option>
+              <option value="pentatonic-minor">Pentatonic Minor</option>
+              <option value="blues">Blues</option>
+              <option value="chromatic">Chromatic</option>
+            </select>
+            <button
+              id="open-scale-builder"
+              class="ctrl-btn roll-ctrl-btn"
+              title="Build custom scale"
+              onClick={() => props.onOpenScaleBuilder?.()}
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="14"
+                height="14"
+                style={{ 'margin-right': '4px' }}
+              >
                 <path
                   fill="currentColor"
-                  d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"
+                  d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"
                 />
               </svg>
-            </button>
-            <span class="octave-value">{viewOctave()}</span>
-            <button
-              class="octave-btn"
-              title="Higher octave"
-              onClick={() => handleViewOctaveShift(1)}
-            >
-              <svg viewBox="0 0 24 24" width="14" height="14">
-                <path
-                  fill="currentColor"
-                  d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"
-                />
-              </svg>
+              Custom
             </button>
           </div>
-
-          <select
-            id="scale-select"
-            class="dropdown-select-style"
-            value={scaleType()}
-            onChange={(e) => {
-              const st = e.currentTarget.value
-              setScaleType(st)
-              melodyStore.refreshScale(
-                keyName(),
-                melodyStore.getCurrentOctave(),
-                st,
-              )
-            }}
-          >
-            <option value="major">Major</option>
-            <option value="natural-minor">Minor (Natural)</option>
-            <option value="harmonic-minor">Harmonic Minor</option>
-            <option value="melodic-minor">Melodic Minor</option>
-            <option value="dorian">Dorian</option>
-            <option value="mixolydian">Mixolydian</option>
-            <option value="phrygian">Phrygian</option>
-            <option value="lydian">Lydian</option>
-            <option value="pentatonic-major">Pentatonic Major</option>
-            <option value="pentatonic-minor">Pentatonic Minor</option>
-            <option value="blues">Blues</option>
-            <option value="chromatic">Chromatic</option>
-          </select>
-          <button
-            id="open-scale-builder"
-            class="ctrl-btn roll-ctrl-btn"
-            title="Build custom scale"
-            onClick={() => props.onOpenScaleBuilder?.()}
-          >
-            <svg
-              viewBox="0 0 24 24"
-              width="14"
-              height="14"
-              style={{ 'margin-right': '4px' }}
-            >
-              <path
-                fill="currentColor"
-                d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"
-              />
-            </svg>
-            Custom
-          </button>
         </div>
-      </div>
+      </Show>
 
       {/* Library */}
       <div class="sidebar-section">
         <LibraryTab />
       </div>
 
-      {/* Stats panel — Practice tab only */}
-      <Show when={activeTab() === 'practice'}>
+      {/* Stats panel */}
+      <Show when={isPracticeOrSettingsTab() && appStore.showStats()}>
         <div class="sidebar-section">
           <div id="stats-panel">
             <h3>Accuracy</h3>
@@ -299,17 +303,21 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
         </div>
       </Show>
 
-      {/* Note list + pitch reference — Practice tab only (bottom-anchored) */}
-      <Show when={activeTab() === 'practice'}>
+      {/* Note list (bottom-anchored) */}
+      <Show when={isPracticeOrSettingsTab() && showSidebarNoteList()}>
         <div class="sidebar-section sidebar-notes-bottom">
-          <Show when={showSidebarNoteList()}>
-            <NoteList
-              melody={props.melody}
-              currentNoteIndex={props.currentNoteIndex}
-              noteResults={props.noteResults}
-              isPlaying={props.isPlaying}
-            />
-          </Show>
+          <NoteList
+            melody={props.melody}
+            currentNoteIndex={props.currentNoteIndex}
+            noteResults={props.noteResults}
+            isPlaying={props.isPlaying}
+          />
+        </div>
+      </Show>
+
+      {/* Pitch display (bottom-anchored) */}
+      <Show when={isPracticeOrSettingsTab() && appStore.showPitchDisplay()}>
+        <div class="sidebar-section sidebar-notes-bottom">
           <PitchDisplay pitch={props.pitch} targetNote={props.targetNoteName} />
         </div>
       </Show>

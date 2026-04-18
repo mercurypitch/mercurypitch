@@ -1,0 +1,112 @@
+/* ============================================================
+ * Editor Tab Header Toolbar CSS
+ * ============================================================ */
+
+.toolbarColumns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 2px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border-dim);
+  background: var(--bg-tertiary);
+}
+
+.toolbarColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.toolbarColumn .appHeaderSep {
+  display: none;
+}
+
+/* ===== Toolbar Group ===== */
+.toolbarGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 2px 4px;
+  background: var(--bg-tertiary);
+  border-right: 1px solid var(--border-dim);
+}
+
+.toolbarGroup:last-child {
+  border-right: none;
+}
+
+/* ===== Toolbar Group Horizontal (for multi-row groups) ===== */
+.toolbarGroupHorizontal {
+  display: grid;
+  gap: 4px;
+}
+
+.toolbarGroupGrid2 {
+  grid-template-columns: 1fr 1fr;
+}
+
+.toolbarGroupGrid3 {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+/* ===== Toolbar Button ===== */
+.toolbarBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.toolbarBtn:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--bg-tertiary);
+}
+
+.toolbarBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.toolbarBtn .icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+}
+
+/* ===== Toolbar Label ===== */
+.toolbarLabel {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  padding: 2px 4px;
+}
+
+/* ===== Toolbar Select ===== */
+.toolbarSelect {
+  width: 100%;
+  padding: 4px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.toolbarSelect:hover {
+  border-color: var(--accent);
+}
+
+.toolbarSelect option {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
