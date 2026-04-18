@@ -332,10 +332,11 @@ export function importMelodyFromMIDI(data: Uint8Array): MelodyItem[] | null {
     noteItems.sort((a, b) => a.startBeat - b.startBeat);
 
     // Assign IDs and convert to MelodyItems
+    let nextId = 1;
     return noteItems.map((n) => {
       const { name, octave } = midiToNote(n.midi);
       return {
-        id: this._nextId++,
+        id: nextId++,
         note: {
           name,
           octave,

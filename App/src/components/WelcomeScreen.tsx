@@ -121,6 +121,23 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
           </svg>
           Ready to Sing?
         </button>
+
+        {/* Tour */}
+        <button
+          class="welcome-tour-btn"
+          onClick={() => {
+            appStore.dismissWelcome();
+            appStore.startWalkthrough();
+          }}
+        >
+          <svg viewBox="0 0 24 24" width="18" height="18">
+            <path
+              fill="currentColor"
+              d="M21 5c-1.11-.35-2.33-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.43.3 4.5 1.5.15.15.35.05.5 0 .1-.1.1-.25 0-.35C21.25 20 21 19.75 21 19.5V5z"
+            />
+          </svg>
+          Take a Tour
+        </button>
       </div>
     </div>
   );

@@ -24,6 +24,7 @@ import { SessionPlayer } from '@/components/SessionPlayer';
 import { EditorTabHeader } from '@/components/EditorTabHeader';
 import { FocusMode } from '@/components/FocusMode';
 import { WelcomeScreen } from '@/components/WelcomeScreen';
+import { Walkthrough } from '@/components/Walkthrough';
 import type { PresetData } from '@/stores/app-store';
 import { HistoryCanvas } from '@/components/HistoryCanvas';
 import { appStore, getNoteAccuracyMap } from '@/stores/app-store';
@@ -259,7 +260,7 @@ export const App: Component<AppProps> = (props) => {
     // Additional shortcuts: Escape (stop), Home (go to beginning), R (repeat), P (practice)
     const onKeyDown = (e: KeyboardEvent) => {
       // Skip if typing in input/select/textarea
-      const isTyping = e.target?.closest('input,textarea,select,[contenteditable]');
+      const isTyping = (e.target as Element | null)?.closest('input,textarea,select,[contenteditable]');
 
       if (e.code === 'Space' && !isTyping) {
         e.preventDefault();
@@ -296,8 +297,8 @@ export const App: Component<AppProps> = (props) => {
       // R → toggle Repeat mode
       if (e.code === 'KeyR' && !isTyping) {
         e.preventDefault();
-        if (appStore.playMode() !== 'repeat') {
-          appStore.setPlayMode('repeat');
+        if (playMode() !== 'repeat') {
+          setPlayMode('repeat');
           appStore.showNotification('Mode: Repeat', 'info');
         }
       }
@@ -305,8 +306,8 @@ export const App: Component<AppProps> = (props) => {
       // P → toggle Practice mode
       if (e.code === 'KeyP' && !isTyping) {
         e.preventDefault();
-        if (appStore.playMode() !== 'practice') {
-          appStore.setPlayMode('practice');
+        if (playMode() !== 'practice') {
+          setPlayMode('practice');
           appStore.showNotification('Mode: Practice', 'info');
         }
       }
@@ -314,8 +315,8 @@ export const App: Component<AppProps> = (props) => {
       // O → Once mode
       if (e.code === 'KeyO' && !isTyping) {
         e.preventDefault();
-        if (appStore.playMode() !== 'once') {
-          appStore.setPlayMode('once');
+        if (playMode() !== 'once') {
+          setPlayMode('once');
           appStore.showNotification('Mode: Once', 'info');
         }
       }
@@ -1060,6 +1061,7 @@ export const App: Component<AppProps> = (props) => {
       <Show when={showWelcome()}>
         <WelcomeScreen onEnableMic={handleMicToggle} />
       </Show>
+      <Walkthrough />
 
       {/* Sidebar backdrop (mobile) */}
       <Show when={sidebarOpen()}>
@@ -1235,8 +1237,7 @@ export const App: Component<AppProps> = (props) => {
               }}
               onMetronomeToggle={() => setMetronomeEnabled(!metronomeEnabled())}
               onSpeedChange={(speed) => {
-                const engine = (window as PitchPerfectWindow).pianoRollAudioEngine;
-                if (engine) engine.setPlaybackSpeed?.(speed);
+                appStore.setPlaybackSpeed(speed);
               }}
               metronomeEnabled={metronomeEnabled}
               isRecording={isRecording}
@@ -1245,9 +1246,6 @@ export const App: Component<AppProps> = (props) => {
               onVolumeChange={(vol) => {
                 setSavedVol(vol);
                 audioEngine?.setVolume(vol / 100);
-              }}
-              onPlaybackStateChange={(state) => {
-                setEditorPlaybackState(state);
               }}
             />
             <PianoRollCanvas

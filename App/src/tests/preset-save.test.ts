@@ -17,7 +17,7 @@ import { melodyStore, setMelody } from '@/stores/melody-store';
 function makeNote(midi: number, startBeat: number, duration: number) {
   return {
     id: Math.floor(Math.random() * 99999),
-    note: { name: 'C', octave: 4, midi, freq: 261.63 },
+    note: { name: 'C' as const, octave: 4, midi, freq: 261.63 },
     startBeat,
     duration,
   };
@@ -202,8 +202,8 @@ describe('Preset Save and Load', () => {
           midi: n.note.midi,
           startBeat: n.startBeat,
           duration: n.duration,
-          effectType: n.effectType,
-          linkedTo: n.linkedTo,
+          effectType: (n as { effectType?: string }).effectType,
+          linkedTo: (n as { linkedTo?: number[] }).linkedTo,
         })),
         totalBeats,
         bpm: 120,

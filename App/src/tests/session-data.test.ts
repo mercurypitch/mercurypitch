@@ -18,21 +18,21 @@ describe('PRACTICE_SESSIONS — static data integrity', () => {
 
   it('every session has non-empty name and description', () => {
     for (const session of PRACTICE_SESSIONS) {
-      expect(session.name.trim().length).toBeGreaterThan(0, `Session ${session.id} has empty name`);
-      expect(session.description.trim().length).toBeGreaterThan(0, `Session ${session.id} has empty description`);
+      expect(session.name.trim().length).toBeGreaterThan(0);
+      expect(session.description.trim().length).toBeGreaterThan(0);
     }
   });
 
   it('every session has at least 3 items', () => {
     for (const session of PRACTICE_SESSIONS) {
-      expect(session.items.length).toBeGreaterThanOrEqual(3, `Session ${session.id} has fewer than 3 items`);
+      expect(session.items.length).toBeGreaterThanOrEqual(3);
     }
   });
 
   it('every item has a label', () => {
     for (const session of PRACTICE_SESSIONS) {
       for (const item of session.items) {
-        expect(item.label?.trim().length).toBeGreaterThan(0, `Session ${session.id} item missing label`);
+        expect(item.label?.trim().length).toBeGreaterThan(0);
       }
     }
   });
@@ -42,7 +42,7 @@ describe('PRACTICE_SESSIONS — static data integrity', () => {
       for (const item of session.items) {
         if (item.type === 'rest') {
           expect(item.restMs).toBeDefined();
-          expect(item.restMs!).toBeGreaterThan(0, `Rest item in ${session.id} has invalid restMs`);
+          expect(item.restMs!).toBeGreaterThan(0);
         }
       }
     }
@@ -52,9 +52,9 @@ describe('PRACTICE_SESSIONS — static data integrity', () => {
     for (const session of PRACTICE_SESSIONS) {
       for (const item of session.items) {
         if (item.type === 'scale') {
-          expect(item.scaleType?.trim().length).toBeGreaterThan(0, `Scale item in ${session.id} missing scaleType`);
+          expect(item.scaleType?.trim().length).toBeGreaterThan(0);
           expect(item.beats).toBeDefined();
-          expect(item.beats!).toBeGreaterThan(0, `Scale item in ${session.id} has invalid beats`);
+          expect(item.beats!).toBeGreaterThan(0);
         }
       }
     }
@@ -79,7 +79,7 @@ describe('PRACTICE_SESSIONS — static data integrity', () => {
   it('advanced sessions have at least 8 items', () => {
     for (const session of PRACTICE_SESSIONS) {
       if (session.difficulty === 'advanced') {
-        expect(session.items.length).toBeGreaterThanOrEqual(8, `${session.id} should have 8+ items`);
+        expect(session.items.length).toBeGreaterThanOrEqual(8);
       }
     }
   });

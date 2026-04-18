@@ -88,7 +88,7 @@ export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
 
   // Propagate waveform props for recording visualization
   createEffect(() => {
-    editor?.setWaveformProps(props.isRecording, props.getWaveform);
+    editor?.setWaveformProps(props.isRecording ?? null, props.getWaveform ?? null);
   });
 
   onCleanup(() => {

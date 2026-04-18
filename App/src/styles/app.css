@@ -3707,3 +3707,165 @@ header h1 {
     transform: translateY(0);
 }
 
+
+/* ============================================================
+   Walkthrough Tutorial (GH #140)
+   ============================================================ */
+
+/* Walkthrough overlay backdrop */
+.walkthrough-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  pointer-events: auto;
+}
+
+/* Highlight ring around target element */
+.walkthrough-highlight {
+  position: fixed;
+  border: 3px solid #6c63ff;
+  border-radius: 10px;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.55);
+  pointer-events: none;
+  z-index: 9999;
+  transition: top 0.2s ease, left 0.2s ease, width 0.2s ease, height 0.2s ease;
+}
+
+/* Tooltip card */
+.walkthrough-tooltip {
+  position: fixed;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 18px 22px;
+  max-width: 340px;
+  min-width: 280px;
+  z-index: 10000;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.35);
+  color: var(--text-primary);
+  pointer-events: auto;
+}
+
+.walkthrough-tooltip-bottom {
+  transform: translate(-50%, 12px);
+}
+.walkthrough-tooltip-top {
+  transform: translate(-50%, calc(-100% - 12px));
+}
+.walkthrough-tooltip-right {
+  transform: translate(12px, -50%);
+}
+.walkthrough-tooltip-left {
+  transform: translate(calc(-100% - 12px), -50%);
+}
+
+.walkthrough-step-counter {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+.walkthrough-step-title {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0 0 10px 0;
+  color: var(--text-primary);
+}
+.walkthrough-step-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0 0 18px 0;
+  line-height: 1.6;
+}
+.walkthrough-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.walkthrough-skip {
+  font-size: 12px;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  text-decoration: underline;
+}
+.walkthrough-skip:hover {
+  color: var(--text-secondary);
+}
+.walkthrough-prev,
+.walkthrough-next {
+  padding: 7px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  transition: background 0.15s;
+}
+.walkthrough-prev:hover {
+  background: var(--bg-secondary);
+}
+.walkthrough-prev:disabled {
+  opacity: 0.35;
+  cursor: default;
+  pointer-events: none;
+}
+.walkthrough-next {
+  background: #6c63ff;
+  color: #fff;
+  border-color: #6c63ff;
+  margin-left: auto;
+}
+.walkthrough-next:hover {
+  background: #5850e0;
+}
+
+/* Tour button in sidebar */
+.tour-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  padding: 7px 12px;
+  border-radius: 8px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  cursor: pointer;
+  width: 100%;
+  margin-bottom: 10px;
+  font-weight: 500;
+  transition: background 0.15s;
+}
+.tour-btn:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+/* WelcomeScreen tour button */
+.welcome-tour-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 11px;
+  margin-top: 10px;
+  border-radius: 10px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.welcome-tour-btn:hover {
+  background: var(--bg-secondary);
+}

@@ -157,8 +157,8 @@ export class AudioEngine {
     const sampleRate = this.audioCtx.sampleRate;
     const ir = this._generateImpulseResponse(type, sampleRate);
     const irBuffer = this.audioCtx.createBuffer(2, ir[0].length, sampleRate);
-    irBuffer.copyToChannel(ir[0], 0);
-    irBuffer.copyToChannel(ir[1], 1);
+    irBuffer.copyToChannel(Float32Array.from(ir[0]), 0);
+    irBuffer.copyToChannel(Float32Array.from(ir[1]), 1);
     this.reverbNode = this.audioCtx.createConvolver();
     this.reverbNode.buffer = irBuffer;
     this._connectReverbChain();

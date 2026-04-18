@@ -5,16 +5,16 @@
 import { Component, Show, createMemo } from 'solid-js';
 import { appStore } from '@/stores/app-store';
 import { PitchCanvas } from '@/components/PitchCanvas';
-import { HistoryCanvas } from '@/components/HistoryCanvas';
 import { melodyStore } from '@/stores/melody-store';
 import { melodyTotalBeats } from '@/lib/scale-data';
 import type { MelodyItem, PitchResult, NoteResult, PracticeResult } from '@/types';
+import type { PitchSample } from '@/components/PitchCanvas';
 
 interface FocusModeProps {
   isPlaying: () => boolean;
   isPaused: () => boolean;
   currentPitch: () => PitchResult | null;
-  pitchHistory: () => Array<{ time: number; freq: number; amplitude: number }>;
+  pitchHistory: () => PitchSample[];
   noteResults: () => NoteResult[];
   practiceResult: () => PracticeResult | null;
   liveScore: () => number | null;
@@ -110,9 +110,7 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
       </div>
 
       {/* History canvas — thin strip below top bar */}
-      <div id="history-container" class="focus-history">
-        <HistoryCanvas />
-      </div>
+      <div id="history-container" class="focus-history" />
 
       {/* Main pitch canvas fills remaining space */}
       <div class="focus-canvas">

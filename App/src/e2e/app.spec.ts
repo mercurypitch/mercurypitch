@@ -59,8 +59,9 @@ test.describe('PitchPerfect App', () => {
     await dismissWelcomeIfShown(page);
     // Click Editor tab - use evaluate to directly call the store method
     await page.evaluate(() => {
-      if (window.__appStore) {
-        window.__appStore.setActiveTab('editor');
+      const w = window as Window & { __appStore?: { setActiveTab: (tab: string) => void } };
+      if (w.__appStore) {
+        w.__appStore.setActiveTab('editor');
       }
     });
     await page.waitForTimeout(1000);
@@ -69,8 +70,9 @@ test.describe('PitchPerfect App', () => {
 
     // Click Settings tab - use evaluate to directly call the store method
     await page.evaluate(() => {
-      if (window.__appStore) {
-        window.__appStore.setActiveTab('settings');
+      const w = window as Window & { __appStore?: { setActiveTab: (tab: string) => void } };
+      if (w.__appStore) {
+        w.__appStore.setActiveTab('settings');
       }
     });
     await page.waitForTimeout(2000);
@@ -79,8 +81,9 @@ test.describe('PitchPerfect App', () => {
 
     // Click Practice tab - use evaluate to directly call the store method
     await page.evaluate(() => {
-      if (window.__appStore) {
-        window.__appStore.setActiveTab('practice');
+      const w = window as Window & { __appStore?: { setActiveTab: (tab: string) => void } };
+      if (w.__appStore) {
+        w.__appStore.setActiveTab('practice');
       }
     });
     await page.waitForTimeout(1000);

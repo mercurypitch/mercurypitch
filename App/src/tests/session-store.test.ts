@@ -189,10 +189,11 @@ describe('endPracticeSession', () => {
     endPracticeSession();
 
     // Find the session_results call that happened after our snapshot
-    const sessionCall = localStorageMock.setItem.mock.calls.find(
-      (call: string[]) =>
+    const allCalls = localStorageMock.setItem.mock.calls as unknown[][];
+    const sessionCall = allCalls.find(
+      (call) =>
         call[0] === 'pitchperfect_session_results' &&
-        localStorageMock.setItem.mock.calls.indexOf(call) >= callsBefore
+        allCalls.indexOf(call) >= callsBefore
     );
     expect(sessionCall).toBeDefined();
     const parsed = JSON.parse(sessionCall![1] as string);

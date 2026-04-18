@@ -50,6 +50,22 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
           <path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
         </svg>
       </button>
+
+      {/* Tour button */}
+      <button
+        class="tour-btn"
+        onClick={() => appStore.startWalkthrough()}
+        title="Take a Tour"
+      >
+        <svg viewBox="0 0 24 24" width="16" height="16">
+          <path
+            fill="currentColor"
+            d="M21 5c-1.11-.35-2.33-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.43.3 4.5 1.5.15.15.35.05.5 0 .1-.1.1-.25 0-.35C21.25 20 21 19.75 21 19.5V5z"
+          />
+        </svg>
+        Take a Tour
+      </button>
+
       {/* Scale section */}
       <div class="sidebar-section">
         <h2 class="panel-title">Scale</h2>

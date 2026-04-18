@@ -118,6 +118,98 @@ export function dismissWelcome(): void {
   } catch {}
 }
 
+// ── Walkthrough Tutorial (GH #140) ────────────────────────────────
+export interface WalkthroughStep {
+  title: string;
+  targetSelector: string;
+  description: string;
+  placement?: 'top' | 'bottom' | 'left' | 'right';
+}
+
+export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
+  {
+    title: 'Welcome to PitchPerfect',
+    targetSelector: '#app-title',
+    description:
+      "PitchPerfect helps you practice and improve your musical pitch. Let's take a quick tour of the main features!",
+    placement: 'bottom',
+  },
+  {
+    title: 'Navigation Tabs',
+    targetSelector: '#app-tabs',
+    description:
+      'Switch between Practice, Editor, and Settings tabs. Each tab gives you different controls for your practice workflow.',
+    placement: 'bottom',
+  },
+  {
+    title: 'Scale & Key',
+    targetSelector: '#scale-info',
+    description:
+      'Choose your musical key and scale type here. The piano roll updates to match your selection automatically.',
+    placement: 'right',
+  },
+  {
+    title: 'Load a Melody',
+    targetSelector: '.preset-section',
+    description:
+      'Load a preset melody from the library, import a MIDI file, or record your own. Presets give you a great head start.',
+    placement: 'right',
+  },
+  {
+    title: 'Practice Mode',
+    targetSelector: '#practice-panel',
+    description:
+      'In Practice mode, play a melody and sing along. The app detects your pitch in real time and scores your accuracy.',
+    placement: 'right',
+  },
+  {
+    title: 'Editor Mode',
+    targetSelector: '#editor-panel',
+    description:
+      'The Editor tab shows the piano roll. Click to place notes, drag to move them, and build your melody note by note.',
+    placement: 'top',
+  },
+];
+
+const WALKTHROUGH_KEY = 'pitchperfect_walkthrough_done';
+const [walkthroughActive, setWalkthroughActive] = createSignal(false);
+const [walkthroughStep, setWalkthroughStep] = createSignal(0);
+
+export function startWalkthrough(): void {
+  setWalkthroughActive(true);
+  setWalkthroughStep(0);
+}
+
+export function nextWalkthroughStep(): void {
+  if (walkthroughStep() < WALKTHROUGH_STEPS.length - 1) {
+    setWalkthroughStep((s) => s + 1);
+  } else {
+    endWalkthrough();
+  }
+}
+
+export function prevWalkthroughStep(): void {
+  if (walkthroughStep() > 0) {
+    setWalkthroughStep((s) => s - 1);
+  }
+}
+
+export function endWalkthrough(): void {
+  setWalkthroughActive(false);
+  setWalkthroughStep(0);
+  try {
+    localStorage.setItem(WALKTHROUGH_KEY, '1');
+  } catch {}
+}
+
+export function isWalkthroughActive(): boolean {
+  return walkthroughActive();
+}
+
+export function getWalkthroughStep(): number {
+  return walkthroughStep();
+}
+
 // ── Sensitivity Presets ─────────────────────────────────────────
 
 export type SensitivityPreset = 'quiet' | 'home' | 'noisy';
@@ -846,5 +938,13 @@ export const appStore = {
   recordSessionItemResult,
   endPracticeSession,
   isInSessionMode,
+
+  // Walkthrough (GH #140)
+  walkthroughActive,
+  walkthroughStep,
+  startWalkthrough,
+  nextWalkthroughStep,
+  prevWalkthroughStep,
+  endWalkthrough,
 };
 // TEST MARKER Sat Apr 18 12:29:36 AM UTC 2026
