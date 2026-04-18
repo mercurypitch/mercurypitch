@@ -36,6 +36,8 @@
   --purple: #bc8cff;
   --teal: #2dd4bf;
   --note-active: #58a6ff;
+  --bg-inverse: #f6f8fa;
+  --text-inverse: #1f2328;
 }
 
 /* Light theme overrides */
@@ -60,6 +62,8 @@
   --purple: #8250df;
   --teal: #0a6460;
   --note-active: #0969da;
+  --bg-inverse: #1f2328;
+  --text-inverse: #e6edf3;
 }
 
 html,
@@ -2922,6 +2926,54 @@ header h1 {
   font-size: 0.8rem;
   color: var(--text-muted);
   margin: -8px 0 12px 0;
+}
+
+/* ============================================================
+   Tooltip System (GH #150)
+   ============================================================ */
+
+.tooltip-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.tooltip {
+  position: absolute;
+  z-index: 9000;
+  padding: 5px 10px;
+  background: var(--bg-inverse);
+  color: var(--text-inverse);
+  font-size: 0.72rem;
+  border-radius: 6px;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  line-height: 1.4;
+}
+
+.tooltip-top {
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.tooltip-bottom {
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.tooltip-left {
+  right: calc(100% + 6px);
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.tooltip-right {
+  left: calc(100% + 6px);
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 /* Keyboard shortcuts table */
