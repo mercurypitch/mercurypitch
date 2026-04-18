@@ -237,13 +237,18 @@ export const [selectedCharacter, setSelectedCharacter] =
 export const [characterSounds, setCharacterSounds] =
   createPersistedSignal<boolean>('pitchperfect_character_sounds', true)
 
-export function toggleGridLines(): void {
-  setGridLinesVisible(!gridLinesVisible())
-}
+const SHOW_PLAYBACK_SETUP_KEY = 'pitchperfect_show_playback_setup_label'
+const SHOW_STATS_KEY = 'pitchperfect_show_stats'
+const SHOW_PITCH_DISPLAY_KEY = 'pitchperfect_show_pitch_display'
 
-export function setGridLines(visible: boolean): void {
-  setGridLinesVisible(visible)
-}
+export const [showPlaybackSetupInfo, setShowPlaybackSetup] =
+  createPersistedSignal<boolean>(SHOW_PLAYBACK_SETUP_KEY, true)
+export const [showStats, setShowStats] = createPersistedSignal<boolean>(
+  SHOW_STATS_KEY,
+  true,
+)
+export const [showPitchDisplay, setShowPitchDisplay] =
+  createPersistedSignal<boolean>(SHOW_PITCH_DISPLAY_KEY, true)
 
 // FIXME: Initialization functions mapped to no-ops to support old init pattern gracefully
 // before they are completely removed. Storage loading happens on signal creation now.

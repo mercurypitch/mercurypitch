@@ -187,25 +187,6 @@ export const SettingsPanel: Component = () => {
               the key
             </small>
           </div>
-
-          <div class="settings-row">
-            <label for="vis-sidebar-notes">Sidebar Note List</label>
-            <label class="settings-toggle">
-              <input
-                type="checkbox"
-                id="vis-sidebar-notes"
-                checked={showSidebarNoteList()}
-                onChange={(e) => {
-                  setShowSidebarNoteList(e.currentTarget.checked)
-                }}
-              />
-              <span class="settings-slider" />
-            </label>
-            <small>
-              Show the detailed note list in the Practice sidebar. Hidden by
-              default for a cleaner playback layout.
-            </small>
-          </div>
         </div>
 
         {/* Accuracy Bands Section */}
@@ -387,7 +368,7 @@ export const SettingsPanel: Component = () => {
                 id="vis-gridlines"
                 checked={appStore.gridLinesVisible()}
                 onChange={(e) => {
-                  appStore.setGridLines(e.currentTarget.checked)
+                  appStore.setGridLinesVisible(e.currentTarget.checked)
                 }}
               />
               <span class="settings-slider" />
@@ -396,17 +377,86 @@ export const SettingsPanel: Component = () => {
           </div>
 
           <div class="settings-row">
+            <label for="vis-sidebar-notes">Sidebar Note List</label>
+            <label class="settings-toggle">
+              <input
+                type="checkbox"
+                id="vis-sidebar-notes"
+                checked={showSidebarNoteList()}
+                onChange={(e) => {
+                  setShowSidebarNoteList(e.currentTarget.checked)
+                }}
+              />
+              <span class="settings-slider" />
+            </label>
+            <small>
+              Show the detailed note list in the Practice sidebar. Hidden by
+              default for a cleaner playback layout.
+            </small>
+          </div>
+
+          <div class="settings-row">
+            <label for="vis-playback-setup">Playback Setup</label>
+            <label class="settings-toggle">
+              <input
+                type="checkbox"
+                id="vis-playback-setup"
+                checked={appStore.showPlaybackSetupInfo()}
+                onChange={(e) => {
+                  appStore.setShowPlaybackSetup(e.currentTarget.checked)
+                }}
+              />
+              <span class="settings-slider" />
+            </label>
+            <small>Show Playback setup component in sidebar</small>
+          </div>
+
+          <div class="settings-row">
+            <label for="vis-stats">Stats Panel</label>
+            <label class="settings-toggle">
+              <input
+                type="checkbox"
+                id="vis-stats"
+                checked={appStore.showStats()}
+                onChange={(e) => {
+                  appStore.setShowStats(e.currentTarget.checked)
+                }}
+              />
+              <span class="settings-slider" />
+            </label>
+            <small>Show accuracy stats (Practice tab)</small>
+          </div>
+
+          <div class="settings-row">
+            <label for="vis-pitch-display">Pitch Display</label>
+            <label class="settings-toggle">
+              <input
+                type="checkbox"
+                id="vis-pitch-display"
+                checked={appStore.showPitchDisplay()}
+                onChange={(e) => {
+                  appStore.setShowPitchDisplay(e.currentTarget.checked)
+                }}
+              />
+              <span class="settings-slider" />
+            </label>
+            <small>Show live pitch tracker (Practice tab)</small>
+          </div>
+
+          <div class="settings-row">
             <label for="vis-theme">Theme</label>
-            <select
-              id="vis-theme"
-              value={appStore.theme()}
-              onChange={(e) => {
-                appStore.setTheme(e.currentTarget.value as 'dark' | 'light')
-              }}
-            >
-              <option value="dark">Dark</option>
-              <option value="light">Light</option>
-            </select>
+            <label>
+              <select
+                id="vis-theme"
+                value={appStore.theme()}
+                onChange={(e) => {
+                  appStore.setTheme(e.currentTarget.value as 'dark' | 'light')
+                }}
+              >
+                <option value="dark">Dark</option>
+                <option value="light">Light</option>
+              </select>
+            </label>
             <small>Switch between dark and light mode</small>
           </div>
         </div>
