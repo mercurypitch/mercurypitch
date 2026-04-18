@@ -23,6 +23,7 @@ import type { EffectType, MelodyItem, NoteName, NoteResult, PitchResult, Practic
 // Expose appStore for E2E testing
 if (typeof window !== 'undefined') {
   ;(window as unknown as { __appStore: typeof appStore }).__appStore = appStore
+  ;(window as unknown as { __melodyEngine: MelodyEngine }).__melodyEngine = melodyEngine
 }
 
 import { AppSidebar } from '@/components/AppSidebar'
@@ -1437,6 +1438,7 @@ export const App: Component<AppProps> = (props) => {
                 }
                 onSpeedChange={(speed) => {
                   appStore.setPlaybackSpeed(speed)
+                  melodyEngine?.setPlaybackSpeed(speed)
                 }}
                 metronomeEnabled={metronomeEnabled}
                 isRecording={isRecording}
