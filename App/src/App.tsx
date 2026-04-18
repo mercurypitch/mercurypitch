@@ -26,7 +26,7 @@ import { FocusMode } from '@/components/FocusMode';
 import { WelcomeScreen } from '@/components/WelcomeScreen';
 import type { PresetData } from '@/stores/app-store';
 import { HistoryCanvas } from '@/components/HistoryCanvas';
-import { appStore, activeTab, setActiveTab, getNoteAccuracyMap } from '@/stores/app-store';
+import { appStore, getNoteAccuracyMap } from '@/stores/app-store';
 import { playback } from '@/stores/playback-store';
 
 // Expose appStore for E2E testing
@@ -125,6 +125,23 @@ interface AppProps {
 }
 
 export const App: Component<AppProps> = (props) => {
+  // ── Local reactive aliases for appStore signals ─────────────
+  const activeTab = () => appStore.activeTab();
+  const showWelcome = () => appStore.showWelcome();
+  const focusMode = () => appStore.focusMode();
+
+  const handleTabPractice = () => {
+    appStore.setActiveTab('practice');
+  };
+
+  const handleTabEditor = () => {
+    appStore.setActiveTab('editor');
+  };
+
+  const handleTabSettings = () => {
+    appStore.setActiveTab('settings');
+  };
+
   // ── Derived state ──────────────────────────────────────────
 
   const totalBeats = createMemo(() => melodyTotalBeats(melodyStore.items));
@@ -222,6 +239,21 @@ export const App: Component<AppProps> = (props) => {
     appStore.initSessionHistory();
     appStore.initSettings();
     appStore.initReverb();
+
+    // Fallback: direct click listeners on tab buttons in case SolidJS delegation misses them
+    // This handles the edge case where innerHTML-created elements need explicit handlers
+    const tabBtn = document.getElementById('tab-settings');
+    if (tabBtn) {
+      tabBtn.addEventListener('click', handleTabSettings);
+    }
+    const tabPracticeBtn = document.getElementById('tab-practice');
+    if (tabPracticeBtn) {
+      tabPracticeBtn.addEventListener('click', handleTabPractice);
+    }
+    const tabEditorBtn = document.getElementById('tab-editor');
+    if (tabEditorBtn) {
+      tabEditorBtn.addEventListener('click', handleTabEditor);
+    }
 
     // Space key handler for play/pause (Focus Mode friendly)
     // Additional shortcuts: Escape (stop), Home (go to beginning), R (repeat), P (practice)
@@ -899,7 +931,7 @@ export const App: Component<AppProps> = (props) => {
       currentNoteMidi = -1;
       currentNoteStartBeat = -1;
       setIsRecording(false);
-      setActiveTab('editor');
+      appStore.setActiveTab('editor');
     } else {
       // Start recording
       const micOk = await practiceEngine.startMic();
@@ -942,19 +974,6 @@ export const App: Component<AppProps> = (props) => {
     melodyStore.refreshScale(keyName, newOctave, scaleType);
   };
 
-  // ── Tab switching ─────────────────────────────────────────────
-
-  const handleTabPractice = () => {
-    setActiveTab('practice');
-  };
-
-  const handleTabEditor = () => {
-    setActiveTab('editor');
-  };
-
-  const handleTabSettings = () => {
-    setActiveTab('settings');
-  };
 
   // ── Target note for pitch display ───────────────────────────
 
@@ -1006,7 +1025,7 @@ export const App: Component<AppProps> = (props) => {
   return (
     <div id="app">
       {/* Welcome screen overlay (GH #131) */}
-      <Show when={appStore.showWelcome()}>
+      <Show when={showWelcome()}>
         <WelcomeScreen onEnableMic={handleMicToggle} />
       </Show>
 
@@ -1024,7 +1043,7 @@ export const App: Component<AppProps> = (props) => {
       </button>
 
       {/* Full app UI — hidden when in Focus Mode */}
-      <Show when={!appStore.focusMode()}>
+      <Show when={!focusMode()}>
         {/* Header */}
         <header>
           <div class="header-left">
@@ -1091,7 +1110,6 @@ export const App: Component<AppProps> = (props) => {
 
         {/* Tab content */}
         <div class="main-content">
-          {/* Practice tab */}
           <Show when={activeTab() === 'practice'}>
             {/* Practice-specific header: mic + mode toggles + playback controls */}
             <PracticeTabHeader
@@ -1166,7 +1184,6 @@ export const App: Component<AppProps> = (props) => {
             </div>
           </Show>
 
-          {/* Editor tab */}
           <Show when={activeTab() === 'editor'}>
             <EditorTabHeader
               isPlaying={editorIsPlaying}
@@ -1218,7 +1235,6 @@ export const App: Component<AppProps> = (props) => {
             />
           </Show>
 
-          {/* Settings tab */}
           <Show when={activeTab() === 'settings'}>
             <div id="settings-panel">
               <SettingsPanel />
@@ -1229,7 +1245,7 @@ export const App: Component<AppProps> = (props) => {
       </Show>
 
       {/* Focus Mode — full-screen minimal practice UI */}
-      <Show when={appStore.focusMode()}>
+      <Show when={focusMode()}>
         <FocusMode
           isPlaying={isPlaying}
           isPaused={isPaused}

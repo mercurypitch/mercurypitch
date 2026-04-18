@@ -7,7 +7,7 @@
 import { Component, For, Show } from 'solid-js';
 import {
   appStore,
-  activeTab,
+  activeTab as appActiveTab,
   getNoteAccuracyMap,
 } from '@/stores/app-store';
 import { melodyStore } from '@/stores/melody-store';
@@ -40,6 +40,8 @@ interface AppSidebarProps {
 }
 
 export const AppSidebar: Component<AppSidebarProps> = (props) => {
+  // Local alias for reactive tracking
+  const activeTab = () => appActiveTab();
   return (
     <aside class={`app-sidebar${props.class ? ' ' + props.class : ''}`}>
       {/* Mobile close button */}

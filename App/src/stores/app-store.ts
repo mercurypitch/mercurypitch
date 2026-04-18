@@ -88,8 +88,9 @@ export function setGridLines(visible: boolean): void {
 // ── Active tab ───────────────────────────────────────────────
 
 export type ActiveTab = 'practice' | 'editor' | 'settings';
-export const activeTab = createSignal<ActiveTab>('practice')[0];
-export { setActiveTab as setActiveTab };
+const [activeTabGetter, _setActiveTab] = createSignal<ActiveTab>('practice');
+export const activeTab = activeTabGetter;
+export const setActiveTab = _setActiveTab;
 
 // ── Focus Mode ─────────────────────────────────────────────────
 const [focusMode, setFocusMode] = createSignal(false);
@@ -117,6 +118,43 @@ export function dismissWelcome(): void {
   } catch {}
 }
 
+// ── Sensitivity Presets ─────────────────────────────────────────
+
+export type SensitivityPreset = 'quiet' | 'home' | 'noisy';
+const SENSITIVITY_PRESET_KEY = 'pitchperfect_sensitivity_preset';
+
+export const SENSITIVITY_PRESETS: Record<SensitivityPreset, Omit<SettingsConfig, 'bands' | 'tonicAnchor'>> = {
+  quiet: { detectionThreshold: 0.05, sensitivity: 7, minConfidence: 0.30, minAmplitude: 1 },
+  home:  { detectionThreshold: 0.10, sensitivity: 5, minConfidence: 0.50, minAmplitude: 2 },
+  noisy: { detectionThreshold: 0.20, sensitivity: 9, minConfidence: 0.70, minAmplitude: 4 },
+};
+
+function loadSensitivityPreset(): SensitivityPreset {
+  try {
+    const stored = localStorage.getItem(SENSITIVITY_PRESET_KEY);
+    if (stored === 'quiet' || stored === 'home' || stored === 'noisy') return stored;
+  } catch {}
+  return 'home';
+}
+
+const [sensitivityPresetGetter, _setSensitivityPreset] = createSignal<SensitivityPreset>(loadSensitivityPreset());
+export const sensitivityPreset = sensitivityPresetGetter;
+
+export function setSensitivityPresetValue(value: SensitivityPreset): void {
+  _setSensitivityPreset(value);
+  try { localStorage.setItem(SENSITIVITY_PRESET_KEY, value); } catch {}
+  window.dispatchEvent(new CustomEvent('pitchperfect:sensitivityPresetChange', { detail: { preset: value } }));
+}
+
+export function applySensitivityPreset(preset: SensitivityPreset): void {
+  const config = SENSITIVITY_PRESETS[preset];
+  setSettings((s) => ({ ...s, ...config }));
+  saveSettingsToStorage({ ...settings(), ...config });
+  _setSensitivityPreset(preset);
+  try { localStorage.setItem(SENSITIVITY_PRESET_KEY, preset); } catch {}
+  window.dispatchEvent(new CustomEvent('pitchperfect:sensitivityPresetChange', { detail: { preset } }));
+}
+
 // ── Settings ───────────────────────────────────────────────────
 
 const SETTINGS_KEY = 'pitchperfect_settings';
@@ -137,54 +175,6 @@ const DEFAULT_BANDS: AccuracyBand[] = [
   { threshold: 50,  band: 50,  color: '#d29922' },
   { threshold: 999, band: 0,  color: '#f85149' },
 ];
-
-// ── Sensitivity Presets (UX feature) ─────────────────────────
-
-export type SensitivityPreset = 'quiet' | 'home' | 'noisy';
-export const SENSITIVITY_PRESETS: Record<SensitivityPreset, SettingsConfig> = {
-  quiet: {
-    detectionThreshold: 0.05,
-    sensitivity: 9,
-    minConfidence: 0.30,
-    minAmplitude: 1,
-    bands: DEFAULT_BANDS,
-    tonicAnchor: false,
-  },
-  home: {
-    detectionThreshold: 0.10,
-    sensitivity: 5,
-    minConfidence: 0.50,
-    minAmplitude: 3,
-    bands: DEFAULT_BANDS,
-    tonicAnchor: false,
-  },
-  noisy: {
-    detectionThreshold: 0.15,
-    sensitivity: 8,
-    minConfidence: 0.60,
-    minAmplitude: 5,
-    bands: DEFAULT_BANDS,
-    tonicAnchor: false,
-  },
-};
-
-const SENSITIVITY_PRESET_KEY = 'pitchperfect_sensitivity_preset';
-
-function loadSensitivityPreset(): SensitivityPreset {
-  try {
-    const stored = localStorage.getItem(SENSITIVITY_PRESET_KEY);
-    if (stored === 'quiet' || stored === 'home' || stored === 'noisy') return stored;
-  } catch {}
-  return 'home'; // default: some noise (home environment)
-}
-
-export function applySensitivityPreset(preset: SensitivityPreset): void {
-  const config = SENSITIVITY_PRESETS[preset];
-  setSettings(config);
-  saveSettingsToStorage(config);
-  try { localStorage.setItem(SENSITIVITY_PRESET_KEY, preset); } catch {}
-  window.dispatchEvent(new CustomEvent('pitchperfect:sensitivityPresetChange', { detail: { preset } }));
-}
 
 const DEFAULT_SETTINGS: SettingsConfig = {
   detectionThreshold: 0.10,
@@ -813,7 +803,7 @@ export const appStore = {
   // Sensitivity Presets
   SENSITIVITY_PRESETS,
   applySensitivityPreset,
-  sensitivityPreset: createSignal(loadSensitivityPreset()),
+  sensitivityPreset,
 
   // Theme
   theme,
@@ -857,3 +847,4 @@ export const appStore = {
   endPracticeSession,
   isInSessionMode,
 };
+// TEST MARKER Sat Apr 18 12:29:36 AM UTC 2026

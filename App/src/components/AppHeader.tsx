@@ -6,7 +6,7 @@
 // ============================================================
 
 import { Component, Show } from 'solid-js';
-import { appStore, activeTab, type CountInOption } from '@/stores/app-store';
+import { appStore, type CountInOption } from '@/stores/app-store';
 import { MetronomeButton } from '@/components/MetronomeButton';
 
 interface AppHeaderProps {
@@ -153,7 +153,7 @@ export const AppHeader: Component<AppHeaderProps> = (props) => {
       </div>
 
       {/* Metronome — Practice tab only */}
-      <Show when={activeTab() === 'practice'}>
+      <Show when={appStore.activeTab() === 'practice'}>
         <MetronomeButton
           active={props.metronomeEnabled()}
           onClick={props.onMetronomeToggle}
