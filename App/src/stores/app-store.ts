@@ -59,7 +59,12 @@ export function initTheme(): void {
 // ── Mic ──────────────────────────────────────────────────────
 
 const [micActive, setMicActive] = createSignal<boolean>(false)
+const [micWaveVisible, setMicWaveVisible] = createSignal<boolean>(true)
 const [micError, setMicError] = createSignal<string | null>(null)
+
+export function toggleMicWaveVisible(): void {
+  setMicWaveVisible((v) => !v)
+}
 
 // ── Count-in ────────────────────────────────────────────────
 
@@ -956,6 +961,8 @@ export const appStore = {
   // Mic
   micActive,
   setMicActive,
+  micWaveVisible,
+  toggleMicWaveVisible,
   micError,
   setMicError,
 

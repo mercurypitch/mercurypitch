@@ -194,7 +194,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     )
 
     // Waveform display during mic recording
-    if (props.getWaveform) {
+    if (props.getWaveform && appStore.micWaveVisible()) {
       const waveform = props.getWaveform()
       if (waveform && waveform.length > 0) {
         ctx.save()
@@ -395,6 +395,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     props.noteAccuracyMap?.()
     props.isRecording?.()
     props.getWaveform?.()
+    appStore.micWaveVisible()
   })
 
   return (

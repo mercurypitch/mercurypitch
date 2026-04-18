@@ -689,6 +689,12 @@ export const App: Component<AppProps> = (props) => {
         }
       },
     })
+
+    // EXPOSE MELODY ENGINE NOW
+    if (typeof window !== 'undefined') {
+      ;(window as unknown as { __melodyEngine: MelodyEngine }).__melodyEngine = melodyEngine
+    }
+
     practiceEngine = new PracticeEngine(audioEngine, { sensitivity: 5 })
 
     // Sync settings to PracticeEngine
