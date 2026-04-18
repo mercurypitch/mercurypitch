@@ -1441,7 +1441,7 @@ export class PianoRollEditor {
       // Place new note on empty space; clicking existing notes switches to select behavior for resize/drag
       const existingNote = this.findNoteAt(beat, row);
       if (existingNote) {
-        // Delegate to select behavior: select the note and allow resize/drag via select tool
+        // Select the note and enable drag/resize — do NOT enter box-select mode
         const noteId = existingNote.id ?? 0;
         this.selectedNoteIds.clear();
         this.selectedNoteIds.add(noteId);
@@ -1453,10 +1453,10 @@ export class PianoRollEditor {
         this.dragStartRow = this.midiToRow(existingNote.note.midi);
         const noteX = existingNote.startBeat * this.beatWidth;
         const noteW = existingNote.duration * this.beatWidth;
-        if (x - noteX < 6) {
+        if (x - noteX < 8) {
           this.isResizing = true;
           this.resizeHandle = 'left';
-        } else if (noteX + noteW - x < 6) {
+        } else if (noteX + noteW - x < 8) {
           this.isResizing = true;
           this.resizeHandle = 'right';
         }
@@ -1536,6 +1536,28 @@ export class PianoRollEditor {
       return;
     }
 
+    // GH #136: Cursor feedback — show resize/move cursor when hovering over note edges/body
+    if (!this.isDragging && !this.isResizing) {
+      const beat = x / this.beatWidth;
+      const row = Math.floor(y / this.rowHeight);
+      const note = this.findNoteAt(beat, row);
+      if (note && note.id !== undefined && this.selectedNoteIds.has(note.id)) {
+        const noteX = note.startBeat * this.beatWidth;
+        const noteW = note.duration * this.beatWidth;
+        if (x - noteX < 8) {
+          this.gridCanvas.style.cursor = 'ew-resize';
+        } else if (noteX + noteW - x < 8) {
+          this.gridCanvas.style.cursor = 'ew-resize';
+        } else {
+          this.gridCanvas.style.cursor = 'move';
+        }
+      } else if (note) {
+        this.gridCanvas.style.cursor = 'pointer';
+      } else {
+        this.gridCanvas.style.cursor = this.activeTool === 'place' ? 'crosshair' : 'default';
+      }
+    }
+
     if (this.isDragging && this.selectedNoteIds.size > 0) {
       const deltaBeat = Math.round((x - this.dragStartX) / this.beatWidth);
       const deltaRow = Math.round((y - this.dragStartY) / this.rowHeight);
@@ -1589,7 +1611,6 @@ export class PianoRollEditor {
         this.placeNote(this.dragStartBeat, this.dragStartRow, this.selectedDuration);
       }
       this.isBoxSelecting = false;
-      this.isDragging = false;
     }
     this.isDragging = false;
     this.isResizing = false;
@@ -1599,10 +1620,14 @@ export class PianoRollEditor {
   private onGridMouseLeave(_e: MouseEvent): void {
     if (this.isBoxSelecting) {
       this.isBoxSelecting = false;
-      this.isDragging = false;
     }
     this.isDragging = false;
     this.isResizing = false;
+    this.resizeHandle = null;
+    // Reset cursor
+    if (this.gridCanvas) {
+      this.gridCanvas.style.cursor = this.activeTool === 'place' ? 'crosshair' : 'default';
+    }
   }
 
   /** Select all notes whose blocks intersect the given pixel box */
