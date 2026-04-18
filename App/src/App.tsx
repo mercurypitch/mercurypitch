@@ -270,12 +270,16 @@ export const App: Component<AppProps> = (props) => {
         }
       }
 
-      // Escape → stop playback
+      // Escape → exit focus mode, or stop playback
       if (e.code === 'Escape' && !isTyping) {
         e.preventDefault();
-        handleStop();
-        setCurrentBeat(0);
-        melodyEngine.seekTo(0);
+        if (appStore.focusMode()) {
+          appStore.exitFocusMode();
+        } else {
+          handleStop();
+          setCurrentBeat(0);
+          melodyEngine.seekTo(0);
+        }
       }
 
       // Home → go to beginning

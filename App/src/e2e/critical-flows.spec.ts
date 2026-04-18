@@ -665,6 +665,20 @@ test.describe('Critical Flows — GH #121', () => {
       await expect(page.locator('.practice-header-bar')).toBeVisible({ timeout: 3000 });
     });
 
+    test('Escape key exits Focus Mode (GH #139)', async ({ page }) => {
+      // Enter focus mode
+      await page.locator('.focus-btn').click();
+      await page.waitForTimeout(500);
+      await expect(page.locator('.focus-mode')).toBeVisible({ timeout: 3000 });
+
+      // Press Escape to exit
+      await page.keyboard.press('Escape');
+      await page.waitForTimeout(500);
+
+      // Should be back to normal view
+      await expect(page.locator('.practice-header-bar')).toBeVisible({ timeout: 3000 });
+    });
+
     test('sidebar scale controls work', async ({ page }) => {
       // Key select
       const keySelect = page.locator('#key-select');
