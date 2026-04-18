@@ -287,6 +287,42 @@ header h1 {
   flex-shrink: 0;
 }
 
+/* ===== Editor Tab Header (second header bar) ===== */
+.editor-header-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.editor-header-bar::-webkit-scrollbar {
+  display: none;
+}
+.editor-header-bar .essential-controls,
+.editor-header-bar .secondary-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.practice-header-bar .essential-control-group,
+.editor-header-bar .essential-control-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.practice-header-bar .secondary-control-group,
+.editor-header-bar .secondary-control-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .mode-group {
   display: flex;
   gap: 4px;

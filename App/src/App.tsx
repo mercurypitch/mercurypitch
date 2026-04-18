@@ -1284,7 +1284,7 @@ export const App: Component<AppProps> = (props) => {
               onClick={handleTabPractice}
               title="Go to Practice"
             >
-              <h1 id="app-title-text">PitchPerfect</h1>
+              <h1 id="app-title" class="app-title">PitchPerfect</h1>
             </button>
             <p class="subtitle">Voice Pitch Practice</p>
           </div>
@@ -1342,6 +1342,8 @@ export const App: Component<AppProps> = (props) => {
           {/* Tab content */}
           <div class="main-content">
             <Show when={activeTab() === 'practice'}>
+              {/* Practice panel */}
+              <div id="practice-panel">
               {/* Practice-specific header: mic + mode toggles + playback controls */}
               <PracticeTabHeader
                 isPlaying={isPlaying}
@@ -1419,6 +1421,7 @@ export const App: Component<AppProps> = (props) => {
                   waveformData={waveformData}
                   liveScore={liveScore}
                 />
+              </div>
               </div>
             </Show>
 

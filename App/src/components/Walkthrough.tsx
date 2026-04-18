@@ -35,6 +35,7 @@ export const Walkthrough: Component = () => {
     if (!highlightRef) return
     const el = document.querySelector(currentStep().targetSelector)
     if (!el) {
+      // If target doesn't exist, don't show highlight ring
       highlightRef.style.display = 'none'
       return
     }
@@ -47,11 +48,26 @@ export const Walkthrough: Component = () => {
     highlightRef.style.height = `${rect.height + padding * 2}px`
   }
 
+  const updateTooltipCentered = (tW: number, tH: number, vw: number, vh: number) => {
+    // Fallback when target element is not available - show tooltip in center of screen
+    const left = (vw - tW) / 2
+    const top = (vh - tH) / 2
+    tooltipRef.style.left = `${left}px`
+    tooltipRef.style.top = `${top}px`
+    tooltipRef.dataset.placement = 'bottom'
+  }
+
   const updateTooltip = () => {
     if (!tooltipRef) return
     const el = document.querySelector(currentStep().targetSelector)
     if (!el) {
-      tooltipRef.style.opacity = '0'
+      // Target element doesn't exist - show tooltip centered
+      const vw = window.innerWidth
+      const vh = window.innerHeight
+      const tooltipRect = tooltipRef.getBoundingClientRect()
+      const tW = tooltipRect.width > 0 ? tooltipRect.width : TOOLTIP_WIDTH
+      const tH = tooltipRect.height > 0 ? tooltipRect.height : TOOLTIP_HEIGHT
+      updateTooltipCentered(tW, tH, vw, vh)
       return
     }
     tooltipRef.style.opacity = ''

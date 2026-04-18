@@ -210,7 +210,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
       </div>
 
       {/* Preset selector */}
-      <div class="sidebar-section">
+      <div class="sidebar-section" id="preset-section">
         <PresetSelector
           onLoad={(preset) => {
             props.onPresetLoad?.(preset)

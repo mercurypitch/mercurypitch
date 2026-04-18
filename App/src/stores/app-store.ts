@@ -189,7 +189,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
   },
   {
     title: 'Load a Melody',
-    targetSelector: '.preset-section',
+    targetSelector: '#preset-section',
     description:
       'Load a preset melody from the library, import a MIDI file, or record your own. Presets give you a great head start.',
     placement: 'right',
