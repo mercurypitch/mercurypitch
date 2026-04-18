@@ -517,17 +517,21 @@ test.describe('Critical Flows — GH #121', () => {
       }
     })
 
-    test('Count-in select changes precount', async ({ page }) => {
-      const countInSelect = page.locator('#countin-select')
-      await expect(countInSelect).toBeVisible()
+    test('Precount button toggles between off and on (4 beats)', async ({
+      page,
+    }) => {
+      const precountBtn = page.locator('#btn-precount')
+      await expect(precountBtn).toBeVisible()
 
-      await countInSelect.selectOption('4')
+      // Starts off — click to turn on
+      await precountBtn.click()
       await page.waitForTimeout(200)
-      await expect(countInSelect).toHaveValue('4')
+      await expect(precountBtn).toHaveClass(/active/)
 
-      await countInSelect.selectOption('0')
+      // Click again to turn off
+      await precountBtn.click()
       await page.waitForTimeout(200)
-      await expect(countInSelect).toHaveValue('0')
+      await expect(precountBtn).not.toHaveClass(/active/)
     })
 
     test('Practice sub-mode select exists in practice mode', async ({
