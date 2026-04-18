@@ -2,32 +2,45 @@
 // Settings Panel — Pitch detection and accuracy configuration
 // ============================================================
 
-import { Component, createMemo, For } from 'solid-js';
-import { appStore } from '@/stores/app-store';
+import { Component, createMemo, For } from 'solid-js'
+import { appStore } from '@/stores/app-store'
 
 export const SettingsPanel: Component = () => {
-  const s = () => appStore.settings();
+  const s = () => appStore.settings()
 
   // Map bands array to display format (perfect=100, excellent=90, good=75, okay=50)
-  const bandLabels = ['Perfect', 'Excellent', 'Good', 'Okay'];
+  const bandLabels = ['Perfect', 'Excellent', 'Good', 'Okay']
 
   const bandValues = createMemo(() => {
-    const bands = s().bands;
+    const bands = s().bands
     return {
-      perfect:    bands.find(b => b.band === 100)?.threshold ?? 0,
-      excellent:  bands.find(b => b.band === 90)?.threshold ?? 10,
-      good:       bands.find(b => b.band === 75)?.threshold ?? 25,
-      okay:       bands.find(b => b.band === 50)?.threshold ?? 50,
-    };
-  });
-
-  const handleBandChange = (band: 'perfect' | 'excellent' | 'good' | 'okay', value: string) => {
-    const num = parseInt(value, 10) || 0;
-    const idx = s().bands.findIndex(b => b.band === (band === 'perfect' ? 100 : band === 'excellent' ? 90 : band === 'good' ? 75 : 50));
-    if (idx >= 0) {
-      appStore.setBand(idx, num);
+      perfect: bands.find((b) => b.band === 100)?.threshold ?? 0,
+      excellent: bands.find((b) => b.band === 90)?.threshold ?? 10,
+      good: bands.find((b) => b.band === 75)?.threshold ?? 25,
+      okay: bands.find((b) => b.band === 50)?.threshold ?? 50,
     }
-  };
+  })
+
+  const handleBandChange = (
+    band: 'perfect' | 'excellent' | 'good' | 'okay',
+    value: string,
+  ) => {
+    const num = parseInt(value, 10) || 0
+    const idx = s().bands.findIndex(
+      (b) =>
+        b.band ===
+        (band === 'perfect'
+          ? 100
+          : band === 'excellent'
+            ? 90
+            : band === 'good'
+              ? 75
+              : 50),
+    )
+    if (idx >= 0) {
+      appStore.setBand(idx, num)
+    }
+  }
 
   return (
     <div class="settings-panel">
@@ -44,7 +57,11 @@ export const SettingsPanel: Component = () => {
             <select
               id="preset-select"
               value={appStore.sensitivityPreset()}
-              onChange={(e) => appStore.applySensitivityPreset(e.currentTarget.value as 'quiet' | 'home' | 'noisy')}
+              onChange={(e) =>
+                appStore.applySensitivityPreset(
+                  e.currentTarget.value as 'quiet' | 'home' | 'noisy',
+                )
+              }
             >
               <option value="quiet">Quiet Room (Studio)</option>
               <option value="home">Some Noise (At Home)</option>
@@ -66,9 +83,15 @@ export const SettingsPanel: Component = () => {
               max="20"
               step="1"
               value={Math.round(s().detectionThreshold * 100)}
-              onInput={(e) => appStore.setDetectionThreshold(parseInt(e.currentTarget.value) / 100)}
+              onInput={(e) =>
+                appStore.setDetectionThreshold(
+                  parseInt(e.currentTarget.value) / 100,
+                )
+              }
             />
-            <span class="settings-val">{s().detectionThreshold.toFixed(2)}</span>
+            <span class="settings-val">
+              {s().detectionThreshold.toFixed(2)}
+            </span>
             <small>Lower = stricter pitch detection</small>
           </div>
 
@@ -81,7 +104,9 @@ export const SettingsPanel: Component = () => {
               max="10"
               step="1"
               value={s().sensitivity}
-              onInput={(e) => appStore.setSensitivity(parseInt(e.currentTarget.value))}
+              onInput={(e) =>
+                appStore.setSensitivity(parseInt(e.currentTarget.value))
+              }
             />
             <span class="settings-val">{s().sensitivity}</span>
             <small>Higher = more responsive to quiet signals</small>
@@ -96,9 +121,13 @@ export const SettingsPanel: Component = () => {
               max="90"
               step="5"
               value={Math.round(s().minConfidence * 100)}
-              onInput={(e) => appStore.setMinConfidence(parseInt(e.currentTarget.value) / 100)}
+              onInput={(e) =>
+                appStore.setMinConfidence(parseInt(e.currentTarget.value) / 100)
+              }
             />
-            <span class="settings-val">{Math.round(s().minConfidence * 100)}%</span>
+            <span class="settings-val">
+              {Math.round(s().minConfidence * 100)}%
+            </span>
             <small>Minimum confidence to accept a pitch</small>
           </div>
 
@@ -111,7 +140,9 @@ export const SettingsPanel: Component = () => {
               max="10"
               step="1"
               value={s().minAmplitude}
-              onInput={(e) => appStore.setMinAmplitude(parseInt(e.currentTarget.value))}
+              onInput={(e) =>
+                appStore.setMinAmplitude(parseInt(e.currentTarget.value))
+              }
             />
             <span class="settings-val">{s().minAmplitude}</span>
             <small>Minimum signal loudness required</small>
@@ -130,14 +161,19 @@ export const SettingsPanel: Component = () => {
               checked={s().tonicAnchor}
               onChange={(e) => appStore.setTonicAnchor(e.currentTarget.checked)}
             />
-            <small>Play a reference tone at the start of each run to help lock in to the key</small>
+            <small>
+              Play a reference tone at the start of each run to help lock in to
+              the key
+            </small>
           </div>
         </div>
 
         {/* Accuracy Bands Section */}
         <div class="settings-section">
           <h3 class="settings-section-title">Accuracy Bands</h3>
-          <p class="settings-desc">Define how many cents off is "Perfect", "Good", etc.</p>
+          <p class="settings-desc">
+            Define how many cents off is "Perfect", "Good", etc.
+          </p>
 
           <div class="settings-row">
             <label for="band-perfect">Perfect (&le; cents)</label>
@@ -147,7 +183,9 @@ export const SettingsPanel: Component = () => {
               min="1"
               max="50"
               value={bandValues().perfect}
-              onInput={(e) => handleBandChange('perfect', e.currentTarget.value)}
+              onInput={(e) =>
+                handleBandChange('perfect', e.currentTarget.value)
+              }
             />
           </div>
 
@@ -159,7 +197,9 @@ export const SettingsPanel: Component = () => {
               min="1"
               max="100"
               value={bandValues().excellent}
-              onInput={(e) => handleBandChange('excellent', e.currentTarget.value)}
+              onInput={(e) =>
+                handleBandChange('excellent', e.currentTarget.value)
+              }
             />
           </div>
 
@@ -192,17 +232,29 @@ export const SettingsPanel: Component = () => {
         <div class="settings-section">
           <h3 class="settings-section-title">Current Values</h3>
           <div class="settings-info">
-            <div>Threshold: <span>{s().detectionThreshold.toFixed(2)}</span></div>
-            <div>Sensitivity: <span>{s().sensitivity}</span></div>
-            <div>Min Confidence: <span>{Math.round(s().minConfidence * 100)}%</span></div>
-            <div>Min Amplitude: <span>{s().minAmplitude}</span></div>
+            <div>
+              Threshold: <span>{s().detectionThreshold.toFixed(2)}</span>
+            </div>
+            <div>
+              Sensitivity: <span>{s().sensitivity}</span>
+            </div>
+            <div>
+              Min Confidence:{' '}
+              <span>{Math.round(s().minConfidence * 100)}%</span>
+            </div>
+            <div>
+              Min Amplitude: <span>{s().minAmplitude}</span>
+            </div>
           </div>
         </div>
-     
+
         {/* ADSR Envelope Section */}
         <div class="settings-section">
           <h3 class="settings-section-title">Tone Envelope (ADSR)</h3>
-          <p class="settings-desc">Adjust the Attack, Decay, Sustain, Release envelope for note playback.</p>
+          <p class="settings-desc">
+            Adjust the Attack, Decay, Sustain, Release envelope for note
+            playback.
+          </p>
 
           <div class="settings-row">
             <label for="adsr-attack">Attack</label>
@@ -213,7 +265,9 @@ export const SettingsPanel: Component = () => {
               max="1000"
               step="10"
               value={appStore.adsr().attack}
-              onInput={(e) => appStore.setAttack(parseInt(e.currentTarget.value))}
+              onInput={(e) =>
+                appStore.setAttack(parseInt(e.currentTarget.value))
+              }
             />
             <span class="settings-val">{appStore.adsr().attack}ms</span>
             <small>Time to reach full volume</small>
@@ -228,7 +282,9 @@ export const SettingsPanel: Component = () => {
               max="1000"
               step="10"
               value={appStore.adsr().decay}
-              onInput={(e) => appStore.setDecay(parseInt(e.currentTarget.value))}
+              onInput={(e) =>
+                appStore.setDecay(parseInt(e.currentTarget.value))
+              }
             />
             <span class="settings-val">{appStore.adsr().decay}ms</span>
             <small>Time to fall to sustain level</small>
@@ -243,7 +299,9 @@ export const SettingsPanel: Component = () => {
               max="100"
               step="5"
               value={appStore.adsr().sustain}
-              onInput={(e) => appStore.setSustain(parseInt(e.currentTarget.value))}
+              onInput={(e) =>
+                appStore.setSustain(parseInt(e.currentTarget.value))
+              }
             />
             <span class="settings-val">{appStore.adsr().sustain}%</span>
             <small>Volume during note held</small>
@@ -258,7 +316,9 @@ export const SettingsPanel: Component = () => {
               max="2000"
               step="50"
               value={appStore.adsr().release}
-              onInput={(e) => appStore.setRelease(parseInt(e.currentTarget.value))}
+              onInput={(e) =>
+                appStore.setRelease(parseInt(e.currentTarget.value))
+              }
             />
             <span class="settings-val">{appStore.adsr().release}ms</span>
             <small>Time to fade after note ends</small>
@@ -286,7 +346,9 @@ export const SettingsPanel: Component = () => {
             <select
               id="vis-theme"
               value={appStore.theme()}
-              onChange={(e) => appStore.setTheme(e.currentTarget.value as 'dark' | 'light')}
+              onChange={(e) =>
+                appStore.setTheme(e.currentTarget.value as 'dark' | 'light')
+              }
             >
               <option value="dark">Dark</option>
               <option value="light">Light</option>
@@ -298,7 +360,9 @@ export const SettingsPanel: Component = () => {
         {/* Playback Speed Section */}
         <div class="settings-section">
           <h3 class="settings-section-title">Playback Speed</h3>
-          <p class="settings-desc">Adjust the playback speed of the practice melody.</p>
+          <p class="settings-desc">
+            Adjust the playback speed of the practice melody.
+          </p>
 
           <div class="settings-row">
             <label for="playback-speed">Speed</label>
@@ -309,9 +373,13 @@ export const SettingsPanel: Component = () => {
               max="200"
               step="25"
               value={Math.round(appStore.playbackSpeed() * 100)}
-              onInput={(e) => appStore.setPlaybackSpeed(parseInt(e.currentTarget.value) / 100)}
+              onInput={(e) =>
+                appStore.setPlaybackSpeed(parseInt(e.currentTarget.value) / 100)
+              }
             />
-            <span class="settings-val">{appStore.playbackSpeed().toFixed(2)}x</span>
+            <span class="settings-val">
+              {appStore.playbackSpeed().toFixed(2)}x
+            </span>
             <small>0.25x = slowest, 2.0x = fastest</small>
           </div>
         </div>
@@ -319,14 +387,24 @@ export const SettingsPanel: Component = () => {
         {/* Reverb Section */}
         <div class="settings-section">
           <h3 class="settings-section-title">Reverb</h3>
-          <p class="settings-desc">Add reverb (echo) to the practice playback for a richer sound.</p>
+          <p class="settings-desc">
+            Add reverb (echo) to the practice playback for a richer sound.
+          </p>
 
           <div class="settings-row">
             <label for="reverb-type">Type</label>
             <select
               id="reverb-type"
               value={appStore.reverb().type}
-              onChange={(e) => appStore.setReverbType(e.currentTarget.value as 'off' | 'room' | 'hall' | 'cathedral')}
+              onChange={(e) =>
+                appStore.setReverbType(
+                  e.currentTarget.value as
+                    | 'off'
+                    | 'room'
+                    | 'hall'
+                    | 'cathedral',
+                )
+              }
             >
               <option value="off">Off</option>
               <option value="room">Room</option>
@@ -344,7 +422,9 @@ export const SettingsPanel: Component = () => {
               max="100"
               step="5"
               value={appStore.reverb().wetness}
-              onInput={(e) => appStore.setReverbWetness(parseInt(e.currentTarget.value))}
+              onInput={(e) =>
+                appStore.setReverbWetness(parseInt(e.currentTarget.value))
+              }
             />
             <span class="settings-val">{appStore.reverb().wetness}%</span>
             <small>How much reverb vs dry signal</small>
@@ -357,17 +437,30 @@ export const SettingsPanel: Component = () => {
           <div class="about-content">
             <div class="about-logo">
               <svg viewBox="0 0 48 48" width="40" height="40">
-                <circle cx="24" cy="24" r="22" fill="none" stroke="currentColor" stroke-width="2"/>
-                <path d="M24 8 L24 40 M12 16 Q18 10 24 16 Q30 22 36 16" fill="none" stroke="currentColor" stroke-width="2"/>
-                <circle cx="24" cy="32" r="4" fill="currentColor"/>
+                <circle
+                  cx="24"
+                  cy="24"
+                  r="22"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                />
+                <path
+                  d="M24 8 L24 40 M12 16 Q18 10 24 16 Q30 22 36 16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                />
+                <circle cx="24" cy="32" r="4" fill="currentColor" />
               </svg>
             </div>
             <p class="about-name">PitchPerfect</p>
             <p class="about-version">Version 1.0.0</p>
             <p class="about-desc">
-              A web-based vocal pitch practice tool. Sing into your microphone and see your accuracy
-              on the pitch canvas. Use the piano roll editor to compose melodies, then practice
-              singing them with real-time feedback.
+              A web-based vocal pitch practice tool. Sing into your microphone
+              and see your accuracy on the pitch canvas. Use the piano roll
+              editor to compose melodies, then practice singing them with
+              real-time feedback.
             </p>
             <div class="about-features">
               <span>🎤 Real-time pitch detection</span>
@@ -400,5 +493,5 @@ export const SettingsPanel: Component = () => {
         </div>
       </div>
     </div>
-  );
-};
+  )
+}

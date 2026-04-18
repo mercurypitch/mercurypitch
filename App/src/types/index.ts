@@ -4,252 +4,273 @@
 // ============================================================
 
 /** Note name within an octave (C through B, with # for sharps) */
-export type NoteName = 'C' | 'C#' | 'D' | 'D#' | 'E' | 'F' | 'F#' | 'G' | 'G#' | 'A' | 'A#' | 'B';
+export type NoteName =
+  | 'C'
+  | 'C#'
+  | 'D'
+  | 'D#'
+  | 'E'
+  | 'F'
+  | 'F#'
+  | 'G'
+  | 'G#'
+  | 'A'
+  | 'A#'
+  | 'B'
 
 /** Pitch accuracy rating for feedback */
-export type AccuracyRating = 'perfect' | 'excellent' | 'good' | 'okay' | 'off';
+export type AccuracyRating = 'perfect' | 'excellent' | 'good' | 'okay' | 'off'
 
 /** Playback mode for the melody engine */
-export type PlaybackMode = 'once' | 'repeat' | 'practice';
+export type PlaybackMode = 'once' | 'repeat' | 'practice'
 
 /** Transport playback state */
-export type TransportState = 'stopped' | 'playing' | 'paused' | 'precount';
+export type TransportState = 'stopped' | 'playing' | 'paused' | 'precount'
 
 /** A single note within the melody */
 export interface MelodyNote {
   /** MIDI note number (e.g., 60 = C4) */
-  midi: number;
+  midi: number
   /** Note name without octave (C, C#, D, etc.) */
-  name: NoteName;
+  name: NoteName
   /** Octave number (e.g., 4 for middle C) */
-  octave: number;
+  octave: number
   /** Frequency in Hz (e.g., 261.63 for C4) */
-  freq: number;
+  freq: number
 }
 
 /** Effect type for note modifications */
-export type EffectType = 'slide-up' | 'slide-down' | 'ease-in' | 'ease-out' | 'vibrato';
+export type EffectType =
+  | 'slide-up'
+  | 'slide-down'
+  | 'ease-in'
+  | 'ease-out'
+  | 'vibrato'
 
 /** A melody item used by the audio engine and piano roll */
 export interface MelodyItem {
   /** Unique identifier for the note block */
-  id?: number;
+  id?: number
   /** Note data (name, octave, MIDI, frequency) */
-  note: MelodyNote;
+  note: MelodyNote
   /** Duration in beats */
-  duration: number;
+  duration: number
   /** Start position in beats (from 0) */
-  startBeat: number;
+  startBeat: number
   /** Velocity (0-127, default 100) */
-  velocity?: number;
+  velocity?: number
   /** Effect type applied to this note */
-  effectType?: EffectType;
+  effectType?: EffectType
   /** IDs of linked notes (for slides/ease: next note; for vibrato: start note) */
-  linkedTo?: number[];
+  linkedTo?: number[]
 }
 
 /** Scale degree definition */
 export interface ScaleDegree {
   /** MIDI note number */
-  midi: number;
+  midi: number
   /** Note name (C, C#, D, etc.) */
-  name: string;
+  name: string
   /** Octave number */
-  octave: number;
+  octave: number
   /** Frequency in Hz */
-  freq: number;
+  freq: number
   /** Semitone offset from root note */
-  semitone: number;
+  semitone: number
 }
 
 /** Scale definition */
 export interface ScaleDefinition {
   /** Scale name (e.g., 'major', 'minor', 'pentatonic') */
-  name: string;
+  name: string
   /** Array of semitone offsets from the root */
-  degrees: number[];
+  degrees: number[]
   /** Description text */
-  description: string;
+  description: string
 }
 
 /** Key signature definition */
 export interface KeySignature {
   /** Number of sharps (positive) or flats (negative) */
-  sharps: number;
+  sharps: number
   /** Number of flats */
-  flats: number;
+  flats: number
   /** Display name (e.g., 'C major', 'G major') */
-  displayName: string;
+  displayName: string
 }
 
 /** Audio engine callbacks */
 export interface AudioEngineCallbacks {
-  onNoteChange?: (note: MelodyNote, noteIndex: number) => void;
-  onPlaybackEnd?: () => void;
+  onNoteChange?: (note: MelodyNote, noteIndex: number) => void
+  onPlaybackEnd?: () => void
 }
 
 /** Pitch detection result */
 export interface PitchResult {
   /** Detected frequency in Hz */
-  frequency: number;
+  frequency: number
   /** Clarity/confidence score (0-1) */
-  clarity: number;
+  clarity: number
   /** Detected note name */
-  noteName: string;
+  noteName: string
   /** Detected octave */
-  octave: number;
+  octave: number
   /** Cents deviation from the nearest note (-50 to +50) */
-  cents: number;
+  cents: number
 }
 
 /** A single pitch sample collected during note playback */
 export interface PitchSample {
   /** Detected frequency in Hz */
-  freq: number;
+  freq: number
   /** Timestamp (ms since playback start) */
-  time: number;
+  time: number
   /** Cents deviation */
-  cents: number;
+  cents: number
 }
 
 /** Result of singing a single note */
 export interface NoteResult {
   /** The target melody note */
-  targetNote: MelodyNote;
+  targetNote: MelodyNote
   /** All pitch samples collected */
-  samples: PitchSample[];
+  samples: PitchSample[]
   /** Average detected frequency */
-  avgFreq: number;
+  avgFreq: number
   /** Average cents deviation */
-  avgCents: number;
+  avgCents: number
   /** Number of samples captured */
-  sampleCount: number;
+  sampleCount: number
   /** Assigned accuracy rating */
-  rating: AccuracyRating;
+  rating: AccuracyRating
   /** Cumulative pitch error (sum of |cents|) */
-  totalError: number;
+  totalError: number
 }
 
 /** Practice session result (one full cycle) */
 export interface PracticeResult {
   /** Results for each note in the melody */
-  noteResults: NoteResult[];
+  noteResults: NoteResult[]
   /** Overall score (0-100) */
-  score: number;
+  score: number
   /** Average cents deviation */
-  avgCents: number;
+  avgCents: number
   /** Number of notes practiced */
-  noteCount: number;
+  noteCount: number
 }
 
 /** Preset melody definition */
 export interface Preset {
   /** Preset display name */
-  name: string;
+  name: string
   /** Melody items */
-  melody: MelodyItem[];
+  melody: MelodyItem[]
   /** Musical key */
-  key: string;
+  key: string
   /** Tempo in BPM */
-  bpm: number;
+  bpm: number
   /** Number of total beats */
-  totalBeats: number;
+  totalBeats: number
   /** Scale definition for this preset */
-  scale: ScaleDefinition[];
+  scale: ScaleDefinition[]
 }
 
 /** Accuracy band definition */
 export interface AccuracyBand {
   /** Cents threshold for this band */
-  threshold: number;
+  threshold: number
   /** Score band (100=perfect, 90=excellent, 75=good, 50=okay, 0=off) */
-  band: number;
+  band: number
   /** Display color */
-  color: string;
+  color: string
 }
 
 /** Piano roll configuration */
 export interface PianoRollConfig {
   /** Row height in pixels */
-  rowHeight: number;
+  rowHeight: number
   /** Beat width in pixels */
-  beatWidth: number;
+  beatWidth: number
   /** Piano key column width in pixels */
-  pianoWidth: number;
+  pianoWidth: number
   /** Ruler height in pixels */
-  rulerHeight: number;
+  rulerHeight: number
   /** Beats per bar (for bar line rendering) */
-  beatsPerBar: number;
+  beatsPerBar: number
   /** Minimum note duration in beats */
-  minDuration: number;
+  minDuration: number
   /** Note colors for different states */
   noteColors: {
-    normal: string;
-    selected: string;
-    active: string;
-    ghost: string;
-  };
+    normal: string
+    selected: string
+    active: string
+    ghost: string
+  }
 }
 
 /** Window extensions for global references */
 export interface PitchPerfectWindow extends Window {
-  pianoRollEditor?: import('../lib/piano-roll').PianoRollEditor;
-  pianoRollAudioEngine?: import('../lib/audio-engine').AudioEngine;
-  pianoRollGenerateId?: () => number;
+  pianoRollEditor?: import('../lib/piano-roll').PianoRollEditor
+  pianoRollAudioEngine?: import('../lib/audio-engine').AudioEngine
+  pianoRollGenerateId?: () => number
 }
 
 // ── Practice Sessions ─────────────────────────────────────────
 
-export type SessionDifficulty = 'beginner' | 'intermediate' | 'advanced';
-export type SessionCategory = 'vocal' | 'instrumental' | 'ear-training' | 'general';
-export type SessionItemType = 'preset' | 'scale' | 'rest';
+export type SessionDifficulty = 'beginner' | 'intermediate' | 'advanced'
+export type SessionCategory =
+  | 'vocal'
+  | 'instrumental'
+  | 'ear-training'
+  | 'general'
+export type SessionItemType = 'preset' | 'scale' | 'rest'
 
 /** A single item within a practice session */
 export interface SessionItem {
   /** Item type */
-  type: SessionItemType;
+  type: SessionItemType
   /** Preset ID (for type='preset') */
-  presetId?: string;
+  presetId?: string
   /** Scale type (for type='scale') */
-  scaleType?: string;
+  scaleType?: string
   /** Custom display label */
-  label?: string;
+  label?: string
   /** Duration in beats (for type='scale') */
-  beats?: number;
+  beats?: number
   /** Duration in ms (for type='rest') */
-  restMs?: number;
+  restMs?: number
   /** Number of times to repeat this item (default 1) */
-  repeat?: number;
+  repeat?: number
 }
 
 /** A structured practice session with multiple items */
 export interface PracticeSession {
   /** Unique session ID */
-  id: string;
+  id: string
   /** Display name */
-  name: string;
+  name: string
   /** Description */
-  description: string;
+  description: string
   /** Difficulty level */
-  difficulty: SessionDifficulty;
+  difficulty: SessionDifficulty
   /** Category */
-  category: SessionCategory;
+  category: SessionCategory
   /** Session items */
-  items: SessionItem[];
+  items: SessionItem[]
 }
 
 /** Result of completing a practice session */
 export interface SessionResult {
   /** Session ID */
-  sessionId: string;
+  sessionId: string
   /** Session display name */
-  sessionName: string;
+  sessionName: string
   /** Completion timestamp */
-  completedAt: number;
+  completedAt: number
   /** Number of items completed */
-  itemsCompleted: number;
+  itemsCompleted: number
   /** Total items in session */
-  totalItems: number;
+  totalItems: number
   /** Average score across items */
-  score: number;
+  score: number
 }

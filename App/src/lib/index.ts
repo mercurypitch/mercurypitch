@@ -4,8 +4,8 @@
 // better tree-shaking and explicit dependencies.
 // ============================================================
 
-export { AudioEngine } from './audio-engine';
-export { PitchDetector } from './pitch-detector';
+export { AudioEngine } from './audio-engine'
+export { PitchDetector } from './pitch-detector'
 export {
   NOTE_NAMES,
   WHITE_NOTE_NAMES,
@@ -25,4 +25,4 @@ export {
   melodyIndexAtBeat,
   isBlackKey,
   melodyMidiRange,
-} from './scale-data';
+} from './scale-data'

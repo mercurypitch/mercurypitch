@@ -2,72 +2,72 @@
 // FocusMode — full-screen minimal practice UI (GH #123)
 // ============================================================
 
-import { Component, Show, createMemo } from 'solid-js';
-import { appStore } from '@/stores/app-store';
-import { PitchCanvas } from '@/components/PitchCanvas';
-import { melodyStore } from '@/stores/melody-store';
-import { melodyTotalBeats } from '@/lib/scale-data';
-import type { MelodyItem, PitchResult, NoteResult, PracticeResult } from '@/types';
-import type { PitchSample } from '@/components/PitchCanvas';
+import { Component, Show, createMemo } from 'solid-js'
+import { appStore } from '@/stores/app-store'
+import { PitchCanvas } from '@/components/PitchCanvas'
+import { melodyStore } from '@/stores/melody-store'
+import { melodyTotalBeats } from '@/lib/scale-data'
+import type { MelodyItem, PitchResult, NoteResult, PracticeResult, } from '@/types'
+import type { PitchSample } from '@/components/PitchCanvas'
 
 interface FocusModeProps {
-  isPlaying: () => boolean;
-  isPaused: () => boolean;
-  currentPitch: () => PitchResult | null;
-  pitchHistory: () => PitchSample[];
-  noteResults: () => NoteResult[];
-  practiceResult: () => PracticeResult | null;
-  liveScore: () => number | null;
-  countInBeat: () => number;
-  isCountingIn: () => boolean;
-  currentBeat: () => number;
-  onPlay: () => void;
-  onPause: () => void;
-  onResume: () => void;
-  onStop: () => void;
+  isPlaying: () => boolean
+  isPaused: () => boolean
+  currentPitch: () => PitchResult | null
+  pitchHistory: () => PitchSample[]
+  noteResults: () => NoteResult[]
+  practiceResult: () => PracticeResult | null
+  liveScore: () => number | null
+  countInBeat: () => number
+  isCountingIn: () => boolean
+  currentBeat: () => number
+  onPlay: () => void
+  onPause: () => void
+  onResume: () => void
+  onStop: () => void
 }
 
-const SPEED_STEPS = [0.25, 0.5, 0.75, 1.0, 1.5, 2.0];
+const SPEED_STEPS = [0.25, 0.5, 0.75, 1.0, 1.5, 2.0]
 
 export const FocusMode: Component<FocusModeProps> = (props) => {
   const keyDisplay = createMemo(
-    () => `${appStore.keyName()} ${appStore.scaleType()}`
-  );
+    () => `${appStore.keyName()} ${appStore.scaleType()}`,
+  )
 
-  const totalBeats = createMemo(() => melodyTotalBeats(melodyStore.items));
-  const totalBars = createMemo(() => Math.ceil(totalBeats() / 4));
-  const currentBar = createMemo(() => Math.floor(props.currentBeat() / 4) + 1);
+  const totalBeats = createMemo(() => melodyTotalBeats(melodyStore.items))
+  const totalBars = createMemo(() => Math.ceil(totalBeats() / 4))
+  const currentBar = createMemo(() => Math.floor(props.currentBeat() / 4) + 1)
   const progress = createMemo(() => {
-    const beats = props.currentBeat();
-    const total = totalBeats();
-    return total > 0 ? Math.min(100, (beats / total) * 100) : 0;
-  });
+    const beats = props.currentBeat()
+    const total = totalBeats()
+    return total > 0 ? Math.min(100, (beats / total) * 100) : 0
+  })
 
   // Session info
-  const isSession = createMemo(() => appStore.sessionActive());
-  const sessionItem = createMemo(() => appStore.sessionItemIndex());
-  const sessionRepeat = createMemo(() => appStore.sessionItemRepeat());
+  const isSession = createMemo(() => appStore.sessionActive())
+  const sessionItem = createMemo(() => appStore.sessionItemIndex())
+  const sessionRepeat = createMemo(() => appStore.sessionItemRepeat())
 
   // Playback speed
   const currentSpeedIndex = createMemo(() => {
-    const speed = appStore.playbackSpeed();
-    const idx = SPEED_STEPS.indexOf(speed);
-    return idx >= 0 ? idx : 3; // default to 1.0x
-  });
+    const speed = appStore.playbackSpeed()
+    const idx = SPEED_STEPS.indexOf(speed)
+    return idx >= 0 ? idx : 3 // default to 1.0x
+  })
 
   const speedUp = () => {
-    const idx = currentSpeedIndex();
+    const idx = currentSpeedIndex()
     if (idx < SPEED_STEPS.length - 1) {
-      appStore.setPlaybackSpeed(SPEED_STEPS[idx + 1]);
+      appStore.setPlaybackSpeed(SPEED_STEPS[idx + 1])
     }
-  };
+  }
 
   const speedDown = () => {
-    const idx = currentSpeedIndex();
+    const idx = currentSpeedIndex()
     if (idx > 0) {
-      appStore.setPlaybackSpeed(SPEED_STEPS[idx - 1]);
+      appStore.setPlaybackSpeed(SPEED_STEPS[idx - 1])
     }
-  };
+  }
 
   return (
     <div class="focus-mode">
@@ -155,10 +155,7 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
         <Show when={props.isPlaying()}>
           <button class="focus-play" onClick={props.onPause} title="Pause">
             <svg viewBox="0 0 24 24" width="24" height="24">
-              <path
-                fill="currentColor"
-                d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"
-              />
+              <path fill="currentColor" d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
             </svg>
           </button>
         </Show>
@@ -180,10 +177,15 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
             title="Faster (↑)"
           >
             <svg viewBox="0 0 24 24" width="16" height="16">
-              <path fill="currentColor" d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z" />
+              <path
+                fill="currentColor"
+                d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"
+              />
             </svg>
           </button>
-          <span class="focus-speed-label">{appStore.playbackSpeed().toFixed(2)}x</span>
+          <span class="focus-speed-label">
+            {appStore.playbackSpeed().toFixed(2)}x
+          </span>
           <button
             class="focus-speed-btn"
             onClick={speedDown}
@@ -191,11 +193,14 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
             title="Slower (↓)"
           >
             <svg viewBox="0 0 24 24" width="16" height="16">
-              <path fill="currentColor" d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z" />
+              <path
+                fill="currentColor"
+                d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"
+              />
             </svg>
           </button>
         </div>
       </div>
     </div>
-  );
-};
+  )
+}

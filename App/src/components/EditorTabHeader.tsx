@@ -4,53 +4,53 @@
 // playback bar is always visible regardless of active tab.
 // ============================================================
 
-import { Component, Show } from 'solid-js';
-import { appStore } from '@/stores/app-store';
-import { playback } from '@/stores/playback-store';
-import { MicButton } from '@/components/MicButton';
-import { MetronomeButton } from '@/components/MetronomeButton';
+import { Component, Show } from 'solid-js'
+import { appStore } from '@/stores/app-store'
+import { playback } from '@/stores/playback-store'
+import { MicButton } from '@/components/MicButton'
+import { MetronomeButton } from '@/components/MetronomeButton'
 
 interface EditorTabHeaderProps {
-  isPlaying: () => boolean;
-  isPaused: () => boolean;
-  onMicToggle: () => void;
-  onPlay: () => void;
-  onPause: () => void;
-  onResume: () => void;
-  onStop: () => void;
-  onMetronomeToggle: () => void;
-  onSpeedChange: (speed: number) => void;
-  metronomeEnabled: () => boolean;
-  isRecording: () => boolean;
-  onRecordToggle: () => void;
-  volume: () => number;
-  onVolumeChange: (vol: number) => void;
+  isPlaying: () => boolean
+  isPaused: () => boolean
+  onMicToggle: () => void
+  onPlay: () => void
+  onPause: () => void
+  onResume: () => void
+  onStop: () => void
+  onMetronomeToggle: () => void
+  onSpeedChange: (speed: number) => void
+  metronomeEnabled: () => boolean
+  isRecording: () => boolean
+  onRecordToggle: () => void
+  volume: () => number
+  onVolumeChange: (vol: number) => void
 }
 
 export const EditorTabHeader: Component<EditorTabHeaderProps> = (props) => {
-  const isActive = () => props.isPlaying() || props.isPaused();
-  const isStopped = () => !props.isPlaying() && !props.isPaused();
+  const isActive = () => props.isPlaying() || props.isPaused()
+  const isStopped = () => !props.isPlaying() && !props.isPaused()
 
-  const playLabel = () => playback.playButtonLabel();
+  const playLabel = () => playback.playButtonLabel()
 
   const handlePlayClick = () => {
-    const state = playback.state();
+    const state = playback.state()
     if (state === 'stopped') {
-      playback.startPlayback();
-      props.onPlay();
+      playback.startPlayback()
+      props.onPlay()
     } else if (state === 'playing') {
-      playback.pausePlayback();
-      props.onPause();
+      playback.pausePlayback()
+      props.onPause()
     } else {
-      playback.continuePlayback();
-      props.onResume();
+      playback.continuePlayback()
+      props.onResume()
     }
-  };
+  }
 
   const handleStopClick = () => {
-    playback.resetPlayback();
-    props.onStop();
-  };
+    playback.resetPlayback()
+    props.onStop()
+  }
 
   return (
     <div class="practice-header-bar">
@@ -69,7 +69,9 @@ export const EditorTabHeader: Component<EditorTabHeaderProps> = (props) => {
         disabled={isActive()}
         title="Record to piano roll"
       >
-        <svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="12" r="6" fill="currentColor"/></svg>
+        <svg viewBox="0 0 24 24" width="16" height="16">
+          <circle cx="12" cy="12" r="6" fill="currentColor" />
+        </svg>
         {props.isRecording() ? 'Stop' : 'Record'}
       </button>
 
@@ -77,22 +79,40 @@ export const EditorTabHeader: Component<EditorTabHeaderProps> = (props) => {
 
       {/* Playback controls */}
       <Show when={isStopped()}>
-        <button class="ctrl-btn play-btn" onClick={handlePlayClick} title="Play">
-          <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>
+        <button
+          class="ctrl-btn play-btn"
+          onClick={handlePlayClick}
+          title="Play"
+        >
+          <svg viewBox="0 0 24 24" width="16" height="16">
+            <path fill="currentColor" d="M8 5v14l11-7z" />
+          </svg>
           {playLabel()}
         </button>
       </Show>
 
       <Show when={props.isPlaying()}>
-        <button class="ctrl-btn stop-btn" onClick={handlePlayClick} title="Pause">
-          <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+        <button
+          class="ctrl-btn stop-btn"
+          onClick={handlePlayClick}
+          title="Pause"
+        >
+          <svg viewBox="0 0 24 24" width="16" height="16">
+            <path fill="currentColor" d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+          </svg>
           Pause
         </button>
       </Show>
 
       <Show when={props.isPaused()}>
-        <button class="ctrl-btn play-btn" onClick={handlePlayClick} title="Continue">
-          <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>
+        <button
+          class="ctrl-btn play-btn"
+          onClick={handlePlayClick}
+          title="Continue"
+        >
+          <svg viewBox="0 0 24 24" width="16" height="16">
+            <path fill="currentColor" d="M8 5v14l11-7z" />
+          </svg>
           Continue
         </button>
       </Show>
@@ -102,7 +122,9 @@ export const EditorTabHeader: Component<EditorTabHeaderProps> = (props) => {
         onClick={handleStopClick}
         title="Stop"
       >
-        <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M6 6h12v12H6z"/></svg>
+        <svg viewBox="0 0 24 24" width="16" height="16">
+          <path fill="currentColor" d="M6 6h12v12H6z" />
+        </svg>
         Stop
       </button>
 
@@ -119,8 +141,8 @@ export const EditorTabHeader: Component<EditorTabHeaderProps> = (props) => {
           value={props.volume()}
           class="volume-slider"
           onInput={(e) => {
-            const vol = parseInt(e.currentTarget.value) || 80;
-            props.onVolumeChange(vol);
+            const vol = parseInt(e.currentTarget.value) || 80
+            props.onVolumeChange(vol)
           }}
         />
         <span id="volume-value">{props.volume()}</span>
@@ -134,8 +156,8 @@ export const EditorTabHeader: Component<EditorTabHeaderProps> = (props) => {
           value="1"
           class="speed-select"
           onChange={(e) => {
-            const speed = parseFloat(e.currentTarget.value);
-            props.onSpeedChange(speed);
+            const speed = parseFloat(e.currentTarget.value)
+            props.onSpeedChange(speed)
           }}
         >
           <option value="0.25">0.25x</option>
@@ -154,5 +176,5 @@ export const EditorTabHeader: Component<EditorTabHeaderProps> = (props) => {
         onClick={props.onMetronomeToggle}
       />
     </div>
-  );
-};
+  )
+}

@@ -3,44 +3,44 @@
 // This is the second header bar containing all practice controls
 // ============================================================
 
-import { Component, Show } from 'solid-js';
-import { appStore, type CountInOption } from '@/stores/app-store';
-import { MicButton } from '@/components/MicButton';
-import { MetronomeButton } from '@/components/MetronomeButton';
+import { Component, Show } from 'solid-js'
+import { appStore, type CountInOption } from '@/stores/app-store'
+import { MicButton } from '@/components/MicButton'
+import { MetronomeButton } from '@/components/MetronomeButton'
 
-export type PracticeSubMode = 'all' | 'random' | 'focus' | 'reverse';
+export type PracticeSubMode = 'all' | 'random' | 'focus' | 'reverse'
 
 interface PracticeTabHeaderProps {
-  isPlaying: () => boolean;
-  isPaused: () => boolean;
-  playMode: () => 'once' | 'repeat' | 'practice';
-  practiceCycles: () => number;
-  currentCycle: () => number;
-  isCountingIn: () => boolean;
-  countInBeat: () => number;
-  metronomeEnabled: () => boolean;
-  volume: () => number;
-  practiceSubMode: () => PracticeSubMode;
-  onMicToggle: () => void;
-  onPlayModeChange: (mode: 'once' | 'repeat' | 'practice') => void;
-  onCyclesChange: (cycles: number) => void;
-  onPlay: () => void;
-  onPause: () => void;
-  onResume: () => void;
-  onStop: () => void;
-  onMetronomeToggle: () => void;
-  onSpeedChange: (speed: number) => void;
-  onVolumeChange: (vol: number) => void;
-  onPracticeSubModeChange: (mode: PracticeSubMode) => void;
-  isRecording: () => boolean;
-  onRecordToggle: () => void;
-  onOpenSessions: () => void;
-  sessionActive: () => boolean;
+  isPlaying: () => boolean
+  isPaused: () => boolean
+  playMode: () => 'once' | 'repeat' | 'practice'
+  practiceCycles: () => number
+  currentCycle: () => number
+  isCountingIn: () => boolean
+  countInBeat: () => number
+  metronomeEnabled: () => boolean
+  volume: () => number
+  practiceSubMode: () => PracticeSubMode
+  onMicToggle: () => void
+  onPlayModeChange: (mode: 'once' | 'repeat' | 'practice') => void
+  onCyclesChange: (cycles: number) => void
+  onPlay: () => void
+  onPause: () => void
+  onResume: () => void
+  onStop: () => void
+  onMetronomeToggle: () => void
+  onSpeedChange: (speed: number) => void
+  onVolumeChange: (vol: number) => void
+  onPracticeSubModeChange: (mode: PracticeSubMode) => void
+  isRecording: () => boolean
+  onRecordToggle: () => void
+  onOpenSessions: () => void
+  sessionActive: () => boolean
 }
 
 export const PracticeTabHeader: Component<PracticeTabHeaderProps> = (props) => {
-  const isActive = () => props.isPlaying() || props.isPaused();
-  const isStopped = () => !props.isPlaying() && !props.isPaused();
+  const isActive = () => props.isPlaying() || props.isPaused()
+  const isStopped = () => !props.isPlaying() && !props.isPaused()
 
   return (
     <div class="practice-header-bar">
@@ -61,7 +61,9 @@ export const PracticeTabHeader: Component<PracticeTabHeaderProps> = (props) => {
           disabled={isActive()}
           title="Record to piano roll"
         >
-          <svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="12" r="6" fill="currentColor"/></svg>
+          <svg viewBox="0 0 24 24" width="16" height="16">
+            <circle cx="12" cy="12" r="6" fill="currentColor" />
+          </svg>
           {props.isRecording() ? 'Stop' : 'Record'}
         </button>
 
@@ -70,27 +72,47 @@ export const PracticeTabHeader: Component<PracticeTabHeaderProps> = (props) => {
         {/* Playback controls */}
         <Show when={isStopped()}>
           <button class="ctrl-btn play-btn" onClick={props.onPlay} title="Play">
-            <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>
+            <svg viewBox="0 0 24 24" width="16" height="16">
+              <path fill="currentColor" d="M8 5v14l11-7z" />
+            </svg>
             Play
           </button>
         </Show>
 
         <Show when={props.isPlaying()}>
-          <button class="ctrl-btn stop-btn" onClick={props.onPause} title="Pause">
-            <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+          <button
+            class="ctrl-btn stop-btn"
+            onClick={props.onPause}
+            title="Pause"
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16">
+              <path fill="currentColor" d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+            </svg>
             Pause
           </button>
         </Show>
 
         <Show when={props.isPaused()}>
-          <button class="ctrl-btn play-btn" onClick={props.onResume} title="Continue">
-            <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>
+          <button
+            class="ctrl-btn play-btn"
+            onClick={props.onResume}
+            title="Continue"
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16">
+              <path fill="currentColor" d="M8 5v14l11-7z" />
+            </svg>
             Continue
           </button>
         </Show>
 
-        <button class={`ctrl-btn stop-btn stop ${props.isPlaying() || props.isPaused() ? '' : 'inactive'}`} onClick={props.onStop} title="Stop">
-          <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M6 6h12v12H6z"/></svg>
+        <button
+          class={`ctrl-btn stop-btn stop ${props.isPlaying() || props.isPaused() ? '' : 'inactive'}`}
+          onClick={props.onStop}
+          title="Stop"
+        >
+          <svg viewBox="0 0 24 24" width="16" height="16">
+            <path fill="currentColor" d="M6 6h12v12H6z" />
+          </svg>
           Stop
         </button>
 
@@ -141,7 +163,10 @@ export const PracticeTabHeader: Component<PracticeTabHeaderProps> = (props) => {
           title="Enter Focus Mode (minimal UI)"
         >
           <svg viewBox="0 0 24 24" width="16" height="16">
-            <path fill="currentColor" d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+            <path
+              fill="currentColor"
+              d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"
+            />
           </svg>
           Focus
         </button>
@@ -160,8 +185,8 @@ export const PracticeTabHeader: Component<PracticeTabHeaderProps> = (props) => {
             {props.playMode() === 'practice'
               ? `C${props.currentCycle()}/${props.practiceCycles()}`
               : props.playMode() === 'repeat'
-              ? '↻'
-              : ''}
+                ? '↻'
+                : ''}
           </span>
         </div>
       </div>
@@ -178,14 +203,22 @@ export const PracticeTabHeader: Component<PracticeTabHeaderProps> = (props) => {
             min="2"
             max="20"
             value={props.practiceCycles()}
-            onInput={(e) => props.onCyclesChange(Math.max(2, Math.min(20, parseInt(e.currentTarget.value) || 5)))}
+            onInput={(e) =>
+              props.onCyclesChange(
+                Math.max(2, Math.min(20, parseInt(e.currentTarget.value) || 5)),
+              )
+            }
             class="cycles-input"
           />
           <label class="opt-label">Mode:</label>
           <select
             id="practice-sub-mode"
             value={props.practiceSubMode()}
-            onChange={(e) => props.onPracticeSubModeChange(e.currentTarget.value as PracticeSubMode)}
+            onChange={(e) =>
+              props.onPracticeSubModeChange(
+                e.currentTarget.value as PracticeSubMode,
+              )
+            }
             class="practice-sub-mode-select"
           >
             <option value="all">All Notes</option>
@@ -205,7 +238,9 @@ export const PracticeTabHeader: Component<PracticeTabHeaderProps> = (props) => {
             max="280"
             value={appStore.bpm()}
             class="tempo-slider"
-            onInput={(e) => appStore.setBpm(parseInt(e.currentTarget.value) || 80)}
+            onInput={(e) =>
+              appStore.setBpm(parseInt(e.currentTarget.value) || 80)
+            }
           />
           <span id="tempo-value">{appStore.bpm()}</span>
         </div>
@@ -216,7 +251,11 @@ export const PracticeTabHeader: Component<PracticeTabHeaderProps> = (props) => {
           <select
             id="countin-select"
             value={appStore.countIn()}
-            onChange={(e) => appStore.setCountIn(parseInt(e.currentTarget.value) as CountInOption)}
+            onChange={(e) =>
+              appStore.setCountIn(
+                parseInt(e.currentTarget.value) as CountInOption,
+              )
+            }
             class="countin-select"
           >
             <option value="0">Off</option>
@@ -237,8 +276,8 @@ export const PracticeTabHeader: Component<PracticeTabHeaderProps> = (props) => {
             value={props.volume()}
             class="volume-slider"
             onInput={(e) => {
-              const vol = parseInt(e.currentTarget.value) || 80;
-              props.onVolumeChange(vol);
+              const vol = parseInt(e.currentTarget.value) || 80
+              props.onVolumeChange(vol)
             }}
           />
           <span id="volume-value">{props.volume()}</span>
@@ -252,9 +291,9 @@ export const PracticeTabHeader: Component<PracticeTabHeaderProps> = (props) => {
             value={appStore.playbackSpeed().toString()}
             class="speed-select"
             onChange={(e) => {
-              const speed = parseFloat(e.currentTarget.value);
-              appStore.setPlaybackSpeed(speed);
-              props.onSpeedChange(speed);
+              const speed = parseFloat(e.currentTarget.value)
+              appStore.setPlaybackSpeed(speed)
+              props.onSpeedChange(speed)
             }}
           >
             <option value="0.25">0.25x</option>
@@ -284,13 +323,13 @@ export const PracticeTabHeader: Component<PracticeTabHeaderProps> = (props) => {
             value={appStore.settings().sensitivity}
             class="sensitivity-slider"
             onInput={(e) => {
-              const val = parseInt(e.currentTarget.value) || 5;
-              appStore.setSensitivity(val);
+              const val = parseInt(e.currentTarget.value) || 5
+              appStore.setSensitivity(val)
             }}
           />
           <span id="sensitivity-value">{appStore.settings().sensitivity}</span>
         </div>
       </div>
     </div>
-  );
-};
+  )
+}

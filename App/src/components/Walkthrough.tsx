@@ -2,59 +2,53 @@
 // Walkthrough — Step-by-step tutorial overlay (GH #140)
 // ============================================================
 
-import { Component, createEffect, onCleanup, Show } from 'solid-js';
-import {
-  appStore,
-  WALKTHROUGH_STEPS,
-  endWalkthrough,
-  nextWalkthroughStep,
-  prevWalkthroughStep,
-} from '@/stores/app-store';
+import { Component, createEffect, onCleanup, Show } from 'solid-js'
+import { appStore, WALKTHROUGH_STEPS, endWalkthrough, nextWalkthroughStep, prevWalkthroughStep, } from '@/stores/app-store'
 
 export const Walkthrough: Component = () => {
   const currentStep = () =>
-    WALKTHROUGH_STEPS[appStore.walkthroughStep()] ?? WALKTHROUGH_STEPS[0];
+    WALKTHROUGH_STEPS[appStore.walkthroughStep()] ?? WALKTHROUGH_STEPS[0]
   const isLast = () =>
-    appStore.walkthroughStep() === WALKTHROUGH_STEPS.length - 1;
-  const isFirst = () => appStore.walkthroughStep() === 0;
+    appStore.walkthroughStep() === WALKTHROUGH_STEPS.length - 1
+  const isFirst = () => appStore.walkthroughStep() === 0
 
-  let highlightRef: HTMLDivElement | undefined;
-  const placement = () => currentStep().placement ?? 'bottom';
+  let highlightRef: HTMLDivElement | undefined
+  const placement = () => currentStep().placement ?? 'bottom'
 
   const updateHighlight = () => {
-    if (!highlightRef) return;
-    const el = document.querySelector(currentStep().targetSelector);
+    if (!highlightRef) return
+    const el = document.querySelector(currentStep().targetSelector)
     if (!el) {
-      highlightRef.style.display = 'none';
-      return;
+      highlightRef.style.display = 'none'
+      return
     }
-    highlightRef.style.display = '';
-    const rect = el.getBoundingClientRect();
-    const padding = 6;
-    highlightRef.style.top = `${rect.top - padding}px`;
-    highlightRef.style.left = `${rect.left - padding}px`;
-    highlightRef.style.width = `${rect.width + padding * 2}px`;
-    highlightRef.style.height = `${rect.height + padding * 2}px`;
-  };
+    highlightRef.style.display = ''
+    const rect = el.getBoundingClientRect()
+    const padding = 6
+    highlightRef.style.top = `${rect.top - padding}px`
+    highlightRef.style.left = `${rect.left - padding}px`
+    highlightRef.style.width = `${rect.width + padding * 2}px`
+    highlightRef.style.height = `${rect.height + padding * 2}px`
+  }
 
   createEffect(() => {
     if (appStore.walkthroughActive()) {
-      updateHighlight();
-      window.addEventListener('resize', updateHighlight);
-      window.addEventListener('scroll', updateHighlight, true);
+      updateHighlight()
+      window.addEventListener('resize', updateHighlight)
+      window.addEventListener('scroll', updateHighlight, true)
     }
-  });
+  })
 
   onCleanup(() => {
-    window.removeEventListener('resize', updateHighlight);
-    window.removeEventListener('scroll', updateHighlight, true);
-  });
+    window.removeEventListener('resize', updateHighlight)
+    window.removeEventListener('scroll', updateHighlight, true)
+  })
 
   // Update highlight whenever step changes
   createEffect(() => {
-    appStore.walkthroughStep(); // dependency
-    updateHighlight();
-  });
+    appStore.walkthroughStep() // dependency
+    updateHighlight()
+  })
 
   return (
     <Show when={appStore.walkthroughActive()}>
@@ -93,5 +87,5 @@ export const Walkthrough: Component = () => {
         </div>
       </div>
     </Show>
-  );
-};
+  )
+}
