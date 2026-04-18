@@ -88,9 +88,8 @@ export function setGridLines(visible: boolean): void {
 // ── Active tab ───────────────────────────────────────────────
 
 export type ActiveTab = 'practice' | 'editor' | 'settings';
-export function activeTab(): ActiveTab { return _activeTab(); }
+export const activeTab = createSignal<ActiveTab>('practice')[0];
 export { setActiveTab as setActiveTab };
-const [_activeTab, setActiveTab] = createSignal<ActiveTab>('practice');
 
 // ── Focus Mode ─────────────────────────────────────────────────
 const [focusMode, setFocusMode] = createSignal(false);
@@ -760,6 +759,7 @@ export const appStore = {
   setCountIn,
 
   // Navigation
+  activeTab,
   setActiveTab,
 
   // Focus Mode
