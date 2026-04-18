@@ -1797,6 +1797,7 @@ export class PianoRollEditor {
     this.emitMelodyChange();
     this.draw();
     this._updateHint();
+    this.updateUndoRedoButtons();
   }
 
   private eraseNote(note: MelodyItem): void {
