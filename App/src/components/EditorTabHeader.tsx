@@ -8,6 +8,7 @@ import type { Component } from 'solid-js'
 import { Show } from 'solid-js'
 import { MetronomeButton } from '@/components/MetronomeButton'
 import { MicButton } from '@/components/MicButton'
+import { Tooltip } from '@/components/Tooltip'
 import { appStore } from '@/stores/app-store'
 import { playback } from '@/stores/playback-store'
 
@@ -63,6 +64,21 @@ export const EditorTabHeader: Component<EditorTabHeaderProps> = (props) => {
           onClick={props.onMicToggle}
           disabled={false}
         />
+
+        <Tooltip text={appStore.micWaveVisible() ? 'Hide mic wave' : 'Show mic wave'}>
+          <button
+            class={`ctrl-btn wave-btn ${appStore.micWaveVisible() ? 'active' : ''}`}
+            onClick={appStore.toggleMicWaveVisible}
+            title="Toggle mic waveform view"
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16">
+              <path
+                fill="currentColor"
+                d="M3 9h2v6H3zm4-3h2v12H7zm4 6h2v3h-2zm4-3h2v6h-2zm4-2h2v10h-2z"
+              />
+            </svg>
+          </button>
+        </Tooltip>
 
         {/* Record to piano roll */}
         <button
