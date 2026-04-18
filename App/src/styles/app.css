@@ -2899,8 +2899,8 @@ header h1 {
   font-size: 1.2rem;
   color: var(--text-primary);
   margin: 0 0 20px 0;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--border);
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .settings-section {
@@ -2909,10 +2909,13 @@ header h1 {
 
 .settings-section-title {
   font-size: 0.9rem;
-  color: var(--text-secondary);
+  font-weight: 600;
+  color: var(--text-primary);
   margin: 0 0 12px 0;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .settings-desc {
