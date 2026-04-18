@@ -3,9 +3,6 @@
 // These are used across multiple modules
 // ============================================================
 
-import type { AudioEngine } from '../lib/audio-engine'
-import type { PianoRollEditor } from '../lib/piano-roll'
-
 /** Note name within an octave (C through B, with # for sharps) */
 export type NoteName =
   | 'C'

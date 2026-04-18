@@ -1,5 +1,4 @@
 // Vitest test setup file
-import type { AudioContext as AudioContextType } from 'standardized-audio-context'
 import '@testing-library/jest-dom'
 
 // Mock Web Audio API for tests
@@ -74,7 +73,7 @@ class MockAnalyser {
 // eslint-disable-next-line @typescript-eslint/no-extraneous-class
 class MockMediaStreamAudioSourceNode {}
 
-global.AudioContext = MockAudioContext as unknown as typeof AudioContextType
+global.AudioContext = MockAudioContext as unknown as typeof global.AudioContext
 ;(
   global.navigator as unknown as {
     mediaDevices?: { getUserMedia: () => Promise<{ getTracks: () => [] }> }

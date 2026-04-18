@@ -1550,7 +1550,7 @@ export class PianoRollEditor {
         // Get instrument from the toolbar select
         const instrumentSelect = container.querySelector(
           '#roll-instrument-select',
-        )
+        ) as HTMLSelectElement | null
         const instrument = (instrumentSelect?.value as InstrumentType) || 'sine'
         const success = await engine.downloadMelodyAsWAV(
           melody,

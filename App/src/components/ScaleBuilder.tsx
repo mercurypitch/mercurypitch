@@ -41,7 +41,7 @@ export const ScaleBuilder: Component<ScaleBuilderProps> = (props) => {
   const loadSavedScales = () => {
     try {
       const stored = localStorage.getItem('pitchperfect_custom_scales')
-      if (stored !== '') {
+      if (stored !== null && stored !== '') {
         setSavedScales(JSON.parse(stored))
       }
     } catch {

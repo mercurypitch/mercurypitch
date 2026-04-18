@@ -3,7 +3,7 @@
 // ============================================================
 
 import { midiToNote } from '@/lib/scale-data'
-import type { MelodyItem as _MelodyItem } from '@/types'
+import type { MelodyItem } from '@/types'
 
 export interface SharedPreset {
   /** Comma-separated note data: midi.startBeat.duration,midi.startBeat.duration,... */

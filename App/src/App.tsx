@@ -3,6 +3,7 @@
 // Matches the original JS app's HTML structure exactly
 // ============================================================
 
+import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, onCleanup, onMount, Show, } from 'solid-js'
 import type { PitchSample } from '@/components/PitchCanvas'
 import type { PracticeSubMode } from '@/components/PracticeTabHeader'

@@ -193,7 +193,7 @@ describe('MelodyEngine', () => {
       if (pendingCallbacks.length > 0) pendingCallbacks.shift()!(fakeNow)
 
       expect(callArgs.length).toBeGreaterThanOrEqual(1)
-      const firstNote = callArgs[0]
+      const firstNote = callArgs[0] as { duration: number }
       // Verify it's a MelodyItem with duration (not just MelodyNote)
       expect(firstNote).toHaveProperty('duration')
       expect(firstNote).toHaveProperty('startBeat')
@@ -232,7 +232,7 @@ describe('MelodyEngine', () => {
       if (pendingCallbacks.length > 0) pendingCallbacks.shift()!(fakeNow)
 
       expect(callArgs.length).toBeGreaterThanOrEqual(1)
-      const endedNote = callArgs[0]
+      const endedNote = callArgs[0] as { duration: number }
       expect(endedNote).toHaveProperty('duration')
       expect(endedNote.duration).toBe(2)
       e.destroy()
