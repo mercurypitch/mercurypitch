@@ -318,8 +318,8 @@ export const App: Component<AppProps> = (props) => {
         }
       }
 
-      // R → toggle Repeat mode
-      if (e.code === 'KeyR' && !isTyping) {
+      // R → toggle Repeat mode (but allow Ctrl+R / Cmd+R for browser reload)
+      if (e.code === 'KeyR' && !e.ctrlKey && !e.metaKey && !isTyping) {
         e.preventDefault()
         if (playMode() !== 'repeat') {
           setPlayMode('repeat')
