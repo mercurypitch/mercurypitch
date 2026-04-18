@@ -1,10 +1,22 @@
 // ============================================================
-// Walkthrough — Step-by-step tutorial overlay (GH #140)
+// Walkthrough — Step-by-step tutorial overlay (GH #140, GH #145)
 // ============================================================
 
 import type { Component } from 'solid-js'
 import { createEffect, onCleanup, Show } from 'solid-js'
-import { appStore, endWalkthrough, nextWalkthroughStep, prevWalkthroughStep, WALKTHROUGH_STEPS, } from '@/stores/app-store'
+import {
+  appStore,
+  endWalkthrough,
+  nextWalkthroughStep,
+  prevWalkthroughStep,
+  WALKTHROUGH_STEPS,
+} from '@/stores/app-store'
+
+type Placement = 'top' | 'bottom' | 'left' | 'right'
+
+const TOOLTIP_GAP = 12
+const TOOLTIP_WIDTH = 340
+const TOOLTIP_HEIGHT = 200
 
 export const Walkthrough: Component = () => {
   const currentStep = () =>
@@ -14,7 +26,10 @@ export const Walkthrough: Component = () => {
   const isFirst = () => appStore.walkthroughStep() === 0
 
   let highlightRef: HTMLDivElement | undefined
-  const placement = () => currentStep().placement ?? 'bottom'
+  let tooltipRef: HTMLDivElement | undefined
+
+  const getPlacement = (): Placement =>
+    currentStep().placement ?? 'bottom'
 
   const updateHighlight = () => {
     if (!highlightRef) return
@@ -32,23 +47,127 @@ export const Walkthrough: Component = () => {
     highlightRef.style.height = `${rect.height + padding * 2}px`
   }
 
+  const updateTooltip = () => {
+    if (!tooltipRef) return
+    const el = document.querySelector(currentStep().targetSelector)
+    if (!el) {
+      tooltipRef.style.opacity = '0'
+      return
+    }
+    tooltipRef.style.opacity = ''
+
+    const targetRect = el.getBoundingClientRect()
+    const vw = window.innerWidth
+    const vh = window.innerHeight
+
+    // Use measured dimensions if available, otherwise fall back to constants
+    const tooltipRect = tooltipRef.getBoundingClientRect()
+    const tW = tooltipRect.width > 0 ? tooltipRect.width : TOOLTIP_WIDTH
+    const tH = tooltipRect.height > 0 ? tooltipRect.height : TOOLTIP_HEIGHT
+
+    // Get desired placement, then check for overflow and flip if needed
+    let placement: Placement = getPlacement()
+
+    const targetCenterX = targetRect.left + targetRect.width / 2
+    const targetCenterY = targetRect.top + targetRect.height / 2
+
+    // Flip horizontal placements if tooltip would overflow
+    if (placement === 'right') {
+      const wouldOverflowRight = targetRect.right + TOOLTIP_GAP + tW > vw
+      if (wouldOverflowRight) {
+        placement = 'left'
+      }
+    } else if (placement === 'left') {
+      const wouldOverflowLeft = targetRect.left - TOOLTIP_GAP - tW < 0
+      if (wouldOverflowLeft) {
+        placement = 'right'
+      }
+    }
+
+    // Flip vertical placements if tooltip would overflow
+    if (placement === 'bottom') {
+      const wouldOverflowBottom = targetRect.bottom + TOOLTIP_GAP + tH > vh
+      if (wouldOverflowBottom) {
+        placement = 'top'
+      }
+    } else if (placement === 'top') {
+      const wouldOverflowTop = targetRect.top - TOOLTIP_GAP - tH < 0
+      if (wouldOverflowTop) {
+        placement = 'bottom'
+      }
+    }
+
+    // If target is too close to a horizontal edge and we're trying horizontal
+    // placement, fall back to vertical
+    if (placement === 'right' && targetRect.right > vw - tW * 0.5) {
+      placement = 'bottom'
+    } else if (placement === 'left' && targetRect.left < tW * 0.5) {
+      placement = 'bottom'
+    }
+
+    // Also check if all placements overflow — in that case clamp to nearest edge
+    let left: number
+    let top: number
+
+    switch (placement) {
+      case 'bottom':
+        left = targetCenterX - tW / 2
+        top = targetRect.bottom + TOOLTIP_GAP
+        break
+      case 'top':
+        left = targetCenterX - tW / 2
+        top = targetRect.top - tH - TOOLTIP_GAP
+        break
+      case 'right':
+        left = targetRect.right + TOOLTIP_GAP
+        top = targetCenterY - tH / 2
+        break
+      case 'left':
+        left = targetRect.left - tW - TOOLTIP_GAP
+        top = targetCenterY - tH / 2
+        break
+    }
+
+    // Clamp so tooltip stays within viewport
+    left = Math.max(12, Math.min(left, vw - tW - 12))
+    top = Math.max(12, Math.min(top, vh - tH - 12))
+
+    tooltipRef.style.left = `${left}px`
+    tooltipRef.style.top = `${top}px`
+    tooltipRef.dataset.placement = placement
+  }
+
   createEffect(() => {
     if (appStore.walkthroughActive()) {
       updateHighlight()
-      window.addEventListener('resize', updateHighlight)
-      window.addEventListener('scroll', updateHighlight, true)
+      updateTooltip()
+      window.addEventListener('resize', () => {
+        updateHighlight()
+        updateTooltip()
+      })
+      window.addEventListener('scroll', () => {
+        updateHighlight()
+        updateTooltip()
+      }, true)
     }
   })
 
   onCleanup(() => {
-    window.removeEventListener('resize', updateHighlight)
-    window.removeEventListener('scroll', updateHighlight, true)
+    window.removeEventListener('resize', () => {
+      updateHighlight()
+      updateTooltip()
+    })
+    window.removeEventListener('scroll', () => {
+      updateHighlight()
+      updateTooltip()
+    }, true)
   })
 
-  // Update highlight whenever step changes
+  // Update both when step changes
   createEffect(() => {
     appStore.walkthroughStep() // dependency
     updateHighlight()
+    updateTooltip()
   })
 
   return (
@@ -59,7 +178,8 @@ export const Walkthrough: Component = () => {
 
         {/* Tooltip card */}
         <div
-          class={`walkthrough-tooltip walkthrough-tooltip-${placement()}`}
+          ref={tooltipRef}
+          class="walkthrough-tooltip"
           onClick={(e) => {
             e.stopPropagation()
           }}

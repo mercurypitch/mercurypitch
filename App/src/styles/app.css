@@ -4117,25 +4117,59 @@ header h1 {
   border: 1px solid var(--border-color);
   border-radius: 14px;
   padding: 18px 22px;
-  max-width: 340px;
-  min-width: 280px;
+  width: 340px;
   z-index: 10000;
   box-shadow: 0 8px 40px rgba(0, 0, 0, 0.35);
   color: var(--text-primary);
   pointer-events: auto;
+  transition:
+    left 0.2s ease,
+    top 0.2s ease;
 }
 
-.walkthrough-tooltip-bottom {
-  transform: translate(-50%, 12px);
+/* Tooltip arrow indicator — points toward the highlighted target */
+.walkthrough-tooltip::after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 0;
+  border: 8px solid transparent;
 }
-.walkthrough-tooltip-top {
-  transform: translate(-50%, calc(-100% - 12px));
+
+/* Arrow points up when tooltip is below target */
+.walkthrough-tooltip[data-placement='bottom']::after {
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-bottom-color: var(--border-color);
+  border-top: none;
 }
-.walkthrough-tooltip-right {
-  transform: translate(12px, -50%);
+
+/* Arrow points down when tooltip is above target */
+.walkthrough-tooltip[data-placement='top']::after {
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-top-color: var(--border-color);
+  border-bottom: none;
 }
-.walkthrough-tooltip-left {
-  transform: translate(calc(-100% - 12px), -50%);
+
+/* Arrow points left when tooltip is to the right of target */
+.walkthrough-tooltip[data-placement='right']::after {
+  right: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  border-right-color: var(--border-color);
+  border-left: none;
+}
+
+/* Arrow points right when tooltip is to the left of target */
+.walkthrough-tooltip[data-placement='left']::after {
+  left: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  border-left-color: var(--border-color);
+  border-right: none;
 }
 
 .walkthrough-step-counter {
