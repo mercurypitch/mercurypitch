@@ -145,6 +145,140 @@ global.navigator = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 } as any
 
+// Mock browser APIs for test environment
+global.AudioContext = vi.fn().mockImplementation(function(this: object) {
+  Object.assign(this, {
+    state: 'running' as const,
+    sampleRate: 44100,
+    currentTime: 0,
+    resume: vi.fn().mockResolvedValue(undefined),
+    suspend: vi.fn().mockResolvedValue(undefined),
+    close: vi.fn().mockResolvedValue(undefined),
+    createGain: vi.fn().mockImplementation(() => ({
+      gain: {
+        value: 0,
+        valueOf: () => 0,
+        setTargetAtTime: vi.fn(),
+        cancelScheduledValues: vi.fn(),
+        setValueAtTime: vi.fn(),
+        linearRampToValueAtTime: vi.fn(),
+        exponentialRampToValueAtTime: vi.fn(),
+      },
+      connect: vi.fn(),
+      disconnect: vi.fn(),
+    })),
+    createOscillator: vi.fn().mockImplementation(() => ({
+      start: vi.fn(),
+      stop: vi.fn(),
+      connect: vi.fn(),
+      disconnect: vi.fn(),
+      type: 'sine' as const,
+      frequency: {
+        value: 440,
+        setTargetAtTime: vi.fn(),
+        setValueAtTime: vi.fn(),
+        exponentialRampToValueAtTime: vi.fn(),
+      },
+    })),
+    createAnalyser: vi.fn().mockImplementation(() => ({
+      fftSize: 2048,
+      smoothingTimeConstant: 0.1,
+      getFloatFrequencyData: vi.fn().mockReturnValue(new Float32Array(1024)),
+      getFloatTimeDomainData: vi.fn().mockReturnValue(new Float32Array(2048)),
+      getByteFrequencyData: vi.fn().mockReturnValue(new Uint8Array(1024)),
+    })),
+    createMediaStreamSource: vi.fn().mockReturnValue({
+      connect: vi.fn(),
+      disconnect: vi.fn(),
+    }),
+    createBuffer: vi.fn().mockImplementation(() => ({
+      numberOfChannels: 1,
+      sampleRate: 44100,
+      getChannelData: vi.fn().mockReturnValue(new Float32Array(44100)),
+      length: 44100,
+      copyToChannel: vi.fn(),
+    })),
+    createConvolver: vi.fn().mockImplementation(() => ({
+      buffer: null,
+      connect: vi.fn(),
+      disconnect: vi.fn(),
+    })),
+    destination: { connect: vi.fn() },
+  })
+})
+
+global.OfflineAudioContext = vi.fn().mockImplementation(function(this: object) {
+  Object.assign(this, {
+    sampleRate: 44100,
+    currentTime: 0,
+    createGain: vi.fn().mockImplementation(() => ({
+      gain: {
+        value: 0,
+        valueOf: () => 0,
+        setTargetAtTime: vi.fn(),
+        cancelScheduledValues: vi.fn(),
+        setValueAtTime: vi.fn(),
+        linearRampToValueAtTime: vi.fn(),
+        exponentialRampToValueAtTime: vi.fn(),
+      },
+      connect: vi.fn(),
+      disconnect: vi.fn(),
+    })),
+    createOscillator: vi.fn().mockImplementation(() => ({
+      start: vi.fn(),
+      stop: vi.fn(),
+      connect: vi.fn(),
+      disconnect: vi.fn(),
+      type: 'sine' as const,
+      frequency: {
+        value: 440,
+        setTargetAtTime: vi.fn(),
+        setValueAtTime: vi.fn(),
+        exponentialRampToValueAtTime: vi.fn(),
+      },
+    })),
+    createBuffer: vi.fn().mockImplementation(() => ({
+      numberOfChannels: 1,
+      sampleRate: 44100,
+      getChannelData: vi.fn().mockReturnValue(new Float32Array(44100)),
+      length: 44100,
+    })),
+    createConvolver: vi.fn().mockImplementation(() => ({
+      buffer: null,
+      connect: vi.fn(),
+      disconnect: vi.fn(),
+    })),
+    startRendering: vi.fn().mockResolvedValue({
+      numberOfChannels: 1,
+      sampleRate: 44100,
+      getChannelData: vi.fn().mockReturnValue(new Float32Array(44100)),
+      length: 44100,
+    }),
+  })
+})
+
+// Mock URL.createObjectURL for download tests
+global.URL = {
+  createObjectURL: vi.fn().mockReturnValue('mock-url' as any),
+  revokeObjectURL: vi.fn().mockImplementation(() => {}),
+} as any
+
+global.navigator = {
+  mediaDevices: {
+    getUserMedia: vi.fn().mockResolvedValue({
+      getTracks: vi.fn().mockReturnValue([]),
+    }) as any,
+    ondevicechange: null,
+    enumerateDevices: vi.fn(),
+    getDisplayMedia: vi.fn(),
+    getSupportedConstraints: vi.fn(),
+  },
+  clipboard: null,
+  credentials: null,
+  doNotTrack: null,
+  geolocation: null,
+} as any
+
 describe('AudioEngine', () => {
   let engine: AudioEngine
 
