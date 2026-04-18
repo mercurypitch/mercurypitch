@@ -4,6 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, onCleanup, onMount } from 'solid-js'
+import { appStore } from '@/stores/app-store'
 import type { MelodyItem, ScaleDegree } from '@/types'
 
 export interface PitchSample {

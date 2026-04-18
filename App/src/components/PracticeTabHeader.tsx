@@ -6,9 +6,9 @@
 import type { Component } from 'solid-js'
 import { Show } from 'solid-js'
 import { MetronomeButton } from '@/components/MetronomeButton'
-import { Tooltip } from '@/components/Tooltip'
 import { MicButton } from '@/components/MicButton'
 import { PrecCountButton } from '@/components/PrecCountButton'
+import { Tooltip } from '@/components/Tooltip'
 import { appStore } from '@/stores/app-store'
 
 export type PracticeSubMode = 'all' | 'random' | 'focus' | 'reverse'

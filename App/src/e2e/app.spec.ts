@@ -6,12 +6,19 @@ import { expect, test } from '@playwright/test'
  * Call this after page.goto() before interacting with the app.
  */
 async function dismissWelcomeIfShown(page: Page): Promise<void> {
+  // The welcome overlay uses class="welcome-overlay" (no leading dot)
   const overlay = page.locator('.welcome-overlay')
-  if ((await overlay.count()) > 0 && (await overlay.isVisible())) {
-    const dismissBtn = page.locator('.welcome-cta, .overlay-close')
-    if ((await dismissBtn.count()) > 0) {
-      await dismissBtn.first().click()
-      await overlay.waitFor({ state: 'hidden', timeout: 5000 })
+  if ((await overlay.count()) > 0) {
+    const isVisible = await overlay.isVisible().catch(() => false)
+    if (isVisible) {
+      const dismissBtn = page.locator('button.overlay-close')
+      if ((await dismissBtn.count()) > 0) {
+        await dismissBtn.first().click()
+        await overlay.waitFor({ state: 'hidden', timeout: 5000 })
+      } else {
+        // No close button, click anywhere on overlay to dismiss
+        await overlay.first().click()
+      }
     }
   }
 }
@@ -170,12 +177,8 @@ test.describe('PitchPerfect App', () => {
   })
 
   test('practice tab has playback controls', async ({ page }) => {
-    // Mic toggle button should be present
-    await expect(
-      page.locator(
-        '.mic-toggle-btn, button[title*="microphone" i], button[title*="mic" i]',
-      ),
-    ).toBeVisible({ timeout: 5000 })
+    // Check essential controls - mic button with id btn-mic
+    await expect(page.locator('#btn-mic')).toBeVisible({ timeout: 5000 })
   })
 
   test('record button exists and toggles', async ({ page }) => {
