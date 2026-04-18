@@ -486,6 +486,7 @@ export const SettingsPanel: Component = () => {
         {/* About Section */}
         <div class="settings-section">
           <h3 class="settings-section-title">About PitchPerfect</h3>
+          <div class="settings-divider" />
           <div class="about-content">
             <div class="about-logo">
               <svg viewBox="0 0 48 48" width="40" height="40">
