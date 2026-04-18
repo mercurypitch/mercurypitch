@@ -437,6 +437,52 @@ export const SettingsPanel: Component = () => {
           </div>
         </div>
 
+        {/* Keyboard Shortcuts Section */}
+        <div class="settings-section">
+          <h3 class="settings-section-title">Keyboard Shortcuts</h3>
+          <p class="settings-desc">
+            Global shortcuts active when not typing in a text field.
+          </p>
+          <div class="keymap-table">
+            <div class="keymap-row keymap-header">
+              <span>Key</span>
+              <span>Action</span>
+            </div>
+            <div class="keymap-row">
+              <kbd>Space</kbd>
+              <span>Play / Pause / Resume (focus mode)</span>
+            </div>
+            <div class="keymap-row">
+              <kbd>Esc</kbd>
+              <span>Exit focus mode / Stop playback</span>
+            </div>
+            <div class="keymap-row">
+              <kbd>Home</kbd>
+              <span>Go to beginning</span>
+            </div>
+            <div class="keymap-row">
+              <kbd>R</kbd>
+              <span>Toggle Repeat mode</span>
+            </div>
+            <div class="keymap-row">
+              <kbd>P</kbd>
+              <span>Toggle Practice mode</span>
+            </div>
+            <div class="keymap-row">
+              <kbd>O</kbd>
+              <span>Toggle Once mode</span>
+            </div>
+            <div class="keymap-row">
+              <kbd>↑</kbd>
+              <span>Increase playback speed</span>
+            </div>
+            <div class="keymap-row">
+              <kbd>↓</kbd>
+              <span>Decrease playback speed</span>
+            </div>
+          </div>
+        </div>
+
         {/* About Section */}
         <div class="settings-section">
           <h3 class="settings-section-title">About PitchPerfect</h3>
