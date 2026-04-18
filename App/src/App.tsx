@@ -26,8 +26,13 @@ import { FocusMode } from '@/components/FocusMode';
 import { WelcomeScreen } from '@/components/WelcomeScreen';
 import type { PresetData } from '@/stores/app-store';
 import { HistoryCanvas } from '@/components/HistoryCanvas';
-import { appStore, getNoteAccuracyMap } from '@/stores/app-store';
+import { appStore, activeTab, setActiveTab, getNoteAccuracyMap } from '@/stores/app-store';
 import { playback } from '@/stores/playback-store';
+
+// Expose appStore for E2E testing
+if (typeof window !== 'undefined') {
+  (window as any).__appStore = appStore;
+}
 import { melodyStore } from '@/stores/melody-store';
 import { melodyTotalBeats, buildSampleMelody, buildMultiOctaveScale, keyTonicFreq, midiToNote } from '@/lib/scale-data';
 import { AudioEngine, type InstrumentType } from '@/lib/audio-engine';
@@ -894,7 +899,7 @@ export const App: Component<AppProps> = (props) => {
       currentNoteMidi = -1;
       currentNoteStartBeat = -1;
       setIsRecording(false);
-      appStore.setActiveTab('editor');
+      setActiveTab('editor');
     } else {
       // Start recording
       const micOk = await practiceEngine.startMic();
@@ -940,11 +945,15 @@ export const App: Component<AppProps> = (props) => {
   // ── Tab switching ─────────────────────────────────────────────
 
   const handleTabPractice = () => {
-    appStore.setActiveTab('practice');
+    setActiveTab('practice');
   };
 
   const handleTabEditor = () => {
-    appStore.setActiveTab('editor');
+    setActiveTab('editor');
+  };
+
+  const handleTabSettings = () => {
+    setActiveTab('settings');
   };
 
   // ── Target note for pitch display ───────────────────────────
@@ -1032,14 +1041,14 @@ export const App: Component<AppProps> = (props) => {
           <nav id="app-tabs">
             <button
               id="tab-practice"
-              class={`app-tab ${appStore.activeTab() === 'practice' ? 'active' : ''}`}
+              class={`app-tab ${activeTab() === 'practice' ? 'active' : ''}`}
               onClick={handleTabPractice}
             >
               Practice
             </button>
             <button
               id="tab-editor"
-              class={`app-tab ${appStore.activeTab() === 'editor' ? 'active' : ''}`}
+              class={`app-tab ${activeTab() === 'editor' ? 'active' : ''}`}
               onClick={handleTabEditor}
             >
               Editor
@@ -1049,8 +1058,8 @@ export const App: Component<AppProps> = (props) => {
             </button>
             <button
               id="tab-settings"
-              class={`app-tab ${appStore.activeTab() === 'settings' ? 'active' : ''}`}
-              onClick={() => appStore.setActiveTab('settings')}
+              class={`app-tab ${activeTab() === 'settings' ? 'active' : ''}`}
+              onClick={handleTabSettings}
             >
               Settings
             </button>
@@ -1083,7 +1092,7 @@ export const App: Component<AppProps> = (props) => {
         {/* Tab content */}
         <div class="main-content">
           {/* Practice tab */}
-          <Show when={appStore.activeTab() === 'practice'}>
+          <Show when={activeTab() === 'practice'}>
             {/* Practice-specific header: mic + mode toggles + playback controls */}
             <PracticeTabHeader
               isPlaying={isPlaying}
@@ -1158,7 +1167,7 @@ export const App: Component<AppProps> = (props) => {
           </Show>
 
           {/* Editor tab */}
-          <Show when={appStore.activeTab() === 'editor'}>
+          <Show when={activeTab() === 'editor'}>
             <EditorTabHeader
               isPlaying={editorIsPlaying}
               isPaused={editorIsPaused}
@@ -1210,7 +1219,7 @@ export const App: Component<AppProps> = (props) => {
           </Show>
 
           {/* Settings tab */}
-          <Show when={appStore.activeTab() === 'settings'}>
+          <Show when={activeTab() === 'settings'}>
             <div id="settings-panel">
               <SettingsPanel />
             </div>

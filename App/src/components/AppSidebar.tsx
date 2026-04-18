@@ -7,6 +7,7 @@
 import { Component, For, Show } from 'solid-js';
 import {
   appStore,
+  activeTab,
   getNoteAccuracyMap,
 } from '@/stores/app-store';
 import { melodyStore } from '@/stores/melody-store';
@@ -167,7 +168,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
       </div>
 
       {/* Stats panel — Practice tab only */}
-      <Show when={appStore.activeTab() === 'practice'}>
+      <Show when={activeTab() === 'practice'}>
         <div class="sidebar-section">
           <div id="stats-panel">
             <h3>Accuracy</h3>
@@ -226,7 +227,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
       </Show>
 
       {/* Note list + pitch reference — Practice tab only (bottom-anchored) */}
-      <Show when={appStore.activeTab() === 'practice'}>
+      <Show when={activeTab() === 'practice'}>
         <div class="sidebar-section sidebar-notes-bottom">
           <NoteList
             melody={props.melody}
