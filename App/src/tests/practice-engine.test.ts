@@ -2,7 +2,7 @@
 // Practice Engine Tests
 // ============================================================
 
-import { describe, expect,it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { centsToBand, centsToRating, ratingToScore, scoreGrade, } from '@/lib/practice-engine'
 import type { AccuracyRating } from '@/types'
 

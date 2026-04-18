@@ -3,7 +3,7 @@
 // Matches the original JS app's HTML structure exactly
 // ============================================================
 
-import { createEffect, createMemo, createSignal, onCleanup, onMount, Show } from 'solid-js'
+import { createEffect, createMemo, createSignal, onCleanup, onMount, Show, } from 'solid-js'
 import type { PitchSample } from '@/components/PitchCanvas'
 import type { PracticeSubMode } from '@/components/PracticeTabHeader'
 import type { InstrumentType } from '@/lib/audio-engine'
@@ -11,13 +11,13 @@ import { AudioEngine } from '@/lib/audio-engine'
 import { MelodyEngine } from '@/lib/melody-engine'
 import type { PlaybackState } from '@/lib/piano-roll'
 import { PracticeEngine } from '@/lib/practice-engine'
-import { buildMultiOctaveScale, keyTonicFreq, melodyTotalBeats, midiToNote } from '@/lib/scale-data'
+import { buildMultiOctaveScale, keyTonicFreq, melodyTotalBeats, midiToNote, } from '@/lib/scale-data'
 import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
 import type { PresetData } from '@/stores/app-store'
 import { appStore, getNoteAccuracyMap } from '@/stores/app-store'
 import { melodyStore } from '@/stores/melody-store'
 import { playback } from '@/stores/playback-store'
-import type { EffectType, MelodyItem, NoteName, NoteResult, PitchResult, PracticeResult } from '@/types'
+import type { EffectType, MelodyItem, NoteName, NoteResult, PitchResult, PracticeResult, } from '@/types'
 
 // Expose appStore for E2E testing
 if (typeof window !== 'undefined') {
@@ -516,7 +516,11 @@ export const App: Component<AppProps> = (props) => {
                 // Actually, let's use a simpler approach: the onComplete for rest items will
                 // detect rest items by checking if getCurrentSessionItem().type === 'rest'
                 // and call advanceSessionItem() then wait restDuration before loading the scale
-                console.info('[onComplete] rest timeout for', restDuration, 'ms')
+                console.info(
+                  '[onComplete] rest timeout for',
+                  restDuration,
+                  'ms',
+                )
                 setTimeout(() => {
                   console.info(
                     '[onComplete rest timeout] firing, idx:',
@@ -599,7 +603,9 @@ export const App: Component<AppProps> = (props) => {
             melodyStore.setCurrentNoteIndex(-1)
             setPitchHistory([])
             practiceEngine.resetSession()
-            setTimeout(() => { melodyEngine.start(appStore.countIn()); }, 600)
+            setTimeout(() => {
+              melodyEngine.start(appStore.countIn())
+            }, 600)
             return
           } else {
             // All cycles done — compute combined result
@@ -746,7 +752,7 @@ export const App: Component<AppProps> = (props) => {
         console.info(
           '[App] Mic state changed:',
           active ? 'ACTIVE' : 'INACTIVE',
-          error !== undefined && error !== '' ? `Error: ${  error}` : '',
+          error !== undefined && error !== '' ? `Error: ${error}` : '',
         )
         appStore.setMicActive(active)
         if (error !== undefined && error !== '') {
@@ -1057,7 +1063,9 @@ export const App: Component<AppProps> = (props) => {
           )
           setTimeout(() => handlePlay(), 500)
         } else if (nextItem.type === 'rest') {
-          setTimeout(() => { handleSessionSkip(); }, nextItem.restMs ?? 2000)
+          setTimeout(() => {
+            handleSessionSkip()
+          }, nextItem.restMs ?? 2000)
         }
       }
     } else {
@@ -1148,7 +1156,9 @@ export const App: Component<AppProps> = (props) => {
       currentNoteStartBeat = -1
       silenceFrames = 0
       // eslint-disable-next-line no-restricted-globals
-      freeRecordStartTime = (performance as unknown as { now: () => number }).now()
+      freeRecordStartTime = (
+        performance as unknown as { now: () => number }
+      ).now()
       setIsRecording(true)
     }
   }
@@ -1346,7 +1356,9 @@ export const App: Component<AppProps> = (props) => {
                 onMetronomeToggle={() =>
                   setMetronomeEnabled(!metronomeEnabled())
                 }
-                onSpeedChange={(speed) => { melodyEngine?.setPlaybackSpeed(speed); }}
+                onSpeedChange={(speed) => {
+                  melodyEngine?.setPlaybackSpeed(speed)
+                }}
                 onVolumeChange={(vol) => {
                   setSavedVol(vol)
                   audioEngine?.setVolume(vol / 100)
@@ -1441,10 +1453,12 @@ export const App: Component<AppProps> = (props) => {
                 totalBeats={() => totalBeats()}
                 playbackState={() => playback.state() as PlaybackState}
                 currentNoteIndex={() => melodyStore.currentNoteIndex()}
-                onMelodyChange={(melody) => { melodyStore.setMelody(melody); }}
-                onInstrumentChange={(instrument) =>
-                  { audioEngine.setInstrument(instrument as InstrumentType); }
-                }
+                onMelodyChange={(melody) => {
+                  melodyStore.setMelody(melody)
+                }}
+                onInstrumentChange={(instrument) => {
+                  audioEngine.setInstrument(instrument as InstrumentType)
+                }}
                 onPlaybackStateChange={(state) => {
                   setEditorPlaybackState(state)
                 }}
@@ -1485,7 +1499,12 @@ export const App: Component<AppProps> = (props) => {
       {/* Score overlay */}
       <Show when={practiceResult() !== null}>
         <div class="overlay" onClick={closeScoreOverlay}>
-          <div id="score-card" onClick={(e) => { e.stopPropagation(); }}>
+          <div
+            id="score-card"
+            onClick={(e) => {
+              e.stopPropagation()
+            }}
+          >
             <button class="overlay-close" onClick={closeScoreOverlay}>
               &times;
             </button>
@@ -1585,7 +1604,12 @@ export const App: Component<AppProps> = (props) => {
       {/* Session Summary Overlay */}
       <Show when={sessionSummary() !== null}>
         <div class="overlay" onClick={() => setSessionSummary(null)}>
-          <div id="session-summary-card" onClick={(e) => { e.stopPropagation(); }}>
+          <div
+            id="session-summary-card"
+            onClick={(e) => {
+              e.stopPropagation()
+            }}
+          >
             <button
               class="overlay-close"
               onClick={() => setSessionSummary(null)}

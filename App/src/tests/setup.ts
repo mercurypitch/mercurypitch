@@ -75,7 +75,11 @@ class MockAnalyser {
 class MockMediaStreamAudioSourceNode {}
 
 global.AudioContext = MockAudioContext as unknown as typeof AudioContextType
-;(global.navigator as unknown as { mediaDevices?: { getUserMedia: () => Promise<{ getTracks: () => [] }> } }).mediaDevices = {
+;(
+  global.navigator as unknown as {
+    mediaDevices?: { getUserMedia: () => Promise<{ getTracks: () => [] }> }
+  }
+).mediaDevices = {
   getUserMedia: () => Promise.resolve({ getTracks: () => [] }),
 }
 

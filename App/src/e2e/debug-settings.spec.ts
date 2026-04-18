@@ -47,7 +47,12 @@ test('debug settings panel mounting', async ({ page }) => {
     const elements = document.querySelectorAll('*')
     const found = []
     for (const el of elements) {
-      if (el.textContent !== null && el.textContent !== undefined && el.textContent.includes('Settings') && el.children.length === 0) {
+      if (
+        el.textContent !== null &&
+        el.textContent !== undefined &&
+        el.textContent.includes('Settings') &&
+        el.children.length === 0
+      ) {
         found.push(`${el.tagName}#${el.id}.${el.className}`)
       }
     }

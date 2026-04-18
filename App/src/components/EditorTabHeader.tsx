@@ -4,7 +4,7 @@
 // playback bar is always visible regardless of active tab.
 // ============================================================
 
-import type { Component} from 'solid-js';
+import type { Component } from 'solid-js'
 import { Show } from 'solid-js'
 import { MetronomeButton } from '@/components/MetronomeButton'
 import { MicButton } from '@/components/MicButton'

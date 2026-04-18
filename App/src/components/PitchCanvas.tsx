@@ -2,8 +2,8 @@
 // PitchCanvas — Pitch trail and melody display canvas
 // ============================================================
 
-import type { Component} from 'solid-js';
-import { createEffect,onCleanup, onMount } from 'solid-js'
+import type { Component } from 'solid-js'
+import { createEffect, onCleanup, onMount } from 'solid-js'
 import type { MelodyItem, ScaleDegree } from '@/types'
 
 export interface PitchSample {
@@ -51,7 +51,9 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       isSeeking = false
     })
 
-    const ro = new ResizeObserver(() => { resizeCanvas(); })
+    const ro = new ResizeObserver(() => {
+      resizeCanvas()
+    })
     ro.observe(canvasRef.parentElement!)
 
     startLoop()
@@ -86,8 +88,8 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     const h = canvasRef.parentElement!.clientHeight
     canvasRef.width = w * dpr
     canvasRef.height = h * dpr
-    canvasRef.style.width = `${w  }px`
-    canvasRef.style.height = `${h  }px`
+    canvasRef.style.width = `${w}px`
+    canvasRef.style.height = `${h}px`
     ctx?.setTransform(dpr, 0, 0, dpr, 0, 0)
   }
 
@@ -282,8 +284,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
 
         if (bw >= 12) {
           ctx.fillStyle = isActive ? '#58a6ff' : 'rgba(88,166,255,0.65)'
-          ctx.font =
-            `${(isActive ? 'bold ' : '') + (isActive ? 12 : 11)  }px sans-serif`
+          ctx.font = `${(isActive ? 'bold ' : '') + (isActive ? 12 : 11)}px sans-serif`
           ctx.textAlign = 'center'
           ctx.textBaseline = 'middle'
           ctx.fillText(item.note.name, x1 + bw / 2, y + 0.5)
@@ -326,7 +327,12 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
 
       // Glowing dot at last position
       const last = history[history.length - 1]
-      if (last !== null && last !== undefined && last.freq !== undefined && last.confidence >= 0.2) {
+      if (
+        last !== null &&
+        last !== undefined &&
+        last.freq !== undefined &&
+        last.confidence >= 0.2
+      ) {
         const lx = beatToX(last.beat, w)
         const ly = freqToY(last.freq, h)
         const grad = ctx.createRadialGradient(lx, ly, 0, lx, ly, 12)

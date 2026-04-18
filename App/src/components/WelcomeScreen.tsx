@@ -2,7 +2,7 @@
 // WelcomeScreen — first-run welcome overlay (GH #131)
 // ============================================================
 
-import type { Component} from 'solid-js';
+import type { Component } from 'solid-js'
 import { createSignal } from 'solid-js'
 import { appStore } from '@/stores/app-store'
 
@@ -29,11 +29,23 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
   }
 
   return (
-    <div class="welcome-overlay" onClick={() => { appStore.dismissWelcome(); }}>
-      <div class="welcome-card" onClick={(e) => { e.stopPropagation(); }}>
+    <div
+      class="welcome-overlay"
+      onClick={() => {
+        appStore.dismissWelcome()
+      }}
+    >
+      <div
+        class="welcome-card"
+        onClick={(e) => {
+          e.stopPropagation()
+        }}
+      >
         <button
           class="overlay-close"
-          onClick={() => { appStore.dismissWelcome(); }}
+          onClick={() => {
+            appStore.dismissWelcome()
+          }}
           title="Dismiss"
         >
           &times;
@@ -84,7 +96,9 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
               Microphone enabled
             </div>
           )}
-          {micError() !== null && <div class="welcome-mic-error">{micError()}</div>}
+          {micError() !== null && (
+            <div class="welcome-mic-error">{micError()}</div>
+          )}
         </div>
 
         {/* Features */}
@@ -137,7 +151,12 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
         </div>
 
         {/* CTA */}
-        <button class="welcome-cta" onClick={() => { appStore.dismissWelcome(); }}>
+        <button
+          class="welcome-cta"
+          onClick={() => {
+            appStore.dismissWelcome()
+          }}
+        >
           <svg viewBox="0 0 24 24" width="20" height="20">
             <path fill="currentColor" d="M8 5v14l11-7z" />
           </svg>

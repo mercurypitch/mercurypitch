@@ -4,9 +4,7 @@ import { expect, test } from '@playwright/test'
 /**
  * Dismisses the welcome overlay if it appears.
  */
-async function dismissWelcomeIfShown(
-  page: Page,
-): Promise<void> {
+async function dismissWelcomeIfShown(page: Page): Promise<void> {
   const overlay = page.locator('.welcome-overlay')
   if ((await overlay.count()) > 0 && (await overlay.isVisible())) {
     const dismissBtn = page.locator('.welcome-cta, .overlay-close')
@@ -130,7 +128,13 @@ test.describe('Critical Flows — GH #121', () => {
 
       // Get initial speed from store
       const initialSpeed = await page.evaluate(() => {
-        return (window as unknown as { __appStore?: { playbackSpeed: () => number } }).__appStore?.playbackSpeed() ?? 1.0
+        return (
+          (
+            window as unknown as {
+              __appStore?: { playbackSpeed: () => number }
+            }
+          ).__appStore?.playbackSpeed() ?? 1.0
+        )
       })
 
       // Press ArrowUp (faster)
@@ -138,7 +142,13 @@ test.describe('Critical Flows — GH #121', () => {
       await page.waitForTimeout(200)
 
       const speedAfterUp = await page.evaluate(() => {
-        return (window as unknown as { __appStore?: { playbackSpeed: () => number } }).__appStore?.playbackSpeed() ?? 1.0
+        return (
+          (
+            window as unknown as {
+              __appStore?: { playbackSpeed: () => number }
+            }
+          ).__appStore?.playbackSpeed() ?? 1.0
+        )
       })
 
       // Speed should have increased
@@ -149,7 +159,13 @@ test.describe('Critical Flows — GH #121', () => {
       await page.waitForTimeout(200)
 
       const speedAfterDown = await page.evaluate(() => {
-        return (window as unknown as { __appStore?: { playbackSpeed: () => number } }).__appStore?.playbackSpeed() ?? 1.0
+        return (
+          (
+            window as unknown as {
+              __appStore?: { playbackSpeed: () => number }
+            }
+          ).__appStore?.playbackSpeed() ?? 1.0
+        )
       })
 
       // Speed should decrease back
@@ -183,7 +199,13 @@ test.describe('Critical Flows — GH #121', () => {
       await page.waitForTimeout(200)
 
       const storeSpeed = await page.evaluate(() => {
-        return (window as unknown as { __appStore?: { playbackSpeed: () => number } }).__appStore?.playbackSpeed() ?? 1.0
+        return (
+          (
+            window as unknown as {
+              __appStore?: { playbackSpeed: () => number }
+            }
+          ).__appStore?.playbackSpeed() ?? 1.0
+        )
       })
       expect(storeSpeed).toBe(0.5)
 
@@ -191,7 +213,13 @@ test.describe('Critical Flows — GH #121', () => {
       await page.waitForTimeout(200)
 
       const storeSpeed2 = await page.evaluate(() => {
-        return (window as unknown as { __appStore?: { playbackSpeed: () => number } }).__appStore?.playbackSpeed() ?? 1.0
+        return (
+          (
+            window as unknown as {
+              __appStore?: { playbackSpeed: () => number }
+            }
+          ).__appStore?.playbackSpeed() ?? 1.0
+        )
       })
       expect(storeSpeed2).toBe(2.0)
     })
@@ -302,7 +330,11 @@ test.describe('Critical Flows — GH #121', () => {
     test('Ctrl+Z undo and Ctrl+Y redo keyboard shortcuts', async ({ page }) => {
       // Navigate to Editor tab first
       await page.evaluate(() => {
-        const store = (window as unknown as { __appStore?: { setActiveTab: (tab: string) => void } }).__appStore
+        const store = (
+          window as unknown as {
+            __appStore?: { setActiveTab: (tab: string) => void }
+          }
+        ).__appStore
         if (store !== null && store !== undefined) store.setActiveTab('editor')
       })
       await page.waitForTimeout(300)

@@ -2,7 +2,7 @@
 // Pitch Detector Tests
 // ============================================================
 
-import { beforeEach,describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { PitchDetector } from '@/lib/pitch-detector'
 
 function createSineBuffer(

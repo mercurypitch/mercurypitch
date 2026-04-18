@@ -3,12 +3,12 @@
 // This is the second header bar containing all practice controls
 // ============================================================
 
-import type { Component} from 'solid-js';
+import type { Component } from 'solid-js'
 import { Show } from 'solid-js'
 import { MetronomeButton } from '@/components/MetronomeButton'
 import { MicButton } from '@/components/MicButton'
-import type {CountInOption} from '@/stores/app-store';
-import { appStore  } from '@/stores/app-store'
+import type { CountInOption } from '@/stores/app-store'
+import { appStore } from '@/stores/app-store'
 
 export type PracticeSubMode = 'all' | 'random' | 'focus' | 'reverse'
 
@@ -138,21 +138,27 @@ export const PracticeTabHeader: Component<PracticeTabHeaderProps> = (props) => {
           <button
             id="btn-once"
             class={`mode-btn ${props.playMode() === 'once' ? 'active' : ''}`}
-            onClick={() => { props.onPlayModeChange('once'); }}
+            onClick={() => {
+              props.onPlayModeChange('once')
+            }}
           >
             Once
           </button>
           <button
             id="btn-repeat"
             class={`mode-btn ${props.playMode() === 'repeat' ? 'active' : ''}`}
-            onClick={() => { props.onPlayModeChange('repeat'); }}
+            onClick={() => {
+              props.onPlayModeChange('repeat')
+            }}
           >
             Repeat
           </button>
           <button
             id="btn-practice"
             class={`mode-btn ${props.playMode() === 'practice' ? 'active' : ''}`}
-            onClick={() => { props.onPlayModeChange('practice'); }}
+            onClick={() => {
+              props.onPlayModeChange('practice')
+            }}
           >
             Practice
           </button>
@@ -161,7 +167,9 @@ export const PracticeTabHeader: Component<PracticeTabHeaderProps> = (props) => {
         {/* Focus Mode */}
         <button
           class="ctrl-btn focus-btn"
-          onClick={() => { appStore.enterFocusMode(); }}
+          onClick={() => {
+            appStore.enterFocusMode()
+          }}
           title="Enter Focus Mode (minimal UI)"
         >
           <svg viewBox="0 0 24 24" width="16" height="16">
@@ -205,22 +213,22 @@ export const PracticeTabHeader: Component<PracticeTabHeaderProps> = (props) => {
             min="2"
             max="20"
             value={props.practiceCycles()}
-            onInput={(e) =>
-              { props.onCyclesChange(
+            onInput={(e) => {
+              props.onCyclesChange(
                 Math.max(2, Math.min(20, parseInt(e.currentTarget.value) || 5)),
-              ); }
-            }
+              )
+            }}
             class="cycles-input"
           />
           <label class="opt-label">Mode:</label>
           <select
             id="practice-sub-mode"
             value={props.practiceSubMode()}
-            onChange={(e) =>
-              { props.onPracticeSubModeChange(
+            onChange={(e) => {
+              props.onPracticeSubModeChange(
                 e.currentTarget.value as PracticeSubMode,
-              ); }
-            }
+              )
+            }}
             class="practice-sub-mode-select"
           >
             <option value="all">All Notes</option>

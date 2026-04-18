@@ -3,12 +3,12 @@
 // Used in sidebar for both Practice and Editor tabs
 // ============================================================
 
-import type { Component} from 'solid-js';
+import type { Component } from 'solid-js'
 import { createMemo, createSignal, onMount } from 'solid-js'
 import { buildSampleMelody } from '@/lib/scale-data'
 import { copyShareURL } from '@/lib/share-url'
-import type {PresetData} from '@/stores/app-store';
-import { appStore, deletePreset, initPresets,loadPreset, savePreset  } from '@/stores/app-store'
+import type { PresetData } from '@/stores/app-store'
+import { appStore, deletePreset, initPresets, loadPreset, savePreset, } from '@/stores/app-store'
 import { melodyStore } from '@/stores/melody-store'
 
 interface PresetSelectorProps {
@@ -148,7 +148,9 @@ export const PresetSelector: Component<PresetSelectorProps> = (props) => {
         id="preset-select"
         placeholder="— Select or type melody —"
         value={currentName()}
-        onChange={(e) => { handleLoad(e.currentTarget.value); }}
+        onChange={(e) => {
+          handleLoad(e.currentTarget.value)
+        }}
         onBlur={(e) => setSaveName(e.currentTarget.value)}
       />
       <datalist id="preset-datalist">

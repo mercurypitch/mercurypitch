@@ -3,7 +3,7 @@
 // Shows session name, item progress, elapsed time, skip/end controls
 // ============================================================
 
-import type { Component} from 'solid-js';
+import type { Component } from 'solid-js'
 import { createSignal, onCleanup, Show } from 'solid-js'
 import { appStore } from '@/stores/app-store'
 

@@ -2,7 +2,7 @@
 // Audio Engine — Web Audio API playback and microphone input
 // ============================================================
 
-import type { AudioEngineCallbacks, EffectType,MelodyItem, MelodyNote,  } from '@/types'
+import type { AudioEngineCallbacks, EffectType, MelodyItem, MelodyNote, } from '@/types'
 
 export type InstrumentType = 'sine' | 'piano' | 'organ' | 'strings' | 'synth'
 
@@ -82,7 +82,11 @@ export class AudioEngine {
     this.reverbSendGain.gain.value = 0
     this.reverbReturnGain.gain.value = 0
 
-    if (this.playbackAnalyser !== null && this.playbackAnalyser !== undefined && typeof this.mainGain.connect === 'function') {
+    if (
+      this.playbackAnalyser !== null &&
+      this.playbackAnalyser !== undefined &&
+      typeof this.mainGain.connect === 'function'
+    ) {
       // Dry path: mainGain → playbackAnalyser (always full volume)
       this.mainGain.connect(this.playbackAnalyser)
       // Wet send tap: mainGain → reverbSendGain (gain = wetness, only active when reverb on)
@@ -242,12 +246,16 @@ export class AudioEngine {
     if (this.reverbSendGain && this.reverbNode) {
       try {
         this.reverbSendGain.disconnect(this.reverbNode)
-      } catch { /* empty */ }
+      } catch {
+        /* empty */
+      }
     }
     if (this.reverbNode && this.reverbReturnGain) {
       try {
         this.reverbNode.disconnect(this.reverbReturnGain)
-      } catch { /* empty */ }
+      } catch {
+        /* empty */
+      }
     }
 
     if (!this.reverbNode || !this.reverbSendGain || !this.reverbReturnGain)
@@ -257,13 +265,19 @@ export class AudioEngine {
     // Wire: mainGain → reverbSendGain → reverbNode → reverbReturnGain → playbackAnalyser
     try {
       this.reverbSendGain.connect(this.reverbNode)
-    } catch { /* empty */ }
+    } catch {
+      /* empty */
+    }
     try {
       this.reverbNode.connect(this.reverbReturnGain)
-    } catch { /* empty */ }
+    } catch {
+      /* empty */
+    }
     try {
       this.reverbReturnGain.connect(this.playbackAnalyser)
-    } catch { /* empty */ }
+    } catch {
+      /* empty */
+    }
   }
 
   getVolume(): number {
@@ -411,7 +425,11 @@ export class AudioEngine {
       console.info('[AudioEngine] Requesting microphone access...')
 
       // eslint-disable-next-line no-restricted-globals
-      this.micStream = await (navigator as unknown as { mediaDevices: { getUserMedia: (opts: object) => Promise<MediaStream> } }).mediaDevices.getUserMedia({
+      this.micStream = await (
+        navigator as unknown as {
+          mediaDevices: { getUserMedia: (opts: object) => Promise<MediaStream> }
+        }
+      ).mediaDevices.getUserMedia({
         audio: {
           echoCancellation: false,
           noiseSuppression: false,
@@ -461,7 +479,9 @@ export class AudioEngine {
       this.micGain = null
     }
     if (this.micStream) {
-      this.micStream.getTracks().forEach((track) => { track.stop(); })
+      this.micStream.getTracks().forEach((track) => {
+        track.stop()
+      })
       this.micStream = null
     }
     console.info('[AudioEngine] Microphone stopped')
@@ -641,7 +661,9 @@ export class AudioEngine {
 
     // Auto-stop after duration
     if (durationMs) {
-      setTimeout(() => { this.stopNote(noteId); }, durationMs)
+      setTimeout(() => {
+        this.stopNote(noteId)
+      }, durationMs)
     }
 
     return noteId
@@ -898,7 +920,9 @@ export class AudioEngine {
   /** Play a beep sound */
   playBeep(type: 'start' | 'stop' = 'start'): void {
     if (!this.audioCtx || !this.mainGain) {
-      this.init().then(() => { this._doPlayBeep(type); })
+      this.init().then(() => {
+        this._doPlayBeep(type)
+      })
       return
     }
     this._doPlayBeep(type)
@@ -1048,7 +1072,8 @@ export class AudioEngine {
     bpm: number,
     instrument?: InstrumentType,
   ): Promise<Blob | null> {
-    if (melody === null || melody === undefined || melody.length === 0) return null
+    if (melody === null || melody === undefined || melody.length === 0)
+      return null
 
     const sampleRate = 44100
     const beatDuration = 60 / bpm // seconds per beat

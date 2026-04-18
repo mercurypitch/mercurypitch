@@ -44,10 +44,13 @@ export function encodeMelodyToURL(
 
   params.set('n', noteStr)
 
-  if (bpm !== null && bpm !== undefined && bpm !== 0) params.set('bpm', String(bpm))
+  if (bpm !== null && bpm !== undefined && bpm !== 0)
+    params.set('bpm', String(bpm))
   if (key !== null && key !== undefined && key !== '') params.set('k', key)
-  if (scaleType !== null && scaleType !== undefined && scaleType !== '') params.set('s', scaleType)
-  if (totalBeats !== null && totalBeats !== undefined && totalBeats !== 0) params.set('beats', String(totalBeats))
+  if (scaleType !== null && scaleType !== undefined && scaleType !== '')
+    params.set('s', scaleType)
+  if (totalBeats !== null && totalBeats !== undefined && totalBeats !== 0)
+    params.set('beats', String(totalBeats))
 
   return params.toString()
 }
@@ -106,13 +109,21 @@ export function decodeMelodyFromURL(params: URLSearchParams): {
     return {
       melody,
       bpm: params.has('bpm') ? parseInt(params.get('bpm')!, 10) : undefined,
-      key: params.get('k') !== null && params.get('k') !== undefined ? params.get('k')! : undefined,
-      scaleType: params.get('s') !== null && params.get('s') !== undefined ? params.get('s')! : undefined,
+      key:
+        params.get('k') !== null && params.get('k') !== undefined
+          ? params.get('k')!
+          : undefined,
+      scaleType:
+        params.get('s') !== null && params.get('s') !== undefined
+          ? params.get('s')!
+          : undefined,
       totalBeats: params.has('beats')
         ? parseInt(params.get('beats')!, 10)
         : undefined,
     }
-  } catch { /* empty */ return null }
+  } catch {
+    /* empty */ return null
+  }
 }
 
 /**
@@ -172,7 +183,11 @@ export async function copyShareURL(
   const url = generateShareURL(melody, bpm, key, scaleType, totalBeats)
   try {
     // eslint-disable-next-line no-restricted-globals
-    await (navigator as unknown as { clipboard: { writeText: (text: string) => Promise<void> } }).clipboard.writeText(url)
+    await (
+      navigator as unknown as {
+        clipboard: { writeText: (text: string) => Promise<void> }
+      }
+    ).clipboard.writeText(url)
     return true
   } catch {
     // Fallback for older browsers

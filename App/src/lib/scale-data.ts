@@ -2,7 +2,7 @@
 // Scale Data — Music theory utilities for PitchPerfect
 // ============================================================
 
-import type { MelodyItem, MelodyNote, NoteName, ScaleDefinition,ScaleDegree,  } from '@/types'
+import type { MelodyItem, MelodyNote, NoteName, ScaleDefinition, ScaleDegree, } from '@/types'
 
 export const NOTE_NAMES: NoteName[] = [
   'C',

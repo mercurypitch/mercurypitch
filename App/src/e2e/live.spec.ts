@@ -1,4 +1,4 @@
-import { expect,test } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
 test('live site settings', async ({ page }) => {
   await page.goto('https://pitchperfect.clodhost.com/')

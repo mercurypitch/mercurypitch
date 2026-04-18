@@ -4,7 +4,7 @@
 // Visible in all tabs; NoteList, PitchDisplay, stats wrapped in Show for Practice only
 // ============================================================
 
-import type { Component} from 'solid-js';
+import type { Component } from 'solid-js'
 import { For, Show } from 'solid-js'
 import { NoteList } from '@/components/NoteList'
 import { PitchDisplay } from '@/components/PitchDisplay'
@@ -40,7 +40,9 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
   // Local alias for reactive tracking
   const activeTab = () => appActiveTab()
   return (
-    <aside class={`app-sidebar${props.class !== undefined && props.class !== '' ? ` ${  props.class}` : ''}`}>
+    <aside
+      class={`app-sidebar${props.class !== undefined && props.class !== '' ? ` ${props.class}` : ''}`}
+    >
       {/* Mobile close button */}
       <button
         class="sidebar-close-btn"
@@ -58,7 +60,9 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
       {/* Tour button */}
       <button
         class="tour-btn"
-        onClick={() => { appStore.startWalkthrough(); }}
+        onClick={() => {
+          appStore.startWalkthrough()
+        }}
         title="Take a Tour"
       >
         <svg viewBox="0 0 24 24" width="16" height="16">

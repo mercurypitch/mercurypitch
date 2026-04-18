@@ -2,7 +2,7 @@
 // Practice Engine — Mic, pitch detection, accuracy scoring
 // ============================================================
 
-import type { AccuracyRating, MelodyNote, NoteResult, PitchResult, PitchSample, PracticeResult } from '@/types'
+import type { AccuracyRating, MelodyNote, NoteResult, PitchResult, PitchSample, PracticeResult, } from '@/types'
 import type { AudioEngine } from './audio-engine'
 import { PitchDetector } from './pitch-detector'
 

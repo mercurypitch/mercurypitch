@@ -4,8 +4,8 @@
 
 import { createSignal } from 'solid-js'
 import { createStore } from 'solid-js/store'
-import { buildMultiOctaveScale,buildSampleMelody } from '@/lib/scale-data'
-import type { MelodyItem, MelodyNote,ScaleDegree } from '@/types'
+import { buildMultiOctaveScale, buildSampleMelody } from '@/lib/scale-data'
+import type { MelodyItem, MelodyNote, ScaleDegree } from '@/types'
 import { appStore } from './app-store'
 
 // ── Melody items ─────────────────────────────────────────────

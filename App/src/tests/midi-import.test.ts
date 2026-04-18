@@ -2,7 +2,7 @@
 // MIDI Import Tests
 // ============================================================
 
-import { describe, expect,it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { importMelodyFromMIDI } from '@/lib/piano-roll'
 
 function encodeVLQ(value: number): number[] {

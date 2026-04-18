@@ -2,9 +2,9 @@
 // Walkthrough — Step-by-step tutorial overlay (GH #140)
 // ============================================================
 
-import type { Component} from 'solid-js';
+import type { Component } from 'solid-js'
 import { createEffect, onCleanup, Show } from 'solid-js'
-import { appStore, endWalkthrough, nextWalkthroughStep, prevWalkthroughStep,WALKTHROUGH_STEPS,  } from '@/stores/app-store'
+import { appStore, endWalkthrough, nextWalkthroughStep, prevWalkthroughStep, WALKTHROUGH_STEPS, } from '@/stores/app-store'
 
 export const Walkthrough: Component = () => {
   const currentStep = () =>
@@ -60,7 +60,9 @@ export const Walkthrough: Component = () => {
         {/* Tooltip card */}
         <div
           class={`walkthrough-tooltip walkthrough-tooltip-${placement()}`}
-          onClick={(e) => { e.stopPropagation(); }}
+          onClick={(e) => {
+            e.stopPropagation()
+          }}
         >
           <div class="walkthrough-step-counter">
             Step {appStore.walkthroughStep() + 1} of {WALKTHROUGH_STEPS.length}

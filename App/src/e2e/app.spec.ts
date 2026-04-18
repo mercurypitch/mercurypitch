@@ -5,9 +5,7 @@ import { expect, test } from '@playwright/test'
  * Dismisses the welcome overlay if it appears (localStorage cleared or first visit).
  * Call this after page.goto() before interacting with the app.
  */
-async function dismissWelcomeIfShown(
-  page: Page,
-): Promise<void> {
+async function dismissWelcomeIfShown(page: Page): Promise<void> {
   const overlay = page.locator('.welcome-overlay')
   if ((await overlay.count()) > 0 && (await overlay.isVisible())) {
     const dismissBtn = page.locator('.welcome-cta, .overlay-close')
@@ -454,9 +452,9 @@ test.describe('PitchPerfect App', () => {
 
   test('Welcome screen appears on first visit', async ({ page }) => {
     // Clear localStorage to ensure welcome screen shows
-    await page.evaluate(() =>
-      { localStorage.removeItem('pitchperfect_welcome_version'); },
-    )
+    await page.evaluate(() => {
+      localStorage.removeItem('pitchperfect_welcome_version')
+    })
     await page.reload()
     await page.waitForSelector('#app-tabs', { timeout: 10000 })
 

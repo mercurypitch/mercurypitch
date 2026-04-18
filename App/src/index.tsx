@@ -12,4 +12,13 @@ if (!root) {
 }
 
 // Add loaded class once app mounts to prevent FOUC
-render(() => <App onMounted={() => { root.classList.add('loaded'); }} />, root)
+render(
+  () => (
+    <App
+      onMounted={() => {
+        root.classList.add('loaded')
+      }}
+    />
+  ),
+  root,
+)

@@ -2,8 +2,8 @@
 // FocusMode — full-screen minimal practice UI (GH #123)
 // ============================================================
 
-import type { Component} from 'solid-js';
-import { createMemo,Show } from 'solid-js'
+import type { Component } from 'solid-js'
+import { createMemo, Show } from 'solid-js'
 import type { PitchSample } from '@/components/PitchCanvas'
 import { PitchCanvas } from '@/components/PitchCanvas'
 import { melodyTotalBeats } from '@/lib/scale-data'
@@ -133,7 +133,9 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
         {/* Exit button */}
         <button
           class="focus-exit"
-          onClick={() => { appStore.exitFocusMode(); }}
+          onClick={() => {
+            appStore.exitFocusMode()
+          }}
           title="Exit Focus Mode"
         >
           <svg viewBox="0 0 24 24" width="20" height="20">

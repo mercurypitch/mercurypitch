@@ -2,7 +2,7 @@
 // Audio Engine Tests
 // ============================================================
 
-import { beforeEach,describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { AudioEngine } from '@/lib/audio-engine'
 
 describe('AudioEngine', () => {

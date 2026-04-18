@@ -2,7 +2,7 @@
 // Settings Panel — Pitch detection and accuracy configuration
 // ============================================================
 
-import type { Component} from 'solid-js';
+import type { Component } from 'solid-js'
 import { createMemo } from 'solid-js'
 import { appStore } from '@/stores/app-store'
 
@@ -55,11 +55,11 @@ export const SettingsPanel: Component = () => {
             <select
               id="preset-select"
               value={appStore.sensitivityPreset()}
-              onChange={(e) =>
-                { appStore.applySensitivityPreset(
+              onChange={(e) => {
+                appStore.applySensitivityPreset(
                   e.currentTarget.value as 'quiet' | 'home' | 'noisy',
-                ); }
-              }
+                )
+              }}
             >
               <option value="quiet">Quiet Room (Studio)</option>
               <option value="home">Some Noise (At Home)</option>
@@ -81,11 +81,11 @@ export const SettingsPanel: Component = () => {
               max="20"
               step="1"
               value={Math.round(s().detectionThreshold * 100)}
-              onInput={(e) =>
-                { appStore.setDetectionThreshold(
+              onInput={(e) => {
+                appStore.setDetectionThreshold(
                   parseInt(e.currentTarget.value) / 100,
-                ); }
-              }
+                )
+              }}
             />
             <span class="settings-val">
               {s().detectionThreshold.toFixed(2)}
@@ -102,9 +102,9 @@ export const SettingsPanel: Component = () => {
               max="10"
               step="1"
               value={s().sensitivity}
-              onInput={(e) =>
-                { appStore.setSensitivity(parseInt(e.currentTarget.value)); }
-              }
+              onInput={(e) => {
+                appStore.setSensitivity(parseInt(e.currentTarget.value))
+              }}
             />
             <span class="settings-val">{s().sensitivity}</span>
             <small>Higher = more responsive to quiet signals</small>
@@ -119,9 +119,9 @@ export const SettingsPanel: Component = () => {
               max="90"
               step="5"
               value={Math.round(s().minConfidence * 100)}
-              onInput={(e) =>
-                { appStore.setMinConfidence(parseInt(e.currentTarget.value) / 100); }
-              }
+              onInput={(e) => {
+                appStore.setMinConfidence(parseInt(e.currentTarget.value) / 100)
+              }}
             />
             <span class="settings-val">
               {Math.round(s().minConfidence * 100)}%
@@ -138,9 +138,9 @@ export const SettingsPanel: Component = () => {
               max="10"
               step="1"
               value={s().minAmplitude}
-              onInput={(e) =>
-                { appStore.setMinAmplitude(parseInt(e.currentTarget.value)); }
-              }
+              onInput={(e) => {
+                appStore.setMinAmplitude(parseInt(e.currentTarget.value))
+              }}
             />
             <span class="settings-val">{s().minAmplitude}</span>
             <small>Minimum signal loudness required</small>
@@ -157,7 +157,9 @@ export const SettingsPanel: Component = () => {
               type="checkbox"
               id="set-tonic-anchor"
               checked={s().tonicAnchor}
-              onChange={(e) => { appStore.setTonicAnchor(e.currentTarget.checked); }}
+              onChange={(e) => {
+                appStore.setTonicAnchor(e.currentTarget.checked)
+              }}
             />
             <small>
               Play a reference tone at the start of each run to help lock in to
@@ -181,9 +183,9 @@ export const SettingsPanel: Component = () => {
               min="1"
               max="50"
               value={bandValues().perfect}
-              onInput={(e) =>
-                { handleBandChange('perfect', e.currentTarget.value); }
-              }
+              onInput={(e) => {
+                handleBandChange('perfect', e.currentTarget.value)
+              }}
             />
           </div>
 
@@ -195,9 +197,9 @@ export const SettingsPanel: Component = () => {
               min="1"
               max="100"
               value={bandValues().excellent}
-              onInput={(e) =>
-                { handleBandChange('excellent', e.currentTarget.value); }
-              }
+              onInput={(e) => {
+                handleBandChange('excellent', e.currentTarget.value)
+              }}
             />
           </div>
 
@@ -209,7 +211,9 @@ export const SettingsPanel: Component = () => {
               min="1"
               max="100"
               value={bandValues().good}
-              onInput={(e) => { handleBandChange('good', e.currentTarget.value); }}
+              onInput={(e) => {
+                handleBandChange('good', e.currentTarget.value)
+              }}
             />
           </div>
 
@@ -221,7 +225,9 @@ export const SettingsPanel: Component = () => {
               min="1"
               max="200"
               value={bandValues().okay}
-              onInput={(e) => { handleBandChange('okay', e.currentTarget.value); }}
+              onInput={(e) => {
+                handleBandChange('okay', e.currentTarget.value)
+              }}
             />
           </div>
         </div>
@@ -263,9 +269,9 @@ export const SettingsPanel: Component = () => {
               max="1000"
               step="10"
               value={appStore.adsr().attack}
-              onInput={(e) =>
-                { appStore.setAttack(parseInt(e.currentTarget.value)); }
-              }
+              onInput={(e) => {
+                appStore.setAttack(parseInt(e.currentTarget.value))
+              }}
             />
             <span class="settings-val">{appStore.adsr().attack}ms</span>
             <small>Time to reach full volume</small>
@@ -280,9 +286,9 @@ export const SettingsPanel: Component = () => {
               max="1000"
               step="10"
               value={appStore.adsr().decay}
-              onInput={(e) =>
-                { appStore.setDecay(parseInt(e.currentTarget.value)); }
-              }
+              onInput={(e) => {
+                appStore.setDecay(parseInt(e.currentTarget.value))
+              }}
             />
             <span class="settings-val">{appStore.adsr().decay}ms</span>
             <small>Time to fall to sustain level</small>
@@ -297,9 +303,9 @@ export const SettingsPanel: Component = () => {
               max="100"
               step="5"
               value={appStore.adsr().sustain}
-              onInput={(e) =>
-                { appStore.setSustain(parseInt(e.currentTarget.value)); }
-              }
+              onInput={(e) => {
+                appStore.setSustain(parseInt(e.currentTarget.value))
+              }}
             />
             <span class="settings-val">{appStore.adsr().sustain}%</span>
             <small>Volume during note held</small>
@@ -314,9 +320,9 @@ export const SettingsPanel: Component = () => {
               max="2000"
               step="50"
               value={appStore.adsr().release}
-              onInput={(e) =>
-                { appStore.setRelease(parseInt(e.currentTarget.value)); }
-              }
+              onInput={(e) => {
+                appStore.setRelease(parseInt(e.currentTarget.value))
+              }}
             />
             <span class="settings-val">{appStore.adsr().release}ms</span>
             <small>Time to fade after note ends</small>
@@ -334,7 +340,9 @@ export const SettingsPanel: Component = () => {
               type="checkbox"
               id="vis-gridlines"
               checked={appStore.gridLinesVisible()}
-              onChange={(e) => { appStore.setGridLines(e.currentTarget.checked); }}
+              onChange={(e) => {
+                appStore.setGridLines(e.currentTarget.checked)
+              }}
             />
             <small>Show horizontal and vertical grid lines</small>
           </div>
@@ -344,9 +352,9 @@ export const SettingsPanel: Component = () => {
             <select
               id="vis-theme"
               value={appStore.theme()}
-              onChange={(e) =>
-                { appStore.setTheme(e.currentTarget.value as 'dark' | 'light'); }
-              }
+              onChange={(e) => {
+                appStore.setTheme(e.currentTarget.value as 'dark' | 'light')
+              }}
             >
               <option value="dark">Dark</option>
               <option value="light">Light</option>
@@ -371,9 +379,9 @@ export const SettingsPanel: Component = () => {
               max="200"
               step="25"
               value={Math.round(appStore.playbackSpeed() * 100)}
-              onInput={(e) =>
-                { appStore.setPlaybackSpeed(parseInt(e.currentTarget.value) / 100); }
-              }
+              onInput={(e) => {
+                appStore.setPlaybackSpeed(parseInt(e.currentTarget.value) / 100)
+              }}
             />
             <span class="settings-val">
               {appStore.playbackSpeed().toFixed(2)}x
@@ -394,15 +402,15 @@ export const SettingsPanel: Component = () => {
             <select
               id="reverb-type"
               value={appStore.reverb().type}
-              onChange={(e) =>
-                { appStore.setReverbType(
+              onChange={(e) => {
+                appStore.setReverbType(
                   e.currentTarget.value as
                     | 'off'
                     | 'room'
                     | 'hall'
                     | 'cathedral',
-                ); }
-              }
+                )
+              }}
             >
               <option value="off">Off</option>
               <option value="room">Room</option>
@@ -420,9 +428,9 @@ export const SettingsPanel: Component = () => {
               max="100"
               step="5"
               value={appStore.reverb().wetness}
-              onInput={(e) =>
-                { appStore.setReverbWetness(parseInt(e.currentTarget.value)); }
-              }
+              onInput={(e) => {
+                appStore.setReverbWetness(parseInt(e.currentTarget.value))
+              }}
             />
             <span class="settings-val">{appStore.reverb().wetness}%</span>
             <small>How much reverb vs dry signal</small>

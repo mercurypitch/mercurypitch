@@ -20,9 +20,7 @@ test('debug store prototype chain', async ({ page }) => {
     const store = (window as any).__appStore
 
     // Check if it's a Proxy
-    const isProxy =
-      store !== null &&
-      typeof store === 'object'
+    const isProxy = store !== null && typeof store === 'object'
 
     // Get own properties
     const ownKeys = Reflect.ownKeys(store)
@@ -70,7 +68,10 @@ test('debug store prototype chain', async ({ page }) => {
     if (desc !== null && desc !== undefined && desc.get) {
       return { hasGetter: true, result: desc.get() }
     }
-    return { hasGetter: false, value: desc !== null && desc !== undefined ? desc.value : undefined }
+    return {
+      hasGetter: false,
+      value: desc !== null && desc !== undefined ? desc.value : undefined,
+    }
   })
   console.info('Accessor test:', JSON.stringify(accessorTest, null, 2))
 })

@@ -2,8 +2,8 @@
 // Scale Data Tests
 // ============================================================
 
-import { describe, expect,it } from 'vitest'
-import { buildMajorScale, buildMultiOctaveScale, freqToMidi, freqToNote, isBlackKey, keyTonicFreq,melodyIndexAtBeat, melodyMidiRange, melodyNoteAtBeat, melodyTotalBeats, midiToFreq, midiToNote, NOTE_NAMES, noteToMidi, SCALE_DEFINITIONS,  } from '@/lib/scale-data'
+import { describe, expect, it } from 'vitest'
+import { buildMajorScale, buildMultiOctaveScale, freqToMidi, freqToNote, isBlackKey, keyTonicFreq, melodyIndexAtBeat, melodyMidiRange, melodyNoteAtBeat, melodyTotalBeats, midiToFreq, midiToNote, NOTE_NAMES, noteToMidi, SCALE_DEFINITIONS, } from '@/lib/scale-data'
 import type { MelodyItem } from '@/types'
 
 describe('MIDI/Frequency Conversion', () => {

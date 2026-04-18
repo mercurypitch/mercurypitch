@@ -2,7 +2,7 @@
 // NoteList — Displays melody notes with accuracy band colors
 // ============================================================
 
-import type { Component} from 'solid-js';
+import type { Component } from 'solid-js'
 import { createMemo, For } from 'solid-js'
 import { centsToBand } from '@/lib/practice-engine'
 import type { MelodyItem, NoteResult } from '@/types'

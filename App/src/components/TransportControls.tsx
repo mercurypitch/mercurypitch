@@ -2,7 +2,7 @@
 // TransportControls — Play/Reset buttons
 // ============================================================
 
-import type { Component} from 'solid-js';
+import type { Component } from 'solid-js'
 import { createMemo } from 'solid-js'
 import { playback } from '@/stores/playback-store'
 
