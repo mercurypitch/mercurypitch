@@ -786,9 +786,10 @@ test.describe('Critical Flows — GH #121', () => {
   // ============================================================
 
   test.describe('Practice Page Improvements (GH #138)', () => {
-    test('Count-in label reads "Precount"', async ({ page }) => {
-      const precountLabel = page.locator('.countin-group .opt-label')
-      await expect(precountLabel).toContainText('Precount')
+    test('Precount button exists and toggles on/off', async ({ page }) => {
+      const precountBtn = page.locator('#btn-precount')
+      await expect(precountBtn).toBeVisible()
+      await expect(precountBtn).toHaveAttribute('title', /Precount/)
     })
 
     test('Focus Mode play/pause controls work', async ({ page }) => {
