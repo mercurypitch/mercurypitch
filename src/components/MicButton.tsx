@@ -3,6 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
+import styles from './MicButton.module.css'
 
 interface MicButtonProps {
   active: boolean
@@ -14,7 +15,7 @@ export const MicButton: Component<MicButtonProps> = (props) => {
   return (
     <button
       id="btn-mic"
-      class={`ctrl-btn ${props.active ? 'recording' : ''}`}
+      class={`${styles.ctrlBtn} ${props.active ? styles.recording : ''}`}
       onClick={() => props.onClick?.()}
       disabled={props.disabled}
       title={props.active ? 'Disable microphone' : 'Enable microphone'}
