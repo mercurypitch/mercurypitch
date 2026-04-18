@@ -2994,10 +2994,55 @@ header h1 {
 
 /* ===== Session Browser Modal ===== */
 .session-browser {
-    width: min(560px, 95vw);
+    width: min(680px, 95vw);
     max-height: 85vh;
     display: flex;
     flex-direction: column;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.session-browser .modal-header {
+    padding: 0 0 12px 0;
+    margin-bottom: 12px;
+}
+
+.session-browser .session-categories {
+    margin: 0 0 12px 0;
+}
+
+.session-card {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.modal-close-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.12s;
+    flex-shrink: 0;
+}
+
+.modal-close-btn:hover {
+    color: var(--text-primary);
+    background: var(--bg-tertiary);
+}
+
+.modal-close-btn svg {
+    display: block;
 }
 
 .session-categories {

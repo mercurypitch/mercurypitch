@@ -173,9 +173,6 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
           </button>
         </Show>
 
-        {/* Keyboard hint */}
-        <div class="focus-key-hint">Space = play/pause</div>
-
         {/* Playback speed controls */}
         <div class="focus-speed-controls">
           <button

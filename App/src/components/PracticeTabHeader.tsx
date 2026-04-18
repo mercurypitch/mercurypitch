@@ -212,7 +212,7 @@ export const PracticeTabHeader: Component<PracticeTabHeaderProps> = (props) => {
 
         {/* Count-in */}
         <div class="countin-group">
-          <label class="opt-label">Count:</label>
+          <label class="opt-label">Precount:</label>
           <select
             id="countin-select"
             value={appStore.countIn()}

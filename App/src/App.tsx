@@ -315,6 +315,32 @@ export const App: Component<AppProps> = (props) => {
           appStore.showNotification('Mode: Once', 'info');
         }
       }
+
+      // ↑ → faster playback
+      if (e.code === 'ArrowUp' && !isTyping) {
+        e.preventDefault();
+        const current = appStore.playbackSpeed();
+        const steps = [0.25, 0.5, 0.75, 1.0, 1.5, 2.0];
+        const idx = steps.indexOf(current);
+        if (idx < steps.length - 1) {
+          const next = steps[idx + 1];
+          appStore.setPlaybackSpeed(next);
+          if (melodyEngine) melodyEngine.setPlaybackSpeed(next);
+        }
+      }
+
+      // ↓ → slower playback
+      if (e.code === 'ArrowDown' && !isTyping) {
+        e.preventDefault();
+        const current = appStore.playbackSpeed();
+        const steps = [0.25, 0.5, 0.75, 1.0, 1.5, 2.0];
+        const idx = steps.indexOf(current);
+        if (idx > 0) {
+          const next = steps[idx - 1];
+          appStore.setPlaybackSpeed(next);
+          if (melodyEngine) melodyEngine.setPlaybackSpeed(next);
+        }
+      }
     };
     window.addEventListener('keydown', onKeyDown);
 
@@ -520,6 +546,7 @@ export const App: Component<AppProps> = (props) => {
             });
             appStore.showNotification(`Practice complete! Score: ${combinedScore}%`, combinedScore >= 80 ? 'success' : combinedScore >= 50 ? 'info' : 'warning');
             handleStop();
+            return;
           }
         } else if (mode === 'repeat') {
           // Auto-restart for repeat mode
@@ -556,6 +583,7 @@ export const App: Component<AppProps> = (props) => {
             );
           }
           handleStop();
+          return;
         }
       },
     });
