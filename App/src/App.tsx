@@ -20,12 +20,6 @@ import { melodyStore } from '@/stores/melody-store'
 import { playback } from '@/stores/playback-store'
 import type { EffectType, MelodyItem, NoteName, NoteResult, PitchResult, PracticeResult, } from '@/types'
 
-// Expose appStore for E2E testing
-if (typeof window !== 'undefined') {
-  ;(window as unknown as { __appStore: typeof appStore }).__appStore = appStore
-  ;(window as unknown as { __melodyEngine: MelodyEngine }).__melodyEngine = melodyEngine
-}
-
 import { AppSidebar } from '@/components/AppSidebar'
 import { EditorTabHeader } from '@/components/EditorTabHeader'
 import { FocusMode } from '@/components/FocusMode'
@@ -403,6 +397,13 @@ export const App: Component<AppProps> = (props) => {
     // Apply saved reverb settings to audio engine
     audioEngine.setReverbType(appStore.reverb().type)
     audioEngine.setReverbWetness(appStore.reverb().wetness)
+
+    // EXPOSE ENGINES FOR E2E TESTING
+    if (typeof window !== 'undefined') {
+      ;(window as unknown as { __appStore: typeof appStore }).__appStore = appStore
+      ;(window as unknown as { __melodyEngine: MelodyEngine }).__melodyEngine =
+        melodyEngine
+    }
 
     melodyEngine = new MelodyEngine({
       bpm: appStore.bpm(),
