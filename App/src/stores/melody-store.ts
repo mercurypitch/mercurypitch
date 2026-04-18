@@ -4,8 +4,8 @@
 
 import { createSignal } from 'solid-js'
 import { createStore } from 'solid-js/store'
-import type { MelodyItem, ScaleDegree, MelodyNote } from '@/types'
-import { buildSampleMelody, buildMultiOctaveScale } from '@/lib/scale-data'
+import { buildMultiOctaveScale,buildSampleMelody } from '@/lib/scale-data'
+import type { MelodyItem, MelodyNote,ScaleDegree } from '@/types'
 import { appStore } from './app-store'
 
 // ── Melody items ─────────────────────────────────────────────
@@ -44,7 +44,7 @@ export function updateMelodyNote(
 
 export function setMelody(newMelody: MelodyItem[]): void {
   setMelodyItems(
-    newMelody.map((item, i) => ({ ...item, id: item.id ?? generateId() })),
+    newMelody.map((item, _i) => ({ ...item, id: item.id ?? generateId() })),
   )
 }
 

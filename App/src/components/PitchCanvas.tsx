@@ -2,7 +2,8 @@
 // PitchCanvas — Pitch trail and melody display canvas
 // ============================================================
 
-import { Component, onMount, onCleanup, createEffect } from 'solid-js'
+import type { Component} from 'solid-js';
+import { createEffect,onCleanup, onMount } from 'solid-js'
 import type { MelodyItem, ScaleDegree } from '@/types'
 
 export interface PitchSample {
@@ -50,8 +51,8 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       isSeeking = false
     })
 
-    const ro = new ResizeObserver(() => resizeCanvas())
-    ro.observe(canvasRef!.parentElement!)
+    const ro = new ResizeObserver(() => { resizeCanvas(); })
+    ro.observe(canvasRef.parentElement!)
 
     startLoop()
 
@@ -85,8 +86,8 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     const h = canvasRef.parentElement!.clientHeight
     canvasRef.width = w * dpr
     canvasRef.height = h * dpr
-    canvasRef.style.width = w + 'px'
-    canvasRef.style.height = h + 'px'
+    canvasRef.style.width = `${w  }px`
+    canvasRef.style.height = `${h  }px`
     ctx?.setTransform(dpr, 0, 0, dpr, 0, 0)
   }
 
@@ -140,7 +141,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
 
   const drawTargetPitch = (h: number) => {
     const target = props.targetPitch?.()
-    if (!target || target <= 0) return
+    if (target === null || target === undefined || target <= 0) return
     const ty = freqToY(target, h)
 
     // Threshold bands (±10 cents = ±0.58% in frequency)
@@ -282,7 +283,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
         if (bw >= 12) {
           ctx.fillStyle = isActive ? '#58a6ff' : 'rgba(88,166,255,0.65)'
           ctx.font =
-            (isActive ? 'bold ' : '') + (isActive ? 12 : 11) + 'px sans-serif'
+            `${(isActive ? 'bold ' : '') + (isActive ? 12 : 11)  }px sans-serif`
           ctx.textAlign = 'center'
           ctx.textBaseline = 'middle'
           ctx.fillText(item.note.name, x1 + bw / 2, y + 0.5)
@@ -325,7 +326,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
 
       // Glowing dot at last position
       const last = history[history.length - 1]
-      if (last && last.freq && last.confidence >= 0.2) {
+      if (last !== null && last !== undefined && last.freq !== undefined && last.confidence >= 0.2) {
         const lx = beatToX(last.beat, w)
         const ly = freqToY(last.freq, h)
         const grad = ctx.createRadialGradient(lx, ly, 0, lx, ly, 12)
@@ -353,7 +354,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       props.currentNoteIndex() >= 0
     ) {
       const noteItem = melody[props.currentNoteIndex()]
-      if (noteItem) {
+      if (noteItem !== null && noteItem !== undefined) {
         const tx = beatToX(props.currentBeat(), w)
         const ty = freqToY(noteItem.note.freq, h)
         const grad2 = ctx.createRadialGradient(tx, ty, 0, tx, ty, 18)

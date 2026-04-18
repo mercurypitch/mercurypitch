@@ -2,8 +2,8 @@
 // App Store Tests — Settings and persistence
 // ============================================================
 
-import { describe, it, expect, beforeEach } from 'vitest'
-import { appStore, initSettings, setDetectionThreshold, setSensitivity, setMinConfidence, setMinAmplitude, setBand, getBandRating, } from '@/stores/app-store'
+import { beforeEach,describe, expect, it } from 'vitest'
+import { appStore, getBandRating,initSettings, setBand, setDetectionThreshold, setMinAmplitude, setMinConfidence, setSensitivity,  } from '@/stores/app-store'
 
 describe('Settings — init and defaults', () => {
   beforeEach(() => {
@@ -156,7 +156,7 @@ describe('Settings — setBand', () => {
   it('persists band changes to localStorage', () => {
     setBand(0, 3)
     const stored = JSON.parse(localStorage.getItem('pitchperfect_settings')!)
-    const band100 = stored.bands.find((b: any) => b.band === 100)
+    const band100 = stored.bands.find((b: { band: number; threshold: number }) => b.band === 100)
     expect(band100.threshold).toBe(3)
   })
 })

@@ -1,4 +1,5 @@
 // Vitest test setup file
+import type { AudioContext as AudioContextType } from 'standardized-audio-context'
 import '@testing-library/jest-dom'
 
 // Mock Web Audio API for tests
@@ -70,10 +71,11 @@ class MockAnalyser {
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-extraneous-class
 class MockMediaStreamAudioSourceNode {}
 
-global.AudioContext = MockAudioContext as any
-;(global.navigator as any).mediaDevices = {
+global.AudioContext = MockAudioContext as unknown as typeof AudioContextType
+;(global.navigator as unknown as { mediaDevices?: { getUserMedia: () => Promise<{ getTracks: () => [] }> } }).mediaDevices = {
   getUserMedia: () => Promise.resolve({ getTracks: () => [] }),
 }
 
@@ -91,18 +93,18 @@ const localStorageMock = {
     Object.keys(localStorageStore).forEach((k) => delete localStorageStore[k])
   },
 }
-global.localStorage = localStorageMock as any
+global.localStorage = localStorageMock as unknown as Storage
 
 // Mock ResizeObserver
 global.ResizeObserver = class ResizeObserver {
   observe() {}
   unobserve() {}
   disconnect() {}
-} as any
+} as unknown as typeof ResizeObserver
 
 // Mock requestAnimationFrame
 let rafId = 0
-global.requestAnimationFrame = (cb: FrameRequestCallback) => {
+global.requestAnimationFrame = (_cb: FrameRequestCallback) => {
   return ++rafId
 }
 global.cancelAnimationFrame = () => {}

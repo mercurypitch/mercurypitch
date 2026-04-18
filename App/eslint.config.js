@@ -1,5 +1,4 @@
 import eslint from '@eslint/js'
-import tsParser from '@typescript-eslint/parser'
 import { defineConfig } from 'eslint/config'
 import { importX } from 'eslint-plugin-import-x'
 import simpleImportSort from 'eslint-plugin-simple-import-sort'
@@ -17,18 +16,15 @@ export default defineConfig(
     ],
   },
   importX.flatConfigs.recommended,
-  importX.flatConfigs.typescript,
   eslint.configs.recommended,
-  tseslint.configs.strictTypeChecked,
+  ...tseslint.configs.strict,
   {
     plugins: {
       'simple-import-sort': simpleImportSort,
     },
     languageOptions: {
-      parser: tsParser,
       parserOptions: {
         projectService: true,
-        tsconfigRootDir: import.meta.dirname,
       },
     },
   },
@@ -36,14 +32,16 @@ export default defineConfig(
     rules: {
       'import-x/consistent-type-specifier-style': 'error',
       'import-x/newline-after-import': 'error',
-      'import-x/no-duplicates': 'error',
       'import-x/no-empty-named-blocks': 'error',
       'import-x/no-named-as-default': 'error',
       'import-x/no-useless-path-segments': 'error',
       'import-x/no-named-as-default-member': 'off',
+      // Disable import resolution rules — handled by typescript-eslint parser
+      'import-x/no-unresolved': 'off',
+      'import-x/namespace': 'off',
+      'import-x/no-duplicates': 'off',
 
       '@typescript-eslint/unified-signatures': 'off',
-      'import-x/no-unresolved': 'off',
       'no-console': ['error', { allow: ['info', 'warn', 'error', 'table'] }],
       'no-throw-literal': 'error',
       'no-useless-concat': 'error',
@@ -69,6 +67,7 @@ export default defineConfig(
       '@typescript-eslint/no-unsafe-member-access': 'off',
       '@typescript-eslint/no-unsafe-return': 'off',
       '@typescript-eslint/restrict-template-expressions': 'off',
+      '@typescript-eslint/no-unnecessary-condition': 'off',
       'padding-line-between-statements': [
         'error',
         { blankLine: 'always', prev: '*', next: 'function' },

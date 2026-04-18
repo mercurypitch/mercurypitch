@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test } from '@playwright/test'
 
 test('debug appStore structure', async ({ page }) => {
   await page.goto('http://localhost:4173/')
@@ -16,8 +16,9 @@ test('debug appStore structure', async ({ page }) => {
 
   // Check appStore structure
   const storeInfo = await page.evaluate(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const store = (window as any).__appStore
-    if (!store) return 'no store'
+    if (store === null || store === undefined) return 'no store'
 
     // Check if sensitivityPreset exists and is a function
     const sp = store.sensitivityPreset
@@ -35,5 +36,5 @@ test('debug appStore structure', async ({ page }) => {
     }
   })
 
-  console.log('appStore structure:', JSON.stringify(storeInfo, null, 2))
+  console.info('appStore structure:', JSON.stringify(storeInfo, null, 2))
 })

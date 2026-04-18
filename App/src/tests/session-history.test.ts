@@ -2,8 +2,9 @@
 // Session History Store Tests
 // ============================================================
 
-import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { appStore, saveSession, clearSessionHistory, getSessionHistory, initSessionHistory, getNoteAccuracyMap, type SessionHistoryEntry, } from '@/stores/app-store'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type {SessionHistoryEntry} from '@/stores/app-store';
+import { appStore, clearSessionHistory, getNoteAccuracyMap, getSessionHistory, initSessionHistory, saveSession  } from '@/stores/app-store'
 
 // Mock localStorage
 const localStorageMock = (() => {
@@ -123,7 +124,7 @@ describe('Session History', () => {
     it('handles corrupted localStorage gracefully', () => {
       localStorageMock.getItem.mockReturnValue('not valid json')
 
-      expect(() => initSessionHistory()).not.toThrow()
+      expect(() => { initSessionHistory(); }).not.toThrow()
       expect(getSessionHistory().length).toBe(0)
     })
   })

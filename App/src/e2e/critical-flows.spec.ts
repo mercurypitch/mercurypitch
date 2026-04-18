@@ -1,10 +1,11 @@
-import { test, expect } from '@playwright/test'
+import type { Page } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
 /**
  * Dismisses the welcome overlay if it appears.
  */
 async function dismissWelcomeIfShown(
-  page: import('@playwright/test').Page,
+  page: Page,
 ): Promise<void> {
   const overlay = page.locator('.welcome-overlay')
   if ((await overlay.count()) > 0 && (await overlay.isVisible())) {
@@ -78,7 +79,7 @@ test.describe('Critical Flows — GH #121', () => {
 
     test('Stop button resets playback state', async ({ page }) => {
       const playBtn = page.locator('.play-btn')
-      const stopBtn = page.locator('.play-btn + .stop-btn, button.stop')
+      const _stopBtn = page.locator('.play-btn + .stop-btn, button.stop')
 
       // Start playback
       await playBtn.click()
@@ -129,7 +130,7 @@ test.describe('Critical Flows — GH #121', () => {
 
       // Get initial speed from store
       const initialSpeed = await page.evaluate(() => {
-        return (window as any).__appStore?.playbackSpeed() ?? 1.0
+        return (window as unknown as { __appStore?: { playbackSpeed: () => number } }).__appStore?.playbackSpeed() ?? 1.0
       })
 
       // Press ArrowUp (faster)
@@ -137,7 +138,7 @@ test.describe('Critical Flows — GH #121', () => {
       await page.waitForTimeout(200)
 
       const speedAfterUp = await page.evaluate(() => {
-        return (window as any).__appStore?.playbackSpeed() ?? 1.0
+        return (window as unknown as { __appStore?: { playbackSpeed: () => number } }).__appStore?.playbackSpeed() ?? 1.0
       })
 
       // Speed should have increased
@@ -148,7 +149,7 @@ test.describe('Critical Flows — GH #121', () => {
       await page.waitForTimeout(200)
 
       const speedAfterDown = await page.evaluate(() => {
-        return (window as any).__appStore?.playbackSpeed() ?? 1.0
+        return (window as unknown as { __appStore?: { playbackSpeed: () => number } }).__appStore?.playbackSpeed() ?? 1.0
       })
 
       // Speed should decrease back
@@ -182,7 +183,7 @@ test.describe('Critical Flows — GH #121', () => {
       await page.waitForTimeout(200)
 
       const storeSpeed = await page.evaluate(() => {
-        return (window as any).__appStore?.playbackSpeed() ?? 1.0
+        return (window as unknown as { __appStore?: { playbackSpeed: () => number } }).__appStore?.playbackSpeed() ?? 1.0
       })
       expect(storeSpeed).toBe(0.5)
 
@@ -190,7 +191,7 @@ test.describe('Critical Flows — GH #121', () => {
       await page.waitForTimeout(200)
 
       const storeSpeed2 = await page.evaluate(() => {
-        return (window as any).__appStore?.playbackSpeed() ?? 1.0
+        return (window as unknown as { __appStore?: { playbackSpeed: () => number } }).__appStore?.playbackSpeed() ?? 1.0
       })
       expect(storeSpeed2).toBe(2.0)
     })
@@ -301,8 +302,8 @@ test.describe('Critical Flows — GH #121', () => {
     test('Ctrl+Z undo and Ctrl+Y redo keyboard shortcuts', async ({ page }) => {
       // Navigate to Editor tab first
       await page.evaluate(() => {
-        const store = (window as any).__appStore
-        if (store) store.setActiveTab('editor')
+        const store = (window as unknown as { __appStore?: { setActiveTab: (tab: string) => void } }).__appStore
+        if (store !== null && store !== undefined) store.setActiveTab('editor')
       })
       await page.waitForTimeout(300)
 
@@ -527,10 +528,10 @@ test.describe('Critical Flows — GH #121', () => {
     test('Mic toggle button changes state', async ({ page }) => {
       const micBtn = page.locator('.mic-toggle-btn')
       if ((await micBtn.count()) > 0 && (await micBtn.isVisible())) {
-        const initialClass = await micBtn.getAttribute('class')
+        const _initialClass = await micBtn.getAttribute('class')
         await micBtn.click()
         await page.waitForTimeout(500)
-        const newClass = await micBtn.getAttribute('class')
+        const _newClass = await micBtn.getAttribute('class')
         // Class should change (active or inactive state)
         // Note: mic may fail in test env but button state should toggle
       }
@@ -607,7 +608,7 @@ test.describe('Critical Flows — GH #121', () => {
         (await sensitivitySlider.count()) > 0 &&
         (await sensitivitySlider.isVisible())
       ) {
-        const initialSens = await sensitivitySlider.inputValue()
+        const _initialSens = await sensitivitySlider.inputValue()
 
         // Change sensitivity
         await sensitivitySlider.fill('8')

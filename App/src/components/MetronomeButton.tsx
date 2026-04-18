@@ -2,7 +2,7 @@
 // MetronomeButton — Toggle metronome with precount
 // ============================================================
 
-import { Component } from 'solid-js'
+import type { Component } from 'solid-js'
 
 interface MetronomeButtonProps {
   active: boolean

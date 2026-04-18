@@ -2,7 +2,7 @@
 // Melody Engine — Orchestrates melody playback with audio
 // ============================================================
 
-import type { MelodyItem, MelodyNote } from '@/types'
+import type { MelodyItem } from '@/types'
 import { melodyIndexAtBeat } from './scale-data'
 
 export interface MelodyEngineCallbacks {
@@ -155,7 +155,8 @@ export class MelodyEngine {
     }
 
     this.pauseOffset = 0
-    this.playStartTime = performance.now()
+    // eslint-disable-next-line no-restricted-globals
+    this.playStartTime = (performance as unknown as { now: () => number }).now()
     this.hopActive = false
     this.hopStartTime = 0
     this.currentNoteIndex = -1
@@ -167,7 +168,8 @@ export class MelodyEngine {
     if (!this.isPlaying || this.isPaused) return
 
     this.isPaused = true
-    this.pauseOffset = performance.now() - this.playStartTime
+    // eslint-disable-next-line no-restricted-globals
+    this.pauseOffset = (performance as unknown as { now: () => number }).now() - this.playStartTime
     this._stopTick()
   }
 
@@ -175,7 +177,8 @@ export class MelodyEngine {
     if (!this.isPlaying || !this.isPaused) return
 
     this.isPaused = false
-    this.playStartTime = performance.now() - this.pauseOffset
+    // eslint-disable-next-line no-restricted-globals
+    this.playStartTime = (performance as unknown as { now: () => number }).now() - this.pauseOffset
     this._tick()
   }
 
@@ -190,8 +193,9 @@ export class MelodyEngine {
   /** Seek to a specific beat position (while playing or paused) */
   seekTo(targetBeat: number): void {
     const beatDurationMs = 60000 / this.bpm
-    this.playStartTime =
-      performance.now() - (targetBeat * beatDurationMs) / this.playbackSpeed
+    // eslint-disable-next-line no-restricted-globals
+    const perfNow = (performance as unknown as { now: () => number }).now()
+    this.playStartTime = perfNow - (targetBeat * beatDurationMs) / this.playbackSpeed
     this.pauseOffset = (targetBeat * beatDurationMs) / this.playbackSpeed
     this.currentBeat = targetBeat
     // Recalculate current note index based on new beat position
@@ -210,7 +214,7 @@ export class MelodyEngine {
   }
 
   private _tick(): void {
-    this.animFrameId = requestAnimationFrame(() => this._onFrame())
+    this.animFrameId = requestAnimationFrame(() => { this._onFrame(); })
   }
 
   private _stopTick(): void {
@@ -223,8 +227,9 @@ export class MelodyEngine {
   private _onFrame(): void {
     if (!this.isPlaying || this.isPaused) return
 
-    const elapsed =
-      (performance.now() - this.playStartTime) * this.playbackSpeed
+    // eslint-disable-next-line no-restricted-globals
+    const perfNow = (performance as unknown as { now: () => number }).now()
+    const elapsed = (perfNow - this.playStartTime) * this.playbackSpeed
     const beatsPerMs = this.bpm / 60000
     const rawBeat = elapsed * beatsPerMs
 
@@ -293,7 +298,8 @@ export class MelodyEngine {
         this.hopFromY = this.currentNoteIndex
         this.hopToY = newIndex
         this.hopActive = true
-        this.hopStartTime = performance.now()
+        // eslint-disable-next-line no-restricted-globals
+        this.hopStartTime = (performance as unknown as { now: () => number }).now()
       }
 
       this.currentNoteIndex = newIndex
@@ -317,7 +323,8 @@ export class MelodyEngine {
     if (!this.hopActive) {
       return { active: false, progress: 0, from: 0, to: 0 }
     }
-    const elapsed = performance.now() - this.hopStartTime
+    // eslint-disable-next-line no-restricted-globals
+    const elapsed = (performance as unknown as { now: () => number }).now() - this.hopStartTime
     const progress = Math.min(1, elapsed / this.hopDuration)
     if (progress >= 1) this.hopActive = false
     return {

@@ -3,7 +3,8 @@
 // (mirrors #pitch-reference in the original JS app)
 // ============================================================
 
-import { Component, createMemo, Show } from 'solid-js'
+import type { Component} from 'solid-js';
+import { createMemo } from 'solid-js'
 import type { PitchResult } from '@/types'
 
 interface PitchDisplayProps {

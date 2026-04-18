@@ -2,9 +2,9 @@
 // Melody Store Tests
 // ============================================================
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { melodyStore, setMelody, clearMelody, generateId, addMelodyNote, removeMelodyNote, updateMelodyNote, } from '@/stores/melody-store'
-import type { MelodyItem, MelodyNote } from '@/types'
+import { afterEach,beforeEach, describe, expect, it } from 'vitest'
+import { addMelodyNote, clearMelody, generateId, melodyStore, removeMelodyNote, setMelody, updateMelodyNote, } from '@/stores/melody-store'
+import type { MelodyItem as _MelodyItem, MelodyNote as _MelodyNote } from '@/types'
 
 describe('MelodyStore', () => {
   beforeEach(() => {

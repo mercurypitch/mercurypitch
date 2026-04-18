@@ -2,7 +2,7 @@
 // Session Data Tests — validate static session templates
 // ============================================================
 
-import { describe, it, expect } from 'vitest'
+import { describe, expect,it } from 'vitest'
 import { PRACTICE_SESSIONS } from '@/data/sessions'
 
 describe('PRACTICE_SESSIONS — static data integrity', () => {

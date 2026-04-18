@@ -2,7 +2,8 @@
 // SessionBrowser — Modal for browsing and selecting practice sessions
 // ============================================================
 
-import { Component, createSignal, For } from 'solid-js'
+import type { Component} from 'solid-js';
+import { createSignal, For } from 'solid-js'
 import { PRACTICE_SESSIONS } from '@/data/sessions'
 import type { PracticeSession, SessionCategory, SessionDifficulty, } from '@/types'
 
@@ -118,7 +119,7 @@ export const SessionBrowser: Component<SessionBrowserProps> = (props) => {
                 </div>
                 <button
                   class="session-start-btn"
-                  onClick={() => props.onStartSession(session)}
+                  onClick={() => { props.onStartSession(session); }}
                 >
                   Start
                 </button>

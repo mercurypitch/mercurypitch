@@ -2,13 +2,12 @@
 // PianoRollCanvas — Piano roll editor wrapper
 // ============================================================
 
-import { Component, onMount, onCleanup, createEffect } from 'solid-js'
-import { PianoRollEditor } from '@/lib/piano-roll'
-import { downloadMIDI } from '@/lib/piano-roll'
-import type { PlaybackState } from '@/lib/piano-roll'
-import type { MelodyItem, ScaleDegree } from '@/types'
-import type { PitchPerfectWindow } from '@/types'
+import type { Component} from 'solid-js';
+import { createEffect,onCleanup, onMount } from 'solid-js'
 import { AudioEngine } from '@/lib/audio-engine'
+import type { PlaybackState } from '@/lib/piano-roll'
+import { PianoRollEditor } from '@/lib/piano-roll'
+import type { MelodyItem, PitchPerfectWindow,ScaleDegree  } from '@/types'
 
 interface PianoRollCanvasProps {
   melody: () => MelodyItem[]

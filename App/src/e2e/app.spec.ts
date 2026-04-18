@@ -1,11 +1,12 @@
-import { test, expect } from '@playwright/test'
+import type { Page } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
 /**
  * Dismisses the welcome overlay if it appears (localStorage cleared or first visit).
  * Call this after page.goto() before interacting with the app.
  */
 async function dismissWelcomeIfShown(
-  page: import('@playwright/test').Page,
+  page: Page,
 ): Promise<void> {
   const overlay = page.locator('.welcome-overlay')
   if ((await overlay.count()) > 0 && (await overlay.isVisible())) {
@@ -188,9 +189,9 @@ test.describe('PitchPerfect App', () => {
     await page.waitForTimeout(500)
     // Button should now show Stop or have recording class
     const hasStop = await recordBtn.textContent()
-    const hasRecordingClass = await recordBtn.getAttribute('class')
+    const _hasRecordingClass = await recordBtn.getAttribute('class')
     // After clicking (mic start may fail in test env), click again to reset
-    if (hasStop?.includes('Stop')) {
+    if (hasStop !== null && hasStop !== undefined && hasStop.includes('Stop')) {
       await recordBtn.click()
     }
   })
@@ -454,7 +455,7 @@ test.describe('PitchPerfect App', () => {
   test('Welcome screen appears on first visit', async ({ page }) => {
     // Clear localStorage to ensure welcome screen shows
     await page.evaluate(() =>
-      localStorage.removeItem('pitchperfect_welcome_version'),
+      { localStorage.removeItem('pitchperfect_welcome_version'); },
     )
     await page.reload()
     await page.waitForSelector('#app-tabs', { timeout: 10000 })

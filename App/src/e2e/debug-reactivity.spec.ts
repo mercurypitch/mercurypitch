@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test } from '@playwright/test'
 
 test('debug reactive behavior', async ({ page }) => {
   await page.goto('http://localhost:4173/')
@@ -17,14 +17,15 @@ test('debug reactive behavior', async ({ page }) => {
   // Test reactive updates with setTimeout trick
   const result = await page.evaluate(async () => {
     const results = []
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const store = (window as any).__appStore
 
     // Get initial state
-    results.push({ step: 'initial', tab: store.activeTab?.() })
+    results.push({ step: 'initial', tab: store?.activeTab?.() })
 
     // Click the tab using mouse
     const btn = document.getElementById('tab-settings')
-    if (btn) {
+    if (btn !== null && btn !== undefined) {
       // Check if click event fires
       let clickFired = false
       btn.addEventListener(
@@ -34,17 +35,17 @@ test('debug reactive behavior', async ({ page }) => {
         },
         { once: true },
       )
-      ;(btn as HTMLElement).click()
+      btn.click()
       results.push({
         step: 'after-click',
         clickFired,
-        tab: store.activeTab?.(),
+        tab: store?.activeTab?.(),
       })
     }
 
     // Wait for any reactive updates
     await new Promise((r) => setTimeout(r, 1000))
-    results.push({ step: 'after-wait', tab: store.activeTab?.() })
+    results.push({ step: 'after-wait', tab: store?.activeTab?.() })
 
     // Check DOM
     const mainContent = document.querySelector('.main-content')
@@ -58,5 +59,5 @@ test('debug reactive behavior', async ({ page }) => {
     return results
   })
 
-  console.log('Reactivity test results:', JSON.stringify(result, null, 2))
+  console.info('Reactivity test results:', JSON.stringify(result, null, 2))
 })

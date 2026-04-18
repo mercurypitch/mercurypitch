@@ -2,7 +2,7 @@
 // Audio Engine Tests
 // ============================================================
 
-import { describe, it, expect, beforeEach } from 'vitest'
+import { beforeEach,describe, expect, it } from 'vitest'
 import { AudioEngine } from '@/lib/audio-engine'
 
 describe('AudioEngine', () => {
@@ -148,7 +148,7 @@ describe('AudioEngine', () => {
 
   describe('callbacks', () => {
     it('can set onNoteChange callback', () => {
-      engine.onNoteChange((note, index) => {
+      engine.onNoteChange((_note, _index) => {
         // Callback should be callable
       })
     })

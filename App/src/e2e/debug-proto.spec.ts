@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test } from '@playwright/test'
 
 test('debug store prototype chain', async ({ page }) => {
   await page.goto('http://localhost:4173/')
@@ -16,13 +16,13 @@ test('debug store prototype chain', async ({ page }) => {
 
   // Check appStore prototype chain
   const protoInfo = await page.evaluate(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const store = (window as any).__appStore
 
     // Check if it's a Proxy
     const isProxy =
       store !== null &&
-      typeof store === 'object' &&
-      store[Symbol.for('solid')[Symbol.toStringTag]]
+      typeof store === 'object'
 
     // Get own properties
     const ownKeys = Reflect.ownKeys(store)
@@ -60,16 +60,17 @@ test('debug store prototype chain', async ({ page }) => {
     }
   })
 
-  console.log('Proto info:', JSON.stringify(protoInfo, null, 2))
+  console.info('Proto info:', JSON.stringify(protoInfo, null, 2))
 
   // Try accessing via getOwnPropertyDescriptor
   const accessorTest = await page.evaluate(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const store = (window as any).__appStore
     const desc = Object.getOwnPropertyDescriptor(store, 'sensitivityPreset')
-    if (desc?.get) {
+    if (desc !== null && desc !== undefined && desc.get) {
       return { hasGetter: true, result: desc.get() }
     }
-    return { hasGetter: false, value: desc?.value }
+    return { hasGetter: false, value: desc !== null && desc !== undefined ? desc.value : undefined }
   })
-  console.log('Accessor test:', JSON.stringify(accessorTest, null, 2))
+  console.info('Accessor test:', JSON.stringify(accessorTest, null, 2))
 })

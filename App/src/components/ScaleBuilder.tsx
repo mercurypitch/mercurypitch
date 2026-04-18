@@ -2,11 +2,12 @@
 // ScaleBuilder — Modal for creating custom scales
 // ============================================================
 
-import { Component, createSignal, createMemo, createEffect, For, Show, } from 'solid-js'
+import type { Component} from 'solid-js';
+import { createEffect, createMemo, createSignal, For, Show, } from 'solid-js'
+import { NOTE_NAMES } from '@/lib/scale-data'
 import { appStore } from '@/stores/app-store'
 import { melodyStore } from '@/stores/melody-store'
-import { NOTE_NAMES } from '@/lib/scale-data'
-import type { ScaleDegree, NoteName } from '@/types'
+import type { NoteName } from '@/types'
 
 interface ScaleBuilderProps {
   isOpen: boolean
@@ -40,10 +41,10 @@ export const ScaleBuilder: Component<ScaleBuilderProps> = (props) => {
   const loadSavedScales = () => {
     try {
       const stored = localStorage.getItem('pitchperfect_custom_scales')
-      if (stored) {
+      if (stored !== '') {
         setSavedScales(JSON.parse(stored))
       }
-    } catch {}
+    } catch { /* empty */ }
   }
 
   // Toggle a note in the custom scale
@@ -79,7 +80,7 @@ export const ScaleBuilder: Component<ScaleBuilderProps> = (props) => {
         'pitchperfect_custom_scales',
         JSON.stringify(updated),
       )
-    } catch {}
+    } catch { /* empty */ }
 
     appStore.showNotification(`Scale "${name}" saved`, 'success')
   }
@@ -87,7 +88,7 @@ export const ScaleBuilder: Component<ScaleBuilderProps> = (props) => {
   // Load a saved scale
   const loadScale = (name: string) => {
     const scale = savedScales()[name]
-    if (scale) {
+    if (scale !== null && scale !== undefined) {
       setScaleName(name)
       setCustomNotes(new Set(scale))
     }
@@ -103,7 +104,7 @@ export const ScaleBuilder: Component<ScaleBuilderProps> = (props) => {
         'pitchperfect_custom_scales',
         JSON.stringify(updated),
       )
-    } catch {}
+    } catch { /* empty */ }
   }
 
   // Apply the custom scale to the app
@@ -122,7 +123,7 @@ export const ScaleBuilder: Component<ScaleBuilderProps> = (props) => {
     // Store custom scale info in localStorage for refreshScale to use
     try {
       localStorage.setItem('pitchperfect_active_custom_scale', customName)
-    } catch {}
+    } catch { /* empty */ }
 
     // Update scale type (will use custom logic)
     appStore.setScaleType(customName)
@@ -156,14 +157,14 @@ export const ScaleBuilder: Component<ScaleBuilderProps> = (props) => {
     // Try to load current custom scale if active
     try {
       const current = localStorage.getItem('pitchperfect_active_custom_scale')
-      if (current && current.startsWith('custom:')) {
+      if (current !== null && current !== undefined && current.startsWith('custom:')) {
         const parts = current.split(':')
         if (parts.length >= 3) {
           setScaleName(parts[1])
           setCustomNotes(new Set(parts[2].split(',')))
         }
       }
-    } catch {}
+    } catch { /* empty */ }
   }
 
   createEffect(() => {
@@ -174,14 +175,14 @@ export const ScaleBuilder: Component<ScaleBuilderProps> = (props) => {
 
   return (
     <Show when={props.isOpen}>
-      <div class="modal-overlay" onClick={() => props.onClose()}>
+      <div class="modal-overlay" onClick={() => { props.onClose(); }}>
         <div
           class="modal-content scale-builder"
-          onClick={(e) => e.stopPropagation()}
+          onClick={(e) => { e.stopPropagation(); }}
         >
           <div class="modal-header">
             <h2>Custom Scale Builder</h2>
-            <button class="modal-close" onClick={() => props.onClose()}>
+            <button class="modal-close" onClick={() => { props.onClose(); }}>
               &times;
             </button>
           </div>
@@ -198,7 +199,7 @@ export const ScaleBuilder: Component<ScaleBuilderProps> = (props) => {
                 {(note) => (
                   <button
                     class={`scale-note-btn ${customNotes().has(note) ? 'active' : ''} ${note.includes('#') ? 'black-key' : 'white-key'}`}
-                    onClick={() => toggleNote(note)}
+                    onClick={() => { toggleNote(note); }}
                   >
                     {note}
                   </button>
@@ -252,13 +253,13 @@ export const ScaleBuilder: Component<ScaleBuilderProps> = (props) => {
                       <div class="saved-scale-item">
                         <button
                           class="btn-small"
-                          onClick={() => loadScale(name)}
+                          onClick={() => { loadScale(name); }}
                         >
                           {name}
                         </button>
                         <button
                           class="btn-delete"
-                          onClick={() => deleteScale(name)}
+                          onClick={() => { deleteScale(name); }}
                           title="Delete"
                         >
                           &times;

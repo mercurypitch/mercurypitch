@@ -2,7 +2,7 @@
 // Melody Engine Tests
 // ============================================================
 
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { MelodyEngine } from '@/lib/melody-engine'
 import type { MelodyItem } from '@/types'
 
@@ -161,7 +161,7 @@ describe('MelodyEngine', () => {
     it('onNoteStart callback receives MelodyItem with duration (GH #128 fix)', () => {
       // GH #128 fix: onNoteStart now passes the full MelodyItem (including duration)
       // rather than just MelodyNote. We test by mocking RAF and manually driving it.
-      const callArgs: any[] = []
+      const callArgs: unknown[] = []
       const e = new MelodyEngine({
         bpm: 120,
         melody,
@@ -177,6 +177,7 @@ describe('MelodyEngine', () => {
 
       // Mock performance.now() so elapsed time advances
       let fakeNow = 1000 // Start at 1000ms so playStartTime = 1000 (set during start())
+      // eslint-disable-next-line no-restricted-globals
       vi.spyOn(performance, 'now').mockImplementation(() => fakeNow)
 
       e.start()
@@ -200,11 +201,12 @@ describe('MelodyEngine', () => {
       expect(typeof firstNote.duration).toBe('number')
       expect(firstNote.duration).toBe(2) // First note has duration 2
       e.destroy()
+      // eslint-disable-next-line no-restricted-globals
       vi.spyOn(performance, 'now').mockRestore()
     })
 
     it('onNoteEnd callback receives MelodyItem with duration', () => {
-      const callArgs: any[] = []
+      const callArgs: unknown[] = []
       const e = new MelodyEngine({
         bpm: 120,
         melody,
@@ -218,6 +220,7 @@ describe('MelodyEngine', () => {
       })
 
       let fakeNow = 1000
+      // eslint-disable-next-line no-restricted-globals
       vi.spyOn(performance, 'now').mockImplementation(() => fakeNow)
 
       e.start()
@@ -233,6 +236,7 @@ describe('MelodyEngine', () => {
       expect(endedNote).toHaveProperty('duration')
       expect(endedNote.duration).toBe(2)
       e.destroy()
+      // eslint-disable-next-line no-restricted-globals
       vi.spyOn(performance, 'now').mockRestore()
     })
   })

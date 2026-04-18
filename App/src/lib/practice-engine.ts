@@ -2,10 +2,9 @@
 // Practice Engine — Mic, pitch detection, accuracy scoring
 // ============================================================
 
-import type { MelodyItem, MelodyNote, PitchResult, PitchSample, NoteResult, PracticeResult, AccuracyRating, } from '@/types'
-import { AudioEngine } from './audio-engine'
+import type { AccuracyRating, MelodyNote, NoteResult, PitchResult, PitchSample, PracticeResult } from '@/types'
+import type { AudioEngine } from './audio-engine'
 import { PitchDetector } from './pitch-detector'
-import { freqToNote } from './scale-data'
 
 // Accuracy bands (threshold in cents → band score)
 const DEFAULT_BANDS: { threshold: number; band: number }[] = [
@@ -128,7 +127,7 @@ export class PracticeEngine {
         actualSampleRate !== this.sampleRate ||
         actualBufferSize !== this.bufferSize
       ) {
-        console.log(
+        console.info(
           `[PracticeEngine] Reinitializing PitchDetector: ${this.sampleRate}Hz → ${actualSampleRate}Hz, buffer ${this.bufferSize} → ${actualBufferSize}`,
         )
         this.sampleRate = actualSampleRate
@@ -144,7 +143,7 @@ export class PracticeEngine {
       if (ok) {
         this.micActive = true
         this.detector.resetHistory()
-        console.log('[PracticeEngine] Mic started successfully')
+        console.info('[PracticeEngine] Mic started successfully')
         this.callbacks.onMicStateChange?.(true)
         return true
       }
@@ -160,10 +159,10 @@ export class PracticeEngine {
 
   stopMic(): void {
     if (!this.micActive) {
-      console.log('[PracticeEngine] Mic already stopped')
+      console.info('[PracticeEngine] Mic already stopped')
       return
     }
-    console.log('[PracticeEngine] Stopping mic...')
+    console.info('[PracticeEngine] Stopping mic...')
     this.audioEngine.stopMic()
     this.micActive = false
     this.callbacks.onMicStateChange?.(false)
@@ -249,7 +248,8 @@ export class PracticeEngine {
       if (pitch.clarity >= 0.2) {
         this.currentSamples.push({
           freq: pitch.frequency,
-          time: performance.now(),
+          // eslint-disable-next-line no-restricted-globals
+          time: (performance as unknown as { now: () => number }).now(),
           cents,
         })
       }
@@ -392,7 +392,7 @@ export class PracticeEngine {
 
 export function centsToRating(
   avgCents: number | null,
-  bands?: { threshold: number; band: number }[],
+  _bands?: { threshold: number; band: number }[],
 ): AccuracyRating {
   // Use fixed thresholds matching the old app (not configurable) for rating labels
   // Bands are used only for the numeric score calculation

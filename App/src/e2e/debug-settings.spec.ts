@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test } from '@playwright/test'
 
 test('debug settings panel mounting', async ({ page }) => {
   await page.goto('http://localhost:4173/')
@@ -17,12 +17,12 @@ test('debug settings panel mounting', async ({ page }) => {
   // Get initial DOM state
   const initialMainContent = await page.evaluate(() => {
     const el = document.querySelector('.main-content')
-    if (!el) return 'not found'
+    if (el === null || el === undefined) return 'not found'
     return Array.from(el.children).map(
-      (c) => c.tagName + '#' + c.id + '.' + c.className.split(' ')[0],
+      (c) => `${c.tagName}#${c.id}.${c.className.split(' ')[0]}`,
     )
   })
-  console.log('Initial main-content:', JSON.stringify(initialMainContent))
+  console.info('Initial main-content:', JSON.stringify(initialMainContent))
 
   // Manually click tab via Playwright
   await page.click('#tab-settings')
@@ -30,30 +30,30 @@ test('debug settings panel mounting', async ({ page }) => {
 
   // Check if settings panel appeared
   const settingsPanel = await page.locator('#settings-panel').count()
-  console.log('Settings panel count after click:', settingsPanel)
+  console.info('Settings panel count after click:', settingsPanel)
 
   // Get final DOM state
   const finalMainContent = await page.evaluate(() => {
     const el = document.querySelector('.main-content')
-    if (!el) return 'not found'
+    if (el === null || el === undefined) return 'not found'
     return Array.from(el.children).map(
-      (c) => c.tagName + '#' + c.id + '.' + c.className.split(' ')[0],
+      (c) => `${c.tagName}#${c.id}.${c.className.split(' ')[0]}`,
     )
   })
-  console.log('Final main-content:', JSON.stringify(finalMainContent))
+  console.info('Final main-content:', JSON.stringify(finalMainContent))
 
   // Check if there's any element containing 'settings' text
   const settingsText = await page.evaluate(() => {
     const elements = document.querySelectorAll('*')
     const found = []
     for (const el of elements) {
-      if (el.textContent?.includes('Settings') && el.children.length === 0) {
-        found.push(el.tagName + '#' + el.id + '.' + el.className)
+      if (el.textContent !== null && el.textContent !== undefined && el.textContent.includes('Settings') && el.children.length === 0) {
+        found.push(`${el.tagName}#${el.id}.${el.className}`)
       }
     }
     return found
   })
-  console.log(
+  console.info(
     'Elements with Settings text:',
     JSON.stringify(settingsText.slice(0, 10)),
   )

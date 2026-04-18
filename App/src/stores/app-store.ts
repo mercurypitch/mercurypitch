@@ -4,7 +4,7 @@
 
 import { createSignal } from 'solid-js'
 import { createStore } from 'solid-js/store'
-import type { AccuracyBand } from '@/types'
+import type { AccuracyBand, PracticeSession, SessionResult  } from '@/types'
 
 // ── Key / Scale ─────────────────────────────────────────────
 
@@ -23,7 +23,7 @@ function loadThemeFromStorage(): ThemeMode {
   try {
     const stored = localStorage.getItem(THEME_KEY)
     if (stored === 'light' || stored === 'dark') return stored
-  } catch {}
+  } catch { /* empty */ }
   return 'dark' // default to dark
 }
 
@@ -35,7 +35,7 @@ export function setTheme(mode: ThemeMode): void {
   setThemeInternal(mode)
   try {
     localStorage.setItem(THEME_KEY, mode)
-  } catch {}
+  } catch { /* empty */ }
   // Apply theme to document
   document.documentElement.setAttribute('data-theme', mode)
   window.dispatchEvent(
@@ -71,6 +71,7 @@ const [lastScore, setLastScore] = createSignal<number | null>(null)
 // ── Grid ──────────────────────────────────────────────────────
 
 const GRID_KEY = 'pitchperfect_grid'
+
 function loadGridVisibility(): boolean {
   try {
     return localStorage.getItem(GRID_KEY) !== 'false'
@@ -86,7 +87,7 @@ export function toggleGridLines(): void {
   setGridLinesVisible(next)
   try {
     localStorage.setItem(GRID_KEY, String(next))
-  } catch {}
+  } catch { /* empty */ }
   window.dispatchEvent(
     new CustomEvent('pitchperfect:gridToggle', { detail: { visible: next } }),
   )
@@ -96,7 +97,7 @@ export function setGridLines(visible: boolean): void {
   setGridLinesVisible(visible)
   try {
     localStorage.setItem(GRID_KEY, String(visible))
-  } catch {}
+  } catch { /* empty */ }
   window.dispatchEvent(
     new CustomEvent('pitchperfect:gridToggle', { detail: { visible } }),
   )
@@ -138,7 +139,7 @@ export function dismissWelcome(): void {
   setShowWelcome(false)
   try {
     localStorage.setItem(WELCOME_KEY, APP_VERSION)
-  } catch {}
+  } catch { /* empty */ }
 }
 
 // ── Walkthrough Tutorial (GH #140) ────────────────────────────────
@@ -222,7 +223,7 @@ export function endWalkthrough(): void {
   setWalkthroughStep(0)
   try {
     localStorage.setItem(WALKTHROUGH_KEY, '1')
-  } catch {}
+  } catch { /* empty */ }
 }
 
 export function isWalkthroughActive(): boolean {
@@ -267,7 +268,7 @@ function loadSensitivityPreset(): SensitivityPreset {
     const stored = localStorage.getItem(SENSITIVITY_PRESET_KEY)
     if (stored === 'quiet' || stored === 'home' || stored === 'noisy')
       return stored
-  } catch {}
+  } catch { /* empty */ }
   return 'home'
 }
 
@@ -279,7 +280,7 @@ export function setSensitivityPresetValue(value: SensitivityPreset): void {
   _setSensitivityPreset(value)
   try {
     localStorage.setItem(SENSITIVITY_PRESET_KEY, value)
-  } catch {}
+  } catch { /* empty */ }
   window.dispatchEvent(
     new CustomEvent('pitchperfect:sensitivityPresetChange', {
       detail: { preset: value },
@@ -294,7 +295,7 @@ export function applySensitivityPreset(preset: SensitivityPreset): void {
   _setSensitivityPreset(preset)
   try {
     localStorage.setItem(SENSITIVITY_PRESET_KEY, preset)
-  } catch {}
+  } catch { /* empty */ }
   window.dispatchEvent(
     new CustomEvent('pitchperfect:sensitivityPresetChange', {
       detail: { preset },
@@ -337,7 +338,7 @@ const [settings, setSettings] = createSignal<SettingsConfig>(DEFAULT_SETTINGS)
 function loadSettingsFromStorage(): SettingsConfig {
   try {
     const raw = localStorage.getItem(SETTINGS_KEY)
-    return raw ? JSON.parse(raw) : DEFAULT_SETTINGS
+    return raw !== null && raw !== undefined && raw !== '' ? JSON.parse(raw) : DEFAULT_SETTINGS
   } catch {
     return DEFAULT_SETTINGS
   }
@@ -448,7 +449,7 @@ const [currentPresetName, setCurrentPresetName] = createSignal<string | null>(
 function loadPresetsFromStorage(): PresetsStore {
   try {
     const raw = localStorage.getItem(PRESETS_KEY)
-    return raw ? JSON.parse(raw) : {}
+    return raw !== null && raw !== undefined && raw !== '' ? JSON.parse(raw) : {}
   } catch {
     return {}
   }
@@ -468,7 +469,7 @@ export function initPresets(): void {
     setPresets(stored)
   }
   const last = localStorage.getItem(LAST_PRESET_KEY)
-  if (last) setCurrentPresetName(last)
+  if (last !== null && last !== undefined && last !== '') setCurrentPresetName(last)
 }
 
 /** Reset presets signal (used by tests) */
@@ -540,7 +541,7 @@ const DEFAULT_ADSR: ADSRConfig = {
 function loadADSRFromStorage(): ADSRConfig {
   try {
     const raw = localStorage.getItem(ADSR_KEY)
-    return raw ? JSON.parse(raw) : DEFAULT_ADSR
+    return raw !== null && raw !== undefined && raw !== '' ? JSON.parse(raw) : DEFAULT_ADSR
   } catch {
     return DEFAULT_ADSR
   }
@@ -610,7 +611,7 @@ const DEFAULT_REVERB: ReverbConfig = {
 function loadReverbFromStorage(): ReverbConfig {
   try {
     const raw = localStorage.getItem(REVERB_KEY)
-    return raw ? JSON.parse(raw) : DEFAULT_REVERB
+    return raw !== null && raw !== undefined && raw !== '' ? JSON.parse(raw) : DEFAULT_REVERB
   } catch {
     return DEFAULT_REVERB
   }
@@ -656,11 +657,11 @@ const [playbackSpeed, setPlaybackSpeedSignal] = createSignal<number>(1.0)
 function loadPlaybackSpeed(): number {
   try {
     const stored = localStorage.getItem(PLAYBACK_SPEED_KEY)
-    if (stored) {
+    if (stored !== null && stored !== undefined && stored !== '') {
       const speed = parseFloat(stored)
       if (!isNaN(speed) && speed >= 0.25 && speed <= 2.0) return speed
     }
-  } catch {}
+  } catch { /* empty */ }
   return 1.0
 }
 
@@ -673,7 +674,7 @@ export function setPlaybackSpeed(speed: number): void {
   setPlaybackSpeedSignal(clamped)
   try {
     localStorage.setItem(PLAYBACK_SPEED_KEY, String(clamped))
-  } catch {}
+  } catch { /* empty */ }
 }
 
 // ── Notifications ────────────────────────────────────────────
@@ -700,7 +701,6 @@ export function showNotification(
 
 // ── Session Results (reactive store for sidebar) ───────────────
 
-import type { PracticeSession, SessionResult } from '@/types'
 const [sessionResultsStore, setSessionResultsStore] = createStore<
   SessionResult[]
 >([])
@@ -722,7 +722,7 @@ const SESSION_RESULTS_KEY = 'pitchperfect_session_results'
 function loadSessionResults(): SessionResult[] {
   try {
     const raw = localStorage.getItem(SESSION_RESULTS_KEY)
-    return raw ? JSON.parse(raw) : []
+    return raw !== null && raw !== undefined && raw !== '' ? JSON.parse(raw) : []
   } catch {
     return []
   }
@@ -847,7 +847,7 @@ const [sessionHistory, setSessionHistory] = createStore<SessionHistoryEntry[]>(
 function loadSessionHistory(): SessionHistoryEntry[] {
   try {
     const raw = localStorage.getItem(SESSION_HISTORY_KEY)
-    return raw ? JSON.parse(raw) : []
+    return raw !== null && raw !== undefined && raw !== '' ? JSON.parse(raw) : []
   } catch {
     return []
   }

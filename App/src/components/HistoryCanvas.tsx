@@ -2,7 +2,8 @@
 // HistoryCanvas — Real-time pitch visualization
 // ============================================================
 
-import { Component, onMount, onCleanup } from 'solid-js'
+import type { Component} from 'solid-js';
+import { onCleanup,onMount } from 'solid-js'
 
 interface HistoryCanvasProps {
   frequencyData: () => Float32Array | null
@@ -20,8 +21,8 @@ export const HistoryCanvas: Component<HistoryCanvasProps> = (props) => {
     ctx = canvasRef.getContext('2d')
     resizeCanvas()
 
-    const ro = new ResizeObserver(() => resizeCanvas())
-    ro.observe(canvasRef!.parentElement!)
+    const ro = new ResizeObserver(() => { resizeCanvas(); })
+    ro.observe(canvasRef.parentElement!)
 
     animFrameId = requestAnimationFrame(function loop() {
       draw()
@@ -41,8 +42,8 @@ export const HistoryCanvas: Component<HistoryCanvasProps> = (props) => {
     const h = canvasRef.parentElement!.clientHeight
     canvasRef.width = w * dpr
     canvasRef.height = h * dpr
-    canvasRef.style.width = w + 'px'
-    canvasRef.style.height = h + 'px'
+    canvasRef.style.width = `${w  }px`
+    canvasRef.style.height = `${h  }px`
     ctx?.setTransform(dpr, 0, 0, dpr, 0, 0)
   }
 
@@ -169,7 +170,7 @@ export const HistoryCanvas: Component<HistoryCanvasProps> = (props) => {
       ctx.fillStyle = color
       ctx.font = 'bold 15px sans-serif'
       ctx.textAlign = 'right'
-      ctx.fillText(score + '%', w - 10, 20)
+      ctx.fillText(`${score  }%`, w - 10, 20)
       ctx.fillStyle = '#8b949e'
       ctx.font = '9px sans-serif'
       ctx.fillText('live score', w - 10, 32)

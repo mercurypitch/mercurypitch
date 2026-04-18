@@ -3,8 +3,8 @@
 // ============================================================
 
 import { render } from 'solid-js/web'
-import { App } from './App'
 import '@/styles/app.css'
+import { App } from './App'
 
 const root = document.getElementById('root')
 if (!root) {
@@ -12,4 +12,4 @@ if (!root) {
 }
 
 // Add loaded class once app mounts to prevent FOUC
-render(() => <App onMounted={() => root.classList.add('loaded')} />, root)
+render(() => <App onMounted={() => { root.classList.add('loaded'); }} />, root)

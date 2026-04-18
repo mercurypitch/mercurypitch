@@ -1,10 +1,10 @@
-import { test, expect } from '@playwright/test'
+import { test } from '@playwright/test'
 
-test('debug settings tab - comprehensive', async ({ page }) => {
+test('debug store and Show reactivity', async ({ page }) => {
   await page.goto('http://localhost:4173/')
   await page.waitForSelector('#app-tabs', { timeout: 10000 })
 
-  // Dismiss welcome
+  // Dismiss welcome if present
   const overlay = page.locator('.welcome-overlay')
   if ((await overlay.count()) > 0 && (await overlay.isVisible())) {
     const dismissBtn = page.locator('.welcome-cta, .overlay-close')
@@ -14,42 +14,59 @@ test('debug settings tab - comprehensive', async ({ page }) => {
     }
   }
 
-  // Check what type appStore.activeTab is in window context
-  const storeType = await page.evaluate(() => {
+  // Deep dive into what's happening
+  const result = await page.evaluate(async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const store = (window as any).__appStore
-    const at = store ? store.activeTab : undefined
+
+    // 1. Check if Show component's `when` condition is working
+    // Look at the Show component that wraps settings-panel
+    const settingsShowCondition = () => store.activeTab() === 'settings'
+
+    // 2. Check if we can trigger a manual re-render test
+    // Simulate what the tab click does
+    if (store !== null && store !== undefined) {
+      store.setActiveTab('settings')
+    }
+
     return {
-      type: typeof at,
-      isFunction: typeof at === 'function',
-      isSignal: at && typeof at === 'object',
-      keys: store
-        ? Object.keys(store).filter(
-            (k) =>
-              k.includes('Tab') || k.includes('tab') || k.includes('active'),
-          )
-        : [],
+      activeTab: store?.activeTab(),
+      settingsCondition: settingsShowCondition(),
+      // Check if there's a Show component tracking this
+      hasShowCondition: true,
     }
   })
-  console.log('appStore.activeTab type:', JSON.stringify(storeType))
 
-  // Check if there's a nested activeTab
-  const nestedCheck = await page.evaluate(() => {
-    const store = (window as any).__appStore
-    return {
-      storeKeys: store ? Object.keys(store).slice(0, 30) : [],
-      navKeys:
-        store && store.navigation ? Object.keys(store.navigation) : 'no nav',
-      settingsKeys:
-        store && store.settings
-          ? Object.keys(store.settings).slice(0, 10)
-          : 'no settings',
-    }
-  })
-  console.log('Store structure:', JSON.stringify(nestedCheck))
+  console.info('Store state after setActiveTab:', JSON.stringify(result))
 
-  // Click the Settings tab to switch to the settings view
-  await page.locator('#tab-settings').click()
+  // Wait for DOM update
   await page.waitForTimeout(500)
 
-  await expect(page.locator('#settings-panel')).toBeVisible({ timeout: 5000 })
+  // Check DOM again
+  const domResult = await page.evaluate(() => {
+    return {
+      settingsPanelExists: !!document.getElementById('settings-panel'),
+      mainContentChildren: Array.from(
+        document.querySelector('.main-content')?.children || [],
+      ).map((c) => c.id || c.tagName),
+    }
+  })
+  console.info('DOM after store change:', JSON.stringify(domResult))
+
+  // Test if showing a known working Show (like the practice one)
+  await page.evaluate(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ;(window as any).__appStore?.setActiveTab('practice')
+  })
+  await page.waitForTimeout(500)
+
+  const practiceDom = await page.evaluate(() => {
+    return {
+      practiceHeaderExists: !!document.querySelector('.practice-header-bar'),
+      mainContentChildren: Array.from(
+        document.querySelector('.main-content')?.children || [],
+      ).map((c) => c.id || c.tagName),
+    }
+  })
+  console.info('DOM after returning to practice:', JSON.stringify(practiceDom))
 })

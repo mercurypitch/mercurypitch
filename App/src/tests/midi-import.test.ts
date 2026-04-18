@@ -2,7 +2,7 @@
 // MIDI Import Tests
 // ============================================================
 
-import { describe, it, expect } from 'vitest'
+import { describe, expect,it } from 'vitest'
 import { importMelodyFromMIDI } from '@/lib/piano-roll'
 
 function encodeVLQ(value: number): number[] {
@@ -121,7 +121,7 @@ function buildMidiFormat1(
   for (const trackEvents of tracks) {
     const absEvents = trackEvents.map((e) => ({
       tick: e.tick,
-      type: e.type as 'on' | 'off',
+      type: e.type,
       pitch: e.pitch,
       vel: e.vel ?? velocity,
     }))

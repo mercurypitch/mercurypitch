@@ -1,4 +1,5 @@
-import { test, expect } from '@playwright/test'
+import { expect,test } from '@playwright/test'
+
 test('live site settings', async ({ page }) => {
   await page.goto('https://pitchperfect.clodhost.com/')
   await page.waitForSelector('#app-tabs', { timeout: 15000 })
@@ -12,7 +13,7 @@ test('live site settings', async ({ page }) => {
     }
   }
 
-  console.log(
+  console.info(
     'Initial tabs:',
     JSON.stringify(
       await page.evaluate(() =>
@@ -27,7 +28,7 @@ test('live site settings', async ({ page }) => {
   await page.locator('#tab-settings').click()
   await page.waitForTimeout(3000)
 
-  console.log(
+  console.info(
     'After clicking Settings:',
     JSON.stringify(
       await page.evaluate(() =>
@@ -39,7 +40,7 @@ test('live site settings', async ({ page }) => {
     ),
   )
 
-  console.log(
+  console.info(
     'Settings panel count:',
     await page.locator('#settings-panel').count(),
   )

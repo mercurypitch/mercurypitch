@@ -2,8 +2,8 @@
 // Theme Store Tests
 // ============================================================
 
-import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { appStore, setTheme, toggleTheme, initTheme } from '@/stores/app-store'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { appStore, initTheme,setTheme, toggleTheme } from '@/stores/app-store'
 
 describe('Theme Store', () => {
   beforeEach(() => {
@@ -116,7 +116,7 @@ describe('Theme Store', () => {
 
     it('should handle localStorage errors gracefully', () => {
       // The function should not throw even if localStorage fails
-      expect(() => setTheme('dark')).not.toThrow()
+      expect(() => { setTheme('dark'); }).not.toThrow()
     })
   })
 })

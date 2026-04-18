@@ -2,7 +2,8 @@
 // WelcomeScreen — first-run welcome overlay (GH #131)
 // ============================================================
 
-import { Component, createSignal } from 'solid-js'
+import type { Component} from 'solid-js';
+import { createSignal } from 'solid-js'
 import { appStore } from '@/stores/app-store'
 
 interface WelcomeScreenProps {
@@ -20,7 +21,7 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
       }
       setMicEnabled(true)
       setMicError(null)
-    } catch (err) {
+    } catch (_err) {
       setMicError(
         'Microphone access denied. Please enable it in your browser settings.',
       )
@@ -28,11 +29,11 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
   }
 
   return (
-    <div class="welcome-overlay" onClick={() => appStore.dismissWelcome()}>
-      <div class="welcome-card" onClick={(e) => e.stopPropagation()}>
+    <div class="welcome-overlay" onClick={() => { appStore.dismissWelcome(); }}>
+      <div class="welcome-card" onClick={(e) => { e.stopPropagation(); }}>
         <button
           class="overlay-close"
-          onClick={() => appStore.dismissWelcome()}
+          onClick={() => { appStore.dismissWelcome(); }}
           title="Dismiss"
         >
           &times;
@@ -57,7 +58,7 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
             PitchPerfect needs microphone access to detect your singing pitch in
             real-time.
           </p>
-          {!micEnabled() && !micError() && (
+          {micEnabled() === false && micError() === null && (
             <button class="welcome-mic-btn" onClick={handleEnableMic}>
               <svg viewBox="0 0 24 24" width="18" height="18">
                 <path
@@ -83,7 +84,7 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
               Microphone enabled
             </div>
           )}
-          {micError() && <div class="welcome-mic-error">{micError()}</div>}
+          {micError() !== null && <div class="welcome-mic-error">{micError()}</div>}
         </div>
 
         {/* Features */}
@@ -136,7 +137,7 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
         </div>
 
         {/* CTA */}
-        <button class="welcome-cta" onClick={() => appStore.dismissWelcome()}>
+        <button class="welcome-cta" onClick={() => { appStore.dismissWelcome(); }}>
           <svg viewBox="0 0 24 24" width="20" height="20">
             <path fill="currentColor" d="M8 5v14l11-7z" />
           </svg>

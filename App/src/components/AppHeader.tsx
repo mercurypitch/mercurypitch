@@ -5,9 +5,11 @@
 // Sensitivity, metronome visible in Practice tab only
 // ============================================================
 
-import { Component, Show } from 'solid-js'
-import { appStore, type CountInOption } from '@/stores/app-store'
+import type { Component} from 'solid-js';
+import { Show } from 'solid-js'
 import { MetronomeButton } from '@/components/MetronomeButton'
+import type {CountInOption} from '@/stores/app-store';
+import { appStore  } from '@/stores/app-store'
 
 interface AppHeaderProps {
   isPlaying: () => boolean
@@ -196,7 +198,7 @@ export const AppHeader: Component<AppHeaderProps> = (props) => {
       <button
         id="theme-toggle-btn"
         class={`ctrl-btn theme-toggle-btn ${appStore.theme()}`}
-        onClick={() => appStore.toggleTheme()}
+        onClick={() => { appStore.toggleTheme(); }}
         title="Toggle dark/light theme"
       >
         <Show

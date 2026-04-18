@@ -2,8 +2,8 @@
 // Practice Session State Tests — appStore session lifecycle
 // ============================================================
 
-import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { startPracticeSession, getCurrentSessionItem, advanceSessionItem, recordSessionItemResult, endPracticeSession, isInSessionMode, initSessionHistory, initPresets, } from '@/stores/app-store'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { advanceSessionItem, endPracticeSession, getCurrentSessionItem, initPresets,initSessionHistory, isInSessionMode, recordSessionItemResult, startPracticeSession,  } from '@/stores/app-store'
 import type { PracticeSession } from '@/types'
 
 // Mock localStorage

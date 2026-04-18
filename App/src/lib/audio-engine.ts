@@ -2,7 +2,7 @@
 // Audio Engine — Web Audio API playback and microphone input
 // ============================================================
 
-import type { MelodyItem, MelodyNote, AudioEngineCallbacks, EffectType, } from '@/types'
+import type { AudioEngineCallbacks, EffectType,MelodyItem, MelodyNote,  } from '@/types'
 
 export type InstrumentType = 'sine' | 'piano' | 'organ' | 'strings' | 'synth'
 
@@ -67,7 +67,8 @@ export class AudioEngine {
     this.playbackAnalyser.fftSize = this.bufferSize
     this.playbackAnalyser.smoothingTimeConstant = 0.0
     if (
-      this.audioCtx.destination &&
+      this.audioCtx.destination !== null &&
+      this.audioCtx.destination !== undefined &&
       typeof this.playbackAnalyser.connect === 'function'
     ) {
       this.playbackAnalyser.connect(this.audioCtx.destination)
@@ -81,7 +82,7 @@ export class AudioEngine {
     this.reverbSendGain.gain.value = 0
     this.reverbReturnGain.gain.value = 0
 
-    if (this.playbackAnalyser && typeof this.mainGain.connect === 'function') {
+    if (this.playbackAnalyser !== null && this.playbackAnalyser !== undefined && typeof this.mainGain.connect === 'function') {
       // Dry path: mainGain → playbackAnalyser (always full volume)
       this.mainGain.connect(this.playbackAnalyser)
       // Wet send tap: mainGain → reverbSendGain (gain = wetness, only active when reverb on)
@@ -241,12 +242,12 @@ export class AudioEngine {
     if (this.reverbSendGain && this.reverbNode) {
       try {
         this.reverbSendGain.disconnect(this.reverbNode)
-      } catch {}
+      } catch { /* empty */ }
     }
     if (this.reverbNode && this.reverbReturnGain) {
       try {
         this.reverbNode.disconnect(this.reverbReturnGain)
-      } catch {}
+      } catch { /* empty */ }
     }
 
     if (!this.reverbNode || !this.reverbSendGain || !this.reverbReturnGain)
@@ -256,13 +257,13 @@ export class AudioEngine {
     // Wire: mainGain → reverbSendGain → reverbNode → reverbReturnGain → playbackAnalyser
     try {
       this.reverbSendGain.connect(this.reverbNode)
-    } catch {}
+    } catch { /* empty */ }
     try {
       this.reverbNode.connect(this.reverbReturnGain)
-    } catch {}
+    } catch { /* empty */ }
     try {
       this.reverbReturnGain.connect(this.playbackAnalyser)
-    } catch {}
+    } catch { /* empty */ }
   }
 
   getVolume(): number {
@@ -403,13 +404,14 @@ export class AudioEngine {
       await this.resume()
 
       if (this.isRecording) {
-        console.log('[AudioEngine] Mic already active, returning true')
+        console.info('[AudioEngine] Mic already active, returning true')
         return true
       }
 
-      console.log('[AudioEngine] Requesting microphone access...')
+      console.info('[AudioEngine] Requesting microphone access...')
 
-      this.micStream = await navigator.mediaDevices.getUserMedia({
+      // eslint-disable-next-line no-restricted-globals
+      this.micStream = await (navigator as unknown as { mediaDevices: { getUserMedia: (opts: object) => Promise<MediaStream> } }).mediaDevices.getUserMedia({
         audio: {
           echoCancellation: false,
           noiseSuppression: false,
@@ -432,7 +434,7 @@ export class AudioEngine {
       this.micGain.connect(this.analyser)
 
       this.isRecording = true
-      console.log('[AudioEngine] Microphone started successfully')
+      console.info('[AudioEngine] Microphone started successfully')
       return true
     } catch (err) {
       console.error('[AudioEngine] Microphone access denied:', err)
@@ -442,12 +444,12 @@ export class AudioEngine {
 
   stopMic(): void {
     if (!this.isRecording) {
-      console.log('[AudioEngine] Mic already stopped')
+      console.info('[AudioEngine] Mic already stopped')
       return
     }
 
     this.isRecording = false
-    console.log('[AudioEngine] Stopping microphone...')
+    console.info('[AudioEngine] Stopping microphone...')
 
     // Disconnect mic chain but keep analyser for visualization
     if (this.micSource) {
@@ -459,10 +461,10 @@ export class AudioEngine {
       this.micGain = null
     }
     if (this.micStream) {
-      this.micStream.getTracks().forEach((track) => track.stop())
+      this.micStream.getTracks().forEach((track) => { track.stop(); })
       this.micStream = null
     }
-    console.log('[AudioEngine] Microphone stopped')
+    console.info('[AudioEngine] Microphone stopped')
     // Note: analyser stays active for visualization
   }
 
@@ -639,7 +641,7 @@ export class AudioEngine {
 
     // Auto-stop after duration
     if (durationMs) {
-      setTimeout(() => this.stopNote(noteId), durationMs)
+      setTimeout(() => { this.stopNote(noteId); }, durationMs)
     }
 
     return noteId
@@ -896,7 +898,7 @@ export class AudioEngine {
   /** Play a beep sound */
   playBeep(type: 'start' | 'stop' = 'start'): void {
     if (!this.audioCtx || !this.mainGain) {
-      this.init().then(() => this._doPlayBeep(type))
+      this.init().then(() => { this._doPlayBeep(type); })
       return
     }
     this._doPlayBeep(type)
@@ -940,7 +942,7 @@ export class AudioEngine {
 
     // Release envelope (GH #130 fix: guard for voices with no/null gains, e.g. metronome)
     const firstGain = voice.gains[0]
-    if (firstGain) {
+    if (firstGain !== null && firstGain !== undefined) {
       try {
         firstGain.gain.cancelScheduledValues(now)
         firstGain.gain.setValueAtTime(firstGain.gain.value, now)
@@ -976,7 +978,7 @@ export class AudioEngine {
         }
       })
       // Only disconnect if gains exist (GH #130 fix)
-      if (firstGain) {
+      if (firstGain !== null && firstGain !== undefined) {
         try {
           firstGain.disconnect()
         } catch {
@@ -1046,7 +1048,7 @@ export class AudioEngine {
     bpm: number,
     instrument?: InstrumentType,
   ): Promise<Blob | null> {
-    if (!melody || melody.length === 0) return null
+    if (melody === null || melody === undefined || melody.length === 0) return null
 
     const sampleRate = 44100
     const beatDuration = 60 / bpm // seconds per beat
@@ -1149,10 +1151,10 @@ export class AudioEngine {
   private _createVoiceForContext(
     ctx: OfflineAudioContext | AudioContext,
     freq: number,
-    durationMs: number,
+    _durationMs: number,
   ): { oscillators: OscillatorNode[]; gain: GainNode } {
     const now = ctx.currentTime
-    const dur = durationMs / 1000
+    // const dur = _durationMs / 1000
 
     const mainGain = ctx.createGain()
     const oscillators: OscillatorNode[] = []

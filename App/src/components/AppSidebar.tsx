@@ -4,14 +4,15 @@
 // Visible in all tabs; NoteList, PitchDisplay, stats wrapped in Show for Practice only
 // ============================================================
 
-import { Component, For, Show } from 'solid-js'
-import { appStore, activeTab as appActiveTab, getNoteAccuracyMap, } from '@/stores/app-store'
-import { melodyStore } from '@/stores/melody-store'
-import { PresetSelector } from '@/components/PresetSelector'
+import type { Component} from 'solid-js';
+import { For, Show } from 'solid-js'
 import { NoteList } from '@/components/NoteList'
 import { PitchDisplay } from '@/components/PitchDisplay'
+import { PresetSelector } from '@/components/PresetSelector'
 import { KEY_OFFSETS, midiToFreq, midiToNote } from '@/lib/scale-data'
 import type { PresetData } from '@/stores/app-store'
+import { activeTab as appActiveTab, appStore } from '@/stores/app-store'
+import { melodyStore } from '@/stores/melody-store'
 import type { MelodyItem, NoteResult, PitchResult } from '@/types'
 
 interface AppSidebarProps {
@@ -39,7 +40,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
   // Local alias for reactive tracking
   const activeTab = () => appActiveTab()
   return (
-    <aside class={`app-sidebar${props.class ? ' ' + props.class : ''}`}>
+    <aside class={`app-sidebar${props.class !== undefined && props.class !== '' ? ` ${  props.class}` : ''}`}>
       {/* Mobile close button */}
       <button
         class="sidebar-close-btn"
@@ -57,7 +58,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
       {/* Tour button */}
       <button
         class="tour-btn"
-        onClick={() => appStore.startWalkthrough()}
+        onClick={() => { appStore.startWalkthrough(); }}
         title="Take a Tour"
       >
         <svg viewBox="0 0 24 24" width="16" height="16">

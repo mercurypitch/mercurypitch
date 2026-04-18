@@ -2,8 +2,8 @@
 // Scale Data Tests
 // ============================================================
 
-import { describe, it, expect } from 'vitest'
-import { midiToFreq, freqToMidi, noteToMidi, midiToNote, freqToNote, buildMajorScale, buildMultiOctaveScale, melodyTotalBeats, melodyNoteAtBeat, melodyIndexAtBeat, isBlackKey, melodyMidiRange, SCALE_DEFINITIONS, NOTE_NAMES, keyTonicFreq, } from '@/lib/scale-data'
+import { describe, expect,it } from 'vitest'
+import { buildMajorScale, buildMultiOctaveScale, freqToMidi, freqToNote, isBlackKey, keyTonicFreq,melodyIndexAtBeat, melodyMidiRange, melodyNoteAtBeat, melodyTotalBeats, midiToFreq, midiToNote, NOTE_NAMES, noteToMidi, SCALE_DEFINITIONS,  } from '@/lib/scale-data'
 import type { MelodyItem } from '@/types'
 
 describe('MIDI/Frequency Conversion', () => {
@@ -155,7 +155,7 @@ describe('Scale Definitions', () => {
   })
 
   it('has valid degree arrays for all scales', () => {
-    for (const [name, def] of Object.entries(SCALE_DEFINITIONS)) {
+    for (const [_name, def] of Object.entries(SCALE_DEFINITIONS)) {
       expect(def.degrees.length).toBeGreaterThanOrEqual(5)
       expect(def.degrees[0]).toBe(0) // Should start at root
       expect(def.degrees[def.degrees.length - 1]).toBe(12) // Should include octave

@@ -1,10 +1,10 @@
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
-test('debug store and Show reactivity', async ({ page }) => {
+test('debug settings tab - comprehensive', async ({ page }) => {
   await page.goto('http://localhost:4173/')
   await page.waitForSelector('#app-tabs', { timeout: 10000 })
 
-  // Dismiss welcome if present
+  // Dismiss welcome
   const overlay = page.locator('.welcome-overlay')
   if ((await overlay.count()) > 0 && (await overlay.isVisible())) {
     const dismissBtn = page.locator('.welcome-cta, .overlay-close')
@@ -14,55 +14,48 @@ test('debug store and Show reactivity', async ({ page }) => {
     }
   }
 
-  // Deep dive into what's happening
-  const result = await page.evaluate(async () => {
+  // Check what type appStore.activeTab is in window context
+  const storeType = await page.evaluate(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const store = (window as any).__appStore
-
-    // 1. Check if Show component's `when` condition is working
-    // Look at the Show component that wraps settings-panel
-    const settingsShowCondition = () => store.activeTab() === 'settings'
-
-    // 2. Check if we can trigger a manual re-render test
-    // Simulate what the tab click does
-    store.setActiveTab('settings')
-
+    const at = store !== null && store !== undefined ? store.activeTab : undefined
     return {
-      activeTab: store.activeTab(),
-      settingsCondition: settingsShowCondition(),
-      // Check if there's a Show component tracking this
-      hasShowCondition: true,
+      type: typeof at,
+      isFunction: typeof at === 'function',
+      isSignal: at !== null && at !== undefined && typeof at === 'object',
+      keys: store !== null && store !== undefined
+        ? Object.keys(store).filter(
+            (k) =>
+              k.includes('Tab') || k.includes('tab') || k.includes('active'),
+          )
+        : [],
     }
   })
+  console.info('appStore.activeTab type:', JSON.stringify(storeType))
 
-  console.log('Store state after setActiveTab:', JSON.stringify(result))
+  // Check if there's a nested activeTab
+  const nestedCheck = await page.evaluate(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const store = (window as any).__appStore
+    return {
+      storeKeys: store !== null && store !== undefined ? Object.keys(store).slice(0, 30) : [],
+      navKeys:
+        // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+        store !== null && store !== undefined && store.navigation
+          ? Object.keys(store.navigation)
+          : 'no nav',
+      settingsKeys:
+        // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+        store !== null && store !== undefined && store.settings
+          ? Object.keys(store.settings).slice(0, 10)
+          : 'no settings',
+    }
+  })
+  console.info('Store structure:', JSON.stringify(nestedCheck))
 
-  // Wait for DOM update
+  // Click the Settings tab to switch to the settings view
+  await page.locator('#tab-settings').click()
   await page.waitForTimeout(500)
 
-  // Check DOM again
-  const domResult = await page.evaluate(() => {
-    return {
-      settingsPanelExists: !!document.getElementById('settings-panel'),
-      mainContentChildren: Array.from(
-        document.querySelector('.main-content')?.children || [],
-      ).map((c) => c.id || c.tagName),
-    }
-  })
-  console.log('DOM after store change:', JSON.stringify(domResult))
-
-  // Test if showing a known working Show (like the practice one)
-  await page.evaluate(() => {
-    ;(window as any).__appStore?.setActiveTab('practice')
-  })
-  await page.waitForTimeout(500)
-
-  const practiceDom = await page.evaluate(() => {
-    return {
-      practiceHeaderExists: !!document.querySelector('.practice-header-bar'),
-      mainContentChildren: Array.from(
-        document.querySelector('.main-content')?.children || [],
-      ).map((c) => c.id || c.tagName),
-    }
-  })
-  console.log('DOM after returning to practice:', JSON.stringify(practiceDom))
+  await expect(page.locator('#settings-panel')).toBeVisible({ timeout: 5000 })
 })

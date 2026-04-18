@@ -2,8 +2,8 @@
 // Share URL Tests
 // ============================================================
 
-import { describe, it, expect, beforeEach } from 'vitest'
-import { encodeMelodyToURL, decodeMelodyFromURL, generateShareURL, updateURL, hasSharedPresetInURL, } from '@/lib/share-url'
+import { beforeEach,describe, expect, it } from 'vitest'
+import { decodeMelodyFromURL, encodeMelodyToURL, generateShareURL, hasSharedPresetInURL } from '@/lib/share-url'
 import type { MelodyItem } from '@/types'
 
 describe('encodeMelodyToURL', () => {

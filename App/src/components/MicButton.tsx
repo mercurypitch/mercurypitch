@@ -2,7 +2,7 @@
 // MicButton — Microphone toggle button
 // ============================================================
 
-import { Component } from 'solid-js'
+import type { Component } from 'solid-js'
 
 interface MicButtonProps {
   active: boolean

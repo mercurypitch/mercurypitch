@@ -2,8 +2,8 @@
 // Practice Engine Tests
 // ============================================================
 
-import { describe, it, expect } from 'vitest'
-import { centsToRating, centsToBand, ratingToScore, scoreGrade, } from '@/lib/practice-engine'
+import { describe, expect,it } from 'vitest'
+import { centsToBand, centsToRating, ratingToScore, scoreGrade, } from '@/lib/practice-engine'
 import type { AccuracyRating } from '@/types'
 
 // Default bands used in tests (matching DEFAULT_BANDS in practice-engine.ts)

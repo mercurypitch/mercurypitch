@@ -3,6 +3,9 @@
 // These are used across multiple modules
 // ============================================================
 
+import type { AudioEngine } from '../lib/audio-engine'
+import type { PianoRollEditor } from '../lib/piano-roll'
+
 /** Note name within an octave (C through B, with # for sharps) */
 export type NoteName =
   | 'C'
@@ -208,10 +211,13 @@ export interface PianoRollConfig {
   }
 }
 
+import type { AudioEngine } from '../lib/audio-engine'
+import type { PianoRollEditor } from '../lib/piano-roll'
+
 /** Window extensions for global references */
 export interface PitchPerfectWindow extends Window {
-  pianoRollEditor?: import('../lib/piano-roll').PianoRollEditor
-  pianoRollAudioEngine?: import('../lib/audio-engine').AudioEngine
+  pianoRollEditor?: PianoRollEditor
+  pianoRollAudioEngine?: AudioEngine
   pianoRollGenerateId?: () => number
 }
 

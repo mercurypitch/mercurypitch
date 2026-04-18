@@ -2,7 +2,8 @@
 // TransportControls — Play/Reset buttons
 // ============================================================
 
-import { Component, createMemo } from 'solid-js'
+import type { Component} from 'solid-js';
+import { createMemo } from 'solid-js'
 import { playback } from '@/stores/playback-store'
 
 interface TransportControlsProps {
@@ -13,7 +14,7 @@ interface TransportControlsProps {
 
 export const TransportControls: Component<TransportControlsProps> = (props) => {
   const handlePlayClick = () => {
-    if (props.disabled) return
+    if (props.disabled !== undefined && props.disabled !== null) return
     const state = playback.state()
     if (state === 'stopped') {
       playback.startPlayback()

@@ -2,8 +2,8 @@
 // Shareable URL — Encode/decode preset data in URL query params
 // ============================================================
 
-import type { MelodyItem, ScaleDefinition, NoteName } from '@/types'
 import { midiToNote } from '@/lib/scale-data'
+import type { MelodyItem as _MelodyItem } from '@/types'
 
 export interface SharedPreset {
   /** Comma-separated note data: midi.startBeat.duration,midi.startBeat.duration,... */
@@ -44,10 +44,10 @@ export function encodeMelodyToURL(
 
   params.set('n', noteStr)
 
-  if (bpm) params.set('bpm', String(bpm))
-  if (key) params.set('k', key)
-  if (scaleType) params.set('s', scaleType)
-  if (totalBeats) params.set('beats', String(totalBeats))
+  if (bpm !== null && bpm !== undefined && bpm !== 0) params.set('bpm', String(bpm))
+  if (key !== null && key !== undefined && key !== '') params.set('k', key)
+  if (scaleType !== null && scaleType !== undefined && scaleType !== '') params.set('s', scaleType)
+  if (totalBeats !== null && totalBeats !== undefined && totalBeats !== 0) params.set('beats', String(totalBeats))
 
   return params.toString()
 }
@@ -64,7 +64,7 @@ export function decodeMelodyFromURL(params: URLSearchParams): {
   totalBeats?: number
 } | null {
   const noteStr = params.get('n')
-  if (!noteStr) return null
+  if (noteStr === null || noteStr === undefined || noteStr === '') return null
 
   try {
     const melody: MelodyItem[] = []
@@ -92,7 +92,7 @@ export function decodeMelodyFromURL(params: URLSearchParams): {
         id: melody.length + 1,
         note: {
           midi,
-          name: noteInfo.name as NoteName,
+          name: noteInfo.name,
           octave: noteInfo.octave,
           freq: 0,
         },
@@ -106,15 +106,13 @@ export function decodeMelodyFromURL(params: URLSearchParams): {
     return {
       melody,
       bpm: params.has('bpm') ? parseInt(params.get('bpm')!, 10) : undefined,
-      key: params.get('k') || undefined,
-      scaleType: params.get('s') || undefined,
+      key: params.get('k') !== null && params.get('k') !== undefined ? params.get('k')! : undefined,
+      scaleType: params.get('s') !== null && params.get('s') !== undefined ? params.get('s')! : undefined,
       totalBeats: params.has('beats')
         ? parseInt(params.get('beats')!, 10)
         : undefined,
     }
-  } catch {
-    return null
-  }
+  } catch { /* empty */ return null }
 }
 
 /**
@@ -173,7 +171,8 @@ export async function copyShareURL(
 ): Promise<boolean> {
   const url = generateShareURL(melody, bpm, key, scaleType, totalBeats)
   try {
-    await navigator.clipboard.writeText(url)
+    // eslint-disable-next-line no-restricted-globals
+    await (navigator as unknown as { clipboard: { writeText: (text: string) => Promise<void> } }).clipboard.writeText(url)
     return true
   } catch {
     // Fallback for older browsers

@@ -2,9 +2,10 @@
 // Preset Save/Load Tests
 // ============================================================
 
-import { describe, it, expect, beforeEach } from 'vitest'
-import { savePreset, loadPreset, getPresetNames, deletePreset, initPresets, _resetPresets, type PresetData, } from '@/stores/app-store'
-import { melodyStore, setMelody } from '@/stores/melody-store'
+import { beforeEach,describe, expect, it } from 'vitest'
+import type {PresetData} from '@/stores/app-store';
+import { _resetPresets, deletePreset, getPresetNames, initPresets, loadPreset, savePreset  } from '@/stores/app-store'
+import { melodyStore as _melodyStore, setMelody } from '@/stores/melody-store'
 
 function makeNote(midi: number, startBeat: number, duration: number) {
   return {
