@@ -310,6 +310,9 @@ export const App: Component<AppProps> = (props) => {
     appStore.initSettings()
     appStore.initReverb()
 
+    // Expose appStore to window for e2e tests
+    ;(window as unknown as { __appStore: typeof appStore }).__appStore = appStore
+
     // Fallback: direct click listeners on tab buttons in case SolidJS delegation misses them
     // This handles the edge case where innerHTML-created elements need explicit handlers
     const tabBtn = document.getElementById('tab-settings')
@@ -380,15 +383,6 @@ export const App: Component<AppProps> = (props) => {
         if (playMode() !== 'practice') {
           setPlayMode('practice')
           appStore.showNotification('Mode: Practice', 'info')
-        }
-      }
-
-      // O → Once mode
-      if (e.code === 'KeyO' && !isTyping) {
-        e.preventDefault()
-        if (playMode() !== 'once') {
-          setPlayMode('once')
-          appStore.showNotification('Mode: Once', 'info')
         }
       }
 
@@ -1083,13 +1077,19 @@ export const App: Component<AppProps> = (props) => {
     _label?: string,
   ) => {
     const numOctaves = beats > 12 ? 2 : 1
-    const scale = buildMultiOctaveScale(
+    let scale = buildMultiOctaveScale(
       appStore.keyName(),
       melodyStore.currentOctave(),
       numOctaves,
       scaleType,
     )
-    if (scale === null || scale === undefined || scale.length === 0) return
+    if (!scale || scale.length === 0) {
+      // Fallback to a minimum scale (C major, 2 octaves) if scale is empty
+      console.warn('Scale is empty, using fallback')
+      const fallbackScale = buildMultiOctaveScale('C', melodyStore.currentOctave(), 2, 'major')
+      if (!fallbackScale || fallbackScale.length === 0) return
+      scale = fallbackScale
+    }
 
     // Use ALL notes from the scale (no 8-note cap) — respect the beats parameter
     const noteCount = Math.min(scale.length, beats)

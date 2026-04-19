@@ -65,15 +65,8 @@ test.describe('PitchPerfect App', () => {
 
   test('tab navigation switches content', async ({ page }) => {
     await dismissWelcomeIfShown(page)
-    // Click Editor tab - use evaluate to directly call the store method
-    await page.evaluate(() => {
-      const w = window as Window & {
-        __appStore?: { setActiveTab: (tab: string) => void }
-      }
-      if (w.__appStore) {
-        w.__appStore.setActiveTab('editor')
-      }
-    })
+    // Click Editor tab
+    await page.locator('#tab-editor').click()
     await page.waitForTimeout(1000)
     // Check that editor content is visible (piano roll toolbar)
     await expect(page.locator('.roll-toolbar')).toBeVisible({ timeout: 5000 })

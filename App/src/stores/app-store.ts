@@ -288,7 +288,7 @@ function loadSensitivityPreset(): SensitivityPreset {
   } catch {
     /* empty */
   }
-  return 'home'
+  return 'noisy'
 }
 
 const [sensitivityPresetGetter, _setSensitivityPreset] =

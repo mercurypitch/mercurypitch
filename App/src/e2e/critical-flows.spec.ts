@@ -124,7 +124,7 @@ test.describe('Critical Flows — GH #121', () => {
     test('Arrow keys change playback speed', async ({ page }) => {
       // Focus the page body
       await page.locator('body').click()
-      await page.waitForTimeout(200)
+      await page.waitForTimeout(300)
 
       // Get initial speed from store
       const initialSpeed = await page.evaluate(() => {
@@ -139,7 +139,10 @@ test.describe('Critical Flows — GH #121', () => {
 
       // Press ArrowUp (faster)
       await page.keyboard.press('ArrowUp')
-      await page.waitForTimeout(200)
+      // Wait a bit for state to update
+      await page.waitForTimeout(100)
+      // Allow the speed change to propagate
+      await page.waitForTimeout(100)
 
       const speedAfterUp = await page.evaluate(() => {
         return (
@@ -156,7 +159,8 @@ test.describe('Critical Flows — GH #121', () => {
 
       // Press ArrowDown (slower)
       await page.keyboard.press('ArrowDown')
-      await page.waitForTimeout(200)
+      await page.waitForTimeout(100)
+      await page.waitForTimeout(100)
 
       const speedAfterDown = await page.evaluate(() => {
         return (
