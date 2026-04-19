@@ -19,6 +19,7 @@ import { SessionBrowser } from '@/components/SessionBrowser'
 import { SessionPlayer } from '@/components/SessionPlayer'
 import { SettingsPanel } from '@/components/SettingsPanel'
 import { Walkthrough } from '@/components/Walkthrough'
+import { Notifications } from '@/components/Notifications'
 import { WelcomeScreen } from '@/components/WelcomeScreen'
 import type { InstrumentType } from '@/lib/audio-engine'
 import { AudioEngine } from '@/lib/audio-engine'
@@ -1716,6 +1717,9 @@ export const App: Component<AppProps> = (props) => {
           </div>
         </div>
       </Show>
+
+      {/* Notifications */}
+      <Notifications />
     </div>
   )
 }
