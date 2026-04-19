@@ -652,7 +652,8 @@ export class PianoRollEditor {
 
   setScale(scale: ScaleDegree[]): void {
     this.scale = scale
-    this.totalRows = scale.length
+    // Ensure minimum 2 rows (one octave) to prevent 0-height canvas
+    this.totalRows = Math.max(scale.length, 2)
     this.buildCanvases()
     this.draw()
   }
@@ -1079,7 +1080,7 @@ export class PianoRollEditor {
       <span id="roll-zoom-value" class="zoom-value">100%</span>
       <button id="roll-zoom-in" class="roll-zoom-btn" title="Zoom in">
           <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M19 13H5v-2h14v2z"/></svg>
-      </button>
+          </button>
     </div>
     
     <!-- Zoom Fit -->

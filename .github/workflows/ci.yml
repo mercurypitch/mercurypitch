@@ -21,10 +21,10 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies
-        run: cd public && npm install
+        run: cd App && npm install
 
       - name: Syntax check (Node.js --check)
-        run: cd public && npm run check:syntax
+        run: cd App && npm run check:syntax
 
   cleanup:
     runs-on: ubuntu-latest

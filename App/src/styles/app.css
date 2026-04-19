@@ -263,107 +263,48 @@ header h1 {
   flex-shrink: 0;
 }
 
-/* ===== Practice Tab Header (second header bar) ===== */
-.practice-header-bar {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 12px;
-  background: var(--bg-tertiary);
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-}
-.practice-header-bar::-webkit-scrollbar {
-  display: none;
-}
-.practice-header-bar .essential-controls,
-.practice-header-bar .secondary-controls {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-}
-
-/* ===== Editor Tab Header (second header bar) ===== */
+/* ===== Practice & Editor Tab Headers (single 3-row layout) ===== */
+.practice-header-bar,
 .editor-header-bar {
   display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 12px;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 12px;
   background: var(--bg-tertiary);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-}
-.editor-header-bar::-webkit-scrollbar {
-  display: none;
-}
-.editor-header-bar .essential-controls,
-.editor-header-bar .secondary-controls {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-}
-.practice-header-bar .essential-control-group,
-.editor-header-bar .essential-control-group {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.practice-header-bar .secondary-control-group,
-.editor-header-bar .secondary-control-group {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  overflow: hidden;
 }
 
-.editor-header-bar .tool-btn {
+/* Row 1: Essential controls - always visible */
+.practice-header-bar .essential-controls,
+.editor-header-bar .essential-controls {
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 4px 10px;
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-  border: 1px solid var(--border);
-  border-radius: 5px;
-  font-size: 0.75rem;
-  cursor: pointer;
-  transition: all 0.12s ease;
+  flex-shrink: 0;
+  padding: 2px 0;
+  border-bottom: 1px solid var(--border-dim);
 }
 
-.editor-header-bar .tool-btn:hover {
-  border-color: var(--accent);
-  color: var(--text-primary);
+/* Control sections with separators */
+.practice-header-bar .control-section,
+.editor-header-bar .control-section {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
 }
 
-.editor-header-bar .tool-btn:active {
-  transform: translateY(1px);
-}
-
-.editor-header-bar .instrument-select {
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-  border: 1px solid var(--border);
-  border-radius: 5px;
-  padding: 3px 8px;
-  font-size: 0.75rem;
-  cursor: pointer;
-  outline: none;
-}
-
-.editor-header-bar .instrument-select:focus {
-  border-color: var(--accent);
-}
-
-.editor-header-bar .instrument-select option {
-  background: var(--bg-primary);
-  color: var(--text-primary);
+/* Row 2: Secondary controls - hidden on mobile */
+.practice-header-bar .secondary-controls,
+.editor-header-bar .secondary-controls {
+  display: none; /* Hidden by default - shown on larger screens */
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  padding: 2px 0;
+  border-bottom: 1px solid var(--border-dim);
 }
 
 .mode-group {
@@ -898,6 +839,12 @@ header h1 {
   border-color: var(--yellow);
   background: rgba(210, 153, 34, 0.1);
   color: var(--yellow);
+}
+
+.ctrl-btn.wave-btn.active {
+  border-color: #d485f5;
+  background: rgba(212, 133, 245, 0.15);
+  color: #d485f5;
 }
 
 .ctrl-sep {
@@ -1770,12 +1717,35 @@ header h1 {
     display: none;
   }
 
-  /* Practice header: hide secondary controls by default */
-  .practice-header-bar .secondary-controls {
+  /* Practice & Editor headers: show essential controls row 1 only */
+  .practice-header-bar .essential-controls,
+  .editor-header-bar .essential-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    width: 100%;
+    padding: 0;
+    border-bottom: 1px solid var(--border-dim);
+  }
+
+  .practice-header-bar .secondary-controls,
+  .editor-header-bar .secondary-controls {
     display: none;
   }
-  .practice-header-bar .essential-controls {
-    display: flex;
+
+  /* Show only essential controls in compact row */
+  .practice-header-bar .control-section,
+  .editor-header-bar .control-section {
+    flex-shrink: 1;
+  }
+
+  .app-header-sep {
+    display: inline-block;
+    width: 1px;
+    height: 16px;
+    margin: 0 2px;
+    background: var(--border);
+    border-radius: 1px;
   }
 
   /* Session player: compact */
@@ -1816,40 +1786,37 @@ header h1 {
     font-size: 0.72rem;
   }
 
-  /* Practice header: single essential row only */
-  .practice-header-bar {
+  /* Practice & Editor headers: single essential row only */
+  .practice-header-bar,
+  .editor-header-bar {
     flex-wrap: nowrap;
     overflow-x: auto;
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
   }
-  .practice-header-bar::-webkit-scrollbar {
+  .practice-header-bar::-webkit-scrollbar,
+  .editor-header-bar::-webkit-scrollbar {
     display: none;
   }
-  /* Keep only: mic, record, play/stop, sessions, mode toggles, count-in badge */
-  .practice-header-bar .tempo-group,
-  .practice-header-bar .countin-group,
-  .practice-header-bar .volume-group,
-  .practice-header-bar .speed-group,
-  .practice-header-bar .sensitivity-group {
+  /* Keep only: mic, record, play/stop */
+  .practice-header-bar .control-section,
+  .editor-header-bar .control-section {
+    flex-shrink: 1;
+  }
+  .practice-header-bar .secondary-controls,
+  .editor-header-bar .secondary-controls {
     display: none;
   }
-  .practice-header-bar .ctrl-btn {
+  .practice-header-bar .ctrl-btn,
+  .editor-header-bar .ctrl-btn {
     padding: 6px 8px;
     font-size: 0.75rem;
     min-height: 44px;
     min-width: 44px;
   }
-  .practice-header-bar .record-btn {
+  .practice-header-bar .record-btn,
+  .editor-header-bar .record-btn {
     min-width: auto;
-  }
-  .mode-group {
-    gap: 2px;
-  }
-  .mode-btn {
-    padding: 6px 8px;
-    font-size: 0.72rem;
-    min-height: 44px;
   }
   #run-indicator {
     font-size: 0.65rem;
@@ -2935,7 +2902,43 @@ Keeps your existing styles, only adjusts layout
   .mode-label {
     font-size: 0.65rem;
   }
-  .roll-mode-select {
+}
+
+/* ===== Desktop/Tablet ( > 768px ) — show secondary controls row ===== */
+@media (min-width: 769px) {
+  /* Practice & Editor headers: show essential + secondary rows */
+  .practice-header-bar .essential-controls,
+  .editor-header-bar .essential-controls,
+  .practice-header-bar .secondary-controls,
+  .editor-header-bar .secondary-controls {
+    display: flex;
+  }
+
+  /* Secondary controls layout */
+  .practice-header-bar .secondary-controls,
+  .editor-header-bar .secondary-controls {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* Volume and Speed groups in secondary row */
+  .practice-header-bar .control-section,
+  .editor-header-bar .control-section {
+    align-items: center;
+  }
+
+  .volume-slider {
+    width: 70px;
+  }
+
+  .speed-select {
+    font-size: 0.75rem;
+    padding: 4px 6px;
+  }
+  /* ===== Piano Roll Editor ===== */
+  /* todo: piano roll editor/toolbar refactor: check this mobile views again */
+  .roll-mode-select,
+  .roll-instrument-select {
     max-width: 100px;
     font-size: 0.68rem;
     padding: 3px 6px;
