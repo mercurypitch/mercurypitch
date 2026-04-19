@@ -8,6 +8,7 @@ import type { Component } from 'solid-js'
 import { For, Show } from 'solid-js'
 import { NoteList } from '@/components/NoteList'
 import { PitchDisplay } from '@/components/PitchDisplay'
+import { PresetPillGallery } from '@/components/PresetPillGallery'
 import { PresetSelector } from '@/components/PresetSelector'
 import { KEY_OFFSETS, midiToFreq, midiToNote } from '@/lib/scale-data'
 import type { PresetData } from '@/stores/app-store'
@@ -17,7 +18,7 @@ import type { MelodyItem, NoteResult, PitchResult } from '@/types'
 
 interface AppSidebarProps {
   /** Called when a preset is loaded */
-  onPresetLoad?: (preset: PresetData) => void
+  onPresetLoad?: (name: string) => void
   /** For octave shift handler from parent */
   onOctaveShift?: (delta: number) => void
   /** Open scale builder modal */
@@ -212,9 +213,12 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
       {/* Preset selector */}
       <div class="sidebar-section" id="preset-section">
         <PresetSelector
-          onLoad={(preset) => {
-            props.onPresetLoad?.(preset)
-          }}
+          onLoad={props.onPresetLoad}
+        />
+        {/* Pill gallery for recent presets */}
+        <PresetPillGallery
+          onLoad={props.onPresetLoad}
+          _melody={props.melody}
         />
       </div>
 

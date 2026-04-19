@@ -10,10 +10,42 @@ import { copyShareURL } from '@/lib/share-url'
 import type { PresetData } from '@/stores/app-store'
 import { appStore, deletePreset, initPresets, loadPreset, savePreset, } from '@/stores/app-store'
 import { melodyStore } from '@/stores/melody-store'
+import { MelodyEngine } from '@/lib/melody-engine'
+import type { NoteName } from '@/types'
+
+// External melody engine reference
+declare global {
+  var melodyEngine: MelodyEngine
+}
+
+function presetToMelody(preset: PresetData): any[] {
+  return preset.notes.map((n) => {
+    // Use the scale data stored with the preset for accurate note lookup
+    const scaleNote = preset.scale.find((s) => s.midi === n.midi)
+    return {
+      id: melodyStore.generateId(),
+      note: {
+        midi: n.midi,
+        // Use stored scale data, fallback to computed from current scale
+        name: (scaleNote?.name ??
+          melodyStore.currentScale().find((s) => s.midi === n.midi)?.name ??
+          'C') as NoteName,
+        octave:
+          scaleNote?.octave ??
+          melodyStore.currentScale().find((s) => s.midi === n.midi)?.octave ??
+          4,
+      },
+      startBeat: n.startBeat,
+      duration: n.duration,
+      effectType: n.effectType,
+      linkedTo: n.linkedTo,
+    }
+  })
+}
 
 interface PresetSelectorProps {
   /** Called when a preset is loaded */
-  onLoad?: (preset: PresetData) => void
+  onLoad?: (name: string) => void
 }
 
 export const PresetSelector: Component<PresetSelectorProps> = (props) => {
@@ -62,8 +94,14 @@ export const PresetSelector: Component<PresetSelectorProps> = (props) => {
     setSaveName(name)
     const preset = loadPreset(name)
     if (preset) {
-      props.onLoad?.(preset)
+      // Convert preset to melody for backward compatibility
+      melodyStore.setMelody(presetToMelody(preset))
+      if (preset.bpm) {
+        appStore.setBpm(preset.bpm)
+        melodyEngine?.setBPM(preset.bpm)
+      }
     }
+    props.onLoad?.(name)
   }
 
   const handleSave = () => {

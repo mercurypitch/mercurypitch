@@ -30,7 +30,7 @@ import { PracticeEngine } from '@/lib/practice-engine'
 import { buildMultiOctaveScale, keyTonicFreq, melodyTotalBeats, midiToNote, } from '@/lib/scale-data'
 import { generateShareURL,hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
 import type { PresetData } from '@/stores/app-store'
-import { appStore, getNoteAccuracyMap } from '@/stores/app-store'
+import { appStore, getNoteAccuracyMap, loadPreset } from '@/stores/app-store'
 import { melodyStore } from '@/stores/melody-store'
 import { playback } from '@/stores/playback-store'
 import type { EffectType, MelodyItem, NoteName, NoteResult, PitchResult, PracticeResult, } from '@/types'
@@ -1374,11 +1374,14 @@ export const App: Component<AppProps> = (props) => {
           {/* Shared sidebar — with mobile open class */}
           <AppSidebar
             class={sidebarOpen() ? 'open' : ''}
-            onPresetLoad={(preset) => {
-              melodyStore.setMelody(presetToMelody(preset))
-              if (preset.bpm) {
-                appStore.setBpm(preset.bpm)
-                melodyEngine?.setBPM(preset.bpm)
+            onPresetLoad={(name) => {
+              const preset = loadPreset(name)
+              if (preset) {
+                melodyStore.setMelody(presetToMelody(preset))
+                if (preset.bpm) {
+                  appStore.setBpm(preset.bpm)
+                  melodyEngine?.setBPM(preset.bpm)
+                }
               }
             }}
             onOctaveShift={handleOctaveShift}
