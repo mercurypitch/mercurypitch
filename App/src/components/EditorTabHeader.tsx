@@ -11,6 +11,8 @@ import { MicButton } from '@/components/MicButton'
 import { Tooltip } from '@/components/Tooltip'
 import { appStore } from '@/stores/app-store'
 import { playback } from '@/stores/playback-store'
+import * as tabStyles from '@/styles/TabControls.module.css'
+// controlStyles - reserved for future editor control grouping
 
 interface EditorTabHeaderProps {
   isPlaying: () => boolean
@@ -27,6 +29,11 @@ interface EditorTabHeaderProps {
   onRecordToggle: () => void
   volume: () => number
   onVolumeChange: (vol: number) => void
+  onExportMIDI?: () => void
+  onImportMIDI?: () => void
+  onShare?: () => void
+  onInstrumentChange?: (instrument: string) => void
+  currentInstrument?: string
 }
 
 export const EditorTabHeader: Component<EditorTabHeaderProps> = (props) => {
@@ -55,18 +62,20 @@ export const EditorTabHeader: Component<EditorTabHeaderProps> = (props) => {
   }
 
   return (
-    <div class="practice-header-bar">
+    <div class={tabStyles.tabHeaderBar}>
       {/* Row 1: Essential controls - always visible */}
-      <div class="essential-controls">
+      <div class={tabStyles.tabHeaderEssentialControls}>
         {/* Microphone & Recording Section */}
-        <div class="control-section">
+        <div class="tabHeaderControlSection">
           <MicButton
             active={appStore.micActive()}
             onClick={props.onMicToggle}
             disabled={false}
           />
 
-          <Tooltip text={appStore.micWaveVisible() ? 'Hide mic wave' : 'Show mic wave'}>
+          <Tooltip
+            text={appStore.micWaveVisible() ? 'Hide mic wave' : 'Show mic wave'}
+          >
             <button
               class={`ctrl-btn wave-btn ${appStore.micWaveVisible() ? 'active' : ''}`}
               onClick={appStore.toggleMicWaveVisible}
@@ -98,7 +107,7 @@ export const EditorTabHeader: Component<EditorTabHeaderProps> = (props) => {
         </div>
 
         {/* Playback Controls Section */}
-        <div class="control-section">
+        <div class="tabHeaderControlSection">
           <Show when={isStopped()}>
             <button
               class="ctrl-btn play-btn"
@@ -151,7 +160,7 @@ export const EditorTabHeader: Component<EditorTabHeaderProps> = (props) => {
         </div>
 
         {/* Output Controls Section */}
-        <div class="control-section">
+        <div class="tabHeaderControlSection">
           <div class="volume-group">
             <label class="opt-label">Vol:</label>
             <input
@@ -167,6 +176,24 @@ export const EditorTabHeader: Component<EditorTabHeaderProps> = (props) => {
               }}
             />
             <span id="volume-value">{props.volume()}</span>
+          </div>
+
+          <div class="app-header-sep" />
+
+          <div class="tempo-group">
+            <label class="opt-label">BPM:</label>
+            <input
+              type="range"
+              id="bpm"
+              min="40"
+              max="280"
+              value={appStore.bpm()}
+              class="tempo-slider"
+              onInput={(e) =>
+                appStore.setBpm(parseInt(e.currentTarget.value) || 120)
+              }
+            />
+            <span id="bpm-value">{appStore.bpm()}</span>
           </div>
 
           <div class="app-header-sep" />
@@ -200,6 +227,81 @@ export const EditorTabHeader: Component<EditorTabHeaderProps> = (props) => {
             onClick={props.onMetronomeToggle}
           />
         </div>
+      </div>
+
+      {/* Secondary controls (hidden on mobile < 480px) */}
+      <div class="tabHeaderSecondaryControls">
+        <div class="app-header-sep" />
+
+        <Show when={props.onExportMIDI || props.onImportMIDI || props.onShare}>
+          {/* Export/Import Section */}
+          <div class="secondary-group">
+            <div class="app-header-sep" />
+            <button
+              class="ctrl-btn tool-btn"
+              onClick={props.onShare}
+              title="Share via URL"
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16">
+                <path
+                  fill="currentColor"
+                  d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"
+                />
+              </svg>
+              Share
+            </button>
+            <button
+              class="ctrl-btn tool-btn"
+              onClick={props.onExportMIDI}
+              title="Export as MIDI"
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16">
+                <path
+                  fill="currentColor"
+                  d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"
+                />
+              </svg>
+              MIDI
+            </button>
+            <button
+              class="ctrl-btn tool-btn"
+              onClick={props.onImportMIDI}
+              title="Import MIDI"
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16">
+                <path
+                  fill="currentColor"
+                  d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"
+                />
+              </svg>
+              Import
+            </button>
+            <div class="app-header-sep" />
+          </div>
+        </Show>
+
+        {/* Instrument Section */}
+        <Show when={props.onInstrumentChange}>
+          <div class="secondary-group">
+            <div class="app-header-sep" />
+            <label class="opt-label">Instr:</label>
+            <select
+              id="instrument-select"
+              value={props.currentInstrument ?? 'piano'}
+              class="instrument-select"
+              onChange={(e) => {
+                props.onInstrumentChange?.(e.currentTarget.value)
+              }}
+            >
+              <option value="piano">Piano</option>
+              <option value="guitar">Guitar</option>
+              <option value="violin">Violin</option>
+              <option value="flute">Flute</option>
+              <option value="drums">Drums</option>
+            </select>
+            <div class="app-header-sep" />
+          </div>
+        </Show>
       </div>
     </div>
   )
