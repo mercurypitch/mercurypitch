@@ -16,7 +16,7 @@ export interface PitchDetectorOptions {
   minFrequency?: number
   /** Maximum frequency to detect (default: 2100 Hz) */
   maxFrequency?: number
-  /** Sensitivity 1-10 (default: 5) */
+  /** Sensitivity 1-12 (default: 7) */
   sensitivity?: number
   /** Minimum confidence to accept pitch (0-1, default: 0.50) */
   minConfidence?: number
@@ -27,7 +27,7 @@ export interface PitchDetectorOptions {
 const DEFAULT_OPTIONS: Required<PitchDetectorOptions> = {
   sampleRate: 44100,
   bufferSize: 2048,
-  threshold: 0.1,
+  threshold: 0.15,
   minFrequency: 65,
   maxFrequency: 2100,
   sensitivity: 7,
@@ -201,10 +201,10 @@ export class PitchDetector {
     return frequency
   }
 
-  /** Adjust threshold based on sensitivity (1-10) */
+  /** Adjust threshold based on sensitivity (1-12) */
   private adjustedThreshold(): number {
-    // sensitivity 1 → threshold 0.25 (strict), sensitivity 10 → threshold 0.05 (lenient)
-    return 0.3 - this.sensitivity * 0.025
+    // sensitivity 1 → threshold 0.30 (very strict), sensitivity 12 → threshold 0.01 (very relaxed)
+    return 0.30 - (this.sensitivity - 1) * 0.025
   }
 
   /** Get the current sample rate */
