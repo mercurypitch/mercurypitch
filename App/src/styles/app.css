@@ -1893,7 +1893,7 @@ Keeps your existing styles, only adjusts layout
 
 /* 🔥 MAIN TOOLBAR: force ONE horizontal row */
 .roll-toolbar {
-  display: grid; /* was: flex */
+  display: grid;
   grid-auto-flow: column;
   grid-auto-columns: max-content;
 
@@ -1906,6 +1906,12 @@ Keeps your existing styles, only adjusts layout
 
   flex-wrap: unset; /* disable old wrapping */
   flex-shrink: 0;
+
+  overflow-x: auto;       /* Enables the horizontal scrollbar when needed */
+  max-width: 100%;        /* Ensures it doesn't push past the screen width */
+
+  /* Optional: Smooth scrolling for touch devices */
+  -webkit-overflow-scrolling: touch;
 }
 
 /* 📦 GROUP CONTAINER (NEW) */
@@ -1915,8 +1921,8 @@ Keeps your existing styles, only adjusts layout
   grid-auto-flow: column;
   grid-auto-columns: max-content;
 
-  gap: 6px;
-  padding: 6px 8px;
+  gap: 5px;
+  padding: 8px 8px;
 
   background: var(--bg-secondary);
   /*border: 1px solid var(--border);*/
@@ -1945,15 +1951,31 @@ Keeps your existing styles, only adjusts layout
   align-self: center;
 }
 
+.roll-group::before {
+  content: attr(data-name);
+  position: absolute;
+  top: -7px;
+  left: 4px;
+  font-weight: bold;
+
+  color: var(--text-secondary);
+  font-size: 0.62rem;
+}
+
 /* 🔧 Keep internal flex layouts working inside grid */
 .roll-durations,
 .roll-octave-group,
 .roll-octaves-group,
 .roll-bars-group,
+.roll-bars-btn,
+.roll-octave-btn,
 .roll-zoom-group,
 .roll-mode-group,
 .roll-instrument-group,
-.roll-effects-group {
+.roll-effects-group,
+.roll-export-btn,
+.roll-export-group
+{
   display: flex;
   align-items: center;
   gap: 4px;
@@ -2804,19 +2826,33 @@ Keeps your existing styles, only adjusts layout
     font-size: 0.72rem;
   }
   .roll-toolbar {
+    display: grid; /* Ensure grid is active */
+    grid-auto-flow: column;
+    /* This ensures columns only take up as much space as their content and NO LESS */
+    grid-auto-columns: min-content;
+
     padding: 6px 8px;
     gap: 3px;
     overflow-x: auto;
     overflow-y: hidden;
-    flex-wrap: nowrap;
+
+    /* This is the magic line for Grid scrolling */
+    width: 100%;
+
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
   }
+
+  /* For the children */
+  .roll-group,
+  .roll-durations {
+    /* flex-shrink only works if the parent is display: flex */
+    /* Since you're using Grid, use this instead to prevent shrinking: */
+    min-width: max-content;
+  }
+
   .roll-toolbar::-webkit-scrollbar {
     display: none;
-  }
-  .roll-tool-group {
-    flex-shrink: 0;
   }
   .roll-tool-btn {
     padding: 4px 7px;
@@ -2837,11 +2873,6 @@ Keeps your existing styles, only adjusts layout
     padding: 3px 5px;
     font-size: 0.65rem;
   }
-  .roll-octave-group,
-  .roll-octaves-group {
-    flex-shrink: 0;
-    gap: 2px;
-  }
   .octave-label,
   .octaves-label {
     font-size: 0.65rem;
@@ -2857,9 +2888,6 @@ Keeps your existing styles, only adjusts layout
   .roll-snap-btn {
     padding: 3px 7px;
     font-size: 0.65rem;
-  }
-  .roll-mode-group {
-    flex-shrink: 0;
   }
   .mode-label {
     font-size: 0.65rem;
@@ -2877,16 +2905,9 @@ Keeps your existing styles, only adjusts layout
     height: 20px;
     font-size: 0.55rem;
   }
-  .roll-bars-group {
-    flex-shrink: 0;
-  }
   .roll-bars-btn {
     padding: 3px 6px;
     font-size: 0.65rem;
-  }
-  .roll-zoom-group {
-    flex-shrink: 0;
-    gap: 2px;
   }
   .roll-zoom-btn {
     padding: 3px 6px;
@@ -2895,10 +2916,6 @@ Keeps your existing styles, only adjusts layout
   .zoom-value {
     font-size: 0.65rem;
     min-width: 32px;
-  }
-  .roll-undo-group,
-  .roll-clipboard-group {
-    flex-shrink: 0;
   }
   .roll-undo-btn,
   .roll-redo-btn,
@@ -2920,10 +2937,6 @@ Keeps your existing styles, only adjusts layout
     width: 12px;
     height: 12px;
   }
-  .roll-effects-row {
-    flex-shrink: 0;
-    gap: 3px;
-  }
   .roll-preset-select {
     max-width: 90px;
     font-size: 0.68rem;
@@ -2935,9 +2948,6 @@ Keeps your existing styles, only adjusts layout
   .roll-sep {
     display: none;
   }
-  .roll-play-group {
-    flex-shrink: 0;
-  }
   .roll-play-btn {
     padding: 4px 10px;
     font-size: 0.72rem;
@@ -2945,9 +2955,6 @@ Keeps your existing styles, only adjusts layout
   .roll-reset-btn {
     padding: 4px 8px;
     font-size: 0.68rem;
-  }
-  .roll-instrument-group {
-    flex-shrink: 0;
   }
   .roll-instrument-select {
     max-width: 90px;

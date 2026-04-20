@@ -1033,10 +1033,10 @@ export class PianoRollEditor {
 
   private buildDOM(): void {
     this.container.innerHTML = `
-<div class="roll-toolbar">
+     <div class="roll-toolbar">
 
   <!-- TOOLS -->
-  <div class="roll-group">
+  <div class="roll-group" data-name="Edit">
     <button class="roll-tool-btn active" data-tool="place" title="Place notes">
       <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
     </button>
@@ -1046,10 +1046,7 @@ export class PianoRollEditor {
     <button class="roll-tool-btn" data-tool="select" title="Select notes">
       <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/></svg>
     </button>
-  </div>
-
   <!-- EDIT -->
-  <div class="roll-group">
     <div class="roll-undo-group">
        <button id="roll-undo-btn" class="roll-undo-btn" title="Undo (Ctrl+Z)" disabled>
          <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/></svg>
@@ -1058,42 +1055,47 @@ export class PianoRollEditor {
          <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M18.4 10.6C16.55 8.99 14.15 8 11.5 8c-4.65 0-8.58 3.03-9.96 7.22L3.9 16c1.05-3.19 4.05-5.5 7.6-5.5 1.95 0 3.73.72 5.12 1.88L13 16h9V7l-3.6 3.6z"/></svg>
        </button>
     </div>
-    <button id="roll-delete-selected-btn" class="roll-delete-btn" title="Delete selected notes (Del)">
-      Delete
+    <button id="roll-clear-all" class="roll-ctrl-btn danger" title="Clear all notes">
+      <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M15 16h4v2h-4zm0-8h7v2h-7zm0 4h6v2h-6zM3 18c0 1.1.9 2 2 2h6c1.1 0 2-.9 2-2V8H3v10zM14 5h-3l-1-1H6L5 5H2v2h12z"/></svg>
+    <!--  <span>Clear</span>-->
     </button>
   </div>
 
   <!-- VIEW -->
-  <div class="roll-group">
+  <div class="roll-group" data-name="View">
      <button id="roll-grid-toggle" class="roll-grid-toggle-btn" title="Toggle grid lines">
        <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M20 2H4c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM8 20H4v-4h4v4zm0-6H4v-4h4v4zm0-6H4V4h4v4zm6 12h-4v-4h4v4zm0-6h-4v-4h4v4zm0-6h-4V4h4v4zm6 12h-4v-4h4v4zm0-6h-4v-4h4v4zm0-6h-4V4h4v4z"/></svg>
        <span>Grid</span>
      </button>
-
     <button id="roll-pitch-track-btn" class="roll-pitch-track-btn" title="Toggle pitch track">
-      Pitch Track
+      <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/></svg>
+      <span>Pitch Track</span>
     </button>
     
-    <button id="roll-clear-all" class="roll-ctrl-btn danger">Clear</button>
-    
     <div class="roll-zoom-inline">
-      <button id="roll-zoom-out" class="roll-zoom-btn" title="Zoom out">-</button>
+      <button id="roll-zoom-out" class="roll-zoom-btn" title="Zoom out">
+        <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+      </button>
       <span id="roll-zoom-value" class="zoom-value">100%</span>
-      <button id="roll-zoom-in" class="roll-zoom-btn" title="Zoom in">+</button>
+      <button id="roll-zoom-in" class="roll-zoom-btn" title="Zoom in">
+          <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M19 13H5v-2h14v2z"/></svg>
+      </button>
     </div>
     
     <!-- Zoom Fit -->
     <div class="roll-zoom-group">
-      <button id="roll-zoom-fit" class="roll-zoom-btn">Fit</button>
+      <button id="roll-zoom-fit" class="roll-zoom-btn" title="Fit to screen">
+        <svg viewBox="0 0 24 24" width="12" height="12"><path fill="currentColor" d="M15 3l2.3 2.3-2.89 2.87 1.42 1.42L18.7 6.7 21 9V3zM3 9l2.3-2.3 2.87 2.89 1.42-1.42L6.7 5.3 9 3H3zm6 12l-2.3-2.3 2.89-2.87-1.42-1.42L5.3 17.3 3 15v6zm12-6l-2.3 2.3-2.87-2.89-1.42 1.42 2.89 2.87L15 21h6z"/></svg>
+        <span>Fit</span>
+      </button>
     </div>
   </div>
 
   <!-- MUSICAL (2 COL) -->
-  <div class="roll-group roll-group-2col">
+  <div class="roll-group roll-group-2col" data-name="Notes">
 
     <!-- Duration -->
     <div class="roll-durations">
-      <label class="dur-label">Dur:</label>
       <button class="dur-btn" data-dur="0.25">1/16</button>
       <button class="dur-btn" data-dur="0.5">1/8</button>
       <button class="dur-btn active" data-dur="1">1/4</button>
@@ -1102,9 +1104,44 @@ export class PianoRollEditor {
       <button class="dur-btn" data-dur="4">1</button>
     </div>
 
+    <!-- Rows -->
+    <div class="roll-octaves-group">
+       <button id="roll-octaves-minus" class="octave-btn" title="Fewer octaves">
+        <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+       </button>
+       <span id="roll-octaves-value" class="octave-value">${this.numOctaves}</span>
+       <button id="roll-octaves-plus" class="octave-btn" title="More octaves">
+          <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M19 13H5v-2h14v2z"/></svg>
+       </button>
+    </div>
+
+    <!-- Octave -->
+    <div class="roll-octave-group">
+      <button id="roll-octave-down" class="octave-btn" title="Lower octave">
+        <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+      </button>
+      <span id="roll-octave-value" class="octave-value">${this.octave}</span>
+      <button id="roll-octave-up" class="octave-btn" title="Higher octave">
+        <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M19 13H5v-2h14v2z"/></svg>
+      </button>
+    </div>
+
+    <!-- Bars -->
+    <div class="roll-bars-group">
+      <button id="roll-bars-down" class="roll-bars-btn" title="Remove 4 bars">
+        <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+      </button>
+
+      <button id="roll-bars-up" class="roll-bars-btn" title="Add 4 bars">
+        <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+      </button>
+    </div>
+
     <!-- Scale -->
     <div class="roll-mode-group">
-      <label class="mode-label">Scale:</label>
+        <label class="mode-label">
+      <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+    </label>
       <select id="roll-mode-select" class="roll-mode-select">
         <option value="major">Major</option>
         <option value="natural-minor">Natural Minor</option>
@@ -1121,35 +1158,15 @@ export class PianoRollEditor {
       </select>
     </div>
 
-    <!-- Octave -->
-    <div class="roll-octave-group">
-      <label class="octave-label">Oct:</label>
-      <button id="roll-octave-down" class="octave-btn" title="Lower octave">-</button>
-      <span id="roll-octave-value" class="octave-value">${this.octave}</span>
-      <button id="roll-octave-up" class="octave-btn" title="Higher octave">+</button>
-    </div>
-
-    <!-- Bars -->
-    <div class="roll-bars-group">
-      <button id="roll-bars-down" class="roll-bars-btn" title="Remove 4 bars">-4b</button>
-      <button id="roll-bars-up" class="roll-bars-btn" title="Add 4 bars">+4b</button>
-    </div>
-
-    <!-- Rows -->
-    <div class="roll-octaves-group">
-       <label class="octaves-label">Rows:</label>
-       <button id="roll-octaves-minus" class="octave-btn" title="Fewer octaves">-</button>
-       <span id="roll-octaves-value" class="octave-value">${this.numOctaves}</span>
-       <button id="roll-octaves-plus" class="octave-btn" title="More octaves">+</button>
-    </div>
-
   </div>
 
   <!-- INSTRUMENT -->
-  <div class="roll-group">
+  <div class="roll-group" data-name="Instrument">
     <div class="roll-instrument-group">
-      <label class="instrument-label">Instr:</label>
-          <select id="roll-instrument-select" class="roll-instrument-select">
+        <label class="instrument-label">
+          <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M20 3H4c-1.1 0-1.99.9-1.99 2L2 19c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H4V5h16v14zm-1-7h-2V7h-2v5h-2V7h-2v5H9V7H7v5H5V7h14v5z"/></svg>
+        </label>
+        <select id="roll-instrument-select" class="roll-instrument-select">
         <option value="sine">Sine</option>
         <option value="piano">Piano</option>
         <option value="organ">Organ</option>
@@ -1160,7 +1177,7 @@ export class PianoRollEditor {
   </div>
 
   <!-- EFFECTS -->
-  <div class="roll-group roll-group-2col">
+  <div class="roll-group roll-group-2col" data-name="Effects">
     <button id="roll-action-slide-up" class="roll-action-btn slide-up" title="Create ascending slide between selected notes">
       <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M4 20l8-16 8 16z"/></svg>
       <span>↑Slide</span>
@@ -1184,10 +1201,20 @@ export class PianoRollEditor {
   </div>
 
   <!-- IO -->
-  <div class="roll-group roll-group-2col">
-    <button id="roll-export-midi" class="roll-export-btn" title="Export melody as MIDI file">Export MIDI</button>
-    <button id="roll-export-wav" class="roll-export-btn" title="Export melody as WAV file">Export WAV</button>
-    <button id="roll-import-midi" class="roll-export-btn" title="Import melody from MIDI file">Import MIDI</button>
+  <div class="roll-group roll-group-2col" data-name="I/O">
+    <button id="roll-import-midi" class="roll-export-btn" title="Import melody from MIDI file">
+      <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5z"/></svg>
+      <span>Import MIDI</span>
+    </button>
+    <button id="roll-export-midi" class="roll-export-btn" title="Export melody as MIDI file">
+      <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+      <span>Export MIDI</span>
+    </button>
+
+    <button id="roll-export-wav" class="roll-export-btn" title="Export melody as WAV file">
+      <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+      <span>Export WAV</span>
+    </button>
   </div>
 
 </div>
