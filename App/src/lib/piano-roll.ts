@@ -2313,15 +2313,11 @@ export class PianoRollEditor {
         (performance as unknown as { now: () => number }).now() -
         (beat / this.bpm) * 60000
     } else if (this.playbackState === 'paused') {
-      // For paused state, update both playStartTime and activeBeat for proper resume
-
+      // For paused state, update playStartTime to seek to new position
       this.playStartTime =
         (performance as unknown as { now: () => number }).now() -
         (beat / this.bpm) * 60000
-
-      this.pauseStartTime = (
-        performance as unknown as { now: () => number }
-      ).now() // Reset pause point to now
+      // Do NOT reset pauseStartTime - it's needed for correct resume offset
     }
   }
 
@@ -2488,7 +2484,7 @@ export class PianoRollEditor {
     ctx.shadowBlur = 4
     const triSize = 6
     ctx.beginPath()
-    ctx.moveTo(playheadX, this.rulerHeight)
+    ctx.moveTo(playheadX, this.rulerHeight - 1)
     ctx.lineTo(playheadX - triSize, this.rulerHeight - triSize - 1)
     ctx.lineTo(playheadX + triSize, this.rulerHeight - triSize - 1)
     ctx.closePath()
