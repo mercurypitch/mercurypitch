@@ -9,6 +9,7 @@ import { AppSidebar } from '@/components/AppSidebar'
 import { EditorTabHeader } from '@/components/EditorTabHeader'
 import { FocusMode } from '@/components/FocusMode'
 import { HistoryCanvas } from '@/components/HistoryCanvas'
+import { Notifications } from '@/components/Notifications'
 import { PianoRollCanvas } from '@/components/PianoRollCanvas'
 import type { PitchSample } from '@/components/PitchCanvas'
 import { PitchCanvas } from '@/components/PitchCanvas'
@@ -19,7 +20,6 @@ import { SessionBrowser } from '@/components/SessionBrowser'
 import { SessionPlayer } from '@/components/SessionPlayer'
 import { SettingsPanel } from '@/components/SettingsPanel'
 import { Walkthrough } from '@/components/Walkthrough'
-import { Notifications } from '@/components/Notifications'
 import { WelcomeScreen } from '@/components/WelcomeScreen'
 import type { InstrumentType } from '@/lib/audio-engine'
 import { AudioEngine } from '@/lib/audio-engine'
@@ -1085,11 +1085,11 @@ export const App: Component<AppProps> = (props) => {
       numOctaves,
       scaleType,
     )
-    if (!scale || scale.length === 0) {
+    if (scale === null || scale.length === 0) {
       // Fallback to a minimum scale (C major, 2 octaves) if scale is empty
       console.warn('Scale is empty, using fallback')
       const fallbackScale = buildMultiOctaveScale('C', melodyStore.currentOctave(), 2, 'major')
-      if (!fallbackScale || fallbackScale.length === 0) return
+      if (fallbackScale === null || fallbackScale.length === 0) return
       scale = fallbackScale
     }
 

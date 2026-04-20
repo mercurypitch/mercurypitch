@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { Show, For } from 'solid-js'
+import { For } from 'solid-js'
 import { appStore } from '@/stores/app-store'
 import styles from '@/styles/Notifications.module.css'
 
