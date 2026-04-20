@@ -1886,20 +1886,87 @@ header h1 {
 }
 
 /* Piano roll toolbar */
+/* =========================================================
+ROLL TOOLBAR — GRID RIBBON REFACTOR (NON-DESTRUCTIVE)
+Keeps your existing styles, only adjusts layout
+========================================================= */
+
+/* 🔥 MAIN TOOLBAR: force ONE horizontal row */
 .roll-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  display: grid; /* was: flex */
+  grid-auto-flow: column;
+  grid-auto-columns: max-content;
+
+  align-items: stretch;
+  gap: 10px;
+
   padding: 8px 14px;
   background: var(--bg-secondary);
   border-bottom: 1px solid var(--border);
-  flex-wrap: wrap;
+
+  flex-wrap: unset; /* disable old wrapping */
   flex-shrink: 0;
 }
 
-.roll-tools {
+/* 📦 GROUP CONTAINER (NEW) */
+.roll-group {
+  display: grid;
+  grid-template-rows: repeat(3, auto);
+  grid-auto-flow: column;
+  grid-auto-columns: max-content;
+
+  gap: 6px;
+  padding: 6px 8px;
+
+  background: var(--bg-secondary);
+  /*border: 1px solid var(--border);*/
+  /*border-radius: 6px;*/
+
+  position: relative;
+}
+
+.roll-group:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  right: -6px;
+  top: 6px;
+  bottom: 6px;
+  width: 1px;
+  /*background: var(--border);*/
+}
+
+/* 🧩 Two-column groups (for complex sections like Musical / Effects / IO) */
+.roll-group-2col {
+  grid-template-columns: repeat(2, max-content);
+}
+
+/* 🧠 Ensure inner elements behave nicely inside grid cells */
+.roll-group > * {
+  align-self: center;
+}
+
+/* 🔧 Keep internal flex layouts working inside grid */
+.roll-durations,
+.roll-octave-group,
+.roll-octaves-group,
+.roll-bars-group,
+.roll-zoom-group,
+.roll-mode-group,
+.roll-instrument-group,
+.roll-effects-group {
   display: flex;
+  align-items: center;
   gap: 4px;
+}
+
+/* 🧼 Prevent labels from stretching weirdly */
+.roll-toolbar label {
+  white-space: nowrap;
+}
+
+/* 🎯 Optional polish: subtle panel depth (Word-like feel) */
+.roll-group {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
 }
 
 .roll-tool-btn {
@@ -1925,13 +1992,6 @@ header h1 {
   border-color: var(--accent);
   background: var(--accent-dim);
   color: var(--accent);
-}
-
-/* Effect buttons */
-.roll-effects-group {
-  display: flex;
-  align-items: center;
-  gap: 4px;
 }
 
 .roll-effects-label {
@@ -1982,20 +2042,6 @@ header h1 {
   border-left: 2px solid #ff6b6b;
 }
 
-.roll-sep {
-  width: 1px;
-  height: 22px;
-  background: var(--border);
-  flex-shrink: 0;
-}
-
-/* Octave controls */
-.roll-octave-group {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
 .roll-octave-btn {
   padding: 4px 8px;
   border: 1px solid var(--border);
@@ -2020,12 +2066,12 @@ header h1 {
   text-align: center;
   font-weight: 600;
 }
-
-/* Duration buttons */
-.roll-durations {
-  display: flex;
-  align-items: center;
-  gap: 3px;
+.roll-octave-value {
+  font-size: 0.72rem;
+  color: var(--accent);
+  min-width: 20px;
+  text-align: center;
+  font-weight: 600;
 }
 
 .dur-label {
@@ -2719,6 +2765,29 @@ header h1 {
   color: var(--accent);
 }
 
+/* Export/Import buttons */
+.roll-export-btn {
+  padding: 5px 10px;
+  font-size: 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.12s ease;
+  flex-shrink: 0;
+}
+
+.roll-export-btn:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.roll-export-btn:active {
+  background: var(--accent);
+  color: #fff;
+}
+
 /* Pitch track canvas */
 .roll-pitch-track {
   width: 100%;
@@ -2961,11 +3030,13 @@ header h1 {
 .settings-divider {
   height: 4px;
   width: 100%;
-  background: linear-gradient(90deg,
+  background: linear-gradient(
+    90deg,
     var(--border-color) 0%,
     var(--border-color) 60%,
     var(--primary-color) 60%,
-    var(--primary-color) 100%);
+    var(--primary-color) 100%
+  );
   margin: 16px 0;
   border-radius: 2px;
 }

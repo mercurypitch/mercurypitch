@@ -56,7 +56,9 @@ export const PracticeTabHeader: Component<PracticeTabHeaderProps> = (props) => {
           disabled={false}
         />
 
-        <Tooltip text={appStore.micWaveVisible() ? 'Hide mic wave' : 'Show mic wave'}>
+        <Tooltip
+          text={appStore.micWaveVisible() ? 'Hide mic wave' : 'Show mic wave'}
+        >
           <button
             class={`ctrl-btn wave-btn ${appStore.micWaveVisible() ? 'active' : ''}`}
             onClick={appStore.toggleMicWaveVisible}

@@ -399,7 +399,8 @@ export const App: Component<AppProps> = (props) => {
 
     // EXPOSE ENGINES FOR E2E TESTING
     if (typeof window !== 'undefined') {
-      ;(window as unknown as { __appStore: typeof appStore }).__appStore = appStore
+      ;(window as unknown as { __appStore: typeof appStore }).__appStore =
+        appStore
       ;(window as unknown as { __melodyEngine: MelodyEngine }).__melodyEngine =
         melodyEngine
     }
@@ -692,7 +693,8 @@ export const App: Component<AppProps> = (props) => {
 
     // EXPOSE MELODY ENGINE NOW
     if (typeof window !== 'undefined') {
-      ;(window as unknown as { __melodyEngine: MelodyEngine }).__melodyEngine = melodyEngine
+      ;(window as unknown as { __melodyEngine: MelodyEngine }).__melodyEngine =
+        melodyEngine
     }
 
     practiceEngine = new PracticeEngine(audioEngine, { sensitivity: 5 })
@@ -1284,7 +1286,9 @@ export const App: Component<AppProps> = (props) => {
               onClick={handleTabPractice}
               title="Go to Practice"
             >
-              <h1 id="app-title" class="app-title">PitchPerfect</h1>
+              <h1 id="app-title" class="app-title">
+                PitchPerfect
+              </h1>
             </button>
             <p class="subtitle">Voice Pitch Practice</p>
           </div>
@@ -1344,84 +1348,84 @@ export const App: Component<AppProps> = (props) => {
             <Show when={activeTab() === 'practice'}>
               {/* Practice panel */}
               <div id="practice-panel">
-              {/* Practice-specific header: mic + mode toggles + playback controls */}
-              <PracticeTabHeader
-                isPlaying={isPlaying}
-                isPaused={isPaused}
-                playMode={playMode}
-                practiceCycles={practiceCycles}
-                currentCycle={currentCycle}
-                isCountingIn={isCountingIn}
-                countInBeat={countInBeat}
-                metronomeEnabled={metronomeEnabled}
-                volume={savedVol}
-                practiceSubMode={practiceSubMode}
-                onMicToggle={handleMicToggle}
-                onPlayModeChange={setPlayMode}
-                onCyclesChange={setPracticeCycles}
-                onPlay={handlePlay}
-                onPause={handlePause}
-                onResume={handleResume}
-                onStop={handleReset}
-                onMetronomeToggle={() =>
-                  setMetronomeEnabled(!metronomeEnabled())
-                }
-                onSpeedChange={(speed) => {
-                  melodyEngine?.setPlaybackSpeed(speed)
-                }}
-                onVolumeChange={(vol) => {
-                  setSavedVol(vol)
-                  audioEngine?.setVolume(vol / 100)
-                }}
-                onPracticeSubModeChange={setPracticeSubMode}
-                isRecording={isRecording}
-                onRecordToggle={handleRecordToggle}
-                onOpenSessions={() => setShowSessionBrowser(true)}
-                sessionActive={appStore.sessionActive}
-              />
-
-              {/* Session Player — shown when a session is active */}
-              <Show when={appStore.sessionActive()}>
-                <SessionPlayer
-                  onSkip={handleSessionSkip}
-                  onEnd={handleSessionEnd}
-                />
-              </Show>
-
-              {/* Canvas */}
-              <div id="canvas-container">
-                <PitchCanvas
-                  melody={() => melodyStore.items}
-                  scale={() => melodyStore.currentScale()}
-                  totalBeats={totalBeats}
-                  currentBeat={currentBeat}
-                  pitchHistory={pitchHistory}
-                  currentNoteIndex={currentNoteIndex}
+                {/* Practice-specific header: mic + mode toggles + playback controls */}
+                <PracticeTabHeader
                   isPlaying={isPlaying}
                   isPaused={isPaused}
-                  isScrolling={() => false}
-                  targetPitch={targetPitch}
-                  noteAccuracyMap={noteAccuracyMap}
-                  isRecording={isRecording}
-                  getWaveform={() => audioEngine?.getWaveformData() ?? null}
-                />
-                <div
-                  id="playhead"
-                  style={{
-                    display: isPlaying() || isPaused() ? 'block' : 'none',
-                    left: `${(currentBeat() / Math.max(1, totalBeats())) * 100}%`,
+                  playMode={playMode}
+                  practiceCycles={practiceCycles}
+                  currentCycle={currentCycle}
+                  isCountingIn={isCountingIn}
+                  countInBeat={countInBeat}
+                  metronomeEnabled={metronomeEnabled}
+                  volume={savedVol}
+                  practiceSubMode={practiceSubMode}
+                  onMicToggle={handleMicToggle}
+                  onPlayModeChange={setPlayMode}
+                  onCyclesChange={setPracticeCycles}
+                  onPlay={handlePlay}
+                  onPause={handlePause}
+                  onResume={handleResume}
+                  onStop={handleReset}
+                  onMetronomeToggle={() =>
+                    setMetronomeEnabled(!metronomeEnabled())
+                  }
+                  onSpeedChange={(speed) => {
+                    melodyEngine?.setPlaybackSpeed(speed)
                   }}
+                  onVolumeChange={(vol) => {
+                    setSavedVol(vol)
+                    audioEngine?.setVolume(vol / 100)
+                  }}
+                  onPracticeSubModeChange={setPracticeSubMode}
+                  isRecording={isRecording}
+                  onRecordToggle={handleRecordToggle}
+                  onOpenSessions={() => setShowSessionBrowser(true)}
+                  sessionActive={appStore.sessionActive}
                 />
-              </div>
 
-              {/* History */}
-              <div id="history-container">
-                <HistoryCanvas
-                  frequencyData={frequencyData}
-                  waveformData={waveformData}
-                  liveScore={liveScore}
-                />
-              </div>
+                {/* Session Player — shown when a session is active */}
+                <Show when={appStore.sessionActive()}>
+                  <SessionPlayer
+                    onSkip={handleSessionSkip}
+                    onEnd={handleSessionEnd}
+                  />
+                </Show>
+
+                {/* Canvas */}
+                <div id="canvas-container">
+                  <PitchCanvas
+                    melody={() => melodyStore.items}
+                    scale={() => melodyStore.currentScale()}
+                    totalBeats={totalBeats}
+                    currentBeat={currentBeat}
+                    pitchHistory={pitchHistory}
+                    currentNoteIndex={currentNoteIndex}
+                    isPlaying={isPlaying}
+                    isPaused={isPaused}
+                    isScrolling={() => false}
+                    targetPitch={targetPitch}
+                    noteAccuracyMap={noteAccuracyMap}
+                    isRecording={isRecording}
+                    getWaveform={() => audioEngine?.getWaveformData() ?? null}
+                  />
+                  <div
+                    id="playhead"
+                    style={{
+                      display: isPlaying() || isPaused() ? 'block' : 'none',
+                      left: `${(currentBeat() / Math.max(1, totalBeats())) * 100}%`,
+                    }}
+                  />
+                </div>
+
+                {/* History */}
+                <div id="history-container">
+                  <HistoryCanvas
+                    frequencyData={frequencyData}
+                    waveformData={waveformData}
+                    liveScore={liveScore}
+                  />
+                </div>
               </div>
             </Show>
 

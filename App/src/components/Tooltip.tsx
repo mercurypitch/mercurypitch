@@ -42,10 +42,7 @@ export const Tooltip: Component<TooltipProps> = (props) => {
     >
       {props.children}
       <Show when={visible() && props.text}>
-        <span
-          class={`tooltip tooltip-${placement()}`}
-          role="tooltip"
-        >
+        <span class={`tooltip tooltip-${placement()}`} role="tooltip">
           {props.text}
         </span>
       </Show>

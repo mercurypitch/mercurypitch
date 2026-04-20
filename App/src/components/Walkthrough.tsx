@@ -4,13 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, onCleanup, Show } from 'solid-js'
-import {
-  appStore,
-  endWalkthrough,
-  nextWalkthroughStep,
-  prevWalkthroughStep,
-  WALKTHROUGH_STEPS,
-} from '@/stores/app-store'
+import { appStore, endWalkthrough, nextWalkthroughStep, prevWalkthroughStep, WALKTHROUGH_STEPS, } from '@/stores/app-store'
 
 type Placement = 'top' | 'bottom' | 'left' | 'right'
 
@@ -28,8 +22,7 @@ export const Walkthrough: Component = () => {
   let highlightRef: HTMLDivElement | undefined
   let tooltipRef: HTMLDivElement | undefined
 
-  const getPlacement = (): Placement =>
-    currentStep().placement ?? 'bottom'
+  const getPlacement = (): Placement => currentStep().placement ?? 'bottom'
 
   const updateHighlight = () => {
     if (!highlightRef) return
@@ -48,7 +41,12 @@ export const Walkthrough: Component = () => {
     highlightRef.style.height = `${rect.height + padding * 2}px`
   }
 
-  const updateTooltipCentered = (tW: number, tH: number, vw: number, vh: number) => {
+  const updateTooltipCentered = (
+    tW: number,
+    tH: number,
+    vw: number,
+    vh: number,
+  ) => {
     // Fallback when target element is not available - show tooltip in center of screen
     const left = (vw - tW) / 2
     const top = (vh - tH) / 2
@@ -161,10 +159,14 @@ export const Walkthrough: Component = () => {
         updateHighlight()
         updateTooltip()
       })
-      window.addEventListener('scroll', () => {
-        updateHighlight()
-        updateTooltip()
-      }, true)
+      window.addEventListener(
+        'scroll',
+        () => {
+          updateHighlight()
+          updateTooltip()
+        },
+        true,
+      )
     }
   })
 
@@ -173,10 +175,14 @@ export const Walkthrough: Component = () => {
       updateHighlight()
       updateTooltip()
     })
-    window.removeEventListener('scroll', () => {
-      updateHighlight()
-      updateTooltip()
-    }, true)
+    window.removeEventListener(
+      'scroll',
+      () => {
+        updateHighlight()
+        updateTooltip()
+      },
+      true,
+    )
   })
 
   // Update both when step changes
