@@ -10,7 +10,7 @@ import styles from '@/styles/Notifications.module.css'
 export const Notifications: Component = () => {
   return (
     <div class={styles.notificationContainer} role="region" aria-live="polite">
-      <For each={appStore.notifications()}>
+      <For each={appStore.notifications}>
         {(notif) => (
           <div
             class={`${styles.notification} ${styles[notif.type]}`}
