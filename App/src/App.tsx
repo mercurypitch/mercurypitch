@@ -297,7 +297,7 @@ export const App: Component<AppProps> = (props) => {
         } else {
           handleStop()
           setCurrentBeat(0)
-          melodyEngine.seekTo(0)
+          if (melodyEngine !== null) melodyEngine.seekTo(0)
         }
       }
 
@@ -305,9 +305,9 @@ export const App: Component<AppProps> = (props) => {
       if (e.code === 'Home' && !isTyping) {
         e.preventDefault()
         setCurrentBeat(0)
-        melodyEngine.seekTo(0)
+        if (melodyEngine !== null) melodyEngine.seekTo(0)
         if (isPlaying()) {
-          melodyEngine.seekTo(0)
+          if (melodyEngine !== null) melodyEngine.seekTo(0)
           setCurrentBeat(0)
         }
       }
@@ -815,7 +815,7 @@ export const App: Component<AppProps> = (props) => {
       const targetBeat = e.detail.beat as number
       // const beatDurationMs = 60000 / appStore.bpm()
       // const targetTime = targetBeat * beatDurationMs
-      melodyEngine.seekTo(targetBeat)
+      if (melodyEngine !== null) melodyEngine.seekTo(targetBeat)
       setCurrentBeat(targetBeat)
     }
     window.addEventListener(
