@@ -1056,6 +1056,7 @@ export const App: Component<AppProps> = (props) => {
   }
 
   const handleStop = () => {
+    console.info('Stoppping handling...')
     melodyEngine.stop()
     practiceEngine.endSession()
     audioEngine.stopTone()
@@ -1499,21 +1500,13 @@ export const App: Component<AppProps> = (props) => {
 
             <Show when={activeTab() === 'editor'}>
               <EditorTabHeader
-                isPlaying={editorIsPlaying}
-                isPaused={editorIsPaused}
+                isPlaying={isPlaying}
+                isPaused={isPaused}
                 onMicToggle={handleMicToggle}
-                onPlay={() => {
-                  playback.startPlayback()
-                }}
-                onPause={() => {
-                  playback.pausePlayback()
-                }}
-                onResume={() => {
-                  playback.continuePlayback()
-                }}
-                onStop={() => {
-                  playback.resetPlayback()
-                }}
+                onPlay={handlePlay}
+                onPause={handlePause}
+                onResume={handleResume}
+                onStop={handleReset}
                 onMetronomeToggle={() =>
                   setMetronomeEnabled(!metronomeEnabled())
                 }
@@ -1537,8 +1530,6 @@ export const App: Component<AppProps> = (props) => {
                   audioEngine?.setInstrument(instrument as InstrumentType)
                 }}
                 currentInstrument={currentInstrument()}
-                bpm={() => appStore.bpm()}
-                onBpmChange={(bpm) => appStore.setBpm(bpm)}
               />
               <PianoRollCanvas
                 melody={() => melodyStore.items}
@@ -1554,6 +1545,7 @@ export const App: Component<AppProps> = (props) => {
                   audioEngine.setInstrument(instrument as InstrumentType)
                 }}
                 onPlaybackStateChange={(state) => {
+                  console.info('State change', state)
                   setEditorPlaybackState(state)
                 }}
                 isRecording={isRecording}

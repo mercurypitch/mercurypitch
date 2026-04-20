@@ -172,16 +172,19 @@ export class MelodyEngine {
     this.pauseOffset =
       (performance as unknown as { now: () => number }).now() -
       this.playStartTime
-    this._stopTick()
+    console.log('pausing', this.pauseOffset)
+    // this._stopTick()
   }
 
   resume(): void {
+    console.info('Error or ney', this.playStartTime, this.pauseOffset)
     if (!this.isPlaying || !this.isPaused) return
 
     this.isPaused = false
 
     this.playStartTime =
       (performance as unknown as { now: () => number }).now() - this.pauseOffset
+    console.info('Continuing', this.playStartTime, this.pauseOffset)
     this._tick()
   }
 

@@ -4,6 +4,7 @@
 
 import { createSignal } from 'solid-js'
 import type { TransportState } from '@/types'
+import { appStore } from './app-store'
 
 export type PlayButtonLabel = 'Start' | 'Pause' | 'Continue'
 
@@ -56,5 +57,5 @@ export const playback = {
 
 /** Playback speed accessor function (for compatibility with EditorTabHeader) */
 export function getPlaybackSpeed(): number {
-  return playbackSpeed()
+  return appStore.playbackSpeed()
 }

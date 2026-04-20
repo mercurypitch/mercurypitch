@@ -43,24 +43,25 @@ export const EditorTabHeader: Component<EditorTabHeaderProps> = (props) => {
 
   const handlePlayClick = () => {
     const state = playback.state()
-    if (state === 'stopped') {
-      playback.startPlayback()
+    console.info('Play state was:', state)
+    console.info('Playing...', isActive, isStopped, props.isPlaying())
+    if (!props.isPlaying() && !props.isPaused()) {
+      // playback.startPlayback()
       props.onPlay()
-    } else if (state === 'playing') {
-      playback.pausePlayback()
+    } else if (props.isPlaying()) {
+      // playback.pausePlayback()
       props.onPause()
     } else {
-      playback.continuePlayback()
+      // playback.continuePlayback()
       props.onResume()
     }
   }
 
   const handleStopClick = () => {
-    playback.resetPlayback()
+    // playback.resetPlayback()
     props.onStop()
   }
 
-  console.info(ui)
   return (
     <div class={ui.tabHeaderBar}>
       {/* Row 1: Essential controls - always visible */}

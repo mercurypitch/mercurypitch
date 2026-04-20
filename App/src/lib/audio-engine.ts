@@ -580,6 +580,7 @@ export class AudioEngine {
 
   /** Stop the current tone */
   stopTone(): void {
+    console.info('Stopping tone')
     if (this.toneOscillator) {
       try {
         this.toneOscillator.stop()
