@@ -54,3 +54,8 @@ export const playback = {
   isPaused: () => playbackState() === 'paused',
   isStopped: () => playbackState() === 'stopped',
 }
+
+/** Playback speed accessor function (for compatibility with EditorTabHeader) */
+export function getPlaybackSpeed(): number {
+  return playbackSpeed()
+}

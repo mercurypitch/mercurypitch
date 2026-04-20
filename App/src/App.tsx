@@ -4,10 +4,11 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createEffect, createMemo, createSignal, onCleanup, onMount, Show, } from 'solid-js'
+import { createEffect, createMemo, createSignal, onCleanup, onMount, Show } from 'solid-js'
 import { AppSidebar } from '@/components/AppSidebar'
 import { FocusMode } from '@/components/FocusMode'
 import { HistoryCanvas } from '@/components/HistoryCanvas'
+import { Notifications } from '@/components/Notifications'
 import { PianoRollCanvas } from '@/components/PianoRollCanvas'
 import { PitchCanvas } from '@/components/PitchCanvas'
 import { ScaleBuilder } from '@/components/ScaleBuilder'
@@ -24,9 +25,9 @@ import { PlaybackRuntime } from '@/lib/playback-runtime'
 import { PracticeEngine } from '@/lib/practice-engine'
 import { melodyIndexAtBeat } from '@/lib/scale-data'
 import { buildMultiOctaveScale, keyTonicFreq, melodyTotalBeats, midiToNote, } from '@/lib/scale-data'
-import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
+import { generateShareURL,hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
 import type { PresetData } from '@/stores/app-store'
-import { appStore, getNoteAccuracyMap } from '@/stores/app-store'
+import { appStore, getNoteAccuracyMap, loadPreset } from '@/stores/app-store'
 import { melodyStore } from '@/stores/melody-store'
 import { playback } from '@/stores/playback-store'
 import type { PitchSample } from '@/types'
@@ -204,6 +205,57 @@ export const App: Component<AppProps> = (props) => {
   const [metronomeEnabled, setMetronomeEnabled] = createSignal(false)
   const [targetPitch, setTargetPitch] = createSignal<number | null>(null)
 
+  // ── Editor features ────────────────────────────────────────────────
+  const [currentInstrument, setCurrentInstrument] =
+    createSignal<InstrumentType>('piano')
+
+  const handleShare = () => {
+    const melody = melodyStore.items
+    const key = appStore.keyName()
+    const scaleType = appStore.scaleType()
+    const bpm = appStore.bpm()
+    const totalBeats = melodyTotalBeats(melody)
+
+    const url = generateShareURL(melody, bpm, key, scaleType, totalBeats)
+    navigator.clipboard.writeText(url).then(() => {
+      appStore.showNotification('Share URL copied to clipboard!', 'success')
+    })
+  }
+
+  const handleExportMIDI = () => {
+    const melody = melodyStore.items
+    const bpm = appStore.bpm()
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
+    if (downloadMIDI(melody, bpm, `pitchperfect-${timestamp}.mid`)) {
+      appStore.showNotification('MIDI file exported!', 'success')
+    }
+  }
+
+  const handleImportMIDI = () => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = '.mid,.midi'
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0]
+      if (!file) return
+
+      try {
+        const buffer = await file.arrayBuffer()
+        const data = new Uint8Array(buffer)
+        const melody = importMelodyFromMIDI(data)
+        if (melody && melody.length > 0) {
+          melodyStore.setMelody(melody)
+          appStore.showNotification(`Imported ${melody.length} note(s) from MIDI`, 'success')
+        } else {
+          appStore.showNotification('Could not parse MIDI file', 'error')
+        }
+      } catch (_err) {
+        appStore.showNotification('Error reading MIDI file', 'error')
+      }
+    }
+    input.click()
+  }
+
   // ── Recording ────────────────────────────────────────────────
   const [isRecording, setIsRecording] = createSignal(false)
   const [recordedMelody, setRecordedMelody] = createSignal<MelodyItem[]>([])
@@ -290,6 +342,9 @@ export const App: Component<AppProps> = (props) => {
     appStore.initSettings()
     appStore.initReverb()
 
+    // Expose appStore to window for e2e tests
+    ;(window as unknown as { __appStore: typeof appStore }).__appStore = appStore
+
     // Fallback: direct click listeners on tab buttons in case SolidJS delegation misses them
     // This handles the edge case where innerHTML-created elements need explicit handlers
     const tabBtn = document.getElementById('tab-settings')
@@ -366,15 +421,6 @@ export const App: Component<AppProps> = (props) => {
         if (playMode() !== 'practice') {
           setPlayMode('practice')
           appStore.showNotification('Mode: Practice', 'info')
-        }
-      }
-
-      // O → Once mode
-      if (e.code === 'KeyO' && !isTyping) {
-        e.preventDefault()
-        if (playMode() !== 'once') {
-          setPlayMode('once')
-          appStore.showNotification('Mode: Once', 'info')
         }
       }
 
@@ -1102,13 +1148,19 @@ export const App: Component<AppProps> = (props) => {
     _label?: string,
   ) => {
     const numOctaves = beats > 12 ? 2 : 1
-    const scale = buildMultiOctaveScale(
+    let scale = buildMultiOctaveScale(
       appStore.keyName(),
       melodyStore.currentOctave(),
       numOctaves,
       scaleType,
     )
-    if (scale === null || scale === undefined || scale.length === 0) return
+    if (scale === null || scale.length === 0) {
+      // Fallback to a minimum scale (C major, 2 octaves) if scale is empty
+      console.warn('Scale is empty, using fallback')
+      const fallbackScale = buildMultiOctaveScale('C', melodyStore.currentOctave(), 2, 'major')
+      if (fallbackScale === null || fallbackScale.length === 0) return
+      scale = fallbackScale
+    }
 
     // Use ALL notes from the scale (no 8-note cap) — respect the beats parameter
     const noteCount = Math.min(scale.length, beats)
@@ -1395,11 +1447,14 @@ export const App: Component<AppProps> = (props) => {
           {/* Shared sidebar — with mobile open class */}
           <AppSidebar
             class={sidebarOpen() ? 'open' : ''}
-            onPresetLoad={(preset) => {
-              melodyStore.setMelody(presetToMelody(preset))
-              if (preset.bpm) {
-                appStore.setBpm(preset.bpm)
+            onPresetLoad={(name) => {
+              const preset = loadPreset(name)
+              if (preset) {
+                melodyStore.setMelody(presetToMelody(preset))
+                if (preset.bpm) {
+                  appStore.setBpm(preset.bpm)
                 // BPM already set via appStore.setBpm() above
+                }
               }
             }}
             onOctaveShift={handleOctaveShift}
@@ -1742,6 +1797,9 @@ export const App: Component<AppProps> = (props) => {
           </div>
         </div>
       </Show>
+
+      {/* Notifications */}
+      <Notifications />
     </div>
   )
 }

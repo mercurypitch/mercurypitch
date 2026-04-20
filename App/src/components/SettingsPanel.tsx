@@ -48,6 +48,7 @@ export const SettingsPanel: Component = () => {
         {/* Sensitivity Presets Section */}
         <div class="settings-section">
           <h3 class="settings-section-title">Sensitivity Presets</h3>
+          <div class="settings-divider" />
           <p class="settings-desc">Quick presets for different environments.</p>
 
           <div class="settings-row">
@@ -71,6 +72,7 @@ export const SettingsPanel: Component = () => {
         {/* Pitch Detection Section */}
         <div class="settings-section">
           <h3 class="settings-section-title">Pitch Detection</h3>
+          <div class="settings-divider" />
 
           <div class="settings-row">
             <label for="set-threshold">Detection Threshold</label>
@@ -150,6 +152,7 @@ export const SettingsPanel: Component = () => {
         {/* Practice Aids Section */}
         <div class="settings-section">
           <h3 class="settings-section-title">Practice Aids</h3>
+          <div class="settings-divider" />
 
           <div class="settings-row">
             <label for="set-tonic-anchor">Tonic Anchor Tone</label>
@@ -171,6 +174,7 @@ export const SettingsPanel: Component = () => {
         {/* Accuracy Bands Section */}
         <div class="settings-section">
           <h3 class="settings-section-title">Accuracy Bands</h3>
+          <div class="settings-divider" />
           <p class="settings-desc">
             Define how many cents off is "Perfect", "Good", etc.
           </p>
@@ -235,6 +239,7 @@ export const SettingsPanel: Component = () => {
         {/* Current Values Section */}
         <div class="settings-section">
           <h3 class="settings-section-title">Current Values</h3>
+          <div class="settings-divider" />
           <div class="settings-info">
             <div>
               Threshold: <span>{s().detectionThreshold.toFixed(2)}</span>
@@ -255,6 +260,7 @@ export const SettingsPanel: Component = () => {
         {/* ADSR Envelope Section */}
         <div class="settings-section">
           <h3 class="settings-section-title">Tone Envelope (ADSR)</h3>
+          <div class="settings-divider" />
           <p class="settings-desc">
             Adjust the Attack, Decay, Sustain, Release envelope for note
             playback.
@@ -332,6 +338,7 @@ export const SettingsPanel: Component = () => {
         {/* Visibility Toggles */}
         <div class="settings-section">
           <h3 class="settings-section-title">Visibility</h3>
+          <div class="settings-divider" />
           <p class="settings-desc">Show or hide interface elements.</p>
 
           <div class="settings-row">
@@ -366,6 +373,7 @@ export const SettingsPanel: Component = () => {
         {/* Playback Speed Section */}
         <div class="settings-section">
           <h3 class="settings-section-title">Playback Speed</h3>
+          <div class="settings-divider" />
           <p class="settings-desc">
             Adjust the playback speed of the practice melody.
           </p>
@@ -393,6 +401,7 @@ export const SettingsPanel: Component = () => {
         {/* Reverb Section */}
         <div class="settings-section">
           <h3 class="settings-section-title">Reverb</h3>
+          <div class="settings-divider" />
           <p class="settings-desc">
             Add reverb (echo) to the practice playback for a richer sound.
           </p>
@@ -440,6 +449,7 @@ export const SettingsPanel: Component = () => {
         {/* Keyboard Shortcuts Section */}
         <div class="settings-section">
           <h3 class="settings-section-title">Keyboard Shortcuts</h3>
+          <div class="settings-divider" />
           <p class="settings-desc">
             Global shortcuts active when not typing in a text field.
           </p>

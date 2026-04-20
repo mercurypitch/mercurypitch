@@ -1,0 +1,99 @@
+/* ============================================================
+   PresetPillGallery — Scrollable pill gallery for presets
+   Rounded button style like GitHub status pills
+   ============================================================ */
+
+.presetPillGallery {
+  margin-top: 16px;
+  padding: 0 4px;
+}
+
+.galleryTitle {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin: 0 0 8px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.galleryScroll {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 4px;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  background: var(--bg-secondary);
+}
+
+/* Scrollbar styling */
+.galleryScroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.galleryScroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.galleryScroll::-webkit-scrollbar-thumb {
+  background: var(--border-mid);
+  border-radius: 3px;
+}
+
+.galleryScroll::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* Pill button style - GitHub status pill inspired */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.pill:hover {
+  background: var(--border-light);
+  transform: translateY(-1px);
+}
+
+.pill:active {
+  transform: translateY(0);
+}
+
+/* Active/Current preset */
+.pillCurrent {
+  background: rgba(125, 211, 252, 0.2);
+  border-color: var(--blue);
+  color: var(--blue);
+}
+
+.pillCurrent:hover {
+  background: rgba(125, 211, 252, 0.3);
+}
+
+/* Score badge style */
+.currentIndicator {
+  width: 10px;
+  height: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  border-radius: 50%;
+  background: var(--blue);
+  color: var(--bg-primary);
+}

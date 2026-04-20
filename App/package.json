@@ -17,7 +17,8 @@
     "fmt:write": "prettier src --write",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
-    "lines": "cloc src --exclude-dir=node_modules,dist --by-file-by-lang --not-match-f='(.*[.]d[.]ts|.*[.]stories[.].*|.*[.]test[.].*|.*[.]json)'"
+    "lines": "cloc src --exclude-dir=node_modules,dist --by-file-by-lang --not-match-f='(.*[.]d[.]ts|.*[.]stories[.].*|.*[.]test[.].*|.*[.]json)'",
+    "check:syntax": "run-s typecheck lint fmt"
   },
   "dependencies": {
     "solid-js": "^1.8.0"
