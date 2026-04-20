@@ -3,7 +3,6 @@
 // Mirrors the transport portion of PracticeTabHeader so the
 // playback bar is always visible regardless of active tab.
 // ============================================================
-
 import type { Component } from 'solid-js'
 import { Show } from 'solid-js'
 import { MetronomeButton } from '@/components/MetronomeButton'
@@ -11,7 +10,7 @@ import { MicButton } from '@/components/MicButton'
 import { Tooltip } from '@/components/Tooltip'
 import { appStore } from '@/stores/app-store'
 import { playback } from '@/stores/playback-store'
-import * as tabStyles from '@/styles/TabControls.module.css'
+import ui from './TabControls.module.css'
 // controlStyles - reserved for future editor control grouping
 
 interface EditorTabHeaderProps {
@@ -61,12 +60,13 @@ export const EditorTabHeader: Component<EditorTabHeaderProps> = (props) => {
     props.onStop()
   }
 
+  console.info(ui)
   return (
-    <div class={tabStyles.tabHeaderBar}>
+    <div class={ui.tabHeaderBar}>
       {/* Row 1: Essential controls - always visible */}
-      <div class={tabStyles.tabHeaderEssentialControls}>
+      <div class={ui.tabHeaderEssentialControls}>
         {/* Microphone & Recording Section */}
-        <div class="tabHeaderControlSection">
+        <div class={ui.tabHeaderControlSection}>
           <MicButton
             active={appStore.micActive()}
             onClick={props.onMicToggle}
@@ -107,7 +107,7 @@ export const EditorTabHeader: Component<EditorTabHeaderProps> = (props) => {
         </div>
 
         {/* Playback Controls Section */}
-        <div class="tabHeaderControlSection">
+        <div class={ui.tabHeaderControlSection}>
           <Show when={isStopped()}>
             <button
               class="ctrl-btn play-btn"
@@ -160,7 +160,7 @@ export const EditorTabHeader: Component<EditorTabHeaderProps> = (props) => {
         </div>
 
         {/* Output Controls Section */}
-        <div class="tabHeaderControlSection">
+        <div class={ui.tabHeaderControlSection}>
           <div class="volume-group">
             <label class="opt-label">Vol:</label>
             <input
@@ -230,7 +230,7 @@ export const EditorTabHeader: Component<EditorTabHeaderProps> = (props) => {
       </div>
 
       {/* Secondary controls (hidden on mobile < 480px) */}
-      <div class="tabHeaderSecondaryControls">
+      <div class={ui.tabHeaderSecondaryControls}>
         <div class="app-header-sep" />
 
         <Show when={props.onExportMIDI || props.onImportMIDI || props.onShare}>

@@ -29,4 +29,9 @@ export default defineConfig({
       include: ['src/lib/**/*.ts', 'src/stores/**/*.ts'],
     },
   },
-});
+  css: {
+    modules: {
+      localsConvention: 'camelCaseOnly',
+    },
+  },
+})

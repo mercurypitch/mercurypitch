@@ -1,31 +1,33 @@
 /* ===== Tab Headers (Practice & Editor) ===== */
 .tabHeaderBar {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: max-content;
+
   padding: 4px 12px;
   background: var(--bg-tertiary);
   border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
   overflow: hidden;
 }
 
 /* Row 1: Essential controls - always visible */
 .tabHeaderEssentialControls {
-  display: flex;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: max-content;
   align-items: center;
   gap: 4px;
-  flex-shrink: 0;
   padding: 2px 0;
   border-bottom: 1px solid var(--border-dim);
 }
 
 /* Control sections with separators */
 .tabHeaderControlSection {
-  display: flex;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: max-content;
   align-items: center;
   gap: 4px;
-  flex-shrink: 0;
 }
 
 /* Row 2: Secondary controls - hidden on mobile */
@@ -35,18 +37,17 @@
 
 /* Secondary controls styling for Editor header */
 .tabHeaderSecondaryControls.expanded {
-  display: flex;
-  flex-direction: column;
   border-bottom: 1px solid var(--border-dim);
   border-top: 1px solid var(--border-dim);
   padding: 4px 8px;
 }
 
 .tabHeaderSecondaryGroup {
-  display: flex;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: max-content;
   align-items: center;
   gap: 4px;
-  flex-shrink: 0;
 }
 
 .tabHeaderSecondaryGroup .appHeaderSep {
@@ -55,7 +56,6 @@
 }
 
 .tabHeaderToolBtn {
-  display: flex;
   align-items: center;
   gap: 4px;
   font-size: 0.75rem;
@@ -74,7 +74,6 @@
 
 /* ===== Control Groups ===== */
 .controlGroup {
-  display: flex;
   align-items: center;
   gap: 6px;
 }
@@ -86,7 +85,6 @@
 
 /* ===== Volume Control ===== */
 .volumeGroup {
-  display: flex;
   align-items: center;
   gap: 6px;
 }
@@ -132,7 +130,6 @@
 
 /* ===== Tempo Control ===== */
 .tempoGroup {
-  display: flex;
   align-items: center;
   gap: 6px;
 }
@@ -169,7 +166,6 @@
 
 /* ===== Speed Control ===== */
 .speedGroup {
-  display: flex;
   align-items: center;
   gap: 6px;
 }
@@ -258,16 +254,6 @@
   padding: 4px 0;
   border-bottom: 1px solid var(--border-dim);
   background: var(--bg-tertiary);
-}
-
-.toolbarColumn {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.toolbarColumn .appHeaderSep {
-  display: none;
 }
 
 /* ===== Toolbar Group ===== */

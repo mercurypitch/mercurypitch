@@ -108,7 +108,12 @@ export interface KeySignature {
 }
 
 /** Progress bar value for practice engine */
-export type ProgressBarValue = 'ready' | 'playing' | 'paused' | 'precount' | 'complete'
+export type ProgressBarValue =
+  | 'ready'
+  | 'playing'
+  | 'paused'
+  | 'precount'
+  | 'complete'
 
 /** Note result from practice engine */
 export interface NoteResult {
@@ -218,7 +223,14 @@ export interface HistoryEntry {
   /** Time of action */
   timestamp: number
   /** Action type */
-  type: 'preset_load' | 'preset_save' | 'preset_delete' | 'tab_change' | 'note_add' | 'note_delete' | 'note_edit'
+  type:
+    | 'preset_load'
+    | 'preset_save'
+    | 'preset_delete'
+    | 'tab_change'
+    | 'note_add'
+    | 'note_delete'
+    | 'note_edit'
   /** Action details */
   details: Record<string, unknown>
 }

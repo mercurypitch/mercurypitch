@@ -31,6 +31,8 @@
     "@types/node": "^22.0.0",
     "@typescript-eslint/eslint-plugin": "^8.58.2",
     "@typescript-eslint/parser": "^8.58.2",
+    "typescript-plugin-css-modules": "^5.2.0",
+    "eslint-import-resolver-typescript": "^4.4.4",
     "cloc": "^2.6.0-cloc",
     "eslint": "9.39.1",
     "eslint-plugin-import-x": "^4.16.2",

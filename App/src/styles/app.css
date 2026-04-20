@@ -263,48 +263,107 @@ header h1 {
   flex-shrink: 0;
 }
 
-/* ===== Practice & Editor Tab Headers (single 3-row layout) ===== */
-.practice-header-bar,
-.editor-header-bar {
+/* ===== Practice Tab Header (second header bar) ===== */
+.practice-header-bar {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 4px 12px;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
   background: var(--bg-tertiary);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
-  overflow: hidden;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
 }
-
-/* Row 1: Essential controls - always visible */
+.practice-header-bar::-webkit-scrollbar {
+  display: none;
+}
 .practice-header-bar .essential-controls,
-.editor-header-bar .essential-controls {
+.practice-header-bar .secondary-controls {
   display: flex;
   align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
-  padding: 2px 0;
-  border-bottom: 1px solid var(--border-dim);
-}
-
-/* Control sections with separators */
-.practice-header-bar .control-section,
-.editor-header-bar .control-section {
-  display: flex;
-  align-items: center;
-  gap: 4px;
+  gap: 6px;
   flex-shrink: 0;
 }
 
-/* Row 2: Secondary controls - hidden on mobile */
-.practice-header-bar .secondary-controls,
+/* ===== Editor Tab Header (second header bar) ===== */
+.editor-header-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.editor-header-bar::-webkit-scrollbar {
+  display: none;
+}
+.editor-header-bar .essential-controls,
 .editor-header-bar .secondary-controls {
-  display: none; /* Hidden by default - shown on larger screens */
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.practice-header-bar .essential-control-group,
+.editor-header-bar .essential-control-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.practice-header-bar .secondary-control-group,
+.editor-header-bar .secondary-control-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.editor-header-bar .tool-btn {
+  display: flex;
   align-items: center;
   gap: 4px;
-  flex-shrink: 0;
-  padding: 2px 0;
-  border-bottom: 1px solid var(--border-dim);
+  padding: 4px 10px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.editor-header-bar .tool-btn:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.editor-header-bar .tool-btn:active {
+  transform: translateY(1px);
+}
+
+.editor-header-bar .instrument-select {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 3px 8px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  outline: none;
+}
+
+.editor-header-bar .instrument-select:focus {
+  border-color: var(--accent);
+}
+
+.editor-header-bar .instrument-select option {
+  background: var(--bg-primary);
+  color: var(--text-primary);
 }
 
 .mode-group {
@@ -1917,8 +1976,8 @@ Keeps your existing styles, only adjusts layout
   flex-wrap: unset; /* disable old wrapping */
   flex-shrink: 0;
 
-  overflow-x: auto;       /* Enables the horizontal scrollbar when needed */
-  max-width: 100%;        /* Ensures it doesn't push past the screen width */
+  overflow-x: auto; /* Enables the horizontal scrollbar when needed */
+  max-width: 100%; /* Ensures it doesn't push past the screen width */
 
   /* Optional: Smooth scrolling for touch devices */
   -webkit-overflow-scrolling: touch;
@@ -1984,8 +2043,7 @@ Keeps your existing styles, only adjusts layout
 .roll-instrument-group,
 .roll-effects-group,
 .roll-export-btn,
-.roll-export-group
-{
+.roll-export-group {
   display: flex;
   align-items: center;
   gap: 4px;

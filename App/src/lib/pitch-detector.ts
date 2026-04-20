@@ -204,7 +204,7 @@ export class PitchDetector {
   /** Adjust threshold based on sensitivity (1-12) */
   private adjustedThreshold(): number {
     // sensitivity 1 → threshold 0.30 (very strict), sensitivity 12 → threshold 0.01 (very relaxed)
-    return 0.30 - (this.sensitivity - 1) * 0.025
+    return 0.3 - (this.sensitivity - 1) * 0.025
   }
 
   /** Get the current sample rate */

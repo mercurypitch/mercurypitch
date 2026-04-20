@@ -15,6 +15,20 @@
     },
     "baseUrl": "."
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.d.ts", "vitest.config.ts"],
-  "exclude": ["node_modules", "dist"]
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "src/**/*.d.ts",
+    "vitest.config.ts"
+  ],
+  "exclude": ["node_modules", "dist"],
+  "plugins": [
+    {
+      "name": "typescript-plugin-css-modules",
+      "options": {
+        "classnameTransform": "camelCaseOnly",
+        "goToDefinition": true
+      }
+    }
+  ]
 }

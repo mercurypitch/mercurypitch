@@ -16,8 +16,17 @@ export default defineConfig({
     include: ['src/tests/**/*.test.ts', 'src/tests/**/*.test.tsx'],
     coverage: {
       reporter: ['text', 'json', 'html'],
-      include: ['src/lib/**/*.ts', 'src/stores/**/*.ts', 'src/components/**/*.tsx'],
+      include: [
+        'src/lib/**/*.ts',
+        'src/stores/**/*.ts',
+        'src/components/**/*.tsx',
+      ],
       exclude: ['src/tests/**', '**/*.d.ts'],
     },
   },
-});
+  css: {
+    modules: {
+      localsConvention: 'camelCaseOnly',
+    },
+  },
+})

@@ -4,7 +4,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createEffect, createMemo, createSignal, onCleanup, onMount, Show } from 'solid-js'
+import { createEffect, createMemo, createSignal, onCleanup, onMount, Show, } from 'solid-js'
 import { AppSidebar } from '@/components/AppSidebar'
 import { EditorTabHeader } from '@/components/EditorTabHeader'
 import { FocusMode } from '@/components/FocusMode'
@@ -28,7 +28,7 @@ import type { PlaybackState } from '@/lib/piano-roll'
 import { downloadMIDI, importMelodyFromMIDI } from '@/lib/piano-roll'
 import { PracticeEngine } from '@/lib/practice-engine'
 import { buildMultiOctaveScale, keyTonicFreq, melodyTotalBeats, midiToNote, } from '@/lib/scale-data'
-import { generateShareURL,hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
+import { generateShareURL, hasSharedPresetInURL, loadFromURL, } from '@/lib/share-url'
 import type { PresetData } from '@/stores/app-store'
 import { appStore, getNoteAccuracyMap, loadPreset } from '@/stores/app-store'
 import { melodyStore } from '@/stores/melody-store'
@@ -196,7 +196,10 @@ export const App: Component<AppProps> = (props) => {
   const handleExportMIDI = () => {
     const melody = melodyStore.items
     const bpm = appStore.bpm()
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
+    const timestamp = new Date()
+      .toISOString()
+      .replace(/[:.]/g, '-')
+      .slice(0, 19)
     if (downloadMIDI(melody, bpm, `pitchperfect-${timestamp}.mid`)) {
       appStore.showNotification('MIDI file exported!', 'success')
     }
@@ -216,7 +219,10 @@ export const App: Component<AppProps> = (props) => {
         const melody = importMelodyFromMIDI(data)
         if (melody && melody.length > 0) {
           melodyStore.setMelody(melody)
-          appStore.showNotification(`Imported ${melody.length} note(s) from MIDI`, 'success')
+          appStore.showNotification(
+            `Imported ${melody.length} note(s) from MIDI`,
+            'success',
+          )
         } else {
           appStore.showNotification('Could not parse MIDI file', 'error')
         }
@@ -311,7 +317,8 @@ export const App: Component<AppProps> = (props) => {
     appStore.initReverb()
 
     // Expose appStore to window for e2e tests
-    ;(window as unknown as { __appStore: typeof appStore }).__appStore = appStore
+    ;(window as unknown as { __appStore: typeof appStore }).__appStore =
+      appStore
 
     // Fallback: direct click listeners on tab buttons in case SolidJS delegation misses them
     // This handles the edge case where innerHTML-created elements need explicit handlers
@@ -1088,7 +1095,12 @@ export const App: Component<AppProps> = (props) => {
     if (scale === null || scale.length === 0) {
       // Fallback to a minimum scale (C major, 2 octaves) if scale is empty
       console.warn('Scale is empty, using fallback')
-      const fallbackScale = buildMultiOctaveScale('C', melodyStore.currentOctave(), 2, 'major')
+      const fallbackScale = buildMultiOctaveScale(
+        'C',
+        melodyStore.currentOctave(),
+        2,
+        'major',
+      )
       if (fallbackScale === null || fallbackScale.length === 0) return
       scale = fallbackScale
     }
