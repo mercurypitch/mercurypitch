@@ -12,9 +12,6 @@ import { Tooltip } from '@/components/Tooltip'
 import { appStore } from '@/stores/app-store'
 import { playback } from '@/stores/playback-store'
 
-// Editor control groups for the 3-row layout
-type EditorControlGroup = 'microphone' | 'playback' | 'output'
-
 interface EditorTabHeaderProps {
   isPlaying: () => boolean
   isPaused: () => boolean
