@@ -4,7 +4,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createEffect, createMemo, createSignal, onCleanup, onMount, Show, } from 'solid-js'
+import { createEffect, createMemo, createSignal, onCleanup, onMount, Show } from 'solid-js'
 import { AppSidebar } from '@/components/AppSidebar'
 import { EditorTabHeader } from '@/components/EditorTabHeader'
 import { FocusMode } from '@/components/FocusMode'
@@ -24,9 +24,10 @@ import type { InstrumentType } from '@/lib/audio-engine'
 import { AudioEngine } from '@/lib/audio-engine'
 import { MelodyEngine } from '@/lib/melody-engine'
 import type { PlaybackState } from '@/lib/piano-roll'
+import { downloadMIDI, importMelodyFromMIDI } from '@/lib/piano-roll'
 import { PracticeEngine } from '@/lib/practice-engine'
 import { buildMultiOctaveScale, keyTonicFreq, melodyTotalBeats, midiToNote, } from '@/lib/scale-data'
-import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
+import { generateShareURL,hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
 import type { PresetData } from '@/stores/app-store'
 import { appStore, getNoteAccuracyMap } from '@/stores/app-store'
 import { melodyStore } from '@/stores/melody-store'
@@ -173,6 +174,57 @@ export const App: Component<AppProps> = (props) => {
   const [isCountingIn, setIsCountingIn] = createSignal(false)
   const [metronomeEnabled, setMetronomeEnabled] = createSignal(false)
   const [targetPitch, setTargetPitch] = createSignal<number | null>(null)
+
+  // ── Editor features ────────────────────────────────────────────────
+  const [currentInstrument, setCurrentInstrument] =
+    createSignal<InstrumentType>('piano')
+
+  const handleShare = () => {
+    const melody = melodyStore.items
+    const key = appStore.keyName()
+    const scaleType = appStore.scaleType()
+    const bpm = appStore.bpm()
+    const totalBeats = melodyTotalBeats(melody)
+
+    const url = generateShareURL(melody, bpm, key, scaleType, totalBeats)
+    navigator.clipboard.writeText(url).then(() => {
+      appStore.showNotification('Share URL copied to clipboard!', 'success')
+    })
+  }
+
+  const handleExportMIDI = () => {
+    const melody = melodyStore.items
+    const bpm = appStore.bpm()
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
+    if (downloadMIDI(melody, bpm, `pitchperfect-${timestamp}.mid`)) {
+      appStore.showNotification('MIDI file exported!', 'success')
+    }
+  }
+
+  const handleImportMIDI = () => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = '.mid,.midi'
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0]
+      if (!file) return
+
+      try {
+        const buffer = await file.arrayBuffer()
+        const data = new Uint8Array(buffer)
+        const melody = importMelodyFromMIDI(data)
+        if (melody && melody.length > 0) {
+          melodyStore.setMelody(melody)
+          appStore.showNotification(`Imported ${melody.length} note(s) from MIDI`, 'success')
+        } else {
+          appStore.showNotification('Could not parse MIDI file', 'error')
+        }
+      } catch (_err) {
+        appStore.showNotification('Error reading MIDI file', 'error')
+      }
+    }
+    input.click()
+  }
 
   // ── Recording ────────────────────────────────────────────────
   const [isRecording, setIsRecording] = createSignal(false)
@@ -1461,6 +1513,16 @@ export const App: Component<AppProps> = (props) => {
                   setSavedVol(vol)
                   audioEngine?.setVolume(vol / 100)
                 }}
+                onExportMIDI={handleExportMIDI}
+                onImportMIDI={handleImportMIDI}
+                onShare={handleShare}
+                onInstrumentChange={(instrument) => {
+                  setCurrentInstrument(instrument as InstrumentType)
+                  audioEngine?.setInstrument(instrument as InstrumentType)
+                }}
+                currentInstrument={currentInstrument()}
+                bpm={() => appStore.bpm()}
+                onBpmChange={(bpm) => appStore.setBpm(bpm)}
               />
               <PianoRollCanvas
                 melody={() => melodyStore.items}

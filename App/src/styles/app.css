@@ -323,6 +323,49 @@ header h1 {
   gap: 6px;
 }
 
+.editor-header-bar .tool-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.editor-header-bar .tool-btn:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.editor-header-bar .tool-btn:active {
+  transform: translateY(1px);
+}
+
+.editor-header-bar .instrument-select {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 3px 8px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  outline: none;
+}
+
+.editor-header-bar .instrument-select:focus {
+  border-color: var(--accent);
+}
+
+.editor-header-bar .instrument-select option {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
 .mode-group {
   display: flex;
   gap: 4px;
