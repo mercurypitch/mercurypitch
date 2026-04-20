@@ -5,12 +5,12 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, onMount } from 'solid-js'
+import type { MelodyEngine } from '@/lib/melody-engine'
 import { buildSampleMelody } from '@/lib/scale-data'
 import { copyShareURL } from '@/lib/share-url'
 import type { PresetData } from '@/stores/app-store'
-import { appStore, deletePreset, initPresets, loadPreset, savePreset, } from '@/stores/app-store'
+import { appStore, deletePreset, initPresets, loadPreset, savePreset } from '@/stores/app-store'
 import { melodyStore } from '@/stores/melody-store'
-import { MelodyEngine } from '@/lib/melody-engine'
 import type { NoteName } from '@/types'
 
 // External melody engine reference
@@ -18,7 +18,7 @@ declare global {
   var melodyEngine: MelodyEngine
 }
 
-function presetToMelody(preset: PresetData): any[] {
+function presetToMelody(preset: PresetData): MelodyItem[] {
   return preset.notes.map((n) => {
     // Use the scale data stored with the preset for accurate note lookup
     const scaleNote = preset.scale.find((s) => s.midi === n.midi)
