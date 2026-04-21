@@ -1018,7 +1018,9 @@ export const App: Component<AppProps> = (props) => {
     void playbackRuntime.resume()
     setIsPlaying(true)
     setIsPaused(false)
-    void playback.continuePlayback()
+    playback.continuePlayback()
+    // Sync editor playback state since it's separate from practice state
+    setEditorPlaybackState('playing')
   }
 
   const handleStop = () => {
