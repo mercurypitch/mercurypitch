@@ -6,6 +6,8 @@
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, onCleanup, onMount, Show, } from 'solid-js'
 import { AppSidebar } from '@/components/AppSidebar'
+import { FocusMode } from '@/components/FocusMode'
+import { HistoryCanvas } from '@/components/HistoryCanvas'
 import { PianoRollCanvas } from '@/components/PianoRollCanvas'
 import type { PitchSample } from '@/components/PitchCanvas'
 import { PitchCanvas } from '@/components/PitchCanvas'
@@ -13,8 +15,7 @@ import { ScaleBuilder } from '@/components/ScaleBuilder'
 import { SessionBrowser } from '@/components/SessionBrowser'
 import { SessionPlayer } from '@/components/SessionPlayer'
 import { SettingsPanel } from '@/components/SettingsPanel'
-import { FocusMode } from '@/components/FocusMode'
-import { HistoryCanvas } from '@/components/HistoryCanvas'
+import type { PracticeSubMode } from '@/components/shared/SharedControlToolbar'
 import { SharedControlToolbar } from '@/components/shared/SharedControlToolbar'
 import { Walkthrough } from '@/components/Walkthrough'
 import { WelcomeScreen } from '@/components/WelcomeScreen'
@@ -24,13 +25,13 @@ import { PlaybackRuntime } from '@/lib/playback-runtime'
 import { PracticeEngine } from '@/lib/practice-engine'
 import { melodyIndexAtBeat } from '@/lib/scale-data'
 import { buildMultiOctaveScale, keyTonicFreq, melodyTotalBeats, midiToNote, } from '@/lib/scale-data'
-import type { PracticeSubMode } from '@/components/shared/SharedControlToolbar'
-import { loadFromURL, hasSharedPresetInURL } from '@/lib/share-url'
-import { appStore, getNoteAccuracyMap, type PresetData, } from '@/stores/app-store'
+import { hasSharedPresetInURL,loadFromURL } from '@/lib/share-url'
+import type {PresetData} from '@/stores/app-store';
+import { appStore, getNoteAccuracyMap  } from '@/stores/app-store'
 import { melodyStore } from '@/stores/melody-store'
-import { PlaybackState } from '@/types'
 import { playback } from '@/stores/playback-store'
 import type { EffectType, MelodyItem, NoteName, NoteResult, PitchResult, PracticeResult, } from '@/types'
+import type { PlaybackState } from '@/types'
 
 // ── Engine instances (single shared) ────────────────────────
 
@@ -1385,7 +1386,7 @@ export const App: Component<AppProps> = (props) => {
                     setMetronomeEnabled(!metronomeEnabled())
                   }
                   playMode={() => playMode()}
-                  onPlayModeChange={setPlayMode}
+                  playModeChange={setPlayMode}
                   practiceCycles={() => practiceCycles()}
                   onCyclesChange={setPracticeCycles}
                   currentCycle={() => currentCycle()}
@@ -1393,6 +1394,7 @@ export const App: Component<AppProps> = (props) => {
                   onPracticeSubModeChange={setPracticeSubMode}
                   isCountingIn={() => isCountingIn()}
                   countInBeat={() => countInBeat()}
+                  onSessionsClick={() => setShowSessionBrowser(true)}
                   onMicToggle={handleMicToggle}
                   onWaveToggle={appStore.toggleMicWaveVisible}
                 />
@@ -1466,6 +1468,12 @@ export const App: Component<AppProps> = (props) => {
                   setMetronomeEnabled(!metronomeEnabled())
                 }
                 isRecording={() => isRecording()}
+                playMode={() => 'once'}
+                playModeChange={() => {}}
+                practiceCycles={() => 1}
+                onCyclesChange={() => {}}
+                practiceSubMode={() => 'all'}
+                onPracticeSubModeChange={() => {}}
                 onRecordToggle={handleRecordToggle}
                 onMicToggle={handleMicToggle}
                 onWaveToggle={appStore.toggleMicWaveVisible}
