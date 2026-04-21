@@ -276,7 +276,9 @@ describe('MelodyEngine', () => {
       // GH #128 fix: onNoteStart now passes the full MelodyItem (including duration)
       // rather than just MelodyNote. We test by mocking RAF and manually driving it.
       const callArgs: unknown[] = []
-      const opts: MelodyEngineOptions = { onNoteStart: (item: MelodyItem) => callArgs.push(item) }
+      const opts: MelodyEngineOptions = {
+        onNoteStart: (item: MelodyItem) => callArgs.push(item),
+      }
       const e = new MelodyEngine(opts)
       e.setMelody(melody)
 
@@ -319,7 +321,9 @@ describe('MelodyEngine', () => {
 
     it('onNoteEnd callback receives MelodyItem with duration', () => {
       const callArgs: unknown[] = []
-      const opts: MelodyEngineOptions = { onNoteEnd: (item: MelodyItem) => callArgs.push(item) }
+      const opts: MelodyEngineOptions = {
+        onNoteEnd: (item: MelodyItem) => callArgs.push(item),
+      }
       const e = new MelodyEngine(opts)
       e.setMelody(melody)
 

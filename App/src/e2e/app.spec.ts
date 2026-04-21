@@ -1,29 +1,5 @@
-import type { Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
-
-/**
- * Dismisses the welcome overlay if it appears (localStorage cleared or first visit).
- * Call this after page.goto() before interacting with the app.
- */
-async function dismissWelcomeIfShown(page: Page): Promise<void> {
-  // The welcome overlay uses class="welcome-overlay" (no leading dot)
-  const overlay = page.locator('.welcome-overlay')
-  if ((await overlay.count()) > 0) {
-    const isVisible = await overlay.isVisible().catch(() => false)
-    if (isVisible) {
-      const dismissBtn = page.locator('button.overlay-close')
-      if ((await dismissBtn.count()) > 0) {
-        // todo: temporary fix until e2e test failing to click dismiss button is found
-        await page.mouse.click(0,0)
-        // await dismissBtn.first().click()
-        await overlay.waitFor({ state: 'hidden', timeout: 5000 })
-      } else {
-        // No close button, click anywhere on overlay to dismiss
-        await overlay.first().click()
-      }
-    }
-  }
-}
+import { dismissOverlays } from '@/e2e/helpers/ui'
 
 test.describe('PitchPerfect App', () => {
   test.beforeEach(async ({ page }) => {
@@ -31,7 +7,7 @@ test.describe('PitchPerfect App', () => {
     // Wait for app to initialize
     await page.waitForSelector('#app-tabs', { timeout: 10000 })
     // Dismiss welcome overlay FIRST before interacting with the app
-    await dismissWelcomeIfShown(page)
+    await dismissOverlays(page)
     // Then click Practice tab
     await page.locator('#tab-practice').click()
     await page.waitForTimeout(300)
@@ -66,7 +42,7 @@ test.describe('PitchPerfect App', () => {
   })
 
   test('tab navigation switches content', async ({ page }) => {
-    await dismissWelcomeIfShown(page)
+    await dismissOverlays(page)
     // Click Editor tab - use evaluate to directly call the store method
     await page.evaluate(() => {
       const w = window as Window & {
@@ -147,7 +123,6 @@ test.describe('PitchPerfect App', () => {
   })
 
   test('can save a new preset', async ({ page }) => {
-    await dismissWelcomeIfShown(page)
     // Switch to editor tab
     await page.locator('#tab-editor').click()
     await page.waitForTimeout(2000)
@@ -184,7 +159,9 @@ test.describe('PitchPerfect App', () => {
     await expect(page.locator('#btn-mic')).toBeVisible({ timeout: 5000 })
   })
 
-  test('record button exists and toggles (editor only now)', async ({ page }) => {
+  test('record button exists and toggles (editor only now)', async ({
+    page,
+  }) => {
     // only on editor now (perhaps we will have it on both Practice and Editor!
     await page.locator('#tab-editor').click()
     const recordBtn = page.locator('#record-btn')
@@ -203,7 +180,6 @@ test.describe('PitchPerfect App', () => {
   })
 
   test('editor tab shows piano roll toolbar', async ({ page }) => {
-    await dismissWelcomeIfShown(page)
     await page.locator('#tab-editor').click()
     await expect(page.locator('.roll-toolbar')).toBeVisible()
     // Place, select, delete buttons may or may not exist depending on implementation
@@ -219,7 +195,6 @@ test.describe('PitchPerfect App', () => {
   })
 
   test('editor tab shows MIDI export/import buttons', async ({ page }) => {
-    await dismissWelcomeIfShown(page)
     await page.locator('#tab-editor').click()
     // These may or may not exist depending on implementation
     if ((await page.locator('#roll-export-midi').count()) > 0) {
@@ -231,7 +206,6 @@ test.describe('PitchPerfect App', () => {
   })
 
   test('can place a note on the piano roll', async ({ page }) => {
-    await dismissWelcomeIfShown(page)
     await page.locator('#tab-editor').click()
     await page.waitForTimeout(2000)
 
@@ -257,7 +231,6 @@ test.describe('PitchPerfect App', () => {
   })
 
   test('piano roll zoom controls exist', async ({ page }) => {
-    await dismissWelcomeIfShown(page)
     await page.locator('#tab-editor').click()
     if ((await page.locator('#roll-zoom-in').count()) > 0) {
       await expect(page.locator('#roll-zoom-in')).toBeVisible()
@@ -268,7 +241,6 @@ test.describe('PitchPerfect App', () => {
   })
 
   test('snap-to-grid toggle exists', async ({ page }) => {
-    await dismissWelcomeIfShown(page)
     await page.locator('#tab-editor').click()
     if ((await page.locator('#roll-snap-btn').count()) > 0) {
       await expect(page.locator('#roll-snap-btn')).toBeVisible()
@@ -276,7 +248,6 @@ test.describe('PitchPerfect App', () => {
   })
 
   test('effect buttons exist in editor', async ({ page }) => {
-    await dismissWelcomeIfShown(page)
     await page.locator('#tab-editor').click()
     if ((await page.locator('#roll-action-slide-up').count()) > 0) {
       await expect(page.locator('#roll-action-slide-up')).toBeVisible()
@@ -303,7 +274,6 @@ test.describe('PitchPerfect App', () => {
   })
 
   test('note count badge updates when notes present', async ({ page }) => {
-    await dismissWelcomeIfShown(page)
     // Note count badge may not exist in current implementation
     // This is a lenient test that doesn't fail if badge isn't present
     const badge = page.locator('#tab-editor .tab-badge')
@@ -313,7 +283,6 @@ test.describe('PitchPerfect App', () => {
   })
 
   test('grid toggle button changes state', async ({ page }) => {
-    await dismissWelcomeIfShown(page)
     const gridBtn = page.locator('#grid-toggle-btn')
     if ((await gridBtn.count()) > 0 && (await gridBtn.isVisible())) {
       const initialClass = await gridBtn.getAttribute('class')
@@ -324,7 +293,6 @@ test.describe('PitchPerfect App', () => {
   })
 
   test('Settings panel shows About section', async ({ page }) => {
-    await dismissWelcomeIfShown(page)
     // Click Settings tab button with force
     await page.locator('#tab-settings').click({ force: true })
     await page.waitForTimeout(3000) // Wait longer for SolidJS to re-render
@@ -340,7 +308,6 @@ test.describe('PitchPerfect App', () => {
   test('Settings panel shows GitHub link in About section', async ({
     page,
   }) => {
-    await dismissWelcomeIfShown(page)
     await page.locator('#tab-settings').click({ force: true })
     await page.waitForTimeout(3000)
     const githubLink = page.locator('.about-link')
@@ -350,7 +317,6 @@ test.describe('PitchPerfect App', () => {
   })
 
   test('Settings panel shows ADSR envelope controls', async ({ page }) => {
-    await dismissWelcomeIfShown(page)
     await page.locator('#tab-settings').click({ force: true })
     await page.waitForTimeout(3000)
     await expect(page.locator('#adsr-attack')).toBeVisible({ timeout: 10000 })
@@ -360,7 +326,6 @@ test.describe('PitchPerfect App', () => {
   })
 
   test('Settings panel shows Reverb controls', async ({ page }) => {
-    await dismissWelcomeIfShown(page)
     await page.locator('#tab-settings').click({ force: true })
     await page.waitForTimeout(3000)
     await expect(page.locator('#reverb-type')).toBeVisible({ timeout: 10000 })
@@ -378,7 +343,6 @@ test.describe('PitchPerfect App', () => {
   })
 
   test('Reverb type can be changed', async ({ page }) => {
-    await dismissWelcomeIfShown(page)
     await page.locator('#tab-settings').click({ force: true })
     await page.waitForTimeout(3000)
     const reverbType = page.locator('#reverb-type')
@@ -388,7 +352,6 @@ test.describe('PitchPerfect App', () => {
   })
 
   test('ADSR controls can be adjusted', async ({ page }) => {
-    await dismissWelcomeIfShown(page)
     await page.locator('#tab-settings').click({ force: true })
     await page.waitForTimeout(3000)
     const attackSlider = page.locator('#adsr-attack')
@@ -398,7 +361,6 @@ test.describe('PitchPerfect App', () => {
   })
 
   test('Accuracy bands settings exist', async ({ page }) => {
-    await dismissWelcomeIfShown(page)
     await page.locator('#tab-settings').click({ force: true })
     await page.waitForTimeout(3000)
     await expect(page.locator('#band-perfect')).toBeVisible({ timeout: 10000 })
@@ -408,7 +370,6 @@ test.describe('PitchPerfect App', () => {
   })
 
   test('Practice tab shows transport controls', async ({ page }) => {
-    await dismissWelcomeIfShown(page)
     await page.locator('#tab-practice').click()
     await page.waitForTimeout(500)
     // Transport controls use class 'play-btn' in the app
@@ -418,7 +379,6 @@ test.describe('PitchPerfect App', () => {
   })
 
   test('Practice mode buttons exist', async ({ page }) => {
-    await dismissWelcomeIfShown(page)
     await page.locator('#tab-practice').click()
     await page.waitForTimeout(500)
     // Mode buttons are within a mode-group div
@@ -427,7 +387,6 @@ test.describe('PitchPerfect App', () => {
   })
 
   test('Editor shows instrument selector', async ({ page }) => {
-    await dismissWelcomeIfShown(page)
     await page.locator('#tab-editor').click()
     await expect(page.locator('#roll-instrument-select')).toBeVisible()
     await expect(
@@ -439,19 +398,16 @@ test.describe('PitchPerfect App', () => {
   })
 
   test('Editor shows WAV export button', async ({ page }) => {
-    await dismissWelcomeIfShown(page)
     await page.locator('#tab-editor').click()
     await expect(page.locator('#roll-export-wav')).toBeVisible()
   })
 
   test('Editor shows MIDI export button', async ({ page }) => {
-    await dismissWelcomeIfShown(page)
     await page.locator('#tab-editor').click()
     await expect(page.locator('#roll-export-midi')).toBeVisible()
   })
 
   test('Editor shows pitch track toggle button', async ({ page }) => {
-    await dismissWelcomeIfShown(page)
     await page.locator('#tab-editor').click()
     if ((await page.locator('#roll-pitch-track-btn').count()) > 0) {
       await expect(page.locator('#roll-pitch-track-btn')).toBeVisible()

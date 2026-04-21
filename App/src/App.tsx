@@ -298,11 +298,17 @@ export const App: Component<AppProps> = (props) => {
     }
     const tabPracticeBtn = document.getElementById('tab-practice')
     if (tabPracticeBtn) {
-      tabPracticeBtn.addEventListener('click', () => void handleTabChange('practice'))
+      tabPracticeBtn.addEventListener(
+        'click',
+        () => void handleTabChange('practice'),
+      )
     }
     const tabEditorBtn = document.getElementById('tab-editor')
     if (tabEditorBtn) {
-      tabEditorBtn.addEventListener('click', () => void handleTabChange('editor'))
+      tabEditorBtn.addEventListener(
+        'click',
+        () => void handleTabChange('editor'),
+      )
     }
 
     // Space key handler for play/pause (Focus Mode friendly)

@@ -765,7 +765,10 @@ export class PianoRollEditor {
         const startTime = Date.now() - (this.editorBeat / this.bpm) * 60000
         this.playStartTime = startTime
         this.startPlaybackAnimation()
-      } else if (!this.isExternalPlayback && this.playbackAnimationId === null) {
+      } else if (
+        !this.isExternalPlayback &&
+        this.playbackAnimationId === null
+      ) {
         // Fresh start - use editorBeat as starting point for animation
         this.startedNoteIds.clear()
         const startTime = Date.now() - (this.editorBeat / this.bpm) * 60000
@@ -1576,7 +1579,8 @@ export class PianoRollEditor {
             if (this.hintEl)
               this.hintEl.textContent = `Imported ${melody.length} note(s) from MIDI`
           } else {
-            if (this.hintEl) this.hintEl.textContent = 'Could not parse MIDI file'
+            if (this.hintEl)
+              this.hintEl.textContent = 'Could not parse MIDI file'
           }
         } catch {
           if (this.hintEl) this.hintEl.textContent = 'Error reading MIDI file'
