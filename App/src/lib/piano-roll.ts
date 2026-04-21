@@ -740,16 +740,24 @@ export class PianoRollEditor {
 
     if (state === 'playing') {
       // External start (from Practice tab) — reset animation and begin
-
-      this.playStartTime =
-        playStartTime ?? (performance as unknown as { now: () => number }).now()
-      this.pauseStartTime = 0
+      // If resuming from paused state, use pauseStartTime to continue from correct position
+      if (this.pauseStartTime > 0) {
+        const elapsed = (performance as unknown as { now: () => number }).now() - this.pauseStartTime
+        this.playStartTime = elapsed
+        this.pauseStartTime = 0
+      } else {
+        this.playStartTime =
+          playStartTime ?? (performance as unknown as { now: () => number }).now()
+        this.pauseStartTime = 0
+      }
       this.startedNoteIds.clear()
       if (this.playAnimationId === null) {
         this.startAnimation()
       }
     } else if (state === 'paused') {
       // GH #130: Stop all active notes when pausing
+      // Record the time to resume from correct position
+      this.pauseStartTime = (performance as unknown as { now: () => number }).now()
       const win = window as Window & {
         pianoRollAudioEngine?: { stopAllNotes: () => void }
       }
