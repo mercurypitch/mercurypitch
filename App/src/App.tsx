@@ -4,41 +4,29 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createEffect, createMemo, createSignal, onCleanup, onMount, Show, } from 'solid-js'
+import { createEffect, createMemo, createSignal, onCleanup, onMount, Show } from 'solid-js'
 import { AppSidebar } from '@/components/AppSidebar'
-import { EditorTabHeader } from '@/components/EditorTabHeader'
-import { FocusMode } from '@/components/FocusMode'
-import { HistoryCanvas } from '@/components/HistoryCanvas'
 import { PianoRollCanvas } from '@/components/PianoRollCanvas'
 import type { PitchSample } from '@/components/PitchCanvas'
 import { PitchCanvas } from '@/components/PitchCanvas'
-import type { PracticeSubMode } from '@/components/PracticeTabHeader'
-import { PracticeTabHeader } from '@/components/PracticeTabHeader'
 import { ScaleBuilder } from '@/components/ScaleBuilder'
 import { SessionBrowser } from '@/components/SessionBrowser'
 import { SessionPlayer } from '@/components/SessionPlayer'
 import { SettingsPanel } from '@/components/SettingsPanel'
+import { SharedControlToolbar } from '@/components/shared/SharedControlToolbar'
 import { Walkthrough } from '@/components/Walkthrough'
 import { WelcomeScreen } from '@/components/WelcomeScreen'
 import type { InstrumentType } from '@/lib/audio-engine'
 import { AudioEngine } from '@/lib/audio-engine'
-import type { PlaybackState } from '@/lib/piano-roll'
 import { PlaybackRuntime } from '@/lib/playback-runtime'
 import { PracticeEngine } from '@/lib/practice-engine'
-import { buildMultiOctaveScale, keyTonicFreq, melodyTotalBeats, midiToNote, } from '@/lib/scale-data'
-import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
-import type { PresetData } from '@/stores/app-store'
+import { melodyIndexAtBeat } from '@/lib/scale-data'
+import { buildMultiOctaveScale, keyTonicFreq, melodyTotalBeats, midiToNote } from '@/lib/scale-data'
+import { loadFromURL } from '@/lib/share-url'
 import { appStore, getNoteAccuracyMap } from '@/stores/app-store'
 import { melodyStore } from '@/stores/melody-store'
 import { playback } from '@/stores/playback-store'
-import type {
-  EffectType,
-  MelodyItem,
-  NoteName,
-  NoteResult,
-  PitchResult,
-  PracticeResult,
-} from '@/types'
+import type { EffectType, MelodyItem, NoteName, NoteResult, PitchResult, PracticeResult } from '@/types'
 
 // ── Engine instances (single shared) ────────────────────────
 
@@ -161,6 +149,19 @@ export const App: Component<AppProps> = (props) => {
     createSignal<PlaybackState>('stopped')
   const editorIsPlaying = () => editorPlaybackState() === 'playing'
   const editorIsPaused = () => editorPlaybackState() === 'paused'
+
+  // ── Play button label helpers ───────────────────────────────
+  const playButtonLabel = createMemo(() => {
+    if (isPlaying()) return 'Pause'
+    if (isPaused()) return 'Continue'
+    return 'Start'
+  })
+
+  const editorPlayButtonLabel = createMemo(() => {
+    if (editorIsPlaying()) return 'Pause'
+    if (editorIsPaused()) return 'Continue'
+    return 'Start'
+  })
 
   const [currentBeat, setCurrentBeat] = createSignal(0)
   const [currentNoteIndex, setCurrentNoteIndex] = createSignal(-1)
@@ -373,8 +374,12 @@ export const App: Component<AppProps> = (props) => {
     window.addEventListener('keydown', onKeyDown)
 
     // Check for shared preset in URL
-    if (hasSharedPresetInURL()) {
-      const sharedData = loadFromURL()
+    let hasPreset: boolean = false
+    if (typeof hasSharedPresetInURL === 'function') {
+      hasPreset = hasSharedPresetInURL()
+    }
+    if (hasPreset) {
+      const sharedData = loadFromURL() as { melody: MelodyItem[]; bpm?: number; key?: string; scaleType?: string; totalBeats?: number } | null
       if (sharedData !== null) {
         // Load shared preset into melody store
         melodyStore.setMelody(sharedData.melody)
@@ -579,10 +584,15 @@ export const App: Component<AppProps> = (props) => {
       handleSeek as EventListener,
     )
 
-    // Listen to PlaybackRuntime events for synchronization
-    playbackRuntime.on('beat', (e: { beat?: number }) =>
-      setCurrentBeat(e.beat ?? 0),
-    )
+    // Listen to PlaybackRuntime events for synchronization (both tabs)
+    playbackRuntime.on('beat', (e: { beat?: number }) => {
+      setCurrentBeat(e.beat ?? 0)
+      // Also update editor state
+      if (activeTab() === 'editor') {
+        // Editor uses melodyStore to track current note index
+        melodyStore.setCurrentNoteIndex(melodyIndexAtBeat(melodyStore.items, e.beat ?? 0))
+      }
+    })
     playbackRuntime.on('countIn', (e: { countIn?: number }) => {
       setCountInBeat(e?.countIn ?? 0)
       setIsCountingIn(true)
@@ -611,6 +621,10 @@ export const App: Component<AppProps> = (props) => {
         const beatDurationMs = 60000 / appStore.bpm()
         const noteDurationMs = noteItem.duration ?? 1 * beatDurationMs
         audioEngine.playTone(noteItem.note.freq, noteDurationMs)
+      }
+      // Also update editor state
+      if (activeTab() === 'editor') {
+        melodyStore.setCurrentNoteIndex(e?.index ?? -1)
       }
     })
     playbackRuntime.on('noteEnd', () => {
@@ -953,6 +967,51 @@ export const App: Component<AppProps> = (props) => {
     melodyStore.setCurrentNoteIndex(-1)
     setPitchHistory([])
     playback.resetPlayback()
+    // Also reset editor state
+    setEditorPlaybackState('stopped')
+  }
+
+  // ── Editor tab playback handlers (connect to actual PlaybackRuntime) ─────────────────────────────────
+  const handleEditorPlay = async () => {
+    if (editorIsPaused()) {
+      handleEditorResume()
+      return
+    }
+
+    // Reset state
+    setPitchHistory([])
+    setCurrentBeat(0)
+    setCurrentNoteIndex(-1)
+
+    // Initialize audio if needed
+    if (!audioEngine?.getIsInitialized()) {
+      await audioEngine?.init()
+    }
+
+    // Start playbackRuntime with count-in
+    const countInBeats = appStore.countIn()
+    playbackRuntime.setMelody(melodyStore.items)
+    playbackRuntime.start(countInBeats)
+    setEditorPlaybackState('playing')
+  }
+
+  const handleEditorPause = () => {
+    playbackRuntime.pause()
+    audioEngine.stopTone()
+    setEditorPlaybackState('paused')
+  }
+
+  const handleEditorResume = () => {
+    playbackRuntime.resume()
+    setEditorPlaybackState('playing')
+  }
+
+  const handleEditorStop = () => {
+    playbackRuntime.stop()
+    audioEngine.stopTone()
+    setCurrentBeat(0)
+    setCurrentNoteIndex(-1)
+    setEditorPlaybackState('stopped')
   }
 
   const handleReset = () => {
@@ -1289,40 +1348,39 @@ export const App: Component<AppProps> = (props) => {
             <Show when={activeTab() === 'practice'}>
               {/* Practice panel */}
               <div id="practice-panel">
-                {/* Practice-specific header: mic + mode toggles + playback controls */}
-                <PracticeTabHeader
+                {/* Shared control toolbar with practice-specific options */}
+                <SharedControlToolbar
+                  activeTab={activeTab}
+                  practiceTab={activeTab}
                   isPlaying={isPlaying}
                   isPaused={isPaused}
-                  playMode={playMode}
-                  practiceCycles={practiceCycles}
-                  currentCycle={currentCycle}
-                  isCountingIn={isCountingIn}
-                  countInBeat={countInBeat}
-                  metronomeEnabled={metronomeEnabled}
-                  volume={savedVol}
-                  practiceSubMode={practiceSubMode}
-                  onMicToggle={handleMicToggle}
-                  onPlayModeChange={setPlayMode}
-                  onCyclesChange={setPracticeCycles}
+                  playButtonLabel={playButtonLabel}
                   onPlay={handlePlay}
                   onPause={handlePause}
                   onResume={handleResume}
                   onStop={handleReset}
-                  onMetronomeToggle={() =>
-                    setMetronomeEnabled(!metronomeEnabled())
-                  }
-                  onSpeedChange={(speed) => {
-                    appStore.setPlaybackSpeed(speed)
-                  }}
+                  volume={savedVol}
                   onVolumeChange={(vol) => {
                     setSavedVol(vol)
                     audioEngine?.setVolume(vol / 100)
                   }}
+                  speed={appStore.playbackSpeed()}
+                  onSpeedChange={appStore.setPlaybackSpeed}
+                  metronomeEnabled={() => metronomeEnabled()}
+                  onMetronomeToggle={() =>
+                    setMetronomeEnabled(!metronomeEnabled())
+                  }
+                  playMode={() => playMode()}
+                  onPlayModeChange={setPlayMode}
+                  practiceCycles={() => practiceCycles()}
+                  onCyclesChange={setPracticeCycles}
+                  currentCycle={() => currentCycle()}
+                  practiceSubMode={() => practiceSubMode()}
                   onPracticeSubModeChange={setPracticeSubMode}
-                  isRecording={isRecording}
-                  onRecordToggle={handleRecordToggle}
-                  onOpenSessions={() => setShowSessionBrowser(true)}
-                  sessionActive={appStore.sessionActive}
+                  isCountingIn={() => isCountingIn()}
+                  countInBeat={() => countInBeat()}
+                  onMicToggle={handleMicToggle}
+                  onWaveToggle={appStore.toggleMicWaveVisible}
                 />
 
                 {/* Session Player — shown when a session is active */}
@@ -1371,36 +1429,32 @@ export const App: Component<AppProps> = (props) => {
             </Show>
 
             <Show when={activeTab() === 'editor'}>
-              <EditorTabHeader
+              {/* Shared control toolbar with editor-specific options */}
+              <SharedControlToolbar
+                activeTab={activeTab}
+                editorTab={activeTab}
                 isPlaying={editorIsPlaying}
                 isPaused={editorIsPaused}
-                onMicToggle={handleMicToggle}
-                onPlay={() => {
-                  playback.startPlayback()
-                }}
-                onPause={() => {
-                  playback.pausePlayback()
-                }}
-                onResume={() => {
-                  playback.continuePlayback()
-                }}
-                onStop={() => {
-                  playback.resetPlayback()
-                }}
-                onMetronomeToggle={() =>
-                  setMetronomeEnabled(!metronomeEnabled())
-                }
-                onSpeedChange={(speed) => {
-                  appStore.setPlaybackSpeed(speed)
-                }}
-                metronomeEnabled={metronomeEnabled}
-                isRecording={isRecording}
-                onRecordToggle={handleRecordToggle}
+                playButtonLabel={editorPlayButtonLabel}
+                onPlay={handleEditorPlay}
+                onPause={handleEditorPause}
+                onResume={handleEditorResume}
+                onStop={handleEditorStop}
                 volume={savedVol}
                 onVolumeChange={(vol) => {
                   setSavedVol(vol)
                   audioEngine?.setVolume(vol / 100)
                 }}
+                speed={appStore.playbackSpeed()}
+                onSpeedChange={appStore.setPlaybackSpeed}
+                metronomeEnabled={() => metronomeEnabled()}
+                onMetronomeToggle={() =>
+                  setMetronomeEnabled(!metronomeEnabled())
+                }
+                isRecording={() => isRecording()}
+                onRecordToggle={handleRecordToggle}
+                onMicToggle={handleMicToggle}
+                onWaveToggle={appStore.toggleMicWaveVisible}
               />
               <PianoRollCanvas
                 melody={() => melodyStore.items}
