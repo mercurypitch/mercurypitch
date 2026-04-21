@@ -63,6 +63,7 @@ export function initTheme(): void {
 
 const [micActive, setMicActive] = createSignal<boolean>(false)
 const [micWaveVisible, setMicWaveVisible] = createSignal<boolean>(true)
+export { setMicWaveVisible }
 const [micError, setMicError] = createSignal<string | null>(null)
 
 export function toggleMicWaveVisible(): void {
@@ -969,6 +970,7 @@ export const appStore = {
   micActive,
   setMicActive,
   micWaveVisible,
+  setMicWaveVisible,
   toggleMicWaveVisible,
   micError,
   setMicError,
@@ -1070,6 +1072,7 @@ export const appStore = {
 
   // Session state (signals)
   sessionActive,
+  setSessionActive,
   sessionItemIndex,
   sessionItemRepeat,
   practiceSession,

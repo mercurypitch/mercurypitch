@@ -26,9 +26,9 @@ describe('SharedControlToolbar Types', () => {
 
 describe('SharedControlToolbar Button Visibility Logic', () => {
   beforeEach(() => {
-    appStore.sessionActive(false)
-    appStore.theme('light')
-    appStore.micWaveVisible(false)
+    appStore.setSessionActive(false)
+    appStore.setTheme('light')
+    appStore.setMicWaveVisible(false)
   })
 
   describe('Stopped state (not playing, not paused)', () => {
@@ -207,7 +207,7 @@ describe('SharedControlToolbar Button Visibility Logic', () => {
 
   describe('Record button state', () => {
     beforeEach(() => {
-      appStore.sessionActive(false)
+      appStore.setSessionActive(false)
     })
 
     it('Record button enabled when stopped', () => {
