@@ -81,7 +81,9 @@ export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
 
     if (typeof window !== 'undefined') {
       const win = window as PitchPerfectWindow & {
-        __playbackRuntime?: { on: (event: string, handler: (e: unknown) => void) => void }
+        __playbackRuntime?: {
+          on: (event: string, handler: (e: unknown) => void) => void
+        }
       }
       const playbackRuntime = win.__playbackRuntime
 

@@ -2,7 +2,7 @@
 // Audio Engine — Web Audio API playback and microphone input
 // ============================================================
 
-import type { AudioEngineCallbacks, EffectType, MelodyItem, MelodyNote } from '@/types'
+import type { AudioEngineCallbacks, EffectType, MelodyItem, MelodyNote, } from '@/types'
 
 export type InstrumentType = 'sine' | 'piano' | 'organ' | 'strings' | 'synth'
 

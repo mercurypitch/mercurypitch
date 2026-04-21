@@ -38,7 +38,11 @@ export const CoreControls: Component<CoreControlsProps> = (props) => {
   return (
     <div class="essential-control-group">
       <Show when={isStopped()}>
-        <button class="ctrl-btn play-btn" onClick={handlePlayClick} title="Play">
+        <button
+          class="ctrl-btn play-btn"
+          onClick={handlePlayClick}
+          title="Play"
+        >
           <svg viewBox="0 0 24 24" width="16" height="16">
             <path fill="currentColor" d="M8 5v14l11-7z" />
           </svg>

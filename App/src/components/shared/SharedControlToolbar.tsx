@@ -67,8 +67,10 @@ interface SharedControlToolbarProps {
 export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
   props,
 ) => {
-  const isPracticeTab = () => props.practiceTab?.() ?? props.activeTab() === 'practice'
-  const isEditorTab = () => props.editorTab?.() ?? props.activeTab() === 'editor'
+  const isPracticeTab = () =>
+    props.practiceTab?.() ?? props.activeTab() === 'practice'
+  const isEditorTab = () =>
+    props.editorTab?.() ?? props.activeTab() === 'editor'
 
   const showPlayPauseContinue = () =>
     !isPracticeTab() ||
@@ -145,7 +147,9 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
               id="record-btn"
               class={`ctrl-btn record-btn ${isRecording?.() === true ? 'recording' : ''}`}
               onClick={props.onRecordToggle}
-              disabled={(props.isPlaying?.() ?? false) || (props.isPaused?.() ?? false)}
+              disabled={
+                (props.isPlaying?.() ?? false) || (props.isPaused?.() ?? false)
+              }
               title="Record to piano roll"
             >
               <svg viewBox="0 0 24 24" width="16" height="16">
@@ -174,7 +178,10 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
 
           {/* Speed */}
           <ControlGroup>
-            <SpeedGroup speed={props.speed} onSpeedChange={props.onSpeedChange} />
+            <SpeedGroup
+              speed={props.speed}
+              onSpeedChange={props.onSpeedChange}
+            />
           </ControlGroup>
 
           <div class="app-header-sep" />
@@ -227,7 +234,12 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
                   max="20"
                   value={props.practiceCycles?.() ?? 5}
                   onInput={(e) => {
-                    props.onCyclesChange?.(Math.max(2, Math.min(20, parseInt(e.currentTarget.value) || 5)))
+                    props.onCyclesChange?.(
+                      Math.max(
+                        2,
+                        Math.min(20, parseInt(e.currentTarget.value) || 5),
+                      ),
+                    )
                   }}
                   class="cycles-input"
                 />
@@ -242,7 +254,9 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
                   id="practice-sub-mode"
                   value={props.practiceSubMode?.() ?? 'all'}
                   onChange={(e) => {
-                    props.onPracticeSubModeChange?.(e.currentTarget.value as PracticeSubMode)
+                    props.onPracticeSubModeChange?.(
+                      e.currentTarget.value as PracticeSubMode,
+                    )
                   }}
                   class="practice-sub-mode-select"
                 >
@@ -334,7 +348,9 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
                   }}
                   class="sensitivity-slider"
                 />
-                <span id="sensitivity-value">{appStore.settings().sensitivity}</span>
+                <span id="sensitivity-value">
+                  {appStore.settings().sensitivity}
+                </span>
               </div>
             </ControlGroup>
           </Show>

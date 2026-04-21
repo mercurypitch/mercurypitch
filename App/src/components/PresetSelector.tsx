@@ -8,7 +8,7 @@ import { createMemo, createSignal, onMount } from 'solid-js'
 import { buildSampleMelody } from '@/lib/scale-data'
 import { copyShareURL } from '@/lib/share-url'
 import type { PresetData } from '@/stores/app-store'
-import { appStore, deletePreset, initPresets, savePreset } from '@/stores/app-store'
+import { appStore, deletePreset, initPresets, savePreset, } from '@/stores/app-store'
 import { melodyStore } from '@/stores/melody-store'
 
 export const PresetSelector: Component = () => {
@@ -58,9 +58,10 @@ export const PresetSelector: Component = () => {
     }
 
     const melody = melodyStore.items
-    const totalBeats = melody.length > 0
-      ? Math.max(...melody.map((n) => n.startBeat + n.duration))
-      : 16
+    const totalBeats =
+      melody.length > 0
+        ? Math.max(...melody.map((n) => n.startBeat + n.duration))
+        : 16
 
     const data: PresetData = {
       notes: melody.map((n) => ({

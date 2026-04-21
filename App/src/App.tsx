@@ -4,7 +4,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createEffect, createMemo, createSignal, onCleanup, onMount, Show } from 'solid-js'
+import { createEffect, createMemo, createSignal, onCleanup, onMount, Show, } from 'solid-js'
 import { AppSidebar } from '@/components/AppSidebar'
 import { PianoRollCanvas } from '@/components/PianoRollCanvas'
 import type { PitchSample } from '@/components/PitchCanvas'
@@ -21,12 +21,12 @@ import { AudioEngine } from '@/lib/audio-engine'
 import { PlaybackRuntime } from '@/lib/playback-runtime'
 import { PracticeEngine } from '@/lib/practice-engine'
 import { melodyIndexAtBeat } from '@/lib/scale-data'
-import { buildMultiOctaveScale, keyTonicFreq, melodyTotalBeats, midiToNote } from '@/lib/scale-data'
+import { buildMultiOctaveScale, keyTonicFreq, melodyTotalBeats, midiToNote, } from '@/lib/scale-data'
 import { loadFromURL } from '@/lib/share-url'
 import { appStore, getNoteAccuracyMap } from '@/stores/app-store'
 import { melodyStore } from '@/stores/melody-store'
 import { playback } from '@/stores/playback-store'
-import type { EffectType, MelodyItem, NoteName, NoteResult, PitchResult, PracticeResult } from '@/types'
+import type { EffectType, MelodyItem, NoteName, NoteResult, PitchResult, PracticeResult, } from '@/types'
 
 // ── Engine instances (single shared) ────────────────────────
 
@@ -196,7 +196,9 @@ export const App: Component<AppProps> = (props) => {
   const [playMode, setPlayMode] = createSignal<PlayMode>('once')
   const [practiceCycles, setPracticeCycles] = createSignal<number>(5)
   const [currentCycle, setCurrentCycle] = createSignal<number>(1)
-  const [_allCycleResults, setAllCycleResults] = createSignal<NoteResult[][]>([])
+  const [_allCycleResults, setAllCycleResults] = createSignal<NoteResult[][]>(
+    [],
+  )
   const [_isPracticeComplete, setIsPracticeComplete] =
     createSignal<boolean>(false)
   const [practiceSubMode, setPracticeSubMode] =
@@ -379,7 +381,13 @@ export const App: Component<AppProps> = (props) => {
       hasPreset = hasSharedPresetInURL()
     }
     if (hasPreset) {
-      const sharedData = loadFromURL() as { melody: MelodyItem[]; bpm?: number; key?: string; scaleType?: string; totalBeats?: number } | null
+      const sharedData = loadFromURL() as {
+        melody: MelodyItem[]
+        bpm?: number
+        key?: string
+        scaleType?: string
+        totalBeats?: number
+      } | null
       if (sharedData !== null) {
         // Load shared preset into melody store
         melodyStore.setMelody(sharedData.melody)
@@ -411,8 +419,9 @@ export const App: Component<AppProps> = (props) => {
     if (typeof window !== 'undefined') {
       ;(window as unknown as { __appStore: typeof appStore }).__appStore =
         appStore
-      ;(window as unknown as { __playbackRuntime: PlaybackRuntime }).__playbackRuntime =
-        playbackRuntime
+      ;(
+        window as unknown as { __playbackRuntime: PlaybackRuntime }
+      ).__playbackRuntime = playbackRuntime
     }
 
     // Create PlaybackRuntime - orchestrates audio and timing
@@ -451,8 +460,9 @@ export const App: Component<AppProps> = (props) => {
 
     // EXPOSE PLAYBACK RUNTIME FOR E2E TESTING
     if (typeof window !== 'undefined') {
-      ;(window as unknown as { __playbackRuntime: PlaybackRuntime }).__playbackRuntime =
-        playbackRuntime
+      ;(
+        window as unknown as { __playbackRuntime: PlaybackRuntime }
+      ).__playbackRuntime = playbackRuntime
     }
 
     practiceEngine = new PracticeEngine(audioEngine, { sensitivity: 5 })
@@ -590,7 +600,9 @@ export const App: Component<AppProps> = (props) => {
       // Also update editor state
       if (activeTab() === 'editor') {
         // Editor uses melodyStore to track current note index
-        melodyStore.setCurrentNoteIndex(melodyIndexAtBeat(melodyStore.items, e.beat ?? 0))
+        melodyStore.setCurrentNoteIndex(
+          melodyIndexAtBeat(melodyStore.items, e.beat ?? 0),
+        )
       }
     })
     playbackRuntime.on('countIn', (e: { countIn?: number }) => {
@@ -609,24 +621,24 @@ export const App: Component<AppProps> = (props) => {
         audioEngine?.playMetronomeClick(e?.isDownbeat ?? false)
       }
     })
-    playbackRuntime.on('noteStart', (e: {
-      note?: MelodyItem
-      index?: number
-    }) => {
-      const noteItem = e?.note
-      setCurrentNoteIndex(e?.index ?? -1)
-      setTargetPitch(noteItem?.note?.freq ?? 440)
-      if (noteItem) {
-        practiceEngine.onNoteStart(noteItem.note!, e?.index ?? -1)
-        const beatDurationMs = 60000 / appStore.bpm()
-        const noteDurationMs = noteItem.duration ?? 1 * beatDurationMs
-        audioEngine.playTone(noteItem.note.freq, noteDurationMs)
-      }
-      // Also update editor state
-      if (activeTab() === 'editor') {
-        melodyStore.setCurrentNoteIndex(e?.index ?? -1)
-      }
-    })
+    playbackRuntime.on(
+      'noteStart',
+      (e: { note?: MelodyItem; index?: number }) => {
+        const noteItem = e?.note
+        setCurrentNoteIndex(e?.index ?? -1)
+        setTargetPitch(noteItem?.note?.freq ?? 440)
+        if (noteItem) {
+          practiceEngine.onNoteStart(noteItem.note!, e?.index ?? -1)
+          const beatDurationMs = 60000 / appStore.bpm()
+          const noteDurationMs = noteItem.duration ?? 1 * beatDurationMs
+          audioEngine.playTone(noteItem.note.freq, noteDurationMs)
+        }
+        // Also update editor state
+        if (activeTab() === 'editor') {
+          melodyStore.setCurrentNoteIndex(e?.index ?? -1)
+        }
+      },
+    )
     playbackRuntime.on('noteEnd', () => {
       audioEngine.stopTone()
     })
@@ -708,11 +720,7 @@ export const App: Component<AppProps> = (props) => {
               // Actually, let's use a simpler approach: the onComplete for rest items will
               // detect rest items by checking if getCurrentSessionItem().type === 'rest'
               // and call advanceSessionItem() then wait restDuration before loading the scale
-              console.info(
-                '[onComplete] rest timeout for',
-                restDuration,
-                'ms',
-              )
+              console.info('[onComplete] rest timeout for', restDuration, 'ms')
               setTimeout(() => {
                 console.info(
                   '[onComplete rest timeout] firing, idx:',

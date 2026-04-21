@@ -125,7 +125,9 @@ export class MelodyEngine {
     return this.runtime.getCurrentNoteIndex()
   }
 
-  getPlaybackState(): ReturnType<typeof PlaybackRuntime.prototype.getPlaybackState> {
+  getPlaybackState(): ReturnType<
+    typeof PlaybackRuntime.prototype.getPlaybackState
+  > {
     return this.runtime.getPlaybackState()
   }
 

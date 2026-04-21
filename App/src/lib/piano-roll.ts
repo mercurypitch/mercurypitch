@@ -2212,10 +2212,7 @@ export class PianoRollEditor {
     )
     let foundRow = -1
     for (const note of sortedNotes) {
-      if (
-        note.startBeat <= beat &&
-        note.startBeat + note.duration > beat
-      ) {
+      if (note.startBeat <= beat && note.startBeat + note.duration > beat) {
         foundRow = this.midiToRow(note.note.midi)
         break
       }

@@ -17,8 +17,7 @@ export const Walkthrough: Component = () => {
     WALKTHROUGH_STEPS[appStore.walkthroughStep()] ?? WALKTHROUGH_STEPS[0]
   const isLast = () =>
     appStore.walkthroughStep() === WALKTHROUGH_STEPS.length - 1
-  const isFirst = () =>
-    appStore.walkthroughStep() === 0
+  const isFirst = () => appStore.walkthroughStep() === 0
 
   let highlightRef: HTMLDivElement | undefined
   let tooltipRef: HTMLDivElement | undefined

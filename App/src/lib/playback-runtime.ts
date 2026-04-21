@@ -10,7 +10,15 @@ import { melodyIndexAtBeat } from './scale-data'
 
 export type PlaybackState = 'stopped' | 'playing' | 'paused'
 export interface PlaybackEvent {
-  type: 'state' | 'beat' | 'noteStart' | 'noteEnd' | 'complete' | 'countIn' | 'countInComplete' | 'metronome'
+  type:
+    | 'state'
+    | 'beat'
+    | 'noteStart'
+    | 'noteEnd'
+    | 'complete'
+    | 'countIn'
+    | 'countInComplete'
+    | 'metronome'
   state?: PlaybackState
   beat?: number
   note?: MelodyItem
@@ -75,12 +83,21 @@ export class PlaybackRuntime {
 
   on(event: 'state', handler: (state: PlaybackState) => void): void
   on(event: 'beat', handler: (e: { beat: number }) => void): void
-  on(event: 'noteStart', handler: (e: { note: MelodyItem; index: number }) => void): void
-  on(event: 'noteEnd', handler: (e: { note: MelodyItem; index: number }) => void): void
+  on(
+    event: 'noteStart',
+    handler: (e: { note: MelodyItem; index: number }) => void,
+  ): void
+  on(
+    event: 'noteEnd',
+    handler: (e: { note: MelodyItem; index: number }) => void,
+  ): void
   on(event: 'complete', handler: () => void): void
   on(event: 'countIn', handler: (e: { countIn: number }) => void): void
   on(event: 'countInComplete', handler: () => void): void
-  on(event: 'metronome', handler: (e: { beat: number; isDownbeat: boolean }) => void): void
+  on(
+    event: 'metronome',
+    handler: (e: { beat: number; isDownbeat: boolean }) => void,
+  ): void
   on(event: PlaybackEvent['type'], handler: unknown): void {
     const _handler = handler as (e: unknown) => void
     if (!this.onEventCallbacks.has(event)) {
@@ -124,7 +141,9 @@ export class PlaybackRuntime {
     if (this.isPlaying) return
 
     if (!this.audioEngine.getIsInitialized()) {
-      this.audioEngine.init().catch((err) => console.error('Audio init error:', err))
+      this.audioEngine
+        .init()
+        .catch((err) => console.error('Audio init error:', err))
     }
 
     this.isPlaying = true
@@ -180,7 +199,9 @@ export class PlaybackRuntime {
   }
 
   setBPM(bpm: number): void {
-    const audioEngine = this.audioEngine as unknown as { setBPM?: (bpm: number) => void }
+    const audioEngine = this.audioEngine as unknown as {
+      setBPM?: (bpm: number) => void
+    }
     audioEngine.setBPM?.(bpm)
   }
 
@@ -217,7 +238,7 @@ export class PlaybackRuntime {
       const elapsed = now - this.playStartTime
 
       if (countIn > 0) {
-        const rawBeat = (elapsed / beatDuration) + countIn
+        const rawBeat = elapsed / beatDuration + countIn
         const currentInt = Math.floor(rawBeat)
 
         if (currentInt !== this.countInBeat) {
@@ -231,7 +252,11 @@ export class PlaybackRuntime {
 
         const intBeat = Math.floor(beat)
         if (intBeat !== this.metronomeLastBeat && this.metronomeLastBeat >= 0) {
-          this._emit({ type: 'metronome', beat: intBeat, isDownbeat: intBeat % 4 === 0 })
+          this._emit({
+            type: 'metronome',
+            beat: intBeat,
+            isDownbeat: intBeat % 4 === 0,
+          })
         }
         this.metronomeLastBeat = intBeat
 
@@ -240,12 +265,20 @@ export class PlaybackRuntime {
 
         if (newIndex !== this.currentNoteIndex) {
           if (this.currentNoteIndex >= 0) {
-            this._emit({ type: 'noteEnd', note: melody[this.currentNoteIndex], index: this.currentNoteIndex })
+            this._emit({
+              type: 'noteEnd',
+              note: melody[this.currentNoteIndex],
+              index: this.currentNoteIndex,
+            })
             this._playNoteEnd()
           }
           this.currentNoteIndex = newIndex
           if (newIndex >= 0) {
-            this._emit({ type: 'noteStart', note: melody[newIndex], index: newIndex })
+            this._emit({
+              type: 'noteStart',
+              note: melody[newIndex],
+              index: newIndex,
+            })
             this._playNoteStart()
           }
         }
@@ -317,7 +350,9 @@ export class PlaybackRuntime {
   }
 
   set _bpm(bpm: number) {
-    const audioEngine = this.audioEngine as unknown as { setBPM?: (bpm: number) => void }
+    const audioEngine = this.audioEngine as unknown as {
+      setBPM?: (bpm: number) => void
+    }
     audioEngine.setBPM?.(bpm)
   }
 

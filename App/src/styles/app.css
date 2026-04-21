@@ -1907,8 +1907,8 @@ Keeps your existing styles, only adjusts layout
   flex-wrap: unset; /* disable old wrapping */
   flex-shrink: 0;
 
-  overflow-x: auto;       /* Enables the horizontal scrollbar when needed */
-  max-width: 100%;        /* Ensures it doesn't push past the screen width */
+  overflow-x: auto; /* Enables the horizontal scrollbar when needed */
+  max-width: 100%; /* Ensures it doesn't push past the screen width */
 
   /* Optional: Smooth scrolling for touch devices */
   -webkit-overflow-scrolling: touch;
@@ -1974,8 +1974,7 @@ Keeps your existing styles, only adjusts layout
 .roll-instrument-group,
 .roll-effects-group,
 .roll-export-btn,
-.roll-export-group
-{
+.roll-export-group {
   display: flex;
   align-items: center;
   gap: 4px;
