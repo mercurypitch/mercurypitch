@@ -2085,6 +2085,7 @@ export class PianoRollEditor {
       return
 
     this.pushHistory()
+    this.updateUndoRedoButtons()
 
     const snappedBeat = Math.floor(beat) + (beat % 1 >= 0.5 ? 0.5 : 0)
     const id = this.nextNoteId++
