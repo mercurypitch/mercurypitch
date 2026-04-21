@@ -2,6 +2,5 @@
 // SolidJS JSX type definitions
 // ============================================================
 
-import type { JSX as SolidJSX } from 'solid-js/jsx-runtime'
-
-export type JSX = SolidJSX.Element
+// SolidJS JSX types are automatically inferred by TypeScript's JSX support
+// No separate type file needed

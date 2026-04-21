@@ -36,7 +36,8 @@ export interface PlaybackRuntimeCallbacks {
 }
 
 export interface PlaybackRuntimeOptions {
-  bpm: number
+  /** Existing AudioEngine instance (BPM managed by appStore) */
+  audioEngine?: AudioEngine
   metronomeEnabled?: () => boolean
   instrumentType?: InstrumentType
   onEvent?: (event: PlaybackEvent) => void
@@ -72,8 +73,11 @@ export class PlaybackRuntime {
     return max
   }
 
+  /**
+   * Initialize with AudioEngine (BPM should be set via appStore)
+   */
   constructor(options: PlaybackRuntimeOptions) {
-    this.audioEngine = new AudioEngine()
+    this.audioEngine = options.audioEngine ?? new AudioEngine()
     this.audioEngine.setInstrument(options.instrumentType ?? 'sine')
     this.callbacks = options
     this.metronomeEnabled = options.metronomeEnabled
@@ -173,6 +177,7 @@ export class PlaybackRuntime {
     // Record the time offset to resume correctly
     this.pauseOffset = performance.now() - this.playStartTime
     this.isPaused = true
+    this.isPlaying = false
     this._emit({ type: 'state', state: 'paused' })
     this._stopAnimationLoop()
   }
@@ -181,6 +186,7 @@ export class PlaybackRuntime {
     if (!this.isPlaying || !this.isPaused) return
 
     this.isPaused = false
+    this.isPlaying = true
     // Resume from paused position by adjusting playStartTime
     this.playStartTime = performance.now() - this.pauseOffset
     this._emit({ type: 'state', state: 'playing' })
@@ -207,13 +213,9 @@ export class PlaybackRuntime {
     this._emit({ type: 'beat', beat: this.currentBeat })
   }
 
-  setBPM(bpm: number): void {
-    const audioEngine = this.audioEngine as unknown as {
-      setBPM?: (bpm: number) => void
-    }
-    audioEngine.setBPM?.(bpm)
-  }
-
+  /**
+   * Set count-in beats (0-4). Count-in is shown before playback starts.
+   */
   setCountIn(beats: number): void {
     this._countInBeats = Math.max(0, Math.min(4, beats))
   }
@@ -226,8 +228,11 @@ export class PlaybackRuntime {
     this._melody = melody
   }
 
+  /**
+   * Get current BPM from AudioEngine (which reads from appStore)
+   */
   getBPM(): number {
-    return this.audioEngine.getBPM?.() ?? 120
+    return this.audioEngine.getBPM?.() || 120
   }
 
   getMelody(): MelodyItem[] {

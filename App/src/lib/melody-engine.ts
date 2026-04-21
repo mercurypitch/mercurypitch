@@ -17,7 +17,7 @@ export interface MelodyEngineCallbacks {
 }
 
 export interface MelodyEngineOptions {
-  bpm: number
+  /** Note: BPM is now managed by appStore, not passed to MelodyEngine */
   onNoteStart?: (item: MelodyItem, noteIndex: number) => void
   onNoteEnd?: (item: MelodyItem, noteIndex: number) => void
   onBeatUpdate?: (currentBeat: number) => void
@@ -34,7 +34,6 @@ export class MelodyEngine {
 
   constructor(options: MelodyEngineOptions) {
     this.runtime = new PlaybackRuntime({
-      bpm: options.bpm,
       metronomeEnabled: () => false,
       onNoteStart: options.onNoteStart,
       onNoteEnd: options.onNoteEnd,
@@ -66,8 +65,12 @@ export class MelodyEngine {
     this.runtime.setMelody(melody)
   }
 
+  /**
+   * Note: BPM is now managed by appStore.
+   * This method exists for backward compatibility but does nothing.
+   */
   setBPM(_bpm: number): void {
-    this.runtime.setBPM(_bpm)
+    // BPM is managed by appStore and synced to AudioEngine via createEffect
   }
 
   setCountIn(_beats: number): void {

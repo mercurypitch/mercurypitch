@@ -5,11 +5,11 @@
 
 import type { Component } from 'solid-js'
 import { Show } from 'solid-js'
+import { MicButton } from '@/components'
 import { Tooltip } from '@/components/Tooltip'
 import { appStore } from '@/stores/app-store'
 import { ControlGroup } from './ControlGroup'
 import { MetronomeGroup } from './MetronomeGroup'
-import { MicButton } from '@/components'
 
 export type PracticeSubMode = 'all' | 'random' | 'focus' | 'reverse'
 export type ActiveTab = 'practice' | 'editor' | 'settings'
