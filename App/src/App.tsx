@@ -13,6 +13,8 @@ import { ScaleBuilder } from '@/components/ScaleBuilder'
 import { SessionBrowser } from '@/components/SessionBrowser'
 import { SessionPlayer } from '@/components/SessionPlayer'
 import { SettingsPanel } from '@/components/SettingsPanel'
+import { FocusMode } from '@/components/FocusMode'
+import { HistoryCanvas } from '@/components/HistoryCanvas'
 import { SharedControlToolbar } from '@/components/shared/SharedControlToolbar'
 import { Walkthrough } from '@/components/Walkthrough'
 import { WelcomeScreen } from '@/components/WelcomeScreen'
@@ -22,9 +24,11 @@ import { PlaybackRuntime } from '@/lib/playback-runtime'
 import { PracticeEngine } from '@/lib/practice-engine'
 import { melodyIndexAtBeat } from '@/lib/scale-data'
 import { buildMultiOctaveScale, keyTonicFreq, melodyTotalBeats, midiToNote, } from '@/lib/scale-data'
-import { loadFromURL } from '@/lib/share-url'
-import { appStore, getNoteAccuracyMap } from '@/stores/app-store'
+import type { PracticeSubMode } from '@/components/shared/SharedControlToolbar'
+import { loadFromURL, hasSharedPresetInURL } from '@/lib/share-url'
+import { appStore, getNoteAccuracyMap, type PresetData, } from '@/stores/app-store'
 import { melodyStore } from '@/stores/melody-store'
+import { PlaybackState } from '@/types'
 import { playback } from '@/stores/playback-store'
 import type { EffectType, MelodyItem, NoteName, NoteResult, PitchResult, PracticeResult, } from '@/types'
 
@@ -119,7 +123,8 @@ interface AppProps {
 
 export const App: Component<AppProps> = (props) => {
   // ── Local reactive aliases for appStore signals ─────────────
-  const activeTab = () => appStore.activeTab()
+  const activeTab = (): 'practice' | 'editor' | 'settings' =>
+    appStore.activeTab()
   const showWelcome = () => appStore.showWelcome()
   const focusMode = () => appStore.focusMode()
 
@@ -1359,7 +1364,8 @@ export const App: Component<AppProps> = (props) => {
                 {/* Shared control toolbar with practice-specific options */}
                 <SharedControlToolbar
                   activeTab={activeTab}
-                  practiceTab={activeTab}
+                  practiceTab={() => activeTab() === 'practice'}
+                  editorTab={() => activeTab() === 'editor'}
                   isPlaying={isPlaying}
                   isPaused={isPaused}
                   playButtonLabel={playButtonLabel}
@@ -1440,7 +1446,7 @@ export const App: Component<AppProps> = (props) => {
               {/* Shared control toolbar with editor-specific options */}
               <SharedControlToolbar
                 activeTab={activeTab}
-                editorTab={activeTab}
+                editorTab={() => activeTab() === 'editor'}
                 isPlaying={editorIsPlaying}
                 isPaused={editorIsPaused}
                 playButtonLabel={editorPlayButtonLabel}
@@ -1469,7 +1475,9 @@ export const App: Component<AppProps> = (props) => {
                 scale={() => melodyStore.currentScale()}
                 bpm={() => appStore.bpm()}
                 totalBeats={() => totalBeats()}
-                playbackState={() => playback.state() as PlaybackState}
+                playbackState={() =>
+                  playback.state() as unknown as PlaybackState
+                }
                 currentNoteIndex={() => melodyStore.currentNoteIndex()}
                 onMelodyChange={(melody) => {
                   melodyStore.setMelody(melody)

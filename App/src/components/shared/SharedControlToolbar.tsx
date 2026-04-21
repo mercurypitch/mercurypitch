@@ -14,10 +14,11 @@ import { SpeedGroup } from './SpeedGroup'
 import { VolumeGroup } from './VolumeGroup'
 
 export type PracticeSubMode = 'all' | 'random' | 'focus' | 'reverse'
+export type ActiveTab = 'practice' | 'editor' | 'settings'
 
 interface SharedControlToolbarProps {
   // Tab identification
-  activeTab: () => 'practice' | 'editor'
+  activeTab: () => ActiveTab
   practiceTab?: () => boolean
   editorTab?: () => boolean
 
@@ -145,7 +146,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
           <div class="essential-control-group">
             <button
               id="record-btn"
-              class={`ctrl-btn record-btn ${isRecording?.() === true ? 'recording' : ''}`}
+              class={`ctrl-btn record-btn ${(props.isRecording?.() ?? false) ? 'recording' : ''}`}
               onClick={props.onRecordToggle}
               disabled={
                 (props.isPlaying?.() ?? false) || (props.isPaused?.() ?? false)
@@ -274,7 +275,6 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
                 class="ctrl-btn mode-btn"
                 onClick={() => {
                   appStore.setActiveTab('settings')
-                  setShowSessionBrowser(true)
                 }}
                 title="Browse practice sessions"
               >
@@ -292,7 +292,9 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
                   class="prec-count-btn"
                   onClick={() => {
                     const current = appStore.countIn()
-                    appStore.setCountIn(Math.max(0, current - 1))
+                    appStore.setCountIn(
+                      Math.max(0, current - 1) as 0 | 1 | 2 | 4,
+                    )
                   }}
                   disabled={appStore.countIn() === 0}
                 >
@@ -304,7 +306,9 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
                   class="prec-count-btn"
                   onClick={() => {
                     const current = appStore.countIn()
-                    appStore.setCountIn(Math.min(4, current + 1))
+                    appStore.setCountIn(
+                      Math.min(4, current + 1) as 0 | 1 | 2 | 4,
+                    )
                   }}
                   disabled={appStore.countIn() === 4}
                 >
@@ -326,7 +330,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
             {/* Count-in badge */}
             <Show when={props.isCountingIn}>
               <div id="countin-display" class="countin-badge">
-                {props.countInBeat}
+                {props.countInBeat?.() ?? 0}
               </div>
             </Show>
 

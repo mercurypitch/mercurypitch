@@ -26,6 +26,7 @@ export type PlaybackMode = 'once' | 'repeat' | 'practice'
 
 /** Transport playback state */
 export type TransportState = 'stopped' | 'playing' | 'paused' | 'precount'
+export type PlaybackState = 'stopped' | 'playing' | 'paused'
 
 /** A single note within the melody */
 export interface MelodyNote {

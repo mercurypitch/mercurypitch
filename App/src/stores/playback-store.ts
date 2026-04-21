@@ -6,6 +6,7 @@ import { createSignal } from 'solid-js'
 import type { TransportState } from '@/types'
 
 export type PlayButtonLabel = 'Start' | 'Pause' | 'Continue'
+export type PlaybackState = TransportState
 
 const [playbackState, setPlaybackState] =
   createSignal<TransportState>('stopped')

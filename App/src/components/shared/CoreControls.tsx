@@ -2,6 +2,7 @@
 // CoreControls - Shared playback control buttons (play, pause, stop)
 // ============================================================
 
+import { Show } from 'solid-js'
 import type { Component } from 'solid-js'
 import type { PlayButtonLabel } from '@/stores/playback-store'
 
