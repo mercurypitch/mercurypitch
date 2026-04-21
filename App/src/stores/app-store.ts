@@ -11,7 +11,10 @@ import type { AccuracyBand, PracticeSession, SessionResult } from '@/types'
 const [keyName, setKeyName] = createSignal<string>('C')
 const [scaleType, setScaleType] = createSignal<string>('major')
 const [bpm, setBpm] = createSignal<number>(120)
+const [instrument, setInstrument] = createSignal<InstrumentType>('sine')
 const [isRecording, setIsRecording] = createSignal<boolean>(false)
+
+export type InstrumentType = 'sine' | 'piano' | 'organ' | 'strings' | 'synth'
 
 // ── Theme ────────────────────────────────────────────────────
 
@@ -953,6 +956,10 @@ export const appStore = {
   setScaleType,
   bpm,
   setBpm,
+
+  // Instrument
+  instrument,
+  setInstrument,
 
   // Recording
   isRecording,

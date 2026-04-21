@@ -17,7 +17,8 @@ export const Walkthrough: Component = () => {
     WALKTHROUGH_STEPS[appStore.walkthroughStep()] ?? WALKTHROUGH_STEPS[0]
   const isLast = () =>
     appStore.walkthroughStep() === WALKTHROUGH_STEPS.length - 1
-  const isFirst = () => appStore.walkthroughStep() === 0
+  const isFirst = () =>
+    appStore.walkthroughStep() === 0
 
   let highlightRef: HTMLDivElement | undefined
   let tooltipRef: HTMLDivElement | undefined
@@ -48,6 +49,7 @@ export const Walkthrough: Component = () => {
     vh: number,
   ) => {
     // Fallback when target element is not available - show tooltip in center of screen
+    if (!tooltipRef) return
     const left = (vw - tW) / 2
     const top = (vh - tH) / 2
     tooltipRef.style.left = `${left}px`

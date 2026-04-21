@@ -34,15 +34,13 @@ describe('MelodyEngine', () => {
 
   beforeEach(() => {
     melody = createMelody()
-    engine = new MelodyEngine({
-      bpm: 120,
-      melody,
-    })
+    engine = new MelodyEngine({ bpm: 120 })
+    engine.setMelody(melody)
   })
 
   describe('creation', () => {
     it('creates with default options', () => {
-      const e = new MelodyEngine({ bpm: 60, melody: [] })
+      const e = new MelodyEngine({ bpm: 60 })
       expect(e.getIsPlaying()).toBe(false)
       expect(e.getIsPaused()).toBe(false)
     })
@@ -150,13 +148,6 @@ describe('MelodyEngine', () => {
     })
   })
 
-  describe('hop animation', () => {
-    it('returns inactive hop by default', () => {
-      const hop = engine.getHopProgress()
-      expect(hop.active).toBe(false)
-    })
-  })
-
   describe('callbacks', () => {
     it('onNoteStart callback receives MelodyItem with duration (GH #128 fix)', () => {
       // GH #128 fix: onNoteStart now passes the full MelodyItem (including duration)
@@ -164,9 +155,9 @@ describe('MelodyEngine', () => {
       const callArgs: unknown[] = []
       const e = new MelodyEngine({
         bpm: 120,
-        melody,
         onNoteStart: (item) => callArgs.push(item),
       })
+      e.setMelody(melody)
 
       // Mock RAF so we can drive it manually with fake time
       const pendingCallbacks: Array<(time: number) => void> = []
@@ -209,9 +200,9 @@ describe('MelodyEngine', () => {
       const callArgs: unknown[] = []
       const e = new MelodyEngine({
         bpm: 120,
-        melody,
         onNoteEnd: (item) => callArgs.push(item),
       })
+      e.setMelody(melody)
 
       const pendingCallbacks: Array<(time: number) => void> = []
       vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => {
@@ -247,14 +238,14 @@ describe('MelodyEngine', () => {
     })
 
     it('returns 0 for empty melody', () => {
-      const emptyEngine = new MelodyEngine({ bpm: 120, melody: [] })
+      const emptyEngine = new MelodyEngine({ bpm: 120 })
       expect(emptyEngine.totalBeats()).toBe(0)
     })
   })
 
   describe('cleanup', () => {
     it('has destroy method', () => {
-      const e = new MelodyEngine({ bpm: 120, melody: [] })
+      const e = new MelodyEngine({ bpm: 120 })
       expect(typeof e.destroy).toBe('function')
       e.destroy() // Should not throw
     })

@@ -2,7 +2,7 @@
 // Audio Engine — Web Audio API playback and microphone input
 // ============================================================
 
-import type { AudioEngineCallbacks, EffectType, MelodyItem, MelodyNote, } from '@/types'
+import type { AudioEngineCallbacks, EffectType, MelodyItem, MelodyNote } from '@/types'
 
 export type InstrumentType = 'sine' | 'piano' | 'organ' | 'strings' | 'synth'
 
@@ -301,6 +301,17 @@ export class AudioEngine {
   /** Get available instrument names */
   getInstruments(): InstrumentType[] {
     return ['sine', 'piano', 'organ', 'strings', 'synth']
+  }
+
+  /** Get current BPM (exists for compatibility with PlaybackRuntime) */
+  getBPM(): number {
+    return 120 // Default BPM, can be extended with BPM state if needed
+  }
+
+  /** Set BPM (exists for compatibility with PlaybackRuntime) */
+  setBPM(_bpm: number): void {
+    // No-op for now, BPM is managed externally in PlaybackRuntime
+    // Kept for API compatibility
   }
 
   // ============================================================
@@ -1052,6 +1063,11 @@ export class AudioEngine {
     this.reverbNode = null
     this.reverbSendGain = null
     this.reverbReturnGain = null
+  }
+
+  /** Get whether audio context is initialized */
+  getIsInitialized(): boolean {
+    return this.audioCtx !== null
   }
 
   // ============================================================

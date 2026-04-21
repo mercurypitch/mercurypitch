@@ -477,12 +477,15 @@ export class PianoRollEditor {
 
   // Playback
   private playbackState: PlaybackState = 'stopped'
-  private playAnimationId: number | null = null
-  private playStartTime = 0
-  private pauseStartTime = 0
-  private activeBeat = 0
+  private playbackAnimationId: number | null = null
+  private playStartTime: number = 0
+  // Remote beat comes from PlaybackRuntime events (external playback)
+  // For internal editor playback, beat is calculated locally
+  private remoteBeat = 0
   private startedNoteIds = new Set<number>()
   private currentNoteRow = -1 // GH #129: tracks current note row for glowing dot
+  // Track whether playback is external (from Practice tab) vs local (Editor tab)
+  private isExternalPlayback = false
   private isSeeking = false
   private seekStartX = 0
   // Track whether playback was started externally (Practice tab) vs internally (Editor tab)
@@ -708,11 +711,11 @@ export class PianoRollEditor {
 
   setCurrentNote(index: number): void {
     if (index < 0) {
-      this.activeBeat = 0
+      this.remoteBeat = 0
     } else {
       const item = this.melody[index]
       if (item !== null && item !== undefined) {
-        this.activeBeat = item.startBeat
+        this.remoteBeat = item.startBeat
       }
     }
     this.drawWithPlayhead()
@@ -729,52 +732,45 @@ export class PianoRollEditor {
   /** Called by App to sync the editor's playhead animation to the melody engine's timeline.
    *  When Practice tab playback is active, this ensures the editor's playhead moves
    *  in lockstep with the melody engine. */
-  syncPlayhead(melodyEngineStartTime: number): void {
-    if (this.playbackState !== 'playing') return
-    // Update playStartTime so the animation loop computes the same beat as the melody engine
-    this.playStartTime = melodyEngineStartTime
+  setRemoteBeat(beat: number): void {
+    if (this.playbackState === 'stopped') return
+    this.remoteBeat = beat
+    this.handleBeatUpdate(beat)
   }
 
-  setPlaybackState(state: PlaybackState, playStartTime?: number): void {
+  /** Called by App when external playback starts - indicates we should use event-based updates */
+  setExternalPlayback(active: boolean): void {
+    this.isExternalPlayback = active
+    if (active && this.playbackAnimationId !== null) {
+      cancelAnimationFrame(this.playbackAnimationId)
+      this.playbackAnimationId = null
+    }
+  }
+
+  setPlaybackState(state: PlaybackState): void {
     this.playbackState = state
 
     if (state === 'playing') {
-      // External start (from Practice tab) — reset animation and begin
-
-      this.playStartTime =
-        playStartTime ?? (performance as unknown as { now: () => number }).now()
-      this.pauseStartTime = 0
-      this.startedNoteIds.clear()
-      if (this.playAnimationId === null) {
-        this.startAnimation()
+      // Start internal animation if not using external playback
+      if (!this.isExternalPlayback && this.playbackAnimationId === null) {
+        this.startedNoteIds.clear()
+        this.startPlaybackAnimation()
       }
     } else if (state === 'paused') {
-      // GH #130: Stop all active notes when pausing
-      const win = window as Window & {
-        pianoRollAudioEngine?: { stopAllNotes: () => void }
-      }
-      win.pianoRollAudioEngine?.stopAllNotes()
-      if (this.playAnimationId !== null) {
-        cancelAnimationFrame(this.playAnimationId)
-        this.playAnimationId = null
-      }
+      this.stopPlayback()
     } else if (state === 'stopped') {
-      // GH #130: Stop all active audio notes so they don't keep playing
-      const win = window as Window & {
-        pianoRollAudioEngine?: { stopAllNotes: () => void }
-      }
-      win.pianoRollAudioEngine?.stopAllNotes()
-      // Stop animation and reset playback position
-      if (this.playAnimationId !== null) {
-        cancelAnimationFrame(this.playAnimationId)
-        this.playAnimationId = null
-      }
-      this.activeBeat = 0
+      this.stopPlayback()
+      this.remoteBeat = 0
       this.startedNoteIds.clear()
       this.currentNoteRow = -1
       this.playbackState = 'stopped'
       this.draw()
     }
+  }
+
+  /** Update playback position from a beat value */
+  updatePlaybackPosition(beat: number): void {
+    this.handleBeatUpdate(beat)
   }
 
   addBeats(count: number): void {
@@ -1021,8 +1017,8 @@ export class PianoRollEditor {
   }
 
   destroy(): void {
-    if (this.playAnimationId !== null) {
-      cancelAnimationFrame(this.playAnimationId)
+    if (this.playbackAnimationId !== null) {
+      cancelAnimationFrame(this.playbackAnimationId)
     }
     this.container.innerHTML = ''
   }
@@ -2179,118 +2175,132 @@ export class PianoRollEditor {
   // Playback
   // ============================================================
 
-  private startAnimation(): void {
+  /**
+   * Internal playback animation loop — used for local Editor playback
+   * Not used for external playback (Practice tab) which uses remote beat from events
+   */
+  private startPlaybackAnimation(): void {
+    if (this.playbackAnimationId !== null) return
+
     const animate = () => {
-      if (this.playbackState !== 'playing') return
+      if (this.playbackState !== 'playing' || this.isExternalPlayback) {
+        this.playbackAnimationId = null
+        return
+      }
 
-      // When in external playback (Practice tab), syncPlayhead() keeps playStartTime
-      // in sync with the melody engine's timeline, so the formula below correctly
-      // computes the current beat. In internal playback (Editor tab), we self-advance.
+      const now = performance.now()
+      const elapsed = now - this.playStartTime
+      const currentBeat = (elapsed / 60000) * this.bpm
 
-      const elapsed =
-        (performance as unknown as { now: () => number }).now() -
-        this.playStartTime
-      this.activeBeat = (elapsed / 60000) * this.bpm
+      this.updatePlaybackPosition(currentBeat)
+      this.playbackAnimationId = requestAnimationFrame(animate)
+    }
 
-      // GH #129: Track the current note row for vertical glow dot
+    this.playbackAnimationId = requestAnimationFrame(animate)
+  }
+
+  /**
+   * Called when a beat update event arrives from PlaybackRuntime
+   * Updates playhead and all related state
+   */
+  private handleBeatUpdate(beat: number): void {
+    this.remoteBeat = beat
+
+    // GH #129: Track the current note row for vertical glow dot
+    const sortedNotes = [...this.melody].sort(
+      (a, b) => a.startBeat - b.startBeat,
+    )
+    let foundRow = -1
+    for (const note of sortedNotes) {
+      if (
+        note.startBeat <= beat &&
+        note.startBeat + note.duration > beat
+      ) {
+        foundRow = this.midiToRow(note.note.midi)
+        break
+      }
+    }
+    this.currentNoteRow = foundRow
+
+    // Scroll grid to keep playhead visible
+    const playheadX = beat * this.beatWidth
+    const containerWidth = this.gridContainer?.clientWidth ?? 0
+    const targetScroll = playheadX - containerWidth * 0.3
+    if (targetScroll > 0) {
+      this.gridContainer!.scrollLeft = targetScroll
+    }
+
+    this.drawWithPlayhead()
+
+    // Play tones for notes that start at current beat (one-shot trigger per note)
+    const win = window as Window & {
+      pianoRollAudioEngine?: {
+        playNote: (
+          freq: number,
+          durationMs: number,
+          effectType?: string,
+        ) => number | undefined
+      }
+    }
+    if (win.pianoRollAudioEngine && this.melody.length > 0) {
+      const durationMs = this.beatWidth * (60000 / this.bpm)
+      for (const note of this.melody) {
+        const noteId = note.id ?? -1
+        // One-shot: trigger exactly once when activeBeat crosses the note's start beat.
+        // Guard: only trigger when activeBeat is within 0.02 beats of the start and the
+        // note has not been started yet.
+        if (
+          !this.startedNoteIds.has(noteId) &&
+          Math.abs(beat - note.startBeat) < 0.02 &&
+          note.startBeat <= beat
+        ) {
+          this.startedNoteIds.add(noteId)
+          win.pianoRollAudioEngine.playNote(
+            note.note.freq,
+            note.duration * durationMs,
+            note.effectType,
+          )
+        }
+      }
+    }
+
+    // Update timeline info during playback
+    this._updateTimelineInfo(beat)
+
+    // Update pitch track visualization during playback
+    if (this.pitchTrackVisible) {
+      this._updatePitchTrack()
+    }
+
+    // Check if playback is done
+    if (this.melody.length > 0) {
       const sortedNotes = [...this.melody].sort(
         (a, b) => a.startBeat - b.startBeat,
       )
-      let foundRow = -1
-      for (const note of sortedNotes) {
-        if (
-          note.startBeat <= this.activeBeat &&
-          note.startBeat + note.duration > this.activeBeat
-        ) {
-          foundRow = this.midiToRow(note.note.midi)
-          break
-        }
+      const lastNote = sortedNotes[sortedNotes.length - 1]
+      if (beat >= lastNote.startBeat + lastNote.duration) {
+        this.stopPlayback()
+        this.remoteBeat = 0
+        this.startedNoteIds.clear()
+        this.currentNoteRow = -1
+        this.playbackState = 'stopped'
+        this.onPlaybackStateChange?.('stopped')
+        this.draw()
+        return
       }
-      this.currentNoteRow = foundRow
-
-      // Scroll grid to keep playhead visible
-      const playheadX = this.activeBeat * this.beatWidth
-      const containerWidth = this.gridContainer?.clientWidth ?? 0
-      const targetScroll = playheadX - containerWidth * 0.3
-      if (targetScroll > 0) {
-        this.gridContainer!.scrollLeft = targetScroll
-      }
-
-      this.drawWithPlayhead()
-
-      // Play tones for notes that start at current beat (one-shot trigger per note)
-      const win = window as Window & {
-        pianoRollAudioEngine?: {
-          playNote: (
-            freq: number,
-            durationMs: number,
-            effectType?: string,
-          ) => number | undefined
-        }
-      }
-      if (win.pianoRollAudioEngine && this.melody.length > 0) {
-        const durationMs = this.beatWidth * (60000 / this.bpm)
-        for (const note of this.melody) {
-          const noteId = note.id ?? -1
-          // One-shot: trigger exactly once when activeBeat crosses the note's start beat.
-          // We use the fraction of the beat to detect the moment of crossing — when
-          // the fraction transitions from near 1 (approaching from below) to near 0.
-          // Guard: only trigger when activeBeat is within 0.02 beats of the start and the
-          // note has not been started yet.
-          if (
-            !this.startedNoteIds.has(noteId) &&
-            Math.abs(this.activeBeat - note.startBeat) < 0.02 &&
-            note.startBeat <= this.activeBeat
-          ) {
-            this.startedNoteIds.add(noteId)
-            win.pianoRollAudioEngine.playNote(
-              note.note.freq,
-              note.duration * durationMs,
-              note.effectType,
-            )
-          }
-        }
-      }
-
-      // Update timeline info during playback
-      this._updateTimelineInfo(this.activeBeat)
-
-      // Update pitch track visualization during playback
-      if (this.pitchTrackVisible) {
-        this._updatePitchTrack()
-      }
-
-      // Check if playback is done
-      if (this.melody.length > 0) {
-        const sortedNotes = [...this.melody].sort(
-          (a, b) => a.startBeat - b.startBeat,
-        )
-        const lastNote = sortedNotes[sortedNotes.length - 1]
-        if (this.activeBeat >= lastNote.startBeat + lastNote.duration) {
-          // Stop animation and reset playback position
-          if (this.playAnimationId !== null) {
-            cancelAnimationFrame(this.playAnimationId)
-            this.playAnimationId = null
-          }
-          // GH #130: Stop all notes when playback ends naturally
-          const win = window as Window & {
-            pianoRollAudioEngine?: { stopAllNotes: () => void }
-          }
-          win.pianoRollAudioEngine?.stopAllNotes()
-          this.activeBeat = 0
-          this.startedNoteIds.clear()
-          this.currentNoteRow = -1
-          this.playbackState = 'stopped'
-          this.onPlaybackStateChange?.('stopped')
-          this.draw()
-          return
-        }
-      }
-
-      this.playAnimationId = requestAnimationFrame(animate)
     }
+  }
 
-    this.playAnimationId = requestAnimationFrame(animate)
+  private stopPlayback(): void {
+    if (this.playbackAnimationId !== null) {
+      cancelAnimationFrame(this.playbackAnimationId)
+      this.playbackAnimationId = null
+    }
+    // GH #130: Stop all active audio notes
+    const win = window as Window & {
+      pianoRollAudioEngine?: { stopAllNotes: () => void }
+    }
+    win.pianoRollAudioEngine?.stopAllNotes()
   }
 
   private seekToRulerPosition(e: MouseEvent): void {
@@ -2303,7 +2313,7 @@ export class PianoRollEditor {
     this.gridContainer.scrollLeft = Math.max(0, targetScroll)
 
     // Update playhead position visually
-    this.activeBeat = beat
+    this.remoteBeat = beat
     this.drawGridWithPlayhead()
 
     // If playback is active or paused, update the playback start time so
@@ -2317,8 +2327,19 @@ export class PianoRollEditor {
       this.playStartTime =
         (performance as unknown as { now: () => number }).now() -
         (beat / this.bpm) * 60000
-      // Do NOT reset pauseStartTime - it's needed for correct resume offset
     }
+  }
+
+  /**
+   * Get current beat for drawing/playhead based on playback state
+   */
+  private getCurrentBeat(): number {
+    if (this.isExternalPlayback) {
+      return this.remoteBeat
+    }
+    // Local editor playback - calculate from playStartTime
+    const elapsed = performance.now() - this.playStartTime
+    return (elapsed / 60000) * this.bpm
   }
 
   // ============================================================
@@ -2477,7 +2498,7 @@ export class PianoRollEditor {
     ctx.stroke()
 
     // Playhead triangle
-    const playheadX = this.pianoWidth + this.activeBeat * this.beatWidth
+    const playheadX = this.pianoWidth + this.getCurrentBeat() * this.beatWidth
     ctx.save()
     ctx.fillStyle = '#58a6ff'
     ctx.shadowColor = 'rgba(88, 166, 255, 0.5)'
@@ -2608,9 +2629,10 @@ export class PianoRollEditor {
     // Note blocks with active highlight
     this.drawNoteBlocks(ctx, true)
 
-    // Playhead line — only draw when activeBeat is non-negative (not during count-in)
-    if (this.activeBeat >= 0) {
-      const playheadX = this.activeBeat * this.beatWidth
+    // Playhead line — only draw when current beat is non-negative (not during count-in)
+    const currentBeat = this.getCurrentBeat()
+    if (currentBeat >= 0) {
+      const playheadX = currentBeat * this.beatWidth
       ctx.save()
       ctx.strokeStyle = '#58a6ff'
       ctx.lineWidth = 2
@@ -2771,8 +2793,8 @@ export class PianoRollEditor {
         note.id !== undefined && this.selectedNoteIds.has(note.id)
       const isActive =
         highlightActive &&
-        this.activeBeat >= note.startBeat &&
-        this.activeBeat < note.startBeat + note.duration
+        this.getCurrentBeat() >= note.startBeat &&
+        this.getCurrentBeat() < note.startBeat + note.duration
       const cornerRadius = 4
 
       // Diagonal rendering for slide notes

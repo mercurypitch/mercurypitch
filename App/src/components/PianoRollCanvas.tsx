@@ -75,6 +75,39 @@ export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
     editor?.setTotalBeats(props.totalBeats())
   })
 
+  // Subscribe to PlaybackRuntime events for external playback
+  createEffect(() => {
+    const playbackState = props.playbackState()
+
+    if (typeof window !== 'undefined') {
+      const win = window as PitchPerfectWindow & {
+        __playbackRuntime?: { on: (event: string, handler: (e: unknown) => void) => void }
+      }
+      const playbackRuntime = win.__playbackRuntime
+
+      if (playbackRuntime && playbackState === 'playing') {
+        // External playback - subscribe to beat events
+        editor?.setExternalPlayback(true)
+        playbackRuntime.on('beat', (e: unknown) => {
+          editor?.setRemoteBeat((e as { beat: number }).beat)
+        })
+        playbackRuntime.on('state', (e: unknown) => {
+          if ((e as { state: string }).state === 'paused') {
+            editor?.setExternalPlayback(false)
+          }
+        })
+      } else {
+        // Internal playback (editor tab)
+        editor?.setExternalPlayback(false)
+      }
+
+      // Cleanup on state change
+      return () => {
+        editor?.setExternalPlayback(false)
+      }
+    }
+  })
+
   // Propagate playback state changes
   createEffect(() => {
     editor?.setPlaybackState(props.playbackState())
