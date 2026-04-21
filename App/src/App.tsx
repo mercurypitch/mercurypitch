@@ -129,16 +129,34 @@ export const App: Component<AppProps> = (props) => {
   const showWelcome = () => appStore.showWelcome()
   const focusMode = () => appStore.focusMode()
 
-  const handleTabPractice = () => {
-    appStore.setActiveTab('practice')
-  }
+  // Tab handlers - audio cleanup handled by handleTabChange
+  const _handleTabPractice = () => void appStore.setActiveTab('practice')
+  const _handleTabEditor = () => void appStore.setActiveTab('editor')
+  const _handleTabSettings = () => void appStore.setActiveTab('settings')
 
-  const handleTabEditor = () => {
-    appStore.setActiveTab('editor')
-  }
+  // ── Tab change handler with audio cleanup ───────────────────────────────────
+  const handleTabChange = (newTab: 'practice' | 'editor' | 'settings') => {
+    const currentTab = activeTab()
 
-  const handleTabSettings = () => {
-    appStore.setActiveTab('settings')
+    // Stop audio when leaving practice or editor tabs
+    if (currentTab === 'practice' || currentTab === 'editor') {
+      void audioEngine.stopTone()
+      void audioEngine.stopAllNotes()
+      void playbackRuntime.stop()
+      void practiceEngine.endSession()
+      playback.resetPlayback()
+      setIsPlaying(false)
+      setIsPaused(false)
+      setEditorPlaybackState('stopped')
+      setCurrentBeat(0)
+      setCurrentNoteIndex(-1)
+      melodyStore.setCurrentNoteIndex(-1)
+      setPitchHistory([])
+      setNoteResults([])
+    }
+
+    // Switch to new tab
+    appStore.setActiveTab(newTab)
   }
 
   // ── Derived state ──────────────────────────────────────────
@@ -264,15 +282,15 @@ export const App: Component<AppProps> = (props) => {
     // This handles the edge case where innerHTML-created elements need explicit handlers
     const tabBtn = document.getElementById('tab-settings')
     if (tabBtn) {
-      tabBtn.addEventListener('click', handleTabSettings)
+      tabBtn.addEventListener('click', () => void handleTabChange('settings'))
     }
     const tabPracticeBtn = document.getElementById('tab-practice')
     if (tabPracticeBtn) {
-      tabPracticeBtn.addEventListener('click', handleTabPractice)
+      tabPracticeBtn.addEventListener('click', () => void handleTabChange('practice'))
     }
     const tabEditorBtn = document.getElementById('tab-editor')
     if (tabEditorBtn) {
-      tabEditorBtn.addEventListener('click', handleTabEditor)
+      tabEditorBtn.addEventListener('click', () => void handleTabChange('editor'))
     }
 
     // Space key handler for play/pause (Focus Mode friendly)
@@ -1279,7 +1297,7 @@ export const App: Component<AppProps> = (props) => {
             <button
               id="app-title"
               class="logo-btn"
-              onClick={handleTabPractice}
+              onClick={() => handleTabChange('practice')}
               title="Go to Practice"
             >
               <h1 id="app-title" class="app-title">
@@ -1292,14 +1310,14 @@ export const App: Component<AppProps> = (props) => {
             <button
               id="tab-practice"
               class={`app-tab ${activeTab() === 'practice' ? 'active' : ''}`}
-              onClick={handleTabPractice}
+              onClick={() => handleTabChange('practice')}
             >
               Practice
             </button>
             <button
               id="tab-editor"
               class={`app-tab ${activeTab() === 'editor' ? 'active' : ''}`}
-              onClick={handleTabEditor}
+              onClick={() => handleTabChange('editor')}
             >
               Editor
               <Show when={melodyStore.items.length > 0}>
@@ -1309,7 +1327,7 @@ export const App: Component<AppProps> = (props) => {
             <button
               id="tab-settings"
               class={`app-tab ${activeTab() === 'settings' ? 'active' : ''}`}
-              onClick={handleTabSettings}
+              onClick={() => handleTabChange('settings')}
             >
               Settings
             </button>

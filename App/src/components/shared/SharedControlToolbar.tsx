@@ -54,7 +54,7 @@ interface SharedControlToolbarProps {
 
   // Editor-specific
   isRecording?: () => boolean
-  onRecordToggle?: () => void
+  onRecordToggle?: () => Promise<void>
 
   // Common
   onMicToggle?: () => void
@@ -130,9 +130,11 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
             <button
               id="record-btn"
               class={`ctrl-btn record-btn ${(props.isRecording?.() ?? false) ? 'recording' : ''}`}
-              onClick={props.onRecordToggle}
               disabled={isActive()}
               title="Record to piano roll"
+              onClick={() => void (async () => {
+                await props.onRecordToggle?.()
+              })()}
             >
               <svg viewBox="0 0 24 24" width="16" height="16">
                 <circle cx="12" cy="12" r="6" fill="currentColor" />

@@ -686,6 +686,52 @@ test.describe('Critical Flows — GH #121', () => {
   // ============================================================
 
   test.describe('Tab Navigation', () => {
+    test('tab switch stops audio from Practice tab', async ({ page }) => {
+      // Go to Practice tab
+      await page.locator('#tab-practice').click()
+      await page.waitForTimeout(1000)
+
+      // Start playback
+      const playBtn = page.locator('.play-btn')
+      await playBtn.click()
+      await page.waitForTimeout(1000)
+
+      // Audio should be playing - check that pause button is visible
+      await expect(page.locator('.stop-btn').first()).toBeVisible({
+        timeout: 3000,
+      })
+
+      // Switch to Editor tab - this should stop audio
+      await page.locator('#tab-editor').click()
+      await page.waitForTimeout(1000)
+
+      // Audio should have stopped - pause button should not be visible
+      // In practice mode, the stop button appears when playing
+      const practiceStopBtn = page.locator('#practice-panel .stop-btn').first()
+      const count = await practiceStopBtn.count()
+      expect(count).toBe(0)
+    })
+
+    test('tab switch stops audio from Editor tab', async ({ page }) => {
+      // Go to Editor tab
+      await page.locator('#tab-editor').click()
+      await page.waitForTimeout(1000)
+
+      // Click Play button - this should start playback in Editor
+      await page.locator('.ctrl-btn.play-btn').click()
+      await page.waitForTimeout(1000)
+
+      // A pause/stop button should appear (playback active)
+      await expect(page.locator('.ctrl-btn').filter({ hasText: 'Pause' })).toBeVisible({ timeout: 2000 })
+
+      // Switch to Practice tab - audio should stop
+      await page.locator('#tab-practice').click()
+      await page.waitForTimeout(2000)
+
+      // The Play button should be visible (audio stopped)
+      await expect(page.locator('.ctrl-btn').filter({ hasText: 'Play' })).toBeVisible()
+    })
+
     test('all tabs are accessible', async ({ page }) => {
       const tabs = [
         { id: '#tab-practice', name: 'Practice' },
