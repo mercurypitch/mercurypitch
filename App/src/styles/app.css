@@ -814,6 +814,31 @@ header h1 {
   color: var(--text-primary);
 }
 
+.mic-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.mic-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: rgba(88, 166, 255, 0.08);
+}
+
+.mic-btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
 .ctrl-btn:active:not(:disabled) {
   transform: scale(0.97);
 }

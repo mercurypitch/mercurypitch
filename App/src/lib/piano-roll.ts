@@ -482,6 +482,9 @@ export class PianoRollEditor {
   // Remote beat comes from PlaybackRuntime events (external playback)
   // For internal editor playback, beat is calculated locally
   private remoteBeat = 0
+  // Editor tab current beat (propagated from App.tsx for continuous animation)
+  // This is used for Editor tab internal playback and to track position
+  private editorBeat = 0
   private startedNoteIds = new Set<number>()
   private currentNoteRow = -1 // GH #129: tracks current note row for glowing dot
   // Track whether playback is external (from Practice tab) vs local (Editor tab)
@@ -754,6 +757,9 @@ export class PianoRollEditor {
       // Start internal animation if not using external playback
       if (!this.isExternalPlayback && this.playbackAnimationId === null) {
         this.startedNoteIds.clear()
+        // Use editorBeat as starting point for animation (resumes from where it was)
+        const startTime = Date.now() - (this.editorBeat / this.bpm) * 60000
+        this.playStartTime = startTime
         this.startPlaybackAnimation()
       }
     } else if (state === 'paused') {
@@ -761,6 +767,7 @@ export class PianoRollEditor {
     } else if (state === 'stopped') {
       this.stopPlayback()
       this.remoteBeat = 0
+      this.editorBeat = 0
       this.startedNoteIds.clear()
       this.currentNoteRow = -1
       this.playbackState = 'stopped'
@@ -2182,14 +2189,17 @@ export class PianoRollEditor {
   private startPlaybackAnimation(): void {
     if (this.playbackAnimationId !== null) return
 
+    // Calculate start time so animation continues from current editorBeat
+    const elapsed = (this.editorBeat / this.bpm) * 60000
+    this.playStartTime = Date.now() - elapsed
+
     const animate = () => {
       if (this.playbackState !== 'playing' || this.isExternalPlayback) {
         this.playbackAnimationId = null
         return
       }
 
-      const now = performance.now()
-      const elapsed = now - this.playStartTime
+      const elapsed = Date.now() - this.playStartTime
       const currentBeat = (elapsed / 60000) * this.bpm
 
       this.updatePlaybackPosition(currentBeat)

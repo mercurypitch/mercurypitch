@@ -1475,6 +1475,12 @@ export const App: Component<AppProps> = (props) => {
                   playback.state() as unknown as PlaybackState
                 }
                 currentNoteIndex={() => melodyStore.currentNoteIndex()}
+                currentBeat={currentBeat}
+                isPlaying={editorIsPlaying}
+                isPaused={editorIsPaused}
+                isScrolling={() => false}
+                targetPitch={() => null}
+                noteAccuracyMap={() => new Map()}
                 onMelodyChange={(melody) => {
                   melodyStore.setMelody(melody)
                 }}
@@ -1484,7 +1490,6 @@ export const App: Component<AppProps> = (props) => {
                 onPlaybackStateChange={(state) => {
                   setEditorPlaybackState(state)
                 }}
-                isRecording={isRecording}
                 getWaveform={() => audioEngine?.getWaveformData() ?? null}
               />
             </Show>

@@ -7,7 +7,7 @@ This document contains my Claude Code workflow preferences for this project.
 - **ALWAYS commit and push after fixing bugs**
 - **ALWAYS include tests and linting in the same PR/commit**
 - **Do NOT leave uncommitted changes on the refactor branch**
-- After any code change, run: `npm run lint && npm test -- --run && git add -A && git commit -m "fix: ..." && git push`
+- After any code change, run: `npm run lint && npm test -- --run && npm run typecheck && npm run build && git add -A && git commit -m "fix: ..." && git push`
 
 ## Runtime Error Detection Workflow (MUST DO AFTER EVERY CODE CHANGE)
 
