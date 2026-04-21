@@ -3,8 +3,8 @@
 // Tests for the unified control toolbar component
 // ============================================================
 
-import { describe, expect,it } from 'vitest'
-import type { ActiveTab,PracticeSubMode } from '@/components/shared/SharedControlToolbar'
+import { describe, expect, it } from 'vitest'
+import type { ActiveTab, PracticeSubMode, } from '@/components/shared/SharedControlToolbar'
 
 describe('SharedControlToolbar Types', () => {
   it('PracticeSubMode has all expected values', () => {

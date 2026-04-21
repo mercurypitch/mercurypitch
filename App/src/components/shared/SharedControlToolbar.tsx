@@ -291,7 +291,10 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
               value={props.practiceCycles()}
               onInput={(e) => {
                 props.onCyclesChange(
-                  Math.max(2, Math.min(20, parseInt(e.currentTarget.value) || 5)),
+                  Math.max(
+                    2,
+                    Math.min(20, parseInt(e.currentTarget.value) || 5),
+                  ),
                 )
               }}
               class="cycles-input"
