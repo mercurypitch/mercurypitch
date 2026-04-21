@@ -10,7 +10,6 @@ import type { AccuracyBand, PracticeSession, SessionResult } from '@/types'
 
 const [keyName, setKeyName] = createSignal<string>('C')
 const [scaleType, setScaleType] = createSignal<string>('major')
-const [bpm, setBpm] = createSignal<number>(120)
 const [instrument, setInstrument] = createSignal<InstrumentType>('sine')
 const [isRecording, setIsRecording] = createSignal<boolean>(false)
 
@@ -75,6 +74,46 @@ export function toggleMicWaveVisible(): void {
 export type CountInOption = 0 | 1 | 2 | 4
 
 const [countIn, setCountIn] = createSignal<CountInOption>(0)
+
+// ── BPM ────────────────────────────────────────────────────
+
+const BPM_KEY = 'pitchperfect_bpm'
+
+function loadBpmFromStorage(): number {
+  try {
+    const stored = localStorage.getItem(BPM_KEY)
+    const parsed = parseInt(stored ?? '120', 10)
+    if (!isNaN(parsed) && parsed >= 40 && parsed <= 280) {
+      return parsed
+    }
+  } catch {
+    /* empty */
+  }
+  return 120 // default
+}
+
+function saveBpmToStorage(value: number): void {
+  try {
+    localStorage.setItem(BPM_KEY, String(value))
+  } catch (e) {
+    console.warn('Failed to save BPM:', e)
+  }
+}
+
+let _bpmValue = loadBpmFromStorage()
+const [bpm, setBpmSignal] = createSignal<number>(_bpmValue)
+
+export function setBpm(value: number): void {
+  const clamped = Math.max(40, Math.min(280, value))
+  _bpmValue = clamped
+  setBpmSignal(clamped)
+  saveBpmToStorage(clamped)
+}
+
+export function initBpm(): void {
+  _bpmValue = loadBpmFromStorage()
+  setBpmSignal(_bpmValue)
+}
 
 // ── Practice ────────────────────────────────────────────────
 
@@ -955,8 +994,6 @@ export const appStore = {
   setKeyName,
   scaleType,
   setScaleType,
-  bpm,
-  setBpm,
 
   // Instrument
   instrument,
@@ -1041,6 +1078,11 @@ export const appStore = {
   SENSITIVITY_PRESETS,
   applySensitivityPreset,
   sensitivityPreset,
+
+  // BPM
+  bpm,
+  setBpm,
+  initBpm,
 
   // Theme
   theme,

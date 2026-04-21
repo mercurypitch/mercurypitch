@@ -273,6 +273,7 @@ export const App: Component<AppProps> = (props) => {
   onMount(() => {
     // Initialize theme and settings from localStorage
     appStore.initTheme()
+    appStore.initBpm()
     appStore.initPresets()
     appStore.initSessionHistory()
     appStore.initSettings()
@@ -748,6 +749,10 @@ export const App: Component<AppProps> = (props) => {
                     '[onComplete rest timeout] building scale:',
                     afterRest.label,
                   )
+                  // Reset for new item
+                  setCurrentCycle(1)
+                  setAllCycleResults([])
+                  setIsPracticeComplete(false)
                   buildScaleMelody(
                     afterRest.scaleType ?? 'major',
                     afterRest.beats ?? 8,
@@ -765,6 +770,10 @@ export const App: Component<AppProps> = (props) => {
               }, restDuration)
             } else if (nextItem && nextItem.type === 'scale') {
               console.info('[onComplete] building scale:', nextItem.label)
+              // Reset for new item
+              setCurrentCycle(1)
+              setAllCycleResults([])
+              setIsPracticeComplete(false)
               buildScaleMelody(
                 nextItem.scaleType ?? 'major',
                 nextItem.beats ?? 8,
@@ -1002,9 +1011,16 @@ export const App: Component<AppProps> = (props) => {
     setCurrentBeat(0)
     setCurrentNoteIndex(-1)
 
+    // Initialize audio engine - CRITICAL: must init and resume for sound to work
+    audioEngine.init()
+    audioEngine.resume()
+
+    // Sync engine with current melody/bpm
+    playbackRuntime.setMelody(melodyStore.items)
+    playbackRuntime.setBPM(appStore.bpm())
+
     // Start playbackRuntime with count-in
     const countInBeats = appStore.countIn()
-    playbackRuntime.setMelody(melodyStore.items)
     playbackRuntime.start(countInBeats)
     setEditorPlaybackState('playing')
   }
@@ -1130,7 +1146,7 @@ export const App: Component<AppProps> = (props) => {
 
   // ── Mic handlers ─────────────────────────────────────────────
 
-  const handleMicToggle = () => {
+  const handleMicToggle = async () => {
     if (appStore.micActive()) {
       practiceEngine.stopMic()
     } else {

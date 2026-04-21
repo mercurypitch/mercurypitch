@@ -41,6 +41,9 @@ export class AudioEngine {
     }
   >()
 
+  // BPM state (used for timing calculations)
+  private _bpm = 120
+
   // ADSR Envelope configuration (default values)
   private adsrAttack = 0.01 // seconds (10ms)
   private adsrDecay = 0.1 // seconds (100ms)
@@ -303,15 +306,14 @@ export class AudioEngine {
     return ['sine', 'piano', 'organ', 'strings', 'synth']
   }
 
-  /** Get current BPM (exists for compatibility with PlaybackRuntime) */
-  getBPM(): number {
-    return 120 // Default BPM, can be extended with BPM state if needed
+  /** Set BPM */
+  setBPM(bpm: number): void {
+    this._bpm = Math.max(40, Math.min(280, bpm))
   }
 
-  /** Set BPM (exists for compatibility with PlaybackRuntime) */
-  setBPM(_bpm: number): void {
-    // No-op for now, BPM is managed externally in PlaybackRuntime
-    // Kept for API compatibility
+  /** Get current BPM */
+  getBPM(): number {
+    return this._bpm
   }
 
   // ============================================================

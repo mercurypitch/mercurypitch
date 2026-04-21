@@ -260,11 +260,21 @@ export class PlaybackRuntime {
         const beat = elapsed / beatDuration
 
         const intBeat = Math.floor(beat)
-        if (intBeat !== this.metronomeLastBeat && this.metronomeLastBeat >= 0) {
+
+        // Check if metronome click should play
+        const shouldPlayMetronome = this.metronomeEnabled?.() ?? false
+        const isDownbeat = intBeat % 4 === 0
+
+        if (
+          intBeat !== this.metronomeLastBeat &&
+          this.metronomeLastBeat >= 0 &&
+          shouldPlayMetronome
+        ) {
+          this.audioEngine.playMetronomeClick(isDownbeat)
           this._emit({
             type: 'metronome',
             beat: intBeat,
-            isDownbeat: intBeat % 4 === 0,
+            isDownbeat,
           })
         }
         this.metronomeLastBeat = intBeat
@@ -355,7 +365,8 @@ export class PlaybackRuntime {
   // ── Config Accessors ───────────────────────────────────────
 
   get _bpm(): number {
-    return this.audioEngine.getBPM?.() || 120
+    const bpm = this.audioEngine.getBPM?.()
+    return bpm !== undefined ? bpm : 120
   }
 
   set _bpm(bpm: number) {

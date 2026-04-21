@@ -49,7 +49,6 @@ export const Walkthrough: Component = () => {
   ) => {
     if (!tooltipRef) return
     // Fallback when target element is not available - show tooltip in center of screen
-    if (!tooltipRef) return
     const left = (vw - tW) / 2
     const top = (vh - tH) / 2
     tooltipRef.style.left = `${left}px`

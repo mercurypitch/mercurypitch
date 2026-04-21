@@ -889,4 +889,79 @@ test.describe('Critical Flows — GH #121', () => {
       await page.locator('.focus-exit').click()
     })
   })
+
+  // ============================================================
+  // GH #184: Playback fixes (regression tests)
+  // ============================================================
+
+  test.describe('Playback Fixes (GH #184)', () => {
+    test('BPM slider properly updates tempo', async ({ page }) => {
+      const tempoSlider = page.locator('#tempo')
+      const tempoValue = page.locator('#tempo-value')
+
+      await expect(tempoSlider).toBeVisible()
+      await expect(tempoValue).toBeVisible()
+
+      const initialBpm = await tempoValue.textContent()
+      expect(initialBpm).not.toBeNull()
+
+      // Adjust BPM slider - should update display immediately
+      await tempoSlider.fill('160')
+      await page.waitForTimeout(300)
+
+      const newBpm = await tempoValue.textContent()
+      expect(newBpm).toBe('160')
+    })
+
+    test('Editor tab play button starts audio correctly', async ({ page }) => {
+      await page.locator('#tab-editor').click()
+      await page.waitForTimeout(1000)
+
+      // Verify play button exists
+      const playBtn = page.locator('.ctrl-btn.play-btn')
+      await expect(playBtn).toBeVisible()
+
+      // Click play - audio should initialize
+      await playBtn.click()
+      await page.waitForTimeout(500)
+
+      // Pause button should appear (audio started)
+      await expect(page.locator('.ctrl-btn').filter({ hasText: 'Pause' })).toBeVisible({
+        timeout: 2000,
+      })
+
+      // Stop playback
+      const stopBtn = page.locator('.ctrl-btn.stop')
+      await stopBtn.click()
+      await page.waitForTimeout(300)
+    })
+
+    test('PlaybackRuntime BPM syncs correctly', async ({ page }) => {
+      await page.locator('#tab-practice').click()
+      await page.waitForTimeout(300)
+
+      const tempoSlider = page.locator('#tempo')
+      const tempoValue = page.locator('#tempo-value')
+
+      // Set BPM via slider
+      await tempoSlider.fill('150')
+      await page.waitForTimeout(300)
+
+      // Verify it was set
+      const bpm = await tempoValue.textContent()
+      expect(bpm).toBe('150')
+
+      // Play should start with the new BPM
+      const playBtn = page.locator('.play-btn')
+      await playBtn.click()
+      await page.waitForTimeout(300)
+
+      // Pause button should be visible (playback started)
+      await expect(page.locator('.stop-btn').first()).toBeVisible({ timeout: 2000 })
+
+      // Stop
+      await page.locator('.stop-btn').first().click()
+      await page.waitForTimeout(300)
+    })
+  })
 })
