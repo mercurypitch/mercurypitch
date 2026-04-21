@@ -156,19 +156,6 @@ export const App: Component<AppProps> = (props) => {
   const editorIsPlaying = () => editorPlaybackState() === 'playing'
   const editorIsPaused = () => editorPlaybackState() === 'paused'
 
-  // ── Play button label helpers ───────────────────────────────
-  const playButtonLabel = createMemo(() => {
-    if (isPlaying()) return 'Pause'
-    if (isPaused()) return 'Continue'
-    return 'Start'
-  })
-
-  const editorPlayButtonLabel = createMemo(() => {
-    if (editorIsPlaying()) return 'Pause'
-    if (editorIsPaused()) return 'Continue'
-    return 'Start'
-  })
-
   const [currentBeat, setCurrentBeat] = createSignal(0)
   const [currentNoteIndex, setCurrentNoteIndex] = createSignal(-1)
   const [pitchHistory, setPitchHistory] = createSignal<PitchSample[]>([])
@@ -1369,7 +1356,6 @@ export const App: Component<AppProps> = (props) => {
                   editorTab={() => activeTab() === 'editor'}
                   isPlaying={isPlaying}
                   isPaused={isPaused}
-                  playButtonLabel={playButtonLabel}
                   onPlay={handlePlay}
                   onPause={handlePause}
                   onResume={handleResume}
@@ -1451,7 +1437,6 @@ export const App: Component<AppProps> = (props) => {
                 editorTab={() => activeTab() === 'editor'}
                 isPlaying={editorIsPlaying}
                 isPaused={editorIsPaused}
-                playButtonLabel={editorPlayButtonLabel}
                 onPlay={handleEditorPlay}
                 onPause={handleEditorPause}
                 onResume={handleEditorResume}
@@ -1467,13 +1452,16 @@ export const App: Component<AppProps> = (props) => {
                 onMetronomeToggle={() =>
                   setMetronomeEnabled(!metronomeEnabled())
                 }
-                isRecording={() => isRecording()}
                 playMode={() => 'once'}
                 playModeChange={() => {}}
                 practiceCycles={() => 1}
                 onCyclesChange={() => {}}
+                currentCycle={() => 1}
                 practiceSubMode={() => 'all'}
                 onPracticeSubModeChange={() => {}}
+                isCountingIn={() => false}
+                countInBeat={() => 0}
+                isRecording={() => isRecording()}
                 onRecordToggle={handleRecordToggle}
                 onMicToggle={handleMicToggle}
                 onWaveToggle={appStore.toggleMicWaveVisible}

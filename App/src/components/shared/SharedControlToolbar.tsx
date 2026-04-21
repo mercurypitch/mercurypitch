@@ -386,7 +386,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
         {/* Metronome */}
         <ControlGroup>
           <MetronomeGroup
-            active={props.metronomeEnabled()}
+            active={props.metronomeEnabled}
             onClick={props.onMetronomeToggle}
           />
         </ControlGroup>
