@@ -101,24 +101,29 @@ export const PresetSelector: Component = () => {
     appStore.showNotification(`Melody "${name}" deleted`, 'info')
   }
 
-  const handleShare = async () => {
+  const handleShare = () => {
     const melody = melodyStore.items
     if (melody.length === 0) {
       appStore.showNotification('Nothing to share', 'warning')
       return
     }
     const totalBeats = Math.max(...melody.map((n) => n.startBeat + n.duration))
-    const ok = await copyShareURL(
+    copyShareURL(
       melody,
       appStore.bpm(),
       appStore.keyName(),
       appStore.scaleType(),
       totalBeats,
     )
-    appStore.showNotification(
-      ok ? 'Share URL copied to clipboard!' : 'Failed to copy URL',
-      ok ? 'success' : 'error',
-    )
+      .then((ok) => {
+        appStore.showNotification(
+          ok ? 'Share URL copied to clipboard!' : 'Failed to copy URL',
+          ok ? 'success' : 'error',
+        )
+      })
+      .catch(() => {
+        appStore.showNotification('Failed to copy URL', 'error')
+      })
   }
 
   return (

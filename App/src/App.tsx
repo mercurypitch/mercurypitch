@@ -895,7 +895,7 @@ export const App: Component<AppProps> = (props) => {
 
   // ── Playback handlers ───────────────────────────────────────
 
-  const handlePlay = async () => {
+  const handlePlay = () => {
     if (isPaused()) {
       handleResume()
       return
@@ -911,8 +911,8 @@ export const App: Component<AppProps> = (props) => {
     melodyStore.setCurrentNoteIndex(-1)
 
     // Initialize audio engine
-    await audioEngine.init()
-    await audioEngine.resume()
+    audioEngine.init()
+    audioEngine.resume()
 
     // Sync engine with current melody/bpm
     const baseMelody = melodyStore.items
@@ -942,25 +942,25 @@ export const App: Component<AppProps> = (props) => {
   }
 
   const handlePause = () => {
-    playbackRuntime.pause()
-    audioEngine.stopAllNotes()
-    audioEngine.stopTone()
+    void playbackRuntime.pause()
+    void audioEngine.stopAllNotes()
+    void audioEngine.stopTone()
     setIsPlaying(false)
     setIsPaused(true)
-    playback.pausePlayback()
+    void playback.pausePlayback()
   }
 
   const handleResume = () => {
-    playbackRuntime.resume()
+    void playbackRuntime.resume()
     setIsPlaying(true)
     setIsPaused(false)
-    playback.continuePlayback()
+    void playback.continuePlayback()
   }
 
   const handleStop = () => {
-    playbackRuntime.stop()
-    practiceEngine.endSession()
-    audioEngine.stopTone()
+    void playbackRuntime.stop()
+    void practiceEngine.endSession()
+    void audioEngine.stopTone()
     setIsPlaying(false)
     setIsPaused(false)
     setCurrentBeat(0)
@@ -973,7 +973,7 @@ export const App: Component<AppProps> = (props) => {
   }
 
   // ── Editor tab playback handlers (connect to actual PlaybackRuntime) ─────────────────────────────────
-  const handleEditorPlay = async () => {
+  const handleEditorPlay = () => {
     if (editorIsPaused()) {
       handleEditorResume()
       return
@@ -984,11 +984,6 @@ export const App: Component<AppProps> = (props) => {
     setCurrentBeat(0)
     setCurrentNoteIndex(-1)
 
-    // Initialize audio if needed
-    if (!audioEngine?.getIsInitialized()) {
-      await audioEngine?.init()
-    }
-
     // Start playbackRuntime with count-in
     const countInBeats = appStore.countIn()
     playbackRuntime.setMelody(melodyStore.items)
@@ -997,19 +992,19 @@ export const App: Component<AppProps> = (props) => {
   }
 
   const handleEditorPause = () => {
-    playbackRuntime.pause()
-    audioEngine.stopTone()
+    void playbackRuntime.pause()
+    void audioEngine.stopTone()
     setEditorPlaybackState('paused')
   }
 
   const handleEditorResume = () => {
-    playbackRuntime.resume()
+    void playbackRuntime.resume()
     setEditorPlaybackState('playing')
   }
 
   const handleEditorStop = () => {
-    playbackRuntime.stop()
-    audioEngine.stopTone()
+    void playbackRuntime.stop()
+    void audioEngine.stopTone()
     setCurrentBeat(0)
     setCurrentNoteIndex(-1)
     setEditorPlaybackState('stopped')
@@ -1072,7 +1067,7 @@ export const App: Component<AppProps> = (props) => {
             nextItem.beats ?? 8,
             nextItem.label,
           )
-          setTimeout(() => handlePlay(), 500)
+          setTimeout(() => void handlePlay(), 500)
         } else if (nextItem.type === 'rest') {
           setTimeout(() => {
             handleSessionSkip()
@@ -1110,18 +1105,18 @@ export const App: Component<AppProps> = (props) => {
         buildScaleMelody(item.scaleType ?? 'major', item.beats ?? 8, item.label)
         setPlayMode('practice')
         setPracticeCycles(1)
-        setTimeout(() => handlePlay(), 500)
+        setTimeout(() => void handlePlay(), 500)
       }
     }
   })
 
   // ── Mic handlers ─────────────────────────────────────────────
 
-  const handleMicToggle = async () => {
+  const handleMicToggle = () => {
     if (appStore.micActive()) {
       practiceEngine.stopMic()
     } else {
-      await practiceEngine.startMic()
+      practiceEngine.startMic()
     }
   }
 

@@ -71,7 +71,7 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
             real-time.
           </p>
           {micEnabled() === false && micError() === null && (
-            <button class="welcome-mic-btn" onClick={handleEnableMic}>
+            <button class="welcome-mic-btn" onClick={() => void handleEnableMic()}>
               <svg viewBox="0 0 24 24" width="18" height="18">
                 <path
                   fill="currentColor"

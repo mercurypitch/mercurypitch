@@ -1562,25 +1562,27 @@ export class PianoRollEditor {
         importMidiInput.click()
       })
 
-    importMidiInput.addEventListener('change', async () => {
-      const file = importMidiInput.files?.[0]
-      if (!file) return
-      try {
-        const buffer = await file.arrayBuffer()
-        const data = new Uint8Array(buffer)
-        const melody = importMelodyFromMIDI(data)
-        if (melody && melody.length > 0) {
-          this.setMelody(melody)
-          this.onMelodyChange?.(melody)
-          if (this.hintEl)
-            this.hintEl.textContent = `Imported ${melody.length} note(s) from MIDI`
-        } else {
-          if (this.hintEl) this.hintEl.textContent = 'Could not parse MIDI file'
+    importMidiInput.addEventListener('change', () => {
+      void (async () => {
+        const file = importMidiInput.files?.[0]
+        if (!file) return
+        try {
+          const buffer = await file.arrayBuffer()
+          const data = new Uint8Array(buffer)
+          const melody = importMelodyFromMIDI(data)
+          if (melody && melody.length > 0) {
+            this.setMelody(melody)
+            this.onMelodyChange?.(melody)
+            if (this.hintEl)
+              this.hintEl.textContent = `Imported ${melody.length} note(s) from MIDI`
+          } else {
+            if (this.hintEl) this.hintEl.textContent = 'Could not parse MIDI file'
+          }
+        } catch {
+          if (this.hintEl) this.hintEl.textContent = 'Error reading MIDI file'
         }
-      } catch {
-        if (this.hintEl) this.hintEl.textContent = 'Error reading MIDI file'
-      }
-      importMidiInput.value = ''
+        importMidiInput.value = ''
+      })()
     })
 
     // Export MIDI button
@@ -1592,15 +1594,15 @@ export class PianoRollEditor {
           .toISOString()
           .replace(/[:.]/g, '-')
           .slice(0, 19)
-        downloadMIDI(melody, this.bpm, `pitchperfect-${timestamp}.mid`)
+        void downloadMIDI(melody, this.bpm, `pitchperfect-${timestamp}.mid`)
       })
 
     // Export WAV button
     container
       .querySelector('#roll-export-wav')
-      ?.addEventListener('click', async () => {
+      ?.addEventListener('click', () => {
         const melody = this.getMelody()
-        if (melody === null || melody === undefined || melody.length === 0) {
+        if (!melody.length) {
           alert('No melody to export. Add some notes first.')
           return
         }
@@ -1608,7 +1610,6 @@ export class PianoRollEditor {
           .toISOString()
           .replace(/[:.]/g, '-')
           .slice(0, 19)
-        // Use the window-exposed audio engine instance
         const engine = (
           window as Window & { pianoRollAudioEngine?: AudioEngine }
         ).pianoRollAudioEngine
@@ -1616,20 +1617,16 @@ export class PianoRollEditor {
           alert('Audio engine not ready. Please try again.')
           return
         }
-        // Get instrument from the toolbar select
         const instrumentSelect = container.querySelector(
           '#roll-instrument-select',
         ) as HTMLSelectElement | null
         const instrument = (instrumentSelect?.value as InstrumentType) || 'sine'
-        const success = await engine.downloadMelodyAsWAV(
+        void engine.downloadMelodyAsWAV(
           melody,
           this.bpm,
           `pitchperfect-${timestamp}.wav`,
           instrument,
         )
-        if (!success) {
-          alert('Failed to render WAV. Please try again.')
-        }
       })
 
     // Pitch track toggle
