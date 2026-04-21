@@ -3,9 +3,9 @@
 // ============================================================
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { MelodyEngineOptions } from '@/lib/melody-engine'
 import { MelodyEngine } from '@/lib/melody-engine'
 import type { MelodyItem } from '@/types'
-import type { MelodyEngineOptions } from '@/lib/melody-engine'
 
 // Helper to create mock melody items
 const createMelody = (): MelodyItem[] => [

@@ -150,14 +150,12 @@ export class PlaybackRuntime {
         .catch((err) => console.error('Audio init error:', err))
     }
 
+    // Check if we were paused before resetting state
+    const wasPaused = this.isPaused
     this.isPlaying = true
-    this.isPaused = false
-
-    // If we were paused before, restore the current beat position instead of resetting to 0
-    if (this.isPaused) {
+    if (wasPaused) {
       // Resume from paused position
       this.playStartTime = performance.now() - this.pauseOffset
-      this.isPaused = false
     } else {
       // Fresh start - use count-in beats
       this.currentBeat = 0
