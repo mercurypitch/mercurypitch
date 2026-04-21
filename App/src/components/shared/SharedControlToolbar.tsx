@@ -5,6 +5,7 @@
 
 import type { Component } from 'solid-js'
 import { Show } from 'solid-js'
+import { Tooltip } from '@/components/Tooltip'
 import { appStore } from '@/stores/app-store'
 import { ControlGroup } from './ControlGroup'
 import { MetronomeGroup } from './MetronomeGroup'
