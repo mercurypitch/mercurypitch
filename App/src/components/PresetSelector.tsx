@@ -8,15 +8,10 @@ import { createMemo, createSignal, onMount } from 'solid-js'
 import { buildSampleMelody } from '@/lib/scale-data'
 import { copyShareURL } from '@/lib/share-url'
 import type { PresetData } from '@/stores/app-store'
-import { appStore, deletePreset, initPresets, loadPreset, savePreset, } from '@/stores/app-store'
+import { appStore, deletePreset, initPresets, savePreset } from '@/stores/app-store'
 import { melodyStore } from '@/stores/melody-store'
 
-interface PresetSelectorProps {
-  /** Called when a preset is loaded */
-  onLoad?: (preset: PresetData) => void
-}
-
-export const PresetSelector: Component<PresetSelectorProps> = (props) => {
+export const PresetSelector: Component = () => {
   const [saveName, setSaveName] = createSignal<string>('')
 
   // Create default preset if none exist
@@ -24,7 +19,6 @@ export const PresetSelector: Component<PresetSelectorProps> = (props) => {
     initPresets()
     const presets = Object.keys(appStore.presets())
     if (presets.length === 0) {
-      // Create a default melody preset
       const defaultMelody = buildSampleMelody('C', 4)
       melodyStore.setMelody(defaultMelody)
       const data: PresetData = {
@@ -49,22 +43,9 @@ export const PresetSelector: Component<PresetSelectorProps> = (props) => {
     }
   })
 
-  // Reactive preset names from appStore - must call presets() to track signal changes
-  const presetNames = createMemo(() => {
-    return Object.keys(appStore.presets()).sort()
-  })
+  const presetNames = createMemo(() => Object.keys(appStore.presets()).sort())
 
   const currentName = createMemo(() => appStore.currentPresetName() ?? '')
-
-  // Sync save-name input when a preset is selected
-  const handleLoad = (name: string) => {
-    if (!name) return
-    setSaveName(name)
-    const preset = loadPreset(name)
-    if (preset) {
-      props.onLoad?.(preset)
-    }
-  }
 
   const handleSave = () => {
     const name = saveName().trim()
@@ -77,10 +58,9 @@ export const PresetSelector: Component<PresetSelectorProps> = (props) => {
     }
 
     const melody = melodyStore.items
-    const totalBeats =
-      melody.length > 0
-        ? Math.max(...melody.map((n) => n.startBeat + n.duration))
-        : 16
+    const totalBeats = melody.length > 0
+      ? Math.max(...melody.map((n) => n.startBeat + n.duration))
+      : 16
 
     const data: PresetData = {
       notes: melody.map((n) => ({
@@ -142,16 +122,14 @@ export const PresetSelector: Component<PresetSelectorProps> = (props) => {
 
   return (
     <div class="preset-selector">
+      {/* Name input with datalist - simple autocomplete */}
       <input
         type="text"
         list="preset-datalist"
-        id="preset-select"
-        placeholder="— Select or type melody —"
-        value={currentName()}
-        onChange={(e) => {
-          handleLoad(e.currentTarget.value)
-        }}
-        onBlur={(e) => setSaveName(e.currentTarget.value)}
+        id="preset-name-input"
+        placeholder="Melody name"
+        value={saveName()}
+        onInput={(e) => setSaveName(e.currentTarget.value)}
       />
       <datalist id="preset-datalist">
         {presetNames().map((name) => (
@@ -159,6 +137,16 @@ export const PresetSelector: Component<PresetSelectorProps> = (props) => {
         ))}
       </datalist>
 
+      {/* Save button */}
+      <button
+        class="ctrl-btn small preset-save-btn"
+        onClick={handleSave}
+        title="Save melody"
+      >
+        Save
+      </button>
+
+      {/* New button */}
       <button
         class="ctrl-btn small preset-new-btn"
         onClick={handleNew}
@@ -167,20 +155,7 @@ export const PresetSelector: Component<PresetSelectorProps> = (props) => {
         +
       </button>
 
-      <input
-        type="text"
-        id="preset-name-input"
-        placeholder="Melody name"
-        value={saveName()}
-        onInput={(e) => setSaveName(e.currentTarget.value)}
-      />
-      <button
-        class="ctrl-btn small preset-save-btn"
-        onClick={handleSave}
-        title="Save melody"
-      >
-        Save
-      </button>
+      {/* Delete button - shown when a preset is selected */}
       {currentName() && (
         <button
           class="ctrl-btn small danger preset-delete-btn"
@@ -191,6 +166,7 @@ export const PresetSelector: Component<PresetSelectorProps> = (props) => {
         </button>
       )}
 
+      {/* Share button */}
       <button
         class="share-btn small"
         onClick={handleShare}

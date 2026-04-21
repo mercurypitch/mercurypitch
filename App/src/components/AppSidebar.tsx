@@ -211,11 +211,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
 
       {/* Preset selector */}
       <div class="sidebar-section" id="preset-section">
-        <PresetSelector
-          onLoad={(preset) => {
-            props.onPresetLoad?.(preset)
-          }}
-        />
+        <PresetSelector />
       </div>
 
       {/* Stats panel — Practice tab only */}

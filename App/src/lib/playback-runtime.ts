@@ -122,7 +122,6 @@ export class PlaybackRuntime {
   start(countInBeats: number = 0): void {
     if (this.isPlaying) return
 
-    // Initialize audio engine on first start
     if (!this.audioEngine.getIsInitialized()) {
       this.audioEngine.init().catch((err) => console.error('Audio init error:', err))
     }
@@ -169,30 +168,25 @@ export class PlaybackRuntime {
     this._emit({ type: 'state', state: 'stopped' })
   }
 
-  /** Seek to a specific beat position */
   seekTo(beat: number): void {
     this.stop()
     this.currentBeat = Math.max(0, beat)
     this._emit({ type: 'beat', beat: this.currentBeat })
   }
 
-  /** Set BPM */
-  setBPM(_bpm: number): void {
-    // Proxy to audio engine
-    (_audioEngine as unknown as { setBPM?: (bpm: number) => void }).setBPM?.(_bpm)
+  setBPM(bpm: number): void {
+    const audioEngine = this.audioEngine as unknown as { setBPM?: (bpm: number) => void }
+    audioEngine.setBPM?.(bpm)
   }
 
-  /** Set melody */
   setMelody(melody: MelodyItem[]): void {
     this._melody = melody
   }
 
-  /** Get current BPM from audio engine */
   getBPM(): number {
     return this.audioEngine.getBPM?.() ?? 120
   }
 
-  /** Get melody */
   getMelody(): MelodyItem[] {
     return this._melody
   }
@@ -210,7 +204,6 @@ export class PlaybackRuntime {
       const elapsed = now - this.playStartTime
 
       if (countIn > 0) {
-        // Count-in phase
         const rawBeat = (elapsed / beatDuration) + countIn
         const currentInt = Math.floor(rawBeat)
 
@@ -221,17 +214,14 @@ export class PlaybackRuntime {
         }
         this.animationFrameId = requestAnimationFrame(animate)
       } else {
-        // Normal playback phase
         const beat = elapsed / beatDuration
 
-        // Metronome
         const intBeat = Math.floor(beat)
         if (intBeat !== this.metronomeLastBeat && this.metronomeLastBeat >= 0) {
           this._emit({ type: 'metronome', beat: intBeat, isDownbeat: intBeat % 4 === 0 })
         }
         this.metronomeLastBeat = intBeat
 
-        // Note tracking
         const melody = this._melody ?? []
         const newIndex = melodyIndexAtBeat(melody, beat)
 
@@ -250,7 +240,6 @@ export class PlaybackRuntime {
         this.currentBeat = beat
         this._emit({ type: 'beat', beat })
 
-        // Check complete
         const totalBeats = this._getTotalBeats(melody)
         if (beat >= totalBeats) {
           this._emit({ type: 'complete' })
@@ -315,7 +304,8 @@ export class PlaybackRuntime {
   }
 
   set _bpm(bpm: number) {
-    this.audioEngine.setBPM?.(bpm)
+    const audioEngine = this.audioEngine as unknown as { setBPM?: (bpm: number) => void }
+    audioEngine.setBPM?.(bpm)
   }
 
   // ── Cleanup ───────────────────────────────────────────────

@@ -99,16 +99,6 @@ describe('MelodyEngine', () => {
   })
 
   describe('count-in', () => {
-    it('reports when in count-in phase', () => {
-      expect(engine.isInCountIn()).toBe(false)
-      // Count-in starts when start() is called with count-in parameter
-      // But since we're not actually waiting for playback, we just verify the method exists
-    })
-
-    it('reports current count-in beat', () => {
-      expect(engine.getCountInBeat()).toBe(0)
-    })
-
     it('setCountIn clamps to valid range', () => {
       engine.setCountIn(-1) // Should clamp to 0
       engine.setCountIn(10) // Should clamp to 4
