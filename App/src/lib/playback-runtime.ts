@@ -48,6 +48,7 @@ export class PlaybackRuntime {
   private onEventCallbacks = new Map<string, Set<(e: unknown) => void>>()
   private animationFrameId: number | null = null
   private playStartTime = 0
+  private pauseOffset = 0
   private _countInBeats = 0
   private countInBeat = 0
   private metronomeEnabled?: () => boolean
@@ -141,6 +142,8 @@ export class PlaybackRuntime {
   pause(): void {
     if (!this.isPlaying || this.isPaused) return
 
+    // Record the time offset to resume correctly
+    this.pauseOffset = performance.now() - this.playStartTime
     this.isPaused = true
     this._emit({ type: 'state', state: 'paused' })
     this._stopAnimationLoop()
@@ -150,6 +153,8 @@ export class PlaybackRuntime {
     if (!this.isPlaying || !this.isPaused) return
 
     this.isPaused = false
+    // Resume from paused position by adjusting playStartTime
+    this.playStartTime = performance.now() - this.pauseOffset
     this._emit({ type: 'state', state: 'playing' })
     this._startAnimationLoop()
   }
@@ -177,6 +182,14 @@ export class PlaybackRuntime {
   setBPM(bpm: number): void {
     const audioEngine = this.audioEngine as unknown as { setBPM?: (bpm: number) => void }
     audioEngine.setBPM?.(bpm)
+  }
+
+  setCountIn(beats: number): void {
+    this._countInBeats = Math.max(0, Math.min(4, beats))
+  }
+
+  getCountIn(): number {
+    return this._countInBeats
   }
 
   setMelody(melody: MelodyItem[]): void {

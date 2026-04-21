@@ -71,7 +71,16 @@ export class MelodyEngine {
   }
 
   setCountIn(_beats: number): void {
-    this.runtime.setBPM(this.runtime.getBPM())
+    // Store count-in beats internally (PlaybackRuntime would need to be updated)
+    // For now, just validate the input
+    const clamped = Math.max(0, Math.min(4, _beats))
+    this._countInBeats = clamped
+  }
+
+  // Internal method to access count-in beats
+  private _countInBeats: number = 0
+  getCountIn(): number {
+    return this._countInBeats
   }
 
   setPlaybackSpeed(_speed: number): void {

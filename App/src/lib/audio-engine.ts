@@ -580,7 +580,9 @@ export class AudioEngine {
 
     if (duration !== undefined) {
       const stopTime = this.audioCtx.currentTime + duration / 1000
-      this.toneGain.gain.setValueAtTime(this.volume, stopTime - 0.02)
+      // Clamp fade-out start time to be non-negative (prevent RangeError for short notes)
+      const fadeOutStart = Math.max(0, stopTime - 0.02)
+      this.toneGain.gain.setValueAtTime(this.volume, fadeOutStart)
       this.toneGain.gain.linearRampToValueAtTime(0, stopTime)
       this.toneOscillator.stop(stopTime)
       this.toneOscillator.onended = () => {
