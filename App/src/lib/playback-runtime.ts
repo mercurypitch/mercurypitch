@@ -148,10 +148,19 @@ export class PlaybackRuntime {
 
     this.isPlaying = true
     this.isPaused = false
-    this.currentBeat = 0
-    this.currentNoteIndex = -1
-    this._countInBeats = countInBeats
-    this.countInBeat = 0
+
+    // If we were paused before, restore the current beat position instead of resetting to 0
+    if (this.isPaused) {
+      // Resume from paused position
+      this.playStartTime = performance.now() - this.pauseOffset
+      this.isPaused = false
+    } else {
+      // Fresh start - use count-in beats
+      this.currentBeat = 0
+      this.currentNoteIndex = -1
+      this._countInBeats = countInBeats
+      this.countInBeat = 0
+    }
 
     this._emit({ type: 'state', state: 'playing' })
 

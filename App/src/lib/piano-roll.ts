@@ -485,6 +485,8 @@ export class PianoRollEditor {
   // Editor tab current beat (propagated from App.tsx for continuous animation)
   // This is used for Editor tab internal playback and to track position
   private editorBeat = 0
+  // Whether the editor was playing before switching to external playback
+  private wasPlayingBeforeExternal = false
   private startedNoteIds = new Set<number>()
   private currentNoteRow = -1 // GH #129: tracks current note row for glowing dot
   // Track whether playback is external (from Practice tab) vs local (Editor tab)
@@ -754,10 +756,18 @@ export class PianoRollEditor {
     this.playbackState = state
 
     if (state === 'playing') {
-      // Start internal animation if not using external playback
-      if (!this.isExternalPlayback && this.playbackAnimationId === null) {
+      // If we're transitioning from external back to internal playback
+      if (this.isExternalPlayback && this.wasPlayingBeforeExternal) {
+        this.wasPlayingBeforeExternal = false
+        this.isExternalPlayback = false
         this.startedNoteIds.clear()
-        // Use editorBeat as starting point for animation (resumes from where it was)
+        // Resume from current editorBeat
+        const startTime = Date.now() - (this.editorBeat / this.bpm) * 60000
+        this.playStartTime = startTime
+        this.startPlaybackAnimation()
+      } else if (!this.isExternalPlayback && this.playbackAnimationId === null) {
+        // Fresh start - use editorBeat as starting point for animation
+        this.startedNoteIds.clear()
         const startTime = Date.now() - (this.editorBeat / this.bpm) * 60000
         this.playStartTime = startTime
         this.startPlaybackAnimation()
