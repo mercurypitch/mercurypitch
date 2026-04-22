@@ -569,8 +569,8 @@ export class AudioEngine {
     await this.resume()
     if (!this.audioCtx || !this.mainGain) return
 
-    // Stop any existing oscillator
-    this.stopTone()
+    // Stop any existing tone completely
+    void this.stopTone()
 
     this.toneOscillator = this.audioCtx.createOscillator()
     this.toneGain = this.audioCtx.createGain()
@@ -587,17 +587,22 @@ export class AudioEngine {
 
     this.toneOscillator.connect(this.toneGain)
     this.toneGain.connect(this.mainGain)
-    this.toneOscillator.start()
+    this.toneOscillator.start(this.audioCtx.currentTime)
 
     this.isPlaying = true
 
     if (duration !== undefined) {
       const stopTime = this.audioCtx.currentTime + duration / 1000
-      // Clamp fade-out start time to be at most stopTime (prevent RangeError for short notes)
-      const fadeOutStart = Math.min(stopTime, Math.max(0, stopTime - 0.02))
-      this.toneGain.gain.setValueAtTime(this.volume, fadeOutStart)
-      this.toneGain.gain.linearRampToValueAtTime(0, stopTime)
-      this.toneOscillator.stop(stopTime)
+      // For extremely short notes, skip the fade-out to prevent RangeError
+      // Minimum fade duration is 20ms, anything shorter just plays a very short tone
+      if (stopTime - this.audioCtx.currentTime < 0.02) {
+        this.toneOscillator.stop(stopTime)
+      } else {
+        // Fade out smoothly in the last 20ms
+        this.toneGain.gain.setValueAtTime(this.volume, stopTime - 0.02)
+        this.toneGain.gain.linearRampToValueAtTime(0, stopTime)
+        this.toneOscillator.stop(stopTime)
+      }
       this.toneOscillator.onended = () => {
         this.isPlaying = false
       }

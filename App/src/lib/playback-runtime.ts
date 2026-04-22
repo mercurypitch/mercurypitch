@@ -58,6 +58,7 @@ export class PlaybackRuntime {
   private animationFrameId: number | null = null
   private playStartTime = 0
   private pauseOffset = 0
+  private pauseStartTime = 0
   private _countInBeats = 0
   private countInBeat = 0
   private metronomeEnabled?: () => boolean
@@ -150,18 +151,26 @@ export class PlaybackRuntime {
         .catch((err) => console.error('Audio init error:', err))
     }
 
-    // Check if we were paused before resetting state
+    // Track if we're resuming from pause (not stopping)
     const wasPaused = this.isPaused
+    const isResuming = wasPaused && this.pauseOffset > 0
+
     this.isPlaying = true
-    if (wasPaused) {
-      // Resume from paused position
-      this.playStartTime = performance.now() - this.pauseOffset
+
+    if (isResuming) {
+      // Add accumulated pause duration to be accounted for in the animation loop
+      this.pauseOffset += this.pauseStartTime > 0
+        ? performance.now() - this.pauseStartTime
+        : 0
+      // Reset pauseStartTime for next pause
+      this.pauseStartTime = 0
     } else {
       // Fresh start - use count-in beats
       this.currentBeat = 0
       this.currentNoteIndex = -1
       this._countInBeats = countInBeats
       this.countInBeat = 0
+      this.pauseOffset = 0
     }
 
     this._emit({ type: 'state', state: 'playing' })
@@ -173,7 +182,9 @@ export class PlaybackRuntime {
     if (!this.isPlaying || this.isPaused) return
 
     // Record the time offset to resume correctly
-    this.pauseOffset = performance.now() - this.playStartTime
+    this.pauseOffset += performance.now() - this.playStartTime
+    // Record when we paused for cleanup in resume()
+    this.pauseStartTime = performance.now()
     this.isPaused = true
     // Keep isPlaying=true so resume() can proceed - we're in "paused but playing" state
     this._emit({ type: 'state', state: 'paused' })
@@ -183,10 +194,16 @@ export class PlaybackRuntime {
   resume(): void {
     if (!this.isPlaying || !this.isPaused) return
 
+    // Add accumulated pause time to our offset
+    this.pauseOffset += this.pauseStartTime > 0
+      ? performance.now() - this.pauseStartTime
+      : 0
+    this.pauseStartTime = 0
+
     this.isPaused = false
     this.isPlaying = true
-    // Resume from paused position by adjusting playStartTime
-    this.playStartTime = performance.now() - this.pauseOffset
+    // Reset playStartTime so we can track since resume
+    this.playStartTime = performance.now()
     this._emit({ type: 'state', state: 'playing' })
     this._startAnimationLoop()
   }
@@ -247,7 +264,8 @@ export class PlaybackRuntime {
 
       const now = performance.now()
       const beatDuration = 60000 / this._bpm
-      const elapsed = now - this.playStartTime
+      // Calculate elapsed time, accounting for pause time
+      let elapsed = (now - this.playStartTime) + this.pauseOffset
 
       if (countIn > 0) {
         const rawBeat = elapsed / beatDuration + countIn
