@@ -1,18 +1,10 @@
 import { test } from '@playwright/test'
+import { dismissOverlays } from '@/e2e/helpers/ui'
 
 test('debug store and Show reactivity', async ({ page }) => {
   await page.goto('http://localhost:4173/')
   await page.waitForSelector('#app-tabs', { timeout: 10000 })
-
-  // Dismiss welcome if present
-  const overlay = page.locator('.welcome-overlay')
-  if ((await overlay.count()) > 0 && (await overlay.isVisible())) {
-    const dismissBtn = page.locator('.welcome-cta, .overlay-close')
-    if ((await dismissBtn.count()) > 0) {
-      await dismissBtn.first().click()
-      await overlay.waitFor({ state: 'hidden', timeout: 5000 })
-    }
-  }
+  await dismissOverlays(page)
 
   // Deep dive into what's happening
   const result = await page.evaluate(async () => {

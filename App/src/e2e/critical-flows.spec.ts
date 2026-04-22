@@ -1,25 +1,11 @@
-import type { Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
-
-/**
- * Dismisses the welcome overlay if it appears.
- */
-async function dismissWelcomeIfShown(page: Page): Promise<void> {
-  const overlay = page.locator('.welcome-overlay')
-  if ((await overlay.count()) > 0 && (await overlay.isVisible())) {
-    const dismissBtn = page.locator('.welcome-cta, .overlay-close')
-    if ((await dismissBtn.count()) > 0) {
-      await dismissBtn.first().click()
-      await overlay.waitFor({ state: 'hidden', timeout: 5000 })
-    }
-  }
-}
+import { dismissOverlays } from '@/e2e/helpers/ui'
 
 test.describe('Critical Flows — GH #121', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/')
     await page.waitForSelector('#app-tabs', { timeout: 10000 })
-    await dismissWelcomeIfShown(page)
+    await dismissOverlays(page)
   })
 
   // ============================================================
@@ -668,7 +654,7 @@ test.describe('Critical Flows — GH #121', () => {
       // Reload the page
       await page.reload()
       await page.waitForSelector('#app-tabs', { timeout: 10000 })
-      await dismissWelcomeIfShown(page)
+      await dismissOverlays(page)
 
       // Go to settings
       await page.locator('#tab-settings').click()
@@ -722,14 +708,18 @@ test.describe('Critical Flows — GH #121', () => {
       await page.waitForTimeout(1000)
 
       // A pause/stop button should appear (playback active)
-      await expect(page.locator('.ctrl-btn').filter({ hasText: 'Pause' })).toBeVisible({ timeout: 2000 })
+      await expect(
+        page.locator('.ctrl-btn').filter({ hasText: 'Pause' }),
+      ).toBeVisible({ timeout: 2000 })
 
       // Switch to Practice tab - audio should stop
       await page.locator('#tab-practice').click()
       await page.waitForTimeout(2000)
 
       // The Play button should be visible (audio stopped)
-      await expect(page.locator('.ctrl-btn').filter({ hasText: 'Play' })).toBeVisible()
+      await expect(
+        page.locator('.ctrl-btn').filter({ hasText: 'Play' }),
+      ).toBeVisible()
     })
 
     test('all tabs are accessible', async ({ page }) => {
@@ -926,7 +916,9 @@ test.describe('Critical Flows — GH #121', () => {
       await page.waitForTimeout(500)
 
       // Pause button should appear (audio started)
-      await expect(page.locator('.ctrl-btn').filter({ hasText: 'Pause' })).toBeVisible({
+      await expect(
+        page.locator('.ctrl-btn').filter({ hasText: 'Pause' }),
+      ).toBeVisible({
         timeout: 2000,
       })
 
@@ -957,7 +949,9 @@ test.describe('Critical Flows — GH #121', () => {
       await page.waitForTimeout(300)
 
       // Pause button should be visible (playback started)
-      await expect(page.locator('.stop-btn').first()).toBeVisible({ timeout: 2000 })
+      await expect(page.locator('.stop-btn').first()).toBeVisible({
+        timeout: 2000,
+      })
 
       // Stop
       await page.locator('.stop-btn').first().click()

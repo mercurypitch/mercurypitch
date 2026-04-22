@@ -7,23 +7,22 @@
 // **Why BPM exists in both appStore and PlaybackRuntime:**
 
 // 1. **appStore.bpm** - The single source of truth for BPM value
-//    - Stored in localStorage for persistence
-//    - Updated when preset is loaded (from URL or saved preset)
-//    - Updated when slider is moved
-//    - Used by appStore UI components (slider display)
+// - Stored in localStorage for persistence
+// - Updated when preset is loaded (from URL or saved preset)
+// - Updated when slider is moved
+// - Used by appStore UI components (slider display)
 
 // 2. **PlaybackRuntime** - Reads BPM from appStore via AudioEngine
-//    - Does NOT store BPM independently
-//    - Passes BPM to AudioEngine for timing calculations
-//    - This design ensures UI (slider) and playback (timing) always sync
+// - Does NOT store BPM independently
+// - Passes BPM to AudioEngine for timing calculations
+// - This design ensures UI (slider) and playback (timing) always sync
 
 // **Data flow:**
-// ```
-// URL preset -> appStore.setBpm() -> localStorage
+// `// URL preset -> appStore.setBpm() -> localStorage
 // App initialization -> loadBpmFromStorage() -> appStore.setBpmSignal()
 // Slider change -> setBpm() -> _bpmValue -> setBpmSignal() -> localStorage
 // Playback start -> appStore.bpm() -> AudioEngine.setBPM() -> timing
-// ```
+//`
 
 // **Why not pass appStore reference to PlaybackRuntime?**
 // - Would create tighter coupling between AudioEngine and appStore
@@ -38,9 +37,9 @@
 // **How:**
 // 1. `PlaybackRuntime.start(countInBeats)` - accepts count-in beats (0-4)
 // 2. During animation loop, if `countInBeats > 0`:
-//    - Plays count-in beats with metronome sounds
-//    - Emits 'countIn' events (1, 2, 3, 4)
-//    - Emits 'countInComplete' event when done
+// - Plays count-in beats with metronome sounds
+// - Emits 'countIn' events (1, 2, 3, 4)
+// - Emits 'countInComplete' event when done
 // 3. After count-in completes, starts actual playback
 
 // **Integration:**

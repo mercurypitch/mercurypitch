@@ -1,18 +1,11 @@
 import { test } from '@playwright/test'
+import { dismissOverlays } from './helpers/ui'
 
 test('debug settings tab click - detailed', async ({ page }) => {
   await page.goto('http://localhost:4173/')
   await page.waitForSelector('#app-tabs', { timeout: 10000 })
 
-  // Dismiss welcome
-  const overlay = page.locator('.welcome-overlay')
-  if ((await overlay.count()) > 0 && (await overlay.isVisible())) {
-    const dismissBtn = page.locator('.welcome-cta, .overlay-close')
-    if ((await dismissBtn.count()) > 0) {
-      await dismissBtn.first().click()
-      await overlay.waitFor({ state: 'hidden', timeout: 5000 })
-    }
-  }
+  await dismissOverlays(page)
 
   // Check tab signal before click
   const beforeTab = await page.evaluate(() => {

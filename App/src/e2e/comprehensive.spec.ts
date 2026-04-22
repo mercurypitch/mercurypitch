@@ -3,12 +3,12 @@
 // ============================================================
 
 import { expect, test } from '@playwright/test'
+import { dismissOverlays } from '@/e2e/helpers/ui'
 
 test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/')
-    await page.waitForLoadState('networkidle')
-    await page.waitForTimeout(500)
+    await dismissOverlays(page)
   })
 
   // ==========================================
@@ -25,7 +25,9 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
     }
   })
 
-  test('practice tab navigation persists after navigation away', async ({ page }) => {
+  test('practice tab navigation persists after navigation away', async ({
+    page,
+  }) => {
     await page.locator('#tab-practice').click()
     await page.waitForTimeout(300)
 
@@ -85,7 +87,9 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
     expect(page.locator('#focus-mode-btn')).not.toHaveClass(/active/)
   })
 
-  test('can navigate from practice tab to editor to practice', async ({ page }) => {
+  test('can navigate from practice tab to editor to practice', async ({
+    page,
+  }) => {
     await page.locator('#tab-practice').click()
     await page.waitForTimeout(300)
 
@@ -98,7 +102,9 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
     await expect(page.locator('#tab-practice')).toHaveClass(/active/)
   })
 
-  test('settings tab remains accessible after multiple navigations', async ({ page }) => {
+  test('settings tab remains accessible after multiple navigations', async ({
+    page,
+  }) => {
     for (let i = 0; i < 5; i++) {
       await page.locator('#tab-settings').click()
       await page.waitForTimeout(200)
@@ -142,7 +148,9 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
     }
   })
 
-  test('zoom controls in piano roll toolbar are accessible', async ({ page }) => {
+  test('zoom controls in piano roll toolbar are accessible', async ({
+    page,
+  }) => {
     const editorTab = page.locator('#tab-editor')
     await editorTab.click()
     await page.waitForTimeout(300)
@@ -171,7 +179,9 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
     await expect(page.locator('.roll-piano')).toBeVisible()
   })
 
-  test('playback speed selector is visible in practice tab', async ({ page }) => {
+  test('playback speed selector is visible in practice tab', async ({
+    page,
+  }) => {
     const practiceTab = page.locator('#tab-practice')
     await practiceTab.click()
     await page.waitForTimeout(300)
@@ -694,7 +704,9 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
     expect(micBtn).not.toHaveClass(/active/)
   })
 
-  test('play button enables on first navigation to practice', async ({ page }) => {
+  test('play button enables on first navigation to practice', async ({
+    page,
+  }) => {
     await page.locator('#tab-editor').click()
     await page.waitForTimeout(300)
 
@@ -702,7 +714,9 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
     await expect(playBtn).toBeVisible()
   })
 
-  test('all playback controls are visible in practice tab', async ({ page }) => {
+  test('all playback controls are visible in practice tab', async ({
+    page,
+  }) => {
     const practiceTab = page.locator('#tab-practice')
 
     await practiceTab.click()
@@ -856,7 +870,9 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
     // Place a note
     await page.locator('.roll-tool-btn[data-tool="place"]').click()
     await page.waitForTimeout(100)
-    await page.locator('canvas.roll-grid').click({ position: { x: 400, y: 300 } })
+    await page
+      .locator('canvas.roll-grid')
+      .click({ position: { x: 400, y: 300 } })
     await page.waitForTimeout(300)
   })
 
@@ -986,7 +1002,9 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
 
     // Place a note
     await page.locator('.roll-tool-btn[data-tool="place"]').click()
-    await page.locator('canvas.roll-grid').click({ position: { x: 400, y: 300 } })
+    await page
+      .locator('canvas.roll-grid')
+      .click({ position: { x: 400, y: 300 } })
     await page.waitForTimeout(300)
 
     await expect(timelineInfo).toBeVisible()
@@ -1043,7 +1061,9 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
 
     // Place a note
     await page.locator('.roll-tool-btn[data-tool="place"]').click()
-    await page.locator('canvas.roll-grid').click({ position: { x: 400, y: 300 } })
+    await page
+      .locator('canvas.roll-grid')
+      .click({ position: { x: 400, y: 300 } })
     await page.waitForTimeout(300)
   })
 
@@ -1153,7 +1173,10 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
 
     await expect(page.locator('#reverb-type')).toBeVisible()
 
-    const options = await page.locator('#reverb-type').locator('option').allTextContents()
+    const options = await page
+      .locator('#reverb-type')
+      .locator('option')
+      .allTextContents()
     expect(options.length).toBeGreaterThan(2)
   })
 
@@ -1203,7 +1226,9 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
     expect(errors).toHaveLength(0)
   })
 
-  test('no errors when navigating repeatedly between tabs', async ({ page }) => {
+  test('no errors when navigating repeatedly between tabs', async ({
+    page,
+  }) => {
     const errors: string[] = []
     page.on('console', (msg) => {
       if (msg.type() === 'error') {
@@ -1274,7 +1299,9 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
     const gridCanvas = page.locator('canvas.roll-grid')
 
     for (let i = 0; i < 50; i++) {
-      await gridCanvas.click({ position: { x: 400 + (i % 50) * 20, y: 300 + (i % 20) * 15 } })
+      await gridCanvas.click({
+        position: { x: 400 + (i % 50) * 20, y: 300 + (i % 20) * 15 },
+      })
       await page.waitForTimeout(10)
     }
 
@@ -1542,8 +1569,11 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
     await page.locator('#tab-practice').click()
     await page.waitForTimeout(100)
 
-    const criticalErrors = errors.filter((e) =>
-      e.includes('ReferenceError') || e.includes('TypeError') || e.includes('undefined'),
+    const criticalErrors = errors.filter(
+      (e) =>
+        e.includes('ReferenceError') ||
+        e.includes('TypeError') ||
+        e.includes('undefined'),
     )
     expect(criticalErrors).toHaveLength(0)
   })
@@ -1632,7 +1662,10 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
     await page.waitForTimeout(300)
 
     await expect(page.locator('#settings-panel')).toBeVisible()
-    await expect(page.locator('#settings-panel')).toHaveCSS('overflow-y', 'auto')
+    await expect(page.locator('#settings-panel')).toHaveCSS(
+      'overflow-y',
+      'auto',
+    )
   })
 
   test(' piano roll scales with viewport', async ({ page }) => {
@@ -1659,7 +1692,9 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
     const mainRect = await page.locator('main').boundingBox()
 
     if (statusRect && mainRect) {
-      expect(statusRect.y + statusRect.height).toBeLessThanOrEqual(mainRect.y + mainRect.height + 10)
+      expect(statusRect.y + statusRect.height).toBeLessThanOrEqual(
+        mainRect.y + mainRect.height + 10,
+      )
     }
   })
 

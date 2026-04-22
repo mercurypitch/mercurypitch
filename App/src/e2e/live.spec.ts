@@ -1,17 +1,10 @@
 import { expect, test } from '@playwright/test'
+import { dismissOverlays } from '@/e2e/helpers/ui'
 
 test('live site settings', async ({ page }) => {
   await page.goto('https://pitchperfect.clodhost.com/')
   await page.waitForSelector('#app-tabs', { timeout: 15000 })
-
-  const overlay = page.locator('.welcome-overlay')
-  if ((await overlay.count()) > 0 && (await overlay.isVisible())) {
-    const dismissBtn = page.locator('.welcome-cta, .overlay-close')
-    if ((await dismissBtn.count()) > 0) {
-      await dismissBtn.first().click()
-      await overlay.waitFor({ state: 'hidden', timeout: 5000 })
-    }
-  }
+  await dismissOverlays(page)
 
   console.info(
     'Initial tabs:',

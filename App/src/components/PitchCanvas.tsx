@@ -303,7 +303,9 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
         }
         let beat: number
         if (isRecordingMode) {
-          const perfNow = (performance as unknown as { now: () => number }).now()
+          const perfNow = (
+            performance as unknown as { now: () => number }
+          ).now()
           const beatDurationMs = 60000 / appStore.bpm()
           beat = (perfNow - pt.time) / beatDurationMs
         } else {
@@ -323,7 +325,9 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
         let lx: number
         const ly = freqToY(last.freq, h)
         if (isRecordingMode) {
-          const perfNow = (performance as unknown as { now: () => number }).now()
+          const perfNow = (
+            performance as unknown as { now: () => number }
+          ).now()
           const beatDurationMs = 60000 / appStore.bpm()
           const lastBeat = (perfNow - last.time) / beatDurationMs
           lx = beatToX(lastBeat, w)
