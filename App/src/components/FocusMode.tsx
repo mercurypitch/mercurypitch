@@ -4,7 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, Show } from 'solid-js'
-import type { PitchSample } from '@/components/PitchCanvas'
+import type { PitchSample } from '@/types'
 import { PitchCanvas } from '@/components/PitchCanvas'
 import { melodyTotalBeats } from '@/lib/scale-data'
 import { appStore } from '@/stores/app-store'

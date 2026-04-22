@@ -2,16 +2,16 @@
 // PitchCanvas — Pitch trail and melody display canvas
 // ============================================================
 
-import type { Component } from 'solid-js'
-import { createEffect, onCleanup, onMount } from 'solid-js'
+import type {
+  Component as ComponentType,
+  createEffect,
+  onCleanup,
+  onMount,
+} from 'solid-js'
+import type { MelodyItem, PitchSample, ScaleDegree } from '@/types'
 import { appStore } from '@/stores/app-store'
-import type { MelodyItem, ScaleDegree } from '@/types'
 
-export interface PitchSample {
-  beat: number
-  freq: number
-  confidence: number
-}
+type Component = ComponentType
 
 interface PitchCanvasProps {
   melody: () => MelodyItem[]
@@ -66,20 +66,22 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
   })
 
   const handleSeek = (e: MouseEvent) => {
-    if (!canvasRef || (!props.isPlaying() && !props.isPaused())) return
-    const rect = canvasRef.getBoundingClientRect()
-    const x = e.clientX - rect.left
-    // Map x position to a beat and trigger a seek
-    const w = canvasRef.clientWidth
-    const totalBeats = props.totalBeats()
-    const seekBeat = (x / w) * totalBeats
-    // Update currentBeat signal - this will trigger playback to seek
-    // For now, emit a custom event that App.tsx can handle
-    window.dispatchEvent(
-      new CustomEvent('pitchperfect:seekToBeat', {
-        detail: { beat: seekBeat },
-      }),
-    )
+    if (!canvasRef) return
+    if (props.isPlaying() || props.isPaused()) {
+      const rect = canvasRef.getBoundingClientRect()
+      const x = e.clientX - rect.left
+      // Map x position to a beat and trigger a seek
+      const w = canvasRef.clientWidth
+      const totalBeats = props.totalBeats()
+      const seekBeat = (x / w) * totalBeats
+      // Update currentBeat signal - this will trigger playback to seek
+      // For now, emit a custom event that App.tsx can handle
+      window.dispatchEvent(
+        new CustomEvent('pitchperfect:seekToBeat', {
+          detail: { beat: seekBeat },
+        }),
+      )
+    }
   }
 
   const resizeCanvas = () => {
@@ -195,9 +197,10 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     )
 
     // Waveform display during mic recording
-    if (props.getWaveform && appStore.micWaveVisible()) {
-      const waveform = props.getWaveform()
-      if (waveform && waveform.length > 0) {
+    if (props.getWaveform) {
+      if (appStore.micWaveVisible()) {
+        const waveform = props.getWaveform()
+        if (waveform && waveform.length > 0) {
         ctx.save()
         ctx.strokeStyle = 'rgba(219,112,219,0.6)'
         ctx.lineWidth = 1.5
@@ -312,12 +315,21 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       ctx.lineCap = 'round'
       ctx.beginPath()
       let started = false
+      const isRecordingMode = props.isRecording?.() ?? false
       for (const pt of history) {
-        if (!pt.freq || pt.confidence < 0.2) {
+        if (!pt.freq || pt.cents === undefined) {
           started = false
           continue
         }
-        const px = beatToX(pt.beat, w)
+        let beat: number
+        if (isRecordingMode) {
+          const perfNow = (performance as unknown as { now: () => number }).now()
+          const beatDurationMs = 60000 / appStore.bpm()
+          beat = (perfNow - pt.time) / beatDurationMs
+        } else {
+          beat = pt.time
+        }
+        const px = beatToX(beat, w)
         const py = freqToY(pt.freq, h)
         if (!started) {
           ctx.moveTo(px, py)
@@ -328,14 +340,18 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
 
       // Glowing dot at last position
       const last = history[history.length - 1]
-      if (
-        last !== null &&
-        last !== undefined &&
-        last.freq !== undefined &&
-        last.confidence >= 0.2
-      ) {
-        const lx = beatToX(last.beat, w)
-        const ly = freqToY(last.freq, h)
+      if (last && last.cents !== undefined) {
+        let lx: number
+        let ly: number
+        if (isRecordingMode) {
+          const perfNow = (performance as unknown as { now: () => number }).now()
+          const beatDurationMs = 60000 / appStore.bpm()
+          const lastBeat = (perfNow - last.time) / beatDurationMs
+          lx = beatToX(lastBeat, w)
+        } else {
+          lx = beatToX(last.time, w)
+        }
+        ly = freqToY(last.freq, h)
         const grad = ctx.createRadialGradient(lx, ly, 0, lx, ly, 12)
         grad.addColorStop(0, 'rgba(63,185,80,0.55)')
         grad.addColorStop(1, 'rgba(63,185,80,0)')
@@ -405,4 +421,5 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       style={{ display: 'block', width: '100%', height: '100%' }}
     />
   )
+}
 }

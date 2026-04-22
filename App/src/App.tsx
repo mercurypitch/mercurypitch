@@ -450,7 +450,7 @@ export const App: Component<AppProps> = (props) => {
     // Create PlaybackRuntime - orchestrates audio and timing
     // Note: BPM is managed by appStore, passed to AudioEngine for timing
     playbackRuntime = new PlaybackRuntime({
-      metronomeEnabled: () => metronomeEnabled(),
+      metronomeEnabled: metronomeEnabled,
       instrumentType: appStore.instrument(),
       onNoteStart: (item, noteIndex) => {
         setCurrentNoteIndex(noteIndex)
@@ -836,7 +836,11 @@ export const App: Component<AppProps> = (props) => {
         setPitchHistory((prev) => {
           const next = [
             ...prev,
-            { beat, freq: pitch.frequency, confidence: pitch.clarity },
+            {
+              freq: pitch.frequency,
+              time: perfNow,
+              cents: pitch.cents,
+            },
           ]
           return next.length > 800 ? next.slice(-800) : next
         })
