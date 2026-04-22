@@ -2,16 +2,15 @@
 // PitchCanvas — Pitch trail and melody display canvas
 // ============================================================
 
-import type {
-  Component as ComponentType,
+import {
+  Component,
   createEffect,
   onCleanup,
   onMount,
+  createSignal,
 } from 'solid-js'
-import type { MelodyItem, PitchSample, ScaleDegree } from '@/types'
 import { appStore } from '@/stores/app-store'
-
-type Component = ComponentType
+import type { MelodyItem, PitchSample, ScaleDegree } from '@/types'
 
 interface PitchCanvasProps {
   melody: () => MelodyItem[]

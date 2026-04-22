@@ -6,11 +6,11 @@
 import type { Component } from 'solid-js'
 import { Show } from 'solid-js'
 import { MicButton } from '@/components'
+import { PrecCountButton } from '@/components/PrecCountButton'
 import { Tooltip } from '@/components/Tooltip'
 import { appStore } from '@/stores/app-store'
 import { ControlGroup } from './ControlGroup'
 import { MetronomeGroup } from './MetronomeGroup'
-import { PrecCountButton } from '@/components/PrecCountButton'
 
 export type PracticeSubMode = 'all' | 'random' | 'focus' | 'reverse'
 export type ActiveTab = 'practice' | 'editor' | 'settings'

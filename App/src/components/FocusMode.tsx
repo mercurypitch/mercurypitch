@@ -4,11 +4,11 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, Show } from 'solid-js'
-import type { PitchSample } from '@/types'
 import { PitchCanvas } from '@/components/PitchCanvas'
 import { melodyTotalBeats } from '@/lib/scale-data'
 import { appStore } from '@/stores/app-store'
 import { melodyStore } from '@/stores/melody-store'
+import type { PitchSample } from '@/types'
 import type { NoteResult, PitchResult, PracticeResult } from '@/types'
 
 interface FocusModeProps {
