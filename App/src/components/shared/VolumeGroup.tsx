@@ -2,10 +2,10 @@
 // VolumeGroup - Shared volume control component
 // ============================================================
 
-import type { Component } from 'solid-js'
+import type { Accessor,Component } from 'solid-js'
 
 interface VolumeGroupProps {
-  volume: () => number
+  volume: Accessor<number>
   onVolumeChange: (vol: number) => void
   id?: string
 }

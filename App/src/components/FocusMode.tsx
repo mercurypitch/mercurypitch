@@ -37,7 +37,11 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
 
   const totalBeats = createMemo(() => melodyTotalBeats(melodyStore.items))
   const totalBars = createMemo(() => Math.ceil(totalBeats() / 4))
-  const currentBar = createMemo(() => Math.floor(props.currentBeat() / 4) + 1)
+  const currentBar = createMemo(() => {
+    const beat = Math.max(1, props.currentBeat())
+    const bar = Math.floor(beat / 4) + 1
+    return Math.min(bar, totalBars())
+  })
   const progress = createMemo(() => {
     const beats = props.currentBeat()
     const total = totalBeats()
