@@ -2,13 +2,17 @@
 // VolumeGroup - Shared volume control component
 // ============================================================
 
-import type { Accessor,Component } from 'solid-js'
+import type { Accessor, Component } from 'solid-js'
 
 interface VolumeGroupProps {
   volume: Accessor<number>
   onVolumeChange: (vol: number) => void
   id?: string
 }
+
+// Clamp value between min and max
+const clamp = (value: number, min: number, max: number): number =>
+  Math.max(min, Math.min(max, value))
 
 export const VolumeGroup: Component<VolumeGroupProps> = (props) => (
   <div class="volume-group">
@@ -21,7 +25,11 @@ export const VolumeGroup: Component<VolumeGroupProps> = (props) => (
       value={props.volume()}
       class="volume-slider"
       onInput={(e) => {
-        const vol = parseInt(e.currentTarget.value) || 80
+        let vol = parseInt(e.currentTarget.value, 10)
+        // Fallback only if the value is not a valid number
+        if (isNaN(vol)) vol = 80
+        // Clamp to valid range
+        vol = clamp(vol, 0, 100)
         props.onVolumeChange(vol)
       }}
     />
