@@ -964,6 +964,10 @@ export const App: Component<AppProps> = (props) => {
     // BPM synced via AudioEngine in the createEffect above
 
     practiceEngine.startSession()
+
+    // Set session active for practice mode (for FocusMode display)
+    appStore.setSessionActive(true)
+
     setIsPlaying(true)
     setIsPaused(false)
     playback.startPlayback()
@@ -1018,6 +1022,7 @@ export const App: Component<AppProps> = (props) => {
     melodyStore.setCurrentNoteIndex(-1)
     setPitchHistory([])
     playback.resetPlayback()
+    appStore.setSessionActive(false)
     // Also reset editor state
     setEditorPlaybackState('stopped')
   }
