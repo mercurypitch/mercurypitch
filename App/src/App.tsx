@@ -850,12 +850,16 @@ export const App: Component<AppProps> = (props) => {
         ? ((perfNow - freeRecordStartTime) / 60000) * appStore.bpm()
         : playbackRuntime.getCurrentBeat()
       if (pitch && pitch.frequency > 0 && pitch.clarity >= 0.2) {
+        // Use beat time for samples during playback, real time for recording
+        const sampleTime = isRecording()
+          ? perfNow
+          : (beat * 60000) / appStore.bpm()
         setPitchHistory((prev) => {
           const next = [
             ...prev,
             {
               freq: pitch.frequency,
-              time: perfNow,
+              time: sampleTime,
               cents: pitch.cents,
             },
           ]
