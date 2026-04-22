@@ -10,6 +10,7 @@ import { Tooltip } from '@/components/Tooltip'
 import { appStore } from '@/stores/app-store'
 import { ControlGroup } from './ControlGroup'
 import { MetronomeGroup } from './MetronomeGroup'
+import { PrecCountButton } from '@/components/PrecCountButton'
 
 export type PracticeSubMode = 'all' | 'random' | 'focus' | 'reverse'
 export type ActiveTab = 'practice' | 'editor' | 'settings'
@@ -216,6 +217,13 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
             Focus
           </button>
         </Show>
+
+        {/* Precount toggle */}
+        <div class="app-header-sep" />
+        <div class="app-header-sep" />
+        <div class="control-group">
+          <PrecCountButton />
+        </div>
 
         {/* Count-in badge */}
         <Show when={props.isCountingIn()}>
