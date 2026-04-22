@@ -592,14 +592,19 @@ export class AudioEngine {
     this.isPlaying = true
 
     if (duration !== undefined) {
-      const stopTime = this.audioCtx.currentTime + duration / 1000
-      // For extremely short notes, skip the fade-out to prevent RangeError
-      // Minimum fade duration is 20ms, anything shorter just plays a very short tone
-      if (stopTime - this.audioCtx.currentTime < 0.02) {
+      const durationSeconds = duration / 1000
+      const stopTime = this.audioCtx.currentTime + durationSeconds
+      // For extremely short notes (< 20ms), skip the fade-out entirely
+      // This prevents RangeError when stopTime - 0.02 would be negative
+      if (durationSeconds < 0.02) {
         this.toneOscillator.stop(stopTime)
       } else {
         // Fade out smoothly in the last 20ms
-        this.toneGain.gain.setValueAtTime(this.volume, stopTime - 0.02)
+        // Ensure fadeStart is always a positive time (never negative or zero)
+        const fadeDuration = 0.02
+        const safeStart = Math.max(0, this.audioCtx.currentTime + 0.001)
+        const fadeStart = Math.max(safeStart, stopTime - fadeDuration)
+        this.toneGain.gain.setValueAtTime(this.volume, fadeStart)
         this.toneGain.gain.linearRampToValueAtTime(0, stopTime)
         this.toneOscillator.stop(stopTime)
       }
