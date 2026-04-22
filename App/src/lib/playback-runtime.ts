@@ -265,7 +265,7 @@ export class PlaybackRuntime {
       const now = performance.now()
       const beatDuration = 60000 / this._bpm
       // Calculate elapsed time, accounting for pause time
-      let elapsed = (now - this.playStartTime) + this.pauseOffset
+      const elapsed = (now - this.playStartTime) + this.pauseOffset
 
       if (countIn > 0) {
         const rawBeat = elapsed / beatDuration + countIn
