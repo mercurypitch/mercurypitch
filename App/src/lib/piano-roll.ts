@@ -2326,7 +2326,9 @@ export class PianoRollEditor {
     const rect = this.rulerCanvas?.getBoundingClientRect()
     if (!rect || !this.gridContainer) return
 
-    const x = e.clientX - rect.left
+    // Account for scroll offset (ruler has transform for scrolling)
+    const scrollOffset = this.gridContainer.scrollLeft
+    const x = e.clientX - rect.left + scrollOffset
     const beat = Math.max(0, Math.min(this.totalBeats, x / this.beatWidth))
     const targetScroll = beat * this.beatWidth - rect.width / 2
     this.gridContainer.scrollLeft = Math.max(0, targetScroll)

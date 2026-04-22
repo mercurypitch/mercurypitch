@@ -158,20 +158,25 @@ export class PlaybackRuntime {
     this.isPlaying = true
 
     if (isResuming) {
-      // Add accumulated pause duration to be accounted for in the animation loop
-      this.pauseOffset += this.pauseStartTime > 0
-        ? performance.now() - this.pauseStartTime
-        : 0
-      // Reset pauseStartTime for next pause
-      this.pauseStartTime = 0
+      // For resuming, continue from paused position
+      // Don't reset countInBeat - preserve where we left off
+      this.currentBeat = Math.max(0, this.currentBeat)
+      this.currentNoteIndex = Math.max(-1, this.currentNoteIndex)
     } else {
-      // Fresh start - use count-in beats
+      // Fresh start - initialize count-in from top
       this.currentBeat = 0
       this.currentNoteIndex = -1
       this._countInBeats = countInBeats
-      this.countInBeat = 0
+      this.countInBeat = countInBeats
       this.pauseOffset = 0
     }
+
+    // Add accumulated pause duration to be accounted for in the animation loop
+    this.pauseOffset += this.pauseStartTime > 0
+      ? performance.now() - this.pauseStartTime
+      : 0
+    // Reset pauseStartTime for next pause
+    this.pauseStartTime = 0
 
     this._emit({ type: 'state', state: 'playing' })
 
@@ -268,13 +273,14 @@ export class PlaybackRuntime {
       const elapsed = (now - this.playStartTime) + this.pauseOffset
 
       if (countIn > 0) {
-        const rawBeat = elapsed / beatDuration + countIn
-        const currentInt = Math.floor(rawBeat)
+        const elapsedBeats = elapsed / beatDuration
+        const currentBeat = countIn - Math.floor(elapsedBeats)
+        const currentInt = Math.floor(currentBeat)
 
         if (currentInt !== this.countInBeat) {
           this.countInBeat = currentInt
-          this._emit({ type: 'beat', beat: rawBeat })
-          this._emit({ type: 'countIn', countIn: this.countInBeat + 1 })
+          this._emit({ type: 'beat', beat: currentBeat })
+          this._emit({ type: 'countIn', countIn: this.countInBeat })
         }
         this.animationFrameId = requestAnimationFrame(animate)
       } else {
