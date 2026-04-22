@@ -1,9 +1,9 @@
-import { defineConfig } from 'vite';
-import solidPlugin from 'vite-plugin-solid';
-import { resolve, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { defineConfig } from 'vite'
+import solidPlugin from 'vite-plugin-solid'
+import { resolve, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+const __dirname = dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
   plugins: [solidPlugin()],
@@ -19,14 +19,4 @@ export default defineConfig({
   build: {
     target: 'esnext',
   },
-  test: {
-    globals: true,
-    environment: 'jsdom',
-    setupFiles: './src/test/setup.ts',
-    include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
-    coverage: {
-      reporter: ['text', 'html'],
-      include: ['src/lib/**/*.ts', 'src/stores/**/*.ts'],
-    },
-  },
-});
+})
