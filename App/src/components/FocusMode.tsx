@@ -181,12 +181,12 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
             class="focus-speed-btn"
             onClick={speedUp}
             disabled={currentSpeedIndex() === SPEED_STEPS.length - 1}
-            title="Faster (↑)"
+            title="Faster"
           >
             <svg viewBox="0 0 24 24" width="16" height="16">
               <path
                 fill="currentColor"
-                d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"
+                d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"
               />
             </svg>
           </button>
@@ -197,12 +197,12 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
             class="focus-speed-btn"
             onClick={speedDown}
             disabled={currentSpeedIndex() === 0}
-            title="Slower (↓)"
+            title="Slower"
           >
             <svg viewBox="0 0 24 24" width="16" height="16">
               <path
                 fill="currentColor"
-                d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"
+                d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"
               />
             </svg>
           </button>

@@ -39,7 +39,6 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
   test('settings panel can be toggled from editor tab', async ({ page }) => {
     const editorTab = page.locator('#tab-editor')
     const settingsTab = page.locator('#tab-settings')
-    const practiceTab = page.locator('#tab-practice')
 
     await editorTab.click()
     await page.waitForTimeout(300)
@@ -153,42 +152,27 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
     }
   })
 
-  test('practice sub-mode can be toggled', async ({ page }) => {
-    const practiceTab = page.locator('#tab-practice')
-    await practiceTab.click()
+  test('practice sub-mode select exists', async ({ page }) => {
+    // Select Practice mode first (sub-mode select only shows in practice mode)
+    const btnPractice = page.locator('#btn-practice')
+    await btnPractice.click()
     await page.waitForTimeout(300)
 
-    // Practice sub-mode select removed in current version
-    // This test verifies practice tab is accessible
-    await expect(page.locator('#practice-panel')).toBeVisible()
+    // Verify practice sub-mode select exists
+    const subModeSelect = page.locator('#practice-sub-mode')
+    await expect(subModeSelect).toBeVisible()
+
+    // Verify sub-mode select is visible
+    await expect(subModeSelect).toBeVisible()
+
+    // Note: The sub-mode select shows/hides options dynamically based on selection
+    // Just verify the select element exists and has options
   })
 
-  test('zoom controls in piano roll toolbar are accessible', async ({
-    page,
-  }) => {
+  test('editor tab is accessible', async ({ page }) => {
     const editorTab = page.locator('#tab-editor')
     await editorTab.click()
     await page.waitForTimeout(300)
-
-    // Toolbar removed in current version - just verify tab is active
-    await expect(editorTab).toHaveClass(/active/)
-  })
-
-  test('effect buttons in editor are visible', async ({ page }) => {
-    const editorTab = page.locator('#tab-editor')
-    await editorTab.click()
-    await page.waitForTimeout(300)
-
-    // Toolbar removed in current version - just verify tab is active
-    await expect(editorTab).toHaveClass(/active/)
-  })
-
-  test('piano roll row labels are visible', async ({ page }) => {
-    const editorTab = page.locator('#tab-editor')
-    await editorTab.click()
-    await page.waitForTimeout(300)
-
-    // Editor tab is accessible
     await expect(editorTab).toHaveClass(/active/)
   })
 
@@ -215,11 +199,17 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
     const toolbar = page.locator('.practice-header-bar')
     await expect(toolbar).toBeVisible()
 
+    // Play button is only visible in stopped state
     const playBtn = page.locator('.play-btn').first()
     await expect(playBtn).toBeVisible()
 
     await playBtn.click()
-    await page.waitForTimeout(300)
+    await page.waitForTimeout(500)
+
+    // After clicking play, pause button should be visible
+    // The pause button is a stop button in practice mode
+    const stopBtn = page.locator('.stop-btn').first()
+    await expect(stopBtn).toBeVisible({ timeout: 3000 })
   })
 
   test('pause button stops playback', async ({ page }) => {
@@ -227,12 +217,13 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
     await practiceTab.click()
     await page.waitForTimeout(500)
 
-    const playBtn = page.locator('.play-btn').first()
-
+    // Start playback first
+    const playBtn = page.locator('.ctrl-btn.play-btn').first()
     await playBtn.click()
     await page.waitForTimeout(500)
 
-    const pauseBtn = page.locator('button[title="Pause"]')
+    // Now pause button should be visible (pause button has class="ctrl-btn stop-btn")
+    const pauseBtn = page.locator('.ctrl-btn.stop-btn').first()
     await expect(pauseBtn).toBeVisible()
   })
 
@@ -241,17 +232,18 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
     await practiceTab.click()
     await page.waitForTimeout(500)
 
-    const playBtn = page.locator('.play-btn').first()
+    const playBtn = page.locator('.ctrl-btn.play-btn').first()
 
     await playBtn.click()
     await page.waitForTimeout(500)
 
-    const stopBtn = page.locator('.stop-btn').first()
-    await stopBtn.click()
-    await page.waitForTimeout(300)
+    // Find and click the stop button (has class="ctrl-btn stop-btn stop")
+    const stop = page.locator('.ctrl-btn.stop-btn.stop').first()
+    await stop.click()
+    await page.waitForTimeout(500)
 
-    // Verify stop button shows
-    await expect(stopBtn).toBeVisible()
+    // Play button should be visible again (stopped state)
+    await expect(playBtn).toBeVisible({ timeout: 3000 })
   })
 
   test('play/pause cycle works correctly', async ({ page }) => {
@@ -259,19 +251,26 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
     await practiceTab.click()
     await page.waitForTimeout(500)
 
-    const playBtn = page.locator('.play-btn').first()
-    const stopBtn = page.locator('.stop-btn').first()
+    const playBtn = page.locator('.ctrl-btn.play-btn').first()
+    const stopBtn = page.locator('.ctrl-btn.stop-btn.stop').first()
 
+    // Start playback
     await playBtn.click()
     await page.waitForTimeout(200)
 
+    // Pause
     await stopBtn.click()
     await page.waitForTimeout(200)
 
+    // Now play button should be visible (resume state)
+    await expect(playBtn).toBeVisible({ timeout: 3000 })
+
+    // Resume
     await playBtn.click()
     await page.waitForTimeout(200)
 
-    expect(stopBtn).not.toHaveClass(/active/)
+    // Play button should be hidden (playing state)
+    await expect(playBtn).toBeHidden()
   })
 
   // Note: Skip buttons were removed in current version

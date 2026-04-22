@@ -161,9 +161,20 @@ export const App: Component<AppProps> = (props) => {
   const handleTabChange = (newTab: ActiveTab) => {
     const currentTab = activeTab()
 
-    // Stop audio when leaving practice or editor tabs
-    if (currentTab === 'practice' || currentTab === 'editor') {
+    // Stop audio when leaving practice or editor tabs - but preserve playback state for Editor tab
+    if (currentTab === 'practice') {
+      // Only reset for practice tab (practice tab has session-based playback)
       resetPlaybackState()
+    } else if (currentTab === 'editor') {
+      // For editor tab, just stop audio but don't reset entire state
+      void audioEngine.stopAllNotes()
+      void audioEngine.stopTone()
+      void playbackRuntime.stop()
+      playback.resetPlayback()
+      setEditorPlaybackState('stopped')
+      setCurrentBeat(0)
+      setCurrentNoteIndex(-1)
+      melodyStore.setCurrentNoteIndex(-1)
     }
 
     // Switch to new tab
@@ -973,10 +984,12 @@ export const App: Component<AppProps> = (props) => {
     playbackRuntime.setMelody(filteredMelody)
     // BPM synced via AudioEngine in the createEffect above
 
-    practiceEngine.startSession()
-
-    // Set session active for practice mode (for FocusMode display)
-    appStore.setSessionActive(true)
+    // Only start a session if user has selected one via the Sessions browser
+    // Don't auto-start sessions - let users explicitly choose to load a session
+    if (appStore.sessionMode()) {
+      practiceEngine.startSession()
+      appStore.setSessionActive(true)
+    }
 
     setIsPlaying(true)
     setIsPaused(false)
