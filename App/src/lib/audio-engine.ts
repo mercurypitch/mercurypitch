@@ -44,6 +44,17 @@ export class AudioEngine {
   // BPM state (used for timing calculations)
   private _bpm = 120
 
+  private _appStoreBpm = 120
+
+  setBpm(bpm: number): void {
+    this._bpm = bpm
+    this._appStoreBpm = bpm
+  }
+
+  getBpm(): number {
+    return this._bpm
+  }
+
   // ADSR Envelope configuration (default values)
   private adsrAttack = 0.01 // seconds (10ms)
   private adsrDecay = 0.1 // seconds (100ms)

@@ -368,15 +368,15 @@ export class PlaybackRuntime {
   // ── Config Accessors ───────────────────────────────────────
 
   get _bpm(): number {
-    const bpm = this.audioEngine.getBPM?.()
+    const bpm = this.audioEngine.getBpm?.()
     return bpm !== undefined ? bpm : 120
   }
 
   set _bpm(bpm: number) {
     const audioEngine = this.audioEngine as unknown as {
-      setBPM?: (bpm: number) => void
+      setBpm?: (bpm: number) => void
     }
-    audioEngine.setBPM?.(bpm)
+    audioEngine.setBpm?.(bpm)
   }
 
   // ── Cleanup ───────────────────────────────────────────────

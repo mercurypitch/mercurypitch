@@ -1019,12 +1019,12 @@ export const App: Component<AppProps> = (props) => {
     if (!isPlaying()) {
       return
     }
-    void playbackRuntime.pause()
     void audioEngine.stopAllNotes()
     void audioEngine.stopTone()
+    void playbackRuntime.pause()
+    void playback.pausePlayback()
     setIsPlaying(false)
     setIsPaused(true)
-    void playback.pausePlayback()
   }
 
   const handleResume = () => {

@@ -2,7 +2,7 @@
 // Melody Store — Melody items and scale data
 // ============================================================
 
-import { createSignal } from 'solid-js'
+import { createSignal, onMount } from 'solid-js'
 import { createStore } from 'solid-js/store'
 import { buildMultiOctaveScale, buildSampleMelody } from '@/lib/scale-data'
 import type { MelodyItem, MelodyNote, ScaleDegree } from '@/types'
@@ -10,8 +10,31 @@ import { appStore } from './app-store'
 
 // ── Melody items ─────────────────────────────────────────────
 
+const DEFAULT_MELODY_KEY = 'pitchperfect_default_melody'
+
+function loadDefaultMelodyFromStorage(): MelodyItem[] {
+  try {
+    const stored = localStorage.getItem(DEFAULT_MELODY_KEY)
+    if (stored !== null && stored !== '') {
+      const parsed = JSON.parse(stored)
+      if (Array.isArray(parsed)) return parsed
+    }
+  } catch {
+    // Fail silently
+  }
+  return buildSampleMelody('C', 4)
+}
+
+function saveDefaultMelodyToStorage(melody: MelodyItem[]): void {
+  try {
+    localStorage.setItem(DEFAULT_MELODY_KEY, JSON.stringify(melody))
+  } catch {
+    // Fail silently
+  }
+}
+
 const [melodyItems, setMelodyItems] = createStore<MelodyItem[]>(
-  buildSampleMelody('C', 4),
+  loadDefaultMelodyFromStorage(),
 )
 
 let _idCounter = 100
@@ -43,14 +66,19 @@ export function updateMelodyNote(
 }
 
 export function setMelody(newMelody: MelodyItem[]): void {
-  setMelodyItems(
-    newMelody.map((item, _i) => ({ ...item, id: item.id ?? generateId() })),
-  )
+  const updated = newMelody.map((item, _i) => ({ ...item, id: item.id ?? generateId() }))
+  setMelodyItems(updated)
+  saveDefaultMelodyToStorage(updated)
 }
 
 export function clearMelody(): void {
   setMelodyItems([])
 }
+
+// Save melody to localStorage whenever it changes (for default melody persistence)
+onMount(() => {
+  saveDefaultMelodyToStorage(melodyItems())
+})
 
 // ── Scale data ───────────────────────────────────────────────
 
