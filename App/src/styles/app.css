@@ -263,48 +263,64 @@ header h1 {
   flex-shrink: 0;
 }
 
-/* ===== Practice & Editor Tab Headers (single 3-row layout) ===== */
-.practice-header-bar,
-.editor-header-bar {
+/* ===== Practice Tab Header (second header bar) ===== */
+.practice-header-bar {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 4px 12px;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
   background: var(--bg-tertiary);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
-  overflow: hidden;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
 }
-
-/* Row 1: Essential controls - always visible */
+.practice-header-bar::-webkit-scrollbar {
+  display: none;
+}
 .practice-header-bar .essential-controls,
-.editor-header-bar .essential-controls {
+.practice-header-bar .secondary-controls {
   display: flex;
   align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
-  padding: 2px 0;
-  border-bottom: 1px solid var(--border-dim);
-}
-
-/* Control sections with separators */
-.practice-header-bar .control-section,
-.editor-header-bar .control-section {
-  display: flex;
-  align-items: center;
-  gap: 4px;
+  gap: 6px;
   flex-shrink: 0;
 }
 
-/* Row 2: Secondary controls - hidden on mobile */
-.practice-header-bar .secondary-controls,
+/* ===== Editor Tab Header (second header bar) ===== */
+.editor-header-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.editor-header-bar::-webkit-scrollbar {
+  display: none;
+}
+.editor-header-bar .essential-controls,
 .editor-header-bar .secondary-controls {
-  display: none; /* Hidden by default - shown on larger screens */
+  display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   flex-shrink: 0;
-  padding: 2px 0;
-  border-bottom: 1px solid var(--border-dim);
+}
+.practice-header-bar .essential-control-group,
+.editor-header-bar .essential-control-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.practice-header-bar .secondary-control-group,
+.editor-header-bar .secondary-control-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .mode-group {
@@ -1742,35 +1758,12 @@ header h1 {
     display: none;
   }
 
-  /* Practice & Editor headers: show essential controls row 1 only */
-  .practice-header-bar .essential-controls,
-  .editor-header-bar .essential-controls {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 2px;
-    width: 100%;
-    padding: 0;
-    border-bottom: 1px solid var(--border-dim);
-  }
-
-  .practice-header-bar .secondary-controls,
-  .editor-header-bar .secondary-controls {
+  /* Practice header: hide secondary controls by default */
+  .practice-header-bar .secondary-controls {
     display: none;
   }
-
-  /* Show only essential controls in compact row */
-  .practice-header-bar .control-section,
-  .editor-header-bar .control-section {
-    flex-shrink: 1;
-  }
-
-  .app-header-sep {
-    display: inline-block;
-    width: 1px;
-    height: 16px;
-    margin: 0 2px;
-    background: var(--border);
-    border-radius: 1px;
+  .practice-header-bar .essential-controls {
+    display: flex;
   }
 
   /* Session player: compact */
@@ -1811,37 +1804,40 @@ header h1 {
     font-size: 0.72rem;
   }
 
-  /* Practice & Editor headers: single essential row only */
-  .practice-header-bar,
-  .editor-header-bar {
+  /* Practice header: single essential row only */
+  .practice-header-bar {
     flex-wrap: nowrap;
     overflow-x: auto;
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
   }
-  .practice-header-bar::-webkit-scrollbar,
-  .editor-header-bar::-webkit-scrollbar {
+  .practice-header-bar::-webkit-scrollbar {
     display: none;
   }
-  /* Keep only: mic, record, play/stop */
-  .practice-header-bar .control-section,
-  .editor-header-bar .control-section {
-    flex-shrink: 1;
-  }
-  .practice-header-bar .secondary-controls,
-  .editor-header-bar .secondary-controls {
+  /* Keep only: mic, record, play/stop, sessions, mode toggles, count-in badge */
+  .practice-header-bar .tempo-group,
+  .practice-header-bar .countin-group,
+  .practice-header-bar .volume-group,
+  .practice-header-bar .speed-group,
+  .practice-header-bar .sensitivity-group {
     display: none;
   }
-  .practice-header-bar .ctrl-btn,
-  .editor-header-bar .ctrl-btn {
+  .practice-header-bar .ctrl-btn {
     padding: 6px 8px;
     font-size: 0.75rem;
     min-height: 44px;
     min-width: 44px;
   }
-  .practice-header-bar .record-btn,
-  .editor-header-bar .record-btn {
+  .practice-header-bar .record-btn {
     min-width: auto;
+  }
+  .mode-group {
+    gap: 2px;
+  }
+  .mode-btn {
+    padding: 6px 8px;
+    font-size: 0.72rem;
+    min-height: 44px;
   }
   #run-indicator {
     font-size: 0.65rem;
@@ -2853,106 +2849,41 @@ Keeps your existing styles, only adjusts layout
   background: #0d1117;
 }
 
-/* Piano roll toolbar - 3-row layout with dynamic columns */
+/* ===== Mobile Piano Roll ===== */
+@media (max-width: 768px) {
+  .app-tab {
+    padding: 4px 10px;
+    font-size: 0.72rem;
+  }
 .roll-toolbar {
-  display: grid;
-  grid-template-rows: repeat(3, auto);
-  gap: 6px;
-  padding: 8px 14px;
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
-}
+    display: grid; /* Ensure grid is active */
+    grid-auto-flow: column;
+    /* This ensures columns only take up as much space as their content and NO LESS */
+    grid-auto-columns: min-content;
 
-.roll-toolbar-row {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  align-items: center;
-}
-
-.roll-toolbar-row:nth-child(2) .roll-col-essential,
-.roll-toolbar-row:nth-child(2) .roll-col-edit,
-.roll-toolbar-row:nth-child(2) .roll-col-advanced {
-  grid-template-columns: repeat(3, 1fr);
-}
-
-/* Essential Controls Row */
-.roll-toolbar-row:nth-child(1) .roll-col-essential {
-  display: flex;
-  justify-content: center;
-  background: var(--bg-tertiary);
-  border-radius: 5px;
   padding: 6px 8px;
+    gap: 3px;
+    overflow-x: auto;
+    overflow-y: hidden;
+
+    /* This is the magic line for Grid scrolling */
+    width: 100%;
+
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
 }
 
-.roll-toolbar-row:nth-child(1) .roll-col-grid {
-  justify-content: center;
+  /* For the children */
+  .roll-group,
+  .roll-durations {
+    /* flex-shrink only works if the parent is display: flex */
+    /* Since you're using Grid, use this instead to prevent shrinking: */
+    min-width: max-content;
 }
 
-/* Edit Controls Row */
-.roll-toolbar-row:nth-child(2) .roll-col-edit {
-  display: flex;
-  justify-content: flex-start;
-}
-
-.roll-toolbar-row:nth-child(2) .roll-col-delete {
-  justify-content: center;
-}
-
-.roll-toolbar-row:nth-child(2) .roll-col-clear {
-  justify-content: flex-end;
-}
-
-/* Advanced Controls Row */
-.roll-toolbar-row:nth-child(3) .roll-col-advanced {
-  display: flex;
-  justify-content: flex-start;
-}
-
-.roll-toolbar-row:nth-child(3) .roll-col-pitch-track {
-  justify-content: center;
-}
-
-.roll-toolbar-row:nth-child(3) .roll-col-effects {
-  justify-content: flex-end;
-  gap: 4px;
-}
-
-/* Mobile overrides - single column */
-@media (max-width: 768px) {
-  .roll-toolbar {
-    grid-template-rows: auto;
+  .roll-toolbar::-webkit-scrollbar {
+    display: none;
   }
-  .roll-toolbar-row {
-    grid-template-columns: 1fr;
-    gap: 6px;
-  }
-  .roll-toolbar-row:nth-child(2) .roll-col-essential,
-  .roll-toolbar-row:nth-child(2) .roll-col-edit,
-  .roll-toolbar-row:nth-child(2) .roll-col-advanced {
-    grid-template-columns: 1fr;
-  }
-  .roll-toolbar-row:nth-child(1) .roll-col-essential {
-    flex-direction: row;
-    justify-content: center;
-  }
-  .roll-toolbar-row:nth-child(2) .roll-col-delete,
-  .roll-toolbar-row:nth-child(2) .roll-col-clear {
-    flex-direction: row;
-    justify-content: center;
-  }
-  .roll-toolbar-row:nth-child(3) .roll-col-pitch-track {
-    flex-direction: row;
-    justify-content: center;
-  }
-  .roll-toolbar-row:nth-child(3) .roll-col-effects {
-    flex-direction: row;
-    justify-content: center;
-  }
-}
-
-@media (max-width: 768px) {
   .roll-tool-btn {
     padding: 4px 7px;
     font-size: 0.68rem;
@@ -2991,143 +2922,7 @@ Keeps your existing styles, only adjusts layout
   .mode-label {
     font-size: 0.65rem;
   }
-}
-
-/* ===== Desktop/Tablet ( > 768px ) — show secondary controls row ===== */
-@media (min-width: 769px) {
-  /* Practice & Editor headers: show essential + secondary rows */
-  .practice-header-bar .essential-controls,
-  .editor-header-bar .essential-controls,
-  .practice-header-bar .secondary-controls,
-  .editor-header-bar .secondary-controls {
-    display: flex;
-  }
-
-  /* Secondary controls layout */
-  .practice-header-bar .secondary-controls,
-  .editor-header-bar .secondary-controls {
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  /* Volume and Speed groups in secondary row */
-  .practice-header-bar .control-section,
-  .editor-header-bar .control-section {
-    align-items: center;
-  }
-
-  .volume-slider {
-    width: 70px;
-  }
-
-  .speed-select {
-    font-size: 0.75rem;
-    padding: 4px 6px;
-  }
-
-  /* Piano Roll Editor toolbar 3-column grid layout */
-  .roll-toolbar {
-    display: grid;
-    grid-template-columns: auto 1fr auto;
-    gap: 2px;
-    background: var(--bg-secondary);
-    padding: 4px;
-    border-radius: 6px;
-    margin: 8px 0;
-  }
-
-  .roll-toolbar-row {
-    display: contents;
-  }
-
-  .roll-col-left,
-  .roll-col-middle,
-  .roll-col-right {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    padding: 4px;
-  }
-
-  .roll-col-divider {
-    width: 1px;
-    background: var(--border);
-    margin: 0 2px;
-  }
-
-  .roll-tool-btn,
-  .roll-delete-btn,
-  .roll-undo-btn,
-  .roll-redo-btn,
-  .roll-grid-toggle-btn,
-  .roll-bars-btn,
-  .roll-zoom-btn,
-  .roll-export-btn {
-    padding: 4px 8px;
-    font-size: 0.75rem;
-    min-width: auto;
-    flex-shrink: 0;
-  }
-
-  .roll-tool-btn svg,
-  .roll-undo-btn svg,
-  .roll-redo-btn svg,
-  .roll-delete-btn svg,
-  .roll-grid-toggle-btn svg,
-  .roll-action-btn svg,
-  .roll-bar-btn svg,
-  .roll-zoom-btn svg {
-    width: 14px;
-    height: 14px;
-  }
-
-  .roll-add-erase-group,
-  .roll-instrument-group,
-  .roll-undo-group,
-  .roll-advanced-group {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-
-  .mode-label,
-  .dur-label,
-  .octave-label,
-  .octaves-label {
-    font-size: 0.7rem;
-    white-space: nowrap;
-  }
-
-  .roll-mode-select,
-  .roll-instrument-select {
-    padding: 3px 6px;
-    font-size: 0.75rem;
-    min-width: 80px;
-  }
-
-  .dur-btn {
-    padding: 2px 6px;
-    font-size: 0.7rem;
-  }
-
-  .roll-toolbar-row.roll-row-1 {
-    /* 3-column layout: Essential controls group */
-    grid-template-columns: 1fr 1fr 1fr;
-  }
-
-  .roll-toolbar-row.roll-row-2 {
-    /* 2-column layout: Duration + Octave + Rows */
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .roll-toolbar-row.roll-row-3 {
-    /* 2-column layout: Scale + Bars + Zoom + Import/Export */
-    grid-template-columns: 1fr 1fr;
-  }
-
-  /* ===== Piano Roll Editor ===== */
-  .roll-mode-select,
-  .roll-instrument-select {
+  .roll-mode-select {
     max-width: 100px;
     font-size: 0.68rem;
     padding: 3px 6px;
@@ -3139,6 +2934,42 @@ Keeps your existing styles, only adjusts layout
     width: 20px;
     height: 20px;
     font-size: 0.55rem;
+  }
+  .roll-bars-btn {
+    padding: 3px 6px;
+    font-size: 0.65rem;
+  }
+  .roll-zoom-btn {
+    padding: 3px 6px;
+    font-size: 0.65rem;
+  }
+  .zoom-value {
+    font-size: 0.65rem;
+    min-width: 32px;
+  }
+  .roll-undo-btn,
+  .roll-redo-btn,
+  .roll-ctrl-btn {
+    padding: 4px 6px;
+  }
+  .roll-ctrl-btn svg {
+    width: 12px;
+    height: 12px;
+  }
+  .roll-effects-label {
+    font-size: 0.65rem;
+  }
+  .roll-action-btn {
+    padding: 3px 6px;
+    font-size: 0.65rem;
+  }
+  .roll-action-btn svg {
+    width: 12px;
+    height: 12px;
+  }
+  .roll-preset-select {
+    max-width: 90px;
+    font-size: 0.68rem;
   }
   .roll-preset-name {
     width: 80px;
