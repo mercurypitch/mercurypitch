@@ -1120,11 +1120,11 @@ export class PianoRollEditor {
     <!-- Rows -->
     <div class="roll-octaves-group">
        <button id="roll-octaves-minus" class="octave-btn" title="Fewer octaves">
-        <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+        <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M19 13H5v-2h14v2z"/></svg>
        </button>
        <span id="roll-octaves-value" class="octave-value">${this.numOctaves}</span>
        <button id="roll-octaves-plus" class="octave-btn" title="More octaves">
-          <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M19 13H5v-2h14v2z"/></svg>
+          <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
        </button>
     </div>
 
