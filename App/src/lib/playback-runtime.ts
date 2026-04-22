@@ -175,7 +175,7 @@ export class PlaybackRuntime {
     // Record the time offset to resume correctly
     this.pauseOffset = performance.now() - this.playStartTime
     this.isPaused = true
-    this.isPlaying = false
+    // Keep isPlaying=true so resume() can proceed - we're in "paused but playing" state
     this._emit({ type: 'state', state: 'paused' })
     this._stopAnimationLoop()
   }

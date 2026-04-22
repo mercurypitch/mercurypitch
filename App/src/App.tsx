@@ -937,10 +937,12 @@ export const App: Component<AppProps> = (props) => {
 
   const handlePlay = () => {
     if (isPaused()) {
+      // Resume from paused state
       handleResume()
       return
     }
 
+    // Start fresh playback (if not playing)
     // Reset state
     setPitchHistory([])
     setNoteResults([])
@@ -982,6 +984,10 @@ export const App: Component<AppProps> = (props) => {
   }
 
   const handlePause = () => {
+    // Only pause if currently playing
+    if (!isPlaying()) {
+      return
+    }
     void playbackRuntime.pause()
     void audioEngine.stopAllNotes()
     void audioEngine.stopTone()
@@ -991,6 +997,10 @@ export const App: Component<AppProps> = (props) => {
   }
 
   const handleResume = () => {
+    // Only resume if currently paused (not stopped)
+    if (!isPaused()) {
+      return
+    }
     void playbackRuntime.resume()
     setIsPlaying(true)
     setIsPaused(false)
