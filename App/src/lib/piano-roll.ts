@@ -3033,10 +3033,6 @@ export class PianoRollEditor {
     )
     this.scale = newScale
     this.totalRows = newScale.length
-    // Remove notes whose pitch is no longer in the scale
-    const scaleMidiSet = new Set(newScale.map((s) => s.midi))
-    this.melody = this.melody.filter((n) => scaleMidiSet.has(n.note.midi))
-    this.emitMelodyChange()
     this.draw()
 
     window.dispatchEvent(
