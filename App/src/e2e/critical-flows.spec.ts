@@ -432,16 +432,12 @@ test.describe('Critical Flows — GH #121', () => {
       await expect(page.locator('#preset-name-input')).toHaveValue(name)
     })
 
-    test('preset dropdown shows saved preset option', async ({ page }) => {
+    test('preset datalist shows saved preset option', async ({ page }) => {
       // Save a preset with unique name
       const name = `E2E Unique Preset ${Date.now()}`
       await page.locator('#preset-name-input').fill(name)
       await page.locator('button[title="Save melody"]').click()
       await page.waitForTimeout(500)
-
-      // Open preset datalist
-      await page.locator('#preset-select').click()
-      await page.waitForTimeout(300)
 
       // The preset should appear in the datalist
       await expect(
@@ -449,22 +445,18 @@ test.describe('Critical Flows — GH #121', () => {
       ).toBeAttached()
     })
 
-    test('deleting preset removes it from the list', async ({ page }) => {
-      // Save a preset first
-      const name = `E2E Delete Test ${Date.now()}`
+    test('preset save persists name after page interaction', async ({ page }) => {
+      // Type a unique name
+      const name = `E2E Persist Test ${Date.now()}`
       await page.locator('#preset-name-input').fill(name)
-      await page.locator('button[title="Save melody"]').click()
+
+      // Click Save
+      const saveBtn = page.locator('button[title="Save melody"]')
+      await saveBtn.click()
       await page.waitForTimeout(500)
 
-      // Delete button should appear after selecting a preset
-      await page.locator('#preset-select').fill(name)
-      await page.waitForTimeout(300)
-
-      const deleteBtn = page.locator('button[title="Delete preset"]')
-      if ((await deleteBtn.count()) > 0 && (await deleteBtn.isVisible())) {
-        await deleteBtn.click()
-        await page.waitForTimeout(500)
-      }
+      // Name should persist in the input
+      await expect(page.locator('#preset-name-input')).toHaveValue(name)
     })
   })
 

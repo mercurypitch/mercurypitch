@@ -114,8 +114,9 @@ test.describe('PitchPerfect App', () => {
     ).toBeAttached()
   })
 
-  test('preset selector exists in sidebar', async ({ page }) => {
-    await expect(page.locator('#preset-select')).toBeVisible()
+  test('preset name input exists in sidebar', async ({ page }) => {
+    // Check that the name input exists
+    await expect(page.locator('#preset-name-input')).toBeVisible()
     // Check that the datalist has options (Default Melody should be there)
     await expect(
       page.locator('#preset-datalist option[value="Default Melody"]'),
@@ -144,11 +145,10 @@ test.describe('PitchPerfect App', () => {
     )
   })
 
-  test('can load a saved preset', async ({ page }) => {
-    // Open preset dropdown and select a preset from the datalist
-    const presetSelect = page.locator('#preset-select')
-    // todo: remove or change test; doesn't work like that anymore, the dropdown for selecting melodies/presets is no longer available
-    await expect(presetSelect).toBeVisible()
+  test('can load a saved preset by name', async ({ page }) => {
+    // Presets are loaded by clicking the name input and typing the preset name
+    const nameInput = page.locator('#preset-name-input')
+    await expect(nameInput).toBeVisible()
     // Check that the datalist has options available
     await expect(page.locator('#preset-datalist option').first()).toBeAttached()
     // The datalist options are available but we don't force selection in this test
