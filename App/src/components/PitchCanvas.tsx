@@ -2,13 +2,8 @@
 // PitchCanvas — Pitch trail and melody display canvas
 // ============================================================
 
-import {
-  Component,
-  createEffect,
-  onCleanup,
-  onMount,
-  createSignal,
-} from 'solid-js'
+import type { Component } from 'solid-js'
+import { createEffect, onCleanup, onMount } from 'solid-js'
 import { appStore } from '@/stores/app-store'
 import type { MelodyItem, PitchSample, ScaleDegree } from '@/types'
 
@@ -69,12 +64,9 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     if (props.isPlaying() || props.isPaused()) {
       const rect = canvasRef.getBoundingClientRect()
       const x = e.clientX - rect.left
-      // Map x position to a beat and trigger a seek
       const w = canvasRef.clientWidth
       const totalBeats = props.totalBeats()
       const seekBeat = (x / w) * totalBeats
-      // Update currentBeat signal - this will trigger playback to seek
-      // For now, emit a custom event that App.tsx can handle
       window.dispatchEvent(
         new CustomEvent('pitchperfect:seekToBeat', {
           detail: { beat: seekBeat },
@@ -119,7 +111,6 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     return (beat / Math.max(1, props.totalBeats())) * w
   }
 
-  // Accuracy heatmap: color-code pitch rows based on historical accuracy
   const drawAccuracyHeatmap = (h: number) => {
     const accuracyMap = props.noteAccuracyMap?.()
     if (!accuracyMap || accuracyMap.size === 0) return
@@ -130,7 +121,6 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       if (acc === undefined) continue
       const y = freqToY(note.freq, h)
 
-      // Green (perfect) → yellow (good) → orange (okay) → red (off)
       let color: string
       if (acc >= 90) color = 'rgba(63,185,80,0.12)'
       else if (acc >= 75) color = 'rgba(141,203,65,0.10)'
@@ -148,18 +138,15 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     if (target === null || target === undefined || target <= 0) return
     const ty = freqToY(target, h)
 
-    // Threshold bands (±10 cents = ±0.58% in frequency)
     const centsBand = 0.1
     const freqLow = target / Math.pow(2, centsBand / 1200)
     const freqHigh = target * Math.pow(2, centsBand / 1200)
     const yLow = freqToY(freqLow, h)
     const yHigh = freqToY(freqHigh, h)
 
-    // Shaded zone
     ctx!.fillStyle = 'rgba(88,166,255,0.08)'
     ctx!.fillRect(0, yHigh, ctx!.canvas.clientWidth, yLow - yHigh)
 
-    // Target line
     ctx!.strokeStyle = 'rgba(88,166,255,0.5)'
     ctx!.lineWidth = 2
     ctx!.setLineDash([6, 4])
@@ -169,7 +156,6 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     ctx!.stroke()
     ctx!.setLineDash([])
 
-    // Label
     ctx!.fillStyle = '#58a6ff'
     ctx!.font = 'bold 10px sans-serif'
     ctx!.textAlign = 'left'
@@ -195,51 +181,49 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       0,
     )
 
-    // Waveform display during mic recording
     if (props.getWaveform) {
       if (appStore.micWaveVisible()) {
         const waveform = props.getWaveform()
         if (waveform && waveform.length > 0) {
-        ctx.save()
-        ctx.strokeStyle = 'rgba(219,112,219,0.6)'
-        ctx.lineWidth = 1.5
-        ctx.beginPath()
-        const step = Math.max(1, Math.floor(waveform.length / w))
-        for (let i = 0; i < w; i++) {
-          const sampleIdx = i * step
-          const sample = waveform[sampleIdx] ?? 0
-          const y = h / 2 + sample * (h / 2) * 0.8
-          if (i === 0) ctx.moveTo(i, y)
-          else ctx.lineTo(i, y)
-        }
-        ctx.stroke()
+          ctx.save()
+          ctx.strokeStyle = 'rgba(219,112,219,0.6)'
+          ctx.lineWidth = 1.5
+          ctx.beginPath()
+          const step = Math.max(1, Math.floor(waveform.length / w))
+          for (let i = 0; i < w; i++) {
+            const sampleIdx = i * step
+            const sample = waveform[sampleIdx] ?? 0
+            const y = h / 2 + sample * (h / 2) * 0.8
+            if (i === 0) ctx.moveTo(i, y)
+            else ctx.lineTo(i, y)
+          }
+          ctx.stroke()
 
-        // Filled area under the waveform
-        ctx.fillStyle = 'rgba(219,112,219,0.08)'
-        ctx.beginPath()
-        for (let i = 0; i < w; i++) {
-          const sampleIdx = i * step
-          const sample = waveform[sampleIdx] ?? 0
-          const y = h / 2 + sample * (h / 2) * 0.8
-          if (i === 0) ctx.moveTo(i, h / 2)
-          else ctx.lineTo(i, y)
+          ctx.fillStyle = 'rgba(219,112,219,0.08)'
+          ctx.beginPath()
+          for (let i = 0; i < w; i++) {
+            const sampleIdx = i * step
+            const sample = waveform[sampleIdx] ?? 0
+            const y = h / 2 + sample * (h / 2) * 0.8
+            if (i === 0) ctx.moveTo(i, h / 2)
+            else ctx.lineTo(i, y)
+          }
+          for (let i = w - 1; i >= 0; i--) {
+            const sampleIdx = i * step
+            const sample = waveform[sampleIdx] ?? 0
+            const y = h / 2 - sample * (h / 2) * 0.8
+            ctx.lineTo(i, y)
+          }
+          ctx.closePath()
+          ctx.fill()
+          ctx.restore()
         }
-        for (let i = w - 1; i >= 0; i--) {
-          const sampleIdx = i * step
-          const sample = waveform[sampleIdx] ?? 0
-          const y = h / 2 - sample * (h / 2) * 0.8
-          ctx.lineTo(i, y)
-        }
-        ctx.closePath()
-        ctx.fill()
-        ctx.restore()
       }
     }
 
     const scale = props.scale()
     const melody = props.melody()
 
-    // Grid lines
     for (const note of scale) {
       const y = freqToY(note.freq, h)
       ctx.strokeStyle = 'rgba(48,54,61,0.7)'
@@ -255,11 +239,9 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       ctx.fillText(note.name + note.octave, w - 6, y - 3)
     }
 
-    // Target pitch overlay
     drawAccuracyHeatmap(h)
     drawTargetPitch(h)
 
-    // Melody blocks
     let accum = 0
     for (let j = 0; j < melody.length; j++) {
       const item = melody[j]
@@ -305,7 +287,6 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       accum += item.duration
     }
 
-    // Pitch trail
     const history = props.pitchHistory()
     if (history.length > 1) {
       ctx.lineWidth = 2
@@ -337,11 +318,10 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       }
       ctx.stroke()
 
-      // Glowing dot at last position
       const last = history[history.length - 1]
-      if (last && last.cents !== undefined) {
+      if (last.cents !== undefined) {
         let lx: number
-        let ly: number
+        const ly = freqToY(last.freq, h)
         if (isRecordingMode) {
           const perfNow = (performance as unknown as { now: () => number }).now()
           const beatDurationMs = 60000 / appStore.bpm()
@@ -350,7 +330,6 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
         } else {
           lx = beatToX(last.time, w)
         }
-        ly = freqToY(last.freq, h)
         const grad = ctx.createRadialGradient(lx, ly, 0, lx, ly, 12)
         grad.addColorStop(0, 'rgba(63,185,80,0.55)')
         grad.addColorStop(1, 'rgba(63,185,80,0)')
@@ -369,7 +348,6 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       }
     }
 
-    // Current note dot
     if (
       props.isPlaying() &&
       !props.isPaused() &&
@@ -401,17 +379,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
   }
 
   createEffect(() => {
-    // Re-trigger draw when relevant props change
-    props.currentBeat()
-    props.pitchHistory()
-    props.currentNoteIndex()
-    props.isPlaying()
-    props.melody()
-    props.targetPitch?.()
-    props.noteAccuracyMap?.()
-    props.isRecording?.()
-    props.getWaveform?.()
-    appStore.micWaveVisible()
+    draw()
   })
 
   return (
@@ -420,5 +388,4 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       style={{ display: 'block', width: '100%', height: '100%' }}
     />
   )
-}
 }

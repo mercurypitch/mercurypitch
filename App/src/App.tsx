@@ -9,7 +9,6 @@ import { AppSidebar } from '@/components/AppSidebar'
 import { FocusMode } from '@/components/FocusMode'
 import { HistoryCanvas } from '@/components/HistoryCanvas'
 import { PianoRollCanvas } from '@/components/PianoRollCanvas'
-import type { PitchSample } from '@/types'
 import { PitchCanvas } from '@/components/PitchCanvas'
 import { ScaleBuilder } from '@/components/ScaleBuilder'
 import { SessionBrowser } from '@/components/SessionBrowser'
@@ -30,6 +29,7 @@ import type { PresetData } from '@/stores/app-store'
 import { appStore, getNoteAccuracyMap } from '@/stores/app-store'
 import { melodyStore } from '@/stores/melody-store'
 import { playback } from '@/stores/playback-store'
+import type { PitchSample } from '@/types'
 import type { EffectType, MelodyItem, NoteName, NoteResult, PitchResult, PracticeResult, } from '@/types'
 import type { PlaybackState } from '@/types'
 
@@ -429,9 +429,9 @@ export const App: Component<AppProps> = (props) => {
 
     // Load saved volume
     const savedVol = parseInt(localStorage.getItem('pp_volume') ?? '80', 10)
-    setSavedVol(savedVol)
+    setSavedVol(isNaN(savedVol) ? 80 : savedVol)
     audioEngine = new AudioEngine()
-    audioEngine.setVolume(savedVol / 100)
+    audioEngine.setVolume((isNaN(savedVol) ? 80 : savedVol) / 100)
     // Sync ADSR settings from appStore
     audioEngine.syncFromAppStore(appStore.adsr())
     // Apply saved reverb settings to audio engine
