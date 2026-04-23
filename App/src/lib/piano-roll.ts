@@ -5,6 +5,7 @@
 import type { AudioEngine, InstrumentType } from '@/lib/audio-engine'
 import { PitchDetector } from '@/lib/pitch-detector'
 import { buildMultiOctaveScale, midiToFreq, midiToNote } from '@/lib/scale-data'
+import type { PlaybackState } from '@/types'
 import type { MelodyItem, NoteName, PianoRollConfig, ScaleDegree, } from '@/types'
 
 const PIANO_ROLL_CONFIG: PianoRollConfig = {
@@ -434,7 +435,6 @@ export interface PianoRollOptions {
   onPlaybackStateChange?: (state: PlaybackState) => void
 }
 
-export type PlaybackState = 'stopped' | 'playing' | 'paused'
 export type ActiveTool = 'place' | 'erase' | 'select'
 export type EffectType =
   | 'slide-up'

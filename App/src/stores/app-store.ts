@@ -101,19 +101,19 @@ function saveBpmToStorage(value: number): void {
   }
 }
 
-let _bpmValue = loadBpmFromStorage()
-const [bpm, setBpmSignal] = createSignal<number>(_bpmValue)
+let bpmValue = loadBpmFromStorage()
+const [bpm, setBpmSignal] = createSignal<number>(bpmValue)
 
 export function setBpm(value: number): void {
   const clamped = Math.max(40, Math.min(280, value))
-  _bpmValue = clamped
+  bpmValue = clamped
   setBpmSignal(clamped)
   saveBpmToStorage(clamped)
 }
 
 export function initBpm(): void {
-  _bpmValue = loadBpmFromStorage()
-  setBpmSignal(_bpmValue)
+  bpmValue = loadBpmFromStorage()
+  setBpmSignal(bpmValue)
 }
 
 // ── Practice ────────────────────────────────────────────────
@@ -163,19 +163,17 @@ export function setGridLines(visible: boolean): void {
 // ── Active tab ───────────────────────────────────────────────
 
 export type ActiveTab = 'practice' | 'editor' | 'settings'
-const [activeTabGetter, _setActiveTab] = createSignal<ActiveTab>('practice')
-export const activeTab = activeTabGetter
-export const setActiveTab = _setActiveTab
+const [activeTab, setActiveTab] = createSignal<ActiveTab>('practice')
 
 // ── Focus Mode ─────────────────────────────────────────────────
-const [focusModeGetter, _setFocusMode] = createSignal<boolean>(false)
-export const focusMode = focusModeGetter
-export const setFocusMode = _setFocusMode as any
+const [focusMode, setFocusMode] = createSignal<boolean>(false)
+
 export function enterFocusMode(): void {
   setFocusMode(true)
 }
+
 export function exitFocusMode(): void {
-  (_setFocusMode as unknown as (val: boolean) => void)(false)
+  setFocusMode(false)
   ;(window as any).__exitFocusMode = exitFocusMode
 }
 
@@ -999,6 +997,10 @@ export const appStore = {
   scaleType,
   setScaleType,
 
+  // Navigation
+  activeTab,
+  setActiveTab,
+
   // Instrument
   instrument,
   setInstrument,
@@ -1025,10 +1027,6 @@ export const appStore = {
   // Count-in
   countIn,
   setCountIn,
-
-  // Navigation
-  activeTab,
-  setActiveTab,
 
   // Focus Mode
   focusMode,

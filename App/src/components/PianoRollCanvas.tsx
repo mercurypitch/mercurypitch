@@ -5,8 +5,8 @@
 import type { Component } from 'solid-js'
 import { createEffect, onCleanup, onMount } from 'solid-js'
 import { AudioEngine } from '@/lib/audio-engine'
-import type { PlaybackState } from '@/lib/piano-roll'
 import { PianoRollEditor } from '@/lib/piano-roll'
+import type { PlaybackState } from '@/types'
 import type { MelodyItem, PitchPerfectWindow, ScaleDegree } from '@/types'
 
 interface PianoRollCanvasProps {

@@ -4,11 +4,11 @@
 // ============================================================
 
 import type { MelodyItem } from '@/types'
+import type { PlaybackState } from '@/types'
 import type { InstrumentType } from './audio-engine'
 import { AudioEngine } from './audio-engine'
 import { melodyIndexAtBeat } from './scale-data'
 
-export type PlaybackState = 'stopped' | 'playing' | 'paused'
 export interface PlaybackEvent {
   type:
     | 'state'

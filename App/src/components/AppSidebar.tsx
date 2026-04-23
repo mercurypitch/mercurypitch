@@ -11,7 +11,7 @@ import { PitchDisplay } from '@/components/PitchDisplay'
 import { PresetSelector } from '@/components/PresetSelector'
 import { KEY_OFFSETS, midiToFreq, midiToNote } from '@/lib/scale-data'
 import type { PresetData } from '@/stores/app-store'
-import { activeTab as appActiveTab, appStore } from '@/stores/app-store'
+import { appStore } from '@/stores/app-store'
 import { melodyStore } from '@/stores/melody-store'
 import type { MelodyItem, NoteResult, PitchResult } from '@/types'
 
@@ -38,7 +38,7 @@ interface AppSidebarProps {
 
 export const AppSidebar: Component<AppSidebarProps> = (props) => {
   // Local alias for reactive tracking
-  const activeTab = () => appActiveTab()
+  const activeTab = () => appStore.activeTab()
   return (
     <aside
       class={`app-sidebar${props.class !== undefined && props.class !== '' ? ` ${props.class}` : ''}`}
