@@ -5,7 +5,8 @@
 
 import { createSignal } from 'solid-js'
 import { createStore } from 'solid-js/store'
-import type { AccuracyBand, PracticeSession, SessionResult } from '@/types'
+import type { AccuracyBand, PracticeSession, SavedUserSession, SessionResult } from '@/types'
+import { melodyStore } from './melody-store'
 
 // ── Key / Scale ─────────────────────────────────────────────
 
@@ -78,6 +79,8 @@ const [countIn, setCountIn] = createSignal<CountInOption>(0)
 
 // ── BPM ────────────────────────────────────────────────────
 
+// Duplicate setSessionItemRepeat removed - it's declared at line 124
+
 const BPM_KEY = 'pitchperfect_bpm'
 
 function loadBpmFromStorage(): number {
@@ -120,6 +123,7 @@ export function initBpm(): void {
 
 const [practiceCount, setPracticeCount] = createSignal<number>(0)
 const [lastScore, setLastScore] = createSignal<number | null>(null)
+const [sessionItemRepeat, setSessionItemRepeat] = createSignal<number>(0)
 
 // ── User Profile (for author attribution) ────────────────────
 
@@ -521,6 +525,10 @@ export interface PresetData {
 
 export type PresetsStore = Record<string, PresetData>
 
+// ============================================================
+// Legacy Presets (kept for backwards compatibility)
+// ============================================================
+
 const [presets, setPresets] = createSignal<PresetsStore>({})
 const [currentPresetName, setCurrentPresetName] = createSignal<string | null>(
   null,
@@ -553,6 +561,19 @@ export function initPresets(): void {
   const last = localStorage.getItem(LAST_PRESET_KEY)
   if (last !== null && last !== undefined && last !== '')
     setCurrentPresetName(last)
+}
+
+// Internal utility to update the signal
+const _setKeyName = setKeyName
+const _setScaleType = setScaleType
+
+export function setTempo(bpm: number): void {
+  setBpm(bpm)
+}
+
+export function setOctave(_octave: number): void {
+  // This is handled by melodyStore
+  appStore.showNotification('Use melodyStore.setOctave() to change octave', 'info')
 }
 
 /** Reset presets signal (used by tests) */
@@ -801,12 +822,15 @@ const [sessionResultsStore, setSessionResultsStore] = createStore<
 const [practiceSession, setPracticeSession] =
   createSignal<PracticeSession | null>(null)
 const [sessionItemIndex, setSessionItemIndex] = createSignal(0)
-const [sessionItemRepeat, setSessionItemRepeat] = createSignal(0) // how many times current item has repeated
 const [sessionActive, setSessionActive] = createSignal(false)
 const [sessionResults, setSessionResults] = createSignal<{ score: number }[]>(
   [],
 )
 const [sessionMode, setSessionMode] = createSignal(false) // true when in session flow
+
+// Export signal getters for public access
+export const currentSessionItemIndex = sessionItemIndex
+export const currentSessionItemRepeat = sessionItemRepeat
 
 const SESSION_RESULTS_KEY = 'pitchperfect_session_results'
 
@@ -835,21 +859,16 @@ export function initSessionHistory(): void {
   setSessionResultsStore(loadSessionResults().slice(0, 5))
 }
 
-export function startPracticeSession(session: PracticeSession): void {
-  setPracticeSession(session)
-  setSessionItemIndex(0)
-  setSessionItemRepeat(0)
-  setSessionActive(true)
-  setSessionMode(true)
-  setSessionResults([])
-}
-
 export function getCurrentSessionItem(): PracticeSession['items'][0] | null {
   const session = practiceSession()
   if (!session) return null
   const idx = sessionItemIndex()
   if (idx < 0 || idx >= session.items.length) return null
   return session.items[idx]
+}
+
+export function getCurrentSessionItemIndex(): number {
+  return sessionItemIndex()
 }
 
 export function advanceSessionItem(): void {
@@ -909,6 +928,15 @@ export function endPracticeSession(): SessionResult | null {
   setSessionResults([])
 
   return result
+}
+
+export function startPracticeSession(session: PracticeSession): void {
+  setPracticeSession(session)
+  setSessionItemIndex(0)
+  setSessionItemRepeat(0)
+  setSessionActive(true)
+  setSessionMode(true)
+  setSessionResults([])
 }
 
 export function isInSessionMode(): boolean {
@@ -1000,12 +1028,49 @@ export function getNoteAccuracyMap(): Map<number, number> {
   return result
 }
 
+// ============================================================
+// User Session Library Bridge
+// ============================================================
+
+export function loadSession(session: SavedUserSession): void {
+  if (session.items.length === 0) {
+    appStore.showNotification('Session has no items', 'warning')
+    return
+  }
+
+  // Reset session state
+  setSessionActive(false)
+  setSessionMode(false)
+
+  // Load first item and set as current session
+  startPracticeSession({
+    id: session.id,
+    name: session.name,
+    difficulty: session.difficulty,
+    category: session.category,
+    items: session.items,
+  })
+}
+
+export function createPlaylist(name: string): string {
+  return melodyStore.createPlaylist(name)
+}
+
+export function editPlaylist(_playlistId: string): void {
+  // TODO: Implement playlist editing UI
+  appStore.showNotification('Playlist editing not yet implemented', 'info')
+}
+
 export const appStore = {
   // Key / scale
   keyName,
   setKeyName,
   scaleType,
   setScaleType,
+  currentSessionItemIndex,
+  currentSessionItemRepeat,
+  setSessionItemIndex,
+  setSessionItemRepeat,
 
   // Instrument
   instrument,
@@ -1075,6 +1140,11 @@ export const appStore = {
   deletePreset,
   _resetPresets,
 
+  // User Session Library
+  loadSession,
+  setTempo,
+  setOctave,
+
   // Settings
   settings,
   initSettings,
@@ -1128,7 +1198,7 @@ export const appStore = {
   sessionActive,
   setSessionActive,
   sessionItemIndex,
-  sessionItemRepeat,
+  getCurrentSessionItemIndex,
   practiceSession,
   sessionResults,
   sessionMode,
@@ -1146,5 +1216,10 @@ export const appStore = {
   nextWalkthroughStep,
   prevWalkthroughStep,
   endWalkthrough,
+
+  // Melody (for LibraryModal)
+  createPlaylist: melodyStore.createPlaylist,
+  deletePlaylist: melodyStore.deletePlaylist,
+  createNewMelody: melodyStore.createNewMelody,
 }
 // TEST MARKER Sat Apr 18 12:29:36 AM UTC 2026

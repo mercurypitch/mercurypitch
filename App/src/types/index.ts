@@ -221,7 +221,7 @@ export interface PitchPerfectWindow extends Window {
 
 // ── Practice Sessions ─────────────────────────────────────────
 
-export type SessionItemType = 'preset' | 'scale' | 'rest'
+export type SessionItemType = 'preset' | 'scale' | 'rest' | 'melody'
 
 /** A single item within a practice session */
 export interface SessionItem {
@@ -231,6 +231,8 @@ export interface SessionItem {
   presetId?: string
   /** Scale type (for type='scale') */
   scaleType?: string
+  /** Melody key (for type='melody') */
+  melodyKey?: string
   /** Custom display label */
   label?: string
   /** Duration in beats (for type='scale') */
@@ -247,6 +249,28 @@ export type SessionDifficulty = 'beginner' | 'intermediate' | 'advanced'
 /** Category for practice sessions */
 export type SessionCategory = 'vocal' | 'instrumental' | 'ear-training' | 'general'
 
+/** User session data stored in localStorage */
+export interface SavedUserSession {
+  id: string
+  name: string
+  author: string
+  items: SessionItem[]
+  created: number
+  lastPlayed?: number
+  difficulty: SessionDifficulty
+  category: SessionCategory
+}
+
+/** Result of a completed practice session */
+export interface SessionResult {
+  sessionId: string
+  sessionName: string
+  completedAt: number
+  itemsCompleted: number
+  totalItems: number
+  score: number
+}
+
 /** A structured practice session with multiple items */
 export interface PracticeSession {
   /** Unique session ID */
@@ -254,7 +278,7 @@ export interface PracticeSession {
   /** Display name */
   name: string
   /** Description */
-  description: string
+  description?: string
   /** Difficulty level */
   difficulty: SessionDifficulty
   /** Category */
@@ -295,6 +319,8 @@ export interface MelodyData {
   updatedAt: number
   /** Play count for popularity tracking */
   playCount?: number
+  /** Last played timestamp for sorting */
+  lastPlayed?: number
 }
 
 /** Main melody library structure */

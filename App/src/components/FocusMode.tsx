@@ -51,7 +51,7 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
   // Session info
   const isSession = createMemo(() => appStore.sessionActive())
   const sessionItem = createMemo(() => appStore.sessionItemIndex())
-  const sessionRepeat = createMemo(() => appStore.sessionItemRepeat())
+  const sessionRepeat = createMemo(() => appStore.currentSessionItemRepeat())
 
   // Playback speed
   const currentSpeedIndex = createMemo(() => {
@@ -121,7 +121,7 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
       <div class="focus-canvas">
         <PitchCanvas
           melody={() => melodyStore.getCurrentItems()}
-          scale={() => melodyStore.currentScale}
+          scale={() => melodyStore.currentScale()}
           totalBeats={totalBeats}
           currentBeat={props.currentBeat}
           pitchHistory={props.pitchHistory}

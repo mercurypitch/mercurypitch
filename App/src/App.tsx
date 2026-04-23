@@ -5,16 +5,19 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createEffect, createMemo, createSignal, onCleanup, onMount, Show, } from 'solid-js'
+import { createEffect, createMemo, createSignal, onCleanup, onMount, Show } from 'solid-js'
 import { AppSidebar } from '@/components/AppSidebar'
 import { FocusMode } from '@/components/FocusMode'
 import { HistoryCanvas } from '@/components/HistoryCanvas'
+import { LibraryModal } from '@/components/LibraryModal'
 import { PianoRollCanvas } from '@/components/PianoRollCanvas'
 import { PitchCanvas } from '@/components/PitchCanvas'
 import { ScaleBuilder } from '@/components/ScaleBuilder'
 import { SessionBrowser } from '@/components/SessionBrowser'
+import { SessionLibraryModal } from '@/components/SessionLibraryModal'
 import { SessionPlayer } from '@/components/SessionPlayer'
 import { SettingsPanel } from '@/components/SettingsPanel'
+import { sessionModalOpen, setSessionModalOpen } from '@/components/shared/ModalState'
 import type { PracticeSubMode } from '@/components/shared/SharedControlToolbar'
 import { SharedControlToolbar } from '@/components/shared/SharedControlToolbar'
 import { Walkthrough } from '@/components/Walkthrough'
@@ -49,15 +52,15 @@ function presetToMelody(preset: PresetData): MelodyItem[] {
         midi: n.midi,
         // Use stored scale data, fallback to computed from current scale
         name: (scaleNote?.name ??
-          melodyStore.currentScale.find((s) => s.midi === n.midi)?.name ??
+          melodyStore.currentScale().find((s) => s.midi === n.midi)?.name ??
           'C') as NoteName,
         octave:
           scaleNote?.octave ??
-          melodyStore.currentScale.find((s) => s.midi === n.midi)?.octave ??
+          melodyStore.currentScale().find((s) => s.midi === n.midi)?.octave ??
           4,
         freq:
           scaleNote?.freq ??
-          melodyStore.currentScale.find((s) => s.midi === n.midi)?.freq ??
+          melodyStore.currentScale().find((s) => s.midi === n.midi)?.freq ??
           440,
       },
       startBeat: n.startBeat,
@@ -245,6 +248,9 @@ export const App: Component<AppProps> = (props) => {
     items: number
     name: string
   } | null>(null)
+
+// ── Library state ────────────────────────────────────────────
+  const [showLibraryModal, setShowLibraryModal] = createSignal(false)
 
   // ── Mobile sidebar toggle ─────────────────────────────────────
   const [sidebarOpen, setSidebarOpen] = createSignal(false)
@@ -735,7 +741,7 @@ export const App: Component<AppProps> = (props) => {
               '[onComplete] advanced, new idx:',
               appStore.sessionItemIndex(),
               'repeat:',
-              appStore.sessionItemRepeat(),
+              appStore.currentSessionItemRepeat(),
             )
             setNoteResults([])
             setLiveScore(null)
@@ -1046,7 +1052,7 @@ export const App: Component<AppProps> = (props) => {
     const numOctaves = beats > 12 ? 2 : 1
     const scale = buildMultiOctaveScale(
       appStore.keyName(),
-      melodyStore.currentOctave,
+      melodyStore.currentOctave(),
       numOctaves,
       scaleType,
     )
@@ -1190,7 +1196,7 @@ export const App: Component<AppProps> = (props) => {
   // ── Octave shift ─────────────────────────────────────────────
 
   const handleOctaveShift = (delta: number) => {
-    const newOctave = melodyStore.currentOctave + delta
+    const newOctave = melodyStore.currentOctave() + delta
     if (newOctave < 1 || newOctave > 6) return
 
     const keyName = appStore.keyName()
@@ -1412,7 +1418,7 @@ export const App: Component<AppProps> = (props) => {
                 <div id="canvas-container">
                   <PitchCanvas
                     melody={() => melodyStore.getCurrentItems()}
-                    scale={() => melodyStore.currentScale}
+                    scale={() => melodyStore.currentScale()}
                     totalBeats={totalBeats}
                     currentBeat={currentBeat}
                     pitchHistory={pitchHistory}
@@ -1485,7 +1491,7 @@ export const App: Component<AppProps> = (props) => {
               />
               <PianoRollCanvas
                 melody={() => melodyStore.getCurrentItems()}
-                scale={() => melodyStore.currentScale}
+                scale={() => melodyStore.currentScale()}
                 bpm={() => appStore.bpm()}
                 totalBeats={() => totalBeats()}
                 playbackState={() =>
@@ -1686,6 +1692,18 @@ export const App: Component<AppProps> = (props) => {
           </div>
         </div>
       </Show>
+
+      {/* Library Modal */}
+      <LibraryModal
+        isOpen={showLibraryModal}
+        close={() => setShowLibraryModal(false)}
+      />
+
+      {/* Session Library Modal */}
+      <SessionLibraryModal
+        isOpen={sessionModalOpen}
+        close={() => setSessionModalOpen(false)}
+      />
     </div>
   )
 }

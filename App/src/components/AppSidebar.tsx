@@ -6,6 +6,7 @@
 
 import type { Component } from 'solid-js'
 import { For, Show } from 'solid-js'
+import { LibraryTab } from '@/components/LibraryTab'
 import { NoteList } from '@/components/NoteList'
 import { PitchDisplay } from '@/components/PitchDisplay'
 import { PresetSelector } from '@/components/PresetSelector'
@@ -116,7 +117,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
               appStore.setKeyName(newKey)
               melodyStore.refreshScale(
                 newKey,
-                melodyStore.currentOctave,
+                melodyStore.currentOctave(),
                 appStore.scaleType(),
               )
             }}
@@ -145,7 +146,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
                 />
               </svg>
             </button>
-            <span class="octave-value">{melodyStore.currentOctave}</span>
+            <span class="octave-value">{melodyStore.currentOctave()}</span>
             <button
               class="octave-btn"
               title="Higher octave"
@@ -169,7 +170,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
               appStore.setScaleType(st)
               melodyStore.refreshScale(
                 appStore.keyName(),
-                melodyStore.currentOctave,
+                melodyStore.currentOctave(),
                 st,
               )
             }}
@@ -212,6 +213,11 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
       {/* Preset selector */}
       <div class="sidebar-section" id="preset-section">
         <PresetSelector />
+      </div>
+
+      {/* Library */}
+      <div class="sidebar-section">
+        <LibraryTab />
       </div>
 
       {/* Stats panel — Practice tab only */}

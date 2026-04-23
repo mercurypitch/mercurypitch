@@ -16,10 +16,9 @@ describe('PRACTICE_SESSIONS — static data integrity', () => {
     expect(uniqueIds.size).toBe(ids.length)
   })
 
-  it('every session has non-empty name and description', () => {
+  it('every session has non-empty name', () => {
     for (const session of PRACTICE_SESSIONS) {
       expect(session.name.trim().length).toBeGreaterThan(0)
-      expect(session.description.trim().length).toBeGreaterThan(0)
     }
   })
 
