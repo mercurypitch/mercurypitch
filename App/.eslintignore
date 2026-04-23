@@ -1,5 +1,0 @@
-src/e2e/debug.spec.ts
-src/e2e/helpers/ui.ts
-src/index.tsx
-src/lib/engine-bridge.ts
-*.spec.ts
