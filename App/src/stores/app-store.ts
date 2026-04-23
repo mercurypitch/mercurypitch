@@ -167,12 +167,15 @@ export const activeTab = activeTabGetter
 export const setActiveTab = _setActiveTab
 
 // ── Focus Mode ─────────────────────────────────────────────────
-const [focusMode, setFocusMode] = createSignal(false)
+const [focusModeGetter, _setFocusMode] = createSignal<boolean>(false)
+export const focusMode = focusModeGetter
+export const setFocusMode = _setFocusMode as any
 export function enterFocusMode(): void {
   setFocusMode(true)
 }
 export function exitFocusMode(): void {
-  setFocusMode(false)
+  (_setFocusMode as any)(false)
+  (window as any).__exitFocusMode = exitFocusMode
 }
 
 // ── Welcome Screen (GH #131) ────────────────────────────────────

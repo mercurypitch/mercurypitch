@@ -3,12 +3,17 @@
 // ============================================================
 
 import { expect, test } from '@playwright/test'
-import { dismissOverlays } from '@/e2e/helpers/ui'
+import { dismissOverlays, switchTab } from './helpers/ui'
 
 test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/')
+    // Wait for the app to be fully mounted by checking for window.__appStore
+    await page.waitForFunction(() => typeof (window as any).__appStore !== 'undefined', {
+      timeout: 5000
+    })
     await dismissOverlays(page)
+    await page.waitForTimeout(500)
   })
 
   // ==========================================
@@ -16,98 +21,55 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
   // ==========================================
 
   test('navigate to all tabs using sidebar buttons', async ({ page }) => {
-    const tabs = ['editor', 'practice', 'settings'] as const
+    const tabs = ['practice', 'editor', 'settings'] as const
 
     for (const tab of tabs) {
-      await page.locator(`#tab-${tab}`).click()
+      await switchTab(page, tab)
       await expect(page.locator(`#tab-${tab}`)).toHaveClass(/active/)
-      await expect(page.locator(`#tab-${tab}`)).toBeVisible()
     }
   })
 
   test('practice tab navigation persists after navigation away', async ({
     page,
   }) => {
-    await page.locator('#tab-practice').click()
-    await page.waitForTimeout(300)
+    await switchTab(page, 'practice')
 
-    const practiceTab = page.locator('#tab-practice')
-    await practiceTab.click()
-    await expect(practiceTab).toHaveClass(/active/)
+    await switchTab(page, 'practice')
+    await expect(page.locator('#tab-practice')).toHaveClass(/active/)
   })
 
   test('settings panel can be toggled from editor tab', async ({ page }) => {
-    const editorTab = page.locator('#tab-editor')
-    const settingsTab = page.locator('#tab-settings')
-
-    await editorTab.click()
-    await page.waitForTimeout(300)
-
-    // Navigate to settings via the tab button (not a settings button)
-    await settingsTab.click()
-    await page.waitForTimeout(300)
-
+    await switchTab(page, 'editor')
+    await switchTab(page, 'settings')
     await expect(page.locator('#settings-panel')).toBeVisible()
   })
 
   test('settings panel closes when clicking outside', async ({ page }) => {
-    const practiceTab = page.locator('#tab-practice')
-
-    await practiceTab.click()
-    await page.waitForTimeout(300)
-
+    await switchTab(page, 'practice')
     await expect(page.locator('#practice-panel')).toBeVisible()
   })
 
   test('tab switching preserves note data in editor tab', async ({ page }) => {
-    const editorTab = page.locator('#tab-editor')
-    const practiceTab = page.locator('#tab-practice')
-
-    await editorTab.click()
-    await page.waitForTimeout(300)
-
-    // Navigate to practice
-    await practiceTab.click()
-    await page.waitForTimeout(300)
-
-    // Navigate back to editor
-    await editorTab.click()
-    await page.waitForTimeout(300)
-
-    // Verify tab is active
+    await switchTab(page, 'editor')
+    await switchTab(page, 'practice')
+    await switchTab(page, 'editor')
     await expect(page.locator('#tab-editor')).toHaveClass(/active/)
   })
 
   test('focus mode exits when tab is changed', async ({ page }) => {
-    const practiceTab = page.locator('#tab-practice')
-    const editorTab = page.locator('#tab-editor')
-
-    await practiceTab.click()
-    await page.waitForTimeout(300)
-
-    // Verify tab is active
+    await switchTab(page, 'practice')
     await expect(page.locator('#tab-practice')).toHaveClass(/active/)
 
-    // Navigate to editor
-    await editorTab.click()
-    await page.waitForTimeout(300)
-
-    // Verify tab is active
+    await switchTab(page, 'editor')
     await expect(page.locator('#tab-editor')).toHaveClass(/active/)
   })
 
   test('can navigate from practice tab to editor to practice', async ({
     page,
   }) => {
-    await page.locator('#tab-practice').click()
-    await page.waitForTimeout(300)
-
-    await page.locator('#tab-editor').click()
-    await page.waitForTimeout(300)
-
-    await page.locator('#tab-practice').click()
-    await page.waitForTimeout(300)
-
+    await switchTab(page, 'practice')
+    await switchTab(page, 'editor')
+    await switchTab(page, 'practice')
     await expect(page.locator('#tab-practice')).toHaveClass(/active/)
   })
 
@@ -115,11 +77,9 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
     page,
   }) => {
     for (let i = 0; i < 5; i++) {
-      await page.locator('#tab-settings').click()
-      await page.waitForTimeout(200)
+      await switchTab(page, 'settings')
       await expect(page.locator('#tab-settings')).toHaveClass(/active/)
-      await page.locator('#tab-editor').click()
-      await page.waitForTimeout(200)
+      await switchTab(page, 'editor')
     }
   })
 
@@ -170,19 +130,14 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
   })
 
   test('editor tab is accessible', async ({ page }) => {
-    const editorTab = page.locator('#tab-editor')
-    await editorTab.click()
-    await page.waitForTimeout(300)
-    await expect(editorTab).toHaveClass(/active/)
+    await switchTab(page, 'editor')
+    await expect(page.locator('#tab-editor')).toHaveClass(/active/)
   })
 
   test('playback speed selector is visible in practice tab', async ({
     page,
   }) => {
-    const practiceTab = page.locator('#tab-practice')
-    await practiceTab.click()
-    await page.waitForTimeout(300)
-
+    await switchTab(page, 'practice')
     await expect(page.locator('#practice-panel')).toBeVisible()
   })
 
@@ -299,7 +254,7 @@ test('skip-forward button exists (no error)', async ({ page }) => {
     await page.waitForTimeout(300)
 
     // Editor tab exists and can be navigated to
-    await page.locator('#tab-editor').click()
+    await switchTab(page, 'editor')
     await page.waitForTimeout(300)
 
     // Navigate back to practice
@@ -315,7 +270,7 @@ test('skip-forward button exists (no error)', async ({ page }) => {
     await page.waitForTimeout(300)
 
     // Navigate to editor
-    await page.locator('#tab-editor').click()
+    await switchTab(page, 'editor')
     await page.waitForTimeout(300)
 
     // Navigate back to practice
@@ -329,7 +284,7 @@ test('skip-forward button exists (no error)', async ({ page }) => {
     await page.waitForTimeout(300)
 
     // Navigate to editor
-    await page.locator('#tab-editor').click()
+    await switchTab(page, 'editor')
     await page.waitForTimeout(300)
 
     // Navigate back to practice
@@ -573,7 +528,7 @@ test('skip-forward button exists (no error)', async ({ page }) => {
   test('play button enables on first navigation to practice', async ({
     page,
   }) => {
-    await page.locator('#tab-editor').click()
+    await switchTab(page, 'editor')
     await page.waitForTimeout(300)
 
     const playBtn = page.locator('.play-btn').first()
@@ -738,17 +693,17 @@ test('skip-forward button exists (no error)', async ({ page }) => {
     })
 
     for (let i = 0; i < 20; i++) {
-      await page.locator('#tab-practice').click()
+      await switchTab(page, 'practice')
       await page.waitForTimeout(100)
 
-      await page.locator('#tab-editor').click()
+      await switchTab(page, 'editor')
       await page.waitForTimeout(100)
 
-      await page.locator('#tab-settings').click()
+      await switchTab(page, 'settings')
       await page.waitForTimeout(100)
     }
 
-    await page.locator('#tab-practice').click()
+    await switchTab(page, 'practice')
     await page.waitForTimeout(100)
 
     expect(errors).toHaveLength(0)
@@ -793,18 +748,18 @@ test('skip-forward button exists (no error)', async ({ page }) => {
     })
 
     for (let i = 0; i < 15; i++) {
-      await page.locator('#tab-practice').click()
+      await switchTab(page, 'practice')
       await page.waitForTimeout(100)
 
-      await page.locator('#tab-editor').click()
+      await switchTab(page, 'editor')
       await page.waitForTimeout(100)
 
-      await page.locator('#tab-settings').click()
+      await switchTab(page, 'settings')
       await page.waitForTimeout(100)
     }
 
     // Navigate to practice tab to verify it's accessible
-    await page.locator('#tab-practice').click()
+    await switchTab(page, 'practice')
     await page.waitForTimeout(500)
 
     expect(errors).toHaveLength(0)
@@ -818,7 +773,7 @@ test('skip-forward button exists (no error)', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 })
     await page.waitForTimeout(300)
 
-    await page.locator('#tab-editor').click()
+    await switchTab(page, 'editor')
     await page.waitForTimeout(300)
 
     await expect(page.locator('nav')).toBeVisible()
@@ -831,7 +786,7 @@ test('skip-forward button exists (no error)', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 })
     await page.waitForTimeout(300)
 
-    await page.locator('#tab-practice').click()
+    await switchTab(page, 'practice')
     await page.waitForTimeout(300)
 
     await page.setViewportSize({ width: 1024, height: 768 })
@@ -845,7 +800,7 @@ test('skip-forward button exists (no error)', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 })
     await page.waitForTimeout(300)
 
-    await page.locator('#tab-practice').click()
+    await switchTab(page, 'practice')
     await page.waitForTimeout(300)
 
     await expect(page.locator('#tab-practice')).toBeVisible()
@@ -855,7 +810,7 @@ test('skip-forward button exists (no error)', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 })
     await page.waitForTimeout(300)
 
-    await page.locator('#tab-practice').click()
+    await switchTab(page, 'practice')
     await page.waitForTimeout(300)
 
     await page.setViewportSize({ width: 1024, height: 768 })
@@ -865,7 +820,7 @@ test('skip-forward button exists (no error)', async ({ page }) => {
   })
 
   test('settings panel remains scrollable on resize', async ({ page }) => {
-    await page.locator('#tab-settings').click()
+    await switchTab(page, 'settings')
     await page.waitForTimeout(300)
 
     await page.setViewportSize({ width: 768, height: 600 })

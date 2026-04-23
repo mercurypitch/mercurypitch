@@ -1,64 +1,61 @@
-import { test } from '@playwright/test'
+import { test, expect } from '@playwright/test'
 import { dismissOverlays } from '@/e2e/helpers/ui'
 
-test('debug store and Show reactivity', async ({ page }) => {
-  await page.goto('http://localhost:4173/')
-  await page.waitForSelector('#app-tabs', { timeout: 10000 })
-  await dismissOverlays(page)
+test('check if appStore is available in evaluate', async ({ page }) => {
+  await page.goto('/')
+  await page.waitForLoadState('domcontentloaded')
 
-  // Deep dive into what's happening
-  const result = await page.evaluate(async () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const store = (window as any).__appStore
+  // Check if any JavaScript errors occurred
+  const errors = await page.evaluate(() => {
+    return (window as any).__lastError || null
+  })
 
-    // 1. Check if Show component's `when` condition is working
-    // Look at the Show component that wraps settings-panel
-    const settingsShowCondition = () => store.activeTab() === 'settings'
+  console.log('JavaScript errors:', errors)
 
-    // 2. Check if we can trigger a manual re-render test
-    // Simulate what the tab click does
-    if (store !== null && store !== undefined) {
-      store.setActiveTab('settings')
-    }
-
+  // Check basic DOM state
+  const rootHtml = await page.evaluate(() => {
+    const root = document.getElementById('root')
     return {
-      activeTab: store?.activeTab(),
-      settingsCondition: settingsShowCondition(),
-      // Check if there's a Show component tracking this
-      hasShowCondition: true,
+      hasRoot: !!root,
+      rootChildren: root?.children.length ?? 0,
+      rootText: root?.textContent?.substring(0, 100) ?? null,
+      fullHtml: document.documentElement.outerHTML.substring(0, 500),
     }
   })
 
-  console.info('Store state after setActiveTab:', JSON.stringify(result))
+  console.log('Root state:', JSON.stringify(rootHtml))
 
-  // Wait for DOM update
-  await page.waitForTimeout(500)
+  // Check if onMount was called by checking for a debug marker
+  const debugRendered = await page.evaluate(() => {
+    const debugEl = document.querySelector('[data-debug-rendered]') as HTMLElement | null
+    return !!debugEl
+  })
 
-  // Check DOM again
-  const domResult = await page.evaluate(() => {
+  console.log('Debug render marker found:', debugRendered)
+
+  // Check if window.onerror was called
+  const errorOccurred = await page.evaluate(() => {
+    return (window as any).__errorOccurred || false
+  })
+
+  console.log('Error occurred:', errorOccurred)
+
+  // Wait and check after load
+  await page.waitForLoadState('networkidle', { timeout: 10000 })
+  const afterLoad = await page.evaluate(() => {
     return {
-      settingsPanelExists: !!document.getElementById('settings-panel'),
-      mainContentChildren: Array.from(
-        document.querySelector('.main-content')?.children || [],
-      ).map((c) => c.id || c.tagName),
+      appStore: typeof (window as any).__appStore !== 'undefined',
+      hasRoot: !!document.getElementById('root'),
+      rootChildren: document.getElementById('root')?.children.length ?? 0,
+      bodyHtml: document.body.innerHTML.substring(0, 200),
+      scripts: Array.from(document.querySelectorAll('script')).map((s) => s.src || s.textContent?.substring(0, 50)),
     }
   })
-  console.info('DOM after store change:', JSON.stringify(domResult))
+  console.log('After networkidle:', JSON.stringify(afterLoad))
 
-  // Test if showing a known working Show (like the practice one)
-  await page.evaluate(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ;(window as any).__appStore?.setActiveTab('practice')
+  // Get browser console logs
+  const consoleLogs = await page.evaluate(() => {
+    return (window as any).__consoleLogs || []
   })
-  await page.waitForTimeout(500)
-
-  const practiceDom = await page.evaluate(() => {
-    return {
-      practiceHeaderExists: !!document.querySelector('.practice-header-bar'),
-      mainContentChildren: Array.from(
-        document.querySelector('.main-content')?.children || [],
-      ).map((c) => c.id || c.tagName),
-    }
-  })
-  console.info('DOM after returning to practice:', JSON.stringify(practiceDom))
+  console.log('Console logs:', JSON.stringify(consoleLogs))
 })
