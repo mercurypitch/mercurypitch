@@ -6,6 +6,7 @@ import type { Component } from 'solid-js'
 import { createEffect, onCleanup, onMount } from 'solid-js'
 import { AudioEngine } from '@/lib/audio-engine'
 import { PianoRollEditor } from '@/lib/piano-roll'
+import { appStore } from '@/stores/app-store'
 import type { PlaybackState } from '@/types'
 import type { MelodyItem, PitchPerfectWindow, ScaleDegree } from '@/types'
 
@@ -140,6 +141,11 @@ export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
       props.isRecording ?? null,
       props.getWaveform ?? null,
     )
+  })
+
+  // Propagate sensitivity settings for pitch detector
+  createEffect(() => {
+    editor?.setSensitivity(appStore.settings().sensitivity)
   })
 
   onCleanup(() => {

@@ -74,6 +74,9 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
   const isEditorTab = () =>
     props.editorTab?.() ?? props.activeTab() === 'editor'
 
+  // Editor tab: show sensitivity for pitch track detection
+  const showSensitivity = () => isEditorTab()
+
   const isActive = () => props.isPlaying() || props.isPaused()
   const isStopped = () => !props.isPlaying() && !props.isPaused()
 
@@ -398,26 +401,28 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
         </ControlGroup>
 
         {/* Sensitivity */}
-        <ControlGroup>
-          <div class="sensitivity-group">
-            <label class="opt-label">Sens:</label>
-            <input
-              type="range"
-              id="sensitivity"
-              min="1"
-              max="10"
-              value={appStore.settings().sensitivity}
-              class="sensitivity-slider"
-              onInput={(e) => {
-                const val = parseInt(e.currentTarget.value) || 5
-                appStore.setSensitivity(val)
-              }}
-            />
-            <span id="sensitivity-value">
-              {appStore.settings().sensitivity}
-            </span>
-          </div>
-        </ControlGroup>
+        <Show when={showSensitivity()}>
+          <ControlGroup>
+            <div class="sensitivity-group">
+              <label class="opt-label">Sens:</label>
+              <input
+                type="range"
+                id="sensitivity"
+                min="1"
+                max="10"
+                value={appStore.settings().sensitivity}
+                class="sensitivity-slider"
+                onInput={(e) => {
+                  const val = parseInt(e.currentTarget.value) || 5
+                  appStore.setSensitivity(val)
+                }}
+              />
+              <span id="sensitivity-value">
+                {appStore.settings().sensitivity}
+              </span>
+            </div>
+          </ControlGroup>
+        </Show>
       </div>
     </div>
   )

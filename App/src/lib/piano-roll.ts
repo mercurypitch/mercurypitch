@@ -428,6 +428,7 @@ export interface PianoRollOptions {
   scale?: ScaleDegree[]
   bpm?: number
   totalBeats?: number
+  sensitivity?: number
   onMelodyChange?: (melody: MelodyItem[]) => void
   onNoteSelect?: (note: MelodyItem | null) => void
   onInstrumentChange?: (instrument: InstrumentType) => void
@@ -449,6 +450,7 @@ export class PianoRollEditor {
   private melody: MelodyItem[] = []
   private bpm: number
   private totalBeats: number
+  private sensitivity: number
 
   // DOM elements
   private pianoCanvas: HTMLCanvasElement | null = null
@@ -551,6 +553,7 @@ export class PianoRollEditor {
     this.scale = options.scale ?? []
     this.bpm = options.bpm ?? 120
     this.totalBeats = options.totalBeats ?? 16
+    this.sensitivity = options.sensitivity ?? 5
     this.onMelodyChange = options.onMelodyChange
     this.onNoteSelect = options.onNoteSelect
     this.onInstrumentChange = options.onInstrumentChange
@@ -734,6 +737,13 @@ export class PianoRollEditor {
     this.getWaveform = getWaveform
   }
 
+  setSensitivity(value: number): void {
+    this.sensitivity = Math.max(1, Math.min(10, value))
+    if (this.pitchDetector) {
+      this.pitchDetector.setSensitivity(this.sensitivity)
+    }
+  }
+
   /** Called by App to sync the editor's playhead animation to the melody engine's timeline.
    *  When Practice tab playback is active, this ensures the editor's playhead moves
    *  in lockstep with the melody engine. */
@@ -907,7 +917,7 @@ export class PianoRollEditor {
               sampleRate: 44100,
               bufferSize: 2048,
               threshold: 0.1,
-              sensitivity: 5,
+              sensitivity: this.sensitivity,
             })
           }
           this._resizePitchTrackCanvas()
@@ -918,7 +928,7 @@ export class PianoRollEditor {
             sampleRate: 44100,
             bufferSize: 2048,
             threshold: 0.1,
-            sensitivity: 5,
+            sensitivity: this.sensitivity,
           })
         }
         this._resizePitchTrackCanvas()
