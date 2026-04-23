@@ -172,9 +172,8 @@ export class PlaybackRuntime {
     }
 
     // Add accumulated pause duration to be accounted for in the animation loop
-    this.pauseOffset += this.pauseStartTime > 0
-      ? performance.now() - this.pauseStartTime
-      : 0
+    this.pauseOffset +=
+      this.pauseStartTime > 0 ? performance.now() - this.pauseStartTime : 0
     // Reset pauseStartTime for next pause
     this.pauseStartTime = 0
 
@@ -200,9 +199,8 @@ export class PlaybackRuntime {
     if (!this.isPlaying || !this.isPaused) return
 
     // Add accumulated pause time to our offset
-    this.pauseOffset += this.pauseStartTime > 0
-      ? performance.now() - this.pauseStartTime
-      : 0
+    this.pauseOffset +=
+      this.pauseStartTime > 0 ? performance.now() - this.pauseStartTime : 0
     this.pauseStartTime = 0
 
     this.isPaused = false
@@ -282,10 +280,10 @@ export class PlaybackRuntime {
       const now = performance.now()
       const beatDuration = 60000 / this._bpm
       // Calculate elapsed time, accounting for pause time
-      const elapsed = (now - this.playStartTime) + this.pauseOffset
+      const elapsed = now - this.playStartTime + this.pauseOffset
 
       // Count-in phase: play count-in beats before actual melody
-      if (countIn > 0 && elapsed < (countIn * beatDuration)) {
+      if (countIn > 0 && elapsed < countIn * beatDuration) {
         const elapsedBeats = elapsed / beatDuration
         const currentBeat = countIn - Math.floor(elapsedBeats)
         const currentInt = Math.floor(currentBeat)

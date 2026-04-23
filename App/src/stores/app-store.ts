@@ -175,7 +175,7 @@ export function enterFocusMode(): void {
   setFocusMode(true)
 }
 export function exitFocusMode(): void {
-  (_setFocusMode as unknown as (val: boolean) => void)(false)
+  ;(_setFocusMode as unknown as (val: boolean) => void)(false)
   ;(window as any).__exitFocusMode = exitFocusMode
 }
 

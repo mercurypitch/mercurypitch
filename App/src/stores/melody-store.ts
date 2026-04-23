@@ -66,7 +66,10 @@ export function updateMelodyNote(
 }
 
 export function setMelody(newMelody: MelodyItem[]): void {
-  const updated = newMelody.map((item, _i) => ({ ...item, id: item.id ?? generateId() }))
+  const updated = newMelody.map((item, _i) => ({
+    ...item,
+    id: item.id ?? generateId(),
+  }))
   setMelodyItems(updated)
   saveDefaultMelodyToStorage(updated)
 }

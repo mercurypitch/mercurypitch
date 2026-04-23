@@ -8,10 +8,15 @@ import { dismissOverlays, switchTab } from './helpers/ui'
 test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/')
+
+    // In your Playwright test, add this to debug:
     // Wait for the app to be fully mounted by checking for window.__appStore
-    await page.waitForFunction(() => typeof (window as any).__appStore !== 'undefined', {
-      timeout: 5000
-    })
+    await page.waitForFunction(
+      () => typeof (window as any).__appStore !== 'undefined',
+      {
+        timeout: 5000,
+      },
+    )
     await dismissOverlays(page)
     await page.waitForTimeout(500)
   })
@@ -229,7 +234,7 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
   })
 
   // Note: Skip buttons were removed in current version
-test('skip-forward button exists (no error)', async ({ page }) => {
+  test('skip-forward button exists (no error)', async ({ page }) => {
     const practiceTab = page.locator('#tab-practice')
     await practiceTab.click()
     await page.waitForTimeout(300)

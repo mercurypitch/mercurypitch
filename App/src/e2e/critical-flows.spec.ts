@@ -445,7 +445,9 @@ test.describe('Critical Flows — GH #121', () => {
       ).toBeAttached()
     })
 
-    test('preset save persists name after page interaction', async ({ page }) => {
+    test('preset save persists name after page interaction', async ({
+      page,
+    }) => {
       // Type a unique name
       const name = `E2E Persist Test ${Date.now()}`
       await page.locator('#preset-name-input').fill(name)

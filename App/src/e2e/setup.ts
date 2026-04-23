@@ -10,9 +10,12 @@ export const appMounted = test.extend<{
   isMounted: async ({ page }, use) => {
     await page.goto('/')
     await page.waitForSelector('#app-title', { timeout: 10000 })
-    await page.waitForFunction(() => typeof (window as any).__appStore !== 'undefined', {
-      timeout: 5000,
-    })
+    await page.waitForFunction(
+      () => typeof (window as any).__appStore !== 'undefined',
+      {
+        timeout: 5000,
+      },
+    )
     use(true)
   },
 })

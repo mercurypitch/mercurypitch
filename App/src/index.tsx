@@ -23,12 +23,18 @@ if (typeof window !== 'undefined') {
   ;(window as any).__consoleLogs = []
   const oldLog = console.log
   console.log = (...args) => {
-    ;(window as any).__consoleLogs.push({ type: 'log', args: args.map(a => String(a)) })
+    ;(window as any).__consoleLogs.push({
+      type: 'log',
+      args: args.map((a) => String(a)),
+    })
     oldLog(...args)
   }
   const oldError = console.error
   console.error = (...args) => {
-    ;(window as any).__consoleLogs.push({ type: 'error', args: args.map(a => String(a)) })
+    ;(window as any).__consoleLogs.push({
+      type: 'error',
+      args: args.map((a) => String(a)),
+    })
     oldError(...args)
   }
   console.error('index.tsx: Console capture installed')
