@@ -184,6 +184,33 @@ const [activeTabGetter, _setActiveTab] = createSignal<ActiveTab>('practice')
 export const activeTab = activeTabGetter
 export const setActiveTab = _setActiveTab
 
+// ── Library Modal ───────────────────────────────────────────
+
+const [showLibraryModal, setShowLibraryModal] = createSignal<boolean>(false)
+const [showSessionLibraryModal, setShowSessionLibraryModal] = createSignal<boolean>(false)
+const [showPresetsModal, setShowPresetsModal] = createSignal<boolean>(false)
+export function showLibrary(): void {
+  setShowLibraryModal(true)
+}
+export function hideLibrary(): void {
+  setShowLibraryModal(false)
+}
+export function showSessionLibrary(): void {
+  setShowSessionLibraryModal(true)
+}
+export function hideSessionLibrary(): void {
+  setShowSessionLibraryModal(false)
+}
+export function showPresetsLibrary(): void {
+  setShowPresetsModal(true)
+}
+export function hidePresetsLibrary(): void {
+  setShowPresetsModal(false)
+}
+export const isLibraryModalOpen = showLibraryModal
+export const isSessionLibraryModalOpen = showSessionLibraryModal
+export const isPresetsModalOpen = showPresetsModal
+
 // ── Focus Mode ─────────────────────────────────────────────────
 const [focusModeGetter, _setFocusMode] = createSignal<boolean>(false)
 export const focusMode = focusModeGetter
@@ -896,7 +923,8 @@ export function saveSession(
   const id = Date.now()
   const newEntry: SessionHistoryEntry = { ...entry, id, timestamp: Date.now() }
   const prev = sessionHistory()
-  const updated = [newEntry, ...prev.slice(0, MAX_HISTORY_ENTRIES)]
+  const prevLimit = Math.max(0, MAX_HISTORY_ENTRIES - 1)
+  const updated = [newEntry, ...prev.slice(0, prevLimit)]
   setSessionHistory(updated)
   saveSessionHistoryToStorage(updated)
 }
@@ -1015,6 +1043,17 @@ export const appStore = {
   // Navigation
   activeTab,
   setActiveTab,
+
+  // Library Modals
+  isLibraryModalOpen,
+  showLibrary,
+  hideLibrary,
+  isSessionLibraryModalOpen,
+  showSessionLibrary,
+  hideSessionLibrary,
+  isPresetsModalOpen,
+  showPresetsLibrary,
+  hidePresetsLibrary,
 
   // Focus Mode
   focusMode,

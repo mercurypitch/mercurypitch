@@ -12,12 +12,12 @@ import { HistoryCanvas } from '@/components/HistoryCanvas'
 import { LibraryModal } from '@/components/LibraryModal'
 import { PianoRollCanvas } from '@/components/PianoRollCanvas'
 import { PitchCanvas } from '@/components/PitchCanvas'
+import { PresetsLibraryModal } from '@/components/PresetsLibraryModal'
 import { ScaleBuilder } from '@/components/ScaleBuilder'
 import { SessionBrowser } from '@/components/SessionBrowser'
 import { SessionLibraryModal } from '@/components/SessionLibraryModal'
 import { SessionPlayer } from '@/components/SessionPlayer'
 import { SettingsPanel } from '@/components/SettingsPanel'
-import { sessionModalOpen, setSessionModalOpen } from '@/components/shared/ModalState'
 import type { PracticeSubMode } from '@/components/shared/SharedControlToolbar'
 import { SharedControlToolbar } from '@/components/shared/SharedControlToolbar'
 import { Walkthrough } from '@/components/Walkthrough'
@@ -29,6 +29,7 @@ import { buildMultiOctaveScale, melodyIndexAtBeat, melodyTotalBeats, midiToNote,
 import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
 import type { InstrumentType, SessionHistoryEntry } from '@/stores/app-store'
 import type { PresetData } from '@/stores/app-store'
+import { isLibraryModalOpen, isPresetsModalOpen,isSessionLibraryModalOpen } from '@/stores/app-store'
 import { appStore, getNoteAccuracyMap } from '@/stores/app-store'
 import { melodyStore } from '@/stores/melody-store'
 import { playback } from '@/stores/playback-store'
@@ -249,10 +250,7 @@ export const App: Component<AppProps> = (props) => {
     name: string
   } | null>(null)
 
-// ── Library state ────────────────────────────────────────────
-  const [showLibraryModal, setShowLibraryModal] = createSignal(false)
-
-  // ── Mobile sidebar toggle ─────────────────────────────────────
+// ── Mobile sidebar toggle ─────────────────────────────────────
   const [sidebarOpen, setSidebarOpen] = createSignal(false)
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen())
   const closeSidebar = () => setSidebarOpen(false)
@@ -1697,14 +1695,20 @@ export const App: Component<AppProps> = (props) => {
 
       {/* Library Modal */}
       <LibraryModal
-        isOpen={showLibraryModal}
-        close={() => setShowLibraryModal(false)}
+        isOpen={() => isLibraryModalOpen()}
+        close={() => appStore.hideLibrary()}
+      />
+
+      {/* Presets Library Modal */}
+      <PresetsLibraryModal
+        isOpen={() => isPresetsModalOpen()}
+        close={() => appStore.hidePresetsLibrary()}
       />
 
       {/* Session Library Modal */}
       <SessionLibraryModal
-        isOpen={sessionModalOpen}
-        close={() => setSessionModalOpen(false)}
+        isOpen={() => isSessionLibraryModalOpen()}
+        close={() => appStore.hideSessionLibrary()}
       />
     </div>
   )

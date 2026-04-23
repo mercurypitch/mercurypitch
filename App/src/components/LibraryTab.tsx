@@ -1,9 +1,10 @@
 // ============================================================
-// LibraryTab — Quick access to saved melodies
+// LibraryTab — Quick access to saved melodies and sessions
 // ============================================================
 
 import type { Component } from 'solid-js'
 import { createMemo, For, onMount } from 'solid-js'
+import type { PRACTICE_SESSIONS } from '@/data/sessions'
 import { appStore } from '@/stores/app-store'
 import { melodyStore } from '@/stores/melody-store'
 import type { MelodyData } from '@/types'
@@ -18,8 +19,23 @@ export const LibraryTab: Component = () => {
       .slice(0, 5)
   })
 
-  const totalMelodies = createMemo(() => Object.keys(library().melodies).length)
-  const totalPlaylists = createMemo(() => Object.keys(library().playlists).length)
+  const _totalMelodies = createMemo(() => Object.keys(library().melodies).length)
+  const _totalPlaylists = createMemo(() => Object.keys(library().playlists).length)
+
+  const openLibrary = () => {
+    appStore.showLibrary()
+    appStore.setActiveTab('editor')
+  }
+
+  const openSessionLibrary = (): void => {
+    appStore.showSessionLibrary()
+    appStore.setActiveTab('editor')
+  }
+
+  const openPresetsLibrary = () => {
+    appStore.showPresetsLibrary()
+    appStore.setActiveTab('editor')
+  }
 
   const handlePlay = (melody: MelodyData) => {
     melodyStore.loadMelody(melody.id)
@@ -30,31 +46,43 @@ export const LibraryTab: Component = () => {
     appStore.setOctave(melody.octave ?? 4)
   }
 
+  const _handlePlaySession = (_session: typeof PRACTICE_SESSIONS[number]): void => {}
+
   onMount(() => {
     library()
   })
-
-  const handleSessionPlay = () => {
-    const sessions = melodyStore.getSessions()
-    if (sessions.length > 0) {
-      appStore.loadSession?.(sessions[0])
-    }
-  }
 
   return (
     <div class="library-tab">
       <div class="tab-header">
         <h3>Library</h3>
-        <div class="tab-stats">
-          <span class="stat-badge">{totalMelodies()} melodies</span>
-          <span class="stat-badge">{totalPlaylists()} playlists</span>
+        <div class="tab-actions">
+          <button class="tab-action-btn" onClick={openLibrary} title="Open Melodies">
+            <svg viewBox="0 0 24 24" width="14" height="14">
+              <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+            </svg>
+            Melodies
+          </button>
+          <button class="tab-action-btn" onClick={openPresetsLibrary} title="Open Presets">
+            <svg viewBox="0 0 24 24" width="14" height="14">
+              <path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z" />
+            </svg>
+            Presets
+          </button>
+          <button class="tab-action-btn" onClick={openSessionLibrary} title="Open Sessions">
+            <svg viewBox="0 0 24 24" width="14" height="14">
+              <path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z" />
+            </svg>
+            Sessions
+          </button>
         </div>
       </div>
 
-      <div class="recent-list">
-        <p class="section-label">Recent</p>
+      {/* Recent Melodies Section - always shown */}
+      <div class="recent-section">
+        <p class="section-label">Recent Melodies</p>
         {recentMelodies().length === 0 ? (
-          <p class="empty-tip">No melodies yet. Click "Library" to create one!</p>
+          <p class="empty-tip">No melodies yet. Click "Melodies" to create one!</p>
         ) : (
           <For each={recentMelodies()}>
             {(m) => (
@@ -67,12 +95,21 @@ export const LibraryTab: Component = () => {
         )}
       </div>
 
-      <button class="library-tab-btn" onClick={handleSessionPlay}>
-        <svg viewBox="0 0 24 24" width="14" height="14">
-          <path fill="currentColor" d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z" />
-        </svg>
-        Sessions
-      </button>
+      {/* Quick Actions */}
+      <div class="quick-actions">
+        <button class="quick-action-btn" onClick={openPresetsLibrary}>
+          <svg viewBox="0 0 24 24" width="14" height="14">
+            <path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z" />
+          </svg>
+          Quick Start
+        </button>
+        <button class="quick-action-btn" onClick={openSessionLibrary}>
+          <svg viewBox="0 0 24 24" width="14" height="14">
+            <path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z" />
+          </svg>
+          Sessions
+        </button>
+      </div>
     </div>
   )
 }
