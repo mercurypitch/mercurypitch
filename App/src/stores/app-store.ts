@@ -121,6 +121,14 @@ export function initBpm(): void {
 const [practiceCount, setPracticeCount] = createSignal<number>(0)
 const [lastScore, setLastScore] = createSignal<number | null>(null)
 
+// ── User Profile (for author attribution) ────────────────────
+
+export function userProfile(): { name: string; email?: string } {
+  return {
+    name: 'User',
+  }
+}
+
 // ── Grid ──────────────────────────────────────────────────────
 
 const GRID_KEY = 'pitchperfect_grid'
@@ -175,7 +183,7 @@ export function enterFocusMode(): void {
   setFocusMode(true)
 }
 export function exitFocusMode(): void {
-  ;(_setFocusMode as unknown as (val: boolean) => void)(false)
+  (_setFocusMode as unknown as (val: boolean) => void)(false)
   ;(window as any).__exitFocusMode = exitFocusMode
 }
 

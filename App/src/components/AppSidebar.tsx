@@ -88,7 +88,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
               const currentKey = appStore.keyName()
 
               // Transpose existing melody notes if any
-              const melody = melodyStore.items
+              const melody = melodyStore.getCurrentItems()
               if (melody.length > 0) {
                 const currentOffset = KEY_OFFSETS[currentKey] ?? 0
                 const newOffset = KEY_OFFSETS[newKey] ?? 0

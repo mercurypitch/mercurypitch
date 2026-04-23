@@ -221,12 +221,6 @@ export interface PitchPerfectWindow extends Window {
 
 // ── Practice Sessions ─────────────────────────────────────────
 
-export type SessionDifficulty = 'beginner' | 'intermediate' | 'advanced'
-export type SessionCategory =
-  | 'vocal'
-  | 'instrumental'
-  | 'ear-training'
-  | 'general'
 export type SessionItemType = 'preset' | 'scale' | 'rest'
 
 /** A single item within a practice session */
@@ -247,6 +241,12 @@ export interface SessionItem {
   repeat?: number
 }
 
+/** Difficulty level for practice sessions */
+export type SessionDifficulty = 'beginner' | 'intermediate' | 'advanced'
+
+/** Category for practice sessions */
+export type SessionCategory = 'vocal' | 'instrumental' | 'ear-training' | 'general'
+
 /** A structured practice session with multiple items */
 export interface PracticeSession {
   /** Unique session ID */
@@ -263,18 +263,68 @@ export interface PracticeSession {
   items: SessionItem[]
 }
 
-/** Result of completing a practice session */
-export interface SessionResult {
-  /** Session ID */
-  sessionId: string
-  /** Session display name */
-  sessionName: string
-  /** Completion timestamp */
-  completedAt: number
-  /** Number of items completed */
-  itemsCompleted: number
-  /** Total items in session */
-  totalItems: number
-  /** Average score across items */
-  score: number
+// ============================================================
+// Melody Library Types
+// ============================================================
+
+/** Data for a single user-created melody */
+export interface MelodyData {
+  /** Unique melody ID */
+  id: string
+  /** Display name */
+  name: string
+  /** Creator name */
+  author?: string
+  /** Tempo for this melody (BPM) */
+  bpm: number
+  /** Musical key */
+  key: string
+  /** Scale type */
+  scaleType: string
+  /** Default octave */
+  octave?: number
+  /** Melody notes */
+  items: MelodyItem[]
+  /** Tags for categorization */
+  tags?: string[]
+  /** User notes about this melody */
+  notes?: string
+  /** Creation timestamp */
+  createdAt: number
+  /** Last update timestamp */
+  updatedAt: number
+  /** Play count for popularity tracking */
+  playCount?: number
 }
+
+/** Main melody library structure */
+export interface MelodyLibrary {
+  /** Library metadata */
+  meta: {
+    author: string
+    version: string
+    lastUpdated: number
+  }
+  /** Render settings */
+  renderSettings: {
+    gridlines: boolean
+    showLabels: boolean
+    showNumbers: boolean
+    custom?: Record<string, unknown>
+  }
+  /** All saved melodies */
+  melodies: Record<string, MelodyData>
+  /** User-created playlists */
+  playlists: Record<string, {
+    name: string
+    melodyKeys: string[]
+    created: number
+  }>
+}
+
+/** Create session item from a melody */
+export interface MelodySessionItem extends Omit<SessionItem, 'type'> {
+  type: 'melody'
+  melodyKey: string
+}
+

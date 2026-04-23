@@ -182,7 +182,7 @@ export const App: Component<AppProps> = (props) => {
 
   // ── Derived state ──────────────────────────────────────────
 
-  const totalBeats = createMemo(() => melodyTotalBeats(melodyStore.items))
+  const totalBeats = createMemo(() => melodyTotalBeats(melodyStore.getCurrentItems()))
 
   // ── Practice mode signals ───────────────────────────────────
 
@@ -452,7 +452,7 @@ export const App: Component<AppProps> = (props) => {
     // Sync settings to PlaybackRuntime when they change
     createEffect(() => {
       const bpm = appStore.bpm()
-      const melody = melodyStore.items
+      const melody = melodyStore.getCurrentItems()
       const instrument = appStore.instrument()
 
       // Update AudioEngine with BPM and instrument
@@ -650,7 +650,7 @@ export const App: Component<AppProps> = (props) => {
       if (activeTab() === 'editor') {
         // Editor uses melodyStore to track current note index
         melodyStore.setCurrentNoteIndex(
-          melodyIndexAtBeat(melodyStore.items, e.beat ?? 0),
+          melodyIndexAtBeat(melodyStore.getCurrentItems(), e.beat ?? 0),
         )
       }
     })
@@ -761,7 +761,7 @@ export const App: Component<AppProps> = (props) => {
                 'ms',
               )
               playbackRuntime.stop()
-              playbackRuntime.setMelody(melodyStore.items)
+              playbackRuntime.setMelody(melodyStore.getCurrentItems())
               // BPM synced via AudioEngine in the createEffect above
               playbackRuntime.start(appStore.countIn())
               // Store the rest duration so onComplete knows to wait before loading next scale
@@ -796,7 +796,7 @@ export const App: Component<AppProps> = (props) => {
                     afterRest.label,
                   )
                   playbackRuntime.stop()
-                  playbackRuntime.setMelody(melodyStore.items)
+                  playbackRuntime.setMelody(melodyStore.getCurrentItems())
                   // BPM synced via AudioEngine in the createEffect above
                   console.info(
                     '[onComplete rest timeout] starting playbackRuntime',
@@ -817,7 +817,7 @@ export const App: Component<AppProps> = (props) => {
                 nextItem.label,
               )
               playbackRuntime.stop()
-              playbackRuntime.setMelody(melodyStore.items)
+              playbackRuntime.setMelody(melodyStore.getCurrentItems())
               // BPM synced via AudioEngine in the createEffect above
               console.info('[onComplete] starting playbackRuntime')
               playbackRuntime.start(appStore.countIn())
@@ -1164,7 +1164,7 @@ export const App: Component<AppProps> = (props) => {
       }
       const items = recordedMelody()
       if (items.length > 0) {
-        melodyStore.setMelody([...melodyStore.items, ...items])
+        melodyStore.setMelody([...melodyStore.getCurrentItems(), ...items])
       }
       setRecordedMelody([])
       currentNoteMidi = -1
@@ -1197,10 +1197,10 @@ export const App: Component<AppProps> = (props) => {
     const scaleType = appStore.scaleType()
 
     // Check if we have notes that can be transposed
-    if (melodyStore.items.length > 0) {
+    if (melodyStore.getCurrentItems().length > 0) {
       // Transpose all notes by the octave delta
       const MIDI_OCTAVE_SHIFT = 12
-      const transposed = melodyStore.items.map((item) => ({
+      const transposed = melodyStore.getCurrentItems().map((item) => ({
         ...item,
         note: {
           ...item.note,
@@ -1222,8 +1222,8 @@ export const App: Component<AppProps> = (props) => {
 
   const targetNote = createMemo(() => {
     const idx = currentNoteIndex()
-    if (idx < 0 || idx >= melodyStore.items.length) return null
-    return melodyStore.items[idx].note
+    if (idx < 0 || idx >= melodyStore.getCurrentItems().length) return null
+    return melodyStore.getCurrentItems()[idx].note
   })
 
   const targetNoteName = createMemo(() => {
@@ -1320,8 +1320,8 @@ export const App: Component<AppProps> = (props) => {
               onClick={() => handleTabChange('editor')}
             >
               Editor
-              <Show when={melodyStore.items.length > 0}>
-                <span class="tab-badge">{melodyStore.items.length}</span>
+              <Show when={melodyStore.getCurrentItems().length > 0}>
+                <span class="tab-badge">{melodyStore.getCurrentItems().length}</span>
               </Show>
             </button>
             <button
@@ -1348,7 +1348,7 @@ export const App: Component<AppProps> = (props) => {
             }}
             onOctaveShift={handleOctaveShift}
             onOpenScaleBuilder={() => setShowScaleBuilder(true)}
-            melody={() => melodyStore.items}
+            melody={() => melodyStore.getCurrentItems()}
             currentNoteIndex={currentNoteIndex}
             noteResults={noteResults}
             isPlaying={isPlaying}
@@ -1411,7 +1411,7 @@ export const App: Component<AppProps> = (props) => {
                 {/* Canvas */}
                 <div id="canvas-container">
                   <PitchCanvas
-                    melody={() => melodyStore.items}
+                    melody={() => melodyStore.getCurrentItems()}
                     scale={() => melodyStore.currentScale()}
                     totalBeats={totalBeats}
                     currentBeat={currentBeat}
@@ -1484,7 +1484,7 @@ export const App: Component<AppProps> = (props) => {
                 onWaveToggle={appStore.toggleMicWaveVisible}
               />
               <PianoRollCanvas
-                melody={() => melodyStore.items}
+                melody={() => melodyStore.getCurrentItems()}
                 scale={() => melodyStore.currentScale()}
                 bpm={() => appStore.bpm()}
                 totalBeats={() => totalBeats()}

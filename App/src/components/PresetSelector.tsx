@@ -14,11 +14,11 @@ import { melodyStore } from '@/stores/melody-store'
 export const PresetSelector: Component = () => {
   const [saveName, setSaveName] = createSignal<string>('')
 
-  // Create default preset if none exist
+  // Load melody from library on mount
   onMount(() => {
     initPresets()
-    const presets = Object.keys(appStore.presets())
-    if (presets.length === 0) {
+    const library = melodyStore.getMelodyLibrary()
+    if (Object.keys(library.melodies).length === 0) {
       const defaultMelody = buildSampleMelody('C', 4)
       melodyStore.setMelody(defaultMelody)
       const data: PresetData = {
@@ -57,7 +57,7 @@ export const PresetSelector: Component = () => {
       return
     }
 
-    const melody = melodyStore.items
+    const melody = melodyStore.getCurrentItems()
     const totalBeats =
       melody.length > 0
         ? Math.max(...melody.map((n) => n.startBeat + n.duration))
@@ -88,9 +88,9 @@ export const PresetSelector: Component = () => {
 
   const handleNew = () => {
     setSaveName('')
-    melodyStore.setMelody([])
+    _ = melodyStore.createNewMelody()
     appStore.setCurrentPresetName(null)
-    appStore.showNotification('Melody cleared', 'info')
+    appStore.showNotification('New melody created', 'info')
   }
 
   const handleDelete = () => {
@@ -102,7 +102,7 @@ export const PresetSelector: Component = () => {
   }
 
   const handleShare = () => {
-    const melody = melodyStore.items
+    const melody = melodyStore.getCurrentItems()
     if (melody.length === 0) {
       appStore.showNotification('Nothing to share', 'warning')
       return

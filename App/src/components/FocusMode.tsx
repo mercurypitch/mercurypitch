@@ -35,7 +35,7 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
     () => `${appStore.keyName()} ${appStore.scaleType()}`,
   )
 
-  const totalBeats = createMemo(() => melodyTotalBeats(melodyStore.items))
+  const totalBeats = createMemo(() => melodyTotalBeats(melodyStore.getCurrentItems()))
   const totalBars = createMemo(() => Math.ceil(totalBeats() / 4))
   const currentBar = createMemo(() => {
     const beat = Math.max(1, props.currentBeat())
@@ -120,7 +120,7 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
       {/* Main pitch canvas fills remaining space */}
       <div class="focus-canvas">
         <PitchCanvas
-          melody={() => melodyStore.items}
+          melody={() => melodyStore.getCurrentItems()}
           scale={() => melodyStore.currentScale()}
           totalBeats={totalBeats}
           currentBeat={props.currentBeat}
