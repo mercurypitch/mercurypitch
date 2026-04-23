@@ -262,7 +262,7 @@ export interface SavedUserSession {
 }
 
 /** Result of a completed practice session */
-export interface SessionResult {
+export type SessionResult = {
   sessionId: string
   sessionName: string
   completedAt: number

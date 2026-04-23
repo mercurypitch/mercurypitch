@@ -8,9 +8,23 @@ import { Show } from 'solid-js'
 import { MicButton } from '@/components'
 import { PrecCountButton } from '@/components/PrecCountButton'
 import { Tooltip } from '@/components/Tooltip'
+import { NOTE_NAMES } from '@/lib/scale-data'
 import { appStore } from '@/stores/app-store'
+import { melodyStore } from '@/stores/melody-store'
 import { ControlGroup } from './ControlGroup'
 import { MetronomeGroup } from './MetronomeGroup'
+
+// Scale types matching the types file
+export const SCALE_TYPES = [
+  { value: 'major', label: 'Major' },
+  { value: 'minor', label: 'Minor' },
+  { value: 'harmonic-minor', label: 'Harmonic Minor' },
+  { value: 'pentatonic', label: 'Pentatonic' },
+  { value: 'blues', label: 'Blues' },
+  { value: 'chromatic', label: 'Chromatic' },
+  { value: 'dorian', label: 'Dorian' },
+  { value: 'mixolydian', label: 'Mixolydian' },
+] as const
 
 export type PracticeSubMode = 'all' | 'random' | 'focus' | 'reverse'
 export type ActiveTab = 'practice' | 'editor' | 'settings'
@@ -396,6 +410,50 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
             onClick={props.onMetronomeToggle}
           />
         </ControlGroup>
+
+        {/* Key — editor tab only */}
+        <Show when={isEditorTab()}>
+          <ControlGroup>
+            <div class="key-group">
+              <label class="opt-label">Key:</label>
+              <select
+                id="key-select"
+                value={appStore.keyName()}
+                class="key-select"
+                onChange={(e) => {
+                  const key = e.currentTarget.value
+                  appStore.setKeyName(key)
+                  // Refresh scale with new key
+                  melodyStore.refreshScale(key, melodyStore.currentOctave(), appStore.scaleType())
+                }}
+              >
+                {NOTE_NAMES.map((k) => (
+                  <option value={k}>{k}</option>
+                ))}
+              </select>
+            </div>
+          </ControlGroup>
+          <ControlGroup>
+            <div class="scale-group">
+              <label class="opt-label">Scale:</label>
+              <select
+                id="scale-select"
+                value={appStore.scaleType()}
+                class="scale-select"
+                onChange={(e) => {
+                  const scaleType = e.currentTarget.value
+                  appStore.setScaleType(scaleType)
+                  // Refresh scale with new scale type
+                  melodyStore.refreshScale(appStore.keyName(), melodyStore.currentOctave(), scaleType)
+                }}
+              >
+                {SCALE_TYPES.map((s) => (
+                  <option value={s.value}>{s.label}</option>
+                ))}
+              </select>
+            </div>
+          </ControlGroup>
+        </Show>
 
         {/* Sensitivity */}
         <ControlGroup>

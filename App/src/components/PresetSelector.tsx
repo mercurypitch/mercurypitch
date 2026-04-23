@@ -4,48 +4,21 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createMemo, createSignal, onMount } from 'solid-js'
-import { buildSampleMelody } from '@/lib/scale-data'
+import { createMemo, createSignal } from 'solid-js'
 import { copyShareURL } from '@/lib/share-url'
-import type { PresetData } from '@/stores/app-store'
-import { appStore, deletePreset, initPresets, savePreset, } from '@/stores/app-store'
+import { appStore } from '@/stores/app-store'
 import { melodyStore } from '@/stores/melody-store'
+import type { MelodyData, MelodyItem } from '@/types'
 
 export const PresetSelector: Component = () => {
   const [saveName, setSaveName] = createSignal<string>('')
 
-  // Load melody from library on mount
-  onMount(() => {
-    initPresets()
-    const library = melodyStore.getMelodyLibrary()
-    if (Object.keys(library.melodies).length === 0) {
-      const defaultMelody = buildSampleMelody('C', 4)
-      melodyStore.setMelody(defaultMelody)
-      const data: PresetData = {
-        notes: defaultMelody.map((n) => ({
-          midi: n.note.midi,
-          startBeat: n.startBeat,
-          duration: n.duration,
-          effectType: n.effectType,
-          linkedTo: n.linkedTo,
-        })),
-        totalBeats: 20,
-        bpm: appStore.bpm(),
-        scale: melodyStore.currentScale().map((s) => ({
-          midi: s.midi,
-          name: s.name,
-          octave: s.octave,
-          freq: s.freq,
-        })),
-      }
-      savePreset('Default Melody', data)
-      setSaveName('Default Melody')
-    }
+  const melodies = createMemo(() => melodyStore.getAllMelodies())
+
+  const currentName = createMemo(() => {
+    const activeMelody = melodyStore.currentMelody()
+    return activeMelody ? activeMelody.name : ''
   })
-
-  const presetNames = createMemo(() => Object.keys(appStore.presets()).sort())
-
-  const currentName = createMemo(() => appStore.currentPresetName() ?? '')
 
   const handleSave = () => {
     const name = saveName().trim()
@@ -57,33 +30,44 @@ export const PresetSelector: Component = () => {
       return
     }
 
-    const melody = melodyStore.getCurrentItems()
-    const totalBeats =
-      melody.length > 0
-        ? Math.max(...melody.map((n) => n.startBeat + n.duration))
-        : 16
+    // Get current melody items and build melody data
+    const items = melodyStore.getCurrentItems()
 
-    const data: PresetData = {
-      notes: melody.map((n) => ({
-        midi: n.note.midi,
-        startBeat: n.startBeat,
-        duration: n.duration,
-        effectType: n.effectType,
-        linkedTo: n.linkedTo,
-      })),
-      totalBeats,
-      bpm: appStore.bpm(),
-      scale: melodyStore.currentScale().map((s) => ({
-        midi: s.midi,
-        name: s.name,
-        octave: s.octave,
-        freq: s.freq,
-      })),
+    const currentMelody = melodyStore.getCurrentMelody()
+    const bpm = currentMelody?.bpm ?? appStore.bpm()
+    const key = currentMelody?.key ?? appStore.keyName()
+    const scaleType = currentMelody?.scaleType ?? appStore.scaleType()
+
+    const notes: MelodyItem[] = items.map((n) => ({
+      note: n.note,
+      duration: n.duration,
+      startBeat: n.startBeat,
+      velocity: n.velocity,
+      id: n.id,
+      effectType: n.effectType,
+      linkedTo: n.linkedTo,
+    }))
+
+    // Construct complete MelodyData object
+    const data: MelodyData = {
+      id: currentMelody?.id ?? `melody-${Date.now()}`,
+      name,
+      bpm,
+      key,
+      scaleType,
+      items: notes,
+      createdAt: currentMelody?.createdAt ?? Date.now(),
+      updatedAt: Date.now(),
     }
 
-    savePreset(name, data)
+    // Save to library
+    melodyStore.updateMelody(currentMelody?.id ?? data.id, data)
+    appStore.setTempo(bpm)
+    appStore.setKeyName(key)
+    appStore.setScaleType(scaleType)
+
     setSaveName(name)
-    appStore.showNotification(`Melody "${name}" saved`, 'success')
+    appStore.showNotification(`Melody "${name}" saved to library`, 'success')
   }
 
   const handleNew = () => {
@@ -96,20 +80,23 @@ export const PresetSelector: Component = () => {
   const handleDelete = () => {
     const name = saveName().trim() || currentName()
     if (!name) return
-    deletePreset(name)
-    setSaveName('')
-    appStore.showNotification(`Melody "${name}" deleted`, 'info')
+    const currentMelody = melodyStore.getCurrentMelody()
+    if (currentMelody !== null && currentMelody !== undefined) {
+      melodyStore.deleteMelody(currentMelody.id)
+      setSaveName('')
+      appStore.showNotification(`Melody "${name}" deleted`, 'info')
+    }
   }
 
   const handleShare = () => {
-    const melody = melodyStore.getCurrentItems()
-    if (melody.length === 0) {
+    const items = melodyStore.getCurrentItems()
+    if (items.length === 0) {
       appStore.showNotification('Nothing to share', 'warning')
       return
     }
-    const totalBeats = Math.max(...melody.map((n) => n.startBeat + n.duration))
+    const totalBeats = Math.max(...items.map((n) => n.startBeat + n.duration))
     copyShareURL(
-      melody,
+      items,
       appStore.bpm(),
       appStore.keyName(),
       appStore.scaleType(),
@@ -138,8 +125,8 @@ export const PresetSelector: Component = () => {
         onInput={(e) => setSaveName(e.currentTarget.value)}
       />
       <datalist id="preset-datalist">
-        {presetNames().map((name) => (
-          <option value={name} />
+        {melodies().map((m) => (
+          <option value={m.name} />
         ))}
       </datalist>
 
@@ -161,7 +148,7 @@ export const PresetSelector: Component = () => {
         +
       </button>
 
-      {/* Delete button - shown when a preset is selected */}
+      {/* Delete button - shown when a melody is selected */}
       {currentName() && (
         <button
           class="ctrl-btn small danger preset-delete-btn"

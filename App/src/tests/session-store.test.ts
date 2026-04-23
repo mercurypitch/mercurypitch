@@ -3,7 +3,7 @@
 // ============================================================
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { advanceSessionItem, endPracticeSession, getCurrentSessionItem, initPresets, initSessionHistory, isInSessionMode, recordSessionItemResult, startPracticeSession, } from '@/stores/app-store'
+import { advanceSessionItem, endPracticeSession, getCurrentSessionItem, initSessionHistory, isInSessionMode, recordSessionItemResult, startPracticeSession, } from '@/stores/app-store'
 import type { PracticeSession } from '@/types'
 
 // Mock localStorage
@@ -63,7 +63,6 @@ describe('getCurrentSessionItem', () => {
     localStorageMock.clear()
     // Init stores then clean any lingering session
     initSessionHistory()
-    initPresets()
     endPracticeSession()
   })
 

@@ -280,11 +280,11 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
             </div>
 
             {/* Session history — practice tab only */}
-            <Show when={appStore.sessionResultsStore.length > 0}>
+            <Show when={appStore.sessionResults().length > 0}>
               <div id="session-history-panel">
                 <h3>Sessions</h3>
                 <div id="session-history-list">
-                  <For each={appStore.sessionResultsStore}>
+                  <For each={appStore.sessionResults()}>
                     {(entry) => (
                       <div class="session-history-entry">
                         <span class="session-history-name">

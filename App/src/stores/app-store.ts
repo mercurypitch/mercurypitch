@@ -4,7 +4,6 @@
 // ============================================================
 
 import { createSignal } from 'solid-js'
-import { createStore } from 'solid-js/store'
 import type { AccuracyBand, PracticeSession, SavedUserSession, SessionResult } from '@/types'
 import { melodyStore } from './melody-store'
 
@@ -79,13 +78,9 @@ const [countIn, setCountIn] = createSignal<CountInOption>(0)
 
 // ── BPM ────────────────────────────────────────────────────
 
-// Duplicate setSessionItemRepeat removed - it's declared at line 124
-
-const BPM_KEY = 'pitchperfect_bpm'
-
 function loadBpmFromStorage(): number {
   try {
-    const stored = localStorage.getItem(BPM_KEY)
+    const stored = localStorage.getItem('pitchperfect_bpm')
     const parsed = parseInt(stored ?? '120', 10)
     if (!isNaN(parsed) && parsed >= 40 && parsed <= 280) {
       return parsed
@@ -98,7 +93,7 @@ function loadBpmFromStorage(): number {
 
 function saveBpmToStorage(value: number): void {
   try {
-    localStorage.setItem(BPM_KEY, String(value))
+    localStorage.setItem('pitchperfect_bpm', String(value))
   } catch (e) {
     console.warn('Failed to save BPM:', e)
   }
@@ -119,11 +114,21 @@ export function initBpm(): void {
   setBpmSignal(_bpmValue)
 }
 
+export function setTempo(bpm: number): void {
+  setBpm(bpm)
+}
+
+export function setOctave(octave: number): void {
+  melodyStore.setOctave(octave)
+}
+
 // ── Practice ────────────────────────────────────────────────
 
 const [practiceCount, setPracticeCount] = createSignal<number>(0)
 const [lastScore, setLastScore] = createSignal<number | null>(null)
 const [sessionItemRepeat, setSessionItemRepeat] = createSignal<number>(0)
+
+export const currentSessionItemRepeat = sessionItemRepeat
 
 // ── User Profile (for author attribution) ────────────────────
 
@@ -313,7 +318,6 @@ export function getWalkthroughStep(): number {
 // ── Sensitivity Presets ─────────────────────────────────────────
 
 export type SensitivityPreset = 'quiet' | 'home' | 'noisy'
-const SENSITIVITY_PRESET_KEY = 'pitchperfect_sensitivity_preset'
 
 export const SENSITIVITY_PRESETS: Record<
   SensitivityPreset,
@@ -339,9 +343,9 @@ export const SENSITIVITY_PRESETS: Record<
   },
 }
 
-function loadSensitivityPreset(): SensitivityPreset {
+export function loadSensitivityPreset(): SensitivityPreset {
   try {
-    const stored = localStorage.getItem(SENSITIVITY_PRESET_KEY)
+    const stored = localStorage.getItem('pitchperfect_sensitivity_preset')
     if (stored === 'quiet' || stored === 'home' || stored === 'noisy')
       return stored
   } catch {
@@ -357,7 +361,7 @@ export const sensitivityPreset = sensitivityPresetGetter
 export function setSensitivityPresetValue(value: SensitivityPreset): void {
   _setSensitivityPreset(value)
   try {
-    localStorage.setItem(SENSITIVITY_PRESET_KEY, value)
+    localStorage.setItem('pitchperfect_sensitivity_preset', value)
   } catch {
     /* empty */
   }
@@ -374,7 +378,7 @@ export function applySensitivityPreset(preset: SensitivityPreset): void {
   saveSettingsToStorage({ ...settings(), ...config })
   _setSensitivityPreset(preset)
   try {
-    localStorage.setItem(SENSITIVITY_PRESET_KEY, preset)
+    localStorage.setItem('pitchperfect_sensitivity_preset', preset)
   } catch {
     /* empty */
   }
@@ -504,11 +508,7 @@ export function getBandRating(avgCents: number | null): number {
   return 0
 }
 
-// ── Presets ──────────────────────────────────────────────────
-
-const PRESETS_KEY = 'pitchperfect_presets'
-const LAST_PRESET_KEY = 'pitchperfect_lastpreset'
-const SELECTED_PRESET_KEY = 'pitchperfect_selected_preset'
+// ── PresetData Interface ─────────────────────────────────────────
 
 export interface PresetData {
   notes: Array<{
@@ -521,108 +521,6 @@ export interface PresetData {
   totalBeats: number
   bpm: number
   scale: Array<{ midi: number; name: string; octave: number; freq: number }>
-}
-
-export type PresetsStore = Record<string, PresetData>
-
-// ============================================================
-// Legacy Presets (kept for backwards compatibility)
-// ============================================================
-
-const [presets, setPresets] = createSignal<PresetsStore>({})
-const [currentPresetName, setCurrentPresetName] = createSignal<string | null>(
-  null,
-)
-
-function loadPresetsFromStorage(): PresetsStore {
-  try {
-    const raw = localStorage.getItem(PRESETS_KEY)
-    return raw !== null && raw !== undefined && raw !== ''
-      ? JSON.parse(raw)
-      : {}
-  } catch {
-    return {}
-  }
-}
-
-function savePresetsToStorage(data: PresetsStore): void {
-  try {
-    localStorage.setItem(PRESETS_KEY, JSON.stringify(data))
-  } catch (e) {
-    console.warn('Failed to save presets:', e)
-  }
-}
-
-export function initPresets(): void {
-  const stored = loadPresetsFromStorage()
-  if (Object.keys(stored).length > 0) {
-    setPresets(stored)
-  }
-  const last = localStorage.getItem(LAST_PRESET_KEY)
-  if (last !== null && last !== undefined && last !== '')
-    setCurrentPresetName(last)
-}
-
-// Internal utility to update the signal
-const _setKeyName = setKeyName
-const _setScaleType = setScaleType
-
-export function setTempo(bpm: number): void {
-  setBpm(bpm)
-}
-
-export function setOctave(_octave: number): void {
-  // This is handled by melodyStore
-  appStore.showNotification('Use melodyStore.setOctave() to change octave', 'info')
-}
-
-/** Reset presets signal (used by tests) */
-export function _resetPresets(): void {
-  setPresets({})
-  setCurrentPresetName(null)
-}
-
-export function savePreset(name: string, data: PresetData): void {
-  const updated = { ...presets(), [name]: data }
-  setPresets(updated)
-  savePresetsToStorage(updated)
-  setCurrentPresetName(name)
-  localStorage.setItem(LAST_PRESET_KEY, name)
-  localStorage.setItem(SELECTED_PRESET_KEY, name)
-  window.dispatchEvent(
-    new CustomEvent('pitchperfect:presetSaved', { detail: { name } }),
-  )
-}
-
-export function loadPreset(name: string): PresetData | null {
-  return presets()[name] ?? null
-}
-
-export function getPresetNames(): string[] {
-  return Object.keys(presets()).sort()
-}
-
-export function getPresets(): PresetsStore {
-  return presets()
-}
-
-export function getCurrentPresetName(): string | null {
-  return currentPresetName()
-}
-
-export function deletePreset(name: string): void {
-  const updated = { ...presets() }
-  delete updated[name]
-  setPresets(updated)
-  savePresetsToStorage(updated)
-  if (currentPresetName() === name) {
-    setCurrentPresetName(null)
-    localStorage.removeItem(LAST_PRESET_KEY)
-    localStorage.removeItem(SELECTED_PRESET_KEY)
-  }
-  window.dispatchEvent(
-    new CustomEvent('pitchperfect:presetDeleted', { detail: { name } }),
-  )
 }
 
 // ── ADSR Envelope ─────────────────────────────────────────────
@@ -797,7 +695,8 @@ interface Notification {
   type: 'info' | 'success' | 'warning' | 'error'
 }
 
-const [notifications, setNotifications] = createStore<Notification[]>([])
+const [notifications, setNotifications] = createSignal<Notification[]>([])
+
 let _notifId = 0
 
 export function showNotification(
@@ -811,26 +710,19 @@ export function showNotification(
   }, 3000)
 }
 
-// ── Session Results (reactive store for sidebar) ───────────────
-
-const [sessionResultsStore, setSessionResultsStore] = createStore<
-  SessionResult[]
->([])
-
 // ── Practice Session State ────────────────────────────────────
 
 const [practiceSession, setPracticeSession] =
   createSignal<PracticeSession | null>(null)
 const [sessionItemIndex, setSessionItemIndex] = createSignal(0)
 const [sessionActive, setSessionActive] = createSignal(false)
-const [sessionResults, setSessionResults] = createSignal<{ score: number }[]>(
+const [sessionResults, setSessionResults] = createSignal<SessionResult[]>(
   [],
 )
 const [sessionMode, setSessionMode] = createSignal(false) // true when in session flow
 
 // Export signal getters for public access
 export const currentSessionItemIndex = sessionItemIndex
-export const currentSessionItemRepeat = sessionItemRepeat
 
 const SESSION_RESULTS_KEY = 'pitchperfect_session_results'
 
@@ -856,7 +748,7 @@ function saveSessionResultsToStorage(data: SessionResult[]): void {
 export function initSessionHistory(): void {
   setSessionHistory(loadSessionHistory())
   // Also load session results into reactive store
-  setSessionResultsStore(loadSessionResults().slice(0, 5))
+  setSessionResults(loadSessionResults().slice(0, 5))
 }
 
 export function getCurrentSessionItem(): PracticeSession['items'][0] | null {
@@ -891,7 +783,20 @@ export function advanceSessionItem(): void {
 }
 
 export function recordSessionItemResult(score: number): void {
-  setSessionResults((prev) => [...prev, { score }])
+  const session = practiceSession()
+  if (!session) return
+  setSessionResults((prev) => {
+    const results: SessionResult[] = [...prev]
+    results.push({
+      sessionId: session.id,
+      sessionName: session.name,
+      completedAt: Date.now(),
+      itemsCompleted: sessionItemIndex(),
+      totalItems: session.items.length,
+      score,
+    })
+    return results
+  })
 }
 
 export function endPracticeSession(): SessionResult | null {
@@ -918,7 +823,7 @@ export function endPracticeSession(): SessionResult | null {
   saveSessionResultsToStorage([result, ...existing].slice(0, 50))
 
   // Update reactive store for sidebar display
-  setSessionResultsStore([result, ...sessionResultsStore].slice(0, 5))
+  setSessionResults([result, ...sessionResults()].slice(0, 5))
 
   setSessionActive(false)
   setPracticeSession(null)
@@ -961,19 +866,20 @@ export interface SessionHistoryEntry {
 const SESSION_HISTORY_KEY = 'pitchperfect_session_history'
 const MAX_HISTORY_ENTRIES = 50
 
-const [sessionHistory, setSessionHistory] = createStore<SessionHistoryEntry[]>(
+const [sessionHistory, setSessionHistory] = createSignal<SessionHistoryEntry[]>(
   [],
 )
 
 function loadSessionHistory(): SessionHistoryEntry[] {
   try {
     const raw = localStorage.getItem(SESSION_HISTORY_KEY)
-    return raw !== null && raw !== undefined && raw !== ''
-      ? JSON.parse(raw)
-      : []
+    if (raw !== null && raw !== '') {
+      return JSON.parse(raw)
+    }
   } catch {
-    return []
+    // Return empty array if parsing fails
   }
+  return []
 }
 
 function saveSessionHistoryToStorage(data: SessionHistoryEntry[]): void {
@@ -989,7 +895,8 @@ export function saveSession(
 ): void {
   const id = Date.now()
   const newEntry: SessionHistoryEntry = { ...entry, id, timestamp: Date.now() }
-  const updated = [newEntry, ...sessionHistory].slice(0, MAX_HISTORY_ENTRIES)
+  const prev = sessionHistory()
+  const updated = [newEntry, ...prev.slice(0, MAX_HISTORY_ENTRIES)]
   setSessionHistory(updated)
   saveSessionHistoryToStorage(updated)
 }
@@ -1000,13 +907,13 @@ export function clearSessionHistory(): void {
 }
 
 export function getSessionHistory(): SessionHistoryEntry[] {
-  return sessionHistory
+  return sessionHistory()
 }
 
 // Compute per-note accuracy map from session history (midi -> avg score %)
 export function getNoteAccuracyMap(): Map<number, number> {
   const accMap = new Map<number, number[]>()
-  for (const entry of sessionHistory) {
+  for (const entry of sessionHistory()) {
     for (const nr of entry.noteResults) {
       if (!accMap.has(nr.midi)) accMap.set(nr.midi, [])
       accMap
@@ -1052,14 +959,20 @@ export function loadSession(session: SavedUserSession): void {
   })
 }
 
-export function createPlaylist(name: string): string {
-  return melodyStore.createPlaylist(name)
+// ── PresetData Presets Bridge (for backward compatibility) ───────
+
+function setCurrentPresetName(name: string | null): void {
+  const signal = (window as unknown as { __currentPresetNameSignal?: (...args: unknown[]) => void }).__currentPresetNameSignal
+  if (signal !== undefined) {
+    const isFunction = typeof signal === 'function'
+    if (isFunction) {
+      (signal as (...args: unknown[]) => void)(name)
+    }
+  }
 }
 
-export function editPlaylist(_playlistId: string): void {
-  // TODO: Implement playlist editing UI
-  appStore.showNotification('Playlist editing not yet implemented', 'info')
-}
+// Bridge to legacy preset signal
+;(window as any).__currentPresetNameSignal = setCurrentPresetName
 
 export const appStore = {
   // Key / scale
@@ -1129,16 +1042,17 @@ export const appStore = {
   getSessionHistory,
   getNoteAccuracyMap,
 
-  // Presets
-  presets,
-  currentPresetName,
+  // Presets (bridge for backward compatibility)
+  // Note: Legacy presets signal is kept for compatibility with existing code
+  presets: () => ({} as any), // Return empty object - legacy support only
+  currentPresetName: () => null,
   setCurrentPresetName,
-  initPresets,
-  savePreset,
-  loadPreset,
-  getPresetNames,
-  deletePreset,
-  _resetPresets,
+  initPresets: () => {}, // No-op - presets now handled by melodyStore
+  savePreset: () => {}, // No-op - presets now handled by melodyStore
+  loadPreset: () => null, // No-op - presets now handled by melodyStore
+  getPresetNames: () => [], // No-op - presets now handled by melodyStore
+  deletePreset: () => {}, // No-op - presets now handled by melodyStore
+  _resetPresets: () => {}, // No-op - presets now handled by melodyStore
 
   // User Session Library
   loadSession,
@@ -1192,7 +1106,7 @@ export const appStore = {
   setPlaybackSpeed,
 
   // Session Results
-  sessionResultsStore,
+  sessionResults,
 
   // Session state (signals)
   sessionActive,
@@ -1200,7 +1114,6 @@ export const appStore = {
   sessionItemIndex,
   getCurrentSessionItemIndex,
   practiceSession,
-  sessionResults,
   sessionMode,
   getCurrentSessionItem,
   startPracticeSession,
@@ -1216,10 +1129,11 @@ export const appStore = {
   nextWalkthroughStep,
   prevWalkthroughStep,
   endWalkthrough,
+  isWalkthroughActive,
+  getWalkthroughStep,
 
   // Melody (for LibraryModal)
   createPlaylist: melodyStore.createPlaylist,
   deletePlaylist: melodyStore.deletePlaylist,
   createNewMelody: melodyStore.createNewMelody,
 }
-// TEST MARKER Sat Apr 18 12:29:36 AM UTC 2026

@@ -50,17 +50,14 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (props) 
   const handleSave = () => {
     const editing = isEditing()
     if (editing !== null) {
-      const updated = { ...editing, name: nameInput(), difficulty: difficulty(), category: category() }
-      const existingSessions = melodyStore.getSessions()
-      const idx = existingSessions.findIndex((s: SavedUserSession) => s.id === editing.id)
-      const newSessions = [...existingSessions]
-      if (idx >= 0) {
-        newSessions[idx] = updated
-      } else {
-        newSessions.push(updated)
+      const updated: SavedUserSession = {
+        ...editing,
+        name: nameInput(),
+        difficulty: difficulty(),
+        category: category(),
+        lastPlayed: Date.now(),
       }
-      newSessions.sort((a: SavedUserSession, b: SavedUserSession) => (b.lastPlayed ?? b.created) - (a.lastPlayed ?? a.created))
-      // In a full implementation, this would call a store update function
+      melodyStore.updateUserSession(updated)
     }
     setIsEditing(null)
     appStore.showNotification('Session saved', 'success')

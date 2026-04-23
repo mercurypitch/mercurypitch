@@ -6,7 +6,7 @@ import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
 import { appStore } from '@/stores/app-store'
 import { melodyStore } from '@/stores/melody-store'
-import type { MelodyData } from '@/types'
+import type { MelodyData, NoteName } from '@/types'
 
 interface LibraryModalProps {
   isOpen: () => boolean
@@ -19,8 +19,36 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
   const [activeTab, setActiveTab] = createSignal<Tab>('melodies')
   const [searchQuery, setSearchQuery] = createSignal('')
   const [selectedMelodyKey, setSelectedMelodyKey] = createSignal<string | null>(null)
+  const [editingMelodyKey, setEditingMelodyKey] = createSignal<string | null>(null)
+
+  const [editName, setEditName] = createSignal('')
+  const [editBpm, setEditBpm] = createSignal(80)
+  const [editKey, setEditKey] = createSignal('C')
+  const [editScale, setEditScale] = createSignal('major')
+  const [editTags, setEditTags] = createSignal('')
+  const [editNotes, setEditNotes] = createSignal('')
+
+  const [createName, setCreateName] = createSignal('')
+  const [createBpm, setCreateBpm] = createSignal(80)
+  const [createKey, setCreateKey] = createSignal('C')
+  const [createScale, setCreateScale] = createSignal('major')
+  const [createTags, setCreateTags] = createSignal('')
+  const [createNotes, setCreateNotes] = createSignal('')
 
   const library = createMemo(() => melodyStore.getMelodyLibrary())
+
+  const keyNames: NoteName[] = [
+    'C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'
+  ]
+
+  const scaleTypes = [
+    { value: 'major', label: 'Major' },
+    { value: 'minor', label: 'Minor' },
+    { value: 'harmonic-minor', label: 'Harmonic Minor' },
+    { value: 'pentatonic', label: 'Pentatonic' },
+    { value: 'blues', label: 'Blues' },
+    { value: 'chromatic', label: 'Chromatic' },
+  ]
 
   const filteredMelodies = createMemo(() => {
     const query = searchQuery().toLowerCase()
@@ -56,17 +84,92 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
   const handleDelete = (key: string) => {
     if (confirm('Delete this melody?')) {
       melodyStore.deleteMelody(key)
-      if (selectedMelodyKey() === key) setSelectedMelodyKey(null)
+      setSelectedMelodyKey(null)
+      if (editingMelodyKey() === key) {
+        cancelEdit()
+      }
     }
   }
 
   const handleEdit = (melody: MelodyData) => {
-    setSelectedMelodyKey(melody.id)
-    setActiveTab('melodies')
+    setEditName(melody.name)
+    setEditBpm(melody.bpm)
+    setEditKey(melody.key)
+    setEditScale(melody.scaleType)
+    setEditTags(melody.tags ? melody.tags.join(', ') : '')
+    setEditNotes(melody.notes ?? '')
+    setEditingMelodyKey(melody.id)
+  }
+
+  const handleSaveMelody = () => {
+    const editingKey = editingMelodyKey()
+    if (editingKey === null) return
+
+    const tagsArray = editTags().split(',').map(t => t.trim()).filter(t => t)
+    const melody = melodyStore.getMelody(editingKey)
+    if (melody) {
+      melodyStore.updateMelody(editingKey, {
+        name: editName(),
+        bpm: editBpm(),
+        key: editKey(),
+        scaleType: editScale(),
+        tags: tagsArray.length > 0 ? tagsArray : undefined,
+        notes: editNotes().trim() || undefined,
+      })
+      setEditName('')
+      setEditBpm(80)
+      setEditKey('C')
+      setEditScale('major')
+      setEditTags('')
+      setEditNotes('')
+      setEditingMelodyKey(null)
+      setSelectedMelodyKey(editingKey)
+      appStore.showNotification('Melody saved', 'success')
+    }
+  }
+
+  const cancelEdit = () => {
+    setEditingMelodyKey(null)
+    setEditName('')
+    setEditBpm(80)
+    setEditKey('C')
+    setEditScale('major')
+    setEditTags('')
+    setEditNotes('')
+  }
+
+  const handleCreateMelody = () => {
+    const name = createName().trim()
+    if (!name) {
+      appStore.showNotification('Please enter a name', 'warning')
+      return
+    }
+    const tagsArray = createTags().split(',').map(t => t.trim()).filter(t => t)
+    const newMelody = melodyStore.createNewMelody(name, 'User')
+    melodyStore.updateMelody(newMelody.id, {
+      bpm: createBpm(),
+      key: createKey(),
+      scaleType: createScale(),
+      tags: tagsArray.length > 0 ? tagsArray : undefined,
+      notes: createNotes().trim() || undefined,
+    })
+    setCreateName('')
+    setCreateBpm(80)
+    setCreateKey('C')
+    setCreateScale('major')
+    setCreateTags('')
+    setCreateNotes('')
+    setSelectedMelodyKey(newMelody.id)
+    appStore.showNotification(`Melody "${name}" created`, 'success')
   }
 
   const getNoteCount = (itemCount: number) => {
     return itemCount > 0 ? `${itemCount} notes` : 'Empty'
+  }
+
+  const handlePlaylistEdit = (_playlistId: string) => {
+    // Note: Full playlist editing not yet implemented
+    // This is just a placeholder
   }
 
   return (
@@ -114,13 +217,170 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                 onInput={(e) => setSearchQuery(e.currentTarget.value)}
               />
 
-              {/* New Melody Button */}
-              <button class="new-btn" onClick={() => appStore.createNewMelody?.('', 'User')}>
-                <svg viewBox="0 0 24 24" width="16" height="16">
-                  <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
-                </svg>
-                New Melody
-              </button>
+              {/* Create Melody Form */}
+              {editingMelodyKey() === null && (
+                <div class="edit-melody-form">
+                  <h3>Create New Melody</h3>
+
+                  <div class="form-group">
+                    <label>Name</label>
+                    <input
+                      type="text"
+                      value={createName()}
+                      onInput={(e) => setCreateName(e.currentTarget.value)}
+                      placeholder="Melody name"
+                    />
+                  </div>
+
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label>BPM</label>
+                      <input
+                        type="number"
+                        value={createBpm()}
+                        onInput={(e) => setCreateBpm(parseInt(e.currentTarget.value) || 80)}
+                        min="40"
+                        max="280"
+                      />
+                    </div>
+
+                    <div class="form-group">
+                      <label>Key</label>
+                      <select
+                        value={createKey()}
+                        onChange={(e) => setCreateKey(e.currentTarget.value as NoteName)}
+                      >
+                        {keyNames.map(k => (
+                          <option value={k}>{k}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div class="form-group">
+                      <label>Scale</label>
+                      <select
+                        value={createScale()}
+                        onChange={(e) => setCreateScale(e.currentTarget.value)}
+                      >
+                        {scaleTypes.map(s => (
+                          <option value={s.value}>{s.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label>Tags (comma-separated)</label>
+                    <input
+                      type="text"
+                      value={createTags()}
+                      onInput={(e) => setCreateTags(e.currentTarget.value)}
+                      placeholder="jazz, blues, etc."
+                    />
+                  </div>
+
+                  <div class="form-group">
+                    <label>Notes</label>
+                    <textarea
+                      value={createNotes()}
+                      onInput={(e) => setCreateNotes(e.currentTarget.value)}
+                      placeholder="User notes about this melody..."
+                      rows={3}
+                    />
+                  </div>
+
+                  <div class="form-actions">
+                    <button class="cancel-btn" onClick={() => {
+                      setCreateName('')
+                      setCreateBpm(80)
+                      setCreateKey('C')
+                      setCreateScale('major')
+                      setCreateTags('')
+                      setCreateNotes('')
+                    }}>Cancel</button>
+                    <button class="save-btn" onClick={handleCreateMelody}>Create</button>
+                  </div>
+                </div>
+              )}
+
+              {/* Edit Melody Form */}
+              {editingMelodyKey() !== null && (
+                <div class="edit-melody-form">
+                  <h3>Edit Melody</h3>
+
+                  <div class="form-group">
+                    <label>Name</label>
+                    <input
+                      type="text"
+                      value={editName()}
+                      onInput={(e) => setEditName(e.currentTarget.value)}
+                      placeholder="Melody name"
+                    />
+                  </div>
+
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label>BPM</label>
+                      <input
+                        type="number"
+                        value={editBpm()}
+                        onInput={(e) => setEditBpm(parseInt(e.currentTarget.value) || 80)}
+                        min="40"
+                        max="280"
+                      />
+                    </div>
+
+                    <div class="form-group">
+                      <label>Key</label>
+                      <select
+                        value={editKey()}
+                        onChange={(e) => setEditKey(e.currentTarget.value as NoteName)}
+                      >
+                        {keyNames.map(k => (
+                          <option value={k}>{k}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div class="form-group">
+                      <label>Scale</label>
+                      <select
+                        value={editScale()}
+                        onChange={(e) => setEditScale(e.currentTarget.value)}
+                      >
+                        {scaleTypes.map(s => (
+                          <option value={s.value}>{s.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label>Tags (comma-separated)</label>
+                    <input
+                      type="text"
+                      value={editTags()}
+                      onInput={(e) => setEditTags(e.currentTarget.value)}
+                      placeholder="jazz, blues, etc."
+                    />
+                  </div>
+
+                  <div class="form-group">
+                    <label>Notes</label>
+                    <textarea
+                      value={editNotes()}
+                      onInput={(e) => setEditNotes(e.currentTarget.value)}
+                      placeholder="User notes about this melody..."
+                      rows={3}
+                    />
+                  </div>
+
+                  <div class="form-actions">
+                    <button class="cancel-btn" onClick={cancelEdit}>Cancel</button>
+                    <button class="save-btn" onClick={handleSaveMelody}>Save</button>
+                  </div>
+                </div>
+              )}
 
               {/* List */}
               <div class="library-list">
@@ -212,10 +472,9 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
           ) : (
             <div class="library-content">
               <button class="new-btn" onClick={() => {
-  // Open a simple prompt for playlist name (temporary solution)
-  const name = prompt('Enter playlist name:') ?? 'My Playlist'
-  if (name) appStore.createPlaylist?.(name)
-}}>
+                const name = prompt('Enter playlist name:') ?? 'My Playlist'
+                if (name) melodyStore.createPlaylist(name)
+              }}>
                 <svg viewBox="0 0 24 24" width="16" height="16">
                   <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
                 </svg>
@@ -230,7 +489,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                         <span class="playlist-name">{playlist.name}</span>
                         <span class="playlist-count">{playlist.melodyKeys.length} melodies</span>
                       </div>
-                      <button class="action-btn edit-btn" onClick={() => alert('Edit playlist feature not yet implemented')} title="Edit">
+                      <button class="action-btn edit-btn" onClick={() => handlePlaylistEdit(_id)} title="Edit">
                         <svg viewBox="0 0 24 24" width="14" height="14">
                           <path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z" />
                         </svg>

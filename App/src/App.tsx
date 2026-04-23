@@ -5,7 +5,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createEffect, createMemo, createSignal, onCleanup, onMount, Show } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show } from 'solid-js'
 import { AppSidebar } from '@/components/AppSidebar'
 import { FocusMode } from '@/components/FocusMode'
 import { HistoryCanvas } from '@/components/HistoryCanvas'
@@ -27,7 +27,7 @@ import { PlaybackRuntime } from '@/lib/playback-runtime'
 import { PracticeEngine } from '@/lib/practice-engine'
 import { buildMultiOctaveScale, melodyIndexAtBeat, melodyTotalBeats, midiToNote, } from '@/lib/scale-data'
 import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
-import type { InstrumentType } from '@/stores/app-store'
+import type { InstrumentType, SessionHistoryEntry } from '@/stores/app-store'
 import type { PresetData } from '@/stores/app-store'
 import { appStore, getNoteAccuracyMap } from '@/stores/app-store'
 import { melodyStore } from '@/stores/melody-store'
@@ -92,7 +92,7 @@ function _filterMelodyForPractice(
 
   if (subMode === 'focus') {
     // Use session history to find worst-performing notes
-    const history = appStore.sessionHistory
+    const history = appStore.sessionHistory()
     if (history.length === 0) return melody // No history — practice all
 
     // Find notes with the most errors
@@ -1242,7 +1242,7 @@ export const App: Component<AppProps> = (props) => {
 
   const noteAccuracyMap = createMemo(() => {
     // Track session history so this recomputes when history changes
-    void appStore.sessionHistory.length
+    void appStore.sessionHistory().length
     return getNoteAccuracyMap()
   })
 
@@ -1616,17 +1616,19 @@ export const App: Component<AppProps> = (props) => {
             </div>
 
             {/* Session history mini chart */}
-            <Show when={appStore.sessionHistory.length > 1}>
+            <Show when={appStore.sessionHistory().length > 1}>
               <div id="score-history">
                 <h3 class="history-title">Recent Progress</h3>
                 <div class="history-chart">
-                  {appStore.sessionHistory.slice(0, 10).map((session) => (
-                    <div
-                      class="history-bar"
-                      style={{ height: `${session.score}%` }}
-                      title={`Score: ${session.score}%`}
-                    />
-                  ))}
+                  <For each={appStore.sessionHistory().slice(0, 10)}>
+                    {(session: SessionHistoryEntry) => (
+                      <div
+                        class="history-bar"
+                        style={{ height: `${session.score}%` }}
+                        title={`Score: ${session.score}%`}
+                      />
+                    )}
+                  </For>
                 </div>
               </div>
             </Show>

@@ -127,6 +127,14 @@ export function deleteSession(id: string): void {
   saveUserSessions(userSessions())
 }
 
+export function updateUserSession(session: SavedUserSession): void {
+  const sessions = userSessions()
+  const updated = [...sessions, session]
+  updated.sort((a: SavedUserSession, b: SavedUserSession) => (b.lastPlayed ?? b.created) - (a.lastPlayed ?? a.created))
+  setUserSessions(updated)
+  saveUserSessions(updated)
+}
+
 export function getSession(id: string): SavedUserSession | undefined {
   return userSessions().find((s) => s.id === id)
 }
@@ -445,6 +453,7 @@ export function getMelody(id: string): MelodyData | undefined {
 export const melodyStore = {
   // Current melody operations
   currentMelody: getCurrentMelody,
+  getCurrentMelody,
   setCurrentMelody,
   setMelody,
   getCurrentItems,
@@ -491,6 +500,7 @@ export const melodyStore = {
   updateSession,
   deleteSession,
   getSession,
+  updateUserSession,
 
   // Current Note Index
   currentNoteIndex,
