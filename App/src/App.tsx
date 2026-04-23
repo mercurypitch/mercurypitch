@@ -1695,19 +1695,19 @@ export const App: Component<AppProps> = (props) => {
 
       {/* Library Modal */}
       <LibraryModal
-        isOpen={() => isLibraryModalOpen()}
+        isOpen={isLibraryModalOpen}
         close={() => appStore.hideLibrary()}
       />
 
       {/* Presets Library Modal */}
       <PresetsLibraryModal
-        isOpen={() => isPresetsModalOpen()}
+        isOpen={isPresetsModalOpen}
         close={() => appStore.hidePresetsLibrary()}
       />
 
       {/* Session Library Modal */}
       <SessionLibraryModal
-        isOpen={() => isSessionLibraryModalOpen()}
+        isOpen={isSessionLibraryModalOpen}
         close={() => appStore.hideSessionLibrary()}
       />
     </div>
