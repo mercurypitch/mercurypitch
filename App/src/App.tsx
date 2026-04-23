@@ -49,15 +49,15 @@ function presetToMelody(preset: PresetData): MelodyItem[] {
         midi: n.midi,
         // Use stored scale data, fallback to computed from current scale
         name: (scaleNote?.name ??
-          melodyStore.currentScale().find((s) => s.midi === n.midi)?.name ??
+          melodyStore.currentScale.find((s) => s.midi === n.midi)?.name ??
           'C') as NoteName,
         octave:
           scaleNote?.octave ??
-          melodyStore.currentScale().find((s) => s.midi === n.midi)?.octave ??
+          melodyStore.currentScale.find((s) => s.midi === n.midi)?.octave ??
           4,
         freq:
           scaleNote?.freq ??
-          melodyStore.currentScale().find((s) => s.midi === n.midi)?.freq ??
+          melodyStore.currentScale.find((s) => s.midi === n.midi)?.freq ??
           440,
       },
       startBeat: n.startBeat,
@@ -1046,7 +1046,7 @@ export const App: Component<AppProps> = (props) => {
     const numOctaves = beats > 12 ? 2 : 1
     const scale = buildMultiOctaveScale(
       appStore.keyName(),
-      melodyStore.currentOctave(),
+      melodyStore.currentOctave,
       numOctaves,
       scaleType,
     )
@@ -1190,7 +1190,7 @@ export const App: Component<AppProps> = (props) => {
   // ── Octave shift ─────────────────────────────────────────────
 
   const handleOctaveShift = (delta: number) => {
-    const newOctave = melodyStore.currentOctave() + delta
+    const newOctave = melodyStore.currentOctave + delta
     if (newOctave < 1 || newOctave > 6) return
 
     const keyName = appStore.keyName()
@@ -1412,7 +1412,7 @@ export const App: Component<AppProps> = (props) => {
                 <div id="canvas-container">
                   <PitchCanvas
                     melody={() => melodyStore.getCurrentItems()}
-                    scale={() => melodyStore.currentScale()}
+                    scale={() => melodyStore.currentScale}
                     totalBeats={totalBeats}
                     currentBeat={currentBeat}
                     pitchHistory={pitchHistory}
@@ -1485,7 +1485,7 @@ export const App: Component<AppProps> = (props) => {
               />
               <PianoRollCanvas
                 melody={() => melodyStore.getCurrentItems()}
-                scale={() => melodyStore.currentScale()}
+                scale={() => melodyStore.currentScale}
                 bpm={() => appStore.bpm()}
                 totalBeats={() => totalBeats()}
                 playbackState={() =>

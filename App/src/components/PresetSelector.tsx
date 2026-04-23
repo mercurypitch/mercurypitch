@@ -31,7 +31,7 @@ export const PresetSelector: Component = () => {
         })),
         totalBeats: 20,
         bpm: appStore.bpm(),
-        scale: melodyStore.currentScale().map((s) => ({
+        scale: melodyStore.currentScale.map((s) => ({
           midi: s.midi,
           name: s.name,
           octave: s.octave,
@@ -73,7 +73,7 @@ export const PresetSelector: Component = () => {
       })),
       totalBeats,
       bpm: appStore.bpm(),
-      scale: melodyStore.currentScale().map((s) => ({
+      scale: melodyStore.currentScale.map((s) => ({
         midi: s.midi,
         name: s.name,
         octave: s.octave,

@@ -121,7 +121,7 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
       <div class="focus-canvas">
         <PitchCanvas
           melody={() => melodyStore.getCurrentItems()}
-          scale={() => melodyStore.currentScale()}
+          scale={() => melodyStore.currentScale}
           totalBeats={totalBeats}
           currentBeat={props.currentBeat}
           pitchHistory={props.pitchHistory}

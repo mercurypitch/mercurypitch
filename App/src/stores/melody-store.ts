@@ -64,16 +64,7 @@ export const melodyLibrary = createStore<MelodyLibrary>(loadLibrary())
 export function resetMelodyLibrary(): void {
   localStorage.removeItem(STORAGE_KEY_MELODY_LIBRARY)
   _idCounter = 100
-  // @ts-expect-error - SolidJS store mutation
-  melodyLibrary.melodies.melodies = {}
-  // @ts-expect-error - SolidJS store mutation
-  melodyLibrary.melodies.playlists = {}
-  // @ts-expect-error - SolidJS store mutation
-  melodyLibrary.melodies.meta = {
-    author: 'User',
-    version: '1.0',
-    lastUpdated: Date.now(),
-  }
+  melodyLibrary({ melodies: {}, playlists: {}, meta: { author: 'User', version: '1.0', lastUpdated: Date.now() } })
 }
 
 function loadUserSessions(): SavedUserSession[] {
@@ -141,7 +132,7 @@ export function createNewMelody(name?: string, author?: string): MelodyData {
   const id = generateMelodyId()
   const newMelody: MelodyData = {
     id,
-    name: name ?? `New Melody ${Object.keys(melodyLibrary.melodies).length + 1}`,
+    name: name ?? `New Melody ${Object.keys(melodyLibrary().melodies).length + 1}`,
     author: author ?? 'User',
     bpm: DEFAULT_BPM,
     key: DEFAULT_KEY,
@@ -151,8 +142,7 @@ export function createNewMelody(name?: string, author?: string): MelodyData {
     createdAt: Date.now(),
     updatedAt: Date.now(),
   }
-  // @ts-expect-error - SolidJS store mutation
-  melodyLibrary.melodies.melodies[id] = newMelody
+  melodyLibrary.melodies[id] = newMelody
   setCurrentMelody(newMelody)
   return newMelody
 }
@@ -162,10 +152,19 @@ const DEFAULT_SCALE_TYPE = 'major'
 const DEFAULT_OCTAVE = 4
 const DEFAULT_BPM = 80
 
-export const currentScale = createSignal<ScaleDegree[]>(
+// ============================================================
+// Scale - SolidJS Signals
+// ============================================================
+
+const _currentScale = createSignal<ScaleDegree[]>(
   buildMultiOctaveScale(DEFAULT_KEY, DEFAULT_OCTAVE, 2, DEFAULT_SCALE_TYPE),
 )
-export const currentOctave = createSignal<number>(DEFAULT_OCTAVE)
+export const currentScale = _currentScale[0]
+export const setCurrentScale = _currentScale[1]
+
+const _currentOctave = createSignal<number>(DEFAULT_OCTAVE)
+export const currentOctave = _currentOctave[0]
+const _setOctave = _currentOctave[1]
 
 // ============================================================
 // Melody Note Operations
@@ -176,24 +175,13 @@ export function addMelodyNote(note: MelodyNote, startBeat: number, duration: num
   if (current === null || current === undefined) return
   const items = current.items ?? []
   const key = current.id
-  const updatedMelody = {
+  melodyLibrary.melodies[key] = {
     ...current,
     items: [...items, { id: generateId(), note, startBeat, duration }],
     updatedAt: Date.now(),
   }
-  const updatedMelodies = {
-    ...melodyLibrary.melodies.melodies,
-    [key]: updatedMelody,
-  }
-  const updatedMeta = {
-    ...melodyLibrary.melodies.meta,
-    lastUpdated: Date.now(),
-  }
-  // @ts-expect-error - SolidJS store mutation
-  melodyLibrary.melodies.melodies = updatedMelodies
-  // @ts-expect-error - SolidJS store mutation
-  melodyLibrary.melodies.meta = updatedMeta
-  setCurrentMelody(updatedMelodies[key])
+  melodyLibrary.meta.lastUpdated = Date.now()
+  setCurrentMelody(melodyLibrary.melodies[key])
 }
 
 export function removeMelodyNote(id: number): void {
@@ -201,24 +189,13 @@ export function removeMelodyNote(id: number): void {
   if (current === null || current === undefined) return
   const items = current.items ?? []
   const key = current.id
-  const updatedMelody = {
+  melodyLibrary.melodies[key] = {
     ...current,
     items: items.filter((item) => item.id !== id),
     updatedAt: Date.now(),
   }
-  const updatedMelodies = {
-    ...melodyLibrary.melodies.melodies,
-    [key]: updatedMelody,
-  }
-  const updatedMeta = {
-    ...melodyLibrary.melodies.meta,
-    lastUpdated: Date.now(),
-  }
-  // @ts-expect-error - SolidJS store mutation
-  melodyLibrary.melodies.melodies = updatedMelodies
-  // @ts-expect-error - SolidJS store mutation
-  melodyLibrary.melodies.meta = updatedMeta
-  setCurrentMelody(updatedMelodies[key])
+  melodyLibrary.meta.lastUpdated = Date.now()
+  setCurrentMelody(melodyLibrary.melodies[key])
 }
 
 export function updateMelodyNote(
@@ -229,69 +206,48 @@ export function updateMelodyNote(
   if (current === null || current === undefined) return
   const items = current.items ?? []
   const key = current.id
-  const updatedMelody = {
+  melodyLibrary.melodies[key] = {
     ...current,
     items: items.map((item) =>
       item.id === id ? { ...item, ...updates } : item,
     ),
     updatedAt: Date.now(),
   }
-  const updatedMelodies = {
-    ...melodyLibrary.melodies.melodies,
-    [key]: updatedMelody,
-  }
-  const updatedMeta = {
-    ...melodyLibrary.melodies.meta,
-    lastUpdated: Date.now(),
-  }
-  // @ts-expect-error - SolidJS store mutation
-  melodyLibrary.melodies.melodies = updatedMelodies
-  // @ts-expect-error - SolidJS store mutation
-  melodyLibrary.melodies.meta = updatedMeta
-  setCurrentMelody(updatedMelodies[key])
+  melodyLibrary.meta.lastUpdated = Date.now()
+  setCurrentMelody(melodyLibrary.melodies[key])
 }
 
 export function loadMelody(key: string): MelodyData | null {
-  const melody = melodyLibrary.melodies.melodies[key]
+  const melody = melodyLibrary.melodies[key]
   if (melody !== null && melody !== undefined) {
     setCurrentMelody(melody)
     // Increment play count
     const playCount = 'playCount' in melody ? melody.playCount : 0
-    const updatedMelody = {
+    melodyLibrary.melodies[key] = {
       ...melody,
       playCount: playCount + 1,
     }
-    // @ts-expect-error - SolidJS store mutation
-    melodyLibrary.melodies.melodies[key] = updatedMelody
-    // @ts-expect-error - SolidJS store mutation
-    melodyLibrary.melodies.meta.lastUpdated = Date.now()
+    melodyLibrary.meta.lastUpdated = Date.now()
     return melody
   }
   return null
 }
 
 export function updateMelody(key: string, updates: Partial<MelodyData>): void {
-  const existing = melodyLibrary.melodies.melodies[key]
-  if (existing === null || existing === undefined) return
-  const updated = {
-    ...existing,
+  melodyLibrary.melodies[key] = {
+    ...melodyLibrary.melodies[key],
     ...updates,
     updatedAt: Date.now(),
   }
-  // @ts-expect-error - SolidJS store mutation
-  melodyLibrary.melodies.melodies[key] = updated
-  // @ts-expect-error - SolidJS store mutation
-  melodyLibrary.melodies.meta.lastUpdated = Date.now()
+  melodyLibrary.meta.lastUpdated = Date.now()
 }
 
 export function deleteMelody(key: string): void {
-  const { [key]: _removed, ...rest } = melodyLibrary.melodies.melodies
-  // @ts-expect-error - SolidJS store mutation
-  melodyLibrary.melodies.melodies = rest
+  const { [key]: _removed, ...rest } = melodyLibrary.melodies
+  melodyLibrary.melodies = rest
   // Remove from any playlists
-  for (const playlistId in melodyLibrary.melodies.playlists) {
-    // @ts-expect-error - SolidJS store mutation
-    melodyLibrary.melodies.playlists[playlistId].melodyKeys = melodyLibrary.melodies.playlists[
+  for (const playlistId in melodyLibrary.playlists) {
+    melodyLibrary.playlists[playlistId].melodyKeys = melodyLibrary.playlists[
       playlistId
     ].melodyKeys.filter((k) => k !== key)
   }
@@ -299,8 +255,7 @@ export function deleteMelody(key: string): void {
   if (currentMelody()?.id === key) {
     setCurrentMelody(null)
   }
-  // @ts-expect-error - SolidJS store mutation
-  melodyLibrary.melodies.meta.lastUpdated = Date.now()
+  melodyLibrary.meta.lastUpdated = Date.now()
 }
 
 export function saveCurrentMelody(name?: string): MelodyData {
@@ -309,16 +264,13 @@ export function saveCurrentMelody(name?: string): MelodyData {
     return createNewMelody(name)
   }
   const key = melody.id
-  const updated = {
+  melodyLibrary.melodies[key] = {
     ...melody,
     name: name ?? melody.name,
     updatedAt: Date.now(),
   }
-  // @ts-expect-error - SolidJS store mutation
-  melodyLibrary.melodies.melodies[key] = updated
-  // @ts-expect-error - SolidJS store mutation
-  melodyLibrary.melodies.meta.lastUpdated = Date.now()
-  return { ...melodyLibrary.melodies.melodies[key] } as MelodyData
+  melodyLibrary.meta.lastUpdated = Date.now()
+  return { ...melodyLibrary.melodies[key] } as MelodyData
 }
 
 export function getCurrentMelody(): MelodyData | null {
@@ -332,10 +284,10 @@ export function getCurrentItems(): MelodyItem[] {
 export function setMelody(items: MelodyItem[]): void {
   const key = currentMelody()?.id ?? createNewMelody().id
   const existing = currentMelody()
-  const updatedMelody = {
+  melodyLibrary.melodies[key] = {
     ...existing ?? {
       id: key,
-      name: `Melody ${Object.keys(melodyLibrary.melodies.melodies).length + 1}`,
+      name: `Melody ${Object.keys(melodyLibrary.melodies).length + 1}`,
       bpm: DEFAULT_BPM,
       key: DEFAULT_KEY,
       scaleType: DEFAULT_SCALE_TYPE,
@@ -347,13 +299,10 @@ export function setMelody(items: MelodyItem[]): void {
     items,
     updatedAt: Date.now(),
   }
-  // @ts-expect-error - SolidJS store mutation
-  melodyLibrary.melodies.melodies[key] = updatedMelody
   if (existing !== null && existing !== undefined) {
-    setCurrentMelody(melodyLibrary.melodies.melodies[key] as MelodyData)
+    setCurrentMelody(melodyLibrary.melodies[key])
   }
-  // @ts-expect-error - SolidJS store mutation
-  melodyLibrary.melodies.meta.lastUpdated = Date.now()
+  melodyLibrary.meta.lastUpdated = Date.now()
 }
 
 // ============================================================
@@ -365,21 +314,17 @@ export function refreshScale(
   startOctave: number,
   scaleType: string,
 ): void {
-  currentOctave.set(startOctave)
-  currentScale.set(buildMultiOctaveScale(keyName, startOctave, 2, scaleType))
+  setCurrentOctave(startOctave)
+  setCurrentScale(buildMultiOctaveScale(keyName, startOctave, 2, scaleType))
 }
 
 export function setOctave(octave: number): void {
-  currentOctave.set(octave)
-}
-
-export function setCurrentOctave(octave: number): void {
-  currentOctave.set(octave)
+  setCurrentOctave(octave)
 }
 
 export function setNumOctaves(num: number): void {
-  currentScale.set(
-    buildMultiOctaveScale(DEFAULT_KEY, currentOctave(), num, appStore.scaleType()),
+  setCurrentScale(
+    buildMultiOctaveScale(DEFAULT_KEY, currentOctave, num, appStore.scaleType()),
   )
 }
 
@@ -389,48 +334,40 @@ export function setNumOctaves(num: number): void {
 
 export function createPlaylist(name: string): string {
   const id = `playlist-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-  // @ts-expect-error - SolidJS store mutation
-  melodyLibrary.melodies.playlists[id] = {
+  melodyLibrary.playlists[id] = {
     name,
     melodyKeys: [],
     created: Date.now(),
   }
-  // @ts-expect-error - SolidJS store mutation
-  melodyLibrary.melodies.meta.lastUpdated = Date.now()
+  melodyLibrary.meta.lastUpdated = Date.now()
   return id
 }
 
 export function addMelodyToPlaylist(playlistId: string, melodyKey: string): void {
-  const playlist = melodyLibrary.melodies.playlists[playlistId]
+  const playlist = melodyLibrary.playlists[playlistId]
   if (playlist === undefined) return
 
-  // @ts-expect-error - SolidJS store mutation
-  melodyLibrary.melodies.playlists[playlistId].melodyKeys = [
+  melodyLibrary.playlists[playlistId].melodyKeys = [
     ...playlist.melodyKeys,
     melodyKey,
   ]
-  // @ts-expect-error - SolidJS store mutation
-  melodyLibrary.melodies.meta.lastUpdated = Date.now()
+  melodyLibrary.meta.lastUpdated = Date.now()
 }
 
 export function removeMelodyFromPlaylist(playlistId: string, melodyKey: string): void {
-  const playlist = melodyLibrary.melodies.playlists[playlistId]
+  const playlist = melodyLibrary.playlists[playlistId]
   if (playlist === null) return
 
-  // @ts-expect-error - SolidJS store mutation
-  melodyLibrary.melodies.playlists[playlistId].melodyKeys = playlist.melodyKeys.filter(
+  melodyLibrary.playlists[playlistId].melodyKeys = playlist.melodyKeys.filter(
     (k) => k !== melodyKey,
   )
-  // @ts-expect-error - SolidJS store mutation
-  melodyLibrary.melodies.meta.lastUpdated = Date.now()
+  melodyLibrary.meta.lastUpdated = Date.now()
 }
 
 export function deletePlaylist(playlistId: string): void {
-  const { [playlistId]: _, ...rest } = melodyLibrary.melodies.playlists
-  // @ts-expect-error - SolidJS store mutation
-  melodyLibrary.melodies.playlists = rest
-  // @ts-expect-error - SolidJS store mutation
-  melodyLibrary.melodies.meta.lastUpdated = Date.now()
+  const { [playlistId]: _, ...rest } = melodyLibrary.playlists
+  melodyLibrary.playlists = rest
+  melodyLibrary.meta.lastUpdated = Date.now()
 }
 
 // ============================================================
@@ -438,24 +375,19 @@ export function deletePlaylist(playlistId: string): void {
 // ============================================================
 
 export function getMelodyLibrary(): MelodyLibrary {
-  return {
-    meta: melodyLibrary.melodies.meta,
-    renderSettings: melodyLibrary.melodies.renderSettings,
-    melodies: melodyLibrary.melodies.melodies,
-    playlists: melodyLibrary.melodies.playlists,
-  }
+  return melodyLibrary()
 }
 
 export function getAllMelodies(): MelodyData[] {
-  return Object.values(melodyLibrary.melodies.melodies)
+  return Object.values(melodyLibrary().melodies)
 }
 
 export function getMelodyCount(): number {
-  return Object.keys(melodyLibrary.melodies.melodies).length
+  return Object.keys(melodyLibrary().melodies).length
 }
 
 export function getPlaylistCount(): number {
-  return Object.keys(melodyLibrary.melodies.playlists).length
+  return Object.keys(melodyLibrary().playlists).length
 }
 
 export function getPlaylists(): Record<string, {
@@ -463,7 +395,7 @@ export function getPlaylists(): Record<string, {
   melodyKeys: string[]
   created: number
 }> {
-  return { ...melodyLibrary.melodies.playlists }
+  return { ...melodyLibrary().playlists }
 }
 
 export function getPlaylist(melodyKey: string): {
@@ -471,11 +403,11 @@ export function getPlaylist(melodyKey: string): {
   melodyKeys: string[]
   created: number
 } | undefined {
-  return melodyLibrary.melodies.playlists[melodyKey]
+  return melodyLibrary().playlists[melodyKey]
 }
 
 export function getMelody(id: string): MelodyData | undefined {
-  return melodyLibrary.melodies.melodies[id]
+  return melodyLibrary().melodies[id]
 }
 
 // ============================================================
@@ -504,13 +436,13 @@ export const melodyStore = {
   getMelodyCount,
   getMelody,
 
-  // Scale
+  // Scale - these are Signals
   currentScale,
+  setCurrentScale,
   refreshScale,
   setOctave,
   setNumOctaves,
   currentOctave,
-  setCurrentOctave,
 
   // Playlist operations
   createPlaylist,
@@ -520,6 +452,6 @@ export const melodyStore = {
   getPlaylists,
   getPlaylist,
 
-  // Export library for access - need raw store for direct mutation
-  melodyLibrary,
+  // Export library
+  melodyLibrary: getMelodyLibrary,
 }

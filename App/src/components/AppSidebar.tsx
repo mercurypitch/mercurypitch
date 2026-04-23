@@ -116,7 +116,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
               appStore.setKeyName(newKey)
               melodyStore.refreshScale(
                 newKey,
-                melodyStore.currentOctave(),
+                melodyStore.currentOctave,
                 appStore.scaleType(),
               )
             }}
@@ -145,7 +145,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
                 />
               </svg>
             </button>
-            <span class="octave-value">{melodyStore.currentOctave()}</span>
+            <span class="octave-value">{melodyStore.currentOctave}</span>
             <button
               class="octave-btn"
               title="Higher octave"
@@ -169,7 +169,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
               appStore.setScaleType(st)
               melodyStore.refreshScale(
                 appStore.keyName(),
-                melodyStore.currentOctave(),
+                melodyStore.currentOctave,
                 st,
               )
             }}
