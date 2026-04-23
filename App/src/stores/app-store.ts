@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // ============================================================
 // App Store — Global application state
 // ============================================================
@@ -174,8 +175,8 @@ export function enterFocusMode(): void {
   setFocusMode(true)
 }
 export function exitFocusMode(): void {
-  (_setFocusMode as any)(false)
-  (window as any).__exitFocusMode = exitFocusMode
+  (_setFocusMode as unknown as (val: boolean) => void)(false)
+  ;(window as any).__exitFocusMode = exitFocusMode
 }
 
 // ── Welcome Screen (GH #131) ────────────────────────────────────

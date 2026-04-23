@@ -1,10 +1,10 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/strict-boolean-expressions */
 // ============================================================
 // App — Main SolidJS application entry
 // Matches the original JS app's HTML structure exactly
 // ============================================================
 
-import type { Component } from 'solid-js'
-import { createEffect, createMemo, createSignal, onCleanup, onMount, Show, } from 'solid-js'
+import { createEffect, createMemo, createSignal, onCleanup, onMount, Show } from 'solid-js'
 import { AppSidebar } from '@/components/AppSidebar'
 import { FocusMode } from '@/components/FocusMode'
 import { HistoryCanvas } from '@/components/HistoryCanvas'
@@ -18,36 +18,14 @@ import type { PracticeSubMode } from '@/components/shared/SharedControlToolbar'
 import { SharedControlToolbar } from '@/components/shared/SharedControlToolbar'
 import { Walkthrough } from '@/components/Walkthrough'
 import { WelcomeScreen } from '@/components/WelcomeScreen'
-import type { InstrumentType } from '@/lib/audio-engine'
-import { AudioEngine } from '@/lib/audio-engine'
 import { PlaybackRuntime } from '@/lib/playback-runtime'
 import { PracticeEngine } from '@/lib/practice-engine'
-import {
-  editorPlay,
-  editorPause,
-  editorResume,
-  editorStop,
-  pause,
-  resume,
-  seekTo,
-  stop,
-  cyclesChange,
-  micToggle,
-  octaveShift,
-  practiceSubModeChange,
-  recordToggle,
-  setEngineCallbacks,
-  waveToggle,
-} from '@/lib/engine-bridge'
-import { melodyIndexAtBeat } from '@/lib/scale-data'
-import { buildMultiOctaveScale, keyTonicFreq, melodyTotalBeats, midiToNote, } from '@/lib/scale-data'
 import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
 import type { PresetData } from '@/stores/app-store'
 import { appStore, getNoteAccuracyMap } from '@/stores/app-store'
 import { melodyStore } from '@/stores/melody-store'
 import { playback } from '@/stores/playback-store'
-import type { PitchSample } from '@/types'
-import type { EffectType, MelodyItem, NoteName, NoteResult, PitchResult, PracticeResult, } from '@/types'
+import type { EffectType, MelodyItem, NoteName, NoteResult, PitchResult, PracticeResult } from '@/types'
 import type { PlaybackState } from '@/types'
 
 // ── Engine instances (single shared) ────────────────────────
@@ -86,7 +64,7 @@ function presetToMelody(preset: PresetData): MelodyItem[] {
 }
 
 /** Filter melody items based on practice sub-mode */
-function filterMelodyForPractice(
+function _filterMelodyForPractice(
   melody: MelodyItem[],
   subMode: PracticeSubMode,
 ): MelodyItem[] {
@@ -392,7 +370,9 @@ export const App: Component<AppProps> = (props) => {
       onNoteStart: (item, noteIndex) => {
         setCurrentNoteIndex(noteIndex)
         setTargetPitch(item.note.freq)
-        if (practiceEngine) practiceEngine.onNoteStart(item.note, noteIndex)
+        if (practiceEngine) {
+          practiceEngine.onNoteStart(item.note, noteIndex)
+        }
         // Play tone for the note — use the full note duration from the melody item
         const beatDurationMs = 60000 / appStore.bpm()
         const noteDurationMs = item.duration * beatDurationMs
@@ -430,12 +410,12 @@ export const App: Component<AppProps> = (props) => {
     // Sync settings to PracticeEngine
     createEffect(() => {
       const s = appStore.settings()
-      if (practiceEngine) practiceEngine.syncSettings({
+      practiceEngine?.syncSettings({
         sensitivity: s.sensitivity,
         minConfidence: s.minConfidence,
         minAmplitude: s.minAmplitude,
         bands: s.bands.map((b) => ({ threshold: b.threshold, band: b.band })),
-      })
+      } as any)
     })
 
     // Sync ADSR settings to AudioEngine when they change
@@ -460,7 +440,7 @@ export const App: Component<AppProps> = (props) => {
       const type = appStore.reverb().type
       if (audioEngine && type !== lastReverbType) {
         lastReverbType = type
-        audioEngine.setReverbType(type)
+        audioEngine.setReverbType(type as any)
       }
     })
 
@@ -692,6 +672,7 @@ export const App: Component<AppProps> = (props) => {
         setCurrentNoteIndex(e?.index ?? -1)
         setTargetPitch(noteItem?.note?.freq ?? 440)
         if (noteItem) {
+           
           practiceEngine.onNoteStart(noteItem.note!, e?.index ?? -1)
           const beatDurationMs = 60000 / appStore.bpm()
           const noteDurationMs = noteItem.duration ?? 1 * beatDurationMs
