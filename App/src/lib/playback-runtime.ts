@@ -272,14 +272,15 @@ export class PlaybackRuntime {
       // Calculate elapsed time, accounting for pause time
       const elapsed = (now - this.playStartTime) + this.pauseOffset
 
-      if (countIn > 0) {
+      // Count-in phase: play count-in beats before actual melody
+      if (countIn > 0 && elapsed < (countIn * beatDuration)) {
         const elapsedBeats = elapsed / beatDuration
         const currentBeat = countIn - Math.floor(elapsedBeats)
         const currentInt = Math.floor(currentBeat)
 
         if (currentInt !== this.countInBeat) {
-          this.countInBeat = currentInt
-          this._emit({ type: 'beat', beat: currentBeat })
+          this.countInBeat = Math.max(0, currentInt)
+          this._emit({ type: 'beat', beat: this.countInBeat })
           this._emit({ type: 'countIn', countIn: this.countInBeat })
         }
         this.animationFrameId = requestAnimationFrame(animate)
