@@ -292,6 +292,7 @@ export class PlaybackRuntime {
 
         if (currentInt !== this.countInBeat) {
           this.countInBeat = Math.max(0, currentInt)
+          this._emit({ type: 'beat', beat: this.countInBeat })
           this._emit({ type: 'countIn', countIn: this.countInBeat })
         }
         this.animationFrameId = requestAnimationFrame(animate)
