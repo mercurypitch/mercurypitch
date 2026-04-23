@@ -77,7 +77,7 @@ export function clearMelody(): void {
 
 // Save melody to localStorage whenever it changes (for default melody persistence)
 onMount(() => {
-  const currentMelody = melodyStore.items
+  const currentMelody = melodyItems
   saveDefaultMelodyToStorage(currentMelody)
 })
 
