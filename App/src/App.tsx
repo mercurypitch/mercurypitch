@@ -190,6 +190,8 @@ export const App: Component<AppProps> = (props) => {
       void audioEngine.stopTone()
       void playbackEngine.stop()
       playbackEngine.reset()
+      setIsPlaying(false)
+      setIsPaused(false)
       setEditorPlaybackState('stopped')
       setCurrentBeat(0)
       setCurrentNoteIndex(-1)
