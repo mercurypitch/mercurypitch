@@ -1,6 +1,6 @@
-import { defineConfig } from 'vitest/config';
-import solidPlugin from 'vite-plugin-solid';
 import path from 'path';
+import solidPlugin from 'vite-plugin-solid';
+import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   plugins: [solidPlugin() as any],

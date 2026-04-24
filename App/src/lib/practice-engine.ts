@@ -2,7 +2,7 @@
 // Practice Engine — Mic, pitch detection, accuracy scoring
 // ============================================================
 
-import type { AccuracyRating, MelodyNote, NoteResult, PitchResult, PitchSample, PracticeResult, } from '@/types'
+import type { AccuracyRating, MelodyNote, NoteResult, PitchResult, PitchSample, PlaybackMode, PracticeResult, } from '@/types'
 import type { AudioEngine } from './audio-engine'
 import { PitchDetector } from './pitch-detector'
 
@@ -16,7 +16,7 @@ const DEFAULT_BANDS: { threshold: number; band: number }[] = [
 ]
 
 export interface PracticeEngineCallbacks {
-  onPitchDetected?: (pitch: PitchResult) => void
+  onPitchDetected?: (pitch: PitchResult | null) => void
   onNoteComplete?: (result: NoteResult) => void
   onPracticeComplete?: (result: PracticeResult) => void
   onMicStateChange?: (active: boolean, error?: string) => void
@@ -190,7 +190,7 @@ export class PracticeEngine {
 
   // ── Pitch Detection ──────────────────────────────────────
 
-  detectPitch(): PitchResult | null {
+  detectPitch(): { frequency: number; clarity: number; noteName: string; octave: number; cents: number } | null {
     if (!this.micActive) return null
 
     const timeData = this.audioEngine.getTimeData()
@@ -215,11 +215,16 @@ export class PracticeEngine {
   update(): PitchResult | null {
     if (!this.micActive) {
       this.callbacks.onPitchDetected?.({
+        freq: 0,
+        midi: 0,
+        note: '',
+        noteName: '',
+        targetMidi: 0,
+        targetNote: '',
         frequency: 0,
         clarity: 0,
-        noteName: '',
-        octave: 0,
         cents: 0,
+        octave: 0,
       })
       return null
     }
@@ -235,7 +240,18 @@ export class PracticeEngine {
 
     // Track last detected pitch for genuine mic drop detection
     if (pitch && pitch.frequency !== 0) {
-      this.lastDetectedPitch = pitch
+      this.lastDetectedPitch = {
+        freq: pitch.frequency,
+        midi: 0,
+        note: pitch.noteName + pitch.octave,
+        noteName: pitch.noteName,
+        targetMidi: 0,
+        targetNote: '',
+        frequency: pitch.frequency,
+        clarity: pitch.clarity,
+        cents: pitch.cents ?? 0,
+        octave: pitch.octave,
+      }
       this.micHealthFailures = 0
     }
 
@@ -255,17 +271,36 @@ export class PracticeEngine {
       }
     }
 
-    this.callbacks.onPitchDetected?.(
-      pitch ?? {
-        frequency: 0,
-        clarity: 0,
-        noteName: '',
-        octave: 0,
-        cents: 0,
-      },
-    )
+    if (pitch && this.currentTargetNote) {
+      this.callbacks.onPitchDetected?.({
+        freq: pitch.frequency,
+        midi: 0,
+        note: pitch.noteName + pitch.octave,
+        noteName: pitch.noteName,
+        targetMidi: this.currentTargetNote.midi,
+        targetNote: this.currentTargetNote.name + this.currentTargetNote.octave,
+        frequency: pitch.frequency,
+        clarity: pitch.clarity,
+        cents: pitch.cents ?? 0,
+        octave: pitch.octave,
+      })
 
-    return pitch
+      return {
+        freq: pitch.frequency,
+        midi: 0,
+        note: pitch.noteName + pitch.octave,
+        noteName: pitch.noteName,
+        targetMidi: this.currentTargetNote.midi,
+        targetNote: this.currentTargetNote.name + this.currentTargetNote.octave,
+        frequency: pitch.frequency,
+        clarity: pitch.clarity,
+        cents: pitch.cents ?? 0,
+        octave: pitch.octave,
+      }
+    } else {
+      this.callbacks.onPitchDetected?.(null)
+      return null
+    }
   }
 
   /** Called when a new note starts */
@@ -293,35 +328,31 @@ export class PracticeEngine {
     if (!this.currentTargetNote) return
 
     let avgCents: number | null = null
-    let totalError = 0
+    let pitchFreq = 0
 
     if (this.currentSamples.length > 0) {
       let sumCents = 0
       let validCount = 0
       for (const s of this.currentSamples) {
-        if (s.cents !== null) {
+        if (s.cents !== undefined && s.freq !== null) {
           sumCents += Math.abs(s.cents)
           validCount++
         }
       }
       avgCents = validCount > 0 ? sumCents / validCount : null
-      totalError = sumCents
+      pitchFreq = this.currentSamples[0]?.freq ?? 0
     }
 
     const rating = centsToRating(avgCents, this.bands)
 
     const result: NoteResult = {
-      targetNote: this.currentTargetNote,
-      samples: [...this.currentSamples],
-      avgFreq:
-        this.currentSamples.length > 0
-          ? this.currentSamples.reduce((s, x) => s + x.freq, 0) /
-            this.currentSamples.length
-          : 0,
-      avgCents: avgCents ?? 0,
-      sampleCount: this.currentSamples.length,
+      item: { id: 0, note: this.currentTargetNote, duration: 1, startBeat: 0 },
+      pitchFreq,
+      pitchCents: avgCents ?? 0,
+      time: this.currentSamples.length * (1000 / 60),
       rating,
-      totalError,
+      avgCents: avgCents ?? 0,
+      targetNote: this.currentTargetNote.name + this.currentTargetNote.octave,
     }
 
     this.noteResults.push(result)
@@ -366,16 +397,19 @@ export class PracticeEngine {
     return Math.round(total / results.length)
   }
 
-  calculatePracticeResult(results: NoteResult[]): PracticeResult {
+  calculatePracticeResult(results: NoteResult[], name = 'Session', mode = 'practice' as PlaybackMode): PracticeResult {
     return {
-      noteResults: results,
       score: this.calculateScore(results),
+      noteCount: results.length,
       avgCents:
         results.length > 0
           ? results.reduce((s, r) => s + Math.abs(r.avgCents), 0) /
             results.length
           : 0,
-      noteCount: results.length,
+      itemsCompleted: results.length,
+      name,
+      mode,
+      completedAt: Date.now(),
     }
   }
 

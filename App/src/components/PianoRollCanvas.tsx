@@ -7,7 +7,7 @@ import { createEffect, onCleanup, onMount } from 'solid-js'
 import { AudioEngine } from '@/lib/audio-engine'
 import type { PlaybackState } from '@/lib/piano-roll'
 import { PianoRollEditor } from '@/lib/piano-roll'
-import type { MelodyItem, PitchPerfectWindow, ScaleDegree } from '@/types'
+import type { MelodyItem, ScaleDegree } from '@/types'
 
 interface PianoRollCanvasProps {
   melody: () => MelodyItem[]
@@ -41,7 +41,7 @@ export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
 
     // Create and expose audio engine for piano roll playback
     audioEngine = new AudioEngine()
-    ;(window as PitchPerfectWindow).pianoRollAudioEngine = audioEngine
+    ;(window as unknown as { pianoRollAudioEngine: typeof audioEngine }).pianoRollAudioEngine = audioEngine
 
     editor = new PianoRollEditor({
       container: containerRef,
@@ -55,8 +55,8 @@ export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
     editor.setTotalBeats(props.totalBeats())
 
     // Expose on window for debugging
-    ;(window as PitchPerfectWindow).pianoRollEditor = editor
-    ;(window as PitchPerfectWindow).pianoRollGenerateId = () => Date.now()
+    ;(window as unknown as { pianoRollEditor: typeof editor }).pianoRollEditor = editor
+    ;(window as unknown as { pianoRollGenerateId: () => number }).pianoRollGenerateId = () => Date.now()
   })
 
   // Propagate melody changes to the editor
@@ -86,7 +86,7 @@ export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
     const playbackState = props.playbackState()
 
     if (typeof window !== 'undefined') {
-      const win = window as PitchPerfectWindow & {
+      const win = window as unknown as {
         __playbackRuntime?: {
           on: (event: string, handler: (e: unknown) => void) => void
         }
@@ -144,10 +144,10 @@ export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
 
   onCleanup(() => {
     editor?.destroy()
-    delete (window as PitchPerfectWindow).pianoRollEditor
-    delete (window as PitchPerfectWindow).pianoRollGenerateId
+    delete (window as unknown as { pianoRollEditor?: unknown }).pianoRollEditor
+    delete (window as unknown as { pianoRollGenerateId?: () => number }).pianoRollGenerateId
     audioEngine?.destroy()
-    delete (window as PitchPerfectWindow).pianoRollAudioEngine
+    delete (window as unknown as { pianoRollAudioEngine?: unknown }).pianoRollAudioEngine
   })
 
   return (

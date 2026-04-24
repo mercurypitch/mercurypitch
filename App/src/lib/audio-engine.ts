@@ -2,7 +2,16 @@
 // Audio Engine — Web Audio API playback and microphone input
 // ============================================================
 
-import type { AudioEngineCallbacks, EffectType, MelodyItem, MelodyNote, } from '@/types'
+import type { EffectType, MelodyItem, MelodyNote } from '@/types'
+
+export interface AudioEngineCallbacks {
+  onNoteComplete?: (item: MelodyItem, time: number) => void
+  onPlaybackEnd?: () => void
+  onRecordingStart?: () => void
+  onRecordingEnd?: () => void
+  onMicStateChange?: (active: boolean, error?: string) => void
+  onNoteChange?: (note: MelodyNote, noteIndex: number) => void
+}
 
 export type InstrumentType = 'sine' | 'piano' | 'organ' | 'strings' | 'synth'
 

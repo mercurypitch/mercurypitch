@@ -8,11 +8,14 @@ import { createEffect, createMemo, createSignal, onCleanup, onMount, Show } from
 import { AppSidebar } from '@/components/AppSidebar'
 import { FocusMode } from '@/components/FocusMode'
 import { HistoryCanvas } from '@/components/HistoryCanvas'
+import { LibraryModal } from '@/components/LibraryModal'
 import { Notifications } from '@/components/Notifications'
 import { PianoRollCanvas } from '@/components/PianoRollCanvas'
 import { PitchCanvas } from '@/components/PitchCanvas'
+import { PresetsLibraryModal } from '@/components/PresetsLibraryModal'
 import { ScaleBuilder } from '@/components/ScaleBuilder'
 import { SessionBrowser } from '@/components/SessionBrowser'
+import { SessionLibraryModal } from '@/components/SessionLibraryModal'
 import { SessionPlayer } from '@/components/SessionPlayer'
 import { SettingsPanel } from '@/components/SettingsPanel'
 import type { PracticeSubMode } from '@/components/shared/SharedControlToolbar'
@@ -567,7 +570,7 @@ export const App: Component<AppProps> = (props) => {
     practiceEngine.setCallbacks({
       onPitchDetected: (pitch) => {
         setCurrentPitch(pitch)
-        if (pitch.frequency > 0 && pitch.clarity >= 0.2) {
+        if (pitch && pitch.frequency > 0 && pitch.clarity >= 0.2) {
           setFrequencyData(audioEngine.getFrequencyData())
         }
       },
@@ -1765,6 +1768,30 @@ export const App: Component<AppProps> = (props) => {
 
       {/* Notifications */}
       <Notifications />
+
+      {/* Library Modal */}
+      <Show when={appStore.isLibraryModalOpen()}>
+        <LibraryModal
+          isOpen={true}
+          close={() => appStore.hideLibrary()}
+        />
+      </Show>
+
+      {/* Session Library Modal */}
+      <Show when={appStore.isSessionLibraryModalOpen()}>
+        <SessionLibraryModal
+          isOpen={true}
+          close={() => appStore.hideSessionLibrary()}
+        />
+      </Show>
+
+      {/* Presets Library Modal */}
+      <Show when={appStore.isPresetsModalOpen()}>
+        <PresetsLibraryModal
+          isOpen={true}
+          close={() => appStore.hidePresetsLibrary()}
+        />
+      </Show>
     </div>
   )
 }

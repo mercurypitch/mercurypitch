@@ -211,6 +211,16 @@ export interface PracticeSession {
   description?: string
 }
 
+/** Static template for practice sessions (used in presets/sessions data) */
+export interface SessionTemplate {
+  id: string
+  name: string
+  difficulty: SessionDifficulty
+  category: SessionCategory
+  items: SessionItem[]
+  description?: string
+}
+
 /** Session result for history */
 export interface SessionResult {
   sessionId?: string
@@ -278,8 +288,6 @@ export interface MelodyData {
   lastPlayed?: number
   /** Default octave */
   octave?: number
-  /** Default octave */
-  octave?: number
   /** Array of melody items (notes) */
   items: MelodyItem[]
   /** Tags for categorization */
@@ -323,13 +331,13 @@ export interface MelodyLibrary {
 }
 
 /** Session item type */
-export type SessionItemType = 'preset' | 'scale' | 'rest'
+export type SessionItemType = 'preset' | 'scale' | 'rest' | 'melody'
 
 /** Session difficulty levels */
 export type SessionDifficulty = 'beginner' | 'intermediate' | 'advanced' | 'expert'
 
 /** Session categories */
-export type SessionCategory = 'warmup' | 'scales' | 'melodic' | 'rhythmic' | 'ear_training' | 'custom'
+export type SessionCategory = 'warmup' | 'scales' | 'melodic' | 'rhythmic' | 'ear_training' | 'custom' | 'vocal'
 
 /** A session item in user sessions */
 export interface SessionItem {
@@ -383,6 +391,22 @@ export interface PitchSample {
   cents?: number
   /** Sample timestamp (beat position or performance.now() delta) */
   time: number
+}
+
+/** Piano roll editor configuration */
+export interface PianoRollConfig {
+  rowHeight: number
+  beatWidth: number
+  pianoWidth: number
+  rulerHeight: number
+  beatsPerBar: number
+  minDuration: number
+  noteColors: {
+    normal: string
+    selected: string
+    active: string
+    ghost: string
+  }
 }
 
 /** Session history entry */

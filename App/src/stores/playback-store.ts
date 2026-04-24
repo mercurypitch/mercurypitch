@@ -55,6 +55,11 @@ export const playback = {
   isStopped: () => playbackState() === 'stopped',
 }
 
+// Playback speed (1.0 = normal, 0.5 = half speed, 2.0 = double speed)
+const [playbackSpeed, setPlaybackSpeed] = createSignal<number>(1.0)
+
+export { playbackSpeed, setPlaybackSpeed }
+
 /** Playback speed accessor function (for compatibility with EditorTabHeader) */
 export function getPlaybackSpeed(): number {
   return playbackSpeed()

@@ -60,8 +60,8 @@ describe('PRACTICE_SESSIONS — static data integrity', () => {
   })
 
   it('every session has valid difficulty and category', () => {
-    const validDifficulties = ['beginner', 'intermediate', 'advanced']
-    const validCategories = ['vocal', 'instrumental', 'ear-training', 'general']
+    const validDifficulties = ['beginner', 'intermediate', 'advanced', 'expert']
+    const validCategories = ['vocal', 'warmup', 'scales', 'melodic', 'rhythmic', 'ear_training', 'custom']
     for (const session of PRACTICE_SESSIONS) {
       expect(validDifficulties).toContain(session.difficulty)
       expect(validCategories).toContain(session.category)

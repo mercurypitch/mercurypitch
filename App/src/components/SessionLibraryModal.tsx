@@ -52,7 +52,7 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
     setIsEditing(session)
     setNameInput(session.name)
     setDifficulty(session.difficulty)
-    setCategory(session.category)
+    setCategory(session.category as SessionCategory)
   }
 
   const handleSave = () => {
@@ -84,21 +84,18 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
 
   const categoryOptions: Array<{ value: SessionCategory; label: string }> = [
     { value: 'vocal', label: 'Vocal' },
-    { value: 'instrumental', label: 'Instrumental' },
-    { value: 'ear-training', label: 'Ear Training' },
-    { value: 'general', label: 'General' },
+    { value: 'warmup', label: 'Warmup' },
+    { value: 'scales', label: 'Scales' },
+    { value: 'melodic', label: 'Melodic' },
+    { value: 'rhythmic', label: 'Rhythmic' },
+    { value: 'ear_training', label: 'Ear Training' },
+    { value: 'custom', label: 'Custom' },
   ]
 
   const [nameInput, setNameInput] = createSignal('')
   const [difficulty, setDifficulty] =
     createSignal<SessionDifficulty>('beginner')
-  const [category, setCategory] = createSignal<SessionCategory>('general')
-
-  const resetForm = () => {
-    setNameInput('')
-    setDifficulty('beginner')
-    setCategory('general')
-  }
+  const [category, setCategory] = createSignal<SessionCategory>('custom')
 
   return (
     <Show when={props.isOpen}>
@@ -187,9 +184,8 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
                     items: [],
                     created: Date.now(),
                     difficulty: 'beginner',
-                    category: 'general',
+                    category: 'custom',
                   })
-                  resetForm()
                 }}
               >
                 <svg viewBox="0 0 24 24" width="16" height="16">

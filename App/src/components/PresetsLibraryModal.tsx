@@ -12,13 +12,17 @@ const DIFFICULTY_COLORS: Record<SessionDifficulty, string> = {
   beginner: 'var(--accent-success)',
   intermediate: 'var(--accent-warning)',
   advanced: 'var(--accent-danger)',
+  expert: 'var(--accent-info)',
 }
 
-const CATEGORY_LABELS: Record<SessionCategory, string> = {
+const CATEGORY_LABELS: Partial<Record<SessionCategory, string>> = {
+  warmup: 'Warmup',
+  scales: 'Scales',
+  melodic: 'Melodic',
+  rhythmic: 'Rhythmic',
+  ear_training: 'Ear Training',
+  custom: 'Custom',
   vocal: 'Vocal',
-  instrumental: 'Instrumental',
-  'ear-training': 'Ear Training',
-  general: 'General',
 }
 
 function estimateDuration(items: SessionItem[]): string {
@@ -70,8 +74,8 @@ export const PresetsLibraryModal: Component<PresetsLibraryModalProps> = (
       items,
       created: Date.now(),
       lastPlayed: Date.now(),
-      difficulty: session.difficulty,
-      category: session.category,
+      difficulty: session.difficulty as SessionDifficulty,
+      category: session.category as SessionCategory,
     }
 
     appStore.loadSession(savedSession)
@@ -117,22 +121,28 @@ export const PresetsLibraryModal: Component<PresetsLibraryModalProps> = (
               Vocal
             </button>
             <button
-              class={`session-cat-btn ${activeCategory() === 'instrumental' ? 'active' : ''}`}
-              onClick={() => setActiveCategory('instrumental')}
+              class={`session-cat-btn ${activeCategory() === 'warmup' ? 'active' : ''}`}
+              onClick={() => setActiveCategory('warmup')}
             >
-              Instrumental
+              Warmup
             </button>
             <button
-              class={`session-cat-btn ${activeCategory() === 'ear-training' ? 'active' : ''}`}
-              onClick={() => setActiveCategory('ear-training')}
+              class={`session-cat-btn ${activeCategory() === 'scales' ? 'active' : ''}`}
+              onClick={() => setActiveCategory('scales')}
             >
-              Ear Training
+              Scales
             </button>
             <button
-              class={`session-cat-btn ${activeCategory() === 'general' ? 'active' : ''}`}
-              onClick={() => setActiveCategory('general')}
+              class={`session-cat-btn ${activeCategory() === 'melodic' ? 'active' : ''}`}
+              onClick={() => setActiveCategory('melodic')}
             >
-              General
+              Melodic
+            </button>
+            <button
+              class={`session-cat-btn ${activeCategory() === 'rhythmic' ? 'active' : ''}`}
+              onClick={() => setActiveCategory('rhythmic')}
+            >
+              Rhythmic
             </button>
           </div>
 
@@ -152,7 +162,7 @@ export const PresetsLibraryModal: Component<PresetsLibraryModalProps> = (
                   <p class="preset-description">{session.description}</p>
                   <div class="preset-meta">
                     <span class="preset-category-badge">
-                      {CATEGORY_LABELS[session.category]}
+                      {CATEGORY_LABELS[session.category] ?? session.category}
                     </span>
                     <span class="preset-item-count">
                       {session.items.length} items

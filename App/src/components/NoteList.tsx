@@ -37,7 +37,7 @@ export const NoteList: Component<NoteListProps> = (props) => {
   const bandMap = createMemo(() => {
     const map = new Map<number, number | 'off'>()
     for (const r of props.noteResults()) {
-      const midi = r.targetNote.midi
+      const midi = r.item.note.midi
       const band = centsToBand(r.avgCents)
       map.set(midi, band)
     }

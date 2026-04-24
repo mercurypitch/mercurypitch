@@ -4,7 +4,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { advanceSessionItem, endPracticeSession, getCurrentSessionItem, initSessionHistory, isInSessionMode, recordSessionItemResult, startPracticeSession, } from '@/stores/app-store'
-import type { PracticeSession } from '@/types'
+import type { NoteResult,SessionItem } from '@/types'
 
 // Mock localStorage
 const localStorageMock = (() => {
@@ -24,12 +24,44 @@ const localStorageMock = (() => {
 })()
 Object.defineProperty(global, 'localStorage', { value: localStorageMock })
 
-const makeSession = (id: string, itemCount: number): PracticeSession => ({
+/** Test session with all required fields for PracticeSession */
+interface TestSession {
+  id: string
+  name: string
+  description?: string
+  difficulty: 'beginner' | 'intermediate' | 'advanced' | 'expert'
+  category: 'warmup' | 'scales' | 'melodic' | 'rhythmic' | 'ear_training' | 'custom' | 'vocal'
+  items: SessionItem[]
+  mode?: 'once' | 'repeat' | 'practice'
+  cycles?: number
+  scale?: { name: string; degrees: number[]; description: string }
+  currentCycle?: number
+  beatsPerMeasure?: number
+  isRecording?: boolean
+  noteResults?: NoteResult[]
+  score?: number
+  duration?: number
+  completedAt?: number
+  itemsCompleted?: number
+}
+
+const makeSession = (id: string, itemCount: number): TestSession => ({
   id,
   name: `${id} name`,
   description: `${id} description`,
   difficulty: 'beginner',
   category: 'vocal',
+  mode: 'practice',
+  cycles: 1,
+  scale: { name: 'major', degrees: [0, 2, 4, 5, 7, 9, 11], description: '' },
+  currentCycle: 1,
+  beatsPerMeasure: 4,
+  isRecording: false,
+  noteResults: [],
+  score: 0,
+  duration: 0,
+  completedAt: 0,
+  itemsCompleted: 0,
   items: Array.from({ length: itemCount }, (_, i) => ({
     type: 'scale' as const,
     label: `Item ${i + 1}`,
@@ -84,7 +116,7 @@ describe('advanceSessionItem — repeat support', () => {
   })
 
   it('repeats the same item when repeat > 1', () => {
-    const session: PracticeSession = {
+    const session: TestSession = {
       id: 'repeat-test',
       name: 'Repeat Test',
       description: 'Test repeat',
@@ -118,7 +150,7 @@ describe('advanceSessionItem — repeat support', () => {
   })
 
   it('item with repeat=1 advances immediately', () => {
-    const session: PracticeSession = {
+    const session: TestSession = {
       id: 'no-repeat-test',
       name: 'No Repeat Test',
       description: 'Test no repeat',

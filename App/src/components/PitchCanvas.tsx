@@ -321,7 +321,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       ctx.stroke()
 
       const last = history[history.length - 1]
-      if (last.cents !== undefined) {
+      if (last.cents !== undefined && last.freq !== null && last.freq !== undefined && last.freq > 0) {
         let lx: number
         const ly = freqToY(last.freq, h)
         if (isRecordingMode) {

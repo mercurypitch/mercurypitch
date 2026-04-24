@@ -5,29 +5,33 @@
 import type { Component } from 'solid-js'
 import { createSignal, For } from 'solid-js'
 import { PRACTICE_SESSIONS } from '@/data/sessions'
-import type { PracticeSession, SessionCategory, SessionDifficulty, } from '@/types'
+import type { SessionCategory, SessionDifficulty, SessionTemplate } from '@/types'
 
 type FilterCategory = 'all' | SessionCategory
 
 interface SessionBrowserProps {
   onClose: () => void
-  onStartSession: (session: PracticeSession) => void
+  onStartSession: (session: SessionTemplate) => void
 }
 
 const DIFFICULTY_COLORS: Record<SessionDifficulty, string> = {
   beginner: 'var(--accent-success)',
   intermediate: 'var(--accent-warning)',
   advanced: 'var(--accent-danger)',
+  expert: 'var(--accent-info)',
 }
 
-const CATEGORY_LABELS: Record<SessionCategory, string> = {
+const CATEGORY_LABELS: Partial<Record<SessionCategory, string>> = {
+  warmup: 'Warmup',
+  scales: 'Scales',
+  melodic: 'Melodic',
+  rhythmic: 'Rhythmic',
+  ear_training: 'Ear Training',
+  custom: 'Custom',
   vocal: 'Vocal',
-  instrumental: 'Instrumental',
-  'ear-training': 'Ear Training',
-  general: 'General',
 }
 
-function estimateDuration(items: PracticeSession['items']): string {
+function estimateDuration(items: SessionTemplate['items']): string {
   let beats = 0
   let restMs = 0
   for (const item of items) {
@@ -54,9 +58,10 @@ export const SessionBrowser: Component<SessionBrowserProps> = (props) => {
   const categories: FilterCategory[] = [
     'all',
     'vocal',
-    'instrumental',
-    'ear-training',
-    'general',
+    'warmup',
+    'scales',
+    'melodic',
+    'rhythmic',
   ]
 
   return (
@@ -86,7 +91,7 @@ export const SessionBrowser: Component<SessionBrowserProps> = (props) => {
                 class={`session-cat-btn ${activeCategory() === cat ? 'active' : ''}`}
                 onClick={() => setActiveCategory(cat)}
               >
-                {cat === 'all' ? 'All' : CATEGORY_LABELS[cat]}
+                {cat === 'all' ? 'All' : CATEGORY_LABELS[cat] ?? cat}
               </button>
             )}
           </For>
@@ -108,7 +113,7 @@ export const SessionBrowser: Component<SessionBrowserProps> = (props) => {
                 <p class="session-description">{session.description}</p>
                 <div class="session-meta">
                   <span class="session-category-badge">
-                    {CATEGORY_LABELS[session.category]}
+                    {CATEGORY_LABELS[session.category] ?? session.category}
                   </span>
                   <span class="session-item-count">
                     {session.items.length} items

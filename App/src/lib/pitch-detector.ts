@@ -2,8 +2,16 @@
 // Pitch Detector — YIN algorithm implementation
 // ============================================================
 
-import type { PitchResult } from '@/types'
 import { freqToNote } from './scale-data'
+
+/** Internal pitch detection result (partial PitchResult) */
+export interface DetectedPitch {
+  frequency: number
+  clarity: number
+  noteName: string
+  octave: number
+  cents: number
+}
 
 export interface PitchDetectorOptions {
   /** Audio sample rate (default: 44100) */
@@ -62,7 +70,7 @@ export class PitchDetector {
   }
 
   /** Detect pitch from a time-domain buffer (e.g., AnalyserNode.getFloatTimeDomainData) */
-  detect(timeDomainBuffer: Float32Array): PitchResult {
+  detect(timeDomainBuffer: Float32Array): DetectedPitch {
     // First check amplitude threshold
     let rms = 0
     for (let i = 0; i < timeDomainBuffer.length; i++) {

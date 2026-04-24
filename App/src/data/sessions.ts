@@ -2,9 +2,9 @@
 // Practice Session Templates — static data
 // ============================================================
 
-import type { PracticeSession } from '@/types'
+import type { SessionTemplate } from '@/types'
 
-export const PRACTICE_SESSIONS: PracticeSession[] = [
+export const PRACTICE_SESSIONS: SessionTemplate[] = [
   {
     id: 'warmup-2min',
     name: '2-Minute Warm-up',
@@ -85,7 +85,7 @@ export const PRACTICE_SESSIONS: PracticeSession[] = [
     description:
       'Two-octave major scale and a simple folk melody to warm up finger technique.',
     difficulty: 'beginner',
-    category: 'instrumental',
+    category: 'vocal',
     items: [
       {
         type: 'scale',
@@ -118,7 +118,7 @@ export const PRACTICE_SESSIONS: PracticeSession[] = [
     description:
       'Diverse practice routine covering scales, arpeggios, and multiple short melodies.',
     difficulty: 'intermediate',
-    category: 'general',
+    category: 'custom',
     items: [
       {
         type: 'scale',
@@ -167,7 +167,7 @@ export const PRACTICE_SESSIONS: PracticeSession[] = [
     description:
       'Interval recognition and chord progression practice to develop relative pitch.',
     difficulty: 'intermediate',
-    category: 'ear-training',
+    category: 'ear_training',
     items: [
       {
         type: 'scale',
@@ -216,7 +216,7 @@ export const PRACTICE_SESSIONS: PracticeSession[] = [
     description:
       'Comprehensive session with long tones, complex scales, arpeggios, and full melodies.',
     difficulty: 'advanced',
-    category: 'general',
+    category: 'custom',
     items: [
       {
         type: 'scale',

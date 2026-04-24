@@ -4,7 +4,7 @@
 // ============================================================
 
 import { createSignal } from 'solid-js'
-import type { AccuracyBand, PitchPerfectWindow, PracticeSession, SavedUserSession, SessionResult, } from '@/types'
+import type { AccuracyBand, PracticeSession, SavedUserSession, SessionResult, SessionTemplate, } from '@/types'
 import { melodyStore } from './melody-store'
 
 // ── Key / Scale ─────────────────────────────────────────────
@@ -812,6 +812,7 @@ export function recordSessionItemResult(score: number): void {
     const results: SessionResult[] = [...prev]
     results.push({
       sessionId: session.id,
+      name: session.name,
       sessionName: session.name,
       completedAt: Date.now(),
       itemsCompleted: sessionItemIndex(),
@@ -834,6 +835,7 @@ export function endPracticeSession(): SessionResult | null {
 
   const result: SessionResult = {
     sessionId: session.id,
+    name: session.name,
     sessionName: session.name,
     completedAt: Date.now(),
     itemsCompleted: scores.length,
@@ -861,7 +863,7 @@ export function endPracticeSession(): SessionResult | null {
 let recursionDepth = 0
 const MAX_RECURSION = 10
 
-export function startPracticeSession(session: PracticeSession): void {
+export function startPracticeSession(session: PracticeSession | SessionTemplate): void {
   recursionDepth++
   if (recursionDepth > MAX_RECURSION) {
     console.error(
@@ -872,7 +874,24 @@ export function startPracticeSession(session: PracticeSession): void {
     return
   }
   console.log('[startPracticeSession] called, recursionDepth:', recursionDepth)
-  setPracticeSession(session)
+  // Convert SessionTemplate to PracticeSession if needed
+  const practiceSession: PracticeSession = 'mode' in session
+    ? session as PracticeSession
+    : {
+        ...session,
+        mode: 'practice',
+        cycles: 1,
+        scale: { name: 'major', degrees: [0, 2, 4, 5, 7, 9, 11], description: '' },
+        currentCycle: 1,
+        beatsPerMeasure: 4,
+        isRecording: false,
+        noteResults: [],
+        score: 0,
+        duration: 0,
+        completedAt: 0,
+        itemsCompleted: 0,
+      }
+  setPracticeSession(practiceSession)
   setSessionItemIndex(0)
   setSessionItemRepeat(0)
   setSessionActive(true)
@@ -915,7 +934,7 @@ export function loadAndPlayMelody(key: string): void {
   // Signal app to auto-play after load
   console.log('[loadAndPlayMelody] setting window.__autoPlayMelody:', key)
   if (typeof window !== 'undefined') {
-    ;(window as PitchPerfectWindow).__autoPlayMelody = key
+    ;(window as unknown as { __autoPlayMelody?: string }).__autoPlayMelody = key
   }
 }
 

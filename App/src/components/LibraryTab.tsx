@@ -7,7 +7,6 @@ import { createMemo, For, onMount } from 'solid-js'
 import type { PRACTICE_SESSIONS } from '@/data/sessions'
 import { appStore } from '@/stores/app-store'
 import { melodyStore } from '@/stores/melody-store'
-import type { PitchPerfectWindow } from '@/types'
 import type { MelodyData } from '@/types'
 
 export const LibraryTab: Component = () => {
@@ -44,12 +43,8 @@ export const LibraryTab: Component = () => {
   }
 
   const handlePlay = (melody: MelodyData) => {
-    // Load and set up the melody data
-    const loadedMelody = melodyStore.loadMelody(melody.id)
-    if (loadedMelody !== null) {
-      // Trigger auto-play from the signal
-      ;(window as PitchPerfectWindow).__autoPlayMelody = melody.id
-    }
+    // Load the melody into the store
+    melodyStore.loadMelody(melody.id)
   }
 
   const _handlePlaySession = (

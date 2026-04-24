@@ -956,7 +956,7 @@ describe('Melody Library System', () => {
         created: Date.now() - 5000,
         lastPlayed: Date.now(),
         difficulty: 'intermediate' as const,
-        category: 'general' as const,
+        category: 'custom' as const,
       }
       melodyStore.saveSession(_session1)
       melodyStore.saveSession(_session2)
@@ -986,7 +986,7 @@ describe('Melody Library System', () => {
         created: Date.now() - 5000,
         lastPlayed: Date.now() - 2000,
         difficulty: 'intermediate' as const,
-        category: 'general' as const,
+        category: 'custom' as const,
       }
       melodyStore.saveSession(_session1)
       melodyStore.saveSession(_session2)
