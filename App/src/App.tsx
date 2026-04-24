@@ -270,6 +270,9 @@ export const App: Component<AppProps> = (props) => {
 
   // ── Session state ────────────────────────────────────────────
   const [showSessionBrowser, setShowSessionBrowser] = createSignal(false)
+  const [isBuildingMelody, setIsBuildingMelody] = createSignal<boolean>(false)
+
+// ── Mobile sidebar toggle ─────────────────────────────────────
   const [sessionSummary, setSessionSummary] = createSignal<{
     score: number
     items: number
@@ -1152,6 +1155,8 @@ export const App: Component<AppProps> = (props) => {
 
   /** Auto-start session when session mode becomes active */
   createEffect(() => {
+    if (isBuildingMelody()) return // Skip if we're currently building a melody
+
     console.log('[createEffect] sessionMode, practiceSession, playMode:')
     console.log('  sessionMode:', appStore.sessionMode())
     console.log('  practiceSession:', appStore.practiceSession()?.name)
@@ -1161,10 +1166,14 @@ export const App: Component<AppProps> = (props) => {
       console.log('  currentItem:', item)
       if (item && item.type === 'scale') {
         console.log('[createEffect] building scale melody, starting playback')
+        setIsBuildingMelody(true)
         buildScaleMelody(item.scaleType ?? 'major', item.beats ?? 8, item.label)
         setPlayMode('practice')
         setPracticeCycles(1)
-        setTimeout(() => void handlePlay(), 500)
+        setTimeout(() => {
+          setIsBuildingMelody(false)
+          void handlePlay()
+        }, 500)
       }
     }
   })
