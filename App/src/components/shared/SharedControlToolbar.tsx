@@ -19,7 +19,7 @@ import { MetronomeGroup } from './MetronomeGroup'
 // ========================================
 
 /** Determine current practice mode based on global state */
-function activePracticeMode(
+export function activePracticeMode(
   playMode: () => 'once' | 'repeat' | 'practice',
   sessionActive: () => boolean,
 ): string {

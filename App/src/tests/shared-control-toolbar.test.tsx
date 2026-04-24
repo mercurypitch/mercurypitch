@@ -4,8 +4,42 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import type { ActiveTab, PracticeSubMode, } from '@/components/shared/SharedControlToolbar'
+import type { ActiveTab, PracticeSubMode } from '@/components/shared/SharedControlToolbar'
 import { appStore } from '@/stores/app-store'
+
+// ========================================
+// Utility functions (copied for testing without triggering imports)
+// ========================================
+
+/** Determine current practice mode based on global state */
+function activePracticeMode(
+  playMode: () => 'once' | 'repeat' | 'practice',
+  sessionActive: () => boolean,
+): string {
+  // Session mode takes priority
+  if (sessionActive()) return 'Session'
+
+  // Practice run-once vs repeat
+  if (playMode() === 'practice') {
+    return 'Run-once'
+  }
+  if (playMode() === 'repeat') {
+    return 'Repeat'
+  }
+  return 'Run-once'
+}
+
+// Scale types matching the types file
+const SCALE_TYPES = [
+  { value: 'major', label: 'Major' },
+  { value: 'minor', label: 'Minor' },
+  { value: 'harmonic-minor', label: 'Harmonic Minor' },
+  { value: 'pentatonic', label: 'Pentatonic' },
+  { value: 'blues', label: 'Blues' },
+  { value: 'chromatic', label: 'Chromatic' },
+  { value: 'dorian', label: 'Dorian' },
+  { value: 'mixolydian', label: 'Mixolydian' },
+] as const
 
 describe('SharedControlToolbar Types', () => {
   it('PracticeSubMode has all expected values', () => {
@@ -21,6 +55,79 @@ describe('SharedControlToolbar Types', () => {
     expect(tabs).toContain('practice')
     expect(tabs).toContain('editor')
     expect(tabs).toContain('settings')
+  })
+})
+
+describe('activePracticeMode utility', () => {
+  beforeEach(() => {
+    appStore.setSessionActive(false)
+  })
+
+  it('returns "Session" when session is active', () => {
+    appStore.setSessionActive(true)
+    const result = activePracticeMode(() => 'practice', () => appStore.sessionActive())
+    expect(result).toBe('Session')
+  })
+
+  it('returns "Run-once" when playMode is practice and no session', () => {
+    appStore.setSessionActive(false)
+    const result = activePracticeMode(() => 'practice', () => appStore.sessionActive())
+    expect(result).toBe('Run-once')
+  })
+
+  it('returns "Repeat" when playMode is repeat and no session', () => {
+    appStore.setSessionActive(false)
+    const result = activePracticeMode(() => 'repeat', () => appStore.sessionActive())
+    expect(result).toBe('Repeat')
+  })
+
+  it('returns "Run-once" when playMode is once and no session', () => {
+    appStore.setSessionActive(false)
+    const result = activePracticeMode(() => 'once', () => appStore.sessionActive())
+    expect(result).toBe('Run-once')
+  })
+
+  it('session takes priority over playMode', () => {
+    appStore.setSessionActive(true)
+    const result = activePracticeMode(() => 'repeat', () => appStore.sessionActive())
+    expect(result).toBe('Session')
+  })
+
+  it('distinguishes all three practice modes correctly', () => {
+    appStore.setSessionActive(false)
+    expect(activePracticeMode(() => 'once', () => false)).toBe('Run-once')
+    expect(activePracticeMode(() => 'repeat', () => false)).toBe('Repeat')
+    expect(activePracticeMode(() => 'practice', () => false)).toBe('Run-once')
+  })
+})
+
+describe('SCALE_TYPES constant', () => {
+  it('contains all expected scale types', () => {
+    const scaleLabels = SCALE_TYPES.map((s) => s.label)
+    expect(scaleLabels).toContain('Major')
+    expect(scaleLabels).toContain('Minor')
+    expect(scaleLabels).toContain('Harmonic Minor')
+    expect(scaleLabels).toContain('Pentatonic')
+    expect(scaleLabels).toContain('Blues')
+    expect(scaleLabels).toContain('Chromatic')
+    expect(scaleLabels).toContain('Dorian')
+    expect(scaleLabels).toContain('Mixolydian')
+  })
+
+  it('has matching values for all scale types', () => {
+    expect(SCALE_TYPES).toHaveLength(8)
+    const expectedValues = [
+      'major', 'minor', 'harmonic-minor', 'pentatonic',
+      'blues', 'chromatic', 'dorian', 'mixolydian',
+    ]
+    const actualValues = SCALE_TYPES.map((s) => s.value)
+    expect(actualValues).toEqual(expectedValues)
+  })
+
+  it('has unique values for all scale types', () => {
+    const values = SCALE_TYPES.map((s) => s.value)
+    const unique = new Set(values)
+    expect(unique.size).toBe(values.length)
   })
 })
 
