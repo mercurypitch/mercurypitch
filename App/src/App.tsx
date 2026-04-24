@@ -23,7 +23,9 @@ import { SharedControlToolbar } from '@/components/shared/SharedControlToolbar'
 import { Walkthrough } from '@/components/Walkthrough'
 import { WelcomeScreen } from '@/components/WelcomeScreen'
 import { AudioEngine } from '@/lib/audio-engine'
-import { PlaybackRuntime } from '@/lib/playback-runtime'
+import type { PlaybackState as PianoRollPlaybackState } from '@/lib/piano-roll'
+import type { PlaybackState as PlaybackEngineState } from '@/lib/playback-engine'
+import { PlaybackEngine } from '@/lib/playback-engine'
 import { PracticeEngine } from '@/lib/practice-engine'
 import { buildMultiOctaveScale, melodyIndexAtBeat, melodyTotalBeats, midiToNote, } from '@/lib/scale-data'
 import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
@@ -32,14 +34,29 @@ import type { PresetData } from '@/stores/app-store'
 import { isLibraryModalOpen, isPresetsModalOpen,isSessionLibraryModalOpen } from '@/stores/app-store'
 import { appStore, getNoteAccuracyMap } from '@/stores/app-store'
 import { melodyStore } from '@/stores/melody-store'
-import { playback } from '@/stores/playback-store'
+import type { PitchPerfectWindow } from '@/types'
+// import { playback } from '@/stores/playback-store' // Replaced with PlaybackEngine
 import type { PitchSample } from '@/types'
-import type { EffectType, MelodyItem, NoteName, NoteResult, PitchResult, PracticeResult, } from '@/types'
-import type { PlaybackState } from '@/types'
+import type {
+  _TransportState,
+  EffectType,
+  MelodyItem,
+  NoteName,
+  NoteResult,
+  PitchResult,
+  PracticeResult,
+} from '@/types'
+
+// Type alias for compatibility between PlaybackEngineState (with 'precount'/'complete')
+// and PianoRollPlaybackState (only 'stopped'/'playing'/'paused')
+type CompatiblePlaybackState = 'stopped' | 'playing' | 'paused' | 'complete' | 'precount'
+
+// Re-export PlaybackState types for use across components
+export type { PlaybackEngineState, PianoRollPlaybackState }
 
 // ── Engine instances (single shared) ────────────────────────
 let audioEngine: AudioEngine
-let playbackRuntime: PlaybackRuntime
+let playbackEngine: PlaybackEngine
 let practiceEngine: PracticeEngine
 
 /** Convert preset note data to melody items, preserving exact note properties */
@@ -147,9 +164,9 @@ export const App: Component<AppProps> = (props) => {
   const resetPlaybackState = () => {
     void audioEngine.stopTone()
     void audioEngine.stopAllNotes()
-    void playbackRuntime.stop()
+    void playbackEngine.stop()
     void practiceEngine.endSession()
-    playback.resetPlayback()
+    playbackEngine.reset()
     setIsPlaying(false)
     setIsPaused(false)
     setEditorPlaybackState('stopped')
@@ -172,8 +189,8 @@ export const App: Component<AppProps> = (props) => {
       // For editor tab, just stop audio but don't reset entire state
       void audioEngine.stopAllNotes()
       void audioEngine.stopTone()
-      void playbackRuntime.stop()
-      playback.resetPlayback()
+      void playbackEngine.stop()
+      playbackEngine.reset()
       setEditorPlaybackState('stopped')
       setCurrentBeat(0)
       setCurrentNoteIndex(-1)
@@ -221,7 +238,7 @@ export const App: Component<AppProps> = (props) => {
 
   // ── Editor tab playback state ───────────────────────────────
   const [editorPlaybackState, setEditorPlaybackState] =
-    createSignal<PlaybackState>('stopped')
+    createSignal<CompatiblePlaybackState>('stopped')
   const editorIsPlaying = () => editorPlaybackState() === 'playing'
   const editorIsPaused = () => editorPlaybackState() === 'paused'
 
@@ -403,11 +420,24 @@ export const App: Component<AppProps> = (props) => {
         appStore
     }
 
-    // Create PlaybackRuntime - orchestrates audio and timing
+    // Create PlaybackEngine - unified audio orchestration
     // Note: BPM is managed by appStore, passed to AudioEngine for timing
-    playbackRuntime = new PlaybackRuntime({
-      metronomeEnabled: metronomeEnabled,
+    playbackEngine = new PlaybackEngine({
+      audioEngine,
       instrumentType: appStore.instrument(),
+      metronomeEnabled: metronomeEnabled,
+      countIn: 0,
+      mode: playMode(),
+    })
+
+    // Setup playbackEngine callbacks
+    playbackEngine.setCallbacks({
+      onStateChange: (state) => {
+        setEditorPlaybackState(state === 'precount' ? 'playing' : state)
+      },
+      onBeatUpdate: (beat) => {
+        setCurrentBeat(beat)
+      },
       onNoteStart: (item, noteIndex) => {
         setCurrentNoteIndex(noteIndex)
         setTargetPitch(item.note.freq)
@@ -422,9 +452,6 @@ export const App: Component<AppProps> = (props) => {
       onNoteEnd: () => {
         audioEngine.stopTone()
       },
-      onBeatUpdate: (beat) => {
-        setCurrentBeat(beat)
-      },
       onComplete: () => {
         practiceEngine.onPlaybackComplete()
         const mode = playMode()
@@ -437,13 +464,29 @@ export const App: Component<AppProps> = (props) => {
           appStore.sessionItemIndex(),
         )
       },
+      onCountIn: (beat) => {
+        setCountInBeat(beat)
+        setIsCountingIn(true)
+        if (metronomeEnabled() && audioEngine) {
+          audioEngine.playClick()
+        }
+      },
+      onCountInComplete: () => {
+        setIsCountingIn(false)
+        setCountInBeat(0)
+      },
+      onMetronome: (beat, isDownbeat) => {
+        if (metronomeEnabled() && audioEngine) {
+          audioEngine.playMetronomeClick(isDownbeat)
+        }
+      },
     })
 
-    // EXPOSE PLAYBACK RUNTIME FOR E2E TESTING
+    // EXPOSE PLAYBACK ENGINE FOR E2E TESTING
     if (typeof window !== 'undefined') {
       ;(
-        window as unknown as { __playbackRuntime: PlaybackRuntime }
-      ).__playbackRuntime = playbackRuntime
+        window as unknown as { __playbackEngine: PlaybackEngine }
+      ).__playbackEngine = playbackEngine
     }
 
     practiceEngine = new PracticeEngine(audioEngine, { sensitivity: 5 })
@@ -485,7 +528,7 @@ export const App: Component<AppProps> = (props) => {
       }
     })
 
-    // Sync settings to PlaybackRuntime when they change
+    // Sync settings to playbackEngine when they change
     createEffect(() => {
       const bpm = appStore.bpm()
       const melody = melodyStore.getCurrentItems()
@@ -494,8 +537,8 @@ export const App: Component<AppProps> = (props) => {
       // Update AudioEngine with BPM and instrument
       audioEngine?.setBPM(bpm)
       audioEngine?.setInstrument(instrument)
-      // Tell PlaybackRuntime about new melody (BPM handled by AudioEngine)
-      playbackRuntime?.setMelody(melody)
+      // Tell PlaybackEngine about new melody (BPM handled by AudioEngine)
+      playbackEngine?.setMelody(melody)
     })
 
     // Keydown handler for playback control
@@ -523,7 +566,7 @@ export const App: Component<AppProps> = (props) => {
         } else {
           handleStop()
           setCurrentBeat(0)
-          playbackRuntime.seekTo(0)
+          playbackEngine.seekTo(0)
         }
       }
 
@@ -531,9 +574,9 @@ export const App: Component<AppProps> = (props) => {
       if (e.code === 'Home' && !isTyping) {
         e.preventDefault()
         setCurrentBeat(0)
-        playbackRuntime.seekTo(0)
+        playbackEngine.seekTo(0)
         if (isPlaying()) {
-          playbackRuntime.seekTo(0)
+          playbackEngine.seekTo(0)
           setCurrentBeat(0)
         }
       }
@@ -591,11 +634,9 @@ export const App: Component<AppProps> = (props) => {
     }
     window.addEventListener('keydown', onKeyDown)
 
-    // EXPOSE PLAYBACK RUNTIME FOR E2E TESTING
+    // EXPOSE PLAYBACK ENGINE FOR E2E TESTING
     if (typeof window !== 'undefined') {
-      ;(
-        window as unknown as { __playbackRuntime: PlaybackRuntime }
-      ).__playbackRuntime = playbackRuntime
+      ;(window as unknown as { __playbackEngine: PlaybackEngine }).__playbackEngine = playbackEngine
     }
 
     // Link practice callbacks
@@ -671,7 +712,7 @@ export const App: Component<AppProps> = (props) => {
     const handleSeek = (e: CustomEvent) => {
       if (!isPlaying() && !isPaused()) return
       const targetBeat = e.detail.beat as number
-      playbackRuntime?.seekTo(targetBeat)
+      playbackEngine.seekTo(targetBeat)
       setCurrentBeat(targetBeat)
     }
     window.addEventListener(
@@ -679,8 +720,8 @@ export const App: Component<AppProps> = (props) => {
       handleSeek as EventListener,
     )
 
-    // Listen to PlaybackRuntime events for synchronization (both tabs)
-    playbackRuntime.on('beat', (e: { beat?: number }) => {
+    // Listen to playbackEngine events for synchronization (both tabs)
+    playbackEngine.on('beat', (e: { beat?: number }) => {
       setCurrentBeat(e.beat ?? 0)
       // Also update editor state
       if (activeTab() === 'editor') {
@@ -690,44 +731,38 @@ export const App: Component<AppProps> = (props) => {
         )
       }
     })
-    playbackRuntime.on('countIn', (e: { countIn?: number }) => {
+    playbackEngine.on('countIn', (e: { countIn?: number }) => {
       setCountInBeat(e?.countIn ?? 0)
       setIsCountingIn(true)
-      if (metronomeEnabled() && audioEngine) {
-        audioEngine.playClick()
-      }
     })
-    playbackRuntime.on('countInComplete', () => {
+    playbackEngine.on('countInComplete', () => {
       setIsCountingIn(false)
       setCountInBeat(0)
     })
-    playbackRuntime.on('metronome', (e: { isDownbeat?: boolean }) => {
+    playbackEngine.on('metronome', (e: { beat?: number; isDownbeat?: boolean }) => {
       if (metronomeEnabled() && audioEngine) {
         audioEngine.playMetronomeClick(e?.isDownbeat ?? false)
       }
     })
-    playbackRuntime.on(
-      'noteStart',
-      (e: { note?: MelodyItem; index?: number }) => {
-        const noteItem = e?.note
-        setCurrentNoteIndex(e?.index ?? -1)
-        setTargetPitch(noteItem?.note?.freq ?? 440)
-        if (noteItem) {
-          practiceEngine.onNoteStart(noteItem.note!, e?.index ?? -1)
-          const beatDurationMs = 60000 / appStore.bpm()
-          const noteDurationMs = noteItem.duration ?? 1 * beatDurationMs
-          audioEngine.playTone(noteItem.note.freq, noteDurationMs)
-        }
-        // Also update editor state
-        if (activeTab() === 'editor') {
-          melodyStore.setCurrentNoteIndex(e?.index ?? -1)
-        }
-      },
-    )
-    playbackRuntime.on('noteEnd', () => {
+    playbackEngine.on('noteStart', (e: { note?: MelodyItem; index?: number }) => {
+      const noteItem = e?.note
+      setCurrentNoteIndex(e?.index ?? -1)
+      setTargetPitch(noteItem?.note?.freq ?? 440)
+      if (noteItem) {
+        practiceEngine.onNoteStart(noteItem.note!, e?.index ?? -1)
+        const beatDurationMs = 60000 / appStore.bpm()
+        const noteDurationMs = noteItem.duration ?? 1 * beatDurationMs
+        audioEngine.playTone(noteItem.note.freq, noteDurationMs)
+      }
+      // Also update editor state
+      if (activeTab() === 'editor') {
+        melodyStore.setCurrentNoteIndex(e?.index ?? -1)
+      }
+    })
+    playbackEngine.on('noteEnd', () => {
       audioEngine.stopTone()
     })
-    playbackRuntime.on('complete', () => {
+    playbackEngine.on('complete', () => {
       practiceEngine.onPlaybackComplete()
       const mode = playMode()
       console.info(
@@ -796,10 +831,10 @@ export const App: Component<AppProps> = (props) => {
                 restDuration,
                 'ms',
               )
-              playbackRuntime.stop()
-              playbackRuntime.setMelody(melodyStore.getCurrentItems())
+              playbackEngine.stop()
+              playbackEngine.setMelody(melodyStore.getCurrentItems())
               // BPM synced via AudioEngine in the createEffect above
-              playbackRuntime.start(appStore.countIn())
+              playbackEngine.start()
               // Store the rest duration so onComplete knows to wait before loading next scale
               // We do this by setting a flag on the melodyStore or checking the item repeat count
               // Actually, let's use a simpler approach: the onComplete for rest items will
@@ -840,13 +875,13 @@ export const App: Component<AppProps> = (props) => {
                     afterRest.beats ?? 8,
                     afterRest.label,
                   )
-                  playbackRuntime.stop()
-                  playbackRuntime.setMelody(melodyStore.getCurrentItems())
+                  playbackEngine.stop()
+                  playbackEngine.setMelody(melodyStore.getCurrentItems())
                   // BPM synced via AudioEngine in the createEffect above
                   console.info(
-                    '[onComplete rest timeout] starting playbackRuntime',
+                    '[onComplete rest timeout] starting playbackEngine',
                   )
-                  playbackRuntime.start(appStore.countIn())
+                  playbackEngine.start()
                 }
                 // If afterRest is still 'rest', onComplete will handle it on the next cycle
               }, restDuration)
@@ -869,13 +904,13 @@ export const App: Component<AppProps> = (props) => {
                 nextItem.beats ?? 8,
                 nextItem.label,
               )
-              playbackRuntime.stop()
-              playbackRuntime.setMelody(melodyStore.getCurrentItems())
+              playbackEngine.stop()
+              playbackEngine.setMelody(melodyStore.getCurrentItems())
               // BPM synced via AudioEngine in the createEffect above
               console.info(
                 '[onComplete rest timeout] starting playbackRuntime',
               )
-              playbackRuntime.start(appStore.countIn())
+              playbackEngine.start()
             }
           }
         }
@@ -887,12 +922,12 @@ export const App: Component<AppProps> = (props) => {
     const loop = () => {
       const pitch = practiceEngine.update()
       // During free recording, compute beat from performance.now() independently.
-      // During playback-backed recording, use playbackRuntime's beat position.
+      // During playback-backed recording, use playbackEngine's beat position.
 
       const perfNow = (performance as unknown as { now: () => number }).now()
       const beat = isRecording()
         ? ((perfNow - freeRecordStartTime) / 60000) * appStore.bpm()
-        : playbackRuntime.getCurrentBeat()
+        : playbackEngine.getCurrentBeat()
       if (pitch && pitch.frequency > 0 && pitch.clarity >= 0.2) {
         // Use beat time for samples during playback, real time for recording
         const sampleTime = isRecording()
@@ -972,7 +1007,7 @@ export const App: Component<AppProps> = (props) => {
 
     onCleanup(() => {
       cancelAnimationFrame(animId)
-      playbackRuntime.destroy()
+      playbackEngine.destroy()
       practiceEngine.destroy()
       audioEngine.destroy()
       window.removeEventListener('keydown', onKeyDown)
@@ -1014,40 +1049,38 @@ export const App: Component<AppProps> = (props) => {
 
     setIsPlaying(true)
     setIsPaused(false)
-    playback.startPlayback()
 
-    // Start playbackRuntime for practice mode (when not in a session)
+    // Start playbackEngine for practice mode (when not in a session)
     if (!appStore.sessionActive()) {
-      // Use countIn for count-in, or 0 for no count-in
-      const countIn = appStore.countIn()
-      if (playbackRuntime.getIsPlaying()) {
+      if (playbackEngine.isPlaying) {
         // Already playing, just reset for fresh start
-        playbackRuntime.stop()
-        playbackRuntime.setMelody(melodyStore.getCurrentItems())
+        playbackEngine.stop()
       }
-      playbackRuntime.start(countIn > 0 ? countIn : 0)
+      playbackEngine.setMelody(melodyStore.getCurrentItems())
+      playbackEngine.start()
     }
   }
 
   const handlePause = () => {
-    if (!isPlaying()) {
+    if (!playbackEngine.isPlaying) {
       return
     }
     setIsPlaying(false)
     setIsPaused(true)
 
-    // Pause playbackRuntime for practice mode
+    // Pause playbackEngine for practice mode
     if (!appStore.sessionActive()) {
-      playbackRuntime.pause()
+      playbackEngine.pause()
     }
   }
 
   const handleResume = () => {
-    if (!isPaused()) {
+    if (!playbackEngine.isPaused) {
       return
     }
     setIsPlaying(true)
     setIsPaused(false)
+    playbackEngine.resume()
   }
 
   const handleStop = () => {
@@ -1059,9 +1092,9 @@ export const App: Component<AppProps> = (props) => {
     setPitchHistory([])
     appStore.setSessionActive(false)
 
-    // Stop playbackRuntime for practice mode
+    // Stop playbackEngine for practice mode
     if (!appStore.sessionActive()) {
-      playbackRuntime.stop()
+      playbackEngine.stop()
     }
 
     // Also reset editor state
@@ -1187,10 +1220,10 @@ export const App: Component<AppProps> = (props) => {
   /** Auto-play melody when loaded from library */
   createEffect(() => {
     // Check if melody library key is in window for auto-play trigger
-    if (typeof window !== 'undefined' && window.__autoPlayMelody) {
-      console.log('[createEffect] detected window.__autoPlayMelody:', window.__autoPlayMelody)
-      const melodyKey = window.__autoPlayMelody
-      delete window.__autoPlayMelody // Clear after processing
+    if (typeof window !== 'undefined' && (window as PitchPerfectWindow).__autoPlayMelody) {
+      console.log('[createEffect] detected window.__autoPlayMelody:', (window as PitchPerfectWindow).__autoPlayMelody)
+      const melodyKey = (window as PitchPerfectWindow).__autoPlayMelody
+      delete (window as PitchPerfectWindow).__autoPlayMelody // Clear after processing
 
       // Only auto-play if not already in a session
       if (!appStore.sessionActive()) {
@@ -1217,7 +1250,7 @@ export const App: Component<AppProps> = (props) => {
     if (isRecording()) {
       // Stop recording — finalize any pending note
       if (currentNoteMidi > 0 && currentNoteStartBeat > 0) {
-        const beat = playbackRuntime?.getCurrentBeat() ?? 0
+        const beat = playbackEngine.getCurrentBeat()
         const duration = Math.max(0.25, beat - currentNoteStartBeat)
         const note = midiToNote(currentNoteMidi)
         setRecordedMelody((prev) => [
@@ -1526,21 +1559,21 @@ export const App: Component<AppProps> = (props) => {
                 isPlaying={() => false}
                 isPaused={() => false}
                 onPlay={() => {
-                  // Start shared PlaybackRuntime for audio playback
-                  playbackRuntime.setMelody(melodyStore.getCurrentItems())
-                  void playbackRuntime.start(appStore.countIn())
+                  // Start shared playbackEngine for audio playback
+                  playbackEngine.setMelody(melodyStore.getCurrentItems())
+                  void playbackEngine.start()
                 }}
                 onPause={() => {
-                  // Pause the shared PlaybackRuntime
-                  playbackRuntime.pause()
+                  // Pause the shared playbackEngine
+                  playbackEngine.pause()
                 }}
                 onResume={() => {
-                  // Resume the shared PlaybackRuntime
-                  playbackRuntime.resume()
+                  // Resume the shared playbackEngine
+                  playbackEngine.resume()
                 }}
                 onStop={() => {
-                  // Stop both shared PlaybackRuntime and reset editor state
-                  void playbackRuntime.stop()
+                  // Stop both shared playbackEngine and reset editor state
+                  void playbackEngine.stop()
                   setEditorPlaybackState('stopped')
                 }}
                 volume={savedVol}
@@ -1575,7 +1608,10 @@ export const App: Component<AppProps> = (props) => {
                 scale={() => melodyStore.currentScale()}
                 bpm={() => appStore.bpm()}
                 totalBeats={() => totalBeats()}
-                playbackState={() => editorPlaybackState()}
+                playbackState={() => {
+  const s = editorPlaybackState()
+  return (s === 'precount' || s === 'complete') ? 'stopped' : s
+}}
                 currentNoteIndex={() => melodyStore.currentNoteIndex()}
                 currentBeat={currentBeat}
                 isPlaying={editorIsPlaying}

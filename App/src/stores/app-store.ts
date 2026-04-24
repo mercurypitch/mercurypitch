@@ -4,7 +4,7 @@
 // ============================================================
 
 import { createSignal } from 'solid-js'
-import type { AccuracyBand, PracticeSession, SavedUserSession, SessionResult } from '@/types'
+import type { AccuracyBand, PitchPerfectWindow, PracticeSession, SavedUserSession, SessionResult } from '@/types'
 import { melodyStore } from './melody-store'
 
 // ── Key / Scale ─────────────────────────────────────────────
@@ -112,14 +112,6 @@ export function setBpm(value: number): void {
 export function initBpm(): void {
   _bpmValue = loadBpmFromStorage()
   setBpmSignal(_bpmValue)
-}
-
-export function setTempo(bpm: number): void {
-  setBpm(bpm)
-}
-
-export function setOctave(octave: number): void {
-  melodyStore.setOctave(octave)
 }
 
 // ── Practice ────────────────────────────────────────────────
@@ -894,7 +886,10 @@ export function loadAndPlayMelody(key: string): void {
   }
   console.log('[loadAndPlayMelody] melody loaded:', melody.name)
   // Set app store values from melody data
-  setTempo(melody.bpm)
+  const clampedBpm = Math.max(40, Math.min(280, melody.bpm))
+  _bpmValue = clampedBpm
+  setBpmSignal(clampedBpm)
+  saveBpmToStorage(clampedBpm)
   setKeyName(melody.key)
   setScaleType(melody.scaleType)
   if (melody.octave !== undefined) {
@@ -908,7 +903,7 @@ export function loadAndPlayMelody(key: string): void {
   // Signal app to auto-play after load
   console.log('[loadAndPlayMelody] setting window.__autoPlayMelody:', key)
   if (typeof window !== 'undefined') {
-    window.__autoPlayMelody = key
+    ;(window as PitchPerfectWindow).__autoPlayMelody = key
   }
 }
 
@@ -1139,8 +1134,8 @@ export const appStore = {
 
   // User Session Library
   loadSession,
-  setTempo,
-  setOctave,
+  setTempo: setBpm,
+  setOctave: melodyStore.setOctave,
   loadAndPlayMelody,
 
   // Settings

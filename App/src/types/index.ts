@@ -217,6 +217,7 @@ export interface PitchPerfectWindow extends Window {
   pianoRollEditor?: PianoRollEditor
   pianoRollAudioEngine?: AudioEngine
   pianoRollGenerateId?: () => number
+  __autoPlayMelody?: string
 }
 
 // ── Practice Sessions ─────────────────────────────────────────
