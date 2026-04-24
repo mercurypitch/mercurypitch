@@ -38,7 +38,6 @@ import type { PitchPerfectWindow } from '@/types'
 // import { playback } from '@/stores/playback-store' // Replaced with PlaybackEngine
 import type { PitchSample } from '@/types'
 import type {
-  _TransportState,
   EffectType,
   MelodyItem,
   NoteName,
