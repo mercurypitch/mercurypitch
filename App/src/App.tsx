@@ -1169,6 +1169,23 @@ export const App: Component<AppProps> = (props) => {
     }
   })
 
+  /** Auto-play melody when loaded from library */
+  createEffect(() => {
+    // Check if melody library key is in window for auto-play trigger
+    if (typeof window !== 'undefined' && window.__autoPlayMelody) {
+      console.log('[createEffect] detected window.__autoPlayMelody:', window.__autoPlayMelody)
+      const melodyKey = window.__autoPlayMelody
+      delete window.__autoPlayMelody // Clear after processing
+
+      // Only auto-play if not already in a session
+      if (!appStore.sessionActive()) {
+        console.log('[createEffect] auto-playing melody:', melodyKey)
+        // Use a small delay to ensure the melody is loaded
+        setTimeout(() => void handlePlay(), 300)
+      }
+    }
+  })
+
   // ── Mic handlers ─────────────────────────────────────────────
 
   const handleMicToggle = async () => {

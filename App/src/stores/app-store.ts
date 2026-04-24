@@ -884,6 +884,34 @@ export function startPracticeSession(session: PracticeSession): void {
   recursionDepth = 0
 }
 
+export function loadAndPlayMelody(key: string): void {
+  console.log('[loadAndPlayMelody] loading melody with key:', key)
+  // Load melody from library
+  const melody = melodyStore.loadMelody(key)
+  if (!melody) {
+    console.log('[loadAndPlayMelody] melody not found, key:', key)
+    return
+  }
+  console.log('[loadAndPlayMelody] melody loaded:', melody.name)
+  // Set app store values from melody data
+  setTempo(melody.bpm)
+  setKeyName(melody.key)
+  setScaleType(melody.scaleType)
+  if (melody.octave !== undefined) {
+    // Set octave in appStore if there's a setter
+    const octaveSetters = Object.keys(appStore).filter(k => k.toLowerCase().includes('octave'))
+    octaveSetters.forEach(k => {
+      const setter = (appStore as any)[k]
+      if (typeof setter === 'function') setter(melody.octave)
+    })
+  }
+  // Signal app to auto-play after load
+  console.log('[loadAndPlayMelody] setting window.__autoPlayMelody:', key)
+  if (typeof window !== 'undefined') {
+    window.__autoPlayMelody = key
+  }
+}
+
 export function isInSessionMode(): boolean {
   return sessionMode()
 }
@@ -1113,6 +1141,7 @@ export const appStore = {
   loadSession,
   setTempo,
   setOctave,
+  loadAndPlayMelody,
 
   // Settings
   settings,
