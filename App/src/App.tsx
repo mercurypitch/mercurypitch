@@ -785,17 +785,6 @@ export const App: Component<AppProps> = (props) => {
       }
     })
 
-    // Update practice mode tracking when session changes
-    createEffect(() => {
-      if (appStore.sessionActive()) {
-        setCurrentPracticeMode('session')
-      } else if (playMode() === 'practice') {
-        setCurrentPracticeMode('run-once')
-      } else {
-        setCurrentPracticeMode('none')
-      }
-    })
-
     playbackEngine.on('complete', () => {
       practiceEngine.onPlaybackComplete()
       console.info(
@@ -808,7 +797,7 @@ export const App: Component<AppProps> = (props) => {
       )
 
       // Handle session mode: record result and advance/end session
-      if (appStore.sessionMode() && mode === 'practice') {
+      if (appStore.sessionMode() && playMode() === 'practice') {
         const currentScore = liveScore()
         console.info(
           '[onComplete] session handler, score:',
