@@ -212,6 +212,34 @@ test.describe('Practice Sessions', () => {
     await switchTab(page, 'practice')
     await page.waitForTimeout(300)
 
+    // No session history yet - should be hidden
+    const sessionHistory = page.locator('#session-history-panel')
+    const sessionList = page.locator('#session-history-list')
+
+    const historyVisible = await sessionHistory.isVisible().catch(() => false)
+    const listVisible = await sessionList.isVisible().catch(() => false)
+
+    expect(historyVisible || listVisible).toBe(false)
+  })
+
+  test('Session history panel shows after completing a session', async ({ page }) => {
+    await switchTab(page, 'practice')
+    await page.waitForTimeout(500)
+
+    // Click Play to start a session item
+    const playBtn = page.locator('.play-btn').first()
+    if (await playBtn.isVisible()) {
+      await playBtn.click()
+      await page.waitForTimeout(500)
+
+      const stopBtn = page.locator('.stop-btn').first()
+      if (await stopBtn.isVisible()) {
+        await stopBtn.click()
+        await page.waitForTimeout(500)
+      }
+    }
+
+    // Now session history should be visible
     const sessionHistory = page.locator('#session-history-panel')
     const sessionList = page.locator('#session-history-list')
 

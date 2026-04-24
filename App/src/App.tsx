@@ -182,6 +182,32 @@ export const App: Component<AppProps> = (props) => {
 
     // Switch to new tab
     appStore.setActiveTab(newTab)
+
+    // Load a default melody for Practice tab if no melody exists
+    if (newTab === 'practice' && melodyStore.getCurrentItems().length === 0) {
+      // Build a default C Major scale melody (8 notes)
+      const numOctaves = 1
+      const scale = buildMultiOctaveScale(
+        appStore.keyName(),
+        melodyStore.currentOctave(),
+        numOctaves,
+        'major',
+      )
+      if (scale !== null && scale.length > 0) {
+        const items = scale.slice(0, 8).map((note, i: number) => ({
+          id: melodyStore.generateId(),
+          note: {
+            midi: note.midi,
+            name: note.name as NoteName,
+            octave: note.octave,
+            freq: note.freq,
+          },
+          startBeat: i,
+          duration: 1,
+        }))
+        melodyStore.setMelody(items)
+      }
+    }
   }
 
   // ── Derived state ──────────────────────────────────────────
@@ -982,6 +1008,18 @@ export const App: Component<AppProps> = (props) => {
     setIsPlaying(true)
     setIsPaused(false)
     playback.startPlayback()
+
+    // Start playbackRuntime for practice mode (when not in a session)
+    if (!appStore.sessionActive()) {
+      // Use countIn for count-in, or 0 for no count-in
+      const countIn = appStore.countIn()
+      if (playbackRuntime.getIsPlaying()) {
+        // Already playing, just reset for fresh start
+        playbackRuntime.stop()
+        playbackRuntime.setMelody(melodyStore.getCurrentItems())
+      }
+      playbackRuntime.start(countIn > 0 ? countIn : 0)
+    }
   }
 
   const handlePause = () => {
@@ -990,6 +1028,11 @@ export const App: Component<AppProps> = (props) => {
     }
     setIsPlaying(false)
     setIsPaused(true)
+
+    // Pause playbackRuntime for practice mode
+    if (!appStore.sessionActive()) {
+      playbackRuntime.pause()
+    }
   }
 
   const handleResume = () => {
@@ -1008,6 +1051,12 @@ export const App: Component<AppProps> = (props) => {
     melodyStore.setCurrentNoteIndex(-1)
     setPitchHistory([])
     appStore.setSessionActive(false)
+
+    // Stop playbackRuntime for practice mode
+    if (!appStore.sessionActive()) {
+      playbackRuntime.stop()
+    }
+
     // Also reset editor state
     setEditorPlaybackState('stopped')
   }
@@ -1440,6 +1489,7 @@ export const App: Component<AppProps> = (props) => {
                 isPaused={() => false}
                 onPlay={() => {
                   // Start shared PlaybackRuntime for audio playback
+                  playbackRuntime.setMelody(melodyStore.getCurrentItems())
                   void playbackRuntime.start(appStore.countIn())
                 }}
                 onPause={() => {

@@ -857,7 +857,7 @@ export function endPracticeSession(): SessionResult | null {
   setSessionItemIndex(0)
   setSessionItemRepeat(0)
   setSessionMode(false)
-  setSessionResults([])
+  // Don't clear sessionResults - sidebar needs to display history
 
   return result
 }

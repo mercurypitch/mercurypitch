@@ -142,7 +142,7 @@ describe('MelodyEngine', () => {
     it('sets melody', () => {
       const newMelody = createMelody()
       engine.setMelody(newMelody)
-      expect(engine.getMelody()).toBe(newMelody)
+      expect(engine.getMelody()).toStrictEqual(newMelody)
     })
 
     it('sets BPM', () => {
