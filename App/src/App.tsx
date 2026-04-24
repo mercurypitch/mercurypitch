@@ -280,6 +280,7 @@ export const App: Component<AppProps> = (props) => {
 
   // Track if we've already built the current session item's melody
   let builtSessionMelodyKey = ''
+  let pendingSessionTransition = false
 
 // ── Mobile sidebar toggle ─────────────────────────────────────
   const [sidebarOpen, setSidebarOpen] = createSignal(false)
@@ -828,7 +829,7 @@ export const App: Component<AppProps> = (props) => {
                     return
                   }
                   // Mark transition in progress so createEffect doesn't fire
-                  handleSessionTransition()
+                  pendingSessionTransition = true
                   builtSessionMelodyKey = afterRestKey
                   // Reset for new item
                   setCurrentCycle(1)
@@ -857,6 +858,7 @@ export const App: Component<AppProps> = (props) => {
                 console.info('[onComplete] already built, skipping')
                 return
               }
+              pendingSessionTransition = true
               builtSessionMelodyKey = nextItemKey
               // Reset for new item
               setCurrentCycle(1)
@@ -1111,8 +1113,8 @@ export const App: Component<AppProps> = (props) => {
   }
 
   /** Get unique key for a session item */
-  const getSessionItemKey = (item: typeof PRACTICE_SESSIONS[number]) => {
-    return `${item.scaleType}-${item.beats}-${item.label}`
+  const getSessionItemKey = (item: { scaleType?: string; beats?: number; label?: string }) => {
+    return `${item.scaleType ?? 'major'}-${item.beats ?? 8}-${item.label ?? 'scale'}`
   }
 
   /** Handle session skip — advance to next item or end session */
@@ -1123,7 +1125,7 @@ export const App: Component<AppProps> = (props) => {
     const session = appStore.practiceSession()
     const idx = appStore.sessionItemIndex()
     if (session && idx < session.items.length - 1) {
-      handleSessionTransition()
+      pendingSessionTransition = true
       appStore.advanceSessionItem()
       const nextItem = appStore.getCurrentSessionItem()
       if (nextItem) {
@@ -1148,7 +1150,6 @@ export const App: Component<AppProps> = (props) => {
           name: summary.sessionName,
         })
       builtSessionMelodyKey = ''
-      pendingSessionTransition = false
     }
   }
 
@@ -1164,32 +1165,9 @@ export const App: Component<AppProps> = (props) => {
       })
   }
 
-  /** Auto-start session when session mode becomes active */
-  createEffect(() => {
-    // Only run when sessionMode changes TO true (not when other signals change)
-    if (!appStore.sessionMode()) return
-
-    console.log('[createEffect] sessionMode became true, practiceSession:', appStore.practiceSession()?.name)
-
-    // This effect runs once when session starts - subsequent calls should be handled elsewhere
-    const item = appStore.getCurrentSessionItem()
-    if (item && item.type === 'scale') {
-      console.log('[createEffect] starting session item:', item.label)
-      builtSessionMelodyKey = `${item.scaleType}-${item.beats}-${item.label}` // Set flag
-      buildScaleMelody(item.scaleType ?? 'major', item.beats ?? 8, item.label)
-      setPlayMode('practice')
-      setPracticeCycles(1)
-      // Use setTimeout to avoid infinite effect loop due to batching
-      setTimeout(() => {
-        void handlePlay()
-      }, 500)
-    }
-  })
-
   /** Handle session item change when it advances */
-  let pendingSessionTransition = false
   createEffect(() => {
-    // Check if we're in session mode and the item index changed
+    // Initialize effect once when entering session mode
     if (!appStore.sessionMode()) return
 
     const item = appStore.getCurrentSessionItem()
@@ -1202,15 +1180,9 @@ export const App: Component<AppProps> = (props) => {
         console.log('[createEffect] new session item:', item.label)
         builtSessionMelodyKey = itemKey
         buildScaleMelody(item.scaleType ?? 'major', item.beats ?? 8, item.label)
-        // Don't reset flag here - let the complete handler advance
       }
     }
   })
-
-  /** Handle session item change when it advances */
-  const handleSessionTransition = () => {
-    pendingSessionTransition = true
-  }
 
   /** Auto-play melody when loaded from library */
   createEffect(() => {
