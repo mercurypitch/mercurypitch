@@ -987,20 +987,18 @@ export function loadSession(session: SavedUserSession): void {
   })
 }
 
-// ── PresetData Presets Bridge (for backward compatibility) ───────
+// ── PresetData Presets Bridge (legacy support - functions are no-ops) ───────
 
 function setCurrentPresetName(name: string | null): void {
-  const signal = (window as unknown as { __currentPresetNameSignal?: (...args: unknown[]) => void }).__currentPresetNameSignal
-  if (signal !== undefined) {
-    const isFunction = typeof signal === 'function'
-    if (isFunction) {
-      (signal as (...args: unknown[]) => void)(name)
+  // Legacy preset name is no longer used - set currentMelody.name instead
+  if (name !== null) {
+    // Try to set the current melody's name via melodyStore
+    const currentMelody = melodyStore.getCurrentMelody()
+    if (currentMelody) {
+      melodyStore.updateMelody(currentMelody.id, { name })
     }
   }
 }
-
-// Bridge to legacy preset signal
-;(window as any).__currentPresetNameSignal = setCurrentPresetName
 
 export const appStore = {
   // Key / scale

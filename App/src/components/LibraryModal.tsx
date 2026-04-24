@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createMemo, createSignal, For, Show } from 'solid-js'
+import { createMemo, createSignal, For, Show, onMount } from 'solid-js'
 import { appStore } from '@/stores/app-store'
 import { melodyStore } from '@/stores/melody-store'
 import type { MelodyData, NoteName } from '@/types'
@@ -15,11 +15,59 @@ interface LibraryModalProps {
 
 type Tab = 'melodies' | 'playlists'
 
+// Playlist editing state
+type PlaylistEditingState =
+  | null // Not editing any playlist
+  | { mode: 'add-melody'; playlistId: string; selectedMelodyKey: string | null }
+  | { mode: 'rename'; playlistId: string; originalName: string }
+  | { mode: 'delete'; playlistId: string }
+
 export const LibraryModal: Component<LibraryModalProps> = (props) => {
+  // Initialize localStorage if empty
+  onMount(() => {
+    const library = melodyStore.getMelodyLibrary()
+    if (Object.keys(library.melodies).length === 0) {
+      // Try to migrate existing default melody
+      try {
+        const defaultMelody = localStorage.getItem('pitchperfect_default_melody')
+        if (defaultMelody) {
+          const data = JSON.parse(defaultMelody)
+          if (Array.isArray(data.items) && data.items.length > 0) {
+            const id = `melody-${Date.now()}`
+            const newMelody: MelodyData = {
+              id,
+              name: 'Default Melody',
+              author: 'System',
+              bpm: 80,
+              key: 'C',
+              scaleType: 'major',
+              octave: 4,
+              items: data.items,
+              tags: [],
+              notes: '',
+              createdAt: Date.now(),
+              updatedAt: Date.now(),
+              playCount: 0,
+            }
+            melodyStore.updateMelody(id, newMelody)
+          }
+        }
+      } catch {
+        // Ignore migration errors
+      }
+    }
+  })
+
   const [activeTab, setActiveTab] = createSignal<Tab>('melodies')
   const [searchQuery, setSearchQuery] = createSignal('')
   const [selectedMelodyKey, setSelectedMelodyKey] = createSignal<string | null>(null)
   const [editingMelodyKey, setEditingMelodyKey] = createSignal<string | null>(null)
+  const [playlistEditing, setPlaylistEditing] = createSignal<PlaylistEditingState>(null)
+
+  // For rename playlist
+  const [renameInput, setRenameInput] = createSignal('')
+  // For add melody to playlist
+  const [addMelodySearch, setAddMelodySearch] = createSignal('')
 
   const [editName, setEditName] = createSignal('')
   const [editBpm, setEditBpm] = createSignal(80)
@@ -57,6 +105,21 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
     return entries
       .filter(([, m]) => m.name.toLowerCase().includes(query))
       .sort((a, b): number => (b[1].playCount ?? 0) - (a[1].playCount ?? 0))
+  })
+
+  const availableForPlaylist = createMemo(() => {
+    const playlistId = playlistEditing()?.playlistId ?? null
+    if (!playlistId) return []
+
+    const playlist = library().playlists[playlistId]
+    if (!playlist) return []
+
+    const selectedKey = playlistEditing()?.selectedMelodyKey ?? null
+
+    return Object.entries(library().melodies)
+      .filter(([id, _]) => id !== selectedKey)
+      .filter(([id]) => !playlist.melodyKeys.includes(id))
+      .map(([id, m]) => ({ id, melody: m }))
   })
 
   const selectedMelody = createMemo(() => {
@@ -167,9 +230,85 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
     return itemCount > 0 ? `${itemCount} notes` : 'Empty'
   }
 
-  const handlePlaylistEdit = (_playlistId: string) => {
-    // Note: Full playlist editing not yet implemented
-    // This is just a placeholder
+  // Playlist operations
+  const handleCreatePlaylist = () => {
+    const name = renameInput().trim() || 'My Playlist'
+    const playlistId = melodyStore.createPlaylist(name)
+    setPlaylistEditing(null)
+    setRenameInput('')
+    appStore.showNotification(`Playlist "${name}" created`, 'success')
+  }
+
+  const handleRenamePlaylist = () => {
+    const playlistId = playlistEditing()?.playlistId ?? null
+    const name = renameInput().trim()
+    if (playlistId && name) {
+      const playlist = melodyStore.getPlaylist(playlistId)
+      if (playlist) {
+        // Create new playlist with same melodies and new name
+        const newPlaylistId = melodyStore.createPlaylist(name)
+        const library = melodyStore.getMelodyLibrary()
+        const melodies = library.playlists[playlistId].melodyKeys
+
+        // Move melodies to new playlist
+        melodies.forEach(melodyKey => {
+          melodyStore.addMelodyToPlaylist(newPlaylistId, melodyKey)
+        })
+
+        // Delete old playlist
+        melodyStore.deletePlaylist(playlistId)
+
+        setPlaylistEditing(null)
+        setRenameInput('')
+        appStore.showNotification(`Playlist renamed`, 'success')
+      }
+    }
+  }
+
+  const cancelRename = () => {
+    setPlaylistEditing(null)
+    setRenameInput('')
+  }
+
+  const handleDeletePlaylist = () => {
+    const playlistId = playlistEditing()?.playlistId ?? null
+    if (playlistId) {
+      if (confirm('Delete this playlist?')) {
+        melodyStore.deletePlaylist(playlistId)
+        setPlaylistEditing(null)
+        appStore.showNotification('Playlist deleted', 'success')
+      }
+    }
+  }
+
+  const handleAddMelodyToPlaylist = (melodyId: string) => {
+    const playlistId = playlistEditing()?.playlistId ?? null
+    if (playlistId && melodyId) {
+      melodyStore.addMelodyToPlaylist(playlistId, melodyId)
+      setSelectedMelodyKey(melodyId)
+      appStore.showNotification('Melody added to playlist', 'success')
+    }
+  }
+
+  const handleRemoveMelodyFromPlaylist = (melodyId: string) => {
+    const playlistId = playlistEditing()?.playlistId ?? null
+    if (playlistId && melodyId) {
+      melodyStore.removeMelodyFromPlaylist(playlistId, melodyId)
+      appStore.showNotification('Melody removed from playlist', 'success')
+    }
+  }
+
+  const startAddMelodyMode = (playlistId: string) => {
+    setPlaylistEditing({ mode: 'add-melody', playlistId, selectedMelodyKey: null })
+    setAddMelodySearch('')
+  }
+
+  const startRenameMode = (playlistId: string) => {
+    const playlist = melodyStore.getPlaylist(playlistId)
+    if (playlist) {
+      setPlaylistEditing({ mode: 'rename', playlistId, originalName: playlist.name })
+      setRenameInput(playlist.name)
+    }
   }
 
   return (
@@ -471,33 +610,150 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
             </div>
           ) : (
             <div class="library-content">
-              <button class="new-btn" onClick={() => {
-                const name = prompt('Enter playlist name:') ?? 'My Playlist'
-                if (name) melodyStore.createPlaylist(name)
-              }}>
-                <svg viewBox="0 0 24 24" width="16" height="16">
-                  <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
-                </svg>
-                New Playlist
-              </button>
+              {/* Add melody mode */}
+              <Show when={playlistEditing()?.mode === 'add-melody'}>
+                <div class="playlist-edit-form">
+                  <h3>Add Melody to Playlist</h3>
 
-              <div class="playlist-list">
-                <For each={Object.entries(library().playlists) as [string, { name: string; melodyKeys: string[]; created: number }][]}>
-                  {([_id, playlist]) => (
-                    <div class="playlist-item">
-                      <div class="playlist-info">
-                        <span class="playlist-name">{playlist.name}</span>
-                        <span class="playlist-count">{playlist.melodyKeys.length} melodies</span>
+                  <div class="form-group">
+                    <label>Search melodies...</label>
+                    <input
+                      type="text"
+                      class="search-input"
+                      placeholder="Type to search melodies..."
+                      value={addMelodySearch()}
+                      onInput={(e) => setAddMelodySearch(e.currentTarget.value)}
+                    />
+                  </div>
+
+                  <div class="melody-select-list">
+                    <For each={availableForPlaylist()}>
+                      {({ id, melody }) => (
+                        <div
+                          class={`melody-select-item ${selectedMelodyKey() === id ? 'selected' : ''}`}
+                          onClick={() => setSelectedMelodyKey(id)}
+                        >
+                          <div class="select-item-title">{melody.name}</div>
+                          <div class="select-item-meta">{melody.key} • {melody.bpm} BPM</div>
+                        </div>
+                      )}
+                    </For>
+
+                    {availableForPlaylist().length === 0 && (
+                      <div class="empty-state">
+                        <p>All melodies already in this playlist!</p>
                       </div>
-                      <button class="action-btn edit-btn" onClick={() => handlePlaylistEdit(_id)} title="Edit">
-                        <svg viewBox="0 0 24 24" width="14" height="14">
-                          <path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z" />
-                        </svg>
-                      </button>
-                    </div>
-                  )}
-                </For>
-              </div>
+                    )}
+                  </div>
+
+                  <div class="form-actions">
+                    <button class="cancel-btn" onClick={() => {
+                      setPlaylistEditing(null)
+                      setAddMelodySearch('')
+                    }}>Cancel</button>
+                    <button class="save-btn" onClick={() => {
+                      const edit = playlistEditing()
+                      if (edit?.mode === 'add-melody' && selectedMelodyKey()) {
+                        handleAddMelodyToPlaylist(selectedMelodyKey())
+                      }
+                    }}>Add to Playlist</button>
+                  </div>
+                </div>
+              </Show>
+
+              {/* Rename mode */}
+              <Show when={playlistEditing()?.mode === 'rename'}>
+                <div class="playlist-edit-form">
+                  <h3>Rename Playlist</h3>
+
+                  <div class="form-group">
+                    <label>New Name</label>
+                    <input
+                      type="text"
+                      class="search-input"
+                      value={renameInput()}
+                      onInput={(e) => setRenameInput(e.currentTarget.value)}
+                      placeholder="Playlist name"
+                      autoFocus
+                    />
+                  </div>
+
+                  <div class="form-actions">
+                    <button class="cancel-btn" onClick={cancelRename}>Cancel</button>
+                    <button class="save-btn" onClick={handleRenamePlaylist}>Rename</button>
+                  </div>
+                </div>
+              </Show>
+
+              {/* Delete mode */}
+              <Show when={playlistEditing()?.mode === 'delete'}>
+                <div class="playlist-edit-form">
+                  <h3>Delete Playlist</h3>
+                  <p>Are you sure you want to delete this playlist? This action cannot be undone.</p>
+
+                  <div class="form-actions">
+                    <button class="cancel-btn" onClick={cancelRename}>Cancel</button>
+                    <button class="delete-btn" onClick={handleDeletePlaylist}>Delete</button>
+                  </div>
+                </div>
+              </Show>
+
+              {/* Normal playlist view */}
+              <Show when={playlistEditing() === null}>
+                <button class="new-btn" onClick={() => {
+                  setPlaylistEditing({ mode: 'rename', playlistId: '', originalName: '' })
+                  setRenameInput('')
+                }}>
+                  <svg viewBox="0 0 24 24" width="16" height="16">
+                    <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+                  </svg>
+                  New Playlist
+                </button>
+
+                {Object.keys(library().playlists).length === 0 && (
+                  <div class="empty-state">
+                    <p>No playlists yet. Create a playlist to organize your melodies!</p>
+                  </div>
+                )}
+
+                <div class="playlist-list">
+                  <For each={Object.entries(library().playlists) as [string, { name: string; melodyKeys: string[]; created: number }][]}>
+                    {([_id, playlist]) => (
+                      <div class="playlist-item">
+                        <div class="playlist-info">
+                          <span class="playlist-name">{playlist.name}</span>
+                          <span class="playlist-count">{playlist.melodyKeys.length} melodies</span>
+                        </div>
+                        <div class="item-actions">
+                          <button class="action-btn edit-btn" onClick={() => startRenameMode(_id)} title="Rename">
+                            <svg viewBox="0 0 24 24" width="14" height="14">
+                              <path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z" />
+                            </svg>
+                          </button>
+                          <button class="action-btn play-btn" onClick={() => {
+                            // Note: Playlist playback not implemented - could iterate through melodies
+                            appStore.showNotification('Playlist playback coming soon!', 'info')
+                          }} title="Play All">
+                            <svg viewBox="0 0 24 24" width="14" height="14">
+                              <path fill="currentColor" d="M8 5v14l11-7z" />
+                            </svg>
+                          </button>
+                          <button class="action-btn edit-btn" onClick={() => startAddMelodyMode(_id)} title="Add Melody">
+                            <svg viewBox="0 0 24 24" width="14" height="14">
+                              <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+                            </svg>
+                          </button>
+                          <button class="action-btn delete-btn" onClick={() => setPlaylistEditing({ mode: 'delete', playlistId: _id })} title="Delete">
+                            <svg viewBox="0 0 24 24" width="14" height="14">
+                              <path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </For>
+                </div>
+              </Show>
             </div>
           )}
         </div>
