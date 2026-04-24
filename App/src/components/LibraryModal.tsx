@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createMemo, createSignal, For, Show, onMount } from 'solid-js'
+import { createMemo, createSignal, For, Show } from 'solid-js'
 import { appStore } from '@/stores/app-store'
 import { melodyStore } from '@/stores/melody-store'
 import type { MelodyData, NoteName } from '@/types'
@@ -23,41 +23,6 @@ type PlaylistEditingState =
   | { mode: 'delete'; playlistId: string }
 
 export const LibraryModal: Component<LibraryModalProps> = (props) => {
-  // Initialize localStorage if empty
-  onMount(() => {
-    const library = melodyStore.getMelodyLibrary()
-    if (Object.keys(library.melodies).length === 0) {
-      // Try to migrate existing default melody
-      try {
-        const defaultMelody = localStorage.getItem('pitchperfect_default_melody')
-        if (defaultMelody) {
-          const data = JSON.parse(defaultMelody)
-          if (Array.isArray(data.items) && data.items.length > 0) {
-            const id = `melody-${Date.now()}`
-            const newMelody: MelodyData = {
-              id,
-              name: 'Default Melody',
-              author: 'System',
-              bpm: 80,
-              key: 'C',
-              scaleType: 'major',
-              octave: 4,
-              items: data.items,
-              tags: [],
-              notes: '',
-              createdAt: Date.now(),
-              updatedAt: Date.now(),
-              playCount: 0,
-            }
-            melodyStore.updateMelody(id, newMelody)
-          }
-        }
-      } catch {
-        // Ignore migration errors
-      }
-    }
-  })
-
   const [activeTab, setActiveTab] = createSignal<Tab>('melodies')
   const [searchQuery, setSearchQuery] = createSignal('')
   const [selectedMelodyKey, setSelectedMelodyKey] = createSignal<string | null>(null)
@@ -108,13 +73,14 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
   })
 
   const availableForPlaylist = createMemo(() => {
-    const playlistId = playlistEditing()?.playlistId ?? null
-    if (!playlistId) return []
+    const playlistEdit = playlistEditing()
+    const playlistId = playlistEdit?.playlistId ?? null
+    if (playlistId === null || playlistId === undefined) return []
 
-    const playlist = library().playlists[playlistId]
-    if (!playlist) return []
+    const playlist = library().playlists[playlistId] ?? null
+    if (playlist === null) return []
 
-    const selectedKey = playlistEditing()?.selectedMelodyKey ?? null
+    const selectedKey = playlistEdit?.mode === 'add-melody' ? playlistEdit.selectedMelodyKey ?? null : null
 
     return Object.entries(library().melodies)
       .filter(([id, _]) => id !== selectedKey)
@@ -231,31 +197,31 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
   }
 
   // Playlist operations
-  const handleCreatePlaylist = () => {
+  const _handleCreatePlaylist = () => {
     const name = renameInput().trim() || 'My Playlist'
-    const playlistId = melodyStore.createPlaylist(name)
+    const _playlistId = melodyStore.createPlaylist(name)
     setPlaylistEditing(null)
     setRenameInput('')
     appStore.showNotification(`Playlist "${name}" created`, 'success')
   }
 
   const handleRenamePlaylist = () => {
-    const playlistId = playlistEditing()?.playlistId ?? null
+    const playlistEdit = playlistEditing()
+    if (!playlistEdit || playlistEdit.mode !== 'rename') return
+
+    const playlistId = playlistEdit.playlistId
     const name = renameInput().trim()
-    if (playlistId && name) {
+    if (playlistId !== null && playlistId !== undefined && name.trim().length > 0) {
       const playlist = melodyStore.getPlaylist(playlistId)
-      if (playlist) {
-        // Create new playlist with same melodies and new name
+      if (playlist !== null) {
         const newPlaylistId = melodyStore.createPlaylist(name)
         const library = melodyStore.getMelodyLibrary()
-        const melodies = library.playlists[playlistId].melodyKeys
 
-        // Move melodies to new playlist
-        melodies.forEach(melodyKey => {
+        const melodyKeys = library.playlists[playlistId].melodyKeys
+        melodyKeys.forEach(melodyKey => {
           melodyStore.addMelodyToPlaylist(newPlaylistId, melodyKey)
         })
 
-        // Delete old playlist
         melodyStore.deletePlaylist(playlistId)
 
         setPlaylistEditing(null)
@@ -270,30 +236,30 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
     setRenameInput('')
   }
 
-  const handleDeletePlaylist = () => {
-    const playlistId = playlistEditing()?.playlistId ?? null
-    if (playlistId) {
-      if (confirm('Delete this playlist?')) {
-        melodyStore.deletePlaylist(playlistId)
-        setPlaylistEditing(null)
-        appStore.showNotification('Playlist deleted', 'success')
-      }
+  const _handleDeletePlaylist = () => {
+    const playlistEdit = playlistEditing()
+    if (!playlistEdit || playlistEdit.mode !== 'delete') return
+
+    if (playlistEdit.playlistId !== null && playlistEdit.playlistId !== undefined && confirm('Delete this playlist?')) {
+      melodyStore.deletePlaylist(playlistEdit.playlistId)
+      setPlaylistEditing(null)
+      appStore.showNotification('Playlist deleted', 'success')
     }
   }
 
   const handleAddMelodyToPlaylist = (melodyId: string) => {
-    const playlistId = playlistEditing()?.playlistId ?? null
-    if (playlistId && melodyId) {
-      melodyStore.addMelodyToPlaylist(playlistId, melodyId)
+    const playlistEdit = playlistEditing()
+    if (playlistEdit !== null && playlistEdit.mode === 'add-melody' && playlistEdit.playlistId !== null && playlistEdit.playlistId !== undefined) {
+      melodyStore.addMelodyToPlaylist(playlistEdit.playlistId, melodyId)
       setSelectedMelodyKey(melodyId)
       appStore.showNotification('Melody added to playlist', 'success')
     }
   }
 
-  const handleRemoveMelodyFromPlaylist = (melodyId: string) => {
-    const playlistId = playlistEditing()?.playlistId ?? null
-    if (playlistId && melodyId) {
-      melodyStore.removeMelodyFromPlaylist(playlistId, melodyId)
+  const _handleRemoveMelodyFromPlaylist = (melodyId: string) => {
+    const playlistEdit = playlistEditing()
+    if (playlistEdit !== null && playlistEdit.mode === 'add-melody' && playlistEdit.playlistId !== null && playlistEdit.playlistId !== undefined) {
+      melodyStore.removeMelodyFromPlaylist(playlistEdit.playlistId, melodyId)
       appStore.showNotification('Melody removed from playlist', 'success')
     }
   }
@@ -542,7 +508,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                           <span>{melody.bpm} BPM</span>
                           <span>•</span>
                           <span>{getNoteCount(melody.items.length)}</span>
-                          <Show when={melody.playCount !== null}>
+                          <Show when={melody.playCount !== null && melody.playCount !== undefined}>
                             <span>•</span>
                             <span>{melody.playCount} plays</span>
                           </Show>
@@ -582,7 +548,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
               </div>
 
               {/* Selected Melody Details */}
-              <Show when={selectedMelody()}>
+              <Show when={selectedMelody() !== null}>
                 <div class="melody-details">
                   <h3>Selected Melody</h3>
                   <Show when={selectedMelody()}>
@@ -653,8 +619,8 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                     }}>Cancel</button>
                     <button class="save-btn" onClick={() => {
                       const edit = playlistEditing()
-                      if (edit?.mode === 'add-melody' && selectedMelodyKey()) {
-                        handleAddMelodyToPlaylist(selectedMelodyKey())
+                      if (edit?.mode === 'add-melody' && selectedMelodyKey() !== null) {
+                        handleAddMelodyToPlaylist(selectedMelodyKey()!)
                       }
                     }}>Add to Playlist</button>
                   </div>
@@ -674,7 +640,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                       value={renameInput()}
                       onInput={(e) => setRenameInput(e.currentTarget.value)}
                       placeholder="Playlist name"
-                      autoFocus
+                      autofocus
                     />
                   </div>
 
@@ -693,7 +659,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
 
                   <div class="form-actions">
                     <button class="cancel-btn" onClick={cancelRename}>Cancel</button>
-                    <button class="delete-btn" onClick={handleDeletePlaylist}>Delete</button>
+                    <button class="delete-btn" onClick={_handleDeletePlaylist}>Delete</button>
                   </div>
                 </div>
               </Show>
@@ -731,7 +697,6 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                             </svg>
                           </button>
                           <button class="action-btn play-btn" onClick={() => {
-                            // Note: Playlist playback not implemented - could iterate through melodies
                             appStore.showNotification('Playlist playback coming soon!', 'info')
                           }} title="Play All">
                             <svg viewBox="0 0 24 24" width="14" height="14">
