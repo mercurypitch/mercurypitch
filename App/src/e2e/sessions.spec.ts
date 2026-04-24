@@ -146,7 +146,9 @@ test.describe('Practice Sessions', () => {
     await expect(statBars).toBeVisible()
   })
 
-  test('Accuracy stat labels are visible (Perfect, Excellent, etc.)', async ({ page }) => {
+  test('Accuracy stat labels are visible (Perfect, Excellent, etc.)', async ({
+    page,
+  }) => {
     await switchTab(page, 'practice')
     await page.waitForTimeout(300)
 
@@ -222,7 +224,9 @@ test.describe('Practice Sessions', () => {
     expect(historyVisible || listVisible).toBe(false)
   })
 
-  test('Session history panel shows after completing a session', async ({ page }) => {
+  test('Session history panel shows after completing a session', async ({
+    page,
+  }) => {
     await switchTab(page, 'practice')
     await page.waitForTimeout(500)
 
@@ -249,7 +253,9 @@ test.describe('Practice Sessions', () => {
     expect(historyVisible || listVisible).toBe(true)
   })
 
-  test('Session history entries show session name and score', async ({ page }) => {
+  test('Session history entries show session name and score', async ({
+    page,
+  }) => {
     await switchTab(page, 'practice')
     await page.waitForTimeout(300)
 
@@ -302,7 +308,9 @@ test.describe('Practice Sessions', () => {
     expect(count).toBeLessThanOrEqual(5)
   })
 
-  test('Session score has color coding based on performance', async ({ page }) => {
+  test('Session score has color coding based on performance', async ({
+    page,
+  }) => {
     await switchTab(page, 'practice')
     await page.waitForTimeout(300)
 

@@ -424,7 +424,11 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
                   const key = e.currentTarget.value
                   appStore.setKeyName(key)
                   // Refresh scale with new key
-                  melodyStore.refreshScale(key, melodyStore.currentOctave(), appStore.scaleType())
+                  melodyStore.refreshScale(
+                    key,
+                    melodyStore.currentOctave(),
+                    appStore.scaleType(),
+                  )
                 }}
               >
                 {NOTE_NAMES.map((k) => (
@@ -444,7 +448,11 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
                   const scaleType = e.currentTarget.value
                   appStore.setScaleType(scaleType)
                   // Refresh scale with new scale type
-                  melodyStore.refreshScale(appStore.keyName(), melodyStore.currentOctave(), scaleType)
+                  melodyStore.refreshScale(
+                    appStore.keyName(),
+                    melodyStore.currentOctave(),
+                    scaleType,
+                  )
                 }}
               >
                 {SCALE_TYPES.map((s) => (

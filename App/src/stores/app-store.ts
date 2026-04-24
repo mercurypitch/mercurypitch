@@ -4,7 +4,7 @@
 // ============================================================
 
 import { createSignal } from 'solid-js'
-import type { AccuracyBand, PitchPerfectWindow, PracticeSession, SavedUserSession, SessionResult } from '@/types'
+import type { AccuracyBand, PitchPerfectWindow, PracticeSession, SavedUserSession, SessionResult, } from '@/types'
 import { melodyStore } from './melody-store'
 
 // ── Key / Scale ─────────────────────────────────────────────
@@ -179,7 +179,8 @@ export const setActiveTab = _setActiveTab
 // ── Library Modal ───────────────────────────────────────────
 
 const [showLibraryModal, setShowLibraryModal] = createSignal<boolean>(false)
-const [showSessionLibraryModal, setShowSessionLibraryModal] = createSignal<boolean>(false)
+const [showSessionLibraryModal, setShowSessionLibraryModal] =
+  createSignal<boolean>(false)
 const [showPresetsModal, setShowPresetsModal] = createSignal<boolean>(false)
 export function showLibrary(): void {
   setShowLibraryModal(true)
@@ -211,7 +212,7 @@ export function enterFocusMode(): void {
   setFocusMode(true)
 }
 export function exitFocusMode(): void {
-  (_setFocusMode as unknown as (val: boolean) => void)(false)
+  ;(_setFocusMode as unknown as (val: boolean) => void)(false)
   ;(window as any).__exitFocusMode = exitFocusMode
 }
 
@@ -735,9 +736,7 @@ const [practiceSession, setPracticeSession] =
   createSignal<PracticeSession | null>(null)
 const [sessionItemIndex, setSessionItemIndex] = createSignal(0)
 const [sessionActive, setSessionActive] = createSignal(false)
-const [sessionResults, setSessionResults] = createSignal<SessionResult[]>(
-  [],
-)
+const [sessionResults, setSessionResults] = createSignal<SessionResult[]>([])
 const [sessionMode, setSessionMode] = createSignal(false) // true when in session flow
 
 // Export signal getters for public access
@@ -860,7 +859,10 @@ const MAX_RECURSION = 10
 export function startPracticeSession(session: PracticeSession): void {
   recursionDepth++
   if (recursionDepth > MAX_RECURSION) {
-    console.error('[CRASH] Too many recursion calls detected! Aborting:', recursionDepth)
+    console.error(
+      '[CRASH] Too many recursion calls detected! Aborting:',
+      recursionDepth,
+    )
     recursionDepth = 0
     return
   }
@@ -871,7 +873,10 @@ export function startPracticeSession(session: PracticeSession): void {
   setSessionActive(true)
   console.log('[startPracticeSession] setSessionActive(true)')
   setSessionMode(true)
-  console.log('[startPracticeSession] setSessionMode(true), recursionDepth:', recursionDepth)
+  console.log(
+    '[startPracticeSession] setSessionMode(true), recursionDepth:',
+    recursionDepth,
+  )
   setSessionResults([])
   recursionDepth = 0
 }
@@ -894,8 +899,10 @@ export function loadAndPlayMelody(key: string): void {
   setScaleType(melody.scaleType)
   if (melody.octave !== undefined) {
     // Set octave in appStore if there's a setter
-    const octaveSetters = Object.keys(appStore).filter(k => k.toLowerCase().includes('octave'))
-    octaveSetters.forEach(k => {
+    const octaveSetters = Object.keys(appStore).filter((k) =>
+      k.toLowerCase().includes('octave'),
+    )
+    octaveSetters.forEach((k) => {
       const setter = (appStore as any)[k]
       if (typeof setter === 'function') setter(melody.octave)
     })
@@ -1025,7 +1032,10 @@ export function loadSession(session: SavedUserSession): void {
     category: session.category,
     items: session.items,
   })
-  console.log('[appStore] startPracticeSession complete, sessionMode:', sessionMode())
+  console.log(
+    '[appStore] startPracticeSession complete, sessionMode:',
+    sessionMode(),
+  )
 }
 
 // ── PresetData Presets Bridge (legacy support - functions are no-ops) ───────
@@ -1122,7 +1132,7 @@ export const appStore = {
 
   // Presets (bridge for backward compatibility)
   // Note: Legacy presets signal is kept for compatibility with existing code
-  presets: () => ({} as any), // Return empty object - legacy support only
+  presets: () => ({}) as any, // Return empty object - legacy support only
   currentPresetName: () => null,
   setCurrentPresetName,
   initPresets: () => {}, // No-op - presets now handled by melodyStore

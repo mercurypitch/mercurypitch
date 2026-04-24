@@ -248,7 +248,11 @@ export interface SessionItem {
 export type SessionDifficulty = 'beginner' | 'intermediate' | 'advanced'
 
 /** Category for practice sessions */
-export type SessionCategory = 'vocal' | 'instrumental' | 'ear-training' | 'general'
+export type SessionCategory =
+  | 'vocal'
+  | 'instrumental'
+  | 'ear-training'
+  | 'general'
 
 /** User session data stored in localStorage */
 export interface SavedUserSession {
@@ -342,11 +346,14 @@ export interface MelodyLibrary {
   /** All saved melodies */
   melodies: Record<string, MelodyData>
   /** User-created playlists */
-  playlists: Record<string, {
-    name: string
-    melodyKeys: string[]
-    created: number
-  }>
+  playlists: Record<
+    string,
+    {
+      name: string
+      melodyKeys: string[]
+      created: number
+    }
+  >
 }
 
 /** Create session item from a melody */
@@ -354,4 +361,3 @@ export interface MelodySessionItem extends Omit<SessionItem, 'type'> {
   type: 'melody'
   melodyKey: string
 }
-

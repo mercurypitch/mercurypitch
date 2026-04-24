@@ -33,7 +33,9 @@ test.describe('Melody Library', () => {
     await page.waitForTimeout(300)
 
     await expect(page.locator('.recent-section')).toBeVisible()
-    await expect(page.locator('.section-label:has-text("Recent Melodies")')).toBeVisible()
+    await expect(
+      page.locator('.section-label:has-text("Recent Melodies")'),
+    ).toBeVisible()
   })
 
   test('Recent melodies list can be displayed', async ({ page }) => {
@@ -50,15 +52,21 @@ test.describe('Melody Library', () => {
     await page.waitForTimeout(300)
 
     await expect(page.locator('.quick-actions')).toBeVisible()
-    await expect(page.locator('.quick-action-btn:has-text("Quick Start")')).toBeVisible()
-    await expect(page.locator('.quick-action-btn:has-text("Sessions")')).toBeVisible()
+    await expect(
+      page.locator('.quick-action-btn:has-text("Quick Start")'),
+    ).toBeVisible()
+    await expect(
+      page.locator('.quick-action-btn:has-text("Sessions")'),
+    ).toBeVisible()
   })
 
   test('Quick Start button opens presets library', async ({ page }) => {
     await switchTab(page, 'practice')
     await page.waitForTimeout(300)
 
-    const quickStartBtn = page.locator('.quick-action-btn:has-text("Quick Start")')
+    const quickStartBtn = page.locator(
+      '.quick-action-btn:has-text("Quick Start")',
+    )
     await quickStartBtn.click()
     await page.waitForTimeout(300)
 
@@ -110,7 +118,9 @@ test.describe('Melody Library', () => {
     await expect(emptyTip).toBeVisible()
   })
 
-  test('Recent melodies update when new melodies are added', async ({ page }) => {
+  test('Recent melodies update when new melodies are added', async ({
+    page,
+  }) => {
     await switchTab(page, 'editor')
     await page.waitForTimeout(1000)
 
@@ -183,7 +193,7 @@ test.describe('Melody Library', () => {
 
   test('Library modal has close button', async ({ page }) => {
     await page.evaluate(() => {
-      (window as any).__appStore?.showLibrary()
+      ;(window as any).__appStore?.showLibrary()
     })
     await page.waitForTimeout(500)
 
@@ -193,7 +203,7 @@ test.describe('Melody Library', () => {
 
   test('Library modal has search input', async ({ page }) => {
     await page.evaluate(() => {
-      (window as any).__appStore?.showLibrary()
+      ;(window as any).__appStore?.showLibrary()
     })
     await page.waitForTimeout(500)
 
@@ -203,7 +213,7 @@ test.describe('Melody Library', () => {
 
   test('Library modal shows melodies tab', async ({ page }) => {
     await page.evaluate(() => {
-      (window as any).__appStore?.showLibrary()
+      ;(window as any).__appStore?.showLibrary()
     })
     await page.waitForTimeout(500)
 
@@ -213,7 +223,7 @@ test.describe('Melody Library', () => {
 
   test('Library modal shows playlists tab', async ({ page }) => {
     await page.evaluate(() => {
-      (window as any).__appStore?.showLibrary()
+      ;(window as any).__appStore?.showLibrary()
     })
     await page.waitForTimeout(500)
 
@@ -223,7 +233,7 @@ test.describe('Melody Library', () => {
 
   test('Create Melody form is shown when modal opens', async ({ page }) => {
     await page.evaluate(() => {
-      (window as any).__appStore?.showLibrary()
+      ;(window as any).__appStore?.showLibrary()
     })
     await page.waitForTimeout(500)
 
@@ -233,17 +243,21 @@ test.describe('Melody Library', () => {
 
   test('Create Melody form has name input', async ({ page }) => {
     await page.evaluate(() => {
-      (window as any).__appStore?.showLibrary()
+      ;(window as any).__appStore?.showLibrary()
     })
     await page.waitForTimeout(500)
 
-    const nameInput = page.locator('.edit-melody-form input[type="text"], .create-melody-form input[type="text"]').first()
+    const nameInput = page
+      .locator(
+        '.edit-melody-form input[type="text"], .create-melody-form input[type="text"]',
+      )
+      .first()
     await expect(nameInput).toBeVisible()
   })
 
   test('Create Melody form has BPM input', async ({ page }) => {
     await page.evaluate(() => {
-      (window as any).__appStore?.showLibrary()
+      ;(window as any).__appStore?.showLibrary()
     })
     await page.waitForTimeout(500)
 
@@ -253,7 +267,7 @@ test.describe('Melody Library', () => {
 
   test('Create Melody form has Key selector', async ({ page }) => {
     await page.evaluate(() => {
-      (window as any).__appStore?.showLibrary()
+      ;(window as any).__appStore?.showLibrary()
     })
     await page.waitForTimeout(500)
 
@@ -263,7 +277,7 @@ test.describe('Melody Library', () => {
 
   test('Create Melody form has Scale selector', async ({ page }) => {
     await page.evaluate(() => {
-      (window as any).__appStore?.showLibrary()
+      ;(window as any).__appStore?.showLibrary()
     })
     await page.waitForTimeout(500)
 
@@ -273,7 +287,7 @@ test.describe('Melody Library', () => {
 
   test('Create Melody form has Tags input', async ({ page }) => {
     await page.evaluate(() => {
-      (window as any).__appStore?.showLibrary()
+      ;(window as any).__appStore?.showLibrary()
     })
     await page.waitForTimeout(500)
 
@@ -283,7 +297,7 @@ test.describe('Melody Library', () => {
 
   test('Create Melody form has Notes textarea', async ({ page }) => {
     await page.evaluate(() => {
-      (window as any).__appStore?.showLibrary()
+      ;(window as any).__appStore?.showLibrary()
     })
     await page.waitForTimeout(500)
 
@@ -293,7 +307,7 @@ test.describe('Melody Library', () => {
 
   test('Create Melody form has Create button', async ({ page }) => {
     await page.evaluate(() => {
-      (window as any).__appStore?.showLibrary()
+      ;(window as any).__appStore?.showLibrary()
     })
     await page.waitForTimeout(500)
 
@@ -303,7 +317,7 @@ test.describe('Melody Library', () => {
 
   test('Create Melody form has Cancel button', async ({ page }) => {
     await page.evaluate(() => {
-      (window as any).__appStore?.showLibrary()
+      ;(window as any).__appStore?.showLibrary()
     })
     await page.waitForTimeout(500)
 
@@ -314,7 +328,7 @@ test.describe('Melody Library', () => {
   test('Library modal list displays saved melodies', async ({ page }) => {
     // Create a test melody first
     await page.evaluate(() => {
-      (window as any).__appStore?.showLibrary()
+      ;(window as any).__appStore?.showLibrary()
     })
     await page.waitForTimeout(500)
 
@@ -336,11 +350,13 @@ test.describe('Melody Library', () => {
 
   test('Can create a new melody via Library modal', async ({ page }) => {
     await page.evaluate(() => {
-      (window as any).__appStore?.showLibrary()
+      ;(window as any).__appStore?.showLibrary()
     })
     await page.waitForTimeout(500)
 
-    const nameInput = page.locator('.edit-melody-form input[type="text"]').first()
+    const nameInput = page
+      .locator('.edit-melody-form input[type="text"]')
+      .first()
     await nameInput.fill('E2E Created Melody')
     await page.waitForTimeout(200)
 
@@ -361,7 +377,7 @@ test.describe('Melody Library', () => {
 
   test('Cannot create melody without name', async ({ page }) => {
     await page.evaluate(() => {
-      (window as any).__appStore?.showLibrary()
+      ;(window as any).__appStore?.showLibrary()
     })
     await page.waitForTimeout(500)
 
@@ -379,7 +395,9 @@ test.describe('Melody Library', () => {
     await page.waitForTimeout(300)
 
     // Should show warning notification
-    const notification = page.locator('.notification:has-text("Please enter a name")')
+    const notification = page.locator(
+      '.notification:has-text("Please enter a name")',
+    )
     const count = await notification.count()
     expect(count).toBeGreaterThanOrEqual(0)
   })
@@ -387,11 +405,13 @@ test.describe('Melody Library', () => {
   test('Can edit melody in Library modal', async ({ page }) => {
     // First create a melody
     await page.evaluate(() => {
-      (window as any).__appStore?.showLibrary()
+      ;(window as any).__appStore?.showLibrary()
     })
     await page.waitForTimeout(500)
 
-    const nameInput = page.locator('.edit-melody-form input[type="text"]').first()
+    const nameInput = page
+      .locator('.edit-melody-form input[type="text"]')
+      .first()
     await nameInput.fill('E2E Editable Melody')
     await page.waitForTimeout(200)
 
@@ -405,7 +425,7 @@ test.describe('Melody Library', () => {
 
     // Open library again
     await page.evaluate(() => {
-      (window as any).__appStore?.showLibrary()
+      ;(window as any).__appStore?.showLibrary()
     })
     await page.waitForTimeout(500)
 
@@ -424,11 +444,13 @@ test.describe('Melody Library', () => {
   test('Can save edits to melody', async ({ page }) => {
     // Create a melody
     await page.evaluate(() => {
-      (window as any).__appStore?.showLibrary()
+      ;(window as any).__appStore?.showLibrary()
     })
     await page.waitForTimeout(500)
 
-    const nameInput = page.locator('.edit-melody-form input[type="text"]').first()
+    const nameInput = page
+      .locator('.edit-melody-form input[type="text"]')
+      .first()
     await nameInput.fill('E2E Saveable Melody')
     await page.waitForTimeout(200)
 
@@ -439,7 +461,7 @@ test.describe('Melody Library', () => {
 
     // Open library again and click edit
     await page.evaluate(() => {
-      (window as any).__appStore?.showLibrary()
+      ;(window as any).__appStore?.showLibrary()
     })
     await page.waitForTimeout(500)
 
@@ -449,7 +471,9 @@ test.describe('Melody Library', () => {
       await page.waitForTimeout(300)
 
       // Change name
-      const newNameInput = page.locator('.edit-melody-form input[type="text"]').first()
+      const newNameInput = page
+        .locator('.edit-melody-form input[type="text"]')
+        .first()
       await newNameInput.fill('E2E Updated Melody')
       await page.waitForTimeout(200)
 
@@ -463,11 +487,13 @@ test.describe('Melody Library', () => {
   test('Can delete a melody from Library modal', async ({ page }) => {
     // Create a melody for deletion
     await page.evaluate(() => {
-      (window as any).__appStore?.showLibrary()
+      ;(window as any).__appStore?.showLibrary()
     })
     await page.waitForTimeout(500)
 
-    const nameInput = page.locator('.edit-melody-form input[type="text"]').first()
+    const nameInput = page
+      .locator('.edit-melody-form input[type="text"]')
+      .first()
     await nameInput.fill('E2E Deleteable Melody')
     await page.waitForTimeout(200)
 
@@ -496,7 +522,7 @@ test.describe('Melody Library', () => {
 
   test('Can play a melody from Library modal', async ({ page }) => {
     await page.evaluate(() => {
-      (window as any).__appStore?.showLibrary()
+      ;(window as any).__appStore?.showLibrary()
     })
     await page.waitForTimeout(500)
 
@@ -513,7 +539,7 @@ test.describe('Melody Library', () => {
 
   test('Can load a melody to editor from Library modal', async ({ page }) => {
     await page.evaluate(() => {
-      (window as any).__appStore?.showLibrary()
+      ;(window as any).__appStore?.showLibrary()
     })
     await page.waitForTimeout(500)
 
@@ -534,7 +560,9 @@ test.describe('Melody Library', () => {
     await page.waitForTimeout(300)
 
     // Find and click play button on a recent item
-    const recentPlayBtn = page.locator('.recent-item .action-btn.play-btn').first()
+    const recentPlayBtn = page
+      .locator('.recent-item .action-btn.play-btn')
+      .first()
     if ((await recentPlayBtn.count()) > 0) {
       await recentPlayBtn.click()
       await page.waitForTimeout(500)
@@ -547,7 +575,7 @@ test.describe('Melody Library', () => {
 
   test('Library modal lists display melody metadata', async ({ page }) => {
     await page.evaluate(() => {
-      (window as any).__appStore?.showLibrary()
+      ;(window as any).__appStore?.showLibrary()
     })
     await page.waitForTimeout(500)
 
@@ -559,7 +587,7 @@ test.describe('Melody Library', () => {
 
   test('Library modal shows melody author', async ({ page }) => {
     await page.evaluate(() => {
-      (window as any).__appStore?.showLibrary()
+      ;(window as any).__appStore?.showLibrary()
     })
     await page.waitForTimeout(500)
 
@@ -570,7 +598,7 @@ test.describe('Melody Library', () => {
 
   test('Library modal shows melody BPM in metadata', async ({ page }) => {
     await page.evaluate(() => {
-      (window as any).__appStore?.showLibrary()
+      ;(window as any).__appStore?.showLibrary()
     })
     await page.waitForTimeout(500)
 
@@ -581,7 +609,7 @@ test.describe('Melody Library', () => {
 
   test('Library modal shows note count in metadata', async ({ page }) => {
     await page.evaluate(() => {
-      (window as any).__appStore?.showLibrary()
+      ;(window as any).__appStore?.showLibrary()
     })
     await page.waitForTimeout(500)
 
@@ -592,7 +620,7 @@ test.describe('Melody Library', () => {
 
   test('Library modal playlists tab shows playlists', async ({ page }) => {
     await page.evaluate(() => {
-      (window as any).__appStore?.showLibrary()
+      ;(window as any).__appStore?.showLibrary()
     })
     await page.waitForTimeout(500)
 
@@ -626,13 +654,15 @@ test.describe('Melody Library', () => {
     await sessionsBtn.click()
     await page.waitForTimeout(300)
 
-    const sessionsModal = page.locator('.sessions-modal, .session-library-modal')
+    const sessionsModal = page.locator(
+      '.sessions-modal, .session-library-modal',
+    )
     await expect(sessionsModal).toBeVisible()
   })
 
   test('Sessions Library modal has close button', async ({ page }) => {
     await page.evaluate(() => {
-      (window as any).__appStore?.showSessionLibrary()
+      ;(window as any).__appStore?.showSessionLibrary()
     })
     await page.waitForTimeout(500)
 
@@ -642,7 +672,7 @@ test.describe('Melody Library', () => {
 
   test('Sessions Library modal shows session list', async ({ page }) => {
     await page.evaluate(() => {
-      (window as any).__appStore?.showSessionLibrary()
+      ;(window as any).__appStore?.showSessionLibrary()
     })
     await page.waitForTimeout(500)
 
@@ -653,7 +683,7 @@ test.describe('Melody Library', () => {
 
   test('Sessions Library modal has "New Session" button', async ({ page }) => {
     await page.evaluate(() => {
-      (window as any).__appStore?.showSessionLibrary()
+      ;(window as any).__appStore?.showSessionLibrary()
     })
     await page.waitForTimeout(500)
 
@@ -661,10 +691,12 @@ test.describe('Melody Library', () => {
     await expect(newSessionBtn).toBeVisible()
   })
 
-  test('Can load a session to practice from Sessions Library', async ({ page }) => {
+  test('Can load a session to practice from Sessions Library', async ({
+    page,
+  }) => {
     // Navigate to sessions library
     await page.evaluate(() => {
-      (window as any).__appStore?.showSessionLibrary()
+      ;(window as any).__appStore?.showSessionLibrary()
     })
     await page.waitForTimeout(500)
 
@@ -682,7 +714,7 @@ test.describe('Melody Library', () => {
 
   test('Library modal can be closed via close button', async ({ page }) => {
     await page.evaluate(() => {
-      (window as any).__appStore?.showLibrary()
+      ;(window as any).__appStore?.showLibrary()
     })
     await page.waitForTimeout(500)
 
@@ -693,15 +725,18 @@ test.describe('Melody Library', () => {
 
     // Check if modal is hidden
     const modal = page.locator('.library-modal, .modal-overlay')
-    const isHidden = await modal.first().evaluate((el) => {
-      return el.style.display === 'none' || el.classList.contains('hidden')
-    }).catch(() => false)
+    const isHidden = await modal
+      .first()
+      .evaluate((el) => {
+        return el.style.display === 'none' || el.classList.contains('hidden')
+      })
+      .catch(() => false)
     expect(isHidden).toBe(true)
   })
 
   test('Library modal can be closed by clicking outside', async ({ page }) => {
     await page.evaluate(() => {
-      (window as any).__appStore?.showLibrary()
+      ;(window as any).__appStore?.showLibrary()
     })
     await page.waitForTimeout(500)
 
@@ -714,15 +749,18 @@ test.describe('Melody Library', () => {
 
     // Check if modal is hidden
     const modal = page.locator('.library-modal, .modal-overlay')
-    const isHidden = await modal.first().evaluate((el) => {
-      return el.style.display === 'none'
-    }).catch(() => false)
+    const isHidden = await modal
+      .first()
+      .evaluate((el) => {
+        return el.style.display === 'none'
+      })
+      .catch(() => false)
     expect(isHidden).toBe(true)
   })
 
   test('Library modal search filters melodies', async ({ page }) => {
     await page.evaluate(() => {
-      (window as any).__appStore?.showLibrary()
+      ;(window as any).__appStore?.showLibrary()
     })
     await page.waitForTimeout(500)
 
@@ -745,12 +783,14 @@ test.describe('Melody Library', () => {
   test('Complete flow: create, play, edit melody', async ({ page }) => {
     // Open library
     await page.evaluate(() => {
-      (window as any).__appStore?.showLibrary()
+      ;(window as any).__appStore?.showLibrary()
     })
     await page.waitForTimeout(500)
 
     // Create new melody
-    const nameInput = page.locator('.edit-melody-form input[type="text"]').first()
+    const nameInput = page
+      .locator('.edit-melody-form input[type="text"]')
+      .first()
     await nameInput.fill('E2E Complete Flow Melody')
     await page.waitForTimeout(200)
 
@@ -770,7 +810,7 @@ test.describe('Melody Library', () => {
 
       // Open library again and edit
       await page.evaluate(() => {
-        (window as any).__appStore?.showLibrary()
+        ;(window as any).__appStore?.showLibrary()
       })
       await page.waitForTimeout(500)
 
@@ -810,11 +850,13 @@ test.describe('Melody Library', () => {
   test('Melody metadata persists after page reload', async ({ page }) => {
     // Create a melody with specific settings
     await page.evaluate(() => {
-      (window as any).__appStore?.showLibrary()
+      ;(window as any).__appStore?.showLibrary()
     })
     await page.waitForTimeout(500)
 
-    const nameInput = page.locator('.edit-melody-form input[type="text"]').first()
+    const nameInput = page
+      .locator('.edit-melody-form input[type="text"]')
+      .first()
     await nameInput.fill('E2E Persistence Test')
     await page.waitForTimeout(200)
 
@@ -844,11 +886,13 @@ test.describe('Melody Library', () => {
     // Create multiple melodies
     for (let i = 0; i < 3; i++) {
       await page.evaluate(() => {
-        (window as any).__appStore?.showLibrary()
+        ;(window as any).__appStore?.showLibrary()
       })
       await page.waitForTimeout(500)
 
-      const nameInput = page.locator('.edit-melody-form input[type="text"]').first()
+      const nameInput = page
+        .locator('.edit-melody-form input[type="text"]')
+        .first()
       await nameInput.fill(`E2E Multi-Melody ${i + 1}`)
       await page.waitForTimeout(200)
 
@@ -863,7 +907,7 @@ test.describe('Melody Library', () => {
 
     // Navigate to library and check count
     await page.evaluate(() => {
-      (window as any).__appStore?.showLibrary()
+      ;(window as any).__appStore?.showLibrary()
     })
     await page.waitForTimeout(500)
 
@@ -872,7 +916,9 @@ test.describe('Melody Library', () => {
     expect(count).toBeGreaterThanOrEqual(0)
   })
 
-  test('Can navigate between Library and Presets libraries', async ({ page }) => {
+  test('Can navigate between Library and Presets libraries', async ({
+    page,
+  }) => {
     await switchTab(page, 'practice')
     await page.waitForTimeout(300)
 
@@ -897,11 +943,13 @@ test.describe('Melody Library', () => {
   test('BPM setting persists through melody operations', async ({ page }) => {
     // Create melody with 120 BPM
     await page.evaluate(() => {
-      (window as any).__appStore?.showLibrary()
+      ;(window as any).__appStore?.showLibrary()
     })
     await page.waitForTimeout(500)
 
-    const nameInput = page.locator('.edit-melody-form input[type="text"]').first()
+    const nameInput = page
+      .locator('.edit-melody-form input[type="text"]')
+      .first()
     await nameInput.fill('E2E BPM Persistence')
     await page.waitForTimeout(200)
 
@@ -925,11 +973,13 @@ test.describe('Melody Library', () => {
 
   test('Tags field accepts comma-separated values', async ({ page }) => {
     await page.evaluate(() => {
-      (window as any).__appStore?.showLibrary()
+      ;(window as any).__appStore?.showLibrary()
     })
     await page.waitForTimeout(500)
 
-    const nameInput = page.locator('.edit-melody-form input[type="text"]').first()
+    const nameInput = page
+      .locator('.edit-melody-form input[type="text"]')
+      .first()
     await nameInput.fill('E2E Tags Test')
     await page.waitForTimeout(200)
 
@@ -946,17 +996,19 @@ test.describe('Melody Library', () => {
     await page.waitForTimeout(300)
 
     const recentItems = page.locator('.recent-item')
-    const hasTags = await recentItems.count() > 0
+    const hasTags = (await recentItems.count()) > 0
     expect(hasTags).toBe(true)
   })
 
   test('Notes field accepts multi-line text', async ({ page }) => {
     await page.evaluate(() => {
-      (window as any).__appStore?.showLibrary()
+      ;(window as any).__appStore?.showLibrary()
     })
     await page.waitForTimeout(500)
 
-    const nameInput = page.locator('.edit-melody-form input[type="text"]').first()
+    const nameInput = page
+      .locator('.edit-melody-form input[type="text"]')
+      .first()
     await nameInput.fill('E2E Notes Test')
     await page.waitForTimeout(200)
 
@@ -973,13 +1025,13 @@ test.describe('Melody Library', () => {
     await page.waitForTimeout(300)
 
     const recentItems = page.locator('.recent-item')
-    const hasNotes = await recentItems.count() > 0
+    const hasNotes = (await recentItems.count()) > 0
     expect(hasNotes).toBe(true)
   })
 
   test('Library modal handles empty search results', async ({ page }) => {
     await page.evaluate(() => {
-      (window as any).__appStore?.showLibrary()
+      ;(window as any).__appStore?.showLibrary()
     })
     await page.waitForTimeout(500)
 
@@ -990,21 +1042,27 @@ test.describe('Melody Library', () => {
 
       // Check for empty state message
       const emptyState = page.locator('.empty-state')
-      const isHidden = await emptyState.evaluate((el) => {
-        return el.style.display === 'none'
-      }).catch(() => false)
+      const isHidden = await emptyState
+        .evaluate((el) => {
+          return el.style.display === 'none'
+        })
+        .catch(() => false)
       expect(isHidden).toBe(true)
     }
   })
 
-  test('Delete button confirmation prevents accidental deletion', async ({ page }) => {
+  test('Delete button confirmation prevents accidental deletion', async ({
+    page,
+  }) => {
     // Create a melody first
     await page.evaluate(() => {
-      (window as any).__appStore?.showLibrary()
+      ;(window as any).__appStore?.showLibrary()
     })
     await page.waitForTimeout(500)
 
-    const nameInput = page.locator('.edit-melody-form input[type="text"]').first()
+    const nameInput = page
+      .locator('.edit-melody-form input[type="text"]')
+      .first()
     await nameInput.fill('E2E Confirm Delete Test')
     await page.waitForTimeout(200)
 
@@ -1014,7 +1072,7 @@ test.describe('Melody Library', () => {
 
     // Open library again
     await page.evaluate(() => {
-      (window as any).__appStore?.showLibrary()
+      ;(window as any).__appStore?.showLibrary()
     })
     await page.waitForTimeout(500)
 

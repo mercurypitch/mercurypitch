@@ -12,7 +12,12 @@ import { melodyIndexAtBeat } from './scale-data'
 export type PlaybackMode = 'once' | 'repeat' | 'practice'
 
 /** Playback state - what component should track */
-export type PlaybackState = 'stopped' | 'playing' | 'paused' | 'complete' | 'precount'
+export type PlaybackState =
+  | 'stopped'
+  | 'playing'
+  | 'paused'
+  | 'complete'
+  | 'precount'
 
 /** PlaybackEngine event types */
 export type PlaybackEventType =
@@ -110,7 +115,10 @@ export class PlaybackEngine implements PlaybackTimekeeper {
   private metronomeEnabledFn: () => boolean
 
   // ── Subscriptions ───────────────────────────────────────────
-  private onEventCallbacks = new Map<PlaybackEventType, Set<(e: PlaybackEvent) => void>>()
+  private onEventCallbacks = new Map<
+    PlaybackEventType,
+    Set<(e: PlaybackEvent) => void>
+  >()
 
   constructor(config: PlaybackEngineConfig = {}) {
     this.audioEngine = config.audioEngine ?? new AudioEngine()
@@ -132,7 +140,10 @@ export class PlaybackEngine implements PlaybackTimekeeper {
   /** Get current playback time in seconds */
   getCurrentTime(): number {
     if (!this.isPlaying || this.isPaused) {
-      return (this.pauseOffset / 1000) + (this.startTime > 0 ? (performance.now() - this.startTime) / 1000 : 0)
+      return (
+        this.pauseOffset / 1000 +
+        (this.startTime > 0 ? (performance.now() - this.startTime) / 1000 : 0)
+      )
     }
     const elapsedMs = performance.now() - this.startTime + this.pauseOffset
     return elapsedMs / 1000
@@ -173,7 +184,9 @@ export class PlaybackEngine implements PlaybackTimekeeper {
 
     // Ensure audio engine is initialized
     if (!this.audioEngine.getIsInitialized()) {
-      this.audioEngine.init().catch((err) => console.error('Audio init error:', err))
+      this.audioEngine
+        .init()
+        .catch((err) => console.error('Audio init error:', err))
     }
 
     this.isPlaying = true
@@ -184,7 +197,10 @@ export class PlaybackEngine implements PlaybackTimekeeper {
     this.countInBeat = this.countInBeats
 
     // Emit initial state
-    this._emit({ type: 'state', state: this.countInBeats > 0 ? 'playing' : 'playing' })
+    this._emit({
+      type: 'state',
+      state: this.countInBeats > 0 ? 'playing' : 'playing',
+    })
 
     this._startAnimationLoop()
   }
@@ -347,7 +363,11 @@ export class PlaybackEngine implements PlaybackTimekeeper {
         }
         this.currentNoteIndex = newIndex
         if (newIndex >= 0) {
-          this._emit({ type: 'noteStart', note: this.melody[newIndex], index: newIndex })
+          this._emit({
+            type: 'noteStart',
+            note: this.melody[newIndex],
+            index: newIndex,
+          })
           this._playNote()
         }
       }

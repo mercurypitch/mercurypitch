@@ -51,8 +51,9 @@ test.describe('Recursion Detection', () => {
 
     test.afterEach(async () => {
       // Check for recursion errors after test
-      const recursionErrors = consoleErrors.filter((err) =>
-        err.includes('too much recursion') || err.includes('InternalError'),
+      const recursionErrors = consoleErrors.filter(
+        (err) =>
+          err.includes('too much recursion') || err.includes('InternalError'),
       )
 
       if (recursionErrors.length > 0) {
@@ -72,7 +73,9 @@ test.describe('Recursion Detection', () => {
       await page.waitForTimeout(500)
 
       // Look for Quick Start button
-      const quickStartBtn = page.locator('.quick-action-btn:has-text("Quick Start")')
+      const quickStartBtn = page.locator(
+        '.quick-action-btn:has-text("Quick Start")',
+      )
       await expect(quickStartBtn).toBeVisible()
       await quickStartBtn.click()
 
@@ -80,8 +83,10 @@ test.describe('Recursion Detection', () => {
       await page.waitForTimeout(500)
 
       // Check if presets modal is visible
-      const presetsModal = page.locator('.presets-modal, .preset-list, .session-list')
-      const presetsVisible = await presetsModal.count() > 0
+      const presetsModal = page.locator(
+        '.presets-modal, .preset-list, .session-list',
+      )
+      const presetsVisible = (await presetsModal.count()) > 0
       if (!presetsVisible) {
         // Try alternative selectors
         const altModal = page.locator('.modal-overlay').first()
@@ -112,7 +117,9 @@ test.describe('Recursion Detection', () => {
       await switchTab(page, 'practice')
       await page.waitForTimeout(500)
 
-      const quickStartBtn = page.locator('.quick-action-btn:has-text("Quick Start")')
+      const quickStartBtn = page.locator(
+        '.quick-action-btn:has-text("Quick Start")',
+      )
       await quickStartBtn.click()
 
       await page.waitForTimeout(500)
@@ -123,7 +130,9 @@ test.describe('Recursion Detection', () => {
 
       if (count > 0) {
         // Click the first session's Start button
-        const startBtn = sessionItems.first().locator('button:has-text("Start")')
+        const startBtn = sessionItems
+          .first()
+          .locator('button:has-text("Start")')
         await startBtn.click()
 
         // Wait for playback
@@ -141,7 +150,9 @@ test.describe('Recursion Detection', () => {
       await page.waitForTimeout(500)
 
       // Quick Start button
-      const quickStartBtn = page.locator('.quick-action-btn:has-text("Quick Start")')
+      const quickStartBtn = page.locator(
+        '.quick-action-btn:has-text("Quick Start")',
+      )
       await quickStartBtn.click()
       await page.waitForTimeout(500)
 

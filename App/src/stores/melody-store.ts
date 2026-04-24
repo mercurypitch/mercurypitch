@@ -4,14 +4,7 @@
 
 import { createSignal } from 'solid-js'
 import { buildMultiOctaveScale } from '@/lib/scale-data'
-import type {
-  MelodyData,
-  MelodyItem,
-  MelodyLibrary,
-  MelodyNote,
-  SavedUserSession,
-  ScaleDegree,
-} from '@/types'
+import type { MelodyData, MelodyItem, MelodyLibrary, MelodyNote, SavedUserSession, ScaleDegree, } from '@/types'
 
 const STORAGE_KEY_MELODY_LIBRARY = 'pitchperfect_melody_library'
 const STORAGE_KEY_USER_SESSIONS = 'pitchperfect_user_sessions'
@@ -36,7 +29,11 @@ function loadLibrary(): MelodyLibrary {
     const stored = localStorage.getItem(STORAGE_KEY_MELODY_LIBRARY)
     if (stored !== null && stored !== '') {
       const parsed = JSON.parse(stored)
-      if (parsed !== null && typeof parsed === 'object' && 'melodies' in parsed) {
+      if (
+        parsed !== null &&
+        typeof parsed === 'object' &&
+        'melodies' in parsed
+      ) {
         return parsed
       }
     }
@@ -58,7 +55,11 @@ function generateId(): number {
 
 // Create store with explicit access functions
 const _melodyLibraryData = loadLibrary()
-const _melodyLibrarySetter: (fn: (lib: MelodyLibrary) => MelodyLibrary) => void = (fn) => { Object.assign(_melodyLibraryData, fn(_melodyLibraryData)) }
+const _melodyLibrarySetter: (
+  fn: (lib: MelodyLibrary) => MelodyLibrary,
+) => void = (fn) => {
+  Object.assign(_melodyLibraryData, fn(_melodyLibraryData))
+}
 
 /** Get the melody library data */
 export function getMelodyLibrary(): MelodyLibrary {
@@ -101,9 +102,8 @@ function saveUserSessions(sessions: SavedUserSession[]): void {
   }
 }
 
-const [userSessions, setUserSessions] = createSignal<SavedUserSession[]>(
-  loadUserSessions(),
-)
+const [userSessions, setUserSessions] =
+  createSignal<SavedUserSession[]>(loadUserSessions())
 
 export function getSessions(): SavedUserSession[] {
   return userSessions()
@@ -117,7 +117,10 @@ export function saveSession(session: SavedUserSession): void {
   saveUserSessions(updated)
 }
 
-export function updateSession(id: string, updates: Partial<SavedUserSession>): void {
+export function updateSession(
+  id: string,
+  updates: Partial<SavedUserSession>,
+): void {
   setUserSessions((sessions) =>
     sessions.map((s) => (s.id === id ? { ...s, ...updates } : s)),
   )
@@ -132,7 +135,10 @@ export function deleteSession(id: string): void {
 export function updateUserSession(session: SavedUserSession): void {
   const sessions = userSessions()
   const updated = [...sessions, session]
-  updated.sort((a: SavedUserSession, b: SavedUserSession) => (b.lastPlayed ?? b.created) - (a.lastPlayed ?? a.created))
+  updated.sort(
+    (a: SavedUserSession, b: SavedUserSession) =>
+      (b.lastPlayed ?? b.created) - (a.lastPlayed ?? a.created),
+  )
   setUserSessions(updated)
   saveUserSessions(updated)
 }
@@ -141,9 +147,8 @@ export function getSession(id: string): SavedUserSession | undefined {
   return userSessions().find((s) => s.id === id)
 }
 
-export const [currentMelody, setCurrentMelody] = createSignal<MelodyData | null>(
-  null,
-)
+export const [currentMelody, setCurrentMelody] =
+  createSignal<MelodyData | null>(null)
 
 // ============================================================
 // Melody Operations
@@ -153,7 +158,9 @@ export function createNewMelody(name?: string, author?: string): MelodyData {
   const id = generateMelodyId()
   const newMelody: MelodyData = {
     id,
-    name: name ?? `New Melody ${Object.keys(_melodyLibraryData.melodies).length + 1}`,
+    name:
+      name ??
+      `New Melody ${Object.keys(_melodyLibraryData.melodies).length + 1}`,
     author: author ?? 'User',
     bpm: DEFAULT_BPM,
     key: DEFAULT_KEY,
@@ -196,7 +203,11 @@ export const setCurrentNoteIndex = _currentNoteIndex[1]
 // Melody Note Operations
 // ============================================================
 
-export function addMelodyNote(note: MelodyNote, startBeat: number, duration: number): number {
+export function addMelodyNote(
+  note: MelodyNote,
+  startBeat: number,
+  duration: number,
+): number {
   const current = currentMelody()
   if (current === null || current === undefined) return 0
   const items = current.items ?? []
@@ -243,9 +254,16 @@ export function updateMelodyNote(
     updatedAt: Date.now(),
   }
   _melodyLibraryData.meta.lastUpdated = Date.now()
-  setCurrentMelody(currentMelody()?.id === key ? { ...current, items: items.map((item) =>
-      item.id === id ? { ...item, ...updates } : item
-    ) } : current)
+  setCurrentMelody(
+    currentMelody()?.id === key
+      ? {
+          ...current,
+          items: items.map((item) =>
+            item.id === id ? { ...item, ...updates } : item,
+          ),
+        }
+      : current,
+  )
 }
 
 export function loadMelody(key: string): MelodyData | null {
@@ -264,7 +282,10 @@ export function loadMelody(key: string): MelodyData | null {
   return null
 }
 
-export function updateMelody(key: string, updates: Partial<MelodyData>): MelodyData | undefined {
+export function updateMelody(
+  key: string,
+  updates: Partial<MelodyData>,
+): MelodyData | undefined {
   const melody = _melodyLibraryData.melodies[key]
   if (melody !== undefined) {
     _melodyLibraryData.melodies[key] = {
@@ -281,16 +302,21 @@ export function updateMelody(key: string, updates: Partial<MelodyData>): MelodyD
 export function deleteMelody(key: string): void {
   const { melodies, playlists } = _melodyLibraryData
   const { [key]: _removed, ...newMelodies } = melodies
-  const newPlaylists: Record<string, {
-    name: string
-    melodyKeys: string[]
-    created: number
-  }> = { ...playlists }
+  const newPlaylists: Record<
+    string,
+    {
+      name: string
+      melodyKeys: string[]
+      created: number
+    }
+  > = { ...playlists }
   // Filter each playlist to remove references to the deleted melody
   for (const k in playlists) {
     newPlaylists[k as string] = {
       ...playlists[k as string],
-      melodyKeys: playlists[k as string].melodyKeys.filter((k2: string) => k2 !== key),
+      melodyKeys: playlists[k as string].melodyKeys.filter(
+        (k2: string) => k2 !== key,
+      ),
     }
   }
   Object.assign(_melodyLibraryData, {
@@ -394,7 +420,10 @@ export function createPlaylist(name: string): string {
   return id
 }
 
-export function addMelodyToPlaylist(playlistId: string, melodyKey: string): void {
+export function addMelodyToPlaylist(
+  playlistId: string,
+  melodyKey: string,
+): void {
   const playlist = _melodyLibraryData.playlists[playlistId]
   if (playlist !== undefined) {
     playlist.melodyKeys.push(melodyKey)
@@ -402,7 +431,10 @@ export function addMelodyToPlaylist(playlistId: string, melodyKey: string): void
   }
 }
 
-export function removeMelodyFromPlaylist(playlistId: string, melodyKey: string): void {
+export function removeMelodyFromPlaylist(
+  playlistId: string,
+  melodyKey: string,
+): void {
   const playlist = _melodyLibraryData.playlists[playlistId]
   if (playlist !== undefined) {
     playlist.melodyKeys = playlist.melodyKeys.filter((k) => k !== melodyKey)
@@ -435,19 +467,24 @@ export function getPlaylistCount(): number {
   return Object.keys(_melodyLibraryData.playlists).length
 }
 
-export function getPlaylists(): Record<string, {
-  name: string
-  melodyKeys: string[]
-  created: number
-}> {
+export function getPlaylists(): Record<
+  string,
+  {
+    name: string
+    melodyKeys: string[]
+    created: number
+  }
+> {
   return { ..._melodyLibraryData.playlists }
 }
 
-export function getPlaylist(melodyKey: string): {
-  name: string
-  melodyKeys: string[]
-  created: number
-} | undefined {
+export function getPlaylist(melodyKey: string):
+  | {
+      name: string
+      melodyKeys: string[]
+      created: number
+    }
+  | undefined {
   return _melodyLibraryData.playlists[melodyKey]
 }
 

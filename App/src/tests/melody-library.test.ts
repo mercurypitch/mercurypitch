@@ -4,12 +4,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { melodyStore } from '@/stores/melody-store'
-import type {
-  MelodyData,
-  MelodyItem,
-  MelodyNote,
-  SavedUserSession,
-} from '@/types'
+import type { MelodyData, MelodyItem, MelodyNote, SavedUserSession, } from '@/types'
 
 // Mock localStorage
 const localStorageMock = (() => {
@@ -216,7 +211,9 @@ describe('Melody Library System', () => {
       melodyStore.deleteMelody(_melody.id)
 
       const calls = localStorageMock.setItem.mock.calls
-      const libraryCall = calls.find((call) => call[0] === 'pitchperfect_melody_library')
+      const libraryCall = calls.find(
+        (call) => call[0] === 'pitchperfect_melody_library',
+      )
       expect(libraryCall).toBeDefined()
       const parsed = JSON.parse(libraryCall![1] as string)
       expect(parsed.melodies).not.toHaveProperty(_melody.id)
@@ -237,7 +234,9 @@ describe('Melody Library System', () => {
       melodyStore.saveCurrentMelody('Saved Name')
 
       const calls = localStorageMock.setItem.mock.calls
-      const libraryCall = calls.find((call) => call[0] === 'pitchperfect_melody_library')
+      const libraryCall = calls.find(
+        (call) => call[0] === 'pitchperfect_melody_library',
+      )
       expect(libraryCall).toBeDefined()
       const parsed = JSON.parse(libraryCall![1] as string)
       expect(parsed.melodies).toHaveProperty(_melody.id)
@@ -248,7 +247,9 @@ describe('Melody Library System', () => {
       const _id = melodyStore.createPlaylist('My Playlist')
 
       const calls = localStorageMock.setItem.mock.calls
-      const libraryCall = calls.find((call) => call[0] === 'pitchperfect_melody_library')
+      const libraryCall = calls.find(
+        (call) => call[0] === 'pitchperfect_melody_library',
+      )
       expect(libraryCall).toBeDefined()
       const parsed = JSON.parse(libraryCall![1] as string)
       expect(parsed.playlists).toHaveProperty(_id)
@@ -269,7 +270,9 @@ describe('Melody Library System', () => {
       melodyStore.saveCurrentMelody('Saved Name')
 
       const calls = localStorageMock.setItem.mock.calls
-      const libraryCall = calls.find((call) => call[0] === 'pitchperfect_melody_library')
+      const libraryCall = calls.find(
+        (call) => call[0] === 'pitchperfect_melody_library',
+      )
       expect(libraryCall).toBeDefined()
       const parsed = JSON.parse(libraryCall![1] as string)
       expect(parsed.melodies).toHaveProperty(_melody.id)
@@ -300,7 +303,11 @@ describe('Melody Library System', () => {
         'pitchperfect_melody_library',
         JSON.stringify({
           meta: { author: 'User', version: '1.0', lastUpdated: Date.now() },
-          renderSettings: { gridlines: true, showLabels: true, showNumbers: false },
+          renderSettings: {
+            gridlines: true,
+            showLabels: true,
+            showNumbers: false,
+          },
           melodies: { [savedMelody.id]: savedMelody },
           playlists: {},
         }),
@@ -333,8 +340,16 @@ describe('Melody Library System', () => {
 
     it('adds multiple melody notes', () => {
       const _melody = melodyStore.createNewMelody('Test')
-      melodyStore.addMelodyNote({ midi: 60, name: 'C', octave: 4, freq: 261.63 }, 0, 1)
-      melodyStore.addMelodyNote({ midi: 64, name: 'E', octave: 4, freq: 329.63 }, 1, 1)
+      melodyStore.addMelodyNote(
+        { midi: 60, name: 'C', octave: 4, freq: 261.63 },
+        0,
+        1,
+      )
+      melodyStore.addMelodyNote(
+        { midi: 64, name: 'E', octave: 4, freq: 329.63 },
+        1,
+        1,
+      )
 
       const items = melodyStore.getCurrentItems()
       expect(items).toHaveLength(2)
@@ -342,7 +357,11 @@ describe('Melody Library System', () => {
 
     it('removes a melody note by ID', () => {
       const _melody = melodyStore.createNewMelody('Test')
-      melodyStore.addMelodyNote({ midi: 60, name: 'C', octave: 4, freq: 261.63 }, 0, 1)
+      melodyStore.addMelodyNote(
+        { midi: 60, name: 'C', octave: 4, freq: 261.63 },
+        0,
+        1,
+      )
       const _items = melodyStore.getCurrentItems()
       const _id = _items[0].id
       if (_id === undefined) throw new Error('Note ID is undefined')
@@ -354,9 +373,21 @@ describe('Melody Library System', () => {
 
     it('removes specific melody note', () => {
       const _melody = melodyStore.createNewMelody('Test')
-      const _note1 = melodyStore.addMelodyNote({ midi: 60, name: 'C', octave: 4, freq: 261.63 }, 0, 1)
-      const _note2 = melodyStore.addMelodyNote({ midi: 64, name: 'E', octave: 4, freq: 329.63 }, 1, 1)
-      const _note3 = melodyStore.addMelodyNote({ midi: 67, name: 'G', octave: 4, freq: 392 }, 2, 1)
+      const _note1 = melodyStore.addMelodyNote(
+        { midi: 60, name: 'C', octave: 4, freq: 261.63 },
+        0,
+        1,
+      )
+      const _note2 = melodyStore.addMelodyNote(
+        { midi: 64, name: 'E', octave: 4, freq: 329.63 },
+        1,
+        1,
+      )
+      const _note3 = melodyStore.addMelodyNote(
+        { midi: 67, name: 'G', octave: 4, freq: 392 },
+        2,
+        1,
+      )
 
       const itemsBefore = melodyStore.getCurrentItems()
       expect(itemsBefore).toHaveLength(3)
@@ -372,7 +403,11 @@ describe('Melody Library System', () => {
 
     it('updates melody note properties', () => {
       const _melody = melodyStore.createNewMelody('Test')
-      melodyStore.addMelodyNote({ midi: 60, name: 'C', octave: 4, freq: 261.63 }, 0, 2)
+      melodyStore.addMelodyNote(
+        { midi: 60, name: 'C', octave: 4, freq: 261.63 },
+        0,
+        2,
+      )
       const _items = melodyStore.getCurrentItems()
       const _id = _items[0].id
       if (_id === undefined) throw new Error('Note ID is undefined')
@@ -560,7 +595,9 @@ describe('Melody Library System', () => {
       const _id = melodyStore.createPlaylist('My Playlist')
 
       const calls = localStorageMock.setItem.mock.calls
-      const libraryCall = calls.find((call) => call[0] === 'pitchperfect_melody_library')
+      const libraryCall = calls.find(
+        (call) => call[0] === 'pitchperfect_melody_library',
+      )
       expect(libraryCall).toBeDefined()
       const parsed = JSON.parse(libraryCall![1] as string)
       expect(parsed.playlists).toHaveProperty(_id)
@@ -616,7 +653,9 @@ describe('Melody Library System', () => {
       melodyStore.saveCurrentMelody('Saved Name')
 
       const calls = localStorageMock.setItem.mock.calls
-      const libraryCall = calls.find((call) => call[0] === 'pitchperfect_melody_library')
+      const libraryCall = calls.find(
+        (call) => call[0] === 'pitchperfect_melody_library',
+      )
       expect(libraryCall).toBeDefined()
       const parsed = JSON.parse(libraryCall![1] as string)
       expect(parsed.melodies).toHaveProperty(_melody.id)
@@ -646,7 +685,11 @@ describe('Melody Library System', () => {
         'pitchperfect_melody_library',
         JSON.stringify({
           meta: { author: 'User', version: '1.0', lastUpdated: Date.now() },
-          renderSettings: { gridlines: true, showLabels: true, showNumbers: false },
+          renderSettings: {
+            gridlines: true,
+            showLabels: true,
+            showNumbers: false,
+          },
           melodies: { [savedMelody.id]: savedMelody },
           playlists: {},
         }),
@@ -672,9 +715,8 @@ describe('Melody Library System', () => {
     })
 
     it.skip('fails gracefully when localStorage is null', () => {
-      // @ts-expect-error - this test is skipped but TypeScript still checks it
-       
-      ;(localStorageMock.getItem as unknown as () => string | null).mockReturnValue(null)
+      // @ts-expect-error - skip test won't execute so we need error message
+      localStorageMock.getItem.mockReturnValue(null)
 
       melodyStore.resetMelodyLibrary()
 
@@ -683,7 +725,10 @@ describe('Melody Library System', () => {
     })
 
     it('uses default library when localStorage is empty', () => {
-      localStorageMock.setItem('pitchperfect_melody_library', JSON.stringify({}))
+      localStorageMock.setItem(
+        'pitchperfect_melody_library',
+        JSON.stringify({}),
+      )
 
       melodyStore.resetMelodyLibrary()
 
@@ -711,7 +756,9 @@ describe('Melody Library System', () => {
       })
 
       const _updated = melodyStore.getMelody(_melody.id)
-      expect(_updated?.notes).toBe('Practice this melody slowly, focus on rhythm.')
+      expect(_updated?.notes).toBe(
+        'Practice this melody slowly, focus on rhythm.',
+      )
     })
 
     it('allows empty tags array', () => {
@@ -741,7 +788,9 @@ describe('Melody Library System', () => {
 
       const items = melodyStore.getCurrentItems()
       expect(items).toHaveLength(6)
-      expect(items.map((item) => item.note.midi)).toEqual([60, 64, 67, 72, 67, 64])
+      expect(items.map((item) => item.note.midi)).toEqual([
+        60, 64, 67, 72, 67, 64,
+      ])
     })
 
     it('creates playlist with multiple melodies and plays them sequentially', () => {
@@ -807,7 +856,11 @@ describe('Melody Library System', () => {
 
     it('exports current items', () => {
       melodyStore.createNewMelody('Test')
-      melodyStore.addMelodyNote({ midi: 60, name: 'C', octave: 4, freq: 261.63 }, 0, 1)
+      melodyStore.addMelodyNote(
+        { midi: 60, name: 'C', octave: 4, freq: 261.63 },
+        0,
+        1,
+      )
 
       const items = melodyStore.getCurrentItems()
       expect(items).toHaveLength(1)
@@ -840,8 +893,16 @@ describe('Melody Library System', () => {
 
     it('handles multiple operations on same melody', () => {
       const _melody = melodyStore.createNewMelody('Test')
-      melodyStore.addMelodyNote({ midi: 60, name: 'C', octave: 4, freq: 261.63 }, 0, 1)
-      melodyStore.addMelodyNote({ midi: 64, name: 'E', octave: 4, freq: 329.63 }, 1, 1)
+      melodyStore.addMelodyNote(
+        { midi: 60, name: 'C', octave: 4, freq: 261.63 },
+        0,
+        1,
+      )
+      melodyStore.addMelodyNote(
+        { midi: 64, name: 'E', octave: 4, freq: 329.63 },
+        1,
+        1,
+      )
 
       melodyStore.updateMelody(_melody.id, { tags: ['test'] })
 
@@ -869,7 +930,9 @@ describe('Melody Library System', () => {
 
       melodyStore.resetMelodyLibrary()
 
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith('pitchperfect_melody_library')
+      expect(localStorageMock.removeItem).toHaveBeenCalledWith(
+        'pitchperfect_melody_library',
+      )
     })
   })
 
@@ -1019,7 +1082,9 @@ describe('Melody Library System', () => {
 
       const _sessionId = _session.id
       const calls = localStorageMock.setItem.mock.calls
-      const sessionCall = calls.find((call) => call[0] === 'pitchperfect_user_sessions')
+      const sessionCall = calls.find(
+        (call) => call[0] === 'pitchperfect_user_sessions',
+      )
       expect(sessionCall).toBeDefined()
       const parsed = JSON.parse(sessionCall![1] as string)
       expect(parsed).toHaveLength(1)
@@ -1068,7 +1133,13 @@ describe('Melody Library System', () => {
         name: 'Session with Items',
         author: 'User',
         items: [
-          { type: 'scale' as const, label: 'Scale A', scaleType: 'major', beats: 8, repeat: 1 },
+          {
+            type: 'scale' as const,
+            label: 'Scale A',
+            scaleType: 'major',
+            beats: 8,
+            repeat: 1,
+          },
           { type: 'rest' as const, label: 'Rest', restMs: 1000, repeat: 1 },
         ],
         created: Date.now(),

@@ -8,4 +8,9 @@ import { createSignal } from 'solid-js'
 const [libraryModalOpen, setLibraryModalOpen] = createSignal(false)
 const [sessionModalOpen, setSessionModalOpen] = createSignal(false)
 
-export { libraryModalOpen, setLibraryModalOpen, sessionModalOpen, setSessionModalOpen }
+export {
+  libraryModalOpen,
+  setLibraryModalOpen,
+  sessionModalOpen,
+  setSessionModalOpen,
+}

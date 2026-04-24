@@ -182,7 +182,7 @@ test.describe('Playback', () => {
   })
 
   test.skip('Editor tab Playhead does not display in Editor mode', async ({
-  page,
+    page,
   }) => {
     // Play/Pause controls are only available in Practice mode
     // This test is skipped since Editor mode doesn't have playback controls

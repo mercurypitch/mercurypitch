@@ -6,7 +6,7 @@ import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
 import { PRACTICE_SESSIONS } from '@/data/sessions'
 import { appStore } from '@/stores/app-store'
-import type { SavedUserSession, SessionCategory, SessionDifficulty, SessionItem } from '@/types'
+import type { SavedUserSession, SessionCategory, SessionDifficulty, SessionItem, } from '@/types'
 
 const DIFFICULTY_COLORS: Record<SessionDifficulty, string> = {
   beginner: 'var(--accent-success)',
@@ -40,8 +40,12 @@ interface PresetsLibraryModalProps {
   close: () => void
 }
 
-export const PresetsLibraryModal: Component<PresetsLibraryModalProps> = (props) => {
-  const [activeCategory, setActiveCategory] = createSignal<SessionCategory | 'all'>('all')
+export const PresetsLibraryModal: Component<PresetsLibraryModalProps> = (
+  props,
+) => {
+  const [activeCategory, setActiveCategory] = createSignal<
+    SessionCategory | 'all'
+  >('all')
 
   const filteredSessions = createMemo(() => {
     const cat = activeCategory()
@@ -49,8 +53,8 @@ export const PresetsLibraryModal: Component<PresetsLibraryModalProps> = (props) 
     return PRACTICE_SESSIONS.filter((s) => s.category === cat)
   })
 
-  const handlePlay = (session: typeof PRACTICE_SESSIONS[number]) => {
-    const items = session.items.map(item => ({
+  const handlePlay = (session: (typeof PRACTICE_SESSIONS)[number]) => {
+    const items = session.items.map((item) => ({
       type: item.type as 'scale' | 'rest' | 'preset' | 'melody',
       label: item.label,
       scaleType: item.scaleType,
@@ -76,15 +80,25 @@ export const PresetsLibraryModal: Component<PresetsLibraryModalProps> = (props) 
 
   return (
     <Show when={props.isOpen}>
-      <div class="modal-overlay" onClick={(e) => {
-        if (e.target === e.currentTarget) props.close()
-      }}>
-        <div class="library-modal" style={{ width: '700px' }} onClick={(e) => e.stopPropagation()}>
+      <div
+        class="modal-overlay"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) props.close()
+        }}
+      >
+        <div
+          class="library-modal"
+          style={{ width: '700px' }}
+          onClick={(e) => e.stopPropagation()}
+        >
           <div class="library-header">
             <h2>Practice Presets</h2>
             <button class="close-btn" onClick={props.close}>
               <svg viewBox="0 0 24 24" width="20" height="20">
-                <path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+                <path
+                  fill="currentColor"
+                  d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+                />
               </svg>
             </button>
           </div>
