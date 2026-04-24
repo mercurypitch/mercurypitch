@@ -255,7 +255,8 @@ export class PlaybackRuntime {
   }
 
   setMelody(melody: MelodyItem[]): void {
-    this._melody = melody
+    // Create shallow copy to prevent mutation cascade
+    this._melody = [...melody]
   }
 
   /**

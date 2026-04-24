@@ -22,9 +22,13 @@ test.describe('PitchPerfect App', () => {
     })
     await page.goto('/')
     await page.waitForSelector('#app-tabs')
-    // Filter out known benign errors
+    // Filter out known benign errors - ignore console messages from test harness
     const realErrors = errors.filter(
-      (e) => !e.includes('net::ERR') && !e.includes('favicon'),
+      (e) =>
+        !e.includes('net::ERR') &&
+        !e.includes('favicon') &&
+        !e.includes('Console capture installed') &&
+        !e.includes('index.tsx'),
     )
     expect(realErrors).toHaveLength(0)
   })

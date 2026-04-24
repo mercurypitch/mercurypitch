@@ -1012,24 +1012,6 @@ export const App: Component<AppProps> = (props) => {
     setEditorPlaybackState('stopped')
   }
 
-  const handleEditorPlay = () => {
-    setEditorPlaybackState('playing')
-  }
-
-  const handleEditorPause = () => {
-    setEditorPlaybackState('paused')
-  }
-
-  const handleEditorResume = () => {
-    setEditorPlaybackState('playing')
-  }
-
-  const handleEditorStop = () => {
-    setCurrentBeat(0)
-    setCurrentNoteIndex(-1)
-    setEditorPlaybackState('stopped')
-  }
-
   const handleReset = () => {
     handleStop()
     setNoteResults([])
@@ -1454,12 +1436,25 @@ export const App: Component<AppProps> = (props) => {
               <SharedControlToolbar
                 activeTab={activeTab}
                 editorTab={() => activeTab() === 'editor'}
-                isPlaying={editorIsPlaying}
-                isPaused={editorIsPaused}
-                onPlay={handleEditorPlay}
-                onPause={handleEditorPause}
-                onResume={handleEditorResume}
-                onStop={handleEditorStop}
+                isPlaying={() => false}
+                isPaused={() => false}
+                onPlay={() => {
+                  // Start shared PlaybackRuntime for audio playback
+                  void playbackRuntime.start(appStore.countIn())
+                }}
+                onPause={() => {
+                  // Pause the shared PlaybackRuntime
+                  playbackRuntime.pause()
+                }}
+                onResume={() => {
+                  // Resume the shared PlaybackRuntime
+                  playbackRuntime.resume()
+                }}
+                onStop={() => {
+                  // Stop both shared PlaybackRuntime and reset editor state
+                  void playbackRuntime.stop()
+                  setEditorPlaybackState('stopped')
+                }}
                 volume={savedVol}
                 onVolumeChange={(vol) => {
                   setSavedVol(vol)
@@ -1492,9 +1487,7 @@ export const App: Component<AppProps> = (props) => {
                 scale={() => melodyStore.currentScale()}
                 bpm={() => appStore.bpm()}
                 totalBeats={() => totalBeats()}
-                playbackState={() =>
-                  playback.state() as unknown as PlaybackState
-                }
+                playbackState={() => editorPlaybackState()}
                 currentNoteIndex={() => melodyStore.currentNoteIndex()}
                 currentBeat={currentBeat}
                 isPlaying={editorIsPlaying}
