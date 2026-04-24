@@ -3,20 +3,20 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createMemo, createSignal, For, onMount,Show } from 'solid-js'
+import { createMemo, createSignal, For, onMount, Show } from 'solid-js'
 import { appStore } from '@/stores/app-store'
 import { melodyStore } from '@/stores/melody-store'
 import type { SavedUserSession, SessionCategory, SessionDifficulty } from '@/types'
 
 interface SessionLibraryModalProps {
-  isOpen: () => boolean
+  isOpen: boolean
   close: () => void
 }
 
 export const SessionLibraryModal: Component<SessionLibraryModalProps> = (props) => {
   // Ensure modal is properly closed on mount
   onMount(() => {
-    if (props.isOpen()) {
+    if (props.isOpen) {
       props.close()
     }
   })
@@ -98,12 +98,8 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (props) 
   }
 
   return (
-    <Show when={props.isOpen()}>
-      <div
-        class="modal-overlay"
-        onClick={props.close}
-        style={{ display: props.isOpen() ? 'flex' : 'none' }}
-      >
+    <Show when={props.isOpen}>
+      <div class="modal-overlay" onClick={props.close}>
         <div class="library-modal" onClick={(e) => e.stopPropagation()}>
           <div class="library-header">
             <h2>Practice Sessions</h2>

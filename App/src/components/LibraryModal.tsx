@@ -9,7 +9,7 @@ import { melodyStore } from '@/stores/melody-store'
 import type { MelodyData, NoteName } from '@/types'
 
 interface LibraryModalProps {
-  isOpen: () => boolean
+  isOpen: boolean
   close: () => void
 }
 
@@ -173,12 +173,8 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
   }
 
   return (
-    <Show when={props.isOpen()}>
-      <div
-        class="modal-overlay"
-        onClick={props.close}
-        style={{ display: props.isOpen() ? 'flex' : 'none' }}
-      >
+    <Show when={props.isOpen}>
+      <div class="modal-overlay" onClick={props.close}>
         <div class="library-modal" onClick={(e) => e.stopPropagation()}>
           <div class="library-header">
             <h2>Library</h2>
