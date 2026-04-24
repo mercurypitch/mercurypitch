@@ -12,7 +12,6 @@ import type {
   SavedUserSession,
   ScaleDegree,
 } from '@/types'
-import { appStore } from './app-store'
 
 const STORAGE_KEY_MELODY_LIBRARY = 'pitchperfect_melody_library'
 const STORAGE_KEY_USER_SESSIONS = 'pitchperfect_user_sessions'
@@ -69,6 +68,7 @@ export function getMelodyLibrary(): MelodyLibrary {
 /** Reset the melody library store (used by tests) */
 export function resetMelodyLibrary(): void {
   localStorage.removeItem(STORAGE_KEY_MELODY_LIBRARY)
+  localStorage.removeItem(STORAGE_KEY_USER_SESSIONS)
   _idCounter = 100
   Object.assign(_melodyLibraryData, {
     melodies: {},
@@ -76,6 +76,8 @@ export function resetMelodyLibrary(): void {
     meta: { author: 'User', version: '1.0', lastUpdated: Date.now() },
     renderSettings: { gridlines: true, showLabels: true, showNumbers: false },
   })
+  userSessions() // Access the signal to force reactivity
+  setUserSessions([])
 }
 
 function loadUserSessions(): SavedUserSession[] {
@@ -194,18 +196,20 @@ export const setCurrentNoteIndex = _currentNoteIndex[1]
 // Melody Note Operations
 // ============================================================
 
-export function addMelodyNote(note: MelodyNote, startBeat: number, duration: number): void {
+export function addMelodyNote(note: MelodyNote, startBeat: number, duration: number): number {
   const current = currentMelody()
-  if (current === null || current === undefined) return
+  if (current === null || current === undefined) return 0
   const items = current.items ?? []
   const key = current.id
+  const newItem = { id: generateId(), note, startBeat, duration }
   _melodyLibraryData.melodies[key] = {
     ...current,
-    items: [...items, { id: generateId(), note, startBeat, duration }],
+    items: [...items, newItem],
     updatedAt: Date.now(),
   }
   _melodyLibraryData.meta.lastUpdated = Date.now()
-  setCurrentMelody(currentMelody()?.id === key ? { ...current, items: [...items, { id: generateId(), note, startBeat, duration }] } : current)
+  setCurrentMelody({ ...current, items: [...items, newItem] })
+  return newItem.id
 }
 
 export function removeMelodyNote(id: number): void {
@@ -213,13 +217,14 @@ export function removeMelodyNote(id: number): void {
   if (current === null || current === undefined) return
   const items = current.items ?? []
   const key = current.id
+  const updatedItems = items.filter((item) => item.id !== id)
   _melodyLibraryData.melodies[key] = {
     ...current,
-    items: items.filter((item) => item.id !== id),
+    items: updatedItems,
     updatedAt: Date.now(),
   }
   _melodyLibraryData.meta.lastUpdated = Date.now()
-  setCurrentMelody(currentMelody()?.id === key ? { ...current, items: items.filter((item) => item.id !== id) } : current)
+  setCurrentMelody({ ...current, items: updatedItems })
 }
 
 export function updateMelodyNote(
@@ -252,15 +257,16 @@ export function loadMelody(key: string): MelodyData | null {
     const updated = {
       ...melody,
       playCount: (playCount ?? 0) + 1,
+      lastPlayed: Date.now(),
     }
     _melodyLibraryData.melodies[key] = updated
     _melodyLibraryData.meta.lastUpdated = Date.now()
-    return melody
+    return updated
   }
   return null
 }
 
-export function updateMelody(key: string, updates: Partial<MelodyData>): void {
+export function updateMelody(key: string, updates: Partial<MelodyData>): MelodyData | undefined {
   const melody = _melodyLibraryData.melodies[key]
   if (melody !== undefined) {
     _melodyLibraryData.melodies[key] = {
@@ -269,7 +275,9 @@ export function updateMelody(key: string, updates: Partial<MelodyData>): void {
       updatedAt: Date.now(),
     }
     _melodyLibraryData.meta.lastUpdated = Date.now()
+    return _melodyLibraryData.melodies[key]
   }
+  return undefined
 }
 
 export function deleteMelody(key: string): void {
@@ -280,6 +288,7 @@ export function deleteMelody(key: string): void {
     melodyKeys: string[]
     created: number
   }> = { ...playlists }
+  // Filter each playlist to remove references to the deleted melody
   for (const k in playlists) {
     newPlaylists[k as string] = {
       ...playlists[k as string],
@@ -309,7 +318,7 @@ export function saveCurrentMelody(name?: string): MelodyData {
     updatedAt: Date.now(),
   }
   _melodyLibraryData.meta.lastUpdated = Date.now()
-  return { ..._melodyLibraryData.melodies[key] } as MelodyData
+  return _melodyLibraryData.melodies[key]
 }
 
 export function getCurrentMelody(): MelodyData | null {
@@ -332,7 +341,7 @@ export function setMelody(items: MelodyItem[]): void {
     _melodyLibraryData.meta.lastUpdated = Date.now()
     setCurrentMelody({ ...existing, items, updatedAt: Date.now() })
   } else {
-    _melodyLibraryData.melodies[key] = {
+    const newMelody = {
       id: key,
       name: `Melody ${Object.keys(_melodyLibraryData.melodies).length + 1}`,
       bpm: DEFAULT_BPM,
@@ -343,7 +352,9 @@ export function setMelody(items: MelodyItem[]): void {
       createdAt: Date.now(),
       updatedAt: Date.now(),
     }
+    _melodyLibraryData.melodies[key] = newMelody
     _melodyLibraryData.meta.lastUpdated = Date.now()
+    setCurrentMelody(newMelody)
   }
 }
 
@@ -366,7 +377,7 @@ export function setOctave(octave: number): void {
 
 export function setNumOctaves(num: number): void {
   setCurrentScale(
-    buildMultiOctaveScale(DEFAULT_KEY, currentOctave(), num, appStore.scaleType()),
+    buildMultiOctaveScale(DEFAULT_KEY, currentOctave(), num, 'major'),
   )
 }
 
@@ -474,6 +485,7 @@ export const melodyStore = {
   getMelody,
   getMelodyLibrary,
   generateId,
+  resetMelodyLibrary,
 
   // Scale - these are Signals
   currentScale,
@@ -490,6 +502,7 @@ export const melodyStore = {
   deletePlaylist,
   getPlaylists,
   getPlaylist,
+  getPlaylistCount,
 
   // Export library
   melodyLibrary: getMelodyLibrary,

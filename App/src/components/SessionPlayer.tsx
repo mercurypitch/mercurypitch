@@ -4,7 +4,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createSignal, onCleanup, Show } from 'solid-js'
+import { createSignal, onCleanup, onMount, Show } from 'solid-js'
 import { appStore } from '@/stores/app-store'
 
 interface SessionPlayerProps {
@@ -25,7 +25,9 @@ export const SessionPlayer: Component<SessionPlayerProps> = (props) => {
     }, 1000)
   }
 
-  startTimer()
+  onMount(() => {
+    startTimer()
+  })
 
   onCleanup(() => {
     if (timer) clearInterval(timer)
