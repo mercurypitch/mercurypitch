@@ -91,21 +91,56 @@ export const LibraryTab: Component = () => {
   }
 
   const handleMelodyDoubleClick = (melodyId: string) => {
-    melodyStore.loadMelody(melodyId)
+    handlePlayMelodyInSession(melodyId)
+  }
+
+  /**
+   * Get the session playback handler from window (set by App.tsx)
+   */
+  const getSessionPlaybackHandler = (): ((melodyId: string) => void) | null => {
+    return (window as unknown as {
+      __loadAndPlayMelodyForSession?: (melodyId: string) => void
+    }).__loadAndPlayMelodyForSession ?? null
   }
 
   const handlePlaySelected = () => {
     const ids = appStore.getSelectedMelodyIds?.() ?? []
-    if (ids.length > 0) {
-      // Play the first selected melody for now
+    const handler = getSessionPlaybackHandler()
+    if (ids.length > 0 && handler !== null) {
+      handler(ids[0])
+    } else {
+      // Fallback: just load the melody
       melodyStore.loadMelody(ids[0])
     }
   }
 
-  const handlePlayAll = () => {
+  /**
+   * Play a specific melody in session context
+   */
+  const handlePlayMelodyInSession = (melodyId: string) => {
+    const handler = getSessionPlaybackHandler()
+    if (handler !== null) {
+      handler(melodyId)
+    } else {
+      melodyStore.loadMelody(melodyId)
+    }
+  }
+
+  /**
+   * Play all melodies in the session sequentially
+   * This sets up a callback to play the next melody when current one completes
+   */
+  const handlePlaySessionSequence = () => {
     const ids = sessionMelodyIds()
-    if (ids.length > 0) {
-      melodyStore.loadMelody(ids[0])
+    if (ids.length === 0) return
+
+    // Get the sequence playback handler from window (set by App.tsx)
+    const handler = (window as unknown as {
+      __playSessionSequence?: (melodyIds: string[]) => void
+    }).__playSessionSequence
+
+    if (handler !== undefined) {
+      handler(ids)
     }
   }
 
@@ -155,8 +190,8 @@ export const LibraryTab: Component = () => {
               {userSession()?.name ?? 'Session'} ({sessionMelodies().length})
             </p>
             <div class="session-actions">
-              <button class="pill-action-btn" onClick={handlePlayAll} title="Play All">
-                ▶
+              <button class="pill-action-btn" onClick={handlePlaySessionSequence} title="Play All in sequence">
+                ▶▶
               </button>
               <Show when={selectedMelodyIds().length > 1}>
                 <button class="pill-action-btn" onClick={handlePlaySelected} title="Play Selected">

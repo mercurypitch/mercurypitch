@@ -161,6 +161,73 @@ export const App: Component<AppProps> = (props) => {
 
   const [currentBeat, setCurrentBeat] = createSignal(0)
   const [currentNoteIndex, setCurrentNoteIndex] = createSignal(-1)
+
+  // ── Session Playback State (new melody-ID model) ──────────────
+  const [sessionCurrentMelodyIndex, setSessionCurrentMelodyIndex] =
+    createSignal(-1)
+  const [sessionMelodyIds, setSessionMelodyIds] = createSignal<string[]>([])
+
+  /**
+   * Load and play a specific melody in the session context
+   * Sets up the app to use the melody's BPM and items
+   */
+  const loadAndPlayMelodyForSession = (melodyId: string): void => {
+    const melody = melodyStore.getMelody(melodyId)
+    if (melody === undefined) return
+
+    // Update app state with this melody's settings
+    appStore.setBpm(melody.bpm)
+    appStore.setKeyName(melody.key)
+    appStore.setScaleType(melody.scaleType)
+
+    // Load the melody (sets currentMelody in melodyStore)
+    melodyStore.loadMelody(melodyId)
+
+    // Reset playback state
+    setCurrentBeat(0)
+    setCurrentNoteIndex(-1)
+    melodyStore.setCurrentNoteIndex(-1)
+    setPitchHistory([])
+
+    // Sync playback runtime with melody items
+    playbackRuntime.setMelody(melody.items ?? [])
+
+    // Start playback with count-in
+    const countInBeats = appStore.countIn()
+    playbackRuntime.start(countInBeats)
+    setEditorPlaybackState('playing')
+  }
+
+  /**
+   * Play all melodies in the session sequentially
+   */
+  const playSessionSequence = (melodyIds: string[]): void => {
+    if (melodyIds.length === 0) return
+
+    setSessionMelodyIds(melodyIds)
+    setSessionCurrentMelodyIndex(0)
+    loadAndPlayMelodyForSession(melodyIds[0])
+  }
+
+  /**
+   * Play the next melody in the session sequence
+   * Called when current melody playback completes
+   */
+  const playNextInSessionSequence = (): void => {
+    const ids = sessionMelodyIds()
+    const currentIdx = sessionCurrentMelodyIndex()
+
+    if (currentIdx < ids.length - 1) {
+      const nextIdx = currentIdx + 1
+      setSessionCurrentMelodyIndex(nextIdx)
+      loadAndPlayMelodyForSession(ids[nextIdx])
+    } else {
+      // Session complete
+      setSessionMelodyIds([])
+      setSessionCurrentMelodyIndex(-1)
+    }
+  }
+
   const [pitchHistory, setPitchHistory] = createSignal<PitchSample[]>([])
   const [currentPitch, setCurrentPitch] = createSignal<PitchResult | null>(null)
   const [noteResults, setNoteResults] = createSignal<NoteResult[]>([])
@@ -326,6 +393,15 @@ export const App: Component<AppProps> = (props) => {
 
     // Expose appStore to window for e2e tests
     ;(window as unknown as { __appStore: typeof appStore }).__appStore = appStore
+
+    // Expose session playback handlers for LibraryTab
+    ;(window as unknown as {
+      __loadAndPlayMelodyForSession: (melodyId: string) => void
+      __playSessionSequence: (melodyIds: string[]) => void
+    }).__loadAndPlayMelodyForSession = loadAndPlayMelodyForSession
+    ;(window as unknown as {
+      __playSessionSequence: (melodyIds: string[]) => void
+    }).__playSessionSequence = playSessionSequence
 
     // Fallback: direct click listeners on tab buttons in case SolidJS delegation misses them
     // This handles the edge case where innerHTML-created elements need explicit handlers
@@ -713,7 +789,15 @@ export const App: Component<AppProps> = (props) => {
         appStore.sessionItemIndex(),
       )
 
-      // Handle session mode: record result and advance/end session
+      // Handle new melody-ID session sequence playback
+      const ids = sessionMelodyIds()
+      if (ids.length > 0 && sessionCurrentMelodyIndex() >= 0) {
+        console.info('[onComplete] melody session sequence - playing next')
+        playNextInSessionSequence()
+        return
+      }
+
+      // Handle legacy practice session mode: record result and advance/end session
       if (appStore.sessionMode() && mode === 'practice') {
         const currentScore = liveScore()
         console.info(
