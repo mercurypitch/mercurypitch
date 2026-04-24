@@ -148,7 +148,7 @@ export const LibraryTab: Component = () => {
       </div>
 
       {/* User Session Melodies (new melody-ID model) */}
-      <Show when={sessionMelodies().length > 0}>
+      <Show when={userSession() !== null}>
         <div class="session-items-section">
           <div class="session-header">
             <p class="section-label">
@@ -163,25 +163,39 @@ export const LibraryTab: Component = () => {
                   ▶ Selected
                 </button>
               </Show>
+              <Show when={selectedMelodyIds().length > 0 && sessionMelodies().length > selectedMelodyIds().length}>
+                <button class="pill-action-btn" onClick={() => appStore.selectAllMelodies?.()} title="Select All">
+                  ✓
+                </button>
+              </Show>
+              <Show when={selectedMelodyIds().length > 0}>
+                <button class="pill-action-btn" onClick={() => appStore.clearMelodySelection?.()} title="Clear Selection">
+                  ✕
+                </button>
+              </Show>
             </div>
           </div>
-          <div class="session-items-pills">
-            <For each={sessionMelodies()}>
-              {(melody) => (
-                <span
-                  class={`session-item-pill melody-pill ${
-                    selectedMelodyIds().includes(melody.id) ? 'selected' : ''
-                  }`}
-                  title={melody.name}
-                  onClick={(e) => handleMelodyClick(melody.id, e)}
-                  onDblClick={() => handleMelodyDoubleClick(melody.id)}
-                >
-                  <span class="pill-icon">{getMelodyIcon(melody)}</span>
-                  <span class="pill-label">{melody.name}</span>
-                </span>
-              )}
-            </For>
-          </div>
+          <Show when={sessionMelodies().length > 0} fallback={
+            <p class="empty-tip">No melodies in session. Save a melody and use "Save & Add to Session".</p>
+          }>
+            <div class="session-items-pills">
+              <For each={sessionMelodies()}>
+                {(melody) => (
+                  <span
+                    class={`session-item-pill melody-pill ${
+                      selectedMelodyIds().includes(melody.id) ? 'selected' : ''
+                    }`}
+                    title={melody.name}
+                    onClick={(e) => handleMelodyClick(melody.id, e)}
+                    onDblClick={() => handleMelodyDoubleClick(melody.id)}
+                  >
+                    <span class="pill-icon">{getMelodyIcon(melody)}</span>
+                    <span class="pill-label">{melody.name}</span>
+                  </span>
+                )}
+              </For>
+            </div>
+          </Show>
         </div>
       </Show>
 

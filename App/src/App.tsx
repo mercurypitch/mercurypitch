@@ -317,6 +317,13 @@ export const App: Component<AppProps> = (props) => {
     appStore.initReverb()
     melodyStore.seedDefaultSession()
 
+    // Initialize active user session from saved default
+    const activeSessionId = melodyStore.getActiveSessionId()
+    const activeSession = melodyStore.getNewSession(activeSessionId)
+    if (activeSession !== undefined) {
+      appStore.setActiveUserSession(activeSession)
+    }
+
     // Expose appStore to window for e2e tests
     ;(window as unknown as { __appStore: typeof appStore }).__appStore = appStore
 
