@@ -4723,6 +4723,153 @@ Keeps your existing styles, only adjusts layout
   color: #fff;
 }
 
+/* ===== Presets Library Modal ===== */
+.preset-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  flex: 1;
+  padding: 4px;
+}
+
+.preset-card {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: all 0.15s;
+}
+
+.preset-card:hover {
+  border-color: var(--accent);
+  background: var(--bg-card);
+}
+
+.preset-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.preset-name {
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: var(--text-primary);
+}
+
+.preset-difficulty {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.preset-description {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.preset-meta {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.preset-category-badge {
+  background: var(--bg-secondary);
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  padding: 2px 8px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.preset-item-count {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.preset-duration {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.preset-start-btn {
+  align-self: flex-start;
+  padding: 8px 20px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.15s;
+  margin-top: 4px;
+}
+
+.preset-start-btn:hover {
+  background: #4e9eff;
+}
+
+/* ===== Difficulty Badge for Session Items ===== */
+.difficulty-badge {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.difficulty-badge.beginner {
+  background: rgba(63, 185, 80, 0.15);
+  color: var(--accent-success);
+}
+
+.difficulty-badge.intermediate {
+  background: rgba(210, 153, 34, 0.15);
+  color: var(--yellow);
+}
+
+.difficulty-badge.advanced {
+  background: rgba(248, 81, 73, 0.15);
+  color: var(--accent-danger);
+}
+
+/* ===== Close Button for Modals ===== */
+.close-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.close-btn:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.close-btn svg {
+  display: block;
+}
+
 .library-list {
   display: flex;
   flex-direction: column;
