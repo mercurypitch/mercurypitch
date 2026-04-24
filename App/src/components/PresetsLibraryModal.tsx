@@ -80,6 +80,7 @@ export const PresetsLibraryModal: Component<PresetsLibraryModalProps> = (props) 
       onClick={(e) => {
         if (e.target === e.currentTarget) props.close()
       }}
+      style={{ display: props.isOpen() ? 'flex' : 'none' }}
     >
       <div class="library-modal" style={{ width: '700px' }} onClick={(e) => e.stopPropagation()}>
         <div class="library-header">

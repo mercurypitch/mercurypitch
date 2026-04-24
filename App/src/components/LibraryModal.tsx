@@ -174,7 +174,11 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
 
   return (
     <Show when={props.isOpen()}>
-      <div class="modal-overlay" onClick={props.close}>
+      <div
+        class="modal-overlay"
+        onClick={props.close}
+        style={{ display: props.isOpen() ? 'flex' : 'none' }}
+      >
         <div class="library-modal" onClick={(e) => e.stopPropagation()}>
           <div class="library-header">
             <h2>Library</h2>
