@@ -251,17 +251,15 @@ export function updateMelodyNote(
 export function loadMelody(key: string): MelodyData | null {
   const melody = _melodyLibraryData.melodies[key]
   if (melody !== null && melody !== undefined) {
-    setCurrentMelody(melody)
-    // Increment play count
     const playCount = 'playCount' in melody ? melody.playCount : 0
-    const updated = {
+    _melodyLibraryData.melodies[key] = {
       ...melody,
       playCount: (playCount ?? 0) + 1,
       lastPlayed: Date.now(),
     }
-    _melodyLibraryData.melodies[key] = updated
     _melodyLibraryData.meta.lastUpdated = Date.now()
-    return updated
+    setCurrentMelody(_melodyLibraryData.melodies[key])
+    return _melodyLibraryData.melodies[key]
   }
   return null
 }
