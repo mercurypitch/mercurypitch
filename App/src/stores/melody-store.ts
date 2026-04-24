@@ -333,11 +333,11 @@ export function setMelody(items: MelodyItem[]): void {
   if (existing !== null && existing !== undefined) {
     _melodyLibraryData.melodies[key] = {
       ...existing,
-      items,
+      items: [...items],
       updatedAt: Date.now(),
     }
     _melodyLibraryData.meta.lastUpdated = Date.now()
-    setCurrentMelody({ ...existing, items, updatedAt: Date.now() })
+    setCurrentMelody({ ...existing, items: [...items], updatedAt: Date.now() })
   } else {
     const newMelody = {
       id: key,
@@ -346,7 +346,7 @@ export function setMelody(items: MelodyItem[]): void {
       key: DEFAULT_KEY,
       scaleType: DEFAULT_SCALE_TYPE,
       octave: DEFAULT_OCTAVE,
-      items,
+      items: [...items],
       createdAt: Date.now(),
       updatedAt: Date.now(),
     }
