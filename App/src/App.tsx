@@ -734,11 +734,10 @@ export const App: Component<AppProps> = (props) => {
           melodyIndexAtBeat(melodyStore.getCurrentItems(), e.beat ?? 0),
         )
       }
-      // Sync playback state to practice tab signals
-      if (!appStore.sessionActive() || activeTab() !== 'practice') {
-        setIsPlaying(playback.isPlaying)
-        setIsPaused(playback.isPaused)
-      }
+      // Note: isPlaying/isPaused are managed by handlePlay/handlePause/handleResume
+      // DO NOT sync from playback.isPlaying here — playback state is managed by
+      // the SharedControlToolbar handlers, not the playback store.
+      // currentBeat is always synced regardless of session state.
     })
     playbackEngine.on('countIn', (e: { countIn?: number }) => {
       setCountInBeat(e?.countIn ?? 0)
