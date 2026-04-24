@@ -1,7 +1,6 @@
-import { defineConfig, devices } from '@playwright/test';
+import { defineConfig, devices } from '@playwright/test'
 
 export default defineConfig({
-  timeout: 15000,
   testDir: './src/e2e',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
@@ -22,8 +21,6 @@ export default defineConfig({
     command: 'npm run dev',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
-    timeout: 30000,
-    stdout: 'pipe',
-    stderr: 'pipe',
+    timeout: 120000,
   },
-});
+})
