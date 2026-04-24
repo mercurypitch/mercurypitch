@@ -25,19 +25,21 @@ import { WelcomeScreen } from '@/components/WelcomeScreen'
 import { AudioEngine } from '@/lib/audio-engine'
 import type { PlaybackState as PianoRollPlaybackState } from '@/lib/piano-roll'
 import type { PlaybackState as PlaybackEngineState } from '@/lib/playback-engine'
+import type { PlaybackEvent } from '@/lib/playback-engine'
 import { PlaybackEngine } from '@/lib/playback-engine'
 import { PracticeEngine } from '@/lib/practice-engine'
 import { buildMultiOctaveScale, melodyIndexAtBeat, melodyTotalBeats, midiToNote, } from '@/lib/scale-data'
 import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
+import { appStore } from '@/stores'
 import type { InstrumentType, SessionHistoryEntry } from '@/stores/app-store'
 import type { PresetData } from '@/stores/app-store'
-import { isLibraryModalOpen, isPresetsModalOpen, isSessionLibraryModalOpen, } from '@/stores/app-store'
-import { appStore, getNoteAccuracyMap } from '@/stores/app-store'
+import { getNoteAccuracyMap, getNotifications, showNotification } from '@/stores/app-store'
+import { isLibraryModalOpen, isPresetsModalOpen, isSessionLibraryModalOpen } from '@/stores/app-store'
 import { melodyStore } from '@/stores/melody-store'
+import { playback } from '@/stores/playback-store'
 import type { PitchPerfectWindow } from '@/types'
-// import { playback } from '@/stores/playback-store' // Replaced with PlaybackEngine
 import type { PitchSample } from '@/types'
-import type { EffectType, MelodyItem, NoteName, NoteResult, PitchResult, PracticeResult, } from '@/types'
+import type { EffectType, MelodyItem, NoteName, NoteResult, PitchResult, PracticeResult } from '@/types'
 
 // Type alias for compatibility between PlaybackEngineState (with 'precount'/'complete')
 // and PianoRollPlaybackState (only 'stopped'/'playing'/'paused')
@@ -272,8 +274,8 @@ export const App: Component<AppProps> = (props) => {
   // ── Play mode ────────────────────────────────────────────────
   type PlayMode = 'once' | 'repeat' | 'practice'
   const [playMode, setPlayMode] = createSignal<PlayMode>('once')
-  const [practiceCycles, setPracticeCycles] = createSignal<number>(5)
   const [currentCycle, setCurrentCycle] = createSignal<number>(1)
+  const [practiceCycles, setPracticeCycles] = createSignal<number>(5)
   const [_allCycleResults, setAllCycleResults] = createSignal<NoteResult[][]>(
     [],
   )
@@ -711,7 +713,8 @@ export const App: Component<AppProps> = (props) => {
 
     // Listen for seek events from PitchCanvas (playhead drag)
     const handleSeek = (e: CustomEvent) => {
-      if (!isPlaying() && !isPaused()) return
+      // Only allow seeking when playing or paused (not stopped)
+      if (!playback.isPlaying() && !playback.isPaused()) return
       const targetBeat = e.detail.beat as number
       playbackEngine.seekTo(targetBeat)
       setCurrentBeat(targetBeat)
@@ -730,6 +733,11 @@ export const App: Component<AppProps> = (props) => {
         melodyStore.setCurrentNoteIndex(
           melodyIndexAtBeat(melodyStore.getCurrentItems(), e.beat ?? 0),
         )
+      }
+      // Sync playback state to practice tab signals
+      if (!appStore.sessionActive() || activeTab() !== 'practice') {
+        setIsPlaying(playback.isPlaying)
+        setIsPaused(playback.isPaused)
       }
     })
     playbackEngine.on('countIn', (e: { countIn?: number }) => {
@@ -769,12 +777,30 @@ export const App: Component<AppProps> = (props) => {
     playbackEngine.on('noteEnd', () => {
       audioEngine.stopTone()
     })
+    playbackEngine.on('state', (e: PlaybackEvent) => {
+      setEditorPlaybackState(e.state ?? 'stopped')
+      if (activeTab() === 'editor') {
+        setIsPlaying(editorIsPlaying())
+        setIsPaused(editorIsPaused())
+      }
+    })
+
+    // Update practice mode tracking when session changes
+    createEffect(() => {
+      if (appStore.sessionActive()) {
+        setCurrentPracticeMode('session')
+      } else if (playMode() === 'practice') {
+        setCurrentPracticeMode('run-once')
+      } else {
+        setCurrentPracticeMode('none')
+      }
+    })
+
     playbackEngine.on('complete', () => {
       practiceEngine.onPlaybackComplete()
-      const mode = playMode()
       console.info(
         '[onComplete] fired, mode:',
-        mode,
+        playMode(),
         'sessionMode:',
         appStore.sessionMode(),
         'idx:',
@@ -1099,10 +1125,8 @@ export const App: Component<AppProps> = (props) => {
     setPitchHistory([])
     appStore.setSessionActive(false)
 
-    // Stop playbackEngine for practice mode
-    if (!appStore.sessionActive()) {
-      playbackEngine.stop()
-    }
+    // Always stop playbackEngine (practice mode)
+    playbackEngine.stop()
 
     // Also reset editor state
     setEditorPlaybackState('stopped')
@@ -1575,8 +1599,8 @@ export const App: Component<AppProps> = (props) => {
               <SharedControlToolbar
                 activeTab={activeTab}
                 editorTab={() => activeTab() === 'editor'}
-                isPlaying={() => false}
-                isPaused={() => false}
+                isPlaying={editorIsPlaying}
+                isPaused={editorIsPaused}
                 onPlay={() => {
                   // Start shared playbackEngine for audio playback
                   playbackEngine.setMelody(melodyStore.getCurrentItems())
@@ -1621,6 +1645,16 @@ export const App: Component<AppProps> = (props) => {
                   void handleMicToggle()
                 }}
                 onWaveToggle={appStore.toggleMicWaveVisible}
+                onSaveMelody={() => {
+                  const melody = melodyStore.getCurrentItems()
+                  if (melody.length === 0) {
+                    showNotification('No melody to save', 'warning')
+                    return
+                  }
+                  const saved = melodyStore.saveCurrentMelody()
+                  showNotification(`Melody saved: ${saved.name}`, 'success')
+                }}
+                onSaveMelodyLabel="Save"
               />
               <PianoRollCanvas
                 melody={() => melodyStore.getCurrentItems()}
@@ -1846,6 +1880,29 @@ export const App: Component<AppProps> = (props) => {
         isOpen={isSessionLibraryModalOpen()}
         close={() => appStore.hideSessionLibrary()}
       />
+
+      {/* Notification Toast */}
+      <For each={(() => getNotifications() as unknown as Array<{ type: 'info' | 'success' | 'warning' | 'error', message: string }>)()}>
+        {(notif) => (
+          <div
+            class="notification-toast"
+            classList={{
+              'notification-toast--info': notif.type === 'info',
+              'notification-toast--success': notif.type === 'success',
+              'notification-toast--warning': notif.type === 'warning',
+              'notification-toast--error': notif.type === 'error',
+            }}
+          >
+            <span class="notification-toast-icon">
+              {notif.type === 'success' && '✓'}
+              {notif.type === 'warning' && '⚠'}
+              {notif.type === 'error' && '✕'}
+              {notif.type === 'info' && 'ℹ'}
+            </span>
+            <span class="notification-toast-message">{notif.message}</span>
+          </div>
+        )}
+      </For>
     </div>
   )
 }

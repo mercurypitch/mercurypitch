@@ -14,6 +14,28 @@ import { melodyStore } from '@/stores/melody-store'
 import { ControlGroup } from './ControlGroup'
 import { MetronomeGroup } from './MetronomeGroup'
 
+// ========================================
+// Utility functions
+// ========================================
+
+/** Determine current practice mode based on global state */
+function activePracticeMode(
+  playMode: () => 'once' | 'repeat' | 'practice',
+  sessionActive: () => boolean,
+): string {
+  // Session mode takes priority
+  if (sessionActive()) return 'Session'
+
+  // Practice run-once vs repeat
+  if (playMode() === 'practice') {
+    return 'Run-once'
+  }
+  if (playMode() === 'repeat') {
+    return 'Repeat'
+  }
+  return 'Run-once'
+}
+
 // Scale types matching the types file
 export const SCALE_TYPES = [
   { value: 'major', label: 'Major' },
@@ -78,6 +100,10 @@ interface SharedControlToolbarProps {
 
   // Practice sessions
   onSessionsClick?: () => void
+
+  // Save button (editor tab only)
+  onSaveMelody?: () => void
+  onSaveMelodyLabel?: string
 }
 
 export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
@@ -300,6 +326,16 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
           </div>
         </Show>
 
+        {/* Practice mode indicator */}
+        <Show when={isPracticeTab() && props.playMode() === 'practice'}>
+          <div class="practice-mode-badge">
+            <span class="mode-label">Mode:</span>
+            <span class="mode-value" id="practice-mode-indicator">
+              {activePracticeMode(props.playMode, () => appStore.sessionActive())}
+            </span>
+          </div>
+        </Show>
+
         {/* Practice cycles and sub-mode - only in practice mode */}
         <Show when={isPracticeTab() && props.playMode() === 'practice'}>
           <div class="secondary-control-group">
@@ -459,6 +495,25 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
                   <option value={s.value}>{s.label}</option>
                 ))}
               </select>
+            </div>
+          </ControlGroup>
+        </Show>
+
+        {/* Save Melody — editor tab only */}
+        <Show when={isEditorTab() && props.onSaveMelody}>
+          <ControlGroup>
+            <div class="save-melody-group">
+              <button
+                id="save-melody-btn"
+                class={`save-melody-btn ${props.onSaveMelodyLabel !== null && props.onSaveMelodyLabel !== undefined && props.onSaveMelodyLabel.length > 0 ? 'with-label' : ''}`}
+                onClick={props.onSaveMelody}
+                title="Save melody to library"
+              >
+                <svg viewBox="0 0 24 24" width="16" height="16">
+                  <path fill="currentColor" d="M19 12v7H5v-7H3v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2zm-6 .67l2.59-2.58L17 11.5l-5 5-5-5 1.41-1.41L11 12.67V3h2v9.67z" />
+                </svg>
+                {(props.onSaveMelodyLabel !== null && props.onSaveMelodyLabel !== undefined && props.onSaveMelodyLabel.length > 0) && <span>{props.onSaveMelodyLabel}</span>}
+              </button>
             </div>
           </ControlGroup>
         </Show>

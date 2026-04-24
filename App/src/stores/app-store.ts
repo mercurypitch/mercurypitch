@@ -717,6 +717,11 @@ interface Notification {
 
 const [notifications, setNotifications] = createSignal<Notification[]>([])
 
+/** Get current notifications */
+export function getNotifications() {
+  return notifications
+}
+
 let _notifId = 0
 
 export function showNotification(
