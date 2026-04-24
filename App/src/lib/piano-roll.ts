@@ -2320,6 +2320,9 @@ export class PianoRollEditor {
       pianoRollAudioEngine?: { stopAllNotes: () => void }
     }
     win.pianoRollAudioEngine?.stopAllNotes()
+    // Reset playhead position to 0 when stopping playback
+    this.remoteBeat = 0
+    this.editorBeat = 0
   }
 
   private seekToRulerPosition(e: MouseEvent): void {

@@ -5095,6 +5095,127 @@ Keeps your existing styles, only adjusts layout
 .library-tab {
   display: flex;
   flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border);
+}
+
+.tab-header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tab-header h3 {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.tab-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.tab-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.tab-action-btn:hover {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.recent-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.section-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.empty-tip {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 12px;
+  font-style: italic;
+}
+
+.recent-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.recent-item:hover {
+  background: var(--bg-card);
+}
+
+.recent-name {
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.recent-meta {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.quick-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.quick-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 12px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.quick-action-btn:hover {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ===== Library Tab (sidebar) ===== */
+.library-tab {
+  display: flex;
+  flex-direction: column;
   gap: 10px;
 }
 
