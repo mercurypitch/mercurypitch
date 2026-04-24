@@ -503,6 +503,7 @@ export const melodyStore = {
   setCurrentMelody,
   setMelody,
   getCurrentItems,
+  items: getCurrentItems,
 
   // Melody note operations
   addMelodyNote,

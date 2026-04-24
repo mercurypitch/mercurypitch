@@ -29,12 +29,13 @@ export type TransportState = 'stopped' | 'playing' | 'paused' | 'precount'
 export type PlaybackState = 'stopped' | 'playing' | 'paused'
 
 /** Accuracy band with threshold */
-export type AccuracyBand = 0 | 50 | 75 | 90 | 100
-
-export interface AccuracyBandDef {
-  band: AccuracyBand
+export interface AccuracyBand {
+  band: 0 | 50 | 75 | 90 | 100
   threshold: number
+  color: string
 }
+
+export type AccuracyBandValue = 0 | 50 | 75 | 90 | 100
 
 /** A single note within the melody */
 export interface MelodyNote {
@@ -129,6 +130,26 @@ export interface NoteResult {
   targetNote: string
 }
 
+/** Practice session result summary (for score overlay) */
+export interface PracticeResult {
+  /** Overall score (0-100) */
+  score: number
+  /** Number of notes completed */
+  noteCount: number
+  /** Average cents deviation */
+  avgCents: number
+  /** Number of completed items */
+  itemsCompleted: number
+  /** Total items in session */
+  totalItems?: number
+  /** Session name */
+  name: string
+  /** Practice mode */
+  mode: PlaybackMode
+  /** Completed at timestamp */
+  completedAt: number
+}
+
 /** Pitch result from practice engine */
 export interface PitchResult {
   /** Pitch in Hz */
@@ -170,8 +191,8 @@ export interface PracticeSession {
   beatsPerMeasure: number
   /** Is recording */
   isRecording: boolean
-  /** Recorded notes */
-  items: MelodyItem[]
+  /** Session items (scales, presets, rests) */
+  items: SessionItem[]
   /** Practice results per note */
   noteResults: NoteResult[]
   /** Average score across all notes */
@@ -202,9 +223,6 @@ export interface SessionResult {
   avgCents?: number
   rating?: AccuracyRating
 }
-
-/** Practice result */
-export type PracticeResult = NoteResult
 
 /** PitchPerfectWindow extension */
 export interface PitchPerfectWindow extends Window {
@@ -240,4 +258,149 @@ export interface PresetData {
   bpm: number
   /** Scale data */
   scale: ScaleDegree[]
+}
+
+/** A single melody saved in the library */
+export interface MelodyData {
+  /** Unique melody ID */
+  id: string
+  /** Display name */
+  name: string
+  /** Creator name */
+  author?: string
+  /** Tempo in beats per minute */
+  bpm: number
+  /** Musical key (e.g., 'C', 'G') */
+  key: string
+  /** Scale type (e.g., 'major', 'minor', 'pentatonic') */
+  scaleType: string
+  /** Last played timestamp */
+  lastPlayed?: number
+  /** Default octave */
+  octave?: number
+  /** Default octave */
+  octave?: number
+  /** Array of melody items (notes) */
+  items: MelodyItem[]
+  /** Tags for categorization */
+  tags?: string[]
+  /** User notes */
+  notes?: string
+  /** Creation timestamp */
+  createdAt: number
+  /** Last update timestamp */
+  updatedAt: number
+  /** Number of times played */
+  playCount?: number
+}
+
+/** Melody library storage structure */
+export interface MelodyLibrary {
+  /** Library metadata */
+  meta: {
+    author: string
+    version: string
+    lastUpdated: number
+  }
+  /** Render settings */
+  renderSettings: {
+    gridlines: boolean
+    showLabels: boolean
+    showNumbers: boolean
+    [key: string]: unknown
+  }
+  /** Saved melodies */
+  melodies: Record<string, MelodyData>
+  /** User-created playlists */
+  playlists: Record<
+    string,
+    {
+      name: string
+      melodyKeys: string[]
+      created: number
+    }
+  >
+}
+
+/** Session item type */
+export type SessionItemType = 'preset' | 'scale' | 'rest'
+
+/** Session difficulty levels */
+export type SessionDifficulty = 'beginner' | 'intermediate' | 'advanced' | 'expert'
+
+/** Session categories */
+export type SessionCategory = 'warmup' | 'scales' | 'melodic' | 'rhythmic' | 'ear_training' | 'custom'
+
+/** A session item in user sessions */
+export interface SessionItem {
+  /** Item type */
+  type: SessionItemType
+  /** Item label/name */
+  label: string
+  /** Scale type (for scale items) */
+  scaleType?: string
+  /** Number of beats (for scale items) */
+  beats?: number
+  /** Melody ID reference (for preset items) */
+  melodyId?: string
+  /** Array of melody items (embedded for preset items) */
+  items?: MelodyItem[]
+  /** Rest duration in ms (for rest items) */
+  restMs?: number
+  /** Item-specific settings */
+  settings?: Record<string, unknown>
+  /** Repeat count (for session item) */
+  repeat?: number
+}
+
+/** A saved user session */
+export interface SavedUserSession {
+  /** Unique session ID */
+  id: string
+  /** Session name */
+  name: string
+  /** Creator name */
+  author: string
+  /** Array of session items */
+  items: SessionItem[]
+  /** Creation timestamp */
+  created: number
+  /** Last played timestamp */
+  lastPlayed?: number
+  /** Difficulty level */
+  difficulty: SessionDifficulty
+  /** Session category */
+  category: SessionCategory
+  /** Description */
+  description?: string
+}
+
+/** Pitch sample for pitch history tracking */
+export interface PitchSample {
+  /** Pitch frequency in Hz */
+  freq: number | null
+  /** Cents deviation from target (undefined = no pitch detected) */
+  cents?: number
+  /** Sample timestamp (beat position or performance.now() delta) */
+  time: number
+}
+
+/** Session history entry */
+export interface SessionHistoryEntry {
+  /** Session ID */
+  sessionId?: string
+  /** Session name */
+  name: string
+  /** Score achieved */
+  score: number
+  /** Total items in session */
+  totalItems?: number
+  /** Items completed */
+  itemsCompleted: number
+  /** Average cents deviation */
+  avgCents?: number
+  /** Accuracy rating */
+  rating?: AccuracyRating
+  /** Timestamp */
+  completedAt: number
 }

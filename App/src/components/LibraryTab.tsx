@@ -46,7 +46,7 @@ export const LibraryTab: Component = () => {
   const handlePlay = (melody: MelodyData) => {
     // Load and set up the melody data
     const loadedMelody = melodyStore.loadMelody(melody.id)
-    if (loadedMelody) {
+    if (loadedMelody !== null) {
       // Trigger auto-play from the signal
       ;(window as PitchPerfectWindow).__autoPlayMelody = melody.id
     }

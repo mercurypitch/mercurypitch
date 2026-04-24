@@ -6,7 +6,7 @@
 
 import type { Component } from 'solid-js'
 import { For, Show } from 'solid-js'
-import { appStore, initPresets } from '@/stores/app-store'
+import { appStore } from '@/stores/app-store'
 import styles from '@/styles/PresetPillGallery.module.css'
 
 export type PracticeSubMode = 'all' | 'random' | 'focus' | 'reverse'
@@ -17,9 +17,6 @@ interface PresetPillGalleryProps {
 }
 
 export const PresetPillGallery: Component<PresetPillGalleryProps> = (props) => {
-  // Initialize presets if needed
-  initPresets()
-
   // Reactive preset names from appStore
   const presetNames = () => Object.keys(appStore.presets()).sort()
 

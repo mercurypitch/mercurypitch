@@ -17,7 +17,7 @@ export const PresetSelector: Component = () => {
 
   const currentName = createMemo(() => {
     const activeMelody = melodyStore.currentMelody()
-    return activeMelody ? activeMelody.name : ''
+    return activeMelody !== null ? activeMelody.name : ''
   })
 
   const handleSave = () => {
@@ -81,7 +81,7 @@ export const PresetSelector: Component = () => {
     const name = saveName().trim() || currentName()
     if (!name) return
     const currentMelody = melodyStore.getCurrentMelody()
-    if (currentMelody !== null && currentMelody !== undefined) {
+    if (currentMelody !== null) {
       melodyStore.deleteMelody(currentMelody.id)
       setSaveName('')
       appStore.showNotification(`Melody "${name}" deleted`, 'info')
@@ -149,7 +149,7 @@ export const PresetSelector: Component = () => {
       </button>
 
       {/* Delete button - shown when a melody is selected */}
-      {currentName() && (
+      {currentName() !== '' && (
         <button
           class="ctrl-btn small danger preset-delete-btn"
           onClick={handleDelete}

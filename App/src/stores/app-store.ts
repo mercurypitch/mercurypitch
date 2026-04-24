@@ -890,7 +890,7 @@ export function loadAndPlayMelody(key: string): void {
   console.log('[loadAndPlayMelody] loading melody with key:', key)
   // Load melody from library
   const melody = melodyStore.loadMelody(key)
-  if (!melody) {
+  if (melody === null) {
     console.log('[loadAndPlayMelody] melody not found, key:', key)
     return
   }
@@ -1050,7 +1050,7 @@ function setCurrentPresetName(name: string | null): void {
   if (name !== null) {
     // Try to set the current melody's name via melodyStore
     const currentMelody = melodyStore.getCurrentMelody()
-    if (currentMelody) {
+    if (currentMelody !== null) {
       melodyStore.updateMelody(currentMelody.id, { name })
     }
   }

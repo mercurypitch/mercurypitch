@@ -87,14 +87,14 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
       MelodyData,
     ][]
     return entries
-      .filter(([, m]) => m.name.toLowerCase().includes(query))
+      .filter(([, m]) => m.name !== null && m.name.toLowerCase().includes(query))
       .sort((a, b): number => (b[1].playCount ?? 0) - (a[1].playCount ?? 0))
   })
 
   const availableForPlaylist = createMemo(() => {
     const playlistEdit = playlistEditing()
     const playlistId = playlistEdit?.playlistId ?? null
-    if (playlistId === null || playlistId === undefined) return []
+    if (playlistId === null) return []
 
     const playlist = library().playlists[playlistId] ?? null
     if (playlist === null) return []
@@ -106,13 +106,13 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
 
     return Object.entries(library().melodies)
       .filter(([id, _]) => id !== selectedKey)
-      .filter(([id]) => !playlist.melodyKeys.includes(id))
+      .filter(([id]) => playlist.melodyKeys.includes(id) === false)
       .map(([id, m]) => ({ id, melody: m }))
   })
 
   const selectedMelody = createMemo(() => {
     const key = selectedMelodyKey()
-    if (key === null || key === undefined) return null
+    if (key === null) return null
     return library().melodies[key] ?? null
   })
 
@@ -161,7 +161,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
       .map((t) => t.trim())
       .filter((t) => t)
     const melody = melodyStore.getMelody(editingKey)
-    if (melody) {
+    if (melody !== null) {
       melodyStore.updateMelody(editingKey, {
         name: editName(),
         bpm: editBpm(),

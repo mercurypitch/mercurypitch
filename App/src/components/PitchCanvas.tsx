@@ -297,7 +297,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       let started = false
       const isRecordingMode = props.isRecording?.() ?? false
       for (const pt of history) {
-        if (!pt.freq || pt.cents === undefined) {
+        if (pt.freq === null || pt.freq === undefined || pt.freq === 0 || pt.cents === undefined) {
           started = false
           continue
         }
