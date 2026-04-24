@@ -315,6 +315,7 @@ export const App: Component<AppProps> = (props) => {
     appStore.initSessionHistory()
     appStore.initSettings()
     appStore.initReverb()
+    melodyStore.seedDefaultSession()
 
     // Expose appStore to window for e2e tests
     ;(window as unknown as { __appStore: typeof appStore }).__appStore = appStore

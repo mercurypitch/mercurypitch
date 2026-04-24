@@ -232,6 +232,50 @@ header h1 {
   flex-shrink: 0;
 }
 
+/* Save dropdown */
+.save-dropdown-wrapper {
+  grid-column: 4;
+  grid-row: 2;
+  position: relative;
+}
+.preset-selector .save-dropdown-wrapper .preset-save-btn {
+  grid-column: unset;
+  grid-row: unset;
+}
+.save-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 1000;
+  background: var(--bg-panel, #2a2a2a);
+  border: 1px solid var(--border, #444);
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  min-width: 160px;
+  overflow: hidden;
+}
+.save-dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  text-align: left;
+  background: none;
+  border: none;
+  color: var(--text-primary, #e0e0e0);
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.save-dropdown-item:hover {
+  background: var(--hover-bg, #3a3a3a);
+}
+.save-dropdown-item.add-to-session {
+  color: var(--green, #4caf50);
+}
+.save-dropdown-item.add-to-session:hover {
+  background: rgba(76, 175, 80, 0.1);
+}
+
 /* Sidebar Sections */
 .sidebar-section {
   display: flex;
@@ -5472,6 +5516,34 @@ Keeps your existing styles, only adjusts layout
   border-radius: 6px;
 }
 
+.session-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.session-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.pill-action-btn {
+  padding: 2px 6px;
+  background: var(--accent-dim);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 0.6rem;
+  color: var(--accent);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.pill-action-btn:hover {
+  background: var(--accent);
+  color: var(--bg-primary);
+}
+
 .session-items-pills {
   display: flex;
   flex-wrap: wrap;
@@ -5495,6 +5567,21 @@ Keeps your existing styles, only adjusts layout
   background: var(--accent-dim);
   border-color: var(--accent);
   color: var(--accent);
+}
+
+.melody-pill {
+  cursor: pointer;
+}
+
+.melody-pill:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--green);
+}
+
+.melody-pill.selected {
+  background: var(--green-dim);
+  border-color: var(--green);
+  color: var(--green);
 }
 
 .pill-icon {

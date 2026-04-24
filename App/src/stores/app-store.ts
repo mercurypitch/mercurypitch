@@ -4,7 +4,7 @@
 // ============================================================
 
 import { createSignal } from 'solid-js'
-import type { AccuracyBand, PracticeSession, SavedUserSession, SessionResult, SessionTemplate, } from '@/types'
+import type { AccuracyBand, PracticeSession, SavedUserSession, SessionResult, SessionTemplate, UserSession, } from '@/types'
 import { melodyStore } from './melody-store'
 
 // ── Key / Scale ─────────────────────────────────────────────
@@ -865,6 +865,48 @@ export function endPracticeSession(): SessionResult | null {
   return result
 }
 
+// ── User Session (new melody-ID-based model) ────────────────────
+
+const [userSession, setUserSession] = createSignal<UserSession | null>(null)
+const [selectedMelodyIds, setSelectedMelodyIds] = createSignal<string[]>([])
+
+export function setActiveUserSession(session: UserSession | null): void {
+  setUserSession(session)
+  setSelectedMelodyIds([])
+}
+
+export function getUserSession(): UserSession | null {
+  return userSession()
+}
+
+export function getSessionMelodyIds(): string[] {
+  const session = userSession()
+  return session?.melodyIds ?? []
+}
+
+export function getSelectedMelodyIds(): string[] {
+  return selectedMelodyIds()
+}
+
+export function toggleMelodySelection(melodyId: string): void {
+  setSelectedMelodyIds((prev) =>
+    prev.includes(melodyId)
+      ? prev.filter((id) => id !== melodyId)
+      : [...prev, melodyId],
+  )
+}
+
+export function selectAllMelodies(): void {
+  const session = userSession()
+  if (session) {
+    setSelectedMelodyIds([...session.melodyIds])
+  }
+}
+
+export function clearMelodySelection(): void {
+  setSelectedMelodyIds([])
+}
+
 let recursionDepth = 0
 const MAX_RECURSION = 10
 
@@ -1240,6 +1282,16 @@ export const appStore = {
   recordSessionItemResult,
   endPracticeSession,
   isInSessionMode,
+
+  // User Session (melody-ID model)
+  userSession,
+  setActiveUserSession,
+  getUserSession,
+  getSessionMelodyIds,
+  getSelectedMelodyIds,
+  toggleMelodySelection,
+  selectAllMelodies,
+  clearMelodySelection,
 
   // Walkthrough (GH #140)
   walkthroughActive,

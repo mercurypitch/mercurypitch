@@ -4,7 +4,6 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, For, onMount, Show } from 'solid-js'
-import type { PRACTICE_SESSIONS } from '@/data/sessions'
 import { appStore } from '@/stores/app-store'
 import { melodyStore } from '@/stores/melody-store'
 import type { MelodyData, SessionItem } from '@/types'
@@ -23,17 +22,24 @@ export const LibraryTab: Component = () => {
       .slice(0, 5)
   })
 
-  // Session items for current practice session
-  const sessionItems = createMemo(() => appStore.practiceSession()?.items ?? [])
-  const currentSessionItemIndex = createMemo(() => appStore.getCurrentSessionItemIndex())
-  const hasActiveSession = createMemo(() => appStore.practiceSession() !== null)
+  // User session (new melody-ID model)
+  const userSession = createMemo(() => appStore.userSession?.() ?? null)
+  const sessionMelodyIds = createMemo(() => {
+    const session = userSession()
+    return session?.melodyIds ?? []
+  })
+  const selectedMelodyIds = createMemo(() => appStore.getSelectedMelodyIds?.() ?? [])
+  const sessionMelodies = createMemo(() => {
+    const ids = sessionMelodyIds()
+    return ids
+      .map((id) => melodyStore.getMelody(id))
+      .filter((m): m is MelodyData => m !== undefined)
+  })
 
-  const _totalMelodies = createMemo(
-    () => Object.keys(library().melodies).length,
-  )
-  const _totalPlaylists = createMemo(
-    () => Object.keys(library().playlists).length,
-  )
+  // Practice session items (legacy model)
+  const practiceSessionItems = createMemo(() => appStore.practiceSession()?.items ?? [])
+  const currentSessionItemIndex = createMemo(() => appStore.getCurrentSessionItemIndex())
+  const hasActivePracticeSession = createMemo(() => appStore.practiceSession() !== null)
 
   const openLibrary = () => {
     appStore.showLibrary()
@@ -48,13 +54,8 @@ export const LibraryTab: Component = () => {
   }
 
   const handlePlay = (melody: MelodyData) => {
-    // Load the melody into the store
     melodyStore.loadMelody(melody.id)
   }
-
-  const _handlePlaySession = (
-    _session: (typeof PRACTICE_SESSIONS)[number],
-  ): void => {}
 
   // Get icon for session item type
   const getItemIcon = (item: SessionItem): string => {
@@ -69,6 +70,42 @@ export const LibraryTab: Component = () => {
         return '🎵'
       default:
         return '•'
+    }
+  }
+
+  // Get icon for melody data
+  const getMelodyIcon = (melody: MelodyData): string => {
+    if (melody.scaleType === 'chromatic') return '♩'
+    if (melody.scaleType === 'major' || melody.scaleType === 'minor') return '♩'
+    return '♪'
+  }
+
+  const handleMelodyClick = (melodyId: string, e: MouseEvent) => {
+    if (e.ctrlKey || e.metaKey) {
+      // Toggle selection
+      appStore.toggleMelodySelection?.(melodyId)
+    } else {
+      // Single click: load into editor
+      melodyStore.loadMelody(melodyId)
+    }
+  }
+
+  const handleMelodyDoubleClick = (melodyId: string) => {
+    melodyStore.loadMelody(melodyId)
+  }
+
+  const handlePlaySelected = () => {
+    const ids = appStore.getSelectedMelodyIds?.() ?? []
+    if (ids.length > 0) {
+      // Play the first selected melody for now
+      melodyStore.loadMelody(ids[0])
+    }
+  }
+
+  const handlePlayAll = () => {
+    const ids = sessionMelodyIds()
+    if (ids.length > 0) {
+      melodyStore.loadMelody(ids[0])
     }
   }
 
@@ -110,14 +147,52 @@ export const LibraryTab: Component = () => {
         </div>
       </div>
 
-      {/* Session Items Section - shown when session is active */}
-      <Show when={hasActiveSession()}>
+      {/* User Session Melodies (new melody-ID model) */}
+      <Show when={sessionMelodies().length > 0}>
         <div class="session-items-section">
+          <div class="session-header">
+            <p class="section-label">
+              {userSession()?.name ?? 'Session'} ({sessionMelodies().length})
+            </p>
+            <div class="session-actions">
+              <button class="pill-action-btn" onClick={handlePlayAll} title="Play All">
+                ▶
+              </button>
+              <Show when={selectedMelodyIds().length > 1}>
+                <button class="pill-action-btn" onClick={handlePlaySelected} title="Play Selected">
+                  ▶ Selected
+                </button>
+              </Show>
+            </div>
+          </div>
+          <div class="session-items-pills">
+            <For each={sessionMelodies()}>
+              {(melody) => (
+                <span
+                  class={`session-item-pill melody-pill ${
+                    selectedMelodyIds().includes(melody.id) ? 'selected' : ''
+                  }`}
+                  title={melody.name}
+                  onClick={(e) => handleMelodyClick(melody.id, e)}
+                  onDblClick={() => handleMelodyDoubleClick(melody.id)}
+                >
+                  <span class="pill-icon">{getMelodyIcon(melody)}</span>
+                  <span class="pill-label">{melody.name}</span>
+                </span>
+              )}
+            </For>
+          </div>
+        </div>
+      </Show>
+
+      {/* Practice Session Items (legacy model) */}
+      <Show when={hasActivePracticeSession()}>
+        <div class="session-items-section practice-session">
           <p class="section-label">
-            Session Items ({sessionItems().length})
+            Practice ({practiceSessionItems().length})
           </p>
           <div class="session-items-pills">
-            <For each={sessionItems()}>
+            <For each={practiceSessionItems()}>
               {(item, index) => (
                 <span
                   class={`session-item-pill ${
@@ -137,7 +212,7 @@ export const LibraryTab: Component = () => {
         </div>
       </Show>
 
-      {/* Recent Melodies Section - always shown */}
+      {/* Recent Melodies Section */}
       <div class="recent-section">
         <p class="section-label">Recent Melodies</p>
         {recentMelodies().length === 0 ? (

@@ -4,7 +4,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createMemo, createSignal } from 'solid-js'
+import { createMemo, createSignal, Show } from 'solid-js'
 import { copyShareURL } from '@/lib/share-url'
 import { appStore } from '@/stores/app-store'
 import { melodyStore } from '@/stores/melody-store'
@@ -12,6 +12,7 @@ import type { MelodyData, MelodyItem } from '@/types'
 
 export const PresetSelector: Component = () => {
   const [saveName, setSaveName] = createSignal<string>('')
+  const [showSaveMenu, setShowSaveMenu] = createSignal<boolean>(false)
 
   const melodies = createMemo(() => melodyStore.getAllMelodies())
 
@@ -19,6 +20,8 @@ export const PresetSelector: Component = () => {
     const activeMelody = melodyStore.currentMelody()
     return activeMelody !== null ? activeMelody.name : ''
   })
+
+  const userSession = createMemo(() => appStore.userSession?.() ?? null)
 
   const handleSave = () => {
     const name = saveName().trim()
@@ -67,7 +70,72 @@ export const PresetSelector: Component = () => {
     appStore.setScaleType(scaleType)
 
     setSaveName(name)
+    setShowSaveMenu(false)
     appStore.showNotification(`Melody "${name}" saved to library`, 'success')
+  }
+
+  const handleSaveAndAddToSession = () => {
+    const name = saveName().trim()
+    if (!name) {
+      appStore.showNotification(
+        'Please enter a melody name before saving',
+        'warning',
+      )
+      return
+    }
+
+    const items = melodyStore.getCurrentItems()
+    const currentMelody = melodyStore.getCurrentMelody()
+    const bpm = currentMelody?.bpm ?? appStore.bpm()
+    const key = currentMelody?.key ?? appStore.keyName()
+    const scaleType = currentMelody?.scaleType ?? appStore.scaleType()
+
+    const notes: MelodyItem[] = items.map((n) => ({
+      note: n.note,
+      duration: n.duration,
+      startBeat: n.startBeat,
+      velocity: n.velocity,
+      id: n.id,
+      effectType: n.effectType,
+      linkedTo: n.linkedTo,
+    }))
+
+    const data: MelodyData = {
+      id: currentMelody?.id ?? `melody-${Date.now()}`,
+      name,
+      bpm,
+      key,
+      scaleType,
+      items: notes,
+      createdAt: currentMelody?.createdAt ?? Date.now(),
+      updatedAt: Date.now(),
+    }
+
+    // Save to library
+    melodyStore.updateMelody(currentMelody?.id ?? data.id, data)
+    appStore.setTempo(bpm)
+    appStore.setKeyName(key)
+    appStore.setScaleType(scaleType)
+
+    // Add to active session if one is set
+    const session = userSession()
+    if (session !== null) {
+      melodyStore.addMelodyToSession(session.id, data.id)
+      setSaveName(name)
+      setShowSaveMenu(false)
+      appStore.showNotification(
+        `Melody "${name}" saved and added to "${session.name}"`,
+        'success',
+      )
+    } else {
+      setSaveName(name)
+      setShowSaveMenu(false)
+      appStore.showNotification(`Melody "${name}" saved to library`, 'success')
+    }
+  }
+
+  const toggleSaveMenu = () => {
+    setShowSaveMenu((prev) => !prev)
   }
 
   const handleNew = () => {
@@ -130,14 +198,36 @@ export const PresetSelector: Component = () => {
         ))}
       </datalist>
 
-      {/* Save button */}
-      <button
-        class="ctrl-btn small preset-save-btn"
-        onClick={handleSave}
-        title="Save melody"
-      >
-        Save
-      </button>
+      {/* Save button with dropdown */}
+      <div class="save-dropdown-wrapper">
+        <button
+          class="ctrl-btn small preset-save-btn"
+          onClick={toggleSaveMenu}
+          title="Save melody"
+        >
+          Save ▾
+        </button>
+        <Show when={showSaveMenu()}>
+          <div class="save-dropdown-menu">
+            <button
+              class="save-dropdown-item"
+              onClick={handleSave}
+              title="Save melody"
+            >
+              Save
+            </button>
+            <Show when={userSession() !== null}>
+              <button
+                class="save-dropdown-item add-to-session"
+                onClick={handleSaveAndAddToSession}
+                title={`Save and add to "${userSession()?.name}"`}
+              >
+                Save & Add to {userSession()?.name}
+              </button>
+            </Show>
+          </div>
+        </Show>
+      </div>
 
       {/* New button */}
       <button

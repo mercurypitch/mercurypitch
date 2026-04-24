@@ -361,7 +361,7 @@ export interface SessionItem {
   repeat?: number
 }
 
-/** A saved user session */
+/** A saved user session (legacy - uses embedded items) */
 export interface SavedUserSession {
   /** Unique session ID */
   id: string
@@ -381,6 +381,24 @@ export interface SavedUserSession {
   category: SessionCategory
   /** Description */
   description?: string
+}
+
+/** Session = playlist of melody IDs (new model) */
+export interface UserSession {
+  /** Unique session ID */
+  id: string
+  /** Session name */
+  name: string
+  /** Ordered list of melody IDs (references, not embedded) */
+  melodyIds: string[]
+  /** Creation timestamp */
+  created: number
+  /** Last played timestamp */
+  lastPlayed?: number
+  /** Difficulty level */
+  difficulty?: SessionDifficulty
+  /** Session category */
+  category?: SessionCategory
 }
 
 /** Pitch sample for pitch history tracking */

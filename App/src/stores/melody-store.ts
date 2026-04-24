@@ -4,10 +4,13 @@
 
 import { createSignal } from 'solid-js'
 import { buildMultiOctaveScale } from '@/lib/scale-data'
-import type { MelodyData, MelodyItem, MelodyLibrary, MelodyNote, SavedUserSession, ScaleDegree, } from '@/types'
+import type { MelodyData, MelodyItem, MelodyLibrary, MelodyNote, SavedUserSession, ScaleDegree, UserSession, } from '@/types'
 
 const STORAGE_KEY_MELODY_LIBRARY = 'pitchperfect_melody_library'
 const STORAGE_KEY_USER_SESSIONS = 'pitchperfect_user_sessions'
+const STORAGE_KEY_NEW_SESSIONS = 'pitchperfect_sessions'
+const STORAGE_KEY_DEFAULT_SESSION = 'pitchperfect_default_session'
+const STORAGE_KEY_SEEDED = 'pitchperfect_seeded'
 
 const DEFAULT_LIBRARY: MelodyLibrary = {
   meta: {
@@ -145,6 +148,238 @@ export function updateUserSession(session: SavedUserSession): void {
 
 export function getSession(id: string): SavedUserSession | undefined {
   return userSessions().find((s) => s.id === id)
+}
+
+// ============================================================
+// New Session Model (playlist of melody IDs)
+// ============================================================
+
+function loadNewSessions(): Record<string, UserSession> {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY_NEW_SESSIONS)
+    if (stored !== null && stored !== '') {
+      const parsed = JSON.parse(stored)
+      if (parsed !== null && typeof parsed === 'object') return parsed
+    }
+  } catch {
+    // Fail silently
+  }
+  return {}
+}
+
+function saveNewSessions(sessions: Record<string, UserSession>): void {
+  try {
+    localStorage.setItem(STORAGE_KEY_NEW_SESSIONS, JSON.stringify(sessions))
+  } catch {
+    // Fail silently
+  }
+}
+
+export function getNewSessions(): Record<string, UserSession> {
+  return loadNewSessions()
+}
+
+export function getNewSession(id: string): UserSession | undefined {
+  return loadNewSessions()[id]
+}
+
+export function saveNewSession(session: UserSession): void {
+  const sessions = loadNewSessions()
+  sessions[session.id] = session
+  saveNewSessions(sessions)
+}
+
+export function deleteNewSession(id: string): void {
+  const sessions = loadNewSessions()
+  delete sessions[id]
+  saveNewSessions(sessions)
+}
+
+export function addMelodyToSession(sessionId: string, melodyId: string): void {
+  const sessions = loadNewSessions()
+  const session = sessions[sessionId]
+  if (session !== undefined && !session.melodyIds.includes(melodyId)) {
+    sessions[sessionId] = {
+      ...session,
+      melodyIds: [...session.melodyIds, melodyId],
+    }
+    saveNewSessions(sessions)
+  }
+}
+
+export function removeMelodyFromSession(
+  sessionId: string,
+  melodyId: string,
+): void {
+  const sessions = loadNewSessions()
+  const session = sessions[sessionId]
+  if (session !== undefined) {
+    sessions[sessionId] = {
+      ...session,
+      melodyIds: session.melodyIds.filter((id) => id !== melodyId),
+    }
+    saveNewSessions(sessions)
+  }
+}
+
+export function reorderSessionMelodies(
+  sessionId: string,
+  melodyIds: string[],
+): void {
+  const sessions = loadNewSessions()
+  const session = sessions[sessionId]
+  if (session !== undefined) {
+    sessions[sessionId] = { ...session, melodyIds }
+    saveNewSessions(sessions)
+  }
+}
+
+export function getActiveSessionId(): string {
+  return localStorage.getItem(STORAGE_KEY_DEFAULT_SESSION) ?? 'default'
+}
+
+export function setActiveSessionId(id: string): void {
+  try {
+    localStorage.setItem(STORAGE_KEY_DEFAULT_SESSION, id)
+  } catch {
+    // Fail silently
+  }
+}
+
+// ============================================================
+// Default Session — seeded on first launch
+// ============================================================
+
+function buildScaleMelody(
+  id: string,
+  name: string,
+  key: string,
+  scaleType: string,
+  octave: number,
+  degrees: number[],
+): MelodyData {
+  const items: MelodyItem[] = degrees.map((semitone, i) => ({
+    id: generateId(),
+    note: {
+      midi: 60 + semitone + (i > 0 && degrees[i] < degrees[i - 1] ? 12 : 0),
+      name: NOTE_NAMES[(60 + semitone) % 12] as MelodyNote['name'],
+      octave: 4 + (i > 0 && degrees[i] < degrees[i - 1] ? 1 : 0),
+      freq: midiToFreq(60 + semitone + (i > 0 && degrees[i] < degrees[i - 1] ? 12 : 0)),
+    },
+    duration: 1,
+    startBeat: i,
+  }))
+  return {
+    id,
+    name,
+    author: 'System',
+    bpm: 80,
+    key,
+    scaleType,
+    octave,
+    items,
+    createdAt: 0,
+    updatedAt: 0,
+  }
+}
+
+const NOTE_NAMES = [
+  'C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B',
+]
+
+function midiToFreq(midi: number): number {
+  return 440 * Math.pow(2, (midi - 69) / 12)
+}
+
+const SCALE_DEGREES: Record<string, number[]> = {
+  major: [0, 2, 4, 5, 7, 9, 11],
+  'natural-minor': [0, 2, 3, 5, 7, 8, 10],
+  chromatic: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+  dorian: [0, 2, 3, 5, 7, 9, 10],
+  pentatonic: [0, 2, 4, 7, 9],
+}
+
+export function seedDefaultSession(): void {
+  try {
+    const seeded = localStorage.getItem(STORAGE_KEY_SEEDED)
+    if (seeded === 'true') return
+  } catch {
+    // Continue
+  }
+
+  // Create pre-built scale melodies
+  const scaleConfigs = [
+    { id: 'scale-major-c4', name: 'C Major Scale', key: 'C', scaleType: 'major', octave: 4, degrees: SCALE_DEGREES.major },
+    { id: 'scale-major-g4', name: 'G Major Scale', key: 'G', scaleType: 'major', octave: 4, degrees: SCALE_DEGREES.major },
+    { id: 'scale-chromatic-c4', name: 'Chromatic Scale', key: 'C', scaleType: 'chromatic', octave: 4, degrees: SCALE_DEGREES.chromatic },
+    { id: 'scale-minor-a4', name: 'A Minor Scale', key: 'A', scaleType: 'natural-minor', octave: 4, degrees: SCALE_DEGREES['natural-minor'] },
+    { id: 'scale-pentatonic-c4', name: 'C Pentatonic', key: 'C', scaleType: 'pentatonic', octave: 4, degrees: SCALE_DEGREES.pentatonic },
+    { id: 'scale-dorian-d4', name: 'D Dorian', key: 'D', scaleType: 'dorian', octave: 4, degrees: SCALE_DEGREES.dorian },
+  ]
+
+  for (const cfg of scaleConfigs) {
+    if (_melodyLibraryData.melodies[cfg.id] === undefined) {
+      _melodyLibraryData.melodies[cfg.id] = buildScaleMelody(
+        cfg.id, cfg.name, cfg.key, cfg.scaleType, cfg.octave, cfg.degrees,
+      )
+    }
+  }
+
+  // Create default session
+  const defaultSession: UserSession = {
+    id: 'default',
+    name: 'Default',
+    melodyIds: ['scale-major-c4', 'scale-chromatic-c4'],
+    created: 0,
+  }
+  const sessions = loadNewSessions()
+  if (sessions['default'] === undefined) {
+    sessions['default'] = defaultSession
+  }
+  saveNewSessions(sessions)
+
+  try {
+    localStorage.setItem(STORAGE_KEY_SEEDED, 'true')
+  } catch {
+    // Fail silently
+  }
+}
+
+export function createMelodyFromScale(
+  name: string,
+  key: string,
+  scaleType: string,
+  octave: number,
+  bpm: number,
+  degrees: number[],
+): MelodyData {
+  const id = generateMelodyId()
+  const items: MelodyItem[] = degrees.map((semitone, i) => ({
+    id: generateId(),
+    note: {
+      midi: 60 + semitone + (i > 0 && degrees[i] < degrees[i - 1] ? 12 : 0),
+      name: NOTE_NAMES[(60 + semitone) % 12] as MelodyNote['name'],
+      octave: 4 + (i > 0 && degrees[i] < degrees[i - 1] ? 1 : 0),
+      freq: midiToFreq(60 + semitone + (i > 0 && degrees[i] < degrees[i - 1] ? 12 : 0)),
+    },
+    duration: 1,
+    startBeat: i,
+  }))
+  const melody: MelodyData = {
+    id,
+    name,
+    author: 'User',
+    bpm,
+    key,
+    scaleType,
+    octave,
+    items,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  }
+  _melodyLibraryData.melodies[id] = melody
+  _melodyLibraryData.meta.lastUpdated = Date.now()
+  return melody
 }
 
 export const [currentMelody, setCurrentMelody] =
@@ -550,6 +785,19 @@ export const melodyStore = {
   deleteSession,
   getSession,
   updateUserSession,
+
+  // New Session Model (melody IDs)
+  getNewSessions,
+  getNewSession,
+  saveNewSession,
+  deleteNewSession,
+  addMelodyToSession,
+  removeMelodyFromSession,
+  reorderSessionMelodies,
+  getActiveSessionId,
+  setActiveSessionId,
+  seedDefaultSession,
+  createMelodyFromScale,
 
   // Current Note Index
   currentNoteIndex,
