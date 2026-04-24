@@ -33,17 +33,14 @@ export const LibraryTab: Component = () => {
 
   const openLibrary = () => {
     appStore.showLibrary()
-    appStore.setActiveTab('editor')
   }
 
   const openSessionLibrary = (): void => {
     appStore.showSessionLibrary()
-    appStore.setActiveTab('editor')
   }
 
   const openPresetsLibrary = () => {
     appStore.showPresetsLibrary()
-    appStore.setActiveTab('editor')
   }
 
   const handlePlay = (melody: MelodyData) => {
