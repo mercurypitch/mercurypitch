@@ -270,7 +270,6 @@ export const App: Component<AppProps> = (props) => {
 
   // ── Session state ────────────────────────────────────────────
   const [showSessionBrowser, setShowSessionBrowser] = createSignal(false)
-  const [isBuildingMelody, setIsBuildingMelody] = createSignal<boolean>(false)
 
 // ── Mobile sidebar toggle ─────────────────────────────────────
   const [sessionSummary, setSessionSummary] = createSignal<{
@@ -278,6 +277,9 @@ export const App: Component<AppProps> = (props) => {
     items: number
     name: string
   } | null>(null)
+
+  // Track if we've already built the current session item's melody
+  let builtSessionMelodyKey = ''
 
 // ── Mobile sidebar toggle ─────────────────────────────────────
   const [sidebarOpen, setSidebarOpen] = createSignal(false)
@@ -819,6 +821,13 @@ export const App: Component<AppProps> = (props) => {
                     '[onComplete rest timeout] building scale:',
                     afterRest.label,
                   )
+                  // Check if this scale was already built for this item to avoid loop
+                  const afterRestKey = getSessionItemKey(afterRest)
+                  if (builtSessionMelodyKey === afterRestKey) {
+                    console.info('[onComplete rest timeout] already built, skipping')
+                    return
+                  }
+                  builtSessionMelodyKey = afterRestKey
                   // Reset for new item
                   setCurrentCycle(1)
                   setAllCycleResults([])
@@ -840,6 +849,13 @@ export const App: Component<AppProps> = (props) => {
               }, restDuration)
             } else if (nextItem && nextItem.type === 'scale') {
               console.info('[onComplete] building scale:', nextItem.label)
+              // Check if this scale was already built for this item to avoid loop
+              const nextItemKey = getSessionItemKey(nextItem)
+              if (builtSessionMelodyKey === nextItemKey) {
+                console.info('[onComplete] already built, skipping')
+                return
+              }
+              builtSessionMelodyKey = nextItemKey
               // Reset for new item
               setCurrentCycle(1)
               setAllCycleResults([])
@@ -852,27 +868,11 @@ export const App: Component<AppProps> = (props) => {
               playbackRuntime.stop()
               playbackRuntime.setMelody(melodyStore.getCurrentItems())
               // BPM synced via AudioEngine in the createEffect above
-              console.info('[onComplete] starting playbackRuntime')
+              console.info(
+                '[onComplete rest timeout] starting playbackRuntime',
+              )
               playbackRuntime.start(appStore.countIn())
             }
-            return
-          } else {
-            // Session complete — end and show summary
-            console.info('[onComplete] session complete!')
-            handleStop()
-            const summary = appStore.endPracticeSession()
-            if (summary) {
-              setSessionSummary({
-                score: summary.score,
-                items: summary.itemsCompleted,
-                name: summary.sessionName,
-              })
-              appStore.showNotification(
-                `Session complete! Score: ${summary.score}%`,
-                summary.score >= 80 ? 'success' : 'info',
-              )
-            }
-            return
           }
         }
       }
@@ -1108,9 +1108,16 @@ export const App: Component<AppProps> = (props) => {
     melodyStore.setMelody(items)
   }
 
+  /** Get unique key for a session item */
+  const getSessionItemKey = (item: typeof PRACTICE_SESSIONS[number]) => {
+    return `${item.scaleType}-${item.beats}-${item.label}`
+  }
+
   /** Handle session skip — advance to next item or end session */
   const handleSessionSkip = () => {
     handleStop()
+    builtSessionMelodyKey = '' // Clear flag for next item
+
     const session = appStore.practiceSession()
     const idx = appStore.sessionItemIndex()
     if (session && idx < session.items.length - 1) {
@@ -1118,11 +1125,10 @@ export const App: Component<AppProps> = (props) => {
       const nextItem = appStore.getCurrentSessionItem()
       if (nextItem) {
         if (nextItem.type === 'scale') {
-          buildScaleMelody(
-            nextItem.scaleType ?? 'major',
-            nextItem.beats ?? 8,
-            nextItem.label,
-          )
+          // Don't build here - let createEffect handle it
+          // Just update the play mode and start playback
+          setPlayMode('practice')
+          setPracticeCycles(1)
           setTimeout(() => void handlePlay(), 500)
         } else if (nextItem.type === 'rest') {
           setTimeout(() => {
@@ -1138,6 +1144,7 @@ export const App: Component<AppProps> = (props) => {
           items: summary.itemsCompleted,
           name: summary.sessionName,
         })
+      builtSessionMelodyKey = ''
     }
   }
 
@@ -1155,25 +1162,40 @@ export const App: Component<AppProps> = (props) => {
 
   /** Auto-start session when session mode becomes active */
   createEffect(() => {
-    if (isBuildingMelody()) return // Skip if we're currently building a melody
+    // Only run when sessionMode changes TO true (not when other signals change)
+    if (!appStore.sessionMode()) return
 
-    console.log('[createEffect] sessionMode, practiceSession, playMode:')
-    console.log('  sessionMode:', appStore.sessionMode())
-    console.log('  practiceSession:', appStore.practiceSession()?.name)
-    console.log('  playMode:', playMode())
-    if (appStore.sessionMode() && appStore.practiceSession()) {
-      const item = appStore.getCurrentSessionItem()
-      console.log('  currentItem:', item)
-      if (item && item.type === 'scale') {
-        console.log('[createEffect] building scale melody, starting playback')
-        setIsBuildingMelody(true)
+    console.log('[createEffect] sessionMode became true, practiceSession:', appStore.practiceSession()?.name)
+
+    // This effect runs once when session starts - subsequent calls should be handled elsewhere
+    const item = appStore.getCurrentSessionItem()
+    if (item && item.type === 'scale') {
+      console.log('[createEffect] starting session item:', item.label)
+      builtSessionMelodyKey = `${item.scaleType}-${item.beats}-${item.label}` // Set flag
+      buildScaleMelody(item.scaleType ?? 'major', item.beats ?? 8, item.label)
+      setPlayMode('practice')
+      setPracticeCycles(1)
+      // Use setTimeout to avoid infinite effect loop due to batching
+      setTimeout(() => {
+        void handlePlay()
+      }, 500)
+    }
+  })
+
+  /** Handle session item change when it advances */
+  createEffect(() => {
+    // Check if we're in session mode and the item index changed
+    if (!appStore.sessionMode()) return
+
+    const item = appStore.getCurrentSessionItem()
+    if (item && item.type === 'scale') {
+      const itemKey = `${item.scaleType}-${item.beats}-${item.label}`
+      // Only rebuild if this is a NEW item (different from what was built)
+      if (builtSessionMelodyKey !== itemKey) {
+        console.log('[createEffect] new session item:', item.label)
+        builtSessionMelodyKey = itemKey
         buildScaleMelody(item.scaleType ?? 'major', item.beats ?? 8, item.label)
-        setPlayMode('practice')
-        setPracticeCycles(1)
-        setTimeout(() => {
-          setIsBuildingMelody(false)
-          void handlePlay()
-        }, 500)
+        // Don't reset flag here - let the complete handler advance
       }
     }
   })
