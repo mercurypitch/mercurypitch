@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createMemo, createSignal, For, onMount, Show } from 'solid-js'
+import { createMemo, createSignal, For, Show } from 'solid-js'
 import { appStore } from '@/stores/app-store'
 import { melodyStore } from '@/stores/melody-store'
 import type { SavedUserSession, SessionCategory, SessionDifficulty, } from '@/types'
@@ -16,13 +16,6 @@ interface SessionLibraryModalProps {
 export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
   props,
 ) => {
-  // Ensure modal is properly closed on mount
-  onMount(() => {
-    if (props.isOpen) {
-      props.close()
-    }
-  })
-
   const [searchQuery, setSearchQuery] = createSignal('')
   const [isEditing, setIsEditing] = createSignal<SavedUserSession | null>(null)
 
