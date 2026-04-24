@@ -827,6 +827,8 @@ export const App: Component<AppProps> = (props) => {
                     console.info('[onComplete rest timeout] already built, skipping')
                     return
                   }
+                  // Mark transition in progress so createEffect doesn't fire
+                  handleSessionTransition()
                   builtSessionMelodyKey = afterRestKey
                   // Reset for new item
                   setCurrentCycle(1)
@@ -1121,6 +1123,7 @@ export const App: Component<AppProps> = (props) => {
     const session = appStore.practiceSession()
     const idx = appStore.sessionItemIndex()
     if (session && idx < session.items.length - 1) {
+      handleSessionTransition()
       appStore.advanceSessionItem()
       const nextItem = appStore.getCurrentSessionItem()
       if (nextItem) {
@@ -1145,6 +1148,7 @@ export const App: Component<AppProps> = (props) => {
           name: summary.sessionName,
         })
       builtSessionMelodyKey = ''
+      pendingSessionTransition = false
     }
   }
 
@@ -1183,15 +1187,18 @@ export const App: Component<AppProps> = (props) => {
   })
 
   /** Handle session item change when it advances */
+  let pendingSessionTransition = false
   createEffect(() => {
     // Check if we're in session mode and the item index changed
     if (!appStore.sessionMode()) return
 
     const item = appStore.getCurrentSessionItem()
+    // Only rebuild for scale items - rest items trigger rest timeout callback instead
     if (item && item.type === 'scale') {
       const itemKey = `${item.scaleType}-${item.beats}-${item.label}`
       // Only rebuild if this is a NEW item (different from what was built)
-      if (builtSessionMelodyKey !== itemKey) {
+      // AND we're not in the middle of a pending transition (e.g., rest timeout)
+      if (builtSessionMelodyKey !== itemKey && !pendingSessionTransition) {
         console.log('[createEffect] new session item:', item.label)
         builtSessionMelodyKey = itemKey
         buildScaleMelody(item.scaleType ?? 'major', item.beats ?? 8, item.label)
@@ -1199,6 +1206,11 @@ export const App: Component<AppProps> = (props) => {
       }
     }
   })
+
+  /** Handle session item change when it advances */
+  const handleSessionTransition = () => {
+    pendingSessionTransition = true
+  }
 
   /** Auto-play melody when loaded from library */
   createEffect(() => {
