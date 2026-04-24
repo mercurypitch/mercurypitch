@@ -46,7 +46,7 @@ export default defineConfig(
       'import-x/no-duplicates': 'off',
 
       '@typescript-eslint/unified-signatures': 'off',
-      'no-console': ['error', { allow: ['info', 'warn', 'error', 'table'] }],
+      'no-console': ['error', { allow: ['log', 'info', 'warn', 'error', 'table'] }],
       'no-throw-literal': 'error',
       'no-useless-concat': 'error',
       'prefer-template': 'error',

@@ -1152,9 +1152,15 @@ export const App: Component<AppProps> = (props) => {
 
   /** Auto-start session when session mode becomes active */
   createEffect(() => {
+    console.log('[createEffect] sessionMode, practiceSession, playMode:')
+    console.log('  sessionMode:', appStore.sessionMode())
+    console.log('  practiceSession:', appStore.practiceSession()?.name)
+    console.log('  playMode:', playMode())
     if (appStore.sessionMode() && appStore.practiceSession()) {
       const item = appStore.getCurrentSessionItem()
+      console.log('  currentItem:', item)
       if (item && item.type === 'scale') {
+        console.log('[createEffect] building scale melody, starting playback')
         buildScaleMelody(item.scaleType ?? 'major', item.beats ?? 8, item.label)
         setPlayMode('practice')
         setPracticeCycles(1)

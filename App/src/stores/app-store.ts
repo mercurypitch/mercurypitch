@@ -862,13 +862,26 @@ export function endPracticeSession(): SessionResult | null {
   return result
 }
 
+let recursionDepth = 0
+const MAX_RECURSION = 10
+
 export function startPracticeSession(session: PracticeSession): void {
+  recursionDepth++
+  if (recursionDepth > MAX_RECURSION) {
+    console.error('[CRASH] Too many recursion calls detected! Aborting:', recursionDepth)
+    recursionDepth = 0
+    return
+  }
+  console.log('[startPracticeSession] called, recursionDepth:', recursionDepth)
   setPracticeSession(session)
   setSessionItemIndex(0)
   setSessionItemRepeat(0)
   setSessionActive(true)
+  console.log('[startPracticeSession] setSessionActive(true)')
   setSessionMode(true)
+  console.log('[startPracticeSession] setSessionMode(true), recursionDepth:', recursionDepth)
   setSessionResults([])
+  recursionDepth = 0
 }
 
 export function isInSessionMode(): boolean {
@@ -968,6 +981,7 @@ export function getNoteAccuracyMap(): Map<number, number> {
 // ============================================================
 
 export function loadSession(session: SavedUserSession): void {
+  console.log('[appStore] loadSession called with session:', session.id)
   if (session.items.length === 0) {
     appStore.showNotification('Session has no items', 'warning')
     return
@@ -975,9 +989,12 @@ export function loadSession(session: SavedUserSession): void {
 
   // Reset session state
   setSessionActive(false)
+  console.log('[appStore] setSessionActive(false), current:', sessionActive())
   setSessionMode(false)
+  console.log('[appStore] setSessionMode(false), current:', sessionMode())
 
   // Load first item and set as current session
+  console.log('[appStore] calling startPracticeSession')
   startPracticeSession({
     id: session.id,
     name: session.name,
@@ -985,6 +1002,7 @@ export function loadSession(session: SavedUserSession): void {
     category: session.category,
     items: session.items,
   })
+  console.log('[appStore] startPracticeSession complete, sessionMode:', sessionMode())
 }
 
 // ── PresetData Presets Bridge (legacy support - functions are no-ops) ───────
