@@ -1952,6 +1952,21 @@ header h1 {
   user-select: none;
 }
 
+/* Piano roll wrapper — fills its flex parent */
+.piano-roll-wrapper {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Piano roll container — fills wrapper */
+.piano-roll-container {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
 /* Tab bar */
 #app-tabs {
   display: flex;
