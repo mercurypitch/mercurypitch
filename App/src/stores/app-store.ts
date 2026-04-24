@@ -782,6 +782,11 @@ export function getCurrentSessionItem(): PracticeSession['items'][0] | null {
   return session.items[idx]
 }
 
+export function getSessionItems(): PracticeSession['items'] {
+  const session = practiceSession()
+  return session?.items ?? []
+}
+
 export function getCurrentSessionItemIndex(): number {
   return sessionItemIndex()
 }
@@ -1226,6 +1231,7 @@ export const appStore = {
   setSessionActive,
   sessionItemIndex,
   getCurrentSessionItemIndex,
+  getSessionItems,
   practiceSession,
   sessionMode,
   getCurrentSessionItem,

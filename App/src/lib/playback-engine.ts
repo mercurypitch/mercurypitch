@@ -107,6 +107,7 @@ export class PlaybackEngine implements PlaybackTimekeeper {
   private countInBeats = 0
   private countInBeat = 0
   private metronomeLastBeat = -1
+  private metronomeLastCountInBeat = -1
   private totalBeats = 0
   private mode: PlaybackMode = 'once'
 
@@ -241,6 +242,7 @@ export class PlaybackEngine implements PlaybackTimekeeper {
       this.currentNoteIndex = -1
       this.startTime = 0
       this.metronomeLastBeat = -1
+      this.metronomeLastCountInBeat = -1
     } else {
       this.currentBeat = 0
       this.currentNoteIndex = -1
@@ -248,6 +250,7 @@ export class PlaybackEngine implements PlaybackTimekeeper {
       this.countInBeat = 0
       this.countInBeats = 0
       this.metronomeLastBeat = -1
+      this.metronomeLastCountInBeat = -1
     }
 
     this._emit({ type: 'state', state: 'stopped' })
@@ -330,14 +333,17 @@ export class PlaybackEngine implements PlaybackTimekeeper {
       if (countIn > 0 && elapsedSeconds < countIn / this.beatsPerSecond) {
         const countInElapsed = elapsedSeconds * this.beatsPerSecond
         const currentBeatNum = Math.max(0, countIn - Math.floor(countInElapsed))
+        const currentIntBeat = Math.floor(currentBeatNum)
 
-        if (Math.floor(currentBeatNum) !== this.countInBeat) {
-          this.countInBeat = Math.floor(currentBeatNum)
+        if (currentIntBeat !== this.countInBeat) {
+          this.countInBeat = currentIntBeat
           this._emit({ type: 'countIn', countIn: this.countInBeat })
         }
 
-        if (this.metronomeEnabledFn()) {
-          this._triggerMetronome(currentBeatNum)
+        // Only trigger metronome on beat boundaries during count-in
+        if (this.metronomeEnabledFn() && currentIntBeat !== this.metronomeLastCountInBeat) {
+          this._triggerMetronome(currentIntBeat)
+          this.metronomeLastCountInBeat = currentIntBeat
         }
 
         this.animationFrameId = requestAnimationFrame(animate)

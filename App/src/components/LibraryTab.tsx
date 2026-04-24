@@ -3,11 +3,11 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createMemo, For, onMount } from 'solid-js'
+import { createMemo, For, onMount, Show } from 'solid-js'
 import type { PRACTICE_SESSIONS } from '@/data/sessions'
 import { appStore } from '@/stores/app-store'
 import { melodyStore } from '@/stores/melody-store'
-import type { MelodyData } from '@/types'
+import type { MelodyData, SessionItem } from '@/types'
 
 export const LibraryTab: Component = () => {
   const library = createMemo(() => melodyStore.getMelodyLibrary())
@@ -22,6 +22,11 @@ export const LibraryTab: Component = () => {
       )
       .slice(0, 5)
   })
+
+  // Session items for current practice session
+  const sessionItems = createMemo(() => appStore.practiceSession()?.items ?? [])
+  const currentSessionItemIndex = createMemo(() => appStore.getCurrentSessionItemIndex())
+  const hasActiveSession = createMemo(() => appStore.practiceSession() !== null)
 
   const _totalMelodies = createMemo(
     () => Object.keys(library().melodies).length,
@@ -50,6 +55,22 @@ export const LibraryTab: Component = () => {
   const _handlePlaySession = (
     _session: (typeof PRACTICE_SESSIONS)[number],
   ): void => {}
+
+  // Get icon for session item type
+  const getItemIcon = (item: SessionItem): string => {
+    switch (item.type) {
+      case 'scale':
+        return '♩'
+      case 'rest':
+        return '⏸'
+      case 'preset':
+        return '♪'
+      case 'melody':
+        return '🎵'
+      default:
+        return '•'
+    }
+  }
 
   onMount(() => {
     library()
@@ -88,6 +109,33 @@ export const LibraryTab: Component = () => {
           </button>
         </div>
       </div>
+
+      {/* Session Items Section - shown when session is active */}
+      <Show when={hasActiveSession()}>
+        <div class="session-items-section">
+          <p class="section-label">
+            Session Items ({sessionItems().length})
+          </p>
+          <div class="session-items-pills">
+            <For each={sessionItems()}>
+              {(item, index) => (
+                <span
+                  class={`session-item-pill ${
+                    index() === currentSessionItemIndex() ? 'active' : ''
+                  }`}
+                  title={`${item.type}: ${item.label}`}
+                >
+                  <span class="pill-icon">{getItemIcon(item)}</span>
+                  <span class="pill-label">{item.label}</span>
+                  <Show when={item.repeat !== undefined && item.repeat !== null && item.repeat > 1}>
+                    <span class="pill-repeat">×{item.repeat}</span>
+                  </Show>
+                </span>
+              )}
+            </For>
+          </div>
+        </div>
+      </Show>
 
       {/* Recent Melodies Section - always shown */}
       <div class="recent-section">

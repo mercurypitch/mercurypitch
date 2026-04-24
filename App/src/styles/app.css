@@ -5462,6 +5462,60 @@ Keeps your existing styles, only adjusts layout
   margin: 0;
 }
 
+/* Session Items Section */
+.session-items-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  background: var(--bg-tertiary);
+  border-radius: 6px;
+}
+
+.session-items-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.session-item-pill {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+  transition: all 0.15s;
+}
+
+.session-item-pill.active {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.pill-icon {
+  font-size: 0.7rem;
+}
+
+.pill-label {
+  max-width: 60px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pill-repeat {
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  padding: 1px 4px;
+  background: var(--bg-tertiary);
+  border-radius: 8px;
+}
+
 .tab-stats {
   display: flex;
   gap: 8px;
