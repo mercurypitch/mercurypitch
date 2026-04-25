@@ -315,13 +315,13 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
               Repeat
             </button>
             <button
-              id="btn-practice"
+              id="btn-session"
               class={`mode-btn ${props.playMode() === 'practice' ? 'active' : ''}`}
               onClick={() => {
                 props.playModeChange('practice')
               }}
             >
-              Practice
+              Session mode
             </button>
           </div>
         </Show>
