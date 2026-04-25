@@ -146,7 +146,19 @@ export const App: Component<AppProps> = (props) => {
     playbackRuntime.isPlaying = false
     playbackRuntime.isPaused = false
     playbackRuntime.animationFrameId = null
-    console.log('[resetPlaybackState] Playback state reset complete')
+
+    // Verify all states are reset
+    console.log('[resetPlaybackState] Playback state reset complete', {
+      audioEngineTonePlaying: audioEngine.isTonePlaying(),
+      audioEngineActiveVoices: audioEngine._activeVoices.size,
+      playbackRuntimePlaying: playbackRuntime.getIsPlaying(),
+      playbackRuntimePaused: playbackRuntime.getIsPaused(),
+      editorPlaybackState: editorPlaybackState(),
+      currentBeat: currentBeat(),
+      currentNoteIndex: currentNoteIndex(),
+      melodyStoreNoteIndex: melodyStore.getCurrentNoteIndex(),
+      sessionMelodyIds: sessionMelodyIds(),
+    })
   }
 
   // ── Tab change handler with audio cleanup ───────────────────────────────────
@@ -158,6 +170,8 @@ export const App: Component<AppProps> = (props) => {
     if (currentTab === 'practice' || currentTab === 'editor') {
       console.log('[handleTabChange] Calling resetPlaybackState')
       resetPlaybackState()
+    } else {
+      console.log('[handleTabChange] NOT calling resetPlaybackState (tab is not practice or editor)')
     }
 
     // Switch to new tab
@@ -220,7 +234,8 @@ export const App: Component<AppProps> = (props) => {
     // Sync playback runtime with melody items
     playbackRuntime.setMelody(melody.items ?? [])
 
-    // Note: NOT starting playback here - must be done by user explicitly via handlePlay
+    // Set session as active so SessionPlayer shows
+    setSessionActive(true)
   }
 
   /**
