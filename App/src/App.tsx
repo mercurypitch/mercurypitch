@@ -773,7 +773,7 @@ export const App: Component<AppProps> = (props) => {
         const noteItem = e?.note
         setCurrentNoteIndex(e?.index ?? -1)
         setTargetPitch(noteItem?.note?.freq ?? 440)
-        if (noteItem) {
+        if (noteItem?.note?.midi !== 0) {
           practiceEngine.onNoteStart(noteItem.note!, e?.index ?? -1)
           const beatDurationMs = 60000 / appStore.bpm()
           const noteDurationMs = noteItem.duration ?? 1 * beatDurationMs

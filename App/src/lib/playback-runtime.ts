@@ -388,16 +388,14 @@ export class PlaybackRuntime {
     }
   }
 
+  // Note audio is handled via event handlers in App.tsx — do not call
+  // audioEngine.playTone/stopTone here to avoid duplicate playback
   private _playNoteStart(): void {
-    const note = this._melody[this.currentNoteIndex]
-    if (note?.note.midi !== 0) {
-      const beatDurationMs = 60000 / this._bpm
-      this.audioEngine.playTone(note.note.freq, note.duration * beatDurationMs)
-    }
+    // State tracking only — audio triggered by noteStart event in App.tsx
   }
 
   private _playNoteEnd(): void {
-    this.audioEngine.stopTone()
+    // State tracking only — audio stopped by noteEnd event in App.tsx
   }
 
   // ── Config Accessors ───────────────────────────────────────
