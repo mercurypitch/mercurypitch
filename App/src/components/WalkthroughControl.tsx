@@ -1,0 +1,70 @@
+// ============================================================
+// Walkthrough Control — Button to access walkthroughs anytime
+// ============================================================
+
+import type { Component } from 'solid-js'
+import { createSignal, Show } from 'solid-js'
+import { appStore } from '@/stores/app-store'
+import { WalkthroughModal, WalkthroughSelection } from '@/components'
+import { WalkthroughTab } from '@/stores/walkthrough-store'
+
+interface WalkthroughControlProps {
+  showOnStart?: boolean
+}
+
+export const WalkthroughControl: Component<WalkthroughControlProps> = (props) => {
+  const [showModal, setShowModal] = createSignal(false)
+  const [showSelection, setShowSelection] = createSignal(false)
+
+  const handleOpenWalkthroughs = () => {
+    setShowSelection(true)
+  }
+
+  const handleWalkthroughSelect = (tab: WalkthroughTab) => {
+    setShowSelection(false)
+    setShowModal(true)
+  }
+
+  const handleCloseWalkthroughModal = () => {
+    setShowModal(false)
+  }
+
+  const handleCloseSelection = () => {
+    setShowSelection(false)
+  }
+
+  return (
+    <>
+      {/* Main Walkthrough Selection (shown on app start or via button) */}
+      <Show when={showSelection()}>
+        <WalkthroughSelection
+          isOpen={showSelection()}
+          onClose={handleCloseSelection}
+        />
+      </Show>
+
+      {/* Walkthrough Modal */}
+      <WalkthroughModal
+        isOpen={showModal()}
+        onClose={handleCloseWalkthroughModal}
+      />
+
+      {/* Trigger Button (shown in settings or header) */}
+      <Show when={!props.showOnStart}>
+        <button
+          class="walkthrough-control-btn"
+          onClick={handleOpenWalkthroughs}
+          title="View PitchPerfect walkthroughs"
+        >
+          <svg viewBox="0 0 24 24" width="18" height="18">
+            <path
+              fill="currentColor"
+              d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"
+            />
+          </svg>
+          <span class="walkthrough-control-text">Learn</span>
+        </button>
+      </Show>
+    </>
+  )
+}
