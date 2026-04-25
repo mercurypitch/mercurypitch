@@ -24,7 +24,7 @@ export const PrecCountButton: Component = () => {
         <svg viewBox="0 0 24 24" width="16" height="16">
           <path
             fill="currentColor"
-          d="M6 2h12v5.17l-4 4v1.66l4 4V22H6v-5.17l4-4v-1.66l-4-4V2zm2 2v3.17l4 4 4-4V4H8zm0 13.17v3.83h8v-3.83l-4-4-4 4z"
+            d="M6 2h12v5.17l-4 4v1.66l4 4V22H6v-5.17l4-4v-1.66l-4-4V2zm2 2v3.17l4 4 4-4V4H8zm0 13.17v3.83h8v-3.83l-4-4-4 4z"
           />
         </svg>
       </button>

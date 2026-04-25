@@ -87,7 +87,9 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
       MelodyData,
     ][]
     return entries
-      .filter(([, m]) => m.name !== null && m.name.toLowerCase().includes(query))
+      .filter(
+        ([, m]) => m.name !== null && m.name.toLowerCase().includes(query),
+      )
       .sort((a, b): number => (b[1].playCount ?? 0) - (a[1].playCount ?? 0))
   })
 

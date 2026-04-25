@@ -4,7 +4,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createEffect, createMemo, createSignal, onCleanup, onMount, Show } from 'solid-js'
+import { createEffect, createMemo, createSignal, onCleanup, onMount, Show, } from 'solid-js'
 import { AppSidebar } from '@/components/AppSidebar'
 import { FocusMode } from '@/components/FocusMode'
 import { HistoryCanvas } from '@/components/HistoryCanvas'
@@ -21,6 +21,8 @@ import { SettingsPanel } from '@/components/SettingsPanel'
 import type { PracticeSubMode } from '@/components/shared/SharedControlToolbar'
 import { SharedControlToolbar } from '@/components/shared/SharedControlToolbar'
 import { Walkthrough } from '@/components/Walkthrough'
+import { WalkthroughControl } from '@/components/WalkthroughControl'
+import { WalkthroughModal } from '@/components/WalkthroughModal'
 import { WelcomeScreen } from '@/components/WelcomeScreen'
 import type { InstrumentType } from '@/lib/audio-engine'
 import { AudioEngine } from '@/lib/audio-engine'
@@ -29,7 +31,7 @@ import { PlaybackRuntime } from '@/lib/playback-runtime'
 import { PracticeEngine } from '@/lib/practice-engine'
 import { melodyIndexAtBeat } from '@/lib/scale-data'
 import { buildMultiOctaveScale, keyTonicFreq, melodyTotalBeats, midiToNote, } from '@/lib/scale-data'
-import { generateShareURL,hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
+import { generateShareURL, hasSharedPresetInURL, loadFromURL, } from '@/lib/share-url'
 import { appStore, getNoteAccuracyMap } from '@/stores/app-store'
 import { melodyStore } from '@/stores/melody-store'
 import { playback } from '@/stores/playback-store'
@@ -276,7 +278,10 @@ export const App: Component<AppProps> = (props) => {
   const _handleExportMIDI = () => {
     const melody = melodyStore.items()
     const bpm = appStore.bpm()
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
+    const timestamp = new Date()
+      .toISOString()
+      .replace(/[:.]/g, '-')
+      .slice(0, 19)
     const _result = downloadMIDI(melody, bpm, `pitchperfect-${timestamp}.mid`)
     if (_result !== null) {
       appStore.showNotification('MIDI file exported!', 'success')
@@ -297,7 +302,10 @@ export const App: Component<AppProps> = (props) => {
         const melody = importMelodyFromMIDI(data)
         if (melody !== null && melody.length > 0) {
           melodyStore.setMelody(melody)
-          appStore.showNotification(`Imported ${melody.length} note(s) from MIDI`, 'success')
+          appStore.showNotification(
+            `Imported ${melody.length} note(s) from MIDI`,
+            'success',
+          )
         } else {
           appStore.showNotification('Could not parse MIDI file', 'error')
         }
@@ -403,16 +411,23 @@ export const App: Component<AppProps> = (props) => {
     }
 
     // Expose appStore to window for e2e tests
-    ;(window as unknown as { __appStore: typeof appStore }).__appStore = appStore
+    ;(window as unknown as { __appStore: typeof appStore }).__appStore =
+      appStore
+    ;(window as unknown as { melodyStore: typeof melodyStore }).melodyStore =
+      melodyStore
 
     // Expose session playback handlers for LibraryTab
-    ;(window as unknown as {
-      __loadAndPlayMelodyForSession: (melodyId: string) => void
-      __playSessionSequence: (melodyIds: string[]) => void
-    }).__loadAndPlayMelodyForSession = loadAndPlayMelodyForSession
-    ;(window as unknown as {
-      __playSessionSequence: (melodyIds: string[]) => void
-    }).__playSessionSequence = playSessionSequence
+    ;(
+      window as unknown as {
+        __loadAndPlayMelodyForSession: (melodyId: string) => void
+        __playSessionSequence: (melodyIds: string[]) => void
+      }
+    ).__loadAndPlayMelodyForSession = loadAndPlayMelodyForSession
+    ;(
+      window as unknown as {
+        __playSessionSequence: (melodyIds: string[]) => void
+      }
+    ).__playSessionSequence = playSessionSequence
 
     // Fallback: direct click listeners on tab buttons in case SolidJS delegation misses them
     // This handles the edge case where innerHTML-created elements need explicit handlers
@@ -1215,7 +1230,12 @@ export const App: Component<AppProps> = (props) => {
     if (scale === null || scale.length === 0) {
       // Fallback to a minimum scale (C major, 2 octaves) if scale is empty
       console.warn('Scale is empty, using fallback')
-      const fallbackScale = buildMultiOctaveScale('C', melodyStore.currentOctave(), 2, 'major')
+      const fallbackScale = buildMultiOctaveScale(
+        'C',
+        melodyStore.currentOctave(),
+        2,
+        'major',
+      )
       if (fallbackScale === null || fallbackScale.length === 0) return
       scale = fallbackScale
     }
@@ -1434,11 +1454,11 @@ export const App: Component<AppProps> = (props) => {
 
   return (
     <div id="app">
-      {/* Welcome screen overlay (GH #131) */}
-      <Show when={showWelcome()}>
-        <WelcomeScreen onEnableMic={handleMicToggle} />
-      </Show>
-      <Walkthrough />
+      {/* Walkthrough Selection (shown on app start if walkthroughs remain) */}
+      <WalkthroughControl showOnStart={true} />
+
+      {/* Walkthrough Modal */}
+      <WalkthroughModal isOpen={false} onClose={() => {}} />
 
       {/* Sidebar backdrop (mobile) */}
       <Show when={sidebarOpen()}>
@@ -1472,6 +1492,10 @@ export const App: Component<AppProps> = (props) => {
               </h1>
             </button>
             <p class="subtitle">Voice Pitch Practice</p>
+          </div>
+          <div class="header-right">
+            {/* Walkthrough Control Button */}
+            <WalkthroughControl showOnStart={false} />
           </div>
           <nav id="app-tabs">
             <button
@@ -1696,6 +1720,7 @@ export const App: Component<AppProps> = (props) => {
           countInBeat={countInBeat}
           isCountingIn={isCountingIn}
           currentBeat={currentBeat}
+          currentNoteIndex={currentNoteIndex}
           onPlay={handlePlay}
           onPause={handlePause}
           onResume={handleResume}
@@ -1777,13 +1802,16 @@ export const App: Component<AppProps> = (props) => {
               <div id="score-history">
                 <h3 class="history-title">Recent Progress</h3>
                 <div class="history-chart">
-                  {appStore.sessionHistory().slice(0, 10).map((session) => (
-                    <div
-                      class="history-bar"
-                      style={{ height: `${session.score}%` }}
-                      title={`Score: ${session.score}%`}
-                    />
-                  ))}
+                  {appStore
+                    .sessionHistory()
+                    .slice(0, 10)
+                    .map((session) => (
+                      <div
+                        class="history-bar"
+                        style={{ height: `${session.score}%` }}
+                        title={`Score: ${session.score}%`}
+                      />
+                    ))}
                 </div>
               </div>
             </Show>
@@ -1855,10 +1883,7 @@ export const App: Component<AppProps> = (props) => {
 
       {/* Library Modal */}
       <Show when={appStore.isLibraryModalOpen()}>
-        <LibraryModal
-          isOpen={true}
-          close={() => appStore.hideLibrary()}
-        />
+        <LibraryModal isOpen={true} close={() => appStore.hideLibrary()} />
       </Show>
 
       {/* Session Library Modal */}

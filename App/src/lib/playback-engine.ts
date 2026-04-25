@@ -341,7 +341,10 @@ export class PlaybackEngine implements PlaybackTimekeeper {
         }
 
         // Only trigger metronome on beat boundaries during count-in
-        if (this.metronomeEnabledFn() && currentIntBeat !== this.metronomeLastCountInBeat) {
+        if (
+          this.metronomeEnabledFn() &&
+          currentIntBeat !== this.metronomeLastCountInBeat
+        ) {
           this._triggerMetronome(currentIntBeat)
           this.metronomeLastCountInBeat = currentIntBeat
         }

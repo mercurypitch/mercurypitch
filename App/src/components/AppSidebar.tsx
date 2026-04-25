@@ -212,13 +212,9 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
 
       {/* Preset selector */}
       <div class="sidebar-section" id="preset-section">
-        <PresetSelector
-        />
+        <PresetSelector />
         {/* Pill gallery for recent presets */}
-        <PresetPillGallery
-          onLoad={props.onPresetLoad}
-          _melody={props.melody}
-        />
+        <PresetPillGallery onLoad={props.onPresetLoad} _melody={props.melody} />
       </div>
 
       {/* Library */}

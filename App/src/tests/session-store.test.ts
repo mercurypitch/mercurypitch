@@ -4,7 +4,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { advanceSessionItem, endPracticeSession, getCurrentSessionItem, initSessionHistory, isInSessionMode, recordSessionItemResult, startPracticeSession, } from '@/stores/app-store'
-import type { NoteResult,SessionItem } from '@/types'
+import type { NoteResult, SessionItem } from '@/types'
 
 // Mock localStorage
 const localStorageMock = (() => {
@@ -30,7 +30,14 @@ interface TestSession {
   name: string
   description?: string
   difficulty: 'beginner' | 'intermediate' | 'advanced' | 'expert'
-  category: 'warmup' | 'scales' | 'melodic' | 'rhythmic' | 'ear_training' | 'custom' | 'vocal'
+  category:
+    | 'warmup'
+    | 'scales'
+    | 'melodic'
+    | 'rhythmic'
+    | 'ear_training'
+    | 'custom'
+    | 'vocal'
   items: SessionItem[]
   mode?: 'once' | 'repeat' | 'practice'
   cycles?: number

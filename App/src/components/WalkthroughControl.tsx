@@ -4,9 +4,9 @@
 
 import type { Component } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
-import { appStore } from '@/stores/app-store'
 import { WalkthroughModal, WalkthroughSelection } from '@/components'
-import { WalkthroughTab } from '@/stores/walkthrough-store'
+import { appStore } from '@/stores/app-store'
+import type { WalkthroughTab } from '@/stores/walkthrough-store'
 
 interface WalkthroughControlProps {
   showOnStart?: boolean
@@ -15,18 +15,31 @@ interface WalkthroughControlProps {
 export const WalkthroughControl: Component<WalkthroughControlProps> = (props) => {
   const [showModal, setShowModal] = createSignal(false)
   const [showSelection, setShowSelection] = createSignal(false)
+  const [selectedWalkthrough, setSelectedWalkthrough] = createSignal<string | null>(null)
+  const [walkthroughTab, setWalkthroughTab] = createSignal<WalkthroughTab>('practice')
 
   const handleOpenWalkthroughs = () => {
     setShowSelection(true)
+    setSelectedWalkthrough(null)
   }
 
   const handleWalkthroughSelect = (tab: WalkthroughTab) => {
+    setSelectedWalkthrough(null)
+    setWalkthroughTab(tab)
+    setShowSelection(false)
+    setShowModal(true)
+  }
+
+  const handleStartWalkthrough = (walkthroughId: string, walkthroughTab: WalkthroughTab) => {
+    setSelectedWalkthrough(walkthroughId)
+    setWalkthroughTab(walkthroughTab)
     setShowSelection(false)
     setShowModal(true)
   }
 
   const handleCloseWalkthroughModal = () => {
     setShowModal(false)
+    setSelectedWalkthrough(null)
   }
 
   const handleCloseSelection = () => {
@@ -47,6 +60,8 @@ export const WalkthroughControl: Component<WalkthroughControlProps> = (props) =>
       <WalkthroughModal
         isOpen={showModal()}
         onClose={handleCloseWalkthroughModal}
+        initialTab={walkthroughTab()}
+        initialWalkthroughId={selectedWalkthrough()}
       />
 
       {/* Trigger Button (shown in settings or header) */}

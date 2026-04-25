@@ -3,15 +3,16 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createSignal, onCleanup, Show } from 'solid-js'
+import { createEffect, createSignal, onCleanup, Show } from 'solid-js'
 import { appStore } from '@/stores/app-store'
+import type {
+  WalkthroughTab} from '@/stores/walkthrough-store';
 import {
   completeWalkthrough,
   getWalkthrough,
   getWalkthroughsForTab,
   isWalkthroughCompleted,
-  viewWalkthrough,
-  WalkthroughTab,
+  viewWalkthrough
 } from '@/stores/walkthrough-store'
 import type { WalkthroughContent } from '@/types/walkthrough'
 
@@ -31,6 +32,20 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
   )
   const [currentStepIndex, setCurrentStepIndex] = createSignal(0)
   const [isCompleted, setIsCompleted] = createSignal(false)
+
+  // Load walkthrough when initially provided and modal opens
+  createEffect(() => {
+    if (props.initialWalkthroughId && props.isOpen) {
+      startWalkthrough(props.initialWalkthroughId)
+    }
+  })
+
+  // Sync tab with initialTab prop changes
+  createEffect(() => {
+    if (props.initialTab !== undefined) {
+      setCurrentTab(props.initialTab)
+    }
+  })
 
   // Reset on tab change
   const handleTabChange = (tab: WalkthroughTab) => {

@@ -331,7 +331,9 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
           <div class="practice-mode-badge">
             <span class="mode-label">Mode:</span>
             <span class="mode-value" id="practice-mode-indicator">
-              {activePracticeMode(props.playMode, () => appStore.sessionActive())}
+              {activePracticeMode(props.playMode, () =>
+                appStore.sessionActive(),
+              )}
             </span>
           </div>
         </Show>
@@ -510,9 +512,16 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
                 title="Save melody to library"
               >
                 <svg viewBox="0 0 24 24" width="16" height="16">
-                  <path fill="currentColor" d="M19 12v7H5v-7H3v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2zm-6 .67l2.59-2.58L17 11.5l-5 5-5-5 1.41-1.41L11 12.67V3h2v9.67z" />
+                  <path
+                    fill="currentColor"
+                    d="M19 12v7H5v-7H3v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2zm-6 .67l2.59-2.58L17 11.5l-5 5-5-5 1.41-1.41L11 12.67V3h2v9.67z"
+                  />
                 </svg>
-                {(props.onSaveMelodyLabel !== null && props.onSaveMelodyLabel !== undefined && props.onSaveMelodyLabel.length > 0) && <span>{props.onSaveMelodyLabel}</span>}
+                {props.onSaveMelodyLabel !== null &&
+                  props.onSaveMelodyLabel !== undefined &&
+                  props.onSaveMelodyLabel.length > 0 && (
+                    <span>{props.onSaveMelodyLabel}</span>
+                  )}
               </button>
             </div>
           </ControlGroup>

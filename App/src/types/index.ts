@@ -110,7 +110,12 @@ export interface KeySignature {
 }
 
 /** Progress bar value for practice engine */
-export type ProgressBarValue = 'ready' | 'playing' | 'paused' | 'precount' | 'complete'
+export type ProgressBarValue =
+  | 'ready'
+  | 'playing'
+  | 'paused'
+  | 'precount'
+  | 'complete'
 
 /** Note result from practice engine */
 export interface NoteResult {
@@ -247,7 +252,14 @@ export interface HistoryEntry {
   /** Time of action */
   timestamp: number
   /** Action type */
-  type: 'preset_load' | 'preset_save' | 'preset_delete' | 'tab_change' | 'note_add' | 'note_delete' | 'note_edit'
+  type:
+    | 'preset_load'
+    | 'preset_save'
+    | 'preset_delete'
+    | 'tab_change'
+    | 'note_add'
+    | 'note_delete'
+    | 'note_edit'
   /** Action details */
   details: Record<string, unknown>
 }
@@ -334,10 +346,21 @@ export interface MelodyLibrary {
 export type SessionItemType = 'preset' | 'scale' | 'rest' | 'melody'
 
 /** Session difficulty levels */
-export type SessionDifficulty = 'beginner' | 'intermediate' | 'advanced' | 'expert'
+export type SessionDifficulty =
+  | 'beginner'
+  | 'intermediate'
+  | 'advanced'
+  | 'expert'
 
 /** Session categories */
-export type SessionCategory = 'warmup' | 'scales' | 'melodic' | 'rhythmic' | 'ear_training' | 'custom' | 'vocal'
+export type SessionCategory =
+  | 'warmup'
+  | 'scales'
+  | 'melodic'
+  | 'rhythmic'
+  | 'ear_training'
+  | 'custom'
+  | 'vocal'
 
 /** A session item in user sessions */
 export interface SessionItem {
@@ -445,4 +468,43 @@ export interface SessionHistoryEntry {
   rating?: AccuracyRating
   /** Timestamp */
   completedAt: number
+}
+
+/** Walkthrough tab type */
+export type WalkthroughTab = 'practice' | 'editor' | 'settings'
+
+/** Walkthrough step definition */
+export interface WalkthroughStep {
+  /** Step title */
+  title: string
+  /** Step description */
+  description: string
+  /** Action to perform */
+  action: string
+  /** CSS selector for target element (optional) */
+  target?: string
+}
+
+/** Walkthrough content definition */
+export interface WalkthroughContent {
+  /** Unique identifier */
+  id: string
+  /** Target tab */
+  tab: WalkthroughTab
+  /** Display title */
+  title: string
+  /** Short description */
+  description: string
+  /** Detailed content text */
+  content: string
+  /** Step-by-step instructions */
+  steps: WalkthroughStep[]
+  /** Visual icon/thumbnail */
+  thumbnail: string
+}
+
+/** Walkthrough progress tracking */
+export interface WalkthroughProgress {
+  /** Walkthrough ID -> timestamp when viewed/completed */
+  [id: string]: number
 }

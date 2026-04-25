@@ -2,23 +2,22 @@
 // Walkthrough Selection — Show walkthrough options on app start
 // ============================================================
 
-import type { Component } from 'solid-js'
-import { createMemo, createSignal, Show } from 'solid-js'
-import { appStore } from '@/stores/app-store'
+import type {
+  WalkthroughTab} from '@/stores/walkthrough-store';
 import {
   completeWalkthrough,
-  getCompletionPercentage,
   getCompletedWalkthroughs,
+  getCompletionPercentage,
   getRemainingWalkthroughs,
   getTotalWalkthroughCount,
   isWalkthroughCompleted,
-  viewWalkthrough,
-  WalkthroughTab,
+  viewWalkthrough
 } from '@/stores/walkthrough-store'
 
 interface WalkthroughSelectionProps {
   isOpen: boolean
   onClose: () => void
+  onStartWalkthrough: (walkthroughId: string, tab: WalkthroughTab) => void
 }
 
 export const WalkthroughSelection: Component<WalkthroughSelectionProps> = (props) => {
@@ -29,13 +28,13 @@ export const WalkthroughSelection: Component<WalkthroughSelectionProps> = (props
   const total = createMemo(() => getTotalWalkthroughCount())
   const percentage = createMemo(() => getCompletionPercentage())
 
-  const handleWalkthroughSelect = (id: string) => {
-    viewWalkthrough(id)
-    props.onClose()
+  const handleWalkthroughSelect = (walkthrough: { id: string, tab: WalkthroughTab }) => {
+    viewWalkthrough(walkthrough.id)
+    props.onStartWalkthrough(walkthrough.id, walkthrough.tab)
   }
 
-  const handleComplete = (id: string) => {
-    completeWalkthrough(id)
+  const handleComplete = (walkthrough: { id: string }) => {
+    completeWalkthrough(walkthrough.id)
   }
 
   const handleClickOutside = (e: MouseEvent) => {
@@ -112,7 +111,7 @@ export const WalkthroughSelection: Component<WalkthroughSelectionProps> = (props
               >
                 <button
                   class="ws-item-button"
-                  onClick={() => handleWalkthroughSelect(walkthrough.id)}
+                  onClick={() => handleWalkthroughSelect(walkthrough)}
                 >
                   <span class="ws-item-icon">📖</span>
                   <div class="ws-item-content">
@@ -137,7 +136,7 @@ export const WalkthroughSelection: Component<WalkthroughSelectionProps> = (props
                 {completed().map((walkthrough) => (
                   <button
                     class="ws-completed-item"
-                    onClick={() => handleWalkthroughSelect(walkthrough.id)}
+                    onClick={() => handleWalkthroughSelect(walkthrough)}
                   >
                     <span class="ws-item-icon">✓</span>
                     <span class="ws-item-title">{walkthrough.title}</span>

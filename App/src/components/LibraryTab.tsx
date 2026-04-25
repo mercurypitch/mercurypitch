@@ -28,7 +28,9 @@ export const LibraryTab: Component = () => {
     const session = userSession()
     return session?.melodyIds ?? []
   })
-  const selectedMelodyIds = createMemo(() => appStore.getSelectedMelodyIds?.() ?? [])
+  const selectedMelodyIds = createMemo(
+    () => appStore.getSelectedMelodyIds?.() ?? [],
+  )
   const sessionMelodies = createMemo(() => {
     const ids = sessionMelodyIds()
     return ids
@@ -37,9 +39,15 @@ export const LibraryTab: Component = () => {
   })
 
   // Practice session items (legacy model)
-  const practiceSessionItems = createMemo(() => appStore.practiceSession()?.items ?? [])
-  const currentSessionItemIndex = createMemo(() => appStore.getCurrentSessionItemIndex())
-  const hasActivePracticeSession = createMemo(() => appStore.practiceSession() !== null)
+  const practiceSessionItems = createMemo(
+    () => appStore.practiceSession()?.items ?? [],
+  )
+  const currentSessionItemIndex = createMemo(() =>
+    appStore.getCurrentSessionItemIndex(),
+  )
+  const hasActivePracticeSession = createMemo(
+    () => appStore.practiceSession() !== null,
+  )
 
   const openLibrary = () => {
     appStore.showLibrary()
@@ -98,9 +106,13 @@ export const LibraryTab: Component = () => {
    * Get the session playback handler from window (set by App.tsx)
    */
   const getSessionPlaybackHandler = (): ((melodyId: string) => void) | null => {
-    return (window as unknown as {
-      __loadAndPlayMelodyForSession?: (melodyId: string) => void
-    }).__loadAndPlayMelodyForSession ?? null
+    return (
+      (
+        window as unknown as {
+          __loadAndPlayMelodyForSession?: (melodyId: string) => void
+        }
+      ).__loadAndPlayMelodyForSession ?? null
+    )
   }
 
   const handlePlaySelected = () => {
@@ -135,9 +147,11 @@ export const LibraryTab: Component = () => {
     if (ids.length === 0) return
 
     // Get the sequence playback handler from window (set by App.tsx)
-    const handler = (window as unknown as {
-      __playSessionSequence?: (melodyIds: string[]) => void
-    }).__playSessionSequence
+    const handler = (
+      window as unknown as {
+        __playSessionSequence?: (melodyIds: string[]) => void
+      }
+    ).__playSessionSequence
 
     if (handler !== undefined) {
       handler(ids)
@@ -190,29 +204,56 @@ export const LibraryTab: Component = () => {
               {userSession()?.name ?? 'Session'} ({sessionMelodies().length})
             </p>
             <div class="session-actions">
-              <button class="pill-action-btn" onClick={handlePlaySessionSequence} title="Play All in sequence">
+              <button
+                class="pill-action-btn"
+                onClick={handlePlaySessionSequence}
+                title="Play All in sequence"
+              >
                 ▶▶
               </button>
               <Show when={selectedMelodyIds().length > 1}>
-                <button class="pill-action-btn" onClick={handlePlaySelected} title="Play Selected">
+                <button
+                  class="pill-action-btn"
+                  onClick={handlePlaySelected}
+                  title="Play Selected"
+                >
                   ▶ Selected
                 </button>
               </Show>
-              <Show when={selectedMelodyIds().length > 0 && sessionMelodies().length > selectedMelodyIds().length}>
-                <button class="pill-action-btn" onClick={() => appStore.selectAllMelodies?.()} title="Select All">
+              <Show
+                when={
+                  selectedMelodyIds().length > 0 &&
+                  sessionMelodies().length > selectedMelodyIds().length
+                }
+              >
+                <button
+                  class="pill-action-btn"
+                  onClick={() => appStore.selectAllMelodies?.()}
+                  title="Select All"
+                >
                   ✓
                 </button>
               </Show>
               <Show when={selectedMelodyIds().length > 0}>
-                <button class="pill-action-btn" onClick={() => appStore.clearMelodySelection?.()} title="Clear Selection">
+                <button
+                  class="pill-action-btn"
+                  onClick={() => appStore.clearMelodySelection?.()}
+                  title="Clear Selection"
+                >
                   ✕
                 </button>
               </Show>
             </div>
           </div>
-          <Show when={sessionMelodies().length > 0} fallback={
-            <p class="empty-tip">No melodies in session. Save a melody and use "Save & Add to Session".</p>
-          }>
+          <Show
+            when={sessionMelodies().length > 0}
+            fallback={
+              <p class="empty-tip">
+                No melodies in session. Save a melody and use "Save & Add to
+                Session".
+              </p>
+            }
+          >
             <div class="session-items-pills">
               <For each={sessionMelodies()}>
                 {(melody) => (
@@ -251,7 +292,13 @@ export const LibraryTab: Component = () => {
                 >
                   <span class="pill-icon">{getItemIcon(item)}</span>
                   <span class="pill-label">{item.label}</span>
-                  <Show when={item.repeat !== undefined && item.repeat !== null && item.repeat > 1}>
+                  <Show
+                    when={
+                      item.repeat !== undefined &&
+                      item.repeat !== null &&
+                      item.repeat > 1
+                    }
+                  >
                     <span class="pill-repeat">×{item.repeat}</span>
                   </Show>
                 </span>

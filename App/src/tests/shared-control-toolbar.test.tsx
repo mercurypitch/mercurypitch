@@ -4,7 +4,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import type { ActiveTab, PracticeSubMode } from '@/components/shared/SharedControlToolbar'
+import type { ActiveTab, PracticeSubMode, } from '@/components/shared/SharedControlToolbar'
 import { appStore } from '@/stores/app-store'
 
 // ========================================
@@ -65,39 +65,69 @@ describe('activePracticeMode utility', () => {
 
   it('returns "Session" when session is active', () => {
     appStore.setSessionActive(true)
-    const result = activePracticeMode(() => 'practice', () => appStore.sessionActive())
+    const result = activePracticeMode(
+      () => 'practice',
+      () => appStore.sessionActive(),
+    )
     expect(result).toBe('Session')
   })
 
   it('returns "Run-once" when playMode is practice and no session', () => {
     appStore.setSessionActive(false)
-    const result = activePracticeMode(() => 'practice', () => appStore.sessionActive())
+    const result = activePracticeMode(
+      () => 'practice',
+      () => appStore.sessionActive(),
+    )
     expect(result).toBe('Run-once')
   })
 
   it('returns "Repeat" when playMode is repeat and no session', () => {
     appStore.setSessionActive(false)
-    const result = activePracticeMode(() => 'repeat', () => appStore.sessionActive())
+    const result = activePracticeMode(
+      () => 'repeat',
+      () => appStore.sessionActive(),
+    )
     expect(result).toBe('Repeat')
   })
 
   it('returns "Run-once" when playMode is once and no session', () => {
     appStore.setSessionActive(false)
-    const result = activePracticeMode(() => 'once', () => appStore.sessionActive())
+    const result = activePracticeMode(
+      () => 'once',
+      () => appStore.sessionActive(),
+    )
     expect(result).toBe('Run-once')
   })
 
   it('session takes priority over playMode', () => {
     appStore.setSessionActive(true)
-    const result = activePracticeMode(() => 'repeat', () => appStore.sessionActive())
+    const result = activePracticeMode(
+      () => 'repeat',
+      () => appStore.sessionActive(),
+    )
     expect(result).toBe('Session')
   })
 
   it('distinguishes all three practice modes correctly', () => {
     appStore.setSessionActive(false)
-    expect(activePracticeMode(() => 'once', () => false)).toBe('Run-once')
-    expect(activePracticeMode(() => 'repeat', () => false)).toBe('Repeat')
-    expect(activePracticeMode(() => 'practice', () => false)).toBe('Run-once')
+    expect(
+      activePracticeMode(
+        () => 'once',
+        () => false,
+      ),
+    ).toBe('Run-once')
+    expect(
+      activePracticeMode(
+        () => 'repeat',
+        () => false,
+      ),
+    ).toBe('Repeat')
+    expect(
+      activePracticeMode(
+        () => 'practice',
+        () => false,
+      ),
+    ).toBe('Run-once')
   })
 })
 
@@ -117,8 +147,14 @@ describe('SCALE_TYPES constant', () => {
   it('has matching values for all scale types', () => {
     expect(SCALE_TYPES).toHaveLength(8)
     const expectedValues = [
-      'major', 'minor', 'harmonic-minor', 'pentatonic',
-      'blues', 'chromatic', 'dorian', 'mixolydian',
+      'major',
+      'minor',
+      'harmonic-minor',
+      'pentatonic',
+      'blues',
+      'chromatic',
+      'dorian',
+      'mixolydian',
     ]
     const actualValues = SCALE_TYPES.map((s) => s.value)
     expect(actualValues).toEqual(expectedValues)

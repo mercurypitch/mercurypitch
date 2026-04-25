@@ -185,8 +185,11 @@ export class PlaybackRuntime {
   pause(): void {
     if (!this.isPlaying || this.isPaused) return
 
-    // Record the time offset to resume correctly
-    this.pauseOffset += performance.now() - this.playStartTime
+    // Record the pause offset to resume correctly
+    // We add the elapsed time since playStartTime to the accumulated offset
+    if (this.playStartTime > 0) {
+      this.pauseOffset += performance.now() - this.playStartTime
+    }
     // Record when we paused for cleanup in resume()
     this.pauseStartTime = performance.now()
     this.isPaused = true
@@ -198,14 +201,15 @@ export class PlaybackRuntime {
   resume(): void {
     if (!this.isPlaying || !this.isPaused) return
 
-    // Add accumulated pause time to our offset
-    this.pauseOffset +=
-      this.pauseStartTime > 0 ? performance.now() - this.pauseStartTime : 0
-    this.pauseStartTime = 0
+    // Add accumulated pause time to our offset for the next pause
+    if (this.pauseStartTime > 0) {
+      this.pauseOffset += performance.now() - this.pauseStartTime
+      this.pauseStartTime = 0
+    }
 
     this.isPaused = false
     this.isPlaying = true
-    // Reset playStartTime so we can track since resume
+    // Reset playStartTime so we can track elapsed time from this resume
     this.playStartTime = performance.now()
     this._emit({ type: 'state', state: 'playing' })
     this._startAnimationLoop()

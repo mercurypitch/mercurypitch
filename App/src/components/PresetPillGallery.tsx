@@ -25,9 +25,7 @@ export const PresetPillGallery: Component<PresetPillGalleryProps> = (props) => {
     const names = presetNames()
     const current = appStore.currentPresetName()
     // Get unique names, excluding current, limit to 8
-    return names
-      .filter((n) => n !== current)
-      .slice(0, 8)
+    return names.filter((n) => n !== current).slice(0, 8)
   }
 
   const handleLoad = (name: string) => {

@@ -2,9 +2,9 @@
 // Walkthrough Store — Track completed walkthroughs
 // ============================================================
 
-import type { WalkthroughTab } from '@/types/walkthrough'
 import { createSignal } from 'solid-js'
-import { WALKTHROUGHS, WalkthroughProgress } from '@/types/walkthrough'
+import type { WalkthroughProgress,WalkthroughTab } from '@/types/walkthrough'
+import {WALKTHROUGHS } from '@/types/walkthrough'
 
 /** Export WalkthroughTab type for use in components */
 export type { WalkthroughTab }

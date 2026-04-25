@@ -5,7 +5,7 @@
 import type { Component } from 'solid-js'
 import { createSignal, For } from 'solid-js'
 import { PRACTICE_SESSIONS } from '@/data/sessions'
-import type { SessionCategory, SessionDifficulty, SessionTemplate } from '@/types'
+import type { SessionCategory, SessionDifficulty, SessionTemplate, } from '@/types'
 
 type FilterCategory = 'all' | SessionCategory
 
@@ -91,7 +91,7 @@ export const SessionBrowser: Component<SessionBrowserProps> = (props) => {
                 class={`session-cat-btn ${activeCategory() === cat ? 'active' : ''}`}
                 onClick={() => setActiveCategory(cat)}
               >
-                {cat === 'all' ? 'All' : CATEGORY_LABELS[cat] ?? cat}
+                {cat === 'all' ? 'All' : (CATEGORY_LABELS[cat] ?? cat)}
               </button>
             )}
           </For>

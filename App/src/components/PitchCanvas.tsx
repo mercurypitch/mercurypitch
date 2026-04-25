@@ -23,11 +23,37 @@ interface PitchCanvasProps {
   getWaveform?: () => Float32Array | null
 }
 
+// Spring-physics state for Yousician-style bouncing dot animation
+interface DotState {
+  freq: number
+  targetFreq: number
+  velocity: number
+  prevNoteIndex: number
+  noteStartTime: number
+  trail: { freq: number; alpha: number; time: number }[]
+}
+
+const SPRING_STIFFNESS = 280
+const SPRING_DAMPING = 14
+const DOT_RADIUS = 7
+const GLOW_RADIUS = 18
+
 export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
   let canvasRef: HTMLCanvasElement | undefined
   let ctx: CanvasRenderingContext2D | null = null
   let animFrameId: number | null = null
   let isSeeking = false
+
+  // Yousician spring-bounce state
+  const dotState: DotState = {
+    freq: 0,
+    targetFreq: 0,
+    velocity: 0,
+    prevNoteIndex: -1,
+    noteStartTime: 0,
+    trail: [],
+  }
+  let lastRafTime = 0
 
   onMount(() => {
     if (!canvasRef) return
@@ -88,11 +114,50 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
   }
 
   const startLoop = () => {
-    const loop = () => {
+    const loop = (ts: number) => {
+      updateSpring(ts)
       draw()
       animFrameId = requestAnimationFrame(loop)
     }
+    lastRafTime = 0
     animFrameId = requestAnimationFrame(loop)
+  }
+
+  // Spring physics tick — call once per RAF frame
+  const updateSpring = (now: number) => {
+    const melody = props.melody()
+    const noteIndex = props.currentNoteIndex()
+    const beat = props.currentBeat()
+
+    // Detect note change → snap target and trigger jump
+    if (noteIndex !== dotState.prevNoteIndex) {
+      dotState.prevNoteIndex = noteIndex
+      dotState.noteStartTime = now
+
+      if (noteIndex >= 0 && melody[noteIndex]) {
+        dotState.targetFreq = melody[noteIndex].note.freq
+      }
+    }
+
+    // Always track melody head with linear x-position
+    // Spring only handles Y (frequency = pitch)
+    const springT = SPRING_STIFFNESS * (dotState.targetFreq - dotState.freq)
+    const dampT = SPRING_DAMPING * dotState.velocity
+    dotState.velocity += (springT - dampT) * 0.001
+    dotState.freq += dotState.velocity * 0.016
+
+    // Add trail points for glow fade
+    if (props.isPlaying?.() && !props.isPaused?.()) {
+      dotState.trail.push({
+        freq: dotState.freq,
+        alpha: 0.6,
+        time: now,
+      })
+      // Fade and prune trail (keep last 80ms)
+      dotState.trail = dotState.trail.filter(
+        (pt) => now - pt.time < 80,
+      )
+    }
   }
 
   const freqToY = (freq: number, h: number): number => {
@@ -297,7 +362,12 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       let started = false
       const isRecordingMode = props.isRecording?.() ?? false
       for (const pt of history) {
-        if (pt.freq === null || pt.freq === undefined || pt.freq === 0 || pt.cents === undefined) {
+        if (
+          pt.freq === null ||
+          pt.freq === undefined ||
+          pt.freq === 0 ||
+          pt.cents === undefined
+        ) {
           started = false
           continue
         }
@@ -321,7 +391,12 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       ctx.stroke()
 
       const last = history[history.length - 1]
-      if (last.cents !== undefined && last.freq !== null && last.freq !== undefined && last.freq > 0) {
+      if (
+        last.cents !== undefined &&
+        last.freq !== null &&
+        last.freq !== undefined &&
+        last.freq > 0
+      ) {
         let lx: number
         const ly = freqToY(last.freq, h)
         if (isRecordingMode) {
@@ -352,31 +427,59 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       }
     }
 
-    if (
-      props.isPlaying() &&
-      !props.isPaused() &&
-      props.currentNoteIndex() >= 0
-    ) {
-      const noteItem = melody[props.currentNoteIndex()]
-      if (noteItem !== null && noteItem !== undefined) {
-        const tx = beatToX(props.currentBeat(), w)
-        const ty = freqToY(noteItem.note.freq, h)
-        const grad2 = ctx.createRadialGradient(tx, ty, 0, tx, ty, 18)
-        grad2.addColorStop(0, 'rgba(88,166,255,0.45)')
+    // Yousician-style animated dot — uses spring physics for Y, linear for X
+    // Drawn on top of the melody static bars (which come from melody items)
+    if (props.isPlaying() && !props.isPaused()) {
+      const melody = props.melody()
+      const beat = props.currentBeat()
+      const tx = beatToX(beat, w)
+
+      if (dotState.targetFreq > 0) {
+        const ty = freqToY(dotState.freq, h)
+
+        // Spring overshoot trail: draw fading ghosts from trail buffer
+        for (const pt of dotState.trail) {
+          const age = (performance.now() - pt.time) / 80
+          const alpha = Math.max(0, 0.35 * (1 - age))
+          if (alpha > 0.01) {
+            const trailY = freqToY(pt.freq, h)
+            const grad = ctx.createRadialGradient(tx, trailY, 0, tx, trailY, 12)
+            grad.addColorStop(0, `rgba(88,166,255,${alpha})`)
+            grad.addColorStop(1, `rgba(88,166,255,0)`)
+            ctx.fillStyle = grad
+            ctx.beginPath()
+            ctx.arc(tx, trailY, 12, 0, Math.PI * 2)
+            ctx.fill()
+          }
+        }
+
+        // Outer glow
+        const grad2 = ctx.createRadialGradient(tx, ty, 0, tx, ty, GLOW_RADIUS)
+        grad2.addColorStop(0, 'rgba(88,166,255,0.5)')
         grad2.addColorStop(1, 'rgba(88,166,255,0)')
         ctx.fillStyle = grad2
         ctx.beginPath()
-        ctx.arc(tx, ty, 18, 0, Math.PI * 2)
+        ctx.arc(tx, ty, GLOW_RADIUS, 0, Math.PI * 2)
         ctx.fill()
+
+        // Dot body
         ctx.fillStyle = '#58a6ff'
         ctx.beginPath()
-        ctx.arc(tx, ty, 7, 0, Math.PI * 2)
+        ctx.arc(tx, ty, DOT_RADIUS, 0, Math.PI * 2)
         ctx.fill()
-        ctx.fillStyle = '#fff'
+
+        // Highlight
+        ctx.fillStyle = 'rgba(255,255,255,0.9)'
         ctx.beginPath()
-        ctx.arc(tx, ty, 3, 0, Math.PI * 2)
+        ctx.arc(tx - 2, ty - 2, 2.5, 0, Math.PI * 2)
         ctx.fill()
       }
+    } else if (!props.isPlaying() && !props.isPaused()) {
+      // Reset spring when stopped
+      dotState.freq = 0
+      dotState.targetFreq = 0
+      dotState.velocity = 0
+      dotState.trail = []
     }
 
     ctx.restore()

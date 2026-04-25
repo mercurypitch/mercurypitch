@@ -127,7 +127,7 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
           totalBeats={totalBeats}
           currentBeat={props.currentBeat}
           pitchHistory={props.pitchHistory}
-          currentNoteIndex={() => 0}
+          currentNoteIndex={props.currentNoteIndex ?? (() => 0)}
           isPlaying={props.isPlaying}
           isPaused={props.isPaused}
           isScrolling={() => false}

@@ -249,6 +249,30 @@ export interface WalkthroughStep {
   placement?: 'top' | 'bottom' | 'left' | 'right'
 }
 
+/** Check if there are remaining walkthroughs (not yet completed) */
+export function hasRemainingWalkthroughs(): boolean {
+  try {
+    const stored = localStorage.getItem('pitchperfect_walkthroughs')
+    if (!stored) return true
+    const progress = JSON.parse(stored) as Record<string, number>
+    return Object.keys(progress).length < 7 // Total walkthroughs = 7
+  } catch {
+    return true
+  }
+}
+
+/** Check how many walkthroughs are completed */
+export function getCompletedWalkthroughCount(): number {
+  try {
+    const stored = localStorage.getItem('pitchperfect_walkthroughs')
+    if (!stored) return 0
+    const progress = JSON.parse(stored) as Record<string, number>
+    return Object.keys(progress).length
+  } catch {
+    return 0
+  }
+}
+
 export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
   {
     title: 'Welcome to PitchPerfect',
@@ -910,7 +934,9 @@ export function clearMelodySelection(): void {
 let recursionDepth = 0
 const MAX_RECURSION = 10
 
-export function startPracticeSession(session: PracticeSession | SessionTemplate): void {
+export function startPracticeSession(
+  session: PracticeSession | SessionTemplate,
+): void {
   recursionDepth++
   if (recursionDepth > MAX_RECURSION) {
     console.error(
@@ -922,22 +948,27 @@ export function startPracticeSession(session: PracticeSession | SessionTemplate)
   }
   console.log('[startPracticeSession] called, recursionDepth:', recursionDepth)
   // Convert SessionTemplate to PracticeSession if needed
-  const practiceSession: PracticeSession = 'mode' in session
-    ? session as PracticeSession
-    : {
-        ...session,
-        mode: 'practice',
-        cycles: 1,
-        scale: { name: 'major', degrees: [0, 2, 4, 5, 7, 9, 11], description: '' },
-        currentCycle: 1,
-        beatsPerMeasure: 4,
-        isRecording: false,
-        noteResults: [],
-        score: 0,
-        duration: 0,
-        completedAt: 0,
-        itemsCompleted: 0,
-      }
+  const practiceSession: PracticeSession =
+    'mode' in session
+      ? (session as PracticeSession)
+      : {
+          ...session,
+          mode: 'practice',
+          cycles: 1,
+          scale: {
+            name: 'major',
+            degrees: [0, 2, 4, 5, 7, 9, 11],
+            description: '',
+          },
+          currentCycle: 1,
+          beatsPerMeasure: 4,
+          isRecording: false,
+          noteResults: [],
+          score: 0,
+          duration: 0,
+          completedAt: 0,
+          itemsCompleted: 0,
+        }
   setPracticeSession(practiceSession)
   setSessionItemIndex(0)
   setSessionItemRepeat(0)
@@ -1302,6 +1333,8 @@ export const appStore = {
   endWalkthrough,
   isWalkthroughActive,
   getWalkthroughStep,
+  hasRemainingWalkthroughs,
+  getCompletedWalkthroughCount,
 
   // Melody (for LibraryModal)
   createPlaylist: melodyStore.createPlaylist,

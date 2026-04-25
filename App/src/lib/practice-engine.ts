@@ -190,7 +190,13 @@ export class PracticeEngine {
 
   // ── Pitch Detection ──────────────────────────────────────
 
-  detectPitch(): { frequency: number; clarity: number; noteName: string; octave: number; cents: number } | null {
+  detectPitch(): {
+    frequency: number
+    clarity: number
+    noteName: string
+    octave: number
+    cents: number
+  } | null {
     if (!this.micActive) return null
 
     const timeData = this.audioEngine.getTimeData()
@@ -397,7 +403,11 @@ export class PracticeEngine {
     return Math.round(total / results.length)
   }
 
-  calculatePracticeResult(results: NoteResult[], name = 'Session', mode = 'practice' as PlaybackMode): PracticeResult {
+  calculatePracticeResult(
+    results: NoteResult[],
+    name = 'Session',
+    mode = 'practice' as PlaybackMode,
+  ): PracticeResult {
     return {
       score: this.calculateScore(results),
       noteCount: results.length,

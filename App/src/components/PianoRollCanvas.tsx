@@ -41,7 +41,9 @@ export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
 
     // Create and expose audio engine for piano roll playback
     audioEngine = new AudioEngine()
-    ;(window as unknown as { pianoRollAudioEngine: typeof audioEngine }).pianoRollAudioEngine = audioEngine
+    ;(
+      window as unknown as { pianoRollAudioEngine: typeof audioEngine }
+    ).pianoRollAudioEngine = audioEngine
 
     editor = new PianoRollEditor({
       container: containerRef,
@@ -55,8 +57,11 @@ export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
     editor.setTotalBeats(props.totalBeats())
 
     // Expose on window for debugging
-    ;(window as unknown as { pianoRollEditor: typeof editor }).pianoRollEditor = editor
-    ;(window as unknown as { pianoRollGenerateId: () => number }).pianoRollGenerateId = () => Date.now()
+    ;(window as unknown as { pianoRollEditor: typeof editor }).pianoRollEditor =
+      editor
+    ;(
+      window as unknown as { pianoRollGenerateId: () => number }
+    ).pianoRollGenerateId = () => Date.now()
   })
 
   // Propagate melody changes to the editor
@@ -145,9 +150,11 @@ export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
   onCleanup(() => {
     editor?.destroy()
     delete (window as unknown as { pianoRollEditor?: unknown }).pianoRollEditor
-    delete (window as unknown as { pianoRollGenerateId?: () => number }).pianoRollGenerateId
+    delete (window as unknown as { pianoRollGenerateId?: () => number })
+      .pianoRollGenerateId
     audioEngine?.destroy()
-    delete (window as unknown as { pianoRollAudioEngine?: unknown }).pianoRollAudioEngine
+    delete (window as unknown as { pianoRollAudioEngine?: unknown })
+      .pianoRollAudioEngine
   })
 
   return (
