@@ -22,7 +22,6 @@ import type { PracticeSubMode } from '@/components/shared/SharedControlToolbar'
 import { SharedControlToolbar } from '@/components/shared/SharedControlToolbar'
 import { Walkthrough } from '@/components/Walkthrough'
 import { WalkthroughControl } from '@/components/WalkthroughControl'
-import { WalkthroughModal } from '@/components/WalkthroughModal'
 import { WelcomeScreen } from '@/components/WelcomeScreen'
 import type { InstrumentType } from '@/lib/audio-engine'
 import { AudioEngine } from '@/lib/audio-engine'
@@ -1452,9 +1451,6 @@ export const App: Component<AppProps> = (props) => {
     <div id="app">
       {/* Walkthrough Selection (shown on app start if walkthroughs remain) */}
       <WalkthroughControl showOnStart={true} />
-
-      {/* Walkthrough Modal */}
-      <WalkthroughModal isOpen={false} onClose={() => {}} />
 
       {/* Sidebar backdrop (mobile) */}
       <Show when={sidebarOpen()}>

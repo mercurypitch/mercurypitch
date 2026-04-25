@@ -5,7 +5,6 @@
 import type { Component } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
 import { WalkthroughModal, WalkthroughSelection } from '@/components'
-import { appStore } from '@/stores/app-store'
 import type { WalkthroughTab } from '@/stores/walkthrough-store'
 
 interface WalkthroughControlProps {

@@ -3,11 +3,12 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createMemo } from 'solid-js'
+import { createMemo, createSignal } from 'solid-js'
 import { appStore } from '@/stores/app-store'
 
 export const SettingsPanel: Component = () => {
   const s = () => appStore.settings()
+  const [showResetConfirm, setShowResetConfirm] = createSignal(false)
 
   const bandValues = createMemo(() => {
     const bands = s().bands
@@ -38,6 +39,17 @@ export const SettingsPanel: Component = () => {
     if (idx >= 0) {
       appStore.setBand(idx, num)
     }
+  }
+
+  const handleResetStorage = () => {
+    // Clear all pitchperfect_ keys
+    Object.keys(localStorage).forEach((key) => {
+      if (key.startsWith('pitchperfect_')) {
+        localStorage.removeItem(key)
+      }
+    })
+    // Reload the page to apply defaults
+    window.location.reload()
   }
 
   return (
@@ -491,6 +503,58 @@ export const SettingsPanel: Component = () => {
               <span>Decrease playback speed</span>
             </div>
           </div>
+        </div>
+
+        {/* Danger Zone Section */}
+        <div class="settings-section settings-danger-zone">
+          <h3 class="settings-section-title">Danger Zone</h3>
+          <div class="settings-divider danger-divider" />
+          <p class="settings-desc">
+            Irreversible actions that affect all your data.
+          </p>
+
+          <div class="settings-row danger-row">
+            <div class="danger-content">
+              <label class="danger-label">Reset to Factory Defaults</label>
+              <small class="danger-desc">
+                Clear all stored data and reload the app with initial defaults.
+              </small>
+            </div>
+            <button
+              class="danger-btn"
+              onClick={() => setShowResetConfirm(true)}
+            >
+              Reset
+            </button>
+          </div>
+
+          {/* Reset Confirmation Modal */}
+          <Show when={showResetConfirm()}>
+            <div class="danger-confirm-overlay">
+              <div class="danger-confirm-box">
+                <h4 class="danger-confirm-title">Confirm Reset</h4>
+                <p class="danger-confirm-text">
+                  Are you sure you want to reset all data? This will clear all
+                  stored melodies, presets, sessions, and settings. This action
+                  cannot be undone.
+                </p>
+                <div class="danger-confirm-actions">
+                  <button
+                    class="danger-btn-secondary"
+                    onClick={() => setShowResetConfirm(false)}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    class="danger-btn-primary"
+                    onClick={handleResetStorage}
+                  >
+                    Reset All Data
+                  </button>
+                </div>
+              </div>
+            </div>
+          </Show>
         </div>
 
         {/* About Section */}
