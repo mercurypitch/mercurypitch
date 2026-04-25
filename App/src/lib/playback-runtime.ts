@@ -143,7 +143,18 @@ export class PlaybackRuntime {
   // ── Playback Control ───────────────────────────────────────
 
   start(countInBeats: number = 0): void {
-    console.log('[PlaybackRuntime.start] Called with countInBeats:', countInBeats, 'current isPlaying:', this.isPlaying, 'isPaused:', this.isPaused)
+    const isPlayingBefore = this.isPlaying
+    const isPausedBefore = this.isPaused
+    console.log(
+      '[PlaybackRuntime.start] Called, countInBeats:',
+      countInBeats,
+      'isPlaying before:',
+      isPlayingBefore,
+      'isPaused before:',
+      isPausedBefore,
+      'animationFrameId:',
+      this.animationFrameId ? 'ACTIVE' : 'null'
+    )
     if (this.isPlaying) {
       console.log('[PlaybackRuntime.start] Already playing, returning early')
       return

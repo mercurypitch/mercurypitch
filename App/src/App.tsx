@@ -9,18 +9,19 @@ import { AppSidebar } from '@/components/AppSidebar'
 import { FocusMode } from '@/components/FocusMode'
 import { HistoryCanvas } from '@/components/HistoryCanvas'
 import { LibraryModal } from '@/components/LibraryModal'
+import { MelodyPillList } from '@/components/MelodyPillList'
 import { Notifications } from '@/components/Notifications'
 import { PianoRollCanvas } from '@/components/PianoRollCanvas'
 import { PitchCanvas } from '@/components/PitchCanvas'
 import { PresetsLibraryModal } from '@/components/PresetsLibraryModal'
 import { ScaleBuilder } from '@/components/ScaleBuilder'
 import { SessionBrowser } from '@/components/SessionBrowser'
+import { SessionEditor } from '@/components/SessionEditor'
 import { SessionLibraryModal } from '@/components/SessionLibraryModal'
 import { SessionPlayer } from '@/components/SessionPlayer'
 import { SettingsPanel } from '@/components/SettingsPanel'
 import type { PracticeSubMode } from '@/components/shared/SharedControlToolbar'
 import { SharedControlToolbar } from '@/components/shared/SharedControlToolbar'
-import { Walkthrough } from '@/components/Walkthrough'
 import { WalkthroughControl } from '@/components/WalkthroughControl'
 import { WelcomeScreen } from '@/components/WelcomeScreen'
 import type { InstrumentType } from '@/lib/audio-engine'
@@ -32,8 +33,6 @@ import { melodyIndexAtBeat } from '@/lib/scale-data'
 import { buildMultiOctaveScale, keyTonicFreq, melodyTotalBeats, midiToNote, } from '@/lib/scale-data'
 import { generateShareURL, hasSharedPresetInURL, loadFromURL, } from '@/lib/share-url'
 import { appStore, getNoteAccuracyMap } from '@/stores/app-store'
-import { SessionEditor } from '@/components/SessionEditor'
-import { MelodyPillList } from '@/components/MelodyPillList'
 import { melodyStore } from '@/stores/melody-store'
 import { playback } from '@/stores/playback-store'
 import { getSessionStore } from '@/stores/session-store'
@@ -114,7 +113,7 @@ export const App: Component<AppProps> = (props) => {
   // ── Local reactive aliases for appStore signals ─────────────
   const activeTab = (): 'practice' | 'editor' | 'settings' =>
     appStore.activeTab()
-  const showWelcome = () => appStore.showWelcome()
+  const _showWelcome = () => appStore.showWelcome()
   const focusMode = () => appStore.focusMode()
 
   // Tab handlers - audio cleanup handled by handleTabChange
@@ -1204,11 +1203,25 @@ export const App: Component<AppProps> = (props) => {
 
   /** Auto-start session when session mode becomes active */
   createEffect(() => {
-    if (appStore.sessionMode() && appStore.practiceSession()) {
+    const sessionMode = appStore.sessionMode()
+    const practiceSession = appStore.practiceSession()
+    const playModeValue = playMode()
+
+    console.log(
+      '[auto-start session] sessionMode:',
+      sessionMode,
+      'practiceSession:',
+      !!practiceSession,
+      'playMode:',
+      playModeValue
+    )
+
+    // Only auto-start if in practice mode and session has a scale item
+    if (sessionMode && practiceSession && playModeValue === 'practice') {
       const item = appStore.getCurrentSessionItem()
       if (item && item.type === 'scale') {
+        console.log('[auto-start session] Starting playback for scale item:', item.label)
         buildScaleMelody(item.scaleType ?? 'major', item.beats ?? 8, item.label)
-        setPlayMode('practice')
         setRepeatCycles(1)
         setTimeout(() => void handlePlay(), 500)
       }
@@ -1398,16 +1411,30 @@ export const App: Component<AppProps> = (props) => {
   // ── Load next session item ───────────────────────────────────────
   const loadNextSessionItem = (): void => {
     const nextItem = appStore.getCurrentSessionItem()
-    if (!nextItem) return
+    if (!nextItem) {
+      console.log('[loadNextSessionItem] No current item')
+      return
+    }
+
+    console.log(
+      '[loadNextSessionItem] Type:',
+      nextItem.type,
+      'label:',
+      nextItem.label,
+      'isPlaying:',
+      playbackRuntime.getIsPlaying()
+    )
 
     if (nextItem.type === 'rest') {
       // Rest item — start playback so onComplete fires, then wait before loading real scale
       const restDuration = nextItem.restMs ?? 2000
       playbackRuntime.stop()
       playbackRuntime.setMelody(melodyStore.items())
+      console.log('[loadNextSessionItem] Starting rest playback')
       playbackRuntime.start(appStore.countIn())
       setTimeout(() => {
         const afterRest = appStore.getCurrentSessionItem()
+        console.log('[loadNextSessionItem] After rest, next item:', afterRest?.type)
         if (afterRest && afterRest.type === 'scale') {
           buildScaleMelody(
             afterRest.scaleType ?? 'major',
@@ -1416,10 +1443,12 @@ export const App: Component<AppProps> = (props) => {
           )
           playbackRuntime.stop()
           playbackRuntime.setMelody(melodyStore.items())
+          console.log('[loadNextSessionItem] Starting scale playback after rest')
           playbackRuntime.start(appStore.countIn())
         }
       }, restDuration)
     } else if (nextItem.type === 'scale') {
+      console.log('[loadNextSessionItem] Starting scale playback')
       buildScaleMelody(
         nextItem.scaleType ?? 'major',
         nextItem.beats ?? 8,
