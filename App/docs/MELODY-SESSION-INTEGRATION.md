@@ -251,38 +251,48 @@ Selected melody → Loaded into melodyStore
 
 ## Implementation Phases
 
-### Phase 1: Simplify Session Model
+### Phase 1: Simplify Session Model ✅
 - Refactor `UserSession` to hold `melodyIds: string[]`
 - Remove complex `SessionItem` types
 - Keep `SessionTemplate` for static practice templates (optional)
 
-### Phase 2: Default Session with Scale Melodies
-- Create pre-built scale melodies (C Major, G Major, Chromatic)
+### Phase 2: Default Session with Scale Melodies ✅
+- Create pre-built scale melodies (C Major, G Major, Chromatic, A Minor, C Pentatonic, D Dorian)
 - Seed them into localStorage on first launch
 - `DEFAULT_SESSION` references them by ID
 
-### Phase 3: Save & Add to Session
+### Phase 3: Save & Add to Session ✅
 - MelodyEditor save button → dropdown
 - "Save" vs "Save & Add to [Session Name]"
 - Add to current session's melodyIds array
 
-### Phase 4: Session UI with Selectable Pills
-- Update LibraryTab/SessionEditor to show melody pills
+### Phase 4: Session UI with Selectable Pills ✅
+- Update LibraryTab to show melody pills with selection
 - Single click: select (highlight)
 - Double click: load into editor
-- Multi-select: Ctrl/Shift+click
+- Multi-select: Ctrl+click
 - Play buttons: "Play Selected", "Play All"
-- Drag to reorder
+- Drag to reorder (not implemented yet)
 
-### Phase 5: Session Playback
+### Phase 5: Session Playback ✅
 - Iterate over selected (or all) melodyIds
 - Load each melody → play → advance
 - Practice mode per melody (once/repeat/practice)
+- Sequential playback with playSessionSequence()
 
-### Phase 6: Scale Generator
+### Phase 6: Scale Generator - TODO (future work)
 - Modal: scale type, key, octave
 - Generate melody from scale data
 - Save to library → add to session
+
+## Implementation Status
+
+All phases 1-5 have been completed:
+- Session model simplified to hold melodyIds array
+- Default session with 6 scale melodies seeded on first launch
+- Save & Add to Session dropdown in PresetSelector
+- LibraryTab shows selectable melody pills with selection highlighting
+- Session playback with sequential playback support
 
 ## LocalStorage Keys
 
