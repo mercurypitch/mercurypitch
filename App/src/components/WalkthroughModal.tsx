@@ -132,7 +132,7 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
 
               {/* Tab Selector */}
               <div class="walkthrough-tabs">
-                {(['practice', 'editor', 'settings'] as WalkthroughTab[]).map((tab) => (
+                {(['practice', 'editor', 'settings', 'study'] as WalkthroughTab[]).map((tab) => (
                   <button
                     class={`walkthrough-tab ${tab === currentTab() ? 'active' : ''}`}
                     onClick={() => handleTabChange(tab)}

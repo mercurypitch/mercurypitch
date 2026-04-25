@@ -89,7 +89,7 @@ export const WalkthroughSelection: Component<WalkthroughSelectionProps> = (props
 
           {/* Tabs */}
           <div class="ws-tabs">
-            {(['practice', 'editor', 'settings'] as WalkthroughTab[]).map((tab) => {
+            {(['practice', 'editor', 'settings', 'study'] as WalkthroughTab[]).map((tab) => {
               const tabRemaining = remaining().filter(w => w.tab === tab)
               return (
                 <button

@@ -12,13 +12,13 @@ export type { WalkthroughTab }
 const STORAGE_KEY = 'pitchperfect_walkthroughs'
 
 /** Get all available walkthroughs for a given tab */
-export function getWalkthroughsForTab(tab: 'practice' | 'editor' | 'settings') {
+export function getWalkthroughsForTab(tab: 'practice' | 'editor' | 'settings' | 'study') {
   return WALKTHROUGHS[tab] || []
 }
 
 /** Get a specific walkthrough by ID */
 export function getWalkthrough(id: string) {
-  for (const tab of ['practice', 'editor', 'settings'] as const) {
+  for (const tab of ['practice', 'editor', 'settings', 'study'] as const) {
     const walkthroughs = WALKTHROUGHS[tab]
     const found = walkthroughs.find(w => w.id === id)
     if (found) return found
@@ -66,7 +66,7 @@ export function getRemainingWalkthroughs(): Array<{ tab: string, id: string, tit
   const completed = walkthroughsProgress()
   const remaining: Array<{ tab: string, id: string, title: string }> = []
 
-  for (const tab of ['practice', 'editor', 'settings'] as const) {
+  for (const tab of ['practice', 'editor', 'settings', 'study'] as const) {
     for (const walkthrough of WALKTHROUGHS[tab]) {
       if (!completed[walkthrough.id]) {
         remaining.push({
@@ -86,7 +86,7 @@ export function getCompletedWalkthroughs(): Array<{ tab: string, id: string, tit
   const completed = walkthroughsProgress()
   const completedList: Array<{ tab: string, id: string, title: string }> = []
 
-  for (const tab of ['practice', 'editor', 'settings'] as const) {
+  for (const tab of ['practice', 'editor', 'settings', 'study'] as const) {
     for (const walkthrough of WALKTHROUGHS[tab]) {
       if (completed[walkthrough.id]) {
         completedList.push({
@@ -104,7 +104,7 @@ export function getCompletedWalkthroughs(): Array<{ tab: string, id: string, tit
 /** Get total count of walkthroughs */
 export function getTotalWalkthroughCount(): number {
   let count = 0
-  for (const tab of ['practice', 'editor', 'settings'] as const) {
+  for (const tab of ['practice', 'editor', 'settings', 'study'] as const) {
     count += WALKTHROUGHS[tab].length
   }
   return count

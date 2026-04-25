@@ -2,7 +2,7 @@
 // Walkthrough Types and Definitions
 // ============================================================
 
-export type WalkthroughTab = 'practice' | 'editor' | 'settings'
+export type WalkthroughTab = 'practice' | 'editor' | 'settings' | 'study'
 
 export interface WalkthroughContent {
   id: string
@@ -544,6 +544,275 @@ Reverb adds environmental space to audio, making it sound like it's played in di
         },
       ],
       thumbnail: '🏛️',
+    },
+  ],
+  study: [
+    {
+      id: 'study-pitch-basics',
+      tab: 'study',
+      title: 'Understanding Pitch',
+      description: 'Learn the fundamentals of pitch and how it works',
+      content: `
+Understanding pitch is essential for effective vocal practice. Here's what you need to know:
+
+**What is Pitch?**
+- Pitch is how high or low a sound is measured in hertz (Hz)
+- Higher frequency = higher pitch (shrill sound)
+- Lower frequency = lower pitch (deep sound)
+- Human vocal range typically spans from about 85 Hz (deep bass) to 2550 Hz (high soprano)
+
+**How We Measure Pitch:**
+- **Cents**: A musical interval where 100 cents = 1 semitone (half step)
+- Perfect pitch is within +/- 10 cents
+- Great pitch is within +/- 25 cents
+- Good pitch is within +/- 50 cents
+
+**Tonal Centers:**
+- **Tonic (Root)**: The home note - the note you try to return to
+- **Scale**: A set of notes used in music (Major, Minor, Pentatonic, etc.)
+- **Key**: The tonal center and scale used (e.g., C Major, A Minor)
+- Knowing your key helps you stay in tune with the music
+
+**The 12-Tone System:**
+All Western music is based on 12 notes within an octave:
+C, C#, D, D#, E, F, F#, G, G#, A, A#, B
+
+In pitch-perfect practice, you'll match these exact pitches to build pitch accuracy.
+
+**Tips for Pitch Practice:**
+1. Start slowly - rushing causes errors
+2. Hum before singing to "warm up" your pitch perception
+3. Use the tonic anchor in settings when learning new keys
+4. Practice everyday for the best results
+      `,
+      steps: [
+        {
+          title: 'Understand Your Range',
+          description: 'Know your vocal range limits',
+          action: 'Try different notes',
+          target: '.pitch-canvas',
+        },
+        {
+          title: 'Learn Your Key',
+          description: 'Select a scale and find the tonic',
+          action: 'Select scale',
+          target: '#key-select',
+        },
+        {
+          title: 'Use Anchor Tone',
+          description: 'Practice with a reference pitch',
+          action: 'Enable tonic anchor',
+          target: '#tonic-anchor',
+        },
+      ],
+      thumbnail: '🎵',
+    },
+    {
+      id: 'study-scale-types',
+      tab: 'study',
+      title: 'Common Musical Scales',
+      description: 'Learn different scale types used in music',
+      content: `
+Different scales create different moods and are used in various musical contexts:
+
+**Major Scales:**
+- **C Major**: The "do-re-mi-fa-so-la-ti-do" scale
+- Bright, cheerful, and uplifting sound
+- Most common scale in Western music
+- Notes: C, D, E, F, G, A, B (all natural, no sharps/flats)
+- Best for: Beginners and optimistic melodies
+
+**Natural Minor Scales:**
+- Emotional, reflective, and sometimes sad
+- C Minor: C, D, Eb, F, G, Ab, Bb
+- Uses the same notes as relative major (A Major) but starts on a different note
+- Best for: Melancholic or emotional expressions
+
+**Pentatonic Scales:**
+- **Major Pentatonic**: C, D, E, G, A (omits F and B)
+- **Minor Pentatonic**: C, Eb, F, G, Bb (omits D and A)
+- Very versatile and easy to use
+- Notes never clash or sound wrong together
+- Common in folk music, blues, rock, and pop
+- Best for: Improvisation and casual playing
+
+**Blues Scale:**
+- Minor pentatonic plus flatted 5th (blue note)
+- Adds expressive, soulful character
+- Notes: C, Eb, F, F#, G, Bb
+- Best for: Blues and soul music
+
+**Chromatic Scale:**
+- All 12 notes, half steps only
+- C, C#, D, D#, E, F, F#, G, G#, A, A#, B, C
+- No musical intervals - just stepping through all notes
+- Best for: Demonstrating full pitch range
+
+**Which Scale Should I Use?**
+- **Beginners**: Start with Major Pentatonic (most forgiving)
+- **Pop music**: Major scale or Mixolydian
+- **Blues/Jazz**: Minor Pentatonic or Blues scale
+- **Film scores**: Various scales depending on mood
+- **Solo practice**: Try all of them to develop flexibility
+
+**Pro Tip:** Use the "once mode" at slow speed to practice each scale note by note.
+      `,
+      steps: [
+        {
+          title: 'Try C Major',
+          description: 'The simplest, most cheerful scale',
+          action: 'Select C Major scale',
+          target: '#scale-select',
+        },
+        {
+          title: 'Try Minor Pentatonic',
+          description: 'Versatile and easy to use',
+          action: 'Select Minor Pentatonic',
+          target: '#scale-select',
+        },
+        {
+          title: 'Experiment Freely',
+          description: 'Play notes to see what sounds good',
+          action: 'Use Play button',
+          target: '.play-btn',
+        },
+      ],
+      thumbnail: '🎼',
+    },
+    {
+      id: 'study-progress-tracking',
+      tab: 'study',
+      title: 'Tracking Your Progress',
+      description: 'How to use practice sessions to improve',
+      content: `
+Progress tracking helps you see your improvement over time and stay motivated:
+
+**What Gets Tracked:**
+- **Score history**: Average pitch accuracy over multiple runs
+- **Sessions**: Total time and number of practice runs
+- **Perfect days**: Days when you achieved all perfect scores
+- **Streaks**: Consecutive days of practice
+
+**Understanding Your Scores:**
+- **Perfect (&le; 10 cents)**: You're on pitch!
+- **Excellent (&le; 25 cents)**: Very good, getting closer
+- **Good (&le; 50 cents)**: Acceptable, still room for improvement
+- **Okay (&le; 75 cents)**: Listen more closely next time
+
+**How to Interpret Results:**
+- **Improving trend**: If your Perfect score goes from 70% to 85%, you're getting better
+- **Plateau**: If stuck at 70-80% for weeks, try these:
+  - Slow down playback speed
+  - Practice harder melodies
+  - Get quieter (less background noise)
+  - Adjust detection threshold
+- **Too easy**: If consistently getting 90%+, challenge yourself with more difficult melodies
+
+**Daily Practice Routines:**
+- **Beginner**: 10-15 minutes, easy melodies, focus on accuracy
+- **Intermediate**: 20-30 minutes, mix of easy/hard, work on speed
+- **Advanced**: 30+ minutes, challenging pieces, focus on expression
+
+**Consistency Over Intensity:**
+- 10 minutes every day > 2 hours once a week
+- The brain needs regular exposure to build pitch memory
+- Use reminders or set a daily time (e.g., morning or evening)
+- Track streaks - seeing consecutive days motivates continued practice
+
+**Celebrate Wins:**
+- First time perfecting a melody?
+- Recording your best score?
+- Nailing a difficult section?
+- Make note of these achievements!
+      `,
+      steps: [
+        {
+          title: 'Check Your History',
+          description: 'View your past practice sessions',
+          action: 'View history',
+          target: '.session-history',
+        },
+        {
+          title: 'Analyze Scores',
+          description: 'Look for improvement trends',
+          action: 'Review session data',
+          target: '.stats-panel',
+        },
+        {
+          title: 'Set a Goal',
+          description: 'Challenge yourself to improve',
+          action: 'Set practice goal',
+          target: '.practice-controls',
+        },
+      ],
+      thumbnail: '📈',
+    },
+    {
+      id: 'study-tips-tricks',
+      tab: 'study',
+      title: 'Pro Tips for Better Practice',
+      description: 'Advanced techniques to accelerate your progress',
+      content: `
+Use these professional practice techniques to get the most out of your sessions:
+
+**Preparation Before Practicing:**
+1. **Warm up your voice** - Hum gentle scales before singing
+2. **Check your environment** - Quiet room, good microphone placement
+3. **Adjust settings** - Use appropriate sensitivity for your space
+4. **Know the melody** - Listen to it several times first
+
+**During Practice:**
+- **Start slow** (0.5x-0.75x speed) before increasing
+- **Use metronome** - builds rhythmic accuracy first, then add pitch
+- **Focus on transitions** - hardest parts often between phrases
+- **Don't rush** - rushing masks pitch errors
+- **Record yourself** - hear where you're slipping off pitch
+
+**Common Mistakes to Avoid:**
+- **Practicing too fast** - it's a pitch trainer, not a speed contest
+- **Ignoring rhythm** - you can't have perfect pitch without good timing
+- **Practicing when distracted** - full concentration gives better results
+- **Always playing favorites** - variety builds better pitch recognition
+- **Expecting overnight progress** - pitch accuracy develops over weeks
+
+**Advanced Techniques:**
+- **Sight reading practice** - look at the music and sing it
+- **Transposition** - practice the same melody in different keys
+- **Different voices** - practice using chest voice, head voice, falsetto
+- **Different tempos** - practice at various speeds (50%, 75%, 100%, 125%, 150%)
+- **Ear training** - hum and guess the pitch before checking
+
+**Building Long-Term Skills:**
+- **Consistency wins** - practice daily, even for short sessions
+- **Set specific goals** - "get perfect on melody X this week"
+- **Track your progress** - see improvement over time
+- **Enjoy the journey** - music practice is rewarding when you see growth
+- **Learn from mistakes** - each error is data about where you need work
+
+**Remember:**
+Perfect pitch is a skill that develops with practice, not something you're born with. You have the capacity - commit to daily practice and you'll see results!
+      `,
+      steps: [
+        {
+          title: 'Warm Up First',
+          description: 'Prepare your voice before practice',
+          action: 'Do a quick warm-up',
+          target: '.pitch-canvas',
+        },
+        {
+          title: 'Use Metronome',
+          description: 'Build rhythmic accuracy',
+          action: 'Toggle metronome',
+          target: '.metronome-btn',
+        },
+        {
+          title: 'Practice Different Keys',
+          description: 'Transpose melodies to test flexibility',
+          action: 'Select different key',
+          target: '#key-select',
+        },
+      ],
+      thumbnail: '✨',
     },
   ],
 }
