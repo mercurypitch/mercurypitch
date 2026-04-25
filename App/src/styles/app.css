@@ -1763,6 +1763,15 @@ header h1 {
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     flex-direction: row;
+    flex-shrink: 1;
+  }
+  .practice-header-bar .essential-controls {
+    flex-wrap: nowrap;
+    flex-shrink: 0;
+  }
+  .practice-header-bar .control-group {
+    display: flex;
+    flex-shrink: 0;
   }
   .practice-header-bar::-webkit-scrollbar {
     display: none;
@@ -1938,8 +1947,18 @@ header h1 {
   .practice-header-bar {
     flex-wrap: nowrap;
     overflow-x: auto;
+    overflow-y: hidden;
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
+    flex-shrink: 1;
+  }
+  .practice-header-bar .essential-controls {
+    flex-wrap: nowrap;
+    flex-shrink: 0;
+  }
+  .practice-header-bar .control-group {
+    display: flex;
+    flex-shrink: 0;
   }
   .practice-header-bar::-webkit-scrollbar {
     display: none;
