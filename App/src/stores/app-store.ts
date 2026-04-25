@@ -258,9 +258,9 @@ export interface WalkthroughStep {
 /** Check if there are remaining walkthroughs (not yet completed) */
 export function hasRemainingWalkthroughs(): boolean {
   try {
-    const stored = localStorage.getItem('pitchperfect_walkthroughs')
-    if (!stored) return true
-    const progress = JSON.parse(stored) as Record<string, number>
+    const _stored = localStorage.getItem('pitchperfect_walkthroughs')
+    if (_stored) return true
+    const progress = JSON.parse(_stored) as Record<string, number>
     return Object.keys(progress).length < 7 // Total walkthroughs = 7
   } catch {
     return true
@@ -270,9 +270,9 @@ export function hasRemainingWalkthroughs(): boolean {
 /** Check how many walkthroughs are completed */
 export function getCompletedWalkthroughCount(): number {
   try {
-    const stored = localStorage.getItem('pitchperfect_walkthroughs')
-    if (!stored) return 0
-    const progress = JSON.parse(stored) as Record<string, number>
+    const _stored = localStorage.getItem('pitchperfect_walkthroughs')
+    if (_stored) return 0
+    const progress = JSON.parse(_stored) as Record<string, number>
     return Object.keys(progress).length
   } catch {
     return 0
@@ -926,7 +926,7 @@ export function selectAllMelodies(): void {
   if (session && session.items.length > 0) {
     // Extract melody IDs from session items
     const melodyIds = session.items
-      .filter((item) => item.melodyId)
+      .filter((item) => item.melodyId !== null)
       .map((item) => item.melodyId!)
     setSelectedMelodyIds(melodyIds)
   }
