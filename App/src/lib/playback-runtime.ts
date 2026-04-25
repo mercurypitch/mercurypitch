@@ -143,7 +143,11 @@ export class PlaybackRuntime {
   // ── Playback Control ───────────────────────────────────────
 
   start(countInBeats: number = 0): void {
-    if (this.isPlaying) return
+    console.log('[PlaybackRuntime.start] Called with countInBeats:', countInBeats, 'current isPlaying:', this.isPlaying, 'isPaused:', this.isPaused)
+    if (this.isPlaying) {
+      console.log('[PlaybackRuntime.start] Already playing, returning early')
+      return
+    }
 
     if (!this.audioEngine.getIsInitialized()) {
       this.audioEngine
@@ -162,6 +166,7 @@ export class PlaybackRuntime {
       // Don't reset countInBeat - preserve where we left off
       this.currentBeat = Math.max(0, this.currentBeat)
       this.currentNoteIndex = Math.max(-1, this.currentNoteIndex)
+      console.log('[PlaybackRuntime.start] Resuming from pause at beat:', this.currentBeat)
     } else {
       // Fresh start - initialize count-in from top
       this.currentBeat = 0
@@ -169,6 +174,7 @@ export class PlaybackRuntime {
       this._countInBeats = countInBeats
       this.countInBeat = countInBeats
       this.pauseOffset = 0
+      console.log('[PlaybackRuntime.start] Fresh start, countInBeats:', countInBeats)
     }
 
     // Add accumulated pause duration to be accounted for in the animation loop
@@ -180,6 +186,7 @@ export class PlaybackRuntime {
     this._emit({ type: 'state', state: 'playing' })
 
     this._startAnimationLoop()
+    console.log('[PlaybackRuntime.start] Animation loop started')
   }
 
   pause(): void {
@@ -216,6 +223,7 @@ export class PlaybackRuntime {
   }
 
   stop(): void {
+    console.log('[PlaybackRuntime.stop] Called, isPlaying before stop:', this.isPlaying, 'isPaused before stop:', this.isPaused)
     this._stopAnimationLoop()
     this.audioEngine.stopTone()
     this.isPlaying = false
@@ -235,10 +243,10 @@ export class PlaybackRuntime {
       this.playStartTime = 0
       this.countInBeat = 0
       this._countInBeats = 0
-      this.metronomeLastBeat = -1
     }
 
     this._emit({ type: 'state', state: 'stopped' })
+    console.log('[PlaybackRuntime.stop] Stop complete')
   }
 
   seekTo(beat: number): void {

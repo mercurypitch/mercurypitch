@@ -124,6 +124,7 @@ export const App: Component<AppProps> = (props) => {
 
   // ── Reset all playback-related state ─────────────────────────
   const resetPlaybackState = () => {
+    console.log('[resetPlaybackState] Called, resetting all playback state')
     void audioEngine.stopTone()
     void audioEngine.stopAllNotes()
     void playbackRuntime.stop()
@@ -141,14 +142,22 @@ export const App: Component<AppProps> = (props) => {
     // Reset session playback state
     setSessionMelodyIds([])
     setSessionCurrentMelodyIndex(-1)
+
+    // Force reset PlaybackRuntime animation loop and state
+    playbackRuntime.isPlaying = false
+    playbackRuntime.isPaused = false
+    playbackRuntime.animationFrameId = null
+    console.log('[resetPlaybackState] Playback state reset complete')
   }
 
   // ── Tab change handler with audio cleanup ───────────────────────────────────
   const handleTabChange = (newTab: ActiveTab) => {
+    console.log('[handleTabChange] Switching from', activeTab(), 'to', newTab)
     const currentTab = activeTab()
 
     // Stop audio when leaving practice or editor tabs
     if (currentTab === 'practice' || currentTab === 'editor') {
+      console.log('[handleTabChange] Calling resetPlaybackState')
       resetPlaybackState()
     }
 
@@ -681,6 +690,7 @@ export const App: Component<AppProps> = (props) => {
       audioEngine.setBPM(bpm)
       audioEngine.setInstrument(instrument)
       // Tell PlaybackRuntime about new melody (BPM handled by AudioEngine)
+      console.log('[createEffect melody sync] Setting melody to playbackRuntime, items count:', melody.length)
       playbackRuntime.setMelody(melody)
     })
 
@@ -1043,8 +1053,13 @@ export const App: Component<AppProps> = (props) => {
 
   // ── Editor tab playback handlers (connect to actual PlaybackRuntime) ─────────────────────────────────
   const handleEditorPlay = () => {
-    if (editorIsPlaying()) return // already playing
+    console.log('[handleEditorPlay] Starting playback, current state:', editorPlaybackState())
+    if (editorIsPlaying()) {
+      console.log('[handleEditorPlay] Already playing, returning')
+      return
+    }
     if (editorIsPaused()) {
+      console.log('[handleEditorPlay] Resuming from pause')
       handleEditorResume()
       return
     }
@@ -1064,8 +1079,10 @@ export const App: Component<AppProps> = (props) => {
 
     // Start playbackRuntime with count-in
     const countInBeats = appStore.countIn()
+    console.log('[handleEditorPlay] Starting playbackRuntime with countInBeats:', countInBeats)
     playbackRuntime.start(countInBeats)
     setEditorPlaybackState('playing')
+    console.log('[handleEditorPlay] Playback state set to playing')
   }
 
   const handleEditorPause = () => {
