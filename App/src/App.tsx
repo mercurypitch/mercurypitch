@@ -1069,6 +1069,7 @@ export const App: Component<AppProps> = (props) => {
   // ── Playback handlers ───────────────────────────────────────
 
   const handlePlay = () => {
+    if (isPlaying()) return // already playing
     if (isPaused()) {
       // Resume from paused state
       handleResume()
@@ -1164,6 +1165,7 @@ export const App: Component<AppProps> = (props) => {
 
   // ── Editor tab playback handlers (connect to actual PlaybackRuntime) ─────────────────────────────────
   const handleEditorPlay = () => {
+    if (editorIsPlaying()) return // already playing
     if (editorIsPaused()) {
       handleEditorResume()
       return
@@ -1554,7 +1556,7 @@ export const App: Component<AppProps> = (props) => {
                   onPlay={handlePlay}
                   onPause={handlePause}
                   onResume={handleResume}
-                  onStop={handleReset}
+                  onStop={handleStop}
                   volume={savedVol}
                   onVolumeChange={(vol) => {
                     setSavedVol(vol)
