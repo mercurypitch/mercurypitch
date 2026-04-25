@@ -5,10 +5,9 @@
 import type {
   MelodyItem,
   SavedUserSession,
-  Session,
   SessionResult,
 } from '@/types'
-import type { SessionCategory,SessionDifficulty, SessionItem } from '@/types'
+import type { SessionCategory, SessionDifficulty, SessionItem } from '@/types'
 
 const STORAGE_KEY = 'pitchperfect_sessions'
 
@@ -23,7 +22,7 @@ export function getAllSessions(): Record<string, SavedUserSession> {
     const stored = localStorage.getItem(STORAGE_KEY)
     if (stored) {
       const parsed = JSON.parse(stored) as unknown
-      if (parsed != null && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      if (parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed)) {
         return parsed as Record<string, SavedUserSession>
       }
     }
@@ -178,7 +177,7 @@ export function getAll(): Record<string, SavedUserSession | null> {
   const defaultSession = getDefaultSession()
   const sessions: Record<string, SavedUserSession | null> = {}
   if (defaultSession) {
-    sessions['default-session'] = defaultSession
+    sessions['default'] = defaultSession
   }
   Object.assign(sessions, userSessions)
   return sessions
@@ -210,7 +209,7 @@ export function getInternalSession(nameOrId: string): SavedUserSession | null {
 /** Get or create default session */
 export function getDefaultSession(): SavedUserSession | null {
   const sessions = getAllSessions()
-  const defaultSession = sessions['default-session']
+  const defaultSession = sessions['default']
 
   if (defaultSession === null || defaultSession === undefined) {
     return createDefaultSession()
@@ -247,7 +246,10 @@ function createDefaultSession(): SavedUserSession {
     },
   ])
 
-  _saveSessions({ 'default-session': defaultSession })
+  // Explicitly set ID to 'default' to match lookup key
+  defaultSession.id = 'default'
+
+  _saveSessions({ default: defaultSession })
   return defaultSession
 }
 
@@ -274,7 +276,7 @@ export function deleteSession(id: string): boolean {
 export function getSessionHistory(): SessionResult[] {
   try {
     const stored = localStorage.getItem('pitchperfect_session_history')
-    if (stored != null) {
+    if (stored !== null) {
       const parsed = JSON.parse(stored) as unknown
       if (Array.isArray(parsed)) {
         return parsed as SessionResult[]

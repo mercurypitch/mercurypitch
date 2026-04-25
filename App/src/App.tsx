@@ -9,7 +9,7 @@ import { AppSidebar } from '@/components/AppSidebar'
 import { FocusMode } from '@/components/FocusMode'
 import { HistoryCanvas } from '@/components/HistoryCanvas'
 import { LibraryModal } from '@/components/LibraryModal'
-import { MelodyPillList } from '@/components/MelodyPillList'
+import { _MelodyPillList } from '@/components/MelodyPillList'
 import { Notifications } from '@/components/Notifications'
 import { PianoRollCanvas } from '@/components/PianoRollCanvas'
 import { PitchCanvas } from '@/components/PitchCanvas'
@@ -23,7 +23,7 @@ import { SettingsPanel } from '@/components/SettingsPanel'
 import type { PracticeSubMode } from '@/components/shared/SharedControlToolbar'
 import { SharedControlToolbar } from '@/components/shared/SharedControlToolbar'
 import { WalkthroughControl } from '@/components/WalkthroughControl'
-import { WelcomeScreen } from '@/components/WelcomeScreen'
+import { _WelcomeScreen } from '@/components/WelcomeScreen'
 import type { InstrumentType } from '@/lib/audio-engine'
 import { AudioEngine } from '@/lib/audio-engine'
 import { downloadMIDI, importMelodyFromMIDI } from '@/lib/piano-roll'
@@ -421,7 +421,15 @@ export const App: Component<AppProps> = (props) => {
 
     // Initialize active user session from saved default
     const activeSessionId = melodyStore.getActiveSessionId()
-    if (activeSessionId !== null) {
+    if (activeSessionId === null) {
+      // No active session - load default session
+      const defaultSession = getSessionStore('default')
+      if (defaultSession !== undefined && defaultSession !== null) {
+        appStore.setActiveUserSession(defaultSession)
+        melodyStore.setActiveSessionId(defaultSession.id)
+      }
+    } else {
+      // Load the previously active session
       const activeSession = getSessionStore(activeSessionId)
       if (activeSession !== null) {
         appStore.setActiveUserSession(activeSession)

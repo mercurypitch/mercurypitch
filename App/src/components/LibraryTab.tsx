@@ -28,7 +28,7 @@ export const LibraryTab: Component = () => {
     const session = userSession()
     if (!session) return []
     return session.items
-      .filter((item: SessionItem) => item.melodyId != null)
+      .filter((item: SessionItem) => item.melodyId !== null)
       .map((item: SessionItem) => item.melodyId as string)
   })
   const selectedMelodyIds = createMemo(
