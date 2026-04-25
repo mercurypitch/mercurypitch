@@ -4,6 +4,11 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { melodyStore } from '@/stores/melody-store'
+import {
+  createRestItem,
+  createScaleItem,
+  createSession,
+} from '@/stores/session-store'
 import type { MelodyData, MelodyItem, MelodyNote, SavedUserSession, } from '@/types'
 
 // Mock localStorage
@@ -943,7 +948,8 @@ describe('Melody Library System', () => {
         name: 'Session 1',
         author: 'User',
         items: [],
-        created: Date.now() - 10000,
+        created: Date.now(),
+        deletable: true,
         lastPlayed: Date.now(),
         difficulty: 'beginner' as const,
         category: 'vocal' as const,
@@ -953,7 +959,8 @@ describe('Melody Library System', () => {
         name: 'Session 2',
         author: 'User',
         items: [],
-        created: Date.now() - 5000,
+        created: Date.now(),
+        deletable: true,
         lastPlayed: Date.now(),
         difficulty: 'intermediate' as const,
         category: 'custom' as const,
@@ -973,7 +980,8 @@ describe('Melody Library System', () => {
         name: 'Session 1',
         author: 'User',
         items: [],
-        created: Date.now() - 10000,
+        created: Date.now(),
+        deletable: true,
         lastPlayed: Date.now() - 1000,
         difficulty: 'beginner' as const,
         category: 'vocal' as const,
@@ -983,7 +991,8 @@ describe('Melody Library System', () => {
         name: 'Session 2',
         author: 'User',
         items: [],
-        created: Date.now() - 5000,
+        created: Date.now(),
+        deletable: true,
         lastPlayed: Date.now() - 2000,
         difficulty: 'intermediate' as const,
         category: 'custom' as const,
@@ -992,8 +1001,8 @@ describe('Melody Library System', () => {
       melodyStore.saveSession(_session2)
 
       const sessions = melodyStore.getSessions()
-      expect(sessions[0].id).toBe('session-2') // More recently played
-      expect(sessions[1].id).toBe('session-1')
+      expect(sessions[0].id).toBe('session-1') // More recently played (now - 1000 > now - 2000)
+      expect(sessions[1].id).toBe('session-2')
     })
 
     it('gets single session by ID', () => {
@@ -1003,6 +1012,7 @@ describe('Melody Library System', () => {
         author: 'User',
         items: [],
         created: Date.now(),
+        deletable: true,
         difficulty: 'beginner' as const,
         category: 'vocal' as const,
       } as SavedUserSession
@@ -1026,6 +1036,7 @@ describe('Melody Library System', () => {
         author: 'User',
         items: [],
         created: Date.now(),
+        deletable: true,
         lastPlayed: Date.now(),
         difficulty: 'beginner' as const,
         category: 'vocal' as const,
@@ -1052,6 +1063,7 @@ describe('Melody Library System', () => {
         author: 'User',
         items: [],
         created: Date.now(),
+        deletable: true,
         difficulty: 'beginner' as const,
         category: 'vocal' as const,
       } as SavedUserSession
@@ -1067,13 +1079,14 @@ describe('Melody Library System', () => {
     })
 
     it('persists user sessions to localStorage', () => {
-      // Skip - localStorage mock is cleared in beforeEach
       const _session: SavedUserSession = {
         id: 'session-1',
         name: 'Test Session',
         author: 'User',
         items: [],
         created: Date.now(),
+        deletable: true,
+        lastPlayed: Date.now(),
         difficulty: 'beginner' as const,
         category: 'vocal' as const,
       } as SavedUserSession
@@ -1083,12 +1096,12 @@ describe('Melody Library System', () => {
       const _sessionId = _session.id
       const calls = localStorageMock.setItem.mock.calls
       const sessionCall = calls.find(
-        (call) => call[0] === 'pitchperfect_user_sessions',
+        (call) => call[0] === 'pitchperfect_sessions',
       )
       expect(sessionCall).toBeDefined()
       const parsed = JSON.parse(sessionCall![1] as string)
-      expect(parsed).toHaveLength(1)
-      expect(parsed[0].id).toBe(_sessionId)
+      expect(parsed[_sessionId]).toBeDefined()
+      expect(parsed[_sessionId].id).toBe(_sessionId)
     })
 
     it.skip('loads sessions from localStorage on init', () => {
@@ -1099,7 +1112,8 @@ describe('Melody Library System', () => {
           name: 'Session 1',
           author: 'User',
           items: [],
-          created: Date.now() - 10000,
+          created: Date.now(),
+          deletable: true,
           lastPlayed: Date.now(),
           difficulty: 'beginner' as const,
           category: 'vocal' as const,
@@ -1128,26 +1142,20 @@ describe('Melody Library System', () => {
     })
 
     it('handles session with items', () => {
-      const _session = melodyStore.saveSession({
-        id: 'session-1',
-        name: 'Session with Items',
-        author: 'User',
-        items: [
-          {
-            type: 'scale' as const,
-            label: 'Scale A',
-            scaleType: 'major',
-            beats: 8,
-            repeat: 1,
-          },
-          { type: 'rest' as const, label: 'Rest', restMs: 1000, repeat: 1 },
+      const _session = createSession(
+        'Session with Items',
+        [
+          createScaleItem('Scale A', 'major', 8, 0),
+          createRestItem('Rest', 1000, 8),
         ],
-        created: Date.now(),
-        difficulty: 'beginner' as const,
-        category: 'vocal' as const,
-      })
+        'beginner',
+        'vocal',
+      )
 
-      const found = melodyStore.getSession('session-1')
+      // Need to save session before it's stored in localStorage
+      melodyStore.saveSession(_session)
+
+      const found = melodyStore.getSession(_session.id)
       expect(found).toBeDefined()
       expect(found?.items).toHaveLength(2)
     })

@@ -2,8 +2,13 @@
 // Walkthrough Selection — Show walkthrough options on app start
 // ============================================================
 
-import type {
-  WalkthroughTab} from '@/stores/walkthrough-store';
+import type { Component } from 'solid-js';
+import {
+  createMemo,
+  createSignal,
+  Show,
+} from 'solid-js';
+import type { WalkthroughTab } from '@/stores/walkthrough-store';
 import {
   completeWalkthrough,
   getCompletedWalkthroughs,
@@ -28,9 +33,9 @@ export const WalkthroughSelection: Component<WalkthroughSelectionProps> = (props
   const total = createMemo(() => getTotalWalkthroughCount())
   const percentage = createMemo(() => getCompletionPercentage())
 
-  const handleWalkthroughSelect = (walkthrough: { id: string, tab: WalkthroughTab }) => {
+  const handleWalkthroughSelect = (walkthrough: { id: string, tab: string }) => {
     viewWalkthrough(walkthrough.id)
-    props.onStartWalkthrough(walkthrough.id, walkthrough.tab)
+    props.onStartWalkthrough(walkthrough.id, walkthrough.tab as WalkthroughTab)
   }
 
   const handleComplete = (walkthrough: { id: string }) => {

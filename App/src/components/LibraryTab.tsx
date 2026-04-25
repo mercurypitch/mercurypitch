@@ -26,7 +26,10 @@ export const LibraryTab: Component = () => {
   const userSession = createMemo(() => appStore.userSession?.() ?? null)
   const sessionMelodyIds = createMemo(() => {
     const session = userSession()
-    return session?.melodyIds ?? []
+    if (!session) return []
+    return session.items
+      .filter((item: SessionItem) => item.melodyId != null)
+      .map((item: SessionItem) => item.melodyId as string)
   })
   const selectedMelodyIds = createMemo(
     () => appStore.getSelectedMelodyIds?.() ?? [],

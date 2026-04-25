@@ -345,6 +345,17 @@ export interface MelodyLibrary {
 /** Session item type */
 export type SessionItemType = 'preset' | 'scale' | 'rest' | 'melody'
 
+/** A rest item with specific position in timeline */
+export interface SessionRest {
+  id: string
+  startBeat: number   // Position in timeline (beats from start)
+  duration: number    // Duration in beats
+  label: string       // Display name (e.g., "Rest")
+}
+
+/** Rest item for session items (legacy - embedded rest with ms duration) */
+export type SessionRestItem = 'rest'
+
 /** Session difficulty levels */
 export type SessionDifficulty =
   | 'beginner'
@@ -364,8 +375,12 @@ export type SessionCategory =
 
 /** A session item in user sessions */
 export interface SessionItem {
+  /** Unique identifier for this item (used for Map key) */
+  id: string
   /** Item type */
   type: SessionItemType
+  /** Start position in beats */
+  startBeat: number
   /** Item label/name */
   label: string
   /** Scale type (for scale items) */
@@ -384,36 +399,18 @@ export interface SessionItem {
   repeat?: number
 }
 
-/** A saved user session (legacy - uses embedded items) */
+/** Saved user session - represents a practice session in the library */
 export interface SavedUserSession {
   /** Unique session ID */
   id: string
   /** Session name */
   name: string
   /** Creator name */
-  author: string
+  author?: string
+  /** Can this session be deleted by user? (false for Default/Internal sessions) */
+  deletable: boolean
   /** Array of session items */
   items: SessionItem[]
-  /** Creation timestamp */
-  created: number
-  /** Last played timestamp */
-  lastPlayed?: number
-  /** Difficulty level */
-  difficulty: SessionDifficulty
-  /** Session category */
-  category: SessionCategory
-  /** Description */
-  description?: string
-}
-
-/** Session = playlist of melody IDs (new model) */
-export interface UserSession {
-  /** Unique session ID */
-  id: string
-  /** Session name */
-  name: string
-  /** Ordered list of melody IDs (references, not embedded) */
-  melodyIds: string[]
   /** Creation timestamp */
   created: number
   /** Last played timestamp */
@@ -422,7 +419,12 @@ export interface UserSession {
   difficulty?: SessionDifficulty
   /** Session category */
   category?: SessionCategory
+  /** Description */
+  description?: string
 }
+
+/** Unified session type (SavedUserSession | undefined for optional values) */
+export type Session = SavedUserSession | undefined
 
 /** Pitch sample for pitch history tracking */
 export interface PitchSample {

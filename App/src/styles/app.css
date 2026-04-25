@@ -1314,6 +1314,16 @@ header h1 {
   width: 14px;
 }
 
+.repeat-cycles-input {
+  width: 52px;
+  padding: 3px 6px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
+
 /* ===== Run Indicator ===== */
 #run-indicator {
   margin-left: auto;

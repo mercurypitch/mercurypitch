@@ -17,8 +17,8 @@ interface PracticeTabHeaderProps {
   isPlaying: () => boolean
   isPaused: () => boolean
   playMode: () => 'once' | 'repeat' | 'practice'
-  practiceCycles: () => number
-  currentCycle: () => number
+  repeatCycles: () => number  // Number of times to repeat in repeat mode
+  currentRepeat: () => number  // Current repeat iteration
   isCountingIn: () => boolean
   countInBeat: () => number
   metronomeEnabled: () => boolean
@@ -26,7 +26,7 @@ interface PracticeTabHeaderProps {
   practiceSubMode: () => PracticeSubMode
   onMicToggle: () => void
   onPlayModeChange: (mode: 'once' | 'repeat' | 'practice') => void
-  onCyclesChange: (cycles: number) => void
+  onRepeatCyclesChange: (cycles: number) => void
   onPlay: () => void
   onPause: () => void
   onResume: () => void
@@ -172,13 +172,14 @@ export const PracticeTabHeader: Component<PracticeTabHeaderProps> = (props) => {
             Repeat
           </button>
           <button
-            id="btn-practice"
+            id="btn-session"
             class={`mode-btn ${props.playMode() === 'practice' ? 'active' : ''}`}
             onClick={() => {
               props.onPlayModeChange('practice')
             }}
+            title="Multi-item practice session mode"
           >
-            Practice
+            Session mode
           </button>
         </div>
 
@@ -211,9 +212,9 @@ export const PracticeTabHeader: Component<PracticeTabHeaderProps> = (props) => {
         <div id="run-indicator">
           <span id="cycle-counter">
             {props.playMode() === 'practice'
-              ? `C${props.currentCycle()}/${props.practiceCycles()}`
+              ? `C${props.currentRepeat()}/${props.repeatCycles()}`
               : props.playMode() === 'repeat'
-                ? '↻'
+                ? `${props.currentRepeat()} / ${props.repeatCycles()}`
                 : ''}
           </span>
         </div>
@@ -223,21 +224,26 @@ export const PracticeTabHeader: Component<PracticeTabHeaderProps> = (props) => {
       <div class="secondary-controls">
         <div class="app-header-sep" />
 
-        <Show when={props.playMode() === 'practice'}>
-          <label class="opt-label">Cycles:</label>
+        {/* Repeat mode: set number of times to repeat */}
+        <Show when={props.playMode() === 'repeat'}>
+          <label class="opt-label">Repeat:</label>
           <input
             type="number"
-            id="cycles"
-            min="2"
+            id="repeat-cycles"
+            min="1"
             max="20"
-            value={props.practiceCycles()}
+            value={props.repeatCycles()}
             onInput={(e) => {
-              props.onCyclesChange(
-                Math.max(2, Math.min(20, parseInt(e.currentTarget.value) || 5)),
+              props.onRepeatCyclesChange(
+                Math.max(1, Math.min(20, parseInt(e.currentTarget.value) || 5)),
               )
             }}
-            class="cycles-input"
+            class="repeat-cycles-input"
           />
+        </Show>
+
+        {/* Session mode: show sub-mode options */}
+        <Show when={props.playMode() === 'practice'}>
           <label class="opt-label">Mode:</label>
           <select
             id="practice-sub-mode"

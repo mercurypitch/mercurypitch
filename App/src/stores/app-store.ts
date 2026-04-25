@@ -4,7 +4,7 @@
 // ============================================================
 
 import { createSignal } from 'solid-js'
-import type { AccuracyBand, PracticeSession, SavedUserSession, SessionResult, SessionTemplate, UserSession, } from '@/types'
+import type { AccuracyBand, PracticeSession, SavedUserSession, Session, SessionResult, SessionTemplate, } from '@/types'
 import { melodyStore } from './melody-store'
 
 // ── Key / Scale ─────────────────────────────────────────────
@@ -889,23 +889,18 @@ export function endPracticeSession(): SessionResult | null {
   return result
 }
 
-// ── User Session (new melody-ID-based model) ────────────────────
+// ── User Session (unified session model) ────────────────────
 
-const [userSession, setUserSession] = createSignal<UserSession | null>(null)
+const [userSession, setUserSession] = createSignal<Session | null>(null)
 const [selectedMelodyIds, setSelectedMelodyIds] = createSignal<string[]>([])
 
-export function setActiveUserSession(session: UserSession | null): void {
+export function setActiveUserSession(session: Session | null): void {
   setUserSession(session)
   setSelectedMelodyIds([])
 }
 
-export function getUserSession(): UserSession | null {
+export function getUserSession(): Session | null {
   return userSession()
-}
-
-export function getSessionMelodyIds(): string[] {
-  const session = userSession()
-  return session?.melodyIds ?? []
 }
 
 export function getSelectedMelodyIds(): string[] {
@@ -922,8 +917,12 @@ export function toggleMelodySelection(melodyId: string): void {
 
 export function selectAllMelodies(): void {
   const session = userSession()
-  if (session) {
-    setSelectedMelodyIds([...session.melodyIds])
+  if (session && session.items.length > 0) {
+    // Extract melody IDs from session items
+    const melodyIds = session.items
+      .filter((item) => item.melodyId)
+      .map((item) => item.melodyId!)
+    setSelectedMelodyIds(melodyIds)
   }
 }
 
@@ -1130,8 +1129,8 @@ export function loadSession(session: SavedUserSession): void {
   startPracticeSession({
     id: session.id,
     name: session.name,
-    difficulty: session.difficulty,
-    category: session.category,
+    difficulty: session.difficulty ?? 'beginner',
+    category: session.category ?? 'custom',
     items: session.items,
   })
   console.log(
@@ -1314,11 +1313,10 @@ export const appStore = {
   endPracticeSession,
   isInSessionMode,
 
-  // User Session (melody-ID model)
+  // User Session
   userSession,
   setActiveUserSession,
   getUserSession,
-  getSessionMelodyIds,
   getSelectedMelodyIds,
   toggleMelodySelection,
   selectAllMelodies,

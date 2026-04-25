@@ -3,7 +3,16 @@
 // ============================================================
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { advanceSessionItem, endPracticeSession, getCurrentSessionItem, initSessionHistory, isInSessionMode, recordSessionItemResult, startPracticeSession, } from '@/stores/app-store'
+import {
+  advanceSessionItem,
+  endPracticeSession,
+  getCurrentSessionItem,
+  initSessionHistory,
+  isInSessionMode,
+  recordSessionItemResult,
+  startPracticeSession,
+} from '@/stores/app-store'
+import { createScaleItem } from '@/stores/session-store'
 import type { NoteResult, SessionItem } from '@/types'
 
 // Mock localStorage
@@ -69,12 +78,9 @@ const makeSession = (id: string, itemCount: number): TestSession => ({
   duration: 0,
   completedAt: 0,
   itemsCompleted: 0,
-  items: Array.from({ length: itemCount }, (_, i) => ({
-    type: 'scale' as const,
-    label: `Item ${i + 1}`,
-    scaleType: 'major',
-    beats: 8,
-  })),
+  items: Array.from({ length: itemCount }, (_, i) =>
+    createScaleItem(`Item ${i + 1}`, 'major', 8, i * 8),
+  ),
 })
 
 describe('startPracticeSession', () => {
@@ -130,14 +136,8 @@ describe('advanceSessionItem — repeat support', () => {
       difficulty: 'beginner',
       category: 'vocal',
       items: [
-        {
-          type: 'scale',
-          label: 'Scale A',
-          scaleType: 'major',
-          beats: 8,
-          repeat: 3,
-        },
-        { type: 'scale', label: 'Scale B', scaleType: 'major', beats: 8 },
+        { ...createScaleItem('Scale A', 'major', 8, 0), repeat: 3 },
+        { ...createScaleItem('Scale B', 'major', 8, 8), repeat: 1 },
       ],
     }
     startPracticeSession(session)
@@ -164,14 +164,8 @@ describe('advanceSessionItem — repeat support', () => {
       difficulty: 'beginner',
       category: 'vocal',
       items: [
-        {
-          type: 'scale',
-          label: 'First',
-          scaleType: 'major',
-          beats: 8,
-          repeat: 1,
-        },
-        { type: 'scale', label: 'Second', scaleType: 'major', beats: 8 },
+        createScaleItem('First', 'major', 8, 0),
+        createScaleItem('Second', 'major', 8, 8),
       ],
     }
     startPracticeSession(session)

@@ -10,6 +10,7 @@ import type { WalkthroughTab } from '@/stores/walkthrough-store'
 
 interface WalkthroughControlProps {
   showOnStart?: boolean
+  onStartWalkthrough?: (walkthroughId: string, tab: WalkthroughTab) => void
 }
 
 export const WalkthroughControl: Component<WalkthroughControlProps> = (props) => {
@@ -53,6 +54,7 @@ export const WalkthroughControl: Component<WalkthroughControlProps> = (props) =>
         <WalkthroughSelection
           isOpen={showSelection()}
           onClose={handleCloseSelection}
+          onStartWalkthrough={handleStartWalkthrough}
         />
       </Show>
 

@@ -8,6 +8,7 @@ import { createMemo, createSignal, Show } from 'solid-js'
 import { copyShareURL } from '@/lib/share-url'
 import { appStore } from '@/stores/app-store'
 import { melodyStore } from '@/stores/melody-store'
+import { createMelodyItem } from '@/stores/session-store'
 import type { MelodyData, MelodyItem } from '@/types'
 
 export const PresetSelector: Component = () => {
@@ -120,7 +121,10 @@ export const PresetSelector: Component = () => {
     // Add to active session if one is set
     const session = userSession()
     if (session !== null) {
-      melodyStore.addMelodyToSession(session.id, data.id)
+      const newItem = createMelodyItem(data.name, data.id, session.items.length)
+      melodyStore.updateSession(session.id, {
+        items: [...session.items, newItem],
+      })
       setSaveName(name)
       setShowSaveMenu(false)
       appStore.showNotification(

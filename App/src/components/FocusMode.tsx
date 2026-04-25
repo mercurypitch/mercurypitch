@@ -22,6 +22,7 @@ interface FocusModeProps {
   countInBeat: () => number
   isCountingIn: () => boolean
   currentBeat: () => number
+  currentNoteIndex?: () => number
   onPlay: () => void
   onPause: () => void
   onResume: () => void

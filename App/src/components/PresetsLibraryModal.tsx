@@ -6,7 +6,13 @@ import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
 import { PRACTICE_SESSIONS } from '@/data/sessions'
 import { appStore } from '@/stores/app-store'
-import type { SavedUserSession, SessionCategory, SessionDifficulty, SessionItem, } from '@/types'
+import {
+  createMelodyItem,
+  createPresetItem,
+  createRestItem,
+  createScaleItem,
+} from '@/stores/session-store'
+import type { SavedUserSession, SessionCategory, SessionDifficulty, SessionItem } from '@/types'
 
 const DIFFICULTY_COLORS: Record<SessionDifficulty, string> = {
   beginner: 'var(--accent-success)',
@@ -58,19 +64,40 @@ export const PresetsLibraryModal: Component<PresetsLibraryModalProps> = (
   })
 
   const handlePlay = (session: (typeof PRACTICE_SESSIONS)[number]) => {
-    const items = session.items.map((item) => ({
-      type: item.type as 'scale' | 'rest' | 'preset' | 'melody',
-      label: item.label,
-      scaleType: item.scaleType,
-      beats: item.beats,
-      restMs: item.restMs,
-      repeat: item.repeat ?? 1,
-    }))
+    // Convert template items to session items using factory functions
+    const items = session.items.map((item) => {
+      switch (item.type) {
+        case 'scale':
+          return createScaleItem(
+            item.label,
+            item.scaleType ?? 'major',
+            item.beats ?? 8,
+            item.startBeat,
+          )
+        case 'rest':
+          return createRestItem(
+            item.label,
+            item.restMs ?? 2000,
+            item.startBeat,
+          )
+        case 'preset':
+          return createPresetItem(item.label, item.items || [], item.startBeat)
+        case 'melody':
+          return createMelodyItem(
+            item.label,
+            item.melodyId ?? 'unknown',
+            item.startBeat,
+          )
+        default:
+          return createRestItem(item.label, 1000, item.startBeat)
+      }
+    })
 
     const savedSession: SavedUserSession = {
       id: `preset-${session.id}`,
       name: session.name,
       author: 'System',
+      deletable: false,
       items,
       created: Date.now(),
       lastPlayed: Date.now(),

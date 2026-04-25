@@ -51,7 +51,7 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
   const handleEdit = (session: SavedUserSession) => {
     setIsEditing(session)
     setNameInput(session.name)
-    setDifficulty(session.difficulty)
+    setDifficulty(session.difficulty ?? 'beginner')
     setCategory(session.category as SessionCategory)
   }
 
@@ -181,6 +181,7 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
                     id: `session-${Date.now()}`,
                     name: '',
                     author: 'User',
+                    deletable: true,
                     items: [],
                     created: Date.now(),
                     difficulty: 'beginner',

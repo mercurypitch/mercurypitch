@@ -20,7 +20,7 @@ interface WalkthroughModalProps {
   isOpen: boolean
   onClose: () => void
   initialTab?: WalkthroughTab
-  initialWalkthroughId?: string
+  initialWalkthroughId?: string | null
 }
 
 export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
@@ -98,17 +98,16 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
     }
   }
 
-  // Lifecycle
-  let escapeListener: (() => void) | undefined
-
-  onCleanup(() => {
-    escapeListener?.()
+  // Lifecycle - setup escape key listener
+  createEffect(() => {
+    if (props.isOpen) {
+      const doc = typeof document !== 'undefined' ? document : undefined
+      if (doc) {
+        doc.addEventListener('keydown', handleKeyDown)
+        return () => doc.removeEventListener('keydown', handleKeyDown)
+      }
+    }
   })
-
-  if (props.isOpen) {
-    escapeListener = (typeof document !== 'undefined' &&
-      document.addEventListener('keydown', handleKeyDown))
-  }
 
   const walkthroughs = getWalkthroughsForTab(currentTab())
 
@@ -216,11 +215,11 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
                   <div class="walkthrough-text">
                     {currentWalkthrough()!.content.split('\n').map((para, i) =>
                       para.trim() ? (
-                        <p key={i} class="walkthrough-paragraph">
+                        <p class="walkthrough-paragraph">
                           {para}
                         </p>
                       ) : (
-                        <br key={i} />
+                        <br />
                       ),
                     )}
                   </div>

@@ -4,12 +4,34 @@
 
 import { createSignal } from 'solid-js'
 import { buildMultiOctaveScale } from '@/lib/scale-data'
-import type { MelodyData, MelodyItem, MelodyLibrary, MelodyNote, SavedUserSession, ScaleDegree, UserSession, } from '@/types'
+import type {
+  MelodyData,
+  MelodyItem,
+  MelodyLibrary,
+  MelodyNote,
+  SavedUserSession,
+  ScaleDegree,
+} from '@/types'
+import {
+  addItemToSession,
+  deleteSession as deleteSessionStore,
+  deleteSessionItem,
+  generateSessionItemId,
+  getDefaultSession,
+  getInternalSession,
+  getItemsAtBeat,
+  getSession as getSessionStore,
+  getSessionCount,
+  getSessionItem,
+  getSessionItems,
+  getSessionItemsOrdered,
+  getSessions as getSessionStoreSessions,
+  getUserSessionCount,
+  saveSession as saveSessionStore,
+  updateSessionItem,
+} from './session-store'
 
 const STORAGE_KEY_MELODY_LIBRARY = 'pitchperfect_melody_library'
-const STORAGE_KEY_USER_SESSIONS = 'pitchperfect_user_sessions'
-const STORAGE_KEY_NEW_SESSIONS = 'pitchperfect_sessions'
-const STORAGE_KEY_DEFAULT_SESSION = 'pitchperfect_default_session'
 const STORAGE_KEY_SEEDED = 'pitchperfect_seeded'
 
 const DEFAULT_LIBRARY: MelodyLibrary = {
@@ -91,7 +113,6 @@ export function _setMelodyLibrary(updates: Partial<MelodyLibrary>): void {
 /** Reset the melody library store (used by tests) */
 export function resetMelodyLibrary(): void {
   localStorage.removeItem(STORAGE_KEY_MELODY_LIBRARY)
-  localStorage.removeItem(STORAGE_KEY_USER_SESSIONS)
   localStorage.removeItem(STORAGE_KEY_SEEDED)
   _idCounter = 100
   const defaultLibrary = {
@@ -101,170 +122,40 @@ export function resetMelodyLibrary(): void {
     renderSettings: { gridlines: true, showLabels: true, showNumbers: false },
   }
   setMelodyLibrary(defaultLibrary)
-  userSessions() // Access the signal to force reactivity
-  setUserSessions([])
 }
 
-function loadUserSessions(): SavedUserSession[] {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY_USER_SESSIONS)
-    if (stored !== null && stored !== '') {
-      const parsed = JSON.parse(stored)
-      if (Array.isArray(parsed)) return parsed
-    }
-  } catch {
-    // Fail silently, use empty array
-  }
-  return []
-}
-
-function saveUserSessions(sessions: SavedUserSession[]): void {
-  try {
-    localStorage.setItem(STORAGE_KEY_USER_SESSIONS, JSON.stringify(sessions))
-  } catch {
-    // Fail silently
-  }
-}
-
-const [userSessions, setUserSessions] =
-  createSignal<SavedUserSession[]>(loadUserSessions())
+// ============================================================
+// Session Operations — Delegate to session-store
+// ============================================================
 
 export function getSessions(): SavedUserSession[] {
-  return userSessions()
+  return getSessionStoreSessions()
 }
 
 export function saveSession(session: SavedUserSession): void {
-  const updated = [...userSessions(), session].sort(
-    (a, b) => b.created - a.created,
-  )
-  setUserSessions(updated)
-  saveUserSessions(updated)
+  saveSessionStore(session)
 }
 
 export function updateSession(
   id: string,
   updates: Partial<SavedUserSession>,
 ): void {
-  setUserSessions((sessions) =>
-    sessions.map((s) => (s.id === id ? { ...s, ...updates } : s)),
-  )
-  saveUserSessions(userSessions())
+  const session = getSessionStore(id)
+  if (session) {
+    saveSessionStore({ ...session, ...updates })
+  }
 }
 
 export function deleteSession(id: string): void {
-  setUserSessions((sessions) => sessions.filter((s) => s.id !== id))
-  saveUserSessions(userSessions())
+  deleteSessionStore(id)
 }
 
 export function updateUserSession(session: SavedUserSession): void {
-  const sessions = userSessions()
-  const updated = [...sessions, session]
-  updated.sort(
-    (a: SavedUserSession, b: SavedUserSession) =>
-      (b.lastPlayed ?? b.created) - (a.lastPlayed ?? a.created),
-  )
-  setUserSessions(updated)
-  saveUserSessions(updated)
+  saveSessionStore(session)
 }
 
 export function getSession(id: string): SavedUserSession | undefined {
-  return userSessions().find((s) => s.id === id)
-}
-
-// ============================================================
-// New Session Model (playlist of melody IDs)
-// ============================================================
-
-function loadNewSessions(): Record<string, UserSession> {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY_NEW_SESSIONS)
-    if (stored !== null && stored !== '') {
-      const parsed = JSON.parse(stored)
-      if (parsed !== null && typeof parsed === 'object') return parsed
-    }
-  } catch {
-    // Fail silently
-  }
-  return {}
-}
-
-function saveNewSessions(sessions: Record<string, UserSession>): void {
-  try {
-    localStorage.setItem(STORAGE_KEY_NEW_SESSIONS, JSON.stringify(sessions))
-  } catch {
-    // Fail silently
-  }
-}
-
-export function getNewSessions(): Record<string, UserSession> {
-  return loadNewSessions()
-}
-
-export function getNewSession(id: string): UserSession | undefined {
-  return loadNewSessions()[id]
-}
-
-export function saveNewSession(session: UserSession): void {
-  const sessions = loadNewSessions()
-  sessions[session.id] = session
-  saveNewSessions(sessions)
-}
-
-export function deleteNewSession(id: string): void {
-  const sessions = loadNewSessions()
-  delete sessions[id]
-  saveNewSessions(sessions)
-}
-
-export function addMelodyToSession(sessionId: string, melodyId: string): void {
-  const sessions = loadNewSessions()
-  const session = sessions[sessionId]
-  if (session !== undefined && !session.melodyIds.includes(melodyId)) {
-    sessions[sessionId] = {
-      ...session,
-      melodyIds: [...session.melodyIds, melodyId],
-    }
-    saveNewSessions(sessions)
-  }
-}
-
-export function removeMelodyFromSession(
-  sessionId: string,
-  melodyId: string,
-): void {
-  const sessions = loadNewSessions()
-  const session = sessions[sessionId]
-  if (session !== undefined) {
-    sessions[sessionId] = {
-      ...session,
-      melodyIds: session.melodyIds.filter((id) => id !== melodyId),
-    }
-    saveNewSessions(sessions)
-  }
-}
-
-export function reorderSessionMelodies(
-  sessionId: string,
-  melodyIds: string[],
-): void {
-  const sessions = loadNewSessions()
-  const session = sessions[sessionId]
-  if (session !== undefined) {
-    sessions[sessionId] = { ...session, melodyIds }
-    saveNewSessions(sessions)
-  }
-}
-
-export function getActiveSessionId(): string {
-  return localStorage.getItem(STORAGE_KEY_DEFAULT_SESSION) ?? 'default'
-}
-
-export function setActiveSessionId(id: string): void {
-  try {
-    localStorage.setItem(STORAGE_KEY_DEFAULT_SESSION, id)
-  } catch {
-    // Fail silently
-  }
+  return getSessionStore(id)
 }
 
 // ============================================================
@@ -409,18 +300,14 @@ export function seedDefaultSession(): void {
     }
   }
 
-  // Create default session
-  const defaultSession: UserSession = {
-    id: 'default',
-    name: 'Default',
-    melodyIds: ['scale-major-c4', 'scale-chromatic-c4'],
-    created: 0,
+  // Seed default session if not exists
+  const defaultSession = getSessionStore('default')
+  if (!defaultSession) {
+    const session = getDefaultSession()
+    if (session) {
+      saveSessionStore(session)
+    }
   }
-  const sessions = loadNewSessions()
-  if (sessions['default'] === undefined) {
-    sessions['default'] = defaultSession
-  }
-  saveNewSessions(sessions)
 
   // Persist library to localStorage
   _saveLibraryToStorage()
@@ -532,6 +419,11 @@ const _setOctave = _currentOctave[1]
 const _currentNoteIndex = createSignal<number>(0)
 export const currentNoteIndex = _currentNoteIndex[0]
 export const setCurrentNoteIndex = _currentNoteIndex[1]
+
+// Active session ID tracking
+const _activeSessionId = createSignal<string | null>(null)
+export const getActiveSessionId = _activeSessionId[0]
+export const setActiveSessionId = _activeSessionId[1]
 
 // ============================================================
 // Melody Note Operations
@@ -987,19 +879,22 @@ export const melodyStore = {
   deleteSession,
   getSession,
   updateUserSession,
-
-  // New Session Model (melody IDs)
-  getNewSessions,
-  getNewSession,
-  saveNewSession,
-  deleteNewSession,
-  addMelodyToSession,
-  removeMelodyFromSession,
-  reorderSessionMelodies,
+  getSessionCount,
+  getUserSessionCount,
+  getDefaultSession,
+  getInternalSession,
   getActiveSessionId,
   setActiveSessionId,
-  seedDefaultSession,
-  createMelodyFromScale,
+
+  // Session Item Management (Map-based O(1) operations)
+  addItemToSession,
+  updateSessionItem,
+  deleteSessionItem,
+  getSessionItem,
+  getSessionItems,
+  getSessionItemsOrdered,
+  getItemsAtBeat,
+  generateSessionItemId,
 
   // Current Note Index
   currentNoteIndex,
