@@ -176,6 +176,12 @@ const [activeTabGetter, _setActiveTab] = createSignal<ActiveTab>('practice')
 export const activeTab = activeTabGetter
 export const setActiveTab = _setActiveTab
 
+// Editor view within the Editor tab
+export type EditorView = 'piano-roll' | 'session-editor'
+const [editorViewGetter, _setEditorView] = createSignal<EditorView>('piano-roll')
+export const editorView = editorViewGetter
+export const setEditorView = _setEditorView
+
 // ── Library Modal ───────────────────────────────────────────
 
 const [showLibraryModal, setShowLibraryModal] = createSignal<boolean>(false)

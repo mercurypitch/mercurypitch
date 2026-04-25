@@ -4,8 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
-import { appStore } from '@/stores/app-store'
-import { melodyStore } from '@/stores/melody-store'
+import { appStore, melodyStore, setActiveTab, setEditorView } from '@/stores'
 import type { SavedUserSession, SessionCategory, SessionDifficulty, } from '@/types'
 
 interface SessionLibraryModalProps {
@@ -17,7 +16,6 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
   props,
 ) => {
   const [searchQuery, setSearchQuery] = createSignal('')
-  const [isEditing, setIsEditing] = createSignal<SavedUserSession | null>(null)
 
   const sessions = createMemo(() => melodyStore.getSessions())
 
@@ -43,36 +41,12 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
   const handleDelete = (id: string) => {
     if (confirm('Delete this session?')) {
       melodyStore.deleteSession(id)
-      const editing = isEditing()
-      if (editing !== null && editing.id === id) setIsEditing(null)
     }
   }
 
   const handleEdit = (session: SavedUserSession) => {
-    setIsEditing(session)
-    setNameInput(session.name)
-    setDifficulty(session.difficulty ?? 'beginner')
-    setCategory(session.category as SessionCategory)
-  }
-
-  const handleSave = () => {
-    const editing = isEditing()
-    if (editing !== null) {
-      const updated: SavedUserSession = {
-        ...editing,
-        name: nameInput(),
-        difficulty: difficulty(),
-        category: category(),
-        lastPlayed: Date.now(),
-      }
-      melodyStore.updateUserSession(updated)
-    }
-    setIsEditing(null)
-    appStore.showNotification('Session saved', 'success')
-  }
-
-  const handleCancel = () => {
-    setIsEditing(null)
+    appStore.loadSession(session)
+    setActiveTab('editor'); setEditorView('session-editor')
   }
 
   const difficultyOptions: Array<{ value: SessionDifficulty; label: string }> =
@@ -92,11 +66,6 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
     { value: 'custom', label: 'Custom' },
   ]
 
-  const [nameInput, setNameInput] = createSignal('')
-  const [difficulty, setDifficulty] =
-    createSignal<SessionDifficulty>('beginner')
-  const [category, setCategory] = createSignal<SessionCategory>('custom')
-
   return (
     <Show when={props.isOpen}>
       <div class="modal-overlay" onClick={props.close}>
@@ -113,59 +82,7 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
             </button>
           </div>
 
-          {isEditing() !== null ? (
-            <div class="edit-session-form">
-              <h3>Edit Session</h3>
-
-              <div class="form-group">
-                <label>Name</label>
-                <input
-                  type="text"
-                  value={nameInput()}
-                  onInput={(e) => setNameInput(e.currentTarget.value)}
-                  placeholder="Session name"
-                />
-              </div>
-
-              <div class="form-group">
-                <label>Difficulty</label>
-                <select
-                  value={difficulty()}
-                  onChange={(e) =>
-                    setDifficulty(e.currentTarget.value as SessionDifficulty)
-                  }
-                >
-                  {difficultyOptions.map((opt) => (
-                    <option value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div class="form-group">
-                <label>Category</label>
-                <select
-                  value={category()}
-                  onChange={(e) =>
-                    setCategory(e.currentTarget.value as SessionCategory)
-                  }
-                >
-                  {categoryOptions.map((opt) => (
-                    <option value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div class="form-actions">
-                <button class="cancel-btn" onClick={handleCancel}>
-                  Cancel
-                </button>
-                <button class="save-btn" onClick={handleSave}>
-                  Save
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div class="library-content">
+          <div class="library-content">
               <input
                 type="text"
                 class="search-input"
@@ -177,16 +94,8 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
               <button
                 class="new-btn"
                 onClick={() => {
-                  setIsEditing({
-                    id: `session-${Date.now()}`,
-                    name: '',
-                    author: 'User',
-                    deletable: true,
-                    items: [],
-                    created: Date.now(),
-                    difficulty: 'beginner',
-                    category: 'custom',
-                  })
+                  appStore.setActiveTab('editor')
+                  appStore.setActiveTab('editor'); setEditorView('session-editor')
                 }}
               >
                 <svg viewBox="0 0 24 24" width="16" height="16">
@@ -272,7 +181,6 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
                 )}
               </div>
             </div>
-          )}
         </div>
       </div>
     </Show>

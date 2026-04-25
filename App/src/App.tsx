@@ -33,6 +33,8 @@ import { melodyIndexAtBeat } from '@/lib/scale-data'
 import { buildMultiOctaveScale, keyTonicFreq, melodyTotalBeats, midiToNote, } from '@/lib/scale-data'
 import { generateShareURL, hasSharedPresetInURL, loadFromURL, } from '@/lib/share-url'
 import { appStore, getNoteAccuracyMap } from '@/stores/app-store'
+import { SessionEditor } from '@/components/SessionEditor'
+import { MelodyPillList } from '@/components/MelodyPillList'
 import { melodyStore } from '@/stores/melody-store'
 import { playback } from '@/stores/playback-store'
 import { getSessionStore } from '@/stores/session-store'
@@ -99,7 +101,11 @@ function filterMelodyForPractice(
 // Tab type - reused across the application
 // ============================================================
 
+export type EditorView = 'piano-roll' | 'session-editor'
+
 export type ActiveTab = 'practice' | 'editor' | 'settings'
+
+const [editorView, setEditorView] = createSignal<EditorView>('piano-roll')
 
 interface AppProps {
   onMounted?: () => void
@@ -1089,7 +1095,7 @@ export const App: Component<AppProps> = (props) => {
     setLiveScore(null)
     // Reset practice mode state
     setAllCycleResults([])
-    setCurrentCycle(1)
+    setCurrentRepeat(1)
     setIsPracticeComplete(false)
   }
 
@@ -1563,9 +1569,9 @@ export const App: Component<AppProps> = (props) => {
                   }
                   playMode={() => playMode()}
                   playModeChange={setPlayMode}
-                  repeatCycles={() => repeatCycles()}
-                  onRepeatCyclesChange={setRepeatCycles}
-                  currentRepeat={() => currentRepeat()}
+                  practiceCycles={() => repeatCycles()}
+                  onCyclesChange={setRepeatCycles}
+                  currentCycle={() => currentRepeat()}
                   practiceSubMode={() => practiceSubMode()}
                   onPracticeSubModeChange={setPracticeSubMode}
                   isCountingIn={() => isCountingIn()}
@@ -1646,9 +1652,9 @@ export const App: Component<AppProps> = (props) => {
                 }
                 playMode={() => 'once'}
                 playModeChange={() => {}}
-                repeatCycles={() => 1}
+                practiceCycles={() => 1}
                 onCyclesChange={() => {}}
-                currentCycle={() => 1}
+                currentCycle={() => currentRepeat()}
                 practiceSubMode={() => 'all'}
                 onPracticeSubModeChange={() => {}}
                 isCountingIn={() => false}
@@ -1660,7 +1666,30 @@ export const App: Component<AppProps> = (props) => {
                 }}
                 onWaveToggle={appStore.toggleMicWaveVisible}
               />
-              <PianoRollCanvas
+              {/* Editor View Toggle */}
+              <div class="editor-view-toggle">
+                <button
+                  class={`view-btn ${editorView() === 'piano-roll' ? 'active' : ''}`}
+                  onClick={() => setEditorView('piano-roll')}
+                >
+                  Piano Roll
+                </button>
+                <button
+                  class={`view-btn ${editorView() === 'session-editor' ? 'active' : ''}`}
+                  onClick={() => setEditorView('session-editor')}
+                >
+                  Session Editor
+                </button>
+              </div>
+              {/* Session Editor View */}
+              <Show when={editorView() === 'session-editor'}>
+                <div class="session-editor-container">
+                  <SessionEditor />
+                </div>
+              </Show>
+              {/* Piano Roll View */}
+              <Show when={editorView() === 'piano-roll'}>
+                <PianoRollCanvas
                 melody={() => melodyStore.items()}
                 scale={() => melodyStore.currentScale()}
                 bpm={() => appStore.bpm()}
@@ -1686,6 +1715,7 @@ export const App: Component<AppProps> = (props) => {
                 }}
                 getWaveform={() => audioEngine?.getWaveformData() ?? null}
               />
+              </Show>
             </Show>
 
             <Show when={activeTab() === 'settings'}>
