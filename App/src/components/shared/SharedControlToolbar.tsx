@@ -230,8 +230,8 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
           Stop
         </button>
 
-        {/* Practice sessions */}
-        <Show when={!appStore.sessionActive()}>
+        {/* Practice sessions - only in practice tab */}
+        <Show when={isPracticeTab() && !appStore.sessionActive()}>
           <div class="app-header-sep" />
           <button
             class="ctrl-btn mode-btn"

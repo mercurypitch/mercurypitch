@@ -129,6 +129,10 @@ export const App: Component<AppProps> = (props) => {
     melodyStore.setCurrentNoteIndex(-1)
     setPitchHistory([])
     setNoteResults([])
+
+    // Reset session playback state
+    setSessionMelodyIds([])
+    setSessionCurrentMelodyIndex(-1)
   }
 
   // ── Tab change handler with audio cleanup ───────────────────────────────────
@@ -175,6 +179,9 @@ export const App: Component<AppProps> = (props) => {
     const melody = melodyStore.getMelody(melodyId)
     if (melody === undefined) return
 
+    // Auto-close sidebar on mobile before starting playback
+    closeSidebar()
+
     // Update app state with this melody's settings
     appStore.setBpm(melody.bpm)
     appStore.setKeyName(melody.key)
@@ -200,9 +207,13 @@ export const App: Component<AppProps> = (props) => {
 
   /**
    * Play all melodies in the session sequentially
+   * Auto-closes sidebar on mobile before starting playback
    */
   const playSessionSequence = (melodyIds: string[]): void => {
     if (melodyIds.length === 0) return
+
+    // Auto-close sidebar on mobile before starting playback
+    closeSidebar()
 
     setSessionMelodyIds(melodyIds)
     setSessionCurrentMelodyIndex(0)
