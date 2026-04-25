@@ -7,8 +7,8 @@ import type { Component } from 'solid-js'
 import { createSignal, For, Show } from 'solid-js'
 import { appStore, melodyStore } from '@/stores'
 import type { SessionItem } from '@/types'
-import { SessionEditorTimeline } from './SessionEditorTimeline'
 import { MelodyPillList } from './MelodyPillList'
+import { SessionEditorTimeline } from './SessionEditorTimeline'
 
 interface SessionEditorProps {
   currentSession?: SessionItem[]

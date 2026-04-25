@@ -4,7 +4,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createEffect, createMemo, createSignal, onCleanup, onMount, Show, } from 'solid-js'
+import { createEffect, createMemo, createSignal, onCleanup, onMount, Show } from 'solid-js'
 import { AppSidebar } from '@/components/AppSidebar'
 import { FocusMode } from '@/components/FocusMode'
 import { HistoryCanvas } from '@/components/HistoryCanvas'
@@ -187,9 +187,14 @@ export const App: Component<AppProps> = (props) => {
     createSignal(-1)
   const [sessionMelodyIds, setSessionMelodyIds] = createSignal<string[]>([])
 
+  /** Flag to track if playback should auto-start (set by user, not session load) */
+  const [shouldAutoStartPlayback, setShouldAutoStartPlayback] =
+    createSignal(false)
+
   /**
    * Load and play a specific melody in the session context
    * Sets up the app to use the melody's BPM and items
+   * Note: Does NOT auto-start playback - user must explicitly click Play
    */
   const loadAndPlayMelodyForSession = (melodyId: string): void => {
     const melody = melodyStore.getMelody(melodyId)
@@ -215,10 +220,7 @@ export const App: Component<AppProps> = (props) => {
     // Sync playback runtime with melody items
     playbackRuntime.setMelody(melody.items ?? [])
 
-    // Start playback with count-in
-    const countInBeats = appStore.countIn()
-    playbackRuntime.start(countInBeats)
-    setEditorPlaybackState('playing')
+    // Note: NOT starting playback here - must be done by user explicitly via handlePlay
   }
 
   /**
@@ -419,9 +421,9 @@ export const App: Component<AppProps> = (props) => {
 
     // Initialize active user session from saved default
     const activeSessionId = melodyStore.getActiveSessionId()
-    if (activeSessionId) {
+    if (activeSessionId !== null) {
       const activeSession = getSessionStore(activeSessionId)
-      if (activeSession) {
+      if (activeSession !== null) {
         appStore.setActiveUserSession(activeSession)
       }
     }
@@ -476,7 +478,8 @@ export const App: Component<AppProps> = (props) => {
 
       if (e.code === 'Space' && !isTyping) {
         e.preventDefault()
-        if (appStore.focusMode()) {
+        const focusModeValue = appStore.focusMode()
+        if (focusModeValue === true) {
           if (isPlaying()) handlePause()
           else if (isPaused()) handleResume()
           else handlePlay()
@@ -486,7 +489,8 @@ export const App: Component<AppProps> = (props) => {
       // Escape → exit focus mode, or stop playback
       if (e.code === 'Escape' && !isTyping) {
         e.preventDefault()
-        if (appStore.focusMode()) {
+        const focusModeValue = appStore.focusMode()
+        if (focusModeValue === true) {
           appStore.exitFocusMode()
         } else {
           handleStop()
@@ -822,7 +826,8 @@ export const App: Component<AppProps> = (props) => {
       }
 
       // Handle session mode (multi-item sessions)
-      if (appStore.sessionMode() && mode === 'practice') {
+      const sessionModeValue = appStore.sessionMode()
+      if (sessionModeValue === true && mode === 'practice') {
         handleSessionModeComplete()
         return
       }
@@ -989,12 +994,16 @@ export const App: Component<AppProps> = (props) => {
     // Set session active for practice mode (for FocusMode display)
     appStore.setSessionActive(true)
 
+    // Mark playback as explicitly requested by user (not auto-start)
+    setShouldAutoStartPlayback(true)
+
     setIsPlaying(true)
     setIsPaused(false)
     playback.startPlayback()
 
     // Play tonic anchor tone if enabled — helps singer lock in to the key
-    if (appStore.settings().tonicAnchor) {
+    const settingsValue = appStore.settings()
+    if (settingsValue.tonicAnchor === true) {
       const tonicFreq = keyTonicFreq(
         appStore.keyName(),
         melodyStore.currentOctave(),
@@ -1159,12 +1168,12 @@ export const App: Component<AppProps> = (props) => {
   /** Handle session skip — advance to next item or end session */
   const handleSessionSkip = () => {
     handleStop()
-    const session = appStore.practiceSession()
+    const sessionValue = appStore.practiceSession()
     const idx = appStore.sessionItemIndex()
-    if (session && idx < session.items.length - 1) {
+    if (sessionValue && idx < sessionValue.items.length - 1) {
       appStore.advanceSessionItem()
       const nextItem = appStore.getCurrentSessionItem()
-      if (nextItem) {
+      if (nextItem !== null) {
         if (nextItem.type === 'scale') {
           buildScaleMelody(
             nextItem.scaleType ?? 'major',
@@ -1201,11 +1210,12 @@ export const App: Component<AppProps> = (props) => {
       })
   }
 
-  /** Auto-start session when session mode becomes active */
+  /** Auto-start session playback when explicitly requested by user */
   createEffect(() => {
     const sessionMode = appStore.sessionMode()
     const practiceSession = appStore.practiceSession()
     const playModeValue = playMode()
+    const shouldAutoStart = shouldAutoStartPlayback()
 
     console.log(
       '[auto-start session] sessionMode:',
@@ -1213,17 +1223,20 @@ export const App: Component<AppProps> = (props) => {
       'practiceSession:',
       !!practiceSession,
       'playMode:',
-      playModeValue
+      playModeValue,
+      'shouldAutoStart:',
+      shouldAutoStart
     )
 
-    // Only auto-start if in practice mode and session has a scale item
-    if (sessionMode && practiceSession && playModeValue === 'practice') {
+    // Only auto-start if user explicitly requested AND in practice mode with session
+    if (shouldAutoStart && sessionMode && practiceSession && playModeValue === 'practice') {
       const item = appStore.getCurrentSessionItem()
       if (item && item.type === 'scale') {
         console.log('[auto-start session] Starting playback for scale item:', item.label)
         buildScaleMelody(item.scaleType ?? 'major', item.beats ?? 8, item.label)
         setRepeatCycles(1)
         setTimeout(() => void handlePlay(), 500)
+        setShouldAutoStartPlayback(false) // Reset flag after starting
       }
     }
   })

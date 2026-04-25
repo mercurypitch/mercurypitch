@@ -4,7 +4,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createSignal, For, Show, onMount, onCleanup } from 'solid-js'
+import { createSignal, For, onCleanup,onMount, Show } from 'solid-js'
 import { appStore, melodyStore } from '@/stores'
 import type { SessionItem } from '@/types'
 
