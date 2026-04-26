@@ -1033,6 +1033,9 @@ export const App: Component<AppProps> = (props) => {
       return
     }
 
+    // Auto-close sidebar on mobile when starting playback
+    closeSidebar()
+
     // Start fresh playback (if not playing)
     // Reset state
     setPitchHistory([])
