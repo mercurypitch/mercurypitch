@@ -1090,7 +1090,6 @@ export const App: Component<AppProps> = (props) => {
       return
     }
     void playbackRuntime.pause()
-    void audioEngine.stopAllNotes()
     void audioEngine.stopTone()
     setIsPlaying(false)
     setIsPaused(true)
