@@ -7040,6 +7040,7 @@ Keeps your existing styles, only adjusts layout
   display: flex;
   flex-direction: column;
   max-height: 100%;
+  padding: 24px;
 }
 
 .walkthrough-back-btn {
@@ -7063,14 +7064,18 @@ Keeps your existing styles, only adjusts layout
 }
 
 .walkthrough-main-title {
-  margin: 0 0 8px 0;
-  font-size: 1.5rem;
+  text-align: center;
+  margin: 0 0 12px 0;
+  font-size: 1.75rem;
   font-weight: 600;
 }
 
 .walkthrough-main-desc {
-  margin: 0 0 20px 0;
+  text-align: center;
+  margin: 0 0 24px 0;
   color: var(--text-secondary);
+  max-width: 600px;
+  align-self: center;
 }
 
 .walkthrough-text {
@@ -7081,9 +7086,12 @@ Keeps your existing styles, only adjusts layout
 }
 
 .walkthrough-paragraph {
-  margin: 0 0 16px 0;
-  line-height: 1.6;
+  text-align: center;
+  margin: 0 0 20px 0;
+  line-height: 1.7;
   color: var(--text);
+  max-width: 600px;
+  align-self: center;
 }
 
 .walkthrough-steps {
