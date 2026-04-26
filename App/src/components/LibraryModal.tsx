@@ -698,7 +698,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                         <dt>BPM</dt>
                         <dd>{m().bpm}</dd>
                         <dt>Notes</dt>
-                        <dd>{m().items.length}</dd>
+                        <dd>{m().notes ?? ''}</dd>
                         <dt>Created</dt>
                         <dd>{new Date(m().createdAt).toLocaleDateString()}</dd>
                         <dt>Updated</dt>
