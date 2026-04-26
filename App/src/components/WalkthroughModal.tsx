@@ -53,6 +53,13 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
     }
   })
 
+// Ensure tab is reset when modal opens
+  createEffect(() => {
+    if (props.isOpen && props.initialTab !== null && props.initialTab !== undefined) {
+      setCurrentTab(props.initialTab)
+    }
+  })
+
   // Reset on tab change
   const handleTabChange = (tab: WalkthroughTab) => {
     setCurrentTab(tab)
@@ -213,7 +220,10 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
                 {/* Back to list */}
                 <button
                   class="walkthrough-back-btn"
-                  onClick={() => setCurrentWalkthrough(undefined)}
+                  onClick={() => {
+                    setCurrentWalkthrough(undefined)
+                    setCurrentTab(props.initialTab ?? 'practice')
+                  }}
                 >
                   ← Back to list
                 </button>
