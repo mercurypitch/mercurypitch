@@ -7008,7 +7008,15 @@ Keeps your existing styles, only adjusts layout
 }
 
 .walkthrough-item.completed {
-  opacity: 0.6;
+  opacity: 0.8;
+  border-color: var(--accent-success);
+  background: var(--accent-success-light);
+}
+
+.walkthrough-item.completed .walkthrough-item-title::before {
+  content: '✓ ';
+  color: var(--accent-success);
+  font-weight: bold;
 }
 
 .walkthrough-thumbnail {
