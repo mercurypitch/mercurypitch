@@ -204,32 +204,32 @@ export class PlaybackRuntime {
   pause(): void {
     if (!this.isPlaying || this.isPaused) return
 
-    // Record the pause offset to resume correctly
-    // We add the elapsed time since playStartTime to the accumulated offset
+    // Record the time when pause started - this will be used to calculate pause duration
     if (this.playStartTime > 0) {
-      this.pauseOffset += performance.now() - this.playStartTime
+      this.pauseStartTime = performance.now()
+      this.isPaused = true
+      // Keep isPlaying=true so resume() can proceed - we're in "paused but playing" state
+      this._emit({ type: 'state', state: 'paused' })
+      this._stopAnimationLoop()
     }
-    // Record when we paused for cleanup in resume()
-    this.pauseStartTime = performance.now()
-    this.isPaused = true
-    // Keep isPlaying=true so resume() can proceed - we're in "paused but playing" state
-    this._emit({ type: 'state', state: 'paused' })
-    this._stopAnimationLoop()
   }
 
   resume(): void {
     if (!this.isPlaying || !this.isPaused) return
 
-    // Add accumulated pause time to our offset for the next pause
+    // Calculate how long we were paused and add to offset
     if (this.pauseStartTime > 0) {
-      this.pauseOffset += performance.now() - this.pauseStartTime
+      const pauseDuration = performance.now() - this.pauseStartTime
+      this.pauseOffset += pauseDuration
       this.pauseStartTime = 0
+      console.log('[PlaybackRuntime.resume] Added', pauseDuration, 'ms of pause time to offset')
     }
 
+    // Keep playStartTime as is - it tracks when playback originally started
+    // The pauseOffset accounts for all time spent paused
     this.isPaused = false
     this.isPlaying = true
-    // Reset playStartTime so we can track elapsed time from this resume
-    this.playStartTime = performance.now()
+    console.log('[PlaybackRuntime.resume] Resuming at beat:', this.currentBeat, 'with offset:', this.pauseOffset)
     this._emit({ type: 'state', state: 'playing' })
     this._startAnimationLoop()
   }
