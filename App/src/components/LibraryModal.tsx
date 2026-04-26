@@ -257,17 +257,14 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
 
     const playlistId = playlistEdit.playlistId
     const name = renameInput().trim()
-    if (
-      playlistId !== null &&
-      playlistId !== undefined &&
-      name.trim().length > 0
-    ) {
+    if (playlistId !== null && playlistId !== undefined && name.trim().length > 0) {
       const playlist = melodyStore.getPlaylist(playlistId)
-      if (playlist) {
+      if (playlist !== null) {
         const newPlaylistId = melodyStore.createPlaylist(name)
         const library = melodyStore.getMelodyLibrary()
 
-        const melodyKeys = library.playlists[playlistId]?.melodyKeys || []
+        const libraryPlaylist = library.playlists[playlistId]
+        const melodyKeys = libraryPlaylist !== undefined ? libraryPlaylist.melodyKeys : []
         melodyKeys.forEach((melodyKey: string) => {
           melodyStore.addMelodyToPlaylist(newPlaylistId, melodyKey)
         })

@@ -6089,6 +6089,54 @@ Keeps your existing styles, only adjusts layout
   border-radius: 6px;
 }
 
+/* Session Items Display (Practice tab sidebar) */
+.session-items-display {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.session-items-display h3 {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin: 0;
+  padding: 0 2px;
+}
+
+.session-item-entry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 4px 8px;
+  background: var(--bg-secondary);
+  border-radius: 4px;
+  font-size: 0.75rem;
+}
+
+.session-item-label {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.session-item-type {
+  display: flex;
+  align-items: center;
+  font-size: 0.7rem;
+}
+
+.session-empty-tip {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-style: italic;
+  padding: 8px;
+  text-align: center;
+}
+
 .session-header {
   display: flex;
   align-items: center;

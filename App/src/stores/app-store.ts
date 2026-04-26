@@ -259,7 +259,7 @@ export interface WalkthroughStep {
 export function hasRemainingWalkthroughs(): boolean {
   try {
     const _stored = localStorage.getItem('pitchperfect_walkthroughs')
-    if (_stored) return true
+    if (_stored === null || _stored === undefined || _stored === '') return true
     const progress = JSON.parse(_stored) as Record<string, number>
     return Object.keys(progress).length < 7 // Total walkthroughs = 7
   } catch {
@@ -271,7 +271,7 @@ export function hasRemainingWalkthroughs(): boolean {
 export function getCompletedWalkthroughCount(): number {
   try {
     const _stored = localStorage.getItem('pitchperfect_walkthroughs')
-    if (_stored) return 0
+    if (_stored === null || _stored === undefined) return 0
     const progress = JSON.parse(_stored) as Record<string, number>
     return Object.keys(progress).length
   } catch {

@@ -38,7 +38,7 @@ export const WalkthroughSelection: Component<WalkthroughSelectionProps> = (props
     props.onStartWalkthrough(walkthrough.id, walkthrough.tab as WalkthroughTab)
   }
 
-  const handleComplete = (walkthrough: { id: string }) => {
+  const _handleComplete = (walkthrough: { id: string }) => {
     completeWalkthrough(walkthrough.id)
   }
 

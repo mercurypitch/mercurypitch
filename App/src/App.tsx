@@ -9,7 +9,6 @@ import { AppSidebar } from '@/components/AppSidebar'
 import { FocusMode } from '@/components/FocusMode'
 import { HistoryCanvas } from '@/components/HistoryCanvas'
 import { LibraryModal } from '@/components/LibraryModal'
-import { _MelodyPillList } from '@/components/MelodyPillList'
 import { Notifications } from '@/components/Notifications'
 import { PianoRollCanvas } from '@/components/PianoRollCanvas'
 import { PitchCanvas } from '@/components/PitchCanvas'
@@ -23,7 +22,6 @@ import { SettingsPanel } from '@/components/SettingsPanel'
 import type { PracticeSubMode } from '@/components/shared/SharedControlToolbar'
 import { SharedControlToolbar } from '@/components/shared/SharedControlToolbar'
 import { WalkthroughControl } from '@/components/WalkthroughControl'
-import { _WelcomeScreen } from '@/components/WelcomeScreen'
 import type { InstrumentType } from '@/lib/audio-engine'
 import { AudioEngine } from '@/lib/audio-engine'
 import { debounce } from '@/lib/debounce'
@@ -145,14 +143,12 @@ export const App: Component<AppProps> = (props) => {
     setSessionCurrentMelodyIndex(-1)
 
     // Force reset PlaybackRuntime animation loop and state
-    playbackRuntime.isPlaying = false
-    playbackRuntime.isPaused = false
-    playbackRuntime.animationFrameId = null
+    playbackRuntime.stop() // Reset via playback stop
 
     // Verify all states are reset
     console.log('[resetPlaybackState] Playback state reset complete', {
       audioEngineTonePlaying: audioEngine.isTonePlaying(),
-      audioEngineActiveVoices: audioEngine._activeVoices.size,
+      audioEngineActiveVoices: audioEngine.getActiveVoices().size,
       playbackRuntimePlaying: playbackRuntime.getIsPlaying(),
       playbackRuntimePaused: playbackRuntime.getIsPaused(),
       editorPlaybackState: editorPlaybackState(),

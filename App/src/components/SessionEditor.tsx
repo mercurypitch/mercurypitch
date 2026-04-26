@@ -41,7 +41,6 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
   }
 
   const handleDeleteItem = (itemId: string) => {
-    const current = sessionItems()
     setSelectedMelodyIds(prev => {
       const next = new Set(prev)
       next.delete(itemId)

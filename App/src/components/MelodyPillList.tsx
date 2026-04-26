@@ -33,13 +33,13 @@ export const MelodyPillList: Component<MelodyPillListProps> = (props) => {
   }
 
   const handleDragStart = (e: DragEvent, melodyId: string) => {
-    if (!e.dataTransfer) return
+    if (e.dataTransfer === null || e.dataTransfer === undefined) return
     e.dataTransfer.setData('text/plain', melodyId)
     e.dataTransfer.effectAllowed = 'copy'
   }
 
   return (
-    <div class={`melody-pill-list ${props.className || ''}`}>
+    <div class={`melody-pill-list ${props.className ?? ''}`}>
       <div class="pill-list-header">
         <input
           type="text"

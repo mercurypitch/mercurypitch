@@ -1058,6 +1058,13 @@ export class AudioEngine {
   }
 
   /**
+   * Get all active voice IDs.
+   */
+  getActiveVoices(): Set<number> {
+    return new Set(this._activeVoices.keys())
+  }
+
+  /**
    * Stop all active notes.
    */
   stopAllNotes(): void {

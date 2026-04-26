@@ -3,8 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createEffect, createSignal, onCleanup, Show } from 'solid-js'
-import { appStore } from '@/stores/app-store'
+import { createEffect, createSignal, Show } from 'solid-js'
 import type {
   WalkthroughTab} from '@/stores/walkthrough-store';
 import {
@@ -35,14 +34,14 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
 
   // Load walkthrough when initially provided and modal opens
   createEffect(() => {
-    if (props.initialWalkthroughId && props.isOpen) {
+    if (props.initialWalkthroughId !== null && props.initialWalkthroughId !== undefined && props.isOpen) {
       startWalkthrough(props.initialWalkthroughId)
     }
   })
 
   // Sync tab with initialTab prop changes
   createEffect(() => {
-    if (props.initialTab !== undefined) {
+    if (props.initialTab !== null && props.initialTab !== undefined) {
       setCurrentTab(props.initialTab)
     }
   })
@@ -213,7 +212,7 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
                   </p>
 
                   <div class="walkthrough-text">
-                    {currentWalkthrough()!.content.split('\n').map((para, i) =>
+                    {currentWalkthrough()!.content.split('\n').map((para, _i) =>
                       para.trim() ? (
                         <p class="walkthrough-paragraph">
                           {para}

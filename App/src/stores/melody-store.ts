@@ -98,9 +98,9 @@ function loadLibrary(): UnifiedLibrary {
       ) {
         // Ensure default session exists
         const library = parsed as UnifiedLibrary
-        if (!library.sessions['default']) {
+        if (library.sessions['default'] === null || library.sessions['default'] === undefined) {
           const defaultSession = getDefaultSession()
-          if (defaultSession) {
+          if (defaultSession !== null) {
             library.sessions['default'] = defaultSession
           }
         }
@@ -420,7 +420,7 @@ export function createMelodyFromScale(
     createdAt: Date.now(),
     updatedAt: Date.now(),
   }
-  const library = melodyLibrarySignal()
+  const _library = melodyLibrarySignal()
   setMelodyLibrary((prev) => ({
     ...prev,
     melodies: { ...prev.melodies, [id]: melody },
@@ -507,7 +507,7 @@ export function addMelodyNote(
   const key = current.id
   const newItem = { id: generateId(), note, startBeat, duration }
 
-  const library = melodyLibrarySignal()
+  const _library = melodyLibrarySignal()
   setMelodyLibrary((prev) => ({
     ...prev,
     melodies: {
@@ -631,8 +631,8 @@ export function updateMelody(
 }
 
 export function deleteMelody(key: string): void {
-  const library = melodyLibrarySignal()
-  const { melodies, playlists, sessions } = library
+  const _library = melodyLibrarySignal()
+  const { melodies, playlists } = _library
   const { [key]: _removed, ...newMelodies } = melodies
   const newPlaylists: Record<
     string,
@@ -670,7 +670,7 @@ export function saveCurrentMelody(name?: string): MelodyData {
     return createNewMelody(name)
   }
   const key = melody.id
-  const library = melodyLibrarySignal()
+  const _library = melodyLibrarySignal()
   const updatedMelody = { ...melody, name: name ?? melody.name, updatedAt: Date.now() }
   setMelodyLibrary((prev) => ({
     ...prev,
@@ -695,7 +695,7 @@ export function getCurrentItems(): MelodyItem[] {
 export function setMelody(items: MelodyItem[]): void {
   const key = currentMelody()?.id ?? createNewMelody().id
   const existing = currentMelody()
-  const library = melodyLibrarySignal()
+  const _library = melodyLibrarySignal()
 
   if (existing !== null && existing !== undefined) {
     setMelodyLibrary((prev) => ({
@@ -715,7 +715,7 @@ export function setMelody(items: MelodyItem[]): void {
   } else {
     const newMelody = {
       id: key,
-      name: `Melody ${Object.keys(library.melodies).length + 1}`,
+      name: `Melody ${Object.keys(_library.melodies).length + 1}`,
       bpm: DEFAULT_BPM,
       key: DEFAULT_KEY,
       scaleType: DEFAULT_SCALE_TYPE,
@@ -766,7 +766,7 @@ export function setNumOctaves(num: number): void {
 
 export function createPlaylist(name: string): string {
   const id = `playlist-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-  const library = melodyLibrarySignal()
+  const _library = melodyLibrarySignal()
   setMelodyLibrary((prev) => ({
     ...prev,
     playlists: {
@@ -787,11 +787,11 @@ export function addMelodyToPlaylist(
   playlistId: string,
   melodyKey: string,
 ): void {
-  const library = melodyLibrarySignal()
-  const playlist = library.playlists[playlistId]
+  const _library = melodyLibrarySignal()
+  const playlist = _library.playlists[playlistId]
   if (playlist !== undefined) {
     const updatedPlaylists = {
-      ...library.playlists,
+      ..._library.playlists,
       [playlistId]: {
         ...playlist,
         melodyKeys: [...playlist.melodyKeys, melodyKey],
@@ -810,11 +810,11 @@ export function removeMelodyFromPlaylist(
   playlistId: string,
   melodyKey: string,
 ): void {
-  const library = melodyLibrarySignal()
-  const playlist = library.playlists[playlistId]
+  const _library = melodyLibrarySignal()
+  const playlist = _library.playlists[playlistId]
   if (playlist !== undefined) {
     const updatedPlaylists = {
-      ...library.playlists,
+      ..._library.playlists,
       [playlistId]: {
         ...playlist,
         melodyKeys: playlist.melodyKeys.filter((k) => k !== melodyKey),
@@ -830,8 +830,8 @@ export function removeMelodyFromPlaylist(
 }
 
 export function deletePlaylist(playlistId: string): void {
-  const library = melodyLibrarySignal()
-  const newPlaylists = { ...library.playlists }
+  const _library = melodyLibrarySignal()
+  const newPlaylists = { ..._library.playlists }
   delete newPlaylists[playlistId]
   setMelodyLibrary((prev) => ({
     ...prev,

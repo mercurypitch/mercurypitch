@@ -4,7 +4,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createSignal, For, Show } from 'solid-js'
+import { createSignal, For } from 'solid-js'
 import { appStore, melodyStore } from '@/stores'
 import type { SessionItem } from '@/types'
 
@@ -19,7 +19,7 @@ interface SessionEditorTimelineProps {
 export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
   props,
 ) => {
-  const [draggableItem, setDraggableItem] = createSignal<string | null>(null)
+  const [_, setDraggableItem] = createSignal<string | null>(null)
 
   const addRestBetween = (index: number) => {
     const currentItem = props.sessionItems[index]
@@ -28,19 +28,17 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
     props.onAddRest(startBeat, duration)
   }
 
-  const createDragOverHandler = (index: number) => (e: DragEvent) => {
-    e.preventDefault()
-    e.dataTransfer!.dropEffect = 'copy'
+  const createDragOverHandler = (_index: number) => () => {
     props.onDragOver()
   }
 
   const handleDrop = (e: DragEvent, index: number) => {
     e.preventDefault()
     const melodyId = e.dataTransfer?.getData('text/plain')
-    if (!melodyId) return
+    if (melodyId === null || melodyId === undefined) return
 
     const melody = melodyStore.getMelody(melodyId)
-    if (!melody) return
+    if (melody === null || melody === undefined) return
 
     const newItem: SessionItem = {
       id: `item-${Date.now()}`,
@@ -50,17 +48,16 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
       melodyId,
     }
 
-    const sessionId = appStore.userSession()?.id
-    if (sessionId) {
-      melodyStore.updateSessionItem(sessionId, newItem.id, newItem)
+    const _sessionId = appStore.userSession()?.id
+    if (_sessionId !== null && _sessionId !== undefined) {
+      melodyStore.updateSessionItem(_sessionId, newItem.id, newItem)
     }
 
     // Update local state to trigger re-render
-    const updatedItems = [...props.sessionItems.slice(0, index + 1), newItem, ...props.sessionItems.slice(index + 1)]
     setDraggableItem(null)
   }
 
-  const restIcons = [
+  const _restIcons = [
     '⋯' /* ellipsis */,
     '⏸',
     '⏯',
@@ -91,7 +88,7 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
                 <div
                   class="timeline-item"
                   draggable={true}
-                  onDragStart={(e) => setDraggableItem(item.id)}
+                  onDragStart={(_e) => setDraggableItem(item.id)}
                   data-id={item.id}
                 >
                   <div class="item-header">
@@ -109,7 +106,7 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
                   </div>
                   <div class="item-details">
                     <span class="item-start-beat">Start: {item.startBeat}</span>
-                    {item.restMs && (
+                    {item.restMs !== null && item.restMs !== undefined && item.restMs > 0 && (
                       <span class="item-duration">Duration: {getRestDuration(item.restMs)}</span>
                     )}
                   </div>
@@ -139,8 +136,8 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
             <>
               {' • '}
               Total duration: {props.sessionItems.reduce((acc, item) => {
-                if (item.restMs) return acc + item.restMs
-                if (item.beats) {
+                if (item.restMs !== null && item.restMs !== undefined && item.restMs > 0) return acc + item.restMs
+                if (item.beats !== null && item.beats !== undefined && item.beats > 0) {
                   return acc + (item.beats / 4) * (120 / (appStore.bpm() || 120))
                 }
                 return acc

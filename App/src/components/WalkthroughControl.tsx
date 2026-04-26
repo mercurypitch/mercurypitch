@@ -23,7 +23,7 @@ export const WalkthroughControl: Component<WalkthroughControlProps> = (props) =>
     setSelectedWalkthrough(null)
   }
 
-  const handleWalkthroughSelect = (tab: WalkthroughTab) => {
+  const _handleWalkthroughSelect = (tab: WalkthroughTab) => {
     setSelectedWalkthrough(null)
     setWalkthroughTab(tab)
     setShowSelection(false)
@@ -66,7 +66,7 @@ export const WalkthroughControl: Component<WalkthroughControlProps> = (props) =>
       />
 
       {/* Trigger Button (shown in settings or header) */}
-      <Show when={!props.showOnStart}>
+      <Show when={props.showOnStart === false || props.showOnStart === undefined}>
         <button
           class="walkthrough-control-btn"
           onClick={handleOpenWalkthroughs}

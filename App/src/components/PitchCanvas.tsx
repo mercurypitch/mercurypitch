@@ -53,7 +53,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     noteStartTime: 0,
     trail: [],
   }
-  let lastRafTime = 0
+  let _lastRafTime = 0
 
   onMount(() => {
     if (!canvasRef) return
@@ -119,23 +119,26 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       draw()
       animFrameId = requestAnimationFrame(loop)
     }
-    lastRafTime = 0
+    _lastRafTime = 0
     animFrameId = requestAnimationFrame(loop)
   }
 
   // Spring physics tick — call once per RAF frame
   const updateSpring = (now: number) => {
-    const melody = props.melody()
+    const _melody = props.melody()
     const noteIndex = props.currentNoteIndex()
-    const beat = props.currentBeat()
+    const _beat = props.currentBeat()
 
     // Detect note change → snap target and trigger jump
     if (noteIndex !== dotState.prevNoteIndex) {
       dotState.prevNoteIndex = noteIndex
       dotState.noteStartTime = now
 
-      if (noteIndex >= 0 && melody[noteIndex]) {
-        dotState.targetFreq = melody[noteIndex].note.freq
+      if (noteIndex >= 0) {
+        const note = _melody[noteIndex]
+        if (note !== null && note !== undefined) {
+          dotState.targetFreq = note.note.freq
+        }
       }
     }
 
@@ -430,7 +433,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     // Yousician-style animated dot — uses spring physics for Y, linear for X
     // Drawn on top of the melody static bars (which come from melody items)
     if (props.isPlaying() && !props.isPaused()) {
-      const melody = props.melody()
+      const _melody = props.melody()
       const beat = props.currentBeat()
       const tx = beatToX(beat, w)
 

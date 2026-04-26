@@ -153,7 +153,7 @@ export class PlaybackRuntime {
       'isPaused before:',
       isPausedBefore,
       'animationFrameId:',
-      this.animationFrameId ? 'ACTIVE' : 'null'
+      this.animationFrameId !== null && this.animationFrameId !== undefined ? 'ACTIVE' : 'null'
     )
     if (this.isPlaying) {
       console.log('[PlaybackRuntime.start] Already playing, returning early')

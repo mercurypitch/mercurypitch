@@ -2,7 +2,6 @@
 // Session Store — Unified session management with localStorage
 // ============================================================
 
-import { melodyStore } from './melody-store'
 import type {
   MelodyItem,
   SavedUserSession,
@@ -10,6 +9,7 @@ import type {
   UnifiedLibrary,
 } from '@/types'
 import type { SessionCategory, SessionDifficulty, SessionItem } from '@/types'
+import { melodyStore } from './melody-store'
 
 const STORAGE_KEY = 'pitchperfect_library'
 export const SESSION_KEY = STORAGE_KEY
@@ -23,7 +23,7 @@ export function generateSessionItemId(): string {
 export function getAllSessions(): Record<string, SavedUserSession> {
   try {
     const stored = localStorage.getItem(STORAGE_KEY)
-    if (stored) {
+    if (stored !== null) {
       const parsed = JSON.parse(stored) as unknown
       if (parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed)) {
         const lib = parsed as { sessions?: Record<string, SavedUserSession> }
@@ -50,9 +50,11 @@ function _saveSessions(sessions: Record<string, SavedUserSession>): void {
       },
       renderSettings: library.renderSettings,
     }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedLibrary))
-  } catch {
-    // Fail silently
+    const result = localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedLibrary))
+    console.log('[_saveSessions] Saved to localStorage:', result)
+    console.log('[_saveSessions] Stored value:', localStorage.getItem(STORAGE_KEY))
+  } catch (e) {
+    console.log('[_saveSessions] Error:', e)
   }
 }
 
@@ -398,17 +400,4 @@ export function getSessionCount(): number {
 /** Get user session count */
 export function getUserSessionCount(): number {
   return getSessions().length
-}
-
-// Ensure default session is properly seeded in unified library
-if (localStorage.getItem('pitchperfect_library') === null) {
-  console.log('[session-store] No unified library found, seeding default session')
-  const defaultSession = createDefaultSession()
-  localStorage.setItem('pitchperfect_library', JSON.stringify({
-    meta: { author: 'User', version: '2.0', lastUpdated: Date.now() },
-    melodies: {},
-    playlists: {},
-    sessions: { 'default': defaultSession },
-    renderSettings: { gridlines: true, showLabels: true, showNumbers: false }
-  }))
 }

@@ -49,14 +49,14 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
     setActiveTab('editor'); setEditorView('session-editor')
   }
 
-  const difficultyOptions: Array<{ value: SessionDifficulty; label: string }> =
+  const _difficultyOptions: Array<{ value: SessionDifficulty; label: string }> =
     [
       { value: 'beginner', label: 'Beginner' },
       { value: 'intermediate', label: 'Intermediate' },
       { value: 'advanced', label: 'Advanced' },
     ]
 
-  const categoryOptions: Array<{ value: SessionCategory; label: string }> = [
+  const _categoryOptions: Array<{ value: SessionCategory; label: string }> = [
     { value: 'vocal', label: 'Vocal' },
     { value: 'warmup', label: 'Warmup' },
     { value: 'scales', label: 'Scales' },

@@ -6,7 +6,6 @@ import type { Component } from 'solid-js'
 import { createMemo, For, onMount, Show } from 'solid-js'
 import { appStore } from '@/stores/app-store'
 import { getActiveSession } from '@/stores/melody-store'
-import { getSession } from '@/stores/session-store'
 import { melodyStore } from '@/stores/melody-store'
 import type { MelodyData, SavedUserSession, SessionItem } from '@/types'
 
@@ -43,7 +42,7 @@ export const LibraryTab: Component = () => {
   })
   const sessionMelodyIds = createMemo(() => {
     const session = userSession()
-    if (!session || !session.items) return []
+    if (!session || session.items === undefined) return []
     return session.items
       .filter((item: SessionItem) => item.melodyId !== null)
       .map((item: SessionItem) => item.melodyId as string)
@@ -88,8 +87,8 @@ export const LibraryTab: Component = () => {
   const handleSessionClick = (session: SavedUserSession) => {
     appStore.setActiveUserSession(session)
     // Load first melody in session if exists
-    const firstMelodyId = session.items.find((i) => i.melodyId)?.melodyId
-    if (firstMelodyId) {
+    const firstMelodyId = session.items?.find((i) => i.melodyId !== null && i.melodyId !== undefined)?.melodyId
+    if (firstMelodyId !== null && firstMelodyId !== undefined) {
       melodyStore.loadMelody(firstMelodyId)
     }
   }

@@ -32,8 +32,13 @@ Object.defineProperty(global, 'localStorage', { value: localStorageMock })
 describe('Melody Library System', () => {
   beforeEach(() => {
     localStorageMock.clear()
-    // Reset all stores
+    // Reset all stores and ensure library is properly initialized
     melodyStore.resetMelodyLibrary()
+    const library = melodyStore.getMelodyLibrary()
+    // Ensure sessions are properly initialized
+    if (Object.keys(library.sessions).length === 0) {
+      melodyStore._setMelodyLibrary({ sessions: {} })
+    }
   })
 
   describe('Melody Creation', () => {
@@ -1094,14 +1099,12 @@ describe('Melody Library System', () => {
       melodyStore.saveSession(_session)
 
       const _sessionId = _session.id
-      const calls = localStorageMock.setItem.mock.calls
-      const sessionCall = calls.find(
-        (call) => call[0] === 'pitchperfect_library',
-      )
-      expect(sessionCall).toBeDefined()
-      const parsed = JSON.parse(sessionCall![1] as string)
-      expect(parsed[_sessionId]).toBeDefined()
-      expect(parsed[_sessionId].id).toBe(_sessionId)
+      const stored = localStorageMock.getItem('pitchperfect_library')
+      expect(stored).toBeDefined()
+      const parsed = JSON.parse(stored!)
+      expect(parsed.sessions).toBeDefined()
+      expect(parsed.sessions[_sessionId]).toBeDefined()
+      expect(parsed.sessions[_sessionId]!.id).toBe(_sessionId)
     })
 
     it.skip('loads sessions from localStorage on init', () => {
