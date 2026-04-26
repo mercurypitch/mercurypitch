@@ -1610,7 +1610,7 @@ export const App: Component<AppProps> = (props) => {
             <button
               id="app-title"
               class="logo-btn"
-              onClick={() => handleTabChange('practice')}
+              onClick={() => void handleTabChange('practice')}
               title="Go to Practice"
             >
               <h1 id="app-title" class="app-title">
@@ -1627,14 +1627,14 @@ export const App: Component<AppProps> = (props) => {
             <button
               id="tab-practice"
               class={`app-tab ${activeTab() === 'practice' ? 'active' : ''}`}
-              onClick={() => handleTabChange('practice')}
+              onClick={() => void handleTabChange('practice')}
             >
               Practice
             </button>
             <button
               id="tab-editor"
               class={`app-tab ${activeTab() === 'editor' ? 'active' : ''}`}
-              onClick={() => handleTabChange('editor')}
+              onClick={() => void handleTabChange('editor')}
             >
               Editor
               <Show when={melodyStore.items().length > 0}>
@@ -1644,7 +1644,7 @@ export const App: Component<AppProps> = (props) => {
             <button
               id="tab-settings"
               class={`app-tab ${activeTab() === 'settings' ? 'active' : ''}`}
-              onClick={() => handleTabChange('settings')}
+              onClick={() => void handleTabChange('settings')}
             >
               Settings
             </button>

@@ -649,21 +649,19 @@ export class AudioEngine {
     // Clean up after release completes
     setTimeout(() => {
       try {
-        this.toneOscillator.disconnect()
+        this.toneOscillator?.disconnect()
       } catch {
         // already stopped
       }
       this.toneOscillator = null
     }, 120)
 
-    if (this.toneGain) {
-      try {
-        this.toneGain.disconnect()
-      } catch {
-        // already disconnected
-      }
-      this.toneGain = null
+    try {
+      this.toneGain?.disconnect()
+    } catch {
+      // already disconnected
     }
+    this.toneGain = null
     this.isPlaying = false
   }
 
