@@ -1,6 +1,6 @@
 // ============================================================
 // AppSidebar — Shared sidebar component
-// Contains: Key/Scale controls, Grid toggle, PresetSelector, NoteList, PitchDisplay, Stats
+// Contains: Key/Scale controls, Grid toggle, NoteList, PitchDisplay, Stats
 // Visible in all tabs; NoteList, PitchDisplay, stats wrapped in Show for Practice only
 // ============================================================
 
@@ -9,8 +9,6 @@ import { For, Show } from 'solid-js'
 import { LibraryTab } from '@/components/LibraryTab'
 import { NoteList } from '@/components/NoteList'
 import { PitchDisplay } from '@/components/PitchDisplay'
-import { PresetPillGallery } from '@/components/PresetPillGallery'
-import { PresetSelector } from '@/components/PresetSelector'
 import { KEY_OFFSETS, midiToFreq, midiToNote } from '@/lib/scale-data'
 import { activeTab as appActiveTab, appStore } from '@/stores/app-store'
 import { melodyStore } from '@/stores/melody-store'
@@ -208,13 +206,6 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
             Custom
           </button>
         </div>
-      </div>
-
-      {/* Preset selector */}
-      <div class="sidebar-section" id="preset-section">
-        <PresetSelector />
-        {/* Pill gallery for recent presets */}
-        <PresetPillGallery onLoad={props.onPresetLoad} _melody={props.melody} />
       </div>
 
       {/* Library */}

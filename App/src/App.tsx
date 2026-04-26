@@ -5,6 +5,7 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, onCleanup, onMount, Show } from 'solid-js'
+import { debounce } from '@/lib/debounce'
 import { AppSidebar } from '@/components/AppSidebar'
 import { FocusMode } from '@/components/FocusMode'
 import { HistoryCanvas } from '@/components/HistoryCanvas'
@@ -160,6 +161,14 @@ export const App: Component<AppProps> = (props) => {
       sessionMelodyIds: sessionMelodyIds(),
     })
   }
+
+  // ── Debounced auto-save for melody changes (notes only) ─────────────────────────
+  const debouncedAutoSave = debounce(() => {
+    const currentMelody = melodyStore.getCurrentMelody()
+    if (currentMelody !== null) {
+      appStore.showNotification('Melody saved!', 'success')
+    }
+  }, 500)
 
   // ── Tab change handler with audio cleanup ───────────────────────────────────
   const handleTabChange = (newTab: ActiveTab) => {
@@ -1787,6 +1796,8 @@ export const App: Component<AppProps> = (props) => {
                 targetPitch={() => null}
                 noteAccuracyMap={() => new Map()}
                 onMelodyChange={(melody) => {
+                  // Debounced auto-save before setting melody
+                  debouncedAutoSave()
                   melodyStore.setMelody(melody)
                 }}
                 onInstrumentChange={(instrument) => {
