@@ -796,6 +796,8 @@ export class PianoRollEditor {
       this.startedNoteIds.clear()
       this.currentNoteRow = -1
       this.playbackState = 'stopped'
+      // Also reset external playback mode to ensure clean slate on tab switch
+      this.isExternalPlayback = false
       this.draw()
     }
   }
