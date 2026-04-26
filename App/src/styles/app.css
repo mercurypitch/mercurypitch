@@ -3802,13 +3802,14 @@ Keeps your existing styles, only adjusts layout
 }
 
 .settings-row select {
-  padding: 4px 8px;
+  padding: 8px 12px;
   background: var(--bg-secondary);
   border: 1px solid var(--border);
   color: var(--text-primary);
   border-radius: 4px;
   font-size: 0.85rem;
   cursor: pointer;
+  min-width: 150px;
 }
 
 .settings-val {
