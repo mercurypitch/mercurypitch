@@ -1153,11 +1153,14 @@ export const App: Component<AppProps> = (props) => {
     playbackRuntime.setMelody(melodyStore.items())
     // BPM synced via AudioEngine in the createEffect above
 
+    // Set playback state BEFORE starting to ensure state is updated before animation loop runs
+    // (SolidJS batches state updates, so this should work correctly)
+    setEditorPlaybackState('playing')
+
     // Start playbackRuntime with count-in
     const countInBeats = appStore.countIn()
     console.log('[handleEditorPlay] Starting playbackRuntime with countInBeats:', countInBeats)
     playbackRuntime.start(countInBeats)
-    setEditorPlaybackState('playing')
     console.log('[handleEditorPlay] Playback state set to playing')
   }
 
