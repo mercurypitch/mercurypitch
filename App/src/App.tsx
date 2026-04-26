@@ -156,7 +156,7 @@ export const App: Component<AppProps> = (props) => {
       editorPlaybackState: editorPlaybackState(),
       currentBeat: currentBeat(),
       currentNoteIndex: currentNoteIndex(),
-      melodyStoreNoteIndex: melodyStore.getCurrentNoteIndex(),
+      melodyStoreNoteIndex: melodyStore.currentNoteIndex(),
       sessionMelodyIds: sessionMelodyIds(),
     })
   }
