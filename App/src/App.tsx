@@ -1356,7 +1356,7 @@ export const App: Component<AppProps> = (props) => {
       currentNoteStartBeat = -1
       setIsRecording(false)
       // Unmute audio when recording stops
-      audioEngine.volume = 0.8
+      audioEngine.setVolume(0.8)
       appStore.setActiveTab('editor')
     } else {
       // Start recording
@@ -1372,7 +1372,7 @@ export const App: Component<AppProps> = (props) => {
       ).now()
       setIsRecording(true)
       // Mute audio during recording
-      audioEngine.volume = 0
+      audioEngine.setVolume(0)
     }
   }
 

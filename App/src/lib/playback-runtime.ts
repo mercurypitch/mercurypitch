@@ -63,6 +63,7 @@ export class PlaybackRuntime {
   private countInBeat = 0
   private metronomeEnabled?: () => boolean
   private metronomeLastBeat = -1
+  private metronomeLastCountInBeat = -1
   private _melody: MelodyItem[] = []
 
   private _getTotalBeats(melody: MelodyItem[]): number {
@@ -247,6 +248,7 @@ export class PlaybackRuntime {
       this.currentNoteIndex = -1
       this.playStartTime = 0
       this.metronomeLastBeat = -1
+      this.metronomeLastCountInBeat = -1
     } else {
       // Fresh stop - reset everything
       this.currentBeat = 0
@@ -313,19 +315,22 @@ export class PlaybackRuntime {
         const currentInt = Math.floor(currentBeat)
 
         if (currentInt !== this.countInBeat) {
-          this.countInBeat = Math.max(0, currentInt)
+          this.countInBeat = currentInt
           this._emit({ type: 'countIn', countIn: this.countInBeat })
         }
 
-        // Play metronome click during count-in (4, 3, 2, 1 or 3, 2, 1, 0)
+        // Play metronome click during count-in (4, 3, 2, 1)
         // Precount is a metronome feature - always play regardless of metronome setting
         const isDownbeat = currentInt % 4 === 0
-        this.audioEngine.playMetronomeClick(isDownbeat)
-        this._emit({
-          type: 'metronome',
-          beat: currentInt,
-          isDownbeat,
-        })
+        if (currentInt !== this.metronomeLastCountInBeat) {
+          this.audioEngine.playMetronomeClick(isDownbeat)
+          this.metronomeLastCountInBeat = currentInt
+          this._emit({
+            type: 'metronome',
+            beat: currentInt,
+            isDownbeat,
+          })
+        }
 
         this.animationFrameId = requestAnimationFrame(animate)
       } else {

@@ -332,7 +332,7 @@ export class PlaybackEngine implements PlaybackTimekeeper {
       // Count-in phase
       if (countIn > 0 && elapsedSeconds < countIn / this.beatsPerSecond) {
         const countInElapsed = elapsedSeconds * this.beatsPerSecond
-        const currentBeatNum = Math.max(0, countIn - Math.floor(countInElapsed))
+        const currentBeatNum = countIn - Math.floor(countInElapsed)
         const currentIntBeat = Math.floor(currentBeatNum)
 
         if (currentIntBeat !== this.countInBeat) {
@@ -340,11 +340,9 @@ export class PlaybackEngine implements PlaybackTimekeeper {
           this._emit({ type: 'countIn', countIn: this.countInBeat })
         }
 
-        // Only trigger metronome on beat boundaries during count-in
-        if (
-          this.metronomeEnabledFn() &&
-          currentIntBeat !== this.metronomeLastCountInBeat
-        ) {
+        // Play metronome click during count-in (4, 3, 2, 1)
+        // Precount is a metronome feature - always play regardless of metronome setting
+        if (currentIntBeat !== this.metronomeLastCountInBeat) {
           this._triggerMetronome(currentIntBeat)
           this.metronomeLastCountInBeat = currentIntBeat
         }
