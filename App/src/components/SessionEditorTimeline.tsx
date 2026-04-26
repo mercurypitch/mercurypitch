@@ -4,13 +4,13 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createSignal, For, onCleanup,onMount, Show } from 'solid-js'
+import { createSignal, For, Show } from 'solid-js'
 import { appStore, melodyStore } from '@/stores'
 import type { SessionItem } from '@/types'
 
 interface SessionEditorTimelineProps {
   sessionItems: SessionItem[]
-  onSave: (items: SessionItem[]) => void
+  onSave?: (items: SessionItem[]) => void
   onDeleteItem: (itemId: string) => void
   onAddRest: (startBeat: number, duration: number) => void
   onDragOver: () => void
@@ -50,7 +50,13 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
       melodyId,
     }
 
-    props.onSave([...props.sessionItems.slice(0, index + 1), newItem, ...props.sessionItems.slice(index + 1)])
+    const sessionId = appStore.userSession()?.id
+    if (sessionId) {
+      melodyStore.updateSessionItem(sessionId, newItem.id, newItem)
+    }
+
+    // Update local state to trigger re-render
+    const updatedItems = [...props.sessionItems.slice(0, index + 1), newItem, ...props.sessionItems.slice(index + 1)]
     setDraggableItem(null)
   }
 

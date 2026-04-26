@@ -11,6 +11,7 @@ import type {
   MelodyNote,
   SavedUserSession,
   ScaleDegree,
+  UnifiedLibrary,
 } from '@/types'
 import {
   addItemToSession,
@@ -31,13 +32,13 @@ import {
   updateSessionItem,
 } from './session-store'
 
-const STORAGE_KEY_MELODY_LIBRARY = 'pitchperfect_melody_library'
+const STORAGE_KEY_LIBRARY = 'pitchperfect_library'
 const STORAGE_KEY_SEEDED = 'pitchperfect_seeded'
 
-const DEFAULT_LIBRARY: MelodyLibrary = {
+const DEFAULT_LIBRARY: UnifiedLibrary = {
   meta: {
     author: 'User',
-    version: '1.0',
+    version: '2.0',
     lastUpdated: Date.now(),
   },
   renderSettings: {
@@ -47,19 +48,21 @@ const DEFAULT_LIBRARY: MelodyLibrary = {
   },
   melodies: {},
   playlists: {},
+  sessions: {},
 }
 
-function loadLibrary(): MelodyLibrary {
+function loadLibrary(): UnifiedLibrary {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY_MELODY_LIBRARY)
+    const stored = localStorage.getItem(STORAGE_KEY_LIBRARY)
     if (stored !== null && stored !== '') {
-      const parsed = JSON.parse(stored)
+      const parsed = JSON.parse(stored) as unknown
       if (
         parsed !== null &&
         typeof parsed === 'object' &&
-        'melodies' in parsed
+        'melodies' in parsed &&
+        'sessions' in parsed
       ) {
-        return parsed
+        return parsed as UnifiedLibrary
       }
     }
   } catch {
@@ -70,7 +73,7 @@ function loadLibrary(): MelodyLibrary {
 
 function _saveLibraryToStorage(): void {
   try {
-    localStorage.setItem(STORAGE_KEY_MELODY_LIBRARY, JSON.stringify(melodyLibrarySignal()))
+    localStorage.setItem(STORAGE_KEY_LIBRARY, JSON.stringify(melodyLibrarySignal()))
   } catch {
     // Fail silently
   }
@@ -112,13 +115,14 @@ export function _setMelodyLibrary(updates: Partial<MelodyLibrary>): void {
 
 /** Reset the melody library store (used by tests) */
 export function resetMelodyLibrary(): void {
-  localStorage.removeItem(STORAGE_KEY_MELODY_LIBRARY)
+  localStorage.removeItem(STORAGE_KEY_LIBRARY)
   localStorage.removeItem(STORAGE_KEY_SEEDED)
   _idCounter = 100
-  const defaultLibrary = {
+  const defaultLibrary: UnifiedLibrary = {
     melodies: {},
     playlists: {},
-    meta: { author: 'User', version: '1.0', lastUpdated: Date.now() },
+    sessions: {},
+    meta: { author: 'User', version: '2.0', lastUpdated: Date.now() },
     renderSettings: { gridlines: true, showLabels: true, showNumbers: false },
   }
   setMelodyLibrary(defaultLibrary)
@@ -307,6 +311,20 @@ export function seedDefaultSession(): void {
     if (session) {
       saveSessionStore(session)
     }
+  }
+
+  // Add default session to unified library
+  const defaultSessionFromLibrary = getSessionStore('default')
+  if (defaultSessionFromLibrary) {
+    setMelodyLibrary((prev) => ({
+      ...prev,
+      sessions: {
+        ...prev.sessions,
+        'default': defaultSessionFromLibrary,
+      },
+      meta: { ...prev.meta, lastUpdated: Date.now() },
+    }))
+    _saveLibraryToStorage()
   }
 
   // Persist library to localStorage
@@ -565,7 +583,7 @@ export function updateMelody(
 
 export function deleteMelody(key: string): void {
   const library = melodyLibrarySignal()
-  const { melodies, playlists } = library
+  const { melodies, playlists, sessions } = library
   const { [key]: _removed, ...newMelodies } = melodies
   const newPlaylists: Record<
     string,
@@ -871,6 +889,8 @@ export const melodyStore = {
 
   // Export library
   melodyLibrary: getMelodyLibrary,
+  unifiedLibrary: () => melodyLibrarySignal() as UnifiedLibrary,
+  _setUnifiedLibrary: _setMelodyLibrary,
 
   // User Sessions
   getSessions,

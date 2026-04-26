@@ -301,6 +301,29 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
       {/* Note list + pitch reference — Practice tab only (bottom-anchored) */}
       <Show when={activeTab() === 'practice'}>
         <div class="sidebar-section sidebar-notes-bottom">
+          {/* Current session items display */}
+          <div class="session-items-display">
+            <h3>Session Items</h3>
+            <div id="session-items-list">
+              <Show when={appStore.userSession?.()?.items.length > 0}>
+                <For each={appStore.userSession?.()?.items}>
+                  {(item) => (
+                    <div class="session-item-entry">
+                      <span class="session-item-label">{item.label}</span>
+                      <span class="session-item-type">
+                        {item.type === 'melody' ? '🎵' : item.type === 'scale' ? '♩' : '♪'}
+                      </span>
+                    </div>
+                  )}
+                </For>
+              </Show>
+              <Show when={!appStore.userSession?.()?.items || appStore.userSession?.()?.items.length === 0}>
+                <p class="session-empty-tip">
+                  No items in session
+                </p>
+              </Show>
+            </div>
+          </div>
           <NoteList
             melody={props.melody}
             currentNoteIndex={props.currentNoteIndex}

@@ -1,10 +1,11 @@
 // ============================================================
 // SessionEditor — Collapsible session editor container
 // Shows melody pill list and timeline, togglable by header
+// Auto-saves session changes via session-store
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createSignal, For, Show } from 'solid-js'
+import { createSignal, Show } from 'solid-js'
 import { appStore, melodyStore } from '@/stores'
 import type { SessionItem } from '@/types'
 import { MelodyPillList } from './MelodyPillList'
@@ -12,14 +13,11 @@ import { SessionEditorTimeline } from './SessionEditorTimeline'
 
 interface SessionEditorProps {
   currentSession?: SessionItem[]
-  onSaveSession?: (sessionName: string, items: SessionItem[]) => void
-  onLoadSession?: (sessionName: string) => void
 }
 
 export const SessionEditor: Component<SessionEditorProps> = (props) => {
   const [expanded, setExpanded] = createSignal(true)
   const [selectedMelodyIds, setSelectedMelodyIds] = createSignal<Set<string>>(new Set())
-  const [sessionName, setSessionName] = createSignal('New Session')
 
   const sessionItems = () => {
     if (props.currentSession) return props.currentSession
@@ -42,25 +40,8 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
     }
   }
 
-  const handleSaveSession = () => {
-    if (props.onSaveSession) {
-      props.onSaveSession(sessionName(), sessionItems())
-    } else {
-      appStore.showNotification('Session saved', 'success')
-    }
-  }
-
-  const handleLoadSession = () => {
-    if (props.onLoadSession) {
-      props.onLoadSession(sessionName())
-    } else {
-      appStore.showNotification('Session loaded', 'success')
-    }
-  }
-
   const handleDeleteItem = (itemId: string) => {
     const current = sessionItems()
-    const updated = current.filter(item => item.id !== itemId)
     setSelectedMelodyIds(prev => {
       const next = new Set(prev)
       next.delete(itemId)
@@ -77,19 +58,9 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
       restMs: duration,
     }
     const sessionId = appStore.userSession()?.id
-    if (sessionId) {
+    if (sessionId !== null && sessionId !== undefined) {
       melodyStore.updateSessionItem(sessionId, newItem.id, newItem)
     }
-  }
-
-  const handleSave = () => {
-    const items = sessionItems()
-    const updatedItems = [...items]
-    props.onSaveSession?.(sessionName(), updatedItems)
-  }
-
-  const handleLoad = () => {
-    props.onLoadSession?.(sessionName())
   }
 
   return (
@@ -127,20 +98,11 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
             <div class="section-header">
               <h4 class="section-title">Session Timeline</h4>
               {sessionItems().length > 0 && (
-                <>
-                  <span class="item-count">{sessionItems().length} items</span>
-                  <button class="save-btn" onClick={handleSave}>
-                    Save
-                  </button>
-                  <button class="load-btn" onClick={handleLoad}>
-                    Load
-                  </button>
-                </>
+                <span class="item-count">{sessionItems().length} items</span>
               )}
             </div>
             <SessionEditorTimeline
               sessionItems={sessionItems()}
-              onSave={handleSave}
               onDeleteItem={handleDeleteItem}
               onAddRest={handleAddRest}
               onDragOver={() => {}}

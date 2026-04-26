@@ -6,6 +6,7 @@ import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
 import { appStore } from '@/stores/app-store'
 import { melodyStore } from '@/stores/melody-store'
+import { addItemToSession,getSession } from '@/stores/session-store'
 import type { MelodyData, NoteName } from '@/types'
 
 interface LibraryModalProps {
@@ -109,7 +110,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
     return Object.entries(library().melodies)
       .filter(([id, _]) => id !== selectedKey)
       .filter(([id]) => playlist.melodyKeys.includes(id) === false)
-      .map(([id, m]) => ({ id, melody: m }))
+      .map(([id, m]): { id: string; melody: MelodyData } => ({ id, melody: m }))
   })
 
   const selectedMelody = createMemo(() => {
@@ -212,6 +213,21 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
       tags: tagsArray.length > 0 ? tagsArray : undefined,
       notes: createNotes().trim() || undefined,
     })
+
+    // Add to active session if not default session
+    const sessionId = melodyStore.getActiveSessionId()
+    if (sessionId !== null && sessionId !== 'default') {
+      const session = getSession(sessionId)
+      if (session) {
+        addItemToSession(sessionId, {
+          type: 'melody',
+          label: name,
+          melodyId: newMelody.id,
+          startBeat: 0,
+        })
+      }
+    }
+
     setCreateName('')
     setCreateBpm(80)
     setCreateKey('C')
@@ -252,7 +268,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
         const library = melodyStore.getMelodyLibrary()
 
         const melodyKeys = library.playlists[playlistId].melodyKeys
-        melodyKeys.forEach((melodyKey) => {
+        melodyKeys.forEach((melodyKey: string) => {
           melodyStore.addMelodyToPlaylist(newPlaylistId, melodyKey)
         })
 

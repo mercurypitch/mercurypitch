@@ -314,7 +314,7 @@ export interface MelodyData {
   playCount?: number
 }
 
-/** Melody library storage structure */
+/** Melody library storage structure (legacy) */
 export interface MelodyLibrary {
   /** Library metadata */
   meta: {
@@ -340,6 +340,37 @@ export interface MelodyLibrary {
       created: number
     }
   >
+  /** Legacy type - use UnifiedLibrary for new storage */
+}
+
+/** Unified library storage structure - single storage key for all content */
+export interface UnifiedLibrary {
+  /** Library metadata */
+  meta: {
+    author: string
+    version: string
+    lastUpdated: number
+  }
+  /** Render settings */
+  renderSettings: {
+    gridlines: boolean
+    showLabels: boolean
+    showNumbers: boolean
+    [key: string]: unknown
+  }
+  /** Saved melodies */
+  melodies: Record<string, MelodyData>
+  /** User-created playlists */
+  playlists: Record<
+    string,
+    {
+      name: string
+      melodyKeys: string[]
+      created: number
+    }
+  >
+  /** User sessions */
+  sessions: Record<string, SavedUserSession>
 }
 
 /** Session item type */

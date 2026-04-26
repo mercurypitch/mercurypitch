@@ -8,22 +8,25 @@ import type {
   SessionResult,
 } from '@/types'
 import type { SessionCategory, SessionDifficulty, SessionItem } from '@/types'
+import { melodyStore } from './melody-store'
 
-const STORAGE_KEY = 'pitchperfect_sessions'
+const STORAGE_KEY = 'pitchperfect_library'
+export const SESSION_KEY = STORAGE_KEY
 
 /** Generate unique item ID */
 export function generateSessionItemId(): string {
   return `item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
 }
 
-/** Get all sessions from localStorage */
+/** Get all sessions from localStorage (UnifiedLibrary) */
 export function getAllSessions(): Record<string, SavedUserSession> {
   try {
     const stored = localStorage.getItem(STORAGE_KEY)
     if (stored) {
       const parsed = JSON.parse(stored) as unknown
       if (parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed)) {
-        return parsed as Record<string, SavedUserSession>
+        const lib = parsed as { sessions?: Record<string, SavedUserSession> }
+        return lib.sessions ?? {}
       }
     }
   } catch {
@@ -32,10 +35,16 @@ export function getAllSessions(): Record<string, SavedUserSession> {
   return {}
 }
 
-/** Save sessions to localStorage */
+/** Save sessions to localStorage (UnifiedLibrary) */
 function _saveSessions(sessions: Record<string, SavedUserSession>): void {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions))
+    const library = melodyStore.getMelodyLibrary() as any
+    const updatedLibrary = {
+      ...library,
+      sessions: sessions,
+      meta: { ...library.meta, lastUpdated: Date.now() },
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedLibrary))
   } catch {
     // Fail silently
   }
@@ -212,7 +221,9 @@ export function getDefaultSession(): SavedUserSession | null {
   const defaultSession = sessions['default']
 
   if (defaultSession === null || defaultSession === undefined) {
-    return createDefaultSession()
+    const session = createDefaultSession()
+    _saveSessions({ default: session })
+    return session
   }
 
   return defaultSession
@@ -299,8 +310,9 @@ export function saveSessionResult(result: SessionResult): void {
   }
 }
 
-/** Reset all sessions and history (clear localStorage) */
+/** Reset all sessions (clear localStorage) */
 export function resetAllSessions(): void {
+  // Clear the unified library which will remove sessions
   localStorage.removeItem(STORAGE_KEY)
   localStorage.removeItem('pitchperfect_session_history')
 }

@@ -6,7 +6,8 @@ import type { Component } from 'solid-js'
 import { createMemo, For, onMount, Show } from 'solid-js'
 import { appStore } from '@/stores/app-store'
 import { melodyStore } from '@/stores/melody-store'
-import type { MelodyData, SessionItem } from '@/types'
+import { getSession } from '@/stores/session-store'
+import type { MelodyData, SavedUserSession, SessionItem } from '@/types'
 
 export const LibraryTab: Component = () => {
   const library = createMemo(() => melodyStore.getMelodyLibrary())
@@ -18,6 +19,18 @@ export const LibraryTab: Component = () => {
         (a: MelodyData, b: MelodyData) =>
           (b.lastPlayed ?? b.playCount ?? 0) -
           (a.lastPlayed ?? a.playCount ?? 0),
+      )
+      .slice(0, 5)
+  })
+
+  const recentSessions = createMemo(() => {
+    const sessions = Object.values(library().sessions).filter(
+      (s): s is SavedUserSession => s.id !== 'default'
+    )
+    return [...sessions]
+      .sort(
+        (a: SavedUserSession, b: SavedUserSession) =>
+          (b.lastPlayed ?? 0) - (a.lastPlayed ?? 0),
       )
       .slice(0, 5)
   })
@@ -66,6 +79,15 @@ export const LibraryTab: Component = () => {
 
   const handlePlay = (melody: MelodyData) => {
     melodyStore.loadMelody(melody.id)
+  }
+
+  const handleSessionClick = (session: SavedUserSession) => {
+    appStore.setActiveUserSession(session)
+    // Load first melody in session if exists
+    const firstMelodyId = session.items.find((i) => i.melodyId)?.melodyId
+    if (firstMelodyId) {
+      melodyStore.loadMelody(firstMelodyId)
+    }
   }
 
   // Get icon for session item type
@@ -324,6 +346,25 @@ export const LibraryTab: Component = () => {
               <div class="recent-item" onClick={() => handlePlay(m)}>
                 <span class="recent-name">{m.name}</span>
                 <span class="recent-meta">{m.bpm} BPM</span>
+              </div>
+            )}
+          </For>
+        )}
+      </div>
+
+      {/* Recent Sessions Section */}
+      <div class="recent-section sessions-section">
+        <p class="section-label">Recent Sessions</p>
+        {recentSessions().length === 0 ? (
+          <p class="empty-tip">
+            No sessions yet. Click "Sessions" to create one!
+          </p>
+        ) : (
+          <For each={recentSessions()}>
+            {(s) => (
+              <div class="recent-item" onClick={() => handleSessionClick(s)}>
+                <span class="recent-name">{s.name}</span>
+                <span class="recent-meta">{s.items.length} items</span>
               </div>
             )}
           </For>
