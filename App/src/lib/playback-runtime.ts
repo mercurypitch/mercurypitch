@@ -314,9 +314,10 @@ export class PlaybackRuntime {
         const currentBeat = countIn - Math.floor(elapsedBeats)
         const currentInt = Math.floor(currentBeat)
 
-        if (currentInt !== this.countInBeat) {
+        // Emit the initial count-in value (at start) and then each countdown step
+        if (currentInt !== this.countInBeat || elapsed === 0) {
           this.countInBeat = currentInt
-          this._emit({ type: 'countIn', countIn: this.countInBeat })
+          this._emit({ type: 'countIn', countIn: currentInt })
         }
 
         // Play metronome click during count-in (4, 3, 2, 1)

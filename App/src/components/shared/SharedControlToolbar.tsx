@@ -163,17 +163,26 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
               id="record-btn"
               class={`ctrl-btn record-btn ${(props.isRecording?.() ?? false) ? 'recording' : ''}`}
               disabled={isActive()}
-              title="Record to piano roll"
+              title={(props.isRecording?.() ?? false) ? 'Stop recording' : 'Record to piano roll'}
               onClick={() =>
                 void (async () => {
                   await props.onRecordToggle?.()
                 })()
               }
             >
-              <svg viewBox="0 0 24 24" width="16" height="16">
-                <circle cx="12" cy="12" r="6" fill="currentColor" />
-              </svg>
-              {(props.isRecording?.() ?? false) ? 'Stop' : 'Record'}
+              <Show
+                when={(props.isRecording?.() ?? false)}
+                fallback={
+                  <svg viewBox="0 0 24 24" width="16" height="16">
+                    <circle cx="12" cy="12" r="6" fill="currentColor" />
+                  </svg>
+                }
+              >
+                <svg viewBox="0 0 24 24" width="16" height="16">
+                  <rect x="6" y="6" width="12" height="12" fill="currentColor" rx="1" />
+                </svg>
+              </Show>
+              <span class="record-text">{(props.isRecording?.() ?? false) ? 'STOP' : 'RECORD'}</span>
             </button>
           </div>
         </Show>
@@ -275,7 +284,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
         {/* Count-in badge */}
         <Show when={props.isCountingIn()}>
           <div id="countin-display" class="countin-badge">
-            {props.countInBeats()}
+            {props.countInBeat()}
           </div>
         </Show>
 

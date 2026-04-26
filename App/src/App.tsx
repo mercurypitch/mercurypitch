@@ -860,8 +860,11 @@ export const App: Component<AppProps> = (props) => {
       setIsCountingIn(false)
       setCountInBeat(0)
     })
-    playbackRuntime.on('metronome', (e: { isDownbeat?: boolean }) => {
-      if (metronomeEnabled()) {
+    // Play metronome click - always for count-in, otherwise respect enabled setting
+    playbackRuntime.on('metronome', (e: { beat?: number; isDownbeat?: boolean }) => {
+      const isCounting = playbackRuntime.getCountIn() > 0 &&
+                         playbackRuntime.getCurrentBeat() < playbackRuntime.getCountIn()
+      if (isCounting || metronomeEnabled()) {
         audioEngine?.playMetronomeClick(e?.isDownbeat ?? false)
       }
     })
