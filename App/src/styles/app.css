@@ -1245,7 +1245,14 @@ header h1 {
   border-color: var(--red);
   background: rgba(248, 81, 73, 0.3);
   color: var(--red);
-  animation: pulse-rec 0.8s ease-in-out infinite;
+  animation: pulse-rec 0.4s ease-in-out infinite;
+  box-shadow: 0 0 15px rgba(248, 81, 73, 0.4);
+}
+
+.record-text.recording {
+  font-weight: bold;
+  letter-spacing: 1px;
+  text-transform: uppercase;
 }
 
 .record-text {
