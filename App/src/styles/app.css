@@ -4651,6 +4651,37 @@ Keeps your existing styles, only adjusts layout
 .focus-canvas {
   flex: 1;
   min-height: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Playhead for Focus Mode */
+.focus-playhead {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 3px;
+  height: 100%;
+  background: var(--accent);
+  box-shadow:
+    0 0 8px var(--accent-glow),
+    0 0 16px var(--accent-glow);
+  border-radius: 2px;
+  pointer-events: none;
+  display: none;
+  z-index: 10;
+}
+
+.focus-playhead::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -7px;
+  width: 17px;
+  height: 9px;
+  background: var(--accent);
+  border-radius: 0 0 4px 4px;
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
 }
 
 .focus-history {

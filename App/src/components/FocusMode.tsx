@@ -133,6 +133,14 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
           isPaused={props.isPaused}
           isScrolling={() => false}
         />
+        <div
+          id="playhead"
+          class="focus-playhead"
+          style={{
+            display: (props.isPlaying() || props.isPaused()) ? 'block' : 'none',
+            left: `${(props.currentBeat() / Math.max(1, totalBeats())) * 100}%`,
+          }}
+        />
       </div>
 
       {/* Bottom floating toolbar */}
