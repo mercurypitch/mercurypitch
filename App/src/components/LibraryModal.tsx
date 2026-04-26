@@ -267,7 +267,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
         key: editKey(),
         scaleType: editScale(),
         tags: tagsArray.length > 0 ? tagsArray : undefined,
-        notes: editNotes().trim() || undefined,
+        notes: editNotes().trim().length > 0 ? editNotes().trim() : undefined,
       })
       setEditName('')
       setEditBpm(80)
@@ -307,7 +307,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
       key: createKey(),
       scaleType: createScale(),
       tags: tagsArray.length > 0 ? tagsArray : undefined,
-      notes: createNotes().trim() || undefined,
+      notes: createNotes().trim().length > 0 ? createNotes().trim() : undefined,
     })
 
     // Add to active session if not default session

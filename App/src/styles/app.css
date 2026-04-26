@@ -5397,6 +5397,7 @@ Keeps your existing styles, only adjusts layout
   overflow-y: auto;
   flex: 1;
   min-height: 200px;
+  scroll-behavior: smooth;
 }
 
 .search-input {
@@ -5652,6 +5653,7 @@ Keeps your existing styles, only adjusts layout
   color: var(--accent);
   border-radius: 3px;
   font-weight: 500;
+  display: inline-block;
 }
 
 .tag-pill.more {
@@ -5729,7 +5731,9 @@ Keeps your existing styles, only adjusts layout
 
 .melody-details {
   margin-top: 20px;
-  padding-top: 16px;
+  padding: 16px;
+  background: var(--bg-secondary);
+  border-radius: 8px;
   border-top: 1px solid var(--border);
 }
 
