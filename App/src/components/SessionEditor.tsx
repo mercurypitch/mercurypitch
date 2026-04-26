@@ -48,6 +48,10 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
     })
   }
 
+  const handleDragOver = (_index: number) => {
+    // Optional: Visual feedback for drop zones
+  }
+
   const handleAddRest = (startBeat: number, duration: number) => {
     const newItem: SessionItem = {
       id: `rest-${Date.now()}`,
@@ -104,7 +108,9 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
               sessionItems={sessionItems()}
               onDeleteItem={handleDeleteItem}
               onAddRest={handleAddRest}
-              onDragOver={() => {}}
+              onDragOver={handleDragOver}
+              onDragStart={() => {}}
+              onDrop={() => {}}
             />
           </div>
         </div>

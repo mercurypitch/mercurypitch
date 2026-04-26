@@ -13,13 +13,16 @@ interface SessionEditorTimelineProps {
   onSave?: (items: SessionItem[]) => void
   onDeleteItem: (itemId: string) => void
   onAddRest: (startBeat: number, duration: number) => void
-  onDragOver: () => void
+  onDragOver: (index: number) => void
+  onDragStart?: (itemId: string) => void
+  onDrop?: (itemId: string, targetIndex: number) => void
 }
 
 export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
   props,
 ) => {
-  const [_, setDraggableItem] = createSignal<string | null>(null)
+  const [draggedItemId, setDraggedItemId] = createSignal<string | null>(null)
+  const [dragSourceIndex, setDragSourceIndex] = createSignal<number>(-1)
 
   const addRestBetween = (index: number) => {
     const currentItem = props.sessionItems[index]
@@ -28,33 +31,76 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
     props.onAddRest(startBeat, duration)
   }
 
-  const createDragOverHandler = (_index: number) => () => {
-    props.onDragOver()
+  // Desktop drag handlers
+  const handleDragStart = (e: DragEvent, item: SessionItem, index: number) => {
+    setDraggedItemId(item.id)
+    setDragSourceIndex(index)
+    // Set data for drag transfer
+    const dataTransfer = e.dataTransfer
+    if (dataTransfer?.setData) {
+      dataTransfer.setData('text/plain', item.id)
+    }
+    if (dataTransfer) {
+      dataTransfer.effectAllowed = 'move'
+    }
   }
 
-  const handleDrop = (e: DragEvent, index: number) => {
+  const handleDragOver = (e: DragEvent, index: number) => {
     e.preventDefault()
-    const melodyId = e.dataTransfer?.getData('text/plain')
-    if (melodyId === null || melodyId === undefined) return
+    const dataTransfer = e.dataTransfer
+    if (dataTransfer) {
+      dataTransfer.dropEffect = 'move'
+    }
+    props.onDragOver(index)
+  }
 
-    const melody = melodyStore.getMelody(melodyId)
-    if (melody === null || melody === undefined) return
+  const handleDrop = (e: DragEvent, targetIndex: number) => {
+    e.preventDefault()
+    const sourceIndex = dragSourceIndex()
+    const sourceId = draggedItemId()
 
-    const newItem: SessionItem = {
-      id: `item-${Date.now()}`,
-      type: 'melody',
-      startBeat: props.sessionItems[index].startBeat,
-      label: melody.name,
-      melodyId,
+    if (sourceIndex === -1 || sourceId === null || sourceIndex === targetIndex) {
+      setDraggedItemId(null)
+      setDragSourceIndex(-1)
+      return
     }
 
-    const _sessionId = appStore.userSession()?.id
-    if (_sessionId !== null && _sessionId !== undefined) {
-      melodyStore.updateSessionItem(_sessionId, newItem.id, newItem)
+    // Reorder items in the array
+    const items = [...props.sessionItems]
+    const [removed] = items.splice(sourceIndex, 1)
+    items.splice(targetIndex, 0, removed)
+
+    // Update the session with new order
+    const sessionId = appStore.userSession()?.id
+    if (sessionId !== null && sessionId !== undefined) {
+      // Create updated session with reordered items
+      const updatedSession = appStore.userSession()!
+      melodyStore.updateUserSession({
+        ...updatedSession,
+        items: items,
+      })
     }
 
-    // Update local state to trigger re-render
-    setDraggableItem(null)
+    setDraggedItemId(null)
+    setDragSourceIndex(-1)
+  }
+
+  const handleDragEnd = () => {
+    setDraggedItemId(null)
+    setDragSourceIndex(-1)
+  }
+
+  // Mobile touch handlers (future implementation)
+  const _touchStart = (_e: TouchEvent, _item: SessionItem, _index: number) => {
+    // Future implementation of mobile touch drag-and-drop
+  }
+
+  const _touchMove = (_e: TouchEvent) => {
+    // Future implementation of mobile touch drag-and-drop
+  }
+
+  const _touchEnd = (_e: TouchEvent, _targetIndex: number) => {
+    // Future implementation of mobile touch drag-and-drop
   }
 
   const _restIcons = [
@@ -88,8 +134,10 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
                 <div
                   class="timeline-item"
                   draggable={true}
-                  onDragStart={(_e) => setDraggableItem(item.id)}
-                  data-id={item.id}
+                  onDragStart={(e) => handleDragStart(e, item, index())}
+                  onDragOver={(e) => handleDragOver(e, index())}
+                  onDrop={(e) => handleDrop(e, index())}
+                  onDragEnd={handleDragEnd}
                 >
                   <div class="item-header">
                     <span class="item-type-icon">
@@ -116,7 +164,7 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
                   <div
                     class="timeline-drop-zone rest-zone"
                     onClick={() => addRestBetween(index())}
-                    onDragOver={createDragOverHandler(index())}
+                    onDragOver={(e) => handleDragOver(e, index())}
                     onDrop={(e) => handleDrop(e, index())}
                   >
                     <span class="rest-placeholder">+</span>
