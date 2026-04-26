@@ -126,6 +126,28 @@ export const App: Component<AppProps> = (props) => {
     console.log('[resetPlaybackState] Called, resetting all playback state')
     void audioEngine.stopTone()
     void audioEngine.stopAllNotes()
+
+    // Stop piano roll's internal audio engine as well
+    // (PianoRollCanvas has its own AudioEngine instance exposed as window.pianoRollAudioEngine)
+    const pianoRollEngine = (
+      window as unknown as {
+        pianoRollAudioEngine?: {
+          stopTone: () => void
+          stopAllNotes: () => void
+          isTonePlaying: () => boolean
+          getActiveVoices: () => Set<number>
+        }
+      }
+    ).pianoRollAudioEngine
+    if (pianoRollEngine) {
+      void pianoRollEngine.stopTone()
+      void pianoRollEngine.stopAllNotes()
+      console.log('[resetPlaybackState] Piano roll audio engine stopped', {
+        tonePlaying: pianoRollEngine.isTonePlaying(),
+        activeVoices: pianoRollEngine.getActiveVoices().size,
+      })
+    }
+
     void playbackRuntime.stop()
     void practiceEngine.endSession()
     playback.resetPlayback()
@@ -147,8 +169,10 @@ export const App: Component<AppProps> = (props) => {
 
     // Verify all states are reset
     console.log('[resetPlaybackState] Playback state reset complete', {
-      audioEngineTonePlaying: audioEngine.isTonePlaying(),
-      audioEngineActiveVoices: audioEngine.getActiveVoices().size,
+      sharedAudioEngineTonePlaying: audioEngine.isTonePlaying(),
+      sharedAudioEngineActiveVoices: audioEngine.getActiveVoices().size,
+      pianoRollTonePlaying: pianoRollEngine?.isTonePlaying() ?? null,
+      pianoRollActiveVoices: pianoRollEngine?.getActiveVoices().size ?? null,
       playbackRuntimePlaying: playbackRuntime.getIsPlaying(),
       playbackRuntimePaused: playbackRuntime.getIsPaused(),
       editorPlaybackState: editorPlaybackState(),
