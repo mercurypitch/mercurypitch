@@ -331,7 +331,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
                 props.playModeChange('practice')
               }}
             >
-              Practice Session
+              Session Mode
             </button>
           </div>
         </Show>
