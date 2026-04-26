@@ -121,10 +121,10 @@ export const App: Component<AppProps> = (props) => {
   const _handleTabSettings = () => void appStore.setActiveTab('settings')
 
   // ── Reset all playback-related state ─────────────────────────
-  const resetPlaybackState = () => {
+  const resetPlaybackState = async () => {
     console.log('[resetPlaybackState] Called, resetting all playback state')
-    void audioEngine.stopTone()
-    void audioEngine.stopAllNotes()
+    await audioEngine.stopTone()
+    await audioEngine.stopAllNotes()
 
     // Stop piano roll's internal audio engine as well
     // (PianoRollCanvas has its own AudioEngine instance exposed as window.pianoRollAudioEngine)
@@ -147,8 +147,8 @@ export const App: Component<AppProps> = (props) => {
       })
     }
 
-    void playbackRuntime.stop()
-    void practiceEngine.endSession()
+    await playbackRuntime.stop()
+    await practiceEngine.endSession()
     playback.resetPlayback()
     setIsPlaying(false)
     setIsPaused(false)
@@ -192,14 +192,14 @@ export const App: Component<AppProps> = (props) => {
   }, 500)
 
   // ── Tab change handler with audio cleanup ───────────────────────────────────
-  const handleTabChange = (newTab: ActiveTab) => {
+  const handleTabChange = async (newTab: ActiveTab) => {
     console.log('[handleTabChange] Switching from', activeTab(), 'to', newTab)
     const currentTab = activeTab()
 
     // Stop audio when leaving practice or editor tabs
     if (currentTab === 'practice' || currentTab === 'editor') {
       console.log('[handleTabChange] Calling resetPlaybackState')
-      resetPlaybackState()
+      await resetPlaybackState()
     } else {
       console.log('[handleTabChange] NOT calling resetPlaybackState (tab is not practice or editor)')
     }
