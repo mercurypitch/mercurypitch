@@ -509,10 +509,13 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                       <input
                         type="number"
                         value={createBpm()}
-                        onInput={(e) =>
-                          setCreateBpm(parseInt(e.currentTarget.value) || 80)
-                        }
-                        min="40"
+                        onInput={(e) => {
+                          const val = parseInt(e.currentTarget.value)
+                          if (isNaN(val)) return
+                          const clamped = Math.max(20, Math.min(280, val))
+                          setCreateBpm(clamped)
+                        }}
+                        min="20"
                         max="280"
                       />
                     </div>
@@ -606,10 +609,13 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                       <input
                         type="number"
                         value={editBpm()}
-                        onInput={(e) =>
-                          setEditBpm(parseInt(e.currentTarget.value) || 80)
-                        }
-                        min="40"
+                        onInput={(e) => {
+                          const val = parseInt(e.currentTarget.value)
+                          if (isNaN(val)) return
+                          const clamped = Math.max(20, Math.min(280, val))
+                          setEditBpm(clamped)
+                        }}
+                        min="20"
                         max="280"
                       />
                     </div>
