@@ -627,19 +627,41 @@ export class AudioEngine {
     }
   }
 
-  /** Stop the current tone */
+  /** Stop the current tone with release envelope */
   stopTone(): void {
-    if (this.toneOscillator) {
+    if (!this.audioCtx || !this.toneGain || !this.toneOscillator) return
+
+    const now = this.audioCtx.currentTime
+
+    // Apply release envelope to fade out smoothly
+    try {
+      this.toneGain.gain.cancelScheduledValues(now)
+      this.toneGain.gain.setValueAtTime(this.toneGain.gain.value, now)
+      this.toneGain.gain.linearRampToValueAtTime(0, now + 0.1)
+    } catch {
+      // Gain may already be disconnected or at zero
+    }
+
+    // Schedule the oscillator stop after release
+    const stopTime = now + 0.1
+    this.toneOscillator.stop(stopTime)
+
+    // Clean up after release completes
+    setTimeout(() => {
       try {
-        this.toneOscillator.stop()
         this.toneOscillator.disconnect()
       } catch {
         // already stopped
       }
       this.toneOscillator = null
-    }
+    }, 120)
+
     if (this.toneGain) {
-      this.toneGain.disconnect()
+      try {
+        this.toneGain.disconnect()
+      } catch {
+        // already disconnected
+      }
       this.toneGain = null
     }
     this.isPlaying = false
