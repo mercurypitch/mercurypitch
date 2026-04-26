@@ -5645,6 +5645,7 @@ Keeps your existing styles, only adjusts layout
   display: flex;
   gap: 4px;
   flex-wrap: wrap;
+  min-height: 1.5rem;
 }
 
 .item-actions {
@@ -5729,11 +5730,13 @@ Keeps your existing styles, only adjusts layout
 
 .details-list dt {
   color: var(--text-muted);
+  grid-column: 1;
 }
 
 .details-list dd {
   color: var(--text-primary);
   font-weight: 500;
+  grid-column: 2;
 }
 
 .playlist-list {

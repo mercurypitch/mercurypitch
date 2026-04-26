@@ -139,6 +139,14 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
           isPlaying={props.isPlaying}
           isPaused={props.isPaused}
           isScrolling={() => false}
+          targetPitch={() => {
+            const idx = props.currentNoteIndex?.() ?? 0
+            const items = melodyStore.getCurrentItems()
+            if (idx >= 0 && idx < items.length) {
+              return items[idx].note.freq
+            }
+            return null
+          }}
         />
         <div
           id="playhead"
