@@ -275,9 +275,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
         {/* Count-in badge */}
         <Show when={props.isCountingIn()}>
           <div id="countin-display" class="countin-badge">
-            {[...Array(props.countInBeats()).reverse()]
-              .map((_, i) => props.countInBeats() - i)
-              .join(', ')}
+            {props.countInBeats()}
           </div>
         </Show>
 

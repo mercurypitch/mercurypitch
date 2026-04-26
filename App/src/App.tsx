@@ -224,6 +224,13 @@ export const App: Component<AppProps> = (props) => {
 
   const totalBeats = createMemo(() => melodyTotalBeats(melodyStore.items()))
 
+  // Reactive playhead position for practice tab
+  const playheadPosition = createMemo(() => {
+    const beats = currentBeat()
+    const total = totalBeats()
+    return total > 0 ? (beats / total) * 100 : 0
+  })
+
   // ── Practice mode signals ───────────────────────────────────
 
   const [isPlaying, setIsPlaying] = createSignal(false)
@@ -1731,11 +1738,13 @@ export const App: Component<AppProps> = (props) => {
                   />
                   <div
                     id="playhead"
-                    style={{
-                      display: isPlaying() || isPaused() ? 'block' : 'none',
-                      left: `${(currentBeat() / Math.max(1, totalBeats())) * 100}%`,
-                    }}
-                  />
+                    style={{ display: (isPlaying() || isPaused()) ? 'block' : 'none' }}
+                  >
+                    <div
+                      class="playhead-marker"
+                      style={{ left: `${playheadPosition()}%` }}
+                    />
+                  </div>
                 </div>
 
                 {/* History */}
