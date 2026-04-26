@@ -931,12 +931,12 @@ describe('Melody Library System', () => {
     })
 
     it('clears localStorage on reset', () => {
-      localStorageMock.setItem('pitchperfect_melody_library', 'some data')
+      localStorageMock.setItem('pitchperfect_library', 'some data')
 
       melodyStore.resetMelodyLibrary()
 
       expect(localStorageMock.removeItem).toHaveBeenCalledWith(
-        'pitchperfect_melody_library',
+        'pitchperfect_library',
       )
     })
   })
@@ -1096,7 +1096,7 @@ describe('Melody Library System', () => {
       const _sessionId = _session.id
       const calls = localStorageMock.setItem.mock.calls
       const sessionCall = calls.find(
-        (call) => call[0] === 'pitchperfect_sessions',
+        (call) => call[0] === 'pitchperfect_library',
       )
       expect(sessionCall).toBeDefined()
       const parsed = JSON.parse(sessionCall![1] as string)

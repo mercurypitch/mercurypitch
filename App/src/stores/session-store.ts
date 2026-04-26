@@ -2,10 +2,12 @@
 // Session Store — Unified session management with localStorage
 // ============================================================
 
+import { melodyStore } from './melody-store'
 import type {
   MelodyItem,
   SavedUserSession,
   SessionResult,
+  UnifiedLibrary,
 } from '@/types'
 import type { SessionCategory, SessionDifficulty, SessionItem } from '@/types'
 
@@ -37,11 +39,16 @@ export function getAllSessions(): Record<string, SavedUserSession> {
 /** Save sessions to localStorage (UnifiedLibrary) */
 function _saveSessions(sessions: Record<string, SavedUserSession>): void {
   try {
-    const library = melodyStore.getMelodyLibrary() as any
-    const updatedLibrary = {
+    const library = melodyStore.getMelodyLibrary()
+    const updatedLibrary: UnifiedLibrary = {
       ...library,
       sessions: sessions,
-      meta: { ...library.meta, lastUpdated: Date.now() },
+      meta: {
+        author: library.meta.author,
+        version: library.meta.version,
+        lastUpdated: Date.now(),
+      },
+      renderSettings: library.renderSettings,
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedLibrary))
   } catch {
@@ -393,5 +400,15 @@ export function getUserSessionCount(): number {
   return getSessions().length
 }
 
-// Import at bottom to avoid circular dependency
-import { melodyStore } from './melody-store'
+// Ensure default session is properly seeded in unified library
+if (localStorage.getItem('pitchperfect_library') === null) {
+  console.log('[session-store] No unified library found, seeding default session')
+  const defaultSession = createDefaultSession()
+  localStorage.setItem('pitchperfect_library', JSON.stringify({
+    meta: { author: 'User', version: '2.0', lastUpdated: Date.now() },
+    melodies: {},
+    playlists: {},
+    sessions: { 'default': defaultSession },
+    renderSettings: { gridlines: true, showLabels: true, showNumbers: false }
+  }))
+}

@@ -5,8 +5,9 @@
 import type { Component } from 'solid-js'
 import { createMemo, For, onMount, Show } from 'solid-js'
 import { appStore } from '@/stores/app-store'
-import { melodyStore } from '@/stores/melody-store'
+import { getActiveSession } from '@/stores/melody-store'
 import { getSession } from '@/stores/session-store'
+import { melodyStore } from '@/stores/melody-store'
 import type { MelodyData, SavedUserSession, SessionItem } from '@/types'
 
 export const LibraryTab: Component = () => {
@@ -25,7 +26,7 @@ export const LibraryTab: Component = () => {
 
   const recentSessions = createMemo(() => {
     const sessions = Object.values(library().sessions).filter(
-      (s): s is SavedUserSession => s.id !== 'default'
+      (s): s is SavedUserSession => s !== null && s.id !== 'default'
     )
     return [...sessions]
       .sort(
@@ -36,10 +37,13 @@ export const LibraryTab: Component = () => {
   })
 
   // User session (new melody-ID model)
-  const userSession = createMemo(() => appStore.userSession?.() ?? null)
+  const userSession = createMemo(() => {
+    const session = appStore.userSession?.() ?? getActiveSession()
+    return session ?? null
+  })
   const sessionMelodyIds = createMemo(() => {
     const session = userSession()
-    if (!session) return []
+    if (!session || !session.items) return []
     return session.items
       .filter((item: SessionItem) => item.melodyId !== null)
       .map((item: SessionItem) => item.melodyId as string)
@@ -50,7 +54,7 @@ export const LibraryTab: Component = () => {
   const sessionMelodies = createMemo(() => {
     const ids = sessionMelodyIds()
     return ids
-      .map((id) => melodyStore.getMelody(id))
+      .map((id: string) => melodyStore.getMelody(id))
       .filter((m): m is MelodyData => m !== undefined)
   })
 

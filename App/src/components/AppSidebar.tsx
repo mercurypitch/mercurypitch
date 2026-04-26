@@ -5,7 +5,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { For, Show } from 'solid-js'
+import { createMemo, For, Show } from 'solid-js'
 import { LibraryTab } from '@/components/LibraryTab'
 import { NoteList } from '@/components/NoteList'
 import { PitchDisplay } from '@/components/PitchDisplay'
@@ -38,6 +38,7 @@ interface AppSidebarProps {
 export const AppSidebar: Component<AppSidebarProps> = (props) => {
   // Local alias for reactive tracking
   const activeTab = () => appActiveTab()
+  const userSession = createMemo(() => appStore.userSession?.())
   return (
     <aside
       class={`app-sidebar${props.class !== undefined && props.class !== '' ? ` ${props.class}` : ''}`}
@@ -305,8 +306,8 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
           <div class="session-items-display">
             <h3>Session Items</h3>
             <div id="session-items-list">
-              <Show when={appStore.userSession?.()?.items.length > 0}>
-                <For each={appStore.userSession?.()?.items}>
+              <Show when={userSession()?.items != null && userSession()!.items.length > 0}>
+                <For each={userSession()?.items}>
                   {(item) => (
                     <div class="session-item-entry">
                       <span class="session-item-label">{item.label}</span>
@@ -317,7 +318,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
                   )}
                 </For>
               </Show>
-              <Show when={!appStore.userSession?.()?.items || appStore.userSession?.()?.items.length === 0}>
+              <Show when={!userSession()?.items || (userSession()?.items?.length ?? 0) === 0}>
                 <p class="session-empty-tip">
                   No items in session
                 </p>

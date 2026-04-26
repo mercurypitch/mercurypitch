@@ -49,7 +49,39 @@ const DEFAULT_LIBRARY: UnifiedLibrary = {
   melodies: {},
   playlists: {},
   sessions: {
-    'default': getDefaultSession(),
+    'default': {
+      id: 'default',
+      name: 'Default Session',
+      author: 'System',
+      deletable: false,
+      items: [
+        {
+          id: generateSessionItemId(),
+          type: 'scale',
+          startBeat: 0,
+          label: 'C Major Scale (Octave 3-4)',
+          scaleType: 'major',
+          beats: 16,
+        },
+        {
+          id: generateSessionItemId(),
+          type: 'scale',
+          startBeat: 16,
+          label: 'G Major Scale (Octave 3-4)',
+          scaleType: 'major',
+          beats: 16,
+        },
+        {
+          id: generateSessionItemId(),
+          type: 'rest',
+          startBeat: 32,
+          label: 'Rest - 4 bars',
+          restMs: 8000,
+        },
+      ],
+      created: Date.now(),
+      lastPlayed: undefined,
+    },
   },
 }
 
@@ -144,6 +176,13 @@ export function resetMelodyLibrary(): void {
 
 export function getSessions(): SavedUserSession[] {
   return getSessionStoreSessions()
+}
+
+/** Get the currently active session by ID */
+export function getActiveSession(): SavedUserSession | undefined {
+  const sessionId = getActiveSessionId()
+  if (sessionId === null) return undefined
+  return getSession(sessionId)
 }
 
 export function saveSession(session: SavedUserSession): void {
