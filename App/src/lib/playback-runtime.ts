@@ -315,9 +315,13 @@ export class PlaybackRuntime {
         const currentInt = Math.floor(currentBeat)
 
         // Emit the initial count-in value (at start) and then each countdown step
+        // Don't emit 0 so the UI shows 4-3-2-1 then disappears
         if (currentInt !== this.countInBeat || elapsed === 0) {
           this.countInBeat = currentInt
-          this._emit({ type: 'countIn', countIn: currentInt })
+          // Only emit if countIn > 0 (so we show 4-3-2-1, not 0)
+          if (currentInt > 0) {
+            this._emit({ type: 'countIn', countIn: currentInt })
+          }
         }
 
         // Play metronome click during count-in (4, 3, 2, 1)
@@ -335,6 +339,11 @@ export class PlaybackRuntime {
 
         this.animationFrameId = requestAnimationFrame(animate)
       } else {
+        // Count-in phase finished - emit completion event
+        if (countIn > 0) {
+          this._emit({ type: 'countInComplete' })
+        }
+
         const beat = elapsed / beatDuration
 
         const intBeat = Math.floor(beat)
