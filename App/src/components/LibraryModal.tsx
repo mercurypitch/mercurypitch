@@ -607,6 +607,16 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                             <span>{melody.playCount} plays</span>
                           </Show>
                         </div>
+                        <Show when={melody.tags && melody.tags.length > 0}>
+                          <div class="item-tags">
+                            {(melody.tags as string[]).slice(0, 3).map((tag) => (
+                              <span class="tag-pill">{tag}</span>
+                            ))}
+                            {(melody.tags as string[]).length > 3 && (
+                              <span class="tag-pill more">+{(melody.tags as string[]).length - 3}</span>
+                            )}
+                          </div>
+                        </Show>
                       </div>
                       <div class="item-actions">
                         <button
@@ -697,12 +707,33 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                         </dd>
                         <dt>BPM</dt>
                         <dd>{m().bpm}</dd>
+                        <dt>Tags</dt>
+                        <dd>
+                          <Show when={(m().tags?.length ?? 0) > 0}>
+                            <div class="tag-pills">
+                              <Show when={(m().tags as string[]).length <= 50}>
+                                {(m().tags as string[]).map((tag) => (
+                                  <span class="tag-pill">{tag}</span>
+                                ))}
+                              </Show>
+                              <Show when={(m().tags as string[]).length > 50}>
+                                {(m().tags as string[]).slice(0, 50).map((tag) => (
+                                  <span class="tag-pill">{tag}</span>
+                                ))}
+                                <span class="tag-pill more">+{(m().tags as string[]).length - 50}</span>
+                              </Show>
+                            </div>
+                          </Show>
+                          <Show when={!m().tags || (m().tags as string[]).length === 0}>
+                            -
+                          </Show>
+                        </dd>
                         <dt>Notes</dt>
                         <dd>{m().notes ?? ''}</dd>
                         <dt>Created</dt>
-                        <dd>{new Date(m().createdAt).toLocaleDateString()}</dd>
+                        <dd>{new Date(m().createdAt ?? Date.now()).toLocaleDateString()}</dd>
                         <dt>Updated</dt>
-                        <dd>{new Date(m().updatedAt).toLocaleDateString()}</dd>
+                        <dd>{new Date(m().updatedAt ?? Date.now()).toLocaleDateString()}</dd>
                       </dl>
                     )}
                   </Show>

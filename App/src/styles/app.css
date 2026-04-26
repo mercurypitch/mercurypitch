@@ -184,98 +184,14 @@ header h1 {
   display: none;
 }
 
-/* Preset Selector Grid */
-.preset-selector {
-  display: grid;
-  grid-template-columns: auto 1fr auto auto;
-  grid-template-rows: auto auto;
-  gap: 6px;
-  align-items: center;
-}
-
-/* Row 1: preset name input spans all 4 columns */
-.preset-selector input[list]#preset-select {
-  grid-column: 1 / 5;
-  grid-row: 1;
-}
-
-/* Row 2: + button (col 1), name input (cols 2-3), Save (col 4) */
-.preset-selector .preset-new-btn {
-  grid-column: 1;
-  grid-row: 2;
-  width: auto;
-  flex-shrink: 0;
-}
-.preset-selector input[type='text']#preset-name-input {
-  grid-column: 2 / 4;
-  grid-row: 2;
-  min-width: 0;
-  max-width: 100px;
-}
-.preset-selector .preset-save-btn {
-  grid-column: 4;
-  grid-row: 2;
-  width: auto;
-  flex-shrink: 0;
-}
-
-/* Row 3: delete + share (only rendered when a preset is loaded) */
-.preset-selector .preset-delete-btn {
-  grid-column: 3;
-  grid-row: 3;
-  width: auto;
-  flex-shrink: 0;
-}
-.preset-selector .share-btn {
-  grid-column: 4;
-  grid-row: 3;
-  width: auto;
-  flex-shrink: 0;
-}
-
-/* Save dropdown */
-.save-dropdown-wrapper {
-  grid-column: 4;
-  grid-row: 2;
-  position: relative;
-}
-.preset-selector .save-dropdown-wrapper .preset-save-btn {
-  grid-column: unset;
-  grid-row: unset;
-}
-.save-dropdown-menu {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  z-index: 1000;
-  background: var(--bg-panel, #2a2a2a);
-  border: 1px solid var(--border, #444);
-  border-radius: 4px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  min-width: 160px;
-  overflow: hidden;
-}
-.save-dropdown-item {
-  display: block;
-  width: 100%;
-  padding: 8px 12px;
-  text-align: left;
-  background: none;
-  border: none;
-  color: var(--text-primary, #e0e0e0);
-  font-size: 12px;
-  cursor: pointer;
-  white-space: nowrap;
-}
-.save-dropdown-item:hover {
-  background: var(--hover-bg, #3a3a3a);
-}
-.save-dropdown-item.add-to-session {
-  color: var(--green, #4caf50);
-}
-.save-dropdown-item.add-to-session:hover {
-  background: rgba(76, 175, 80, 0.1);
-}
+/* ==========================================
+   PRESET UI REMOVED - replaced by melody library
+   Kept as comment for reference
+   ==========================================
+/* Preset Selector Grid - REMOVED */
+/* .preset-selector {
+  ...
+} */
 
 /* Sidebar Sections */
 .sidebar-section {
@@ -5700,6 +5616,33 @@ Keeps your existing styles, only adjusts layout
   color: var(--text-muted);
   display: flex;
   align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.item-tags {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.tag-pill {
+  font-size: 0.6rem;
+  padding: 2px 6px;
+  background: var(--accent-dim);
+  color: var(--accent);
+  border-radius: 3px;
+  font-weight: 500;
+}
+
+.tag-pill.more {
+  font-size: 0.55rem;
+  padding: 2px 5px;
+}
+
+.tag-pills {
+  display: flex;
   gap: 4px;
   flex-wrap: wrap;
 }

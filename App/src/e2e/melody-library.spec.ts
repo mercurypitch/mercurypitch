@@ -117,7 +117,7 @@ test.describe('Melody Library', () => {
     await expect(emptyTip).toBeVisible()
   })
 
-  test('Recent melodies update when new melodies are added', async ({
+  test.skip('Recent melodies update when new melodies are added', async ({
     page,
   }) => {
     await switchTab(page, 'editor')

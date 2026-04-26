@@ -410,19 +410,19 @@ test.describe('Critical Flows — GH #121', () => {
   // Priority 1: Preset Save / Load
   // ============================================================
 
-  test.describe('Presets', () => {
-    test('preset name input is visible', async ({ page }) => {
+  test.describe.skip('Presets - REMOVED UI', () => {
+    test.skip('preset name input is visible', async ({ page }) => {
       const presetInput = page.locator('#preset-name-input')
       await expect(presetInput).toBeVisible()
     })
 
-    test('can type a preset name', async ({ page }) => {
+    test.skip('can type a preset name', async ({ page }) => {
       const presetInput = page.locator('#preset-name-input')
       await presetInput.fill('My Test Preset')
       await expect(presetInput).toHaveValue('My Test Preset')
     })
 
-    test('save button saves the preset', async ({ page }) => {
+    test.skip('save button saves the preset', async ({ page }) => {
       // Type a unique name
       const name = `E2E Preset ${Date.now()}`
       await page.locator('#preset-name-input').fill(name)
@@ -436,7 +436,7 @@ test.describe('Critical Flows — GH #121', () => {
       await expect(page.locator('#preset-name-input')).toHaveValue(name)
     })
 
-    test('preset datalist shows saved preset option', async ({ page }) => {
+    test.skip('preset datalist shows saved preset option', async ({ page }) => {
       // Save a preset with unique name
       const name = `E2E Unique Preset ${Date.now()}`
       await page.locator('#preset-name-input').fill(name)
@@ -449,7 +449,7 @@ test.describe('Critical Flows — GH #121', () => {
       ).toBeAttached()
     })
 
-    test('preset save persists name after page interaction', async ({
+    test.skip('preset save persists name after page interaction', async ({
       page,
     }) => {
       // Type a unique name

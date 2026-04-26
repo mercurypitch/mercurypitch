@@ -98,19 +98,34 @@ export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
       }
       const playbackRuntime = win.__playbackRuntime
 
-      if (playbackRuntime && playbackState === 'playing') {
-        // External playback - subscribe to beat events
-        editor?.setExternalPlayback(true)
+      if (playbackRuntime) {
+        // Subscribe to beat events (during actual melody playback)
         playbackRuntime.on('beat', (e: unknown) => {
           editor?.setRemoteBeat((e as { beat: number }).beat)
         })
+
+        // Subscribe to count-in events (during precount phase)
+        // This ensures playhead updates during count-in so it's visible
+        playbackRuntime.on('countIn', (e: unknown) => {
+          const countIn = (e as { countIn: number }).countIn
+          // During count-in, playhead shows the remaining count-in beats
+          // For example, with 4 count-in beats: 4 → 3 → 2 → 1 → 0
+          editor?.setRemoteBeat(countIn)
+        })
+
+        // Subscribe to state events to manage external playback mode
         playbackRuntime.on('state', (e: unknown) => {
           if ((e as { state: string }).state === 'paused') {
             editor?.setExternalPlayback(false)
           }
         })
+      }
+
+      if (playbackRuntime && playbackState === 'playing') {
+        // Enable external playback mode
+        editor?.setExternalPlayback(true)
       } else {
-        // Internal playback (editor tab)
+        // Disable external playback mode
         editor?.setExternalPlayback(false)
       }
 
