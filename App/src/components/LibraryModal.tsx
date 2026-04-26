@@ -23,6 +23,13 @@ type PlaylistEditingState =
   | { mode: 'rename'; playlistId: string; originalName: string }
   | { mode: 'delete'; playlistId: string }
 
+// Drag and drop state
+type DragState =
+  | null
+  | { type: 'melody'; melodyId: string }
+  | { type: 'playlist'; playlistId: string }
+  | { type: 'session'; sessionId: string }
+
 export const LibraryModal: Component<LibraryModalProps> = (props) => {
   const [activeTab, setActiveTab] = createSignal<Tab>('melodies')
   const [searchQuery, setSearchQuery] = createSignal('')
@@ -34,6 +41,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
   )
   const [playlistEditing, setPlaylistEditing] =
     createSignal<PlaylistEditingState>(null)
+  const [dragState, setDragState] = createSignal<DragState>(null)
 
   // For rename playlist
   const [renameInput, setRenameInput] = createSignal('')
@@ -133,6 +141,94 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
     melodyStore.loadMelody(melody.id)
     appStore.setCurrentPresetName(melody.name)
     props.close()
+  }
+
+  // Drag and drop handlers
+  const handleDragStart = (e: DragEvent, melodyId: string) => {
+    setDragState({ type: 'melody', melodyId })
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = 'move'
+      e.dataTransfer.setData('text/plain', melodyId)
+    }
+  }
+
+  const handleDragStartPlaylist = (e: DragEvent, playlistId: string) => {
+    setDragState({ type: 'playlist', playlistId })
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = 'move'
+      e.dataTransfer.setData('playlistId', playlistId)
+    }
+  }
+
+  const _handleDragStartSession = (e: DragEvent, sessionId: string) => {
+    setDragState({ type: 'session', sessionId })
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = 'move'
+      e.dataTransfer.setData('sessionId', sessionId)
+    }
+  }
+
+  const handleDragEnd = () => {
+    setDragState(null)
+  }
+
+  const handleDragOver = (e: DragEvent) => {
+    e.preventDefault()
+    if (e.dataTransfer) {
+      e.dataTransfer.dropEffect = 'move'
+    }
+  }
+
+  const handleDropPlaylist = (e: DragEvent, playlistId: string) => {
+    e.preventDefault()
+    const state = dragState()
+    if (state !== null && state.type === 'melody') {
+      melodyStore.addMelodyToPlaylist(playlistId, state.melodyId)
+      appStore.showNotification('Melody added to playlist', 'success')
+      setDragState(null)
+    } else if (state !== null && state.type === 'session') {
+      melodyStore.addSessionToPlaylist(playlistId, state.sessionId)
+      appStore.showNotification('Session added to playlist', 'success')
+      setDragState(null)
+    }
+  }
+
+  const handleDropSessionToPlaylist = (e: DragEvent, playlistId: string) => {
+    e.preventDefault()
+    const state = dragState()
+    if (state !== null && state.type === 'session') {
+      // Add session to playlist
+      const playlist = melodyStore.getPlaylist(playlistId)
+      if (playlist) {
+        // Check if session is already in playlist
+        const sessionKeys = playlist.sessionKeys
+        if (sessionKeys !== undefined && sessionKeys.includes(state.sessionId)) {
+          appStore.showNotification('Session already in playlist', 'info')
+          setDragState(null)
+          return
+        }
+        melodyStore.addSessionToPlaylist(playlistId, state.sessionId)
+        appStore.showNotification('Session added to playlist', 'success')
+        setDragState(null)
+      }
+    }
+  }
+
+  const handleDropMelodyList = (e: DragEvent, melodyId: string) => {
+    e.preventDefault()
+    const state = dragState()
+    if (state !== null && state.type === 'playlist') {
+      // Remove melody from playlist
+      const playlist = melodyStore.getPlaylist(state.playlistId)
+      if (playlist) {
+        const newMelodyKeys = playlist.melodyKeys.filter(id => id !== melodyId)
+        melodyStore.updatePlaylist(state.playlistId, {
+          melodyKeys: newMelodyKeys
+        })
+        appStore.showNotification('Melody removed from playlist', 'success')
+      }
+      setDragState(null)
+    }
   }
 
   const handleDelete = (key: string) => {
@@ -583,6 +679,11 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                     <div
                       class={`library-item ${selectedMelodyKey() === _ ? 'selected' : ''}`}
                       onClick={() => setSelectedMelodyKey(_)}
+                      draggable={dragState()?.type === 'playlist'}
+                      onDragStart={(e) => handleDragStart(e, _)}
+                      onDragEnd={handleDragEnd}
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDropMelodyList(e, _)}
                     >
                       <div class="item-main">
                         <div class="item-title">
@@ -897,14 +998,31 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                     }
                   >
                     {([_id, playlist]) => (
-                      <div class="playlist-item">
-                        <div class="playlist-info">
-                          <span class="playlist-name">{playlist.name}</span>
-                          <span class="playlist-count">
-                            {playlist.melodyKeys.length} melodies
-                          </span>
-                        </div>
-                        <div class="item-actions">
+                      <div
+                          class="playlist-item"
+                          draggable={dragState()?.type === 'melody'}
+                          onDragStart={(e) => handleDragStartPlaylist(e, _id)}
+                          onDragEnd={handleDragEnd}
+                          onDragOver={handleDragOver}
+                          onDrop={(e) => {
+                            e.preventDefault()
+                            const state = dragState()
+                            if (state !== null) {
+                              if (state.type === 'melody') {
+                                handleDropPlaylist(e, _id)
+                              } else if (state.type === 'session') {
+                                handleDropSessionToPlaylist(e, _id)
+                              }
+                            }
+                          }}
+                        >
+                          <div class="playlist-info">
+                            <span class="playlist-name">{playlist.name}</span>
+                            <span class="playlist-count">
+                              {playlist.melodyKeys.length} melodies
+                            </span>
+                          </div>
+                          <div class="item-actions">
                           <button
                             class="action-btn edit-btn"
                             onClick={() => startRenameMode(_id)}

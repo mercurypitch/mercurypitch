@@ -3793,6 +3793,16 @@ Keeps your existing styles, only adjusts layout
   text-align: center;
 }
 
+.settings-row select {
+  padding: 4px 8px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  border-radius: 4px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
 .settings-val {
   min-width: 40px;
   text-align: right;
@@ -5769,6 +5779,16 @@ Keeps your existing styles, only adjusts layout
 .playlist-count {
   font-size: 0.72rem;
   color: var(--text-muted);
+}
+
+.playlist-item.drag-over {
+  border: 2px dashed var(--accent-color);
+  background: var(--bg-secondary);
+}
+
+.playlist-item.drag-over .playlist-name {
+  color: var(--accent-color);
+  font-weight: 700;
 }
 
 /* ===== Edit Melody Form ===== */

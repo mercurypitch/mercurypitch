@@ -32,10 +32,9 @@ import { melodyIndexAtBeat } from '@/lib/scale-data'
 import { buildMultiOctaveScale, keyTonicFreq, melodyTotalBeats, midiToNote, } from '@/lib/scale-data'
 import { generateShareURL, hasSharedPresetInURL, loadFromURL, } from '@/lib/share-url'
 import { appStore, getNoteAccuracyMap } from '@/stores/app-store'
-import { getActiveSessionId, melodyStore } from '@/stores/melody-store'
+import { melodyStore } from '@/stores/melody-store'
 import { playback } from '@/stores/playback-store'
 import { getSessionStore } from '@/stores/session-store'
-import { addItemToSession } from '@/stores/session-store'
 import type { PitchSample } from '@/types'
 import type { MelodyItem, NoteName, NoteResult, PitchResult, PracticeResult, } from '@/types'
 import type { PlaybackState } from '@/types'
@@ -190,17 +189,6 @@ export const App: Component<AppProps> = (props) => {
 
     // Save to library (the melody is already persisted via melodyStore.setMelody)
     appStore.showNotification('Melody saved!', 'success')
-
-    // Add to active session if one is loaded
-    const sessionId = getActiveSessionId()
-    if (sessionId !== null) {
-      addItemToSession(sessionId, {
-        type: 'melody',
-        label: currentMelody.name,
-        melodyId: currentMelody.id,
-        startBeat: 0,
-      })
-    }
   }, 500)
 
   // ── Tab change handler with audio cleanup ───────────────────────────────────

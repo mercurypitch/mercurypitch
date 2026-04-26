@@ -337,6 +337,7 @@ export interface MelodyLibrary {
     {
       name: string
       melodyKeys: string[]
+      sessionKeys: string[]
       created: number
     }
   >
@@ -367,6 +368,7 @@ export interface UnifiedLibrary {
     {
       name: string
       melodyKeys: string[]
+      sessionKeys: string[]
       created: number
     }
   >

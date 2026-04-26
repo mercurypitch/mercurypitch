@@ -125,8 +125,14 @@ export const LibraryTab: Component = () => {
       // Load session as active
       appStore.setActiveUserSession(item.data)
       // Load first melody in session if exists
-      const firstMelodyId = item.data.items?.find((i) => i.melodyId !== null && i.melodyId !== undefined)?.melodyId
-      if (firstMelodyId !== null && firstMelodyId !== undefined) {
+      let firstMelodyId: string | undefined = undefined
+      for (const i of item.data.items) {
+        if (i.melodyId !== null && i.melodyId !== undefined) {
+          firstMelodyId = i.melodyId
+          break
+        }
+      }
+      if (firstMelodyId !== undefined) {
         melodyStore.loadMelody(firstMelodyId)
       }
     }

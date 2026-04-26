@@ -7,6 +7,13 @@ import { createMemo, createSignal, For, Show } from 'solid-js'
 import { appStore, melodyStore, setActiveTab, setEditorView } from '@/stores'
 import type { SavedUserSession, SessionCategory, SessionDifficulty, } from '@/types'
 
+// Drag and drop state
+type DragState =
+  | null
+  | { type: 'melody'; melodyId: string }
+  | { type: 'playlist'; playlistId: string }
+  | { type: 'session'; sessionId: string }
+
 interface SessionLibraryModalProps {
   isOpen: boolean
   close: () => void
@@ -16,6 +23,7 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
   props,
 ) => {
   const [searchQuery, setSearchQuery] = createSignal('')
+  const [dragState, setDragState] = createSignal<DragState>(null)
 
   const sessions = createMemo(() => melodyStore.getSessions())
 
@@ -46,7 +54,38 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
 
   const handleEdit = (session: SavedUserSession) => {
     appStore.loadSession(session)
-    setActiveTab('editor'); setEditorView('session-editor')
+    setActiveTab('editor')
+    setEditorView('session-editor')
+  }
+
+  // Drag and drop handlers
+  const handleDragStartSession = (e: DragEvent, sessionId: string) => {
+    setDragState({ type: 'session', sessionId })
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = 'move'
+      e.dataTransfer.setData('sessionId', sessionId)
+    }
+  }
+
+  const handleDragEnd = () => {
+    setDragState(null)
+  }
+
+  const handleDragOver = (e: DragEvent) => {
+    e.preventDefault()
+    if (e.dataTransfer) {
+      e.dataTransfer.dropEffect = 'move'
+    }
+  }
+
+  const handleDropSessionToPlaylist = (e: DragEvent, sessionId: string) => {
+    e.preventDefault()
+    const state = dragState()
+    if (state !== null && state.type === 'playlist') {
+      melodyStore.addSessionToPlaylist(state.playlistId, sessionId)
+      appStore.showNotification('Session added to playlist', 'success')
+      setDragState(null)
+    }
   }
 
   const _difficultyOptions: Array<{ value: SessionDifficulty; label: string }> =
@@ -83,104 +122,111 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
           </div>
 
           <div class="library-content">
-              <input
-                type="text"
-                class="search-input"
-                placeholder="Search sessions..."
-                value={searchQuery()}
-                onInput={(e) => setSearchQuery(e.currentTarget.value)}
-              />
+            <input
+              type="text"
+              class="search-input"
+              placeholder="Search sessions..."
+              value={searchQuery()}
+              onInput={(e) => setSearchQuery(e.currentTarget.value)}
+            />
 
-              <button
-                class="new-btn"
-                onClick={() => {
-                  appStore.setActiveTab('editor')
-                  appStore.setActiveTab('editor'); setEditorView('session-editor')
-                }}
-              >
-                <svg viewBox="0 0 24 24" width="16" height="16">
-                  <path
-                    fill="currentColor"
-                    d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"
-                  />
-                </svg>
-                New Session
-              </button>
+            <button
+              class="new-btn"
+              onClick={() => {
+                appStore.setActiveTab('editor')
+                setEditorView('session-editor')
+              }}
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16">
+                <path
+                  fill="currentColor"
+                  d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"
+                />
+              </svg>
+              New Session
+            </button>
 
-              <div class="library-list">
-                <For each={filteredSessions()}>
-                  {(session) => (
-                    <div class="library-item">
-                      <div class="item-main">
-                        <div class="item-title">{session.name}</div>
-                        <div class="item-meta">
-                          <span
-                            class={`difficulty-badge ${session.difficulty}`}
-                          >
-                            {session.difficulty}
+            <div class="library-list">
+              <For each={filteredSessions()}>
+                {(session) => (
+                  <div
+                    class="library-item"
+                    draggable={dragState()?.type === 'playlist'}
+                    onDragStart={(e) => handleDragStartSession(e, session.id)}
+                    onDragEnd={handleDragEnd}
+                    onDragOver={handleDragOver}
+                    onDrop={(e) => handleDropSessionToPlaylist(e, session.id)}
+                  >
+                    <div class="item-main">
+                      <div class="item-title">{session.name}</div>
+                      <div class="item-meta">
+                        <span
+                          class={`difficulty-badge ${session.difficulty}`}
+                        >
+                          {session.difficulty}
+                        </span>
+                        <span>•</span>
+                        <span>{session.category}</span>
+                        <span>•</span>
+                        <span>{session.items.length} items</span>
+                        <Show when={session.lastPlayed}>
+                          <span>•</span>
+                          <span>
+                            {new Date(
+                              session.lastPlayed!,
+                            ).toLocaleDateString()}
                           </span>
-                          <span>•</span>
-                          <span>{session.category}</span>
-                          <span>•</span>
-                          <span>{session.items.length} items</span>
-                          <Show when={session.lastPlayed}>
-                            <span>•</span>
-                            <span>
-                              {new Date(
-                                session.lastPlayed!,
-                              ).toLocaleDateString()}
-                            </span>
-                          </Show>
-                        </div>
-                      </div>
-                      <div class="item-actions">
-                        <button
-                          class="action-btn play-btn"
-                          onClick={() => handlePlay(session)}
-                          title="Play"
-                        >
-                          <svg viewBox="0 0 24 24" width="14" height="14">
-                            <path fill="currentColor" d="M8 5v14l11-7z" />
-                          </svg>
-                        </button>
-                        <button
-                          class="action-btn edit-btn"
-                          onClick={() => handleEdit(session)}
-                          title="Edit"
-                        >
-                          <svg viewBox="0 0 24 24" width="14" height="14">
-                            <path
-                              fill="currentColor"
-                              d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z"
-                            />
-                          </svg>
-                        </button>
-                        <button
-                          class="action-btn delete-btn"
-                          onClick={() => handleDelete(session.id)}
-                          title="Delete"
-                        >
-                          <svg viewBox="0 0 24 24" width="14" height="14">
-                            <path
-                              fill="currentColor"
-                              d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"
-                            />
-                          </svg>
-                        </button>
+                        </Show>
                       </div>
                     </div>
-                  )}
-                </For>
-
-                {filteredSessions().length === 0 && (
-                  <div class="empty-state">
-                    <p>
-                      No sessions found. Create a new session to get started!
-                    </p>
+                    <div class="item-actions">
+                      <button
+                        class="action-btn play-btn"
+                        onClick={() => handlePlay(session)}
+                        title="Play"
+                      >
+                        <svg viewBox="0 0 24 24" width="14" height="14">
+                          <path fill="currentColor" d="M8 5v14l11-7z" />
+                        </svg>
+                      </button>
+                      <button
+                        class="action-btn edit-btn"
+                        onClick={() => handleEdit(session)}
+                        title="Edit"
+                      >
+                        <svg viewBox="0 0 24 24" width="14" height="14">
+                          <path
+                            fill="currentColor"
+                            d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z"
+                          />
+                        </svg>
+                      </button>
+                      <button
+                        class="action-btn delete-btn"
+                        onClick={() => handleDelete(session.id)}
+                        title="Delete"
+                      >
+                        <svg viewBox="0 0 24 24" width="14" height="14">
+                          <path
+                            fill="currentColor"
+                            d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"
+                          />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
                 )}
-              </div>
+              </For>
+
+              {filteredSessions().length === 0 && (
+                <div class="empty-state">
+                  <p>
+                    No sessions found. Create a new session to get started!
+                  </p>
+                </div>
+              )}
             </div>
+          </div>
         </div>
       </div>
     </Show>

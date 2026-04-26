@@ -89,6 +89,17 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
     }
   }
 
+  const handleContinue = () => {
+    // Find next unfinished walkthrough
+    const allWalkthroughs = getWalkthroughsForTab(currentTab())
+    const nextWalkthrough = allWalkthroughs.find(w => !isWalkthroughCompleted(w.id))
+    if (nextWalkthrough) {
+      startWalkthrough(nextWalkthrough.id)
+    } else {
+      props.onClose()
+    }
+  }
+
   const closeOnBackdrop = (e: MouseEvent) => {
     if (e.target === e.currentTarget) {
       props.onClose()
@@ -191,7 +202,7 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
                 <p class="walkthrough-complete-desc">
                   You've completed this walkthrough.
                 </p>
-                <button class="walkthrough-complete-btn" onClick={props.onClose}>
+                <button class="walkthrough-complete-btn" onClick={handleContinue}>
                   Continue
                 </button>
               </div>
