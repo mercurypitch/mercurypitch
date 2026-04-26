@@ -4,7 +4,16 @@
 // ============================================================
 
 import { createSignal } from 'solid-js'
-import type { AccuracyBand, PracticeSession, SavedUserSession, Session, SessionResult, SessionTemplate, } from '@/types'
+import type {
+  AccuracyBand,
+  MelodyItem,
+  MelodyNote,
+  PracticeSession,
+  SavedUserSession,
+  Session,
+  SessionResult,
+  SessionTemplate,
+} from '@/types'
 import { melodyStore } from './melody-store'
 
 // ── Key / Scale ─────────────────────────────────────────────
@@ -16,11 +25,28 @@ const [isRecording, setIsRecording] = createSignal<boolean>(false)
 
 export type InstrumentType = 'sine' | 'piano' | 'organ' | 'strings' | 'synth'
 
+// ── Audio Engine (single instance) ─────────────────────────────
+
+let _audioEngineInstance: any = null
+
+// Initialize audio engine (call this when app starts, not in startPracticeSession)
+export async function initAudioEngine(): Promise<any> {
+  if (_audioEngineInstance !== null && _audioEngineInstance !== undefined) {
+    return _audioEngineInstance
+  }
+
+  const { AudioEngine } = await import('@/lib/audio-engine')
+  _audioEngineInstance = new AudioEngine()
+  return _audioEngineInstance
+}
+
 // ── Theme ────────────────────────────────────────────────────
 
 export type ThemeMode = 'dark' | 'light'
 
 const THEME_KEY = 'pitchperfect_theme'
+
+// ────────────────────────────────────────────────────────────
 
 function loadThemeFromStorage(): ThemeMode {
   try {
@@ -772,10 +798,11 @@ const [practiceSession, setPracticeSession] =
 const [sessionItemIndex, setSessionItemIndex] = createSignal(0)
 const [sessionActive, setSessionActive] = createSignal(false)
 const [sessionResults, setSessionResults] = createSignal<SessionResult[]>([])
-const [sessionMode, setSessionMode] = createSignal(false) // true when in session flow
+const [sessionModeSignal, setSessionMode] = createSignal(false) // true when in session flow
 
 // Export signal getters for public access
 export const currentSessionItemIndex = sessionItemIndex
+export const sessionMode = sessionModeSignal
 
 const SESSION_RESULTS_KEY = 'pitchperfect_session_results'
 
@@ -952,6 +979,7 @@ export function startPracticeSession(
     return
   }
   console.log('[startPracticeSession] called, recursionDepth:', recursionDepth)
+
   // Convert SessionTemplate to PracticeSession if needed
   const practiceSession: PracticeSession =
     'mode' in session
@@ -974,6 +1002,7 @@ export function startPracticeSession(
           completedAt: 0,
           itemsCompleted: 0,
         }
+
   setPracticeSession(practiceSession)
   setSessionItemIndex(0)
   setSessionItemRepeat(0)
@@ -985,6 +1014,40 @@ export function startPracticeSession(
     recursionDepth,
   )
   setSessionResults([])
+
+  // Initialize melody for playback (sync melodyStore with session items)
+  const activeMelody: MelodyItem[] = practiceSession.items
+    .filter((item) => item.type !== 'rest')
+    .map((item) => {
+      if (item.type === 'scale') {
+        return {
+          startBeat: item.startBeat ?? 0,
+          duration: item.beats ?? 8,
+          note: { midi: 60, name: 'C', octave: 4, freq: 261.63 } as MelodyNote,
+        } as MelodyItem
+      } else if (item.type === 'melody') {
+        // For melodies, we need to look up the actual melody data
+        const melodyId = item.melodyId as string
+        const library = melodyStore.melodyLibrary()
+        const melodyData = library.melodies[melodyId || 'unknown']
+        if ((melodyData !== null) && Array.isArray(melodyData.items) && melodyData.items.length > 0) {
+          return {
+            startBeat: item.startBeat ?? 0,
+            items: melodyData.items,
+          } as unknown as MelodyItem
+        }
+      }
+      // Default fallback for unknown items
+      return {
+        startBeat: item.startBeat ?? 0,
+        duration: 8,
+        note: { midi: 60, name: 'C', octave: 4, freq: 261.63 } as MelodyNote,
+      } as MelodyItem
+    })
+
+  melodyStore.setMelody(activeMelody)
+  melodyStore.setCurrentNoteIndex(-1)
+
   recursionDepth = 0
 }
 

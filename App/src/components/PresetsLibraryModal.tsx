@@ -6,9 +6,9 @@ import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
 import { PRACTICE_SESSIONS } from '@/data/sessions'
 import { appStore } from '@/stores/app-store'
+import { melodyStore } from '@/stores/melody-store'
 import {
   createMelodyItem,
-  createRestItem,
   createScaleItem,
 } from '@/stores/session-store'
 import type { SavedUserSession, SessionCategory, SessionDifficulty, SessionItem } from '@/types'
@@ -64,9 +64,35 @@ export const PresetsLibraryModal: Component<PresetsLibraryModalProps> = (
 
   const handlePlay = (session: (typeof PRACTICE_SESSIONS)[number]) => {
     // Convert template items to session items using factory functions
-    // Skip preset items as they're just templates, not actual playback items
+    // Load melody data into melodyStore before creating session items
+    const sessionMelodies = session.items
+      .filter((item) => item.type === 'melody' && (item.melodyId !== undefined && item.melodyId !== null))
+      .map((item) => item.melodyId!)
+      .filter((id, index, self) => self.indexOf(id) === index) // Deduplicate
+
+    // Load each melody into melodyStore if not already loaded
+    sessionMelodies.forEach((melodyId) => {
+      const library = melodyStore.melodyLibrary()
+      const existingMelody = library.melodies[melodyId]
+      if (existingMelody === undefined || existingMelody === null) {
+        // Find the melody in the library by matching names
+        const allMelodies = Object.entries(library.melodies)
+        for (const [, melody] of allMelodies) {
+          if (melody.name === session.name) {
+            melodyStore.updateMelody(melody.id, {
+              name: session.name,
+              items: melody.items,
+            })
+            break
+          }
+        }
+      }
+    })
+
+    // Convert template items to session items using factory functions
+    // Include preset items as they can be played as embedded melodies
     const items = session.items
-      .filter((item) => item.type !== 'preset')
+      .filter((item) => item.type !== 'rest') // Keep scale and melody items
       .map((item) => {
         switch (item.type) {
           case 'scale':
@@ -76,20 +102,28 @@ export const PresetsLibraryModal: Component<PresetsLibraryModalProps> = (
               item.beats ?? 8,
               item.startBeat,
             )
-          case 'rest':
-            return createRestItem(
-              item.label,
-              item.restMs ?? 2000,
-              item.startBeat,
-            )
           case 'melody':
             return createMelodyItem(
               item.label,
               item.melodyId ?? 'unknown',
               item.startBeat,
             )
+          case 'preset':
+            // For preset items, load the embedded melody data if available
+            if (item.items && item.items.length > 0) {
+              return createMelodyItem(
+                item.label,
+                `${session.id}-${item.id}`,
+                item.startBeat,
+              )
+            }
+            return createMelodyItem(
+              item.label,
+              (item.melodyId as string) ?? 'unknown',
+              item.startBeat,
+            )
           default:
-            return createRestItem(item.label, 1000, item.startBeat)
+            return createScaleItem(item.label, 'major', 8, item.startBeat)
         }
       })
 
@@ -106,7 +140,8 @@ export const PresetsLibraryModal: Component<PresetsLibraryModalProps> = (
     }
 
     appStore.loadSession(savedSession)
-    props.close()
+    // Small delay to allow session state to initialize before closing modal
+    setTimeout(() => props.close(), 100)
   }
 
   return (

@@ -33,6 +33,43 @@ const localStorageMock = (() => {
 })()
 Object.defineProperty(global, 'localStorage', { value: localStorageMock })
 
+// Mock audioEngine for tests
+const mockAudioEngine = {
+  init: vi.fn(),
+  getIsInitialized: vi.fn(() => false),
+  stopTone: vi.fn(),
+  setBPM: vi.fn(),
+  setInstrument: vi.fn(),
+  setVolume: vi.fn(),
+  getFrequencyData: vi.fn(() => []),
+}
+
+// Mock melodyStore - use factory function to avoid hoisting issues
+vi.mock('@/stores/melody-store', () => ({
+  melodyStore: {
+    items: vi.fn(() => []),
+    setItems: vi.fn(),
+    currentItems: vi.fn(() => []),
+    setCurrentItems: vi.fn(),
+    melody: vi.fn(() => ({ melodies: new Map(), library: { melodies: new Map() } })),
+    updateMelody: vi.fn(),
+    setMelody: vi.fn(),
+    currentMelody: vi.fn(() => null),
+    setCurrentMelody: vi.fn(),
+    getCurrentItems: vi.fn(() => []),
+    getCurrentScale: vi.fn(() => 'major'),
+    setCurrentNoteIndex: vi.fn(),
+    getCurrentNoteIndex: vi.fn(() => -1),
+    library: vi.fn(() => ({ melodies: new Map() })),
+    loadMelody: vi.fn(() => null),
+  },
+}))
+
+// Mock audio-engine after melody-store
+vi.mock('@/lib/audio-engine', () => ({
+  AudioEngine: vi.fn().mockImplementation(() => mockAudioEngine),
+}))
+
 /** Test session with all required fields for PracticeSession */
 interface TestSession {
   id: string
@@ -82,6 +119,13 @@ const makeSession = (id: string, itemCount: number): TestSession => ({
     createScaleItem(`Item ${i + 1}`, 'major', 8, i * 8),
   ),
 })
+
+// Helper for test isolation (not used directly due to limitation)
+function _resetAppStoreSignals() {
+  // This would need to access private signals - for now, we rely on localStorage clearing
+  // and explicit endPracticeSession calls where needed
+  localStorageMock.clear()
+}
 
 describe('startPracticeSession', () => {
   beforeEach(() => {
@@ -260,6 +304,7 @@ describe('endPracticeSession', () => {
 describe('isInSessionMode', () => {
   beforeEach(() => {
     localStorageMock.clear()
+    endPracticeSession()
   })
 
   it('returns false initially', () => {
