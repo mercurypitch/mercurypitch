@@ -123,6 +123,25 @@ export const LibraryTab: Component = () => {
     } else {
       // Single click: load into editor
       melodyStore.loadMelody(melodyId)
+
+      // Ensure default session is loaded if no active session exists
+      import('@/stores/session-store').then(({ getSessionStore }) => {
+        const activeSessionId = melodyStore.getActiveSessionId()
+        if (activeSessionId === null) {
+          // No active session - load default session
+          const defaultSession = getSessionStore('default')
+          if (defaultSession !== undefined && defaultSession !== null) {
+            appStore.setActiveUserSession(defaultSession)
+            melodyStore.setActiveSessionId(defaultSession.id)
+          }
+        } else {
+          // Load the previously active session
+          const activeSession = getSessionStore(activeSessionId)
+          if (activeSession !== null) {
+            appStore.setActiveUserSession(activeSession)
+          }
+        }
+      })
     }
   }
 

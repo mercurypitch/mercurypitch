@@ -603,6 +603,7 @@ export function loadMelody(key: string): MelodyData | null {
     }))
     _saveLibraryToStorage()
     setCurrentMelody(updatedMelody)
+
     return updatedMelody
   }
   return null
