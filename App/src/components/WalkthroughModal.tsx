@@ -120,6 +120,12 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
     }
   }
 
+  const handleBackToList = () => {
+    // Reset to initial tab and show walkthrough list
+    setCurrentWalkthrough(undefined)
+    setCurrentStepIndex(0)
+  }
+
   // Lifecycle - setup escape key listener
   createEffect(() => {
     if (props.isOpen) {
@@ -220,10 +226,7 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
                 {/* Back to list */}
                 <button
                   class="walkthrough-back-btn"
-                  onClick={() => {
-                    setCurrentWalkthrough(undefined)
-                    setCurrentTab(props.initialTab ?? 'practice')
-                  }}
+                  onClick={handleBackToList}
                 >
                   ← Back to list
                 </button>
