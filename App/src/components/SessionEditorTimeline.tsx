@@ -31,6 +31,59 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
     props.onAddRest(startBeat, duration)
   }
 
+  // Mobile touch handlers - use signals for state
+  const [touchStartPos, setTouchStartPos] = createSignal({ x: 0, y: 0 })
+
+  const handleTouchStart = (e: TouchEvent, item: SessionItem, index: number) => {
+    if (e.touches.length !== 1) return
+    const touch = e.touches[0]
+    setTouchStartPos({ x: touch.clientX, y: touch.clientY })
+    setDraggedItemId(item.id)
+    setDragSourceIndex(index)
+  }
+
+  const handleTouchMove = (e: TouchEvent) => {
+    if (e.touches.length !== 1) return
+    const touch = e.touches[0]
+    const start = touchStartPos()
+    const deltaX = Math.abs(touch.clientX - start.x)
+
+    // Only allow horizontal swipe (left/right) after 50px
+    if (deltaX < 50) return
+
+    setTouchMoved(true)
+
+    // Map horizontal swipe to index change (negative for left, positive for right)
+    const itemWidth = 100
+    const indexChange = Math.round(deltaX / itemWidth)
+
+    if (indexChange !== 0) {
+      const targetIndex = dragSourceIndex() + indexChange
+      const items = [...props.sessionItems]
+      if (targetIndex >= 0 && targetIndex < items.length) {
+        const [removed] = items.splice(dragSourceIndex(), 1)
+        items.splice(targetIndex, 0, removed)
+
+        const sessionId = appStore.userSession()?.id
+        if (sessionId !== null && sessionId !== undefined) {
+          const updatedSession = appStore.userSession()!
+          melodyStore.updateUserSession({
+            ...updatedSession,
+            items: items,
+          })
+        }
+
+        setDraggedItemId(null)
+        setDragSourceIndex(-1)
+      }
+    }
+  }
+
+  const handleTouchEnd = () => {
+    setDraggedItemId(null)
+    setDragSourceIndex(-1)
+  }
+
   // Desktop drag handlers
   const handleDragStart = (e: DragEvent, item: SessionItem, index: number) => {
     setDraggedItemId(item.id)
@@ -86,58 +139,6 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
   }
 
   const handleDragEnd = () => {
-    setDraggedItemId(null)
-    setDragSourceIndex(-1)
-  }
-
-  // Mobile touch handlers
-  const touchStartPos = { x: 0, y: 0 }
-  let draggedItemStartIndex = -1
-
-  const handleTouchStart = (e: TouchEvent, item: SessionItem, index: number) => {
-    if (e.touches.length !== 1) return
-    touchStartPos.x = e.touches[0].clientX
-    touchStartPos.y = e.touches[0].clientY
-    draggedItemStartIndex = index
-    setDraggedItemId(item.id)
-    setDragSourceIndex(index)
-  }
-
-  const handleTouchMove = (e: TouchEvent) => {
-    if (e.touches.length !== 1) return
-    const touch = e.touches[0]
-    const deltaX = touch.clientX - touchStartPos.x
-
-    // Only allow horizontal swipe (left/right)
-    if (Math.abs(deltaX) < 50) return
-
-    // Map horizontal swipe to index change (negative for left, positive for right)
-    const itemWidth = 100
-    const indexChange = Math.round(deltaX / itemWidth)
-
-    if (indexChange !== 0) {
-      const targetIndex = draggedItemStartIndex + indexChange
-      const items = [...props.sessionItems]
-      if (targetIndex >= 0 && targetIndex < items.length) {
-        const [removed] = items.splice(draggedItemStartIndex, 1)
-        items.splice(targetIndex, 0, removed)
-
-        const sessionId = appStore.userSession()?.id
-        if (sessionId !== null && sessionId !== undefined) {
-          const updatedSession = appStore.userSession()!
-          melodyStore.updateUserSession({
-            ...updatedSession,
-            items: items,
-          })
-        }
-
-        setDraggedItemId(null)
-        setDragSourceIndex(-1)
-      }
-    }
-  }
-
-  const handleTouchEnd = () => {
     setDraggedItemId(null)
     setDragSourceIndex(-1)
   }
