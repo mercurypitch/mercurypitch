@@ -20,6 +20,7 @@ type Tab = 'melodies' | 'playlists'
 type PlaylistEditingState =
   | null // Not editing any playlist
   | { mode: 'add-melody'; playlistId: string; selectedMelodyKey: string | null }
+  | { mode: 'create'; playlistId: string; originalName: string }
   | { mode: 'rename'; playlistId: string; originalName: string }
   | { mode: 'delete'; playlistId: string }
 
@@ -932,8 +933,36 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                 </div>
               </Show>
 
+              {/* Create mode (for new playlists) */}
+              <Show when={playlistEditing()?.mode === 'create'}>
+                <div class="playlist-edit-form">
+                  <h3>Create New Playlist</h3>
+
+                  <div class="form-group">
+                    <label>Playlist Name</label>
+                    <input
+                      type="text"
+                      class="search-input"
+                      value={renameInput()}
+                      onInput={(e) => setRenameInput(e.currentTarget.value)}
+                      placeholder="My Playlist"
+                      autofocus
+                    />
+                  </div>
+
+                  <div class="form-actions">
+                    <button class="cancel-btn" onClick={cancelRename}>
+                      Cancel
+                    </button>
+                    <button class="save-btn" onClick={_handleCreatePlaylist}>
+                      Create Playlist
+                    </button>
+                  </div>
+                </div>
+              </Show>
+
               {/* Rename mode */}
-              <Show when={playlistEditing()?.mode === 'rename'}>
+              <Show when={playlistEditing()?.mode === 'rename' && playlistEditing()?.playlistId}>
                 <div class="playlist-edit-form">
                   <h3>Rename Playlist</h3>
 
@@ -986,7 +1015,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                   class="new-btn"
                   onClick={() => {
                     setPlaylistEditing({
-                      mode: 'rename',
+                      mode: 'create',
                       playlistId: '',
                       originalName: '',
                     })
