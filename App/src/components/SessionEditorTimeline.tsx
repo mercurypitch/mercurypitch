@@ -90,17 +90,56 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
     setDragSourceIndex(-1)
   }
 
-  // Mobile touch handlers (future implementation)
-  const _touchStart = (_e: TouchEvent, _item: SessionItem, _index: number) => {
-    // Future implementation of mobile touch drag-and-drop
+  // Mobile touch handlers
+  const touchStartPos = { x: 0, y: 0 }
+  let draggedItemStartIndex = -1
+
+  const handleTouchStart = (e: TouchEvent, item: SessionItem, index: number) => {
+    if (e.touches.length !== 1) return
+    touchStartPos.x = e.touches[0].clientX
+    touchStartPos.y = e.touches[0].clientY
+    draggedItemStartIndex = index
+    setDraggedItemId(item.id)
+    setDragSourceIndex(index)
   }
 
-  const _touchMove = (_e: TouchEvent) => {
-    // Future implementation of mobile touch drag-and-drop
+  const handleTouchMove = (e: TouchEvent) => {
+    if (e.touches.length !== 1) return
+    const touch = e.touches[0]
+    const deltaX = touch.clientX - touchStartPos.x
+
+    // Only allow horizontal swipe (left/right)
+    if (Math.abs(deltaX) < 50) return
+
+    // Map horizontal swipe to index change (negative for left, positive for right)
+    const itemWidth = 100
+    const indexChange = Math.round(deltaX / itemWidth)
+
+    if (indexChange !== 0) {
+      const targetIndex = draggedItemStartIndex + indexChange
+      const items = [...props.sessionItems]
+      if (targetIndex >= 0 && targetIndex < items.length) {
+        const [removed] = items.splice(draggedItemStartIndex, 1)
+        items.splice(targetIndex, 0, removed)
+
+        const sessionId = appStore.userSession()?.id
+        if (sessionId !== null && sessionId !== undefined) {
+          const updatedSession = appStore.userSession()!
+          melodyStore.updateUserSession({
+            ...updatedSession,
+            items: items,
+          })
+        }
+
+        setDraggedItemId(null)
+        setDragSourceIndex(-1)
+      }
+    }
   }
 
-  const _touchEnd = (_e: TouchEvent, _targetIndex: number) => {
-    // Future implementation of mobile touch drag-and-drop
+  const handleTouchEnd = () => {
+    setDraggedItemId(null)
+    setDragSourceIndex(-1)
   }
 
   const _restIcons = [
@@ -134,6 +173,9 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
                 <div
                   class="timeline-item"
                   draggable={true}
+                  onTouchStart={(e) => handleTouchStart(e, item, index())}
+                  onTouchMove={handleTouchMove}
+                  onTouchEnd={handleTouchEnd}
                   onDragStart={(e) => handleDragStart(e, item, index())}
                   onDragOver={(e) => handleDragOver(e, index())}
                   onDrop={(e) => handleDrop(e, index())}
@@ -164,6 +206,9 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
                   <div
                     class="timeline-drop-zone rest-zone"
                     onClick={() => addRestBetween(index())}
+                    onTouchStart={() => setDragSourceIndex(index())}
+                    onTouchMove={() => {}}
+                    onTouchEnd={() => setDraggedItemId(null)}
                     onDragOver={(e) => handleDragOver(e, index())}
                     onDrop={(e) => handleDrop(e, index())}
                   >
