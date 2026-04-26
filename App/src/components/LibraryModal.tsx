@@ -491,7 +491,24 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
               {/* Create Melody Form */}
               {editingMelodyKey() === null && (
                 <div class="edit-melody-form">
-                  <h3>Create New Melody</h3>
+                  <div class="create-header">
+                    <h3>Create New Melody</h3>
+                    <button
+                      class="big-create-btn"
+                      onClick={() => {
+                        setCreateName('')
+                        setCreateBpm(80)
+                        setCreateKey('C')
+                        setCreateScale('major')
+                        setCreateTags('')
+                        setCreateNotes('')
+                      }}
+                    >
+                      <svg viewBox="0 0 24 24" width="20" height="20">
+                        <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+                      </svg>
+                    </button>
+                  </div>
 
                   <div class="form-group">
                     <label>Name</label>
