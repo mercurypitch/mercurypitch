@@ -4668,6 +4668,42 @@ Keeps your existing styles, only adjusts layout
   transition: left 0.1s linear;
 }
 
+/* Glowing pitch dot that follows the current note vertically */
+.focus-pitch-dot {
+  position: absolute;
+  left: 2px;
+  width: 5px;
+  height: 5px;
+  background: var(--accent-color);
+  border-radius: 50%;
+  box-shadow:
+    0 0 4px var(--accent-glow),
+    0 0 8px var(--accent-glow),
+    0 0 12px var(--accent-glow),
+    0 0 16px var(--accent-glow);
+  transform: translateY(calc(var(--pitch-position, 50%) * -100%));
+  animation: pitch-dot-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pitch-dot-pulse {
+  0%, 100% {
+    opacity: 1;
+    box-shadow:
+      0 0 4px var(--accent-glow),
+      0 0 8px var(--accent-glow),
+      0 0 12px var(--accent-glow),
+      0 0 16px var(--accent-glow);
+  }
+  50% {
+    opacity: 0.7;
+    box-shadow:
+      0 0 6px var(--accent-glow),
+      0 0 12px var(--accent-glow),
+      0 0 18px var(--accent-glow),
+      0 0 24px var(--accent-glow);
+  }
+}
+
 .focus-history {
   height: 56px;
   flex-shrink: 0;

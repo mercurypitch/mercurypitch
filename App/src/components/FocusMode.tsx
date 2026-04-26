@@ -63,6 +63,23 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
   const sessionItem = createMemo(() => appStore.sessionItemIndex())
   const sessionRepeat = createMemo(() => appStore.currentSessionItemRepeat())
 
+  // Calculate pitch dot position based on current note
+  const pitchDotPosition = createMemo(() => {
+    const items = melodyStore.getCurrentItems()
+    const noteIndex = props.currentNoteIndex?.() ?? -1
+
+    if (noteIndex >= 0 && noteIndex < items.length) {
+      // Calculate position based on note index in the items array
+      // (simplified - could be more accurate with actual note frequency mapping)
+      const totalNotes = items.length
+      const normalizedPosition = noteIndex / Math.max(1, totalNotes - 1)
+      return Math.max(0, Math.min(100, normalizedPosition * 100))
+    }
+
+    // Return 50% as default when no active note
+    return 50
+  })
+
   // Playback speed
   const currentSpeedIndex = createMemo(() => {
     const speed = appStore.playbackSpeed()
@@ -157,6 +174,8 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
             class="playhead-marker"
             style={{ left: `${playheadPosition()}%` }}
           />
+          {/* Glowing pitch dot with dynamic position */}
+          <div class="focus-pitch-dot" style={{ '--pitch-position': `${pitchDotPosition()}%` }} />
         </div>
       </div>
 
