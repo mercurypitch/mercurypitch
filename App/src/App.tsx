@@ -672,10 +672,13 @@ export const App: Component<AppProps> = (props) => {
         setCurrentNoteIndex(noteIndex)
         setTargetPitch(item.note.freq)
         practiceEngine.onNoteStart(item.note, noteIndex)
-        // Play tone for the note — use the full note duration from the melody item
-        const beatDurationMs = 60000 / appStore.bpm()
-        const noteDurationMs = item.duration * beatDurationMs
-        audioEngine.playTone(item.note.freq, noteDurationMs)
+        // Only play tone if editor is actively playing
+        if (editorPlaybackState() === 'playing') {
+          // Play tone for the note — use the full note duration from the melody item
+          const beatDurationMs = 60000 / appStore.bpm()
+          const noteDurationMs = item.duration * beatDurationMs
+          audioEngine.playTone(item.note.freq, noteDurationMs)
+        }
       },
       onNoteEnd: () => {
         audioEngine.stopTone()
