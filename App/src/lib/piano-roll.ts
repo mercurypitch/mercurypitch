@@ -781,7 +781,8 @@ export class PianoRollEditor {
         this.playbackAnimationId === null
       ) {
         // Fresh start - use editorBeat as starting point for animation
-        this.startedNoteIds.clear()
+        // Don't clear startedNoteIds during fresh start to avoid duplicate note triggers
+        // The notes will start naturally as playhead moves
         const startTime = Date.now() - (this.editorBeat / this.bpm) * 60000
         this.playStartTime = startTime
         this.startPlaybackAnimation()

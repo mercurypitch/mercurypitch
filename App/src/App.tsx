@@ -1828,9 +1828,7 @@ export const App: Component<AppProps> = (props) => {
                 scale={() => melodyStore.currentScale()}
                 bpm={() => appStore.bpm()}
                 totalBeats={() => totalBeats()}
-                playbackState={() =>
-                  playback.state() as unknown as PlaybackState
-                }
+                playbackState={editorPlaybackState}
                 currentNoteIndex={() => melodyStore.currentNoteIndex()}
                 currentBeat={currentBeat}
                 isPlaying={editorIsPlaying}
