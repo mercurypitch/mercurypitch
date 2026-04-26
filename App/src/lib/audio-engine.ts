@@ -578,6 +578,9 @@ export class AudioEngine {
     await this.resume()
     if (!this.audioCtx || !this.mainGain) return
 
+    // Guard against rapid calls - stopTone might still be pending
+    if (this.isPlaying) return
+
     // Stop any existing tone completely
     void this.stopTone()
 

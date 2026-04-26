@@ -1497,6 +1497,29 @@ header h1 {
   color: var(--text-secondary);
 }
 
+.bpm-number-input {
+  width: 50px;
+  padding: 2px 4px;
+  font-size: 0.8rem;
+  text-align: center;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  outline: none;
+  -moz-appearance: textfield;
+}
+
+.bpm-number-input::-webkit-inner-spin-button,
+.bpm-number-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.bpm-number-input:focus {
+  border-color: var(--accent);
+}
+
 .tempo-slider {
   width: 80px;
   accent-color: var(--accent);

@@ -8,7 +8,6 @@ import { PRACTICE_SESSIONS } from '@/data/sessions'
 import { appStore } from '@/stores/app-store'
 import {
   createMelodyItem,
-  createPresetItem,
   createRestItem,
   createScaleItem,
 } from '@/stores/session-store'
@@ -65,33 +64,34 @@ export const PresetsLibraryModal: Component<PresetsLibraryModalProps> = (
 
   const handlePlay = (session: (typeof PRACTICE_SESSIONS)[number]) => {
     // Convert template items to session items using factory functions
-    const items = session.items.map((item) => {
-      switch (item.type) {
-        case 'scale':
-          return createScaleItem(
-            item.label,
-            item.scaleType ?? 'major',
-            item.beats ?? 8,
-            item.startBeat,
-          )
-        case 'rest':
-          return createRestItem(
-            item.label,
-            item.restMs ?? 2000,
-            item.startBeat,
-          )
-        case 'preset':
-          return createPresetItem(item.label, item.items || [], item.startBeat)
-        case 'melody':
-          return createMelodyItem(
-            item.label,
-            item.melodyId ?? 'unknown',
-            item.startBeat,
-          )
-        default:
-          return createRestItem(item.label, 1000, item.startBeat)
-      }
-    })
+    // Skip preset items as they're just templates, not actual playback items
+    const items = session.items
+      .filter((item) => item.type !== 'preset')
+      .map((item) => {
+        switch (item.type) {
+          case 'scale':
+            return createScaleItem(
+              item.label,
+              item.scaleType ?? 'major',
+              item.beats ?? 8,
+              item.startBeat,
+            )
+          case 'rest':
+            return createRestItem(
+              item.label,
+              item.restMs ?? 2000,
+              item.startBeat,
+            )
+          case 'melody':
+            return createMelodyItem(
+              item.label,
+              item.melodyId ?? 'unknown',
+              item.startBeat,
+            )
+          default:
+            return createRestItem(item.label, 1000, item.startBeat)
+        }
+      })
 
     const savedSession: SavedUserSession = {
       id: `preset-${session.id}`,

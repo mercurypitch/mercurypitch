@@ -760,9 +760,8 @@ export const App: Component<AppProps> = (props) => {
         // Update AudioEngine with BPM and instrument
         audioEngine.setBPM(bpm)
         audioEngine.setInstrument(instrument)
-        // Tell PlaybackRuntime about new melody (BPM handled by AudioEngine)
-        console.log('[createEffect melody sync] Setting melody to playbackRuntime, items count:', melody.items?.length ?? 0)
-        playbackRuntime.setMelody(melody.items ?? [])
+        // PlaybackRuntime melody is updated separately by handlePlay/playbackRuntime calls
+        // to avoid resetting the animation loop mid-playback
       }
     })
 
@@ -859,9 +858,8 @@ export const App: Component<AppProps> = (props) => {
     playbackRuntime.on('countIn', (e: { countIn?: number }) => {
       setCountInBeat(e?.countIn ?? 0)
       setIsCountingIn(true)
-      if (metronomeEnabled()) {
-        audioEngine?.playClick()
-      }
+      // Precount sound plays even when metronome is disabled
+      audioEngine?.playClick()
     })
     playbackRuntime.on('countInComplete', () => {
       setIsCountingIn(false)
@@ -1047,8 +1045,7 @@ export const App: Component<AppProps> = (props) => {
     setCurrentNoteIndex(-1)
     melodyStore.setCurrentNoteIndex(-1)
 
-    // Initialize audio engine
-    audioEngine.init()
+    // Resume audio engine (init is handled by playbackRuntime)
     audioEngine.resume()
 
     // Sync engine with current melody/bpm
@@ -1146,8 +1143,7 @@ export const App: Component<AppProps> = (props) => {
     setCurrentBeat(0)
     setCurrentNoteIndex(-1)
 
-    // Initialize audio engine - CRITICAL: must init and resume for sound to work
-    audioEngine.init()
+    // Resume audio engine (init is handled by playbackRuntime)
     audioEngine.resume()
 
     // Sync engine with current melody/bpm
@@ -1700,6 +1696,7 @@ export const App: Component<AppProps> = (props) => {
                   onPracticeSubModeChange={setPracticeSubMode}
                   isCountingIn={() => isCountingIn()}
                   countInBeat={() => countInBeat()}
+                  countInBeats={() => appStore.countIn()}
                   onSessionsClick={() => setShowSessionBrowser(true)}
                   onMicToggle={() => {
                     void handleMicToggle()
@@ -1783,6 +1780,7 @@ export const App: Component<AppProps> = (props) => {
                 onPracticeSubModeChange={() => {}}
                 isCountingIn={() => false}
                 countInBeat={() => 0}
+                countInBeats={() => appStore.countIn()}
                 isRecording={() => isRecording()}
                 onRecordToggle={handleRecordToggle}
                 onMicToggle={() => {

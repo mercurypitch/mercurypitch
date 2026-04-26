@@ -1475,6 +1475,14 @@ export class PianoRollEditor {
       }
     })
 
+    // Touch support for seeking - track touch move outside canvas
+    document.addEventListener('touchmove', (e) => {
+      if (this.isSeeking && e.touches.length > 0) {
+        const touch = e.touches[0]
+        this.seekToRulerPosition({ clientX: touch.clientX } as MouseEvent)
+      }
+    }, { passive: false })
+
     document.addEventListener('mouseup', () => {
       this.isSeeking = false
       // Always finalize box selection regardless of where mouse was released
@@ -1490,6 +1498,24 @@ export class PianoRollEditor {
         this.isDragging = false
       }
       // Also handle dragging/resizing that started on the canvas
+      this.isDragging = false
+      this.isResizing = false
+      this.resizeHandle = null
+    })
+
+    // Touch support - finalize dragging/resizing when touch ends outside canvas
+    document.addEventListener('touchend', () => {
+      if (this.isBoxSelecting) {
+        const boxX1 = Math.min(this.boxStartX, this.boxEndX)
+        const boxY1 = Math.min(this.boxStartY, this.boxEndY)
+        const boxX2 = Math.max(this.boxStartX, this.boxEndX)
+        const boxY2 = Math.max(this.boxStartY, this.boxEndY)
+        if (boxX2 - boxX1 > 3 && boxY2 - boxY1 > 3) {
+          this.selectNotesInBox(boxX1, boxY1, boxX2, boxY2)
+        }
+        this.isBoxSelecting = false
+        this.isDragging = false
+      }
       this.isDragging = false
       this.isResizing = false
       this.resizeHandle = null
@@ -2651,44 +2677,46 @@ export class PianoRollEditor {
     // Note blocks with active highlight
     this.drawNoteBlocks(ctx, true)
 
-    // Playhead line — only draw when current beat is non-negative (not during count-in)
+    // GH #198: Playhead should be visible during count-in too (even if at 0)
+    // Show playhead regardless of currentBeat value so users see continuous playback
     const currentBeat = this.getCurrentBeat()
-    if (currentBeat >= 0) {
-      const playheadX = currentBeat * this.beatWidth
+    const playheadX = currentBeat * this.beatWidth
+
+    // Playhead line — always drawn during playback (including count-in)
+    ctx.save()
+    ctx.strokeStyle = '#58a6ff'
+    ctx.lineWidth = 2
+    ctx.shadowColor = 'rgba(88, 166, 255, 0.5)'
+    ctx.shadowBlur = 4
+    ctx.beginPath()
+    ctx.moveTo(playheadX, 0)
+    ctx.lineTo(playheadX, totalHeight)
+    ctx.stroke()
+    ctx.restore()
+
+    // Draw ruler with playhead triangle (always show during playback)
+    this.drawRulerWithPlayhead()
+
+    // GH #129: Draw glowing dot at current note row's Y position (vertical movement)
+    if (this.currentNoteRow >= 0) {
       ctx.save()
-      ctx.strokeStyle = '#58a6ff'
-      ctx.lineWidth = 2
-      ctx.shadowColor = 'rgba(88, 166, 255, 0.5)'
-      ctx.shadowBlur = 4
+      ctx.shadowColor = 'rgba(63, 185, 80, 0.9)'
+      ctx.shadowBlur = 12
+      ctx.fillStyle = '#3fb950'
       ctx.beginPath()
-      ctx.moveTo(playheadX, 0)
-      ctx.lineTo(playheadX, totalHeight)
-      ctx.stroke()
+      ctx.arc(playheadX, this.currentNoteRow * this.rowHeight + this.rowHeight / 2, 5, 0, Math.PI * 2)
+      ctx.fill()
+      // White core for extra glow
+      ctx.fillStyle = 'rgba(255,255,255,0.7)'
+      ctx.beginPath()
+      ctx.arc(playheadX, this.currentNoteRow * this.rowHeight + this.rowHeight / 2, 2.5, 0, Math.PI * 2)
+      ctx.fill()
       ctx.restore()
+    }
 
-      // Also draw ruler with playhead triangle
-      this.drawRulerWithPlayhead()
-
-      // GH #129: Draw glowing dot at current note row's Y position (vertical movement)
-      if (this.currentNoteRow >= 0) {
-        const dotX = playheadX
-        const dotY = this.currentNoteRow * this.rowHeight + this.rowHeight / 2
-        ctx.save()
-        ctx.shadowColor = 'rgba(63, 185, 80, 0.9)'
-        ctx.shadowBlur = 12
-        ctx.fillStyle = '#3fb950'
-        ctx.beginPath()
-        ctx.arc(dotX, dotY, 5, 0, Math.PI * 2)
-        ctx.fill()
-        // White core for extra glow
-        ctx.fillStyle = 'rgba(255,255,255,0.7)'
-        ctx.beginPath()
-        ctx.arc(dotX, dotY, 2.5, 0, Math.PI * 2)
-        ctx.fill()
-        ctx.restore()
-      }
-    } else {
-      // During count-in, draw the regular ruler without playhead
+    // GH #198: During count-in, still show ruler even if playhead is hidden
+    // (The playhead is always visible now, so this is just for completeness)
+    if (currentBeat < 0) {
       this.drawRuler()
     }
   }

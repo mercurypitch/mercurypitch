@@ -318,18 +318,14 @@ export class PlaybackRuntime {
         }
 
         // Play metronome click during count-in (4, 3, 2, 1 or 3, 2, 1, 0)
-        const shouldPlayMetronome = this.metronomeEnabled?.() ?? false
-        if (shouldPlayMetronome) {
-          // For count-in, we count DOWN: 4 → 3 → 2 → 1 → 0
-          // So when countInBeat is 0, we're at the last click
-          const isDownbeat = currentInt % 4 === 0
-          this.audioEngine.playMetronomeClick(isDownbeat)
-          this._emit({
-            type: 'metronome',
-            beat: currentInt,
-            isDownbeat,
-          })
-        }
+        // Precount is a metronome feature - always play regardless of metronome setting
+        const isDownbeat = currentInt % 4 === 0
+        this.audioEngine.playMetronomeClick(isDownbeat)
+        this._emit({
+          type: 'metronome',
+          beat: currentInt,
+          isDownbeat,
+        })
 
         this.animationFrameId = requestAnimationFrame(animate)
       } else {

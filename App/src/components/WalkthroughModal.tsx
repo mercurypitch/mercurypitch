@@ -3,9 +3,10 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createEffect, createSignal, Show } from 'solid-js'
+import { createEffect, createMemo, createSignal, Show } from 'solid-js'
 import type {
-  WalkthroughTab} from '@/stores/walkthrough-store';
+  WalkthroughTab
+} from '@/stores/walkthrough-store'
 import {
   completeWalkthrough,
   getWalkthrough,
@@ -30,13 +31,19 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
     undefined,
   )
   const [currentStepIndex, setCurrentStepIndex] = createSignal(0)
-  const [isCompleted, setIsCompleted] = createSignal(false)
 
   // Load walkthrough when initially provided and modal opens
   createEffect(() => {
     if (props.initialWalkthroughId !== null && props.initialWalkthroughId !== undefined && props.isOpen) {
       startWalkthrough(props.initialWalkthroughId)
     }
+  })
+
+  // Sync isCompleted with store progress
+  const isCompleted = createMemo(() => {
+    const walkthrough = currentWalkthrough()
+    if (!walkthrough) return false
+    return isWalkthroughCompleted(walkthrough.id)
   })
 
   // Sync tab with initialTab prop changes
@@ -51,7 +58,6 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
     setCurrentTab(tab)
     setCurrentWalkthrough(undefined)
     setCurrentStepIndex(0)
-    setIsCompleted(false)
   }
 
   // Navigate steps
@@ -80,7 +86,6 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
   const completeCurrentWalkthrough = () => {
     if (currentWalkthrough()) {
       completeWalkthrough(currentWalkthrough()!.id)
-      setIsCompleted(true)
     }
   }
 

@@ -35,6 +35,23 @@ export const LibraryTab: Component = () => {
       .slice(0, 5)
   })
 
+  const recentItems = createMemo(() => {
+    const items: Array<{type: 'melody', data: MelodyData} | {type: 'session', data: SavedUserSession}> = []
+
+    // Add recent melodies
+    const melodies = recentMelodies()
+    items.push(...melodies.map((m): {type: 'melody', data: MelodyData} => ({type: 'melody', data: m})))
+
+    // Add recent sessions (exclude default)
+    const sessions = recentSessions()
+    items.push(...sessions.map((s): {type: 'session', data: SavedUserSession} => ({type: 'session', data: s})))
+
+    // Sort by lastPlayed
+    return items.sort(
+      (a, b) => (b.data.lastPlayed ?? 0) - (a.data.lastPlayed ?? 0)
+    ).slice(0, 8)
+  })
+
   // User session (new melody-ID model)
   const userSession = createMemo(() => {
     const session = appStore.userSession?.() ?? getActiveSession()
@@ -47,6 +64,7 @@ export const LibraryTab: Component = () => {
       .filter((item: SessionItem) => item.melodyId !== null)
       .map((item: SessionItem) => item.melodyId as string)
   })
+
   const selectedMelodyIds = createMemo(
     () => appStore.getSelectedMelodyIds?.() ?? [],
   )
@@ -80,16 +98,37 @@ export const LibraryTab: Component = () => {
     appStore.showPresetsLibrary()
   }
 
-  const handlePlay = (melody: MelodyData) => {
-    melodyStore.loadMelody(melody.id)
-  }
+  const handleRecentItemClick = (item: {type: 'melody', data: MelodyData} | {type: 'session', data: SavedUserSession}) => {
+    if (item.type === 'melody') {
+      // Load melody into editor
+      melodyStore.loadMelody(item.data.id)
 
-  const handleSessionClick = (session: SavedUserSession) => {
-    appStore.setActiveUserSession(session)
-    // Load first melody in session if exists
-    const firstMelodyId = session.items?.find((i) => i.melodyId !== null && i.melodyId !== undefined)?.melodyId
-    if (firstMelodyId !== null && firstMelodyId !== undefined) {
-      melodyStore.loadMelody(firstMelodyId)
+      // Ensure default session is loaded if no active session exists
+      import('@/stores/session-store').then(({ getSessionStore }) => {
+        const activeSessionId = melodyStore.getActiveSessionId()
+        if (activeSessionId === null) {
+          // No active session - load default session
+          const defaultSession = getSessionStore('default')
+          if (defaultSession !== undefined && defaultSession !== null) {
+            appStore.setActiveUserSession(defaultSession)
+            melodyStore.setActiveSessionId(defaultSession.id)
+          }
+        } else {
+          // Load the previously active session
+          const activeSession = getSessionStore(activeSessionId)
+          if (activeSession !== null) {
+            appStore.setActiveUserSession(activeSession)
+          }
+        }
+      })
+    } else if (item.type === 'session') {
+      // Load session as active
+      appStore.setActiveUserSession(item.data)
+      // Load first melody in session if exists
+      const firstMelodyId = item.data.items?.find((i) => i.melodyId !== null && i.melodyId !== undefined)?.melodyId
+      if (firstMelodyId !== null && firstMelodyId !== undefined) {
+        melodyStore.loadMelody(firstMelodyId)
+      }
     }
   }
 
@@ -355,38 +394,28 @@ export const LibraryTab: Component = () => {
         </div>
       </Show>
 
-      {/* Recent Melodies Section */}
-      <div class="recent-section">
-        <p class="section-label">Recent Melodies</p>
-        {recentMelodies().length === 0 ? (
+      {/* Recent Items Section */}
+      <div class="recent-section recent-items-section">
+        <p class="section-label">Recent Items</p>
+        {recentItems().length === 0 ? (
           <p class="empty-tip">
-            No melodies yet. Click "Melodies" to create one!
+            No items yet. Click "Melodies" or "Sessions" to get started!
           </p>
         ) : (
-          <For each={recentMelodies()}>
-            {(m) => (
-              <div class="recent-item" onClick={() => handlePlay(m)}>
-                <span class="recent-name">{m.name}</span>
-                <span class="recent-meta">{m.bpm} BPM</span>
-              </div>
-            )}
-          </For>
-        )}
-      </div>
-
-      {/* Recent Sessions Section */}
-      <div class="recent-section sessions-section">
-        <p class="section-label">Recent Sessions</p>
-        {recentSessions().length === 0 ? (
-          <p class="empty-tip">
-            No sessions yet. Click "Sessions" to create one!
-          </p>
-        ) : (
-          <For each={recentSessions()}>
-            {(s) => (
-              <div class="recent-item" onClick={() => handleSessionClick(s)}>
-                <span class="recent-name">{s.name}</span>
-                <span class="recent-meta">{s.items.length} items</span>
+          <For each={recentItems()}>
+            {(item) => (
+              <div class="recent-item" onClick={() => handleRecentItemClick(item)}>
+                {item.type === 'melody' ? (
+                  <>
+                    <span class="recent-name">{item.data.name}</span>
+                    <span class="recent-meta">{item.data.bpm} BPM</span>
+                  </>
+                ) : (
+                  <>
+                    <span class="recent-name">{item.data.name}</span>
+                    <span class="recent-meta">{item.data.items.length} items</span>
+                  </>
+                )}
               </div>
             )}
           </For>
@@ -395,15 +424,6 @@ export const LibraryTab: Component = () => {
 
       {/* Quick Actions */}
       <div class="quick-actions">
-        <button class="quick-action-btn" onClick={openPresetsLibrary}>
-          <svg viewBox="0 0 24 24" width="14" height="14">
-            <path
-              fill="currentColor"
-              d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"
-            />
-          </svg>
-          Quick Start
-        </button>
         <button class="quick-action-btn" onClick={openSessionLibrary}>
           <svg viewBox="0 0 24 24" width="14" height="14">
             <path

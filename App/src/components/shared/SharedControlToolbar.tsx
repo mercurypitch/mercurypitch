@@ -65,6 +65,7 @@ interface SharedControlToolbarProps {
   currentCycle: () => number
   isCountingIn: () => boolean
   countInBeat: () => number
+  countInBeats: () => number
 
   // Core playback callbacks
   onPlay: () => void
@@ -274,7 +275,9 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
         {/* Count-in badge */}
         <Show when={props.isCountingIn()}>
           <div id="countin-display" class="countin-badge">
-            {props.countInBeat()}
+            {[...Array(props.countInBeats()).reverse()]
+              .map((_, i) => props.countInBeats() - i)
+              .join(', ')}
           </div>
         </Show>
 
@@ -321,7 +324,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
                 props.playModeChange('practice')
               }}
             >
-              Session mode
+              Practice Session
             </button>
           </div>
         </Show>
@@ -382,6 +385,20 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
         {/* BPM */}
         <div class="tempo-group">
           <label class="opt-label">BPM:</label>
+          <input
+            type="number"
+            id="bpm-input"
+            min="40"
+            max="280"
+            value={appStore.bpm()}
+            class="bpm-number-input"
+            onInput={(e) => {
+              const value = parseInt(e.currentTarget.value)
+              if (value !== undefined && !isNaN(value)) {
+                appStore.setBpm(value)
+              }
+            }}
+          />
           <input
             type="range"
             id="tempo"

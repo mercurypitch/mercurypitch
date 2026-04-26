@@ -53,14 +53,13 @@ test.describe('Melody Library', () => {
 
     await expect(page.locator('.quick-actions')).toBeVisible()
     await expect(
-      page.locator('.quick-action-btn:has-text("Quick Start")'),
-    ).toBeVisible()
-    await expect(
       page.locator('.quick-action-btn:has-text("Sessions")'),
     ).toBeVisible()
   })
 
-  test('Quick Start button opens presets library', async ({ page }) => {
+  test.skip('Quick Start button opens presets library (removed)', async ({
+    page,
+  }) => {
     await switchTab(page, 'practice')
     await page.waitForTimeout(300)
 

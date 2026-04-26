@@ -7,7 +7,6 @@ import { buildMultiOctaveScale } from '@/lib/scale-data'
 import type {
   MelodyData,
   MelodyItem,
-  MelodyLibrary,
   MelodyNote,
   SavedUserSession,
   ScaleDegree,
@@ -132,12 +131,12 @@ function generateId(): number {
 }
 
 // Use a signal for the library to maintain SolidJS reactivity
-const [melodyLibrarySignal, setMelodyLibrary] = createSignal<MelodyLibrary>(
+const [melodyLibrarySignal, setMelodyLibrary] = createSignal<UnifiedLibrary>(
   loadLibrary(),
 )
 
 /** Get the melody library data (reactive) */
-export function getMelodyLibrary(): MelodyLibrary {
+export function getMelodyLibrary(): UnifiedLibrary {
   return melodyLibrarySignal()
 }
 
@@ -147,7 +146,7 @@ export function getMelodyLibrarySignal(): typeof melodyLibrarySignal {
 }
 
 /** Update the melody library (for reactive updates) */
-export function _setMelodyLibrary(updates: Partial<MelodyLibrary>): void {
+export function _setMelodyLibrary(updates: Partial<UnifiedLibrary>): void {
   setMelodyLibrary((prev) => ({
     ...prev,
     ...updates,
