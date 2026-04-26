@@ -48,7 +48,9 @@ const DEFAULT_LIBRARY: UnifiedLibrary = {
   },
   melodies: {},
   playlists: {},
-  sessions: {},
+  sessions: {
+    'default': getDefaultSession(),
+  },
 }
 
 function loadLibrary(): UnifiedLibrary {
@@ -62,7 +64,15 @@ function loadLibrary(): UnifiedLibrary {
         'melodies' in parsed &&
         'sessions' in parsed
       ) {
-        return parsed as UnifiedLibrary
+        // Ensure default session exists
+        const library = parsed as UnifiedLibrary
+        if (!library.sessions['default']) {
+          const defaultSession = getDefaultSession()
+          if (defaultSession) {
+            library.sessions['default'] = defaultSession
+          }
+        }
+        return library
       }
     }
   } catch {

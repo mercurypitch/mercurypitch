@@ -263,11 +263,11 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
       name.trim().length > 0
     ) {
       const playlist = melodyStore.getPlaylist(playlistId)
-      if (playlist !== null) {
+      if (playlist) {
         const newPlaylistId = melodyStore.createPlaylist(name)
         const library = melodyStore.getMelodyLibrary()
 
-        const melodyKeys = library.playlists[playlistId].melodyKeys
+        const melodyKeys = library.playlists[playlistId]?.melodyKeys || []
         melodyKeys.forEach((melodyKey: string) => {
           melodyStore.addMelodyToPlaylist(newPlaylistId, melodyKey)
         })
