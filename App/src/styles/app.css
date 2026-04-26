@@ -1243,9 +1243,9 @@ header h1 {
 
 .ctrl-btn.recording {
   border-color: var(--red);
-  background: rgba(248, 81, 73, 0.2);
+  background: rgba(248, 81, 73, 0.3);
   color: var(--red);
-  animation: pulse-rec 1s ease-in-out infinite;
+  animation: pulse-rec 0.8s ease-in-out infinite;
 }
 
 .record-text {
