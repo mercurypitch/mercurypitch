@@ -51,6 +51,13 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
     return total > 0 ? Math.min(100, (beats / total) * 100) : 0
   })
 
+  // Reactive playhead position to ensure smooth updates during playback
+  const playheadPosition = createMemo(() => {
+    const beats = props.currentBeat()
+    const total = totalBeats()
+    return total > 0 ? (beats / total) * 100 : 0
+  })
+
   // Session info
   const isSession = createMemo(() => appStore.sessionActive())
   const sessionItem = createMemo(() => appStore.sessionItemIndex())
@@ -136,11 +143,13 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
         <div
           id="playhead"
           class="focus-playhead"
-          style={{
-            display: (props.isPlaying() || props.isPaused()) ? 'block' : 'none',
-            left: `${(props.currentBeat() / Math.max(1, totalBeats())) * 100}%`,
-          }}
-        />
+          style={{ display: (props.isPlaying() || props.isPaused()) ? 'block' : 'none' }}
+        >
+          <div
+            class="playhead-marker"
+            style={{ left: `${playheadPosition()}%` }}
+          />
+        </div>
       </div>
 
       {/* Bottom floating toolbar */}

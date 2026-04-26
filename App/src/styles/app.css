@@ -4707,6 +4707,17 @@ Keeps your existing styles, only adjusts layout
   clip-path: polygon(0 0, 100% 0, 50% 100%);
 }
 
+.focus-playhead .playhead-marker {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 50%;
+  background: var(--accent-glow);
+  border-radius: 0 0 2px 2px;
+  transition: left 0.1s linear;
+}
+
 .focus-history {
   height: 56px;
   flex-shrink: 0;
