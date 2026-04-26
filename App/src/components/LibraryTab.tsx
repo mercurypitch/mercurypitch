@@ -353,6 +353,16 @@ export const LibraryTab: Component = () => {
                   >
                     <span class="pill-icon">{getMelodyIcon(melody)}</span>
                     <span class="pill-label">{melody.name}</span>
+                    <Show when={melody.tags && melody.tags.length > 0}>
+                      <span class="pill-tags">
+                        {(melody.tags as string[]).slice(0, 2).map((tag, _idx) => (
+                          <span class="pill-tag">{tag}</span>
+                        ))}
+                        {(melody.tags as string[]).length > 2 && (
+                          <span class="pill-tag more">+{(melody.tags as string[]).length - 2}</span>
+                        )}
+                      </span>
+                    </Show>
                   </span>
                 )}
               </For>
@@ -409,6 +419,16 @@ export const LibraryTab: Component = () => {
                   <>
                     <span class="recent-name">{item.data.name}</span>
                     <span class="recent-meta">{item.data.bpm} BPM</span>
+                    <Show when={item.data.tags && item.data.tags.length > 0}>
+                      <div class="recent-tags">
+                        {(item.data.tags as string[]).slice(0, 2).map((tag, _idx) => (
+                          <span class="recent-tag">{tag}</span>
+                        ))}
+                        {(item.data.tags as string[]).length > 2 && (
+                          <span class="recent-tag more">+{(item.data.tags as string[]).length - 2}</span>
+                        )}
+                      </div>
+                    </Show>
                   </>
                 ) : (
                   <>

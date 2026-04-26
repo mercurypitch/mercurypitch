@@ -6113,6 +6113,27 @@ Keeps your existing styles, only adjusts layout
   color: var(--text-muted);
 }
 
+.recent-tags {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+.recent-tag {
+  font-size: 0.6rem;
+  padding: 2px 6px;
+  background: var(--accent-dim);
+  color: var(--accent);
+  border-radius: 3px;
+  font-weight: 500;
+}
+
+.recent-tag.more {
+  font-size: 0.55rem;
+  padding: 2px 5px;
+}
+
 .quick-actions {
   display: flex;
   flex-direction: column;
@@ -6286,6 +6307,27 @@ Keeps your existing styles, only adjusts layout
   color: var(--green);
 }
 
+.pill-tags {
+  display: flex;
+  gap: 2px;
+  margin-left: 4px;
+  flex-wrap: wrap;
+}
+
+.pill-tag {
+  font-size: 0.55rem;
+  padding: 1px 4px;
+  background: var(--accent-dim);
+  color: var(--accent);
+  border-radius: 3px;
+  font-weight: 500;
+}
+
+.pill-tag.more {
+  font-size: 0.5rem;
+  padding: 1px 3px;
+}
+
 .pill-icon {
   font-size: 0.7rem;
 }
@@ -6360,6 +6402,27 @@ Keeps your existing styles, only adjusts layout
 .recent-meta {
   font-size: 0.72rem;
   color: var(--text-muted);
+}
+
+.recent-tags {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+.recent-tag {
+  font-size: 0.55rem;
+  padding: 1px 5px;
+  background: var(--accent-dim);
+  color: var(--accent);
+  border-radius: 2px;
+  font-weight: 500;
+}
+
+.recent-tag.more {
+  font-size: 0.5rem;
+  padding: 1px 4px;
 }
 
 .library-tab-btn {
