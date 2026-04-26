@@ -479,6 +479,7 @@ export class PianoRollEditor {
   private playbackState: PlaybackState = 'stopped'
   private playbackAnimationId: number | null = null
   private playStartTime: number = 0
+  private isCountingIn = false
   // Remote beat comes from PlaybackRuntime events (external playback)
   // For internal editor playback, beat is calculated locally
   private remoteBeat = 0
@@ -739,6 +740,10 @@ export class PianoRollEditor {
    *  When Practice tab playback is active, this ensures the editor's playhead moves
    *  in lockstep with the melody engine. */
   setRemoteBeat(beat: number): void {
+    // Don't update during count-in - wait for count-in to complete first
+    // This prevents notes from playing before the user presses Play
+    if (this.isCountingIn) return
+
     if (this.playbackState === 'stopped') return
     this.remoteBeat = beat
     this.handleBeatUpdate(beat)
@@ -757,6 +762,11 @@ export class PianoRollEditor {
     this.playbackState = state
 
     if (state === 'playing') {
+      // Don't start animation during count-in - wait for count-in to complete first
+      if (this.isCountingIn) {
+        this.isCountingIn = false
+      }
+
       // If we're transitioning from external back to internal playback
       if (this.isExternalPlayback && this.wasPlayingBeforeExternal) {
         this.wasPlayingBeforeExternal = false
