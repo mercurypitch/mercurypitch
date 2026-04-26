@@ -8,7 +8,6 @@ import type {
   SessionResult,
 } from '@/types'
 import type { SessionCategory, SessionDifficulty, SessionItem } from '@/types'
-import { melodyStore } from './melody-store'
 
 const STORAGE_KEY = 'pitchperfect_library'
 export const SESSION_KEY = STORAGE_KEY
@@ -393,3 +392,6 @@ export function getSessionCount(): number {
 export function getUserSessionCount(): number {
   return getSessions().length
 }
+
+// Import at bottom to avoid circular dependency
+import { melodyStore } from './melody-store'

@@ -340,7 +340,8 @@ export interface MelodyLibrary {
       created: number
     }
   >
-  /** Legacy type - use UnifiedLibrary for new storage */
+  /** User sessions */
+  sessions: Record<string, SavedUserSession>
 }
 
 /** Unified library storage structure - single storage key for all content */
