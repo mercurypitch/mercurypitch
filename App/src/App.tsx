@@ -235,7 +235,7 @@ export const App: Component<AppProps> = (props) => {
     playbackRuntime.setMelody(melody.items ?? [])
 
     // Set session as active so SessionPlayer shows
-    setSessionActive(true)
+    appStore.setSessionActive(true)
   }
 
   /**
@@ -707,17 +707,21 @@ export const App: Component<AppProps> = (props) => {
     })
 
     // Sync settings to PlaybackRuntime when they change
+    // Changed to avoid re-running on every items() call - use items directly
+    const currentMelody = melodyStore.currentMelody
     createEffect(() => {
-      const bpm = appStore.bpm()
-      const melody = melodyStore.items()
-      const instrument = appStore.instrument()
+      const melody = currentMelody()
+      if (melody !== null) {
+        const bpm = appStore.bpm()
+        const instrument = appStore.instrument()
 
-      // Update AudioEngine with BPM and instrument
-      audioEngine.setBPM(bpm)
-      audioEngine.setInstrument(instrument)
-      // Tell PlaybackRuntime about new melody (BPM handled by AudioEngine)
-      console.log('[createEffect melody sync] Setting melody to playbackRuntime, items count:', melody.length)
-      playbackRuntime.setMelody(melody)
+        // Update AudioEngine with BPM and instrument
+        audioEngine.setBPM(bpm)
+        audioEngine.setInstrument(instrument)
+        // Tell PlaybackRuntime about new melody (BPM handled by AudioEngine)
+        console.log('[createEffect melody sync] Setting melody to playbackRuntime, items count:', melody.items?.length ?? 0)
+        playbackRuntime.setMelody(melody.items ?? [])
+      }
     })
 
     // Link practice callbacks

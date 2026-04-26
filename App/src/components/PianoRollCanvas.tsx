@@ -122,8 +122,21 @@ export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
   })
 
   // Propagate playback state changes
+  // Only propagate state when in editor tab (not from practice tab)
   createEffect(() => {
-    editor?.setPlaybackState(props.playbackState())
+    // Only set editor state when currently showing editor view
+    // Don't propagate practice tab's playback state to editor
+    if (typeof window !== 'undefined') {
+      const win = window as unknown as {
+        __activeTab?: () => string
+      }
+      const activeTab = win.__activeTab?.() ?? 'editor'
+      if (activeTab === 'editor') {
+        editor?.setPlaybackState(props.playbackState())
+      }
+    } else {
+      editor?.setPlaybackState(props.playbackState())
+    }
   })
 
   // Propagate current note index
