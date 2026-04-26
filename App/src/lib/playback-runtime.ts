@@ -187,6 +187,8 @@ export class PlaybackRuntime {
       this.countInBeat = countInBeats
       this.pauseOffset = 0
       console.log('[PlaybackRuntime.start] Fresh start, countInBeats:', countInBeats)
+      // Set playStartTime for fresh starts (not resuming)
+      this.playStartTime = performance.now()
     }
 
     // Add accumulated pause duration to be accounted for in the animation loop
@@ -403,7 +405,6 @@ export class PlaybackRuntime {
       }
     }
 
-    this.playStartTime = performance.now()
     this.animationFrameId = requestAnimationFrame(animate)
   }
 
