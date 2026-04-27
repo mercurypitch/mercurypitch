@@ -9,6 +9,8 @@ import { melodyStore } from '@/stores/melody-store'
 import { addItemToSession,getSession } from '@/stores/session-store'
 import type { MelodyData, NoteName } from '@/types'
 
+type DebouncedSetter<T> = (value: T, immediate?: boolean) => void
+
 interface LibraryModalProps {
   isOpen: boolean
   close: () => void
@@ -44,6 +46,28 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
     createSignal<PlaylistEditingState>(null)
   const [dragState, setDragState] = createSignal<DragState>(null)
 
+  // Debounce helper for BPM inputs to prevent rapid-fire updates
+  const createDebouncedSetter = <T extends number>(
+    setter: (value: T) => void,
+    delay: number = 300,
+  ): DebouncedSetter<T> => {
+    let timeoutId: ReturnType<typeof setTimeout> | null = null
+    return (value: T, immediate = false) => {
+      if (immediate && timeoutId) {
+        clearTimeout(timeoutId)
+        timeoutId = null
+      }
+      if (!timeoutId) {
+        setter(value)
+        if (!immediate) {
+          timeoutId = setTimeout(() => {
+            timeoutId = null
+          }, delay)
+        }
+      }
+    }
+  }
+
   // For rename playlist
   const [renameInput, setRenameInput] = createSignal('')
   // For add melody to playlist
@@ -62,6 +86,10 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
   const [createScale, setCreateScale] = createSignal('major')
   const [createTags, setCreateTags] = createSignal('')
   const [createNotes, setCreateNotes] = createSignal('')
+
+  // Debounced BPM setters to prevent rapid-fire updates
+  const debouncedCreateBpm = createDebouncedSetter(createBpm, 300)
+  const debouncedEditBpm = createDebouncedSetter(editBpm, 300)
 
   const library = createMemo(() => melodyStore.getMelodyLibrary())
 
@@ -528,7 +556,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                           const val = parseInt(e.currentTarget.value)
                           if (isNaN(val)) return
                           const clamped = Math.max(20, Math.min(280, val))
-                          setCreateBpm(clamped)
+                          debouncedCreateBpm(clamped)
                         }}
                         min="20"
                         max="280"
@@ -628,7 +656,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                           const val = parseInt(e.currentTarget.value)
                           if (isNaN(val)) return
                           const clamped = Math.max(20, Math.min(280, val))
-                          setEditBpm(clamped)
+                          debouncedEditBpm(clamped)
                         }}
                         min="20"
                         max="280"
