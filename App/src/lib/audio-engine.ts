@@ -579,10 +579,9 @@ export class AudioEngine {
     if (!this.audioCtx || !this.mainGain) return
 
     // Guard against rapid calls - make sure previous tone is fully stopped
-    if (this.toneOscillator || this.isPlaying) {
-      void this.stopTone()
-      // Small delay to ensure previous tone is fully stopped
-      await new Promise((resolve) => setTimeout(resolve, 5))
+    // We await stopTone() to ensure it completes before starting the new tone
+    if (this.toneOscillator !== null) {
+      await this.stopTone()
     }
 
     this.toneOscillator = this.audioCtx.createOscillator()
