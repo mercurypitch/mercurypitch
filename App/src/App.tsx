@@ -510,13 +510,20 @@ export const App: Component<AppProps> = (props) => {
       window as unknown as {
         __loadAndPlayMelodyForSession: (melodyId: string) => void
         __playSessionSequence: (melodyIds: string[]) => void
+        __setPlayMode: (mode: 'once' | 'repeat' | 'practice') => void
       }
     ).__loadAndPlayMelodyForSession = loadAndPlayMelodyForSession
     ;(
       window as unknown as {
         __playSessionSequence: (melodyIds: string[]) => void
+        __setPlayMode: (mode: 'once' | 'repeat' | 'practice') => void
       }
     ).__playSessionSequence = playSessionSequence
+    ;(
+      window as unknown as {
+        __setPlayMode: (mode: 'once' | 'repeat' | 'practice') => void
+      }
+    ).__setPlayMode = setPlayMode
 
     // Fallback: direct click listeners on tab buttons in case SolidJS delegation misses them
     // This handles the edge case where innerHTML-created elements need explicit handlers
