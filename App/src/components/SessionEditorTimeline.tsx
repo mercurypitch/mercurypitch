@@ -33,23 +33,35 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
 
   // Mobile touch handlers - use signals for state
   const [touchStartPos, setTouchStartPos] = createSignal({ x: 0, y: 0 })
+  const [touchCurrentPos, setTouchCurrentPos] = createSignal({ x: 0, y: 0 })
+  const [touchActive, setTouchActive] = createSignal(false)
 
   const handleTouchStart = (e: TouchEvent, item: SessionItem, index: number) => {
     if (e.touches.length !== 1) return
     const touch = e.touches[0]
     setTouchStartPos({ x: touch.clientX, y: touch.clientY })
+    setTouchCurrentPos({ x: touch.clientX, y: touch.clientY })
+    setTouchActive(true)
     setDraggedItemId(item.id)
     setDragSourceIndex(index)
   }
 
   const handleTouchMove = (e: TouchEvent) => {
-    if (e.touches.length !== 1) return
+    if (e.touches.length !== 1 || !touchActive()) return
     const touch = e.touches[0]
     const start = touchStartPos()
-    const deltaX = Math.abs(touch.clientX - start.x)
+    const current = { x: touch.clientX, y: touch.clientY }
+    setTouchCurrentPos(current)
 
-    // Only allow horizontal swipe (left/right) after 60px
-    if (deltaX < 60) return
+    // Only allow horizontal swipe (left/right)
+    const deltaY = Math.abs(current.y - start.y)
+    if (deltaY > 10) return // Reject vertical movement
+
+    const deltaX = current.x - start.x
+
+    // Use smaller swipe threshold for better mobile experience
+    const swipeThreshold = 50
+    if (Math.abs(deltaX) < swipeThreshold) return
 
     // Map horizontal swipe to index change (negative for left, positive for right)
     const itemWidth = 140
@@ -71,15 +83,24 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
           })
         }
 
+        setTouchActive(false)
         setDraggedItemId(null)
         setDragSourceIndex(-1)
       }
     }
   }
 
+  // Track touch position for potential UI feedback
+  const _isDraggingX = () => {
+    const start = touchStartPos()
+    const current = touchCurrentPos()
+    return Math.abs(current.x - start.x) > 5 && Math.abs(current.y - start.y) <= 10
+  }
+
   const handleTouchEnd = () => {
-    setDraggedItemId(null)
-    setDragSourceIndex(-1)
+    setTouchActive(false)
+    setTouchStartPos({ x: 0, y: 0 })
+    setTouchCurrentPos({ x: 0, y: 0 })
   }
 
   // Desktop drag handlers
@@ -205,9 +226,6 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
                   <div
                     class="timeline-drop-zone rest-zone"
                     onClick={() => addRestBetween(index())}
-                    onTouchStart={() => setDragSourceIndex(index())}
-                    onTouchMove={() => {}}
-                    onTouchEnd={() => setDraggedItemId(null)}
                     onDragOver={(e) => handleDragOver(e, index())}
                     onDrop={(e) => handleDrop(e, index())}
                   >
