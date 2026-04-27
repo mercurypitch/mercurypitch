@@ -140,8 +140,6 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
     }
   })
 
-  const walkthroughs = getWalkthroughsForTab(currentTab())
-
   return (
     <Show when={props.isOpen}>
       <div
@@ -175,7 +173,7 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
 
               {/* Walkthrough List */}
               <div class="walkthrough-list">
-                {walkthroughs.map((walkthrough) => {
+                {getWalkthroughsForTab(currentTab()).map((walkthrough) => {
                   const completed = isWalkthroughCompleted(walkthrough.id)
                   return (
                     <button
@@ -363,4 +361,6 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
       </div>
     </Show>
   )
+
+  const walkthroughs = getWalkthroughsForTab(currentTab())
 }
