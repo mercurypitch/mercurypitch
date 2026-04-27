@@ -866,8 +866,6 @@ export const App: Component<AppProps> = (props) => {
     playbackRuntime.on('countIn', (e: { countIn?: number }) => {
       setCountInBeat(e?.countIn ?? 0)
       setIsCountingIn(true)
-      // Precount sound plays even when metronome is disabled
-      audioEngine?.playClick()
     })
     playbackRuntime.on('countInComplete', () => {
       setIsCountingIn(false)
