@@ -30,20 +30,6 @@ const CATEGORY_LABELS: Partial<Record<SessionCategory, string>> = {
   vocal: 'Vocal',
 }
 
-function estimateDuration(items: SessionItem[]): string {
-  let beats = 0
-  let restMs = 0
-  for (const item of items) {
-    if (item.type === 'scale') beats += item.beats ?? 8
-    if (item.type === 'rest') restMs += item.restMs ?? 0
-  }
-  const sec = Math.round(beats * (60 / 120) + restMs / 1000)
-  if (sec < 60) return `${sec}s`
-  const m = Math.floor(sec / 60)
-  const s = sec % 60
-  return s > 0 ? `${m}m ${s}s` : `${m}m`
-}
-
 interface PresetsLibraryModalProps {
   isOpen: boolean
   close: () => void
@@ -52,15 +38,39 @@ interface PresetsLibraryModalProps {
 export const PresetsLibraryModal: Component<PresetsLibraryModalProps> = (
   props,
 ) => {
+  // ===========================================
+  // 1. Signals - at the top
+  // ===========================================
   const [activeCategory, setActiveCategory] = createSignal<
     SessionCategory | 'all'
   >('all')
 
+  // ===========================================
+  // 2. Memos - next
+  // ===========================================
   const filteredSessions = createMemo(() => {
     const cat = activeCategory()
     if (cat === 'all') return PRACTICE_SESSIONS
     return PRACTICE_SESSIONS.filter((s) => s.category === cat)
   })
+
+  // ===========================================
+  // 3. Regular functions - event handlers
+  // ===========================================
+
+  function estimateDuration(items: SessionItem[]): string {
+    let beats = 0
+    let restMs = 0
+    for (const item of items) {
+      if (item.type === 'scale') beats += item.beats ?? 8
+      if (item.type === 'rest') restMs += item.restMs ?? 0
+    }
+    const sec = Math.round(beats * (60 / 120) + restMs / 1000)
+    if (sec < 60) return `${sec}s`
+    const m = Math.floor(sec / 60)
+    const s = sec % 60
+    return s > 0 ? `${m}m ${s}s` : `${m}m`
+  }
 
   const handlePlay = (session: (typeof PRACTICE_SESSIONS)[number]) => {
     // Convert template items to session items using factory functions
