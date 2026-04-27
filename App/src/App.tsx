@@ -120,6 +120,29 @@ export const App: Component<AppProps> = (props) => {
   const _handleTabEditor = () => void appStore.setActiveTab('editor')
   const _handleTabSettings = () => void appStore.setActiveTab('settings')
 
+  // ── ALL SOLIDJS REACTIVE TYPES (Signals) ────────────────────
+  const [isPlaying, setIsPlaying] = createSignal(false)
+  const [isPaused, setIsPaused] = createSignal(false)
+  const [editorPlaybackState, setEditorPlaybackState] =
+    createSignal<PlaybackState>('stopped')
+  const [currentBeat, setCurrentBeat] = createSignal(0)
+  const [currentNoteIndex, setCurrentNoteIndex] = createSignal(-1)
+  const [sessionCurrentMelodyIndex, setSessionCurrentMelodyIndex] =
+    createSignal(-1)
+  const [sessionMelodyIds, setSessionMelodyIds] = createSignal<string[]>([])
+  const [shouldAutoStartPlayback, setShouldAutoStartPlayback] =
+    createSignal(false)
+
+  // ── ALL SOLIDJS REACTIVE TYPES (Memos) ───────────────────────
+  const totalBeats = createMemo(() => melodyTotalBeats(melodyStore.items()))
+  const playheadPosition = createMemo(() => {
+    const beats = currentBeat()
+    const total = totalBeats()
+    return total > 0 ? (beats / total) * 100 : 0
+  })
+
+  // ── Regular functions (audio, handlers) ───────────────────────
+
   // ── Reset all playback-related state ─────────────────────────
   const resetPlaybackState = async () => {
     console.log('[resetPlaybackState] Called, resetting all playback state')
@@ -208,39 +231,8 @@ export const App: Component<AppProps> = (props) => {
     appStore.setActiveTab(newTab)
   }
 
-  // ── Derived state ──────────────────────────────────────────
-
-  const totalBeats = createMemo(() => melodyTotalBeats(melodyStore.items()))
-
-  // Reactive playhead position for practice tab
-  const playheadPosition = createMemo(() => {
-    const beats = currentBeat()
-    const total = totalBeats()
-    return total > 0 ? (beats / total) * 100 : 0
-  })
-
-  // ── Practice mode signals ───────────────────────────────────
-
-  const [isPlaying, setIsPlaying] = createSignal(false)
-  const [isPaused, setIsPaused] = createSignal(false)
-
-  // ── Editor tab playback state ───────────────────────────────
-  const [editorPlaybackState, setEditorPlaybackState] =
-    createSignal<PlaybackState>('stopped')
   const editorIsPlaying = () => editorPlaybackState() === 'playing'
   const editorIsPaused = () => editorPlaybackState() === 'paused'
-
-  const [currentBeat, setCurrentBeat] = createSignal(0)
-  const [currentNoteIndex, setCurrentNoteIndex] = createSignal(-1)
-
-  // ── Session Playback State (new melody-ID model) ──────────────
-  const [sessionCurrentMelodyIndex, setSessionCurrentMelodyIndex] =
-    createSignal(-1)
-  const [sessionMelodyIds, setSessionMelodyIds] = createSignal<string[]>([])
-
-  /** Flag to track if playback should auto-start (set by user, not session load) */
-  const [shouldAutoStartPlayback, setShouldAutoStartPlayback] =
-    createSignal(false)
 
   /**
    * Load and play a specific melody in the session context
