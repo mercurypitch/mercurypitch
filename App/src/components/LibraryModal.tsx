@@ -366,6 +366,10 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
     return itemCount > 0 ? `${itemCount} notes` : 'Empty'
   }
 
+  const hasNotes = (notes?: string): boolean => {
+    return notes !== null && notes !== undefined && notes.trim().length > 0
+  }
+
   // Playlist operations
   const _handleCreatePlaylist = () => {
     const name = renameInput().trim() || 'My Playlist'
@@ -885,11 +889,13 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                                   <span class="tag-pill">{tag}</span>
                                 ))}
                               </Show>
-                              <Show when={(m().tags as string[]).length > 50}>
+                              <Show when={(m().tags as string[]).length > 3}>
                                 {(m().tags as string[]).slice(0, 50).map((tag) => (
                                   <span class="tag-pill">{tag}</span>
                                 ))}
-                                <span class="tag-pill more">+{(m().tags as string[]).length - 50}</span>
+                                <Show when={(m().tags as string[]).length > 50}>
+                                  <span class="tag-pill more">+{(m().tags as string[]).length - 50}</span>
+                                </Show>
                               </Show>
                             </div>
                           </Show>
@@ -898,7 +904,14 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                           </Show>
                         </dd>
                         <dt>Notes</dt>
-                        <dd>{m().notes ?? ''}</dd>
+                        <dd>
+                          <Show when={hasNotes(m().notes)}>
+                            {m().notes}
+                          </Show>
+                          <Show when={!hasNotes(m().notes)}>
+                            -
+                          </Show>
+                        </dd>
                         <dt>Created</dt>
                         <dd>{new Date(m().createdAt ?? Date.now()).toLocaleDateString()}</dd>
                         <dt>Updated</dt>
