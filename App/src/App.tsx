@@ -659,6 +659,12 @@ export const App: Component<AppProps> = (props) => {
     setSavedVol(isNaN(savedVol) ? 80 : savedVol)
     audioEngine = new AudioEngine()
     audioEngine.setVolume((isNaN(savedVol) ? 80 : savedVol) / 100)
+    audioEngine.setBpm(appStore.bpm())
+
+    // Sync BPM from appStore to AudioEngine when it changes
+    createEffect(() => {
+      audioEngine.setBpm(appStore.bpm())
+    })
     // Sync ADSR settings from appStore
     audioEngine.syncFromAppStore(appStore.adsr())
     // Apply saved reverb settings to audio engine
