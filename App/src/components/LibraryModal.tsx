@@ -4,7 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
-import { appStore } from '@/stores/app-store'
+import { appStore, setEditorView } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import { addItemToSession,getSession } from '@/stores/session-store'
 import type { MelodyData, NoteName } from '@/types'
@@ -271,8 +271,10 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
   }
 
   const handleEdit = (melody: MelodyData) => {
-    // Load melody and navigate to piano roll
+    // Load melody and navigate to piano roll editor
     melodyStore.loadMelody(melody.id)
+    appStore.setActiveTab('editor')
+    setEditorView('piano-roll')
     // Close modal
     props.close()
   }
