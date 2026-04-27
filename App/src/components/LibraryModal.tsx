@@ -1046,8 +1046,21 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                       ][]
                     }
                   >
-                    {([_id, playlist]) => (
-                      <div
+                    {([_id, playlist]) => {
+                      // Find the playlist with the most recent creation time
+                      const allPlaylists = Object.entries(library().playlists)
+                      let newestId = _id
+                      let newestTime = playlist.created
+                      for (const [id, p] of allPlaylists) {
+                        if (p.created > newestTime) {
+                          newestTime = p.created
+                          newestId = id
+                        }
+                      }
+                      const newestPlaylistId = newestId
+
+                      return (
+                        <div
                           class="playlist-item"
                           draggable={dragState()?.type === 'melody'}
                           onDragStart={(e) => handleDragStartPlaylist(e, _id)}
@@ -1072,65 +1085,68 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                             </span>
                           </div>
                           <div class="item-actions">
-                          <button
-                            class="action-btn edit-btn"
-                            onClick={() => startRenameMode(_id)}
-                            title="Rename"
-                          >
-                            <svg viewBox="0 0 24 24" width="14" height="14">
-                              <path
-                                fill="currentColor"
-                                d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z"
-                              />
-                            </svg>
-                          </button>
-                          <button
-                            class="action-btn play-btn"
-                            onClick={() => {
-                              props.close()
-                              appStore.showNotification(
-                                'Playlist playback coming soon!',
-                                'info',
-                              )
-                            }}
-                            title="Play All"
-                          >
-                            <svg viewBox="0 0 24 24" width="14" height="14">
-                              <path fill="currentColor" d="M8 5v14l11-7z" />
-                            </svg>
-                          </button>
-                          <button
-                            class="action-btn edit-btn"
-                            onClick={() => startAddMelodyMode(_id)}
-                            title="Add Melody"
-                          >
-                            <svg viewBox="0 0 24 24" width="14" height="14">
-                              <path
-                                fill="currentColor"
-                                d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"
-                              />
-                            </svg>
-                          </button>
-                          <button
-                            class="action-btn delete-btn"
-                            onClick={() =>
-                              setPlaylistEditing({
-                                mode: 'delete',
-                                playlistId: _id,
-                              })
-                            }
-                            title="Delete"
-                          >
-                            <svg viewBox="0 0 24 24" width="14" height="14">
-                              <path
-                                fill="currentColor"
-                                d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"
-                              />
-                            </svg>
-                          </button>
+                            <Show when={_id !== newestPlaylistId}>
+                              <button
+                                class="action-btn edit-btn"
+                                onClick={() => startRenameMode(_id)}
+                                title="Rename"
+                              >
+                                <svg viewBox="0 0 24 24" width="14" height="14">
+                                  <path
+                                    fill="currentColor"
+                                    d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z"
+                                  />
+                                </svg>
+                              </button>
+                            </Show>
+                            <button
+                              class="action-btn play-btn"
+                              onClick={() => {
+                                props.close()
+                                appStore.showNotification(
+                                  'Playlist playback coming soon!',
+                                  'info',
+                                )
+                              }}
+                              title="Play All"
+                            >
+                              <svg viewBox="0 0 24 24" width="14" height="14">
+                                <path fill="currentColor" d="M8 5v14l11-7z" />
+                              </svg>
+                            </button>
+                            <button
+                              class="action-btn edit-btn"
+                              onClick={() => startAddMelodyMode(_id)}
+                              title="Add Melody"
+                            >
+                              <svg viewBox="0 0 24 24" width="14" height="14">
+                                <path
+                                  fill="currentColor"
+                                  d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"
+                                />
+                              </svg>
+                            </button>
+                            <button
+                              class="action-btn delete-btn"
+                              onClick={() =>
+                                setPlaylistEditing({
+                                  mode: 'delete',
+                                  playlistId: _id,
+                                })
+                              }
+                              title="Delete"
+                            >
+                              <svg viewBox="0 0 24 24" width="14" height="14">
+                                <path
+                                  fill="currentColor"
+                                  d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"
+                                />
+                              </svg>
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )
+                    }}
                   </For>
                 </div>
               </Show>
