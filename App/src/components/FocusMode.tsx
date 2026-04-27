@@ -175,7 +175,10 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
             style={{ left: `${playheadPosition()}%` }}
           />
           {/* Glowing pitch dot with dynamic position */}
-          <div class="focus-pitch-dot" style={{ '--pitch-position': `${pitchDotPosition()}%` }} />
+          <div
+            class="focus-pitch-dot"
+            style={{ left: `${pitchDotPosition()}%` }}
+          />
         </div>
       </div>
 
