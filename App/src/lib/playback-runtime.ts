@@ -227,8 +227,9 @@ export class PlaybackRuntime {
       console.log('[PlaybackRuntime.resume] Added', pauseDuration, 'ms of pause time to offset')
     }
 
-    // Keep playStartTime as is - it tracks when playback originally started
-    // The pauseOffset accounts for all time spent paused
+    // Reset playStartTime to 0 so elapsed time is calculated from resume point
+    // The pauseOffset correctly accounts for paused time
+    this.playStartTime = 0
     this.isPaused = false
     this.isPlaying = true
     console.log('[PlaybackRuntime.resume] Resuming at beat:', this.currentBeat, 'with offset:', this.pauseOffset)
