@@ -137,16 +137,18 @@ export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
   })
 
   // Propagate playback state changes
-  // Only propagate state when in editor tab (not from practice tab)
+  // Only propagate when actually in editor tab and playback is started from editor UI
   createEffect(() => {
-    // Only set editor state when currently showing editor view
-    // Don't propagate practice tab's playback state to editor
     if (typeof window !== 'undefined') {
       const win = window as unknown as {
         __activeTab?: () => string
+        __isExternalPlayback?: () => boolean
       }
       const activeTab = win.__activeTab?.() ?? 'editor'
-      if (activeTab === 'editor') {
+      const isExternal = win.__isExternalPlayback?.() ?? false
+      // Only propagate playback state when in editor tab and NOT in external playback mode
+      // This ensures editor has its own independent playback state
+      if (activeTab === 'editor' && !isExternal) {
         editor?.setPlaybackState(props.playbackState())
       }
     } else {
