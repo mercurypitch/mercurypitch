@@ -3809,7 +3809,7 @@ Keeps your existing styles, only adjusts layout
 }
 
 .settings-row select {
-  padding: 10px 16px;
+  padding: 10px 20px;
   background: var(--bg-secondary);
   border: 1px solid var(--border);
   color: var(--text-primary);
@@ -7092,7 +7092,7 @@ Keeps your existing styles, only adjusts layout
   display: flex;
   flex-direction: column;
   max-height: 100%;
-  padding: 24px;
+  padding: 32px 24px;
 }
 
 .walkthrough-back-btn {
@@ -7117,9 +7117,10 @@ Keeps your existing styles, only adjusts layout
 
 .walkthrough-main-title {
   text-align: center;
-  margin: 0 0 12px 0;
+  margin: 0 0 16px 0;
   font-size: 1.75rem;
   font-weight: 600;
+  padding-top: 12px;
 }
 
 .walkthrough-main-desc {
@@ -7256,7 +7257,7 @@ Keeps your existing styles, only adjusts layout
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 40px;
+  padding: 48px 32px;
   text-align: center;
 }
 
@@ -7266,13 +7267,13 @@ Keeps your existing styles, only adjusts layout
 }
 
 .walkthrough-complete-title {
-  margin: 0 0 12px 0;
+  margin: 0 0 16px 0;
   font-size: 1.5rem;
   font-weight: 600;
 }
 
 .walkthrough-complete-desc {
-  margin: 0 0 24px 0;
+  margin: 0 0 32px 0;
   color: var(--text-secondary);
 }
 

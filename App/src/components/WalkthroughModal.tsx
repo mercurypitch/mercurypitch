@@ -122,6 +122,9 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
 
   const handleBackToList = () => {
     // Reset to initial tab and show walkthrough list
+    if (props.initialTab !== null && props.initialTab !== undefined) {
+      setCurrentTab(props.initialTab)
+    }
     setCurrentWalkthrough(undefined)
     setCurrentStepIndex(0)
   }
