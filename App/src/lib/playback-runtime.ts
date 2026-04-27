@@ -329,15 +329,12 @@ export class PlaybackRuntime {
         // Play metronome click during count-in (4, 3, 2, 1)
         // Precount is a metronome feature - always play regardless of metronome setting
         const isDownbeat = currentInt % 4 === 0
-        // Emit countIn event first (updates UI) then play metronome sound
-        if (currentInt !== this.metronomeLastCountInBeat) {
-          this._emit({
-            type: 'countIn',
-            countIn: currentInt,
-          })
+        // Only play metronome if countIn > 0
+        if (currentInt > 0 && currentInt !== this.metronomeLastCountInBeat) {
           // Play metronome sound
           this.audioEngine.playMetronomeClick(isDownbeat)
           this.metronomeLastCountInBeat = currentInt
+          // Emit metronome event for UI feedback
           this._emit({
             type: 'metronome',
             beat: currentInt,
