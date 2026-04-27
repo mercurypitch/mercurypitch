@@ -34,6 +34,9 @@ type DragState =
   | { type: 'session'; sessionId: string }
 
 export const LibraryModal: Component<LibraryModalProps> = (props) => {
+  // ===========================================
+  // 1. Signals - at the top
+  // ===========================================
   const [activeTab, setActiveTab] = createSignal<Tab>('melodies')
   const [searchQuery, setSearchQuery] = createSignal('')
   const [selectedMelodyKey, setSelectedMelodyKey] = createSignal<string | null>(
@@ -45,6 +48,27 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
   const [playlistEditing, setPlaylistEditing] =
     createSignal<PlaylistEditingState>(null)
   const [dragState, setDragState] = createSignal<DragState>(null)
+
+  const [renameInput, setRenameInput] = createSignal('')
+  const [addMelodySearch, setAddMelodySearch] = createSignal('')
+
+  const [editName, setEditName] = createSignal('')
+  const [editBpm, setEditBpm] = createSignal(80)
+  const [editKey, setEditKey] = createSignal('C')
+  const [editScale, setEditScale] = createSignal('major')
+  const [editTags, setEditTags] = createSignal('')
+  const [editNotes, setEditNotes] = createSignal('')
+
+  const [createName, setCreateName] = createSignal('')
+  const [createBpm, setCreateBpm] = createSignal(80)
+  const [createKey, setCreateKey] = createSignal('C')
+  const [createScale, setCreateScale] = createSignal('major')
+  const [createTags, setCreateTags] = createSignal('')
+  const [createNotes, setCreateNotes] = createSignal('')
+
+  // ===========================================
+  // 2. Memos and helper values
+  // ===========================================
 
   // Debounce helper for BPM inputs to prevent rapid-fire updates
   const createDebouncedSetter = <T extends number>(
@@ -68,26 +92,6 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
     }
   }
 
-  // For rename playlist
-  const [renameInput, setRenameInput] = createSignal('')
-  // For add melody to playlist
-  const [addMelodySearch, setAddMelodySearch] = createSignal('')
-
-  const [editName, setEditName] = createSignal('')
-  const [editBpm, setEditBpm] = createSignal(80)
-  const [editKey, setEditKey] = createSignal('C')
-  const [editScale, setEditScale] = createSignal('major')
-  const [editTags, setEditTags] = createSignal('')
-  const [editNotes, setEditNotes] = createSignal('')
-
-  const [createName, setCreateName] = createSignal('')
-  const [createBpm, setCreateBpm] = createSignal(80)
-  const [createKey, setCreateKey] = createSignal('C')
-  const [createScale, setCreateScale] = createSignal('major')
-  const [createTags, setCreateTags] = createSignal('')
-  const [createNotes, setCreateNotes] = createSignal('')
-
-  // Debounced BPM setters to prevent rapid-fire updates
   const debouncedCreateBpm = createDebouncedSetter(createBpm, 300)
   const debouncedEditBpm = createDebouncedSetter(editBpm, 300)
 
@@ -156,6 +160,10 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
     return library().melodies[key] ?? null
   })
 
+  // ===========================================
+  // 3. Regular functions - event handlers
+  // ===========================================
+
   const handlePlay = (melody: MelodyData) => {
     melodyStore.loadMelody(melody.id)
     appStore.setCurrentPresetName(melody.name)
@@ -177,94 +185,6 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
     props.close()
   }
 
-  // Drag and drop handlers
-  const handleDragStart = (e: DragEvent, melodyId: string) => {
-    setDragState({ type: 'melody', melodyId })
-    if (e.dataTransfer) {
-      e.dataTransfer.effectAllowed = 'move'
-      e.dataTransfer.setData('text/plain', melodyId)
-    }
-  }
-
-  const handleDragStartPlaylist = (e: DragEvent, playlistId: string) => {
-    setDragState({ type: 'playlist', playlistId })
-    if (e.dataTransfer) {
-      e.dataTransfer.effectAllowed = 'move'
-      e.dataTransfer.setData('playlistId', playlistId)
-    }
-  }
-
-  const _handleDragStartSession = (e: DragEvent, sessionId: string) => {
-    setDragState({ type: 'session', sessionId })
-    if (e.dataTransfer) {
-      e.dataTransfer.effectAllowed = 'move'
-      e.dataTransfer.setData('sessionId', sessionId)
-    }
-  }
-
-  const handleDragEnd = () => {
-    setDragState(null)
-  }
-
-  const handleDragOver = (e: DragEvent) => {
-    e.preventDefault()
-    if (e.dataTransfer) {
-      e.dataTransfer.dropEffect = 'move'
-    }
-  }
-
-  const handleDropPlaylist = (e: DragEvent, playlistId: string) => {
-    e.preventDefault()
-    const state = dragState()
-    if (state !== null && state.type === 'melody') {
-      melodyStore.addMelodyToPlaylist(playlistId, state.melodyId)
-      appStore.showNotification('Melody added to playlist', 'success')
-      setDragState(null)
-    } else if (state !== null && state.type === 'session') {
-      melodyStore.addSessionToPlaylist(playlistId, state.sessionId)
-      appStore.showNotification('Session added to playlist', 'success')
-      setDragState(null)
-    }
-  }
-
-  const handleDropSessionToPlaylist = (e: DragEvent, playlistId: string) => {
-    e.preventDefault()
-    const state = dragState()
-    if (state !== null && state.type === 'session') {
-      // Add session to playlist
-      const playlist = melodyStore.getPlaylist(playlistId)
-      if (playlist) {
-        // Check if session is already in playlist
-        const sessionKeys = playlist.sessionKeys
-        if (sessionKeys !== undefined && sessionKeys.includes(state.sessionId)) {
-          appStore.showNotification('Session already in playlist', 'info')
-          setDragState(null)
-          return
-        }
-        melodyStore.addSessionToPlaylist(playlistId, state.sessionId)
-        appStore.showNotification('Session added to playlist', 'success')
-        setDragState(null)
-      }
-    }
-  }
-
-  const handleDropMelodyList = (e: DragEvent, melodyId: string) => {
-    e.preventDefault()
-    const state = dragState()
-    if (state !== null && state.type === 'playlist') {
-      // Remove melody from playlist
-      const playlist = melodyStore.getPlaylist(state.playlistId)
-      if (playlist) {
-        const newMelodyKeys = playlist.melodyKeys.filter(id => id !== melodyId)
-        melodyStore.updatePlaylist(state.playlistId, {
-          melodyKeys: newMelodyKeys
-        })
-        appStore.showNotification('Melody removed from playlist', 'success')
-      }
-      setDragState(null)
-    }
-  }
-
   const handleDelete = (key: string) => {
     if (confirm('Delete this melody?')) {
       melodyStore.deleteMelody(key)
@@ -276,11 +196,9 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
   }
 
   const handleEdit = (melody: MelodyData) => {
-    // Load melody and navigate to piano roll editor
     melodyStore.loadMelody(melody.id)
     appStore.setActiveTab('editor')
     setEditorView('piano-roll')
-    // Close modal
     props.close()
   }
 
@@ -343,7 +261,6 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
       notes: createNotes().trim().length > 0 ? createNotes().trim() : undefined,
     })
 
-    // Add to active session if not default session
     const sessionId = melodyStore.getActiveSessionId()
     if (sessionId !== null && sessionId !== 'default') {
       const session = getSession(sessionId)
@@ -375,7 +292,6 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
     return notes !== null && notes !== undefined && notes.trim().length > 0
   }
 
-  // Playlist operations
   const _handleCreatePlaylist = () => {
     const name = renameInput().trim() || 'My Playlist'
     const _playlistId = melodyStore.createPlaylist(name)
@@ -465,6 +381,91 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
       selectedMelodyKey: null,
     })
     setAddMelodySearch('')
+  }
+
+  // Drag and drop handlers
+  const handleDragStart = (e: DragEvent, melodyId: string) => {
+    setDragState({ type: 'melody', melodyId })
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = 'move'
+      e.dataTransfer.setData('text/plain', melodyId)
+    }
+  }
+
+  const handleDragStartPlaylist = (e: DragEvent, playlistId: string) => {
+    setDragState({ type: 'playlist', playlistId })
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = 'move'
+      e.dataTransfer.setData('playlistId', playlistId)
+    }
+  }
+
+  const _handleDragStartSession = (e: DragEvent, sessionId: string) => {
+    setDragState({ type: 'session', sessionId })
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = 'move'
+      e.dataTransfer.setData('sessionId', sessionId)
+    }
+  }
+
+  const handleDragEnd = () => {
+    setDragState(null)
+  }
+
+  const handleDragOver = (e: DragEvent) => {
+    e.preventDefault()
+    if (e.dataTransfer) {
+      e.dataTransfer.dropEffect = 'move'
+    }
+  }
+
+  const handleDropPlaylist = (e: DragEvent, playlistId: string) => {
+    e.preventDefault()
+    const state = dragState()
+    if (state !== null && state.type === 'melody') {
+      melodyStore.addMelodyToPlaylist(playlistId, state.melodyId)
+      appStore.showNotification('Melody added to playlist', 'success')
+      setDragState(null)
+    } else if (state !== null && state.type === 'session') {
+      melodyStore.addSessionToPlaylist(playlistId, state.sessionId)
+      appStore.showNotification('Session added to playlist', 'success')
+      setDragState(null)
+    }
+  }
+
+  const handleDropSessionToPlaylist = (e: DragEvent, playlistId: string) => {
+    e.preventDefault()
+    const state = dragState()
+    if (state !== null && state.type === 'session') {
+      const playlist = melodyStore.getPlaylist(playlistId)
+      if (playlist) {
+        const sessionKeys = playlist.sessionKeys
+        if (sessionKeys !== undefined && sessionKeys.includes(state.sessionId)) {
+          appStore.showNotification('Session already in playlist', 'info')
+          setDragState(null)
+          return
+        }
+        melodyStore.addSessionToPlaylist(playlistId, state.sessionId)
+        appStore.showNotification('Session added to playlist', 'success')
+        setDragState(null)
+      }
+    }
+  }
+
+  const handleDropMelodyList = (e: DragEvent, melodyId: string) => {
+    e.preventDefault()
+    const state = dragState()
+    if (state !== null && state.type === 'playlist') {
+      const playlist = melodyStore.getPlaylist(state.playlistId)
+      if (playlist) {
+        const newMelodyKeys = playlist.melodyKeys.filter(id => id !== melodyId)
+        melodyStore.updatePlaylist(state.playlistId, {
+          melodyKeys: newMelodyKeys
+        })
+        appStore.showNotification('Melody removed from playlist', 'success')
+      }
+      setDragState(null)
+    }
   }
 
   return (
