@@ -243,13 +243,10 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
   }
 
   const handleEdit = (melody: MelodyData) => {
-    setEditName(melody.name)
-    setEditBpm(melody.bpm)
-    setEditKey(melody.key)
-    setEditScale(melody.scaleType)
-    setEditTags(melody.tags ? melody.tags.join(', ') : '')
-    setEditNotes(melody.notes ?? '')
-    setEditingMelodyKey(melody.id)
+    // Load melody and navigate to piano roll
+    melodyStore.loadMelody(melody.id)
+    // Close modal
+    props.close()
   }
 
   const handleSaveMelody = () => {
