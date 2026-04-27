@@ -7022,22 +7022,39 @@ Keeps your existing styles, only adjusts layout
 }
 
 .walkthrough-item.completed {
-  opacity: 0.9;
+  opacity: 0.75;
   border-color: var(--accent-success);
   background: var(--accent-success-light);
+  position: relative;
 }
 
-.walkthrough-item.completed .walkthrough-item-title::before {
-  content: '✓ ';
+.walkthrough-item.completed::before {
+  content: '✓';
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 1rem;
   color: var(--accent-success);
+  background: var(--accent-success-light);
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-weight: bold;
 }
 
+.walkthrough-item.completed .walkthrough-item-title {
+  position: relative;
+  padding-right: 28px;
+}
+
 .walkthrough-item.completed .walkthrough-item-title::after {
-  content: ' (Completed)';
-  color: var(--text-secondary);
-  font-size: 0.9rem;
-  font-weight: normal;
+  content: ' - Completed';
+  color: var(--accent-success);
+  font-size: 0.85rem;
+  font-weight: 500;
 }
 
 .walkthrough-thumbnail {
