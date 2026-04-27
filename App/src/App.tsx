@@ -1629,7 +1629,7 @@ export const App: Component<AppProps> = (props) => {
               class={`app-tab ${activeTab() === 'practice' ? 'active' : ''}`}
               onClick={() => void handleTabChange('practice')}
             >
-              Practice
+              Session Mode
             </button>
             <button
               id="tab-editor"
