@@ -456,7 +456,7 @@ export class PlaybackRuntime {
 
   get _bpm(): number {
     const bpm = this.audioEngine.getBpm?.()
-    return bpm !== undefined ? bpm : 120
+    return bpm !== undefined && bpm > 0 ? bpm : 120
   }
 
   set _bpm(bpm: number) {

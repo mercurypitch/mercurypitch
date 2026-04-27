@@ -482,6 +482,42 @@ export const App: Component<AppProps> = (props) => {
     appStore.initSettings()
     appStore.initReverb()
 
+    // Load default melody if library is empty
+    const library = melodyStore.getMelodyLibrary()
+    if (Object.keys(library.melodies).length === 0) {
+      // Create a default melody with actual notes (using beats, not milliseconds)
+      // PlaybackRuntime expects melody items to use beats for timing
+      const defaultMelody = melodyStore.createNewMelody('C Major Scale', 'System')
+      // With BPM=80, 1 beat = 750ms
+      melodyStore.setMelody([
+        {
+          id: 'note-1',
+          note: { midi: 60, freq: 261.63, octave: 4 }, // C4
+          duration: 4, // 4 beats
+          startBeat: 0,
+        },
+        {
+          id: 'note-2',
+          note: { midi: 62, freq: 277.18, octave: 4 }, // D4
+          duration: 4, // 4 beats
+          startBeat: 4, // After 4 beats
+        },
+        {
+          id: 'note-3',
+          note: { midi: 64, freq: 293.66, octave: 4 }, // E4
+          duration: 4, // 4 beats
+          startBeat: 8,
+        },
+        {
+          id: 'note-4',
+          note: { midi: 67, freq: 329.63, octave: 4 }, // G4
+          duration: 4, // 4 beats
+          startBeat: 12,
+        },
+      ])
+      console.log('[App onMount] Created default C Major Scale melody with notes')
+    }
+
     // Initialize active user session from saved default
     const activeSessionId = melodyStore.getActiveSessionId()
     if (activeSessionId === null) {
