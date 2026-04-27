@@ -3789,6 +3789,10 @@ Keeps your existing styles, only adjusts layout
   min-width: 160px;
   font-size: 0.85rem;
   color: var(--text-primary);
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  cursor: default;
 }
 
 .settings-row input[type='range'] {
