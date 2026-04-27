@@ -7,6 +7,7 @@ import { createMemo, For, onMount, Show } from 'solid-js'
 import { appStore } from '@/stores/app-store'
 import { getActiveSession } from '@/stores/melody-store'
 import { melodyStore } from '@/stores/melody-store'
+import { createSession, saveSession } from '@/stores/session-store'
 import type { MelodyData, SavedUserSession, SessionItem } from '@/types'
 
 export const LibraryTab: Component = () => {
@@ -96,6 +97,26 @@ export const LibraryTab: Component = () => {
 
   const openPresetsLibrary = () => {
     appStore.showPresetsLibrary()
+  }
+
+  const handleNewSession = () => {
+    // Create a new user-deletable session
+    const newSession = createSession('New Session')
+    // Set as active session
+    appStore.setActiveUserSession(newSession)
+    // Ensure it's saved to the library
+    saveSession(newSession)
+    // Select the first melody item if available
+    if (newSession.items.length > 0) {
+      const firstItem = newSession.items[0]
+      if (firstItem.type === 'melody' && 'melodyId' in firstItem) {
+        const melodyId = (firstItem as { melodyId: string }).melodyId
+        if (melodyId && typeof melodyId === 'string') {
+          melodyStore.loadMelody(melodyId)
+        }
+      }
+    }
+    appStore.showNotification('New session created', 'success')
   }
 
   const handleRecentItemClick = (item: {type: 'melody', data: MelodyData} | {type: 'session', data: SavedUserSession}) => {
@@ -450,6 +471,15 @@ export const LibraryTab: Component = () => {
 
       {/* Quick Actions */}
       <div class="quick-actions">
+        <button class="quick-action-btn" onClick={handleNewSession}>
+          <svg viewBox="0 0 24 24" width="14" height="14">
+            <path
+              fill="currentColor"
+              d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"
+            />
+          </svg>
+          New Session
+        </button>
         <button class="quick-action-btn" onClick={openSessionLibrary}>
           <svg viewBox="0 0 24 24" width="14" height="14">
             <path

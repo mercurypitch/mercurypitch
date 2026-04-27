@@ -7,6 +7,7 @@
 import type { Component } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
 import { appStore, melodyStore } from '@/stores'
+import { addItemToSession,deleteSessionItem } from '@/stores/session-store'
 import type { SessionItem } from '@/types'
 import { MelodyPillList } from './MelodyPillList'
 import { SessionEditorTimeline } from './SessionEditorTimeline'
@@ -27,7 +28,31 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
     return []
   }
 
+  // Function to add melodies to session - handled via drag-drop and click from MelodyPillList
+  const _handleAddMelodyToSession = (_melodyId: string) => {
+    const session = appStore.getUserSession()
+    if (!session) {
+      appStore.showNotification('No active session to add melody to', 'error')
+      return
+    }
+
+    const newSessionItem: Omit<SessionItem, 'id'> = {
+      type: 'melody',
+      label: `Melody`,
+      melodyId: _melodyId,
+      startBeat: sessionItems().length > 0 ? sessionItems()[sessionItems().length - 1].startBeat! + 16 : 0,
+    }
+
+    addItemToSession(session.id, newSessionItem)
+    setSelectedMelodyIds(prev => {
+      const next = new Set(prev)
+      next.add(_melodyId)
+      return next
+    })
+  }
+
   const handleMelodySelect = (melodyId: string) => {
+    // Select the melody but don't add it to session (this is separate functionality)
     const current = selectedMelodyIds()
     if (current.has(melodyId)) {
       const next = new Set(current)
@@ -41,6 +66,16 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
   }
 
   const handleDeleteItem = (itemId: string) => {
+    const session = appStore.getUserSession()
+    if (!session) {
+      appStore.showNotification('No active session', 'error')
+      return
+    }
+
+    // Remove the item from the session using session-store
+    deleteSessionItem(session.id, itemId)
+
+    // Update selected melody IDs if needed
     setSelectedMelodyIds(prev => {
       const next = new Set(prev)
       next.delete(itemId)
@@ -48,8 +83,30 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
     })
   }
 
-  const handleDragOver = (_index: number) => {
-    // Optional: Visual feedback for drop zones
+  const handleDragStart = (_melodyId: string) => {
+    // Handled by MelodyPillList
+  }
+
+  const handleDrop = (melodyId: string, targetItemIndex?: number) => {
+    const session = appStore.getUserSession()
+    if (!session) {
+      appStore.showNotification('No active session to add melody to', 'error')
+      return
+    }
+
+    const newSessionItem: Omit<SessionItem, 'id'> = {
+      type: 'melody',
+      label: `Melody`,
+      melodyId: melodyId,
+      startBeat: targetItemIndex !== undefined ? sessionItems()[targetItemIndex].startBeat! : sessionItems().length > 0 ? sessionItems()[sessionItems().length - 1].startBeat! + 16 : 0,
+    }
+
+    addItemToSession(session.id, newSessionItem)
+    appStore.showNotification(`Melody added to session`, 'success')
+  }
+
+  const _handleDragOver = (_index: number) => {
+    // Visual feedback can be added here
   }
 
   const handleAddRest = (startBeat: number, duration: number) => {
@@ -108,9 +165,9 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
               sessionItems={sessionItems()}
               onDeleteItem={handleDeleteItem}
               onAddRest={handleAddRest}
-              onDragOver={handleDragOver}
-              onDragStart={() => {}}
-              onDrop={() => {}}
+              onDragOver={_handleDragOver}
+              onDragStart={handleDragStart}
+              onDrop={handleDrop}
             />
           </div>
         </div>

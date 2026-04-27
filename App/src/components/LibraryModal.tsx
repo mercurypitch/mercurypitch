@@ -263,17 +263,15 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
       notes: createNotes().trim().length > 0 ? createNotes().trim() : undefined,
     })
 
-    const sessionId = melodyStore.getActiveSessionId()
-    if (sessionId !== null && sessionId !== 'default') {
-      const session = getSession(sessionId)
-      if (session) {
-        addItemToSession(sessionId, {
-          type: 'melody',
-          label: name,
-          melodyId: newMelody.id,
-          startBeat: 0,
-        })
-      }
+    // Always add newly created melody to default session
+    const defaultSession = getSession('default')
+    if (defaultSession) {
+      addItemToSession('default', {
+        type: 'melody',
+        label: name,
+        melodyId: newMelody.id,
+        startBeat: 0,
+      })
     }
 
     setCreateName('')

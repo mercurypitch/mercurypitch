@@ -10,6 +10,7 @@ import { melodyStore } from '@/stores'
 interface MelodyPillListProps {
   selectedMelodyIds?: Set<string>
   onMelodySelect?: (id: string) => void
+  onMelodyAdd?: (id: string) => void
   onSelectAll?: () => void
   onClearSelection?: () => void
   className?: string
@@ -67,7 +68,16 @@ export const MelodyPillList: Component<MelodyPillListProps> = (props) => {
               class={pillClass(melody.id)}
               draggable={true}
               onDragStart={(e) => handleDragStart(e, melody.id)}
-              onClick={() => props.onMelodySelect?.(melody.id)}
+              onClick={(e) => {
+                // Only add to session if we're in Session Editor context
+                const parentElement = e.target as HTMLElement
+                const isInSessionEditor = parentElement.closest('.session-editor')
+                if (isInSessionEditor && props.onMelodyAdd) {
+                  props.onMelodyAdd(melody.id)
+                } else {
+                  props.onMelodySelect?.(melody.id)
+                }
+              }}
               title={melody.name}
             >
               <span class="pill-name">{melody.name}</span>
