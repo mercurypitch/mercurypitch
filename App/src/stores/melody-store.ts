@@ -926,6 +926,52 @@ export function getPlaylist(melodyKey: string):
   return melodyLibrarySignal().playlists[melodyKey]
 }
 
+export function playPlaylist(playlistId: string): void {
+  const playlist = getPlaylist(playlistId)
+  if (playlist === null || playlist === undefined) return
+
+  const library = melodyLibrarySignal()
+  let currentIndex = 0
+
+  // Play melodies one by one
+  const playNextMelody = () => {
+    const playlistItem = playlist.melodyKeys[currentIndex]
+    const melody = library.melodies[playlistItem]
+
+    if (melody !== null && melody !== undefined) {
+      // Load the melody
+      melodyStore.loadMelody(melody.id)
+
+      // Update play count for each melody
+      const playCount = 'playCount' in melody ? melody.playCount : 0
+      const updatedMelody = {
+        ...melody,
+        playCount: (playCount ?? 0) + 1,
+        lastPlayed: Date.now(),
+      }
+      setMelodyLibrary((prev) => ({
+        ...prev,
+        melodies: {
+          ...prev.melodies,
+          [melody.id]: updatedMelody,
+        },
+        meta: { ...prev.meta, lastUpdated: Date.now() },
+      }))
+      _saveLibraryToStorage()
+
+      // Increment index and continue to next melody
+      currentIndex++
+      if (currentIndex < playlist.melodyKeys.length) {
+        // Play next melody after current one completes
+        setTimeout(playNextMelody, 3000)
+      }
+    }
+  }
+
+  // Start playing from the first melody
+  playNextMelody()
+}
+
 export function getMelody(id: string): MelodyData | undefined {
   return melodyLibrarySignal().melodies[id]
 }
@@ -981,6 +1027,7 @@ export const melodyStore = {
   getPlaylists,
   getPlaylist,
   getPlaylistCount,
+  playPlaylist,
 
   // Export library
   melodyLibrary: getMelodyLibrary,

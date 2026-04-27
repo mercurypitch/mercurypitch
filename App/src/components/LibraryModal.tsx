@@ -166,6 +166,11 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
     props.close()
   }
 
+  const handlePlayPlaylist = (playlistId: string) => {
+    melodyStore.playPlaylist(playlistId)
+    props.close()
+  }
+
   const handleLoad = (melody: MelodyData) => {
     melodyStore.loadMelody(melody.id)
     appStore.setCurrentPresetName(melody.name)
@@ -1162,11 +1167,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                             <button
                               class="action-btn play-btn"
                               onClick={() => {
-                                props.close()
-                                appStore.showNotification(
-                                  'Playlist playback coming soon!',
-                                  'info',
-                                )
+                                handlePlayPlaylist(_id)
                               }}
                               title="Play All"
                             >
