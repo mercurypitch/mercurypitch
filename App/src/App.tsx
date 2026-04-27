@@ -115,10 +115,28 @@ export const App: Component<AppProps> = (props) => {
   const _showWelcome = () => appStore.showWelcome()
   const focusMode = () => appStore.focusMode()
 
-  // Tab handlers - audio cleanup handled by handleTabChange
-  const _handleTabPractice = () => void appStore.setActiveTab('practice')
-  const _handleTabEditor = () => void appStore.setActiveTab('editor')
-  const _handleTabSettings = () => void appStore.setActiveTab('settings')
+  // Tab handlers - audio cleanup handled here
+  const _handleTabPractice = async () => {
+    const currentTab = activeTab()
+    if (currentTab === 'practice' || currentTab === 'editor') {
+      await resetPlaybackState()
+    }
+    appStore.setActiveTab('practice')
+  }
+  const _handleTabEditor = async () => {
+    const currentTab = activeTab()
+    if (currentTab === 'practice' || currentTab === 'editor') {
+      await resetPlaybackState()
+    }
+    appStore.setActiveTab('editor')
+  }
+  const _handleTabSettings = async () => {
+    const currentTab = activeTab()
+    if (currentTab === 'practice' || currentTab === 'editor') {
+      await resetPlaybackState()
+    }
+    appStore.setActiveTab('settings')
+  }
 
   // ── ALL SOLIDJS REACTIVE TYPES (Signals) ────────────────────
   const [isPlaying, setIsPlaying] = createSignal(false)
