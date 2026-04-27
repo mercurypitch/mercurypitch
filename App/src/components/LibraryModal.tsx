@@ -1087,6 +1087,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                           <button
                             class="action-btn play-btn"
                             onClick={() => {
+                              props.close()
                               appStore.showNotification(
                                 'Playlist playback coming soon!',
                                 'info',
