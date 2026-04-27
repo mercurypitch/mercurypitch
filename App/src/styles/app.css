@@ -7312,6 +7312,19 @@ Keeps your existing styles, only adjusts layout
   cursor: not-allowed;
 }
 
+.walkthrough-done-btn {
+  padding: 10px 20px;
+  background: var(--accent);
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-weight: 500;
+}
+
+.walkthrough-done-btn:hover {
+  background: var(--accent-light);
+}
+
 .walkthrough-nav-btn-next {
   background: var(--accent);
 }

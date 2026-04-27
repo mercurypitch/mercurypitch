@@ -231,14 +231,6 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
 
             <Show when={!isCompleted()}>
               <div class="walkthrough-content">
-                {/* Back to list */}
-                <button
-                  class="walkthrough-back-btn"
-                  onClick={handleBackToList}
-                >
-                  ← Back to list
-                </button>
-
                 {/* Content */}
                 <div class="walkthrough-body">
                   <h2 class="walkthrough-main-title">
@@ -343,6 +335,14 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
                     disabled={currentStepIndex() === 0}
                   >
                     ← Previous
+                  </button>
+
+                  {/* Done Button */}
+                  <button
+                    class="walkthrough-done-btn"
+                    onClick={completeCurrentWalkthrough}
+                  >
+                    Done
                   </button>
 
                   {currentStepIndex() < (currentWalkthrough()!.steps.length - 1) ? (
