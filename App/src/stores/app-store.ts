@@ -4,17 +4,19 @@
 // ============================================================
 
 import { createSignal } from 'solid-js'
+import { buildMultiOctaveScale } from '@/lib/scale-data'
 import type {
   AccuracyBand,
   MelodyItem,
   MelodyNote,
+  NoteName,
   PracticeSession,
   SavedUserSession,
   Session,
   SessionResult,
   SessionTemplate,
 } from '@/types'
-import { melodyStore } from './melody-store'
+import { getMelodyLibrary,melodyStore } from './melody-store'
 
 // ── Key / Scale ─────────────────────────────────────────────
 
@@ -1018,31 +1020,65 @@ export function startPracticeSession(
   // Initialize melody for playback (sync melodyStore with session items)
   const activeMelody: MelodyItem[] = practiceSession.items
     .filter((item) => item.type !== 'rest')
-    .map((item) => {
+    .flatMap((item) => {
       if (item.type === 'scale') {
+        // Build actual scale melody with proper notes
+        const scaleType = item.scaleType ?? 'major'
+        const beats = item.beats ?? 8
+        const numOctaves = beats > 12 ? 2 : 1
+        const currentOctave = melodyStore.currentOctave()
+
+        const scale = buildMultiOctaveScale(
+          keyName(),
+          currentOctave,
+          numOctaves,
+          scaleType,
+        )
+
+        if (scale.length > 0) {
+          const numNotes = Math.min(scale.length, beats)
+          return scale.slice(0, numNotes).map((note, i) => ({
+            id: melodyStore.generateId(),
+            note: {
+              midi: note.midi,
+              name: note.name as NoteName,
+              octave: note.octave,
+              freq: note.freq,
+            },
+            startBeat: i,
+            duration: 1,
+          }))
+        }
+        // Fallback to default if scale is empty
         return {
+          id: melodyStore.generateId(),
           startBeat: item.startBeat ?? 0,
-          duration: item.beats ?? 8,
+          duration: beats,
           note: { midi: 60, name: 'C', octave: 4, freq: 261.63 } as MelodyNote,
-        } as MelodyItem
+        }
       } else if (item.type === 'melody') {
-        // For melodies, we need to look up the actual melody data
+        // For melodies, look up and return their items as MelodyItems
         const melodyId = item.melodyId as string
-        const library = melodyStore.melodyLibrary()
+        const library = getMelodyLibrary()
         const melodyData = library.melodies[melodyId || 'unknown']
-        if ((melodyData !== null) && Array.isArray(melodyData.items) && melodyData.items.length > 0) {
-          return {
-            startBeat: item.startBeat ?? 0,
-            items: melodyData.items,
-          } as unknown as MelodyItem
+        const melodyItems = melodyData?.items
+        if (melodyItems !== null) {
+          // Convert library items to MelodyItem format
+          return melodyItems.map((libItem) => ({
+            id: libItem.id,
+            note: libItem.note,
+            startBeat: (item.startBeat ?? 0) + libItem.startBeat,
+            duration: libItem.duration,
+          }))
         }
       }
       // Default fallback for unknown items
       return {
+        id: melodyStore.generateId(),
         startBeat: item.startBeat ?? 0,
         duration: 8,
         note: { midi: 60, name: 'C', octave: 4, freq: 261.63 } as MelodyNote,
-      } as MelodyItem
+      }
     })
 
   melodyStore.setMelody(activeMelody)
