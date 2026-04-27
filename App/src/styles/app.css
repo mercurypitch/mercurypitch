@@ -7002,7 +7002,8 @@ Keeps your existing styles, only adjusts layout
 
 .walkthrough-item {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
+  justify-content: center;
   gap: 16px;
   padding: 16px;
   margin-bottom: 12px;
@@ -7011,6 +7012,8 @@ Keeps your existing styles, only adjusts layout
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s;
+  text-align: center;
+  width: 100%;
 }
 
 .walkthrough-item:hover {
@@ -7019,7 +7022,7 @@ Keeps your existing styles, only adjusts layout
 }
 
 .walkthrough-item.completed {
-  opacity: 0.8;
+  opacity: 0.9;
   border-color: var(--accent-success);
   background: var(--accent-success-light);
 }
@@ -7028,6 +7031,13 @@ Keeps your existing styles, only adjusts layout
   content: '✓ ';
   color: var(--accent-success);
   font-weight: bold;
+}
+
+.walkthrough-item.completed .walkthrough-item-title::after {
+  content: ' (Completed)';
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  font-weight: normal;
 }
 
 .walkthrough-thumbnail {
@@ -7044,6 +7054,13 @@ Keeps your existing styles, only adjusts layout
   margin: 0 0 6px 0;
   font-size: 1rem;
   font-weight: 500;
+}
+
+.walkthrough-item-desc {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
 }
 
 .walkthrough-item-desc {
@@ -7117,6 +7134,26 @@ Keeps your existing styles, only adjusts layout
 .walkthrough-back-btn:hover {
   border-color: var(--text);
   color: var(--text);
+}
+
+.walkthrough-back-list-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.85rem;
+  margin: 16px auto 0;
+  transition: all 0.2s;
+}
+
+.walkthrough-back-list-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .walkthrough-main-title {

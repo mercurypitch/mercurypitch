@@ -219,6 +219,9 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
                 <button class="walkthrough-complete-btn" onClick={handleContinue}>
                   Continue
                 </button>
+                <button class="walkthrough-back-list-btn" onClick={handleBackToList}>
+                  ← Back to list
+                </button>
               </div>
             </Show>
 
