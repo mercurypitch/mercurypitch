@@ -361,6 +361,4 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
       </div>
     </Show>
   )
-
-  const walkthroughs = getWalkthroughsForTab(currentTab())
 }

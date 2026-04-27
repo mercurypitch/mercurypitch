@@ -304,8 +304,8 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
           <div class="session-items-display">
             <h3>Session Items</h3>
             <div id="session-items-list">
-              <Show when={userSession()?.items !== null && userSession()!.items.length > 0}>
-                <For each={userSession()?.items}>
+              <Show when={userSession() !== null}>
+                <For each={userSession()!.items}>
                   {(item) => (
                     <div class="session-item-entry">
                       <span class="session-item-label">{item.label}</span>
