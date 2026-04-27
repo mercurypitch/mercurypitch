@@ -494,6 +494,8 @@ export class PianoRollEditor {
   private isExternalPlayback = false
   private isSeeking = false
   private seekStartX = 0
+  // Track currently playing notes (for audio stacking prevention)
+  private currentPlayingNoteIds = new Set<number>()
   // Track whether playback was started externally (Practice tab) vs internally (Editor tab)
   private externalPlayback = false
 
@@ -2290,34 +2292,57 @@ export class PianoRollEditor {
 
     this.drawWithPlayhead()
 
-    // Play tones for notes that start at current beat (one-shot trigger per note)
+    // Stop notes that have ended (to prevent audio stacking)
     const win = window as Window & {
       pianoRollAudioEngine?: {
-        playNote: (
-          freq: number,
-          durationMs: number,
-          effectType?: string,
-        ) => number | undefined
+        stopNote: (noteId: number) => void
+        playNote: (freq: number, durationMs: number, effectType?: string) => void
       }
     }
-    if (win.pianoRollAudioEngine && this.melody.length > 0) {
-      const durationMs = this.beatWidth * (60000 / this.bpm)
+    if (win.pianoRollAudioEngine) {
+      // Get current note being played
+      let currentNote: MelodyItem | undefined
       for (const note of this.melody) {
-        const noteId = note.id ?? -1
-        // One-shot: trigger exactly once when activeBeat crosses the note's start beat.
-        // Guard: only trigger when activeBeat is within 0.02 beats of the start and the
-        // note has not been started yet.
-        if (
-          !this.startedNoteIds.has(noteId) &&
-          Math.abs(beat - note.startBeat) < 0.02 &&
-          note.startBeat <= beat
-        ) {
-          this.startedNoteIds.add(noteId)
-          win.pianoRollAudioEngine.playNote(
-            note.note.freq,
-            note.duration * durationMs,
-            note.effectType,
-          )
+        if (note.startBeat <= beat && note.startBeat + note.duration > beat) {
+          currentNote = note
+          break
+        }
+      }
+
+      // Stop notes that have finished playing
+      const toStop = Array.from(this.currentPlayingNoteIds).filter((id: number) => {
+        const note = this.melody.find((n) => (n.id ?? -1) === id)
+        if (!note || !currentNote) return false
+        // Stop if the note has ended and it's not the current note
+        return beat >= note.startBeat + note.duration && note !== currentNote
+      })
+
+      for (const noteId of toStop) {
+        win.pianoRollAudioEngine.stopNote(noteId)
+        this.currentPlayingNoteIds.delete(noteId)
+      }
+
+      // Play tones for notes that start at current beat (one-shot trigger per note)
+      if (this.melody.length > 0) {
+        const durationMs = this.beatWidth * (60000 / this.bpm)
+        for (const note of this.melody) {
+          const noteId = note.id ?? -1
+          // One-shot: trigger exactly once when activeBeat crosses the note's start beat.
+          // Guard: only trigger when activeBeat is within 0.02 beats of the start and the
+          // note has not been started yet.
+          if (
+            !this.startedNoteIds.has(noteId) &&
+            Math.abs(beat - note.startBeat) < 0.02 &&
+            note.startBeat <= beat
+          ) {
+            this.startedNoteIds.add(noteId)
+            this.currentPlayingNoteIds.add(noteId)
+            win.pianoRollAudioEngine.playNote(
+              note.note.freq,
+              note.duration * durationMs,
+              note.effectType,
+            )
+          }
         }
       }
     }
@@ -2356,12 +2381,20 @@ export class PianoRollEditor {
     }
     // GH #130: Stop all active audio notes
     const win = window as Window & {
-      pianoRollAudioEngine?: { stopAllNotes: () => void }
+      pianoRollAudioEngine?: {
+        stopAllNotes: () => void
+        stopNote: (noteId: number) => void
+        playNote: (freq: number, durationMs: number, effectType?: string) => void
+      }
     }
     win.pianoRollAudioEngine?.stopAllNotes()
     // Reset playhead position to 0 when stopping playback
     this.remoteBeat = 0
     this.editorBeat = 0
+    // Clear tracking sets
+    this.startedNoteIds.clear()
+    this.currentPlayingNoteIds.clear()
+    this.currentNoteRow = -1
   }
 
   private seekToRulerPosition(e: MouseEvent): void {
