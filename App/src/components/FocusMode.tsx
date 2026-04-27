@@ -63,20 +63,23 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
   const sessionItem = createMemo(() => appStore.sessionItemIndex())
   const sessionRepeat = createMemo(() => appStore.currentSessionItemRepeat())
 
-  // Calculate pitch dot position based on current note
+  // Calculate pitch dot position based on current pitch frequency
   const pitchDotPosition = createMemo(() => {
-    const items = melodyStore.getCurrentItems()
-    const noteIndex = props.currentNoteIndex?.() ?? -1
-
-    if (noteIndex >= 0 && noteIndex < items.length) {
-      // Calculate position based on note index in the items array
-      // (simplified - could be more accurate with actual note frequency mapping)
-      const totalNotes = items.length
-      const normalizedPosition = noteIndex / Math.max(1, totalNotes - 1)
-      return Math.max(0, Math.min(100, normalizedPosition * 100))
+    const pitch = props.currentPitch()
+    if (pitch && pitch.freq && pitch.freq > 0) {
+      // Use freqToY-like calculation to get normalized position (0-100)
+      const scale = melodyStore.currentScale()
+      if (scale.length > 0) {
+        const minFreq = Math.min(...scale.map((n) => n.freq)) * 0.82
+        const maxFreq = Math.max(...scale.map((n) => n.freq)) * 1.22
+        const logMin = Math.log2(minFreq)
+        const logMax = Math.log2(maxFreq)
+        const logFreq = Math.log2(pitch.freq)
+        const pct = (logFreq - logMin) / (logMax - logMin)
+        return Math.max(0, Math.min(100, pct * 100))
+      }
     }
-
-    // Return 50% as default when no active note
+    // Return middle position when no active pitch
     return 50
   })
 
@@ -174,10 +177,10 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
             class="playhead-marker"
             style={{ left: `${playheadPosition()}%` }}
           />
-          {/* Glowing pitch dot with dynamic position */}
+          {/* Glowing pitch dot with dynamic vertical position */}
           <div
             class="focus-pitch-dot"
-            style={{ left: `${pitchDotPosition()}%` }}
+            style={{ '--pitch-position': `${pitchDotPosition()}%` }}
           />
         </div>
       </div>
