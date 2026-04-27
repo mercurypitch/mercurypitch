@@ -48,11 +48,11 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
     const start = touchStartPos()
     const deltaX = Math.abs(touch.clientX - start.x)
 
-    // Only allow horizontal swipe (left/right) after 50px
-    if (deltaX < 50) return
+    // Only allow horizontal swipe (left/right) after 60px
+    if (deltaX < 60) return
 
     // Map horizontal swipe to index change (negative for left, positive for right)
-    const itemWidth = 100
+    const itemWidth = 140
     const indexChange = Math.round(deltaX / itemWidth)
 
     if (indexChange !== 0) {
