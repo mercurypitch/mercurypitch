@@ -6,7 +6,7 @@ import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
 import { appStore, setEditorView } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
-import { addItemToSession,getSession } from '@/stores/session-store'
+import { addItemToSession } from '@/stores/session-store'
 import type { MelodyData, NoteName } from '@/types'
 
 type DebouncedSetter<T> = (value: T, immediate?: boolean) => void
@@ -263,10 +263,10 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
       notes: createNotes().trim().length > 0 ? createNotes().trim() : undefined,
     })
 
-    // Always add newly created melody to default session
-    const defaultSession = getSession('default')
-    if (defaultSession) {
-      addItemToSession('default', {
+    // Add newly created melody to currently active session
+    const session = appStore.getUserSession()
+    if (session) {
+      addItemToSession(session.id, {
         type: 'melody',
         label: name,
         melodyId: newMelody.id,
