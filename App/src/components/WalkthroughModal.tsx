@@ -32,6 +32,9 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
   )
   const [currentStepIndex, setCurrentStepIndex] = createSignal(0)
 
+  // Track the most recently selected tab for proper navigation
+  const [lastValidTab, setLastValidTab] = createSignal<WalkthroughTab>('practice')
+
   // Load walkthrough when initially provided and modal opens
   createEffect(() => {
     if (props.initialWalkthroughId !== null && props.initialWalkthroughId !== undefined && props.isOpen) {
@@ -65,6 +68,7 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
     setCurrentTab(tab)
     setCurrentWalkthrough(undefined)
     setCurrentStepIndex(0)
+    setLastValidTab(tab)
   }
 
   // Navigate steps
@@ -86,6 +90,7 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
     if (walkthrough) {
       setCurrentWalkthrough(walkthrough)
       setCurrentStepIndex(0)
+      setLastValidTab(currentTab())
       viewWalkthrough(walkthroughId)
     }
   }
@@ -121,10 +126,9 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
   }
 
   const handleBackToList = () => {
-    // Reset to initial tab and show walkthrough list
-    if (props.initialTab !== null && props.initialTab !== undefined) {
-      setCurrentTab(props.initialTab)
-    }
+    // Restore last valid tab when going back to list
+    const tab = lastValidTab()
+    setCurrentTab(tab)
     setCurrentWalkthrough(undefined)
     setCurrentStepIndex(0)
   }
