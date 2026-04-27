@@ -555,8 +555,18 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                         type="number"
                         value={createBpm()}
                         onInput={(e) => {
-                          const val = parseInt(e.currentTarget.value)
-                          if (isNaN(val)) return
+                          const valStr = e.currentTarget.value
+                          if (!valStr) {
+                            // Empty string - reset to default
+                            setCreateBpm(80)
+                            return
+                          }
+                          const val = parseFloat(valStr)
+                          if (isNaN(val)) {
+                            // Invalid number - keep current value
+                            return
+                          }
+                          // Clamp between 20 and 280
                           const clamped = Math.max(20, Math.min(280, val))
                           debouncedCreateBpm(clamped)
                         }}
@@ -655,8 +665,15 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                         type="number"
                         value={editBpm()}
                         onInput={(e) => {
-                          const val = parseInt(e.currentTarget.value)
-                          if (isNaN(val)) return
+                          const valStr = e.currentTarget.value
+                          if (!valStr) {
+                            setEditBpm(80)
+                            return
+                          }
+                          const val = parseFloat(valStr)
+                          if (isNaN(val)) {
+                            return
+                          }
                           const clamped = Math.max(20, Math.min(280, val))
                           debouncedEditBpm(clamped)
                         }}
