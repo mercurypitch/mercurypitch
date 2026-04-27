@@ -32,6 +32,7 @@ import { melodyIndexAtBeat } from '@/lib/scale-data'
 import { buildMultiOctaveScale, keyTonicFreq, melodyTotalBeats, midiToNote, } from '@/lib/scale-data'
 import { generateShareURL, hasSharedPresetInURL, loadFromURL, } from '@/lib/share-url'
 import { appStore, getNoteAccuracyMap } from '@/stores/app-store'
+import { getMelodyFromLibraryByName } from '@/stores/melody-store'
 import { melodyStore } from '@/stores/melody-store'
 import { playback } from '@/stores/playback-store'
 import { getSessionStore } from '@/stores/session-store'
@@ -1136,6 +1137,21 @@ export const App: Component<AppProps> = (props) => {
     setEditorPlaybackState('stopped')
   }
 
+  const handlePlayMelodyFromModal = (melodyName: string) => {
+    // Load the melody from library
+    const melody = getMelodyFromLibraryByName(melodyName)
+    if (melody) {
+      melodyStore.loadMelody(melody.id)
+      appStore.setCurrentPresetName(melody.name)
+      appStore.setTempo(melody.bpm)
+      appStore.setKeyName(melody.key)
+      appStore.setScaleType(melody.scaleType)
+      appStore.setOctave(melody.octave ?? 4)
+    }
+    // Now call handlePlay to start playback with the loaded melody
+    handlePlay()
+  }
+
   // ── Editor tab playback handlers (connect to actual PlaybackRuntime) ─────────────────────────────────
   const handleEditorPlay = () => {
     console.log('[handleEditorPlay] Starting playback, current state:', editorPlaybackState())
@@ -2045,7 +2061,11 @@ export const App: Component<AppProps> = (props) => {
 
       {/* Library Modal */}
       <Show when={appStore.isLibraryModalOpen()}>
-        <LibraryModal isOpen={true} close={() => appStore.hideLibrary()} />
+        <LibraryModal
+          isOpen={true}
+          close={() => appStore.hideLibrary()}
+          onPlayMelody={handlePlayMelodyFromModal}
+        />
       </Show>
 
       {/* Session Library Modal */}

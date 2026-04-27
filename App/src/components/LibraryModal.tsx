@@ -14,6 +14,7 @@ type DebouncedSetter<T> = (value: T, immediate?: boolean) => void
 interface LibraryModalProps {
   isOpen: boolean
   close: () => void
+  onPlayMelody?: (melodyName: string) => void
 }
 
 type Tab = 'melodies' | 'playlists'
@@ -171,6 +172,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
     appStore.setKeyName(melody.key)
     appStore.setScaleType(melody.scaleType)
     appStore.setOctave(melody.octave ?? 4)
+    props.onPlayMelody?.(melody.name)
     props.close()
   }
 

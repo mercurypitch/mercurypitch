@@ -608,6 +608,16 @@ export function loadMelody(key: string): MelodyData | null {
   return null
 }
 
+export function getMelodyFromLibraryByName(name: string): MelodyData | null {
+  const library = melodyLibrarySignal()
+  for (const key in library.melodies) {
+    if (library.melodies[key]?.name === name) {
+      return library.melodies[key]
+    }
+  }
+  return null
+}
+
 export function updateMelody(
   key: string,
   updates: Partial<MelodyData>,
