@@ -7016,6 +7016,14 @@ Keeps your existing styles, only adjusts layout
   width: 100%;
 }
 
+.walkthrough-item-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.4;
+  text-align: left;
+}
+
 .walkthrough-item:hover {
   border-color: var(--accent);
   transform: translateY(-2px);
@@ -7065,12 +7073,14 @@ Keeps your existing styles, only adjusts layout
 .walkthrough-item-content {
   flex: 1;
   min-width: 0;
+  text-align: center;
 }
 
 .walkthrough-item-title {
   margin: 0 0 6px 0;
   font-size: 1rem;
   font-weight: 500;
+  line-height: 1.4;
 }
 
 .walkthrough-item-desc {
