@@ -138,6 +138,9 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
         const note = _melody[noteIndex]
         if (note !== null && note !== undefined) {
           dotState.targetFreq = note.note.freq
+          if (!Number.isFinite(dotState.freq) || dotState.freq <= 0) {
+            dotState.freq = note.note.freq
+          }
         }
       }
     }
@@ -148,6 +151,10 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     const dampT = SPRING_DAMPING * dotState.velocity
     dotState.velocity += (springT - dampT) * 0.001
     dotState.freq += dotState.velocity * 0.016
+    if (!Number.isFinite(dotState.freq) || dotState.freq <= 0) {
+      dotState.freq = dotState.targetFreq > 0 ? dotState.targetFreq : 0
+      dotState.velocity = 0
+    }
 
     // Add trail points for glow fade
     if (props.isPlaying?.() && !props.isPaused?.()) {
@@ -164,6 +171,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
   }
 
   const freqToY = (freq: number, h: number): number => {
+    if (!Number.isFinite(freq) || freq <= 0) return h / 2
     const scale = props.scale()
     const allFreqs = scale.map((n) => n.freq)
     if (allFreqs.length === 0) return h / 2
@@ -172,11 +180,14 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     const logMin = Math.log2(minFreq)
     const logMax = Math.log2(maxFreq)
     const pct = (Math.log2(freq) - logMin) / (logMax - logMin)
-    return h - pct * (h - 40) - 20
+    const y = h - pct * (h - 40) - 20
+    return Number.isFinite(y) ? y : h / 2
   }
 
   const beatToX = (beat: number, w: number): number => {
-    return (beat / Math.max(1, props.totalBeats())) * w
+    if (!Number.isFinite(beat) || !Number.isFinite(w)) return 0
+    const x = (beat / Math.max(1, props.totalBeats())) * w
+    return Number.isFinite(x) ? x : 0
   }
 
   const drawAccuracyHeatmap = (h: number) => {
@@ -416,6 +427,10 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
 
       if (dotState.targetFreq > 0) {
         const ty = freqToY(dotState.freq, h)
+        if (!Number.isFinite(tx) || !Number.isFinite(ty)) {
+          ctx.restore()
+          return
+        }
 
         // Spring overshoot trail: draw fading ghosts from trail buffer
         for (const pt of dotState.trail) {
@@ -423,6 +438,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
           const alpha = Math.max(0, 0.35 * (1 - age))
           if (alpha > 0.01) {
             const trailY = freqToY(pt.freq, h)
+            if (!Number.isFinite(trailY)) continue
             const grad = ctx.createRadialGradient(tx, trailY, 0, tx, trailY, 12)
             grad.addColorStop(0, `rgba(88,166,255,${alpha})`)
             grad.addColorStop(1, `rgba(88,166,255,0)`)

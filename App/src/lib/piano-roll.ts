@@ -2292,61 +2292,6 @@ export class PianoRollEditor {
 
     this.drawWithPlayhead()
 
-    // Stop notes that have ended (to prevent audio stacking)
-    const win = window as Window & {
-      pianoRollAudioEngine?: {
-        stopNote: (noteId: number) => void
-        playNote: (freq: number, durationMs: number, effectType?: string) => void
-      }
-    }
-    if (win.pianoRollAudioEngine) {
-      // Get current note being played
-      let currentNote: MelodyItem | undefined
-      for (const note of this.melody) {
-        if (note.startBeat <= beat && note.startBeat + note.duration > beat) {
-          currentNote = note
-          break
-        }
-      }
-
-      // Stop notes that have finished playing
-      const toStop = Array.from(this.currentPlayingNoteIds).filter((id: number) => {
-        const note = this.melody.find((n) => (n.id ?? -1) === id)
-        if (!note || !currentNote) return false
-        // Stop if the note has ended and it's not the current note
-        return beat >= note.startBeat + note.duration && note !== currentNote
-      })
-
-      for (const noteId of toStop) {
-        win.pianoRollAudioEngine.stopNote(noteId)
-        this.currentPlayingNoteIds.delete(noteId)
-      }
-
-      // Play tones for notes that start at current beat (one-shot trigger per note)
-      if (this.melody.length > 0) {
-        const durationMs = this.beatWidth * (60000 / this.bpm)
-        for (const note of this.melody) {
-          const noteId = note.id ?? -1
-          // One-shot: trigger exactly once when activeBeat crosses the note's start beat.
-          // Guard: only trigger when activeBeat is within 0.02 beats of the start and the
-          // note has not been started yet.
-          if (
-            !this.startedNoteIds.has(noteId) &&
-            Math.abs(beat - note.startBeat) < 0.02 &&
-            note.startBeat <= beat
-          ) {
-            this.startedNoteIds.add(noteId)
-            this.currentPlayingNoteIds.add(noteId)
-            win.pianoRollAudioEngine.playNote(
-              note.note.freq,
-              note.duration * durationMs,
-              note.effectType,
-            )
-          }
-        }
-      }
-    }
-
     // Update timeline info during playback
     this._updateTimelineInfo(beat)
 

@@ -1859,11 +1859,14 @@ export const App: Component<AppProps> = (props) => {
                   />
                   <div
                     id="playhead"
-                    style={{ display: (isPlaying() || isPaused()) ? 'block' : 'none' }}
+                    style={{
+                      display: (isPlaying() || isPaused()) ? 'block' : 'none',
+                      left: `${playheadPosition()}%`,
+                    }}
                   >
                     <div
                       class="playhead-marker"
-                      style={{ left: `${playheadPosition()}%` }}
+                      style={{ left: '0' }}
                     />
                   </div>
                 </div>
