@@ -4,9 +4,9 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createSignal, For } from 'solid-js'
+import { createSignal, For, Show } from 'solid-js'
 import { appStore, melodyStore } from '@/stores'
-import type { SessionItem } from '@/types'
+import type { MelodyData, SessionItem } from '@/types'
 
 interface SessionEditorTimelineProps {
   sessionItems: SessionItem[]
@@ -162,6 +162,11 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
     setDragSourceIndex(-1)
   }
 
+  const handleContextMenu = (e: MouseEvent, itemId: string) => {
+    e.preventDefault()
+    props.onDeleteItem(itemId)
+  }
+
   const _restIcons = [
     '⋯' /* ellipsis */,
     '⏸',
@@ -188,53 +193,73 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
           )}
 
           <For each={props.sessionItems}>
-            {(item, index) => (
-              <>
-                <div
-                  class="timeline-item"
-                  draggable={true}
-                  onTouchStart={(e) => handleTouchStart(e, item, index())}
-                  onTouchMove={handleTouchMove}
-                  onTouchEnd={handleTouchEnd}
-                  onDragStart={(e) => handleDragStart(e, item, index())}
-                  onDragOver={(e) => handleDragOver(e, index())}
-                  onDrop={(e) => handleDrop(e, index())}
-                  onDragEnd={handleDragEnd}
-                >
-                  <div class="item-header">
-                    <span class="item-type-icon">
-                      {item.type === 'melody' ? '🎵' : item.type === 'scale' ? '🎹' : '⏸'}
-                    </span>
-                    <span class="item-label">{item.label}</span>
-                    <button
-                      class="item-delete-btn"
-                      onClick={() => props.onDeleteItem(item.id)}
-                      title="Delete this item"
-                    >
-                      ×
-                    </button>
-                  </div>
-                  <div class="item-details">
-                    <span class="item-start-beat">Start: {item.startBeat}</span>
-                    {item.restMs !== null && item.restMs !== undefined && item.restMs > 0 && (
-                      <span class="item-duration">Duration: {getRestDuration(item.restMs)}</span>
-                    )}
-                  </div>
-                </div>
+            {(item, index) => {
+              const isMelody = item.type === 'melody' && item.melodyId !== null && item.melodyId !== undefined;
+              const melodyData: MelodyData | undefined = isMelody ? melodyStore.getMelody(item.melodyId!) : undefined;
+              const itemLabel = isMelody && melodyData !== undefined ? melodyData.name : item.label;
 
-                {index() < props.sessionItems.length - 1 && (
+              return (
+                <>
                   <div
-                    class="timeline-drop-zone rest-zone"
-                    onClick={() => addRestBetween(index())}
+                    class="timeline-item"
+                    draggable={true}
+                    onTouchStart={(e) => handleTouchStart(e, item, index())}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={handleTouchEnd}
+                    onDragStart={(e) => handleDragStart(e, item, index())}
                     onDragOver={(e) => handleDragOver(e, index())}
                     onDrop={(e) => handleDrop(e, index())}
+                    onDragEnd={handleDragEnd}
+                    onContextMenu={(e) => handleContextMenu(e, item.id)}
                   >
-                    <span class="rest-placeholder">+</span>
-                    <span class="rest-hint">Add Rest</span>
+                    <div class="item-header">
+                      <span class="item-type-icon">
+                        {item.type === 'melody' ? '🎵' : item.type === 'scale' ? '🎹' : '⏸'}
+                      </span>
+                      <span class="item-label">{itemLabel}</span>
+                      <button
+                        class="item-delete-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          props.onDeleteItem(item.id);
+                        }}
+                        title="Delete this item"
+                      >
+                        ×
+                      </button>
+                    </div>
+                    <div class="item-details">
+                      <span class="item-start-beat">Start: {item.startBeat}</span>
+                      
+                      <Show when={isMelody && melodyData !== undefined}>
+                        <span class="item-meta">{melodyData!.items.length} notes</span>
+                        <span class="item-meta">{melodyData!.bpm} BPM</span>
+                      </Show>
+                      
+                      <Show when={!isMelody && item.restMs !== null && item.restMs !== undefined && item.restMs > 0}>
+                        <span class="item-duration">Duration: {getRestDuration(item.restMs!)}</span>
+                      </Show>
+                      
+                      <Show when={!isMelody && item.type === 'scale' && item.scaleType !== undefined && item.scaleType !== null}>
+                        <span class="item-meta">{item.scaleType}</span>
+                      </Show>
+                    </div>
                   </div>
-                )}
-              </>
-            )}
+
+                  {index() < props.sessionItems.length - 1 && (
+                    <div
+                      class="timeline-drop-zone rest-zone"
+                      onClick={() => addRestBetween(index())}
+                      onDragOver={(e) => handleDragOver(e, index())}
+                      onDrop={(e) => handleDrop(e, index())}
+                    >
+                      <span class="rest-placeholder">+</span>
+                      <span class="rest-hint">Add Rest</span>
+                    </div>
+                  )}
+                </>
+              )
+            }}
           </For>
         </div>
       </div>

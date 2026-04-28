@@ -58,22 +58,33 @@ export const LibraryTab: Component = () => {
     const session = appStore.userSession?.() ?? getActiveSession()
     return session ?? null
   })
+  
   const sessionMelodyIds = createMemo(() => {
     const session = userSession()
-    if (!session || session.items === undefined) return []
+    if (session === null || session.items === undefined) return []
     return session.items
-      .filter((item: SessionItem) => item.melodyId !== null)
+      .filter((item: SessionItem) => item.melodyId !== null && item.melodyId !== undefined)
       .map((item: SessionItem) => item.melodyId as string)
   })
 
   const selectedMelodyIds = createMemo(
     () => appStore.getSelectedMelodyIds?.() ?? [],
   )
-  const sessionMelodies = createMemo(() => {
-    const ids = sessionMelodyIds()
-    return ids
-      .map((id: string) => melodyStore.getMelody(id))
-      .filter((m): m is MelodyData => m !== undefined)
+
+  const sessionItems = createMemo(() => {
+    const session = userSession()
+    if (session === null || session.items === undefined) return []
+    
+    return session.items.map(item => {
+      if (item.type === 'melody' && item.melodyId !== null && item.melodyId !== undefined) {
+        const melodyData = melodyStore.getMelody(item.melodyId)
+        return {
+          ...item,
+          melodyData
+        }
+      }
+      return item
+    })
   })
 
   // Practice session items (legacy model)
@@ -113,11 +124,9 @@ export const LibraryTab: Component = () => {
     // Select the first melody item if available
     if (newSession.items.length > 0) {
       const firstItem = newSession.items[0]
-      if (firstItem.type === 'melody' && 'melodyId' in firstItem) {
-        const melodyId = (firstItem as { melodyId: string }).melodyId
-        if (melodyId && typeof melodyId === 'string') {
-          melodyStore.loadMelody(melodyId)
-        }
+      if (firstItem !== undefined && firstItem.type === 'melody' && 'melodyId' in firstItem && firstItem.melodyId !== null && firstItem.melodyId !== undefined) {
+        const melodyId = firstItem.melodyId as string
+        melodyStore.loadMelody(melodyId)
       }
     }
     appStore.showNotification('New session created', 'success')
@@ -176,7 +185,8 @@ export const LibraryTab: Component = () => {
   }
 
   // Get icon for melody data
-  const getMelodyIcon = (melody: MelodyData): string => {
+  const getMelodyIcon = (melody: MelodyData | undefined): string => {
+    if (melody === undefined) return '♪'
     if (melody.scaleType === 'chromatic') return '♩'
     if (melody.scaleType === 'major' || melody.scaleType === 'minor') return '♩'
     return '♪'
@@ -227,11 +237,13 @@ export const LibraryTab: Component = () => {
   const handlePlaySelected = () => {
     const ids = appStore.getSelectedMelodyIds?.() ?? []
     const handler = getSessionPlaybackHandler()
-    if (ids.length > 0 && handler !== null) {
-      handler(ids[0])
-    } else {
-      // Fallback: just load the melody
-      melodyStore.loadMelody(ids[0])
+    if (ids.length > 0) {
+      if (handler !== null) {
+        handler(ids[0])
+      } else {
+        // Fallback: just load the melody
+        melodyStore.loadMelody(ids[0])
+      }
     }
   }
 
@@ -310,7 +322,7 @@ export const LibraryTab: Component = () => {
         <div class="session-items-section">
           <div class="session-header">
             <p class="section-label">
-              {userSession()?.name ?? 'Session'} ({sessionMelodies().length})
+              {userSession()?.name ?? 'Session'} ({sessionItems().length})
             </p>
             <div class="session-actions">
               <button
@@ -332,7 +344,7 @@ export const LibraryTab: Component = () => {
               <Show
                 when={
                   selectedMelodyIds().length > 0 &&
-                  sessionMelodies().length > selectedMelodyIds().length
+                  sessionItems().filter(i => i.type === 'melody').length > selectedMelodyIds().length
                 }
               >
                 <button
@@ -355,39 +367,60 @@ export const LibraryTab: Component = () => {
             </div>
           </div>
           <Show
-            when={sessionMelodies().length > 0}
+            when={sessionItems().length > 0}
             fallback={
               <p class="empty-tip">
-                No melodies in session. Save a melody and use "Save & Add to
-                Session".
+                No items in session. Edit session to add items.
               </p>
             }
           >
             <div class="session-items-pills">
-              <For each={sessionMelodies()}>
-                {(melody) => (
-                  <span
-                    class={`session-item-pill melody-pill ${
-                      selectedMelodyIds().includes(melody.id) ? 'selected' : ''
-                    }`}
-                    title={melody.name}
-                    onClick={(e) => handleMelodyClick(melody.id, e)}
-                    onDblClick={() => handleMelodyDoubleClick(melody.id)}
-                  >
-                    <span class="pill-icon">{getMelodyIcon(melody)}</span>
-                    <span class="pill-label">{melody.name}</span>
-                    <Show when={melody.tags && melody.tags.length > 0}>
-                      <span class="pill-tags">
-                        {(melody.tags as string[]).slice(0, 2).map((tag, _idx) => (
-                          <span class="pill-tag">{tag}</span>
-                        ))}
-                        {(melody.tags as string[]).length > 2 && (
-                          <span class="pill-tag more">+{(melody.tags as string[]).length - 2}</span>
-                        )}
-                      </span>
-                    </Show>
-                  </span>
-                )}
+              <For each={sessionItems()}>
+                {(item: SessionItem & { melodyData?: MelodyData }) => {
+                  const isMelody = item.type === 'melody' && item.melodyId !== null && item.melodyId !== undefined;
+                  const isSelected = isMelody && item.melodyId !== null && item.melodyId !== undefined && selectedMelodyIds().includes(item.melodyId);
+                  const isMissingMelody = isMelody && item.melodyData === undefined;
+                  const itemLabel = isMelody && !isMissingMelody && item.melodyData !== undefined ? item.melodyData.name : item.label;
+                  
+                  return (
+                    <span
+                      class={`session-item-pill ${isMelody ? 'melody-pill' : ''} ${isSelected ? 'selected' : ''}`}
+                      title={itemLabel}
+                      onClick={(e) => {
+                        if (isMelody && !isMissingMelody && item.melodyId !== null && item.melodyId !== undefined) {
+                          handleMelodyClick(item.melodyId, e)
+                        }
+                      }}
+                      onDblClick={() => {
+                        if (isMelody && !isMissingMelody && item.melodyId !== null && item.melodyId !== undefined) {
+                          handleMelodyDoubleClick(item.melodyId)
+                        }
+                      }}
+                    >
+                      <span class="pill-icon">{isMelody && !isMissingMelody && item.melodyData !== undefined ? getMelodyIcon(item.melodyData) : getItemIcon(item)}</span>
+                      <span class="pill-label">{itemLabel}</span>
+                      
+                      <Show when={isMelody && !isMissingMelody && item.melodyData !== undefined && item.melodyData.tags !== undefined && item.melodyData.tags.length > 0}>
+                        <span class="pill-tags">
+                          {(item.melodyData?.tags as string[]).slice(0, 2).map((tag) => (
+                            <span class="pill-tag">{tag}</span>
+                          ))}
+                          {item.melodyData !== undefined && item.melodyData.tags !== undefined && (item.melodyData.tags as string[]).length > 2 && (
+                            <span class="pill-tag more">+{(item.melodyData.tags as string[]).length - 2}</span>
+                          )}
+                        </span>
+                      </Show>
+                      
+                      <Show when={!isMelody && item.type === 'rest' && item.restMs !== undefined && item.restMs !== null}>
+                        <span class="pill-meta">{Math.round((item.restMs ?? 0) / 1000)}s</span>
+                      </Show>
+                      
+                      <Show when={!isMelody && item.type === 'scale' && item.scaleType !== undefined && item.scaleType !== null}>
+                        <span class="pill-meta">{item.scaleType}</span>
+                      </Show>
+                    </span>
+                  )
+                }}
               </For>
             </div>
           </Show>
@@ -442,12 +475,12 @@ export const LibraryTab: Component = () => {
                   <>
                     <span class="recent-name">{item.data.name}</span>
                     <span class="recent-meta">{item.data.bpm} BPM</span>
-                    <Show when={item.data.tags && item.data.tags.length > 0}>
+                    <Show when={item.data.tags !== undefined && item.data.tags !== null && item.data.tags.length > 0}>
                       <div class="recent-tags">
-                        {(item.data.tags as string[]).slice(0, 2).map((tag, _idx) => (
+                        {(item.data.tags as string[]).slice(0, 2).map((tag) => (
                           <span class="recent-tag">{tag}</span>
                         ))}
-                        {(item.data.tags as string[]).length > 2 && (
+                        {item.data.tags !== undefined && item.data.tags !== null && (item.data.tags as string[]).length > 2 && (
                           <span class="recent-tag more">+{(item.data.tags as string[]).length - 2}</span>
                         )}
                       </div>
