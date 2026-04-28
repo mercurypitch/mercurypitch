@@ -17,7 +17,7 @@ import type {
   SessionResult,
   SessionTemplate,
 } from '@/types'
-import { getMelodyLibrary,melodyStore } from './melody-store'
+import { getMelodyLibrary, melodyStore } from './melody-store'
 
 // ── Key / Scale ─────────────────────────────────────────────
 
@@ -932,6 +932,7 @@ const [selectedMelodyIds, setSelectedMelodyIds] = createSignal<string[]>([])
 export function setActiveUserSession(session: Session | null): void {
   setUserSession(session)
   setSelectedMelodyIds([])
+  melodyStore.setActiveSessionId(session?.id ?? null)
 }
 
 export function getUserSession(): Session | null {
@@ -955,7 +956,7 @@ export function selectAllMelodies(): void {
   if (session && session.items.length > 0) {
     // Extract melody IDs from session items
     const melodyIds = session.items
-      .filter((item) => item.melodyId !== null)
+      .filter((item) => item.melodyId !== null && item.melodyId !== undefined)
       .map((item) => item.melodyId!)
     setSelectedMelodyIds(melodyIds)
   }
@@ -1311,6 +1312,8 @@ export const appStore = {
   // Navigation
   activeTab,
   setActiveTab,
+  editorView,
+  setEditorView,
 
   // Library Modals
   isLibraryModalOpen,

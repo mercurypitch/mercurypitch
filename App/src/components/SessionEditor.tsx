@@ -21,10 +21,24 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
   const [selectedMelodyIds, setSelectedMelodyIds] = createSignal<Set<string>>(new Set())
   const [restDurationInput, setRestDurationInput] = createSignal(4000)
 
-  const sessions = () => melodyStore.getSessions()
+  const sessions = (): SavedUserSession[] => {
+    const userSessions = melodyStore.getSessions()
+    const defaultSession = melodyStore.getDefaultSession()
+    return defaultSession === null ? userSessions : [defaultSession, ...userSessions]
+  }
 
   const currentSession = () => {
-    return appStore.userSession() || melodyStore.getDefaultSession() || sessions()[0]
+    return appStore.userSession() || melodyStore.getActiveSession?.() || melodyStore.getDefaultSession() || sessions()[0]
+  }
+
+  const activateSession = (session: SavedUserSession): void => {
+    appStore.setActiveUserSession(session)
+    const firstMelodyItem = session.items.find(
+      (item) => item.type === 'melody' && item.melodyId !== undefined,
+    )
+    if (firstMelodyItem?.melodyId !== undefined) {
+      melodyStore.loadMelody(firstMelodyItem.melodyId)
+    }
   }
 
   const sessionItems = () => {
@@ -41,9 +55,21 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
     const sessionId = target.value
     const session = melodyStore.getSession(sessionId)
     if (session) {
-      appStore.setActiveUserSession(session)
-      melodyStore.setActiveSessionId(session.id)
+      activateSession(session)
     }
+  }
+
+  const getSessionEndBeat = (): number => {
+    const items = sessionItems()
+    if (items.length === 0) return 0
+
+    return items.reduce((maxBeat, item) => {
+      const itemLength =
+        item.type === 'rest'
+          ? Math.max(1, Math.ceil((item.restMs ?? restDurationInput()) / 1000))
+          : item.beats ?? 16
+      return Math.max(maxBeat, item.startBeat + itemLength)
+    }, 0)
   }
 
   // Function to add melodies to session - handled via drag-drop and click from MelodyPillList
@@ -54,14 +80,19 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
       return
     }
 
+    const melody = melodyStore.getMelody(_melodyId)
+
     const newSessionItem: Omit<SessionItem, 'id'> = {
       type: 'melody',
-      label: `Melody`,
+      label: melody?.name ?? 'Melody',
       melodyId: _melodyId,
-      startBeat: sessionItems().length > 0 ? sessionItems()[sessionItems().length - 1].startBeat! + 16 : 0,
+      startBeat: getSessionEndBeat(),
     }
 
-    addItemToSession(session.id, newSessionItem)
+    const updatedSession = addItemToSession(session.id, newSessionItem)
+    if (updatedSession !== undefined) {
+      appStore.setActiveUserSession(updatedSession)
+    }
     setSelectedMelodyIds(prev => {
       const next = new Set(prev)
       next.add(_melodyId)
@@ -91,7 +122,10 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
     }
 
     // Remove the item from the session using session-store
-    deleteSessionItem(session.id, itemId)
+    const updatedSession = deleteSessionItem(session.id, itemId)
+    if (updatedSession !== undefined) {
+      appStore.setActiveUserSession(updatedSession)
+    }
 
     // Update selected melody IDs if needed
     setSelectedMelodyIds(prev => {
@@ -112,14 +146,19 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
       return
     }
 
+    const melody = melodyStore.getMelody(melodyId)
+
     const newSessionItem: Omit<SessionItem, 'id'> = {
       type: 'melody',
-      label: `Melody`,
+      label: melody?.name ?? 'Melody',
       melodyId: melodyId,
-      startBeat: targetItemIndex !== undefined ? sessionItems()[targetItemIndex].startBeat! : sessionItems().length > 0 ? sessionItems()[sessionItems().length - 1].startBeat! + 16 : 0,
+      startBeat: targetItemIndex !== undefined ? sessionItems()[targetItemIndex]?.startBeat ?? getSessionEndBeat() : getSessionEndBeat(),
     }
 
-    addItemToSession(session.id, newSessionItem)
+    const updatedSession = addItemToSession(session.id, newSessionItem)
+    if (updatedSession !== undefined) {
+      appStore.setActiveUserSession(updatedSession)
+    }
     appStore.showNotification(`Melody added to session`, 'success')
   }
 
@@ -131,12 +170,15 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
     const newItem: Omit<SessionItem, 'id'> = {
       type: 'rest',
       startBeat,
-      label: 'Rest',
+      label: `Rest (${Math.round((duration ?? restDurationInput()) / 1000)}s)`,
       restMs: duration ?? restDurationInput(),
     }
     const session = currentSession()
     if (session) {
-      addItemToSession(session.id, newItem)
+      const updatedSession = addItemToSession(session.id, newItem)
+      if (updatedSession !== undefined) {
+        appStore.setActiveUserSession(updatedSession)
+      }
     }
   }
 
@@ -211,6 +253,7 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
               sessionItems={sessionItems()}
               onDeleteItem={handleDeleteItem}
               onAddRest={handleAddRest}
+              restDuration={restDurationInput()}
               onDragOver={_handleDragOver}
               onDragStart={handleDragStart}
               onDrop={handleDrop}

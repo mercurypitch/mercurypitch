@@ -58,11 +58,10 @@ const DEFAULT_LIBRARY: UnifiedLibrary = {
       items: [
         {
           id: generateSessionItemId(),
-          type: 'scale',
+          type: 'melody',
           startBeat: 0,
-          label: 'C Major Scale (Octave 3-4)',
-          scaleType: 'major',
-          beats: 16,
+          label: 'C Major Scale',
+          melodyId: 'scale-major-c4', // Reference to pre-built C Major scale melody
         },
         {
           id: generateSessionItemId(),
@@ -285,13 +284,6 @@ const SCALE_DEGREES: Record<string, number[]> = {
 }
 
 export function seedDefaultSession(): void {
-  try {
-    const seeded = localStorage.getItem(STORAGE_KEY_SEEDED)
-    if (seeded === 'true') return
-  } catch {
-    // Continue
-  }
-
   // Create pre-built scale melodies
   const scaleConfigs = [
     {
@@ -345,6 +337,7 @@ export function seedDefaultSession(): void {
   ]
 
   const library = melodyLibrarySignal()
+  let hasAddedMelodies = false
   const newMelodies = { ...library.melodies }
 
   for (const cfg of scaleConfigs) {
@@ -357,6 +350,7 @@ export function seedDefaultSession(): void {
         cfg.octave,
         cfg.degrees,
       )
+      hasAddedMelodies = true
     }
   }
 
@@ -374,10 +368,20 @@ export function seedDefaultSession(): void {
   if (defaultSessionFromLibrary) {
     setMelodyLibrary((prev) => ({
       ...prev,
+      melodies: newMelodies, // ensure we use newMelodies
       sessions: {
         ...prev.sessions,
         'default': defaultSessionFromLibrary,
       },
+      meta: { ...prev.meta, lastUpdated: Date.now() },
+    }))
+    _saveLibraryToStorage()
+  } else {
+    // If we couldn't get it from the store (which shouldn't happen, but just in case)
+    // we still need to update the melodies
+    setMelodyLibrary((prev) => ({
+      ...prev,
+      melodies: newMelodies,
       meta: { ...prev.meta, lastUpdated: Date.now() },
     }))
     _saveLibraryToStorage()
@@ -386,11 +390,17 @@ export function seedDefaultSession(): void {
   // Persist library to localStorage
   _saveLibraryToStorage()
 
+  if (currentMelody() === null && newMelodies['scale-major-c4'] !== undefined) {
+    setCurrentMelody(newMelodies['scale-major-c4'])
+  }
+
   try {
     localStorage.setItem(STORAGE_KEY_SEEDED, 'true')
   } catch {
     // Fail silently
   }
+
+  if (!hasAddedMelodies) return
 }
 
 export function createMelodyFromScale(
@@ -501,6 +511,46 @@ export function createNewMelody(name?: string, author?: string): MelodyData {
   _saveLibraryToStorage()
   setCurrentMelody(newMelody)
   return newMelody
+}
+
+function getSessionEndBeat(session: SavedUserSession): number {
+  if (session.items.length === 0) return 0
+
+  return session.items.reduce((maxBeat, item) => {
+    const itemLength =
+      item.type === 'rest'
+        ? Math.max(1, Math.ceil((item.restMs ?? 4000) / 1000))
+        : item.beats ?? 16
+    return Math.max(maxBeat, item.startBeat + itemLength)
+  }, 0)
+}
+
+/**
+ * Append a melody reference to the currently active session.
+ * If no active session is set, the seeded Default Session becomes active.
+ */
+export function addMelodyToActiveSession(
+  melodyId: string,
+  label?: string,
+): SavedUserSession | undefined {
+  let session = getActiveSession()
+
+  if (session === undefined) {
+    session = getDefaultSession() ?? undefined
+    if (session !== undefined) {
+      setActiveSessionId(session.id)
+    }
+  }
+
+  if (session === undefined) return undefined
+
+  const melody = getMelody(melodyId)
+  return addItemToSession(session.id, {
+    type: 'melody',
+    label: label ?? melody?.name ?? 'Melody',
+    melodyId,
+    startBeat: getSessionEndBeat(session),
+  })
 }
 
 const DEFAULT_KEY = 'C'
@@ -820,6 +870,9 @@ export function setMelody(items: MelodyItem[]): void {
     }))
     _saveLibraryToStorage()
     setCurrentMelody(newMelody)
+    if (getActiveSessionId() !== null) {
+      addMelodyToActiveSession(newMelody.id, newMelody.name)
+    }
   }
 }
 
@@ -1078,6 +1131,7 @@ export const melodyStore = {
 
   // Library operations
   createNewMelody,
+  addMelodyToActiveSession,
   loadMelody,
   saveCurrentMelody,
   updateMelody,
@@ -1090,6 +1144,7 @@ export const melodyStore = {
   setMelodyLibrary,
   generateId,
   resetMelodyLibrary,
+  seedDefaultSession,
 
   // Scale - these are state variables
   currentScale,
@@ -1126,6 +1181,7 @@ export const melodyStore = {
   getSessionCount,
   getUserSessionCount,
   getDefaultSession,
+  getActiveSession,
   getInternalSession,
   getActiveSessionId,
   setActiveSessionId,

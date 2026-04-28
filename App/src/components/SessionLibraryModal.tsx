@@ -54,7 +54,13 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
   }
 
   const handleEdit = (session: SavedUserSession) => {
-    appStore.loadSession(session)
+    appStore.setActiveUserSession(session)
+    const firstMelodyItem = session.items.find(
+      (item) => item.type === 'melody' && item.melodyId !== undefined,
+    )
+    if (firstMelodyItem?.melodyId !== undefined) {
+      melodyStore.loadMelody(firstMelodyItem.melodyId)
+    }
     setActiveTab('editor')
     setEditorView('session-editor')
   }
@@ -135,9 +141,8 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
               class="new-btn"
               onClick={() => {
                 console.info('[SessionLibraryModal] New Session clicked')
-                const newSession = createSession('New Session')
+                const newSession = createSession(`New Session ${melodyStore.getSessions().length + 1}`)
                 saveSession(newSession)
-                melodyStore.setActiveSessionId(newSession.id)
                 appStore.setActiveUserSession(newSession)
                 appStore.showNotification('New session created', 'success')
                 // Navigate to Editor for editing

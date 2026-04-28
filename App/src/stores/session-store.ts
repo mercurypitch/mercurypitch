@@ -50,6 +50,7 @@ function _saveSessions(sessions: Record<string, SavedUserSession>): void {
       },
       renderSettings: library.renderSettings,
     }
+    melodyStore._setMelodyLibrary({ sessions })
     const result = localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedLibrary))
     console.log('[_saveSessions] Saved to localStorage:', result)
     console.log('[_saveSessions] Stored value:', localStorage.getItem(STORAGE_KEY))
@@ -62,9 +63,9 @@ function _saveSessions(sessions: Record<string, SavedUserSession>): void {
 export function addItemToSession(
   sessionId: string,
   item: Omit<SessionItem, 'id'>,
-): void {
+): SavedUserSession | undefined {
   const session = getSession(sessionId)
-  if (!session) return
+  if (!session) return undefined
 
   const newId = generateSessionItemId()
   const updatedItems = new Map<string, SessionItem>(session.items.map(item => [item.id, item]))
@@ -76,6 +77,7 @@ export function addItemToSession(
   }
 
   saveSession(updatedSession)
+  return updatedSession
 }
 
 /** Update item in session by ID */
@@ -83,9 +85,9 @@ export function updateSessionItem(
   sessionId: string,
   itemId: string,
   updates: Partial<SessionItem>,
-): void {
+): SavedUserSession | undefined {
   const session = getSession(sessionId)
-  if (!session) return
+  if (!session) return undefined
 
   const updatedItems = new Map<string, SessionItem>(session.items.map(item => [item.id, item]))
   const existingItem = updatedItems.get(itemId)
@@ -99,12 +101,13 @@ export function updateSessionItem(
   }
 
   saveSession(updatedSession)
+  return updatedSession
 }
 
 /** Delete item from session by ID */
-export function deleteSessionItem(sessionId: string, itemId: string): void {
+export function deleteSessionItem(sessionId: string, itemId: string): SavedUserSession | undefined {
   const session = getSession(sessionId)
-  if (!session) return
+  if (!session) return undefined
 
   const updatedItems = new Map<string, SessionItem>(session.items.map(item => [item.id, item]))
   updatedItems.delete(itemId)
@@ -115,6 +118,7 @@ export function deleteSessionItem(sessionId: string, itemId: string): void {
   }
 
   saveSession(updatedSession)
+  return updatedSession
 }
 
 /** Get item from session by ID (O(1) lookup) */
@@ -230,7 +234,7 @@ export function getDefaultSession(): SavedUserSession | null {
 
   if (defaultSession === null || defaultSession === undefined) {
     const session = createDefaultSession()
-    _saveSessions({ default: session })
+    _saveSessions({ ...sessions, default: session })
     return session
   }
 
@@ -242,11 +246,10 @@ function createDefaultSession(): SavedUserSession {
   const defaultSession = createInternalSession('Default Session', [
     {
       id: generateSessionItemId(),
-      type: 'scale',
+      type: 'melody',
       startBeat: 0,
-      label: 'C Major Scale (Octave 3-4)',
-      scaleType: 'major',
-      beats: 16,
+      label: 'C Major Scale',
+      melodyId: 'scale-major-c4', // Reference to pre-built C Major scale melody
     },
     {
       id: generateSessionItemId(),

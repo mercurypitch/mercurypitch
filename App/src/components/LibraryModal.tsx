@@ -6,7 +6,6 @@ import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
 import { appStore, setEditorView } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
-import { addItemToSession } from '@/stores/session-store'
 import type { MelodyData, NoteName } from '@/types'
 
 type DebouncedSetter<T> = (value: T, immediate?: boolean) => void
@@ -255,24 +254,20 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
       .map((t) => t.trim())
       .filter((t) => t)
     const newMelody = melodyStore.createNewMelody(name, 'User')
-    melodyStore.updateMelody(newMelody.id, {
+    const updatedMelody = melodyStore.updateMelody(newMelody.id, {
       bpm: createBpm(),
       key: createKey(),
       scaleType: createScale(),
       tags: tagsArray.length > 0 ? tagsArray : undefined,
       notes: createNotes().trim().length > 0 ? createNotes().trim() : undefined,
-    })
+    }) ?? newMelody
 
     // Add newly created melody to currently active session
-    const session = appStore.getUserSession()
-    if (session) {
-      addItemToSession(session.id, {
-        type: 'melody',
-        label: name,
-        melodyId: newMelody.id,
-        startBeat: 0,
-      })
+    const updatedSession = melodyStore.addMelodyToActiveSession(newMelody.id, name)
+    if (updatedSession !== undefined) {
+      appStore.setActiveUserSession(updatedSession)
     }
+    melodyStore.setCurrentMelody(updatedMelody)
 
     setCreateName('')
     setCreateBpm(80)
@@ -281,6 +276,8 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
     setCreateTags('')
     setCreateNotes('')
     setSelectedMelodyKey(newMelody.id)
+    appStore.setActiveTab('editor')
+    setEditorView('piano-roll')
     appStore.showNotification(`Melody "${name}" created`, 'success')
   }
 

@@ -4,10 +4,10 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, For, onMount, Show } from 'solid-js'
-import { appStore } from '@/stores/app-store'
-import { getActiveSession } from '@/stores/melody-store'
+import { appStore, setEditorView } from '@/stores/app-store'
+import { getActiveSession, getSessions } from '@/stores/melody-store'
 import { melodyStore } from '@/stores/melody-store'
-import { createSession, getSessionStore, saveSession } from '@/stores/session-store'
+import { createSession, getDefaultSession, getSessionStore, saveSession } from '@/stores/session-store'
 import type { MelodyData, SavedUserSession, SessionItem } from '@/types'
 
 export const LibraryTab: Component = () => {
@@ -55,9 +55,19 @@ export const LibraryTab: Component = () => {
 
   // User session (new melody-ID model)
   const userSession = createMemo(() => {
-    const session = appStore.userSession?.() ?? getActiveSession()
-    return session ?? null
+    const explicitSession = appStore.userSession?.()
+    const activeSession = getActiveSession()
+    const defaultSession = getDefaultSession()
+    return explicitSession ?? activeSession ?? defaultSession ?? null
   })
+
+  const allSessions = createMemo(() => {
+    const sessions = getSessions()
+    const defaultSession = getDefaultSession()
+    return defaultSession === null ? sessions : [defaultSession, ...sessions]
+  })
+
+  const activeMelodyId = createMemo(() => melodyStore.getCurrentMelody()?.id ?? null)
   
   const sessionMelodyIds = createMemo(() => {
     const session = userSession()
@@ -110,26 +120,47 @@ export const LibraryTab: Component = () => {
     appStore.showPresetsLibrary()
   }
 
+  const setActiveSessionAndSelectFirstMelody = (session: SavedUserSession): void => {
+    appStore.setActiveUserSession(session)
+    const firstMelodyItem = session.items.find(
+      (item) => item.type === 'melody' && item.melodyId !== undefined,
+    )
+    if (firstMelodyItem?.melodyId !== undefined) {
+      melodyStore.loadMelody(firstMelodyItem.melodyId)
+    }
+  }
+
+  const handleSessionChange = (e: Event): void => {
+    const sessionId = (e.currentTarget as HTMLSelectElement).value
+    const session = getSessionStore(sessionId)
+    if (session !== undefined) {
+      setActiveSessionAndSelectFirstMelody(session)
+    }
+  }
+
   const handleNewSession = () => {
     console.info('[LibraryTab] handleNewSession called')
     // Create a new user-deletable session
-    const newSession = createSession('New Session')
-    // Set as active session
-    appStore.setActiveUserSession(newSession)
+    const newSession = createSession(`New Session ${getSessions().length + 1}`)
     // Ensure it's saved to the library
     saveSession(newSession)
-    // Persist active session ID
-    melodyStore.setActiveSessionId(newSession.id)
+    // Set as active session after saving so the sidebar immediately reflects an empty session
+    appStore.setActiveUserSession(newSession)
     console.info('[LibraryTab] New session created:', newSession.id, 'setActiveSessionId:', melodyStore.getActiveSessionId())
-    // Select the first melody item if available
-    if (newSession.items.length > 0) {
-      const firstItem = newSession.items[0]
-      if (firstItem !== undefined && firstItem.type === 'melody' && 'melodyId' in firstItem && firstItem.melodyId !== null && firstItem.melodyId !== undefined) {
-        const melodyId = firstItem.melodyId as string
-        melodyStore.loadMelody(melodyId)
-      }
-    }
     appStore.showNotification('New session created', 'success')
+  }
+
+  const handleQuickNewMelody = (): void => {
+    const baseName = `New Melody ${melodyStore.getMelodyCount() + 1}`
+    const newMelody = melodyStore.createNewMelody(baseName, 'User')
+    const updatedSession = melodyStore.addMelodyToActiveSession(newMelody.id, newMelody.name)
+    if (updatedSession !== undefined) {
+      appStore.setActiveUserSession(updatedSession)
+    }
+    melodyStore.loadMelody(newMelody.id)
+    appStore.setActiveTab('editor')
+    setEditorView('piano-roll')
+    appStore.showNotification(`Melody "${newMelody.name}" created`, 'success')
   }
 
   const handleRecentItemClick = (item: {type: 'melody', data: MelodyData} | {type: 'session', data: SavedUserSession}) => {
@@ -153,7 +184,7 @@ export const LibraryTab: Component = () => {
       }
     } else if (item.type === 'session') {
       // Load session as active
-      appStore.setActiveUserSession(item.data)
+      setActiveSessionAndSelectFirstMelody(item.data)
       // Load first melody in session if exists
       let firstMelodyId: string | undefined = undefined
       for (const i of item.data.items) {
@@ -199,6 +230,8 @@ export const LibraryTab: Component = () => {
     } else {
       // Single click: load into editor
       melodyStore.loadMelody(melodyId)
+      appStore.setActiveTab('editor')
+      setEditorView('piano-roll')
 
       // Ensure default session is loaded if no active session exists
       const sid = melodyStore.getActiveSessionId()
@@ -321,9 +354,20 @@ export const LibraryTab: Component = () => {
       <Show when={userSession() !== null}>
         <div class="session-items-section">
           <div class="session-header">
-            <p class="section-label">
-              {userSession()?.name ?? 'Session'} ({sessionItems().length})
-            </p>
+            <div class="active-session-summary">
+              <p class="section-label">Active Session</p>
+              <select
+                class="session-select sidebar-session-select"
+                value={userSession()?.id ?? ''}
+                onChange={handleSessionChange}
+                title="Choose active session"
+              >
+                <For each={allSessions()}>
+                  {(session) => <option value={session.id}>{session.name}</option>}
+                </For>
+              </select>
+              <span class="section-meta">{sessionItems().length} item{sessionItems().length === 1 ? '' : 's'}</span>
+            </div>
             <div class="session-actions">
               <button
                 class="pill-action-btn"
@@ -370,7 +414,7 @@ export const LibraryTab: Component = () => {
             when={sessionItems().length > 0}
             fallback={
               <p class="empty-tip">
-                No items in session. Edit session to add items.
+                No melodies in this session yet. Create a melody to add it here.
               </p>
             }
           >
@@ -379,12 +423,13 @@ export const LibraryTab: Component = () => {
                 {(item: SessionItem & { melodyData?: MelodyData }) => {
                   const isMelody = item.type === 'melody' && item.melodyId !== null && item.melodyId !== undefined;
                   const isSelected = isMelody && item.melodyId !== null && item.melodyId !== undefined && selectedMelodyIds().includes(item.melodyId);
+                  const isActiveMelody = isMelody && item.melodyId === activeMelodyId();
                   const isMissingMelody = isMelody && item.melodyData === undefined;
                   const itemLabel = isMelody && !isMissingMelody && item.melodyData !== undefined ? item.melodyData.name : item.label;
                   
                   return (
                     <span
-                      class={`session-item-pill ${isMelody ? 'melody-pill' : ''} ${isSelected ? 'selected' : ''}`}
+                      class={`session-item-pill ${isMelody ? 'melody-pill' : ''} ${isSelected ? 'selected' : ''} ${isActiveMelody ? 'active' : ''}`}
                       title={itemLabel}
                       onClick={(e) => {
                         if (isMelody && !isMissingMelody && item.melodyId !== null && item.melodyId !== undefined) {
@@ -508,6 +553,15 @@ export const LibraryTab: Component = () => {
             />
           </svg>
           New Session
+        </button>
+        <button class="quick-action-btn" onClick={handleQuickNewMelody}>
+          <svg viewBox="0 0 24 24" width="14" height="14">
+            <path
+              fill="currentColor"
+              d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6zM8 19a2 2 0 1 1 0-4 2 2 0 0 1 0 4z"
+            />
+          </svg>
+          New Melody
         </button>
         <button class="quick-action-btn" onClick={openSessionLibrary}>
           <svg viewBox="0 0 24 24" width="14" height="14">

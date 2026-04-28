@@ -31,7 +31,7 @@ import { PracticeEngine } from '@/lib/practice-engine'
 import { melodyIndexAtBeat } from '@/lib/scale-data'
 import { buildMultiOctaveScale, keyTonicFreq, melodyTotalBeats, midiToNote, } from '@/lib/scale-data'
 import { generateShareURL, hasSharedPresetInURL, loadFromURL, } from '@/lib/share-url'
-import { appStore, getNoteAccuracyMap } from '@/stores/app-store'
+import { appStore, editorView, getNoteAccuracyMap, setEditorView } from '@/stores/app-store'
 import { getMelodyFromLibraryByName } from '@/stores/melody-store'
 import { melodyStore } from '@/stores/melody-store'
 import { playback } from '@/stores/playback-store'
@@ -102,8 +102,6 @@ function filterMelodyForPractice(
 export type EditorView = 'piano-roll' | 'session-editor'
 
 export type ActiveTab = 'practice' | 'editor' | 'settings'
-
-const [editorView, setEditorView] = createSignal<EditorView>('piano-roll')
 
 interface AppProps {
   onMounted?: () => void
@@ -481,6 +479,8 @@ export const App: Component<AppProps> = (props) => {
     appStore.initSessionHistory()
     appStore.initSettings()
     appStore.initReverb()
+
+    melodyStore.seedDefaultSession()
 
     // Load default melody if library is empty
     const library = melodyStore.getMelodyLibrary()

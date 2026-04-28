@@ -13,6 +13,7 @@ interface SessionEditorTimelineProps {
   onSave?: (items: SessionItem[]) => void
   onDeleteItem: (itemId: string) => void
   onAddRest: (startBeat: number, duration: number) => void
+  restDuration?: number
   onDragOver: (index: number) => void
   onDragStart?: (itemId: string) => void
   onDrop?: (itemId: string, targetIndex: number) => void
@@ -27,7 +28,7 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
   const addRestBetween = (index: number) => {
     const currentItem = props.sessionItems[index]
     const startBeat = currentItem.startBeat
-    const duration = 4000
+    const duration = props.restDuration ?? 4000
     props.onAddRest(startBeat, duration)
   }
 
@@ -76,11 +77,13 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
 
         const sessionId = appStore.userSession()?.id
         if (sessionId !== null && sessionId !== undefined) {
-          const updatedSession = appStore.userSession()!
-          melodyStore.updateUserSession({
-            ...updatedSession,
+          const activeSession = appStore.userSession()!
+          const updatedSession = {
+            ...activeSession,
             items: items,
-          })
+          }
+          melodyStore.updateUserSession(updatedSession)
+          appStore.setActiveUserSession(updatedSession)
         }
 
         setTouchActive(false)
@@ -146,11 +149,13 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
     const sessionId = appStore.userSession()?.id
     if (sessionId !== null && sessionId !== undefined) {
       // Create updated session with reordered items
-      const updatedSession = appStore.userSession()!
-      melodyStore.updateUserSession({
-        ...updatedSession,
+      const activeSession = appStore.userSession()!
+      const updatedSession = {
+        ...activeSession,
         items: items,
-      })
+      }
+      melodyStore.updateUserSession(updatedSession)
+      appStore.setActiveUserSession(updatedSession)
     }
 
     setDraggedItemId(null)
@@ -236,6 +241,10 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
                         <span class="item-meta">{melodyData!.bpm} BPM</span>
                       </Show>
                       
+                      <Show when={isMelody && melodyData === undefined}>
+                        <span class="item-meta missing">Missing melody</span>
+                      </Show>
+                      
                       <Show when={!isMelody && item.restMs !== null && item.restMs !== undefined && item.restMs > 0}>
                         <span class="item-duration">Duration: {getRestDuration(item.restMs!)}</span>
                       </Show>
@@ -261,6 +270,24 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
               )
             }}
           </For>
+
+          {props.sessionItems.length > 0 && (
+            <div
+              class="timeline-drop-zone rest-zone"
+              onClick={() => props.onAddRest(
+                props.sessionItems.reduce((maxBeat, item) => {
+                  const itemLength = item.type === 'rest'
+                    ? Math.max(1, Math.ceil((item.restMs ?? props.restDuration ?? 4000) / 1000))
+                    : item.beats ?? 16
+                  return Math.max(maxBeat, item.startBeat + itemLength)
+                }, 0),
+                props.restDuration ?? 4000,
+              )}
+            >
+              <span class="rest-placeholder">+</span>
+              <span class="rest-hint">Add Rest</span>
+            </div>
+          )}
         </div>
       </div>
 
