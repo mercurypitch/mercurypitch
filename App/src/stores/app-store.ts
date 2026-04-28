@@ -4,6 +4,7 @@
 // ============================================================
 
 import { createSignal } from 'solid-js'
+import { AudioEngine } from '@/lib/audio-engine'
 import { buildMultiOctaveScale } from '@/lib/scale-data'
 import type {
   AccuracyBand,
@@ -37,7 +38,6 @@ export async function initAudioEngine(): Promise<any> {
     return _audioEngineInstance
   }
 
-  const { AudioEngine } = await import('@/lib/audio-engine')
   _audioEngineInstance = new AudioEngine()
   return _audioEngineInstance
 }
@@ -1238,8 +1238,21 @@ export function loadSession(session: SavedUserSession): void {
     category: session.category ?? 'custom',
     items: session.items,
   })
-  console.log(
-    '[appStore] startPracticeSession complete, sessionMode:',
+
+  // Also set the user session so sidebar shows session melodies
+  const userSessionData: SavedUserSession = {
+    id: session.id,
+    name: session.name,
+    description: session.description ?? '',
+    items: session.items,
+    deletable: session.deletable ?? true,
+    created: session.created ?? Date.now(),
+  }
+  setActiveUserSession(userSessionData)
+  console.info(
+    '[appStore] set userSession:',
+    session.id,
+    'sessionMode:',
     sessionMode(),
   )
 }

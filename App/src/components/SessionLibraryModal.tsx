@@ -5,6 +5,7 @@
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
 import { appStore, melodyStore, setActiveTab, setEditorView } from '@/stores'
+import { createSession, saveSession } from '@/stores/session-store'
 import type { SavedUserSession, SessionCategory, SessionDifficulty, } from '@/types'
 
 // Drag and drop state
@@ -133,8 +134,16 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
             <button
               class="new-btn"
               onClick={() => {
+                console.info('[SessionLibraryModal] New Session clicked')
+                const newSession = createSession('New Session')
+                saveSession(newSession)
+                melodyStore.setActiveSessionId(newSession.id)
+                appStore.setActiveUserSession(newSession)
+                appStore.showNotification('New session created', 'success')
+                // Navigate to Editor for editing
                 appStore.setActiveTab('editor')
                 setEditorView('session-editor')
+                console.info('[SessionLibraryModal] New session:', newSession.id, 'activeSessionId:', melodyStore.getActiveSessionId())
               }}
             >
               <svg viewBox="0 0 24 24" width="16" height="16">

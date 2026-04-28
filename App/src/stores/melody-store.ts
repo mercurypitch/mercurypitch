@@ -33,6 +33,8 @@ import {
 
 const STORAGE_KEY_LIBRARY = 'pitchperfect_library'
 const STORAGE_KEY_SEEDED = 'pitchperfect_seeded'
+const STORAGE_KEY_ACTIVE_SESSION_ID = 'pitchperfect_active_session_id'
+const STORAGE_KEY_CURRENT_MELODY_ID = 'pitchperfect_current_melody_id'
 
 const DEFAULT_LIBRARY: UnifiedLibrary = {
   meta: {
@@ -135,6 +137,10 @@ const [melodyLibrarySignal, setMelodyLibrary] = createSignal<UnifiedLibrary>(
   loadLibrary(),
 )
 
+// Restore active session and current melody from localStorage
+_restoreActiveSessionId()
+_restoreCurrentMelodyId()
+
 /** Get the melody library data (reactive) */
 export function getMelodyLibrary(): UnifiedLibrary {
   return melodyLibrarySignal()
@@ -158,6 +164,8 @@ export function _setMelodyLibrary(updates: Partial<UnifiedLibrary>): void {
 export function resetMelodyLibrary(): void {
   localStorage.removeItem(STORAGE_KEY_LIBRARY)
   localStorage.removeItem(STORAGE_KEY_SEEDED)
+  localStorage.removeItem(STORAGE_KEY_ACTIVE_SESSION_ID)
+  localStorage.removeItem(STORAGE_KEY_CURRENT_MELODY_ID)
   _idCounter = 100
   const defaultLibrary: UnifiedLibrary = {
     melodies: {},
@@ -429,8 +437,40 @@ export function createMelodyFromScale(
   return melody
 }
 
-export const [currentMelody, setCurrentMelody] =
+// Current melody with localStorage persistence
+const [_currentMelodySignal, _setCurrentMelodySignal] =
   createSignal<MelodyData | null>(null)
+
+export const currentMelody = _currentMelodySignal
+
+function _restoreCurrentMelodyId(): void {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY_CURRENT_MELODY_ID)
+    if (saved !== null) {
+      const melody = melodyLibrarySignal().melodies[saved]
+      if (melody !== undefined && melody !== null) {
+        _setCurrentMelodySignal(melody)
+        console.info('[melodyStore] Restored currentMelodyId:', saved)
+      }
+    }
+  } catch {
+    // Ignore
+  }
+}
+
+export const setCurrentMelody = (m: MelodyData | null) => {
+  _setCurrentMelodySignal(m)
+  try {
+    if (m !== null && m !== undefined) {
+      localStorage.setItem(STORAGE_KEY_CURRENT_MELODY_ID, m.id)
+      console.info('[melodyStore] setCurrentMelody:', m.id)
+    } else {
+      localStorage.removeItem(STORAGE_KEY_CURRENT_MELODY_ID)
+    }
+  } catch {
+    // Ignore
+  }
+}
 
 // ============================================================
 // Melody Operations
@@ -500,7 +540,32 @@ export const setCurrentNoteIndex = _currentNoteIndex[1]
 // Active session ID tracking
 const _activeSessionId = createSignal<string | null>(null)
 export const getActiveSessionId = _activeSessionId[0]
-export const setActiveSessionId = _activeSessionId[1]
+
+function _restoreActiveSessionId(): void {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY_ACTIVE_SESSION_ID)
+    if (saved !== null) {
+      setActiveSessionId(saved)
+      console.info('[melodyStore] Restored activeSessionId:', saved)
+    }
+  } catch {
+    // Ignore
+  }
+}
+
+export const setActiveSessionId = (id: string | null) => {
+  _activeSessionId[1](id)
+  try {
+    if (id !== null) {
+      localStorage.setItem(STORAGE_KEY_ACTIVE_SESSION_ID, id)
+    } else {
+      localStorage.removeItem(STORAGE_KEY_ACTIVE_SESSION_ID)
+    }
+    console.info('[melodyStore] setActiveSessionId:', id)
+  } catch {
+    // Ignore
+  }
+}
 
 // ============================================================
 // Melody Note Operations

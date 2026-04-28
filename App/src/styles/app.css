@@ -92,7 +92,7 @@ header {
   background: var(--bg-secondary);
   border-bottom: 1px solid var(--border);
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 16px;
   flex-shrink: 0;
 }

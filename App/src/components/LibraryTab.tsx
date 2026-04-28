@@ -7,7 +7,7 @@ import { createMemo, For, onMount, Show } from 'solid-js'
 import { appStore } from '@/stores/app-store'
 import { getActiveSession } from '@/stores/melody-store'
 import { melodyStore } from '@/stores/melody-store'
-import { createSession, saveSession } from '@/stores/session-store'
+import { createSession, getSessionStore, saveSession } from '@/stores/session-store'
 import type { MelodyData, SavedUserSession, SessionItem } from '@/types'
 
 export const LibraryTab: Component = () => {
@@ -100,12 +100,16 @@ export const LibraryTab: Component = () => {
   }
 
   const handleNewSession = () => {
+    console.info('[LibraryTab] handleNewSession called')
     // Create a new user-deletable session
     const newSession = createSession('New Session')
     // Set as active session
     appStore.setActiveUserSession(newSession)
     // Ensure it's saved to the library
     saveSession(newSession)
+    // Persist active session ID
+    melodyStore.setActiveSessionId(newSession.id)
+    console.info('[LibraryTab] New session created:', newSession.id, 'setActiveSessionId:', melodyStore.getActiveSessionId())
     // Select the first melody item if available
     if (newSession.items.length > 0) {
       const firstItem = newSession.items[0]
@@ -125,23 +129,19 @@ export const LibraryTab: Component = () => {
       melodyStore.loadMelody(item.data.id)
 
       // Ensure default session is loaded if no active session exists
-      import('@/stores/session-store').then(({ getSessionStore }) => {
-        const activeSessionId = melodyStore.getActiveSessionId()
-        if (activeSessionId === null) {
-          // No active session - load default session
-          const defaultSession = getSessionStore('default')
-          if (defaultSession !== undefined && defaultSession !== null) {
-            appStore.setActiveUserSession(defaultSession)
-            melodyStore.setActiveSessionId(defaultSession.id)
-          }
-        } else {
-          // Load the previously active session
-          const activeSession = getSessionStore(activeSessionId)
-          if (activeSession !== null) {
-            appStore.setActiveUserSession(activeSession)
-          }
+      const activeSessionId = melodyStore.getActiveSessionId()
+      if (activeSessionId === null) {
+        const defaultSession = getSessionStore('default')
+        if (defaultSession !== undefined && defaultSession !== null) {
+          appStore.setActiveUserSession(defaultSession)
+          melodyStore.setActiveSessionId(defaultSession.id)
         }
-      })
+      } else {
+        const activeSession = getSessionStore(activeSessionId)
+        if (activeSession !== null) {
+          appStore.setActiveUserSession(activeSession)
+        }
+      }
     } else if (item.type === 'session') {
       // Load session as active
       appStore.setActiveUserSession(item.data)
@@ -191,23 +191,19 @@ export const LibraryTab: Component = () => {
       melodyStore.loadMelody(melodyId)
 
       // Ensure default session is loaded if no active session exists
-      import('@/stores/session-store').then(({ getSessionStore }) => {
-        const activeSessionId = melodyStore.getActiveSessionId()
-        if (activeSessionId === null) {
-          // No active session - load default session
-          const defaultSession = getSessionStore('default')
-          if (defaultSession !== undefined && defaultSession !== null) {
-            appStore.setActiveUserSession(defaultSession)
-            melodyStore.setActiveSessionId(defaultSession.id)
-          }
-        } else {
-          // Load the previously active session
-          const activeSession = getSessionStore(activeSessionId)
-          if (activeSession !== null) {
-            appStore.setActiveUserSession(activeSession)
-          }
+      const sid = melodyStore.getActiveSessionId()
+      if (sid === null) {
+        const defaultSession = getSessionStore('default')
+        if (defaultSession !== undefined && defaultSession !== null) {
+          appStore.setActiveUserSession(defaultSession)
+          melodyStore.setActiveSessionId(defaultSession.id)
         }
-      })
+      } else {
+        const activeSession = getSessionStore(sid)
+        if (activeSession !== null) {
+          appStore.setActiveUserSession(activeSession)
+        }
+      }
     }
   }
 

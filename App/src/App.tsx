@@ -1122,7 +1122,17 @@ export const App: Component<AppProps> = (props) => {
     audioEngine.resume()
 
     // Sync engine with current melody/bpm
-    const baseMelody = melodyStore.items()
+    let baseMelody = melodyStore.items()
+    console.info('[handlePlay] baseMelody length:', baseMelody.length)
+
+    // If no melody loaded, build a default scale melody
+    if (baseMelody.length === 0) {
+      console.info('[handlePlay] No melody loaded, building default scale')
+      buildScaleMelody(appStore.scaleType(), 8)
+      baseMelody = melodyStore.items()
+      console.info('[handlePlay] Built default scale, new length:', baseMelody.length)
+    }
+
     const subMode = playMode() === 'practice' ? practiceSubMode() : 'all'
     const filteredMelody = filterMelodyForPractice(baseMelody, subMode)
     playbackRuntime.setMelody(filteredMelody)
@@ -1213,7 +1223,7 @@ export const App: Component<AppProps> = (props) => {
   }
 
   // ── Editor tab playback handlers (connect to actual PlaybackRuntime) ─────────────────────────────────
-  const handleEditorPlay = () => {
+  const handleEditorPlay = async () => {
     console.log('[handleEditorPlay] Starting playback, current state:', editorPlaybackState())
     if (editorIsPlaying()) {
       console.log('[handleEditorPlay] Already playing, returning')
@@ -1230,22 +1240,28 @@ export const App: Component<AppProps> = (props) => {
     setCurrentBeat(0)
     setCurrentNoteIndex(-1)
 
-    // Resume audio engine (init is handled by playbackRuntime)
-    audioEngine.resume()
+    // Ensure audio engine is ready (Web Audio requires user gesture)
+    if (!audioEngine.getIsInitialized()) {
+      await audioEngine.init()
+    }
+    await audioEngine.resume()
 
     // Sync engine with current melody/bpm
-    playbackRuntime.setMelody(melodyStore.items())
-    // BPM synced via AudioEngine in the createEffect above
+    let editorMelody = melodyStore.items()
+    if (editorMelody.length === 0) {
+      console.info('[handleEditorPlay] No melody, building default scale')
+      buildScaleMelody(appStore.scaleType(), 8)
+      editorMelody = melodyStore.items()
+    }
+    console.info('[handleEditorPlay] melody length:', editorMelody.length)
+    playbackRuntime.setMelody(editorMelody)
 
-    // Set playback state BEFORE starting to ensure state is updated before animation loop runs
-    // (SolidJS batches state updates, so this should work correctly)
+    // Set playback state BEFORE starting
     setEditorPlaybackState('playing')
 
-    // Start playbackRuntime with count-in
     const countInBeats = appStore.countIn()
     console.log('[handleEditorPlay] Starting playbackRuntime with countInBeats:', countInBeats)
     playbackRuntime.start(countInBeats)
-    console.log('[handleEditorPlay] Playback state set to playing')
   }
 
   const handleEditorPause = () => {
@@ -1713,7 +1729,7 @@ export const App: Component<AppProps> = (props) => {
               class={`app-tab ${activeTab() === 'practice' ? 'active' : ''}`}
               onClick={() => void handleTabChange('practice')}
             >
-              Session Mode
+              Practice
             </button>
             <button
               id="tab-editor"
@@ -1852,7 +1868,7 @@ export const App: Component<AppProps> = (props) => {
                 editorTab={() => activeTab() === 'editor'}
                 isPlaying={editorIsPlaying}
                 isPaused={editorIsPaused}
-                onPlay={handleEditorPlay}
+                onPlay={() => void handleEditorPlay()}
                 onPause={handleEditorPause}
                 onResume={handleEditorResume}
                 onStop={handleEditorStop}
