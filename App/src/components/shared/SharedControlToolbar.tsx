@@ -490,7 +490,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
                   // Refresh scale with new key
                   melodyStore.refreshScale(
                     key,
-                    melodyStore.currentOctave(),
+                    melodyStore.getCurrentOctave(),
                     appStore.scaleType(),
                   )
                 }}
@@ -514,7 +514,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
                   // Refresh scale with new scale type
                   melodyStore.refreshScale(
                     appStore.keyName(),
-                    melodyStore.currentOctave(),
+                    melodyStore.getCurrentOctave(),
                     scaleType,
                   )
                 }}

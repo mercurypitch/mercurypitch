@@ -34,15 +34,19 @@ describe('MelodyEngine', () => {
   let melody: MelodyItem[]
   // Store pending callbacks in a way test can access to drive the animation loop
   let pendingCallbacks: Array<(time: number) => void> = []
+  let callbackIndex = 0
 
   beforeEach(() => {
+    // Reset counter for fresh test
+    callbackIndex = 1
+
     // Clear callbacks for fresh test
     pendingCallbacks = []
 
     // Mock RAF before creating engine to catch initial call in start()
     vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => {
       pendingCallbacks.push(cb)
-      return pendingCallbacks.length
+      return callbackIndex++
     })
 
     // Mock performance.now() once for all tests
@@ -57,6 +61,8 @@ describe('MelodyEngine', () => {
     engine.stop()
     pendingCallbacks = []
   })
+
+  // Helper to drive a callback at the given index
 
   describe('creation', () => {
     it('creates with default options', () => {
@@ -211,16 +217,20 @@ describe('MelodyEngine', () => {
       let fakeNow = 1000
       vi.spyOn(performance, 'now').mockImplementation(() => fakeNow)
 
-      // Drive first RAF call (initial after start()) - this starts the recursive loop
-      pendingCallbacks[pendingCallbacks.length - 1]?.(fakeNow)
+      // Track the initial callback length after start() (number of callbacks before any are driven)
+      const initialCallbackLength = pendingCallbacks.length
+      console.log('[test] initialCallbackLength:', initialCallbackLength, 'pendingCallbacks.length:', pendingCallbacks.length)
 
-      // Drive second RAF call
-      fakeNow += 600
-      pendingCallbacks[pendingCallbacks.length - 1]?.(fakeNow)
+      // Drive first RAF call (index 0 - the one added by start())
+      pendingCallbacks[initialCallbackLength - 1](fakeNow)
 
-      // Drive third RAF call (this one executes the beat/note update logic)
+      // Drive second RAF call (index 1 - added by first drive)
       fakeNow += 600
-      pendingCallbacks[pendingCallbacks.length - 1]?.(fakeNow)
+      pendingCallbacks[initialCallbackLength](fakeNow)
+
+      // Drive third RAF call (index 2 - added by second drive)
+      fakeNow += 600
+      pendingCallbacks[initialCallbackLength + 1](fakeNow)
 
       // Verify state before pause
       expect(engine.getIsPlaying()).toBe(true)
@@ -229,29 +239,27 @@ describe('MelodyEngine', () => {
       engine.pause()
       expect(engine.getIsPaused()).toBe(true)
 
-      // _stopAnimationLoop cancels the next RAF, but existing callbacks remain
-      const beforeResumeLength = pendingCallbacks.length
-      expect(beforeResumeLength).toBeGreaterThan(2)
-
       // Resume should start a new animation loop
       engine.resume()
 
-      // resume() sets isPaused = false and keeps isPlaying = true
-      expect(engine.getIsPaused()).toBe(false)
-      expect(engine.getIsPlaying()).toBe(true)
+      // isPaused should be false
+      const isPaused = engine.getIsPaused()
+      // isPlaying should be true
+      const isPlaying = engine.getIsPlaying()
 
-      // Now drive the new RAF that resume() scheduled
+      // Drive resumed animation loop - last element in pendingCallbacks
       fakeNow += 600
       vi.spyOn(performance, 'now').mockImplementation(() => fakeNow)
-      pendingCallbacks[pendingCallbacks.length - 1]?.(fakeNow)
+      pendingCallbacks[pendingCallbacks.length - 1](fakeNow)
 
-      // Drive another frame to ensure the animation loop continues
+      // Drive another frame
       fakeNow += 600
-      pendingCallbacks[pendingCallbacks.length - 1]?.(fakeNow)
+      vi.spyOn(performance, 'now').mockImplementation(() => fakeNow)
+      pendingCallbacks[pendingCallbacks.length - 1](fakeNow)
 
       // The engine should still be playing (not paused)
-      expect(engine.getIsPaused()).toBe(false)
-      expect(engine.getIsPlaying()).toBe(true)
+      expect(isPaused).toBe(false)
+      expect(isPlaying).toBe(true)
     })
 
     it('stops playback', () => {

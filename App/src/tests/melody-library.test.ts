@@ -643,7 +643,7 @@ describe('Melody Library System', () => {
 
     it('sets octave', () => {
       melodyStore.setOctave(5)
-      expect(melodyStore.currentOctave()).toBe(5)
+      expect(melodyStore.getCurrentOctave()).toBe(5)
     })
   })
 

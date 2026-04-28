@@ -1026,7 +1026,7 @@ export function startPracticeSession(
         const scaleType = item.scaleType ?? 'major'
         const beats = item.beats ?? 8
         const numOctaves = beats > 12 ? 2 : 1
-        const currentOctave = melodyStore.currentOctave()
+        const currentOctave = melodyStore.getCurrentOctave()
 
         const scale = buildMultiOctaveScale(
           keyName(),

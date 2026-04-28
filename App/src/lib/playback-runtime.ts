@@ -200,39 +200,35 @@ export class PlaybackRuntime {
     this._emit({ type: 'state', state: 'playing' })
 
     this._startAnimationLoop()
+    console.log('[PlaybackRuntime.start] playStartTime set to', this.playStartTime)
     console.log('[PlaybackRuntime.start] Animation loop started')
   }
 
-  pause(): void {
-    if (!this.isPlaying || this.isPaused) return
+  pause(): boolean {
+    if (!this.isPlaying || this.isPaused) return true
 
     // Record the time when pause started - this will be used to calculate pause duration
     if (this.playStartTime > 0) {
       this.pauseStartTime = performance.now()
       this.isPaused = true
       // Keep isPlaying=true so resume() can proceed - we're in "paused but playing" state
+      console.log('[PlaybackRuntime.pause] Recording pause at', this.pauseStartTime, 'playStartTime:', this.playStartTime)
       this._emit({ type: 'state', state: 'paused' })
       this._stopAnimationLoop()
     }
+    return this.isPlaying
   }
 
   resume(): void {
-    if (!this.isPlaying || !this.isPaused) return
-
-    // Calculate how long we were paused and add to offset
-    if (this.pauseStartTime > 0) {
-      const pauseDuration = performance.now() - this.pauseStartTime
-      this.pauseOffset += pauseDuration
-      this.pauseStartTime = 0
-      console.log('[PlaybackRuntime.resume] Added', pauseDuration, 'ms of pause time to offset')
-    }
+    console.log('[resume] called, isPaused:', this.isPaused, 'isPlaying:', this.isPlaying)
+    if (!this.isPaused) return
 
     // Reset playStartTime to 0 so elapsed time is calculated from resume point
     // The pauseOffset correctly accounts for paused time
     this.playStartTime = 0
     this.isPaused = false
     this.isPlaying = true
-    console.log('[PlaybackRuntime.resume] Resuming at beat:', this.currentBeat, 'with offset:', this.pauseOffset)
+    console.log('[resume] set isPaused=false, isPlaying=true, calling _startAnimationLoop')
     this._emit({ type: 'state', state: 'playing' })
     this._startAnimationLoop()
   }
@@ -310,6 +306,7 @@ export class PlaybackRuntime {
       const beatDuration = 60000 / this._bpm
       // Calculate elapsed time, accounting for pause time
       const elapsed = now - this.playStartTime + this.pauseOffset
+      console.log('[animate] now:', now, 'playStartTime:', this.playStartTime, 'pauseOffset:', this.pauseOffset, 'elapsed:', elapsed)
 
       // Count-in phase: play count-in beats before actual melody
       if (countIn > 0 && elapsed < countIn * beatDuration) {

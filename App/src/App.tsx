@@ -37,7 +37,7 @@ import { melodyStore } from '@/stores/melody-store'
 import { playback } from '@/stores/playback-store'
 import { getSessionStore } from '@/stores/session-store'
 import type { PitchSample } from '@/types'
-import type { MelodyItem, NoteName, NoteResult, PitchResult, PracticeResult, } from '@/types'
+import type { MelodyItem, MelodyNote, NoteName, NoteResult, PitchResult, PracticeResult, } from '@/types'
 import type { PlaybackState } from '@/types'
 
 // ── Engine instances (single shared) ────────────────────────
@@ -487,30 +487,41 @@ export const App: Component<AppProps> = (props) => {
     if (Object.keys(library.melodies).length === 0) {
       // Create a default melody with actual notes (using beats, not milliseconds)
       // PlaybackRuntime expects melody items to use beats for timing
-      const defaultMelody = melodyStore.createNewMelody('C Major Scale', 'System')
       // With BPM=80, 1 beat = 750ms
+      // Use the scale building function to get proper note objects with name field
+      const scale = buildMultiOctaveScale('C', 4, 1, 'major')
+      // Build MelodyNote objects with all required fields
+      // Type assertion needed because buildMultiOctaveScale returns ScaleDegree (name: string) not MelodyNote (name: NoteName)
+      const buildMelodyNote = (sd: { name: string; octave: number; midi: number; freq: number }): MelodyNote => {
+        return {
+          name: sd.name as NoteName,
+          octave: sd.octave,
+          midi: sd.midi,
+          freq: sd.freq,
+        }
+      }
       melodyStore.setMelody([
         {
-          id: 'note-1',
-          note: { midi: 60, freq: 261.63, octave: 4 }, // C4
+          id: 1,
+          note: buildMelodyNote(scale[0]),
           duration: 4, // 4 beats
           startBeat: 0,
         },
         {
-          id: 'note-2',
-          note: { midi: 62, freq: 277.18, octave: 4 }, // D4
+          id: 2,
+          note: buildMelodyNote(scale[2]),
           duration: 4, // 4 beats
           startBeat: 4, // After 4 beats
         },
         {
-          id: 'note-3',
-          note: { midi: 64, freq: 293.66, octave: 4 }, // E4
+          id: 3,
+          note: buildMelodyNote(scale[4]),
           duration: 4, // 4 beats
           startBeat: 8,
         },
         {
-          id: 'note-4',
-          note: { midi: 67, freq: 329.63, octave: 4 }, // G4
+          id: 4,
+          note: buildMelodyNote(scale[6]),
           duration: 4, // 4 beats
           startBeat: 12,
         },
@@ -1134,7 +1145,7 @@ export const App: Component<AppProps> = (props) => {
     if (settingsValue.tonicAnchor === true) {
       const tonicFreq = keyTonicFreq(
         appStore.keyName(),
-        melodyStore.currentOctave(),
+        melodyStore.getCurrentOctave(),
       )
       const bpm = appStore.bpm()
       const tonicDuration = Math.round(60000 / bpm) // 1 beat
@@ -1276,7 +1287,7 @@ export const App: Component<AppProps> = (props) => {
     const numOctaves = beats > 12 ? 2 : 1
     let scale = buildMultiOctaveScale(
       appStore.keyName(),
-      melodyStore.currentOctave(),
+      melodyStore.getCurrentOctave(),
       numOctaves,
       scaleType,
     )
@@ -1285,7 +1296,7 @@ export const App: Component<AppProps> = (props) => {
       console.warn('Scale is empty, using fallback')
       const fallbackScale = buildMultiOctaveScale(
         'C',
-        melodyStore.currentOctave(),
+        melodyStore.getCurrentOctave(),
         2,
         'major',
       )
@@ -1451,7 +1462,7 @@ export const App: Component<AppProps> = (props) => {
   // ── Octave shift ─────────────────────────────────────────────
 
   const handleOctaveShift = (delta: number) => {
-    const newOctave = melodyStore.currentOctave() + delta
+    const newOctave = melodyStore.getCurrentOctave() + delta
     if (newOctave < 1 || newOctave > 6) return
 
     const keyName = appStore.keyName()

@@ -139,7 +139,7 @@ export const ScaleBuilder: Component<ScaleBuilderProps> = (props) => {
     // Refresh the scale
     melodyStore.refreshScale(
       appStore.keyName(),
-      melodyStore.currentOctave(),
+      melodyStore.getCurrentOctave(),
       customName,
     )
 

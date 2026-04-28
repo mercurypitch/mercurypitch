@@ -478,9 +478,20 @@ const _currentScale = createSignal<ScaleDegree[]>(
 export const currentScale = _currentScale[0]
 export const setCurrentScale = _currentScale[1]
 
-const _currentOctave = createSignal<number>(DEFAULT_OCTAVE)
-export const currentOctave = _currentOctave[0]
-const _setOctave = _currentOctave[1]
+// Octave state - use function wrapper to avoid circular dependencies
+let _octave = DEFAULT_OCTAVE
+
+export const getCurrentOctave = (): number => {
+  return _octave
+}
+
+export const setCurrentOctave = (octave: number): void => {
+  _octave = octave
+}
+
+export const setOctave = (octave: number): void => {
+  _octave = octave
+}
 
 const _currentNoteIndex = createSignal<number>(0)
 export const currentNoteIndex = _currentNoteIndex[0]
@@ -756,17 +767,13 @@ export function refreshScale(
   startOctave: number,
   scaleType: string,
 ): void {
-  _setOctave(startOctave)
+  setOctave(startOctave)
   setCurrentScale(buildMultiOctaveScale(keyName, startOctave, 2, scaleType))
-}
-
-export function setOctave(octave: number): void {
-  _setOctave(octave)
 }
 
 export function setNumOctaves(num: number): void {
   setCurrentScale(
-    buildMultiOctaveScale(DEFAULT_KEY, currentOctave(), num, 'major'),
+    buildMultiOctaveScale(DEFAULT_KEY, getCurrentOctave(), num, 'major'),
   )
 }
 
@@ -1019,13 +1026,13 @@ export const melodyStore = {
   generateId,
   resetMelodyLibrary,
 
-  // Scale - these are Signals
+  // Scale - these are state variables
   currentScale,
   setCurrentScale,
   refreshScale,
   setOctave,
   setNumOctaves,
-  currentOctave,
+  getCurrentOctave,
 
   // Playlist operations
   createPlaylist,
