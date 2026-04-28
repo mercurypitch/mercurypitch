@@ -29,6 +29,7 @@ export class AudioEngine {
   private micAnalyser: AnalyserNode | null = null
   private toneOscillator: OscillatorNode | null = null
   private toneGain: GainNode | null = null
+  private toneCleanupTimer: ReturnType<typeof setTimeout> | null = null
   private isRecording = false
   private isPlaying = false
   private callbacks: AudioEngineCallbacks = {}
@@ -578,89 +579,130 @@ export class AudioEngine {
     await this.resume()
     if (!this.audioCtx || !this.mainGain) return
 
-    // Guard against rapid calls - make sure previous tone is fully stopped
-    // We await stopTone() to ensure it completes before starting the new tone
+    // A new note must replace the previous note immediately at the note boundary.
+    // Lingering release tails here make the previous pitch sound over the next note.
     if (this.toneOscillator !== null) {
-      await this.stopTone()
+      this.stopTone(0)
     }
 
-    this.toneOscillator = this.audioCtx.createOscillator()
-    this.toneGain = this.audioCtx.createGain()
+    const oscillator = this.audioCtx.createOscillator()
+    const gain = this.audioCtx.createGain()
+    const startTime = this.audioCtx.currentTime
 
-    this.toneOscillator.type = 'sine'
-    this.toneOscillator.frequency.value = frequency
+    if (this.toneCleanupTimer !== null) {
+      clearTimeout(this.toneCleanupTimer)
+      this.toneCleanupTimer = null
+    }
+
+    this.toneOscillator = oscillator
+    this.toneGain = gain
+
+    oscillator.type = 'sine'
+    oscillator.frequency.value = frequency
 
     // Smooth ramp in
-    this.toneGain.gain.setValueAtTime(0, this.audioCtx.currentTime)
-    this.toneGain.gain.linearRampToValueAtTime(
+    gain.gain.setValueAtTime(0, startTime)
+    gain.gain.linearRampToValueAtTime(
       this.volume,
-      this.audioCtx.currentTime + 0.01,
+      startTime + 0.01,
     )
 
-    this.toneOscillator.connect(this.toneGain)
-    this.toneGain.connect(this.mainGain)
-    this.toneOscillator.start(this.audioCtx.currentTime)
+    oscillator.connect(gain)
+    gain.connect(this.mainGain)
+    oscillator.start(startTime)
 
     this.isPlaying = true
 
-    if (duration !== undefined) {
-      const durationSeconds = duration / 1000
-      const stopTime = this.audioCtx.currentTime + durationSeconds
-      // For extremely short notes (< 20ms), skip the fade-out entirely
-      // This prevents RangeError when stopTime - 0.02 would be negative
-      if (durationSeconds < 0.02) {
-        this.toneOscillator.stop(stopTime)
-      } else {
-        // Fade out smoothly in the last 20ms
-        // Ensure fadeStart is always a positive time (never negative or zero)
-        const fadeDuration = 0.02
-        const safeStart = Math.max(0, this.audioCtx.currentTime + 0.001)
-        const fadeStart = Math.max(safeStart, stopTime - fadeDuration)
-        this.toneGain.gain.setValueAtTime(this.volume, fadeStart)
-        this.toneGain.gain.linearRampToValueAtTime(0, stopTime)
-        this.toneOscillator.stop(stopTime)
+    const cleanup = (): void => {
+      try {
+        oscillator.disconnect()
+      } catch {
+        // already disconnected
       }
-      this.toneOscillator.onended = () => {
-        this.isPlaying = false
+      try {
+        gain.disconnect()
+      } catch {
+        // already disconnected
+      }
+      if (this.toneOscillator === oscillator) {
+        this.toneOscillator = null
+      }
+      if (this.toneGain === gain) {
+        this.toneGain = null
+      }
+      this.isPlaying = false
+    }
+
+    oscillator.onended = cleanup
+
+    if (duration !== undefined) {
+      const durationSeconds = Math.max(0.001, duration / 1000)
+      const stopTime = startTime + durationSeconds
+      const fadeDuration = Math.min(0.01, durationSeconds / 2)
+      const fadeStart = Math.max(startTime + 0.001, stopTime - fadeDuration)
+
+      try {
+        gain.gain.setValueAtTime(this.volume, fadeStart)
+        gain.gain.linearRampToValueAtTime(0, stopTime)
+        oscillator.stop(stopTime)
+      } catch {
+        cleanup()
       }
     }
   }
 
   /** Stop the current tone with release envelope */
-  stopTone(): void {
+  stopTone(releaseMs: number = 10): void {
     if (!this.audioCtx || !this.toneGain || !this.toneOscillator) return
 
     const now = this.audioCtx.currentTime
+    const oscillator = this.toneOscillator
+    const gain = this.toneGain
+    const releaseSeconds = Math.max(0.001, releaseMs / 1000)
+
+    if (this.toneCleanupTimer !== null) {
+      clearTimeout(this.toneCleanupTimer)
+      this.toneCleanupTimer = null
+    }
 
     // Apply release envelope to fade out smoothly
     try {
-      this.toneGain.gain.cancelScheduledValues(now)
-      this.toneGain.gain.setValueAtTime(this.toneGain.gain.value, now)
-      this.toneGain.gain.linearRampToValueAtTime(0, now + 0.1)
+      gain.gain.cancelScheduledValues(now)
+      gain.gain.setValueAtTime(gain.gain.value, now)
+      gain.gain.linearRampToValueAtTime(0, now + releaseSeconds)
     } catch {
       // Gain may already be disconnected or at zero
     }
 
     // Schedule the oscillator stop after release
-    const stopTime = now + 0.1
-    this.toneOscillator.stop(stopTime)
+    const stopTime = now + releaseSeconds
+    try {
+      oscillator.stop(stopTime)
+    } catch {
+      // already stopped
+    }
+
+    if (this.toneOscillator === oscillator) {
+      this.toneOscillator = null
+    }
+    if (this.toneGain === gain) {
+      this.toneGain = null
+    }
 
     // Clean up after release completes
-    setTimeout(() => {
+    this.toneCleanupTimer = setTimeout(() => {
       try {
-        this.toneOscillator?.disconnect()
+        oscillator.disconnect()
       } catch {
         // already stopped
       }
-      this.toneOscillator = null
-    }, 120)
-
-    try {
-      this.toneGain?.disconnect()
-    } catch {
-      // already disconnected
-    }
-    this.toneGain = null
+      try {
+        gain.disconnect()
+      } catch {
+        // already disconnected
+      }
+      this.toneCleanupTimer = null
+    }, Math.ceil(releaseSeconds * 1000) + 30)
     this.isPlaying = false
   }
 

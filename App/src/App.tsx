@@ -754,7 +754,9 @@ export const App: Component<AppProps> = (props) => {
         }
       },
       onNoteEnd: () => {
-        audioEngine.stopTone()
+        // Do not stop here: playTone(note.duration) schedules the exact note end.
+        // Calling stopTone on a note-to-note boundary can prematurely cut a new
+        // note if noteEnd and noteStart happen in the same animation frame.
       },
       onBeatUpdate: (beat) => {
         setCurrentBeat(beat)
