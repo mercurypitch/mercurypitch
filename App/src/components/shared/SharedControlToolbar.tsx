@@ -162,7 +162,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
             <button
               id="record-btn"
               class={`ctrl-btn record-btn ${(props.isRecording?.() ?? false) ? 'recording' : ''}`}
-              disabled={isActive()}
+              disabled={isActive() && !(props.isRecording?.() ?? false)}
               title={(props.isRecording?.() ?? false) ? 'Stop recording' : 'Record to piano roll'}
               onClick={() =>
                 void (async () => {

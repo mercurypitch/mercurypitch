@@ -310,11 +310,10 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     drawAccuracyHeatmap(h)
     drawTargetPitch(h)
 
-    let accum = 0
     for (let j = 0; j < melody.length; j++) {
       const item = melody[j]
-      const x1 = beatToX(accum, w)
-      const x2 = beatToX(accum + item.duration, w)
+      const x1 = beatToX(item.startBeat, w)
+      const x2 = beatToX(item.startBeat + item.duration, w)
       const bw = x2 - x1
       const y = freqToY(item.note.freq, h)
       const isActive =
@@ -351,8 +350,6 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       ctx.moveTo(x1, 0)
       ctx.lineTo(x1, h)
       ctx.stroke()
-
-      accum += item.duration
     }
 
     const history = props.pitchHistory()
@@ -363,7 +360,6 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       ctx.lineCap = 'round'
       ctx.beginPath()
       let started = false
-      const isRecordingMode = props.isRecording?.() ?? false
       for (const pt of history) {
         if (
           pt.freq === null ||
@@ -374,16 +370,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
           started = false
           continue
         }
-        let beat: number
-        if (isRecordingMode) {
-          const perfNow = (
-            performance as unknown as { now: () => number }
-          ).now()
-          const beatDurationMs = 60000 / appStore.bpm()
-          beat = (perfNow - pt.time) / beatDurationMs
-        } else {
-          beat = pt.time
-        }
+        const beat = pt.time
         const px = beatToX(beat, w)
         const py = freqToY(pt.freq, h)
         if (!started) {
@@ -400,18 +387,8 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
         last.freq !== undefined &&
         last.freq > 0
       ) {
-        let lx: number
         const ly = freqToY(last.freq, h)
-        if (isRecordingMode) {
-          const perfNow = (
-            performance as unknown as { now: () => number }
-          ).now()
-          const beatDurationMs = 60000 / appStore.bpm()
-          const lastBeat = (perfNow - last.time) / beatDurationMs
-          lx = beatToX(lastBeat, w)
-        } else {
-          lx = beatToX(last.time, w)
-        }
+        const lx = beatToX(last.time, w)
         const grad = ctx.createRadialGradient(lx, ly, 0, lx, ly, 12)
         grad.addColorStop(0, 'rgba(63,185,80,0.55)')
         grad.addColorStop(1, 'rgba(63,185,80,0)')

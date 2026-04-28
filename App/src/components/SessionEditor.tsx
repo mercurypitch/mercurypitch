@@ -44,8 +44,8 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
   const sessionItems = () => {
     if (props.currentSession) return props.currentSession
     const session = currentSession()
-    if (session) {
-      return session.items || []
+    if (session !== null && session !== undefined) {
+      return session.items ?? []
     }
     return []
   }
@@ -75,7 +75,7 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
   // Function to add melodies to session - handled via drag-drop and click from MelodyPillList
   const _handleAddMelodyToSession = (_melodyId: string) => {
     const session = currentSession()
-    if (!session) {
+    if (session === null || session === undefined) {
       appStore.showNotification('No active session to add melody to', 'error')
       return
     }
@@ -116,7 +116,7 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
 
   const handleDeleteItem = (itemId: string) => {
     const session = currentSession()
-    if (!session) {
+    if (session === null || session === undefined) {
       appStore.showNotification('No active session', 'error')
       return
     }
@@ -141,7 +141,7 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
 
   const handleDrop = (melodyId: string, targetItemIndex?: number) => {
     const session = currentSession()
-    if (!session) {
+    if (session === null || session === undefined) {
       appStore.showNotification('No active session to add melody to', 'error')
       return
     }
@@ -174,7 +174,7 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
       restMs: duration ?? restDurationInput(),
     }
     const session = currentSession()
-    if (session) {
+    if (session !== null && session !== undefined) {
       const updatedSession = addItemToSession(session.id, newItem)
       if (updatedSession !== undefined) {
         appStore.setActiveUserSession(updatedSession)

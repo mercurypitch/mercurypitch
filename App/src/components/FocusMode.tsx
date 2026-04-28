@@ -171,11 +171,14 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
         <div
           id="playhead"
           class="focus-playhead"
-          style={{ display: (props.isPlaying() || props.isPaused()) ? 'block' : 'none' }}
+          style={{
+            display: (props.isPlaying() || props.isPaused()) ? 'block' : 'none',
+            left: `${playheadPosition()}%`,
+          }}
         >
           <div
             class="playhead-marker"
-            style={{ left: `${playheadPosition()}%` }}
+            style={{ left: '0' }}
           />
           {/* Glowing pitch dot with dynamic vertical position */}
           <div

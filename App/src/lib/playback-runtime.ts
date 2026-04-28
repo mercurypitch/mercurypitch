@@ -49,6 +49,7 @@ export interface PlaybackRuntimeOptions {
 
 export class PlaybackRuntime {
   private audioEngine: AudioEngine
+  private ownsAudioEngine: boolean
   private callbacks: PlaybackRuntimeCallbacks
   private isPlaying = false
   private isPaused = false
@@ -65,6 +66,8 @@ export class PlaybackRuntime {
   private metronomeLastBeat = -1
   private metronomeLastCountInBeat = -1
   private _melody: MelodyItem[] = []
+  private _durationBeats = 0
+  private countInCompleteEmitted = false
 
   private _getTotalBeats(melody: MelodyItem[]): number {
     let max = 0
@@ -80,6 +83,7 @@ export class PlaybackRuntime {
    */
   constructor(options: PlaybackRuntimeOptions) {
     this.audioEngine = options.audioEngine ?? new AudioEngine()
+    this.ownsAudioEngine = options.audioEngine === undefined
     this.audioEngine.setInstrument(options.instrumentType ?? 'sine')
     this.callbacks = options
     this.metronomeEnabled = options.metronomeEnabled
@@ -185,6 +189,7 @@ export class PlaybackRuntime {
       this.currentNoteIndex = -1
       this._countInBeats = countInBeats
       this.countInBeat = countInBeats
+      this.countInCompleteEmitted = false
       this.pauseOffset = 0
       console.log('[PlaybackRuntime.start] Fresh start, countInBeats:', countInBeats)
       // Set playStartTime for fresh starts (not resuming)
@@ -223,9 +228,9 @@ export class PlaybackRuntime {
     console.log('[resume] called, isPaused:', this.isPaused, 'isPlaying:', this.isPlaying)
     if (!this.isPaused) return
 
-    // Reset playStartTime to 0 so elapsed time is calculated from resume point
-    // The pauseOffset correctly accounts for paused time
-    this.playStartTime = 0
+    this.pauseOffset +=
+      this.pauseStartTime > 0 ? performance.now() - this.pauseStartTime : 0
+    this.pauseStartTime = 0
     this.isPaused = false
     this.isPlaying = true
     console.log('[resume] set isPaused=false, isPlaying=true, calling _startAnimationLoop')
@@ -255,6 +260,7 @@ export class PlaybackRuntime {
       this.playStartTime = 0
       this.countInBeat = 0
       this._countInBeats = 0
+      this.countInCompleteEmitted = false
     }
 
     this._emit({ type: 'state', state: 'stopped' })
@@ -283,6 +289,10 @@ export class PlaybackRuntime {
     this._melody = [...melody]
   }
 
+  setDurationBeats(beats: number): void {
+    this._durationBeats = Math.max(0, beats)
+  }
+
   /**
    * Get current BPM from AudioEngine (which reads from appStore)
    */
@@ -306,7 +316,6 @@ export class PlaybackRuntime {
       const beatDuration = 60000 / this._bpm
       // Calculate elapsed time, accounting for pause time
       const elapsed = now - this.playStartTime + this.pauseOffset
-      console.log('[animate] now:', now, 'playStartTime:', this.playStartTime, 'pauseOffset:', this.pauseOffset, 'elapsed:', elapsed)
 
       // Count-in phase: play count-in beats before actual melody
       if (countIn > 0 && elapsed < countIn * beatDuration) {
@@ -329,8 +338,6 @@ export class PlaybackRuntime {
         const isDownbeat = currentInt % 4 === 0
         // Only play metronome if countIn > 0
         if (currentInt > 0 && currentInt !== this.metronomeLastCountInBeat) {
-          // Play metronome sound
-          this.audioEngine.playMetronomeClick(isDownbeat)
           this.metronomeLastCountInBeat = currentInt
           // Emit metronome event for UI feedback
           this._emit({
@@ -343,11 +350,13 @@ export class PlaybackRuntime {
         this.animationFrameId = requestAnimationFrame(animate)
       } else {
         // Count-in phase finished - emit completion event
-        if (countIn > 0) {
+        if (countIn > 0 && !this.countInCompleteEmitted) {
+          this.countInCompleteEmitted = true
           this._emit({ type: 'countInComplete' })
         }
 
-        const beat = elapsed / beatDuration
+        const melodyElapsed = Math.max(0, elapsed - countIn * beatDuration)
+        const beat = melodyElapsed / beatDuration
 
         const intBeat = Math.floor(beat)
 
@@ -360,7 +369,6 @@ export class PlaybackRuntime {
           this.metronomeLastBeat >= 0 &&
           shouldPlayMetronome
         ) {
-          this.audioEngine.playMetronomeClick(isDownbeat)
           this._emit({
             type: 'metronome',
             beat: intBeat,
@@ -395,7 +403,7 @@ export class PlaybackRuntime {
         this.currentBeat = beat
         this._emit({ type: 'beat', beat })
 
-        const totalBeats = this._getTotalBeats(melody)
+        const totalBeats = Math.max(this._durationBeats, this._getTotalBeats(melody))
         if (beat >= totalBeats) {
           this._emit({ type: 'complete' })
           this.stop()
@@ -422,7 +430,6 @@ export class PlaybackRuntime {
 
     switch (event.type) {
       case 'state':
-        this.callbacks.onNoteStart = undefined
         break
       case 'beat':
         this.callbacks.onBeatUpdate?.(event.beat!)
@@ -467,6 +474,8 @@ export class PlaybackRuntime {
 
   destroy(): void {
     this.stop()
-    this.audioEngine.destroy()
+    if (this.ownsAudioEngine) {
+      this.audioEngine.destroy()
+    }
   }
 }

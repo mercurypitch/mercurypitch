@@ -400,7 +400,6 @@ export const App: Component<AppProps> = (props) => {
   let currentNoteStartBeat = -1
   let currentNoteMidi = -1
   let pendingNoteId = 0
-  let freeRecordStartTime = 0 // performance.now() when recording started, for free recording
 
   // ── Play mode ────────────────────────────────────────────────
   type PlayMode = 'once' | 'repeat' | 'practice'
@@ -737,14 +736,17 @@ export const App: Component<AppProps> = (props) => {
     // Create PlaybackRuntime - orchestrates audio and timing
     // Note: BPM is managed by appStore, passed to AudioEngine for timing
     playbackRuntime = new PlaybackRuntime({
+      audioEngine,
       metronomeEnabled: metronomeEnabled,
       instrumentType: appStore.instrument(),
       onNoteStart: (item, noteIndex) => {
         setCurrentNoteIndex(noteIndex)
+        melodyStore.setCurrentNoteIndex(noteIndex)
         setTargetPitch(item.note.freq)
-        practiceEngine.onNoteStart(item.note, noteIndex)
-        // Only play tone if editor is actively playing
-        if (editorPlaybackState() === 'playing') {
+        if (activeTab() === 'practice') {
+          practiceEngine.onNoteStart(item.note, noteIndex)
+        }
+        if (!isRecording() && (isPlaying() || editorPlaybackState() === 'playing')) {
           // Play tone for the note — use the full note duration from the melody item
           const beatDurationMs = 60000 / appStore.bpm()
           const noteDurationMs = item.duration * beatDurationMs
@@ -756,18 +758,6 @@ export const App: Component<AppProps> = (props) => {
       },
       onBeatUpdate: (beat) => {
         setCurrentBeat(beat)
-      },
-      onComplete: () => {
-        practiceEngine.onPlaybackComplete()
-        const mode = playMode()
-        console.info(
-          '[onComplete] fired, mode:',
-          mode,
-          'sessionMode:',
-          appStore.sessionMode(),
-          'idx:',
-          appStore.sessionItemIndex(),
-        )
       },
     })
 
@@ -915,14 +905,11 @@ export const App: Component<AppProps> = (props) => {
 
     // Listen to PlaybackRuntime events for synchronization (both tabs)
     playbackRuntime.on('beat', (e: { beat?: number }) => {
-      setCurrentBeat(e.beat ?? 0)
-      // Also update editor state
-      if (activeTab() === 'editor') {
-        // Editor uses melodyStore to track current note index
-        melodyStore.setCurrentNoteIndex(
-          melodyIndexAtBeat(melodyStore.items(), e.beat ?? 0),
-        )
-      }
+      const beat = e.beat ?? 0
+      setCurrentBeat(beat)
+      const noteIndex = melodyIndexAtBeat(melodyStore.items(), beat)
+      setCurrentNoteIndex(noteIndex)
+      melodyStore.setCurrentNoteIndex(noteIndex)
     })
     playbackRuntime.on('countIn', (e: { countIn?: number }) => {
       setCountInBeat(e?.countIn ?? 0)
@@ -977,6 +964,11 @@ export const App: Component<AppProps> = (props) => {
 
       // Once mode: playback is done
       console.info('[onComplete] once mode - playback complete')
+      setIsPlaying(false)
+      setIsPaused(false)
+      setEditorPlaybackState('stopped')
+      playback.resetPlayback()
+      appStore.setSessionActive(false)
     })
 
     // Animation loop for pitch history
@@ -986,17 +978,14 @@ export const App: Component<AppProps> = (props) => {
       // During free recording, compute beat from performance.now() independently.
       // During playback-backed recording, use playbackRuntime's beat position.
 
-      const perfNow = (performance as unknown as { now: () => number }).now()
-      const beat = isRecording()
-        ? ((perfNow - freeRecordStartTime) / 60000) * appStore.bpm()
-        : playbackRuntime.getCurrentBeat()
+      const beat = playbackRuntime.getCurrentBeat()
       if (pitch && pitch.frequency > 0 && pitch.clarity >= 0.2) {
         setPitchHistory((prev) => {
           const next = [
             ...prev,
             {
               freq: pitch.frequency,
-              time: perfNow,
+              time: beat,
               cents: pitch.cents,
             },
           ]
@@ -1004,11 +993,11 @@ export const App: Component<AppProps> = (props) => {
         })
 
         // Record to piano roll
-        if (isRecording()) {
+        if (isRecording() && editorPlaybackState() === 'playing') {
           const midi = Math.round(69 + 12 * Math.log2(pitch.frequency / 440))
           if (midi !== currentNoteMidi) {
             // New pitch detected — finalize previous note
-            if (currentNoteMidi > 0 && currentNoteStartBeat > 0) {
+            if (currentNoteMidi > 0 && currentNoteStartBeat >= 0) {
               const duration = Math.max(0.25, beat - currentNoteStartBeat)
               const note = midiToNote(currentNoteMidi)
               setRecordedMelody((prev) => [
@@ -1031,7 +1020,7 @@ export const App: Component<AppProps> = (props) => {
           }
           silenceFrames = 0
         }
-      } else if (isRecording()) {
+      } else if (isRecording() && editorPlaybackState() === 'playing') {
         silenceFrames++
         // 10+ frames of silence ends the current note
         if (silenceFrames >= 10 && currentNoteMidi > 0) {
@@ -1136,6 +1125,7 @@ export const App: Component<AppProps> = (props) => {
     const subMode = playMode() === 'practice' ? practiceSubMode() : 'all'
     const filteredMelody = filterMelodyForPractice(baseMelody, subMode)
     playbackRuntime.setMelody(filteredMelody)
+    playbackRuntime.setDurationBeats(melodyTotalBeats(filteredMelody))
     // BPM synced via AudioEngine in the createEffect above
 
     practiceEngine.startSession()
@@ -1246,15 +1236,25 @@ export const App: Component<AppProps> = (props) => {
     }
     await audioEngine.resume()
 
-    // Sync engine with current melody/bpm
-    let editorMelody = melodyStore.items()
-    if (editorMelody.length === 0) {
-      console.info('[handleEditorPlay] No melody, building default scale')
-      buildScaleMelody(appStore.scaleType(), 8)
-      editorMelody = melodyStore.items()
+    if (isRecording()) {
+      currentNoteMidi = -1
+      currentNoteStartBeat = -1
+      silenceFrames = 0
+      setRecordedMelody([])
+      playbackRuntime.setMelody([])
+      playbackRuntime.setDurationBeats(Math.max(totalBeats(), 16))
+    } else {
+      // Sync engine with current melody/bpm
+      let editorMelody = melodyStore.items()
+      if (editorMelody.length === 0) {
+        console.info('[handleEditorPlay] No melody, building default scale')
+        buildScaleMelody(appStore.scaleType(), 8)
+        editorMelody = melodyStore.items()
+      }
+      console.info('[handleEditorPlay] melody length:', editorMelody.length)
+      playbackRuntime.setMelody(editorMelody)
+      playbackRuntime.setDurationBeats(melodyTotalBeats(editorMelody))
     }
-    console.info('[handleEditorPlay] melody length:', editorMelody.length)
-    playbackRuntime.setMelody(editorMelody)
 
     // Set playback state BEFORE starting
     setEditorPlaybackState('playing')
@@ -1276,6 +1276,9 @@ export const App: Component<AppProps> = (props) => {
   }
 
   const handleEditorStop = () => {
+    if (isRecording()) {
+      finalizeRecording(playbackRuntime.getCurrentBeat())
+    }
     void playbackRuntime.stop()
     void audioEngine.stopTone()
     setCurrentBeat(0)
@@ -1424,39 +1427,58 @@ export const App: Component<AppProps> = (props) => {
 
   // ── Recording ────────────────────────────────────────────────
 
+  const makeRecordedNote = (midi: number, startBeat: number, endBeat: number): MelodyItem => {
+    const note = midiToNote(midi)
+    return {
+      id: pendingNoteId++,
+      note: {
+        name: note?.name ?? 'C',
+        octave: note?.octave ?? 4,
+        midi,
+        freq: 440 * Math.pow(2, (midi - 69) / 12),
+      },
+      duration: Math.max(0.25, endBeat - startBeat),
+      startBeat,
+    }
+  }
+
+  const mergeRecordedItems = (existing: MelodyItem[], recorded: MelodyItem[]): MelodyItem[] => {
+    if (recorded.length === 0) return existing
+    const overlapsRecorded = (item: MelodyItem): boolean => {
+      const itemStart = item.startBeat
+      const itemEnd = item.startBeat + item.duration
+      return recorded.some((rec) => {
+        const recStart = rec.startBeat
+        const recEnd = rec.startBeat + rec.duration
+        return itemStart < recEnd && itemEnd > recStart
+      })
+    }
+    return [...existing.filter((item) => !overlapsRecorded(item)), ...recorded]
+      .sort((a, b) => a.startBeat - b.startBeat)
+  }
+
+  const finalizeRecording = (endBeat: number): void => {
+    let finalRecordedItems = recordedMelody()
+    if (currentNoteMidi > 0 && currentNoteStartBeat >= 0) {
+      finalRecordedItems = [
+        ...finalRecordedItems,
+        makeRecordedNote(currentNoteMidi, currentNoteStartBeat, endBeat),
+      ]
+    }
+    if (finalRecordedItems.length > 0) {
+      melodyStore.setMelody(mergeRecordedItems(melodyStore.items(), finalRecordedItems))
+    }
+    setRecordedMelody([])
+    currentNoteMidi = -1
+    currentNoteStartBeat = -1
+    setIsRecording(false)
+    audioEngine.setVolume(0.8)
+    appStore.setActiveTab('editor')
+  }
+
   const handleRecordToggle = async () => {
     if (isRecording()) {
-      // Stop recording — finalize any pending note
-      if (currentNoteMidi > 0 && currentNoteStartBeat > 0) {
-        const beat = playbackRuntime.getCurrentBeat()
-        const duration = Math.max(0.25, beat - currentNoteStartBeat)
-        const note = midiToNote(currentNoteMidi)
-        setRecordedMelody((prev) => [
-          ...prev,
-          {
-            id: pendingNoteId++,
-            note: {
-              name: note?.name ?? '',
-              octave: note?.octave ?? 4,
-              midi: currentNoteMidi,
-              freq: 440 * Math.pow(2, (currentNoteMidi - 69) / 12),
-            },
-            duration,
-            startBeat: currentNoteStartBeat,
-          },
-        ])
-      }
-      const items = recordedMelody()
-      if (items.length > 0) {
-        melodyStore.setMelody([...melodyStore.items(), ...items])
-      }
-      setRecordedMelody([])
-      currentNoteMidi = -1
-      currentNoteStartBeat = -1
-      setIsRecording(false)
-      // Unmute audio when recording stops
-      audioEngine.setVolume(0.8)
-      appStore.setActiveTab('editor')
+      finalizeRecording(playbackRuntime.getCurrentBeat())
     } else {
       // Start recording
       const micOk = await practiceEngine.startMic()
@@ -1465,10 +1487,6 @@ export const App: Component<AppProps> = (props) => {
       currentNoteMidi = -1
       currentNoteStartBeat = -1
       silenceFrames = 0
-
-      freeRecordStartTime = (
-        performance as unknown as { now: () => number }
-      ).now()
       setIsRecording(true)
       // Mute audio during recording
       audioEngine.setVolume(0)
