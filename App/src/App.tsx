@@ -21,6 +21,7 @@ import { SessionPlayer } from '@/components/SessionPlayer'
 import { SettingsPanel } from '@/components/SettingsPanel'
 import type { PracticeSubMode } from '@/components/shared/SharedControlToolbar'
 import { SharedControlToolbar } from '@/components/shared/SharedControlToolbar'
+import { Walkthrough } from '@/components/Walkthrough'
 import { WalkthroughControl } from '@/components/WalkthroughControl'
 import type { InstrumentType } from '@/lib/audio-engine'
 import { AudioEngine } from '@/lib/audio-engine'
@@ -1686,6 +1687,9 @@ export const App: Component<AppProps> = (props) => {
       {/* Walkthrough Selection (shown on app start if walkthroughs remain) */}
       <WalkthroughControl showOnStart={true} />
 
+      {/* Guide Tour — Interactive spotlight overlay */}
+      <Walkthrough />
+
       {/* Sidebar backdrop (mobile) */}
       <Show when={sidebarOpen()}>
         <div class="sidebar-backdrop" onClick={closeSidebar} />
@@ -1862,6 +1866,7 @@ export const App: Component<AppProps> = (props) => {
             </Show>
 
             <Show when={activeTab() === 'editor'}>
+              <div id="editor-panel">
               {/* Shared control toolbar with editor-specific options */}
               <SharedControlToolbar
                 activeTab={activeTab}
@@ -1950,6 +1955,7 @@ export const App: Component<AppProps> = (props) => {
                 getWaveform={() => audioEngine?.getWaveformData() ?? null}
               />
               </Show>
+              </div>
             </Show>
 
             <Show when={activeTab() === 'settings'}>
