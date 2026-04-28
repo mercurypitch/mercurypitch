@@ -37,7 +37,7 @@ import { melodyStore } from '@/stores/melody-store'
 import { playback } from '@/stores/playback-store'
 import { getSessionStore } from '@/stores/session-store'
 import type { PitchSample } from '@/types'
-import type { MelodyItem, MelodyNote, NoteName, NoteResult, PitchResult, PracticeResult, } from '@/types'
+import type { MelodyItem, MelodyNote, NoteName, NoteResult, PitchResult, PracticeResult, SavedUserSession, SessionItem, } from '@/types'
 import type { PlaybackState } from '@/types'
 
 // ── Engine instances (single shared) ────────────────────────
@@ -147,11 +147,19 @@ export const App: Component<AppProps> = (props) => {
   const [sessionCurrentMelodyIndex, setSessionCurrentMelodyIndex] =
     createSignal(-1)
   const [sessionMelodyIds, setSessionMelodyIds] = createSignal<string[]>([])
+  const [playbackDisplayMelody, setPlaybackDisplayMelody] =
+    createSignal<MelodyItem[] | null>(null)
+  const [playbackDisplayBeats, setPlaybackDisplayBeats] =
+    createSignal<number | null>(null)
   const [shouldAutoStartPlayback, setShouldAutoStartPlayback] =
     createSignal(false)
 
   // ── ALL SOLIDJS REACTIVE TYPES (Memos) ───────────────────────
-  const totalBeats = createMemo(() => melodyTotalBeats(melodyStore.items()))
+  const activePlaybackItems = (): MelodyItem[] =>
+    playbackDisplayMelody() ?? melodyStore.items()
+  const totalBeats = createMemo(() =>
+    playbackDisplayBeats() ?? melodyTotalBeats(activePlaybackItems()),
+  )
   const playheadPosition = createMemo(() => {
     const beats = currentBeat()
     const total = totalBeats()
@@ -202,6 +210,8 @@ export const App: Component<AppProps> = (props) => {
     // Reset session playback state
     setSessionMelodyIds([])
     setSessionCurrentMelodyIndex(-1)
+    setPlaybackDisplayMelody(null)
+    setPlaybackDisplayBeats(null)
 
     // Force reset PlaybackRuntime animation loop and state
     playbackRuntime.stop() // Reset via playback stop
@@ -276,6 +286,8 @@ export const App: Component<AppProps> = (props) => {
     setCurrentNoteIndex(-1)
     melodyStore.setCurrentNoteIndex(-1)
     setPitchHistory([])
+    setPlaybackDisplayMelody(melody.items ?? [])
+    setPlaybackDisplayBeats(melodyTotalBeats(melody.items ?? []))
 
     // Sync playback runtime with melody items
     playbackRuntime.setMelody(melody.items ?? [])
@@ -288,15 +300,19 @@ export const App: Component<AppProps> = (props) => {
    * Play all melodies in the session sequentially
    * Auto-closes sidebar on mobile before starting playback
    */
-  const playSessionSequence = (melodyIds: string[]): void => {
-    if (melodyIds.length === 0) return
+  const playSessionSequence = (_melodyIds: string[]): void => {
+    const session = appStore.userSession()
+    if (session === null || session === undefined || session.items.length === 0) return
 
-    // Auto-close sidebar on mobile before starting playback
     closeSidebar()
+    setSessionMelodyIds([])
+    setSessionCurrentMelodyIndex(-1)
+    setPlayMode('practice')
+    appStore.setActiveTab('practice')
 
-    setSessionMelodyIds(melodyIds)
-    setSessionCurrentMelodyIndex(0)
-    loadAndPlayMelodyForSession(melodyIds[0])
+    void resetPlaybackState().then(() => {
+      handlePlay()
+    })
   }
 
   /**
@@ -909,7 +925,7 @@ export const App: Component<AppProps> = (props) => {
     playbackRuntime.on('beat', (e: { beat?: number }) => {
       const beat = e.beat ?? 0
       setCurrentBeat(beat)
-      const noteIndex = melodyIndexAtBeat(melodyStore.items(), beat)
+      const noteIndex = melodyIndexAtBeat(activePlaybackItems(), beat)
       setCurrentNoteIndex(noteIndex)
       melodyStore.setCurrentNoteIndex(noteIndex)
     })
@@ -971,6 +987,8 @@ export const App: Component<AppProps> = (props) => {
       setEditorPlaybackState('stopped')
       playback.resetPlayback()
       appStore.setSessionActive(false)
+      setPlaybackDisplayMelody(null)
+      setPlaybackDisplayBeats(null)
     })
 
     // Animation loop for pitch history
@@ -1088,6 +1106,83 @@ export const App: Component<AppProps> = (props) => {
 
   // ── Playback handlers ───────────────────────────────────────
 
+  const sessionItemDurationBeats = (item: SessionItem): number => {
+    if (item.type === 'rest') {
+      return Math.max(0, (item.restMs ?? 0) / (60000 / appStore.bpm()))
+    }
+    if (item.type === 'scale') return item.beats ?? 8
+    if (item.type === 'preset') return melodyTotalBeats(item.items ?? [])
+    if (item.type === 'melody' && item.melodyId !== undefined) {
+      const melody = melodyStore.getMelody(item.melodyId)
+      return melody !== undefined ? melodyTotalBeats(melody.items) : 0
+    }
+    return 0
+  }
+
+  const buildScaleItemsForSession = (item: SessionItem): MelodyItem[] => {
+    const beats = item.beats ?? 8
+    const numOctaves = beats > 12 ? 2 : 1
+    const scale = buildMultiOctaveScale(
+      appStore.keyName(),
+      melodyStore.getCurrentOctave(),
+      numOctaves,
+      item.scaleType ?? 'major',
+    )
+    return scale.slice(0, Math.min(scale.length, beats)).map((note, i) => ({
+      id: melodyStore.generateId(),
+      note: {
+        midi: note.midi,
+        name: note.name as NoteName,
+        octave: note.octave,
+        freq: note.freq,
+      },
+      startBeat: item.startBeat + i,
+      duration: 1,
+    }))
+  }
+
+  const buildSessionPlaybackMelody = (
+    session: SavedUserSession,
+  ): { items: MelodyItem[]; durationBeats: number } => {
+    const items: MelodyItem[] = []
+    let durationBeats = 0
+
+    for (const item of [...session.items].sort((a, b) => a.startBeat - b.startBeat)) {
+      durationBeats = Math.max(
+        durationBeats,
+        item.startBeat + sessionItemDurationBeats(item),
+      )
+
+      if (item.type === 'melody' && item.melodyId !== undefined) {
+        const melody = melodyStore.getMelody(item.melodyId)
+        if (melody !== undefined) {
+          items.push(
+            ...melody.items.map((melodyItem) => ({
+              ...melodyItem,
+              id: melodyStore.generateId(),
+              startBeat: item.startBeat + melodyItem.startBeat,
+            })),
+          )
+        }
+      } else if (item.type === 'preset' && item.items !== undefined) {
+        items.push(
+          ...item.items.map((melodyItem) => ({
+            ...melodyItem,
+            id: melodyStore.generateId(),
+            startBeat: item.startBeat + melodyItem.startBeat,
+          })),
+        )
+      } else if (item.type === 'scale') {
+        items.push(...buildScaleItemsForSession(item))
+      }
+    }
+
+    return {
+      items: items.sort((a, b) => a.startBeat - b.startBeat),
+      durationBeats,
+    }
+  }
+
   const handlePlay = () => {
     if (isPlaying()) return // already playing
     if (isPaused()) {
@@ -1112,8 +1207,29 @@ export const App: Component<AppProps> = (props) => {
     // Resume audio engine (init is handled by playbackRuntime)
     audioEngine.resume()
 
+    let forcedDurationBeats: number | undefined
+
+    if (playMode() === 'practice') {
+      const activeSession = appStore.userSession()
+      if (activeSession !== null && activeSession !== undefined && activeSession.items.length > 0) {
+        const sessionPlayback = buildSessionPlaybackMelody(activeSession)
+        setPlaybackDisplayMelody(sessionPlayback.items)
+        setPlaybackDisplayBeats(sessionPlayback.durationBeats)
+        appStore.setSessionMode(false)
+        appStore.setSessionActive(true)
+        forcedDurationBeats = sessionPlayback.durationBeats
+      }
+    }
+
+    if (forcedDurationBeats === undefined) {
+      setPlaybackDisplayMelody(null)
+      setPlaybackDisplayBeats(null)
+    }
+
     // Sync engine with current melody/bpm
-    let baseMelody = melodyStore.items()
+    let baseMelody = forcedDurationBeats !== undefined
+      ? playbackDisplayMelody() ?? []
+      : melodyStore.items()
     console.info('[handlePlay] baseMelody length:', baseMelody.length)
 
     // If no melody loaded, build a default scale melody
@@ -1124,10 +1240,12 @@ export const App: Component<AppProps> = (props) => {
       console.info('[handlePlay] Built default scale, new length:', baseMelody.length)
     }
 
-    const subMode = playMode() === 'practice' ? practiceSubMode() : 'all'
+    const subMode = forcedDurationBeats !== undefined
+      ? 'all'
+      : playMode() === 'practice' ? practiceSubMode() : 'all'
     const filteredMelody = filterMelodyForPractice(baseMelody, subMode)
     playbackRuntime.setMelody(filteredMelody)
-    playbackRuntime.setDurationBeats(melodyTotalBeats(filteredMelody))
+    playbackRuntime.setDurationBeats(forcedDurationBeats ?? melodyTotalBeats(filteredMelody))
     // BPM synced via AudioEngine in the createEffect above
 
     practiceEngine.startSession()
@@ -1195,6 +1313,8 @@ export const App: Component<AppProps> = (props) => {
     setPitchHistory([])
     playback.resetPlayback()
     appStore.setSessionActive(false)
+    setPlaybackDisplayMelody(null)
+    setPlaybackDisplayBeats(null)
     // Also reset editor state
     setEditorPlaybackState('stopped')
   }
@@ -1286,6 +1406,8 @@ export const App: Component<AppProps> = (props) => {
     setCurrentBeat(0)
     setCurrentNoteIndex(-1)
     setEditorPlaybackState('stopped')
+    setPlaybackDisplayMelody(null)
+    setPlaybackDisplayBeats(null)
   }
 
   const handleReset = () => {
@@ -1781,7 +1903,7 @@ export const App: Component<AppProps> = (props) => {
             }}
             onOctaveShift={handleOctaveShift}
             onOpenScaleBuilder={() => setShowScaleBuilder(true)}
-            melody={() => melodyStore.items()}
+            melody={activePlaybackItems}
             currentNoteIndex={currentNoteIndex}
             noteResults={noteResults}
             isPlaying={isPlaying}
@@ -1845,7 +1967,7 @@ export const App: Component<AppProps> = (props) => {
                 {/* Canvas */}
                 <div id="canvas-container">
                   <PitchCanvas
-                    melody={() => melodyStore.items()}
+                    melody={activePlaybackItems}
                     scale={() => melodyStore.currentScale()}
                     totalBeats={totalBeats}
                     currentBeat={currentBeat}
@@ -1987,6 +2109,7 @@ export const App: Component<AppProps> = (props) => {
       {/* Focus Mode — full-screen minimal practice UI */}
       <Show when={focusMode()}>
         <FocusMode
+          melody={activePlaybackItems}
           isPlaying={isPlaying}
           isPaused={isPaused}
           currentPitch={currentPitch}

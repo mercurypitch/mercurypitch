@@ -1427,6 +1427,7 @@ export const appStore = {
   getSessionItems,
   practiceSession,
   sessionMode,
+  setSessionMode,
   getCurrentSessionItem,
   startPracticeSession,
   advanceSessionItem,

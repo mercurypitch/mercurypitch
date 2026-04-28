@@ -319,7 +319,7 @@ export const LibraryTab: Component = () => {
    */
   const handlePlaySessionSequence = () => {
     const ids = sessionMelodyIds()
-    if (ids.length === 0) return
+    if ((userSession()?.items.length ?? 0) === 0) return
 
     // Get the sequence playback handler from window (set by App.tsx)
     const handler = (

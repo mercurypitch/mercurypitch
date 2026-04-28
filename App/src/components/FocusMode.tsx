@@ -8,7 +8,7 @@ import { PitchCanvas } from '@/components/PitchCanvas'
 import { melodyTotalBeats } from '@/lib/scale-data'
 import { appStore } from '@/stores/app-store'
 import { melodyStore } from '@/stores/melody-store'
-import type { PitchSample } from '@/types'
+import type { MelodyItem, PitchSample } from '@/types'
 import type { NoteResult, PitchResult, PracticeResult } from '@/types'
 
 interface FocusModeProps {
@@ -23,6 +23,7 @@ interface FocusModeProps {
   isCountingIn: () => boolean
   currentBeat: () => number
   currentNoteIndex?: () => number
+  melody: () => MelodyItem[]
   onPlay: () => void
   onPause: () => void
   onResume: () => void
@@ -37,7 +38,7 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
   )
 
   const totalBeats = createMemo(() =>
-    melodyTotalBeats(melodyStore.getCurrentItems()),
+    melodyTotalBeats(props.melody()),
   )
   const totalBars = createMemo(() => Math.ceil(totalBeats() / 4))
   const currentBar = createMemo(() => {
@@ -150,7 +151,7 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
       {/* Main pitch canvas fills remaining space */}
       <div class="focus-canvas">
         <PitchCanvas
-          melody={() => melodyStore.getCurrentItems()}
+          melody={props.melody}
           scale={() => melodyStore.currentScale()}
           totalBeats={totalBeats}
           currentBeat={props.currentBeat}
@@ -161,7 +162,7 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
           isScrolling={() => false}
           targetPitch={() => {
             const idx = props.currentNoteIndex?.() ?? 0
-            const items = melodyStore.getCurrentItems()
+            const items = props.melody()
             if (idx >= 0 && idx < items.length) {
               return items[idx].note.freq
             }
