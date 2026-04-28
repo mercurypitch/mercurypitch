@@ -1357,6 +1357,10 @@ export const App: Component<AppProps> = (props) => {
           setTimeout(() => {
             handleSessionSkip()
           }, nextItem.restMs ?? 2000)
+        } else if (nextItem.type === 'melody' || nextItem.type === 'preset') {
+          const melodyItems = appStore.buildSessionItemMelody(nextItem)
+          melodyStore.setMelody(melodyItems)
+          setTimeout(() => void handlePlay(), 500)
         }
       }
     } else {
@@ -1409,6 +1413,13 @@ export const App: Component<AppProps> = (props) => {
         setRepeatCycles(1)
         setTimeout(() => void handlePlay(), 500)
         setShouldAutoStartPlayback(false) // Reset flag after starting
+      } else if (item && (item.type === 'melody' || item.type === 'preset')) {
+        console.log('[auto-start session] Starting playback for melody item:', item.label)
+        const melodyItems = appStore.buildSessionItemMelody(item)
+        melodyStore.setMelody(melodyItems)
+        setRepeatCycles(1)
+        setTimeout(() => void handlePlay(), 500)
+        setShouldAutoStartPlayback(false)
       }
     }
   })
@@ -1643,6 +1654,13 @@ export const App: Component<AppProps> = (props) => {
         nextItem.beats ?? 8,
         nextItem.label,
       )
+      playbackRuntime.stop()
+      playbackRuntime.setMelody(melodyStore.items())
+      playbackRuntime.start(appStore.countIn())
+    } else if (nextItem.type === 'melody' || nextItem.type === 'preset') {
+      console.log('[loadNextSessionItem] Starting melody playback')
+      const melodyItems = appStore.buildSessionItemMelody(nextItem)
+      melodyStore.setMelody(melodyItems)
       playbackRuntime.stop()
       playbackRuntime.setMelody(melodyStore.items())
       playbackRuntime.start(appStore.countIn())
