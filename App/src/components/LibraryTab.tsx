@@ -62,9 +62,30 @@ export const LibraryTab: Component = () => {
   })
 
   const allSessions = createMemo(() => {
-    const sessions = getSessions()
+    const sessions = Object.values(library().sessions).filter(
+      (session): session is SavedUserSession => session !== null && session !== undefined,
+    )
+    const explicitSession = appStore.userSession?.()
     const defaultSession = getDefaultSession()
-    return defaultSession === null ? sessions : [defaultSession, ...sessions]
+    const sessionMap = new Map<string, SavedUserSession>()
+
+    if (defaultSession !== null) {
+      sessionMap.set(defaultSession.id, defaultSession)
+    }
+
+    if (explicitSession !== null && explicitSession !== undefined) {
+      sessionMap.set(explicitSession.id, explicitSession)
+    }
+
+    for (const session of sessions) {
+      sessionMap.set(session.id, session)
+    }
+
+    return Array.from(sessionMap.values()).sort((a, b) => {
+      if (a.id === 'default') return -1
+      if (b.id === 'default') return 1
+      return (b.created ?? 0) - (a.created ?? 0)
+    })
   })
 
   const activeMelodyId = createMemo(() => melodyStore.getCurrentMelody()?.id ?? null)

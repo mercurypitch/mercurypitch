@@ -124,7 +124,7 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
     e.preventDefault()
     const dataTransfer = e.dataTransfer
     if (dataTransfer) {
-      dataTransfer.dropEffect = 'move'
+      dataTransfer.dropEffect = draggedItemId() === null ? 'copy' : 'move'
     }
     props.onDragOver(index)
   }
@@ -133,6 +133,14 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
     e.preventDefault()
     const sourceIndex = dragSourceIndex()
     const sourceId = draggedItemId()
+    const externalMelodyId = e.dataTransfer?.getData('text/plain') ?? ''
+
+    if (sourceIndex === -1 && sourceId === null && externalMelodyId !== '') {
+      props.onDrop?.(externalMelodyId, targetIndex)
+      setDraggedItemId(null)
+      setDragSourceIndex(-1)
+      return
+    }
 
     if (sourceIndex === -1 || sourceId === null || sourceIndex === targetIndex) {
       setDraggedItemId(null)
@@ -192,7 +200,11 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
       <div class="timeline-track">
         <div class="timeline-items">
           {props.sessionItems.length === 0 && (
-            <div class="empty-state">
+            <div
+              class="empty-state"
+              onDragOver={(e) => handleDragOver(e, 0)}
+              onDrop={(e) => handleDrop(e, 0)}
+            >
               <p>Add items by dragging from the melody list above</p>
             </div>
           )}
@@ -274,6 +286,8 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
           {props.sessionItems.length > 0 && (
             <div
               class="timeline-drop-zone rest-zone"
+              onDragOver={(e) => handleDragOver(e, props.sessionItems.length)}
+              onDrop={(e) => handleDrop(e, props.sessionItems.length)}
               onClick={() => props.onAddRest(
                 props.sessionItems.reduce((maxBeat, item) => {
                   const itemLength = item.type === 'rest'

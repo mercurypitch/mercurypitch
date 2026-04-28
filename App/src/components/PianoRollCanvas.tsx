@@ -47,6 +47,7 @@ export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
 
     editor = new PianoRollEditor({
       container: containerRef,
+      onMelodyChange: props.onMelodyChange,
       onInstrumentChange: props.onInstrumentChange,
       onPlaybackStateChange: props.onPlaybackStateChange,
     })
