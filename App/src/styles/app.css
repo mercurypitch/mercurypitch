@@ -6591,31 +6591,6 @@ Keeps your existing styles, only adjusts layout
 // Walkthrough Styles (GH #199)
 // ============================================================ */
 
-/* Walkthrough Control Button */
-.walkthrough-control-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--text);
-  cursor: pointer;
-  font-size: 0.85rem;
-  transition: all 0.2s;
-}
-
-.walkthrough-control-btn:hover {
-  background: var(--accent);
-  color: white;
-  border-color: var(--accent);
-}
-
-.walkthrough-control-text {
-  font-weight: 500;
-}
-
 /* Walkthrough control button - aligned with tabs */
 .walkthrough-control-btn {
   display: flex;
@@ -7003,7 +6978,7 @@ Keeps your existing styles, only adjusts layout
 .walkthrough-item {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 16px;
   padding: 16px;
   margin-bottom: 12px;
@@ -7012,16 +6987,8 @@ Keeps your existing styles, only adjusts layout
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s;
-  text-align: center;
-  width: 100%;
-}
-
-.walkthrough-item-title {
-  margin: 0;
-  font-size: 1rem;
-  font-weight: 500;
-  line-height: 1.4;
   text-align: left;
+  width: 100%;
 }
 
 .walkthrough-item:hover {
@@ -7073,20 +7040,13 @@ Keeps your existing styles, only adjusts layout
 .walkthrough-item-content {
   flex: 1;
   min-width: 0;
-  text-align: center;
+  text-align: left;
 }
 
 .walkthrough-item-title {
   margin: 0 0 6px 0;
   font-size: 1rem;
   font-weight: 500;
-  line-height: 1.4;
-}
-
-.walkthrough-item-desc {
-  margin: 0;
-  font-size: 0.9rem;
-  color: var(--text-secondary);
   line-height: 1.4;
 }
 
@@ -7164,7 +7124,7 @@ Keeps your existing styles, only adjusts layout
 }
 
 .walkthrough-back-list-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 8px 12px;
@@ -7175,6 +7135,7 @@ Keeps your existing styles, only adjusts layout
   cursor: pointer;
   font-size: 0.85rem;
   margin: 16px auto 0;
+  max-width: 200px;
   transition: all 0.2s;
 }
 
@@ -7192,27 +7153,24 @@ Keeps your existing styles, only adjusts layout
 }
 
 .walkthrough-main-desc {
-  text-align: center;
+  text-align: left;
   margin: 0 0 24px 0;
   color: var(--text-secondary);
   max-width: 600px;
-  align-self: center;
+  align-self: start;
 }
 
 .walkthrough-text {
   flex: 1;
   overflow-y: auto;
-  padding: 0 24px 24px;
-  margin-bottom: 20px;
+  padding: 0 0 24px;
 }
 
 .walkthrough-paragraph {
-  text-align: center;
-  margin: 24px auto;
+  text-align: left;
+  margin: 0 0 12px 0;
   line-height: 1.7;
   color: var(--text);
-  max-width: 600px;
-  padding: 0 12px;
 }
 
 .walkthrough-steps {
@@ -7340,6 +7298,7 @@ Keeps your existing styles, only adjusts layout
   justify-content: center;
   padding: 48px 32px;
   text-align: center;
+  min-height: 400px;
 }
 
 .walkthrough-complete-icon {

@@ -3,9 +3,10 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createSignal, Show } from 'solid-js'
+import { createSignal, onMount, Show } from 'solid-js'
 import { WalkthroughModal, WalkthroughSelection } from '@/components'
 import type { WalkthroughTab } from '@/stores/walkthrough-store'
+import { getRemainingWalkthroughs } from '@/stores/walkthrough-store'
 
 interface WalkthroughControlProps {
   showOnStart?: boolean
@@ -17,6 +18,12 @@ export const WalkthroughControl: Component<WalkthroughControlProps> = (props) =>
   const [showSelection, setShowSelection] = createSignal(false)
   const [selectedWalkthrough, setSelectedWalkthrough] = createSignal<string | null>(null)
   const [walkthroughTab, setWalkthroughTab] = createSignal<WalkthroughTab>('practice')
+
+  onMount(() => {
+    if (props.showOnStart === true && getRemainingWalkthroughs().length > 0) {
+      setTimeout(() => setShowSelection(true), 300)
+    }
+  })
 
   const handleOpenWalkthroughs = () => {
     setShowSelection(true)
