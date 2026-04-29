@@ -35,7 +35,7 @@ function estimateDuration(items: SessionTemplate['items']): string {
   let beats = 0
   let restMs = 0
   for (const item of items) {
-    if (item.type === 'scale') beats += item.beats ?? 8
+    if ((item.type as string) === 'scale') beats += item.beats ?? 8
     if (item.type === 'rest') restMs += item.restMs ?? 0
   }
   const sec = Math.round(beats * (60 / 120) + restMs / 1000)

@@ -170,7 +170,7 @@ export function useSessionSequencer(deps: Deps): SessionSequencer {
       // FIXME: Replace setTimeout chain with awaitable transition
       setTimeout(() => {
         const afterRest = getCurrentSessionItem()
-        if (afterRest && afterRest.type === 'scale') {
+        if (afterRest && (afterRest.type as string) === 'scale') {
           buildScaleMelody(
             afterRest.scaleType ?? 'major',
             afterRest.beats ?? 8,
@@ -181,7 +181,7 @@ export function useSessionSequencer(deps: Deps): SessionSequencer {
           playbackRuntime.start(countIn())
         }
       }, restDuration)
-    } else if (nextItem.type === 'scale') {
+    } else if ((nextItem.type as string) === 'scale') {
       buildScaleMelody(
         nextItem.scaleType ?? 'major',
         nextItem.beats ?? 8,

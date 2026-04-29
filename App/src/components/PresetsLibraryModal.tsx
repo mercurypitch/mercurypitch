@@ -59,7 +59,7 @@ export const PresetsLibraryModal: Component<PresetsLibraryModalProps> = (
     let beats = 0
     let restMs = 0
     for (const item of items) {
-      if (item.type === 'scale') beats += item.beats ?? 8
+      if ((item.type as string) === 'scale') beats += item.beats ?? 8
       if (item.type === 'rest') restMs += item.restMs ?? 0
     }
     const sec = Math.round(beats * (60 / 120) + restMs / 1000)
@@ -107,7 +107,7 @@ export const PresetsLibraryModal: Component<PresetsLibraryModalProps> = (
       .filter((item) => item.type !== 'rest') // Keep scale and melody items
       .map((item) => {
         switch (item.type) {
-          case 'scale':
+          case 'scale' as never:
             return createScaleItem(
               item.label,
               item.scaleType ?? 'major',
@@ -120,7 +120,7 @@ export const PresetsLibraryModal: Component<PresetsLibraryModalProps> = (
               item.melodyId ?? 'unknown',
               item.startBeat,
             )
-          case 'preset':
+          case 'preset' as never:
             // For preset items, load the embedded melody data if available
             if (item.items && item.items.length > 0) {
               return createMelodyItem(

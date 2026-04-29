@@ -263,7 +263,11 @@ const AppShell: Component<AppProps> = (props) => {
     play: handlePlay,
     pause: handlePause,
     resume: handleResume,
-    stop: handleStop,
+    // handleStop is async (awaits audio teardown); wrap to satisfy
+    // the keyboard hook's `() => void` stop signature.
+    stop: () => {
+      void handleStop()
+    },
     seekToStart: () => {
       playbackRuntime.seekTo(0)
     },
@@ -637,7 +641,7 @@ const AppShell: Component<AppProps> = (props) => {
                   onPlay={handlePlay}
                   onPause={handlePause}
                   onResume={handleResume}
-                  onStop={handleStop}
+                  onStop={() => void handleStop()}
                   volume={savedVol}
                   onVolumeChange={(vol) => {
                     setSavedVol(vol)

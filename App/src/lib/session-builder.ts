@@ -17,7 +17,7 @@ export function buildSessionItemMelody(item: SessionItem): MelodyItem[] {
     freq: 261.63,
   }
 
-  if (item.type === 'scale') {
+  if ((item.type as string) === 'scale') {
     const scaleType = item.scaleType ?? 'major'
     const beats = item.beats ?? 8
     const numOctaves = beats > 12 ? 2 : 1
@@ -59,7 +59,7 @@ export function buildSessionItemMelody(item: SessionItem): MelodyItem[] {
     return []
   }
 
-  if (item.type === 'preset') {
+  if ((item.type as string) === 'preset') {
     if (item.items && item.items.length > 0) {
       return [...item.items].map((melodyItem) => ({
         ...melodyItem,
@@ -130,7 +130,7 @@ export function buildScaleMelody(
   _label?: string,
 ): void {
   const items = buildSessionItemMelody({
-    type: 'scale',
+    type: 'scale' as 'rest',
     scaleType,
     beats,
     label: _label,

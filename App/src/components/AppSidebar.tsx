@@ -270,7 +270,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
                       <span class="session-item-type">
                         {item.type === 'melody'
                           ? '🎵'
-                          : item.type === 'scale'
+                          : (item.type as string) === 'scale'
                             ? '♩'
                             : '♪'}
                       </span>

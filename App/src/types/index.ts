@@ -344,7 +344,15 @@ export interface UnifiedLibrary {
 }
 
 /** Session item type */
-export type SessionItemType = 'preset' | 'scale' | 'rest' | 'melody'
+/**
+ * Session item type. v3 narrowed this from `'preset' | 'scale' | 'rest' |
+ * 'melody'` to just `'melody' | 'rest'`. PlaybackSessions now exclusively
+ * hold melody references and rests — scales are pre-seeded as melodies
+ * (e.g. `scale-major-c4`) and referenced by melodyId, and presets were
+ * historically just embedded melodies which are now first-class library
+ * entries. This keeps every clickable sidebar pill consistent.
+ */
+export type SessionItemType = 'melody' | 'rest'
 
 /** A rest item with specific position in timeline */
 export interface SessionRest {

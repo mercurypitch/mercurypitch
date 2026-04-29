@@ -40,7 +40,7 @@ const makeMelodyItem = (): SessionItem => ({
 
 const makeScaleItem = (): SessionItem => ({
   id: 'si-1',
-  type: 'scale',
+  type: 'scale' as 'rest',
   startBeat: 16,
   label: 'C Major',
   scaleType: 'major',

@@ -272,57 +272,96 @@ const SCALE_DEGREES: Record<string, number[]> = {
 }
 
 export function seedDefaultSession(): void {
-  // Create pre-built scale melodies
-  const scaleConfigs = [
+  // Generate scale-melody seed configs.
+  //
+  // ID convention:
+  //   scale-{scaleType}-{key.toLowerCase()}{octave}        — full scale
+  //   scale-{scaleType}-{key.toLowerCase()}{octave}-{N}b   — first N notes
+  //
+  // The unsuffixed ID is the "full" preset (used by the default session
+  // and the sidebar). The `-Nb` suffixes match what `src/data/sessions.ts`
+  // PRACTICE_SESSIONS items reference, so each session item resolves to
+  // its own length-specific melody (e.g. "G Major Scale (8 beats)" →
+  // `scale-major-c4-8b` plays 8 notes; "(12 beats)" → 12, etc.).
+  type ScaleSeedBase = {
+    scaleType: string
+    key: string
+    octave: number
+    name: string
+    degrees: number[]
+  }
+  const baseConfigs: ScaleSeedBase[] = [
     {
-      id: 'scale-major-c4',
+      scaleType: 'major',
+      key: 'C',
+      octave: 4,
       name: 'C Major Scale',
-      key: 'C',
-      scaleType: 'major',
-      octave: 4,
       degrees: SCALE_DEGREES.major,
     },
     {
-      id: 'scale-major-g4',
-      name: 'G Major Scale',
+      scaleType: 'major',
       key: 'G',
-      scaleType: 'major',
       octave: 4,
+      name: 'G Major Scale',
       degrees: SCALE_DEGREES.major,
     },
     {
-      id: 'scale-chromatic-c4',
-      name: 'Chromatic Scale',
-      key: 'C',
       scaleType: 'chromatic',
+      key: 'C',
       octave: 4,
+      name: 'Chromatic Scale',
       degrees: SCALE_DEGREES.chromatic,
     },
     {
-      id: 'scale-minor-a4',
-      name: 'A Minor Scale',
-      key: 'A',
       scaleType: 'natural-minor',
+      key: 'A',
       octave: 4,
+      name: 'A Minor Scale',
       degrees: SCALE_DEGREES['natural-minor'],
     },
     {
-      id: 'scale-pentatonic-c4',
-      name: 'C Pentatonic',
-      key: 'C',
       scaleType: 'pentatonic',
+      key: 'C',
       octave: 4,
+      name: 'C Pentatonic',
       degrees: SCALE_DEGREES.pentatonic,
     },
     {
-      id: 'scale-dorian-d4',
-      name: 'D Dorian',
-      key: 'D',
       scaleType: 'dorian',
+      key: 'D',
       octave: 4,
+      name: 'D Dorian',
       degrees: SCALE_DEGREES.dorian,
     },
   ]
+
+  // Beat-length variants we want pre-seeded (matches PRACTICE_SESSIONS).
+  const lengthVariants = [8, 12, 16]
+
+  const scaleConfigs: Array<ScaleSeedBase & { id: string; beats?: number }> = []
+  for (const base of baseConfigs) {
+    // Full / "unsuffixed" config (used by default session pills + sidebar)
+    scaleConfigs.push({
+      ...base,
+      id: `scale-${base.scaleType}-${base.key.toLowerCase()}${base.octave}`,
+    })
+    // Length variants for PRACTICE_SESSIONS references
+    for (const beats of lengthVariants) {
+      // Cap beats by the available scale degrees so we don't generate
+      // empty notes for short scales like pentatonic (5 degrees).
+      const truncatedDegrees = base.degrees.slice(
+        0,
+        Math.min(beats, base.degrees.length),
+      )
+      scaleConfigs.push({
+        ...base,
+        id: `scale-${base.scaleType}-${base.key.toLowerCase()}${base.octave}-${beats}b`,
+        name: `${base.name} (${beats} beats)`,
+        beats,
+        degrees: truncatedDegrees,
+      })
+    }
+  }
 
   const library = melodyLibrarySignal()
   let hasAddedMelodies = false

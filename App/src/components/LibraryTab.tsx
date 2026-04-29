@@ -262,11 +262,11 @@ export const LibraryTab: Component = () => {
   // Get icon for session item type
   const getItemIcon = (item: SessionItem): string => {
     switch (item.type) {
-      case 'scale':
+      case 'scale' as never:
         return '♩'
       case 'rest':
         return '⏸'
-      case 'preset':
+      case 'preset' as never:
         return '♪'
       case 'melody':
         return '🎵'
@@ -599,7 +599,7 @@ export const LibraryTab: Component = () => {
                       <Show
                         when={
                           !isMelody &&
-                          item.type === 'scale' &&
+                          (item.type as string) === 'scale' &&
                           item.scaleType !== undefined &&
                           item.scaleType !== null
                         }

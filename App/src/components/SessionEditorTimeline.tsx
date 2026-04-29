@@ -246,7 +246,7 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
                       <span class="item-type-icon">
                         {item.type === 'melody'
                           ? '🎵'
-                          : item.type === 'scale'
+                          : (item.type as string) === 'scale'
                             ? '🎹'
                             : '⏸'}
                       </span>
@@ -294,7 +294,7 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
                       <Show
                         when={
                           !isMelody &&
-                          item.type === 'scale' &&
+                          (item.type as string) === 'scale' &&
                           item.scaleType !== undefined &&
                           item.scaleType !== null
                         }

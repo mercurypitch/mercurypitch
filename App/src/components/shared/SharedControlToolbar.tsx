@@ -68,13 +68,13 @@ interface SharedControlToolbarProps {
   countInBeat: () => number
   countInBeats: () => number
 
-  // Core playback callbacks. Allowed to return a Promise (handleStop is
-  // async — it awaits audio teardown before resolving) so callers don't
-  // need to wrap in `void` to satisfy lint.
-  onPlay: () => void | Promise<unknown>
-  onPause: () => void | Promise<unknown>
-  onResume: () => void | Promise<unknown>
-  onStop: () => void | Promise<unknown>
+  // Core playback callbacks. Always synchronous from the toolbar's PoV;
+  // if a caller has an async handler (e.g. handleStop awaits audio
+  // teardown), they should wrap with `void` at the call site.
+  onPlay: () => void
+  onPause: () => void
+  onResume: () => void
+  onStop: () => void
 
   // Volume
   volume: () => number
@@ -222,7 +222,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
         <Show when={props.isPlaying()}>
           <button
             class="ctrl-btn stop-btn"
-            onClick={props.onPause}
+            onClick={() => void props.onPause()}
             title="Pause"
           >
             <svg viewBox="0 0 24 24" width="16" height="16">
@@ -235,7 +235,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
         <Show when={props.isPaused()}>
           <button
             class="ctrl-btn play-btn"
-            onClick={props.onResume}
+            onClick={() => void props.onResume()}
             title="Continue"
           >
             <svg viewBox="0 0 24 24" width="16" height="16">
@@ -251,7 +251,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
           // stop (playing OR paused). When stopped, it's disabled to give
           // a clear visual cue and prevent re-triggering reset side effects.
           disabled={!isActive()}
-          onClick={props.onStop}
+          onClick={() => void props.onStop()}
           title="Stop"
         >
           <svg viewBox="0 0 24 24" width="16" height="16">

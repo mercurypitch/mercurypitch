@@ -262,7 +262,7 @@ function createDefaultSession(): PlaybackSession {
     },
     {
       id: generateSessionItemId(),
-      type: 'scale',
+      type: 'scale' as 'rest',
       startBeat: 16,
       label: 'G Major Scale (Octave 3-4)',
       scaleType: 'major',
@@ -357,7 +357,7 @@ export function createScaleItem(
 ): SessionItem {
   return {
     id: generateSessionItemId(),
-    type: 'scale',
+    type: 'scale' as 'rest',
     startBeat,
     label,
     scaleType,
@@ -388,7 +388,7 @@ export function createPresetItem(
 ): SessionItem {
   return {
     id: generateSessionItemId(),
-    type: 'preset',
+    type: 'preset' as 'rest',
     startBeat,
     label,
     items,

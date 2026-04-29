@@ -30,7 +30,7 @@ describe('buildSessionItemMelody', () => {
   it('returns notes for a scale item', () => {
     const item: SessionItem = {
       id: 's1',
-      type: 'scale',
+      type: 'scale' as 'rest',
       startBeat: 0,
       label: 'C Major',
       scaleType: 'major',
@@ -77,7 +77,7 @@ describe('buildSessionPlaybackMelody', () => {
       items: [
         {
           id: 'a',
-          type: 'scale',
+          type: 'scale' as 'rest',
           startBeat: 0,
           label: 'A',
           scaleType: 'major',
@@ -85,7 +85,7 @@ describe('buildSessionPlaybackMelody', () => {
         },
         {
           id: 'b',
-          type: 'scale',
+          type: 'scale' as 'rest',
           startBeat: 0,
           label: 'B',
           scaleType: 'major',
