@@ -24,6 +24,7 @@ import type { PracticeSubMode } from '@/components/shared/SharedControlToolbar'
 import { SharedControlToolbar } from '@/components/shared/SharedControlToolbar'
 import { Walkthrough } from '@/components/Walkthrough'
 import { WalkthroughControl } from '@/components/WalkthroughControl'
+import { WelcomeScreen } from '@/components/WelcomeScreen'
 import type { InstrumentType } from '@/lib/audio-engine'
 import { AudioEngine } from '@/lib/audio-engine'
 import { debounce } from '@/lib/debounce'
@@ -1712,8 +1713,10 @@ export const App: Component<AppProps> = (props) => {
 
   return (
     <div id="app">
-      {/* Walkthrough Selection (shown on app start if walkthroughs remain) */}
-      <WalkthroughControl showOnStart={true} />
+      {/* Welcome Screen (shown on first visit) */}
+      <Show when={appStore.showWelcome()}>
+        <WelcomeScreen onTakeTour={openGuideSelection} />
+      </Show>
 
       {/* Guide Selection dialog */}
       <GuideSelection
