@@ -29,39 +29,36 @@ export const WALKTHROUGHS: Record<WalkthroughTab, WalkthroughContent[]> = {
       title: 'Practice Toolbar Overview',
       description: 'Master the main practice controls for vocal pitch training',
       content: `
-In Practice mode, the Shared Toolbar provides all essential controls for your practice session:
+## Essential Controls
 
-**Essential Controls**
 - **Microphone Button**: Enables pitch detection. Keep this active during practice to see real-time feedback on the pitch canvas.
-- **Play/Pause/Stop**: Control playback of your melody. Pause allows you to practice a specific section, Stop resets to the beginning.
+- **Play/Pause/Stop**: Control playback of your melody. Pause allows you to practice a specific section; Stop resets to the beginning.
 - **Focus Mode**: Enter minimal UI mode for distraction-free practice.
 
-**Playback Controls**
+## Playback Controls
+
 - **Play Button**: Starts playback from the beginning of the melody (with optional count-in).
 - **Pause**: Pauses playback at the current position.
 - **Continue**: Resumes after pausing.
 - **Stop**: Ends playback and resets to the start.
 
-**Practice Modes**
+## Practice Modes
+
 - **Once**: Practice each note once from beginning to end.
 - **Repeat**: Loop the melody repeatedly for focused repetition.
 - **Practice Mode**: Runs through the melody randomly, helping you internalize the pattern.
 
-**Session Mode** (when available):
-- Select from pre-defined practice sessions or create your own custom sessions.
+> **Note:** Session Mode lets you select from pre-defined practice sessions or create your own custom sessions with multiple melodies.
 
-**Additional Settings**
+## Additional Settings
+
 - **BPM**: Adjust tempo (40-280 BPM). Lower speeds are great for beginners.
 - **Volume**: Control playback volume.
 - **Speed**: 0.25x to 2.0x playback speed. Slower speeds help with difficult sections.
 - **Metronome**: Toggle metronome clicks on each beat for rhythmic accuracy.
 - **Cycles**: Set how many times to repeat (for practice/repeat modes).
 
-**Pro Tips:**
-1. Start at a slower speed (0.5x-0.75x) when learning a new melody.
-2. Use metronome for rhythmic accuracy, especially in faster passages.
-3. Focus Mode minimizes distractions for deep practice sessions.
-4. Adjust sensitivity based on your environment (noisy rooms need higher threshold).
+> **Tip:** Start at a slower speed (0.5x–0.75x) when learning a new melody, then gradually increase as you get comfortable. Use metronome for rhythmic accuracy, especially in faster passages.
       `,
       steps: [
         {
@@ -98,32 +95,38 @@ In Practice mode, the Shared Toolbar provides all essential controls for your pr
       title: 'Understanding Practice Modes',
       description: 'Learn when to use Once, Repeat, or Practice mode',
       content: `
-PitchPerfect offers three practice modes, each designed for different learning goals:
+## Once Mode (Default)
 
-**Once Mode (Default)**
-- Plays through the melody exactly once, note by note
+Plays through the melody exactly once, note by note.
+
 - Best for: Initial learning, memorization, and getting familiar with the melody
-- Control: Use "Cycles" setting to repeat multiple times if desired
+- Use the **Cycles** setting to repeat multiple times if desired
 
-**Repeat Mode**
-- Loops the melody continuously until you stop
-- Best for: Perfecting difficult sections, muscle memory development
-- No repetition limit—stop when you feel comfortable
+## Repeat Mode
 
-**Practice Mode**
-- Randomizes the order of notes each run
+Loops the melody continuously until you stop.
+
+- Best for: Perfecting difficult sections and muscle memory development
+- No repetition limit — stop when you feel comfortable
+
+## Practice Mode
+
+Randomizes the order of notes each run.
+
 - Best for: Strengthening pitch recognition and reducing pattern memorization
-- Each "run" goes through all notes but in different order
+- Each run goes through all notes but in a different order
 
-**Session Mode** (for advanced users)
-- Uses pre-defined or custom practice sessions with multiple melodies
-- Each session item is played in sequence
-- Track progress across multiple melodies
+> **Note:** **Session Mode** (for advanced users) uses pre-defined or custom practice sessions with multiple melodies. Each session item is played in sequence.
 
-**When to use each mode:**
-- Beginner: Start with Once mode at 0.5x speed
-- Intermediate: Try Practice mode to test pitch memory
-- Advanced: Create sessions with multiple melodies for comprehensive training
+## When to Use Each Mode
+
+| Level | Recommendation |
+| --- | --- |
+| **Beginner** | Once mode at 0.5x speed |
+| **Intermediate** | Practice mode to test pitch memory |
+| **Advanced** | Sessions with multiple melodies |
+
+> **Tip:** Don't rush — start at the lowest comfortable speed and gradually increase. Practice mode is the most challenging but yields the fastest improvement.
       `,
       steps: [
         {
@@ -155,40 +158,39 @@ PitchPerfect offers three practice modes, each designed for different learning g
       title: 'Editor Toolbar Overview',
       description: 'Learn how to use the piano roll editor to compose melodies',
       content: `
-The Editor tab is your creative workspace for composing melodies. The toolbar provides essential tools for building, editing, and exporting your music:
+The Editor tab is your creative workspace for composing melodies. The toolbar provides essential tools for building, editing, and exporting your music.
 
-**Essential Tools**
+## Essential Tools
+
 - **Save Melody Button**: Save your composition to the melody library
 - **Key Selector**: Choose the musical key (C, D, E, F, G, A, B)
 - **Scale Selector**: Select scale type (Major, Minor, Pentatonic, etc.)
 - **BPM Control**: Set tempo for playback (40-280 BPM)
 
-**Note Operations**
+## Note Operations
+
 - **Place Tool**: Click on the grid to place notes
 - **Select Tool**: Click and drag to select notes
 - **Delete Tool**: Remove unwanted notes
 
-**Editor Features**
+## Editor Features
+
 - **Piano Roll Grid**: Visual representation of pitch vs time
 - **Octave Shift**: Change the default octave for new notes
 - **Snap-to-Grid**: Align notes to time grid for clean timing
 - **Zoom Controls**: Zoom in/out to see finer details
 
-**Export Options**
+## Export Options
+
 - **WAV Export**: Download your melody as an audio file
 - **MIDI Export**: Export as MIDI for use in DAWs
 - **MIDI Import**: Load melodies from MIDI files
 
-**Canvas Navigation**
-- Scrollable horizontally for longer melodies
-- Vertically shows multiple octaves
-- Playback head shows current position
+## Canvas Navigation
 
-**Pro Tips:**
-1. Start with Major scale for simplicity, then try Minor or Pentatonic
-2. Use Snap-to-Grid for clean, rhythmic melodies
-3. Record directly into the piano roll using the Record button
-4. Export as WAV for listening on any device, MIDI for DAW workflows
+Scroll horizontally for longer melodies, vertically for multiple octaves. The playback head shows your current position.
+
+> **Tip:** Start with Major scale for simplicity, then try Minor or Pentatonic. Use Snap-to-Grid for clean, rhythmic melodies. You can also record directly into the piano roll using the **Record** button.
       `,
       steps: [
         {
@@ -224,33 +226,32 @@ The Editor tab is your creative workspace for composing melodies. The toolbar pr
       title: 'Importing and Exporting MIDI',
       description: 'Workflow for working with MIDI files',
       content: `
-MIDI files are a universal format for sharing music between applications. PitchPerfect supports both import and export:
+MIDI files are a universal format for sharing music between applications. PitchPerfect supports both import and export.
 
-**Exporting MIDI**
+## Exporting MIDI
+
 1. Complete your melody in the piano roll
-2. Click the MIDI Export button (floppy disk icon)
+2. Click the **MIDI Export** button (floppy disk icon)
 3. Your melody is downloaded as a .mid file
 4. Import this file into DAWs like FL Studio, Ableton, Logic Pro
 
-**Importing MIDI**
-1. Click the MIDI Import button
+## Importing MIDI
+
+1. Click the **MIDI Import** button
 2. Select your .mid file
 3. Your melody is converted and appears on the piano roll
-4. You can then edit or save it as your own composition
+4. Edit or save it as your own composition
 
-**MIDI Best Practices:**
-- MIDI preserves note timing and pitch information
-- Great for collaborating with other musicians
-- Compatible with virtually all music software
-- The file doesn't include audio, just note data
+> **Info:** MIDI preserves note timing and pitch information. The file does **not** include audio — just note data. It's compatible with virtually all music software.
 
-**Supported MIDI Features:**
+## Supported Features
+
 - Note pitch and duration
 - Velocity (volume) information
 - Channel mapping
-- Tempo information (may require mapping to PitchPerfect tempo)
+- Tempo information
 
-**Note:** If importing MIDI doesn't work perfectly, it's due to MIDI format variations. Manually edit in the piano roll after import.
+> **Note:** If importing MIDI doesn't work perfectly, it's due to MIDI format variations. Manually edit in the piano roll after import for best results.
       `,
       steps: [
         {
@@ -280,44 +281,43 @@ MIDI files are a universal format for sharing music between applications. PitchP
       title: 'Advanced Editor Features',
       description: 'Tips and techniques for complex melodies',
       content: `
-The Editor offers several advanced features for creating sophisticated melodies:
+The Editor offers several advanced features for creating sophisticated melodies.
 
-**Octave Management**
+## Octave Management
+
 - Default octave sets where new notes appear
 - You can manually place notes in different octaves
 - Changes affect how the melody spans the keyboard
 
-**Scale Reference**
-- The selected scale shows valid notes in that key
-- Notes outside the scale produce different pitches
-- Use chromatic for full flexibility
+## Scale Reference
 
-**Snap-to-Grid**
-- Aligns notes to time divisions (1/4, 1/8, 1/16 note)
-- Makes melodies rhythmically consistent
-- Can be toggled on/off for free-form placement
+The selected scale shows valid notes in that key. Notes outside the scale produce different pitches. Use **chromatic** for full flexibility.
 
-**Visual Aids**
+## Snap-to-Grid
+
+Aligns notes to time divisions (1/4, 1/8, 1/16 note). Makes melodies rhythmically consistent. Can be toggled on/off for free-form placement.
+
+## Visual Aids
+
 - Grid lines help align notes visually
 - Note labels show pitch names
 - Playback head shows current position in real-time
 
-**Editing Techniques**
+## Editing Techniques
+
 - **Select multiple notes**: Use Select tool and click/drag
 - **Copy notes**: Select and copy/paste
 - **Delete notes**: Select and click Delete tool
 - **Adjust timing**: Drag note edges to change duration
 
-**Creating Variations**
+## Creating Variations
+
 1. Start with a base melody
 2. Export as MIDI
 3. Import into your DAW to add harmonies
 4. Bring back interesting sections to the piano roll
 
-**Pro Tips:**
-- Layer octaves for richer sounds (high + low octaves)
-- Use rests strategically for musical phrasing
-- Export to MIDI for advanced editing in your favorite DAW
+> **Tip:** Layer octaves for richer sounds (high + low). Use rests strategically for musical phrasing. Export to MIDI for advanced editing in your favorite DAW.
       `,
       steps: [
         {
@@ -351,43 +351,54 @@ The Editor offers several advanced features for creating sophisticated melodies:
       content: `
 Settings are organized into sections for easy navigation. Here's what each section controls:
 
-**Sensitivity Presets**
+## Sensitivity Presets
+
 - Quick presets for different environments (Quiet Room, Home, Noisy)
 - Adjusts pitch detection thresholds automatically
-- Recommended: Use these instead of manual adjustments
 
-**Pitch Detection**
-- **Detection Threshold**: Lower = stricter detection (ignore noise), Higher = more sensitive
+> **Tip:** Use presets instead of manual adjustments for best results. Start with "Home" and tweak from there.
+
+## Pitch Detection
+
+- **Detection Threshold**: Lower = stricter detection (ignore noise); Higher = more sensitive
 - **Sensitivity**: Higher = more responsive to quiet signals
 - **Min Confidence**: Minimum confidence % to accept a pitch
 - **Min Amplitude**: Minimum signal loudness required
-- *Tip: Start with "Home" preset and adjust based on feedback*
 
-**Practice Aids**
+## Practice Aids
+
 - **Tonic Anchor Tone**: Plays a reference note at start to help lock into key
-- *Use this when learning new keys or scales*
 
-**Accuracy Bands** (cent thresholds)
-- **Perfect**: ≤ cents off (100 cents = semitone)
-- **Excellent**: ≤ cents off (90 cents)
-- **Good**: ≤ cents off (75 cents)
-- **Okay**: ≤ cents off (50 cents)
-- *These define your scoring bands in practice*
+> **Info:** Enable tonic anchor when learning new keys or scales. It gives you a reference pitch before playback begins.
 
-**Tone Envelope (ADSR)**
+## Accuracy Bands (cent thresholds)
+
+These define your scoring bands in practice:
+
+- **Perfect**: ≤ 10 cents off
+- **Excellent**: ≤ 25 cents off
+- **Good**: ≤ 50 cents off
+- **Okay**: ≤ 75 cents off
+
+(100 cents = 1 semitone)
+
+## Tone Envelope (ADSR)
+
+Controls how each note sounds during playback:
+
 - **Attack**: Time to reach full volume (0-1000ms)
 - **Decay**: Time to fall to sustain (0-1000ms)
 - **Sustain**: Volume during note held (0-100%)
 - **Release**: Time to fade after note ends (0-2000ms)
-- *Longer attack/release = smoother, more musical sound*
 
-**Visibility**
+## Appearance
+
 - **Grid Lines**: Toggle canvas grid
 - **Theme**: Dark or Light mode
 
-**Playback Speed**
-- 0.25x to 2.0x speed multiplier
-- Use slower speeds for learning difficult passages
+## Playback Speed
+
+0.25x to 2.0x speed multiplier. Use slower speeds for learning difficult passages.
       `,
       steps: [
         {
@@ -417,41 +428,53 @@ Settings are organized into sections for easy navigation. Here's what each secti
       title: 'Tone Envelope (ADSR) Settings',
       description: 'Customize how notes sound during playback',
       content: `
-The ADSR (Attack, Decay, Sustain, Release) envelope controls how each note sounds when played:
+The **ADSR** (Attack, Decay, Sustain, Release) envelope controls how each note sounds when played.
 
-**Attack (0-1000ms)**
-- Time from note start to full volume
-- Short attack = sharp, percussive sound
-- Long attack = smooth, flowing sound
-- *Typical: 50-200ms for smooth melody playback*
+## Attack (0-1000ms)
 
-**Decay (0-1000ms)**
-- Time to fall from peak to sustain level
-- Short decay = quick energy drop
-- Long decay = sustained sound
-- *Typical: 100-300ms for natural decay*
+Time from note start to full volume.
 
-**Sustain (0-100%)**
-- Volume level during sustained notes
-- 0% = note immediately fades after peak
-- 100% = note sustains at full volume
-- *Typical: 70-80% for pleasant sustain*
+- **Short attack** = sharp, percussive sound
+- **Long attack** = smooth, flowing sound
 
-**Release (0-2000ms)**
-- Time after note ends to fade to silence
-- Short release = sudden stop
-- Long release = smooth fade-out
-- *Typical: 200-500ms for musical feel*
+> **Info:** Typical range: 50-200ms for smooth melody playback.
 
-**Recommended Presets:**
-- **Piano**: Attack 150ms, Decay 300ms, Sustain 80%, Release 400ms
-- **Organ**: Attack 50ms, Decay 100ms, Sustain 90%, Release 200ms
-- **Soft Pad**: Attack 300ms, Decay 500ms, Sustain 60%, Release 800ms
+## Decay (0-1000ms)
 
-**Tips:**
-- Adjust attack/release together for smooth transitions
-- Excessively long releases can make songs sound "echoey"
-- Shorter envelopes work better for fast-paced music
+Time to fall from peak to sustain level.
+
+- **Short decay** = quick energy drop
+- **Long decay** = sustained sound
+
+> **Info:** Typical range: 100-300ms for natural decay.
+
+## Sustain (0-100%)
+
+Volume level during sustained notes.
+
+- **0%** = note immediately fades after peak
+- **100%** = note sustains at full volume
+
+> **Info:** Typical range: 70-80% for pleasant sustain.
+
+## Release (0-2000ms)
+
+Time after note ends to fade to silence.
+
+- **Short release** = sudden stop
+- **Long release** = smooth fade-out
+
+> **Info:** Typical range: 200-500ms for musical feel.
+
+## Recommended Presets
+
+| Preset | Attack | Decay | Sustain | Release |
+| --- | --- | --- | --- | --- |
+| **Piano** | 150ms | 300ms | 80% | 400ms |
+| **Organ** | 50ms | 100ms | 90% | 200ms |
+| **Soft Pad** | 300ms | 500ms | 60% | 800ms |
+
+> **Tip:** Adjust attack/release together for smooth transitions. Excessively long releases can make songs sound "echoey". Shorter envelopes work better for fast-paced music.
       `,
       steps: [
         {
@@ -481,48 +504,35 @@ The ADSR (Attack, Decay, Sustain, Release) envelope controls how each note sound
       title: 'Reverb Effects',
       description: 'Add depth and space to your practice playback',
       content: `
-Reverb adds environmental space to audio, making it sound like it's played in different-sized rooms or spaces:
+Reverb adds environmental space to audio, making it sound like it's played in different-sized rooms or spaces.
 
-**Reverb Types:**
+## Reverb Types
 
-**Off**
-- Pure, dry sound with no reverb
-- Use this when space is at a premium
-- Best for tight, focused practice
+**Off** — Pure, dry sound with no reverb. Best for tight, focused practice.
 
-**Room**
-- Small room ambience
-- Adds subtle depth
-- Ideal for home practice setups
-- Adds about 0.5-1.0 seconds of echo
+**Room** — Small room ambience. Adds subtle depth; about 0.5-1.0 seconds of echo. Ideal for home practice setups.
 
-**Hall**
-- Medium-sized hall ambience
-- Richer, more natural reverb
-- Great for practice feel like being in a concert hall
-- Adds about 1-2 seconds of echo
+**Hall** — Medium-sized hall ambience. Richer, more natural reverb with about 1-2 seconds of echo. Great for a concert hall feel.
 
-**Cathedral**
-- Large cathedral ambience
-- Very spacious, dramatic reverb
-- Use sparingly—can overwhelm simple melodies
-- Adds about 2-4 seconds of echo
+**Cathedral** — Large cathedral ambience. Very spacious, dramatic reverb with about 2-4 seconds of echo. Use sparingly — can overwhelm simple melodies.
 
-**Wet Mix (0-100%)**
-- How much reverb vs dry signal
-- 0% = only dry (no reverb)
-- 50% = balanced mix
-- 100% = only reverb (very spacious)
+## Wet Mix (0-100%)
 
-**Recommended Settings:**
-- **Home practice**: Room, 30-50% wet
-- **Focus sessions**: Off or Room, 20-30% wet
-- **Creative use**: Hall, 50-70% wet for special effects
+Controls how much reverb vs dry signal:
 
-**Tips:**
-- Start with low wet mix for subtle effect
-- Increase mix gradually to avoid overwhelming the melody
-- Reverb can mask pitch detection errors—use with caution
+- **0%** = only dry (no reverb)
+- **50%** = balanced mix
+- **100%** = only reverb (very spacious)
+
+## Recommended Settings
+
+| Scenario | Type | Wet Mix |
+| --- | --- | --- |
+| **Home practice** | Room | 30-50% |
+| **Focus sessions** | Off or Room | 20-30% |
+| **Creative use** | Hall | 50-70% |
+
+> **Note:** Reverb can mask pitch detection errors. Use with caution if you're trying to train precise pitch accuracy.
       `,
       steps: [
         {
@@ -556,35 +566,45 @@ Reverb adds environmental space to audio, making it sound like it's played in di
       content: `
 Understanding pitch is essential for effective vocal practice. Here's what you need to know:
 
-**What is Pitch?**
-- Pitch is how high or low a sound is measured in hertz (Hz)
-- Higher frequency = higher pitch (shrill sound)
-- Lower frequency = lower pitch (deep sound)
-- Human vocal range typically spans from about 85 Hz (deep bass) to 2550 Hz (high soprano)
+## What is Pitch?
 
-**How We Measure Pitch:**
+Pitch is how high or low a sound is, measured in **hertz (Hz)**.
+
+- **Higher frequency** = higher pitch (shrill sound)
+- **Lower frequency** = lower pitch (deep sound)
+- Human vocal range typically spans from about **85 Hz** (deep bass) to **2550 Hz** (high soprano)
+
+## How We Measure Pitch
+
 - **Cents**: A musical interval where 100 cents = 1 semitone (half step)
-- Perfect pitch is within +/- 10 cents
-- Great pitch is within +/- 25 cents
-- Good pitch is within +/- 50 cents
+- **Perfect** pitch is within +/- 10 cents
+- **Excellent** pitch is within +/- 25 cents
+- **Good** pitch is within +/- 50 cents
 
-**Tonal Centers:**
-- **Tonic (Root)**: The home note - the note you try to return to
+> **Info:** In pitch-perfect practice, you'll match exact pitches to build accuracy. The smaller the cent deviation, the closer you are to the target note.
+
+## Tonal Centers
+
+- **Tonic (Root)**: The home note — the note you try to return to
 - **Scale**: A set of notes used in music (Major, Minor, Pentatonic, etc.)
-- **Key**: The tonal center and scale used (e.g., C Major, A Minor)
-- Knowing your key helps you stay in tune with the music
+- **Key**: The tonal center and scale combined (e.g., C Major, A Minor)
 
-**The 12-Tone System:**
+Knowing your key helps you stay in tune with the music.
+
+## The 12-Tone System
+
 All Western music is based on 12 notes within an octave:
-C, C#, D, D#, E, F, F#, G, G#, A, A#, B
 
-In pitch-perfect practice, you'll match these exact pitches to build pitch accuracy.
+**C, C#, D, D#, E, F, F#, G, G#, A, A#, B**
 
-**Tips for Pitch Practice:**
-1. Start slowly - rushing causes errors
+## Tips for Pitch Practice
+
+1. Start slowly — rushing causes errors
 2. Hum before singing to "warm up" your pitch perception
-3. Use the tonic anchor in settings when learning new keys
-4. Practice everyday for the best results
+3. Use the **tonic anchor** in settings when learning new keys
+4. Practice every day for the best results
+
+> **Tip:** Consistency beats intensity. Just 10 minutes daily yields far better results than a 2-hour session once a week.
       `,
       steps: [
         {
@@ -614,49 +634,55 @@ In pitch-perfect practice, you'll match these exact pitches to build pitch accur
       title: 'Common Musical Scales',
       description: 'Learn different scale types used in music',
       content: `
-Different scales create different moods and are used in various musical contexts:
+Different scales create different moods and are used in various musical contexts.
 
-**Major Scales:**
-- **C Major**: The "do-re-mi-fa-so-la-ti-do" scale
-- Bright, cheerful, and uplifting sound
-- Most common scale in Western music
+## Major Scales
+
+**C Major**: The "do-re-mi-fa-so-la-ti-do" scale. Bright, cheerful, and uplifting.
+
 - Notes: C, D, E, F, G, A, B (all natural, no sharps/flats)
 - Best for: Beginners and optimistic melodies
 
-**Natural Minor Scales:**
-- Emotional, reflective, and sometimes sad
-- C Minor: C, D, Eb, F, G, Ab, Bb
+## Natural Minor Scales
+
+Emotional, reflective, and sometimes sad.
+
+- **C Minor**: C, D, Eb, F, G, Ab, Bb
 - Uses the same notes as relative major (A Major) but starts on a different note
 - Best for: Melancholic or emotional expressions
 
-**Pentatonic Scales:**
+## Pentatonic Scales
+
+Very versatile and easy to use — notes never clash or sound wrong together.
+
 - **Major Pentatonic**: C, D, E, G, A (omits F and B)
 - **Minor Pentatonic**: C, Eb, F, G, Bb (omits D and A)
-- Very versatile and easy to use
-- Notes never clash or sound wrong together
-- Common in folk music, blues, rock, and pop
-- Best for: Improvisation and casual playing
 
-**Blues Scale:**
-- Minor pentatonic plus flatted 5th (blue note)
-- Adds expressive, soulful character
+Common in folk music, blues, rock, and pop. Best for improvisation and casual playing.
+
+## Blues Scale
+
+Minor pentatonic plus flatted 5th (the "blue note"). Adds expressive, soulful character.
+
 - Notes: C, Eb, F, F#, G, Bb
 - Best for: Blues and soul music
 
-**Chromatic Scale:**
-- All 12 notes, half steps only
-- C, C#, D, D#, E, F, F#, G, G#, A, A#, B, C
-- No musical intervals - just stepping through all notes
-- Best for: Demonstrating full pitch range
+## Chromatic Scale
 
-**Which Scale Should I Use?**
-- **Beginners**: Start with Major Pentatonic (most forgiving)
-- **Pop music**: Major scale or Mixolydian
-- **Blues/Jazz**: Minor Pentatonic or Blues scale
-- **Film scores**: Various scales depending on mood
-- **Solo practice**: Try all of them to develop flexibility
+All 12 notes, half steps only: C, C#, D, D#, E, F, F#, G, G#, A, A#, B, C.
 
-**Pro Tip:** Use the "once mode" at slow speed to practice each scale note by note.
+Best for: Demonstrating full pitch range.
+
+## Which Scale Should I Use?
+
+| Level | Recommendation |
+| --- | --- |
+| **Beginners** | Major Pentatonic (most forgiving) |
+| **Pop music** | Major scale or Mixolydian |
+| **Blues/Jazz** | Minor Pentatonic or Blues scale |
+| **Solo practice** | Try all of them to develop flexibility |
+
+> **Tip:** Use "once mode" at slow speed to practice each scale note by note. This builds muscle memory for each interval.
       `,
       steps: [
         {
@@ -686,45 +712,52 @@ Different scales create different moods and are used in various musical contexts
       title: 'Tracking Your Progress',
       description: 'How to use practice sessions to improve',
       content: `
-Progress tracking helps you see your improvement over time and stay motivated:
+Progress tracking helps you see your improvement over time and stay motivated.
 
-**What Gets Tracked:**
+## What Gets Tracked
+
 - **Score history**: Average pitch accuracy over multiple runs
 - **Sessions**: Total time and number of practice runs
 - **Perfect days**: Days when you achieved all perfect scores
 - **Streaks**: Consecutive days of practice
 
-**Understanding Your Scores:**
-- **Perfect (&le; 10 cents)**: You're on pitch!
-- **Excellent (&le; 25 cents)**: Very good, getting closer
-- **Good (&le; 50 cents)**: Acceptable, still room for improvement
-- **Okay (&le; 75 cents)**: Listen more closely next time
+## Understanding Your Scores
 
-**How to Interpret Results:**
-- **Improving trend**: If your Perfect score goes from 70% to 85%, you're getting better
-- **Plateau**: If stuck at 70-80% for weeks, try these:
-  - Slow down playback speed
-  - Practice harder melodies
-  - Get quieter (less background noise)
-  - Adjust detection threshold
-- **Too easy**: If consistently getting 90%+, challenge yourself with more difficult melodies
+| Rating | Cents Off | Meaning |
+| --- | --- | --- |
+| **Perfect** | ≤ 10 cents | You're on pitch! |
+| **Excellent** | ≤ 25 cents | Very good, getting closer |
+| **Good** | ≤ 50 cents | Acceptable, room for improvement |
+| **Okay** | ≤ 75 cents | Listen more closely next time |
 
-**Daily Practice Routines:**
-- **Beginner**: 10-15 minutes, easy melodies, focus on accuracy
-- **Intermediate**: 20-30 minutes, mix of easy/hard, work on speed
-- **Advanced**: 30+ minutes, challenging pieces, focus on expression
+## Interpreting Results
 
-**Consistency Over Intensity:**
-- 10 minutes every day > 2 hours once a week
+**Improving trend** — If your Perfect score goes from 70% to 85%, you're getting better. Keep going!
+
+> **Note:** If you're stuck at 70-80% for weeks, try these:
+>- Slow down playback speed
+>- Practice harder melodies
+>- Reduce background noise
+>- Adjust detection threshold
+
+**Too easy** — If consistently getting 90%+, challenge yourself with more difficult melodies.
+
+## Daily Practice Routines
+
+| Level | Duration | Focus |
+| --- | --- | --- |
+| **Beginner** | 10-15 min | Easy melodies, accuracy |
+| **Intermediate** | 20-30 min | Mix of easy/hard, speed |
+| **Advanced** | 30+ min | Challenging pieces, expression |
+
+## Consistency Over Intensity
+
+- **10 minutes every day** > 2 hours once a week
 - The brain needs regular exposure to build pitch memory
-- Use reminders or set a daily time (e.g., morning or evening)
-- Track streaks - seeing consecutive days motivates continued practice
+- Use reminders or set a daily time (morning or evening)
+- Track streaks — seeing consecutive days motivates continued practice
 
-**Celebrate Wins:**
-- First time perfecting a melody?
-- Recording your best score?
-- Nailing a difficult section?
-- Make note of these achievements!
+> **Tip:** Celebrate wins! First time perfecting a melody? Best score ever? Nailing a difficult section? Make note of these achievements!
       `,
       steps: [
         {
@@ -754,44 +787,50 @@ Progress tracking helps you see your improvement over time and stay motivated:
       title: 'Pro Tips for Better Practice',
       description: 'Advanced techniques to accelerate your progress',
       content: `
-Use these professional practice techniques to get the most out of your sessions:
+Use these professional practice techniques to get the most out of your sessions.
 
-**Preparation Before Practicing:**
-1. **Warm up your voice** - Hum gentle scales before singing
-2. **Check your environment** - Quiet room, good microphone placement
-3. **Adjust settings** - Use appropriate sensitivity for your space
-4. **Know the melody** - Listen to it several times first
+## Preparation Before Practicing
 
-**During Practice:**
+1. **Warm up your voice** — Hum gentle scales before singing
+2. **Check your environment** — Quiet room, good microphone placement
+3. **Adjust settings** — Use appropriate sensitivity for your space
+4. **Know the melody** — Listen to it several times first
+
+## During Practice
+
 - **Start slow** (0.5x-0.75x speed) before increasing
-- **Use metronome** - builds rhythmic accuracy first, then add pitch
-- **Focus on transitions** - hardest parts often between phrases
-- **Don't rush** - rushing masks pitch errors
-- **Record yourself** - hear where you're slipping off pitch
+- **Use metronome** — builds rhythmic accuracy first, then add pitch
+- **Focus on transitions** — hardest parts are often between phrases
+- **Don't rush** — rushing masks pitch errors
+- **Record yourself** — hear where you're slipping off pitch
 
-**Common Mistakes to Avoid:**
-- **Practicing too fast** - it's a pitch trainer, not a speed contest
-- **Ignoring rhythm** - you can't have perfect pitch without good timing
-- **Practicing when distracted** - full concentration gives better results
-- **Always playing favorites** - variety builds better pitch recognition
-- **Expecting overnight progress** - pitch accuracy develops over weeks
+## Common Mistakes to Avoid
 
-**Advanced Techniques:**
-- **Sight reading practice** - look at the music and sing it
-- **Transposition** - practice the same melody in different keys
-- **Different voices** - practice using chest voice, head voice, falsetto
-- **Different tempos** - practice at various speeds (50%, 75%, 100%, 125%, 150%)
-- **Ear training** - hum and guess the pitch before checking
+> **Warning:** Avoid these habits that slow your progress:
 
-**Building Long-Term Skills:**
-- **Consistency wins** - practice daily, even for short sessions
-- **Set specific goals** - "get perfect on melody X this week"
-- **Track your progress** - see improvement over time
-- **Enjoy the journey** - music practice is rewarding when you see growth
-- **Learn from mistakes** - each error is data about where you need work
+- **Practicing too fast** — It's a pitch trainer, not a speed contest
+- **Ignoring rhythm** — You can't have perfect pitch without good timing
+- **Practicing when distracted** — Full concentration gives better results
+- **Always playing favorites** — Variety builds better pitch recognition
+- **Expecting overnight progress** — Pitch accuracy develops over weeks
 
-**Remember:**
-Perfect pitch is a skill that develops with practice, not something you're born with. You have the capacity - commit to daily practice and you'll see results!
+## Advanced Techniques
+
+- **Sight reading practice** — Look at the music and sing it
+- **Transposition** — Practice the same melody in different keys
+- **Different voices** — Try chest voice, head voice, falsetto
+- **Different tempos** — Practice at 50%, 75%, 100%, 125%, 150%
+- **Ear training** — Hum and guess the pitch before checking
+
+## Building Long-Term Skills
+
+- **Consistency wins** — Practice daily, even for short sessions
+- **Set specific goals** — "Get perfect on melody X this week"
+- **Track your progress** — See improvement over time
+- **Enjoy the journey** — Music practice is rewarding when you see growth
+- **Learn from mistakes** — Each error is data about where you need work
+
+> **Note:** Perfect pitch is a skill that develops with practice, not something you're born with. You have the capacity — commit to daily practice and you'll see results!
       `,
       steps: [
         {

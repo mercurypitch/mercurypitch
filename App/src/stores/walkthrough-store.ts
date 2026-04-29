@@ -3,8 +3,8 @@
 // ============================================================
 
 import { createSignal } from 'solid-js'
-import type { WalkthroughContent, WalkthroughProgress, WalkthroughTab, } from '@/types/walkthrough'
-import { WALKTHROUGHS } from '@/types/walkthrough'
+import type { WalkthroughProgress,WalkthroughTab } from '@/types/walkthrough'
+import {WALKTHROUGHS } from '@/types/walkthrough'
 
 /** Export WalkthroughTab type for use in components */
 export type { WalkthroughTab }
@@ -12,38 +12,25 @@ export type { WalkthroughTab }
 const STORAGE_KEY = 'pitchperfect_walkthroughs'
 
 /** Get all available walkthroughs for a given tab */
-export function getWalkthroughsForTab(
-  tab: 'practice' | 'editor' | 'settings' | 'study',
-) {
+export function getWalkthroughsForTab(tab: 'practice' | 'editor' | 'settings' | 'study') {
   const walkthroughs = WALKTHROUGHS[tab]
   return walkthroughs !== null && walkthroughs !== undefined ? walkthroughs : []
 }
 
 /** Get a specific walkthrough by ID */
-export function getWalkthrough(id: string): WalkthroughContent | undefined {
+export function getWalkthrough(id: string) {
   for (const tab of ['practice', 'editor', 'settings', 'study'] as const) {
     const walkthroughs = WALKTHROUGHS[tab]
-    const found = walkthroughs.find((w) => w.id === id)
+    const found = walkthroughs.find(w => w.id === id)
     if (found) return found
   }
   return undefined
 }
 
-export const WALKTHROUGH_STEPS: any[] = [] // stub since it was deleted
-export function nextWalkthroughStep() {}
-export function prevWalkthroughStep() {}
-export function endWalkthrough() {}
-export function getWalkthroughStep() {
-  return 0
-}
-export function isWalkthroughActive() {
-  return false
-}
-export function startWalkthrough() {}
-
 /** Get progress signal */
-export const [walkthroughsProgress, setWalkthroughsProgress] =
-  createSignal<WalkthroughProgress>(loadProgress())
+export const [walkthroughsProgress, setWalkthroughsProgress] = createSignal<WalkthroughProgress>(
+  loadProgress(),
+)
 
 /** Get progress for a specific walkthrough */
 export function getWalkthroughProgress(id: string): number {
@@ -53,8 +40,8 @@ export function getWalkthroughProgress(id: string): number {
 /** Mark a walkthrough as viewed (for tracking) */
 export function viewWalkthrough(id: string): void {
   const current = walkthroughsProgress()
-  if (!current[id]) {
-    current[id] = Date.now()
+  if (!(id in current)) {
+    current[id] = 0
     setWalkthroughsProgress({ ...current })
     _saveProgress()
   }
@@ -63,11 +50,9 @@ export function viewWalkthrough(id: string): void {
 /** Mark a walkthrough as completed */
 export function completeWalkthrough(id: string): void {
   const current = walkthroughsProgress()
-  if (!current[id]) {
-    current[id] = Date.now()
-    setWalkthroughsProgress({ ...current })
-    _saveProgress()
-  }
+  current[id] = Date.now()
+  setWalkthroughsProgress({ ...current })
+  _saveProgress()
 }
 
 /** Check if a walkthrough is completed */
@@ -75,18 +60,15 @@ export function isWalkthroughCompleted(id: string): boolean {
   return getWalkthroughProgress(id) > 0
 }
 
-/** Get remaining walkthroughs (not yet completed) */
-export function getRemainingWalkthroughs(): Array<{
-  tab: string
-  id: string
-  title: string
-}> {
-  const completed = walkthroughsProgress()
-  const remaining: Array<{ tab: string; id: string; title: string }> = []
+/** Get remaining walkthroughs (not yet completed — value > 0 means completed) */
+export function getRemainingWalkthroughs(): Array<{ tab: string, id: string, title: string }> {
+  const progress = walkthroughsProgress()
+  const remaining: Array<{ tab: string, id: string, title: string }> = []
 
   for (const tab of ['practice', 'editor', 'settings', 'study'] as const) {
     for (const walkthrough of WALKTHROUGHS[tab]) {
-      if (!completed[walkthrough.id]) {
+      const val = progress[walkthrough.id]
+      if (val === undefined || val === 0 || val < 0) {
         remaining.push({
           tab,
           id: walkthrough.id,
@@ -99,18 +81,14 @@ export function getRemainingWalkthroughs(): Array<{
   return remaining
 }
 
-/** Get completed walkthroughs */
-export function getCompletedWalkthroughs(): Array<{
-  tab: string
-  id: string
-  title: string
-}> {
-  const completed = walkthroughsProgress()
-  const completedList: Array<{ tab: string; id: string; title: string }> = []
+/** Get completed walkthroughs (value > 0 means completed, not just viewed) */
+export function getCompletedWalkthroughs(): Array<{ tab: string, id: string, title: string }> {
+  const progress = walkthroughsProgress()
+  const completedList: Array<{ tab: string, id: string, title: string }> = []
 
   for (const tab of ['practice', 'editor', 'settings', 'study'] as const) {
     for (const walkthrough of WALKTHROUGHS[tab]) {
-      if (completed[walkthrough.id]) {
+      if (progress[walkthrough.id] > 0) {
         completedList.push({
           tab,
           id: walkthrough.id,
@@ -132,10 +110,10 @@ export function getTotalWalkthroughCount(): number {
   return count
 }
 
-/** Get completed count */
+/** Get completed count (only walkthroughs with value > 0, not just viewed) */
 export function getCompletedCount(): number {
-  const completed = walkthroughsProgress()
-  return Object.keys(completed).length
+  const progress = walkthroughsProgress()
+  return Object.values(progress).filter(v => v > 0).length
 }
 
 /** Get completion percentage */

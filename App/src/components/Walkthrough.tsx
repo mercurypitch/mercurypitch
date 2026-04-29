@@ -1,10 +1,20 @@
 // ============================================================
-// Walkthrough — Step-by-step tutorial overlay (GH #140, GH #145)
+// Walkthrough — Section-based spotlight guide tour (GH #140, #199)
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createEffect, onCleanup, Show } from 'solid-js'
-import { appStore, endWalkthrough, nextWalkthroughStep, prevWalkthroughStep, WALKTHROUGH_STEPS, } from '@/stores'
+import { createEffect, createMemo, onCleanup, Show } from 'solid-js'
+import type { WalkthroughStep } from '@/stores/app-store'
+import {
+  activeTab,
+  appStore,
+  endWalkthrough,
+  GUIDE_SECTIONS,
+  nextWalkthroughStep,
+  prevWalkthroughStep,
+  setActiveTab,
+  skipSection,
+} from '@/stores/app-store'
 
 type Placement = 'top' | 'bottom' | 'left' | 'right'
 
@@ -13,22 +23,70 @@ const TOOLTIP_WIDTH = 340
 const TOOLTIP_HEIGHT = 200
 
 export const Walkthrough: Component = () => {
-  const currentStep = () =>
-    WALKTHROUGH_STEPS[appStore.walkthroughStep()] ?? WALKTHROUGH_STEPS[0]
-  const isLast = () =>
-    appStore.walkthroughStep() === WALKTHROUGH_STEPS.length - 1
-  const isFirst = () => appStore.walkthroughStep() === 0
-
   let highlightRef: HTMLDivElement | undefined
   let tooltipRef: HTMLDivElement | undefined
 
-  const getPlacement = (): Placement => currentStep().placement ?? 'bottom'
+  // Derived signals
+  const steps = () => appStore.tourSteps()
+  const currentStep = (): WalkthroughStep | undefined => {
+    const s = steps()
+    return s[appStore.walkthroughStep()]
+  }
+  const isLast = () => {
+    const s = steps()
+    return appStore.walkthroughStep() === s.length - 1
+  }
+  const isFirst = () => appStore.walkthroughStep() === 0
+
+  // Current section info
+  const currentSection = () => {
+    const step = currentStep()
+    if (!step || step.section === undefined || step.section === null || step.section === '') return null
+    return GUIDE_SECTIONS.find(s => s.id === step.section) ?? null
+  }
+
+  const getPlacement = (): Placement => currentStep()?.placement ?? 'bottom'
+
+  // Auto-switch tab when step has requiredTab
+  // Only runs while tour is active — stops immediately when tour ends
+  createEffect(() => {
+    if (!appStore.walkthroughActive()) return
+    const step = currentStep()
+    if (step?.requiredTab) {
+      const tab = step.requiredTab
+      if (activeTab() !== tab) {
+        setActiveTab(tab)
+      }
+    }
+  })
+
+  // Poll until a target element exists in the DOM
+  // Checks immediately first (0 delay) to resolve instantly if already rendered
+  // Retries up to `maxAttempts` times with `intervalMs` between attempts
+  const waitForTarget = (selector: string, maxAttempts = 10, intervalMs = 50): Promise<boolean> =>
+    new Promise((resolve) => {
+      let attempts = 0
+      const tryOnce = () => {
+        if (document.querySelector(selector)) {
+          resolve(true)
+          return
+        }
+        attempts++
+        if (attempts < maxAttempts) {
+          setTimeout(tryOnce, intervalMs)
+        } else {
+          resolve(false)
+        }
+      }
+      tryOnce()
+    })
 
   const updateHighlight = () => {
     if (!highlightRef) return
-    const el = document.querySelector(currentStep().targetSelector)
+    const step = currentStep()
+    if (!step) return
+    const el = document.querySelector(step.targetSelector)
     if (!el) {
-      // If target doesn't exist, don't show highlight ring
       highlightRef.style.display = 'none'
       return
     }
@@ -41,6 +99,28 @@ export const Walkthrough: Component = () => {
     highlightRef.style.height = `${rect.height + padding * 2}px`
   }
 
+  // Scroll target element into view if partially out of viewport,
+  // then re-position highlight + tooltip after scroll settles
+  const scrollToTargetIfNeeded = () => {
+    const step = currentStep()
+    if (!step) return
+    const el = document.querySelector(step.targetSelector)
+    if (!el) return
+
+    const margin = 80
+    const r = el.getBoundingClientRect()
+    const needsScroll = r.top < -margin || r.bottom > window.innerHeight + margin
+    if (!needsScroll) return
+
+    // Use instant scroll so highlight/tooltip update immediately
+    el.scrollIntoView({ behavior: 'auto', block: 'center' })
+    // Re-position after scroll (needs one frame for layout)
+    requestAnimationFrame(() => {
+      updateHighlight()
+      updateTooltip()
+    })
+  }
+
   const updateTooltipCentered = (
     tW: number,
     tH: number,
@@ -48,7 +128,6 @@ export const Walkthrough: Component = () => {
     vh: number,
   ) => {
     if (!tooltipRef) return
-    // Fallback when target element is not available - show tooltip in center of screen
     const left = (vw - tW) / 2
     const top = (vh - tH) / 2
     tooltipRef.style.left = `${left}px`
@@ -58,9 +137,10 @@ export const Walkthrough: Component = () => {
 
   const updateTooltip = () => {
     if (!tooltipRef) return
-    const el = document.querySelector(currentStep().targetSelector)
+    const step = currentStep()
+    if (!step) return
+    const el = document.querySelector(step.targetSelector)
     if (!el) {
-      // Target element doesn't exist - show tooltip centered
       const vw = window.innerWidth
       const vh = window.innerHeight
       const tooltipRect = tooltipRef.getBoundingClientRect()
@@ -75,52 +155,33 @@ export const Walkthrough: Component = () => {
     const vw = window.innerWidth
     const vh = window.innerHeight
 
-    // Use measured dimensions if available, otherwise fall back to constants
     const tooltipRect = tooltipRef.getBoundingClientRect()
     const tW = tooltipRect.width > 0 ? tooltipRect.width : TOOLTIP_WIDTH
     const tH = tooltipRect.height > 0 ? tooltipRect.height : TOOLTIP_HEIGHT
 
-    // Get desired placement, then check for overflow and flip if needed
     let placement: Placement = getPlacement()
 
     const targetCenterX = targetRect.left + targetRect.width / 2
     const targetCenterY = targetRect.top + targetRect.height / 2
 
-    // Flip horizontal placements if tooltip would overflow
     if (placement === 'right') {
-      const wouldOverflowRight = targetRect.right + TOOLTIP_GAP + tW > vw
-      if (wouldOverflowRight) {
-        placement = 'left'
-      }
+      if (targetRect.right + TOOLTIP_GAP + tW > vw) placement = 'left'
     } else if (placement === 'left') {
-      const wouldOverflowLeft = targetRect.left - TOOLTIP_GAP - tW < 0
-      if (wouldOverflowLeft) {
-        placement = 'right'
-      }
+      if (targetRect.left - TOOLTIP_GAP - tW < 0) placement = 'right'
     }
 
-    // Flip vertical placements if tooltip would overflow
     if (placement === 'bottom') {
-      const wouldOverflowBottom = targetRect.bottom + TOOLTIP_GAP + tH > vh
-      if (wouldOverflowBottom) {
-        placement = 'top'
-      }
+      if (targetRect.bottom + TOOLTIP_GAP + tH > vh) placement = 'top'
     } else if (placement === 'top') {
-      const wouldOverflowTop = targetRect.top - TOOLTIP_GAP - tH < 0
-      if (wouldOverflowTop) {
-        placement = 'bottom'
-      }
+      if (targetRect.top - TOOLTIP_GAP - tH < 0) placement = 'bottom'
     }
 
-    // If target is too close to a horizontal edge and we're trying horizontal
-    // placement, fall back to vertical
     if (placement === 'right' && targetRect.right > vw - tW * 0.5) {
       placement = 'bottom'
     } else if (placement === 'left' && targetRect.left < tW * 0.5) {
       placement = 'bottom'
     }
 
-    // Also check if all placements overflow — in that case clamp to nearest edge
     let left: number
     let top: number
 
@@ -143,7 +204,6 @@ export const Walkthrough: Component = () => {
         break
     }
 
-    // Clamp so tooltip stays within viewport
     left = Math.max(12, Math.min(left, vw - tW - 12))
     top = Math.max(12, Math.min(top, vh - tH - 12))
 
@@ -186,20 +246,47 @@ export const Walkthrough: Component = () => {
     )
   })
 
-  // Update both when step changes
+  // Wait for target element to be in the DOM before positioning highlight/tooltip
+  // This is critical when a tab switch occurs — the new tab's DOM takes
+  // at least one frame to render, so we poll until the element appears.
   createEffect(() => {
-    appStore.walkthroughStep() // dependency
-    updateHighlight()
-    updateTooltip()
+    appStore.walkthroughStep()
+    const step = currentStep()
+    if (!step) return
+
+    waitForTarget(step.targetSelector).then((found) => {
+      if (found) {
+        // Scroll element into view if needed (Settings often has overflow)
+        scrollToTargetIfNeeded()
+        // Position highlight/tooltip after any scroll settles
+        requestAnimationFrame(() => {
+          updateHighlight()
+          updateTooltip()
+        })
+      }
+    })
+  })
+
+  // Count steps in current section
+  const sectionStepCount = createMemo(() => {
+    const sec = currentSection()
+    if (!sec) return { current: 0, total: 0 }
+    const allSteps = steps()
+    const secSteps = allSteps.filter(s => s.section === sec.id)
+    const currentSecStep = secSteps.indexOf(
+      allSteps[appStore.walkthroughStep()]
+    )
+    return {
+      current: currentSecStep >= 0 ? currentSecStep + 1 : 1,
+      total: secSteps.length,
+    }
   })
 
   return (
     <Show when={appStore.walkthroughActive()}>
       <div class="walkthrough-overlay" onClick={endWalkthrough}>
-        {/* Highlight ring around target */}
         <div ref={highlightRef} class="walkthrough-highlight" />
 
-        {/* Tooltip card */}
         <div
           ref={tooltipRef}
           class="walkthrough-tooltip"
@@ -207,28 +294,50 @@ export const Walkthrough: Component = () => {
             e.stopPropagation()
           }}
         >
-          <div class="walkthrough-step-counter">
-            Step {appStore.walkthroughStep() + 1} of {WALKTHROUGH_STEPS.length}
-          </div>
-          <h3 class="walkthrough-step-title">{currentStep().title}</h3>
-          <p class="walkthrough-step-desc">{currentStep().description}</p>
+          {/* Section header */}
+          <Show when={currentSection()}>
+            {(sec) => (
+              <div class="walkthrough-section-header">
+                <span class="walkthrough-section-title">{sec().title}</span>
+                <span class="walkthrough-section-steps">
+                  {sectionStepCount().current} / {sectionStepCount().total}
+                </span>
+              </div>
+            )}
+          </Show>
+
+          <h3 class="walkthrough-step-title">
+            {currentStep()?.title}
+          </h3>
+          <p class="walkthrough-step-desc">
+            {currentStep()?.description}
+          </p>
           <div class="walkthrough-actions">
             <button class="walkthrough-skip" onClick={endWalkthrough}>
-              Skip tour
+              Skip Tour
             </button>
-            <button
-              class="walkthrough-prev"
-              onClick={prevWalkthroughStep}
-              disabled={isFirst()}
-            >
-              ← Back
-            </button>
-            <button
-              class="walkthrough-next"
-              onClick={isLast() ? endWalkthrough : nextWalkthroughStep}
-            >
-              {isLast() ? 'Finish' : 'Next →'}
-            </button>
+            <div class="walkthrough-actions-center">
+              <button
+                class="walkthrough-prev"
+                onClick={prevWalkthroughStep}
+                disabled={isFirst()}
+              >
+                ← Back
+              </button>
+              <button
+                class="walkthrough-skip-section"
+                onClick={skipSection}
+                title={`Skip ${currentSection()?.title} section`}
+              >
+                Skip Section
+              </button>
+              <button
+                class="walkthrough-next"
+                onClick={isLast() ? endWalkthrough : nextWalkthroughStep}
+              >
+                {isLast() ? 'Finish' : 'Next →'}
+              </button>
+            </div>
           </div>
         </div>
       </div>
