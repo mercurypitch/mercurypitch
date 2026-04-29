@@ -7348,3 +7348,238 @@ Keeps your existing styles, only adjusts layout
   align-items: center;
   gap: 8px;
 }
+
+/* ============================================================
+   Walkthrough Tour — Section Header & Actions (GH #199)
+   ============================================================ */
+
+.walkthrough-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.walkthrough-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+}
+
+.walkthrough-section-steps {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+/* Actions layout: skip left, center group, next right */
+.walkthrough-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.walkthrough-actions-center {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.walkthrough-skip-section {
+  font-size: 11px;
+  color: var(--text-muted);
+  background: none;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  cursor: pointer;
+  padding: 4px 8px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.walkthrough-skip-section:hover {
+  color: var(--text-secondary);
+  background: var(--bg-tertiary);
+}
+
+/* ============================================================
+   Guide Selection Dialog (GH #199)
+   ============================================================ */
+
+.guide-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+}
+
+.guide-selection {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 28px;
+  max-width: 480px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.3);
+  color: var(--text-primary);
+}
+
+.guide-selection-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.guide-selection-header h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.guide-close-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.guide-close-btn:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.guide-selection-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0 0 20px 0;
+  line-height: 1.5;
+}
+
+/* Quick action buttons */
+.guide-quick-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.guide-quick-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  width: 100%;
+  text-align: left;
+}
+
+.guide-quick-btn:hover {
+  background: var(--bg-secondary);
+  border-color: var(--accent);
+}
+
+.guide-quick-incomplete {
+  border-color: var(--accent);
+  background: var(--accent-light, rgba(108, 99, 255, 0.08));
+  color: var(--accent);
+}
+
+.guide-quick-incomplete:hover {
+  background: var(--accent-light, rgba(108, 99, 255, 0.15));
+}
+
+/* Section list */
+.guide-sections-list {
+  border-top: 1px solid var(--border-color);
+  padding-top: 16px;
+}
+
+.guide-sections-list h3 {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0 0 12px 0;
+}
+
+.guide-section-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: none;
+  color: var(--text-primary);
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  text-align: left;
+  margin-bottom: 4px;
+}
+
+.guide-section-item:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--border-color);
+}
+
+.guide-section-item.completed {
+  opacity: 0.6;
+}
+
+.guide-section-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  color: var(--accent);
+}
+
+.guide-section-item.completed .guide-section-icon {
+  color: #4caf50;
+}
+
+.guide-section-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.guide-section-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.guide-section-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}

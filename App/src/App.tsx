@@ -7,6 +7,7 @@ import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, onCleanup, onMount, Show } from 'solid-js'
 import { AppSidebar } from '@/components/AppSidebar'
 import { FocusMode } from '@/components/FocusMode'
+import { GuideSelection } from '@/components/GuideSelection'
 import { HistoryCanvas } from '@/components/HistoryCanvas'
 import { LibraryModal } from '@/components/LibraryModal'
 import { Notifications } from '@/components/Notifications'
@@ -116,6 +117,15 @@ export const App: Component<AppProps> = (props) => {
     appStore.activeTab()
   const _showWelcome = () => appStore.showWelcome()
   const focusMode = () => appStore.focusMode()
+
+  // ── Guide Selection dialog ──────────────────────────────────
+  const [showGuideSelection, setShowGuideSelection] = createSignal(false)
+  const openGuideSelection = () => setShowGuideSelection(true)
+  const closeGuideSelection = () => setShowGuideSelection(false)
+  const startGuideTour = (sectionIds: string[]) => {
+    closeGuideSelection()
+    appStore.startWalkthrough(sectionIds)
+  }
 
   // Tab handlers - audio cleanup handled here
   const _handleTabPractice = async () => {
@@ -1705,6 +1715,13 @@ export const App: Component<AppProps> = (props) => {
       {/* Walkthrough Selection (shown on app start if walkthroughs remain) */}
       <WalkthroughControl showOnStart={true} />
 
+      {/* Guide Selection dialog */}
+      <GuideSelection
+        isOpen={showGuideSelection()}
+        onClose={closeGuideSelection}
+        onStartTour={startGuideTour}
+      />
+
       {/* Guide Tour — Interactive spotlight overlay */}
       <Walkthrough />
 
@@ -1783,6 +1800,7 @@ export const App: Component<AppProps> = (props) => {
             }}
             onOctaveShift={handleOctaveShift}
             onOpenScaleBuilder={() => setShowScaleBuilder(true)}
+            onOpenGuide={openGuideSelection}
             melody={() => melodyStore.items()}
             currentNoteIndex={currentNoteIndex}
             noteResults={noteResults}

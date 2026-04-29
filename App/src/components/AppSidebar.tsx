@@ -10,7 +10,7 @@ import { LibraryTab } from '@/components/LibraryTab'
 import { NoteList } from '@/components/NoteList'
 import { PitchDisplay } from '@/components/PitchDisplay'
 import { KEY_OFFSETS, midiToFreq, midiToNote } from '@/lib/scale-data'
-import { activeTab as appActiveTab, appStore, startWalkthrough } from '@/stores/app-store'
+import { activeTab as appActiveTab, appStore } from '@/stores/app-store'
 import { melodyStore } from '@/stores/melody-store'
 import type { MelodyItem, NoteResult, PitchResult } from '@/types'
 
@@ -21,6 +21,8 @@ interface AppSidebarProps {
   onOctaveShift?: (delta: number) => void
   /** Open scale builder modal */
   onOpenScaleBuilder?: () => void
+  /** Open guide selection dialog */
+  onOpenGuide?: () => void
   /** Note list props (Practice tab) */
   melody: () => MelodyItem[]
   currentNoteIndex: () => number
@@ -75,7 +77,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
       {/* Guide Tour button — interactive spotlight overlay */}
       <button
         class="tour-btn"
-        onClick={startWalkthrough}
+        onClick={props.onOpenGuide}
         title="Start Guide Tour"
       >
         <svg viewBox="0 0 24 24" width="16" height="16">
