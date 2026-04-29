@@ -67,7 +67,8 @@ export function getRemainingWalkthroughs(): Array<{ tab: string, id: string, tit
 
   for (const tab of ['practice', 'editor', 'settings', 'study'] as const) {
     for (const walkthrough of WALKTHROUGHS[tab]) {
-      if (progress[walkthrough.id] <= 0) {
+      const val = progress[walkthrough.id]
+      if (val === undefined || val === 0 || val < 0) {
         remaining.push({
           tab,
           id: walkthrough.id,
