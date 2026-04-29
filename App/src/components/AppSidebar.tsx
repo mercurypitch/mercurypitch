@@ -9,6 +9,7 @@ import { createMemo, For, Show } from 'solid-js'
 import { LibraryTab } from '@/components/LibraryTab'
 import { NoteList } from '@/components/NoteList'
 import { PitchDisplay } from '@/components/PitchDisplay'
+import { StatsBars } from '@/components/StatsBars'
 import { KEY_OFFSETS, midiToFreq, midiToNote } from '@/lib/scale-data'
 import { activeTab as appActiveTab, appStore } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
@@ -217,53 +218,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
         <div class="sidebar-section">
           <div id="stats-panel">
             <h3>Accuracy</h3>
-            <div id="stats-bars">
-              <div class="stat-row" data-band="100">
-                <span class="stat-label">Perfect</span>
-                <div class="stat-bar-bg">
-                  <div class="stat-bar" id="bar-100" />
-                </div>
-                <span class="stat-count" id="cnt-100">
-                  0
-                </span>
-              </div>
-              <div class="stat-row" data-band="90">
-                <span class="stat-label">Excellent</span>
-                <div class="stat-bar-bg">
-                  <div class="stat-bar" id="bar-90" />
-                </div>
-                <span class="stat-count" id="cnt-90">
-                  0
-                </span>
-              </div>
-              <div class="stat-row" data-band="75">
-                <span class="stat-label">Good</span>
-                <div class="stat-bar-bg">
-                  <div class="stat-bar" id="bar-75" />
-                </div>
-                <span class="stat-count" id="cnt-75">
-                  0
-                </span>
-              </div>
-              <div class="stat-row" data-band="50">
-                <span class="stat-label">Okay</span>
-                <div class="stat-bar-bg">
-                  <div class="stat-bar" id="bar-50" />
-                </div>
-                <span class="stat-count" id="cnt-50">
-                  0
-                </span>
-              </div>
-              <div class="stat-row" data-band="0">
-                <span class="stat-label">Off</span>
-                <div class="stat-bar-bg">
-                  <div class="stat-bar" id="bar-0" />
-                </div>
-                <span class="stat-count" id="cnt-0">
-                  0
-                </span>
-              </div>
-            </div>
+            <StatsBars noteResults={props.noteResults} />
             <div id="score-display">
               <span id="score-label">Score:</span>
               <span id="score-value" class="live-score-value">

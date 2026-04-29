@@ -312,6 +312,10 @@ export class PlaybackRuntime {
     return this._countInBeats
   }
 
+  setMetronomeEnabled(enabled: () => boolean): void {
+    this.metronomeEnabled = enabled
+  }
+
   setMelody(melody: MelodyItem[]): void {
     // Create shallow copy to prevent mutation cascade
     this._melody = [...melody]

@@ -1,49 +1,89 @@
 import type { JSX } from 'solid-js'
-import { createContext, createEffect, onCleanup, useContext } from 'solid-js'
+import {
+  createContext,
+  createEffect,
+  createSignal,
+  onCleanup,
+  useContext,
+} from 'solid-js'
 import { AudioEngine } from '@/lib/audio-engine'
 import { PlaybackRuntime } from '@/lib/playback-runtime'
 import { PracticeEngine } from '@/lib/practice-engine'
-import { adsr, instrument, settings } from '@/stores'
+import * as appStoreCore from '@/stores/app-store'
+import * as settingsStore from '@/stores/settings-store'
+import * as transportStore from '@/stores/transport-store'
 
 interface EngineContextValue {
   audioEngine: AudioEngine
   playbackRuntime: PlaybackRuntime
   practiceEngine: PracticeEngine
+  ready: () => boolean
 }
 
 const EngineContext = createContext<EngineContextValue | null>(null)
 
 export function EngineProvider(props: { children: JSX.Element }) {
+  const [ready, setReady] = createSignal(false)
+
   const audioEngine = new AudioEngine()
-  const adsrSet = adsr()
-  audioEngine.setADSR(
-    adsrSet.attack,
-    adsrSet.decay,
-    adsrSet.release,
-    adsrSet.sustain,
-  )
-  // Wait, these are used inside App.tsx currently and we are migrating them later.
-  // Actually PlaybackRuntime needs an AudioEngine, PracticeEngine needs AudioEngine and settings
+
+  // Initialize from storage/stores
+  const savedVol = parseInt(localStorage.getItem('pp_volume') ?? '80', 10)
+  audioEngine.setVolume((isNaN(savedVol) ? 80 : savedVol) / 100)
+  audioEngine.setBpm(transportStore.bpm())
+  audioEngine.syncFromAppStore(settingsStore.adsr())
+  audioEngine.setReverbType(settingsStore.reverbConfig().type)
+  audioEngine.setReverbWetness(settingsStore.reverbConfig().wetness)
+
   const playbackRuntime = new PlaybackRuntime({
     audioEngine,
-    instrumentType: instrument(),
-  }) // FIXME: check or fix? We bypass strict types since we will fix its constructor later
+    instrumentType: appStoreCore.instrument(),
+  })
 
   const practiceEngine = new PracticeEngine(audioEngine, { sensitivity: 5 })
 
-  // Sync settings/state to audio engine
-  createEffect(() => audioEngine.setInstrument(instrument()))
-
-  // TODO: resolve this notes below!
-  // AudioEngine doesn't have setReverb, setADSR in the same way, we might need to handle them differently if they exist
-  // Based on error: Property 'setReverb' does not exist on type 'AudioEngine'.
-  // We'll remove them for now and let the actual components configure if needed.
-  // We will re-add if we find them in Engine implementations.
-
-  // Sync settings to practice engine
+  // Sync BPM
   createEffect(() => {
-    practiceEngine.syncSettings(settings())
+    audioEngine.setBpm(transportStore.bpm())
   })
+
+  // Sync Instrument
+  createEffect(() => {
+    const inst = appStoreCore.instrument()
+    audioEngine.setInstrument(inst)
+  })
+
+  // Sync ADSR
+  createEffect(() => {
+    audioEngine.syncFromAppStore(settingsStore.adsr())
+  })
+
+  // Sync Reverb
+  createEffect(() => {
+    audioEngine.setReverbWetness(settingsStore.reverbConfig().wetness)
+  })
+
+  let lastReverbType = settingsStore.reverbConfig().type
+  createEffect(() => {
+    const type = settingsStore.reverbConfig().type
+    if (type !== lastReverbType) {
+      lastReverbType = type
+      audioEngine.setReverbType(type)
+    }
+  })
+
+  // Sync Practice Engine settings
+  createEffect(() => {
+    const s = settingsStore.settings()
+    practiceEngine.syncSettings({
+      sensitivity: s.sensitivity,
+      minConfidence: s.minConfidence,
+      minAmplitude: s.minAmplitude,
+      bands: s.bands.map((b) => ({ threshold: b.threshold, band: b.band })),
+    })
+  })
+
+  setReady(true)
 
   onCleanup(() => {
     playbackRuntime.destroy()
@@ -57,6 +97,7 @@ export function EngineProvider(props: { children: JSX.Element }) {
         audioEngine,
         playbackRuntime,
         practiceEngine,
+        ready,
       }}
     >
       {props.children}
