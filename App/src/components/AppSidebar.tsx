@@ -165,6 +165,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
           <span class="preset-label">Scale:</span>
           <select
             id="scale-select"
+            class="sidebar-session-select sidebar-scale-select"
             value={scaleType()}
             onChange={(e) => {
               const st = e.currentTarget.value

@@ -7607,3 +7607,136 @@ Keeps your existing styles, only adjusts layout
   color: #7ee787;
   text-shadow: 0 0 10px rgba(63, 185, 80, 0.3);
 }
+
+/* Sidebar scale select: reuse session-select chrome, sized for the scale row. */
+.sidebar-scale-select {
+  width: 100%;
+  max-width: 100%;
+  min-height: 34px;
+  margin-top: 4px;
+}
+
+/* Number input spinner styling — avoid default white spin button chrome. */
+.cycles-control-group .cycles-input::-webkit-inner-spin-button,
+.cycles-control-group .cycles-input::-webkit-outer-spin-button,
+#bpm-input::-webkit-inner-spin-button,
+#bpm-input::-webkit-outer-spin-button {
+  opacity: 1;
+  filter: invert(65%) sepia(44%) saturate(711%) hue-rotate(179deg) brightness(96%) contrast(95%);
+  cursor: pointer;
+}
+
+.cycles-control-group .cycles-input[type='number'],
+#bpm-input[type='number'] {
+  color-scheme: dark;
+}
+
+/* Practice sub-mode selector — same polished capsule language as Repeat cycles. */
+.practice-mode-control-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border: 1px solid rgba(88, 166, 255, 0.22);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(22, 27, 34, 0.95), rgba(13, 17, 23, 0.9));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 0 0 1px rgba(0,0,0,0.18);
+}
+
+.practice-mode-label {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.practice-mode-control-group .practice-sub-mode-select {
+  height: 28px;
+  min-width: 132px;
+  padding: 0 30px 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(88, 166, 255, 0.35);
+  background: rgba(88, 166, 255, 0.08);
+  color: var(--text-primary);
+  font-weight: 700;
+  outline: none;
+  cursor: pointer;
+  color-scheme: dark;
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, rgba(88,166,255,0.95) 50%),
+    linear-gradient(135deg, rgba(88,166,255,0.95) 50%, transparent 50%);
+  background-position:
+    calc(100% - 16px) 11px,
+    calc(100% - 11px) 11px;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+
+.practice-mode-control-group .practice-sub-mode-select:hover {
+  border-color: rgba(88, 166, 255, 0.55);
+  background-color: rgba(88, 166, 255, 0.12);
+}
+
+.practice-mode-control-group .practice-sub-mode-select:focus {
+  border-color: rgba(88, 166, 255, 0.9);
+  box-shadow: 0 0 0 3px rgba(88,166,255,0.16), 0 0 18px rgba(88,166,255,0.16);
+}
+
+.practice-mode-control-group .practice-sub-mode-select option {
+  background: #161b22;
+  color: var(--text-primary);
+}
+
+/* Stronger override: practice mode dropdown must stay dark (not browser white). */
+.practice-mode-control-group select.practice-sub-mode-select,
+.practice-mode-control-group .practice-sub-mode-select {
+  background-color: rgba(88, 166, 255, 0.08) !important;
+  color: var(--text-primary) !important;
+  border-color: rgba(88, 166, 255, 0.35) !important;
+  color-scheme: dark !important;
+}
+
+/* Compact Settings selects/buttons — match app control density. */
+.settings-panel .settings-row select,
+#settings-panel .settings-row select {
+  min-height: 34px;
+  height: 34px;
+  padding: 0 32px 0 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  line-height: 34px;
+  color-scheme: dark;
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, rgba(88,166,255,0.95) 50%),
+    linear-gradient(135deg, rgba(88,166,255,0.95) 50%, transparent 50%);
+  background-position:
+    calc(100% - 16px) 14px,
+    calc(100% - 11px) 14px;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+
+.settings-panel .settings-row select:hover,
+#settings-panel .settings-row select:hover {
+  border-color: rgba(88, 166, 255, 0.55);
+  background-color: rgba(88, 166, 255, 0.08);
+}
+
+.settings-panel .settings-row select:focus,
+#settings-panel .settings-row select:focus {
+  outline: none;
+  border-color: rgba(88, 166, 255, 0.9);
+  box-shadow: 0 0 0 3px rgba(88,166,255,0.14);
+}
+
+.settings-panel .settings-row select option,
+#settings-panel .settings-row select option {
+  background: #161b22;
+  color: var(--text-primary);
+}

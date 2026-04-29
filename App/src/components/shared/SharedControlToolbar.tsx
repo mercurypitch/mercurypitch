@@ -395,8 +395,8 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
 
         {/* Practice sub-mode selector — only in practice mode */}
         <Show when={isPracticeTab() && props.playMode() === 'practice'}>
-          <div class="secondary-control-group">
-            <label class="opt-label">Mode:</label>
+          <div class="secondary-control-group practice-mode-control-group">
+            <label class="opt-label practice-mode-label">Mode</label>
             <select
               id="practice-sub-mode"
               value={props.practiceSubMode()}

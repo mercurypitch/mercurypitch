@@ -4,7 +4,7 @@ import type { PlaybackRuntime } from '@/lib/playback-runtime'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { melodyTotalBeats } from '@/lib/scale-data'
 import { buildSessionItemMelody } from '@/lib/session-builder'
-import { advanceSessionItem, countIn, getCurrentSessionItem, practiceSession, recordSessionItemResult, sessionItemIndex, setActiveTab, setBpm, setKeyName, setScaleType, setSessionActive, showNotification, userSession, } from '@/stores'
+import { advanceSessionItem, countIn, getCurrentSessionItem, practiceSession, recordSessionItemResult, sessionItemIndex, setActiveTab, setBpm, setKeyName, setScaleType, setSessionActive, showNotification, startPracticeSession, userSession, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import type { MelodyItem, NoteResult, PracticeResult, SessionResult, } from '@/types'
 
@@ -193,11 +193,19 @@ export function useSessionSequencer(deps: Deps): SessionSequencer {
     const nextItem = getCurrentSessionItem()
     if (!nextItem) return
 
+    const startAfterCompleteCleanup = (): void => {
+      // loadNextSessionItem is called from the runtime `complete` handler.
+      // PlaybackRuntime emits `complete` and only then calls its own stop(),
+      // so a synchronous start here would be killed by that post-complete
+      // stop. Defer one macrotask so runtime cleanup completes first.
+      setTimeout(() => playbackRuntime.start(countIn()), 0)
+    }
+
     if (nextItem.type === 'rest') {
       const restDuration = nextItem.restMs ?? 2000
       playbackRuntime.stop()
       playbackRuntime.setMelody(melodyStore.items())
-      playbackRuntime.start(countIn())
+      startAfterCompleteCleanup()
       // FIXME: Replace setTimeout chain with awaitable transition
       setTimeout(() => {
         const afterRest = getCurrentSessionItem()
@@ -209,7 +217,7 @@ export function useSessionSequencer(deps: Deps): SessionSequencer {
           )
           playbackRuntime.stop()
           playbackRuntime.setMelody(melodyStore.items())
-          playbackRuntime.start(countIn())
+          startAfterCompleteCleanup()
         }
       }, restDuration)
     } else if ((nextItem.type as string) === 'scale') {
@@ -220,14 +228,14 @@ export function useSessionSequencer(deps: Deps): SessionSequencer {
       )
       playbackRuntime.stop()
       playbackRuntime.setMelody(melodyStore.items())
-      playbackRuntime.start(countIn())
+      startAfterCompleteCleanup()
     } else if (nextItem.type === 'melody' || nextItem.type === 'preset') {
       const melodyItems = buildSessionItemMelody(nextItem)
       melodyStore.setMelody(melodyItems)
       playbackRuntime.stop()
       playbackRuntime.setMelody(melodyStore.items())
       // FIXME: countIn behavior decision pending — currently fires per item
-      playbackRuntime.start(countIn())
+      startAfterCompleteCleanup()
     }
   }
 
@@ -272,28 +280,25 @@ export function useSessionSequencer(deps: Deps): SessionSequencer {
     setSessionActive(true)
   }
 
-  const playSessionSequence = (melodyIds: string[]): void => {
+  const playSessionSequence = (_melodyIds: string[]): void => {
     const session = userSession()
     if (!session || session.items.length === 0) return
 
-    // If explicit melody IDs provided, play them one-by-one in sequence
-    // (the 'complete' handler in App.tsx will call playNextInSessionSequence).
-    // Otherwise fall back to the concatenated practice-session playback.
+    // Play All should use the PracticeSession API, NOT concatenate all
+    // notes into one giant melody. This preserves the session semantics:
+    // melody item -> complete -> advanceSessionItem() -> next melody/rest.
     closeSidebar()
-    if (melodyIds.length > 0) {
-      setSessionMelodyIds(melodyIds)
-      setSessionCurrentMelodyIndex(0)
-      setPlayMode('practice')
-      setActiveTab('practice')
-      loadAndPlayMelodyForSession(melodyIds[0])
-      handlePlay()
-    } else {
-      setSessionMelodyIds([])
-      setSessionCurrentMelodyIndex(-1)
-      setPlayMode('practice')
-      setActiveTab('practice')
-      handlePlay()
+    setSessionMelodyIds([])
+    setSessionCurrentMelodyIndex(-1)
+    setPlayMode('practice')
+    setActiveTab('practice')
+
+    startPracticeSession(session)
+    const firstItem = session.items[0]
+    if (firstItem !== undefined && firstItem.type !== 'rest') {
+      melodyStore.setMelody(buildSessionItemMelody(firstItem))
     }
+    handlePlay()
   }
 
   const playNextInSessionSequence = (): void => {

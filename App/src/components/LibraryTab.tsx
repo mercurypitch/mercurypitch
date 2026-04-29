@@ -362,12 +362,16 @@ export const LibraryTab: Component = () => {
     const ids = sessionMelodyIds()
     if ((userSession()?.items.length ?? 0) === 0) return
 
-    // Get the sequence playback handler from window (set by App.tsx)
-    const handler = (
-      window as unknown as {
-        __playSessionSequence?: (melodyIds: string[]) => void
-      }
-    ).__playSessionSequence
+    // Get the sequence playback handler from App.tsx.
+    // Production bridge lives under window.__pp. The old top-level
+    // __playSessionSequence alias is e2e/test-only (exposeForE2E), so
+    // reading only that alias made the real UI button a no-op in normal
+    // app mode.
+    const win = window as unknown as {
+      __pp?: { playSessionSequence?: (melodyIds: string[]) => void }
+      __playSessionSequence?: (melodyIds: string[]) => void
+    }
+    const handler = win.__pp?.playSessionSequence ?? win.__playSessionSequence
 
     if (handler !== undefined) {
       handler(ids)
