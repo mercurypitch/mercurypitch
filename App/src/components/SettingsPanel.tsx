@@ -5,9 +5,10 @@
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, Show } from 'solid-js'
 import { appStore } from '@/stores'
+import { adsr, playbackSpeed, setPlaybackSpeed, setSensitivity, settings, } from '@/stores'
 
 export const SettingsPanel: Component = () => {
-  const s = () => appStore.settings()
+  const s = () => settings()
   const [showResetConfirm, setShowResetConfirm] = createSignal(false)
 
   const bandValues = createMemo(() => {
@@ -117,7 +118,7 @@ export const SettingsPanel: Component = () => {
               step="1"
               value={s().sensitivity}
               onInput={(e) => {
-                appStore.setSensitivity(parseInt(e.currentTarget.value))
+                setSensitivity(parseInt(e.currentTarget.value))
               }}
             />
             <span class="settings-val">{s().sensitivity}</span>
@@ -286,12 +287,12 @@ export const SettingsPanel: Component = () => {
               min="0"
               max="1000"
               step="10"
-              value={appStore.adsr().attack}
+              value={adsr().attack}
               onInput={(e) => {
                 appStore.setAttack(parseInt(e.currentTarget.value))
               }}
             />
-            <span class="settings-val">{appStore.adsr().attack}ms</span>
+            <span class="settings-val">{adsr().attack}ms</span>
             <small>Time to reach full volume</small>
           </div>
 
@@ -303,12 +304,12 @@ export const SettingsPanel: Component = () => {
               min="0"
               max="1000"
               step="10"
-              value={appStore.adsr().decay}
+              value={adsr().decay}
               onInput={(e) => {
                 appStore.setDecay(parseInt(e.currentTarget.value))
               }}
             />
-            <span class="settings-val">{appStore.adsr().decay}ms</span>
+            <span class="settings-val">{adsr().decay}ms</span>
             <small>Time to fall to sustain level</small>
           </div>
 
@@ -320,12 +321,12 @@ export const SettingsPanel: Component = () => {
               min="0"
               max="100"
               step="5"
-              value={appStore.adsr().sustain}
+              value={adsr().sustain}
               onInput={(e) => {
                 appStore.setSustain(parseInt(e.currentTarget.value))
               }}
             />
-            <span class="settings-val">{appStore.adsr().sustain}%</span>
+            <span class="settings-val">{adsr().sustain}%</span>
             <small>Volume during note held</small>
           </div>
 
@@ -337,12 +338,12 @@ export const SettingsPanel: Component = () => {
               min="0"
               max="2000"
               step="50"
-              value={appStore.adsr().release}
+              value={adsr().release}
               onInput={(e) => {
                 appStore.setRelease(parseInt(e.currentTarget.value))
               }}
             />
-            <span class="settings-val">{appStore.adsr().release}ms</span>
+            <span class="settings-val">{adsr().release}ms</span>
             <small>Time to fade after note ends</small>
           </div>
         </div>
@@ -398,14 +399,12 @@ export const SettingsPanel: Component = () => {
               min="25"
               max="200"
               step="25"
-              value={Math.round(appStore.playbackSpeed() * 100)}
+              value={Math.round(playbackSpeed() * 100)}
               onInput={(e) => {
-                appStore.setPlaybackSpeed(parseInt(e.currentTarget.value) / 100)
+                setPlaybackSpeed(parseInt(e.currentTarget.value) / 100)
               }}
             />
-            <span class="settings-val">
-              {appStore.playbackSpeed().toFixed(2)}x
-            </span>
+            <span class="settings-val">{playbackSpeed().toFixed(2)}x</span>
             <small>0.25x = slowest, 2.0x = fastest</small>
           </div>
         </div>

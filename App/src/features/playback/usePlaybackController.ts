@@ -6,7 +6,7 @@ import type { PlaybackRuntime } from '@/lib/playback-runtime'
 import type { PlaybackState } from '@/lib/playback-runtime'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { keyTonicFreq, melodyTotalBeats } from '@/lib/scale-data'
-import { appStore } from '@/stores'
+import { bpm, countIn, keyName, scaleType, sessionMode, setActiveTab, setBpm, setKeyName, setScaleType, setSessionActive, setSessionMode, settings, userSession, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import { playback } from '@/stores/playback-store'
 import type { MelodyItem, PlaybackMode, SessionResult } from '@/types'
@@ -119,6 +119,17 @@ export function usePlaybackController(
   const editorIsPlaying = createMemo(() => editorPlaybackState() === 'playing')
   const editorIsPaused = createMemo(() => editorPlaybackState() === 'paused')
 
+  // Subscribe to PlaybackRuntime beat events so currentBeat (and the
+  // playhead position) actually advance during playback. Without this,
+  // the playhead stays at 0% the entire time.
+  playbackRuntime.on('beat', (e: { beat: number }) => {
+    setCurrentBeat(e.beat)
+  })
+
+  playbackRuntime.on('noteStart', (e: { note: unknown; index: number }) => {
+    setCurrentNoteIndex(e.index)
+  })
+
   const resetPlaybackState = async () => {
     audioEngine.stopTone()
     audioEngine.stopAllNotes()
@@ -168,17 +179,13 @@ export function usePlaybackController(
     let forcedDurationBeats: number | undefined
 
     if (playMode() === 'practice') {
-      const activeSession = appStore.userSession()
-      if (
-        activeSession &&
-        activeSession.items.length > 0 &&
-        !appStore.sessionMode()
-      ) {
+      const activeSession = userSession()
+      if (activeSession && activeSession.items.length > 0 && !sessionMode()) {
         const sessionPlayback = buildSessionPlaybackMelody(activeSession)
         setPlaybackDisplayMelody(sessionPlayback.items)
         setPlaybackDisplayBeats(sessionPlayback.durationBeats)
-        appStore.setSessionMode(false)
-        appStore.setSessionActive(true)
+        setSessionMode(false)
+        setSessionActive(true)
         forcedDurationBeats = sessionPlayback.durationBeats
       }
     }
@@ -194,7 +201,7 @@ export function usePlaybackController(
         : melodyStore.items()
 
     if (baseMelody.length === 0) {
-      buildScaleMelody(appStore.scaleType(), 8)
+      buildScaleMelody(scaleType(), 8)
       baseMelody = melodyStore.items()
     }
 
@@ -212,22 +219,19 @@ export function usePlaybackController(
     )
 
     practiceEngine.startSession()
-    appStore.setSessionActive(true)
+    setSessionActive(true)
     setShouldAutoStartPlayback(true)
     setIsPlaying(true)
     setIsPaused(false)
     playback.startPlayback()
 
-    if (appStore.settings().tonicAnchor) {
-      const tonicFreq = keyTonicFreq(
-        appStore.keyName(),
-        melodyStore.getCurrentOctave(),
-      )
-      const tonicDuration = Math.round(60000 / appStore.bpm())
+    if (settings().tonicAnchor) {
+      const tonicFreq = keyTonicFreq(keyName(), melodyStore.getCurrentOctave())
+      const tonicDuration = Math.round(60000 / bpm())
       audioEngine.playTone(tonicFreq, tonicDuration)
     }
 
-    playbackRuntime.start(appStore.countIn())
+    playbackRuntime.start(countIn())
   }
 
   const handlePause = () => {
@@ -259,7 +263,7 @@ export function usePlaybackController(
     melodyStore.setCurrentNoteIndex(-1)
     setPitchHistory([])
     playback.resetPlayback()
-    appStore.setSessionActive(false)
+    setSessionActive(false)
     setPlaybackDisplayMelody(null)
     setPlaybackDisplayBeats(null)
     setEditorPlaybackState('stopped')
@@ -286,7 +290,7 @@ export function usePlaybackController(
     } else {
       let editorMelody = melodyStore.items()
       if (editorMelody.length === 0) {
-        buildScaleMelody(appStore.scaleType(), 8)
+        buildScaleMelody(scaleType(), 8)
         editorMelody = melodyStore.items()
       }
       playbackRuntime.setMelody(editorMelody)
@@ -294,7 +298,7 @@ export function usePlaybackController(
     }
 
     setEditorPlaybackState('playing')
-    playbackRuntime.start(appStore.countIn())
+    playbackRuntime.start(countIn())
   }
 
   const handleEditorPause = () => {
@@ -326,25 +330,25 @@ export function usePlaybackController(
     if (!melody) return
 
     closeSidebar()
-    appStore.setBpm(melody.bpm)
-    appStore.setKeyName(melody.key)
-    appStore.setScaleType(melody.scaleType)
+    setBpm(melody.bpm)
+    setKeyName(melody.key)
+    setScaleType(melody.scaleType)
     melodyStore.loadMelody(melodyId)
 
     setPitchHistory([])
     setPlaybackDisplayMelody(melody.items ?? [])
     setPlaybackDisplayBeats(melodyTotalBeats(melody.items ?? []))
     playbackRuntime.setMelody(melody.items ?? [])
-    appStore.setSessionActive(true)
+    setSessionActive(true)
   }
 
   const playSessionSequence = (_melodyIds: string[]) => {
-    const session = appStore.userSession()
+    const session = userSession()
     if (!session || session.items.length === 0) return
 
     closeSidebar()
     setPlayMode('practice')
-    appStore.setActiveTab('practice')
+    setActiveTab('practice')
 
     resetPlaybackState().then(() => {
       handlePlay()

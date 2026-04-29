@@ -7,6 +7,7 @@ import { createMemo, Show } from 'solid-js'
 import { PitchCanvas } from '@/components/PitchCanvas'
 import { melodyTotalBeats } from '@/lib/scale-data'
 import { appStore } from '@/stores'
+import { keyName, playbackSpeed, scaleType, sessionActive, setPlaybackSpeed, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import type { MelodyItem, PitchSample } from '@/types'
 import type { NoteResult, PitchResult, PracticeResult } from '@/types'
@@ -33,9 +34,7 @@ interface FocusModeProps {
 const SPEED_STEPS = [0.25, 0.5, 0.75, 1.0, 1.5, 2.0]
 
 export const FocusMode: Component<FocusModeProps> = (props) => {
-  const keyDisplay = createMemo(
-    () => `${appStore.keyName()} ${appStore.scaleType()}`,
-  )
+  const keyDisplay = createMemo(() => `${keyName()} ${scaleType()}`)
 
   const totalBeats = createMemo(() => melodyTotalBeats(props.melody()))
   const totalBars = createMemo(() => Math.ceil(totalBeats() / 4))
@@ -58,7 +57,7 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
   })
 
   // Session info
-  const isSession = createMemo(() => appStore.sessionActive())
+  const isSession = createMemo(() => sessionActive())
   const sessionItem = createMemo(() => appStore.sessionItemIndex())
   const sessionRepeat = createMemo(() => appStore.currentSessionItemRepeat())
 
@@ -84,7 +83,7 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
 
   // Playback speed
   const currentSpeedIndex = createMemo(() => {
-    const speed = appStore.playbackSpeed()
+    const speed = playbackSpeed()
     const idx = SPEED_STEPS.indexOf(speed)
     return idx >= 0 ? idx : 3 // default to 1.0x
   })
@@ -92,14 +91,14 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
   const speedUp = () => {
     const idx = currentSpeedIndex()
     if (idx < SPEED_STEPS.length - 1) {
-      appStore.setPlaybackSpeed(SPEED_STEPS[idx + 1])
+      setPlaybackSpeed(SPEED_STEPS[idx + 1])
     }
   }
 
   const speedDown = () => {
     const idx = currentSpeedIndex()
     if (idx > 0) {
-      appStore.setPlaybackSpeed(SPEED_STEPS[idx - 1])
+      setPlaybackSpeed(SPEED_STEPS[idx - 1])
     }
   }
 
@@ -242,9 +241,7 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
               />
             </svg>
           </button>
-          <span class="focus-speed-label">
-            {appStore.playbackSpeed().toFixed(2)}x
-          </span>
+          <span class="focus-speed-label">{playbackSpeed().toFixed(2)}x</span>
           <button
             class="focus-speed-btn"
             onClick={speedDown}

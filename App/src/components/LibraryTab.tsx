@@ -5,6 +5,7 @@
 import type { Component } from 'solid-js'
 import { createMemo, For, onMount, Show } from 'solid-js'
 import { appStore, setEditorView } from '@/stores'
+import { bpm, scaleType, setActiveTab, setActiveUserSession, showLibrary, showNotification, showPresetsLibrary, showSessionLibrary, userSession as userSessionSignal, } from '@/stores'
 import { getActiveSession, getSessions } from '@/stores/melody-store'
 import { melodyStore } from '@/stores/melody-store'
 import { createSession, getDefaultSession, getSession, saveSession, } from '@/stores/session-store'
@@ -68,7 +69,7 @@ export const LibraryTab: Component = () => {
 
   // User session (new melody-ID model)
   const userSession = createMemo(() => {
-    const explicitSession = appStore.userSession?.()
+    const explicitSession = userSessionSignal?.()
     const activeSession = getActiveSession()
     const defaultSession = getDefaultSession()
     return explicitSession ?? activeSession ?? defaultSession ?? null
@@ -79,7 +80,7 @@ export const LibraryTab: Component = () => {
       (session): session is PlaybackSession =>
         session !== null && session !== undefined,
     )
-    const explicitSession = appStore.userSession?.()
+    const explicitSession = userSessionSignal?.()
     const defaultSession = getDefaultSession()
     const sessionMap = new Map<string, PlaybackSession>()
 
@@ -153,21 +154,21 @@ export const LibraryTab: Component = () => {
   )
 
   const openLibrary = () => {
-    appStore.showLibrary()
+    showLibrary()
   }
 
   const openSessionLibrary = (): void => {
-    appStore.showSessionLibrary()
+    showSessionLibrary()
   }
 
   const openPresetsLibrary = () => {
-    appStore.showPresetsLibrary()
+    showPresetsLibrary()
   }
 
   const setActiveSessionAndSelectFirstMelody = (
     session: PlaybackSession,
   ): void => {
-    appStore.setActiveUserSession(session)
+    setActiveUserSession(session)
     const firstMelodyItem = session.items.find(
       (item) => item.type === 'melody' && item.melodyId !== undefined,
     )
@@ -191,14 +192,14 @@ export const LibraryTab: Component = () => {
     // Ensure it's saved to the library
     saveSession(newSession)
     // Set as active session after saving so the sidebar immediately reflects an empty session
-    appStore.setActiveUserSession(newSession)
+    setActiveUserSession(newSession)
     console.info(
       '[LibraryTab] New session created:',
       newSession.id,
       'setActiveSessionId:',
       melodyStore.getActiveSessionId(),
     )
-    appStore.showNotification('New session created', 'success')
+    showNotification('New session created', 'success')
   }
 
   const handleQuickNewMelody = (): void => {
@@ -209,12 +210,12 @@ export const LibraryTab: Component = () => {
       newMelody.name,
     )
     if (updatedSession !== undefined) {
-      appStore.setActiveUserSession(updatedSession)
+      setActiveUserSession(updatedSession)
     }
     melodyStore.loadMelody(newMelody.id)
-    appStore.setActiveTab('editor')
+    setActiveTab('editor')
     setEditorView('piano-roll')
-    appStore.showNotification(`Melody "${newMelody.name}" created`, 'success')
+    showNotification(`Melody "${newMelody.name}" created`, 'success')
   }
 
   const handleRecentItemClick = (
@@ -231,13 +232,13 @@ export const LibraryTab: Component = () => {
       if (activeSessionId === null) {
         const defaultSession = getSession('default')
         if (defaultSession !== undefined && defaultSession !== null) {
-          appStore.setActiveUserSession(defaultSession)
+          setActiveUserSession(defaultSession)
           melodyStore.setActiveSessionId(defaultSession.id)
         }
       } else {
         const activeSession = getSession(activeSessionId)
         if (activeSession !== undefined) {
-          appStore.setActiveUserSession(activeSession)
+          setActiveUserSession(activeSession)
         }
       }
     } else if (item.type === 'session') {
@@ -288,7 +289,7 @@ export const LibraryTab: Component = () => {
     } else {
       // Single click: load into editor
       melodyStore.loadMelody(melodyId)
-      appStore.setActiveTab('editor')
+      setActiveTab('editor')
       setEditorView('piano-roll')
 
       // Ensure default session is loaded if no active session exists
@@ -296,13 +297,13 @@ export const LibraryTab: Component = () => {
       if (sid === null) {
         const defaultSession = getSession('default')
         if (defaultSession !== undefined && defaultSession !== null) {
-          appStore.setActiveUserSession(defaultSession)
+          setActiveUserSession(defaultSession)
           melodyStore.setActiveSessionId(defaultSession.id)
         }
       } else {
         const activeSession = getSession(sid)
         if (activeSession !== undefined) {
-          appStore.setActiveUserSession(activeSession)
+          setActiveUserSession(activeSession)
         }
       }
     }

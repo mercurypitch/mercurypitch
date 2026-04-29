@@ -22,6 +22,19 @@ export { melodyStore } from './melody-store'
 // True session-mode state lives in practice-session-store.sessionMode().
 export const isInSessionMode = () => false
 
+// No-op kept for backward compat (was a presets-store init).
+export const initPresets = (): void => {}
+
+// Composer for starting a practice session — sets practice store fields together.
+import type { PlaybackSession as _PlaybackSession } from '@/types'
+import { setPracticeSession as _setPracticeSession, setSessionActive as _setSessionActive, setSessionMode as _setSessionMode, } from './practice-session-store'
+
+export const startPracticeSession = (session: _PlaybackSession): void => {
+  _setPracticeSession(session)
+  _setSessionMode(true)
+  _setSessionActive(true)
+}
+
 // TODO: Replace all appStore.<something> calls with proper calls!
 // To ease the migration and avoid breaking the rest of the application
 // right away, we expose a monolithic "appStore" namespace that bundles

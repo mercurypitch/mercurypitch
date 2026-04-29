@@ -7,6 +7,7 @@
 import type { Component } from 'solid-js'
 import { createSignal, For, Show } from 'solid-js'
 import { appStore, melodyStore } from '@/stores'
+import { setActiveUserSession, showNotification } from '@/stores'
 import { addItemToSession, deleteSessionItem } from '@/stores/session-store'
 import type { PlaybackSession, SessionItem } from '@/types'
 import { MelodyPillList } from './MelodyPillList'
@@ -38,7 +39,7 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
   }
 
   const activateSession = (session: PlaybackSession): void => {
-    appStore.setActiveUserSession(session)
+    setActiveUserSession(session)
     const firstMelodyItem = session.items.find(
       (item) => item.type === 'melody' && item.melodyId !== undefined,
     )
@@ -86,7 +87,7 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
   const _handleAddMelodyToSession = (_melodyId: string) => {
     const session = currentSession()
     if (session === null || session === undefined) {
-      appStore.showNotification('No active session to add melody to', 'error')
+      showNotification('No active session to add melody to', 'error')
       return
     }
 
@@ -101,7 +102,7 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
 
     const updatedSession = addItemToSession(session.id, newSessionItem)
     if (updatedSession !== undefined) {
-      appStore.setActiveUserSession(updatedSession)
+      setActiveUserSession(updatedSession)
     }
     setSelectedMelodyIds((prev) => {
       const next = new Set(prev)
@@ -127,14 +128,14 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
   const handleDeleteItem = (itemId: string) => {
     const session = currentSession()
     if (session === null || session === undefined) {
-      appStore.showNotification('No active session', 'error')
+      showNotification('No active session', 'error')
       return
     }
 
     // Remove the item from the session using session-store
     const updatedSession = deleteSessionItem(session.id, itemId)
     if (updatedSession !== undefined) {
-      appStore.setActiveUserSession(updatedSession)
+      setActiveUserSession(updatedSession)
     }
 
     // Update selected melody IDs if needed
@@ -152,7 +153,7 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
   const handleDrop = (melodyId: string, targetItemIndex?: number) => {
     const session = currentSession()
     if (session === null || session === undefined) {
-      appStore.showNotification('No active session to add melody to', 'error')
+      showNotification('No active session to add melody to', 'error')
       return
     }
 
@@ -170,9 +171,9 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
 
     const updatedSession = addItemToSession(session.id, newSessionItem)
     if (updatedSession !== undefined) {
-      appStore.setActiveUserSession(updatedSession)
+      setActiveUserSession(updatedSession)
     }
-    appStore.showNotification(`Melody added to session`, 'success')
+    showNotification(`Melody added to session`, 'success')
   }
 
   const _handleDragOver = (_index: number) => {
@@ -190,7 +191,7 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
     if (session !== null && session !== undefined) {
       const updatedSession = addItemToSession(session.id, newItem)
       if (updatedSession !== undefined) {
-        appStore.setActiveUserSession(updatedSession)
+        setActiveUserSession(updatedSession)
       }
     }
   }

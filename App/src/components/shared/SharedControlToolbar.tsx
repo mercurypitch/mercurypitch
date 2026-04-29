@@ -10,6 +10,7 @@ import { PrecCountButton } from '@/components/PrecCountButton'
 import { Tooltip } from '@/components/Tooltip'
 import { NOTE_NAMES } from '@/lib/scale-data'
 import { appStore } from '@/stores'
+import { activeTab, bpm, keyName, micActive, micWaveVisible, playbackSpeed, scaleType, sessionActive, setBpm, setKeyName, setPlaybackSpeed, setScaleType, setSensitivity, settings, toggleMicWaveVisible, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import { ControlGroup } from './ControlGroup'
 import { MetronomeGroup } from './MetronomeGroup'
@@ -127,7 +128,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
           <div class="essential-control-group">
             <div class="mic-group">
               <MicButton
-                active={appStore.micActive()}
+                active={micActive()}
                 onClick={props.onMicToggle}
                 disabled={false}
               />
@@ -137,12 +138,10 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
 
         {/* Wave toggle - practice tab only */}
         <Show when={isPracticeTab()}>
-          <Tooltip
-            text={appStore.micWaveVisible() ? 'Hide mic wave' : 'Show mic wave'}
-          >
+          <Tooltip text={micWaveVisible() ? 'Hide mic wave' : 'Show mic wave'}>
             <button
-              class={`ctrl-btn wave-btn ${appStore.micWaveVisible() ? 'active' : ''}`}
-              onClick={appStore.toggleMicWaveVisible}
+              class={`ctrl-btn wave-btn ${micWaveVisible() ? 'active' : ''}`}
+              onClick={toggleMicWaveVisible}
               title="Toggle mic waveform view"
             >
               <svg viewBox="0 0 24 24" width="16" height="16">
@@ -256,7 +255,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
         </button>
 
         {/* Practice sessions - only in practice tab */}
-        <Show when={isPracticeTab() && !appStore.sessionActive()}>
+        <Show when={isPracticeTab() && !sessionActive()}>
           <div class="app-header-sep" />
           <button
             class="ctrl-btn mode-btn"
@@ -356,9 +355,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
           <div class="practice-mode-badge">
             <span class="mode-label">Mode:</span>
             <span class="mode-value" id="practice-mode-indicator">
-              {activePracticeMode(props.playMode, () =>
-                appStore.sessionActive(),
-              )}
+              {activePracticeMode(props.playMode, () => sessionActive())}
             </span>
           </div>
         </Show>
@@ -412,12 +409,12 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
             id="bpm-input"
             min="40"
             max="280"
-            value={appStore.bpm()}
+            value={bpm()}
             class="bpm-number-input"
             onInput={(e) => {
               const value = parseInt(e.currentTarget.value)
               if (value !== undefined && !isNaN(value)) {
-                appStore.setBpm(value)
+                setBpm(value)
               }
             }}
           />
@@ -426,13 +423,11 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
             id="tempo"
             min="40"
             max="280"
-            value={appStore.bpm()}
+            value={bpm()}
             class="tempo-slider"
-            onInput={(e) =>
-              appStore.setBpm(parseInt(e.currentTarget.value) || 80)
-            }
+            onInput={(e) => setBpm(parseInt(e.currentTarget.value) || 80)}
           />
-          <span id="tempo-value">{appStore.bpm()}</span>
+          <span id="tempo-value">{bpm()}</span>
         </div>
 
         {/* Volume */}
@@ -461,11 +456,11 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
             <label class="opt-label">Speed:</label>
             <select
               id="speed-select"
-              value={appStore.playbackSpeed().toString()}
+              value={playbackSpeed().toString()}
               class="speed-select"
               onChange={(e) => {
                 const speed = parseFloat(e.currentTarget.value)
-                appStore.setPlaybackSpeed(speed)
+                setPlaybackSpeed(speed)
                 props.onSpeedChange(speed)
               }}
             >
@@ -495,16 +490,16 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
               <label class="opt-label">Key:</label>
               <select
                 id="key-select"
-                value={appStore.keyName()}
+                value={keyName()}
                 class="key-select"
                 onChange={(e) => {
                   const key = e.currentTarget.value
-                  appStore.setKeyName(key)
+                  setKeyName(key)
                   // Refresh scale with new key
                   melodyStore.refreshScale(
                     key,
                     melodyStore.getCurrentOctave(),
-                    appStore.scaleType(),
+                    scaleType(),
                   )
                 }}
               >
@@ -519,14 +514,14 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
               <label class="opt-label">Scale:</label>
               <select
                 id="scale-select"
-                value={appStore.scaleType()}
+                value={scaleType()}
                 class="scale-select"
                 onChange={(e) => {
                   const scaleType = e.currentTarget.value
-                  appStore.setScaleType(scaleType)
+                  setScaleType(scaleType)
                   // Refresh scale with new scale type
                   melodyStore.refreshScale(
-                    appStore.keyName(),
+                    keyName(),
                     melodyStore.getCurrentOctave(),
                     scaleType,
                   )
@@ -575,16 +570,14 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
               id="sensitivity"
               min="1"
               max="10"
-              value={appStore.settings().sensitivity}
+              value={settings().sensitivity}
               class="sensitivity-slider"
               onInput={(e) => {
                 const val = parseInt(e.currentTarget.value) || 5
-                appStore.setSensitivity(val)
+                setSensitivity(val)
               }}
             />
-            <span id="sensitivity-value">
-              {appStore.settings().sensitivity}
-            </span>
+            <span id="sensitivity-value">{settings().sensitivity}</span>
           </div>
         </ControlGroup>
       </div>

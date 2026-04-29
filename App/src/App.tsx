@@ -36,7 +36,7 @@ import { registerE2EBridge } from '@/lib/e2e-bridge'
 import { melodyIndexAtBeat, melodyTotalBeats } from '@/lib/scale-data'
 import { buildScaleMelody, buildSessionPlaybackMelody, } from '@/lib/session-builder'
 import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
-import { appStore, editorView, endPracticeSession, getNoteAccuracyMap, getSessionHistory, setEditorView, } from '@/stores'
+import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hidePresetsLibrary, hideSessionLibrary, initBpm, initPresets, initReverb, initSessionHistory, initSettings, initTheme, isLibraryModalOpen, isPresetsModalOpen, isSessionLibraryModalOpen, keyName as keyNameSignal, micActive, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, setActiveTab, setActiveUserSession, setBpm, setEditorView, setKeyName, setPlaybackSpeed, setScaleType, settings as settingsSignal, showNotification, startPracticeSession, toggleMicWaveVisible, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import { getSession } from '@/stores/session-store'
 import type { MelodyItem, NoteResult, PlaybackMode } from '@/types'
@@ -94,8 +94,8 @@ const AppShell: Component<AppProps> = (props) => {
   const { audioEngine, playbackRuntime, practiceEngine } = useEngines()
 
   // ── Local UI state ──────────────────────────────────────────
-  const activeTab = (): ActiveTab => appStore.activeTab() as ActiveTab
-  const focusMode = () => appStore.focusMode()
+  const activeTab = (): ActiveTab => activeTabSignal() as ActiveTab
+  const focusMode = focusModeSignal
 
   const [sidebarOpen, setSidebarOpen] = createSignal(false)
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen())
@@ -288,19 +288,19 @@ const AppShell: Component<AppProps> = (props) => {
     if (currentTab === 'practice' || currentTab === 'editor') {
       await resetPlaybackState()
     }
-    appStore.setActiveTab(newTab)
+    setActiveTab(newTab)
   }
 
   // ── Debounced auto-save for melody changes ─────────────────
   const debouncedAutoSave = debounce(() => {
     const currentMelody = melodyStore.getCurrentMelody()
     if (currentMelody === null) return
-    appStore.showNotification('Melody saved!', 'success')
+    showNotification('Melody saved!', 'success')
   }, 500)
 
   // ── Mic handler ────────────────────────────────────────────
   const handleMicToggle = async () => {
-    if (appStore.micActive()) {
+    if (micActive()) {
       practiceEngine.stopMic()
     } else {
       await practiceEngine.startMic()
@@ -312,8 +312,8 @@ const AppShell: Component<AppProps> = (props) => {
     const newOctave = melodyStore.getCurrentOctave() + delta
     if (newOctave < 1 || newOctave > 6) return
 
-    const keyName = appStore.keyName()
-    const scaleType = appStore.scaleType()
+    const keyName = keyNameSignal()
+    const scaleType = scaleTypeSignal()
 
     if (melodyStore.items().length > 0) {
       const MIDI_OCTAVE_SHIFT = 12
@@ -402,7 +402,7 @@ const AppShell: Component<AppProps> = (props) => {
         !recording.isRecording() &&
         (isPlaying() || editorPlaybackState() === 'playing')
       ) {
-        const beatDurationMs = 60000 / appStore.bpm()
+        const beatDurationMs = 60000 / bpm()
         const noteDurationMs = item.duration * beatDurationMs
         audioEngine.playTone(item.note.freq, noteDurationMs)
       }
@@ -438,7 +438,7 @@ const AppShell: Component<AppProps> = (props) => {
         return
       }
 
-      const sessionModeValue = appStore.sessionMode()
+      const sessionModeValue = sessionMode()
       if (sessionModeValue === true && mode === 'practice') {
         handleSessionItemComplete()
         return
@@ -455,12 +455,12 @@ const AppShell: Component<AppProps> = (props) => {
   }
 
   onMount(() => {
-    appStore.initTheme()
-    appStore.initBpm()
-    appStore.initPresets()
-    appStore.initSessionHistory()
-    appStore.initSettings()
-    appStore.initReverb()
+    initTheme()
+    initBpm()
+    initPresets()
+    initSessionHistory()
+    initSettings()
+    initReverb()
 
     melodyStore.seedDefaultSession()
 
@@ -469,13 +469,13 @@ const AppShell: Component<AppProps> = (props) => {
     if (activeSessionId === null) {
       const defaultSession = getSession('default')
       if (defaultSession !== undefined) {
-        appStore.setActiveUserSession(defaultSession)
+        setActiveUserSession(defaultSession)
         melodyStore.setActiveSessionId(defaultSession.id)
       }
     } else {
       const activeSession = getSession(activeSessionId)
       if (activeSession !== undefined) {
-        appStore.setActiveUserSession(activeSession)
+        setActiveUserSession(activeSession)
       }
     }
 
@@ -502,15 +502,15 @@ const AppShell: Component<AppProps> = (props) => {
       if (sharedData !== null) {
         melodyStore.setMelody(sharedData.melody)
         if (sharedData.bpm !== undefined && sharedData.bpm !== 0) {
-          appStore.setBpm(sharedData.bpm)
+          setBpm(sharedData.bpm)
         }
         if (sharedData.key !== undefined && sharedData.key !== '') {
-          appStore.setKeyName(sharedData.key)
+          setKeyName(sharedData.key)
         }
         if (sharedData.scaleType !== undefined && sharedData.scaleType !== '') {
-          appStore.setScaleType(sharedData.scaleType)
+          setScaleType(sharedData.scaleType)
         }
-        appStore.showNotification('Shared preset loaded from URL', 'info')
+        showNotification('Shared preset loaded from URL', 'info')
       }
     }
 
@@ -623,8 +623,8 @@ const AppShell: Component<AppProps> = (props) => {
                     setSavedVol(vol)
                     audioEngine?.setVolume(vol / 100)
                   }}
-                  speed={appStore.playbackSpeed()}
-                  onSpeedChange={appStore.setPlaybackSpeed}
+                  speed={playbackSpeed()}
+                  onSpeedChange={setPlaybackSpeed}
                   metronomeEnabled={() => metronomeEnabled()}
                   onMetronomeToggle={() =>
                     setMetronomeEnabled(!metronomeEnabled())
@@ -638,15 +638,15 @@ const AppShell: Component<AppProps> = (props) => {
                   onPracticeSubModeChange={setPracticeSubMode}
                   isCountingIn={() => isCountingIn()}
                   countInBeat={() => countInBeat()}
-                  countInBeats={() => appStore.countIn()}
+                  countInBeats={() => countIn()}
                   onSessionsClick={() => setShowSessionBrowser(true)}
                   onMicToggle={() => {
                     void handleMicToggle()
                   }}
-                  onWaveToggle={appStore.toggleMicWaveVisible}
+                  onWaveToggle={toggleMicWaveVisible}
                 />
 
-                <Show when={appStore.sessionActive()}>
+                <Show when={sessionActive()}>
                   <SessionPlayer
                     onSkip={handleSessionSkip}
                     onEnd={handleSessionEnd}
@@ -705,8 +705,8 @@ const AppShell: Component<AppProps> = (props) => {
                   setSavedVol(vol)
                   audioEngine?.setVolume(vol / 100)
                 }}
-                speed={appStore.playbackSpeed()}
-                onSpeedChange={appStore.setPlaybackSpeed}
+                speed={playbackSpeed()}
+                onSpeedChange={setPlaybackSpeed}
                 metronomeEnabled={() => metronomeEnabled()}
                 onMetronomeToggle={() =>
                   setMetronomeEnabled(!metronomeEnabled())
@@ -720,13 +720,13 @@ const AppShell: Component<AppProps> = (props) => {
                 onPracticeSubModeChange={() => {}}
                 isCountingIn={() => false}
                 countInBeat={() => 0}
-                countInBeats={() => appStore.countIn()}
+                countInBeats={() => countIn()}
                 isRecording={() => recording.isRecording()}
                 onRecordToggle={recording.handleRecordToggle}
                 onMicToggle={() => {
                   void handleMicToggle()
                 }}
-                onWaveToggle={appStore.toggleMicWaveVisible}
+                onWaveToggle={toggleMicWaveVisible}
               />
 
               <div class="editor-view-toggle">
@@ -754,7 +754,7 @@ const AppShell: Component<AppProps> = (props) => {
                 <PianoRollCanvas
                   melody={() => melodyStore.items()}
                   scale={() => melodyStore.currentScale()}
-                  bpm={() => appStore.bpm()}
+                  bpm={() => bpm()}
                   totalBeats={() => totalBeats()}
                   playbackState={editorPlaybackState}
                   currentNoteIndex={() => melodyStore.currentNoteIndex()}
@@ -927,7 +927,7 @@ const AppShell: Component<AppProps> = (props) => {
           onStartSession={(session) => {
             const practiceSess = getSession(session.id)
             if (practiceSess) {
-              appStore.startPracticeSession(practiceSess)
+              startPracticeSession(practiceSess)
               setShowSessionBrowser(false)
             }
           }}
@@ -977,26 +977,20 @@ const AppShell: Component<AppProps> = (props) => {
 
       <Notifications />
 
-      <Show when={appStore.isLibraryModalOpen()}>
+      <Show when={isLibraryModalOpen()}>
         <LibraryModal
           isOpen={true}
-          close={() => appStore.hideLibrary()}
+          close={() => hideLibrary()}
           onPlayMelody={handlePlayMelodyFromModal}
         />
       </Show>
 
-      <Show when={appStore.isSessionLibraryModalOpen()}>
-        <SessionLibraryModal
-          isOpen={true}
-          close={() => appStore.hideSessionLibrary()}
-        />
+      <Show when={isSessionLibraryModalOpen()}>
+        <SessionLibraryModal isOpen={true} close={() => hideSessionLibrary()} />
       </Show>
 
-      <Show when={appStore.isPresetsModalOpen()}>
-        <PresetsLibraryModal
-          isOpen={true}
-          close={() => appStore.hidePresetsLibrary()}
-        />
+      <Show when={isPresetsModalOpen()}>
+        <PresetsLibraryModal isOpen={true} close={() => hidePresetsLibrary()} />
       </Show>
     </div>
   )

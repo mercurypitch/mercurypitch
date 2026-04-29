@@ -2,7 +2,7 @@ import type { AudioEngine } from '@/lib/audio-engine'
 import { downloadMIDI, importMelodyFromMIDI } from '@/lib/piano-roll'
 import { melodyTotalBeats } from '@/lib/scale-data'
 import { generateShareURL } from '@/lib/share-url'
-import { appStore } from '@/stores'
+import { bpm, keyName, scaleType, showNotification } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 
 interface Deps {
@@ -18,27 +18,27 @@ export interface EditorController {
 export function useEditorController(_deps: Deps): EditorController {
   const handleShare = (): void => {
     const melody = melodyStore.items()
-    const key = appStore.keyName()
-    const scaleType = appStore.scaleType()
-    const bpm = appStore.bpm()
+    const key = keyName()
+    const scaleTypeVal = scaleType()
+    const bpmVal = bpm()
     const totalBeats = melodyTotalBeats(melody)
 
-    const url = generateShareURL(melody, bpm, key, scaleType, totalBeats)
+    const url = generateShareURL(melody, bpmVal, key, scaleTypeVal, totalBeats)
     void navigator.clipboard.writeText(url).then(() => {
-      appStore.showNotification('Share URL copied to clipboard!', 'success')
+      showNotification('Share URL copied to clipboard!', 'success')
     })
   }
 
   const handleExportMIDI = (): void => {
     const melody = melodyStore.items()
-    const bpm = appStore.bpm()
+    const bpmVal = bpm()
     const timestamp = new Date()
       .toISOString()
       .replace(/[:.]/g, '-')
       .slice(0, 19)
-    const result = downloadMIDI(melody, bpm, `pitchperfect-${timestamp}.mid`)
+    const result = downloadMIDI(melody, bpmVal, `pitchperfect-${timestamp}.mid`)
     if (result !== null) {
-      appStore.showNotification('MIDI file exported!', 'success')
+      showNotification('MIDI file exported!', 'success')
     }
   }
 
@@ -56,15 +56,15 @@ export function useEditorController(_deps: Deps): EditorController {
         const melody = importMelodyFromMIDI(data)
         if (melody !== null && melody.length > 0) {
           melodyStore.setMelody(melody)
-          appStore.showNotification(
+          showNotification(
             `Imported ${melody.length} note(s) from MIDI`,
             'success',
           )
         } else {
-          appStore.showNotification('Could not parse MIDI file', 'error')
+          showNotification('Could not parse MIDI file', 'error')
         }
       } catch (_err) {
-        appStore.showNotification('Error reading MIDI file', 'error')
+        showNotification('Error reading MIDI file', 'error')
       }
     }
     input.click()

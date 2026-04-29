@@ -5,12 +5,13 @@
 import type { Component } from 'solid-js'
 import { Tooltip } from '@/components/Tooltip'
 import { appStore } from '@/stores'
+import { countIn, setCountIn } from '@/stores'
 
 export const PrecCountButton: Component = () => {
-  const isOn = () => appStore.countIn() > 0
+  const isOn = () => countIn() > 0
 
   const toggle = () => {
-    appStore.setCountIn(isOn() ? 0 : 4)
+    setCountIn(isOn() ? 0 : 4)
   }
 
   return (

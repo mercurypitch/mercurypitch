@@ -22,6 +22,7 @@ const localStorageMock = (() => {
 })()
 
 Object.defineProperty(global, 'localStorage', { value: localStorageMock })
+// FIXME: Needs to be rewritten with regards to new session and session history implementation!
 //
 // describe('Practice Session History', () => {
 //   beforeEach(() => {

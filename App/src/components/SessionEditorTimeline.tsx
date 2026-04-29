@@ -6,6 +6,7 @@
 import type { Component } from 'solid-js'
 import { createSignal, For, Show } from 'solid-js'
 import { appStore, melodyStore } from '@/stores'
+import { bpm, scaleType, setActiveUserSession, userSession } from '@/stores'
 import type { MelodyData, SessionItem } from '@/types'
 
 interface SessionEditorTimelineProps {
@@ -79,15 +80,15 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
         const [removed] = items.splice(dragSourceIndex(), 1)
         items.splice(targetIndex, 0, removed)
 
-        const sessionId = appStore.userSession()?.id
+        const sessionId = userSession()?.id
         if (sessionId !== null && sessionId !== undefined) {
-          const activeSession = appStore.userSession()!
+          const activeSession = userSession()!
           const updatedSession = {
             ...activeSession,
             items: items,
           }
           melodyStore.updateUserSession(updatedSession)
-          appStore.setActiveUserSession(updatedSession)
+          setActiveUserSession(updatedSession)
         }
 
         setTouchActive(false)
@@ -164,16 +165,16 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
     items.splice(targetIndex, 0, removed)
 
     // Update the session with new order
-    const sessionId = appStore.userSession()?.id
+    const sessionId = userSession()?.id
     if (sessionId !== null && sessionId !== undefined) {
       // Create updated session with reordered items
-      const activeSession = appStore.userSession()!
+      const activeSession = userSession()!
       const updatedSession = {
         ...activeSession,
         items: items,
       }
       melodyStore.updateUserSession(updatedSession)
-      appStore.setActiveUserSession(updatedSession)
+      setActiveUserSession(updatedSession)
     }
 
     setDraggedItemId(null)
@@ -371,9 +372,7 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
                   item.beats !== undefined &&
                   item.beats > 0
                 ) {
-                  return (
-                    acc + (item.beats / 4) * (120 / (appStore.bpm() || 120))
-                  )
+                  return acc + (item.beats / 4) * (120 / (bpm() || 120))
                 }
                 return acc
               }, 0) / 1000}{' '}

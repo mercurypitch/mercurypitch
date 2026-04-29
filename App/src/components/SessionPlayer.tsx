@@ -6,6 +6,7 @@
 import type { Component } from 'solid-js'
 import { createSignal, onCleanup, onMount, Show } from 'solid-js'
 import { appStore } from '@/stores'
+import { getCurrentSessionItem } from '@/stores'
 
 interface SessionPlayerProps {
   onSkip: () => void
@@ -35,7 +36,7 @@ export const SessionPlayer: Component<SessionPlayerProps> = (props) => {
 
   const session = () => appStore.practiceSession()
   const itemIndex = () => appStore.sessionItemIndex()
-  const currentItem = () => appStore.getCurrentSessionItem()
+  const currentItem = () => getCurrentSessionItem()
 
   const formatTime = (s: number) => {
     const m = Math.floor(s / 60)

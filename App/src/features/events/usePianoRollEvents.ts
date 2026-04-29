@@ -2,7 +2,7 @@ import type { Accessor, Setter } from 'solid-js'
 import { onCleanup, onMount } from 'solid-js'
 import type { AudioEngine } from '@/lib/audio-engine'
 import type { PlaybackRuntime } from '@/lib/playback-runtime'
-import { appStore } from '@/stores'
+import { setBpm, setScaleType, showNotification } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 
 interface PianoRollEventsDeps {
@@ -19,19 +19,19 @@ export function usePianoRollEvents(deps: PianoRollEventsDeps): void {
 
   const handlePresetSaved = (e: Event) => {
     const detail = (e as CustomEvent).detail
-    appStore.showNotification(`Preset "${detail.name}" saved`, 'success')
+    showNotification(`Preset "${detail.name}" saved`, 'success')
   }
 
   const handlePresetLoaded = (e: Event) => {
     const detail = (e as CustomEvent).detail
     if (detail.bpm !== undefined && detail.bpm !== '') {
-      appStore.setBpm(detail.bpm)
+      setBpm(detail.bpm)
       audioEngine.setBPM(detail.bpm)
     }
     if (detail.melody !== undefined) {
       melodyStore.setMelody(detail.melody)
     }
-    appStore.showNotification(`Preset "${detail.name}" loaded`, 'info')
+    showNotification(`Preset "${detail.name}" loaded`, 'info')
   }
 
   const handleOctaveChange = (e: Event) => {
@@ -42,7 +42,7 @@ export function usePianoRollEvents(deps: PianoRollEventsDeps): void {
 
   const handleModeChange = (e: Event) => {
     const detail = (e as CustomEvent).detail
-    appStore.setScaleType(detail.mode)
+    setScaleType(detail.mode)
   }
 
   const handleSeek = (e: Event) => {

@@ -12,6 +12,7 @@ import { PitchDisplay } from '@/components/PitchDisplay'
 import { StatsBars } from '@/components/StatsBars'
 import { KEY_OFFSETS, midiToFreq, midiToNote } from '@/lib/scale-data'
 import { activeTab as appActiveTab, appStore } from '@/stores'
+import { keyName, scaleType, setKeyName, setScaleType, showLibrary, userSession, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import type { MelodyItem, NoteResult, PitchResult } from '@/types'
 
@@ -39,7 +40,9 @@ interface AppSidebarProps {
 export const AppSidebar: Component<AppSidebarProps> = (props) => {
   // Local alias for reactive tracking
   const activeTab = () => appActiveTab()
-  const userSession = createMemo(() => appStore.userSession?.())
+  // userSession imported from @/stores; wrap in memo for reactive tracking.
+  // Renamed local to avoid TS7022 self-shadowing after appStore→named-import migration.
+  const sessionMemo = createMemo(() => userSession?.())
   return (
     <aside
       class={`app-sidebar${props.class !== undefined && props.class !== '' ? ` ${props.class}` : ''}`}
@@ -61,7 +64,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
       {/* Library button */}
       <button
         class="tour-btn"
-        onClick={() => appStore.showLibrary()}
+        onClick={() => showLibrary()}
         title="View Library"
       >
         <svg viewBox="0 0 24 24" width="16" height="16">
@@ -81,10 +84,10 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
           <span class="key-label">Key:</span>
           <select
             id="key-select"
-            value={appStore.keyName()}
+            value={keyName()}
             onChange={(e) => {
               const newKey = e.currentTarget.value
-              const currentKey = appStore.keyName()
+              const currentKey = keyName()
 
               // Transpose existing melody notes if any
               const melody = melodyStore.getCurrentItems()
@@ -112,11 +115,11 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
                 }
               }
 
-              appStore.setKeyName(newKey)
+              setKeyName(newKey)
               melodyStore.refreshScale(
                 newKey,
                 melodyStore.getCurrentOctave(),
-                appStore.scaleType(),
+                scaleType(),
               )
             }}
           >
@@ -162,12 +165,12 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
           <span class="preset-label">Scale:</span>
           <select
             id="scale-select"
-            value={appStore.scaleType()}
+            value={scaleType()}
             onChange={(e) => {
               const st = e.currentTarget.value
-              appStore.setScaleType(st)
+              setScaleType(st)
               melodyStore.refreshScale(
-                appStore.keyName(),
+                keyName(),
                 melodyStore.getCurrentOctave(),
                 st,
               )
@@ -259,8 +262,8 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
           <div class="session-items-display">
             <h3>Session Items</h3>
             <div id="session-items-list">
-              <Show when={userSession() !== null}>
-                <For each={userSession()!.items}>
+              <Show when={sessionMemo() !== null}>
+                <For each={sessionMemo()!.items}>
                   {(item) => (
                     <div class="session-item-entry">
                       <span class="session-item-label">{item.label}</span>
@@ -277,8 +280,8 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
               </Show>
               <Show
                 when={
-                  !userSession()?.items ||
-                  (userSession()?.items?.length ?? 0) === 0
+                  !sessionMemo()?.items ||
+                  (sessionMemo()?.items?.length ?? 0) === 0
                 }
               >
                 <p class="session-empty-tip">No items in session</p>

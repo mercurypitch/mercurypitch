@@ -4,7 +4,7 @@ import type { RecordingController } from '@/features/recording/useRecordingContr
 import type { AudioEngine } from '@/lib/audio-engine'
 import type { PlaybackRuntime } from '@/lib/playback-runtime'
 import type { PracticeEngine } from '@/lib/practice-engine'
-import { appStore } from '@/stores'
+import { setMicActive, setMicError, showNotification } from '@/stores'
 import type { PitchSample } from '@/types'
 import type { NoteResult, PitchResult, PracticeResult } from '@/types'
 
@@ -76,10 +76,10 @@ export function usePracticeController(deps: Deps): PracticeController {
       setLiveScore(practiceEngine.calculateScore(allResults))
     },
     onMicStateChange: (active, error) => {
-      appStore.setMicActive(active)
+      setMicActive(active)
       if (error !== undefined && error !== '') {
-        appStore.setMicError(error)
-        appStore.showNotification(error, 'error')
+        setMicError(error)
+        showNotification(error, 'error')
       }
     },
   })

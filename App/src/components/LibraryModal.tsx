@@ -5,6 +5,9 @@
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
 import { appStore, setEditorView } from '@/stores'
+// Note: setActiveTab is aliased to setAppActiveTab to avoid collision
+// with the local LibraryModal-internal tab signal (Tab = 'melodies' | 'playlists').
+import { bpm, scaleType, setActiveTab as setAppActiveTab, setActiveUserSession, setBpm, setKeyName, setScaleType, showNotification, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import type { MelodyData, NoteName } from '@/types'
 
@@ -167,9 +170,9 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
   const handlePlay = (melody: MelodyData) => {
     melodyStore.loadMelody(melody.id)
     appStore.setCurrentPresetName(melody.name)
-    appStore.setBpm(melody.bpm)
-    appStore.setKeyName(melody.key)
-    appStore.setScaleType(melody.scaleType)
+    setBpm(melody.bpm)
+    setKeyName(melody.key)
+    setScaleType(melody.scaleType)
     appStore.setOctave(melody.octave ?? 4)
     props.onPlayMelody?.(melody.name)
     props.close()
@@ -198,7 +201,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
 
   const handleEdit = (melody: MelodyData) => {
     melodyStore.loadMelody(melody.id)
-    appStore.setActiveTab('editor')
+    setAppActiveTab('editor')
     setEditorView('piano-roll')
     props.close()
   }
@@ -229,7 +232,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
       setEditNotes('')
       setEditingMelodyKey(null)
       setSelectedMelodyKey(editingKey)
-      appStore.showNotification('Melody saved', 'success')
+      showNotification('Melody saved', 'success')
     }
   }
 
@@ -246,7 +249,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
   const handleCreateMelody = () => {
     const name = createName().trim()
     if (!name) {
-      appStore.showNotification('Please enter a name', 'warning')
+      showNotification('Please enter a name', 'warning')
       return
     }
     const tagsArray = createTags()
@@ -270,7 +273,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
       name,
     )
     if (updatedSession !== undefined) {
-      appStore.setActiveUserSession(updatedSession)
+      setActiveUserSession(updatedSession)
     }
     melodyStore.setCurrentMelody(updatedMelody)
 
@@ -281,9 +284,9 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
     setCreateTags('')
     setCreateNotes('')
     setSelectedMelodyKey(newMelody.id)
-    appStore.setActiveTab('editor')
+    setAppActiveTab('editor')
     setEditorView('piano-roll')
-    appStore.showNotification(`Melody "${name}" created`, 'success')
+    showNotification(`Melody "${name}" created`, 'success')
   }
 
   const getNoteCount = (itemCount: number) => {
@@ -299,7 +302,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
     const _playlistId = melodyStore.createPlaylist(name)
     setPlaylistEditing(null)
     setRenameInput('')
-    appStore.showNotification(`Playlist "${name}" created`, 'success')
+    showNotification(`Playlist "${name}" created`, 'success')
   }
 
   const handleRenamePlaylist = () => {
@@ -329,7 +332,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
 
         setPlaylistEditing(null)
         setRenameInput('')
-        appStore.showNotification(`Playlist renamed`, 'success')
+        showNotification(`Playlist renamed`, 'success')
       }
     }
   }
@@ -350,7 +353,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
     ) {
       melodyStore.deletePlaylist(playlistEdit.playlistId)
       setPlaylistEditing(null)
-      appStore.showNotification('Playlist deleted', 'success')
+      showNotification('Playlist deleted', 'success')
     }
   }
 
@@ -364,7 +367,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
     ) {
       melodyStore.addMelodyToPlaylist(playlistEdit.playlistId, melodyId)
       setSelectedMelodyKey(melodyId)
-      appStore.showNotification('Melody added to playlist', 'success')
+      showNotification('Melody added to playlist', 'success')
     }
   }
 
@@ -377,7 +380,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
       playlistEdit.playlistId !== undefined
     ) {
       melodyStore.removeMelodyFromPlaylist(playlistEdit.playlistId, melodyId)
-      appStore.showNotification('Melody removed from playlist', 'success')
+      showNotification('Melody removed from playlist', 'success')
     }
   }
 
@@ -431,11 +434,11 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
     const state = dragState()
     if (state !== null && state.type === 'melody') {
       melodyStore.addMelodyToPlaylist(playlistId, state.melodyId)
-      appStore.showNotification('Melody added to playlist', 'success')
+      showNotification('Melody added to playlist', 'success')
       setDragState(null)
     } else if (state !== null && state.type === 'session') {
       melodyStore.addSessionToPlaylist(playlistId, state.sessionId)
-      appStore.showNotification('Session added to playlist', 'success')
+      showNotification('Session added to playlist', 'success')
       setDragState(null)
     }
   }
@@ -451,12 +454,12 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
           sessionKeys !== undefined &&
           sessionKeys.includes(state.sessionId)
         ) {
-          appStore.showNotification('Session already in playlist', 'info')
+          showNotification('Session already in playlist', 'info')
           setDragState(null)
           return
         }
         melodyStore.addSessionToPlaylist(playlistId, state.sessionId)
-        appStore.showNotification('Session added to playlist', 'success')
+        showNotification('Session added to playlist', 'success')
         setDragState(null)
       }
     }
@@ -474,7 +477,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
         melodyStore.updatePlaylist(state.playlistId, {
           melodyKeys: newMelodyKeys,
         })
-        appStore.showNotification('Melody removed from playlist', 'success')
+        showNotification('Melody removed from playlist', 'success')
       }
       setDragState(null)
     }

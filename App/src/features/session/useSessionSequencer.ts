@@ -3,7 +3,8 @@ import { createSignal } from 'solid-js'
 import type { PlaybackRuntime } from '@/lib/playback-runtime'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { melodyTotalBeats } from '@/lib/scale-data'
-import { advanceSessionItem, appStore, practiceSession, recordSessionItemResult, sessionItemIndex, } from '@/stores'
+import { buildSessionItemMelody } from '@/lib/session-builder'
+import { advanceSessionItem, countIn, getCurrentSessionItem, practiceSession, recordSessionItemResult, sessionItemIndex, setActiveTab, setBpm, setKeyName, setScaleType, setSessionActive, showNotification, userSession, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import type { MelodyItem, NoteResult, PracticeResult, SessionResult, } from '@/types'
 
@@ -93,7 +94,7 @@ export function useSessionSequencer(deps: Deps): SessionSequencer {
   /**
    * v3 decision (documented):
    *   - Pitch history resets per item (current behavior, see FIXME).
-   *   - Count-in fires per item via playbackRuntime.start(appStore.countIn()).
+   *   - Count-in fires per item via playbackRuntime.start(countIn()).
    *   - Skipped items DO record a partial PracticeResult if available.
    *   - Score aggregation lives in practice-session-store.recordSessionItemResult.
    */
@@ -104,7 +105,7 @@ export function useSessionSequencer(deps: Deps): SessionSequencer {
       recordSessionItemResult(practiceRes)
     }
 
-    const current = appStore.getCurrentSessionItem()
+    const current = getCurrentSessionItem()
     if (!current) {
       handleStop()
       return
@@ -131,7 +132,7 @@ export function useSessionSequencer(deps: Deps): SessionSequencer {
           items: summary.itemsCompleted,
           name: summary.sessionName,
         })
-        appStore.showNotification(
+        showNotification(
           `Session complete! Score: ${summary.score}%`,
           summary.score >= 80 ? 'success' : 'info',
         )
@@ -149,24 +150,24 @@ export function useSessionSequencer(deps: Deps): SessionSequencer {
       setLiveScore(null)
       setPitchHistory([])
       practiceEngine.resetSession()
-      playbackRuntime.start(appStore.countIn())
+      playbackRuntime.start(countIn())
     } else {
       handleStop()
     }
   }
 
   const loadNextSessionItem = (): void => {
-    const nextItem = appStore.getCurrentSessionItem()
+    const nextItem = getCurrentSessionItem()
     if (!nextItem) return
 
     if (nextItem.type === 'rest') {
       const restDuration = nextItem.restMs ?? 2000
       playbackRuntime.stop()
       playbackRuntime.setMelody(melodyStore.items())
-      playbackRuntime.start(appStore.countIn())
+      playbackRuntime.start(countIn())
       // FIXME: Replace setTimeout chain with awaitable transition
       setTimeout(() => {
-        const afterRest = appStore.getCurrentSessionItem()
+        const afterRest = getCurrentSessionItem()
         if (afterRest && afterRest.type === 'scale') {
           buildScaleMelody(
             afterRest.scaleType ?? 'major',
@@ -175,7 +176,7 @@ export function useSessionSequencer(deps: Deps): SessionSequencer {
           )
           playbackRuntime.stop()
           playbackRuntime.setMelody(melodyStore.items())
-          playbackRuntime.start(appStore.countIn())
+          playbackRuntime.start(countIn())
         }
       }, restDuration)
     } else if (nextItem.type === 'scale') {
@@ -186,14 +187,14 @@ export function useSessionSequencer(deps: Deps): SessionSequencer {
       )
       playbackRuntime.stop()
       playbackRuntime.setMelody(melodyStore.items())
-      playbackRuntime.start(appStore.countIn())
+      playbackRuntime.start(countIn())
     } else if (nextItem.type === 'melody' || nextItem.type === 'preset') {
-      const melodyItems = appStore.buildSessionItemMelody(nextItem)
+      const melodyItems = buildSessionItemMelody(nextItem)
       melodyStore.setMelody(melodyItems)
       playbackRuntime.stop()
       playbackRuntime.setMelody(melodyStore.items())
       // FIXME: countIn behavior decision pending — currently fires per item
-      playbackRuntime.start(appStore.countIn())
+      playbackRuntime.start(countIn())
     }
   }
 
@@ -222,9 +223,9 @@ export function useSessionSequencer(deps: Deps): SessionSequencer {
     if (!melody) return
 
     closeSidebar()
-    appStore.setBpm(melody.bpm)
-    appStore.setKeyName(melody.key)
-    appStore.setScaleType(melody.scaleType)
+    setBpm(melody.bpm)
+    setKeyName(melody.key)
+    setScaleType(melody.scaleType)
     melodyStore.loadMelody(melodyId)
 
     setCurrentBeat(0)
@@ -234,18 +235,18 @@ export function useSessionSequencer(deps: Deps): SessionSequencer {
     setPlaybackDisplayMelody(melody.items ?? [])
     setPlaybackDisplayBeats(melodyTotalBeats(melody.items ?? []))
     playbackRuntime.setMelody(melody.items ?? [])
-    appStore.setSessionActive(true)
+    setSessionActive(true)
   }
 
   const playSessionSequence = (_melodyIds: string[]): void => {
-    const session = appStore.userSession()
+    const session = userSession()
     if (!session || session.items.length === 0) return
 
     closeSidebar()
     setSessionMelodyIds([])
     setSessionCurrentMelodyIndex(-1)
     setPlayMode('practice')
-    appStore.setActiveTab('practice')
+    setActiveTab('practice')
     handlePlay()
   }
 

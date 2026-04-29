@@ -10,6 +10,7 @@ import { Show } from 'solid-js'
 import { MetronomeButton } from '@/components/MetronomeButton'
 import { PrecCountButton } from '@/components/PrecCountButton'
 import { appStore } from '@/stores'
+import { activeTab, bpm, playbackSpeed, setBpm, setPlaybackSpeed, setSensitivity, settings, } from '@/stores'
 
 interface AppHeaderProps {
   isPlaying: () => boolean
@@ -98,13 +99,11 @@ export const AppHeader: Component<AppHeaderProps> = (props) => {
           id="tempo"
           min="40"
           max="280"
-          value={appStore.bpm()}
+          value={bpm()}
           class="tempo-slider"
-          onInput={(e) =>
-            appStore.setBpm(parseInt(e.currentTarget.value) || 80)
-          }
+          onInput={(e) => setBpm(parseInt(e.currentTarget.value) || 80)}
         />
-        <span id="tempo-value">{appStore.bpm()}</span>
+        <span id="tempo-value">{bpm()}</span>
       </div>
 
       {/* Count-in */}
@@ -133,11 +132,11 @@ export const AppHeader: Component<AppHeaderProps> = (props) => {
         <label class="opt-label">Speed:</label>
         <select
           id="speed-select"
-          value={appStore.playbackSpeed()}
+          value={playbackSpeed()}
           class="speed-select"
           onChange={(e) => {
             const speed = parseFloat(e.currentTarget.value)
-            appStore.setPlaybackSpeed(speed)
+            setPlaybackSpeed(speed)
             props.onSpeedChange?.(speed)
           }}
         >
@@ -152,7 +151,7 @@ export const AppHeader: Component<AppHeaderProps> = (props) => {
       </div>
 
       {/* Metronome — Practice tab only */}
-      <Show when={appStore.activeTab() === 'practice'}>
+      <Show when={activeTab() === 'practice'}>
         <MetronomeButton
           active={props.metronomeEnabled()}
           onClick={props.onMetronomeToggle}
@@ -166,14 +165,14 @@ export const AppHeader: Component<AppHeaderProps> = (props) => {
             id="sensitivity"
             min="1"
             max="10"
-            value={appStore.settings().sensitivity}
+            value={settings().sensitivity}
             class="sensitivity-slider"
             onInput={(e) => {
               const val = parseInt(e.currentTarget.value) || 5
-              appStore.setSensitivity(val)
+              setSensitivity(val)
             }}
           />
-          <span id="sensitivity-value">{appStore.settings().sensitivity}</span>
+          <span id="sensitivity-value">{settings().sensitivity}</span>
         </div>
       </Show>
 

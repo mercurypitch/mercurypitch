@@ -5,6 +5,7 @@
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
 import { appStore, melodyStore, setActiveTab, setEditorView } from '@/stores'
+import { setActiveUserSession, showNotification } from '@/stores'
 import { createSession, saveSession } from '@/stores/session-store'
 import type { PlaybackSession, SessionCategory, SessionDifficulty, } from '@/types'
 
@@ -54,7 +55,7 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
   }
 
   const handleEdit = (session: PlaybackSession) => {
-    appStore.setActiveUserSession(session)
+    setActiveUserSession(session)
     const firstMelodyItem = session.items.find(
       (item) => item.type === 'melody' && item.melodyId !== undefined,
     )
@@ -90,7 +91,7 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
     const state = dragState()
     if (state !== null && state.type === 'playlist') {
       melodyStore.addSessionToPlaylist(state.playlistId, sessionId)
-      appStore.showNotification('Session added to playlist', 'success')
+      showNotification('Session added to playlist', 'success')
       setDragState(null)
     }
   }
@@ -145,10 +146,10 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
                   `New Session ${melodyStore.getSessions().length + 1}`,
                 )
                 saveSession(newSession)
-                appStore.setActiveUserSession(newSession)
-                appStore.showNotification('New session created', 'success')
+                setActiveUserSession(newSession)
+                showNotification('New session created', 'success')
                 // Navigate to Editor for editing
-                appStore.setActiveTab('editor')
+                setActiveTab('editor')
                 setEditorView('session-editor')
                 console.info(
                   '[SessionLibraryModal] New session:',
