@@ -1211,7 +1211,14 @@ export const App: Component<AppProps> = (props) => {
 
     if (playMode() === 'practice') {
       const activeSession = appStore.userSession()
-      if (activeSession !== null && activeSession !== undefined && activeSession.items.length > 0) {
+      // Only build full session playback if NOT in session mode (sequential).
+      // In session mode, melody is already loaded per-item by startPracticeSession/loadNextSessionItem.
+      if (
+        activeSession !== null &&
+        activeSession !== undefined &&
+        activeSession.items.length > 0 &&
+        !appStore.sessionMode()
+      ) {
         const sessionPlayback = buildSessionPlaybackMelody(activeSession)
         setPlaybackDisplayMelody(sessionPlayback.items)
         setPlaybackDisplayBeats(sessionPlayback.durationBeats)
