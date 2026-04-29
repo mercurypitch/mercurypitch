@@ -855,6 +855,7 @@ export class PianoRollEditor {
     )
     if (wouldTrim && !confirm('This will trim some notes. Continue?')) return
     // Trim notes that extend beyond the new total
+    this.pushHistory()
     this.melody = this.melody
       .filter((n) => n.startBeat < newTotal)
       .map((n) =>
@@ -865,13 +866,24 @@ export class PianoRollEditor {
     this.totalBeats = newTotal
     this.buildCanvases()
     this.draw()
+    // BUGFIX: trimming bars deletes notes silently — emit so the
+    // app-level debouncedAutoSave persists the change. Without this
+    // fanout, "remove 4 bars" would visually shrink the timeline but
+    // leave stale full-length data in localStorage until another edit.
+    this.emitMelodyChange()
+    this.updateUndoRedoButtons()
   }
 
   clearMelody(): void {
+    this.pushHistory()
     this.melody = []
     this.selectedNoteIds.clear()
     this.onNoteSelect?.(null)
     this.draw()
+    // Same reason as removeBeats — internal callers (e.g. tests, future
+    // refactors) need clear-emits-onMelodyChange to keep autosave in sync.
+    this.emitMelodyChange()
+    this.updateUndoRedoButtons()
   }
 
   private updateBeatInfo(): void {
@@ -2103,8 +2115,13 @@ export class PianoRollEditor {
         }
         this.selectedNoteIds.clear()
         this.onNoteSelect?.(null)
+        // BUGFIX: also emit so the autosave path runs. eraseNoteInternal
+        // is the silent "no notify" variant — the bulk-delete-by-key path
+        // was relying on it but forgetting to fire onMelodyChange after.
+        this.emitMelodyChange()
         this.draw()
         this._updateHint()
+        this.updateUndoRedoButtons()
       }
     } else if (e.key === 'Escape') {
       this.selectedNoteIds.clear()
