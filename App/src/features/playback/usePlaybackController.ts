@@ -254,7 +254,22 @@ export function usePlaybackController(
   }
 
   const handleStop = async (): Promise<SessionResult | null | undefined> => {
-    // Synchronously tear down playback + audio.
+    // ── Soft Stop ──
+    // v3 decision: Stop tears down audio + transport but PRESERVES the
+    // visual state of the just-finished run so the user can review it.
+    // Specifically we KEEP:
+    //   - noteResults (drives the per-note color coding of played bars)
+    //   - pitchHistory (the green pitch trace on the canvas)
+    //   - currentBeat / currentNoteIndex (so colored notes keep their
+    //     "played" state instead of snapping back to default-blue)
+    //   - playbackDisplayMelody / playbackDisplayBeats (so the canvas
+    //     still shows the practiced session, not the underlying melody)
+    //   - practiceResult / liveScore (score overlay can still appear)
+    //
+    // handlePlay is the SOLE place that clears the above — it does so
+    // at the very start of every fresh Play, so transitioning Stop →
+    // Play feels clean. resetPlaybackState (called on tab switch) does
+    // a hard reset of everything, which is intentional for tab switches.
     playbackRuntime.stop()
     practiceEngine.endSession()
     audioEngine.stopTone()
@@ -262,14 +277,8 @@ export function usePlaybackController(
     audioRegistry.stopAll()
     setIsPlaying(false)
     setIsPaused(false)
-    setCurrentBeat(0)
-    setCurrentNoteIndex(-1)
-    melodyStore.setCurrentNoteIndex(-1)
-    setPitchHistory([])
     playback.resetPlayback()
     setSessionActive(false)
-    setPlaybackDisplayMelody(null)
-    setPlaybackDisplayBeats(null)
     setEditorPlaybackState('stopped')
     const result = endPracticeSession()
     // Yield one microtask + one rAF so the browser actually processes

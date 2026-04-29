@@ -6,6 +6,12 @@ import type { Component } from 'solid-js'
 import { createMemo, createSignal, Show } from 'solid-js'
 import { appStore } from '@/stores'
 import { adsr, playbackSpeed, setPlaybackSpeed, setSensitivity, settings, } from '@/stores'
+import {
+  colorCodeNotes,
+  flameMode,
+  setColorCodeNotes,
+  setFlameMode,
+} from '@/stores/settings-store'
 
 export const SettingsPanel: Component = () => {
   const s = () => settings()
@@ -387,14 +393,31 @@ export const SettingsPanel: Component = () => {
             <input
               type="checkbox"
               id="vis-flame"
-              checked={appStore.flameMode()}
+              checked={flameMode()}
               onChange={(e) => {
-                appStore.setFlameMode(e.currentTarget.checked)
+                setFlameMode(e.currentTarget.checked)
               }}
             />
             <small>
               Animated fire/glow effect on the currently-playing note during
               practice.
+            </small>
+          </div>
+
+          <div class="settings-row">
+            <label for="vis-color-code">🎨 Color-Code Played Notes</label>
+            <input
+              type="checkbox"
+              id="vis-color-code"
+              checked={colorCodeNotes()}
+              onChange={(e) => {
+                setColorCodeNotes(e.currentTarget.checked)
+              }}
+            />
+            <small>
+              Tint already-played notes by accuracy: green = perfect,
+              teal = excellent, lime = good, amber = okay, red = off.
+              Practice tab only.
             </small>
           </div>
         </div>

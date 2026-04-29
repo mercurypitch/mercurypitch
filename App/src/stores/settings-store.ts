@@ -198,6 +198,14 @@ export const [flameMode, setFlameMode] = createPersistedSignal<boolean>(
   false,
 )
 
+/**
+ * Color-code already-played notes by their pitch-accuracy rating
+ * (perfect → green, off → red, with a smooth ramp in between).
+ * Practice tab only. Persisted so it survives reloads.
+ */
+export const [colorCodeNotes, setColorCodeNotes] =
+  createPersistedSignal<boolean>('pitchperfect_color_code_notes', true)
+
 export function toggleGridLines(): void {
   setGridLinesVisible(!gridLinesVisible())
 }

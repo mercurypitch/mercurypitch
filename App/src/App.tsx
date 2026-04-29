@@ -693,6 +693,7 @@ const AppShell: Component<AppProps> = (props) => {
                     noteAccuracyMap={noteAccuracyMap}
                     isRecording={recording.isRecording}
                     getWaveform={() => audioEngine?.getWaveformData() ?? null}
+                    noteResults={noteResults}
                   />
                   <div
                     id="playhead"

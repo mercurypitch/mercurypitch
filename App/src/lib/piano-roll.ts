@@ -2383,26 +2383,33 @@ export class PianoRollEditor {
   }
 
   private seekToRulerPosition(e: MouseEvent): void {
+    // Per user feedback: don't allow seek while playback is actively
+    // running — let the user pause first. This avoids the playhead
+    // fighting the running animation timer.
+    if (this.playbackState === 'playing') return
+
     const rect = this.rulerCanvas?.getBoundingClientRect()
     if (!rect || !this.gridContainer) return
 
-    const x = e.clientX - rect.left
+    // BUGFIX: the ruler canvas spans `pianoWidth + stretchedWidth`, with
+    // beat markers drawn at `pianoWidth + b * beatWidth`. Previously the
+    // seek math was `beat = (clientX - rect.left) / beatWidth` which
+    // ignored the piano-keys column on the left, producing a constant
+    // ~pianoWidth-pixel (≈62px) rightward offset between where the user
+    // clicked and where the playhead actually landed. Subtract
+    // pianoWidth to land on the correct beat.
+    const x = e.clientX - rect.left - this.pianoWidth
     const beat = Math.max(0, Math.min(this.totalBeats, x / this.beatWidth))
     const targetScroll = beat * this.beatWidth - rect.width / 2
     this.gridContainer.scrollLeft = Math.max(0, targetScroll)
 
-    // Update playhead position visually
+    // Update playhead position visually (only paused/stopped path now;
+    // we early-returned above for the 'playing' case).
     this.remoteBeat = beat
     this.drawGridWithPlayhead()
 
-    // If playback is active or paused, update the playback start time so
-    // playback continues from the new position on mouseup
-    if (this.playbackState === 'playing') {
-      this.playStartTime =
-        (performance as unknown as { now: () => number }).now() -
-        (beat / this.bpm) * 60000
-    } else if (this.playbackState === 'paused') {
-      // For paused state, update playStartTime to seek to new position
+    if (this.playbackState === 'paused') {
+      // Update playStartTime so resume continues from the new position.
       this.playStartTime =
         (performance as unknown as { now: () => number }).now() -
         (beat / this.bpm) * 60000
