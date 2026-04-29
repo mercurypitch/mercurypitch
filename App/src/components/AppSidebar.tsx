@@ -10,7 +10,7 @@ import { LibraryTab } from '@/components/LibraryTab'
 import { NoteList } from '@/components/NoteList'
 import { PitchDisplay } from '@/components/PitchDisplay'
 import { KEY_OFFSETS, midiToFreq, midiToNote } from '@/lib/scale-data'
-import { activeTab as appActiveTab, appStore } from '@/stores/app-store'
+import { activeTab as appActiveTab, appStore, startWalkthrough } from '@/stores/app-store'
 import { melodyStore } from '@/stores/melody-store'
 import type { MelodyItem, NoteResult, PitchResult } from '@/types'
 
@@ -70,6 +70,21 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
           />
         </svg>
         Library
+      </button>
+
+      {/* Guide Tour button — interactive spotlight overlay */}
+      <button
+        class="tour-btn"
+        onClick={startWalkthrough}
+        title="Start Guide Tour"
+      >
+        <svg viewBox="0 0 24 24" width="16" height="16">
+          <path
+            fill="currentColor"
+            d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"
+          />
+        </svg>
+        Guide
       </button>
 
       {/* Scale section */}
