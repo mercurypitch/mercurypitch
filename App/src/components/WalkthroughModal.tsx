@@ -5,9 +5,7 @@
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, Show } from 'solid-js'
 import { renderMarkdownToHtml } from '@/lib/render-markdown'
-import type {
-  WalkthroughTab
-} from '@/stores/walkthrough-store'
+import type { WalkthroughTab } from '@/stores/walkthrough-store'
 import {
   completeWalkthrough,
   getWalkthrough,
@@ -20,65 +18,43 @@ import type { WalkthroughContent } from '@/types/walkthrough'
 interface WalkthroughModalProps {
   isOpen: boolean
   onClose: () => void
-  initialTab?: WalkthroughTab
+  onBackToList?: () => void
   initialWalkthroughId?: string | null
 }
 
 export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
-  const [currentTab, setCurrentTab] = createSignal<WalkthroughTab>(
-    props.initialTab ?? 'practice',
-  )
   const [currentWalkthrough, setCurrentWalkthrough] = createSignal<WalkthroughContent | undefined>(
     undefined,
   )
   const [currentStepIndex, setCurrentStepIndex] = createSignal(0)
 
-  // Track the most recently selected tab for proper navigation
-  const [lastValidTab, setLastValidTab] = createSignal<WalkthroughTab>('practice')
-
-  // Load walkthrough when initially provided and modal opens
-  // Use a ref guard so "Back to list" doesn't re-trigger this effect
-  let initialWalkthroughLoaded = false
+  // Load walkthrough when provided
+  let initialLoaded = false
   createEffect(() => {
     const id = props.initialWalkthroughId
     const open = props.isOpen
-    if (id !== null && id !== undefined && open && !initialWalkthroughLoaded) {
-      startWalkthrough(id)
-      initialWalkthroughLoaded = true
+    if (id !== null && id !== undefined && open && !initialLoaded) {
+      const walkthrough = getWalkthrough(id)
+      if (walkthrough) {
+        setCurrentWalkthrough(walkthrough)
+        setCurrentStepIndex(0)
+        viewWalkthrough(id)
+      }
+      initialLoaded = true
     }
     if (!open) {
-      initialWalkthroughLoaded = false
+      initialLoaded = false
+      setCurrentWalkthrough(undefined)
+      setCurrentStepIndex(0)
     }
   })
 
-  // Sync isCompleted with store progress
+  // Sync completion state
   const isCompleted = createMemo(() => {
-    const walkthrough = currentWalkthrough()
-    if (!walkthrough) return false
-    return isWalkthroughCompleted(walkthrough.id)
+    const w = currentWalkthrough()
+    if (!w) return false
+    return isWalkthroughCompleted(w.id)
   })
-
-  // Sync tab with initialTab prop changes
-  createEffect(() => {
-    if (props.initialTab !== null && props.initialTab !== undefined) {
-      setCurrentTab(props.initialTab)
-    }
-  })
-
-// Ensure tab is reset when modal opens
-  createEffect(() => {
-    if (props.isOpen && props.initialTab !== null && props.initialTab !== undefined) {
-      setCurrentTab(props.initialTab)
-    }
-  })
-
-  // Reset on tab change
-  const handleTabChange = (tab: WalkthroughTab) => {
-    setCurrentTab(tab)
-    setCurrentWalkthrough(undefined)
-    setCurrentStepIndex(0)
-    setLastValidTab(tab)
-  }
 
   // Navigate steps
   const nextStep = () => {
@@ -99,7 +75,6 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
     if (walkthrough) {
       setCurrentWalkthrough(walkthrough)
       setCurrentStepIndex(0)
-      setLastValidTab(currentTab())
       viewWalkthrough(walkthroughId)
     }
   }
@@ -111,16 +86,15 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
   }
 
   const handleContinue = () => {
-    // Find next unfinished walkthrough across ALL tabs
-    for (const tab of ['practice', 'editor', 'settings', 'study'] as const) {
+    // Find next unfinished walkthrough across all tabs
+    for (const tab of ['practice', 'editor', 'settings', 'study'] as WalkthroughTab[]) {
       const walkthroughs = getWalkthroughsForTab(tab)
-      const nextWalkthrough = walkthroughs.find(w => !isWalkthroughCompleted(w.id))
-      if (nextWalkthrough) {
-        startWalkthrough(nextWalkthrough.id)
+      const next = walkthroughs.find(w => !isWalkthroughCompleted(w.id))
+      if (next) {
+        startWalkthrough(next.id)
         return
       }
     }
-    // All done
     props.onClose()
   }
 
@@ -130,7 +104,6 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
     }
   }
 
-  // Close on ESC
   const handleKeyDown = (e: KeyboardEvent) => {
     if (e.key === 'Escape') {
       props.onClose()
@@ -138,14 +111,10 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
   }
 
   const handleBackToList = () => {
-    // Restore last valid tab when going back to list
-    const tab = lastValidTab()
-    setCurrentTab(tab)
-    setCurrentWalkthrough(undefined)
-    setCurrentStepIndex(0)
+    props.onBackToList?.()
   }
 
-  // Lifecycle - setup escape key listener
+  // Lifecycle
   createEffect(() => {
     if (props.isOpen) {
       const doc = typeof document !== 'undefined' ? document : undefined
@@ -157,165 +126,101 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
   })
 
   return (
-    <Show when={props.isOpen}>
+    <Show when={props.isOpen && currentWalkthrough()}>
       <div
         class="walkthrough-backdrop"
         onClick={closeOnBackdrop}
       >
         <div class="walkthrough-modal">
-          <Show when={!currentWalkthrough()}>
-            <div class="walkthrough-content">
-              {/* Header */}
-              <div class="walkthrough-header">
-                <h2 class="walkthrough-title">
-                  Welcome to PitchPerfect Walkthroughs
-                </h2>
-                <p class="walkthrough-subtitle">
-                  Learn how to use each feature effectively
-                </p>
-              </div>
-
-              {/* Tab Selector */}
-              <div class="walkthrough-tabs">
-                {(['practice', 'editor', 'settings', 'study'] as WalkthroughTab[]).map((tab) => (
-                  <button
-                    class={`walkthrough-tab ${tab === currentTab() ? 'active' : ''}`}
-                    onClick={() => handleTabChange(tab)}
-                  >
-                    {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                  </button>
-                ))}
-              </div>
-
-              {/* Walkthrough List */}
-              <div class="walkthrough-list">
-                {getWalkthroughsForTab(currentTab()).map((walkthrough) => {
-                  const completed = isWalkthroughCompleted(walkthrough.id)
-                  return (
-                    <button
-                      class={`walkthrough-item ${completed ? 'completed' : ''}`}
-                      onClick={() => startWalkthrough(walkthrough.id)}
-                      title={completed ? 'Completed' : 'Start walkthrough'}
-                    >
-                      <span class="walkthrough-thumbnail">{walkthrough.thumbnail}</span>
-                      <div class="walkthrough-item-content">
-                        <h3 class="walkthrough-item-title">
-                          {completed && '✓ '}
-                          {walkthrough.title}
-                        </h3>
-                        <p class="walkthrough-item-desc">
-                          {walkthrough.description}
-                        </p>
-                        <Show when={completed}>
-                          <span class="walkthrough-status">Completed</span>
-                        </Show>
-                      </div>
-                    </button>
-                  )
-                })}
-              </div>
-
-              {/* Footer */}
-              <div class="walkthrough-footer">
-                <button class="walkthrough-close-btn" onClick={props.onClose}>
-                  Got it!
-                </button>
-              </div>
+          {/* Completed state */}
+          <Show when={isCompleted()} keyed>
+            <div class="walkthrough-complete">
+              <div class="walkthrough-complete-icon">🎉</div>
+              <h2 class="walkthrough-complete-title">Great Job!</h2>
+              <p class="walkthrough-complete-desc">
+                You've completed this walkthrough.
+              </p>
+              <button class="walkthrough-complete-btn" onClick={handleContinue}>
+                Continue
+              </button>
+              <button class="walkthrough-back-list-btn" onClick={handleBackToList}>
+                ← Back to list
+              </button>
             </div>
           </Show>
 
-          <Show when={currentWalkthrough()}>
-            <Show when={isCompleted()}>
-              <div class="walkthrough-complete">
-                <div class="walkthrough-complete-icon">🎉</div>
-                <h2 class="walkthrough-complete-title">Great Job!</h2>
-                <p class="walkthrough-complete-desc">
-                  You've completed this walkthrough.
+          {/* Reading state */}
+          <Show when={!isCompleted()} keyed>
+            <div class="walkthrough-content">
+              <button class="walkthrough-back-btn" onClick={handleBackToList}>
+                ← Back to list
+              </button>
+              <div class="walkthrough-body">
+                <h2 class="walkthrough-main-title">
+                  {currentWalkthrough()!.title}
+                </h2>
+                <p class="walkthrough-main-desc">
+                  {currentWalkthrough()!.description}
                 </p>
-                <button class="walkthrough-complete-btn" onClick={handleContinue}>
-                  Continue
-                </button>
-                <button class="walkthrough-back-list-btn" onClick={handleBackToList}>
-                  ← Back to list
-                </button>
-              </div>
-            </Show>
 
-            <Show when={!isCompleted()}>
-              <div class="walkthrough-content">
-                <button class="walkthrough-back-btn" onClick={handleBackToList}>
-                  ← Back to list
-                </button>
-                {/* Content */}
-                <div class="walkthrough-body">
-                  <h2 class="walkthrough-main-title">
-                    {currentWalkthrough()!.title}
-                  </h2>
-                  <p class="walkthrough-main-desc">
-                    {currentWalkthrough()!.description}
-                  </p>
+                <div
+                  class="walkthrough-text"
+                  innerHTML={renderMarkdownToHtml(currentWalkthrough()!.content)}
+                />
 
-                  <div
-                    class="walkthrough-text"
-                    innerHTML={renderMarkdownToHtml(currentWalkthrough()!.content)}
-                  />
-
-                  {/* Steps */}
-                  <div class="walkthrough-steps">
-                    <h3 class="walkthrough-steps-title">How to Use:</h3>
-                    <div class="walkthrough-steps-list">
-                      <For each={currentWalkthrough()?.steps ?? []}>
-                        {(step, index) => (
-                          <Show when={index() === currentStepIndex()}>
-                            <div class="walkthrough-step-item active">
-                              <span class="walkthrough-step-number">{index() + 1}</span>
-                              <div class="walkthrough-step-details">
-                                <h4 class="walkthrough-step-title">
-                                  {step.title}
-                                </h4>
-                                <p class="walkthrough-step-desc">
-                                  {step.description}
-                                </p>
-                                <span class="walkthrough-step-action">
-                                  Action: {step.action}
-                                </span>
-                              </div>
+                <div class="walkthrough-steps">
+                  <h3 class="walkthrough-steps-title">How to Use:</h3>
+                  <div class="walkthrough-steps-list">
+                    <For each={currentWalkthrough()?.steps ?? []}>
+                      {(step, index) => (
+                        <Show when={index() === currentStepIndex()}>
+                          <div class="walkthrough-step-item active">
+                            <span class="walkthrough-step-number">{index() + 1}</span>
+                            <div class="walkthrough-step-details">
+                              <h4 class="walkthrough-step-title">
+                                {step.title}
+                              </h4>
+                              <p class="walkthrough-step-desc">
+                                {step.description}
+                              </p>
+                              <span class="walkthrough-step-action">
+                                Action: {step.action}
+                              </span>
                             </div>
-                          </Show>
-                        )}
-                      </For>
-                    </div>
+                          </div>
+                        </Show>
+                      )}
+                    </For>
                   </div>
                 </div>
-
-                {/* Controls */}
-                <div class="walkthrough-controls">
-                  <button
-                    class="walkthrough-nav-btn"
-                    onClick={prevStep}
-                    disabled={currentStepIndex() === 0}
-                  >
-                    ← Previous
-                  </button>
-
-                  {currentStepIndex() < (currentWalkthrough()!.steps.length - 1) ? (
-                    <button
-                      class="walkthrough-nav-btn walkthrough-nav-btn-next"
-                      onClick={nextStep}
-                    >
-                      Next →
-                    </button>
-                  ) : (
-                    <button
-                      class="walkthrough-complete-btn"
-                      onClick={completeCurrentWalkthrough}
-                    >
-                      ✓ Mark as Complete
-                    </button>
-                  )}
-                </div>
               </div>
-            </Show>
+
+              <div class="walkthrough-controls">
+                <button
+                  class="walkthrough-nav-btn"
+                  onClick={prevStep}
+                  disabled={currentStepIndex() === 0}
+                >
+                  ← Previous
+                </button>
+
+                {currentStepIndex() < (currentWalkthrough()!.steps.length - 1) ? (
+                  <button
+                    class="walkthrough-nav-btn walkthrough-nav-btn-next"
+                    onClick={nextStep}
+                  >
+                    Next →
+                  </button>
+                ) : (
+                  <button
+                    class="walkthrough-complete-btn"
+                    onClick={completeCurrentWalkthrough}
+                  >
+                    ✓ Mark as Complete
+                  </button>
+                )}
+              </div>
+            </div>
           </Show>
         </div>
       </div>
