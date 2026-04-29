@@ -6,8 +6,7 @@
 
 import type { Component } from 'solid-js'
 import { createSignal, For, Show } from 'solid-js'
-import { appStore, melodyStore } from '@/stores'
-import { setActiveUserSession, showNotification } from '@/stores'
+import { melodyStore, setActiveUserSession, showNotification } from '@/stores'
 import { addItemToSession, deleteSessionItem } from '@/stores/session-store'
 import type { PlaybackSession, SessionItem } from '@/types'
 import { MelodyPillList } from './MelodyPillList'

@@ -346,8 +346,16 @@ export class PlaybackRuntime {
 
       const now = performance.now()
       const beatDuration = 60000 / this._bpm
-      // Calculate elapsed time, accounting for pause time
-      const elapsed = now - this.playStartTime + this.pauseOffset
+      // Calculate elapsed time, freezing during pauses by subtracting the
+      // accumulated pause duration from the wall-clock delta.
+      //
+      // BUG FIX: previously this used `+ pauseOffset`, which made elapsed
+      // jump *forward* by the duration of every pause on resume — i.e.
+      // playback continued from "too far" after Play -> Pause -> wait ->
+      // Resume. The correct sign is `-`: pauseOffset stores the total
+      // milliseconds spent paused; subtracting it from (now - playStartTime)
+      // gives the actual playing-time elapsed.
+      const elapsed = now - this.playStartTime - this.pauseOffset
 
       // Count-in phase: play count-in beats before actual melody
       if (countIn > 0 && elapsed < countIn * beatDuration) {

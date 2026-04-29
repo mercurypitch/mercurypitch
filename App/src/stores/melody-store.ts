@@ -118,9 +118,12 @@ function generateId(): number {
 const [melodyLibrarySignal, setMelodyLibrary] =
   createSignal<UnifiedLibrary>(loadLibrary())
 
-// Restore active session and current melody from localStorage
-_restoreActiveSessionId()
-_restoreCurrentMelodyId()
+// Restore calls deferred to end-of-file to avoid TDZ:
+// _restoreActiveSessionId references the (later-declared) `_activeSessionId`
+// signal at line ~565 and the `setActiveSessionId` export at line ~580.
+// Calling here would throw `ReferenceError: can't access lexical declaration
+// 'setActiveSessionId' before initialization` on page load with the
+// debugger enabled (TDZ for `const` and `let` is enforced).
 
 /** Get the melody library data (reactive) */
 export function getMelodyLibrary(): UnifiedLibrary {
@@ -1196,3 +1199,10 @@ export const melodyStore = {
   currentNoteIndex,
   setCurrentNoteIndex,
 }
+
+// ============================================================
+// Deferred init: restore persisted state once all signal bindings
+// are declared. (See comment near line ~120 for TDZ explanation.)
+// ============================================================
+_restoreActiveSessionId()
+_restoreCurrentMelodyId()

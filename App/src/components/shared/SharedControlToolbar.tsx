@@ -10,7 +10,7 @@ import { PrecCountButton } from '@/components/PrecCountButton'
 import { Tooltip } from '@/components/Tooltip'
 import { NOTE_NAMES } from '@/lib/scale-data'
 import { appStore } from '@/stores'
-import { activeTab, bpm, keyName, micActive, micWaveVisible, playbackSpeed, scaleType, sessionActive, setBpm, setKeyName, setPlaybackSpeed, setScaleType, setSensitivity, settings, toggleMicWaveVisible, } from '@/stores'
+import { bpm, keyName, micActive, micWaveVisible, playbackSpeed, scaleType, sessionActive, setBpm, setKeyName, setPlaybackSpeed, setScaleType, setSensitivity, settings, toggleMicWaveVisible, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import { ControlGroup } from './ControlGroup'
 import { MetronomeGroup } from './MetronomeGroup'
@@ -245,6 +245,10 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
 
         <button
           class={`ctrl-btn stop-btn stop ${isActive() ? '' : 'inactive'}`}
+          // Stop should only be actionable while there is something to
+          // stop (playing OR paused). When stopped, it's disabled to give
+          // a clear visual cue and prevent re-triggering reset side effects.
+          disabled={!isActive()}
           onClick={props.onStop}
           title="Stop"
         >
@@ -304,10 +308,13 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
 
         <div id="run-indicator">
           <span id="cycle-counter">
-            {props.playMode() === 'practice'
+            {/* Repeat mode shows N-of-N cycle progress; Practice mode just
+                shows a session indicator since it plays through the items
+                once and is not cycle-driven. */}
+            {props.playMode() === 'repeat'
               ? `C${props.currentCycle()}/${props.practiceCycles()}`
-              : props.playMode() === 'repeat'
-                ? '↻'
+              : props.playMode() === 'practice'
+                ? '⌛'
                 : ''}
           </span>
         </div>
@@ -360,27 +367,33 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
           </div>
         </Show>
 
-        {/* Practice cycles and sub-mode - only in practice mode */}
-        <Show when={isPracticeTab() && props.playMode() === 'practice'}>
+        {/* Cycles input — applies to Repeat mode (repeat the current melody
+            N times). Practice mode plays the session through once and is
+            controlled by the active session's items, not a cycle count. */}
+        <Show when={isPracticeTab() && props.playMode() === 'repeat'}>
           <div class="secondary-control-group">
             <label class="opt-label">Cycles:</label>
             <input
               type="number"
               id="cycles"
               min="2"
-              max="20"
+              max="100"
               value={props.practiceCycles()}
               onInput={(e) => {
                 props.onCyclesChange(
                   Math.max(
                     2,
-                    Math.min(20, parseInt(e.currentTarget.value) || 5),
+                    Math.min(100, parseInt(e.currentTarget.value) || 5),
                   ),
                 )
               }}
               class="cycles-input"
             />
           </div>
+        </Show>
+
+        {/* Practice sub-mode selector — only in practice mode */}
+        <Show when={isPracticeTab() && props.playMode() === 'practice'}>
           <div class="secondary-control-group">
             <label class="opt-label">Mode:</label>
             <select

@@ -36,10 +36,10 @@ import { registerE2EBridge } from '@/lib/e2e-bridge'
 import { melodyIndexAtBeat, melodyTotalBeats } from '@/lib/scale-data'
 import { buildScaleMelody, buildSessionPlaybackMelody, } from '@/lib/session-builder'
 import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
-import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hidePresetsLibrary, hideSessionLibrary, initBpm, initPresets, initReverb, initSessionHistory, initSettings, initTheme, isLibraryModalOpen, isPresetsModalOpen, isSessionLibraryModalOpen, keyName as keyNameSignal, micActive, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, setActiveTab, setActiveUserSession, setBpm, setEditorView, setKeyName, setPlaybackSpeed, setScaleType, settings as settingsSignal, showNotification, startPracticeSession, toggleMicWaveVisible, } from '@/stores'
+import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hidePresetsLibrary, hideSessionLibrary, initBpm, initPresets, initReverb, initSessionHistory, initSettings, initTheme, isLibraryModalOpen, isPresetsModalOpen, isSessionLibraryModalOpen, keyName as keyNameSignal, micActive, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPlaybackSpeed, setScaleType, showNotification, startPracticeSession, toggleMicWaveVisible, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import { getSession } from '@/stores/session-store'
-import type { MelodyItem, NoteResult, PlaybackMode } from '@/types'
+import type { MelodyItem, PlaybackMode } from '@/types'
 
 // ============================================================
 // Tab type
@@ -125,7 +125,7 @@ const AppShell: Component<AppProps> = (props) => {
     melodyTotalBeats(melodyStore.items()),
   )
 
-  const [shouldAutoStartPlayback, setShouldAutoStartPlayback] =
+  const [_shouldAutoStartPlayback, setShouldAutoStartPlayback] =
     createSignal(false)
 
   // Practice controller will be wired after we have play state from playback controller.
@@ -404,7 +404,25 @@ const AppShell: Component<AppProps> = (props) => {
       ) {
         const beatDurationMs = 60000 / bpm()
         const noteDurationMs = item.duration * beatDurationMs
-        audioEngine.playTone(item.note.freq, noteDurationMs)
+        // Pass the per-note effectType (vibrato/slide-up/etc) through to
+        // audioEngine so effects on session/editor playback are audible.
+        // We MUST call this as a method (audioEngine.playTone(...)) — extracting
+        // it into a local variable loses `this` binding and produces:
+        //   "TypeError: can't access property 'init', this is undefined"
+        // because playTone internally calls this.init() / this.audioCtx.
+        void (
+          audioEngine.playTone as unknown as (
+            this: typeof audioEngine,
+            freq: number,
+            duration?: number,
+            effectType?: string,
+          ) => Promise<void> | void
+        ).call(
+          audioEngine,
+          item.note.freq,
+          noteDurationMs,
+          (item as { effectType?: string }).effectType,
+        )
       }
     })
 
@@ -751,29 +769,14 @@ const AppShell: Component<AppProps> = (props) => {
                 </div>
               </Show>
 
-              {/* Editor playhead — mirrors the practice-tab playhead so
-                  users see playback progress while playing in the editor. */}
-              <Show
-                when={
-                  editorView() === 'piano-roll' &&
-                  (editorIsPlaying() || editorIsPaused())
-                }
-              >
-                <div
-                  id="editor-playhead"
-                  class="playhead"
-                  style={{
-                    position: 'absolute',
-                    left: `${playheadPosition()}%`,
-                    top: 0,
-                    bottom: 0,
-                    width: '2px',
-                    background: 'var(--accent, #4caf50)',
-                    'pointer-events': 'none',
-                    'z-index': 50,
-                  }}
-                />
-              </Show>
+              {/* Note: the editor playhead is rendered internally by the
+                  piano-roll canvas (PianoRollEditor draws it onto its own
+                  ruler/grid via setRemoteBeat / updatePlaybackPosition).
+                  We deliberately do NOT add an absolute-positioned overlay
+                  at the App-shell level — that would render relative to
+                  the page, not the piano roll, which placed it on the far
+                  left. Pre-refactor this behavior worked through the
+                  piano-roll's own canvas, and we keep it that way. */}
 
               <Show when={editorView() === 'piano-roll'}>
                 <PianoRollCanvas
@@ -794,7 +797,12 @@ const AppShell: Component<AppProps> = (props) => {
                     melodyStore.setMelody(melody)
                   }}
                   onInstrumentChange={(instrument) => {
+                    // Update both the audio engine immediately AND the global
+                    // `instrument` signal so EngineContext's reactive sync
+                    // covers any other engines (e.g. piano-roll's secondary
+                    // engine via createEffect).
                     audioEngine.setInstrument(instrument as InstrumentType)
+                    setInstrument(instrument as InstrumentType)
                   }}
                   onPlaybackStateChange={(_state) => {
                     // editor playback state owned by playbackController now

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- intentional any in window hook bag */
 import type { Setter } from 'solid-js'
 import type { PlaybackRuntime } from '@/lib/playback-runtime'
 import { exposeForE2E } from '@/lib/test-utils'

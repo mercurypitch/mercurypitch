@@ -7,7 +7,7 @@ import { createMemo, createSignal, For, Show } from 'solid-js'
 import { appStore, setEditorView } from '@/stores'
 // Note: setActiveTab is aliased to setAppActiveTab to avoid collision
 // with the local LibraryModal-internal tab signal (Tab = 'melodies' | 'playlists').
-import { bpm, scaleType, setActiveTab as setAppActiveTab, setActiveUserSession, setBpm, setKeyName, setScaleType, showNotification, } from '@/stores'
+import { setActiveTab as setAppActiveTab, setActiveUserSession, setBpm, setKeyName, setScaleType, showNotification, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import type { MelodyData, NoteName } from '@/types'
 
@@ -153,7 +153,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
 
     return Object.entries(library().melodies)
       .filter(([id, _]) => id !== selectedKey)
-      .filter(([id]) => playlist.melodyKeys.includes(id) === false)
+      .filter(([id]) => !playlist.melodyKeys.includes(id))
       .map(([id, m]): { id: string; melody: MelodyData } => ({ id, melody: m }))
   })
 

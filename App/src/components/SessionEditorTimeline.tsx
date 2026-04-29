@@ -5,8 +5,7 @@
 
 import type { Component } from 'solid-js'
 import { createSignal, For, Show } from 'solid-js'
-import { appStore, melodyStore } from '@/stores'
-import { bpm, scaleType, setActiveUserSession, userSession } from '@/stores'
+import { bpm, melodyStore, setActiveUserSession, userSession } from '@/stores'
 import type { MelodyData, SessionItem } from '@/types'
 
 interface SessionEditorTimelineProps {

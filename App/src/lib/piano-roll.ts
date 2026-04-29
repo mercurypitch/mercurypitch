@@ -576,12 +576,44 @@ export class PianoRollEditor {
   // ============================================================
 
   setMelody(melody: MelodyItem[]): void {
+    // Skip if the incoming melody is structurally identical to the current
+    // one. This prevents the reactive re-sync loop from wiping the
+    // undo/redo history every time the editor itself emits a change:
+    //   user edit -> pushHistory -> emit -> melodyStore.setMelody
+    //              -> createEffect fires -> editor.setMelody(same data)
+    //              -> clearHistory (BUG)
+    // Without this guard, undo always sees an empty history stack.
+    if (this.melodyEquals(melody)) {
+      return
+    }
     this.clearHistory()
     this.melody = melody.map((item) => ({
       ...item,
       id: item.id ?? this.nextNoteId++,
     }))
     this.draw()
+  }
+
+  /**
+   * Shallow-equality check for melody arrays. Compares length and the
+   * stable identity-bearing fields per item. Used to guard setMelody
+   * against reactive self-sync loops (see setMelody comment).
+   */
+  private melodyEquals(other: MelodyItem[]): boolean {
+    if (other.length !== this.melody.length) return false
+    for (let i = 0; i < other.length; i++) {
+      const a = this.melody[i]
+      const b = other[i]
+      if (
+        a.startBeat !== b.startBeat ||
+        a.duration !== b.duration ||
+        a.note?.midi !== b.note?.midi ||
+        a.note?.freq !== b.note?.freq
+      ) {
+        return false
+      }
+    }
+    return true
   }
 
   getMelody(): MelodyItem[] {

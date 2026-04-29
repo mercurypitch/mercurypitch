@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- compat shim deps; remove with future redesign */
 import type { Accessor, Setter } from 'solid-js'
 import { createMemo, createSignal } from 'solid-js'
 import type { AudioEngine } from '@/lib/audio-engine'
