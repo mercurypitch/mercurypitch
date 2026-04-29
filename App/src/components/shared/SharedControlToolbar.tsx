@@ -352,16 +352,6 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
           </div>
         </Show>
 
-        {/* Practice mode indicator */}
-        <Show when={isPracticeTab() && props.playMode() === 'practice'}>
-          <div class="practice-mode-badge">
-            <span class="mode-label">Mode:</span>
-            <span class="mode-value" id="practice-mode-indicator">
-              {activePracticeMode(props.playMode, () => sessionActive())}
-            </span>
-          </div>
-        </Show>
-
         {/* Cycles input — applies to Repeat mode (repeat the current melody
             N times). Practice mode plays the session through once and is
             controlled by the active session's items, not a cycle count. */}
