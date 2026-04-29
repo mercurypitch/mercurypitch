@@ -769,15 +769,10 @@ const AppShell: Component<AppProps> = (props) => {
                 </div>
               </Show>
 
-              {/* Note: the editor playhead is rendered internally by the
-                  piano-roll canvas (PianoRollEditor draws it onto its own
-                  ruler/grid via setRemoteBeat / updatePlaybackPosition).
-                  We deliberately do NOT add an absolute-positioned overlay
-                  at the App-shell level — that would render relative to
-                  the page, not the piano roll, which placed it on the far
-                  left. Pre-refactor this behavior worked through the
-                  piano-roll's own canvas, and we keep it that way. */}
-
+              {/* Editor playhead is rendered by the piano-roll itself
+                  on its internal ruler/grid canvases via
+                  drawRulerWithPlayhead / drawGridWithPlayhead.  See
+                  PianoRollCanvas + PianoRollEditor.setRemoteBeat. */}
               <Show when={editorView() === 'piano-roll'}>
                 <PianoRollCanvas
                   melody={() => melodyStore.items()}

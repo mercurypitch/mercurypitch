@@ -27,7 +27,7 @@ export interface PlaybackController {
   handlePlay: () => void
   handlePause: () => void
   handleResume: () => void
-  handleStop: () => SessionResult | null | undefined
+  handleStop: () => Promise<SessionResult | null | undefined>
   resetPlaybackState: () => Promise<void>
 
   editorPlaybackState: Accessor<PlaybackState>
@@ -253,10 +253,13 @@ export function usePlaybackController(
     setEditorPlaybackState('playing')
   }
 
-  const handleStop = () => {
+  const handleStop = async (): Promise<SessionResult | null | undefined> => {
+    // Synchronously tear down playback + audio.
     playbackRuntime.stop()
     practiceEngine.endSession()
     audioEngine.stopTone()
+    audioEngine.stopAllNotes()
+    audioRegistry.stopAll()
     setIsPlaying(false)
     setIsPaused(false)
     setCurrentBeat(0)
@@ -268,7 +271,17 @@ export function usePlaybackController(
     setPlaybackDisplayMelody(null)
     setPlaybackDisplayBeats(null)
     setEditorPlaybackState('stopped')
-    return endPracticeSession()
+    const result = endPracticeSession()
+    // Yield one microtask + one rAF so the browser actually processes
+    // pending audio teardown (oscillator stop, gain ramp, AudioContext
+    // bookkeeping) before the next Play() builds new voices. Without
+    // this, Play -> Pause -> Resume -> Stop -> Play could "stick" for
+    // several hundred ms while overlapping audio nodes were being torn
+    // down on the main thread.
+    await new Promise<void>((resolve) =>
+      requestAnimationFrame(() => resolve()),
+    )
+    return result
   }
 
   const handleEditorPlay = async () => {

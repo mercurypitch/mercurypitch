@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createEffect, onCleanup, onMount } from 'solid-js'
+import { createEffect, createSignal, onCleanup, onMount, Show } from 'solid-js'
 import { AudioEngine } from '@/lib/audio-engine'
 import { audioRegistry } from '@/lib/audio-registry'
 import type { PlaybackState } from '@/lib/piano-roll'
@@ -33,9 +33,38 @@ interface PianoRollCanvasProps {
 
 export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
   let containerRef: HTMLDivElement | undefined
+  let wrapperRef: HTMLDivElement | undefined
   let editor: PianoRollEditor | null = null
   let _onMelodyChange: ((melody: MelodyItem[]) => void) | null = null
   let audioEngine: AudioEngine | null = null
+
+  // Geometry of the inner .roll-grid-container, measured relative to the
+  // outer .piano-roll-wrapper. Used to position the playhead overlay so it
+  // starts at the LEFT EDGE of the actual grid (skipping the piano-keys
+  // column) and runs the FULL HEIGHT of the grid (skipping the toolbar
+  // and ruler bars).
+  const [gridRect, setGridRect] = createSignal<{
+    top: number
+    left: number
+    width: number
+    height: number
+  } | null>(null)
+
+  const measureGrid = () => {
+    if (!wrapperRef || !containerRef) return
+    const grid = containerRef.querySelector(
+      '.roll-grid-container',
+    ) as HTMLElement | null
+    if (!grid) return
+    const wrapperRect = wrapperRef.getBoundingClientRect()
+    const gridR = grid.getBoundingClientRect()
+    setGridRect({
+      top: gridR.top - wrapperRect.top,
+      left: gridR.left - wrapperRect.left,
+      width: gridR.width,
+      height: gridR.height,
+    })
+  }
 
   onMount(() => {
     if (!containerRef) return
@@ -69,6 +98,13 @@ export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
     ;(
       window as unknown as { pianoRollGenerateId: () => number }
     ).pianoRollGenerateId = () => Date.now()
+
+    // Measure on first paint and again on resize so the playhead overlay
+    // tracks the grid position even after layout changes.
+    requestAnimationFrame(measureGrid)
+    const ro = new ResizeObserver(() => measureGrid())
+    if (wrapperRef) ro.observe(wrapperRef)
+    onCleanup(() => ro.disconnect())
   })
 
   // Propagate melody changes to the editor
@@ -91,6 +127,8 @@ export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
   // Propagate total beats changes
   createEffect(() => {
     editor?.setTotalBeats(props.totalBeats())
+    // Scale changes can resize the grid horizontally; re-measure.
+    requestAnimationFrame(measureGrid)
   })
 
   // Subscribe to PlaybackRuntime events for external playback
@@ -197,9 +235,49 @@ export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
       .pianoRollAudioEngine
   })
 
+  // Position-aware playhead overlay (Solid-rendered, mirrors the look of
+  // the practice tab's playhead — vertical line + triangle marker on top).
+  // The line is bound to the .roll-grid-container's left edge and width
+  // so it spans only the actual grid (not the piano keys column or the
+  // ruler/toolbar above it).
+  const isActive = () =>
+    props.playbackState() === 'playing' || props.playbackState() === 'paused'
+
+  const playheadLeft = () => {
+    const rect = gridRect()
+    if (!rect) return 0
+    const total = props.totalBeats()
+    if (total <= 0) return rect.left
+    const beat = Math.max(0, Math.min(total, props.currentBeat()))
+    return rect.left + (beat / total) * rect.width
+  }
+
   return (
-    <div class="piano-roll-wrapper">
+    <div
+      ref={wrapperRef}
+      class="piano-roll-wrapper"
+      style={{ position: 'relative' }}
+    >
       <div ref={containerRef} class="piano-roll-container" />
+
+      <Show when={isActive() && gridRect() !== null}>
+        <div
+          id="editor-playhead"
+          class="editor-playhead"
+          style={{
+            position: 'absolute',
+            left: `${playheadLeft()}px`,
+            top: `${gridRect()!.top}px`,
+            height: `${gridRect()!.height}px`,
+            width: '2px',
+            'pointer-events': 'none',
+            'z-index': '50',
+          }}
+        >
+          {/* Triangle marker at top of the line, matching practice tab */}
+          <div class="editor-playhead-marker" />
+        </div>
+      </Show>
     </div>
   )
 }

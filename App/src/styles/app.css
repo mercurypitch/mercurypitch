@@ -7452,3 +7452,81 @@ Keeps your existing styles, only adjusts layout
   align-items: center;
   gap: 8px;
 }
+
+/* =====================================================================
+ * Practice tab layout — anchor history-container at bottom, no scroll
+ * on desktop. Mic spectrum / live score should always be visible
+ * without the user having to scroll.
+ * ===================================================================== */
+#practice-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+#practice-panel #canvas-container {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+#practice-panel #history-container {
+  flex: 0 0 auto;
+  margin-top: auto;
+}
+
+/* On desktop, .main-content shouldn't itself scroll for the practice
+ * panel — the layout fits in the viewport. We keep `overflow:auto` as
+ * a safety fallback for very small heights. */
+@media (min-width: 768px) {
+  .main-content {
+    overflow: hidden;
+  }
+  .main-content > #practice-panel {
+    overflow: hidden;
+  }
+}
+
+/* =====================================================================
+ * Bottom safe-area padding on every long-scroll panel so the last
+ * actionable element (e.g. Settings → GitHub link) is always reachable
+ * on mobile. iOS especially likes to clip the last 60-90px behind the
+ * home-indicator/url-bar.
+ * ===================================================================== */
+#settings-panel,
+.settings-panel,
+.library-tab,
+.session-editor-container,
+.app-sidebar,
+#main-layout,
+.main-content {
+  padding-bottom: max(24px, env(safe-area-inset-bottom, 24px));
+}
+
+/* Editor playhead overlay (matches the practice playhead style). */
+.editor-playhead {
+  background: var(--accent, #4caf50);
+  box-shadow: 0 0 6px var(--accent-glow, rgba(76, 175, 80, 0.6));
+}
+
+
+/* Editor playhead — triangle marker on top of the vertical line.
+ * Mirrors the practice tab's #playhead .playhead-marker style so users
+ * see consistent playback indicators across both tabs. */
+.editor-playhead {
+  background: var(--accent, #4caf50);
+  box-shadow: 0 0 6px var(--accent-glow, rgba(76, 175, 80, 0.6));
+}
+
+.editor-playhead .editor-playhead-marker {
+  position: absolute;
+  top: -8px;
+  left: -6px;
+  width: 0;
+  height: 0;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-top: 9px solid var(--accent, #4caf50);
+  filter: drop-shadow(0 0 4px var(--accent-glow, rgba(76, 175, 80, 0.6)));
+}
+

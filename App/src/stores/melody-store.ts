@@ -33,20 +33,27 @@ const DEFAULT_LIBRARY: UnifiedLibrary = {
       author: 'System',
       deletable: false,
       items: [
+        // NOTE: every non-rest item in the default session is a melody
+        // reference so they all behave consistently in the sidebar
+        // (clickable, selectable, draggable, can show "active" state).
+        // Previously G Major was a `type:'scale'` item, which made the
+        // sidebar's selection logic treat it differently from C Major
+        // and skip the `selected` CSS class. Use the pre-built scale
+        // melodies (`scale-major-c4`, `scale-major-g4`) seeded by
+        // seedDefaultSession() instead.
         {
           id: generateSessionItemId(),
           type: 'melody',
           startBeat: 0,
           label: 'C Major Scale',
-          melodyId: 'scale-major-c4', // Reference to pre-built C Major scale melody
+          melodyId: 'scale-major-c4',
         },
         {
           id: generateSessionItemId(),
-          type: 'scale',
+          type: 'melody',
           startBeat: 16,
-          label: 'G Major Scale (Octave 3-4)',
-          scaleType: 'major',
-          beats: 16,
+          label: 'G Major Scale',
+          melodyId: 'scale-major-g4',
         },
         {
           id: generateSessionItemId(),

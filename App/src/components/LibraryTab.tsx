@@ -287,25 +287,27 @@ export const LibraryTab: Component = () => {
     if (e.ctrlKey || e.metaKey) {
       // Toggle selection
       appStore.toggleMelodySelection?.(melodyId)
-    } else {
-      // Single click: load into editor
-      melodyStore.loadMelody(melodyId)
-      setActiveTab('editor')
-      setEditorView('piano-roll')
+      return
+    }
+    // Single click: select for playback. We do NOT switch tabs anymore —
+    // selection is purely a Practice/sidebar action; the user can decide
+    // when to open the editor (double-click goes via handleMelodyDoubleClick
+    // → handlePlayMelodyInSession). This was previously force-switching to
+    // the editor tab, which was wrong UX.
+    melodyStore.loadMelody(melodyId)
 
-      // Ensure default session is loaded if no active session exists
-      const sid = melodyStore.getActiveSessionId()
-      if (sid === null) {
-        const defaultSession = getSession('default')
-        if (defaultSession !== undefined && defaultSession !== null) {
-          setActiveUserSession(defaultSession)
-          melodyStore.setActiveSessionId(defaultSession.id)
-        }
-      } else {
-        const activeSession = getSession(sid)
-        if (activeSession !== undefined) {
-          setActiveUserSession(activeSession)
-        }
+    // Ensure default session is loaded if no active session exists.
+    const sid = melodyStore.getActiveSessionId()
+    if (sid === null) {
+      const defaultSession = getSession('default')
+      if (defaultSession !== undefined && defaultSession !== null) {
+        setActiveUserSession(defaultSession)
+        melodyStore.setActiveSessionId(defaultSession.id)
+      }
+    } else {
+      const activeSession = getSession(sid)
+      if (activeSession !== undefined) {
+        setActiveUserSession(activeSession)
       }
     }
   }
@@ -521,13 +523,13 @@ export const LibraryTab: Component = () => {
                       handleMelodyClick(item.melodyId, e)
                       return
                     }
-                    // Scale or preset: build the items into the melody store
-                    // so they're loaded as the current melody.
+                    // Scale or preset (legacy): build the items into the melody
+                    // store so the click still loads something. Sessions should
+                    // ideally only contain melody/rest items going forward.
+                    // No tab-switch here — single-click is just selection.
                     const built = buildSessionItemMelody(item)
                     if (built.length > 0) {
                       melodyStore.setMelody(built)
-                      setActiveTab('editor')
-                      setEditorView('piano-roll')
                     }
                   }
                   const handleDblClickItem = () => {

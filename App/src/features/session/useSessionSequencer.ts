@@ -45,7 +45,7 @@ interface Deps {
   setLiveScore: Setter<number | null>
   setPlaybackDisplayMelody: (m: MelodyItem[] | null) => void
   setPlaybackDisplayBeats: (b: number | null) => void
-  handleStop: () => SessionResult | null | undefined
+  handleStop: () => Promise<SessionResult | null | undefined>
   handlePlay: () => void
   setPlayMode: Setter<'once' | 'repeat' | 'practice'>
   closeSidebar: () => void
@@ -107,7 +107,7 @@ export function useSessionSequencer(deps: Deps): SessionSequencer {
 
     const current = getCurrentSessionItem()
     if (!current) {
-      handleStop()
+      void handleStop()
       return
     }
 
@@ -125,18 +125,20 @@ export function useSessionSequencer(deps: Deps): SessionSequencer {
       practiceEngine.resetSession()
       loadNextSessionItem()
     } else {
-      const summary = handleStop()
-      if (summary) {
-        setSessionSummary({
-          score: summary.score,
-          items: summary.itemsCompleted,
-          name: summary.sessionName,
-        })
-        showNotification(
-          `Session complete! Score: ${summary.score}%`,
-          summary.score >= 80 ? 'success' : 'info',
-        )
-      }
+      // handleStop is async (waits for audio teardown); resolve and apply
+      void handleStop().then((summary) => {
+        if (summary) {
+          setSessionSummary({
+            score: summary.score,
+            items: summary.itemsCompleted,
+            name: summary.sessionName,
+          })
+          showNotification(
+            `Session complete! Score: ${summary.score}%`,
+            summary.score >= 80 ? 'success' : 'info',
+          )
+        }
+      })
     }
   }
 
@@ -152,7 +154,7 @@ export function useSessionSequencer(deps: Deps): SessionSequencer {
       practiceEngine.resetSession()
       playbackRuntime.start(countIn())
     } else {
-      handleStop()
+      void handleStop()
     }
   }
 
@@ -208,14 +210,15 @@ export function useSessionSequencer(deps: Deps): SessionSequencer {
   }
 
   const handleSessionEnd = (): void => {
-    const summary = handleStop()
-    if (summary) {
-      setSessionSummary({
-        score: summary.score,
-        items: summary.itemsCompleted,
-        name: summary.sessionName,
-      })
-    }
+    void handleStop().then((summary) => {
+      if (summary) {
+        setSessionSummary({
+          score: summary.score,
+          items: summary.itemsCompleted,
+          name: summary.sessionName,
+        })
+      }
+    })
   }
 
   const loadAndPlayMelodyForSession = (melodyId: string): void => {
