@@ -4,13 +4,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import {
-  createMemo,
-  createSignal,
-  onMount,
-  Show,
-} from 'solid-js'
-
+import { createMemo, createSignal, onMount, Show } from 'solid-js'
 import { AppSidebar } from '@/components/AppSidebar'
 import { FocusMode } from '@/components/FocusMode'
 import { HistoryCanvas } from '@/components/HistoryCanvas'
@@ -28,37 +22,23 @@ import { SettingsPanel } from '@/components/SettingsPanel'
 import type { PracticeSubMode } from '@/components/shared/SharedControlToolbar'
 import { SharedControlToolbar } from '@/components/shared/SharedControlToolbar'
 import { WalkthroughControl } from '@/components/WalkthroughControl'
-
 import { EngineProvider, useEngines } from '@/contexts/EngineContext'
-import { useKeyboardShortcuts } from '@/features/keyboard/useKeyboardShortcuts'
-import { usePianoRollEvents } from '@/features/events/usePianoRollEvents'
-import { usePlaybackController } from '@/features/playback/usePlaybackController'
-import { useRecordingController } from '@/features/recording/useRecordingController'
-import { usePracticeController } from '@/features/practice/usePracticeController'
-import { useSessionSequencer } from '@/features/session/useSessionSequencer'
 import { useEditorController } from '@/features/editor/useEditorController'
-
+import { usePianoRollEvents } from '@/features/events/usePianoRollEvents'
+import { useKeyboardShortcuts } from '@/features/keyboard/useKeyboardShortcuts'
+import { usePlaybackController } from '@/features/playback/usePlaybackController'
+import { usePracticeController } from '@/features/practice/usePracticeController'
+import { useRecordingController } from '@/features/recording/useRecordingController'
+import { useSessionSequencer } from '@/features/session/useSessionSequencer'
 import type { InstrumentType } from '@/lib/audio-engine'
 import { debounce } from '@/lib/debounce'
-import {
-  buildScaleMelody,
-  buildSessionPlaybackMelody,
-} from '@/lib/session-builder'
-import { melodyIndexAtBeat, melodyTotalBeats } from '@/lib/scale-data'
-import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
 import { registerE2EBridge } from '@/lib/e2e-bridge'
-
-import {
-  appStore,
-  editorView,
-  endPracticeSession,
-  getNoteAccuracyMap,
-  getSessionHistory,
-  setEditorView,
-} from '@/stores'
+import { melodyIndexAtBeat, melodyTotalBeats } from '@/lib/scale-data'
+import { buildScaleMelody, buildSessionPlaybackMelody, } from '@/lib/session-builder'
+import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
+import { appStore, editorView, endPracticeSession, getNoteAccuracyMap, getSessionHistory, setEditorView, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import { getSession } from '@/stores/session-store'
-
 import type { MelodyItem, NoteResult, PlaybackMode } from '@/types'
 
 // ============================================================
@@ -130,9 +110,6 @@ const AppShell: Component<AppProps> = (props) => {
   const [playMode, setPlayMode] = createSignal<PlaybackMode>('once')
   const [repeatCycles, setRepeatCycles] = createSignal<number>(5)
   const [currentRepeat, setCurrentRepeat] = createSignal<number>(1)
-  const [_allCycleResults, _setAllCycleResults] = createSignal<NoteResult[][]>(
-    [],
-  )
   const [practiceSubMode, setPracticeSubMode] =
     createSignal<PracticeSubMode>('all')
 
@@ -161,13 +138,13 @@ const AppShell: Component<AppProps> = (props) => {
     playMode,
     setPlayMode,
     practiceSubMode,
-    setPitchHistory: ((v: unknown) => practice.setPitchHistory(v as never)) as never,
+    setPitchHistory: ((v: unknown) =>
+      practice.setPitchHistory(v as never)) as never,
     setNoteResults: ((v: unknown) =>
       practice.setNoteResults(v as never)) as never,
     setPracticeResult: ((v: unknown) =>
       practice.setPracticeResult(v as never)) as never,
-    setLiveScore: ((v: unknown) =>
-      practice.setLiveScore(v as never)) as never,
+    setLiveScore: ((v: unknown) => practice.setLiveScore(v as never)) as never,
     closeSidebar,
     filterMelodyForPractice,
     buildSessionPlaybackMelody,
@@ -275,10 +252,9 @@ const AppShell: Component<AppProps> = (props) => {
   } = sessionSequencer
 
   // ── Editor controller ──────────────────────────────────────
-  const editor = useEditorController({ audioEngine })
-  const _handleShare = editor.handleShare
-  const _handleExportMIDI = editor.handleExportMIDI
-  const _handleImportMIDI = editor.handleImportMIDI
+  // Handlers (handleShare, handleExportMIDI, handleImportMIDI) are exposed
+  // for future toolbar integration. Currently unused at the App level.
+  useEditorController({ audioEngine })
 
   // ── Keyboard shortcuts & piano roll events ─────────────────
   useKeyboardShortcuts({
@@ -515,10 +491,7 @@ const AppShell: Component<AppProps> = (props) => {
     }
 
     // Shared preset URL
-    if (
-      typeof hasSharedPresetInURL === 'function' &&
-      hasSharedPresetInURL()
-    ) {
+    if (typeof hasSharedPresetInURL === 'function' && hasSharedPresetInURL()) {
       const sharedData = loadFromURL() as {
         melody: MelodyItem[]
         bpm?: number
@@ -860,31 +833,47 @@ const AppShell: Component<AppProps> = (props) => {
             <div id="score-stats">
               <div class="score-stat score-stat-perfect">
                 <div class="score-stat-value">
-                  {(noteResults() ?? []).filter((r) => r.rating === 'perfect').length}
+                  {
+                    (noteResults() ?? []).filter((r) => r.rating === 'perfect')
+                      .length
+                  }
                 </div>
                 <div class="score-stat-label">Perfect</div>
               </div>
               <div class="score-stat score-stat-excellent">
                 <div class="score-stat-value">
-                  {(noteResults() ?? []).filter((r) => r.rating === 'excellent').length}
+                  {
+                    (noteResults() ?? []).filter(
+                      (r) => r.rating === 'excellent',
+                    ).length
+                  }
                 </div>
                 <div class="score-stat-label">Excellent</div>
               </div>
               <div class="score-stat score-stat-good">
                 <div class="score-stat-value">
-                  {(noteResults() ?? []).filter((r) => r.rating === 'good').length}
+                  {
+                    (noteResults() ?? []).filter((r) => r.rating === 'good')
+                      .length
+                  }
                 </div>
                 <div class="score-stat-label">Good</div>
               </div>
               <div class="score-stat score-stat-okay">
                 <div class="score-stat-value">
-                  {(noteResults() ?? []).filter((r) => r.rating === 'okay').length}
+                  {
+                    (noteResults() ?? []).filter((r) => r.rating === 'okay')
+                      .length
+                  }
                 </div>
                 <div class="score-stat-label">Okay</div>
               </div>
               <div class="score-stat score-stat-off">
                 <div class="score-stat-value">
-                  {(noteResults() ?? []).filter((r) => r.rating === 'off').length}
+                  {
+                    (noteResults() ?? []).filter((r) => r.rating === 'off')
+                      .length
+                  }
                 </div>
                 <div class="score-stat-label">Off</div>
               </div>

@@ -1,6 +1,7 @@
-import { onCleanup, onMount, type Accessor, type Setter } from 'solid-js'
-import { AudioEngine } from '@/lib/audio-engine'
-import { PlaybackRuntime } from '@/lib/playback-runtime'
+import type { Accessor, Setter } from 'solid-js'
+import { onCleanup, onMount } from 'solid-js'
+import type { AudioEngine } from '@/lib/audio-engine'
+import type { PlaybackRuntime } from '@/lib/playback-runtime'
 import { appStore } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 

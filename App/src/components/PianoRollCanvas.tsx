@@ -5,6 +5,7 @@
 import type { Component } from 'solid-js'
 import { createEffect, onCleanup, onMount } from 'solid-js'
 import { AudioEngine } from '@/lib/audio-engine'
+import { audioRegistry } from '@/lib/audio-registry'
 import type { PlaybackState } from '@/lib/piano-roll'
 import { PianoRollEditor } from '@/lib/piano-roll'
 import type { MelodyItem, ScaleDegree } from '@/types'
@@ -41,6 +42,11 @@ export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
 
     // Create and expose audio engine for piano roll playback
     audioEngine = new AudioEngine()
+    // Register with typed audio registry so resetPlaybackState can stop it
+    // without reading from window. (Phase 13 of refactor v3.)
+    audioRegistry.register(audioEngine)
+    // NOTE: window assignment kept for piano-roll.ts internals that still
+    // read it. Removing those reads is part of a follow-up plan.
     ;(
       window as unknown as { pianoRollAudioEngine: typeof audioEngine }
     ).pianoRollAudioEngine = audioEngine
@@ -183,7 +189,10 @@ export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
     delete (window as unknown as { pianoRollEditor?: unknown }).pianoRollEditor
     delete (window as unknown as { pianoRollGenerateId?: () => number })
       .pianoRollGenerateId
-    audioEngine?.destroy()
+    if (audioEngine) {
+      audioRegistry.unregister(audioEngine)
+      audioEngine.destroy()
+    }
     delete (window as unknown as { pianoRollAudioEngine?: unknown })
       .pianoRollAudioEngine
   })

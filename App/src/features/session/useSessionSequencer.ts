@@ -1,21 +1,11 @@
-import { createSignal, type Accessor, type Setter } from 'solid-js'
+import type { Accessor, Setter } from 'solid-js'
+import { createSignal } from 'solid-js'
 import type { PlaybackRuntime } from '@/lib/playback-runtime'
 import type { PracticeEngine } from '@/lib/practice-engine'
-import { melodyStore } from '@/stores/melody-store'
 import { melodyTotalBeats } from '@/lib/scale-data'
-import {
-  appStore,
-  advanceSessionItem,
-  practiceSession,
-  recordSessionItemResult,
-  sessionItemIndex,
-} from '@/stores'
-import type {
-  MelodyItem,
-  NoteResult,
-  PracticeResult,
-  SessionResult,
-} from '@/types'
+import { advanceSessionItem, appStore, practiceSession, recordSessionItemResult, sessionItemIndex, } from '@/stores'
+import { melodyStore } from '@/stores/melody-store'
+import type { MelodyItem, NoteResult, PracticeResult, SessionResult, } from '@/types'
 
 export interface SessionSequencer {
   sessionMelodyIds: Accessor<string[]>
@@ -63,11 +53,7 @@ interface Deps {
   setCurrentRepeat: Setter<number>
   repeatCycles: Accessor<number>
   /** Build scale items into the melody store. */
-  buildScaleMelody: (
-    scaleType: string,
-    beats: number,
-    label?: string,
-  ) => void
+  buildScaleMelody: (scaleType: string, beats: number, label?: string) => void
   setCurrentBeat: Setter<number>
   setCurrentNoteIndex: Setter<number>
 }

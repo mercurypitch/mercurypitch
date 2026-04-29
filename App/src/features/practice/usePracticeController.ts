@@ -1,21 +1,12 @@
-import {
-  createSignal,
-  onCleanup,
-  onMount,
-  type Accessor,
-  type Setter,
-} from 'solid-js'
+import type { Accessor, Setter } from 'solid-js'
+import { createSignal, onCleanup, onMount } from 'solid-js'
+import type { RecordingController } from '@/features/recording/useRecordingController'
 import type { AudioEngine } from '@/lib/audio-engine'
 import type { PlaybackRuntime } from '@/lib/playback-runtime'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { appStore } from '@/stores'
 import type { PitchSample } from '@/types'
-import type {
-  NoteResult,
-  PitchResult,
-  PracticeResult,
-} from '@/types'
-import type { RecordingController } from '@/features/recording/useRecordingController'
+import type { NoteResult, PitchResult, PracticeResult } from '@/types'
 
 export interface PracticeController {
   pitchHistory: Accessor<PitchSample[]>
@@ -56,14 +47,14 @@ export function usePracticeController(deps: Deps): PracticeController {
   } = deps
 
   const [pitchHistory, setPitchHistory] = createSignal<PitchSample[]>([])
-  const [currentPitch, setCurrentPitch] =
-    createSignal<PitchResult | null>(null)
+  const [currentPitch, setCurrentPitch] = createSignal<PitchResult | null>(null)
   const [noteResults, setNoteResults] = createSignal<NoteResult[]>([])
   const [practiceResult, setPracticeResult] =
     createSignal<PracticeResult | null>(null)
   const [liveScore, setLiveScore] = createSignal<number | null>(null)
-  const [frequencyData, setFrequencyData] =
-    createSignal<Float32Array | null>(null)
+  const [frequencyData, setFrequencyData] = createSignal<Float32Array | null>(
+    null,
+  )
   const [waveformData, setWaveformData] = createSignal<Float32Array | null>(
     null,
   )

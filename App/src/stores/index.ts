@@ -18,13 +18,11 @@ export * from './session-store'
 export { playback } from './playback-store'
 export { melodyStore } from './melody-store'
 
+// Kept as no-op stub: still referenced by tests/session-store.test.ts.
+// True session-mode state lives in practice-session-store.sessionMode().
 export const isInSessionMode = () => false
-export const initPresets = () => {}
-export const presets = () => []
 
-export const SessionHistoryEntry = {}
-
-// TODO:Replace all appStore.<something> calls with proper calls!
+// TODO: Replace all appStore.<something> calls with proper calls!
 // To ease the migration and avoid breaking the rest of the application
 // right away, we expose a monolithic "appStore" namespace that bundles
 // all the signals and setters from the individual stores.
@@ -80,8 +78,10 @@ export const appStore = {
 
   // More missing stubs
   buildSessionItemMelody,
+  // initPresets/presets are dead stubs but still referenced by App.tsx
+  // initialization and PresetPillGallery component for now.
   initPresets: () => {},
-  presets: () => [],
+  presets: () => ({}) as Record<string, unknown>,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   walkthroughStep: (walkthroughStore as any).getWalkthroughStep ?? (() => 0),
 

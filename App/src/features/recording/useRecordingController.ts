@@ -1,9 +1,10 @@
-import { createSignal, type Accessor } from 'solid-js'
+import type { Accessor } from 'solid-js'
+import { createSignal } from 'solid-js'
 import type { AudioEngine } from '@/lib/audio-engine'
 import type { PlaybackRuntime } from '@/lib/playback-runtime'
 import type { PracticeEngine } from '@/lib/practice-engine'
-import { melodyStore } from '@/stores/melody-store'
 import { midiToNote } from '@/lib/scale-data'
+import { melodyStore } from '@/stores/melody-store'
 import * as uiStore from '@/stores/ui-store'
 import type { MelodyItem, MelodyNote, NoteName, PitchResult } from '@/types'
 

@@ -1,7 +1,8 @@
-import { onCleanup, onMount, type Accessor, type Setter } from 'solid-js'
-import * as uiStore from '@/stores/ui-store'
-import * as transportStore from '@/stores/transport-store'
+import type { Accessor, Setter } from 'solid-js'
+import { onCleanup, onMount } from 'solid-js'
 import * as notifStore from '@/stores/notifications-store'
+import * as transportStore from '@/stores/transport-store'
+import * as uiStore from '@/stores/ui-store'
 import type { PlaybackMode } from '@/types'
 
 interface KeyboardShortcutHandlers {

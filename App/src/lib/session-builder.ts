@@ -1,13 +1,7 @@
 import { buildMultiOctaveScale, melodyTotalBeats } from '@/lib/scale-data'
 import { keyName } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
-import type {
-  MelodyItem,
-  MelodyNote,
-  NoteName,
-  PlaybackSession,
-  SessionItem,
-} from '@/types'
+import type { MelodyItem, MelodyNote, NoteName, PlaybackSession, SessionItem, } from '@/types'
 
 /**
  * Builds MelodyItems for a single session item.
@@ -143,4 +137,3 @@ export function buildScaleMelody(
   } as SessionItem)
   melodyStore.setMelody(items)
 }
-

@@ -1,12 +1,15 @@
-import { createSignal, createMemo, type Accessor, type Setter } from 'solid-js'
-import { AudioEngine } from '@/lib/audio-engine'
-import { PlaybackRuntime, type PlaybackState } from '@/lib/playback-runtime'
-import { PracticeEngine } from '@/lib/practice-engine'
-import { melodyStore } from '@/stores/melody-store'
+import type { Accessor, Setter } from 'solid-js'
+import { createMemo, createSignal } from 'solid-js'
+import type { AudioEngine } from '@/lib/audio-engine'
+import { audioRegistry } from '@/lib/audio-registry'
+import type { PlaybackRuntime } from '@/lib/playback-runtime'
+import type { PlaybackState } from '@/lib/playback-runtime'
+import type { PracticeEngine } from '@/lib/practice-engine'
+import { keyTonicFreq, melodyTotalBeats } from '@/lib/scale-data'
 import { appStore } from '@/stores'
+import { melodyStore } from '@/stores/melody-store'
 import { playback } from '@/stores/playback-store'
-import { melodyTotalBeats, keyTonicFreq } from '@/lib/scale-data'
-import { type MelodyItem, type PlaybackMode, type SessionResult } from '@/types'
+import type { MelodyItem, PlaybackMode, SessionResult } from '@/types'
 
 export interface PlaybackController {
   isPlaying: Accessor<boolean>
@@ -51,7 +54,10 @@ interface PlaybackControllerDeps {
   setLiveScore: Setter<number | null>
   closeSidebar: () => void
   filterMelodyForPractice: (m: MelodyItem[], sub: any) => MelodyItem[]
-  buildSessionPlaybackMelody: (s: any) => { items: MelodyItem[]; durationBeats: number }
+  buildSessionPlaybackMelody: (s: any) => {
+    items: MelodyItem[]
+    durationBeats: number
+  }
   buildScaleMelody: (type: string, beats: number) => void
   isRecording: Accessor<boolean>
   finalizeRecording: (beat: number) => void
@@ -114,29 +120,12 @@ export function usePlaybackController(
   const editorIsPaused = createMemo(() => editorPlaybackState() === 'paused')
 
   const resetPlaybackState = async () => {
-    console.log('[resetPlaybackState] Called, resetting all playback state')
     audioEngine.stopTone()
     audioEngine.stopAllNotes()
 
-    // Stop piano roll's internal audio engine as well
-    const pianoRollEngine = (
-      window as unknown as {
-        pianoRollAudioEngine?: {
-          stopTone: () => void
-          stopAllNotes: () => void
-          isTonePlaying: () => boolean
-          getActiveVoices: () => Set<number>
-        }
-      }
-    ).pianoRollAudioEngine
-    if (pianoRollEngine) {
-      void pianoRollEngine.stopTone()
-      void pianoRollEngine.stopAllNotes()
-      console.log('[resetPlaybackState] Piano roll audio engine stopped', {
-        tonePlaying: pianoRollEngine.isTonePlaying(),
-        activeVoices: pianoRollEngine.getActiveVoices().size,
-      })
-    }
+    // Stop all secondary engines (e.g. piano roll's internal engine)
+    // via the typed registry — replaces window.pianoRollAudioEngine reads.
+    audioRegistry.stopAll()
 
     playbackRuntime.stop()
     practiceEngine.endSession()
@@ -155,9 +144,7 @@ export function usePlaybackController(
     setPlaybackDisplayBeats(null)
 
     // Force reset PlaybackRuntime animation loop and state
-    playbackRuntime.stop() // Reset via playback stop
-
-    console.log('[resetPlaybackState] Playback state reset complete')
+    playbackRuntime.stop()
   }
 
   const handlePlay = () => {
@@ -203,7 +190,7 @@ export function usePlaybackController(
 
     let baseMelody =
       forcedDurationBeats !== undefined
-        ? playbackDisplayMelody() ?? []
+        ? (playbackDisplayMelody() ?? [])
         : melodyStore.items()
 
     if (baseMelody.length === 0) {

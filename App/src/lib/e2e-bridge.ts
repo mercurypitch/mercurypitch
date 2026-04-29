@@ -1,9 +1,9 @@
+import type { Setter } from 'solid-js'
+import type { PlaybackRuntime } from '@/lib/playback-runtime'
 import { exposeForE2E } from '@/lib/test-utils'
-import { appStore } from '@/stores'
-import { melodyStore } from '@/stores/melody-store'
-import { PlaybackRuntime } from '@/lib/playback-runtime'
-import { type PlaybackMode } from '@/types'
-import { type Setter } from 'solid-js'
+import type { appStore } from '@/stores'
+import type { melodyStore } from '@/stores/melody-store'
+import type { PlaybackMode } from '@/types'
 
 export interface E2EBridgeDeps {
   appStore: typeof appStore

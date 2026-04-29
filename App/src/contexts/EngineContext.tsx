@@ -1,11 +1,5 @@
 import type { JSX } from 'solid-js'
-import {
-  createContext,
-  createEffect,
-  createSignal,
-  onCleanup,
-  useContext,
-} from 'solid-js'
+import { createContext, createEffect, createSignal, onCleanup, useContext, } from 'solid-js'
 import { AudioEngine } from '@/lib/audio-engine'
 import { PlaybackRuntime } from '@/lib/playback-runtime'
 import { PracticeEngine } from '@/lib/practice-engine'
