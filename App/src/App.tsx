@@ -467,8 +467,9 @@ const AppShell: Component<AppProps> = (props) => {
         return
       }
 
-      // Once mode → stop
-      handleStop()
+      // Once mode → stop. handleStop is async (waits for audio teardown
+      // before resolving) — `void` here to satisfy no-floating-promises.
+      void handleStop()
     })
   }
 

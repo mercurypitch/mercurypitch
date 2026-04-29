@@ -95,10 +95,30 @@ export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
 
   // Propagate playback state. The piano-roll editor draws its OWN
   // playhead and active-note highlight on its internal canvases via
-  // drawWithPlayhead / drawGridWithPlayhead. We just need to keep it
-  // informed of state + beat updates from the playbackController.
+  // drawWithPlayhead / drawGridWithPlayhead.
+  //
+  // CRITICAL: piano-roll's drawGridWithPlayhead/drawRulerWithPlayhead
+  // call `getCurrentBeat()`, which has two branches:
+  //   - if isExternalPlayback: return this.remoteBeat
+  //   - else:                  return (now - playStartTime) / beatDur
+  //
+  // We drive the editor from the App-level playbackController via
+  // updatePlaybackPosition(beat) which sets remoteBeat. So we MUST mark
+  // playback as external — otherwise getCurrentBeat falls back to the
+  // local-timer branch (with playStartTime never set) and draws the
+  // playhead at a nonsense position (off the right edge), which looks
+  // exactly like "playhead and triangle not visible during playback".
+  //
+  // If you ever need to re-investigate the editor playhead disappearing,
+  // check in this order:
+  //   1. piano-roll.ts: PianoRollEditor.getCurrentBeat() branch
+  //   2. piano-roll.ts: drawGridWithPlayhead / drawRulerWithPlayhead
+  //   3. updatePlaybackPosition() being called every beat
+  //   4. setExternalPlayback(true) being set during playing/paused
   createEffect(() => {
-    editor?.setPlaybackState(props.playbackState())
+    const state = props.playbackState()
+    editor?.setExternalPlayback(state === 'playing' || state === 'paused')
+    editor?.setPlaybackState(state)
   })
 
   // Propagate current note index

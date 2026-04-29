@@ -68,11 +68,13 @@ interface SharedControlToolbarProps {
   countInBeat: () => number
   countInBeats: () => number
 
-  // Core playback callbacks
-  onPlay: () => void
-  onPause: () => void
-  onResume: () => void
-  onStop: () => void
+  // Core playback callbacks. Allowed to return a Promise (handleStop is
+  // async — it awaits audio teardown before resolving) so callers don't
+  // need to wrap in `void` to satisfy lint.
+  onPlay: () => void | Promise<unknown>
+  onPause: () => void | Promise<unknown>
+  onResume: () => void | Promise<unknown>
+  onStop: () => void | Promise<unknown>
 
   // Volume
   volume: () => number
