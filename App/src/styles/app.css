@@ -7509,7 +7509,6 @@ Keeps your existing styles, only adjusts layout
   box-shadow: 0 0 6px var(--accent-glow, rgba(76, 175, 80, 0.6));
 }
 
-
 /* Editor playhead — triangle marker on top of the vertical line.
  * Mirrors the practice tab's #playhead .playhead-marker style so users
  * see consistent playback indicators across both tabs. */
@@ -7529,4 +7528,3 @@ Keeps your existing styles, only adjusts layout
   border-top: 9px solid var(--accent, #4caf50);
   filter: drop-shadow(0 0 4px var(--accent-glow, rgba(76, 175, 80, 0.6)));
 }
-

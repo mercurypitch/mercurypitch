@@ -278,9 +278,7 @@ export function usePlaybackController(
     // this, Play -> Pause -> Resume -> Stop -> Play could "stick" for
     // several hundred ms while overlapping audio nodes were being torn
     // down on the main thread.
-    await new Promise<void>((resolve) =>
-      requestAnimationFrame(() => resolve()),
-    )
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
     return result
   }
 
