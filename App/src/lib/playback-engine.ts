@@ -3,7 +3,7 @@
 // Manages timing, note playback, and provides clean API for UI
 // ============================================================
 
-import type { InstrumentType } from '@/stores/app-store'
+import type { InstrumentType } from '@/stores'
 import type { MelodyItem } from '@/types'
 import { AudioEngine } from './audio-engine'
 import { melodyIndexAtBeat } from './scale-data'

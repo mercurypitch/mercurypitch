@@ -6,7 +6,7 @@
 
 import type { Component } from 'solid-js'
 import { For, Show } from 'solid-js'
-import { appStore } from '@/stores/app-store'
+import { appStore } from '@/stores'
 import styles from '@/styles/PresetPillGallery.module.css'
 
 export type PracticeSubMode = 'all' | 'random' | 'focus' | 'reverse'

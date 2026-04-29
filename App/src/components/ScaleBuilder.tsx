@@ -5,7 +5,7 @@
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, Show } from 'solid-js'
 import { NOTE_NAMES } from '@/lib/scale-data'
-import { appStore } from '@/stores/app-store'
+import { appStore } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import type { NoteName } from '@/types'
 

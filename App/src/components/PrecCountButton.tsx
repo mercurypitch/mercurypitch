@@ -4,7 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { Tooltip } from '@/components/Tooltip'
-import { appStore } from '@/stores/app-store'
+import { appStore } from '@/stores'
 
 export const PrecCountButton: Component = () => {
   const isOn = () => appStore.countIn() > 0

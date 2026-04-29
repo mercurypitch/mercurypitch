@@ -5,7 +5,7 @@
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
 import { PRACTICE_SESSIONS } from '@/data/sessions'
-import { appStore } from '@/stores/app-store'
+import { appStore } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import {
   createMelodyItem,

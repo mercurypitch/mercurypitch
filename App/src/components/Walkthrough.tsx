@@ -4,7 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, onCleanup, Show } from 'solid-js'
-import { appStore, endWalkthrough, nextWalkthroughStep, prevWalkthroughStep, WALKTHROUGH_STEPS, } from '@/stores/app-store'
+import { appStore, endWalkthrough, nextWalkthroughStep, prevWalkthroughStep, WALKTHROUGH_STEPS, } from '@/stores'
 
 type Placement = 'top' | 'bottom' | 'left' | 'right'
 

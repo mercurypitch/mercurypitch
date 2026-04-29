@@ -5,7 +5,7 @@
 
 import type { Component } from 'solid-js'
 import { createSignal, onCleanup, onMount, Show } from 'solid-js'
-import { appStore } from '@/stores/app-store'
+import { appStore } from '@/stores'
 
 interface SessionPlayerProps {
   onSkip: () => void

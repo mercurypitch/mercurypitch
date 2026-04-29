@@ -3,8 +3,8 @@
 // ============================================================
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { SessionHistoryEntry } from '@/stores/app-store'
-import { appStore, clearSessionHistory, getNoteAccuracyMap, getSessionHistory, initSessionHistory, saveSession, } from '@/stores/app-store'
+import type { SessionHistoryEntry } from '@/stores'
+import { appStore, clearSessionHistory, getNoteAccuracyMap, getSessionHistory, initSessionHistory, saveSession, } from '@/stores'
 
 // Mock localStorage
 const localStorageMock = (() => {

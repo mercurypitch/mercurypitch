@@ -9,7 +9,7 @@ import type { Component } from 'solid-js'
 import { Show } from 'solid-js'
 import { MetronomeButton } from '@/components/MetronomeButton'
 import { PrecCountButton } from '@/components/PrecCountButton'
-import { appStore } from '@/stores/app-store'
+import { appStore } from '@/stores'
 
 interface AppHeaderProps {
   isPlaying: () => boolean

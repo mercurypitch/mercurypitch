@@ -3,7 +3,7 @@
 // ============================================================
 
 import { createSignal } from 'solid-js'
-import type { WalkthroughProgress,WalkthroughTab } from '@/types/walkthrough'
+import type { WalkthroughProgress,WalkthroughTab, WalkthroughContent } from '@/types/walkthrough'
 import {WALKTHROUGHS } from '@/types/walkthrough'
 
 /** Export WalkthroughTab type for use in components */
@@ -18,7 +18,7 @@ export function getWalkthroughsForTab(tab: 'practice' | 'editor' | 'settings' | 
 }
 
 /** Get a specific walkthrough by ID */
-export function getWalkthrough(id: string) {
+export function getWalkthrough(id: string): WalkthroughContent | undefined {
   for (const tab of ['practice', 'editor', 'settings', 'study'] as const) {
     const walkthroughs = WALKTHROUGHS[tab]
     const found = walkthroughs.find(w => w.id === id)
@@ -26,6 +26,14 @@ export function getWalkthrough(id: string) {
   }
   return undefined
 }
+
+export const WALKTHROUGH_STEPS: any[] = [] // stub since it was deleted
+export function nextWalkthroughStep() {}
+export function prevWalkthroughStep() {}
+export function endWalkthrough() {}
+export function getWalkthroughStep() { return 0 }
+export function isWalkthroughActive() { return false }
+export function startWalkthrough() {}
 
 /** Get progress signal */
 export const [walkthroughsProgress, setWalkthroughsProgress] = createSignal<WalkthroughProgress>(

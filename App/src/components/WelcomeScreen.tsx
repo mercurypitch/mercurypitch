@@ -4,7 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createSignal } from 'solid-js'
-import { appStore } from '@/stores/app-store'
+import { appStore } from '@/stores'
 
 interface WelcomeScreenProps {
   onEnableMic?: () => Promise<void>

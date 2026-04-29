@@ -3,7 +3,7 @@
 // ============================================================
 
 import { beforeEach, describe, expect, it } from 'vitest'
-import { appStore, getBandRating, initSettings, setBand, setDetectionThreshold, setMinAmplitude, setMinConfidence, setSensitivity, } from '@/stores/app-store'
+import { appStore, getBandRating, initSettings, setBand, setDetectionThreshold, setMinAmplitude, setMinConfidence, setSensitivity, } from '@/stores'
 
 describe('Settings — init and defaults', () => {
   beforeEach(() => {

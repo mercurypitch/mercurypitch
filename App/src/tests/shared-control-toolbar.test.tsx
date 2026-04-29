@@ -5,7 +5,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { ActiveTab, PracticeSubMode, } from '@/components/shared/SharedControlToolbar'
-import { appStore } from '@/stores/app-store'
+import { appStore } from '@/stores'
 
 // ========================================
 // Utility functions (copied for testing without triggering imports)

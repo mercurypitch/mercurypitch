@@ -3,7 +3,7 @@
 // ============================================================
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { appStore, initTheme, setTheme, toggleTheme } from '@/stores/app-store'
+import { appStore, initTheme, setTheme, toggleTheme } from '@/stores'
 
 describe('Theme Store', () => {
   beforeEach(() => {

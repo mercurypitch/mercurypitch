@@ -4,7 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, For, onMount, Show } from 'solid-js'
-import { appStore, setEditorView } from '@/stores/app-store'
+import { appStore, setEditorView } from '@/stores'
 import { getActiveSession, getSessions } from '@/stores/melody-store'
 import { melodyStore } from '@/stores/melody-store'
 import { createSession, getDefaultSession, getSessionStore, saveSession } from '@/stores/session-store'

@@ -4,7 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { For } from 'solid-js'
-import { appStore } from '@/stores/app-store'
+import { appStore } from '@/stores'
 import styles from '@/styles/Notifications.module.css'
 
 export const Notifications: Component = () => {

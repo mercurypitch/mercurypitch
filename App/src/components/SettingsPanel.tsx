@@ -4,7 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, Show } from 'solid-js'
-import { appStore } from '@/stores/app-store'
+import { appStore } from '@/stores'
 
 export const SettingsPanel: Component = () => {
   const s = () => appStore.settings()

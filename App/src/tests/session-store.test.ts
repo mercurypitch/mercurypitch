@@ -11,7 +11,7 @@ import {
   isInSessionMode,
   recordSessionItemResult,
   startPracticeSession,
-} from '@/stores/app-store'
+} from '@/stores'
 import { createScaleItem } from '@/stores/session-store'
 import type { NoteResult, SessionItem } from '@/types'
 

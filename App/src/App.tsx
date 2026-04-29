@@ -31,11 +31,11 @@ import { PracticeEngine } from '@/lib/practice-engine'
 import { melodyIndexAtBeat } from '@/lib/scale-data'
 import { buildMultiOctaveScale, keyTonicFreq, melodyTotalBeats, midiToNote, } from '@/lib/scale-data'
 import { generateShareURL, hasSharedPresetInURL, loadFromURL, } from '@/lib/share-url'
-import { appStore, editorView, getNoteAccuracyMap, setEditorView } from '@/stores/app-store'
+import { appStore, editorView, getNoteAccuracyMap, setEditorView } from '@/stores'
 import { getMelodyFromLibraryByName } from '@/stores/melody-store'
 import { melodyStore } from '@/stores/melody-store'
 import { playback } from '@/stores/playback-store'
-import { getSessionStore } from '@/stores/session-store'
+import { getSessionStore, initSessionHistory } from '@/stores/session-store'
 import type { PitchSample } from '@/types'
 import type { MelodyItem, MelodyNote, NoteName, NoteResult, PitchResult, PracticeResult, SavedUserSession, SessionItem, } from '@/types'
 import type { PlaybackState } from '@/types'
@@ -67,7 +67,7 @@ function filterMelodyForPractice(
 
   if (subMode === 'focus') {
     // Use session history to find worst-performing notes
-    const history = appStore.sessionHistory()
+    const history = getSessionHistory()
     if (history.length === 0) return melody // No history — practice all
 
     // Find notes with the most errors
@@ -449,7 +449,7 @@ export const App: Component<AppProps> = (props) => {
   // ── Stats panel ──────────────────────────────────────────────
 
   const statsCounts = createMemo(() => {
-    const results = noteResults()
+    const results = noteResults() ?? []
     return {
       perfect: results.filter((r) => r.rating === 'perfect').length,
       excellent: results.filter((r) => r.rating === 'excellent').length,
@@ -561,31 +561,13 @@ export const App: Component<AppProps> = (props) => {
       }
     }
 
-    // Expose appStore to window for e2e tests
-    ;(window as unknown as { __appStore: typeof appStore }).__appStore =
-      appStore
-    ;(window as unknown as { melodyStore: typeof melodyStore }).melodyStore =
-      melodyStore
-
-    // Expose session playback handlers for LibraryTab
-    ;(
-      window as unknown as {
-        __loadAndPlayMelodyForSession: (melodyId: string) => void
-        __playSessionSequence: (melodyIds: string[]) => void
-        __setPlayMode: (mode: 'once' | 'repeat' | 'practice') => void
-      }
-    ).__loadAndPlayMelodyForSession = loadAndPlayMelodyForSession
-    ;(
-      window as unknown as {
-        __playSessionSequence: (melodyIds: string[]) => void
-        __setPlayMode: (mode: 'once' | 'repeat' | 'practice') => void
-      }
-    ).__playSessionSequence = playSessionSequence
-    ;(
-      window as unknown as {
-        __setPlayMode: (mode: 'once' | 'repeat' | 'practice') => void
-      }
-    ).__setPlayMode = setPlayMode
+    import('@/lib/test-utils').then(m => {
+      m.exposeForE2E('__appStore', appStore)
+      m.exposeForE2E('__melodyStore', melodyStore)
+      m.exposeForE2E('__loadAndPlayMelodyForSession', loadAndPlayMelodyForSession)
+      m.exposeForE2E('__playSessionSequence', playSessionSequence)
+      m.exposeForE2E('__setPlayMode', setPlayMode)
+    })
 
     // Fallback: direct click listeners on tab buttons in case SolidJS delegation misses them
     // This handles the edge case where innerHTML-created elements need explicit handlers
@@ -741,13 +723,10 @@ export const App: Component<AppProps> = (props) => {
     audioEngine.setReverbWetness(appStore.reverb().wetness)
 
     // EXPOSE ENGINES FOR E2E TESTING
-    if (typeof window !== 'undefined') {
-      ;(window as unknown as { __appStore: typeof appStore }).__appStore =
-        appStore
-      ;(
-        window as unknown as { __playbackRuntime: PlaybackRuntime }
-      ).__playbackRuntime = playbackRuntime
-    }
+    import('@/lib/test-utils').then(m => {
+      m.exposeForE2E('__appStore', appStore)
+      m.exposeForE2E('__playbackRuntime', playbackRuntime)
+    })
 
     // Create PlaybackRuntime - orchestrates audio and timing
     // Note: BPM is managed by appStore, passed to AudioEngine for timing
@@ -780,11 +759,9 @@ export const App: Component<AppProps> = (props) => {
     })
 
     // EXPOSE PLAYBACK RUNTIME FOR E2E TESTING
-    if (typeof window !== 'undefined') {
-      ;(
-        window as unknown as { __playbackRuntime: PlaybackRuntime }
-      ).__playbackRuntime = playbackRuntime
-    }
+    import('@/lib/test-utils').then(m => {
+      m.exposeForE2E('__playbackRuntime', playbackRuntime)
+    })
 
     practiceEngine = new PracticeEngine(audioEngine, { sensitivity: 5 })
 
@@ -1548,8 +1525,9 @@ export const App: Component<AppProps> = (props) => {
         setShouldAutoStartPlayback(false) // Reset flag after starting
       } else if (item && (item.type === 'melody' || item.type === 'preset')) {
         console.log('[auto-start session] Starting playback for melody item:', item.label)
-        const melodyItems = appStore.buildSessionItemMelody(item)
-        melodyStore.setMelody(melodyItems)
+        appStore.buildSessionItemMelody(item).then(melodyItems => {
+            melodyStore.setMelody(melodyItems)
+        })
         setRepeatCycles(1)
         setTimeout(() => void handlePlay(), 500)
         setShouldAutoStartPlayback(false)
@@ -1578,7 +1556,7 @@ export const App: Component<AppProps> = (props) => {
         octave: note?.octave ?? 4,
         midi,
         freq: 440 * Math.pow(2, (midi - 69) / 12),
-      },
+      } as MelodyNote,
       duration: Math.max(0.25, endBeat - startBeat),
       startBeat,
     }
@@ -1680,6 +1658,9 @@ export const App: Component<AppProps> = (props) => {
     if (note === null) return null
     return note.name + note.octave
   })
+  
+  // Backward compat mapping until these are migrated properly in Phase 4
+  const getSessionHistory = () => appStore.sessionResults()
 
   // ── Session mode complete handler ───────────────────────────────────────
   const handleSessionModeComplete = (): void => {
@@ -1819,8 +1800,8 @@ export const App: Component<AppProps> = (props) => {
 
   const noteAccuracyMap = createMemo(() => {
     // Track session history so this recomputes when history changes
-    void appStore.sessionHistory.length
-    return getNoteAccuracyMap()
+    void getSessionHistory().length
+    return getNoteAccuracyMap() as Map<number, number>
   })
 
   const scoreGrade = createMemo(() => {
@@ -2174,35 +2155,35 @@ export const App: Component<AppProps> = (props) => {
               {practiceResult()!.noteCount} notes ·{' '}
               {practiceResult()!.avgCents.toFixed(1)}¢ avg
             </div>
-            <div id="score-stats">
-              <div class="score-stat score-stat-perfect">
-                <div class="score-stat-value">
-                  {noteResults().filter((r) => r.rating === 'perfect').length}
-                </div>
+              <div id="score-stats">
+                <div class="score-stat score-stat-perfect">
+                  <div class="score-stat-value">
+                    {(noteResults() ?? []).filter((r) => r.rating === 'perfect').length}
+                  </div>
                 <div class="score-stat-label">Perfect</div>
               </div>
-              <div class="score-stat score-stat-excellent">
-                <div class="score-stat-value">
-                  {noteResults().filter((r) => r.rating === 'excellent').length}
-                </div>
+                <div class="score-stat score-stat-excellent">
+                  <div class="score-stat-value">
+                    {(noteResults() ?? []).filter((r) => r.rating === 'excellent').length}
+                  </div>
                 <div class="score-stat-label">Excellent</div>
               </div>
-              <div class="score-stat score-stat-good">
-                <div class="score-stat-value">
-                  {noteResults().filter((r) => r.rating === 'good').length}
-                </div>
+                <div class="score-stat score-stat-good">
+                  <div class="score-stat-value">
+                    {(noteResults() ?? []).filter((r) => r.rating === 'good').length}
+                  </div>
                 <div class="score-stat-label">Good</div>
               </div>
-              <div class="score-stat score-stat-okay">
-                <div class="score-stat-value">
-                  {noteResults().filter((r) => r.rating === 'okay').length}
-                </div>
+                <div class="score-stat score-stat-okay">
+                  <div class="score-stat-value">
+                    {(noteResults() ?? []).filter((r) => r.rating === 'okay').length}
+                  </div>
                 <div class="score-stat-label">Okay</div>
               </div>
-              <div class="score-stat score-stat-off">
-                <div class="score-stat-value">
-                  {noteResults().filter((r) => r.rating === 'off').length}
-                </div>
+                <div class="score-stat score-stat-off">
+                  <div class="score-stat-value">
+                    {(noteResults() ?? []).filter((r) => r.rating === 'off').length}
+                  </div>
                 <div class="score-stat-label">Off</div>
               </div>
             </div>
@@ -2223,18 +2204,19 @@ export const App: Component<AppProps> = (props) => {
             </div>
 
             {/* Session history mini chart */}
-            <Show when={appStore.sessionHistory().length > 1}>
+            <Show when={getSessionHistory().length > 1}>
               <div id="score-history">
                 <h3 class="history-title">Recent Progress</h3>
                 <div class="history-chart">
-                  {appStore
-                    .sessionHistory()
-                    .slice(0, 10)
-                    .map((session) => (
+            {getSessionHistory()
+              .slice(0, 10)
+              .map((session) => (
                       <div
                         class="history-bar"
-                        style={{ height: `${session.score}%` }}
-                        title={`Score: ${session.score}%`}
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        style={{ height: `${(session as any).score}%` }}
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        title={`Score: ${(session as any).score}%`}
                       />
                     ))}
                 </div>
