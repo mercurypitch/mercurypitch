@@ -37,9 +37,17 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
   const [lastValidTab, setLastValidTab] = createSignal<WalkthroughTab>('practice')
 
   // Load walkthrough when initially provided and modal opens
+  // Use a ref guard so "Back to list" doesn't re-trigger this effect
+  let initialWalkthroughLoaded = false
   createEffect(() => {
-    if (props.initialWalkthroughId !== null && props.initialWalkthroughId !== undefined && props.isOpen) {
-      startWalkthrough(props.initialWalkthroughId)
+    const id = props.initialWalkthroughId
+    const open = props.isOpen
+    if (id !== null && id !== undefined && open && !initialWalkthroughLoaded) {
+      startWalkthrough(id)
+      initialWalkthroughLoaded = true
+    }
+    if (!open) {
+      initialWalkthroughLoaded = false
     }
   })
 
@@ -103,14 +111,17 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
   }
 
   const handleContinue = () => {
-    // Find next unfinished walkthrough
-    const allWalkthroughs = getWalkthroughsForTab(currentTab())
-    const nextWalkthrough = allWalkthroughs.find(w => !isWalkthroughCompleted(w.id))
-    if (nextWalkthrough) {
-      startWalkthrough(nextWalkthrough.id)
-    } else {
-      props.onClose()
+    // Find next unfinished walkthrough across ALL tabs
+    for (const tab of ['practice', 'editor', 'settings', 'study'] as const) {
+      const walkthroughs = getWalkthroughsForTab(tab)
+      const nextWalkthrough = walkthroughs.find(w => !isWalkthroughCompleted(w.id))
+      if (nextWalkthrough) {
+        startWalkthrough(nextWalkthrough.id)
+        return
+      }
     }
+    // All done
+    props.onClose()
   }
 
   const closeOnBackdrop = (e: MouseEvent) => {
