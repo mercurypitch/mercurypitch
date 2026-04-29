@@ -3,12 +3,13 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createSignal, Show } from 'solid-js'
+import { createEffect, createSignal, Show } from 'solid-js'
 import { WalkthroughModal, WalkthroughSelection } from '@/components'
 import type { WalkthroughTab } from '@/stores/walkthrough-store'
 
 interface WalkthroughControlProps {
   showOnStart?: boolean
+  showButtons?: boolean
   onStartWalkthrough?: (walkthroughId: string, tab: WalkthroughTab) => void
   onOpenGuide?: () => void
 }
@@ -22,6 +23,13 @@ export const WalkthroughControl: Component<WalkthroughControlProps> = (props) =>
     setShowSelection(true)
     setSelectedWalkthrough(null)
   }
+
+  // Expose for external callers (sidebar)
+  createEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as unknown as { __openWalkthroughs?: () => void }).__openWalkthroughs = handleOpenWalkthroughs
+    }
+  })
 
   const handleStartWalkthrough = (walkthroughId: string, _walkthroughTab: WalkthroughTab) => {
     setSelectedWalkthrough(walkthroughId)
@@ -64,7 +72,7 @@ export const WalkthroughControl: Component<WalkthroughControlProps> = (props) =>
       />
 
       {/* Learn + Guide buttons */}
-      <Show when={props.showOnStart === false || props.showOnStart === undefined}>
+      <Show when={props.showButtons !== false}>
         <div class="walkthrough-control-group">
           <button
             class="walkthrough-control-btn"

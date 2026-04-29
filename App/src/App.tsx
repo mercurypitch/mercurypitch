@@ -1769,8 +1769,8 @@ export const App: Component<AppProps> = (props) => {
             <p class="subtitle">Voice Pitch Practice</p>
           </div>
           <div class="header-right">
-            {/* Walkthrough Control Button */}
-            <WalkthroughControl showOnStart={false} onOpenGuide={openGuideSelection} />
+            {/* Walkthrough modals (buttons moved to sidebar) */}
+            <WalkthroughControl showButtons={false} onOpenGuide={openGuideSelection} />
           </div>
           <nav id="app-tabs">
             <button
@@ -1810,6 +1810,10 @@ export const App: Component<AppProps> = (props) => {
             }}
             onOctaveShift={handleOctaveShift}
             onOpenScaleBuilder={() => setShowScaleBuilder(true)}
+            onOpenLearn={() => {
+              (window as unknown as { __openWalkthroughs?: () => void }).__openWalkthroughs?.()
+            }}
+            onOpenGuide={openGuideSelection}
             melody={() => melodyStore.items()}
             currentNoteIndex={currentNoteIndex}
             noteResults={noteResults}
