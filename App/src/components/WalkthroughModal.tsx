@@ -6,13 +6,7 @@ import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, Show } from 'solid-js'
 import { renderMarkdownToHtml } from '@/lib/render-markdown'
 import type { WalkthroughTab } from '@/stores/walkthrough-store'
-import {
-  completeWalkthrough,
-  getWalkthrough,
-  getWalkthroughsForTab,
-  isWalkthroughCompleted,
-  viewWalkthrough
-} from '@/stores/walkthrough-store'
+import { completeWalkthrough, getWalkthrough, getWalkthroughsForTab, isWalkthroughCompleted, viewWalkthrough, } from '@/stores/walkthrough-store'
 import type { WalkthroughContent } from '@/types/walkthrough'
 
 interface WalkthroughModalProps {
@@ -23,9 +17,9 @@ interface WalkthroughModalProps {
 }
 
 export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
-  const [currentWalkthrough, setCurrentWalkthrough] = createSignal<WalkthroughContent | undefined>(
-    undefined,
-  )
+  const [currentWalkthrough, setCurrentWalkthrough] = createSignal<
+    WalkthroughContent | undefined
+  >(undefined)
   const [currentStepIndex, setCurrentStepIndex] = createSignal(0)
 
   // Load walkthrough when provided
@@ -87,9 +81,14 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
 
   const handleContinue = () => {
     // Find next unfinished walkthrough across all tabs
-    for (const tab of ['practice', 'editor', 'settings', 'study'] as WalkthroughTab[]) {
+    for (const tab of [
+      'practice',
+      'editor',
+      'settings',
+      'study',
+    ] as WalkthroughTab[]) {
       const walkthroughs = getWalkthroughsForTab(tab)
-      const next = walkthroughs.find(w => !isWalkthroughCompleted(w.id))
+      const next = walkthroughs.find((w) => !isWalkthroughCompleted(w.id))
       if (next) {
         startWalkthrough(next.id)
         return
@@ -127,10 +126,7 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
 
   return (
     <Show when={props.isOpen && currentWalkthrough()}>
-      <div
-        class="walkthrough-backdrop"
-        onClick={closeOnBackdrop}
-      >
+      <div class="walkthrough-backdrop" onClick={closeOnBackdrop}>
         <div class="walkthrough-modal">
           {/* Completed state */}
           <Show when={isCompleted()} keyed>
@@ -143,7 +139,10 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
               <button class="walkthrough-complete-btn" onClick={handleContinue}>
                 Continue
               </button>
-              <button class="walkthrough-back-list-btn" onClick={handleBackToList}>
+              <button
+                class="walkthrough-back-list-btn"
+                onClick={handleBackToList}
+              >
                 ← Back to list
               </button>
             </div>
@@ -165,7 +164,9 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
 
                 <div
                   class="walkthrough-text"
-                  innerHTML={renderMarkdownToHtml(currentWalkthrough()!.content)}
+                  innerHTML={renderMarkdownToHtml(
+                    currentWalkthrough()!.content,
+                  )}
                 />
 
                 <div class="walkthrough-steps">
@@ -175,7 +176,9 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
                       {(step, index) => (
                         <Show when={index() === currentStepIndex()}>
                           <div class="walkthrough-step-item active">
-                            <span class="walkthrough-step-number">{index() + 1}</span>
+                            <span class="walkthrough-step-number">
+                              {index() + 1}
+                            </span>
                             <div class="walkthrough-step-details">
                               <h4 class="walkthrough-step-title">
                                 {step.title}
@@ -204,7 +207,7 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
                   ← Previous
                 </button>
 
-                {currentStepIndex() < (currentWalkthrough()!.steps.length - 1) ? (
+                {currentStepIndex() < currentWalkthrough()!.steps.length - 1 ? (
                   <button
                     class="walkthrough-nav-btn walkthrough-nav-btn-next"
                     onClick={nextStep}

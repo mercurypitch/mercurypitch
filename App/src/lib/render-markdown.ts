@@ -100,8 +100,8 @@ export function renderMarkdownToHtml(md: string): string {
         `<div class="md-admonition md-admonition-${type}">` +
           `<span class="md-admonition-icon"></span>` +
           `<div class="md-admonition-content">` +
-          `<strong class="md-admonition-label">${label}</strong>${ 
-          bodyHtml 
+          `<strong class="md-admonition-label">${label}</strong>${
+            bodyHtml
           }</div></div>`,
       )
       continue

@@ -425,9 +425,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
         // playback order, so the j-th played note's rating is at
         // noteResults[j]. Only used when colorCodeNotes is on.
         const playedRating: NoteResult['rating'] | null =
-          isPlayed && colorCodeNotes() && playedRecord
-            ? (playedRecord.rating ?? null)
-            : null
+          isPlayed && colorCodeNotes() ? (playedRecord.rating ?? null) : null
         const playedPalette = playedRating ? ratingColors(playedRating) : null
 
         // Note bar fill — much more opaque than before so the bars are

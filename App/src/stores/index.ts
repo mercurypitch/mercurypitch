@@ -69,12 +69,6 @@ export const appStore = {
   // Re-map loadSession correctly since it was in userSessionStore but was expected in appStore
   loadSession: userSessionStore.loadSession,
 
-  // TODO: Cleanup -> Stubs for removed methods that are now pure functions or context-bound
-  // getNoteAccuracyMap: () => ({}),
-  // saveSession: () => {},
-  // clearSessionHistory: () => {},
-  // getSessionHistory: () => [],
-  // sessionHistory: () => [],
   startPracticeSession: (session: PlaybackSession) => {
     practiceStore.setPracticeSession(session)
     practiceStore.setSessionMode(true)
@@ -91,25 +85,11 @@ export const appStore = {
 
   // More missing stubs
   buildSessionItemMelody,
-  // initPresets/presets are dead stubs but still referenced by App.tsx
-  // initialization and PresetPillGallery component for now.
-  initPresets: () => {},
-  presets: () => ({}) as Record<string, unknown>,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  walkthroughStep: (walkthroughStore as any).getWalkthroughStep ?? (() => 0),
-
-  walkthroughActive:
-    (walkthroughStore as any).isWalkthroughActive ?? (() => false),
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  startWalkthrough: (walkthroughStore as any).startWalkthrough ?? (() => {}),
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  endWalkthrough: (walkthroughStore as any).endWalkthrough ?? (() => {}),
-
-  nextWalkthroughStep:
-    (walkthroughStore as any).nextWalkthroughStep ?? (() => {}),
-
-  prevWalkthroughStep:
-    (walkthroughStore as any).prevWalkthroughStep ?? (() => {}),
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  WALKTHROUGH_STEPS: (walkthroughStore as any).WALKTHROUGH_STEPS ?? [],
+  walkthroughStep: appStoreCore.getWalkthroughStep,
+  walkthroughActive: appStoreCore.isWalkthroughActive,
+  startWalkthrough: appStoreCore.startWalkthrough,
+  endWalkthrough: appStoreCore.endWalkthrough,
+  nextWalkthroughStep: appStoreCore.nextWalkthroughStep,
+  prevWalkthroughStep: appStoreCore.prevWalkthroughStep,
+  WALKTHROUGH_STEPS: appStoreCore.WALKTHROUGH_STEPS,
 }

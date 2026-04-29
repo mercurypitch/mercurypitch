@@ -3,12 +3,8 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { For, onMount,Show } from 'solid-js'
-import {
-  getIncompleteGuideSections,
-  GUIDE_SECTIONS,
-  isGuideSectionCompleted,
-} from '@/stores/app-store'
+import { For, onMount, Show } from 'solid-js'
+import { getIncompleteGuideSections, GUIDE_SECTIONS, isGuideSectionCompleted, } from '@/stores/app-store'
 
 interface GuideSelectionProps {
   isOpen: boolean
@@ -21,14 +17,14 @@ export const GuideSelection: Component<GuideSelectionProps> = (props) => {
 
   const handleStartFull = () => {
     props.onClose()
-    props.onStartTour(GUIDE_SECTIONS.map(s => s.id))
+    props.onStartTour(GUIDE_SECTIONS.map((s) => s.id))
   }
 
   const handleStartIncomplete = () => {
     const secs = incomplete()
     if (secs.length === 0) return
     props.onClose()
-    props.onStartTour(secs.map(s => s.id))
+    props.onStartTour(secs.map((s) => s.id))
   }
 
   const handleStartSection = (id: string) => {
@@ -51,7 +47,11 @@ export const GuideSelection: Component<GuideSelectionProps> = (props) => {
         <div class="guide-selection" onClick={(e) => e.stopPropagation()}>
           <div class="guide-selection-header">
             <h2>Guide Tour</h2>
-            <button class="guide-close-btn" onClick={props.onClose} title="Close">
+            <button
+              class="guide-close-btn"
+              onClick={props.onClose}
+              title="Close"
+            >
               <svg viewBox="0 0 24 24" width="20" height="20">
                 <path
                   fill="currentColor"
@@ -62,21 +62,31 @@ export const GuideSelection: Component<GuideSelectionProps> = (props) => {
           </div>
 
           <p class="guide-selection-desc">
-            Choose a guided spotlight tour. The tour highlights UI elements and explains how they work.
+            Choose a guided spotlight tour. The tour highlights UI elements and
+            explains how they work.
           </p>
 
           {/* Quick actions */}
           <div class="guide-quick-actions">
             <button class="guide-quick-btn" onClick={handleStartFull}>
               <svg viewBox="0 0 24 24" width="18" height="18">
-                <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+                <path
+                  fill="currentColor"
+                  d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"
+                />
               </svg>
               Full Tour (All Sections)
             </button>
             <Show when={incomplete().length > 0}>
-              <button class="guide-quick-btn guide-quick-incomplete" onClick={handleStartIncomplete}>
+              <button
+                class="guide-quick-btn guide-quick-incomplete"
+                onClick={handleStartIncomplete}
+              >
                 <svg viewBox="0 0 24 24" width="18" height="18">
-                  <path fill="currentColor" d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0013 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z" />
+                  <path
+                    fill="currentColor"
+                    d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0013 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"
+                  />
                 </svg>
                 Incomplete Only ({incomplete().length} sections)
               </button>
@@ -97,12 +107,18 @@ export const GuideSelection: Component<GuideSelectionProps> = (props) => {
                     <span class="guide-section-icon">
                       <Show when={done}>
                         <svg viewBox="0 0 24 24" width="18" height="18">
-                          <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+                          <path
+                            fill="currentColor"
+                            d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"
+                          />
                         </svg>
                       </Show>
                       <Show when={!done}>
                         <svg viewBox="0 0 24 24" width="18" height="18">
-                          <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z" />
+                          <path
+                            fill="currentColor"
+                            d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"
+                          />
                         </svg>
                       </Show>
                     </span>

@@ -5,16 +5,8 @@
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, onCleanup, Show } from 'solid-js'
 import type { WalkthroughStep } from '@/stores/app-store'
-import {
-  activeTab,
-  appStore,
-  endWalkthrough,
-  GUIDE_SECTIONS,
-  nextWalkthroughStep,
-  prevWalkthroughStep,
-  setActiveTab,
-  skipSection,
-} from '@/stores/app-store'
+import { appStore, endWalkthrough, GUIDE_SECTIONS, nextWalkthroughStep, prevWalkthroughStep, skipSection, } from '@/stores/app-store'
+import { activeTab, setActiveTab } from '@/stores/ui-store'
 
 type Placement = 'top' | 'bottom' | 'left' | 'right'
 
@@ -41,8 +33,14 @@ export const Walkthrough: Component = () => {
   // Current section info
   const currentSection = () => {
     const step = currentStep()
-    if (!step || step.section === undefined || step.section === null || step.section === '') return null
-    return GUIDE_SECTIONS.find(s => s.id === step.section) ?? null
+    if (
+      !step ||
+      step.section === undefined ||
+      step.section === null ||
+      step.section === ''
+    )
+      return null
+    return GUIDE_SECTIONS.find((s) => s.id === step.section) ?? null
   }
 
   const getPlacement = (): Placement => currentStep()?.placement ?? 'bottom'
@@ -63,7 +61,11 @@ export const Walkthrough: Component = () => {
   // Poll until a target element exists in the DOM
   // Checks immediately first (0 delay) to resolve instantly if already rendered
   // Retries up to `maxAttempts` times with `intervalMs` between attempts
-  const waitForTarget = (selector: string, maxAttempts = 10, intervalMs = 50): Promise<boolean> =>
+  const waitForTarget = (
+    selector: string,
+    maxAttempts = 10,
+    intervalMs = 50,
+  ): Promise<boolean> =>
     new Promise((resolve) => {
       let attempts = 0
       const tryOnce = () => {
@@ -82,9 +84,16 @@ export const Walkthrough: Component = () => {
     })
 
   const updateHighlight = () => {
-    if (!highlightRef) return
+    if (highlightRef === undefined) return
     const step = currentStep()
-    if (!step) return
+    if (
+      step === undefined ||
+      step.targetSelector === undefined ||
+      step.targetSelector === ''
+    ) {
+      highlightRef.style.display = 'none'
+      return
+    }
     const el = document.querySelector(step.targetSelector)
     if (!el) {
       highlightRef.style.display = 'none'
@@ -103,13 +112,19 @@ export const Walkthrough: Component = () => {
   // then re-position highlight + tooltip after scroll settles
   const scrollToTargetIfNeeded = () => {
     const step = currentStep()
-    if (!step) return
+    if (
+      step === undefined ||
+      step.targetSelector === undefined ||
+      step.targetSelector === ''
+    )
+      return
     const el = document.querySelector(step.targetSelector)
     if (!el) return
 
     const margin = 80
     const r = el.getBoundingClientRect()
-    const needsScroll = r.top < -margin || r.bottom > window.innerHeight + margin
+    const needsScroll =
+      r.top < -margin || r.bottom > window.innerHeight + margin
     if (!needsScroll) return
 
     // Use instant scroll so highlight/tooltip update immediately
@@ -136,11 +151,15 @@ export const Walkthrough: Component = () => {
   }
 
   const updateTooltip = () => {
-    if (!tooltipRef) return
+    if (tooltipRef === undefined) return
     const step = currentStep()
-    if (!step) return
-    const el = document.querySelector(step.targetSelector)
-    if (!el) {
+    const targetSelector = step?.targetSelector
+    const el =
+      targetSelector !== undefined && targetSelector !== ''
+        ? document.querySelector(targetSelector)
+        : null
+
+    if (el === null) {
       const vw = window.innerWidth
       const vh = window.innerHeight
       const tooltipRect = tooltipRef.getBoundingClientRect()
@@ -252,7 +271,12 @@ export const Walkthrough: Component = () => {
   createEffect(() => {
     appStore.walkthroughStep()
     const step = currentStep()
-    if (!step) return
+    if (
+      step === undefined ||
+      step.targetSelector === undefined ||
+      step.targetSelector === ''
+    )
+      return
 
     waitForTarget(step.targetSelector).then((found) => {
       if (found) {
@@ -272,9 +296,9 @@ export const Walkthrough: Component = () => {
     const sec = currentSection()
     if (!sec) return { current: 0, total: 0 }
     const allSteps = steps()
-    const secSteps = allSteps.filter(s => s.section === sec.id)
+    const secSteps = allSteps.filter((s) => s.section === sec.id)
     const currentSecStep = secSteps.indexOf(
-      allSteps[appStore.walkthroughStep()]
+      allSteps[appStore.walkthroughStep()],
     )
     return {
       current: currentSecStep >= 0 ? currentSecStep + 1 : 1,
@@ -306,12 +330,8 @@ export const Walkthrough: Component = () => {
             )}
           </Show>
 
-          <h3 class="walkthrough-step-title">
-            {currentStep()?.title}
-          </h3>
-          <p class="walkthrough-step-desc">
-            {currentStep()?.description}
-          </p>
+          <h3 class="walkthrough-step-title">{currentStep()?.title}</h3>
+          <p class="walkthrough-step-desc">{currentStep()?.description}</p>
           <div class="walkthrough-actions">
             <button class="walkthrough-skip" onClick={endWalkthrough}>
               Skip Tour

@@ -7622,7 +7622,8 @@ Keeps your existing styles, only adjusts layout
 #bpm-input::-webkit-inner-spin-button,
 #bpm-input::-webkit-outer-spin-button {
   opacity: 1;
-  filter: invert(65%) sepia(44%) saturate(711%) hue-rotate(179deg) brightness(96%) contrast(95%);
+  filter: invert(65%) sepia(44%) saturate(711%) hue-rotate(179deg)
+    brightness(96%) contrast(95%);
   cursor: pointer;
 }
 
@@ -7639,8 +7640,14 @@ Keeps your existing styles, only adjusts layout
   padding: 4px 8px;
   border: 1px solid rgba(88, 166, 255, 0.22);
   border-radius: 999px;
-  background: linear-gradient(180deg, rgba(22, 27, 34, 0.95), rgba(13, 17, 23, 0.9));
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 0 0 1px rgba(0,0,0,0.18);
+  background: linear-gradient(
+    180deg,
+    rgba(22, 27, 34, 0.95),
+    rgba(13, 17, 23, 0.9)
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 0 0 1px rgba(0, 0, 0, 0.18);
 }
 
 .practice-mode-label {
@@ -7665,12 +7672,14 @@ Keeps your existing styles, only adjusts layout
   color-scheme: dark;
   appearance: none;
   background-image:
-    linear-gradient(45deg, transparent 50%, rgba(88,166,255,0.95) 50%),
-    linear-gradient(135deg, rgba(88,166,255,0.95) 50%, transparent 50%);
+    linear-gradient(45deg, transparent 50%, rgba(88, 166, 255, 0.95) 50%),
+    linear-gradient(135deg, rgba(88, 166, 255, 0.95) 50%, transparent 50%);
   background-position:
     calc(100% - 16px) 11px,
     calc(100% - 11px) 11px;
-  background-size: 5px 5px, 5px 5px;
+  background-size:
+    5px 5px,
+    5px 5px;
   background-repeat: no-repeat;
 }
 
@@ -7681,7 +7690,9 @@ Keeps your existing styles, only adjusts layout
 
 .practice-mode-control-group .practice-sub-mode-select:focus {
   border-color: rgba(88, 166, 255, 0.9);
-  box-shadow: 0 0 0 3px rgba(88,166,255,0.16), 0 0 18px rgba(88,166,255,0.16);
+  box-shadow:
+    0 0 0 3px rgba(88, 166, 255, 0.16),
+    0 0 18px rgba(88, 166, 255, 0.16);
 }
 
 .practice-mode-control-group .practice-sub-mode-select option {
@@ -7713,12 +7724,14 @@ Keeps your existing styles, only adjusts layout
   color-scheme: dark;
   appearance: none;
   background-image:
-    linear-gradient(45deg, transparent 50%, rgba(88,166,255,0.95) 50%),
-    linear-gradient(135deg, rgba(88,166,255,0.95) 50%, transparent 50%);
+    linear-gradient(45deg, transparent 50%, rgba(88, 166, 255, 0.95) 50%),
+    linear-gradient(135deg, rgba(88, 166, 255, 0.95) 50%, transparent 50%);
   background-position:
     calc(100% - 16px) 14px,
     calc(100% - 11px) 14px;
-  background-size: 5px 5px, 5px 5px;
+  background-size:
+    5px 5px,
+    5px 5px;
   background-repeat: no-repeat;
 }
 
@@ -7732,7 +7745,7 @@ Keeps your existing styles, only adjusts layout
 #settings-panel .settings-row select:focus {
   outline: none;
   border-color: rgba(88, 166, 255, 0.9);
-  box-shadow: 0 0 0 3px rgba(88,166,255,0.14);
+  box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.14);
 }
 
 .settings-panel .settings-row select option,

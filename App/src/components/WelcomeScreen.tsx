@@ -41,23 +41,19 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
   }
 
   return (
-    <div
-      class="welcome-overlay"
-      onClick={handleClose}
-    >
+    <div class="welcome-overlay" onClick={handleClose}>
       <div
         class="welcome-card"
         onClick={(e) => {
           e.stopPropagation()
         }}
       >
-        <button
-          class="welcome-close"
-          onClick={handleClose}
-          title="Dismiss"
-        >
+        <button class="welcome-close" onClick={handleClose} title="Dismiss">
           <svg viewBox="0 0 24 24" width="20" height="20">
-            <path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+            <path
+              fill="currentColor"
+              d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+            />
           </svg>
         </button>
 
@@ -105,7 +101,10 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
           {micEnabled() && (
             <div class="welcome-mic-success">
               <svg viewBox="0 0 24 24" width="16" height="16">
-                <path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                <path
+                  fill="currentColor"
+                  d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"
+                />
               </svg>
               Enabled
             </div>
@@ -120,29 +119,42 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
           <div class="welcome-feature">
             <div class="welcome-feature-icon welcome-feature-icon-practice">
               <svg viewBox="0 0 24 24" width="20" height="20">
-                <path fill="currentColor" d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
+                <path
+                  fill="currentColor"
+                  d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"
+                />
               </svg>
             </div>
             <div class="welcome-feature-text">
               <strong>Practice</strong>
-              <p>Sing along to melodies with real-time pitch feedback and scoring</p>
+              <p>
+                Sing along to melodies with real-time pitch feedback and scoring
+              </p>
             </div>
           </div>
           <div class="welcome-feature">
             <div class="welcome-feature-icon welcome-feature-icon-editor">
               <svg viewBox="0 0 24 24" width="20" height="20">
-                <path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a.996.996 0 0 0 0-1.41l-2.34-2.34a.996.996 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
+                <path
+                  fill="currentColor"
+                  d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a.996.996 0 0 0 0-1.41l-2.34-2.34a.996.996 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"
+                />
               </svg>
             </div>
             <div class="welcome-feature-text">
               <strong>Create</strong>
-              <p>Build melodies in the piano roll editor, import MIDI, or record</p>
+              <p>
+                Build melodies in the piano roll editor, import MIDI, or record
+              </p>
             </div>
           </div>
           <div class="welcome-feature">
             <div class="welcome-feature-icon welcome-feature-icon-improve">
               <svg viewBox="0 0 24 24" width="20" height="20">
-                <path fill="currentColor" d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z" />
+                <path
+                  fill="currentColor"
+                  d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"
+                />
               </svg>
             </div>
             <div class="welcome-feature-text">
@@ -154,21 +166,18 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
 
         {/* Actions */}
         <div class="welcome-actions">
-          <button
-            class="welcome-cta"
-            onClick={handleClose}
-          >
+          <button class="welcome-cta" onClick={handleClose}>
             <svg viewBox="0 0 24 24" width="20" height="20">
               <path fill="currentColor" d="M8 5v14l11-7z" />
             </svg>
             Start Singing
           </button>
-          <button
-            class="welcome-tour-btn"
-            onClick={handleTakeTour}
-          >
+          <button class="welcome-tour-btn" onClick={handleTakeTour}>
             <svg viewBox="0 0 24 24" width="18" height="18">
-              <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+              <path
+                fill="currentColor"
+                d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"
+              />
             </svg>
             Take a Tour
           </button>

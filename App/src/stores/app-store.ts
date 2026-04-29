@@ -1,8 +1,8 @@
 import { createSignal } from 'solid-js'
 import { AudioEngine } from '@/lib/audio-engine'
+import { completeWalkthrough, getRemainingWalkthroughs, } from '@/stores/walkthrough-store'
 import type { WalkthroughStep as BaseWalkthroughStep } from '@/types/walkthrough'
-import { completeWalkthrough, getRemainingWalkthroughs } from '@/stores/walkthrough-store'
-export { activeTab, setActiveTab } from './ui-store'
+import type { ActiveTab } from './ui-store'
 
 // ── Key / Scale / Presets ──────────────────────────────────
 
@@ -54,14 +54,25 @@ export interface WalkthroughStep extends BaseWalkthroughStep {
   section?: string
   target?: string
   targetSelector?: string
-  requiredTab?: 'practice' | 'editor' | 'settings' | 'study'
+  requiredTab?: ActiveTab
   placement?: 'top' | 'bottom' | 'left' | 'right'
 }
-
 export const GUIDE_SECTIONS: WalkthroughSection[] = [
-  { id: 'practice', title: 'Practice', description: 'Learn the practice and playback controls.' },
-  { id: 'editor', title: 'Editor', description: 'Learn the piano-roll editor and session editor.' },
-  { id: 'settings', title: 'Settings', description: 'Learn configuration, audio, and visual settings.' },
+  {
+    id: 'practice',
+    title: 'Practice',
+    description: 'Learn the practice and playback controls.',
+  },
+  {
+    id: 'editor',
+    title: 'Editor',
+    description: 'Learn the piano-roll editor and session editor.',
+  },
+  {
+    id: 'settings',
+    title: 'Settings',
+    description: 'Learn configuration, audio, and visual settings.',
+  },
 ]
 
 export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
@@ -97,12 +108,14 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
 const GUIDE_SECTIONS_KEY = 'pitchperfect_guide_sections'
 const [walkthroughActive, setWalkthroughActive] = createSignal(false)
 const [walkthroughStep, setWalkthroughStep] = createSignal(0)
-const [tourSteps, setTourSteps] = createSignal<WalkthroughStep[]>(WALKTHROUGH_STEPS)
+const [tourSteps, setTourSteps] =
+  createSignal<WalkthroughStep[]>(WALKTHROUGH_STEPS)
 
 function loadCompletedGuideSections(): Record<string, boolean> {
   try {
     const stored = localStorage.getItem(GUIDE_SECTIONS_KEY)
-    if (stored !== null && stored !== '') return JSON.parse(stored) as Record<string, boolean>
+    if (stored !== null && stored !== '')
+      return JSON.parse(stored) as Record<string, boolean>
   } catch {
     // ignore
   }
@@ -127,7 +140,10 @@ export function getIncompleteGuideSections(): WalkthroughSection[] {
 }
 
 export function hasRemainingWalkthroughs(): boolean {
-  return getRemainingWalkthroughs().length > 0 || getIncompleteGuideSections().length > 0
+  return (
+    getRemainingWalkthroughs().length > 0 ||
+    getIncompleteGuideSections().length > 0
+  )
 }
 
 export function getCompletedWalkthroughCount(): number {
@@ -136,7 +152,9 @@ export function getCompletedWalkthroughCount(): number {
 
 function buildStepsFromSections(sectionIds: string[]): WalkthroughStep[] {
   const idSet = new Set(sectionIds)
-  return WALKTHROUGH_STEPS.filter((step) => step.section !== undefined && idSet.has(step.section))
+  return WALKTHROUGH_STEPS.filter(
+    (step) => step.section !== undefined && idSet.has(step.section),
+  )
 }
 
 export function startWalkthrough(sectionIds?: string[]): void {
@@ -182,12 +200,14 @@ export function getWalkthroughStep(): number {
 
 export { walkthroughActive, walkthroughStep, tourSteps }
 
-
 export function skipSection(): void {
   const steps = tourSteps()
   const current = steps[walkthroughStep()]
   const currentSection = current?.section
-  const nextIdx = steps.findIndex((step, index) => index > walkthroughStep() && step.section !== currentSection)
+  const nextIdx = steps.findIndex(
+    (step, index) =>
+      index > walkthroughStep() && step.section !== currentSection,
+  )
   if (nextIdx >= 0) setWalkthroughStep(nextIdx)
   else endWalkthrough()
 }
