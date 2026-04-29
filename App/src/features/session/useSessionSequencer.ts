@@ -238,16 +238,28 @@ export function useSessionSequencer(deps: Deps): SessionSequencer {
     setSessionActive(true)
   }
 
-  const playSessionSequence = (_melodyIds: string[]): void => {
+  const playSessionSequence = (melodyIds: string[]): void => {
     const session = userSession()
     if (!session || session.items.length === 0) return
 
+    // If explicit melody IDs provided, play them one-by-one in sequence
+    // (the 'complete' handler in App.tsx will call playNextInSessionSequence).
+    // Otherwise fall back to the concatenated practice-session playback.
     closeSidebar()
-    setSessionMelodyIds([])
-    setSessionCurrentMelodyIndex(-1)
-    setPlayMode('practice')
-    setActiveTab('practice')
-    handlePlay()
+    if (melodyIds.length > 0) {
+      setSessionMelodyIds(melodyIds)
+      setSessionCurrentMelodyIndex(0)
+      setPlayMode('practice')
+      setActiveTab('practice')
+      loadAndPlayMelodyForSession(melodyIds[0])
+      handlePlay()
+    } else {
+      setSessionMelodyIds([])
+      setSessionCurrentMelodyIndex(-1)
+      setPlayMode('practice')
+      setActiveTab('practice')
+      handlePlay()
+    }
   }
 
   const playNextInSessionSequence = (): void => {

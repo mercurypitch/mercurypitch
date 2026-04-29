@@ -4,6 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, For, onMount, Show } from 'solid-js'
+import { buildSessionItemMelody } from '@/lib/session-builder'
 import { appStore, setEditorView } from '@/stores'
 import { bpm, scaleType, setActiveTab, setActiveUserSession, showLibrary, showNotification, showPresetsLibrary, showSessionLibrary, userSession as userSessionSignal, } from '@/stores'
 import { getActiveSession, getSessions } from '@/stores/melody-store'
@@ -506,30 +507,45 @@ export const LibraryTab: Component = () => {
                       ? item.melodyData.name
                       : item.label
 
+                  // Non-rest items (melody, scale, preset) are all clickable.
+                  // Scales/presets are loaded into melodyStore as a transient melody.
+                  const isClickable = item.type !== 'rest'
+                  const handleClickItem = (e: MouseEvent) => {
+                    if (!isClickable) return
+                    if (
+                      isMelody &&
+                      !isMissingMelody &&
+                      item.melodyId !== null &&
+                      item.melodyId !== undefined
+                    ) {
+                      handleMelodyClick(item.melodyId, e)
+                      return
+                    }
+                    // Scale or preset: build the items into the melody store
+                    // so they're loaded as the current melody.
+                    const built = buildSessionItemMelody(item)
+                    if (built.length > 0) {
+                      melodyStore.setMelody(built)
+                      setActiveTab('editor')
+                      setEditorView('piano-roll')
+                    }
+                  }
+                  const handleDblClickItem = () => {
+                    if (
+                      isMelody &&
+                      !isMissingMelody &&
+                      item.melodyId !== null &&
+                      item.melodyId !== undefined
+                    ) {
+                      handleMelodyDoubleClick(item.melodyId)
+                    }
+                  }
                   return (
                     <span
-                      class={`session-item-pill ${isMelody ? 'melody-pill' : ''} ${isSelected ? 'selected' : ''} ${isActiveMelody ? 'active' : ''}`}
+                      class={`session-item-pill ${isMelody ? 'melody-pill' : ''} ${isClickable ? 'clickable' : ''} ${isSelected ? 'selected' : ''} ${isActiveMelody ? 'active' : ''}`}
                       title={itemLabel}
-                      onClick={(e) => {
-                        if (
-                          isMelody &&
-                          !isMissingMelody &&
-                          item.melodyId !== null &&
-                          item.melodyId !== undefined
-                        ) {
-                          handleMelodyClick(item.melodyId, e)
-                        }
-                      }}
-                      onDblClick={() => {
-                        if (
-                          isMelody &&
-                          !isMissingMelody &&
-                          item.melodyId !== null &&
-                          item.melodyId !== undefined
-                        ) {
-                          handleMelodyDoubleClick(item.melodyId)
-                        }
-                      }}
+                      onClick={handleClickItem}
+                      onDblClick={handleDblClickItem}
                     >
                       <span class="pill-icon">
                         {isMelody &&

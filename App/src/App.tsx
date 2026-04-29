@@ -479,16 +479,17 @@ const AppShell: Component<AppProps> = (props) => {
       }
     }
 
-    if (import.meta.env.DEV) {
-      registerE2EBridge({
-        appStore,
-        melodyStore,
-        playbackRuntime,
-        loadAndPlayMelodyForSession,
-        playSessionSequence,
-        setPlayMode,
-      })
-    }
+    // Always register the bridge — production code (e.g. LibraryTab Play All)
+    // currently relies on `__loadAndPlayMelodyForSession` and `__playSessionSequence`
+    // being available. The bridge itself is gated by build mode internally.
+    registerE2EBridge({
+      appStore,
+      melodyStore,
+      playbackRuntime,
+      loadAndPlayMelodyForSession,
+      playSessionSequence,
+      setPlayMode,
+    })
 
     // Shared preset URL
     if (typeof hasSharedPresetInURL === 'function' && hasSharedPresetInURL()) {
@@ -748,6 +749,30 @@ const AppShell: Component<AppProps> = (props) => {
                 <div class="session-editor-container">
                   <SessionEditor />
                 </div>
+              </Show>
+
+              {/* Editor playhead — mirrors the practice-tab playhead so
+                  users see playback progress while playing in the editor. */}
+              <Show
+                when={
+                  editorView() === 'piano-roll' &&
+                  (editorIsPlaying() || editorIsPaused())
+                }
+              >
+                <div
+                  id="editor-playhead"
+                  class="playhead"
+                  style={{
+                    position: 'absolute',
+                    left: `${playheadPosition()}%`,
+                    top: 0,
+                    bottom: 0,
+                    width: '2px',
+                    background: 'var(--accent, #4caf50)',
+                    'pointer-events': 'none',
+                    'z-index': 50,
+                  }}
+                />
               </Show>
 
               <Show when={editorView() === 'piano-roll'}>
