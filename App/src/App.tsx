@@ -114,6 +114,15 @@ const AppShell: Component<AppProps> = (props) => {
   const [practiceSubMode, setPracticeSubMode] =
     createSignal<PracticeSubMode>('all')
 
+  // ── Guide Selection dialog ──────────────────────────────────
+  const [showGuideSelection, setShowGuideSelection] = createSignal(false)
+  const openGuideSelection = () => setShowGuideSelection(true)
+  const closeGuideSelection = () => setShowGuideSelection(false)
+  const startGuideTour = (sectionIds: string[]) => {
+    closeGuideSelection()
+    appStore.startWalkthrough(sectionIds)
+  }
+
   // ── Recording controller ────────────────────────────────────
   const recording = useRecordingController({
     audioEngine,
@@ -602,7 +611,8 @@ const AppShell: Component<AppProps> = (props) => {
             <p class="subtitle">Voice Pitch Practice</p>
           </div>
           <div class="header-right">
-            <WalkthroughControl showOnStart={false} />
+            {/* Walkthrough modals (buttons moved to sidebar) */}
+            <WalkthroughControl showButtons={false} onOpenGuide={openGuideSelection} />
           </div>
           <nav id="app-tabs">
             <button
@@ -639,6 +649,10 @@ const AppShell: Component<AppProps> = (props) => {
             onOctaveShift={handleOctaveShift}
             onOpenScaleBuilder={() => setShowScaleBuilder(true)}
             melody={activePlaybackItems}
+            onOpenLearn={() => {
+              (window as unknown as { __openWalkthroughs?: () => void }).__openWalkthroughs?.()
+            }}
+            onOpenGuide={openGuideSelection}
             currentNoteIndex={currentNoteIndex}
             noteResults={noteResults}
             isPlaying={isPlaying}

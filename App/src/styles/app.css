@@ -4989,12 +4989,12 @@ Keeps your existing styles, only adjusts layout
 .welcome-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(13, 17, 23, 0.92);
+  background: rgba(0, 0, 0, 0.6);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 2000;
-  backdrop-filter: blur(6px);
+  z-index: 9999;
+  backdrop-filter: blur(4px);
   animation: welcome-fadein 0.3s ease;
 }
 
@@ -5009,13 +5009,15 @@ Keeps your existing styles, only adjusts layout
 
 .welcome-card {
   background: var(--bg-secondary);
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 40px 44px;
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 32px 36px 28px;
   text-align: center;
-  min-width: 380px;
-  max-width: 480px;
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
+  width: 420px;
+  max-width: 92vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
   position: relative;
   animation: welcome-slidein 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
@@ -5031,152 +5033,254 @@ Keeps your existing styles, only adjusts layout
   }
 }
 
-.welcome-hero {
-  margin-bottom: 28px;
+/* Close button */
+.welcome-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.welcome-mic-section {
-  text-align: center;
-  padding: 16px 20px;
-  margin-bottom: 24px;
+.welcome-close:hover {
   background: var(--bg-tertiary);
-  border-radius: 12px;
+  color: var(--text-primary);
+}
+
+/* Hero section */
+.welcome-hero {
+  margin-bottom: 24px;
+}
+
+.welcome-icon {
+  color: var(--accent);
+  margin-bottom: 12px;
+  filter: drop-shadow(0 0 16px rgba(88, 166, 255, 0.4));
+}
+
+.welcome-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 6px;
+  letter-spacing: -0.02em;
+}
+
+.welcome-subtitle {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+/* Mic section */
+.welcome-mic-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  margin-bottom: 20px;
+  background: var(--bg-tertiary);
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  text-align: left;
+}
+
+.welcome-mic-icon {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  color: var(--accent);
   border: 1px solid var(--border-color);
 }
 
-.welcome-mic-section h3 {
-  font-size: 1rem;
-  color: var(--text-primary);
-  margin: 0 0 8px;
+.welcome-mic-text {
+  flex: 1;
+  min-width: 0;
 }
 
-.welcome-mic-section p {
+.welcome-mic-text strong {
+  display: block;
   font-size: 0.82rem;
-  color: var(--text-secondary);
-  margin: 0 0 14px;
-  line-height: 1.4;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.welcome-mic-text p {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.3;
 }
 
 .welcome-mic-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  background: var(--accent-color);
+  flex-shrink: 0;
+  padding: 8px 14px;
+  background: var(--accent);
   color: #fff;
   border: none;
   border-radius: 8px;
-  font-size: 0.9rem;
+  font-size: 0.78rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .welcome-mic-btn:hover {
-  opacity: 0.9;
-  transform: translateY(-1px);
+  background: var(--accent-hover);
 }
 
 .welcome-mic-success {
+  flex-shrink: 0;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   color: var(--success-color);
-  font-size: 0.88rem;
+  font-size: 0.78rem;
   font-weight: 500;
+  padding: 6px 12px;
+  background: rgba(34, 197, 94, 0.1);
+  border-radius: 6px;
 }
 
 .welcome-mic-error {
   color: var(--error-color);
-  font-size: 0.8rem;
-  padding: 8px 12px;
+  font-size: 0.75rem;
+  padding: 6px 10px;
   background: rgba(248, 81, 73, 0.1);
   border-radius: 6px;
-  margin-top: 8px;
+  flex-shrink: 0;
 }
 
-.welcome-icon {
-  color: var(--accent);
-  margin-bottom: 12px;
-  filter: drop-shadow(0 0 12px var(--accent));
-}
-
-.welcome-title {
-  font-size: 1.65rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin: 0 0 8px;
-  letter-spacing: -0.02em;
-}
-
-.welcome-subtitle {
-  font-size: 0.95rem;
-  color: var(--text-secondary);
-  margin: 0;
-}
-
+/* Features */
 .welcome-features {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  margin-bottom: 28px;
+  gap: 8px;
+  margin-bottom: 24px;
   text-align: left;
 }
 
 .welcome-feature {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 12px;
-  padding: 12px 14px;
+  padding: 10px 14px;
   background: var(--bg-tertiary);
   border-radius: 10px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-color);
 }
 
-.welcome-feature svg {
+.welcome-feature-icon {
   flex-shrink: 0;
-  color: var(--accent);
-  margin-top: 2px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
 }
 
-.welcome-feature strong {
+.welcome-feature-icon-practice {
+  color: #58a6ff;
+}
+
+.welcome-feature-icon-editor {
+  color: #d2a8ff;
+}
+
+.welcome-feature-icon-improve {
+  color: #7ee787;
+}
+
+.welcome-feature-text {
+  flex: 1;
+  text-align: left;
+}
+
+.welcome-feature-text strong {
   display: block;
-  font-size: 0.88rem;
+  font-size: 0.82rem;
   color: var(--text-primary);
-  margin-bottom: 3px;
+  margin-bottom: 1px;
 }
 
-.welcome-feature p {
-  font-size: 0.8rem;
-  color: var(--text-secondary);
+.welcome-feature-text p {
+  font-size: 0.75rem;
+  color: var(--text-muted);
   margin: 0;
-  line-height: 1.4;
+  line-height: 1.3;
+}
+
+/* Actions */
+.welcome-actions {
+  display: flex;
+  gap: 10px;
 }
 
 .welcome-cta {
+  flex: 2;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  padding: 12px 28px;
+  padding: 12px 20px;
   background: var(--accent);
   color: #fff;
   border: none;
   border-radius: 10px;
-  font-size: 1rem;
+  font-size: 0.92rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s ease;
-  box-shadow: 0 4px 16px rgba(88, 166, 255, 0.3);
+  box-shadow: 0 4px 16px rgba(88, 166, 255, 0.25);
 }
 
 .welcome-cta:hover {
   background: var(--accent-hover);
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(88, 166, 255, 0.4);
+  box-shadow: 0 6px 20px rgba(88, 166, 255, 0.35);
 }
 
 .welcome-cta:active {
   transform: translateY(0);
+}
+
+.welcome-tour-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.welcome-tour-btn:hover {
+  background: var(--bg-secondary);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 /* ============================================================
@@ -5355,28 +5459,6 @@ Keeps your existing styles, only adjusts layout
 .tour-btn:hover {
   background: var(--bg-secondary);
   color: var(--text-primary);
-}
-
-/* WelcomeScreen tour button */
-.welcome-tour-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  padding: 11px;
-  margin-top: 10px;
-  border-radius: 10px;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border-color);
-  color: var(--text-primary);
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-.welcome-tour-btn:hover {
-  background: var(--bg-secondary);
 }
 
 /* ===== Library Modal ===== */
@@ -6305,7 +6387,7 @@ Keeps your existing styles, only adjusts layout
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 4px;
 }
 
 .active-session-summary {
@@ -6663,29 +6745,10 @@ Keeps your existing styles, only adjusts layout
 // Walkthrough Styles (GH #199)
 // ============================================================ */
 
-/* Walkthrough Control Button */
-.walkthrough-control-btn {
+/* Walkthrough control group - Learn + Guide buttons side by side */
+.walkthrough-control-group {
   display: flex;
-  align-items: center;
   gap: 6px;
-  padding: 6px 12px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--text);
-  cursor: pointer;
-  font-size: 0.85rem;
-  transition: all 0.2s;
-}
-
-.walkthrough-control-btn:hover {
-  background: var(--accent);
-  color: white;
-  border-color: var(--accent);
-}
-
-.walkthrough-control-text {
-  font-weight: 500;
 }
 
 /* Walkthrough control button - aligned with tabs */
@@ -6717,7 +6780,24 @@ Keeps your existing styles, only adjusts layout
   transform: scale(0.98);
 }
 
-/* Walkthrough Selection Overlay */
+.walkthrough-control-text {
+  font-size: 0.85rem;
+}
+
+/* Guide button - subtle variant */
+.walkthrough-control-btn-guide {
+  background: var(--surface-dim, var(--surface));
+  border-color: var(--border-muted, var(--border));
+  opacity: 0.85;
+}
+
+.walkthrough-control-btn-guide:hover {
+  opacity: 1;
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Walkthrough / Learn Selection Overlay */
 .walkthrough-selection-overlay {
   position: fixed;
   inset: 0;
@@ -6727,266 +6807,203 @@ Keeps your existing styles, only adjusts layout
   justify-content: center;
   z-index: 9999;
   backdrop-filter: blur(4px);
+  animation: welcome-fadein 0.25s ease;
 }
 
 .walkthrough-selection-card {
-  background: var(--surface);
-  border-radius: 12px;
-  max-width: 500px;
-  width: 90%;
-  max-height: 80vh;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  width: 400px;
+  max-width: 92vw;
+  max-height: 85vh;
   overflow-y: auto;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  animation: welcome-slidein 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  display: flex;
+  flex-direction: column;
 }
 
 .ws-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 24px;
-  border-bottom: 1px solid var(--border);
+  padding: 20px 24px 16px;
+  flex-shrink: 0;
 }
 
 .ws-header-left {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
-.ws-percentage {
-  font-size: 1.5rem;
-  font-weight: 700;
+.ws-header-icon {
   color: var(--accent);
 }
 
 .ws-title {
   margin: 0;
-  font-size: 1.25rem;
-  font-weight: 600;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
 }
 
 .ws-close-btn {
   background: none;
   border: none;
-  color: var(--text);
+  color: var(--text-muted);
   cursor: pointer;
   padding: 4px;
-  border-radius: 4px;
-  transition: background 0.2s;
+  border-radius: 6px;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
 }
 
 .ws-close-btn:hover {
-  background: var(--background);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
 }
 
-.ws-progress-container {
-  padding: 16px 24px;
+/* Progress */
+.ws-progress {
+  padding: 0 24px 16px;
+  flex-shrink: 0;
 }
 
 .ws-progress-bar {
   width: 100%;
-  height: 8px;
-  background: var(--background);
-  border-radius: 4px;
+  height: 4px;
+  background: var(--bg-tertiary);
+  border-radius: 2px;
   overflow: hidden;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .ws-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--accent), var(--accent-light));
+  background: var(--accent);
+  border-radius: 2px;
   transition: width 0.3s ease;
 }
 
 .ws-progress-text {
-  font-size: 0.85rem;
-  color: var(--text-secondary);
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
-.ws-info {
-  padding: 16px 24px;
-  text-align: center;
-  color: var(--text-secondary);
-  font-size: 0.95rem;
-}
-
-.ws-tabs {
+/* Chapters list */
+.ws-chapters {
+  padding: 0 16px 16px;
+  flex: 1;
+  overflow-y: auto;
   display: flex;
-  gap: 8px;
-  padding: 0 24px;
-  border-bottom: 1px solid var(--border);
+  flex-direction: column;
+  gap: 6px;
 }
 
-.ws-tab {
+.ws-chapter-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 16px;
-  background: none;
-  border: none;
-  color: var(--text-secondary);
-  cursor: pointer;
-  font-size: 0.9rem;
-  border-bottom: 2px solid transparent;
-  transition: all 0.2s;
-  border-radius: 4px 4px 0 0;
-}
-
-.ws-tab:hover {
-  color: var(--text);
-  background: var(--background);
-}
-
-.ws-tab.active {
-  color: var(--accent);
-  border-bottom-color: var(--accent);
-  font-weight: 500;
-}
-
-.ws-tab-badge {
-  background: var(--accent);
-  color: white;
-  font-size: 0.7rem;
-  padding: 2px 6px;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
   border-radius: 10px;
-  min-width: 18px;
-  text-align: center;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s;
+  width: 100%;
+  font-size: 0.88rem;
+  color: var(--text-primary);
 }
 
-.ws-list {
-  padding: 16px 24px;
+.ws-chapter-item:hover {
+  border-color: var(--accent);
+  background: var(--bg-secondary);
 }
 
-.ws-item {
-  margin-bottom: 8px;
+.ws-chapter-icon {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: var(--bg-secondary);
+  color: var(--text-muted);
+  border: 1px solid var(--border-color);
 }
 
-.ws-item.completed .ws-item-button {
+.ws-chapter-icon-done {
+  color: var(--success-color);
+  border-color: var(--success-color);
+  background: rgba(34, 197, 94, 0.08);
+}
+
+.ws-chapter-title {
+  flex: 1;
+  font-weight: 500;
+  font-size: 0.85rem;
+}
+
+.ws-chapter-tab {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  background: var(--bg-secondary);
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: capitalize;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  border: 1px solid var(--border-color);
+}
+
+.ws-chapter-done {
   opacity: 0.6;
 }
 
-.ws-item-button {
-  width: 100%;
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 16px;
-  background: var(--background);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  text-align: left;
-  cursor: pointer;
-  transition: all 0.2s;
+.ws-chapter-done:hover {
+  opacity: 1;
 }
 
-.ws-item-button:hover {
-  border-color: var(--accent);
-  transform: translateY(-1px);
-}
-
-.ws-item-icon {
-  font-size: 1.5rem;
-  flex-shrink: 0;
-}
-
-.ws-item-content {
-  flex: 1;
-  min-width: 0;
-}
-
-.ws-item-title {
-  margin: 0 0 4px 0;
-  font-size: 1rem;
-  font-weight: 500;
-}
-
-.ws-item-desc {
-  margin: 0;
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-}
-
-.ws-item-status {
-  color: var(--accent);
-  font-weight: 700;
-  flex-shrink: 0;
-}
-
-.ws-completed-section {
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid var(--border);
-}
-
-.ws-completed-title {
-  margin: 0 0 12px 0;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-}
-
-.ws-completed-list {
+.ws-completed {
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
-.ws-completed-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  background: var(--background);
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.ws-completed-item:hover {
-  background: var(--accent-light);
-}
-
+/* Footer */
 .ws-footer {
-  display: flex;
-  gap: 12px;
   padding: 16px 24px;
-  border-top: 1px solid var(--border);
-  background: var(--background);
-  border-radius: 0 0 12px 12px;
+  border-top: 1px solid var(--border-color);
+  flex-shrink: 0;
 }
 
-.ws-skip-btn {
-  flex: 1;
-  padding: 10px 16px;
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--text-secondary);
-  cursor: pointer;
-  font-size: 0.9rem;
-  transition: all 0.2s;
-}
-
-.ws-skip-btn:hover {
-  background: var(--background);
-  color: var(--text);
-}
-
-.ws-done-btn {
-  flex: 2;
+.ws-close-footer {
+  width: 100%;
   padding: 10px 16px;
   background: var(--accent);
+  color: #fff;
   border: none;
-  border-radius: 6px;
-  color: white;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  font-weight: 600;
   cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 500;
-  transition: all 0.2s;
+  transition: all 0.15s;
 }
 
-.ws-done-btn:hover {
-  background: var(--accent-light);
+.ws-close-footer:hover {
+  background: var(--accent-hover);
 }
 
 /* Walkthrough Modal */
@@ -7002,20 +7019,23 @@ Keeps your existing styles, only adjusts layout
 }
 
 .walkthrough-modal {
-  background: var(--surface);
+  background: var(--bg-primary);
   border-radius: 12px;
-  max-width: 700px;
-  width: 90%;
+  max-width: 680px;
+  width: 95vw;
+  max-width: min(680px, 95vw);
   max-height: 85vh;
   display: flex;
   flex-direction: column;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
 }
 
 .walkthrough-content {
   display: flex;
   flex-direction: column;
   max-height: 100%;
+  overflow: hidden;
 }
 
 .walkthrough-header {
@@ -7075,7 +7095,7 @@ Keeps your existing styles, only adjusts layout
 .walkthrough-item {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 16px;
   padding: 16px;
   margin-bottom: 12px;
@@ -7084,16 +7104,8 @@ Keeps your existing styles, only adjusts layout
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s;
-  text-align: center;
-  width: 100%;
-}
-
-.walkthrough-item-title {
-  margin: 0;
-  font-size: 1rem;
-  font-weight: 500;
-  line-height: 1.4;
   text-align: left;
+  width: 100%;
 }
 
 .walkthrough-item:hover {
@@ -7145,20 +7157,13 @@ Keeps your existing styles, only adjusts layout
 .walkthrough-item-content {
   flex: 1;
   min-width: 0;
-  text-align: center;
+  text-align: left;
 }
 
 .walkthrough-item-title {
   margin: 0 0 6px 0;
   font-size: 1rem;
   font-weight: 500;
-  line-height: 1.4;
-}
-
-.walkthrough-item-desc {
-  margin: 0;
-  font-size: 0.9rem;
-  color: var(--text-secondary);
   line-height: 1.4;
 }
 
@@ -7211,8 +7216,10 @@ Keeps your existing styles, only adjusts layout
 .walkthrough-body {
   display: flex;
   flex-direction: column;
-  max-height: 100%;
-  padding: 32px 24px;
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  overscroll-behavior: contain;
 }
 
 .walkthrough-back-btn {
@@ -7236,7 +7243,7 @@ Keeps your existing styles, only adjusts layout
 }
 
 .walkthrough-back-list-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 8px 12px;
@@ -7247,6 +7254,7 @@ Keeps your existing styles, only adjusts layout
   cursor: pointer;
   font-size: 0.85rem;
   margin: 16px auto 0;
+  max-width: 200px;
   transition: all 0.2s;
 }
 
@@ -7264,27 +7272,261 @@ Keeps your existing styles, only adjusts layout
 }
 
 .walkthrough-main-desc {
-  text-align: center;
+  text-align: left;
   margin: 0 0 24px 0;
   color: var(--text-secondary);
   max-width: 600px;
-  align-self: center;
+  align-self: start;
 }
 
 .walkthrough-text {
   flex: 1;
   overflow-y: auto;
-  padding: 0 24px 24px;
-  margin-bottom: 20px;
+  padding: 0 0 24px;
+  overscroll-behavior: contain;
 }
 
 .walkthrough-paragraph {
-  text-align: center;
-  margin: 24px auto;
-  line-height: 1.7;
+  text-align: left;
+  margin: 0 0 12px 0;
+  line-height: 1.6;
   color: var(--text);
-  max-width: 600px;
-  padding: 0 12px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+/* ============================================================
+   Markdown Rendered Content — Walkthrough tutorial text
+   ============================================================ */
+
+/* Paragraphs */
+.walkthrough-text .md-paragraph {
+  text-align: left;
+  margin: 0 0 12px 0;
+  line-height: 1.7;
+  color: var(--text-primary);
+  font-size: 0.92rem;
+}
+
+/* Headings */
+.walkthrough-text .md-h2 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin: 24px 0 10px 0;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+.walkthrough-text .md-h2:first-child {
+  margin-top: 0;
+}
+
+.walkthrough-text .md-h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 18px 0 8px 0;
+  color: var(--text-primary);
+}
+
+/* Bold / italic inherited from strong/em but ensure contrast */
+.walkthrough-text strong {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.walkthrough-text em {
+  font-style: italic;
+  color: var(--text-secondary, var(--text-muted));
+}
+
+/* Lists */
+.walkthrough-text .md-list {
+  margin: 0 0 14px 0;
+  padding-left: 22px;
+  list-style: none;
+  counter-reset: md-list-counter;
+}
+
+.walkthrough-text .md-list li {
+  position: relative;
+  margin: 0 0 6px 0;
+  padding-left: 4px;
+  line-height: 1.6;
+  font-size: 0.92rem;
+  color: var(--text-primary);
+}
+
+.walkthrough-text .md-list li::before {
+  position: absolute;
+  left: -18px;
+  top: 2px;
+  width: 7px;
+  height: 7px;
+  background: var(--accent);
+  border-radius: 50%;
+  opacity: 0.7;
+  content: '';
+}
+
+/* Ordered lists */
+.walkthrough-text .md-list-ordered {
+  counter-reset: md-list-counter;
+}
+
+.walkthrough-text .md-list-ordered li {
+  counter-increment: md-list-counter;
+  list-style: none;
+}
+
+.walkthrough-text .md-list-ordered li::before {
+  content: counter(md-list-counter) ".";
+  background: none;
+  width: auto;
+  height: auto;
+  opacity: 1;
+  left: -22px;
+  top: 0;
+  font-weight: 600;
+  color: var(--accent);
+  border-radius: 0;
+}
+
+/* Admonitions (callouts) */
+.walkthrough-text .md-admonition {
+  display: flex;
+  gap: 12px;
+  margin: 16px 0;
+  padding: 14px 16px;
+  border-radius: 8px;
+  border-left: 4px solid var(--accent);
+  background: var(--bg-tertiary);
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+
+.walkthrough-text .md-admonition p {
+  margin: 0 0 6px 0;
+  color: var(--text-primary);
+}
+
+.walkthrough-text .md-admonition p:last-child {
+  margin-bottom: 0;
+}
+
+.walkthrough-text .md-admonition-icon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  margin-top: 1px;
+  color: white;
+}
+
+.walkthrough-text .md-admonition-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.walkthrough-text .md-admonition-label {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 4px;
+  color: var(--text-secondary, var(--text-muted));
+}
+
+/* Note — blue */
+.walkthrough-text .md-admonition-note {
+  border-left-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.08);
+}
+.walkthrough-text .md-admonition-note .md-admonition-icon {
+  background: #3b82f6;
+}
+
+/* Tip — green */
+.walkthrough-text .md-admonition-tip {
+  border-left-color: #22c55e;
+  background: rgba(34, 197, 94, 0.08);
+}
+.walkthrough-text .md-admonition-tip .md-admonition-icon {
+  background: #22c55e;
+}
+
+/* Warning — orange */
+.walkthrough-text .md-admonition-warning {
+  border-left-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.08);
+}
+.walkthrough-text .md-admonition-warning .md-admonition-icon {
+  background: #f59e0b;
+}
+
+/* Info — purple */
+.walkthrough-text .md-admonition-info {
+  border-left-color: #8b5cf6;
+  background: rgba(139, 92, 246, 0.08);
+}
+.walkthrough-text .md-admonition-info .md-admonition-icon {
+  background: #8b5cf6;
+}
+
+/* Admonition icon content */
+.walkthrough-text .md-admonition-note .md-admonition-icon::before { content: 'N'; }
+.walkthrough-text .md-admonition-tip .md-admonition-icon::before { content: 'T'; }
+.walkthrough-text .md-admonition-warning .md-admonition-icon::before { content: '!'; }
+.walkthrough-text .md-admonition-info .md-admonition-icon::before { content: 'i'; }
+
+/* Tables */
+.walkthrough-text table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0 16px 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.walkthrough-text thead {
+  background: var(--bg-tertiary);
+}
+
+.walkthrough-text th {
+  padding: 8px 12px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.82rem;
+  color: var(--text-primary);
+  border-bottom: 2px solid var(--border);
+  white-space: nowrap;
+}
+
+.walkthrough-text td {
+  padding: 7px 12px;
+  border-top: 1px solid var(--border);
+  color: var(--text-primary);
+}
+
+.walkthrough-text tr:last-child td {
+  border-bottom: none;
+}
+
+/* Inline text styling inside walkthrough */
+.walkthrough-text p strong,
+.walkthrough-text li strong {
+  font-weight: 600;
 }
 
 .walkthrough-steps {
@@ -7307,7 +7549,7 @@ Keeps your existing styles, only adjusts layout
   display: flex;
   gap: 16px;
   padding: 16px;
-  background: var(--background);
+  background: var(--bg-tertiary);
   border: 1px solid var(--border);
   border-radius: 8px;
   transition: all 0.2s;
@@ -7315,7 +7557,7 @@ Keeps your existing styles, only adjusts layout
 
 .walkthrough-step-item.active {
   border-color: var(--accent);
-  background: var(--accent-light);
+  background: var(--bg-tertiary);
 }
 
 .walkthrough-step-number {
@@ -7412,6 +7654,7 @@ Keeps your existing styles, only adjusts layout
   justify-content: center;
   padding: 48px 32px;
   text-align: center;
+  min-height: 400px;
 }
 
 .walkthrough-complete-icon {
@@ -7538,13 +7781,13 @@ Keeps your existing styles, only adjusts layout
   border: 1px solid rgba(88, 166, 255, 0.22);
   border-radius: 999px;
   background: linear-gradient(
-    180deg,
-    rgba(22, 27, 34, 0.95),
-    rgba(13, 17, 23, 0.9)
+          180deg,
+          rgba(22, 27, 34, 0.95),
+          rgba(13, 17, 23, 0.9)
   );
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.04),
-    0 0 0 1px rgba(0, 0, 0, 0.18);
+          inset 0 1px 0 rgba(255, 255, 255, 0.04),
+          0 0 0 1px rgba(0, 0, 0, 0.18);
 }
 
 .cycles-label {
@@ -7572,8 +7815,8 @@ Keeps your existing styles, only adjusts layout
 .cycles-control-group .cycles-input:focus {
   border-color: rgba(88, 166, 255, 0.9);
   box-shadow:
-    0 0 0 3px rgba(88, 166, 255, 0.16),
-    0 0 18px rgba(88, 166, 255, 0.16);
+          0 0 0 3px rgba(88, 166, 255, 0.16),
+          0 0 18px rgba(88, 166, 255, 0.16);
 }
 
 .cycle-progress-pill {
@@ -7585,9 +7828,9 @@ Keeps your existing styles, only adjusts layout
   border-radius: 999px;
   border: 1px solid rgba(63, 185, 80, 0.28);
   background: linear-gradient(
-    135deg,
-    rgba(63, 185, 80, 0.16),
-    rgba(88, 166, 255, 0.12)
+          135deg,
+          rgba(63, 185, 80, 0.16),
+          rgba(88, 166, 255, 0.12)
   );
   color: var(--text-primary);
   font-size: 0.78rem;
@@ -7623,7 +7866,7 @@ Keeps your existing styles, only adjusts layout
 #bpm-input::-webkit-outer-spin-button {
   opacity: 1;
   filter: invert(65%) sepia(44%) saturate(711%) hue-rotate(179deg)
-    brightness(96%) contrast(95%);
+  brightness(96%) contrast(95%);
   cursor: pointer;
 }
 
@@ -7641,13 +7884,13 @@ Keeps your existing styles, only adjusts layout
   border: 1px solid rgba(88, 166, 255, 0.22);
   border-radius: 999px;
   background: linear-gradient(
-    180deg,
-    rgba(22, 27, 34, 0.95),
-    rgba(13, 17, 23, 0.9)
+          180deg,
+          rgba(22, 27, 34, 0.95),
+          rgba(13, 17, 23, 0.9)
   );
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.04),
-    0 0 0 1px rgba(0, 0, 0, 0.18);
+          inset 0 1px 0 rgba(255, 255, 255, 0.04),
+          0 0 0 1px rgba(0, 0, 0, 0.18);
 }
 
 .practice-mode-label {
@@ -7672,14 +7915,14 @@ Keeps your existing styles, only adjusts layout
   color-scheme: dark;
   appearance: none;
   background-image:
-    linear-gradient(45deg, transparent 50%, rgba(88, 166, 255, 0.95) 50%),
-    linear-gradient(135deg, rgba(88, 166, 255, 0.95) 50%, transparent 50%);
+          linear-gradient(45deg, transparent 50%, rgba(88, 166, 255, 0.95) 50%),
+          linear-gradient(135deg, rgba(88, 166, 255, 0.95) 50%, transparent 50%);
   background-position:
-    calc(100% - 16px) 11px,
-    calc(100% - 11px) 11px;
+          calc(100% - 16px) 11px,
+          calc(100% - 11px) 11px;
   background-size:
-    5px 5px,
-    5px 5px;
+          5px 5px,
+          5px 5px;
   background-repeat: no-repeat;
 }
 
@@ -7691,8 +7934,8 @@ Keeps your existing styles, only adjusts layout
 .practice-mode-control-group .practice-sub-mode-select:focus {
   border-color: rgba(88, 166, 255, 0.9);
   box-shadow:
-    0 0 0 3px rgba(88, 166, 255, 0.16),
-    0 0 18px rgba(88, 166, 255, 0.16);
+          0 0 0 3px rgba(88, 166, 255, 0.16),
+          0 0 18px rgba(88, 166, 255, 0.16);
 }
 
 .practice-mode-control-group .practice-sub-mode-select option {
@@ -7724,14 +7967,14 @@ Keeps your existing styles, only adjusts layout
   color-scheme: dark;
   appearance: none;
   background-image:
-    linear-gradient(45deg, transparent 50%, rgba(88, 166, 255, 0.95) 50%),
-    linear-gradient(135deg, rgba(88, 166, 255, 0.95) 50%, transparent 50%);
+          linear-gradient(45deg, transparent 50%, rgba(88, 166, 255, 0.95) 50%),
+          linear-gradient(135deg, rgba(88, 166, 255, 0.95) 50%, transparent 50%);
   background-position:
-    calc(100% - 16px) 14px,
-    calc(100% - 11px) 14px;
+          calc(100% - 16px) 14px,
+          calc(100% - 11px) 14px;
   background-size:
-    5px 5px,
-    5px 5px;
+          5px 5px,
+          5px 5px;
   background-repeat: no-repeat;
 }
 
@@ -7752,4 +7995,239 @@ Keeps your existing styles, only adjusts layout
 #settings-panel .settings-row select option {
   background: #161b22;
   color: var(--text-primary);
+}
+
+/* ============================================================
+   Walkthrough Tour — Section Header & Actions (GH #199)
+   ============================================================ */
+
+.walkthrough-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.walkthrough-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+}
+
+.walkthrough-section-steps {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+/* Actions layout: skip left, center group, next right */
+.walkthrough-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.walkthrough-actions-center {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.walkthrough-skip-section {
+  font-size: 11px;
+  color: var(--text-muted);
+  background: none;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  cursor: pointer;
+  padding: 4px 8px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.walkthrough-skip-section:hover {
+  color: var(--text-secondary);
+  background: var(--bg-tertiary);
+}
+
+/* ============================================================
+   Guide Selection Dialog (GH #199)
+   ============================================================ */
+
+.guide-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+}
+
+.guide-selection {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 28px;
+  max-width: 480px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.3);
+  color: var(--text-primary);
+}
+
+.guide-selection-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.guide-selection-header h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.guide-close-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.guide-close-btn:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.guide-selection-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0 0 20px 0;
+  line-height: 1.5;
+}
+
+/* Quick action buttons */
+.guide-quick-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.guide-quick-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  width: 100%;
+  text-align: left;
+}
+
+.guide-quick-btn:hover {
+  background: var(--bg-secondary);
+  border-color: var(--accent);
+}
+
+.guide-quick-incomplete {
+  border-color: var(--accent);
+  background: var(--accent-light, rgba(108, 99, 255, 0.08));
+  color: var(--accent);
+}
+
+.guide-quick-incomplete:hover {
+  background: var(--accent-light, rgba(108, 99, 255, 0.15));
+}
+
+/* Section list */
+.guide-sections-list {
+  border-top: 1px solid var(--border-color);
+  padding-top: 16px;
+}
+
+.guide-sections-list h3 {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0 0 12px 0;
+}
+
+.guide-section-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: none;
+  color: var(--text-primary);
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  text-align: left;
+  margin-bottom: 4px;
+}
+
+.guide-section-item:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--border-color);
+}
+
+.guide-section-item.completed {
+  opacity: 0.6;
+}
+
+.guide-section-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  color: var(--accent);
+}
+
+.guide-section-item.completed .guide-section-icon {
+  color: #4caf50;
+}
+
+.guide-section-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.guide-section-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.guide-section-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.4;
 }
