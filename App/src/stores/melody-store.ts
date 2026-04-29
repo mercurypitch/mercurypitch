@@ -209,6 +209,17 @@ export function updateUserSession(session: PlaybackSession): void {
 // Default Session — seeded on first launch
 // ============================================================
 
+/**
+ * Build a scale melody starting from the given (key, octave) tonic.
+ *
+ * BUGFIX (v3): previously this hardcoded `60 + semitone` (C4 root) for
+ * every key — so "G Major Scale" produced the same notes as "C Major
+ * Scale". Now we compute the proper root MIDI from `key` (semitone offset
+ * from C: G→7, A→9, etc.) plus `octave`, then add the scale degree.
+ *
+ * E.g. G major octave 4: rootMidi = 12*(4+1) + 7 = 67 (G4), notes are
+ * G4 A4 B4 C5 D5 E5 F#5  G5  — different from C major.
+ */
 function buildScaleMelody(
   id: string,
   name: string,
@@ -217,19 +228,25 @@ function buildScaleMelody(
   octave: number,
   degrees: number[],
 ): MelodyData {
-  const items: MelodyItem[] = degrees.map((semitone, i) => ({
-    id: generateId(),
-    note: {
-      midi: 60 + semitone + (i > 0 && degrees[i] < degrees[i - 1] ? 12 : 0),
-      name: NOTE_NAMES[(60 + semitone) % 12] as MelodyNote['name'],
-      octave: 4 + (i > 0 && degrees[i] < degrees[i - 1] ? 1 : 0),
-      freq: midiToFreq(
-        60 + semitone + (i > 0 && degrees[i] < degrees[i - 1] ? 12 : 0),
-      ),
-    },
-    duration: 1,
-    startBeat: i,
-  }))
+  const keyIndex = Math.max(0, NOTE_NAMES.indexOf(key))
+  const rootMidi = 12 * (octave + 1) + keyIndex
+
+  const items: MelodyItem[] = degrees.map((semitone, i) => {
+    // Wrap into next octave once degrees decrease (covers descending
+    // chromatic-like scales). For ascending scales `degrees` is monotonic
+    // so the wrap term is 0.
+    const wrap = i > 0 && degrees[i] < degrees[i - 1] ? 12 : 0
+    const midi = rootMidi + semitone + wrap
+    const name = NOTE_NAMES[midi % 12] as MelodyNote['name']
+    const noteOctave = Math.floor(midi / 12) - 1
+    return {
+      id: generateId(),
+      note: { midi, name, octave: noteOctave, freq: midiToFreq(midi) },
+      duration: 1,
+      startBeat: i,
+    }
+  })
+
   return {
     id,
     name,

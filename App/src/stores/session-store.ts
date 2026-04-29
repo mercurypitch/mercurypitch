@@ -250,7 +250,16 @@ export function getDefaultSession(): PlaybackSession {
   return defaultSession
 }
 
-/** Create the default session with starter melodies */
+/** Create the default session with starter melodies.
+ *
+ * NOTE: Every non-rest item is a `type:'melody'` reference into a seeded
+ * scale-melody (`scale-major-c4`, `scale-major-g4`, …). Sessions never
+ * hold raw `type:'scale'` items — those used to be supported but were
+ * removed in v3 because the sidebar selection logic was inconsistent
+ * between melody-refs and scale-configs (only melody-refs got the
+ * `selected` / `melody-pill` styling, draggable behavior, etc.). If you
+ * need a scale, generate it as a melody and reference its id here.
+ */
 function createDefaultSession(): PlaybackSession {
   const defaultSession = createInternalSession('Default Session', [
     {
@@ -258,15 +267,14 @@ function createDefaultSession(): PlaybackSession {
       type: 'melody',
       startBeat: 0,
       label: 'C Major Scale',
-      melodyId: 'scale-major-c4', // Reference to pre-built C Major scale melody
+      melodyId: 'scale-major-c4',
     },
     {
       id: generateSessionItemId(),
-      type: 'scale' as 'rest',
+      type: 'melody',
       startBeat: 16,
-      label: 'G Major Scale (Octave 3-4)',
-      scaleType: 'major',
-      beats: 16,
+      label: 'G Major Scale',
+      melodyId: 'scale-major-g4',
     },
     {
       id: generateSessionItemId(),
