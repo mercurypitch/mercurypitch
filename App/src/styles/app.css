@@ -6673,6 +6673,12 @@ Keeps your existing styles, only adjusts layout
 // Walkthrough Styles (GH #199)
 // ============================================================ */
 
+/* Walkthrough control group - Learn + Guide buttons side by side */
+.walkthrough-control-group {
+  display: flex;
+  gap: 6px;
+}
+
 /* Walkthrough control button - aligned with tabs */
 .walkthrough-control-btn {
   display: flex;
@@ -6700,6 +6706,23 @@ Keeps your existing styles, only adjusts layout
 
 .walkthrough-control-btn:active {
   transform: scale(0.98);
+}
+
+.walkthrough-control-text {
+  font-size: 0.85rem;
+}
+
+/* Guide button - subtle variant */
+.walkthrough-control-btn-guide {
+  background: var(--surface-dim, var(--surface));
+  border-color: var(--border-muted, var(--border));
+  opacity: 0.85;
+}
+
+.walkthrough-control-btn-guide:hover {
+  opacity: 1;
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 /* Walkthrough / Learn Selection Overlay */

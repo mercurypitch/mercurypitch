@@ -13,7 +13,6 @@ import { LibraryModal } from '@/components/LibraryModal'
 import { Notifications } from '@/components/Notifications'
 import { PianoRollCanvas } from '@/components/PianoRollCanvas'
 import { PitchCanvas } from '@/components/PitchCanvas'
-import { PresetsLibraryModal } from '@/components/PresetsLibraryModal'
 import { ScaleBuilder } from '@/components/ScaleBuilder'
 import { SessionBrowser } from '@/components/SessionBrowser'
 import { SessionEditor } from '@/components/SessionEditor'
@@ -570,19 +569,27 @@ export const App: Component<AppProps> = (props) => {
         __loadAndPlayMelodyForSession: (melodyId: string) => void
         __playSessionSequence: (melodyIds: string[]) => void
         __setPlayMode: (mode: 'once' | 'repeat' | 'practice') => void
+        __openSessionBrowser: () => void
       }
     ).__loadAndPlayMelodyForSession = loadAndPlayMelodyForSession
     ;(
       window as unknown as {
         __playSessionSequence: (melodyIds: string[]) => void
         __setPlayMode: (mode: 'once' | 'repeat' | 'practice') => void
+        __openSessionBrowser: () => void
       }
     ).__playSessionSequence = playSessionSequence
     ;(
       window as unknown as {
         __setPlayMode: (mode: 'once' | 'repeat' | 'practice') => void
+        __openSessionBrowser: () => void
       }
     ).__setPlayMode = setPlayMode
+    ;(
+      window as unknown as {
+        __openSessionBrowser: () => void
+      }
+    ).__openSessionBrowser = () => setShowSessionBrowser(true)
 
     // Fallback: direct click listeners on tab buttons in case SolidJS delegation misses them
     // This handles the edge case where innerHTML-created elements need explicit handlers
@@ -1763,7 +1770,7 @@ export const App: Component<AppProps> = (props) => {
           </div>
           <div class="header-right">
             {/* Walkthrough Control Button */}
-            <WalkthroughControl showOnStart={false} />
+            <WalkthroughControl showOnStart={false} onOpenGuide={openGuideSelection} />
           </div>
           <nav id="app-tabs">
             <button
@@ -1803,7 +1810,6 @@ export const App: Component<AppProps> = (props) => {
             }}
             onOctaveShift={handleOctaveShift}
             onOpenScaleBuilder={() => setShowScaleBuilder(true)}
-            onOpenGuide={openGuideSelection}
             melody={() => melodyStore.items()}
             currentNoteIndex={currentNoteIndex}
             noteResults={noteResults}
@@ -1850,7 +1856,6 @@ export const App: Component<AppProps> = (props) => {
                   isCountingIn={() => isCountingIn()}
                   countInBeat={() => countInBeat()}
                   countInBeats={() => appStore.countIn()}
-                  onSessionsClick={() => setShowSessionBrowser(true)}
                   onMicToggle={() => {
                     void handleMicToggle()
                   }}
@@ -2197,11 +2202,14 @@ export const App: Component<AppProps> = (props) => {
         />
       </Show>
 
-      {/* Presets Library Modal */}
+      {/* Presets Library Modal → SessionBrowser */}
       <Show when={appStore.isPresetsModalOpen()}>
-        <PresetsLibraryModal
-          isOpen={true}
-          close={() => appStore.hidePresetsLibrary()}
+        <SessionBrowser
+          onClose={() => appStore.hidePresetsLibrary()}
+          onStartSession={(session) => {
+            appStore.startPracticeSession(session)
+            appStore.hidePresetsLibrary()
+          }}
         />
       </Show>
     </div>

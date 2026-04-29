@@ -95,8 +95,15 @@ export const LibraryTab: Component = () => {
     appStore.showSessionLibrary()
   }
 
-  const openPresetsLibrary = () => {
-    appStore.showPresetsLibrary()
+  // Presets button opens SessionBrowser via window callback
+  const openPresets = () => {
+    // Trigger SessionBrowser via the window handler set by App.tsx
+    const openBrowser = (
+      window as unknown as { __openSessionBrowser?: () => void }
+    ).__openSessionBrowser
+    if (openBrowser !== undefined) {
+      openBrowser()
+    }
   }
 
   const handleNewSession = () => {
@@ -279,7 +286,7 @@ export const LibraryTab: Component = () => {
           <button
             class="tab-action-btn"
             onClick={openLibrary}
-            title="Open Melodies"
+            title="Open Library"
           >
             <svg viewBox="0 0 24 24" width="14" height="14">
               <path
@@ -287,12 +294,12 @@ export const LibraryTab: Component = () => {
                 d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"
               />
             </svg>
-            Melodies
+            Browse
           </button>
           <button
             class="tab-action-btn"
-            onClick={openPresetsLibrary}
-            title="Open Presets"
+            onClick={openPresets}
+            title="Browse Sessions"
           >
             <svg viewBox="0 0 24 24" width="14" height="14">
               <path
@@ -300,7 +307,7 @@ export const LibraryTab: Component = () => {
                 d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"
               />
             </svg>
-            Presets
+            Sessions
           </button>
         </div>
       </div>
@@ -483,7 +490,7 @@ export const LibraryTab: Component = () => {
               d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"
             />
           </svg>
-          Sessions
+          Saved
         </button>
       </div>
     </div>

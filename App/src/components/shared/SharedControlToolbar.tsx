@@ -99,9 +99,6 @@ interface SharedControlToolbarProps {
   onMicToggle?: () => void
   onWaveToggle?: () => void
 
-  // Practice sessions
-  onSessionsClick?: () => void
-
   // Save button (editor tab only)
   onSaveMelody?: () => void
   onSaveMelodyLabel?: string
@@ -241,20 +238,6 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
           </svg>
           Stop
         </button>
-
-        {/* Practice sessions - only in practice tab */}
-        <Show when={isPracticeTab() && !appStore.sessionActive()}>
-          <div class="app-header-sep" />
-          <button
-            class="ctrl-btn mode-btn"
-            onClick={() => {
-              props.onSessionsClick?.()
-            }}
-            title="Browse practice sessions"
-          >
-            Sessions
-          </button>
-        </Show>
 
         {/* Focus Mode button */}
         <Show when={isPracticeTab()}>
