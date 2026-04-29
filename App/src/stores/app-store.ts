@@ -6,6 +6,10 @@
 import { createSignal } from 'solid-js'
 import { AudioEngine } from '@/lib/audio-engine'
 import { buildMultiOctaveScale } from '@/lib/scale-data'
+import {
+  getCompletedCount,
+  getRemainingWalkthroughs
+} from '@/stores/walkthrough-store'
 import type {
   AccuracyBand,
   MelodyItem,
@@ -286,26 +290,13 @@ export interface WalkthroughStep {
 
 /** Check if there are remaining walkthroughs (not yet completed) */
 export function hasRemainingWalkthroughs(): boolean {
-  try {
-    const _stored = localStorage.getItem('pitchperfect_walkthroughs')
-    if (_stored === null || _stored === undefined || _stored === '') return true
-    const progress = JSON.parse(_stored) as Record<string, number>
-    return Object.keys(progress).length < 7 // Total walkthroughs = 7
-  } catch {
-    return true
-  }
+  const remaining = getRemainingWalkthroughs()
+  return remaining.length > 0
 }
 
 /** Check how many walkthroughs are completed */
 export function getCompletedWalkthroughCount(): number {
-  try {
-    const _stored = localStorage.getItem('pitchperfect_walkthroughs')
-    if (_stored === null || _stored === undefined) return 0
-    const progress = JSON.parse(_stored) as Record<string, number>
-    return Object.keys(progress).length
-  } catch {
-    return 0
-  }
+  return getCompletedCount()
 }
 
 export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
