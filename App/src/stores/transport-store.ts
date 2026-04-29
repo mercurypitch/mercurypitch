@@ -1,5 +1,4 @@
 import { createPersistedSignal } from '@/lib/storage'
-import { createSignal } from 'solid-js'
 
 export type CountInOption = 0 | 1 | 2 | 4
 

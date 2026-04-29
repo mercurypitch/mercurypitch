@@ -98,9 +98,7 @@ test.describe('Focus Mode', () => {
     await page.waitForTimeout(300)
   })
 
-  test('Active Focus Mode button is visually highlighted', async ({
-    page,
-  }) => {
+  test('Active Focus Mode button is visually highlighted', async ({ page }) => {
     await switchTab(page, 'practice')
     await page.waitForTimeout(300)
 
@@ -319,9 +317,7 @@ test.describe('Focus Mode', () => {
     await expect(recordBtn).toBeVisible()
   })
 
-  test('Focus mode preserves all practice session state', async ({
-    page,
-  }) => {
+  test('Focus mode preserves all practice session state', async ({ page }) => {
     await switchTab(page, 'practice')
     await page.waitForTimeout(300)
 

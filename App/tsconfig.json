@@ -13,7 +13,9 @@
     "paths": {
       "@/*": ["./src/*"]
     },
-    "baseUrl": "."
+    "baseUrl": ".",
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.d.ts", "vitest.config.ts"],
   "exclude": ["node_modules", "dist"]

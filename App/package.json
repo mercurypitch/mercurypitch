@@ -31,7 +31,8 @@
     "@types/node": "^22.0.0",
     "@typescript-eslint/eslint-plugin": "^8.58.2",
     "@typescript-eslint/parser": "^8.58.2",
-    "@vitest/ui": "^2.1.9",
+    "@vitejs/plugin-basic-ssl": "^2.1.4",
+    "@vitest/ui": "^4.1.5",
     "cloc": "^2.6.0-cloc",
     "eslint": "9.39.1",
     "eslint-plugin-import-x": "^4.16.2",
@@ -43,6 +44,6 @@
     "typescript-eslint": "8.58.2",
     "vite": "^6.0.0",
     "vite-plugin-solid": "^2.10.0",
-    "vitest": "^2.1.9"
+    "vitest": "^4.1.5"
   }
 }

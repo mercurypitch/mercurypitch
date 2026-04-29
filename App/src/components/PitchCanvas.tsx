@@ -164,9 +164,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
         time: now,
       })
       // Fade and prune trail (keep last 80ms)
-      dotState.trail = dotState.trail.filter(
-        (pt) => now - pt.time < 80,
-      )
+      dotState.trail = dotState.trail.filter((pt) => now - pt.time < 80)
     }
   }
 

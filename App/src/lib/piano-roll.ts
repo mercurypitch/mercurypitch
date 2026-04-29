@@ -1491,12 +1491,16 @@ export class PianoRollEditor {
     })
 
     // Touch support for seeking - track touch move outside canvas
-    document.addEventListener('touchmove', (e) => {
-      if (this.isSeeking && e.touches.length > 0) {
-        const touch = e.touches[0]
-        this.seekToRulerPosition({ clientX: touch.clientX } as MouseEvent)
-      }
-    }, { passive: false })
+    document.addEventListener(
+      'touchmove',
+      (e) => {
+        if (this.isSeeking && e.touches.length > 0) {
+          const touch = e.touches[0]
+          this.seekToRulerPosition({ clientX: touch.clientX } as MouseEvent)
+        }
+      },
+      { passive: false },
+    )
 
     document.addEventListener('mouseup', () => {
       this.isSeeking = false
@@ -2329,7 +2333,11 @@ export class PianoRollEditor {
       pianoRollAudioEngine?: {
         stopAllNotes: () => void
         stopNote: (noteId: number) => void
-        playNote: (freq: number, durationMs: number, effectType?: string) => void
+        playNote: (
+          freq: number,
+          durationMs: number,
+          effectType?: string,
+        ) => void
       }
     }
     win.pianoRollAudioEngine?.stopAllNotes()
@@ -2695,12 +2703,24 @@ export class PianoRollEditor {
       ctx.shadowBlur = 12
       ctx.fillStyle = '#3fb950'
       ctx.beginPath()
-      ctx.arc(playheadX, this.currentNoteRow * this.rowHeight + this.rowHeight / 2, 5, 0, Math.PI * 2)
+      ctx.arc(
+        playheadX,
+        this.currentNoteRow * this.rowHeight + this.rowHeight / 2,
+        5,
+        0,
+        Math.PI * 2,
+      )
       ctx.fill()
       // White core for extra glow
       ctx.fillStyle = 'rgba(255,255,255,0.7)'
       ctx.beginPath()
-      ctx.arc(playheadX, this.currentNoteRow * this.rowHeight + this.rowHeight / 2, 2.5, 0, Math.PI * 2)
+      ctx.arc(
+        playheadX,
+        this.currentNoteRow * this.rowHeight + this.rowHeight / 2,
+        2.5,
+        0,
+        Math.PI * 2,
+      )
       ctx.fill()
       ctx.restore()
     }

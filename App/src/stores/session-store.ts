@@ -2,31 +2,28 @@
 // Session Store — Unified session management with localStorage
 // ============================================================
 
-import type {
-  MelodyItem,
-  SavedUserSession,
-  SessionResult,
-  UnifiedLibrary,
-} from '@/types'
+import type { MelodyItem, PlaybackSession, UnifiedLibrary } from '@/types'
 import type { SessionCategory, SessionDifficulty, SessionItem } from '@/types'
-import { melodyStore } from './melody-store'
-
-const STORAGE_KEY = 'pitchperfect_library'
-export const SESSION_KEY = STORAGE_KEY
+import { melodyStore, STORAGE_KEY_LIBRARY, STORAGE_KEY_SESSION_HIST, } from './melody-store'
 
 /** Generate unique item ID */
 export function generateSessionItemId(): string {
-  return `item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+  return `item-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
 }
 
 /** Get all sessions from localStorage (UnifiedLibrary) */
-export function getAllSessions(): Record<string, SavedUserSession> {
+export function getAllSessions(): Record<string, PlaybackSession> {
+  // FIXME: we should just get the melody-store whole library here (this here is duplicate code) and return sessions from there!!
   try {
-    const stored = localStorage.getItem(STORAGE_KEY)
+    const stored = localStorage.getItem(STORAGE_KEY_LIBRARY)
     if (stored !== null) {
       const parsed = JSON.parse(stored) as unknown
-      if (parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed)) {
-        const lib = parsed as { sessions?: Record<string, SavedUserSession> }
+      if (
+        parsed !== null &&
+        typeof parsed === 'object' &&
+        !Array.isArray(parsed)
+      ) {
+        const lib = parsed as { sessions?: Record<string, PlaybackSession> }
         return lib.sessions ?? {}
       }
     }
@@ -37,7 +34,7 @@ export function getAllSessions(): Record<string, SavedUserSession> {
 }
 
 /** Save sessions to localStorage (UnifiedLibrary) */
-function _saveSessions(sessions: Record<string, SavedUserSession>): void {
+function _saveSessions(sessions: Record<string, PlaybackSession>): void {
   try {
     const library = melodyStore.getMelodyLibrary()
     const updatedLibrary: UnifiedLibrary = {
@@ -51,9 +48,13 @@ function _saveSessions(sessions: Record<string, SavedUserSession>): void {
       renderSettings: library.renderSettings,
     }
     melodyStore._setMelodyLibrary({ sessions })
-    const result = localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedLibrary))
-    console.log('[_saveSessions] Saved to localStorage:', result)
-    console.log('[_saveSessions] Stored value:', localStorage.getItem(STORAGE_KEY))
+    localStorage.setItem(STORAGE_KEY_LIBRARY, JSON.stringify(updatedLibrary))
+    // NOTE: keep for log debug for later
+    // console.log('[_saveSessions] Saved to localStorage:', result)
+    // console.log(
+    //   '[_saveSessions] Stored value:',
+    //   localStorage.getItem(STORAGE_KEY_LIBRARY),
+    // )
   } catch (e) {
     console.log('[_saveSessions] Error:', e)
   }
@@ -63,15 +64,17 @@ function _saveSessions(sessions: Record<string, SavedUserSession>): void {
 export function addItemToSession(
   sessionId: string,
   item: Omit<SessionItem, 'id'>,
-): SavedUserSession | undefined {
+): PlaybackSession | undefined {
   const session = getSession(sessionId)
   if (!session) return undefined
 
   const newId = generateSessionItemId()
-  const updatedItems = new Map<string, SessionItem>(session.items.map(item => [item.id, item]))
+  const updatedItems = new Map<string, SessionItem>(
+    session.items.map((item) => [item.id, item]),
+  )
   updatedItems.set(newId, { ...item, id: newId })
 
-  const updatedSession: SavedUserSession = {
+  const updatedSession: PlaybackSession = {
     ...session,
     items: Array.from(updatedItems.values()),
   }
@@ -85,17 +88,19 @@ export function updateSessionItem(
   sessionId: string,
   itemId: string,
   updates: Partial<SessionItem>,
-): SavedUserSession | undefined {
+): PlaybackSession | undefined {
   const session = getSession(sessionId)
   if (!session) return undefined
 
-  const updatedItems = new Map<string, SessionItem>(session.items.map(item => [item.id, item]))
+  const updatedItems = new Map<string, SessionItem>(
+    session.items.map((item) => [item.id, item]),
+  )
   const existingItem = updatedItems.get(itemId)
   if (existingItem) {
     updatedItems.set(itemId, { ...existingItem, ...updates })
   }
 
-  const updatedSession: SavedUserSession = {
+  const updatedSession: PlaybackSession = {
     ...session,
     items: Array.from(updatedItems.values()),
   }
@@ -105,14 +110,19 @@ export function updateSessionItem(
 }
 
 /** Delete item from session by ID */
-export function deleteSessionItem(sessionId: string, itemId: string): SavedUserSession | undefined {
+export function deleteSessionItem(
+  sessionId: string,
+  itemId: string,
+): PlaybackSession | undefined {
   const session = getSession(sessionId)
   if (!session) return undefined
 
-  const updatedItems = new Map<string, SessionItem>(session.items.map(item => [item.id, item]))
+  const updatedItems = new Map<string, SessionItem>(
+    session.items.map((item) => [item.id, item]),
+  )
   updatedItems.delete(itemId)
 
-  const updatedSession: SavedUserSession = {
+  const updatedSession: PlaybackSession = {
     ...session,
     items: Array.from(updatedItems.values()),
   }
@@ -122,9 +132,12 @@ export function deleteSessionItem(sessionId: string, itemId: string): SavedUserS
 }
 
 /** Get item from session by ID (O(1) lookup) */
-export function getSessionItem(sessionId: string, itemId: string): SessionItem | undefined {
+export function getSessionItem(
+  sessionId: string,
+  itemId: string,
+): SessionItem | undefined {
   const session = getSession(sessionId)
-  return session?.items.find(item => item.id === itemId)
+  return session?.items.find((item) => item.id === itemId)
 }
 
 /** Get all items from session */
@@ -140,9 +153,12 @@ export function getSessionItemsOrdered(sessionId: string): SessionItem[] {
 }
 
 /** Get items at specific beat position */
-export function getItemsAtBeat(sessionId: string, startBeat: number): SessionItem[] {
+export function getItemsAtBeat(
+  sessionId: string,
+  startBeat: number,
+): SessionItem[] {
   const items = getSessionItems(sessionId)
-  return items.filter(item => item.startBeat === startBeat)
+  return items.filter((item) => item.startBeat === startBeat)
 }
 
 /** Create new user-deletable session */
@@ -151,7 +167,7 @@ export function createSession(
   items: SessionItem[] = [],
   difficulty?: SessionDifficulty,
   category?: SessionCategory,
-): SavedUserSession {
+): PlaybackSession {
   return {
     id: generateId(),
     name,
@@ -169,7 +185,7 @@ export function createSession(
 export function createInternalSession(
   name: string,
   items: SessionItem[],
-): SavedUserSession {
+): PlaybackSession {
   return {
     id: generateId(),
     name,
@@ -182,39 +198,32 @@ export function createInternalSession(
 }
 
 /** Get session by ID */
-export function getSession(id: string): SavedUserSession | undefined {
+export function getSession(id: string): PlaybackSession | undefined {
   const sessions = getAllSessions()
   return sessions[id]
 }
 
-/** Alias for compatibility */
-export function getSessionStore(id: string): SavedUserSession | undefined {
-  return getSession(id)
-}
-
 /** Get all sessions (including internal/default) */
-export function getAll(): Record<string, SavedUserSession | null> {
+export function getAll(): Record<string, PlaybackSession | null> {
   const userSessions = getAllSessions()
   const defaultSession = getDefaultSession()
-  const sessions: Record<string, SavedUserSession | null> = {}
-  if (defaultSession) {
-    sessions['default'] = defaultSession
-  }
+  const sessions: Record<string, PlaybackSession | null> = {}
+  sessions['default'] = defaultSession
   Object.assign(sessions, userSessions)
   return sessions
 }
 
 /** Get all user-deletable sessions, sorted by lastPlayed (newest first) */
-export function getSessions(): SavedUserSession[] {
+export function getSessions(): PlaybackSession[] {
   const sessions = getAll()
-  const userSessions = Object.values(sessions).filter((s): s is SavedUserSession =>
-    s !== null && s.deletable === true
+  const userSessions = Object.values(sessions).filter(
+    (s): s is PlaybackSession => s !== null && s.deletable === true,
   )
   return userSessions.sort((a, b) => (b.lastPlayed ?? 0) - (a.lastPlayed ?? 0))
 }
 
 /** Get a specific internal/default session by name or ID */
-export function getInternalSession(nameOrId: string): SavedUserSession | null {
+export function getInternalSession(nameOrId: string): PlaybackSession | null {
   const sessions = getAll()
   for (const session of Object.values(sessions)) {
     if (session === null) continue
@@ -228,7 +237,7 @@ export function getInternalSession(nameOrId: string): SavedUserSession | null {
 }
 
 /** Get or create default session */
-export function getDefaultSession(): SavedUserSession | null {
+export function getDefaultSession(): PlaybackSession {
   const sessions = getAllSessions()
   const defaultSession = sessions['default']
 
@@ -242,7 +251,7 @@ export function getDefaultSession(): SavedUserSession | null {
 }
 
 /** Create the default session with starter melodies */
-function createDefaultSession(): SavedUserSession {
+function createDefaultSession(): PlaybackSession {
   const defaultSession = createInternalSession('Default Session', [
     {
       id: generateSessionItemId(),
@@ -276,7 +285,7 @@ function createDefaultSession(): SavedUserSession {
 }
 
 /** Save or update a session */
-export function saveSession(session: SavedUserSession): void {
+export function saveSession(session: PlaybackSession): void {
   const sessions = getAllSessions()
   sessions[session.id] = session
   _saveSessions(sessions)
@@ -294,43 +303,49 @@ export function deleteSession(id: string): boolean {
   return false
 }
 
-/** Get session history from localStorage */
-export function getSessionHistory(): SessionResult[] {
-  try {
-    const stored = localStorage.getItem('pitchperfect_session_history')
-    if (stored !== null) {
-      const parsed = JSON.parse(stored) as unknown
-      if (Array.isArray(parsed)) {
-        return parsed as SessionResult[]
-      }
-    }
-  } catch {
-    // Fail silently
-  }
-  return []
-}
+// FIXME: These commented out functions should be removed when tests are written for new
+// session/session-practice stores
+// export function clearSessionHistory() {
+//   localStorage.removeItem(STORAGE_KEY_SESSION_HIST)
+// }
 
-/** Save session result to history */
-export function saveSessionResult(result: SessionResult): void {
-  const history = getSessionHistory()
-  const updated = [result, ...history].slice(0, 50) // Keep max 50
-  try {
-    localStorage.setItem('pitchperfect_session_history', JSON.stringify(updated))
-  } catch {
-    // Fail silently
-  }
-}
+// /** Get session history from localStorage */
+// export function getSessionHistory(): SessionResult[] {
+//   try {
+//     const stored = localStorage.getItem(STORAGE_KEY_SESSION_HIST)
+//     if (stored !== null) {
+//       const parsed = JSON.parse(stored) as unknown
+//       if (Array.isArray(parsed)) {
+//         return parsed as SessionResult[]
+//       }
+//     }
+//   } catch {
+//     // Fail silently
+//   }
+//   return []
+// }
+
+// /** Save session result to history */
+// export function saveSessionResult(result: SessionResult): void {
+//   const history = getSessionHistory()
+//   const updated = [result, ...history].slice(0, 50) // Keep max 50
+//   try {
+//     localStorage.setItem(STORAGE_KEY_SESSION_HIST, JSON.stringify(updated))
+//   } catch {
+//     // Fail silently
+//   }
+// }
 
 /** Reset all sessions (clear localStorage) */
 export function resetAllSessions(): void {
   // Clear the unified library which will remove sessions
-  localStorage.removeItem(STORAGE_KEY)
-  localStorage.removeItem('pitchperfect_session_history')
+  localStorage.removeItem(STORAGE_KEY_LIBRARY)
+  localStorage.removeItem(STORAGE_KEY_SESSION_HIST)
 }
 
 /** Generate unique ID */
 function generateId(): string {
-  return `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+  return `session-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
 }
 
 /** Create a scale session item */

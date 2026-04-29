@@ -158,7 +158,9 @@ export class PlaybackRuntime {
       'isPaused before:',
       isPausedBefore,
       'animationFrameId:',
-      this.animationFrameId !== null && this.animationFrameId !== undefined ? 'ACTIVE' : 'null'
+      this.animationFrameId !== null && this.animationFrameId !== undefined
+        ? 'ACTIVE'
+        : 'null',
     )
     if (this.isPlaying) {
       console.log('[PlaybackRuntime.start] Already playing, returning early')
@@ -182,7 +184,10 @@ export class PlaybackRuntime {
       // Don't reset countInBeat - preserve where we left off
       this.currentBeat = Math.max(0, this.currentBeat)
       this.currentNoteIndex = Math.max(-1, this.currentNoteIndex)
-      console.log('[PlaybackRuntime.start] Resuming from pause at beat:', this.currentBeat)
+      console.log(
+        '[PlaybackRuntime.start] Resuming from pause at beat:',
+        this.currentBeat,
+      )
     } else {
       // Fresh start - initialize count-in from top
       this.currentBeat = 0
@@ -191,7 +196,10 @@ export class PlaybackRuntime {
       this.countInBeat = countInBeats
       this.countInCompleteEmitted = false
       this.pauseOffset = 0
-      console.log('[PlaybackRuntime.start] Fresh start, countInBeats:', countInBeats)
+      console.log(
+        '[PlaybackRuntime.start] Fresh start, countInBeats:',
+        countInBeats,
+      )
       // Set playStartTime for fresh starts (not resuming)
       this.playStartTime = performance.now()
     }
@@ -205,7 +213,10 @@ export class PlaybackRuntime {
     this._emit({ type: 'state', state: 'playing' })
 
     this._startAnimationLoop()
-    console.log('[PlaybackRuntime.start] playStartTime set to', this.playStartTime)
+    console.log(
+      '[PlaybackRuntime.start] playStartTime set to',
+      this.playStartTime,
+    )
     console.log('[PlaybackRuntime.start] Animation loop started')
   }
 
@@ -217,7 +228,12 @@ export class PlaybackRuntime {
       this.pauseStartTime = performance.now()
       this.isPaused = true
       // Keep isPlaying=true so resume() can proceed - we're in "paused but playing" state
-      console.log('[PlaybackRuntime.pause] Recording pause at', this.pauseStartTime, 'playStartTime:', this.playStartTime)
+      console.log(
+        '[PlaybackRuntime.pause] Recording pause at',
+        this.pauseStartTime,
+        'playStartTime:',
+        this.playStartTime,
+      )
       this._emit({ type: 'state', state: 'paused' })
       this._stopAnimationLoop()
     }
@@ -225,7 +241,12 @@ export class PlaybackRuntime {
   }
 
   resume(): void {
-    console.log('[resume] called, isPaused:', this.isPaused, 'isPlaying:', this.isPlaying)
+    console.log(
+      '[resume] called, isPaused:',
+      this.isPaused,
+      'isPlaying:',
+      this.isPlaying,
+    )
     if (!this.isPaused) return
 
     this.pauseOffset +=
@@ -233,13 +254,20 @@ export class PlaybackRuntime {
     this.pauseStartTime = 0
     this.isPaused = false
     this.isPlaying = true
-    console.log('[resume] set isPaused=false, isPlaying=true, calling _startAnimationLoop')
+    console.log(
+      '[resume] set isPaused=false, isPlaying=true, calling _startAnimationLoop',
+    )
     this._emit({ type: 'state', state: 'playing' })
     this._startAnimationLoop()
   }
 
   stop(): void {
-    console.log('[PlaybackRuntime.stop] Called, isPlaying before stop:', this.isPlaying, 'isPaused before stop:', this.isPaused)
+    console.log(
+      '[PlaybackRuntime.stop] Called, isPlaying before stop:',
+      this.isPlaying,
+      'isPaused before stop:',
+      this.isPaused,
+    )
     this._stopAnimationLoop()
     this.audioEngine.stopTone()
     this.isPlaying = false
@@ -403,7 +431,10 @@ export class PlaybackRuntime {
         this.currentBeat = beat
         this._emit({ type: 'beat', beat })
 
-        const totalBeats = Math.max(this._durationBeats, this._getTotalBeats(melody))
+        const totalBeats = Math.max(
+          this._durationBeats,
+          this._getTotalBeats(melody),
+        )
         if (beat >= totalBeats) {
           this._emit({ type: 'complete' })
           this.stop()

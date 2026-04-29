@@ -385,9 +385,7 @@ test.describe('Playback - Repeat Mode', () => {
     await page.waitForTimeout(500)
   })
 
-  test('Repeat mode: play starts with count-in and loops', async ({
-    page,
-  }) => {
+  test('Repeat mode: play starts with count-in and loops', async ({ page }) => {
     await switchTab(page, 'practice')
     await page.waitForTimeout(500)
 

@@ -7,11 +7,8 @@ import { createMemo, createSignal, For, Show } from 'solid-js'
 import { PRACTICE_SESSIONS } from '@/data/sessions'
 import { appStore } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
-import {
-  createMelodyItem,
-  createScaleItem,
-} from '@/stores/session-store'
-import type { SavedUserSession, SessionCategory, SessionDifficulty, SessionItem } from '@/types'
+import { createMelodyItem, createScaleItem } from '@/stores/session-store'
+import type { PlaybackSession, SessionCategory, SessionDifficulty, SessionItem, } from '@/types'
 
 const DIFFICULTY_COLORS: Record<SessionDifficulty, string> = {
   beginner: 'var(--accent-success)',
@@ -76,7 +73,12 @@ export const PresetsLibraryModal: Component<PresetsLibraryModalProps> = (
     // Convert template items to session items using factory functions
     // Load melody data into melodyStore before creating session items
     const sessionMelodies = session.items
-      .filter((item) => item.type === 'melody' && (item.melodyId !== undefined && item.melodyId !== null))
+      .filter(
+        (item) =>
+          item.type === 'melody' &&
+          item.melodyId !== undefined &&
+          item.melodyId !== null,
+      )
       .map((item) => item.melodyId!)
       .filter((id, index, self) => self.indexOf(id) === index) // Deduplicate
 
@@ -137,7 +139,7 @@ export const PresetsLibraryModal: Component<PresetsLibraryModalProps> = (
         }
       })
 
-    const savedSession: SavedUserSession = {
+    const savedSession: PlaybackSession = {
       id: `preset-${session.id}`,
       name: session.name,
       author: 'System',
@@ -149,6 +151,7 @@ export const PresetsLibraryModal: Component<PresetsLibraryModalProps> = (
       category: session.category as SessionCategory,
     }
 
+    console.log('[Library-Presets-Modal] Loading session', savedSession)
     appStore.loadSession(savedSession)
     // Small delay to allow session state to initialize before closing modal
     setTimeout(() => props.close(), 100)

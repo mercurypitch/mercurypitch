@@ -72,7 +72,8 @@ In Practice mode, the Shared Toolbar provides all essential controls for your pr
         },
         {
           title: 'Adjust Speed',
-          description: 'Use the speed dropdown to slow down or speed up playback',
+          description:
+            'Use the speed dropdown to slow down or speed up playback',
           action: 'Change speed dropdown',
           target: 'speed-select',
         },

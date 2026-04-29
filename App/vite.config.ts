@@ -2,11 +2,12 @@ import { defineConfig } from 'vite'
 import solidPlugin from 'vite-plugin-solid'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import ssl from '@vitejs/plugin-basic-ssl'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
-  plugins: [solidPlugin()],
+  plugins: [ssl(), solidPlugin()],
   base: './',
   resolve: {
     alias: {
@@ -15,7 +16,6 @@ export default defineConfig({
   },
   server: {
     port: 3000,
-    https: false,
   },
   build: {
     target: 'esnext',

@@ -4,35 +4,12 @@
 
 import { createSignal } from 'solid-js'
 import { buildMultiOctaveScale } from '@/lib/scale-data'
-import type {
-  MelodyData,
-  MelodyItem,
-  MelodyNote,
-  SavedUserSession,
-  ScaleDegree,
-  UnifiedLibrary,
-} from '@/types'
-import {
-  addItemToSession,
-  deleteSession as deleteSessionStore,
-  deleteSessionItem,
-  generateSessionItemId,
-  getDefaultSession,
-  getInternalSession,
-  getItemsAtBeat,
-  getSession as getSessionStore,
-  getSessionCount,
-  getSessionItem,
-  getSessionItems,
-  getSessionItemsOrdered,
-  getSessions as getSessionStoreSessions,
-  getUserSessionCount,
-  saveSession as saveSessionStore,
-  updateSessionItem,
-} from './session-store'
+import type { MelodyData, MelodyItem, MelodyNote, PlaybackSession, ScaleDegree, UnifiedLibrary, } from '@/types'
+import { addItemToSession, deleteSession as deleteSessionStore, deleteSessionItem, generateSessionItemId, getDefaultSession, getInternalSession, getItemsAtBeat, getSession, getSessionCount, getSessionItem, getSessionItems, getSessionItemsOrdered, getSessions as getSessionStoreSessions, getUserSessionCount, saveSession as saveSessionStore, updateSessionItem, } from './session-store'
 
-const STORAGE_KEY_LIBRARY = 'pitchperfect_library'
+export const STORAGE_KEY_LIBRARY = 'pitchperfect_library'
 const STORAGE_KEY_SEEDED = 'pitchperfect_seeded'
+export const STORAGE_KEY_SESSION_HIST = 'pitchperfect_session_history'
 const STORAGE_KEY_ACTIVE_SESSION_ID = 'pitchperfect_active_session_id'
 const STORAGE_KEY_CURRENT_MELODY_ID = 'pitchperfect_current_melody_id'
 
@@ -50,7 +27,7 @@ const DEFAULT_LIBRARY: UnifiedLibrary = {
   melodies: {},
   playlists: {},
   sessions: {
-    'default': {
+    default: {
       id: 'default',
       name: 'Default Session',
       author: 'System',
@@ -98,7 +75,10 @@ function loadLibrary(): UnifiedLibrary {
       ) {
         // Ensure default session exists
         const library = parsed as UnifiedLibrary
-        if (library.sessions['default'] === null || library.sessions['default'] === undefined) {
+        if (
+          library.sessions['default'] === null ||
+          library.sessions['default'] === undefined
+        ) {
           const defaultSession = getDefaultSession()
           if (defaultSession !== null) {
             library.sessions['default'] = defaultSession
@@ -115,7 +95,10 @@ function loadLibrary(): UnifiedLibrary {
 
 function _saveLibraryToStorage(): void {
   try {
-    localStorage.setItem(STORAGE_KEY_LIBRARY, JSON.stringify(melodyLibrarySignal()))
+    localStorage.setItem(
+      STORAGE_KEY_LIBRARY,
+      JSON.stringify(melodyLibrarySignal()),
+    )
   } catch {
     // Fail silently
   }
@@ -124,7 +107,7 @@ function _saveLibraryToStorage(): void {
 let _idCounter = 100
 
 function generateMelodyId(): string {
-  return `melody-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+  return `melody-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
 }
 
 function generateId(): number {
@@ -132,9 +115,8 @@ function generateId(): number {
 }
 
 // Use a signal for the library to maintain SolidJS reactivity
-const [melodyLibrarySignal, setMelodyLibrary] = createSignal<UnifiedLibrary>(
-  loadLibrary(),
-)
+const [melodyLibrarySignal, setMelodyLibrary] =
+  createSignal<UnifiedLibrary>(loadLibrary())
 
 // Restore active session and current melody from localStorage
 _restoreActiveSessionId()
@@ -180,27 +162,27 @@ export function resetMelodyLibrary(): void {
 // Session Operations — Delegate to session-store
 // ============================================================
 
-export function getSessions(): SavedUserSession[] {
+export function getSessions(): PlaybackSession[] {
   return getSessionStoreSessions()
 }
 
 /** Get the currently active session by ID */
-export function getActiveSession(): SavedUserSession | undefined {
+export function getActiveSession(): PlaybackSession | undefined {
   const sessionId = getActiveSessionId()
   if (sessionId === null) return undefined
   return getSession(sessionId)
 }
 
-export function saveSession(session: SavedUserSession): void {
+export function saveSession(session: PlaybackSession): void {
   saveSessionStore(session)
 }
 
 export function updateSession(
   id: string,
-  updates: Partial<SavedUserSession>,
+  updates: Partial<PlaybackSession>,
 ): void {
-  const session = getSessionStore(id)
-  if (session) {
+  const session = getSession(id)
+  if (session !== undefined) {
     saveSessionStore({ ...session, ...updates })
   }
 }
@@ -209,12 +191,8 @@ export function deleteSession(id: string): void {
   deleteSessionStore(id)
 }
 
-export function updateUserSession(session: SavedUserSession): void {
+export function updateUserSession(session: PlaybackSession): void {
   saveSessionStore(session)
-}
-
-export function getSession(id: string): SavedUserSession | undefined {
-  return getSessionStore(id)
 }
 
 // ============================================================
@@ -355,23 +333,21 @@ export function seedDefaultSession(): void {
   }
 
   // Seed default session if not exists
-  const defaultSession = getSessionStore('default')
+  const defaultSession = getSession('default')
   if (!defaultSession) {
     const session = getDefaultSession()
-    if (session) {
-      saveSessionStore(session)
-    }
+    saveSession(session)
   }
 
   // Add default session to unified library
-  const defaultSessionFromLibrary = getSessionStore('default')
+  const defaultSessionFromLibrary = getSession('default')
   if (defaultSessionFromLibrary) {
     setMelodyLibrary((prev) => ({
       ...prev,
       melodies: newMelodies, // ensure we use newMelodies
       sessions: {
         ...prev.sessions,
-        'default': defaultSessionFromLibrary,
+        default: defaultSessionFromLibrary,
       },
       meta: { ...prev.meta, lastUpdated: Date.now() },
     }))
@@ -491,9 +467,7 @@ export function createNewMelody(name?: string, author?: string): MelodyData {
   const library = melodyLibrarySignal()
   const newMelody: MelodyData = {
     id,
-    name:
-      name ??
-      `New Melody ${Object.keys(library.melodies).length + 1}`,
+    name: name ?? `New Melody ${Object.keys(library.melodies).length + 1}`,
     author: author ?? 'User',
     bpm: DEFAULT_BPM,
     key: DEFAULT_KEY,
@@ -513,14 +487,14 @@ export function createNewMelody(name?: string, author?: string): MelodyData {
   return newMelody
 }
 
-function getSessionEndBeat(session: SavedUserSession): number {
+function getSessionEndBeat(session: PlaybackSession): number {
   if (session.items.length === 0) return 0
 
   return session.items.reduce((maxBeat, item) => {
     const itemLength =
       item.type === 'rest'
         ? Math.max(1, Math.ceil((item.restMs ?? 4000) / 1000))
-        : item.beats ?? 16
+        : (item.beats ?? 16)
     return Math.max(maxBeat, item.startBeat + itemLength)
   }, 0)
 }
@@ -532,7 +506,7 @@ function getSessionEndBeat(session: SavedUserSession): number {
 export function addMelodyToActiveSession(
   melodyId: string,
   label?: string,
-): SavedUserSession | undefined {
+): PlaybackSession | undefined {
   let session = getActiveSession()
 
   if (session === undefined) {
@@ -770,7 +744,15 @@ export function deleteMelody(key: string): void {
   const _library = melodyLibrarySignal()
   const { melodies, playlists } = _library
   const { [key]: _removed, ...newMelodies } = melodies
-  const newPlaylists: Record<string, { name: string; melodyKeys: string[]; sessionKeys: string[]; created: number }> = {}
+  const newPlaylists: Record<
+    string,
+    {
+      name: string
+      melodyKeys: string[]
+      sessionKeys: string[]
+      created: number
+    }
+  > = {}
 
   // Filter each playlist to remove references to the deleted melody
   for (const playlistId in playlists) {
@@ -806,8 +788,13 @@ export function saveCurrentMelody(name?: string): MelodyData {
     return createNewMelody(name)
   }
   const key = melody.id
+  // FIXME: Do we read the signal for some purpose? Can we refactor/redesign this?
   const _library = melodyLibrarySignal()
-  const updatedMelody = { ...melody, name: name ?? melody.name, updatedAt: Date.now() }
+  const updatedMelody = {
+    ...melody,
+    name: name ?? melody.name,
+    updatedAt: Date.now(),
+  }
   setMelodyLibrary((prev) => ({
     ...prev,
     melodies: {
@@ -900,7 +887,9 @@ export function setNumOctaves(num: number): void {
 // ============================================================
 
 export function createPlaylist(name: string): string {
-  const id = `playlist-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+  const id = `playlist-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+  // FIXME: Do we read this signal for some purpose, can we refactor/resesign this or this is purely
+  // reactivity wise OK...?
   const _library = melodyLibrarySignal()
   setMelodyLibrary((prev) => ({
     ...prev,
@@ -988,7 +977,14 @@ export function addSessionToPlaylist(
   }
 }
 
-export function updatePlaylist(playlistId: string, updates: Partial<{ name: string; melodyKeys: string[]; sessionKeys: string[] }>): void {
+export function updatePlaylist(
+  playlistId: string,
+  updates: Partial<{
+    name: string
+    melodyKeys: string[]
+    sessionKeys: string[]
+  }>,
+): void {
   const _library = melodyLibrarySignal()
   const playlists = { ..._library.playlists }
   const existing = playlists[playlistId]

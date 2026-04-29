@@ -153,6 +153,10 @@ export interface PracticeResult {
   mode: PlaybackMode
   /** Completed at timestamp */
   completedAt: number
+
+  // FIXME: Refactor accuracy heatmap somehow differently, from sessions, but this way we need to
+  // keep the midi notes info! Though we only need noteResult.item.note.midi values
+  noteResult: NoteResult[]
 }
 
 /** Pitch result from practice engine */
@@ -178,44 +182,6 @@ export interface PitchResult {
   octave: number
 }
 
-/** Practice session record */
-export interface PracticeSession {
-  /** Unique session ID */
-  id: string
-  /** Session name */
-  name: string
-  /** Practice mode (once/repeat/practice) */
-  mode: PlaybackMode
-  /** Number of cycles */
-  cycles: number
-  /** Scale definition */
-  scale: ScaleDefinition
-  /** Current cycle number */
-  currentCycle: number
-  /** Beats per measure */
-  beatsPerMeasure: number
-  /** Is recording */
-  isRecording: boolean
-  /** Session items (scales, presets, rests) */
-  items: SessionItem[]
-  /** Practice results per note */
-  noteResults: NoteResult[]
-  /** Average score across all notes */
-  score: number
-  /** Session duration in ms */
-  duration: number
-  /** Completed at timestamp */
-  completedAt: number
-  /** Items completed count */
-  itemsCompleted: number
-  /** Difficulty level */
-  difficulty?: string
-  /** Category */
-  category?: string
-  /** Description */
-  description?: string
-}
-
 /** Static template for practice sessions (used in presets/sessions data) */
 export interface SessionTemplate {
   id: string
@@ -232,6 +198,7 @@ export interface SessionResult {
   name: string
   score: number
   totalItems?: number
+  practiceItemResult: PracticeResult[]
   itemsCompleted: number
   sessionName: string
   completedAt: number
@@ -342,7 +309,7 @@ export interface MelodyLibrary {
     }
   >
   /** User sessions */
-  sessions: Record<string, SavedUserSession>
+  sessions: Record<string, PlaybackSession>
 }
 
 /** Unified library storage structure - single storage key for all content */
@@ -373,7 +340,7 @@ export interface UnifiedLibrary {
     }
   >
   /** User sessions */
-  sessions: Record<string, SavedUserSession>
+  sessions: Record<string, PlaybackSession>
 }
 
 /** Session item type */
@@ -382,9 +349,9 @@ export type SessionItemType = 'preset' | 'scale' | 'rest' | 'melody'
 /** A rest item with specific position in timeline */
 export interface SessionRest {
   id: string
-  startBeat: number   // Position in timeline (beats from start)
-  duration: number    // Duration in beats
-  label: string       // Display name (e.g., "Rest")
+  startBeat: number // Position in timeline (beats from start)
+  duration: number // Duration in beats
+  label: string // Display name (e.g., "Rest")
 }
 
 /** Rest item for session items (legacy - embedded rest with ms duration) */
@@ -433,8 +400,8 @@ export interface SessionItem {
   repeat?: number
 }
 
-/** Saved user session - represents a practice session in the library */
-export interface SavedUserSession {
+/** Sequence of Melody items define a session */
+export interface PlaybackSession {
   /** Unique session ID */
   id: string
   /** Session name */
@@ -456,9 +423,6 @@ export interface SavedUserSession {
   /** Description */
   description?: string
 }
-
-/** Unified session type (SavedUserSession | undefined for optional values) */
-export type Session = SavedUserSession | undefined
 
 /** Pitch sample for pitch history tracking */
 export interface PitchSample {

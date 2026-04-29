@@ -12,11 +12,16 @@ interface WalkthroughControlProps {
   onStartWalkthrough?: (walkthroughId: string, tab: WalkthroughTab) => void
 }
 
-export const WalkthroughControl: Component<WalkthroughControlProps> = (props) => {
+export const WalkthroughControl: Component<WalkthroughControlProps> = (
+  props,
+) => {
   const [showModal, setShowModal] = createSignal(false)
   const [showSelection, setShowSelection] = createSignal(false)
-  const [selectedWalkthrough, setSelectedWalkthrough] = createSignal<string | null>(null)
-  const [walkthroughTab, setWalkthroughTab] = createSignal<WalkthroughTab>('practice')
+  const [selectedWalkthrough, setSelectedWalkthrough] = createSignal<
+    string | null
+  >(null)
+  const [walkthroughTab, setWalkthroughTab] =
+    createSignal<WalkthroughTab>('practice')
 
   const handleOpenWalkthroughs = () => {
     setShowSelection(true)
@@ -30,7 +35,10 @@ export const WalkthroughControl: Component<WalkthroughControlProps> = (props) =>
     setShowModal(true)
   }
 
-  const handleStartWalkthrough = (walkthroughId: string, walkthroughTab: WalkthroughTab) => {
+  const handleStartWalkthrough = (
+    walkthroughId: string,
+    walkthroughTab: WalkthroughTab,
+  ) => {
     setSelectedWalkthrough(walkthroughId)
     setWalkthroughTab(walkthroughTab)
     setShowSelection(false)
@@ -66,7 +74,9 @@ export const WalkthroughControl: Component<WalkthroughControlProps> = (props) =>
       />
 
       {/* Trigger Button (shown in settings or header) */}
-      <Show when={props.showOnStart === false || props.showOnStart === undefined}>
+      <Show
+        when={props.showOnStart === false || props.showOnStart === undefined}
+      >
         <button
           class="walkthrough-control-btn"
           onClick={handleOpenWalkthroughs}

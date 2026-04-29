@@ -2,22 +2,10 @@
 // Walkthrough Selection — Show walkthrough options on app start
 // ============================================================
 
-import type { Component } from 'solid-js';
-import {
-  createMemo,
-  createSignal,
-  Show,
-} from 'solid-js';
-import type { WalkthroughTab } from '@/stores/walkthrough-store';
-import {
-  completeWalkthrough,
-  getCompletedWalkthroughs,
-  getCompletionPercentage,
-  getRemainingWalkthroughs,
-  getTotalWalkthroughCount,
-  isWalkthroughCompleted,
-  viewWalkthrough
-} from '@/stores/walkthrough-store'
+import type { Component } from 'solid-js'
+import { createMemo, createSignal, Show } from 'solid-js'
+import type { WalkthroughTab } from '@/stores/walkthrough-store'
+import { completeWalkthrough, getCompletedWalkthroughs, getCompletionPercentage, getRemainingWalkthroughs, getTotalWalkthroughCount, isWalkthroughCompleted, viewWalkthrough, } from '@/stores/walkthrough-store'
 
 interface WalkthroughSelectionProps {
   isOpen: boolean
@@ -25,7 +13,9 @@ interface WalkthroughSelectionProps {
   onStartWalkthrough: (walkthroughId: string, tab: WalkthroughTab) => void
 }
 
-export const WalkthroughSelection: Component<WalkthroughSelectionProps> = (props) => {
+export const WalkthroughSelection: Component<WalkthroughSelectionProps> = (
+  props,
+) => {
   const [selectedTab, setSelectedTab] = createSignal<WalkthroughTab>('practice')
 
   const remaining = createMemo(() => getRemainingWalkthroughs())
@@ -33,7 +23,10 @@ export const WalkthroughSelection: Component<WalkthroughSelectionProps> = (props
   const total = createMemo(() => getTotalWalkthroughCount())
   const percentage = createMemo(() => getCompletionPercentage())
 
-  const handleWalkthroughSelect = (walkthrough: { id: string, tab: string }) => {
+  const handleWalkthroughSelect = (walkthrough: {
+    id: string
+    tab: string
+  }) => {
     viewWalkthrough(walkthrough.id)
     props.onStartWalkthrough(walkthrough.id, walkthrough.tab as WalkthroughTab)
   }
@@ -58,9 +51,16 @@ export const WalkthroughSelection: Component<WalkthroughSelectionProps> = (props
               <span class="ws-percentage">{percentage()}%</span>
               <h2 class="ws-title">PitchPerfect Walkthroughs</h2>
             </div>
-            <button class="ws-close-btn" onClick={props.onClose} title="Skip walkthrough">
+            <button
+              class="ws-close-btn"
+              onClick={props.onClose}
+              title="Skip walkthrough"
+            >
               <svg viewBox="0 0 24 24" width="20" height="20">
-                <path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+                <path
+                  fill="currentColor"
+                  d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+                />
               </svg>
             </button>
           </div>
@@ -83,14 +83,17 @@ export const WalkthroughSelection: Component<WalkthroughSelectionProps> = (props
           {/* Info */}
           {!percentage() && (
             <p class="ws-info">
-              Welcome to PitchPerfect! Learn how to use the app with our interactive walkthroughs.
+              Welcome to PitchPerfect! Learn how to use the app with our
+              interactive walkthroughs.
             </p>
           )}
 
           {/* Tabs */}
           <div class="ws-tabs">
-            {(['practice', 'editor', 'settings', 'study'] as WalkthroughTab[]).map((tab) => {
-              const tabRemaining = remaining().filter(w => w.tab === tab)
+            {(
+              ['practice', 'editor', 'settings', 'study'] as WalkthroughTab[]
+            ).map((tab) => {
+              const tabRemaining = remaining().filter((w) => w.tab === tab)
               return (
                 <button
                   class={`ws-tab ${tab === selectedTab() ? 'active' : ''}`}
@@ -110,27 +113,29 @@ export const WalkthroughSelection: Component<WalkthroughSelectionProps> = (props
 
           {/* List */}
           <div class="ws-list">
-            {remaining().filter(w => w.tab === selectedTab()).map((walkthrough) => (
-              <div
-                class={`ws-item ${isWalkthroughCompleted(walkthrough.id) ? 'completed' : ''}`}
-              >
-                <button
-                  class="ws-item-button"
-                  onClick={() => handleWalkthroughSelect(walkthrough)}
+            {remaining()
+              .filter((w) => w.tab === selectedTab())
+              .map((walkthrough) => (
+                <div
+                  class={`ws-item ${isWalkthroughCompleted(walkthrough.id) ? 'completed' : ''}`}
                 >
-                  <span class="ws-item-icon">📖</span>
-                  <div class="ws-item-content">
-                    <span class="ws-item-title">{walkthrough.title}</span>
-                    <span class="ws-item-desc">
-                      Learn about {selectedTab()} tab features
-                    </span>
-                  </div>
-                  <Show when={isWalkthroughCompleted(walkthrough.id)}>
-                    <span class="ws-item-status">✓</span>
-                  </Show>
-                </button>
-              </div>
-            ))}
+                  <button
+                    class="ws-item-button"
+                    onClick={() => handleWalkthroughSelect(walkthrough)}
+                  >
+                    <span class="ws-item-icon">📖</span>
+                    <div class="ws-item-content">
+                      <span class="ws-item-title">{walkthrough.title}</span>
+                      <span class="ws-item-desc">
+                        Learn about {selectedTab()} tab features
+                      </span>
+                    </div>
+                    <Show when={isWalkthroughCompleted(walkthrough.id)}>
+                      <span class="ws-item-status">✓</span>
+                    </Show>
+                  </button>
+                </div>
+              ))}
           </div>
 
           {/* Completed Section */}

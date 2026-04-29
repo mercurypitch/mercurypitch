@@ -45,7 +45,7 @@ test.describe('Settings Panel', () => {
     // Theme should change to light
     const body = page.locator('body')
     const computedStyle = await body.evaluate((el) =>
-      window.getComputedStyle(el).getPropertyValue('background-color')
+      window.getComputedStyle(el).getPropertyValue('background-color'),
     )
     // Dark mode is typically dark color, light mode is light color
     expect(computedStyle).toBeTruthy()
@@ -82,16 +82,16 @@ test.describe('Settings Panel', () => {
     await page.waitForTimeout(300)
 
     const themeSelect = page.locator('#theme-select')
-    const initialBg = await page.locator('main').evaluate((el) =>
-      window.getComputedStyle(el).backgroundColor
-    )
+    const initialBg = await page
+      .locator('main')
+      .evaluate((el) => window.getComputedStyle(el).backgroundColor)
 
     await themeSelect.selectOption('light')
     await page.waitForTimeout(300)
 
-    const newBg = await page.locator('main').evaluate((el) =>
-      window.getComputedStyle(el).backgroundColor
-    )
+    const newBg = await page
+      .locator('main')
+      .evaluate((el) => window.getComputedStyle(el).backgroundColor)
 
     expect(initialBg).not.toBe(newBg)
   })
@@ -116,7 +116,7 @@ test.describe('Settings Panel', () => {
 
     // Verify localStorage was updated
     const themeValue = await page.evaluate(() =>
-      localStorage.getItem('pitchperfect_theme')
+      localStorage.getItem('pitchperfect_theme'),
     )
     expect(themeValue).toBe('light')
   })
@@ -173,8 +173,8 @@ test.describe('Settings Panel', () => {
     await expect(bpmSlider).toBeVisible()
 
     // BPM should be 120 initially
-    const initialBpm = await bpmSlider.evaluate((el) =>
-      (el as HTMLInputElement).value
+    const initialBpm = await bpmSlider.evaluate(
+      (el) => (el as HTMLInputElement).value,
     )
     expect(initialBpm).toBe('120')
   })
@@ -354,7 +354,12 @@ test.describe('Settings Panel', () => {
     const instSelect = page.locator('#instrument-select')
 
     // Test switching instruments
-    for (const [index, value] of ['sine', 'piano', 'organ', 'strings'].entries()) {
+    for (const [index, value] of [
+      'sine',
+      'piano',
+      'organ',
+      'strings',
+    ].entries()) {
       await instSelect.selectOption(value)
       await page.waitForTimeout(200)
       await expect(instSelect).toHaveValue(value)
@@ -457,7 +462,7 @@ test.describe('Settings Panel', () => {
     await userNameInput.fill('Test User')
 
     const userName = await page.evaluate(() =>
-      localStorage.getItem('pitchperfect_username')
+      localStorage.getItem('pitchperfect_username'),
     )
     expect(userName).toBe('Test User')
   })

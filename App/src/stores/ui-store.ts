@@ -9,13 +9,17 @@ export const [activeTab, setActiveTab] = createSignal<ActiveTab>('practice')
 
 // Editor view within the Editor tab
 export type EditorView = 'piano-roll' | 'session-editor'
-export const [editorView, setEditorView] = createSignal<EditorView>('piano-roll')
+export const [editorView, setEditorView] =
+  createSignal<EditorView>('piano-roll')
 
 // ── Library Modal ───────────────────────────────────────────
 
-export const [isLibraryModalOpen, setShowLibraryModal] = createSignal<boolean>(false)
-export const [isSessionLibraryModalOpen, setShowSessionLibraryModal] = createSignal<boolean>(false)
-export const [isPresetsModalOpen, setShowPresetsModal] = createSignal<boolean>(false)
+export const [isLibraryModalOpen, setShowLibraryModal] =
+  createSignal<boolean>(false)
+export const [isSessionLibraryModalOpen, setShowSessionLibraryModal] =
+  createSignal<boolean>(false)
+export const [isPresetsModalOpen, setShowPresetsModal] =
+  createSignal<boolean>(false)
 
 export function showLibrary(): void {
   setShowLibraryModal(true)
@@ -64,7 +68,9 @@ export const [welcomeSeen, setWelcomeSeen] = createPersistedSignal<string>(
   '',
 )
 
-export const [showWelcome, setShowWelcome] = createSignal(welcomeSeen() !== APP_VERSION)
+export const [showWelcome, setShowWelcome] = createSignal(
+  welcomeSeen() !== APP_VERSION,
+)
 
 export function dismissWelcome(): void {
   setShowWelcome(false)

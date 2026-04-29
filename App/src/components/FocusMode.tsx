@@ -37,9 +37,7 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
     () => `${appStore.keyName()} ${appStore.scaleType()}`,
   )
 
-  const totalBeats = createMemo(() =>
-    melodyTotalBeats(props.melody()),
-  )
+  const totalBeats = createMemo(() => melodyTotalBeats(props.melody()))
   const totalBars = createMemo(() => Math.ceil(totalBeats() / 4))
   const currentBar = createMemo(() => {
     const beat = Math.max(1, props.currentBeat())
@@ -173,14 +171,11 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
           id="playhead"
           class="focus-playhead"
           style={{
-            display: (props.isPlaying() || props.isPaused()) ? 'block' : 'none',
+            display: props.isPlaying() || props.isPaused() ? 'block' : 'none',
             left: `${playheadPosition()}%`,
           }}
         >
-          <div
-            class="playhead-marker"
-            style={{ left: '0' }}
-          />
+          <div class="playhead-marker" style={{ left: '0' }} />
           {/* Glowing pitch dot with dynamic vertical position */}
           <div
             class="focus-pitch-dot"

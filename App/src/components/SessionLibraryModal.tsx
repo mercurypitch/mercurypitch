@@ -6,7 +6,7 @@ import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
 import { appStore, melodyStore, setActiveTab, setEditorView } from '@/stores'
 import { createSession, saveSession } from '@/stores/session-store'
-import type { SavedUserSession, SessionCategory, SessionDifficulty, } from '@/types'
+import type { PlaybackSession, SessionCategory, SessionDifficulty, } from '@/types'
 
 // Drag and drop state
 type DragState =
@@ -32,17 +32,17 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
     const query = searchQuery().toLowerCase()
     return sessions()
       .filter(
-        (s: SavedUserSession) =>
+        (s: PlaybackSession) =>
           (s.name as string).toLowerCase().includes(query) ||
           (s.category as string).toLowerCase().includes(query),
       )
       .sort(
-        (a: SavedUserSession, b: SavedUserSession) =>
+        (a: PlaybackSession, b: PlaybackSession) =>
           (b.lastPlayed ?? b.created) - (a.lastPlayed ?? a.created),
       )
   })
 
-  const handlePlay = (session: SavedUserSession) => {
+  const handlePlay = (session: PlaybackSession) => {
     appStore.loadSession(session)
     props.close()
   }
@@ -53,7 +53,7 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
     }
   }
 
-  const handleEdit = (session: SavedUserSession) => {
+  const handleEdit = (session: PlaybackSession) => {
     appStore.setActiveUserSession(session)
     const firstMelodyItem = session.items.find(
       (item) => item.type === 'melody' && item.melodyId !== undefined,
@@ -141,14 +141,21 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
               class="new-btn"
               onClick={() => {
                 console.info('[SessionLibraryModal] New Session clicked')
-                const newSession = createSession(`New Session ${melodyStore.getSessions().length + 1}`)
+                const newSession = createSession(
+                  `New Session ${melodyStore.getSessions().length + 1}`,
+                )
                 saveSession(newSession)
                 appStore.setActiveUserSession(newSession)
                 appStore.showNotification('New session created', 'success')
                 // Navigate to Editor for editing
                 appStore.setActiveTab('editor')
                 setEditorView('session-editor')
-                console.info('[SessionLibraryModal] New session:', newSession.id, 'activeSessionId:', melodyStore.getActiveSessionId())
+                console.info(
+                  '[SessionLibraryModal] New session:',
+                  newSession.id,
+                  'activeSessionId:',
+                  melodyStore.getActiveSessionId(),
+                )
               }}
             >
               <svg viewBox="0 0 24 24" width="16" height="16">
@@ -174,9 +181,7 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
                     <div class="item-main">
                       <div class="item-title">{session.name}</div>
                       <div class="item-meta">
-                        <span
-                          class={`difficulty-badge ${session.difficulty}`}
-                        >
+                        <span class={`difficulty-badge ${session.difficulty}`}>
                           {session.difficulty}
                         </span>
                         <span>•</span>
@@ -186,9 +191,7 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
                         <Show when={session.lastPlayed}>
                           <span>•</span>
                           <span>
-                            {new Date(
-                              session.lastPlayed!,
-                            ).toLocaleDateString()}
+                            {new Date(session.lastPlayed!).toLocaleDateString()}
                           </span>
                         </Show>
                       </div>
@@ -234,9 +237,7 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
 
               {filteredSessions().length === 0 && (
                 <div class="empty-state">
-                  <p>
-                    No sessions found. Create a new session to get started!
-                  </p>
+                  <p>No sessions found. Create a new session to get started!</p>
                 </div>
               )}
             </div>

@@ -1,5 +1,4 @@
 import { createPersistedSignal } from '@/lib/storage'
-import { createSignal } from 'solid-js'
 import type { AccuracyBand } from '@/types'
 
 export type SensitivityPreset = 'quiet' | 'home' | 'noisy'
@@ -197,7 +196,7 @@ export function setGridLines(visible: boolean): void {
   setGridLinesVisible(visible)
 }
 
-// Initialization functions mapped to no-ops to support old init pattern gracefully
+// FIXME: Initialization functions mapped to no-ops to support old init pattern gracefully
 // before they are completely removed. Storage loading happens on signal creation now.
 export function initSettings(): void {}
 export function initADSR(): void {}

@@ -1,23 +1,18 @@
 import { createSignal } from 'solid-js'
 import { AudioEngine } from '@/lib/audio-engine'
-import { melodyStore } from './melody-store'
-import type { Session, SavedUserSession } from '@/types'
 
 // ── Key / Scale / Presets ──────────────────────────────────
 
 export const [keyName, setKeyName] = createSignal<string>('C')
 export const [scaleType, setScaleType] = createSignal<string>('major')
 export const [instrument, setInstrument] = createSignal<InstrumentType>('sine')
-export const [currentPresetName, setCurrentPresetName] = createSignal<string | null>(null)
+export const [currentPresetName, setCurrentPresetName] = createSignal<
+  string | null
+>(null)
 
 export type InstrumentType = 'sine' | 'piano' | 'organ' | 'strings' | 'synth'
 
-export function setTempo(val: number) {
-  import('./transport-store').then(m => m.setBpm(val))
-}
-
 export const [octave, setOctave] = createSignal<number>(4)
-
 
 // ── Audio Engine (single instance) ─────────────────────────────
 

@@ -1,17 +1,23 @@
 import { createSignal } from 'solid-js'
-import type { Session } from '@/types'
+import type { PlaybackSession } from '@/types'
 import { melodyStore } from './melody-store'
 
-export const [userSession, setUserSession] = createSignal<Session | null>(null)
-export const [selectedMelodyIds, setSelectedMelodyIds] = createSignal<string[]>([])
+// FIXME: There is no UserSession type anymore, there is only one 'PlaybackSession', this code
+// should be refactored/moved to session-store.ts, we can also rename that file (session-store.ts) as well to
+// playback-session.ts; when refactored this file can be removed!
+export const [userSession, setUserSession] =
+  createSignal<PlaybackSession | null>(null)
+export const [selectedMelodyIds, setSelectedMelodyIds] = createSignal<string[]>(
+  [],
+)
 
-export function setActiveUserSession(session: Session | null): void {
+export function setActiveUserSession(session: PlaybackSession): void {
   setUserSession(session)
   setSelectedMelodyIds([])
   melodyStore.setActiveSessionId(session?.id ?? null)
 }
 
-export function getUserSession(): Session | null {
+export function getUserSession(): PlaybackSession | null {
   return userSession()
 }
 
@@ -41,6 +47,6 @@ export function clearMelodySelection(): void {
   setSelectedMelodyIds([])
 }
 
-export function loadSession(session: Session) {
+export function loadSession(session: PlaybackSession) {
   setActiveUserSession(session)
 }

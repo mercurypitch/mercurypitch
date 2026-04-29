@@ -4,16 +4,8 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, Show } from 'solid-js'
-import type {
-  WalkthroughTab
-} from '@/stores/walkthrough-store'
-import {
-  completeWalkthrough,
-  getWalkthrough,
-  getWalkthroughsForTab,
-  isWalkthroughCompleted,
-  viewWalkthrough
-} from '@/stores/walkthrough-store'
+import type { WalkthroughTab } from '@/stores/walkthrough-store'
+import { completeWalkthrough, getWalkthrough, getWalkthroughsForTab, isWalkthroughCompleted, viewWalkthrough, } from '@/stores/walkthrough-store'
 import type { WalkthroughContent } from '@/types/walkthrough'
 
 interface WalkthroughModalProps {
@@ -27,17 +19,22 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
   const [currentTab, setCurrentTab] = createSignal<WalkthroughTab>(
     props.initialTab ?? 'practice',
   )
-  const [currentWalkthrough, setCurrentWalkthrough] = createSignal<WalkthroughContent | undefined>(
-    undefined,
-  )
+  const [currentWalkthrough, setCurrentWalkthrough] = createSignal<
+    WalkthroughContent | undefined
+  >(undefined)
   const [currentStepIndex, setCurrentStepIndex] = createSignal(0)
 
   // Track the most recently selected tab for proper navigation
-  const [lastValidTab, setLastValidTab] = createSignal<WalkthroughTab>('practice')
+  const [lastValidTab, setLastValidTab] =
+    createSignal<WalkthroughTab>('practice')
 
   // Load walkthrough when initially provided and modal opens
   createEffect(() => {
-    if (props.initialWalkthroughId !== null && props.initialWalkthroughId !== undefined && props.isOpen) {
+    if (
+      props.initialWalkthroughId !== null &&
+      props.initialWalkthroughId !== undefined &&
+      props.isOpen
+    ) {
       startWalkthrough(props.initialWalkthroughId)
     }
   })
@@ -56,9 +53,13 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
     }
   })
 
-// Ensure tab is reset when modal opens
+  // Ensure tab is reset when modal opens
   createEffect(() => {
-    if (props.isOpen && props.initialTab !== null && props.initialTab !== undefined) {
+    if (
+      props.isOpen &&
+      props.initialTab !== null &&
+      props.initialTab !== undefined
+    ) {
       setCurrentTab(props.initialTab)
     }
   })
@@ -104,7 +105,9 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
   const handleContinue = () => {
     // Find next unfinished walkthrough
     const allWalkthroughs = getWalkthroughsForTab(currentTab())
-    const nextWalkthrough = allWalkthroughs.find(w => !isWalkthroughCompleted(w.id))
+    const nextWalkthrough = allWalkthroughs.find(
+      (w) => !isWalkthroughCompleted(w.id),
+    )
     if (nextWalkthrough) {
       startWalkthrough(nextWalkthrough.id)
     } else {
@@ -146,10 +149,7 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
 
   return (
     <Show when={props.isOpen}>
-      <div
-        class="walkthrough-backdrop"
-        onClick={closeOnBackdrop}
-      >
+      <div class="walkthrough-backdrop" onClick={closeOnBackdrop}>
         <div class="walkthrough-modal">
           <Show when={!currentWalkthrough()}>
             <div class="walkthrough-content">
@@ -165,7 +165,14 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
 
               {/* Tab Selector */}
               <div class="walkthrough-tabs">
-                {(['practice', 'editor', 'settings', 'study'] as WalkthroughTab[]).map((tab) => (
+                {(
+                  [
+                    'practice',
+                    'editor',
+                    'settings',
+                    'study',
+                  ] as WalkthroughTab[]
+                ).map((tab) => (
                   <button
                     class={`walkthrough-tab ${tab === currentTab() ? 'active' : ''}`}
                     onClick={() => handleTabChange(tab)}
@@ -185,7 +192,9 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
                       onClick={() => startWalkthrough(walkthrough.id)}
                       title={completed ? 'Completed' : 'Start walkthrough'}
                     >
-                      <span class="walkthrough-thumbnail">{walkthrough.thumbnail}</span>
+                      <span class="walkthrough-thumbnail">
+                        {walkthrough.thumbnail}
+                      </span>
                       <div class="walkthrough-item-content">
                         <h3 class="walkthrough-item-title">
                           {completed && '✓ '}
@@ -220,10 +229,16 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
                 <p class="walkthrough-complete-desc">
                   You've completed this walkthrough.
                 </p>
-                <button class="walkthrough-complete-btn" onClick={handleContinue}>
+                <button
+                  class="walkthrough-complete-btn"
+                  onClick={handleContinue}
+                >
                   Continue
                 </button>
-                <button class="walkthrough-back-list-btn" onClick={handleBackToList}>
+                <button
+                  class="walkthrough-back-list-btn"
+                  onClick={handleBackToList}
+                >
                   ← Back to list
                 </button>
               </div>
@@ -241,15 +256,15 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
                   </p>
 
                   <div class="walkthrough-text">
-                    {currentWalkthrough()!.content.split('\n').map((para, _i) =>
-                      para.trim() ? (
-                        <p class="walkthrough-paragraph">
-                          {para}
-                        </p>
-                      ) : (
-                        <br />
-                      ),
-                    )}
+                    {currentWalkthrough()!
+                      .content.split('\n')
+                      .map((para, _i) =>
+                        para.trim() ? (
+                          <p class="walkthrough-paragraph">{para}</p>
+                        ) : (
+                          <br />
+                        ),
+                      )}
                   </div>
 
                   {/* Steps */}
@@ -307,22 +322,23 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
                         </div>
                       )}
 
-                      {currentWalkthrough()!.steps.length === 4 && currentStepIndex() === 3 && (
-                        <div class="walkthrough-step-item active">
-                          <span class="walkthrough-step-number">4</span>
-                          <div class="walkthrough-step-details">
-                            <h4 class="walkthrough-step-title">
-                              {currentWalkthrough()!.steps[3].title}
-                            </h4>
-                            <p class="walkthrough-step-desc">
-                              {currentWalkthrough()!.steps[3].description}
-                            </p>
-                            <span class="walkthrough-step-action">
-                              Action: {currentWalkthrough()!.steps[3].action}
-                            </span>
+                      {currentWalkthrough()!.steps.length === 4 &&
+                        currentStepIndex() === 3 && (
+                          <div class="walkthrough-step-item active">
+                            <span class="walkthrough-step-number">4</span>
+                            <div class="walkthrough-step-details">
+                              <h4 class="walkthrough-step-title">
+                                {currentWalkthrough()!.steps[3].title}
+                              </h4>
+                              <p class="walkthrough-step-desc">
+                                {currentWalkthrough()!.steps[3].description}
+                              </p>
+                              <span class="walkthrough-step-action">
+                                Action: {currentWalkthrough()!.steps[3].action}
+                              </span>
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        )}
                     </div>
                   </div>
                 </div>
@@ -345,7 +361,8 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
                     Done
                   </button>
 
-                  {currentStepIndex() < (currentWalkthrough()!.steps.length - 1) ? (
+                  {currentStepIndex() <
+                  currentWalkthrough()!.steps.length - 1 ? (
                     <button
                       class="walkthrough-nav-btn walkthrough-nav-btn-next"
                       onClick={nextStep}

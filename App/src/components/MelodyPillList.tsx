@@ -25,7 +25,9 @@ export const MelodyPillList: Component<MelodyPillListProps> = (props) => {
     const query = searchQuery().toLowerCase()
     return melodies()
       .filter((m: { name: string }) => m.name.toLowerCase().includes(query))
-      .sort((a: { name: string }, b: { name: string }) => a.name.localeCompare(b.name))
+      .sort((a: { name: string }, b: { name: string }) =>
+        a.name.localeCompare(b.name),
+      )
   }
 
   const pillClass = (melodyId: string) => {
@@ -71,7 +73,8 @@ export const MelodyPillList: Component<MelodyPillListProps> = (props) => {
               onClick={(e) => {
                 // Only add to session if we're in Session Editor context
                 const parentElement = e.target as HTMLElement
-                const isInSessionEditor = parentElement.closest('.session-editor')
+                const isInSessionEditor =
+                  parentElement.closest('.session-editor')
                 if (isInSessionEditor && props.onMelodyAdd) {
                   props.onMelodyAdd(melody.id)
                 } else {

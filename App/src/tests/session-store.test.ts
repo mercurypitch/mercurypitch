@@ -3,17 +3,9 @@
 // ============================================================
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import {
-  advanceSessionItem,
-  endPracticeSession,
-  getCurrentSessionItem,
-  initSessionHistory,
-  isInSessionMode,
-  recordSessionItemResult,
-  startPracticeSession,
-} from '@/stores'
+import { advanceSessionItem, appStore, endPracticeSession, getCurrentSessionItem, initSessionHistory, isInSessionMode, recordSessionItemResult, } from '@/stores'
 import { createScaleItem } from '@/stores/session-store'
-import type { NoteResult, SessionItem } from '@/types'
+import type { PracticeResult, SessionItem } from '@/types'
 
 // Mock localStorage
 const localStorageMock = (() => {
@@ -51,7 +43,10 @@ vi.mock('@/stores/melody-store', () => ({
     setItems: vi.fn(),
     currentItems: vi.fn(() => []),
     setCurrentItems: vi.fn(),
-    melody: vi.fn(() => ({ melodies: new Map(), library: { melodies: new Map() } })),
+    melody: vi.fn(() => ({
+      melodies: new Map(),
+      library: { melodies: new Map() },
+    })),
     updateMelody: vi.fn(),
     setMelody: vi.fn(),
     currentMelody: vi.fn(() => null),
@@ -115,8 +110,10 @@ vi.mock('@/lib/audio-engine', () => ({
   AudioEngine: vi.fn().mockImplementation(() => mockAudioEngine),
 }))
 
-/** Test session with all required fields for PracticeSession */
+/** Test session with all required fields for PlaybackSession */
 interface TestSession {
+  /** Creation timestamp */
+  created: number
   id: string
   name: string
   description?: string
@@ -130,18 +127,45 @@ interface TestSession {
     | 'custom'
     | 'vocal'
   items: SessionItem[]
+  /** Can this session be deleted by user? (false for Default/Internal sessions) */
+  deletable: boolean
+  /** Creator name */
+  author?: string
   mode?: 'once' | 'repeat' | 'practice'
   cycles?: number
   scale?: { name: string; degrees: number[]; description: string }
   currentCycle?: number
   beatsPerMeasure?: number
   isRecording?: boolean
-  noteResults?: NoteResult[]
   score?: number
   duration?: number
   completedAt?: number
   itemsCompleted?: number
 }
+
+const makePracticeResult = (
+  score: number,
+  name: string = 'default',
+  noteCount: number = 2,
+  avgCents = 10,
+  itemsCompleted: number = 1,
+): PracticeResult => ({
+  /** Overall score (0-100) */
+  score: score,
+  /** Number of notes completed */
+  noteCount: noteCount,
+  /** Average cents deviation */
+  avgCents: avgCents,
+  /** Number of completed items */
+  itemsCompleted: itemsCompleted,
+  /** Session name */
+  name: name,
+  /** Practice mode */
+  mode: 'practice',
+  /** Completed at timestamp */
+  completedAt: Date.now(),
+  noteResult: [],
+})
 
 const makeSession = (id: string, itemCount: number): TestSession => ({
   id,
@@ -151,11 +175,11 @@ const makeSession = (id: string, itemCount: number): TestSession => ({
   category: 'vocal',
   mode: 'practice',
   cycles: 1,
+  deletable: true,
   scale: { name: 'major', degrees: [0, 2, 4, 5, 7, 9, 11], description: '' },
   currentCycle: 1,
   beatsPerMeasure: 4,
   isRecording: false,
-  noteResults: [],
   score: 0,
   duration: 0,
   completedAt: 0,
@@ -163,9 +187,10 @@ const makeSession = (id: string, itemCount: number): TestSession => ({
   items: Array.from({ length: itemCount }, (_, i) =>
     createScaleItem(`Item ${i + 1}`, 'major', 8, i * 8),
   ),
+  created: Date.now(),
 })
 
-// Helper for test isolation (not used directly due to limitation)
+// FIXME: Check if this is needed! Helper for test isolation (not used directly due to limitation)
 function _resetAppStoreSignals() {
   // This would need to access private signals - for now, we rely on localStorage clearing
   // and explicit endPracticeSession calls where needed
@@ -179,13 +204,13 @@ describe('startPracticeSession', () => {
 
   it('marks session mode as active', () => {
     const session = makeSession('test-1', 3)
-    startPracticeSession(session)
+    appStore.startPracticeSession(session)
     expect(isInSessionMode()).toBe(true)
   })
 
   it('sets the session on the store', () => {
     const session = makeSession('test-1', 3)
-    startPracticeSession(session)
+    appStore.startPracticeSession(session)
     const item = getCurrentSessionItem()
     expect(item).toBeDefined()
     expect(item!.label).toBe('Item 1')
@@ -206,7 +231,7 @@ describe('getCurrentSessionItem', () => {
 
   it('returns the first item after starting a session', () => {
     const session = makeSession('test-1', 4)
-    startPracticeSession(session)
+    appStore.startPracticeSession(session)
     const item = getCurrentSessionItem()
     expect(item!.label).toBe('Item 1')
   })
@@ -228,8 +253,10 @@ describe('advanceSessionItem — repeat support', () => {
         { ...createScaleItem('Scale A', 'major', 8, 0), repeat: 3 },
         { ...createScaleItem('Scale B', 'major', 8, 8), repeat: 1 },
       ],
+      created: Date.now(),
+      deletable: true,
     }
-    startPracticeSession(session)
+    appStore.startPracticeSession(session)
     expect(getCurrentSessionItem()!.label).toBe('Scale A')
 
     // First advance — still on Scale A (repeat 2nd time)
@@ -256,8 +283,10 @@ describe('advanceSessionItem — repeat support', () => {
         createScaleItem('First', 'major', 8, 0),
         createScaleItem('Second', 'major', 8, 8),
       ],
+      created: Date.now(),
+      deletable: true,
     }
-    startPracticeSession(session)
+    appStore.startPracticeSession(session)
     advanceSessionItem() // repeat=1 → should move to Second
     expect(getCurrentSessionItem()!.label).toBe('Second')
   })
@@ -270,9 +299,9 @@ describe('recordSessionItemResult', () => {
 
   it('records score for the current item', () => {
     const session = makeSession('test-1', 3)
-    startPracticeSession(session)
-    recordSessionItemResult(85)
-    recordSessionItemResult(90)
+    appStore.startPracticeSession(session)
+    recordSessionItemResult(makePracticeResult(85, session.name))
+    recordSessionItemResult(makePracticeResult(90, session.name))
     // Scores are stored internally
   })
 })
@@ -284,12 +313,12 @@ describe('endPracticeSession', () => {
 
   it('returns a SessionResult with averaged score', () => {
     const session = makeSession('end-test', 3)
-    startPracticeSession(session)
-    recordSessionItemResult(80)
+    appStore.startPracticeSession(session)
+    recordSessionItemResult(makePracticeResult(80, session.name))
     advanceSessionItem()
-    recordSessionItemResult(90)
+    recordSessionItemResult(makePracticeResult(90, session.name))
     advanceSessionItem()
-    recordSessionItemResult(100)
+    recordSessionItemResult(makePracticeResult(100, session.name))
 
     const result = endPracticeSession()
     expect(result).not.toBeNull()
@@ -302,7 +331,7 @@ describe('endPracticeSession', () => {
 
   it('restores session mode to inactive', () => {
     const session = makeSession('end-test', 2)
-    startPracticeSession(session)
+    appStore.startPracticeSession(session)
     expect(isInSessionMode()).toBe(true)
 
     endPracticeSession()
@@ -314,8 +343,8 @@ describe('endPracticeSession', () => {
     const callsBefore = localStorageMock.setItem.mock.calls.length
 
     const session = makeSession('persist-test', 2)
-    startPracticeSession(session)
-    recordSessionItemResult(75)
+    appStore.startPracticeSession(session)
+    recordSessionItemResult(makePracticeResult(75))
     endPracticeSession()
 
     // Find the session_results call that happened after our snapshot
@@ -337,7 +366,7 @@ describe('endPracticeSession', () => {
 
   it('handles zero recorded scores gracefully', () => {
     const session = makeSession('empty-test', 3)
-    startPracticeSession(session)
+    appStore.startPracticeSession(session)
     // no scores recorded
 
     const result = endPracticeSession()
@@ -358,13 +387,13 @@ describe('isInSessionMode', () => {
 
   it('returns true when session is active', () => {
     const session = makeSession('mode-test', 2)
-    startPracticeSession(session)
+    appStore.startPracticeSession(session)
     expect(isInSessionMode()).toBe(true)
   })
 
   it('returns false after session ends', () => {
     const session = makeSession('mode-test', 2)
-    startPracticeSession(session)
+    appStore.startPracticeSession(session)
     endPracticeSession()
     expect(isInSessionMode()).toBe(false)
   })

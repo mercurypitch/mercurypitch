@@ -46,9 +46,7 @@ test.describe('Metronome', () => {
     await expect(metroToggle).toHaveAttribute('data-active', 'true')
   })
 
-  test('Metronome enable state persists across sessions', async ({
-    page,
-  }) => {
+  test('Metronome enable state persists across sessions', async ({ page }) => {
     await switchTab(page, 'practice')
     await page.waitForTimeout(300)
 
@@ -186,7 +184,11 @@ test.describe('Metronome', () => {
     const soundSelect = page.locator('#metro-sound-select')
 
     // Test switching between sound types
-    for (const [index, value] of ['click', 'click-off', 'syncopated'].entries()) {
+    for (const [index, value] of [
+      'click',
+      'click-off',
+      'syncopated',
+    ].entries()) {
       await soundSelect.selectOption(value)
       await page.waitForTimeout(200)
       await expect(soundSelect).toHaveValue(value)
@@ -221,9 +223,7 @@ test.describe('Metronome', () => {
   // Metronome Volume Tests (5 tests)
   // ==========================================
 
-  test('User can adjust metronome volume independently', async ({
-    page,
-  }) => {
+  test('User can adjust metronome volume independently', async ({ page }) => {
     await switchTab(page, 'practice')
     await page.waitForTimeout(300)
 
@@ -380,9 +380,7 @@ test.describe('Metronome', () => {
     await page.waitForTimeout(500)
   })
 
-  test('When metronome is off, indicator does not update', async ({
-    page,
-  }) => {
+  test('When metronome is off, indicator does not update', async ({ page }) => {
     await switchTab(page, 'practice')
     await page.waitForTimeout(300)
 
@@ -444,9 +442,7 @@ test.describe('Metronome', () => {
     await page.waitForTimeout(300)
   })
 
-  test('Metronome volume in count-in matches main volume', async ({
-    page,
-  }) => {
+  test('Metronome volume in count-in matches main volume', async ({ page }) => {
     await switchTab(page, 'settings')
     await page.waitForTimeout(300)
 

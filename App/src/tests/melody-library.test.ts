@@ -3,13 +3,9 @@
 // ============================================================
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { melodyStore } from '@/stores/melody-store'
-import {
-  createRestItem,
-  createScaleItem,
-  createSession,
-} from '@/stores/session-store'
-import type { MelodyData, MelodyItem, MelodyNote, SavedUserSession, } from '@/types'
+import { melodyStore, STORAGE_KEY_LIBRARY } from '@/stores/melody-store'
+import { createRestItem, createScaleItem, createSession, } from '@/stores/session-store'
+import type { MelodyData, MelodyItem, MelodyNote, PlaybackSession, } from '@/types'
 
 // Mock localStorage
 const localStorageMock = (() => {
@@ -941,7 +937,7 @@ describe('Melody Library System', () => {
       melodyStore.resetMelodyLibrary()
 
       expect(localStorageMock.removeItem).toHaveBeenCalledWith(
-        'pitchperfect_library',
+        STORAGE_KEY_LIBRARY,
       )
     })
   })
@@ -1011,7 +1007,7 @@ describe('Melody Library System', () => {
     })
 
     it('gets single session by ID', () => {
-      const _session: SavedUserSession = {
+      const _session: PlaybackSession = {
         id: 'session-1',
         name: 'Session 1',
         author: 'User',
@@ -1020,7 +1016,7 @@ describe('Melody Library System', () => {
         deletable: true,
         difficulty: 'beginner' as const,
         category: 'vocal' as const,
-      } as SavedUserSession
+      } as PlaybackSession
       melodyStore.saveSession(_session)
 
       const found = melodyStore.getSession('session-1')
@@ -1035,7 +1031,7 @@ describe('Melody Library System', () => {
     })
 
     it('updates user session', () => {
-      const _session: SavedUserSession = {
+      const _session: PlaybackSession = {
         id: 'session-1',
         name: 'Original',
         author: 'User',
@@ -1045,7 +1041,7 @@ describe('Melody Library System', () => {
         lastPlayed: Date.now(),
         difficulty: 'beginner' as const,
         category: 'vocal' as const,
-      } as SavedUserSession
+      } as PlaybackSession
 
       melodyStore.saveSession(_session)
 
@@ -1062,7 +1058,7 @@ describe('Melody Library System', () => {
     })
 
     it('deletes user session', () => {
-      const _session: SavedUserSession = {
+      const _session: PlaybackSession = {
         id: 'session-1',
         name: 'To Delete',
         author: 'User',
@@ -1071,7 +1067,7 @@ describe('Melody Library System', () => {
         deletable: true,
         difficulty: 'beginner' as const,
         category: 'vocal' as const,
-      } as SavedUserSession
+      } as PlaybackSession
 
       melodyStore.saveSession(_session)
 
@@ -1084,7 +1080,7 @@ describe('Melody Library System', () => {
     })
 
     it('persists user sessions to localStorage', () => {
-      const _session: SavedUserSession = {
+      const _session: PlaybackSession = {
         id: 'session-1',
         name: 'Test Session',
         author: 'User',
@@ -1094,12 +1090,12 @@ describe('Melody Library System', () => {
         lastPlayed: Date.now(),
         difficulty: 'beginner' as const,
         category: 'vocal' as const,
-      } as SavedUserSession
+      } as PlaybackSession
 
       melodyStore.saveSession(_session)
 
       const _sessionId = _session.id
-      const stored = localStorageMock.getItem('pitchperfect_library')
+      const stored = localStorageMock.getItem(STORAGE_KEY_LIBRARY)
       expect(stored).toBeDefined()
       const parsed = JSON.parse(stored!)
       expect(parsed.sessions).toBeDefined()
@@ -1109,7 +1105,7 @@ describe('Melody Library System', () => {
 
     it.skip('loads sessions from localStorage on init', () => {
       // Skip - localStorage mock is cleared in beforeEach
-      const savedSessions: SavedUserSession[] = [
+      const savedSessions: PlaybackSession[] = [
         {
           id: 'session-1',
           name: 'Session 1',
@@ -1120,7 +1116,7 @@ describe('Melody Library System', () => {
           lastPlayed: Date.now(),
           difficulty: 'beginner' as const,
           category: 'vocal' as const,
-        } as SavedUserSession,
+        } as PlaybackSession,
       ]
 
       localStorageMock.setItem(

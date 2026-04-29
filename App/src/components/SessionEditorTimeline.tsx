@@ -37,7 +37,11 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
   const [touchCurrentPos, setTouchCurrentPos] = createSignal({ x: 0, y: 0 })
   const [touchActive, setTouchActive] = createSignal(false)
 
-  const handleTouchStart = (e: TouchEvent, item: SessionItem, index: number) => {
+  const handleTouchStart = (
+    e: TouchEvent,
+    item: SessionItem,
+    index: number,
+  ) => {
     if (e.touches.length !== 1) return
     const touch = e.touches[0]
     setTouchStartPos({ x: touch.clientX, y: touch.clientY })
@@ -97,7 +101,9 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
   const _isDraggingX = () => {
     const start = touchStartPos()
     const current = touchCurrentPos()
-    return Math.abs(current.x - start.x) > 5 && Math.abs(current.y - start.y) <= 10
+    return (
+      Math.abs(current.x - start.x) > 5 && Math.abs(current.y - start.y) <= 10
+    )
   }
 
   const handleTouchEnd = () => {
@@ -142,7 +148,11 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
       return
     }
 
-    if (sourceIndex === -1 || sourceId === null || sourceIndex === targetIndex) {
+    if (
+      sourceIndex === -1 ||
+      sourceId === null ||
+      sourceIndex === targetIndex
+    ) {
       setDraggedItemId(null)
       setDragSourceIndex(-1)
       return
@@ -180,12 +190,7 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
     props.onDeleteItem(itemId)
   }
 
-  const _restIcons = [
-    '⋯' /* ellipsis */,
-    '⏸',
-    '⏯',
-    '⏯️',
-  ]
+  const _restIcons = ['⋯' /* ellipsis */, '⏸', '⏯', '⏯️']
 
   const getRestDuration = (restMs: number) => {
     if (restMs < 1000) return `${Math.round(restMs / 100)}s`
@@ -211,9 +216,17 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
 
           <For each={props.sessionItems}>
             {(item, index) => {
-              const isMelody = item.type === 'melody' && item.melodyId !== null && item.melodyId !== undefined;
-              const melodyData: MelodyData | undefined = isMelody ? melodyStore.getMelody(item.melodyId!) : undefined;
-              const itemLabel = isMelody && melodyData !== undefined ? melodyData.name : item.label;
+              const isMelody =
+                item.type === 'melody' &&
+                item.melodyId !== null &&
+                item.melodyId !== undefined
+              const melodyData: MelodyData | undefined = isMelody
+                ? melodyStore.getMelody(item.melodyId!)
+                : undefined
+              const itemLabel =
+                isMelody && melodyData !== undefined
+                  ? melodyData.name
+                  : item.label
 
               return (
                 <>
@@ -231,14 +244,18 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
                   >
                     <div class="item-header">
                       <span class="item-type-icon">
-                        {item.type === 'melody' ? '🎵' : item.type === 'scale' ? '🎹' : '⏸'}
+                        {item.type === 'melody'
+                          ? '🎵'
+                          : item.type === 'scale'
+                            ? '🎹'
+                            : '⏸'}
                       </span>
                       <span class="item-label">{itemLabel}</span>
                       <button
                         class="item-delete-btn"
                         onClick={(e) => {
-                          e.stopPropagation();
-                          props.onDeleteItem(item.id);
+                          e.stopPropagation()
+                          props.onDeleteItem(item.id)
                         }}
                         title="Delete this item"
                       >
@@ -246,22 +263,42 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
                       </button>
                     </div>
                     <div class="item-details">
-                      <span class="item-start-beat">Start: {item.startBeat}</span>
-                      
+                      <span class="item-start-beat">
+                        Start: {item.startBeat}
+                      </span>
+
                       <Show when={isMelody && melodyData !== undefined}>
-                        <span class="item-meta">{melodyData!.items.length} notes</span>
+                        <span class="item-meta">
+                          {melodyData!.items.length} notes
+                        </span>
                         <span class="item-meta">{melodyData!.bpm} BPM</span>
                       </Show>
-                      
+
                       <Show when={isMelody && melodyData === undefined}>
                         <span class="item-meta missing">Missing melody</span>
                       </Show>
-                      
-                      <Show when={!isMelody && item.restMs !== null && item.restMs !== undefined && item.restMs > 0}>
-                        <span class="item-duration">Duration: {getRestDuration(item.restMs!)}</span>
+
+                      <Show
+                        when={
+                          !isMelody &&
+                          item.restMs !== null &&
+                          item.restMs !== undefined &&
+                          item.restMs > 0
+                        }
+                      >
+                        <span class="item-duration">
+                          Duration: {getRestDuration(item.restMs!)}
+                        </span>
                       </Show>
-                      
-                      <Show when={!isMelody && item.type === 'scale' && item.scaleType !== undefined && item.scaleType !== null}>
+
+                      <Show
+                        when={
+                          !isMelody &&
+                          item.type === 'scale' &&
+                          item.scaleType !== undefined &&
+                          item.scaleType !== null
+                        }
+                      >
                         <span class="item-meta">{item.scaleType}</span>
                       </Show>
                     </div>
@@ -288,15 +325,24 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
               class="timeline-drop-zone rest-zone"
               onDragOver={(e) => handleDragOver(e, props.sessionItems.length)}
               onDrop={(e) => handleDrop(e, props.sessionItems.length)}
-              onClick={() => props.onAddRest(
-                props.sessionItems.reduce((maxBeat, item) => {
-                  const itemLength = item.type === 'rest'
-                    ? Math.max(1, Math.ceil((item.restMs ?? props.restDuration ?? 4000) / 1000))
-                    : item.beats ?? 16
-                  return Math.max(maxBeat, item.startBeat + itemLength)
-                }, 0),
-                props.restDuration ?? 4000,
-              )}
+              onClick={() =>
+                props.onAddRest(
+                  props.sessionItems.reduce((maxBeat, item) => {
+                    const itemLength =
+                      item.type === 'rest'
+                        ? Math.max(
+                            1,
+                            Math.ceil(
+                              (item.restMs ?? props.restDuration ?? 4000) /
+                                1000,
+                            ),
+                          )
+                        : (item.beats ?? 16)
+                    return Math.max(maxBeat, item.startBeat + itemLength)
+                  }, 0),
+                  props.restDuration ?? 4000,
+                )
+              }
             >
               <span class="rest-placeholder">+</span>
               <span class="rest-hint">Add Rest</span>
@@ -307,17 +353,31 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
 
       <div class="timeline-footer">
         <span class="timeline-info">
-          {props.sessionItems.length} item{props.sessionItems.length !== 1 ? 's' : ''}
+          {props.sessionItems.length} item
+          {props.sessionItems.length !== 1 ? 's' : ''}
           {props.sessionItems.length > 0 && (
             <>
               {' • '}
-              Total duration: {props.sessionItems.reduce((acc, item) => {
-                if (item.restMs !== null && item.restMs !== undefined && item.restMs > 0) return acc + item.restMs
-                if (item.beats !== null && item.beats !== undefined && item.beats > 0) {
-                  return acc + (item.beats / 4) * (120 / (appStore.bpm() || 120))
+              Total duration:{' '}
+              {props.sessionItems.reduce((acc, item) => {
+                if (
+                  item.restMs !== null &&
+                  item.restMs !== undefined &&
+                  item.restMs > 0
+                )
+                  return acc + item.restMs
+                if (
+                  item.beats !== null &&
+                  item.beats !== undefined &&
+                  item.beats > 0
+                ) {
+                  return (
+                    acc + (item.beats / 4) * (120 / (appStore.bpm() || 120))
+                  )
                 }
                 return acc
-              }, 0) / 1000} seconds
+              }, 0) / 1000}{' '}
+              seconds
             </>
           )}
         </span>

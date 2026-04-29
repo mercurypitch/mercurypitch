@@ -39,9 +39,7 @@ test.describe('Recursion Detection (Quick Start removed)', () => {
 
     if (count > 0) {
       // Click the first session's Start button
-      const startBtn = sessionItems
-        .first()
-        .locator('button:has-text("Start")')
+      const startBtn = sessionItems.first().locator('button:has-text("Start")')
       await startBtn.click()
 
       // Wait for playback

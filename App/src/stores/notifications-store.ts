@@ -6,7 +6,9 @@ export interface Notification {
   type: 'info' | 'success' | 'warning' | 'error'
 }
 
-export const [notifications, setNotifications] = createSignal<Notification[]>([])
+export const [notifications, setNotifications] = createSignal<Notification[]>(
+  [],
+)
 
 let _notifId = 0
 

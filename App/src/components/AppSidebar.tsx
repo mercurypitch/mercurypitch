@@ -310,16 +310,23 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
                     <div class="session-item-entry">
                       <span class="session-item-label">{item.label}</span>
                       <span class="session-item-type">
-                        {item.type === 'melody' ? '🎵' : item.type === 'scale' ? '♩' : '♪'}
+                        {item.type === 'melody'
+                          ? '🎵'
+                          : item.type === 'scale'
+                            ? '♩'
+                            : '♪'}
                       </span>
                     </div>
                   )}
                 </For>
               </Show>
-              <Show when={!userSession()?.items || (userSession()?.items?.length ?? 0) === 0}>
-                <p class="session-empty-tip">
-                  No items in session
-                </p>
+              <Show
+                when={
+                  !userSession()?.items ||
+                  (userSession()?.items?.length ?? 0) === 0
+                }
+              >
+                <p class="session-empty-tip">No items in session</p>
               </Show>
             </div>
           </div>

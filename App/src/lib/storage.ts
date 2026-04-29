@@ -1,4 +1,5 @@
-import { createSignal, Signal, Setter } from 'solid-js'
+import type { Setter, Signal } from 'solid-js'
+import { createSignal } from 'solid-js'
 
 export function createPersistedSignal<T>(
   key: string,

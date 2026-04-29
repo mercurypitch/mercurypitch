@@ -4,13 +4,14 @@
  * maintaining testability.
  */
 export function exposeForE2E(key: string, value: unknown): void {
-  // @ts-ignore - Vite injects import.meta.env
-  const isTestMode = typeof import.meta !== 'undefined' && (import.meta as any).env?.MODE === 'test'
-  const isE2E = typeof window !== 'undefined' && (window as any).E2E_TEST_MODE
+  const isTestMode = import.meta.env.MODE === 'test'
+  const win =
+    typeof window !== 'undefined'
+      ? (window as unknown as Record<string, unknown>)
+      : null
+  const isE2E = win !== null && win['E2E_TEST_MODE'] === true
 
-  if (isTestMode || isE2E) {
-    if (typeof window !== 'undefined') {
-      ;(window as any)[key] = value
-    }
+  if ((isTestMode || isE2E) && win !== null) {
+    win[key] = value
   }
 }

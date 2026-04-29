@@ -30,9 +30,7 @@ test.describe('Session Editor', () => {
   // Collapsible Interface Tests (6 tests)
   // ==========================================
 
-  test('Session Editor is collapsible via header toggle', async ({
-    page,
-  }) => {
+  test('Session Editor is collapsible via header toggle', async ({ page }) => {
     // Navigate to editor tab
     await switchTab(page, 'editor')
     await page.waitForTimeout(300)
@@ -65,9 +63,7 @@ test.describe('Session Editor', () => {
     await expect(editorContent).not.toBeVisible()
   })
 
-  test('Expanded state shows melody library and timeline', async ({
-    page,
-  }) => {
+  test('Expanded state shows melody library and timeline', async ({ page }) => {
     await switchTab(page, 'editor')
     await page.waitForTimeout(300)
 
@@ -205,9 +201,7 @@ test.describe('Session Editor', () => {
   // Drag-and-Drop Tests (7 tests)
   // ==========================================
 
-  test('Melody pills are draggable using HTML5 DnD API', async ({
-    page,
-  }) => {
+  test('Melody pills are draggable using HTML5 DnD API', async ({ page }) => {
     await switchTab(page, 'editor')
     await page.waitForTimeout(300)
 
@@ -218,9 +212,7 @@ test.describe('Session Editor', () => {
     expect(draggable).toBe('true')
   })
 
-  test('Timeline accepts drop events from melody library', async ({
-    page,
-  }) => {
+  test('Timeline accepts drop events from melody library', async ({ page }) => {
     await switchTab(page, 'editor')
     await page.waitForTimeout(300)
 
@@ -253,9 +245,7 @@ test.describe('Session Editor', () => {
     await expect(timeline).toBeVisible()
   })
 
-  test('Valid drop updates session data with new item', async ({
-    page,
-  }) => {
+  test('Valid drop updates session data with new item', async ({ page }) => {
     await switchTab(page, 'editor')
     await page.waitForTimeout(300)
 
@@ -301,9 +291,7 @@ test.describe('Session Editor', () => {
     expect(count).toBeGreaterThanOrEqual(0)
   })
 
-  test('Drop zones between items are clearly indicated', async ({
-    page,
-  }) => {
+  test('Drop zones between items are clearly indicated', async ({ page }) => {
     await switchTab(page, 'editor')
     await page.waitForTimeout(300)
 
@@ -313,9 +301,7 @@ test.describe('Session Editor', () => {
     expect(count).toBeGreaterThanOrEqual(0)
   })
 
-  test('Clicking drop zone adds a 4-second rest item', async ({
-    page,
-  }) => {
+  test('Clicking drop zone adds a 4-second rest item', async ({ page }) => {
     await switchTab(page, 'editor')
     await page.waitForTimeout(300)
 
@@ -338,9 +324,7 @@ test.describe('Session Editor', () => {
     expect(count).toBeGreaterThanOrEqual(0)
   })
 
-  test('Rests are visible as gaps or pause indicators', async ({
-    page,
-  }) => {
+  test('Rests are visible as gaps or pause indicators', async ({ page }) => {
     await switchTab(page, 'editor')
     await page.waitForTimeout(300)
 
@@ -390,9 +374,7 @@ test.describe('Session Editor', () => {
     await expect(deleteBtn).toBeVisible()
   })
 
-  test('Deleting an item removes it from the session', async ({
-    page,
-  }) => {
+  test('Deleting an item removes it from the session', async ({ page }) => {
     await switchTab(page, 'editor')
     await page.waitForTimeout(300)
 
@@ -505,9 +487,7 @@ test.describe('Session Editor', () => {
     await expect(emptyState).toBeVisible()
   })
 
-  test('Timeline calculates and displays total duration', async ({
-    page,
-  }) => {
+  test('Timeline calculates and displays total duration', async ({ page }) => {
     await switchTab(page, 'editor')
     await page.waitForTimeout(300)
 

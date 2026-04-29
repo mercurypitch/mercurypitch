@@ -602,10 +602,7 @@ export class AudioEngine {
 
     // Smooth ramp in
     gain.gain.setValueAtTime(0, startTime)
-    gain.gain.linearRampToValueAtTime(
-      this.volume,
-      startTime + 0.01,
-    )
+    gain.gain.linearRampToValueAtTime(this.volume, startTime + 0.01)
 
     oscillator.connect(gain)
     gain.connect(this.mainGain)
@@ -690,19 +687,22 @@ export class AudioEngine {
     }
 
     // Clean up after release completes
-    this.toneCleanupTimer = setTimeout(() => {
-      try {
-        oscillator.disconnect()
-      } catch {
-        // already stopped
-      }
-      try {
-        gain.disconnect()
-      } catch {
-        // already disconnected
-      }
-      this.toneCleanupTimer = null
-    }, Math.ceil(releaseSeconds * 1000) + 30)
+    this.toneCleanupTimer = setTimeout(
+      () => {
+        try {
+          oscillator.disconnect()
+        } catch {
+          // already stopped
+        }
+        try {
+          gain.disconnect()
+        } catch {
+          // already disconnected
+        }
+        this.toneCleanupTimer = null
+      },
+      Math.ceil(releaseSeconds * 1000) + 30,
+    )
     this.isPlaying = false
   }
 

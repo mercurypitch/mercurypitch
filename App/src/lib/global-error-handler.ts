@@ -7,12 +7,13 @@ import { exposeForE2E } from './test-utils'
 export function initGlobalErrorHandlers(): void {
   if (typeof window === 'undefined') return
 
-  window.addEventListener('error', (e) => {
-    console.error('Global error:', e.error || e.message)
-    exposeForE2E('__globalError', e.error || e.message)
+  window.addEventListener('error', (e: ErrorEvent) => {
+    const errorMsg = e.error !== null ? e.error : e.message
+    console.error('Global error:', errorMsg)
+    exposeForE2E('__globalError', errorMsg)
   })
 
-  window.addEventListener('unhandledrejection', (e) => {
+  window.addEventListener('unhandledrejection', (e: PromiseRejectionEvent) => {
     console.error('Unhandled promise rejection:', e.reason)
     exposeForE2E('__globalError', e.reason)
   })

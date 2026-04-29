@@ -1,4 +1,3 @@
-import { createSignal } from 'solid-js'
 import { createPersistedSignal } from '@/lib/storage'
 
 export type ThemeMode = 'dark' | 'light'

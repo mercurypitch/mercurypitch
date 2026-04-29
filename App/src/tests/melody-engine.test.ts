@@ -219,7 +219,12 @@ describe('MelodyEngine', () => {
 
       // Track the initial callback length after start() (number of callbacks before any are driven)
       const initialCallbackLength = pendingCallbacks.length
-      console.log('[test] initialCallbackLength:', initialCallbackLength, 'pendingCallbacks.length:', pendingCallbacks.length)
+      console.log(
+        '[test] initialCallbackLength:',
+        initialCallbackLength,
+        'pendingCallbacks.length:',
+        pendingCallbacks.length,
+      )
 
       // Drive first RAF call (index 0 - the one added by start())
       pendingCallbacks[initialCallbackLength - 1](fakeNow)

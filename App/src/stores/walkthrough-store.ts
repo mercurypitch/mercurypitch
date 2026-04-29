@@ -3,8 +3,8 @@
 // ============================================================
 
 import { createSignal } from 'solid-js'
-import type { WalkthroughProgress,WalkthroughTab, WalkthroughContent } from '@/types/walkthrough'
-import {WALKTHROUGHS } from '@/types/walkthrough'
+import type { WalkthroughContent, WalkthroughProgress, WalkthroughTab, } from '@/types/walkthrough'
+import { WALKTHROUGHS } from '@/types/walkthrough'
 
 /** Export WalkthroughTab type for use in components */
 export type { WalkthroughTab }
@@ -12,7 +12,9 @@ export type { WalkthroughTab }
 const STORAGE_KEY = 'pitchperfect_walkthroughs'
 
 /** Get all available walkthroughs for a given tab */
-export function getWalkthroughsForTab(tab: 'practice' | 'editor' | 'settings' | 'study') {
+export function getWalkthroughsForTab(
+  tab: 'practice' | 'editor' | 'settings' | 'study',
+) {
   const walkthroughs = WALKTHROUGHS[tab]
   return walkthroughs !== null && walkthroughs !== undefined ? walkthroughs : []
 }
@@ -21,7 +23,7 @@ export function getWalkthroughsForTab(tab: 'practice' | 'editor' | 'settings' | 
 export function getWalkthrough(id: string): WalkthroughContent | undefined {
   for (const tab of ['practice', 'editor', 'settings', 'study'] as const) {
     const walkthroughs = WALKTHROUGHS[tab]
-    const found = walkthroughs.find(w => w.id === id)
+    const found = walkthroughs.find((w) => w.id === id)
     if (found) return found
   }
   return undefined
@@ -31,14 +33,17 @@ export const WALKTHROUGH_STEPS: any[] = [] // stub since it was deleted
 export function nextWalkthroughStep() {}
 export function prevWalkthroughStep() {}
 export function endWalkthrough() {}
-export function getWalkthroughStep() { return 0 }
-export function isWalkthroughActive() { return false }
+export function getWalkthroughStep() {
+  return 0
+}
+export function isWalkthroughActive() {
+  return false
+}
 export function startWalkthrough() {}
 
 /** Get progress signal */
-export const [walkthroughsProgress, setWalkthroughsProgress] = createSignal<WalkthroughProgress>(
-  loadProgress(),
-)
+export const [walkthroughsProgress, setWalkthroughsProgress] =
+  createSignal<WalkthroughProgress>(loadProgress())
 
 /** Get progress for a specific walkthrough */
 export function getWalkthroughProgress(id: string): number {
@@ -71,9 +76,13 @@ export function isWalkthroughCompleted(id: string): boolean {
 }
 
 /** Get remaining walkthroughs (not yet completed) */
-export function getRemainingWalkthroughs(): Array<{ tab: string, id: string, title: string }> {
+export function getRemainingWalkthroughs(): Array<{
+  tab: string
+  id: string
+  title: string
+}> {
   const completed = walkthroughsProgress()
-  const remaining: Array<{ tab: string, id: string, title: string }> = []
+  const remaining: Array<{ tab: string; id: string; title: string }> = []
 
   for (const tab of ['practice', 'editor', 'settings', 'study'] as const) {
     for (const walkthrough of WALKTHROUGHS[tab]) {
@@ -91,9 +100,13 @@ export function getRemainingWalkthroughs(): Array<{ tab: string, id: string, tit
 }
 
 /** Get completed walkthroughs */
-export function getCompletedWalkthroughs(): Array<{ tab: string, id: string, title: string }> {
+export function getCompletedWalkthroughs(): Array<{
+  tab: string
+  id: string
+  title: string
+}> {
   const completed = walkthroughsProgress()
-  const completedList: Array<{ tab: string, id: string, title: string }> = []
+  const completedList: Array<{ tab: string; id: string; title: string }> = []
 
   for (const tab of ['practice', 'editor', 'settings', 'study'] as const) {
     for (const walkthrough of WALKTHROUGHS[tab]) {

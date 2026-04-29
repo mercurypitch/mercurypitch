@@ -167,7 +167,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
   const handlePlay = (melody: MelodyData) => {
     melodyStore.loadMelody(melody.id)
     appStore.setCurrentPresetName(melody.name)
-    appStore.setTempo(melody.bpm)
+    appStore.setBpm(melody.bpm)
     appStore.setKeyName(melody.key)
     appStore.setScaleType(melody.scaleType)
     appStore.setOctave(melody.octave ?? 4)
@@ -254,16 +254,21 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
       .map((t) => t.trim())
       .filter((t) => t)
     const newMelody = melodyStore.createNewMelody(name, 'User')
-    const updatedMelody = melodyStore.updateMelody(newMelody.id, {
-      bpm: createBpm(),
-      key: createKey(),
-      scaleType: createScale(),
-      tags: tagsArray.length > 0 ? tagsArray : undefined,
-      notes: createNotes().trim().length > 0 ? createNotes().trim() : undefined,
-    }) ?? newMelody
+    const updatedMelody =
+      melodyStore.updateMelody(newMelody.id, {
+        bpm: createBpm(),
+        key: createKey(),
+        scaleType: createScale(),
+        tags: tagsArray.length > 0 ? tagsArray : undefined,
+        notes:
+          createNotes().trim().length > 0 ? createNotes().trim() : undefined,
+      }) ?? newMelody
 
     // Add newly created melody to currently active session
-    const updatedSession = melodyStore.addMelodyToActiveSession(newMelody.id, name)
+    const updatedSession = melodyStore.addMelodyToActiveSession(
+      newMelody.id,
+      name,
+    )
     if (updatedSession !== undefined) {
       appStore.setActiveUserSession(updatedSession)
     }
@@ -303,14 +308,19 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
 
     const playlistId = playlistEdit.playlistId
     const name = renameInput().trim()
-    if (playlistId !== null && playlistId !== undefined && name.trim().length > 0) {
+    if (
+      playlistId !== null &&
+      playlistId !== undefined &&
+      name.trim().length > 0
+    ) {
       const playlist = melodyStore.getPlaylist(playlistId)
       if (playlist !== null) {
         const newPlaylistId = melodyStore.createPlaylist(name)
         const library = melodyStore.getMelodyLibrary()
 
         const libraryPlaylist = library.playlists[playlistId]
-        const melodyKeys = libraryPlaylist !== undefined ? libraryPlaylist.melodyKeys : []
+        const melodyKeys =
+          libraryPlaylist !== undefined ? libraryPlaylist.melodyKeys : []
         melodyKeys.forEach((melodyKey: string) => {
           melodyStore.addMelodyToPlaylist(newPlaylistId, melodyKey)
         })
@@ -437,7 +447,10 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
       const playlist = melodyStore.getPlaylist(playlistId)
       if (playlist) {
         const sessionKeys = playlist.sessionKeys
-        if (sessionKeys !== undefined && sessionKeys.includes(state.sessionId)) {
+        if (
+          sessionKeys !== undefined &&
+          sessionKeys.includes(state.sessionId)
+        ) {
           appStore.showNotification('Session already in playlist', 'info')
           setDragState(null)
           return
@@ -455,9 +468,11 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
     if (state !== null && state.type === 'playlist') {
       const playlist = melodyStore.getPlaylist(state.playlistId)
       if (playlist) {
-        const newMelodyKeys = playlist.melodyKeys.filter(id => id !== melodyId)
+        const newMelodyKeys = playlist.melodyKeys.filter(
+          (id) => id !== melodyId,
+        )
         melodyStore.updatePlaylist(state.playlistId, {
-          melodyKeys: newMelodyKeys
+          melodyKeys: newMelodyKeys,
         })
         appStore.showNotification('Melody removed from playlist', 'success')
       }
@@ -528,7 +543,10 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                       }}
                     >
                       <svg viewBox="0 0 24 24" width="20" height="20">
-                        <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+                        <path
+                          fill="currentColor"
+                          d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"
+                        />
                       </svg>
                     </button>
                   </div>
@@ -773,11 +791,15 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                         </div>
                         <Show when={melody.tags && melody.tags.length > 0}>
                           <div class="item-tags">
-                            {(melody.tags as string[]).slice(0, 3).map((tag) => (
-                              <span class="tag-pill">{tag}</span>
-                            ))}
+                            {(melody.tags as string[])
+                              .slice(0, 3)
+                              .map((tag) => (
+                                <span class="tag-pill">{tag}</span>
+                              ))}
                             {(melody.tags as string[]).length > 3 && (
-                              <span class="tag-pill more">+{(melody.tags as string[]).length - 3}</span>
+                              <span class="tag-pill more">
+                                +{(melody.tags as string[]).length - 3}
+                              </span>
                             )}
                           </div>
                         </Show>
@@ -881,32 +903,44 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                                 ))}
                               </Show>
                               <Show when={(m().tags as string[]).length > 3}>
-                                {(m().tags as string[]).slice(0, 50).map((tag) => (
-                                  <span class="tag-pill">{tag}</span>
-                                ))}
+                                {(m().tags as string[])
+                                  .slice(0, 50)
+                                  .map((tag) => (
+                                    <span class="tag-pill">{tag}</span>
+                                  ))}
                                 <Show when={(m().tags as string[]).length > 50}>
-                                  <span class="tag-pill more">+{(m().tags as string[]).length - 50}</span>
+                                  <span class="tag-pill more">
+                                    +{(m().tags as string[]).length - 50}
+                                  </span>
                                 </Show>
                               </Show>
                             </div>
                           </Show>
-                          <Show when={!m().tags || (m().tags as string[]).length === 0}>
+                          <Show
+                            when={
+                              !m().tags || (m().tags as string[]).length === 0
+                            }
+                          >
                             -
                           </Show>
                         </dd>
                         <dt>Notes</dt>
                         <dd>
-                          <Show when={hasNotes(m().notes)}>
-                            {m().notes}
-                          </Show>
-                          <Show when={!hasNotes(m().notes)}>
-                            -
-                          </Show>
+                          <Show when={hasNotes(m().notes)}>{m().notes}</Show>
+                          <Show when={!hasNotes(m().notes)}>-</Show>
                         </dd>
                         <dt>Created</dt>
-                        <dd>{new Date(m().createdAt ?? Date.now()).toLocaleDateString()}</dd>
+                        <dd>
+                          {new Date(
+                            m().createdAt ?? Date.now(),
+                          ).toLocaleDateString()}
+                        </dd>
                         <dt>Updated</dt>
-                        <dd>{new Date(m().updatedAt ?? Date.now()).toLocaleDateString()}</dd>
+                        <dd>
+                          {new Date(
+                            m().updatedAt ?? Date.now(),
+                          ).toLocaleDateString()}
+                        </dd>
                       </dl>
                     )}
                   </Show>
@@ -1010,7 +1044,12 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
               </Show>
 
               {/* Rename mode */}
-              <Show when={playlistEditing()?.mode === 'rename' && playlistEditing()?.playlistId}>
+              <Show
+                when={
+                  playlistEditing()?.mode === 'rename' &&
+                  playlistEditing()?.playlistId
+                }
+              >
                 <div class="playlist-edit-form">
                   <h3>Rename Playlist</h3>
 

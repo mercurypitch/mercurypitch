@@ -16,13 +16,18 @@ test.describe('Walkthrough Feature', () => {
     await expect(walkthroughBtn).toBeVisible()
   })
 
-  test('Clicking walkthrough button opens selection modal', async ({ page }) => {
+  test('Clicking walkthrough button opens selection modal', async ({
+    page,
+  }) => {
     const walkthroughBtn = page.locator('.walkthrough-control-btn')
     await walkthroughBtn.click()
 
     const modal = page.locator('.walkthrough-selection-overlay')
     await expect(modal).toBeVisible()
-    await expect(modal).toHaveAttribute('class', /walkthrough-selection-overlay/)
+    await expect(modal).toHaveAttribute(
+      'class',
+      /walkthrough-selection-overlay/,
+    )
   })
 
   test('Walkthrough selection shows progress percentage', async ({ page }) => {
@@ -36,7 +41,9 @@ test.describe('Walkthrough Feature', () => {
     await expect(percentage).toBeVisible()
   })
 
-  test('Walkthrough tabs show remaining walkthroughs with badges', async ({ page }) => {
+  test('Walkthrough tabs show remaining walkthroughs with badges', async ({
+    page,
+  }) => {
     const walkthroughBtn = page.locator('.walkthrough-control-btn')
     await walkthroughBtn.click()
 
@@ -77,7 +84,9 @@ test.describe('Walkthrough Feature', () => {
     expect(count).toBeGreaterThanOrEqual(0)
   })
 
-  test('Completed walkthroughs section shows completed items', async ({ page }) => {
+  test('Completed walkthroughs section shows completed items', async ({
+    page,
+  }) => {
     const walkthroughBtn = page.locator('.walkthrough-control-btn')
     await walkthroughBtn.click()
 

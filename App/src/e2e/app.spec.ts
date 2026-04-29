@@ -11,7 +11,7 @@ test.describe('PitchPerfect App', () => {
     // Seed default melodies for test environment
     await page.evaluate(() => {
       localStorage.removeItem('pitchperfect_seeded')
-      const { melodyStore } = (window as any)
+      const { melodyStore } = window as any
       if (melodyStore && melodyStore.seedDefaultSession) {
         melodyStore.seedDefaultSession()
       }
@@ -167,7 +167,7 @@ test.describe('PitchPerfect App', () => {
     // Seed default melodies if not seeded (for test environment)
     await page.evaluate(() => {
       localStorage.removeItem('pitchperfect_seeded')
-      const { melodyStore } = (window as any)
+      const { melodyStore } = window as any
       if (melodyStore && melodyStore.seedDefaultSession) {
         melodyStore.seedDefaultSession()
       }

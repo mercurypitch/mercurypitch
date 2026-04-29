@@ -44,9 +44,11 @@ export class PracticeEngine {
 
   // Practice session
   private noteResults: NoteResult[] = []
-  private cyclesTotal = 1
-  private cyclesCurrent = 1
-  private allCycleResults: NoteResult[][] = []
+  // FIXME: These were moved to App.tsx, but if we refator those, maybe it makes sense to have them
+  // in practice engine?
+  // private cyclesTotal = 1
+  // private cyclesCurrent = 1
+  // private allCycleResults: NoteResult[][] = []
   private runsCompleted = 0
 
   // Mic health check (prevents AudioContext suspension drops)
@@ -420,6 +422,7 @@ export class PracticeEngine {
       name,
       mode,
       completedAt: Date.now(),
+      noteResult: results,
     }
   }
 
