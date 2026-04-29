@@ -4,6 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, Show } from 'solid-js'
+import { renderMarkdownToHtml } from '@/lib/render-markdown'
 import type {
   WalkthroughTab
 } from '@/stores/walkthrough-store'
@@ -243,17 +244,10 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
                     {currentWalkthrough()!.description}
                   </p>
 
-                  <div class="walkthrough-text">
-                    {currentWalkthrough()!.content.split('\n').map((para, _i) =>
-                      para.trim() ? (
-                        <p class="walkthrough-paragraph">
-                          {para}
-                        </p>
-                      ) : (
-                        <br />
-                      ),
-                    )}
-                  </div>
+                  <div
+                    class="walkthrough-text"
+                    innerHTML={renderMarkdownToHtml(currentWalkthrough()!.content)}
+                  />
 
                   {/* Steps */}
                   <div class="walkthrough-steps">

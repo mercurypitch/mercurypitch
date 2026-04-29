@@ -7224,6 +7224,239 @@ Keeps your existing styles, only adjusts layout
   hyphens: auto;
 }
 
+/* ============================================================
+   Markdown Rendered Content — Walkthrough tutorial text
+   ============================================================ */
+
+/* Paragraphs */
+.walkthrough-text .md-paragraph {
+  text-align: left;
+  margin: 0 0 12px 0;
+  line-height: 1.7;
+  color: var(--text-primary);
+  font-size: 0.92rem;
+}
+
+/* Headings */
+.walkthrough-text .md-h2 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin: 24px 0 10px 0;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+.walkthrough-text .md-h2:first-child {
+  margin-top: 0;
+}
+
+.walkthrough-text .md-h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 18px 0 8px 0;
+  color: var(--text-primary);
+}
+
+/* Bold / italic inherited from strong/em but ensure contrast */
+.walkthrough-text strong {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.walkthrough-text em {
+  font-style: italic;
+  color: var(--text-secondary, var(--text-muted));
+}
+
+/* Lists */
+.walkthrough-text .md-list {
+  margin: 0 0 14px 0;
+  padding-left: 22px;
+  list-style: none;
+  counter-reset: md-list-counter;
+}
+
+.walkthrough-text .md-list li {
+  position: relative;
+  margin: 0 0 6px 0;
+  padding-left: 4px;
+  line-height: 1.6;
+  font-size: 0.92rem;
+  color: var(--text-primary);
+}
+
+.walkthrough-text .md-list li::before {
+  position: absolute;
+  left: -18px;
+  top: 2px;
+  width: 7px;
+  height: 7px;
+  background: var(--accent);
+  border-radius: 50%;
+  opacity: 0.7;
+  content: '';
+}
+
+/* Ordered lists */
+.walkthrough-text .md-list-ordered {
+  counter-reset: md-list-counter;
+}
+
+.walkthrough-text .md-list-ordered li {
+  counter-increment: md-list-counter;
+  list-style: none;
+}
+
+.walkthrough-text .md-list-ordered li::before {
+  content: counter(md-list-counter) ".";
+  background: none;
+  width: auto;
+  height: auto;
+  opacity: 1;
+  left: -22px;
+  top: 0;
+  font-weight: 600;
+  color: var(--accent);
+  border-radius: 0;
+}
+
+/* Admonitions (callouts) */
+.walkthrough-text .md-admonition {
+  display: flex;
+  gap: 12px;
+  margin: 16px 0;
+  padding: 14px 16px;
+  border-radius: 8px;
+  border-left: 4px solid var(--accent);
+  background: var(--bg-tertiary);
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+
+.walkthrough-text .md-admonition p {
+  margin: 0 0 6px 0;
+  color: var(--text-primary);
+}
+
+.walkthrough-text .md-admonition p:last-child {
+  margin-bottom: 0;
+}
+
+.walkthrough-text .md-admonition-icon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  margin-top: 1px;
+  color: white;
+}
+
+.walkthrough-text .md-admonition-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.walkthrough-text .md-admonition-label {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 4px;
+  color: var(--text-secondary, var(--text-muted));
+}
+
+/* Note — blue */
+.walkthrough-text .md-admonition-note {
+  border-left-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.08);
+}
+.walkthrough-text .md-admonition-note .md-admonition-icon {
+  background: #3b82f6;
+}
+
+/* Tip — green */
+.walkthrough-text .md-admonition-tip {
+  border-left-color: #22c55e;
+  background: rgba(34, 197, 94, 0.08);
+}
+.walkthrough-text .md-admonition-tip .md-admonition-icon {
+  background: #22c55e;
+}
+
+/* Warning — orange */
+.walkthrough-text .md-admonition-warning {
+  border-left-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.08);
+}
+.walkthrough-text .md-admonition-warning .md-admonition-icon {
+  background: #f59e0b;
+}
+
+/* Info — purple */
+.walkthrough-text .md-admonition-info {
+  border-left-color: #8b5cf6;
+  background: rgba(139, 92, 246, 0.08);
+}
+.walkthrough-text .md-admonition-info .md-admonition-icon {
+  background: #8b5cf6;
+}
+
+/* Admonition icon content */
+.walkthrough-text .md-admonition-note .md-admonition-icon::before { content: 'N'; }
+.walkthrough-text .md-admonition-tip .md-admonition-icon::before { content: 'T'; }
+.walkthrough-text .md-admonition-warning .md-admonition-icon::before { content: '!'; }
+.walkthrough-text .md-admonition-info .md-admonition-icon::before { content: 'i'; }
+
+/* Tables */
+.walkthrough-text table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0 16px 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.walkthrough-text thead {
+  background: var(--bg-tertiary);
+}
+
+.walkthrough-text th {
+  padding: 8px 12px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.82rem;
+  color: var(--text-primary);
+  border-bottom: 2px solid var(--border);
+  white-space: nowrap;
+}
+
+.walkthrough-text td {
+  padding: 7px 12px;
+  border-top: 1px solid var(--border);
+  color: var(--text-primary);
+}
+
+.walkthrough-text tr:last-child td {
+  border-bottom: none;
+}
+
+/* Inline text styling inside walkthrough */
+.walkthrough-text p strong,
+.walkthrough-text li strong {
+  font-weight: 600;
+}
+
 .walkthrough-steps {
   margin: 0 0 20px 24px;
 }
