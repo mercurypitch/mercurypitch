@@ -47,8 +47,10 @@ export const Walkthrough: Component = () => {
 
   const getPlacement = (): Placement => currentStep()?.placement ?? 'bottom'
 
-  // Auto-switch tab when step has requiredTab, then wait for DOM to render
+  // Auto-switch tab when step has requiredTab
+  // Only runs while tour is active — stops immediately when tour ends
   createEffect(() => {
+    if (!appStore.walkthroughActive()) return
     const step = currentStep()
     if (step?.requiredTab) {
       const tab = step.requiredTab
@@ -95,6 +97,28 @@ export const Walkthrough: Component = () => {
     highlightRef.style.left = `${rect.left - padding}px`
     highlightRef.style.width = `${rect.width + padding * 2}px`
     highlightRef.style.height = `${rect.height + padding * 2}px`
+  }
+
+  // Scroll target element into view if partially out of viewport,
+  // then re-position highlight + tooltip after scroll settles
+  const scrollToTargetIfNeeded = () => {
+    const step = currentStep()
+    if (!step) return
+    const el = document.querySelector(step.targetSelector)
+    if (!el) return
+
+    const margin = 80
+    const r = el.getBoundingClientRect()
+    const needsScroll = r.top < -margin || r.bottom > window.innerHeight + margin
+    if (!needsScroll) return
+
+    // Use instant scroll so highlight/tooltip update immediately
+    el.scrollIntoView({ behavior: 'auto', block: 'center' })
+    // Re-position after scroll (needs one frame for layout)
+    requestAnimationFrame(() => {
+      updateHighlight()
+      updateTooltip()
+    })
   }
 
   const updateTooltipCentered = (
@@ -232,8 +256,13 @@ export const Walkthrough: Component = () => {
 
     waitForTarget(step.targetSelector).then((found) => {
       if (found) {
-        updateHighlight()
-        updateTooltip()
+        // Scroll element into view if needed (Settings often has overflow)
+        scrollToTargetIfNeeded()
+        // Position highlight/tooltip after any scroll settles
+        requestAnimationFrame(() => {
+          updateHighlight()
+          updateTooltip()
+        })
       }
     })
   })
