@@ -381,6 +381,22 @@ export const SettingsPanel: Component = () => {
             </select>
             <small>Switch between dark and light mode</small>
           </div>
+
+          <div class="settings-row">
+            <label for="vis-flame">🔥 Burning Notes</label>
+            <input
+              type="checkbox"
+              id="vis-flame"
+              checked={appStore.flameMode()}
+              onChange={(e) => {
+                appStore.setFlameMode(e.currentTarget.checked)
+              }}
+            />
+            <small>
+              Animated fire/glow effect on the currently-playing note during
+              practice.
+            </small>
+          </div>
         </div>
 
         {/* Playback Speed Section */}

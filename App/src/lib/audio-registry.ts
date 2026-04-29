@@ -10,9 +10,16 @@
  * Phase 13 of refactor v3.
  */
 
+// Loose function type so concrete `AudioEngine.setInstrument(type: InstrumentType)`
+// is assignable. `(instrument: any)` keeps the contravariant parameter wide
+// enough that any string-literal-union typed setInstrument fits.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type SetInstrumentFn = (instrument: any) => void
+
 interface StoppableEngine {
   stopTone: () => void
   stopAllNotes: () => void
+  setInstrument?: SetInstrumentFn
 }
 
 const registered = new Set<StoppableEngine>()
@@ -39,5 +46,22 @@ export const audioRegistry = {
 
   size(): number {
     return registered.size
+  },
+
+  /**
+   * Broadcast an instrument change to every registered engine.
+   * Called by App.tsx onInstrumentChange so the piano-roll's secondary
+   * AudioEngine (used for in-editor preview clicks) stays in sync with
+   * the App's primary engine — otherwise changing the instrument
+   * dropdown wouldn't audibly affect playback in the editor.
+   */
+  setInstrumentAll(instrument: string): void {
+    for (const engine of registered) {
+      try {
+        engine.setInstrument?.(instrument)
+      } catch (err) {
+        console.warn('[audioRegistry] setInstrument error:', err)
+      }
+    }
   },
 }

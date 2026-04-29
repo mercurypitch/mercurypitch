@@ -31,6 +31,7 @@ import { usePracticeController } from '@/features/practice/usePracticeController
 import { useRecordingController } from '@/features/recording/useRecordingController'
 import { useSessionSequencer } from '@/features/session/useSessionSequencer'
 import type { InstrumentType } from '@/lib/audio-engine'
+import { audioRegistry } from '@/lib/audio-registry'
 import { debounce } from '@/lib/debounce'
 import { registerE2EBridge } from '@/lib/e2e-bridge'
 import { melodyIndexAtBeat, melodyTotalBeats } from '@/lib/scale-data'
@@ -797,11 +798,20 @@ const AppShell: Component<AppProps> = (props) => {
                     melodyStore.setMelody(melody)
                   }}
                   onInstrumentChange={(instrument) => {
-                    // Update both the audio engine immediately AND the global
-                    // `instrument` signal so EngineContext's reactive sync
-                    // covers any other engines (e.g. piano-roll's secondary
-                    // engine via createEffect).
+                    // Update three things at once:
+                    //   1. App's primary AudioEngine (used during practice
+                    //      playback).
+                    //   2. The piano-roll's secondary AudioEngine (used
+                    //      for in-editor preview clicks). Without this
+                    //      fanout via the audioRegistry, changing the
+                    //      instrument dropdown wouldn't audibly affect
+                    //      the editor's playback because the secondary
+                    //      engine kept its default 'sine' instrument.
+                    //   3. The global `instrument` signal so EngineContext's
+                    //      reactive createEffect can re-sync any future
+                    //      engine that's registered later.
                     audioEngine.setInstrument(instrument as InstrumentType)
+                    audioRegistry.setInstrumentAll(instrument)
                     setInstrument(instrument as InstrumentType)
                   }}
                   onPlaybackStateChange={(_state) => {

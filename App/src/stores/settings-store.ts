@@ -188,6 +188,16 @@ export function setReverbType(type: ReverbType): void {
 export const [gridLinesVisible, setGridLinesVisible] =
   createPersistedSignal<boolean>('pitchperfect_grid', true)
 
+/**
+ * "Flame mode" — visual fire effect on the currently-playing note
+ * during practice/playback. Persisted so it survives reloads. Toggleable
+ * from the Settings panel and (in v3+) the practice toolbar.
+ */
+export const [flameMode, setFlameMode] = createPersistedSignal<boolean>(
+  'pitchperfect_flame_mode',
+  false,
+)
+
 export function toggleGridLines(): void {
   setGridLinesVisible(!gridLinesVisible())
 }

@@ -5,6 +5,7 @@
 import type { Component } from 'solid-js'
 import { createEffect, onCleanup, onMount } from 'solid-js'
 import { appStore } from '@/stores'
+import { flameMode } from '@/stores/settings-store'
 import type { MelodyItem, PitchSample, ScaleDegree } from '@/types'
 
 interface PitchCanvasProps {
@@ -328,24 +329,88 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       const isActive =
         props.isPlaying() && j === props.currentNoteIndex() && !props.isPaused()
 
+      // Whether this note has already been played in the current run.
+      // The Yousician-style "played" state — slightly dimmed but still
+      // clearly visible, so the user can see what they've completed.
+      const isPlayed =
+        props.isPlaying() && !props.isPaused() && j < props.currentNoteIndex()
+
       if (bw > 2) {
-        const boxH = 20
+        const boxH = 22
         const boxHalf = boxH / 2
         ctx.beginPath()
-        ctx.roundRect(x1, y - boxHalf, bw, boxH, 4)
-        ctx.fillStyle = isActive
-          ? 'rgba(88,166,255,0.28)'
-          : 'rgba(88,166,255,0.1)'
+        ctx.roundRect(x1, y - boxHalf, bw, boxH, 5)
+
+        // Note bar fill — much more opaque than before so the bars are
+        // clearly visible without playback running.
+        if (isActive) {
+          ctx.fillStyle = 'rgba(88,166,255,0.55)'
+        } else if (isPlayed) {
+          // Played notes use a softer green-ish tone to indicate completion
+          ctx.fillStyle = 'rgba(63,185,80,0.32)'
+        } else {
+          ctx.fillStyle = 'rgba(88,166,255,0.28)'
+        }
         ctx.fill()
-        ctx.strokeStyle = isActive
-          ? 'rgba(88,166,255,0.9)'
-          : 'rgba(88,166,255,0.25)'
-        ctx.lineWidth = isActive ? 1.5 : 1
+
+        // Outline — clearer borders so notes don't blend into the background
+        if (isActive) {
+          ctx.strokeStyle = 'rgba(88,166,255,1)'
+        } else if (isPlayed) {
+          ctx.strokeStyle = 'rgba(63,185,80,0.7)'
+        } else {
+          ctx.strokeStyle = 'rgba(88,166,255,0.6)'
+        }
+        ctx.lineWidth = isActive ? 2 : 1.25
         ctx.stroke()
 
+        // ── Flame mode: animated burning effect on the active note. ──
+        // Triggered when the `flameMode` global signal is on (Settings
+        // panel toggle). Renders as a stack of warped radial gradients
+        // with jittered offsets so it flickers like real flame.
+        if (isActive && flameMode()) {
+          ctx.save()
+          const time = performance.now() / 1000
+          const flameLayers = 5
+          for (let f = 0; f < flameLayers; f++) {
+            const phase = time * (3 + f * 1.7)
+            const jitterX = Math.sin(phase + j) * 4
+            const jitterY = Math.cos(phase * 1.3 + f) * 3
+            const fx = x1 + bw / 2 + jitterX
+            const fy = y + jitterY
+            const fr = boxH * (1.5 + f * 0.4) + Math.sin(phase * 2) * 4
+            const grad = ctx.createRadialGradient(fx, fy, 0, fx, fy, fr)
+            // Hottest at center: white-yellow → orange → red → transparent
+            grad.addColorStop(0, `rgba(255,255,220,${0.28 - f * 0.04})`)
+            grad.addColorStop(0.25, `rgba(255,180,40,${0.22 - f * 0.03})`)
+            grad.addColorStop(0.6, `rgba(255,80,30,${0.16 - f * 0.025})`)
+            grad.addColorStop(1, 'rgba(255,30,10,0)')
+            ctx.fillStyle = grad
+            ctx.beginPath()
+            ctx.arc(fx, fy, fr, 0, Math.PI * 2)
+            ctx.fill()
+          }
+          // Bright glow stroke around the active note bar
+          ctx.shadowColor = 'rgba(255,140,40,0.85)'
+          ctx.shadowBlur = 18
+          ctx.strokeStyle = 'rgba(255,200,80,0.95)'
+          ctx.lineWidth = 2.5
+          ctx.beginPath()
+          ctx.roundRect(x1, y - boxHalf, bw, boxH, 5)
+          ctx.stroke()
+          ctx.restore()
+        }
+
         if (bw >= 12) {
-          ctx.fillStyle = isActive ? '#58a6ff' : 'rgba(88,166,255,0.65)'
-          ctx.font = `${(isActive ? 'bold ' : '') + (isActive ? 12 : 11)}px sans-serif`
+          // Note name text — also more opaque, especially for played notes.
+          if (isActive) {
+            ctx.fillStyle = '#ffffff'
+          } else if (isPlayed) {
+            ctx.fillStyle = '#3fb950'
+          } else {
+            ctx.fillStyle = 'rgba(220,235,255,0.95)'
+          }
+          ctx.font = `${(isActive ? 'bold ' : '') + (isActive ? 13 : 11)}px sans-serif`
           ctx.textAlign = 'center'
           ctx.textBaseline = 'middle'
           ctx.fillText(item.note.name, x1 + bw / 2, y + 0.5)
