@@ -151,9 +151,40 @@ export function useSessionSequencer(deps: Deps): SessionSequencer {
       setNoteResults([])
       setLiveScore(null)
       setPitchHistory([])
-      practiceEngine.resetSession()
-      playbackRuntime.start(countIn())
+      // Also reset the per-cycle visual state so the playhead snaps back
+      // to bar 1 and the active note highlight tracks the new cycle.
+      setCurrentBeat(0)
+      setCurrentNoteIndex(-1)
+      melodyStore.setCurrentNoteIndex(-1)
+      // IMPORTANT: PlaybackRuntime's completion flow is currently:
+      //   if (beat >= totalBeats) {
+      //     emit('complete')
+      //     this.stop()
+      //   }
+      //
+      // So we must NOT restart synchronously inside the `complete`
+      // subscriber. If we do:
+      //   emit complete -> handleRepeatModeComplete -> start cycle N+1
+      //   -> returns to runtime -> runtime.stop() kills cycle N+1
+      //
+      // That exact race produced the console sequence:
+      //   start cycle 1 -> runtime.stop -> start cycle 2 -> runtime.stop
+      // and left the playhead stuck at the end.
+      //
+      // Defer the restart one macrotask so the runtime's own post-complete
+      // stop has already finished. Then re-arm the runtime melody and
+      // start a genuinely fresh cycle.
+      setTimeout(() => {
+        practiceEngine.resetSession()
+        practiceEngine.startSession()
+        playbackRuntime.setMelody(melodyStore.items())
+        playbackRuntime.start(countIn())
+      }, 0)
     } else {
+      // Completed the final requested cycle. Reset to 1 so the next
+      // fresh Repeat run starts from cycle 1/N instead of being stuck
+      // at N/N and immediately stopping after a single playback.
+      setCurrentRepeat(1)
       void handleStop()
     }
   }

@@ -6,7 +6,7 @@
 
 import type { Component } from 'solid-js'
 import { createSignal, For, Show } from 'solid-js'
-import { melodyStore, setActiveUserSession, showNotification } from '@/stores'
+import { melodyStore, setActiveUserSession, showNotification, userSession, } from '@/stores'
 import { addItemToSession, deleteSessionItem } from '@/stores/session-store'
 import type { PlaybackSession, SessionItem } from '@/types'
 import { MelodyPillList } from './MelodyPillList'
@@ -33,8 +33,18 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
     //   : [defaultSession, ...userSessions]
   }
 
+  // BUGFIX: read the active session through the REACTIVE `userSession`
+  // signal (set by setActiveUserSession). Previously this called
+  // `melodyStore.getActiveSession()` which is a synchronous lookup
+  // through localStorage and is NOT a SolidJS-tracked signal — so when
+  // the user clicked a melody pill in MelodyPillList and the handler
+  // updated the active session, the timeline below never re-rendered
+  // because nothing in this memo was reactive to the change.
+  //
+  // The fallback to `sessions()[0]` is kept for the brief window before
+  // an active session is set on first launch.
   const currentSession = () => {
-    return melodyStore.getActiveSession?.() || sessions()[0]
+    return userSession() ?? sessions()[0]
   }
 
   const activateSession = (session: PlaybackSession): void => {

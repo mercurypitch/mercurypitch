@@ -308,18 +308,11 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
           </div>
         </Show>
 
-        <div id="run-indicator">
-          <span id="cycle-counter">
-            {/* Repeat mode shows N-of-N cycle progress; Practice mode just
-                shows a session indicator since it plays through the items
-                once and is not cycle-driven. */}
-            {props.playMode() === 'repeat'
-              ? `C${props.currentCycle()}/${props.practiceCycles()}`
-              : props.playMode() === 'practice'
-                ? '⌛'
-                : ''}
-          </span>
-        </div>
+        <Show when={props.playMode() === 'practice'}>
+          <div id="run-indicator">
+            <span id="cycle-counter">⌛</span>
+          </div>
+        </Show>
       </div>
 
       {/* Secondary controls (hidden on mobile < 480px) */}
@@ -373,8 +366,8 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
             N times). Practice mode plays the session through once and is
             controlled by the active session's items, not a cycle count. */}
         <Show when={isPracticeTab() && props.playMode() === 'repeat'}>
-          <div class="secondary-control-group">
-            <label class="opt-label">Cycles:</label>
+          <div class="secondary-control-group cycles-control-group">
+            <label class="opt-label cycles-label">Cycles</label>
             <input
               type="number"
               id="cycles"
@@ -391,6 +384,12 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
               }}
               class="cycles-input"
             />
+            <span class="cycle-progress-pill" title="Current repeat cycle">
+              <span class="cycle-progress-label">Run</span>
+              <span class="cycle-progress-value">
+                {props.currentCycle()}/{props.practiceCycles()}
+              </span>
+            </span>
           </div>
         </Show>
 

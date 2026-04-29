@@ -388,6 +388,23 @@ const AppShell: Component<AppProps> = (props) => {
     void resetPlaybackState()
   }
 
+  const handlePracticePlay = () => {
+    // Fresh user-triggered Play should always begin Repeat mode at
+    // cycle 1/N. Otherwise after a completed N/N run, the next run
+    // starts with currentRepeat still at N and stops after one pass.
+    if (!isPaused()) {
+      setCurrentRepeat(1)
+    }
+    handlePlay()
+  }
+
+  const handlePracticeModeChange = (mode: PlaybackMode) => {
+    setPlayMode(mode)
+    if (mode === 'repeat') {
+      setCurrentRepeat(1)
+    }
+  }
+
   const handlePlayMelodyFromModal = (_melody: unknown) => {
     // Delegated to LibraryModal's own internal handlers.
   }
@@ -639,7 +656,7 @@ const AppShell: Component<AppProps> = (props) => {
                   editorTab={() => activeTab() === 'editor'}
                   isPlaying={isPlaying}
                   isPaused={isPaused}
-                  onPlay={handlePlay}
+                  onPlay={handlePracticePlay}
                   onPause={handlePause}
                   onResume={handleResume}
                   onStop={() => void handleStop()}
@@ -655,7 +672,7 @@ const AppShell: Component<AppProps> = (props) => {
                     setMetronomeEnabled(!metronomeEnabled())
                   }
                   playMode={() => playMode()}
-                  playModeChange={setPlayMode}
+                  playModeChange={handlePracticeModeChange}
                   practiceCycles={() => repeatCycles()}
                   onCyclesChange={setRepeatCycles}
                   currentCycle={() => currentRepeat()}

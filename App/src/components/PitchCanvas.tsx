@@ -6,12 +6,7 @@ import type { Component } from 'solid-js'
 import { createEffect, onCleanup, onMount } from 'solid-js'
 import { appStore } from '@/stores'
 import { colorCodeNotes, flameMode } from '@/stores/settings-store'
-import type {
-  MelodyItem,
-  NoteResult,
-  PitchSample,
-  ScaleDegree,
-} from '@/types'
+import type { MelodyItem, NoteResult, PitchSample, ScaleDegree } from '@/types'
 
 interface PitchCanvasProps {
   melody: () => MelodyItem[]
@@ -418,9 +413,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       // instead of immediately snapping to the played-state color.
       const playedRecord = props.noteResults?.()[j]
       const isPlayed =
-        playedRecord !== undefined &&
-        playedRecord !== null &&
-        !isActive
+        playedRecord !== undefined && playedRecord !== null && !isActive
 
       if (bw > 2) {
         const boxH = 22
@@ -476,10 +469,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
           // Progress inside this note: 0 at note start, 1 at note end.
           const progress = Math.max(
             0,
-            Math.min(
-              1,
-              (props.currentBeat() - item.startBeat) / item.duration,
-            ),
+            Math.min(1, (props.currentBeat() - item.startBeat) / item.duration),
           )
           const burnX = x1 + bw * progress // playhead-relative x
           const time = performance.now() / 1000
