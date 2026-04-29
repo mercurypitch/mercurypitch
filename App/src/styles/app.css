@@ -6905,20 +6905,23 @@ Keeps your existing styles, only adjusts layout
 }
 
 .walkthrough-modal {
-  background: var(--surface);
+  background: var(--bg-primary);
   border-radius: 12px;
-  max-width: 700px;
-  width: 90%;
+  max-width: 680px;
+  width: 95vw;
+  max-width: min(680px, 95vw);
   max-height: 85vh;
   display: flex;
   flex-direction: column;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
 }
 
 .walkthrough-content {
   display: flex;
   flex-direction: column;
   max-height: 100%;
+  overflow: hidden;
 }
 
 .walkthrough-header {
@@ -7099,8 +7102,10 @@ Keeps your existing styles, only adjusts layout
 .walkthrough-body {
   display: flex;
   flex-direction: column;
-  max-height: 100%;
-  padding: 32px 24px;
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  overscroll-behavior: contain;
 }
 
 .walkthrough-back-btn {
@@ -7164,13 +7169,17 @@ Keeps your existing styles, only adjusts layout
   flex: 1;
   overflow-y: auto;
   padding: 0 0 24px;
+  overscroll-behavior: contain;
 }
 
 .walkthrough-paragraph {
   text-align: left;
   margin: 0 0 12px 0;
-  line-height: 1.7;
+  line-height: 1.6;
   color: var(--text);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
 }
 
 .walkthrough-steps {
@@ -7193,7 +7202,7 @@ Keeps your existing styles, only adjusts layout
   display: flex;
   gap: 16px;
   padding: 16px;
-  background: var(--background);
+  background: var(--bg-tertiary);
   border: 1px solid var(--border);
   border-radius: 8px;
   transition: all 0.2s;
@@ -7201,7 +7210,7 @@ Keeps your existing styles, only adjusts layout
 
 .walkthrough-step-item.active {
   border-color: var(--accent);
-  background: var(--accent-light);
+  background: var(--bg-tertiary);
 }
 
 .walkthrough-step-number {
