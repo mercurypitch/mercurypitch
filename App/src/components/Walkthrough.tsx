@@ -6,6 +6,7 @@ import type { Component } from 'solid-js'
 import { createEffect, createMemo, onCleanup, Show } from 'solid-js'
 import type { WalkthroughStep } from '@/stores/app-store'
 import {
+  activeTab,
   appStore,
   endWalkthrough,
   GUIDE_SECTIONS,
@@ -46,13 +47,37 @@ export const Walkthrough: Component = () => {
 
   const getPlacement = (): Placement => currentStep()?.placement ?? 'bottom'
 
-  // Auto-switch tab when step has requiredTab
+  // Auto-switch tab when step has requiredTab, then wait for DOM to render
   createEffect(() => {
     const step = currentStep()
     if (step?.requiredTab) {
-      setActiveTab(step.requiredTab)
+      const tab = step.requiredTab
+      if (activeTab() !== tab) {
+        setActiveTab(tab)
+      }
     }
   })
+
+  // Poll until a target element exists in the DOM
+  // Checks immediately first (0 delay) to resolve instantly if already rendered
+  // Retries up to `maxAttempts` times with `intervalMs` between attempts
+  const waitForTarget = (selector: string, maxAttempts = 10, intervalMs = 50): Promise<boolean> =>
+    new Promise((resolve) => {
+      let attempts = 0
+      const tryOnce = () => {
+        if (document.querySelector(selector)) {
+          resolve(true)
+          return
+        }
+        attempts++
+        if (attempts < maxAttempts) {
+          setTimeout(tryOnce, intervalMs)
+        } else {
+          resolve(false)
+        }
+      }
+      tryOnce()
+    })
 
   const updateHighlight = () => {
     if (!highlightRef) return
@@ -197,10 +222,20 @@ export const Walkthrough: Component = () => {
     )
   })
 
+  // Wait for target element to be in the DOM before positioning highlight/tooltip
+  // This is critical when a tab switch occurs — the new tab's DOM takes
+  // at least one frame to render, so we poll until the element appears.
   createEffect(() => {
     appStore.walkthroughStep()
-    updateHighlight()
-    updateTooltip()
+    const step = currentStep()
+    if (!step) return
+
+    waitForTarget(step.targetSelector).then((found) => {
+      if (found) {
+        updateHighlight()
+        updateTooltip()
+      }
+    })
   })
 
   // Count steps in current section
