@@ -8,17 +8,9 @@ import { dismissOverlays, switchTab } from './helpers/ui'
 test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/')
-
-    // In your Playwright test, add this to debug:
-    // Wait for the app to be fully mounted by checking for window.__appStore
-    await page.waitForFunction(
-      () => typeof (window as any).__appStore !== 'undefined',
-      {
-        timeout: 5000,
-      },
-    )
+    // Wait for app tabs to render
+    await page.waitForSelector('#app-tabs', { timeout: 10000 })
     await dismissOverlays(page)
-    await page.waitForTimeout(500)
   })
 
   // ==========================================
@@ -118,20 +110,18 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
   })
 
   test('practice sub-mode select exists', async ({ page }) => {
-    // Select Practice mode first (sub-mode select only shows in practice mode)
-    const btnPractice = page.locator('#btn-practice')
-    await btnPractice.click()
-    await page.waitForTimeout(300)
+    // Practice sub-mode select only shows when playMode === 'practice'
+    // Click the Practice tab then the Practice (Session) mode button
+    await switchTab(page, 'practice')
+    await expect(page.locator('#practice-panel')).toBeVisible()
+    // The Practice mode button is #btn-session
+    const btnSession = page.locator('#btn-session')
+    await btnSession.click()
+    await page.waitForTimeout(500)
 
     // Verify practice sub-mode select exists
     const subModeSelect = page.locator('#practice-sub-mode')
     await expect(subModeSelect).toBeVisible()
-
-    // Verify sub-mode select is visible
-    await expect(subModeSelect).toBeVisible()
-
-    // Note: The sub-mode select shows/hides options dynamically based on selection
-    // Just verify the select element exists and has options
   })
 
   test('editor tab is accessible', async ({ page }) => {
@@ -471,25 +461,24 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
 
   test('stop button resets playback position to 0', async ({ page }) => {
     const practiceTab = page.locator('#tab-practice')
+    const playBtn = page.locator('.play-btn').first()
+
+    await practiceTab.click()
+    await page.waitForTimeout(500)
+
+    // Start playback
+    await expect(playBtn).toBeVisible()
+    await playBtn.click()
+    await page.waitForTimeout(500)
+
+    // Click stop (the stop-btn appears during playback)
     const stopBtn = page.locator('.stop-btn').first()
-
-    await practiceTab.click()
-    await page.waitForTimeout(300)
-
-    await expect(stopBtn).toBeVisible()
-
-    // Place a note to have something to play
-    const editorTab = page.locator('#tab-editor')
-    await editorTab.click()
-    await page.locator('.roll-tool-btn[data-tool="place"]').click()
-    await page.mouse.click(500, 300)
-    await page.waitForTimeout(300)
-
-    await practiceTab.click()
-    await page.waitForTimeout(300)
-
+    await expect(stopBtn).toBeVisible({ timeout: 3000 })
     await stopBtn.click()
-    await page.waitForTimeout(300)
+    await page.waitForTimeout(500)
+
+    // After stop, play button should be visible again
+    await expect(playBtn).toBeVisible({ timeout: 3000 })
   })
 
   test('skip-forward button is clickable multiple times', async ({ page }) => {
