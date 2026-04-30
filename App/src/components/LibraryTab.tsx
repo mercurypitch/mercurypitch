@@ -208,7 +208,6 @@ export const LibraryTab: Component = () => {
     }))
   })
 
-
   const handleNewSession = () => {
     console.info('[LibraryTab] handleNewSession called')
     // Create a new user-deletable session
@@ -487,7 +486,6 @@ export const LibraryTab: Component = () => {
                 </Show>
               </select>
 
-
               <span class="section-meta">
                 {sessionItems().length} item
                 {sessionItems().length === 1 ? '' : 's'}
@@ -684,7 +682,6 @@ export const LibraryTab: Component = () => {
                   )
                 }}
               </For>
-
             </div>
           </Show>
         </div>

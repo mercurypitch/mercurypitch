@@ -8,7 +8,6 @@ import type { Component } from 'solid-js'
 import { createSignal, For, Show } from 'solid-js'
 import { melodyStore, setActiveUserSession, showNotification, userSession, } from '@/stores'
 import { addItemToSession, deleteSessionItem, insertItemInSession, } from '@/stores/session-store'
-
 import type { PlaybackSession, SessionItem } from '@/types'
 import { MelodyPillList } from './MelodyPillList'
 import { SessionEditorTimeline } from './SessionEditorTimeline'
@@ -218,7 +217,6 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
       setActiveUserSession(updatedSession)
     }
   }
-
 
   return (
     <div class="session-editor">

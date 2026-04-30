@@ -214,6 +214,29 @@ export const [showSidebarNoteList, setShowSidebarNoteList] =
     false,
   )
 
+// ── Character-themed playback sounds ───────────────────────────────
+//
+// Each guide character maps to a different timbre + small detune /
+// volume nudge so the practice tab "feels" different per persona.
+// The user picks a character via <CharacterIcons> in the sidebar; the
+// EngineContext effect listens to `selectedCharacter` and (when
+// `characterSounds` is enabled) calls `audioEngine.setInstrument(...)`
+// with the mapped instrument. Disabling the toggle restores the
+// instrument the user picked from the dropdown in Settings.
+export type CharacterName =
+  | 'blaze'
+  | 'aria'
+  | 'flux'
+  | 'luna'
+  | 'glint'
+  | 'echo'
+
+export const [selectedCharacter, setSelectedCharacter] =
+  createPersistedSignal<CharacterName>('pitchperfect_character', 'aria')
+
+export const [characterSounds, setCharacterSounds] =
+  createPersistedSignal<boolean>('pitchperfect_character_sounds', true)
+
 export function toggleGridLines(): void {
   setGridLinesVisible(!gridLinesVisible())
 }

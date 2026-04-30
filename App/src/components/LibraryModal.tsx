@@ -246,7 +246,6 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
     props.close()
   }
 
-
   const handleLoad = (melody: MelodyData) => {
     melodyStore.loadMelody(melody.id)
     props.close()

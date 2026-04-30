@@ -5,7 +5,7 @@
 import { createSignal } from 'solid-js'
 import { buildMultiOctaveScale } from '@/lib/scale-data'
 import type { MelodyData, MelodyItem, MelodyNote, PlaybackSession, ScaleDegree, UnifiedLibrary, } from '@/types'
-import { addItemToSession, deleteSession as deleteSessionStore, deleteSessionItem, generateSessionItemId, getDefaultSession, getInternalSession, getItemsAtBeat, getSession, getSessionCount, getSessionItem, getSessionItems, getSessionItemsOrdered, getSessions as getSessionStoreSessions, getUserSessionCount, saveSession as saveSessionStore, updateSessionItem, } from './session-store'
+import { addItemToSession, deleteSession as deleteSessionStore, deleteSessionItem, generateSessionItemId, getDefaultSession, getInternalSession, getItemsAtBeat, getSession, getSessionCount, getSessionItem, getSessionItems, getSessionItemsOrdered, getUserSessionCount, saveSession as saveSessionStore, updateSessionItem, } from './session-store'
 
 export const STORAGE_KEY_LIBRARY = 'pitchperfect_library'
 const STORAGE_KEY_SEEDED = 'pitchperfect_seeded'
@@ -35,7 +35,6 @@ const DEFAULT_LIBRARY: UnifiedLibrary = {
       // If they reset all data we recreate it via getDefaultSession().
       deletable: true,
       items: [
-
         // NOTE: every non-rest item in the default session is a melody
         // reference so they all behave consistently in the sidebar
         // (clickable, selectable, draggable, can show "active" state).
@@ -92,7 +91,6 @@ function loadLibrary(): UnifiedLibrary {
         // `resetAllSessions`), and `seedDefaultSession()` re-runs
         // explicitly. Mid-session deletion is sticky.
         if (library.sessions['default']?.deletable === false) {
-
           // Migration: legacy storage had `deletable: false`. Flip it so the
           // user can delete the default session (and so it actually shows
           // up in the SessionLibraryModal, which filters by deletable).
@@ -102,7 +100,6 @@ function loadLibrary(): UnifiedLibrary {
           }
         }
         return library
-
       }
     }
   } catch {
@@ -202,9 +199,11 @@ export function getSessions(): PlaybackSession[] {
   const lib = melodyLibrarySignal()
   return Object.values(lib.sessions ?? {})
     .filter((s): s is PlaybackSession => s !== null && s !== undefined)
-    .sort((a, b) => (b.lastPlayed ?? b.created ?? 0) - (a.lastPlayed ?? a.created ?? 0))
+    .sort(
+      (a, b) =>
+        (b.lastPlayed ?? b.created ?? 0) - (a.lastPlayed ?? a.created ?? 0),
+    )
 }
-
 
 /** Get the currently active session by ID */
 export function getActiveSession(): PlaybackSession | undefined {
@@ -440,7 +439,6 @@ export function seedDefaultSession(): void {
     const session = getDefaultSession()
     saveSession(session)
   }
-
 
   // Add default session to unified library
   const defaultSessionFromLibrary = getSession('default')
@@ -1266,7 +1264,6 @@ export function playPlaylist(playlistId: string): void {
   const playlist = getPlaylist(playlistId)
   if (playlist === null || playlist === undefined) return
 
-
   const library = melodyLibrarySignal()
   let currentIndex = 0
 
@@ -1370,7 +1367,6 @@ export const melodyStore = {
   playPlaylist,
   buildPlaylistAsSession,
   getPlaylistMelodyIds,
-
 
   // Export library
   melodyLibrary: getMelodyLibrary,

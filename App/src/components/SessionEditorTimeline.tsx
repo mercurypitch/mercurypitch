@@ -12,11 +12,7 @@ interface SessionEditorTimelineProps {
   sessionItems: SessionItem[]
   onSave?: (items: SessionItem[]) => void
   onDeleteItem: (itemId: string) => void
-  onAddRest: (
-    startBeat: number,
-    duration: number,
-    insertIndex?: number,
-  ) => void
+  onAddRest: (startBeat: number, duration: number, insertIndex?: number) => void
 
   restDuration?: number
   onDragOver: (index: number) => void
@@ -50,7 +46,6 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
     const duration = props.restDuration ?? 4000
     props.onAddRest(startBeat, duration, afterIndex + 1)
   }
-
 
   // Mobile touch handlers - use signals for state
   const [touchStartPos, setTouchStartPos] = createSignal({ x: 0, y: 0 })
@@ -253,7 +248,6 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
 
           <For each={props.sessionItems}>
             {(item, index) => {
-
               const isMelody =
                 item.type === 'melody' &&
                 item.melodyId !== null &&
@@ -346,7 +340,6 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
                     <div
                       class="timeline-drop-zone rest-zone"
                       onClick={() => addRestAtSlot(index())}
-
                       onDragOver={(e) => handleDragOver(e, index())}
                       onDrop={(e) => handleDrop(e, index())}
                     >

@@ -1,13 +1,20 @@
 import type { Component } from 'solid-js'
-import { createSignal, For } from 'solid-js'
+import { For } from 'solid-js'
 import '@/styles/characters.css'
-
-type CharacterName = 'blaze' | 'aria' | 'flux' | 'luna' | 'glint' | 'echo'
+import type { CharacterName } from '@/stores/settings-store'
+import { selectedCharacter, setSelectedCharacter, } from '@/stores/settings-store'
 
 interface CharacterIconsProps {
   onSelect?: (name: CharacterName) => void
 }
 
+/**
+ * Character picker. Selection is now persisted in the settings store
+ * (`selectedCharacter`) so EngineContext can react to changes and swap
+ * the playback instrument when "Character Sounds" is enabled in
+ * Settings. Previously this was a local `createSignal`, which kept the
+ * choice purely visual — the audio engine had no way to see it.
+ */
 export const CharacterIcons: Component<CharacterIconsProps> = (props) => {
   const characters: CharacterName[] = [
     'blaze',
@@ -17,19 +24,18 @@ export const CharacterIcons: Component<CharacterIconsProps> = (props) => {
     'glint',
     'echo',
   ]
-  const [selected, setSelected] = createSignal<CharacterName | null>('aria')
 
   const handleSelect = (name: CharacterName) => {
-    setSelected(name)
+    setSelectedCharacter(name)
     props.onSelect?.(name)
   }
 
   return (
-    <div id='character-icons' class="character-icons-grid">
+    <div id="character-icons" class="character-icons-grid">
       <For each={characters}>
         {(name) => (
           <button
-            class={`character-icon-btn ${selected() === name ? 'selected' : ''} character-${name} ${selected() === name ? 'selected-anim' : ''}`}
+            class={`character-icon-btn ${selectedCharacter() === name ? 'selected' : ''} character-${name} ${selectedCharacter() === name ? 'selected-anim' : ''}`}
             onClick={() => handleSelect(name)}
             title={`Select ${name}`}
           >

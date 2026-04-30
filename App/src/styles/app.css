@@ -5954,7 +5954,6 @@ input:checked + .settings-slider:before {
   flex-wrap: wrap;
 }
 
-
 .library-item:hover {
   border-color: var(--border);
   background: var(--bg-card);

@@ -92,7 +92,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     title: 'Choose your character!',
     targetSelector: '#character-icons',
     description:
-      "Connect with your inner singer by choosing what suites you best!",
+      'Connect with your inner singer by choosing what suites you best!',
     placement: 'right',
     section: 'practice',
     requiredTab: 'practice',
@@ -174,8 +174,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
   {
     title: 'Play Modes',
     targetSelector: '#btn-repeat',
-    description:
-      'Repeat loops through set number of cycles',
+    description: 'Repeat loops through set number of cycles',
     placement: 'bottom',
     section: 'toolbar',
     requiredTab: 'practice',
@@ -183,8 +182,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
   {
     title: 'Play Modes',
     targetSelector: '#btn-session',
-    description:
-      'Practice runs your session in sequence.',
+    description: 'Practice runs your session in sequence.',
     placement: 'bottom',
     section: 'toolbar',
     requiredTab: 'practice',

@@ -116,7 +116,6 @@ export function insertItemInSession(
 
 /** Update item in session by ID */
 export function updateSessionItem(
-
   sessionId: string,
   itemId: string,
   updates: Partial<SessionItem>,
@@ -237,7 +236,6 @@ export function createInternalSession(
     lastPlayed: undefined,
   }
 }
-
 
 /** Get session by ID */
 export function getSession(id: string): PlaybackSession | undefined {

@@ -6,7 +6,7 @@ import type { Component } from 'solid-js'
 import { createMemo, createSignal, Show } from 'solid-js'
 import { appStore } from '@/stores'
 import { adsr, playbackSpeed, setPlaybackSpeed, setSensitivity, settings, } from '@/stores'
-import { colorCodeNotes, flameMode, setColorCodeNotes, setFlameMode, setShowSidebarNoteList, showSidebarNoteList, } from '@/stores/settings-store'
+import { characterSounds, colorCodeNotes, flameMode, selectedCharacter, setCharacterSounds, setColorCodeNotes, setFlameMode, setShowSidebarNoteList, showSidebarNoteList, } from '@/stores/settings-store'
 import { APP_VERSION } from '@/version'
 
 export const SettingsPanel: Component = () => {
@@ -454,6 +454,33 @@ export const SettingsPanel: Component = () => {
             <small>
               Color-code played notes based on pitch accuracy (Green: Perfect,
               Teal: Excellent, etc).
+            </small>
+          </div>
+
+          {/*
+            Character Sounds — when on, the playback instrument follows
+            the guide character picked in the sidebar so each persona
+            sounds different. When off, the user's manual instrument
+            choice (set elsewhere via appStoreCore.instrument) wins.
+            See EngineContext for the mapping.
+          */}
+          <div class="settings-row">
+            <label for="char-sounds">Character Sounds</label>
+            <label class="settings-toggle">
+              <input
+                type="checkbox"
+                id="char-sounds"
+                checked={characterSounds()}
+                onChange={(e) => {
+                  setCharacterSounds(e.currentTarget.checked)
+                }}
+              />
+              <span class="settings-slider" />
+            </label>
+            <small>
+              Play a different timbre per guide character (currently:{' '}
+              <strong>{selectedCharacter()}</strong>). Disable to use the
+              instrument selected manually.
             </small>
           </div>
         </div>

@@ -417,7 +417,6 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
           </div>
         </Show>
 
-
         {/* BPM */}
         <div class="tempo-group">
           <label class="opt-label">BPM:</label>
