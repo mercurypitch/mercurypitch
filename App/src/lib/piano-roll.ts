@@ -524,7 +524,13 @@ export class PianoRollEditor {
 
   // Scale/Octave state (matches old app)
   private octave = 4
-  private numOctaves = 1
+  // Default to 2 to match the store default (`melodyStore._numOctaves = 2`).
+  // Previously this was 1, which caused the on-screen counter ("Rows: 1") to
+  // disagree with the actually-rendered scale (2 octaves' worth of rows).
+  // The +/- buttons then stepped from 1 → 2 (no visual change) → 3 (jump),
+  // which the user perceived as "things get messy".
+  private numOctaves = 2
+
   private mode = 'major'
 
   // Grid visibility
@@ -591,8 +597,39 @@ export class PianoRollEditor {
       ...item,
       id: item.id ?? this.nextNoteId++,
     }))
+
+    // Auto-fit octave row count to the melody's MIDI span so notes
+    // outside the currently displayed range become visible. We only ever
+    // GROW the row count here — shrinking would surprise the user who
+    // has manually picked a row count. Mobile / tight layouts can still
+    // bring it back down via the toolbar's `−` button. Default minimum
+    // remains 2 (matches melodyStore default).
+    if (melody.length > 0) {
+      let minMidi = Infinity
+      let maxMidi = -Infinity
+      for (const item of melody) {
+        const midi = item.note?.midi
+        if (typeof midi !== 'number') continue
+        if (midi < minMidi) minMidi = midi
+        if (midi > maxMidi) maxMidi = midi
+      }
+      if (Number.isFinite(minMidi) && Number.isFinite(maxMidi)) {
+        const span = Math.ceil((maxMidi - minMidi + 1) / 12)
+        const needed = Math.max(2, span)
+        // Cap at 3 (current upper limit in setNumOctaves) to keep the
+        // grid usable on small screens. Melodies wider than 3 octaves
+        // simply scroll out of view; the user can revisit row count
+        // manually.
+        const target = Math.min(3, needed)
+        if (target > this.numOctaves) {
+          this.setNumOctaves(target)
+        }
+      }
+    }
+
     this.draw()
   }
+
 
   /**
    * Shallow-equality check for melody arrays. Compares length and the
@@ -2470,16 +2507,35 @@ export class PianoRollEditor {
 
 
   /**
-   * Get current beat for drawing/playhead based on playback state
+   * Get current beat for drawing/playhead based on playback state.
+   *
+   * BUGFIX: previously this had two branches:
+   *   - external playback: return remoteBeat
+   *   - else: compute from `playStartTime`, which is initialized to 0.
+   *
+   * On a fresh page load with no playback ever started, `playStartTime`
+   * is still 0, so `elapsed = performance.now() - 0` is a huge number
+   * and `currentBeat = (huge / 60000) * bpm` lands somewhere in the
+   * middle of the grid → users saw a stray vertical playhead line at a
+   * non-zero position the moment they opened the editor tab.
+   *
+   * `drawWithPlayhead()` is called from setMelody/setScale/setBPM/etc.
+   * during normal initialization, so the playhead WAS being drawn even
+   * though playback was 'stopped'. We now short-circuit to 0 whenever
+   * playback isn't active and we're not driven by an external clock.
    */
   private getCurrentBeat(): number {
     if (this.isExternalPlayback) {
       return this.remoteBeat
     }
+    if (this.playbackState === 'stopped') {
+      return 0
+    }
     // Local editor playback - calculate from playStartTime
     const elapsed = performance.now() - this.playStartTime
     return (elapsed / 60000) * this.bpm
   }
+
 
   // ============================================================
   // Drawing
@@ -3147,12 +3203,20 @@ export class PianoRollEditor {
     if (n === this.numOctaves) return
     this.numOctaves = n
 
+    // Keep the toolbar counter in sync. The +/- click handlers also
+    // write this DOM node, but auto-fit (called from setMelody) and any
+    // future programmatic callers route through here directly, so we
+    // need to update unconditionally.
+    const display = this.container.querySelector('#roll-octaves-value')
+    if (display) display.textContent = String(this.numOctaves)
+
     window.dispatchEvent(
       new CustomEvent('pitchperfect:octaveChange', {
         detail: { octave: this.octave, numOctaves: this.numOctaves },
       }),
     )
   }
+
 
   /**
    * Set the scale mode (major, minor, etc.) and rebuild scale.

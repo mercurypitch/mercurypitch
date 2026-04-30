@@ -645,18 +645,49 @@ export const setCurrentScale = _currentScale[1]
 
 // Octave state - use function wrapper to avoid circular dependencies
 let _octave = DEFAULT_OCTAVE
+// Number of octave rows shown in the piano roll. Tracked in this store
+// so refreshScale / setOctave / setNumOctaves can rebuild the scale at
+// a consistent height. Previously this was implicit (refreshScale
+// hardcoded `2`, setNumOctaves was the only path that varied it), so
+// changing the start-octave reset numOctaves back to 2 and changing
+// numOctaves reset the scale type back to 'major'. Both bugs visible
+// to the user as "octaves are wrong, melody disappears off-grid".
+let _numOctaves = 2
+// Last-known key and scale type used to (re)build the rendered scale.
+// refreshScale() is the canonical write site (called whenever the user
+// switches key or scale type via the toolbar/sidebar). setOctave and
+// setNumOctaves use these as the input to buildMultiOctaveScale so the
+// scale stays consistent across octave / row-count changes.
+let _scaleKey: string = DEFAULT_KEY
+let _scaleType: string = DEFAULT_SCALE_TYPE
 
 export const getCurrentOctave = (): number => {
   return _octave
+}
+
+export const getNumOctaves = (): number => {
+  return _numOctaves
 }
 
 export const setCurrentOctave = (octave: number): void => {
   _octave = octave
 }
 
+/**
+ * Update the start octave AND rebuild the scale at the current
+ * numOctaves / key / scaleType. Previously this was a write-only helper
+ * — it stored the new octave but never rebuilt the scale, so the piano
+ * roll's row labels stayed pinned to the old octave while the underlying
+ * MIDI numbers shifted, producing the "notes are off the grid" effect.
+ */
 export const setOctave = (octave: number): void => {
   _octave = octave
+  setCurrentScale(
+    buildMultiOctaveScale(_scaleKey, octave, _numOctaves, _scaleType),
+  )
 }
+
+
 
 const _currentNoteIndex = createSignal<number>(0)
 export const currentNoteIndex = _currentNoteIndex[0]
@@ -968,20 +999,45 @@ export function setMelody(items: MelodyItem[]): void {
 // Scale Operations
 // ============================================================
 
+/**
+ * Canonical scale-rebuild entry point. Stores the new key/scaleType
+ * (so subsequent setOctave / setNumOctaves rebuild against the
+ * correct scale) and rebuilds at the current `_numOctaves`.
+ *
+ * BUGFIX: previously this hardcoded `numOctaves=2`, ignoring whatever
+ * the user had set via the +/- octave-row buttons. Switching key or
+ * scale type would silently snap the row count back to 2.
+ */
 export function refreshScale(
   keyName: string,
   startOctave: number,
   scaleType: string,
 ): void {
-  setOctave(startOctave)
-  setCurrentScale(buildMultiOctaveScale(keyName, startOctave, 2, scaleType))
-}
-
-export function setNumOctaves(num: number): void {
+  _octave = startOctave
+  _scaleKey = keyName
+  _scaleType = scaleType
   setCurrentScale(
-    buildMultiOctaveScale(DEFAULT_KEY, getCurrentOctave(), num, 'major'),
+    buildMultiOctaveScale(keyName, startOctave, _numOctaves, scaleType),
   )
 }
+
+/**
+ * Update the number of octave rows AND rebuild the scale.
+ *
+ * BUGFIX: previously rebuilt with `DEFAULT_KEY` ('C') and hardcoded
+ * 'major' regardless of the user's current selection — so clicking
+ * +/- octaves on a non-C / non-major scale silently reverted the row
+ * labels to C major while the underlying melody MIDI numbers stayed
+ * unchanged, causing notes to render off the displayed grid. Now we
+ * rebuild against the tracked `_scaleKey` / `_scaleType`.
+ */
+export function setNumOctaves(num: number): void {
+  _numOctaves = Math.max(1, Math.min(3, Math.round(num)))
+  setCurrentScale(
+    buildMultiOctaveScale(_scaleKey, _octave, _numOctaves, _scaleType),
+  )
+}
+
 
 // ============================================================
 // Playlist Operations
@@ -1352,6 +1408,8 @@ export const melodyStore = {
   setOctave,
   setNumOctaves,
   getCurrentOctave,
+  getNumOctaves,
+
 
   // Playlist operations
   createPlaylist,
