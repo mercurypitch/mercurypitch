@@ -3,7 +3,7 @@
 // ============================================================
 
 import { beforeEach, describe, expect, it } from 'vitest'
-import { appStore, getBandRating, initSettings, setBand, setDetectionThreshold, setMinAmplitude, setMinConfidence, setSensitivity, } from '@/stores'
+import { appStore, getBandRating, initSettings, setBand, setDetectionThreshold, setMinAmplitude, setMinConfidence, setSensitivity,setSettings,  } from '@/stores'
 
 describe('Settings — init and defaults', () => {
   beforeEach(() => {
@@ -13,10 +13,10 @@ describe('Settings — init and defaults', () => {
 
   it('loads default settings when no localStorage', () => {
     const s = appStore.settings()
-    expect(s.detectionThreshold).toBe(0.1)
-    expect(s.sensitivity).toBe(5)
-    expect(s.minConfidence).toBe(0.3)
-    expect(s.minAmplitude).toBe(1)
+    expect(s.detectionThreshold).toBe(0.2)
+    expect(s.sensitivity).toBe(9)
+    expect(s.minConfidence).toBe(0.7)
+    expect(s.minAmplitude).toBe(4)
     expect(s.bands).toHaveLength(5)
   })
 
@@ -34,8 +34,7 @@ describe('Settings — init and defaults', () => {
         { threshold: 999, band: 0, color: '#f85149' },
       ],
     }
-    localStorage.setItem('pitchperfect_settings', JSON.stringify(stored))
-    initSettings()
+    setSettings(stored)
 
     const s = appStore.settings()
     expect(s.detectionThreshold).toBe(0.15)

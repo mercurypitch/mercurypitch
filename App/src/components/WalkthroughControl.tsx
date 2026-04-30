@@ -15,7 +15,7 @@ interface WalkthroughControlProps {
 }
 
 export const WalkthroughControl: Component<WalkthroughControlProps> = (
-  props,
+  _props,
 ) => {
   const [showModal, setShowModal] = createSignal(false)
   const [showSelection, setShowSelection] = createSignal(false)

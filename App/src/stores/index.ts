@@ -20,19 +20,24 @@ export { melodyStore } from './melody-store'
 
 // Kept as no-op stub: still referenced by tests/session-store.test.ts.
 // True session-mode state lives in practice-session-store.sessionMode().
-export const isInSessionMode = () => false
+import { sessionMode as _sessionMode } from './practice-session-store'
+
+export const isInSessionMode = () => _sessionMode()
 
 // No-op kept for backward compat (was a presets-store init).
 export const initPresets = (): void => {}
 
 // Composer for starting a practice session — sets practice store fields together.
 import type { PlaybackSession as _PlaybackSession } from '@/types'
-import { setPracticeSession as _setPracticeSession, setSessionActive as _setSessionActive, setSessionMode as _setSessionMode, } from './practice-session-store'
+import { setPracticeResults as _setPracticeResults, setPracticeSession as _setPracticeSession, setSessionActive as _setSessionActive, setSessionItemIndex as _setSessionItemIndex, setSessionItemRepeat as _setSessionItemRepeat, setSessionMode as _setSessionMode, } from './practice-session-store'
 
 export const startPracticeSession = (session: _PlaybackSession): void => {
   _setPracticeSession(session)
   _setSessionMode(true)
   _setSessionActive(true)
+  _setPracticeResults([])
+  _setSessionItemIndex(0)
+  _setSessionItemRepeat(0)
 }
 
 // TODO: Replace all appStore.<something> calls with proper calls!
@@ -73,6 +78,9 @@ export const appStore = {
     practiceStore.setPracticeSession(session)
     practiceStore.setSessionMode(true)
     practiceStore.setSessionActive(true)
+    practiceStore.setPracticeResults([])
+    practiceStore.setSessionItemIndex(0)
+    practiceStore.setSessionItemRepeat(0)
   },
   isInSessionMode: () => false,
   sessionMode: practiceStore.sessionMode,

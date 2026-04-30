@@ -115,10 +115,10 @@ const AppShell: Component<AppProps> = (props) => {
     createSignal<PracticeSubMode>('all')
 
   // ── Guide Selection dialog ──────────────────────────────────
-  const [showGuideSelection, setShowGuideSelection] = createSignal(false)
+  const [_showGuideSelection, setShowGuideSelection] = createSignal(false)
   const openGuideSelection = () => setShowGuideSelection(true)
   const closeGuideSelection = () => setShowGuideSelection(false)
-  const startGuideTour = (sectionIds: string[]) => {
+  const _startGuideTour = (sectionIds: string[]) => {
     closeGuideSelection()
     appStore.startWalkthrough(sectionIds)
   }

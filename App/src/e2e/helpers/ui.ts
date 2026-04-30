@@ -15,13 +15,12 @@ export async function dismissOverlays(page: Page) {
     }
 
     // Try to use appStore if available (triggers SolidJS reactivity)
-    // FIXME: not sure why it doesn't exist sometimes
     const win = window as any
-    const winStore = win.__appStore ?? undefined
-    if (winStore.__appStore) {
-      winStore.dismissWelcome()
-      winStore.setActiveTab('practice')
-      winStore.exitFocusMode()
+    const store = win.__pp?.appStore ?? win.__appStore ?? undefined
+    if (store?.dismissWelcome) {
+      store.dismissWelcome()
+      store.setActiveTab('practice')
+      if (store.exitFocusMode) store.exitFocusMode()
     }
 
     // Set localStorage as fallback

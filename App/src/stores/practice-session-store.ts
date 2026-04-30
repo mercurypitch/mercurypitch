@@ -80,22 +80,21 @@ export function endPracticeSession(): SessionResult | null {
   const session = practiceSession()
   if (!session) return null
 
-  const scores = sessionResults()
-  // calculate total score from recent results linked to this session
-  // for simplicity, grabbing the latest result just added
-  // TODO: see do we want to calculate total score on all melody items (SessionItem items) or just
-  // recent one?
-  const recentScore = scores.length > 0 ? scores[0].score : 0
+  const results = practiceResults()
+  const avgScore =
+    results.length > 0
+      ? Math.round(results.reduce((sum, r) => sum + r.score, 0) / results.length)
+      : 0
 
   const result: SessionResult = {
     sessionId: session.id,
     name: session.name,
     sessionName: session.name,
     completedAt: Date.now(),
-    itemsCompleted: scores.length, // TODO: calculate skipped ones; approximation
-    practiceItemResult: practiceResults(),
+    itemsCompleted: results.length,
+    practiceItemResult: results,
     totalItems: session.items.length,
-    score: recentScore,
+    score: avgScore,
   }
 
   setSessionResults((prev) => [result, ...prev].slice(0, 50))

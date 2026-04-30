@@ -10,8 +10,10 @@ export function exposeForE2E(key: string, value: unknown): void {
       ? (window as unknown as Record<string, unknown>)
       : null
   const isE2E = win !== null && win['E2E_TEST_MODE'] === true
+  const isPlaywright = win !== null && win['__playwrightTest'] === true
+  const isWebDriver = win !== null && navigator.webdriver
 
-  if ((isTestMode || isE2E) && win !== null) {
+  if ((isTestMode || isE2E || isPlaywright || isWebDriver) && win !== null) {
     win[key] = value
   }
 }

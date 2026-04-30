@@ -38,6 +38,7 @@ const mockAudioEngine = {
 
 // Mock melodyStore - use factory function to avoid hoisting issues
 vi.mock('@/stores/melody-store', () => ({
+  STORAGE_KEY_SESSION_HIST: 'pitchperfect_session_history',
   melodyStore: {
     items: vi.fn(() => []),
     setItems: vi.fn(),
@@ -351,7 +352,7 @@ describe('endPracticeSession', () => {
     const allCalls = localStorageMock.setItem.mock.calls as unknown[][]
     const sessionCall = allCalls.find(
       (call) =>
-        call[0] === 'pitchperfect_session_results' &&
+        call[0] === 'pitchperfect_session_history' &&
         allCalls.indexOf(call) >= callsBefore,
     )
     expect(sessionCall).toBeDefined()

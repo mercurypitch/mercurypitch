@@ -12,6 +12,8 @@ export default defineConfig({
     baseURL: 'https://localhost:3000',
     ignoreHTTPSErrors: true,
     trace: 'on-first-retry',
+    /* Mark as E2E mode so exposeForE2E() registers window.__appStore etc. */
+    addInitScript: () => { (window as any).E2E_TEST_MODE = true },
   },
   projects: [
     {
