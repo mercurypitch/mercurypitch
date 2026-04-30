@@ -25,7 +25,6 @@ export const [sessionModeSignal, setSessionMode] = createSignal(false)
 export const [pendingSessionStart, setPendingSessionStart] =
   createSignal<boolean>(false)
 
-
 export const [practiceResults, setPracticeResults] = createSignal<
   PracticeResult[]
 >([])

@@ -503,6 +503,52 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
             />
           </div>
 
+          {/* Sensitivity — styled like BPM/Volume so the entire mic
+              sensitivity widget reads as one cohesive control instead
+              of a stray label-slider pair tucked at the right edge. */}
+          <div
+            class="sensitivity-group inline-control"
+            title="Mic sensitivity (1 = quiet rooms, 10 = noisy)"
+          >
+            <span class="inline-control-icon" aria-hidden="true">
+              {/* Mic icon */}
+              <svg viewBox="0 0 24 24" width="14" height="14">
+                <path
+                  fill="currentColor"
+                  d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11z"
+                />
+              </svg>
+            </span>
+            <input
+              type="number"
+              id="sens-input"
+              min="1"
+              max="10"
+              value={settings().sensitivity}
+              class="sens-number-input"
+              aria-label="Sensitivity"
+              onInput={(e) => {
+                const val = parseInt(e.currentTarget.value)
+                if (!isNaN(val) && val >= 1 && val <= 10) {
+                  setSensitivity(val)
+                }
+              }}
+            />
+            <input
+              type="range"
+              id="sensitivity"
+              min="1"
+              max="10"
+              value={settings().sensitivity}
+              class="sensitivity-slider"
+              aria-label="Sensitivity slider"
+              onInput={(e) => {
+                const val = parseInt(e.currentTarget.value) || 5
+                setSensitivity(val)
+              }}
+            />
+          </div>
+
           {/* Speed */}
           <div class="speed-group inline-control" title="Playback speed">
             <span class="inline-control-icon" aria-hidden="true">
@@ -618,25 +664,11 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
           </ControlGroup>
         </Show>
 
-        {/* Sensitivity */}
-        <ControlGroup>
-          <div class="sensitivity-group">
-            <label class="opt-label">Sens:</label>
-            <input
-              type="range"
-              id="sensitivity"
-              min="1"
-              max="10"
-              value={settings().sensitivity}
-              class="sensitivity-slider"
-              onInput={(e) => {
-                const val = parseInt(e.currentTarget.value) || 5
-                setSensitivity(val)
-              }}
-            />
-            <span id="sensitivity-value">{settings().sensitivity}</span>
-          </div>
-        </ControlGroup>
+        {/* Sensitivity is now part of the inline-controls-row above
+            (BPM / Volume / Sensitivity / Speed) so it renders as a
+            cohesive icon+number+slider widget matching the other
+            tempo-style controls instead of a standalone label-slider
+            pair. The old ControlGroup wrapper used to live here. */}
       </div>
     </div>
   )

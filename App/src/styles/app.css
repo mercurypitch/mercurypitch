@@ -1468,7 +1468,8 @@ header h1 {
 }
 
 .bpm-number-input,
-.vol-number-input {
+.vol-number-input,
+.sens-number-input {
   width: 50px;
   padding: 2px 4px;
   font-size: 0.8rem;
@@ -1481,13 +1482,26 @@ header h1 {
   -moz-appearance: textfield;
 }
 
+/* Sens-input is narrower (1–10 range) so it doesn't waste horizontal
+   space in the inline-controls-row alongside BPM/Volume which need
+   3-digit width. */
+.sens-number-input {
+  width: 38px;
+}
+
 .bpm-number-input::-webkit-inner-spin-button,
-.bpm-number-input::-webkit-outer-spin-button {
+.bpm-number-input::-webkit-outer-spin-button,
+.vol-number-input::-webkit-inner-spin-button,
+.vol-number-input::-webkit-outer-spin-button,
+.sens-number-input::-webkit-inner-spin-button,
+.sens-number-input::-webkit-outer-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
 
-.bpm-number-input:focus {
+.bpm-number-input:focus,
+.vol-number-input:focus,
+.sens-number-input:focus {
   border-color: var(--accent);
 }
 
@@ -1518,6 +1532,14 @@ header h1 {
 .sensitivity-slider {
   width: 60px;
   accent-color: var(--yellow);
+}
+
+/* When the sensitivity widget participates in the inline-controls-row
+   (BPM / Volume / Sensitivity / Speed), match the slider footprint of
+   its neighbours so the cluster reads as one cohesive unit rather
+   than three sliders of different widths. */
+.inline-control.sensitivity-group .sensitivity-slider {
+  width: 80px;
 }
 
 #sensitivity-value {

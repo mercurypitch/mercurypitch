@@ -467,7 +467,6 @@ const AppShell: Component<AppProps> = (props) => {
     handlePlay()
   }
 
-
   const handlePracticeModeChange = (mode: PlaybackMode) => {
     setPlayMode(mode)
     if (mode === 'repeat') {
