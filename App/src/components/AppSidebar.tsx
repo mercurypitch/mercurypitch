@@ -5,14 +5,14 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createMemo, For, Show } from 'solid-js'
+import { For, Show } from 'solid-js'
 import { LibraryTab } from '@/components/LibraryTab'
 import { NoteList } from '@/components/NoteList'
 import { PitchDisplay } from '@/components/PitchDisplay'
 import { StatsBars } from '@/components/StatsBars'
 import { KEY_OFFSETS, midiToFreq, midiToNote } from '@/lib/scale-data'
-import { activeTab as appActiveTab, appStore, sessionResults } from '@/stores'
-import { keyName, scaleType, setKeyName, setScaleType, showLibrary, userSession, } from '@/stores'
+import { activeTab as appActiveTab, sessionResults } from '@/stores'
+import { keyName, scaleType, setKeyName, setScaleType, showLibrary, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import type { MelodyItem, NoteResult, PitchResult } from '@/types'
 

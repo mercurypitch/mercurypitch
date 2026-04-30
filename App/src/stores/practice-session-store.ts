@@ -83,7 +83,9 @@ export function endPracticeSession(): SessionResult | null {
   const results = practiceResults()
   const avgScore =
     results.length > 0
-      ? Math.round(results.reduce((sum, r) => sum + r.score, 0) / results.length)
+      ? Math.round(
+          results.reduce((sum, r) => sum + r.score, 0) / results.length,
+        )
       : 0
 
   const result: SessionResult = {

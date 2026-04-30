@@ -10,7 +10,7 @@ import { PrecCountButton } from '@/components/PrecCountButton'
 import { Tooltip } from '@/components/Tooltip'
 import { NOTE_NAMES } from '@/lib/scale-data'
 import { appStore } from '@/stores'
-import { bpm, keyName, micActive, micWaveVisible, playbackSpeed, scaleType, sessionActive, setBpm, setKeyName, setPlaybackSpeed, setScaleType, setSensitivity, settings, toggleMicWaveVisible, } from '@/stores'
+import { bpm, keyName, micActive, micWaveVisible, playbackSpeed, scaleType, setBpm, setKeyName, setPlaybackSpeed, setScaleType, setSensitivity, settings, toggleMicWaveVisible, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import { ControlGroup } from './ControlGroup'
 import { MetronomeGroup } from './MetronomeGroup'
@@ -20,7 +20,7 @@ import { MetronomeGroup } from './MetronomeGroup'
 // ========================================
 
 // TODO: Only for tests, need to update all!
-/** Determine current practice mode based on global state */
+/** Determine the current practice mode based on global state */
 export function activePracticeMode(
   playMode: () => 'once' | 'repeat' | 'practice',
   sessionActive: () => boolean,
