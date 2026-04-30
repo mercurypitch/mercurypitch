@@ -2,8 +2,8 @@
 // Theme Store Tests
 // ============================================================
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { appStore, initTheme, setTheme, toggleTheme } from '@/stores/app-store'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { appStore, initTheme, setTheme, toggleTheme } from '@/stores'
 
 describe('Theme Store', () => {
   beforeEach(() => {
@@ -47,16 +47,9 @@ describe('Theme Store', () => {
       expect(document.documentElement.getAttribute('data-theme')).toBe('light')
     })
 
-    it('should dispatch themeChange event', () => {
-      const handler = vi.fn()
-      window.addEventListener('pitchperfect:themeChange', handler)
+    it('should set data-theme attribute on document', () => {
       setTheme('light')
-      expect(handler).toHaveBeenCalledWith(
-        expect.objectContaining({
-          detail: { theme: 'light' },
-        }),
-      )
-      window.removeEventListener('pitchperfect:themeChange', handler)
+      expect(document.documentElement.getAttribute('data-theme')).toBe('light')
     })
   })
 

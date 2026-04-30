@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Blaze: Belting Specialist (Focused) -->
+  <defs>
+    <linearGradient id="blazeGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#db6d28;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f85149;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <path d="M50 10 L80 40 L70 90 L30 90 L20 40 Z" fill="url(#blazeGrad)" />
+  <!-- Intense Aura -->
+  <path d="M45 5 L55 5 L50 20 Z" fill="#f85149" opacity="0.8" />
+  <path d="M75 35 L85 35 L80 45 Z" fill="#f85149" opacity="0.8" />
+  <path d="M25 35 L15 35 L20 45 Z" fill="#f85149" opacity="0.8" />
+  <!-- Focused Eyes -->
+  <path d="M35 50 L45 50" stroke="white" stroke-width="4" stroke-linecap="round" />
+  <path d="M55 50 L65 50" stroke="white" stroke-width="4" stroke-linecap="round" />
+  <!-- Mouth (Singing / Constant Tone) -->
+  <circle cx="50" cy="72" r="6" fill="#1f2328" />
+</svg>

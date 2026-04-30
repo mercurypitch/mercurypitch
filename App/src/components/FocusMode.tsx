@@ -4,11 +4,12 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, Show } from 'solid-js'
-import type { PitchSample } from '@/components/PitchCanvas'
 import { PitchCanvas } from '@/components/PitchCanvas'
 import { melodyTotalBeats } from '@/lib/scale-data'
-import { appStore } from '@/stores/app-store'
+import { appStore } from '@/stores'
+import { keyName, playbackSpeed, scaleType, sessionActive, setPlaybackSpeed, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
+import type { MelodyItem, PitchSample } from '@/types'
 import type { NoteResult, PitchResult, PracticeResult } from '@/types'
 
 interface FocusModeProps {
@@ -22,6 +23,8 @@ interface FocusModeProps {
   countInBeat: () => number
   isCountingIn: () => boolean
   currentBeat: () => number
+  currentNoteIndex?: () => number
+  melody: () => MelodyItem[]
   onPlay: () => void
   onPause: () => void
   onResume: () => void
@@ -31,27 +34,56 @@ interface FocusModeProps {
 const SPEED_STEPS = [0.25, 0.5, 0.75, 1.0, 1.5, 2.0]
 
 export const FocusMode: Component<FocusModeProps> = (props) => {
-  const keyDisplay = createMemo(
-    () => `${appStore.keyName()} ${appStore.scaleType()}`,
-  )
+  const keyDisplay = createMemo(() => `${keyName()} ${scaleType()}`)
 
-  const totalBeats = createMemo(() => melodyTotalBeats(melodyStore.items))
+  const totalBeats = createMemo(() => melodyTotalBeats(props.melody()))
   const totalBars = createMemo(() => Math.ceil(totalBeats() / 4))
-  const currentBar = createMemo(() => Math.floor(props.currentBeat() / 4) + 1)
+  const currentBar = createMemo(() => {
+    const beat = Math.max(1, props.currentBeat())
+    const bar = Math.floor(beat / 4) + 1
+    return Math.min(bar, totalBars())
+  })
   const progress = createMemo(() => {
     const beats = props.currentBeat()
     const total = totalBeats()
     return total > 0 ? Math.min(100, (beats / total) * 100) : 0
   })
 
+  // Reactive playhead position to ensure smooth updates during playback
+  const playheadPosition = createMemo(() => {
+    const beats = props.currentBeat()
+    const total = totalBeats()
+    return total > 0 ? (beats / total) * 100 : 0
+  })
+
   // Session info
-  const isSession = createMemo(() => appStore.sessionActive())
+  const isSession = createMemo(() => sessionActive())
   const sessionItem = createMemo(() => appStore.sessionItemIndex())
-  const sessionRepeat = createMemo(() => appStore.sessionItemRepeat())
+  const sessionRepeat = createMemo(() => appStore.currentSessionItemRepeat())
+
+  // Calculate pitch dot position based on current pitch frequency
+  const pitchDotPosition = createMemo(() => {
+    const pitch = props.currentPitch()
+    if (pitch && pitch.freq && pitch.freq > 0) {
+      // Use freqToY-like calculation to get normalized position (0-100)
+      const scale = melodyStore.currentScale()
+      if (scale.length > 0) {
+        const minFreq = Math.min(...scale.map((n) => n.freq)) * 0.82
+        const maxFreq = Math.max(...scale.map((n) => n.freq)) * 1.22
+        const logMin = Math.log2(minFreq)
+        const logMax = Math.log2(maxFreq)
+        const logFreq = Math.log2(pitch.freq)
+        const pct = (logFreq - logMin) / (logMax - logMin)
+        return Math.max(0, Math.min(100, pct * 100))
+      }
+    }
+    // Return middle position when no active pitch
+    return 50
+  })
 
   // Playback speed
   const currentSpeedIndex = createMemo(() => {
-    const speed = appStore.playbackSpeed()
+    const speed = playbackSpeed()
     const idx = SPEED_STEPS.indexOf(speed)
     return idx >= 0 ? idx : 3 // default to 1.0x
   })
@@ -59,14 +91,14 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
   const speedUp = () => {
     const idx = currentSpeedIndex()
     if (idx < SPEED_STEPS.length - 1) {
-      appStore.setPlaybackSpeed(SPEED_STEPS[idx + 1])
+      setPlaybackSpeed(SPEED_STEPS[idx + 1])
     }
   }
 
   const speedDown = () => {
     const idx = currentSpeedIndex()
     if (idx > 0) {
-      appStore.setPlaybackSpeed(SPEED_STEPS[idx - 1])
+      setPlaybackSpeed(SPEED_STEPS[idx - 1])
     }
   }
 
@@ -116,16 +148,39 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
       {/* Main pitch canvas fills remaining space */}
       <div class="focus-canvas">
         <PitchCanvas
-          melody={() => melodyStore.items}
+          melody={props.melody}
           scale={() => melodyStore.currentScale()}
           totalBeats={totalBeats}
           currentBeat={props.currentBeat}
           pitchHistory={props.pitchHistory}
-          currentNoteIndex={() => 0}
+          currentNoteIndex={props.currentNoteIndex ?? (() => 0)}
           isPlaying={props.isPlaying}
           isPaused={props.isPaused}
           isScrolling={() => false}
+          targetPitch={() => {
+            const idx = props.currentNoteIndex?.() ?? 0
+            const items = props.melody()
+            if (idx >= 0 && idx < items.length) {
+              return items[idx].note.freq
+            }
+            return null
+          }}
         />
+        <div
+          id="playhead"
+          class="focus-playhead"
+          style={{
+            display: props.isPlaying() || props.isPaused() ? 'block' : 'none',
+            left: `${playheadPosition()}%`,
+          }}
+        >
+          <div class="playhead-marker" style={{ left: '0' }} />
+          {/* Glowing pitch dot with dynamic vertical position */}
+          <div
+            class="focus-pitch-dot"
+            style={{ '--pitch-position': `${pitchDotPosition()}%` }}
+          />
+        </div>
       </div>
 
       {/* Bottom floating toolbar */}
@@ -177,28 +232,26 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
             class="focus-speed-btn"
             onClick={speedUp}
             disabled={currentSpeedIndex() === SPEED_STEPS.length - 1}
-            title="Faster (↑)"
-          >
-            <svg viewBox="0 0 24 24" width="16" height="16">
-              <path
-                fill="currentColor"
-                d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"
-              />
-            </svg>
-          </button>
-          <span class="focus-speed-label">
-            {appStore.playbackSpeed().toFixed(2)}x
-          </span>
-          <button
-            class="focus-speed-btn"
-            onClick={speedDown}
-            disabled={currentSpeedIndex() === 0}
-            title="Slower (↓)"
+            title="Faster"
           >
             <svg viewBox="0 0 24 24" width="16" height="16">
               <path
                 fill="currentColor"
                 d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"
+              />
+            </svg>
+          </button>
+          <span class="focus-speed-label">{playbackSpeed().toFixed(2)}x</span>
+          <button
+            class="focus-speed-btn"
+            onClick={speedDown}
+            disabled={currentSpeedIndex() === 0}
+            title="Slower"
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16">
+              <path
+                fill="currentColor"
+                d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"
               />
             </svg>
           </button>

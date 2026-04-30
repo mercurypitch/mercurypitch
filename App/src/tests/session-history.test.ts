@@ -1,12 +1,13 @@
 // ============================================================
-// Session History Store Tests
+// Session History / Practice Session Store Tests
+// Rewritten for the v3 store split:
+//   - practiceSession state lives in practice-session-store
+//   - session history is persisted via createPersistedSignal
 // ============================================================
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { SessionHistoryEntry } from '@/stores/app-store'
-import { appStore, clearSessionHistory, getNoteAccuracyMap, getSessionHistory, initSessionHistory, saveSession, } from '@/stores/app-store'
 
-// Mock localStorage
+// Mock localStorage before importing modules that rely on it.
 const localStorageMock = (() => {
   let store: Record<string, string> = {}
   return {
@@ -25,166 +26,172 @@ const localStorageMock = (() => {
 
 Object.defineProperty(global, 'localStorage', { value: localStorageMock })
 
-describe('Session History', () => {
-  beforeEach(() => {
-    localStorageMock.clear()
-    clearSessionHistory()
+// Imports must come AFTER localStorage mock (createPersistedSignal reads it).
+import { advanceSessionItem, endPracticeSession, getCurrentSessionItem, getCurrentSessionItemIndex, getSessionHistory, practiceSession, recordSessionItemResult, sessionActive, sessionItemIndex, setPracticeSession, setSessionActive, setSessionItemIndex, setSessionItemRepeat, setSessionResults, } from '@/stores/practice-session-store'
+import type { PlaybackSession, PracticeResult, SessionItem } from '@/types'
+
+const makeMelodyItem = (): SessionItem => ({
+  id: 'mi-1',
+  type: 'melody',
+  startBeat: 0,
+  label: 'Test Melody',
+  melodyId: 'melody-1',
+})
+
+const makeScaleItem = (): SessionItem => ({
+  id: 'si-1',
+  type: 'scale' as 'rest',
+  startBeat: 16,
+  label: 'C Major',
+  scaleType: 'major',
+  beats: 8,
+})
+
+const makeRestItem = (): SessionItem => ({
+  id: 'ri-1',
+  type: 'rest',
+  startBeat: 24,
+  label: 'Rest',
+  restMs: 2000,
+})
+
+const makeSession = (items?: SessionItem[]): PlaybackSession => ({
+  id: 'test-session',
+  name: 'Test Session',
+  items: items ?? [makeMelodyItem(), makeScaleItem(), makeRestItem()],
+  created: Date.now(),
+  deletable: true,
+})
+
+const resetState = () => {
+  setPracticeSession(null)
+  setSessionItemIndex(0)
+  setSessionItemRepeat(0)
+  setSessionActive(false)
+  setSessionResults([])
+  localStorageMock.clear()
+}
+
+describe('practice-session-store: getCurrentSessionItem', () => {
+  beforeEach(resetState)
+
+  it('returns null when no practice session is active', () => {
+    expect(getCurrentSessionItem()).toBeNull()
   })
 
-  describe('saveSession', () => {
-    it('saves a new session entry', () => {
-      saveSession({
-        score: 85,
-        avgCents: 12.5,
-        noteCount: 8,
-        noteResults: [
-          { midi: 60, avgCents: 5, rating: 'perfect' },
-          { midi: 64, avgCents: 15, rating: 'excellent' },
-        ],
-      })
-
-      const history = getSessionHistory()
-      expect(history.length).toBe(1)
-      expect(history[0].score).toBe(85)
-      expect(history[0].avgCents).toBe(12.5)
-      expect(history[0].noteCount).toBe(8)
-      expect(history[0].noteResults.length).toBe(2)
-    })
-
-    it('generates timestamps on save', () => {
-      saveSession({ score: 70, avgCents: 10, noteCount: 4, noteResults: [] })
-      const history = getSessionHistory()
-      expect(history[0].timestamp).toBeGreaterThan(0)
-    })
-
-    it('limits history to 50 entries', () => {
-      for (let i = 0; i < 55; i++) {
-        saveSession({ score: i, avgCents: i, noteCount: 4, noteResults: [] })
-      }
-      const history = getSessionHistory()
-      expect(history.length).toBe(50)
-    })
-
-    it('saves most recent first', () => {
-      saveSession({ score: 70, avgCents: 10, noteCount: 4, noteResults: [] })
-      saveSession({ score: 90, avgCents: 5, noteCount: 4, noteResults: [] })
-
-      const history = getSessionHistory()
-      expect(history[0].score).toBe(90)
-      expect(history[1].score).toBe(70)
-    })
+  it('returns the first item by default once a session is loaded', () => {
+    setPracticeSession(makeSession())
+    const item = getCurrentSessionItem()
+    expect(item).not.toBeNull()
+    expect(item?.type).toBe('melody')
+    expect(item?.label).toBe('Test Melody')
   })
 
-  describe('clearSessionHistory', () => {
-    it('clears all session entries', () => {
-      saveSession({ score: 80, avgCents: 10, noteCount: 4, noteResults: [] })
-      saveSession({ score: 85, avgCents: 8, noteCount: 4, noteResults: [] })
+  it('returns null when the index is out of range', () => {
+    setPracticeSession(makeSession())
+    setSessionItemIndex(99)
+    expect(getCurrentSessionItem()).toBeNull()
+  })
+})
 
-      clearSessionHistory()
-      expect(getSessionHistory().length).toBe(0)
-    })
+describe('practice-session-store: advanceSessionItem', () => {
+  beforeEach(resetState)
 
-    it('removes from localStorage', () => {
-      saveSession({ score: 80, avgCents: 10, noteCount: 4, noteResults: [] })
-      clearSessionHistory()
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith(
-        'pitchperfect_session_history',
-      )
-    })
+  it('advances through items in order', () => {
+    setPracticeSession(makeSession())
+
+    expect(getCurrentSessionItemIndex()).toBe(0)
+    expect(getCurrentSessionItem()?.type).toBe('melody')
+
+    advanceSessionItem()
+    expect(getCurrentSessionItemIndex()).toBe(1)
+    expect(getCurrentSessionItem()?.type).toBe('scale')
+
+    advanceSessionItem()
+    expect(getCurrentSessionItemIndex()).toBe(2)
+    expect(getCurrentSessionItem()?.type).toBe('rest')
   })
 
-  describe('initSessionHistory', () => {
-    it('loads existing history from localStorage', () => {
-      const storedData: SessionHistoryEntry[] = [
-        {
-          id: 1,
-          timestamp: 1000,
-          score: 75,
-          avgCents: 15,
-          noteCount: 4,
-          noteResults: [],
-        },
-        {
-          id: 2,
-          timestamp: 2000,
-          score: 88,
-          avgCents: 7,
-          noteCount: 4,
-          noteResults: [],
-        },
-      ]
-      localStorageMock.getItem.mockReturnValue(JSON.stringify(storedData))
-
-      initSessionHistory()
-      const history = getSessionHistory()
-      expect(history.length).toBe(2)
-      expect(history[0].score).toBe(75)
-    })
-
-    it('handles corrupted localStorage gracefully', () => {
-      localStorageMock.getItem.mockReturnValue('not valid json')
-
-      expect(() => {
-        initSessionHistory()
-      }).not.toThrow()
-      expect(getSessionHistory().length).toBe(0)
-    })
+  it('returns null after the last item', () => {
+    setPracticeSession(makeSession([makeMelodyItem()]))
+    const result = advanceSessionItem()
+    expect(result).toBeNull()
   })
 
-  describe('getNoteAccuracyMap', () => {
-    it('returns empty map when no sessions', () => {
-      const map = getNoteAccuracyMap()
-      expect(map.size).toBe(0)
-    })
+  it('respects per-item repeat count before advancing index', () => {
+    const repeated: SessionItem = { ...makeMelodyItem(), repeat: 3 }
+    setPracticeSession(makeSession([repeated, makeScaleItem()]))
 
-    it('computes average accuracy per MIDI note', () => {
-      saveSession({
-        score: 90,
-        avgCents: 5,
-        noteCount: 2,
-        noteResults: [
-          { midi: 60, avgCents: 0, rating: 'perfect' },
-          { midi: 64, avgCents: 0, rating: 'perfect' },
-        ],
-      })
-      saveSession({
-        score: 70,
-        avgCents: 15,
-        noteCount: 2,
-        noteResults: [
-          { midi: 60, avgCents: 20, rating: 'good' },
-          { midi: 67, avgCents: 0, rating: 'perfect' },
-        ],
-      })
+    // Two repeats should keep us on the first item.
+    advanceSessionItem()
+    expect(getCurrentSessionItemIndex()).toBe(0)
+    advanceSessionItem()
+    expect(getCurrentSessionItemIndex()).toBe(0)
+    // Third advance moves to the next index.
+    advanceSessionItem()
+    expect(getCurrentSessionItemIndex()).toBe(1)
+  })
+})
 
-      const map = getNoteAccuracyMap()
-      // midi 60: 100 (0¢) and max(0, 0) (20¢) = 100 and 0 -> avg 50
-      // midi 64: 100 (0¢) only -> 100
-      // midi 67: 100 (0¢) only -> 100
-      expect(map.get(60)).toBeDefined()
-      expect(map.get(64)).toBeDefined()
-      expect(map.get(67)).toBeDefined()
-    })
+describe('practice-session-store: recordSessionItemResult', () => {
+  beforeEach(resetState)
 
-    it('clamps negative cents to max score', () => {
-      saveSession({
-        score: 100,
-        avgCents: -3,
-        noteCount: 1,
-        noteResults: [{ midi: 60, avgCents: -3, rating: 'perfect' }],
-      })
-      const map = getNoteAccuracyMap()
-      // -3¢ >= -5, so score = 100
-      expect(map.get(60)).toBe(100)
-    })
+  it('endPracticeSession returns null when no session is active', () => {
+    expect(endPracticeSession()).toBeNull()
   })
 
-  describe('appStore integration', () => {
-    it('exposes sessionHistory in appStore', () => {
-      expect(appStore.sessionHistory).toBeDefined()
-      expect(typeof appStore.saveSession).toBe('function')
-      expect(typeof appStore.clearSessionHistory).toBe('function')
-      expect(typeof appStore.initSessionHistory).toBe('function')
-    })
+  it('endPracticeSession produces a SessionResult and clears state', () => {
+    setPracticeSession(makeSession())
+    setSessionActive(true)
+
+    const fakeResult: PracticeResult = {
+      score: 88,
+      noteCount: 4,
+      avgCents: 5.2,
+      noteResult: [],
+    } as unknown as PracticeResult
+    recordSessionItemResult(fakeResult)
+
+    const summary = endPracticeSession()
+    expect(summary).not.toBeNull()
+    expect(summary?.sessionId).toBe('test-session')
+    expect(summary?.sessionName).toBe('Test Session')
+    expect(summary?.totalItems).toBe(3)
+
+    // Side effects: state cleared.
+    expect(practiceSession()).toBeNull()
+    expect(sessionActive()).toBe(false)
+    expect(sessionItemIndex()).toBe(0)
+  })
+
+  it('endPracticeSession appends the SessionResult to history', () => {
+    setPracticeSession(makeSession())
+    endPracticeSession()
+    expect(getSessionHistory()).toHaveLength(1)
+    expect(getSessionHistory()[0].sessionId).toBe('test-session')
+  })
+
+  it('history is capped at 50 entries', () => {
+    // Pre-fill 50 fake results.
+    const seed = Array.from({ length: 50 }, (_, i) => ({
+      sessionId: `s-${i}`,
+      name: `S${i}`,
+      sessionName: `S${i}`,
+      completedAt: i,
+      itemsCompleted: 0,
+      practiceItemResult: [],
+      totalItems: 1,
+      score: 0,
+    }))
+    setSessionResults(seed)
+    expect(getSessionHistory()).toHaveLength(50)
+
+    setPracticeSession(makeSession())
+    endPracticeSession()
+
+    const history = getSessionHistory()
+    expect(history).toHaveLength(50)
+    // Newest first
+    expect(history[0].sessionId).toBe('test-session')
   })
 })

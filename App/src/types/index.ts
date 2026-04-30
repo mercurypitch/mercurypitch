@@ -24,8 +24,21 @@ export type AccuracyRating = 'perfect' | 'excellent' | 'good' | 'okay' | 'off'
 /** Playback mode for the melody engine */
 export type PlaybackMode = 'once' | 'repeat' | 'practice'
 
+/** Extra rest spacing used by the Practice tab's "Spaced" mode. */
+export type SpacedRestMode = 'none' | 'fourth' | 'half' | 'full'
+
 /** Transport playback state */
 export type TransportState = 'stopped' | 'playing' | 'paused' | 'precount'
+export type PlaybackState = 'stopped' | 'playing' | 'paused'
+
+/** Accuracy band with threshold */
+export interface AccuracyBand {
+  band: 0 | 50 | 75 | 90 | 100
+  threshold: number
+  color: string
+}
+
+export type AccuracyBandValue = 0 | 50 | 75 | 90 | 100
 
 /** A single note within the melody */
 export interface MelodyNote {
@@ -63,6 +76,8 @@ export interface MelodyItem {
   effectType?: EffectType
   /** IDs of linked notes (for slides/ease: next note; for vibrato: start note) */
   linkedTo?: number[]
+  /** Visual/playback rest inserted for practice spacing. Not persisted as a real melody note. */
+  isRest?: boolean
 }
 
 /** Scale degree definition */
@@ -99,107 +114,347 @@ export interface KeySignature {
   displayName: string
 }
 
-/** Audio engine callbacks */
-export interface AudioEngineCallbacks {
-  onNoteChange?: (note: MelodyNote, noteIndex: number) => void
-  onPlaybackEnd?: () => void
-}
+/** Progress bar value for practice engine */
+export type ProgressBarValue =
+  | 'ready'
+  | 'playing'
+  | 'paused'
+  | 'precount'
+  | 'complete'
 
-/** Pitch detection result */
-export interface PitchResult {
-  /** Detected frequency in Hz */
-  frequency: number
-  /** Clarity/confidence score (0-1) */
-  clarity: number
-  /** Detected note name */
-  noteName: string
-  /** Detected octave */
-  octave: number
-  /** Cents deviation from the nearest note (-50 to +50) */
-  cents: number
-}
-
-/** A single pitch sample collected during note playback */
-export interface PitchSample {
-  /** Detected frequency in Hz */
-  freq: number
-  /** Timestamp (ms since playback start) */
-  time: number
-  /** Cents deviation */
-  cents: number
-}
-
-/** Result of singing a single note */
+/** Note result from practice engine */
 export interface NoteResult {
-  /** The target melody note */
-  targetNote: MelodyNote
-  /** All pitch samples collected */
-  samples: PitchSample[]
-  /** Average detected frequency */
-  avgFreq: number
-  /** Average cents deviation */
-  avgCents: number
-  /** Number of samples captured */
-  sampleCount: number
-  /** Assigned accuracy rating */
+  /** Original melody item */
+  item: MelodyItem
+  /** Pitch in Hz when note started */
+  pitchFreq: number
+  /** Identified pitch in cents from target */
+  pitchCents: number
+  /** Time spent on this note (ms) */
+  time: number
+  /** Rating for this note */
   rating: AccuracyRating
-  /** Cumulative pitch error (sum of |cents|) */
-  totalError: number
+  /** Average cents deviation from target */
+  avgCents: number
+  /** Target note name */
+  targetNote: string
 }
 
-/** Practice session result (one full cycle) */
+/** Practice session result summary (for score overlay) */
 export interface PracticeResult {
-  /** Results for each note in the melody */
-  noteResults: NoteResult[]
   /** Overall score (0-100) */
   score: number
+  /** Number of notes completed */
+  noteCount: number
   /** Average cents deviation */
   avgCents: number
-  /** Number of notes practiced */
-  noteCount: number
-}
-
-/** Preset melody definition */
-export interface Preset {
-  /** Preset display name */
+  /** Number of completed items */
+  itemsCompleted: number
+  /** Total items in session */
+  totalItems?: number
+  /** Session name */
   name: string
-  /** Melody items */
-  melody: MelodyItem[]
-  /** Musical key */
-  key: string
-  /** Tempo in BPM */
-  bpm: number
-  /** Number of total beats */
+  /** Practice mode */
+  mode: PlaybackMode
+  /** Completed at timestamp */
+  completedAt: number
+
+  // FIXME: Refactor accuracy heatmap somehow differently, from sessions, but this way we need to
+  // keep the midi notes info! Though we only need noteResult.item.note.midi values
+  noteResult: NoteResult[]
+}
+
+/** Pitch result from practice engine */
+export interface PitchResult {
+  /** Pitch in Hz */
+  freq: number
+  /** MIDI note number (estimated) */
+  midi: number
+  /** Note name (e.g., 'C4') */
+  note: string
+  noteName: string
+  /** Target note MIDI */
+  targetMidi: number
+  /** Target note name (e.g., 'C4') */
+  targetNote: string
+  /** Difference in cents from target */
+  cents: number
+  /** Frequency value (clarity) */
+  frequency: number
+  /** Clarity/clarity value */
+  clarity: number
+  /** Octave */
+  octave: number
+}
+
+/** Static template for practice sessions (used in presets/sessions data) */
+export interface SessionTemplate {
+  id: string
+  name: string
+  difficulty: SessionDifficulty
+  category: SessionCategory
+  items: SessionItem[]
+  description?: string
+}
+
+/** Session result for history */
+export interface SessionResult {
+  sessionId?: string
+  name: string
+  score: number
+  totalItems?: number
+  practiceItemResult: PracticeResult[]
+  itemsCompleted: number
+  sessionName: string
+  completedAt: number
+  avgCents?: number
+  rating?: AccuracyRating
+}
+
+/** PitchPerfectWindow extension */
+export interface PitchPerfectWindow extends Window {
+  pitchperfect: {
+    toggleTheme: () => void
+    toggleMicWaveVisible?: () => void
+  }
+}
+
+/** History entry for tracking user actions */
+export interface HistoryEntry {
+  /** Time of action */
+  timestamp: number
+  /** Action type */
+  type:
+    | 'preset_load'
+    | 'preset_save'
+    | 'preset_delete'
+    | 'tab_change'
+    | 'note_add'
+    | 'note_delete'
+    | 'note_edit'
+  /** Action details */
+  details: Record<string, unknown>
+}
+
+/** Preset data for saving/loading melodies */
+export interface PresetData {
+  /** Array of preset notes */
+  notes: Array<{
+    midi: number
+    startBeat: number
+    duration: number
+    effectType?: EffectType
+    linkedTo?: number[]
+  }>
+  /** Total beats in melody */
   totalBeats: number
-  /** Scale definition for this preset */
-  scale: ScaleDefinition[]
+  /** Beats per minute */
+  bpm: number
+  /** Scale data */
+  scale: ScaleDegree[]
 }
 
-/** Accuracy band definition */
-export interface AccuracyBand {
-  /** Cents threshold for this band */
-  threshold: number
-  /** Score band (100=perfect, 90=excellent, 75=good, 50=okay, 0=off) */
-  band: number
-  /** Display color */
-  color: string
+/** A single melody saved in the library */
+export interface MelodyData {
+  /** Unique melody ID */
+  id: string
+  /** Display name */
+  name: string
+  /** Creator name */
+  author?: string
+  /** Tempo in beats per minute */
+  bpm: number
+  /** Musical key (e.g., 'C', 'G') */
+  key: string
+  /** Scale type (e.g., 'major', 'minor', 'pentatonic') */
+  scaleType: string
+  /** Last played timestamp */
+  lastPlayed?: number
+  /** Default octave */
+  octave?: number
+  /** Array of melody items (notes) */
+  items: MelodyItem[]
+  /** Tags for categorization */
+  tags?: string[]
+  /** User notes */
+  notes?: string
+  /** Creation timestamp */
+  createdAt: number
+  /** Last update timestamp */
+  updatedAt: number
+  /** Number of times played */
+  playCount?: number
 }
 
-/** Piano roll configuration */
+/** Melody library storage structure (legacy) */
+export interface MelodyLibrary {
+  /** Library metadata */
+  meta: {
+    author: string
+    version: string
+    lastUpdated: number
+  }
+  /** Render settings */
+  renderSettings: {
+    gridlines: boolean
+    showLabels: boolean
+    showNumbers: boolean
+    [key: string]: unknown
+  }
+  /** Saved melodies */
+  melodies: Record<string, MelodyData>
+  /** User-created playlists */
+  playlists: Record<
+    string,
+    {
+      name: string
+      melodyKeys: string[]
+      sessionKeys: string[]
+      created: number
+    }
+  >
+  /** User sessions */
+  sessions: Record<string, PlaybackSession>
+}
+
+/** Unified library storage structure - single storage key for all content */
+export interface UnifiedLibrary {
+  /** Library metadata */
+  meta: {
+    author: string
+    version: string
+    lastUpdated: number
+  }
+  /** Render settings */
+  renderSettings: {
+    gridlines: boolean
+    showLabels: boolean
+    showNumbers: boolean
+    [key: string]: unknown
+  }
+  /** Saved melodies */
+  melodies: Record<string, MelodyData>
+  /** User-created playlists */
+  playlists: Record<
+    string,
+    {
+      name: string
+      melodyKeys: string[]
+      sessionKeys: string[]
+      created: number
+    }
+  >
+  /** User sessions */
+  sessions: Record<string, PlaybackSession>
+}
+
+/** Session item type */
+/**
+ * Session item type. v3 narrowed this from `'preset' | 'scale' | 'rest' |
+ * 'melody'` to just `'melody' | 'rest'`. PlaybackSessions now exclusively
+ * hold melody references and rests — scales are pre-seeded as melodies
+ * (e.g. `scale-major-c4`) and referenced by melodyId, and presets were
+ * historically just embedded melodies which are now first-class library
+ * entries. This keeps every clickable sidebar pill consistent.
+ */
+export type SessionItemType = 'melody' | 'rest'
+
+/** A rest item with specific position in timeline */
+export interface SessionRest {
+  id: string
+  startBeat: number // Position in timeline (beats from start)
+  duration: number // Duration in beats
+  label: string // Display name (e.g., "Rest")
+}
+
+/** Rest item for session items (legacy - embedded rest with ms duration) */
+export type SessionRestItem = 'rest'
+
+/** Session difficulty levels */
+export type SessionDifficulty =
+  | 'beginner'
+  | 'intermediate'
+  | 'advanced'
+  | 'expert'
+
+/** Session categories */
+export type SessionCategory =
+  | 'warmup'
+  | 'scales'
+  | 'melodic'
+  | 'rhythmic'
+  | 'ear_training'
+  | 'custom'
+  | 'vocal'
+
+/** A session item in user sessions */
+export interface SessionItem {
+  /** Unique identifier for this item (used for Map key) */
+  id: string
+  /** Item type */
+  type: SessionItemType
+  /** Start position in beats */
+  startBeat: number
+  /** Item label/name */
+  label: string
+  /** Scale type (for scale items) */
+  scaleType?: string
+  /** Number of beats (for scale items) */
+  beats?: number
+  /** Melody ID reference (for preset items) */
+  melodyId?: string
+  /** Array of melody items (embedded for preset items) */
+  items?: MelodyItem[]
+  /** Rest duration in ms (for rest items) */
+  restMs?: number
+  /** Item-specific settings */
+  settings?: Record<string, unknown>
+  /** Repeat count (for session item) */
+  repeat?: number
+}
+
+/** Sequence of Melody items define a session */
+export interface PlaybackSession {
+  /** Unique session ID */
+  id: string
+  /** Session name */
+  name: string
+  /** Creator name */
+  author?: string
+  /** Can this session be deleted by user? (false for Default/Internal sessions) */
+  deletable: boolean
+  /** Array of session items */
+  items: SessionItem[]
+  /** Creation timestamp */
+  created: number
+  /** Last played timestamp */
+  lastPlayed?: number
+  /** Difficulty level */
+  difficulty?: SessionDifficulty
+  /** Session category */
+  category?: SessionCategory
+  /** Description */
+  description?: string
+}
+
+/** Pitch sample for pitch history tracking */
+export interface PitchSample {
+  /** Pitch frequency in Hz */
+  freq: number | null
+  /** Cents deviation from target (undefined = no pitch detected) */
+  cents?: number
+  /** Sample timestamp (beat position or performance.now() delta) */
+  time: number
+}
+
+/** Piano roll editor configuration */
 export interface PianoRollConfig {
-  /** Row height in pixels */
   rowHeight: number
-  /** Beat width in pixels */
   beatWidth: number
-  /** Piano key column width in pixels */
   pianoWidth: number
-  /** Ruler height in pixels */
   rulerHeight: number
-  /** Beats per bar (for bar line rendering) */
   beatsPerBar: number
-  /** Minimum note duration in beats */
   minDuration: number
-  /** Note colors for different states */
   noteColors: {
     normal: string
     selected: string
@@ -208,72 +463,61 @@ export interface PianoRollConfig {
   }
 }
 
-import type { AudioEngine } from '../lib/audio-engine'
-import type { PianoRollEditor } from '../lib/piano-roll'
-
-/** Window extensions for global references */
-export interface PitchPerfectWindow extends Window {
-  pianoRollEditor?: PianoRollEditor
-  pianoRollAudioEngine?: AudioEngine
-  pianoRollGenerateId?: () => number
-}
-
-// ── Practice Sessions ─────────────────────────────────────────
-
-export type SessionDifficulty = 'beginner' | 'intermediate' | 'advanced'
-export type SessionCategory =
-  | 'vocal'
-  | 'instrumental'
-  | 'ear-training'
-  | 'general'
-export type SessionItemType = 'preset' | 'scale' | 'rest'
-
-/** A single item within a practice session */
-export interface SessionItem {
-  /** Item type */
-  type: SessionItemType
-  /** Preset ID (for type='preset') */
-  presetId?: string
-  /** Scale type (for type='scale') */
-  scaleType?: string
-  /** Custom display label */
-  label?: string
-  /** Duration in beats (for type='scale') */
-  beats?: number
-  /** Duration in ms (for type='rest') */
-  restMs?: number
-  /** Number of times to repeat this item (default 1) */
-  repeat?: number
-}
-
-/** A structured practice session with multiple items */
-export interface PracticeSession {
-  /** Unique session ID */
-  id: string
-  /** Display name */
-  name: string
-  /** Description */
-  description: string
-  /** Difficulty level */
-  difficulty: SessionDifficulty
-  /** Category */
-  category: SessionCategory
-  /** Session items */
-  items: SessionItem[]
-}
-
-/** Result of completing a practice session */
-export interface SessionResult {
+/** Session history entry */
+export interface SessionHistoryEntry {
   /** Session ID */
-  sessionId: string
-  /** Session display name */
-  sessionName: string
-  /** Completion timestamp */
-  completedAt: number
-  /** Number of items completed */
-  itemsCompleted: number
-  /** Total items in session */
-  totalItems: number
-  /** Average score across items */
+  sessionId?: string
+  /** Session name */
+  name: string
+  /** Score achieved */
   score: number
+  /** Total items in session */
+  totalItems?: number
+  /** Items completed */
+  itemsCompleted: number
+  /** Average cents deviation */
+  avgCents?: number
+  /** Accuracy rating */
+  rating?: AccuracyRating
+  /** Timestamp */
+  completedAt: number
+}
+
+/** Walkthrough tab type */
+export type WalkthroughTab = 'practice' | 'editor' | 'settings'
+
+/** Walkthrough step definition */
+export interface WalkthroughStep {
+  /** Step title */
+  title: string
+  /** Step description */
+  description: string
+  /** Action to perform */
+  action: string
+  /** CSS selector for target element (optional) */
+  target?: string
+}
+
+/** Walkthrough content definition */
+export interface WalkthroughContent {
+  /** Unique identifier */
+  id: string
+  /** Target tab */
+  tab: WalkthroughTab
+  /** Display title */
+  title: string
+  /** Short description */
+  description: string
+  /** Detailed content text */
+  content: string
+  /** Step-by-step instructions */
+  steps: WalkthroughStep[]
+  /** Visual icon/thumbnail */
+  thumbnail: string
+}
+
+/** Walkthrough progress tracking */
+export interface WalkthroughProgress {
+  /** Walkthrough ID -> timestamp when viewed/completed */
+  [id: string]: number
 }

@@ -1,12 +1,13 @@
-import { defineConfig } from 'vite';
-import solidPlugin from 'vite-plugin-solid';
-import { resolve, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { defineConfig } from 'vite'
+import solidPlugin from 'vite-plugin-solid'
+import { resolve, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import ssl from '@vitejs/plugin-basic-ssl'
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+const __dirname = dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
-  plugins: [solidPlugin()],
+  plugins: [ssl(), solidPlugin()],
   base: './',
   resolve: {
     alias: {
@@ -18,15 +19,9 @@ export default defineConfig({
   },
   build: {
     target: 'esnext',
+    sourcemap: true,
   },
-  test: {
-    globals: true,
-    environment: 'jsdom',
-    setupFiles: './src/test/setup.ts',
-    include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
-    coverage: {
-      reporter: ['text', 'html'],
-      include: ['src/lib/**/*.ts', 'src/stores/**/*.ts'],
-    },
+  define: {
+    'process.env': {},
   },
-});
+})

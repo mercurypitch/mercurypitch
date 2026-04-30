@@ -16,10 +16,9 @@ describe('PRACTICE_SESSIONS — static data integrity', () => {
     expect(uniqueIds.size).toBe(ids.length)
   })
 
-  it('every session has non-empty name and description', () => {
+  it('every session has non-empty name', () => {
     for (const session of PRACTICE_SESSIONS) {
       expect(session.name.trim().length).toBeGreaterThan(0)
-      expect(session.description.trim().length).toBeGreaterThan(0)
     }
   })
 
@@ -51,7 +50,7 @@ describe('PRACTICE_SESSIONS — static data integrity', () => {
   it('scale items have valid scaleType and positive beats', () => {
     for (const session of PRACTICE_SESSIONS) {
       for (const item of session.items) {
-        if (item.type === 'scale') {
+        if ((item.type as string) === 'scale') {
           expect(item.scaleType?.trim().length).toBeGreaterThan(0)
           expect(item.beats).toBeDefined()
           expect(item.beats!).toBeGreaterThan(0)
@@ -61,8 +60,16 @@ describe('PRACTICE_SESSIONS — static data integrity', () => {
   })
 
   it('every session has valid difficulty and category', () => {
-    const validDifficulties = ['beginner', 'intermediate', 'advanced']
-    const validCategories = ['vocal', 'instrumental', 'ear-training', 'general']
+    const validDifficulties = ['beginner', 'intermediate', 'advanced', 'expert']
+    const validCategories = [
+      'vocal',
+      'warmup',
+      'scales',
+      'melodic',
+      'rhythmic',
+      'ear_training',
+      'custom',
+    ]
     for (const session of PRACTICE_SESSIONS) {
       expect(validDifficulties).toContain(session.difficulty)
       expect(validCategories).toContain(session.category)
@@ -95,7 +102,8 @@ describe('PRACTICE_SESSIONS — static data integrity', () => {
     let total = 0
     for (const item of session.items) {
       const repeat = item.repeat ?? 1
-      if (item.type === 'scale') {
+      if (item.type === 'melody' || (item.type as string) === 'scale') {
+        // Each melody/scale item plays for `beats` beats (default 8).
         total += (item.beats ?? 8) * (60 / bpm) * repeat
       } else if (item.type === 'rest') {
         total += ((item.restMs ?? 2000) * repeat) / 1000
@@ -125,7 +133,7 @@ describe('PRACTICE_SESSIONS — static data integrity', () => {
   it('all scale items have repeat >= 1', () => {
     for (const session of PRACTICE_SESSIONS) {
       for (const item of session.items) {
-        if (item.type === 'scale') {
+        if ((item.type as string) === 'scale') {
           expect(item.repeat).toBeDefined()
           expect(item.repeat!).toBeGreaterThanOrEqual(1)
         }

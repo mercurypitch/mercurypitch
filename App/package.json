@@ -1,6 +1,6 @@
 {
   "name": "pitch-perfect-app",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -17,7 +17,8 @@
     "fmt:write": "prettier src --write",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
-    "lines": "cloc src --exclude-dir=node_modules,dist --by-file-by-lang --not-match-f='(.*[.]d[.]ts|.*[.]stories[.].*|.*[.]test[.].*|.*[.]json)'"
+    "lines": "cloc src --exclude-dir=node_modules,dist --by-file-by-lang --not-match-f='(.*[.]d[.]ts|.*[.]stories[.].*|.*[.]test[.].*|.*[.]json)'",
+    "check:syntax": "run-s typecheck lint fmt"
   },
   "dependencies": {
     "solid-js": "^1.8.0"
@@ -30,6 +31,8 @@
     "@types/node": "^22.0.0",
     "@typescript-eslint/eslint-plugin": "^8.58.2",
     "@typescript-eslint/parser": "^8.58.2",
+    "@vitejs/plugin-basic-ssl": "^2.3.0",
+    "@vitest/ui": "^4.1.5",
     "cloc": "^2.6.0-cloc",
     "eslint": "9.39.1",
     "eslint-plugin-import-x": "^4.16.2",
@@ -41,6 +44,6 @@
     "typescript-eslint": "8.58.2",
     "vite": "^6.0.0",
     "vite-plugin-solid": "^2.10.0",
-    "vitest": "^2.1.9"
+    "vitest": "^4.1.5"
   }
 }

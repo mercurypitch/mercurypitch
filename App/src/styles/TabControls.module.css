@@ -1,0 +1,361 @@
+/* ===== Tab Headers (Practice & Editor) ===== */
+.tabHeaderBar {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 12px;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+/* Row 1: Essential controls - always visible */
+.tabHeaderEssentialControls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  padding: 2px 0;
+  border-bottom: 1px solid var(--border-dim);
+}
+
+/* Control sections with separators */
+.tabHeaderControlSection {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+/* Row 2: Secondary controls - hidden on mobile */
+.tabHeaderSecondaryControls {
+  display: none;
+}
+
+/* Secondary controls styling for Editor header */
+.tabHeaderSecondaryControls.expanded {
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid var(--border-dim);
+  border-top: 1px solid var(--border-dim);
+  padding: 4px 8px;
+}
+
+.tabHeaderSecondaryGroup {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.tabHeaderSecondaryGroup .appHeaderSep {
+  height: 1px;
+  min-width: 8px;
+}
+
+.tabHeaderToolBtn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  padding: 2px 6px;
+}
+
+.tabHeaderInstrumentSelect {
+  width: 60px;
+  padding: 2px 4px;
+  font-size: 0.75rem;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+/* ===== Control Groups ===== */
+.controlGroup {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.controlLabel {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+/* ===== Volume Control ===== */
+.volumeGroup {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.volumeGroup .controlLabel {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.volumeSlider {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-primary);
+  padding: 4px 8px;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.volumeSlider:hover {
+  border-color: var(--accent);
+}
+
+.volumeSlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  margin-top: -6px;
+}
+
+.volumeSlider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  border: none;
+}
+
+/* ===== Tempo Control ===== */
+.tempoGroup {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tempoGroup .controlLabel {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.tempoSlider {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-primary);
+  padding: 4px 8px;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.tempoSlider:hover {
+  border-color: var(--accent);
+}
+
+.tempoSlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  margin-top: -6px;
+}
+
+/* ===== Speed Control ===== */
+.speedGroup {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.speedGroup .controlLabel {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.speedSelect {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-primary);
+  padding: 4px 8px;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.speedSelect:hover {
+  border-color: var(--accent);
+}
+
+.speedSelect option {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+/* ===== Sensitivity Control ===== */
+.sensitivityGroup {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sensitivityGroup .controlLabel {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.sensitivitySlider {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-primary);
+  padding: 4px 8px;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.sensitivitySlider:hover {
+  border-color: var(--accent);
+}
+
+/* ===== Cycles Input ===== */
+.cyclesInput {
+  width: 52px;
+  padding: 3px 6px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
+
+.cyclesInput:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.cyclesInput::-webkit-inner-spin-button,
+.cyclesInput::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.cyclesInput[type='number'] {
+  -moz-appearance: textfield;
+}
+
+/* ===== Editor Toolbar Columns ===== */
+.toolbarColumns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 2px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border-dim);
+  background: var(--bg-tertiary);
+}
+
+.toolbarColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.toolbarColumn .appHeaderSep {
+  display: none;
+}
+
+/* ===== Toolbar Group ===== */
+.toolbarGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 2px 4px;
+  background: var(--bg-tertiary);
+  border-right: 1px solid var(--border-dim);
+}
+
+.toolbarGroup:last-child {
+  border-right: none;
+}
+
+/* ===== Toolbar Group Horizontal (for multi-row groups) ===== */
+.toolbarGroupHorizontal {
+  display: grid;
+  gap: 4px;
+}
+
+.toolbarGroupGrid2 {
+  grid-template-columns: 1fr 1fr;
+}
+
+.toolbarGroupGrid3 {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+/* ===== Toolbar Button ===== */
+.toolbarBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.toolbarBtn:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--bg-tertiary);
+}
+
+.toolbarBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.toolbarBtn .icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+}
+
+/* ===== Toolbar Label ===== */
+.toolbarLabel {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  padding: 2px 4px;
+}
+
+/* ===== Toolbar Select ===== */
+.toolbarSelect {
+  width: 100%;
+  padding: 4px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.toolbarSelect:hover {
+  border-color: var(--accent);
+}
+
+.toolbarSelect option {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}

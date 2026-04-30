@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Aria: Falsetto Specialist (Encouraging) -->
+  <defs>
+    <linearGradient id="ariaGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#bc8cff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2dd4bf;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <path d="M50 20 Q75 20 85 45 Q85 85 50 85 Q15 85 15 45 Q25 20 50 20" fill="url(#ariaGrad)" />
+  <!-- Sparkles -->
+  <path d="M20 20 L22 25 L27 27 L22 29 L20 34 L18 29 L13 27 L18 25 Z" fill="white" opacity="0.8" />
+  <path d="M80 70 L82 75 L87 77 L82 79 L80 84 L78 79 L73 77 L78 75 Z" fill="white" opacity="0.8" />
+  <!-- Eyes (Warm) -->
+  <circle cx="40" cy="52" r="3" fill="white" />
+  <circle cx="60" cy="52" r="3" fill="white" />
+  <!-- Mouth (Sweet Smile) -->
+  <path d="M42 68 Q50 75 58 68" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" />
+</svg>

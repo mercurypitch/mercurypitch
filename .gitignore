@@ -37,3 +37,4 @@ playwright-report/
 test-results/
 
 public/assets/
+**/**/*.patch

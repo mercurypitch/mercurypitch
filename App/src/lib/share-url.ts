@@ -136,6 +136,7 @@ export function generateShareURL(
   scaleType?: string,
   totalBeats?: number,
 ): string {
+  if (typeof window === 'undefined') return ''
   const query = encodeMelodyToURL(melody, bpm, key, scaleType, totalBeats)
   const base = window.location.origin + window.location.pathname
   return `${base}?${query}`
@@ -151,6 +152,7 @@ export function loadFromURL(): {
   scaleType?: string
   totalBeats?: number
 } | null {
+  if (typeof window === 'undefined') return null
   const params = new URLSearchParams(window.location.search)
   return decodeMelodyFromURL(params)
 }
@@ -165,6 +167,7 @@ export function updateURL(
   scaleType?: string,
   totalBeats?: number,
 ): void {
+  if (typeof window === 'undefined') return
   const query = encodeMelodyToURL(melody, bpm, key, scaleType, totalBeats)
   const newURL = `${window.location.pathname}?${query}`
   window.history.replaceState({}, '', newURL)
@@ -211,6 +214,7 @@ export async function copyShareURL(
  * Check if current URL contains shareable preset data.
  */
 export function hasSharedPresetInURL(): boolean {
+  if (typeof window === 'undefined') return false
   const params = new URLSearchParams(window.location.search)
   return params.has('n')
 }

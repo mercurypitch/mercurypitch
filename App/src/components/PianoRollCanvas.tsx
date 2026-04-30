@@ -5,9 +5,10 @@
 import type { Component } from 'solid-js'
 import { createEffect, onCleanup, onMount } from 'solid-js'
 import { AudioEngine } from '@/lib/audio-engine'
+import { audioRegistry } from '@/lib/audio-registry'
 import type { PlaybackState } from '@/lib/piano-roll'
 import { PianoRollEditor } from '@/lib/piano-roll'
-import type { MelodyItem, PitchPerfectWindow, ScaleDegree } from '@/types'
+import type { MelodyItem, ScaleDegree } from '@/types'
 
 interface PianoRollCanvasProps {
   melody: () => MelodyItem[]
@@ -16,12 +17,18 @@ interface PianoRollCanvasProps {
   totalBeats: () => number
   playbackState: () => PlaybackState
   currentNoteIndex: () => number
+  currentBeat: () => number
   onMelodyChange: (melody: MelodyItem[]) => void
   onInstrumentChange?: (instrument: string) => void
   /** Called when the editor's internal playback state changes */
   onPlaybackStateChange?: (state: PlaybackState) => void
   isRecording?: () => boolean
   getWaveform?: () => Float32Array | null
+  isPlaying?: () => boolean
+  isPaused?: () => boolean
+  isScrolling?: () => boolean
+  targetPitch?: () => number | null
+  noteAccuracyMap?: () => Map<number, number>
 }
 
 export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
@@ -35,10 +42,18 @@ export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
 
     // Create and expose audio engine for piano roll playback
     audioEngine = new AudioEngine()
-    ;(window as PitchPerfectWindow).pianoRollAudioEngine = audioEngine
+    // Register with typed audio registry so resetPlaybackState can stop it
+    // without reading from window. (Phase 13 of refactor v3.)
+    audioRegistry.register(audioEngine)
+    // NOTE: window assignment kept for piano-roll.ts internals that still
+    // read it. Removing those reads is part of a follow-up plan.
+    ;(
+      window as unknown as { pianoRollAudioEngine: typeof audioEngine }
+    ).pianoRollAudioEngine = audioEngine
 
     editor = new PianoRollEditor({
       container: containerRef,
+      onMelodyChange: props.onMelodyChange,
       onInstrumentChange: props.onInstrumentChange,
       onPlaybackStateChange: props.onPlaybackStateChange,
     })
@@ -49,8 +64,11 @@ export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
     editor.setTotalBeats(props.totalBeats())
 
     // Expose on window for debugging
-    ;(window as PitchPerfectWindow).pianoRollEditor = editor
-    ;(window as PitchPerfectWindow).pianoRollGenerateId = () => Date.now()
+    ;(window as unknown as { pianoRollEditor: typeof editor }).pianoRollEditor =
+      editor
+    ;(
+      window as unknown as { pianoRollGenerateId: () => number }
+    ).pianoRollGenerateId = () => Date.now()
   })
 
   // Propagate melody changes to the editor
@@ -75,14 +93,49 @@ export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
     editor?.setTotalBeats(props.totalBeats())
   })
 
-  // Propagate playback state changes
+  // Propagate playback state. The piano-roll editor draws its OWN
+  // playhead and active-note highlight on its internal canvases via
+  // drawWithPlayhead / drawGridWithPlayhead.
+  //
+  // CRITICAL: piano-roll's drawGridWithPlayhead/drawRulerWithPlayhead
+  // call `getCurrentBeat()`, which has two branches:
+  //   - if isExternalPlayback: return this.remoteBeat
+  //   - else:                  return (now - playStartTime) / beatDur
+  //
+  // We drive the editor from the App-level playbackController via
+  // updatePlaybackPosition(beat) which sets remoteBeat. So we MUST mark
+  // playback as external — otherwise getCurrentBeat falls back to the
+  // local-timer branch (with playStartTime never set) and draws the
+  // playhead at a nonsense position (off the right edge), which looks
+  // exactly like "playhead and triangle not visible during playback".
+  //
+  // If you ever need to re-investigate the editor playhead disappearing,
+  // check in this order:
+  //   1. piano-roll.ts: PianoRollEditor.getCurrentBeat() branch
+  //   2. piano-roll.ts: drawGridWithPlayhead / drawRulerWithPlayhead
+  //   3. updatePlaybackPosition() being called every beat
+  //   4. setExternalPlayback(true) being set during playing/paused
   createEffect(() => {
-    editor?.setPlaybackState(props.playbackState())
+    const state = props.playbackState()
+    editor?.setExternalPlayback(state === 'playing' || state === 'paused')
+    editor?.setPlaybackState(state)
   })
 
   // Propagate current note index
   createEffect(() => {
     editor?.setCurrentNote(props.currentNoteIndex())
+  })
+
+  // Propagate current beat for playhead drawing + active-note highlight.
+  // This is THE driver of the editor's playhead — when currentBeat
+  // updates from playbackController.on('beat'), updatePlaybackPosition
+  // calls handleBeatUpdate -> drawWithPlayhead which redraws the canvas
+  // with the new playhead position and the active note in green.
+  createEffect(() => {
+    const beat = props.currentBeat()
+    if (beat >= 0) {
+      editor?.updatePlaybackPosition(beat)
+    }
   })
 
   // Propagate waveform props for recording visualization
@@ -95,10 +148,15 @@ export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
 
   onCleanup(() => {
     editor?.destroy()
-    delete (window as PitchPerfectWindow).pianoRollEditor
-    delete (window as PitchPerfectWindow).pianoRollGenerateId
-    audioEngine?.destroy()
-    delete (window as PitchPerfectWindow).pianoRollAudioEngine
+    delete (window as unknown as { pianoRollEditor?: unknown }).pianoRollEditor
+    delete (window as unknown as { pianoRollGenerateId?: () => number })
+      .pianoRollGenerateId
+    if (audioEngine) {
+      audioRegistry.unregister(audioEngine)
+      audioEngine.destroy()
+    }
+    delete (window as unknown as { pianoRollAudioEngine?: unknown })
+      .pianoRollAudioEngine
   })
 
   return (

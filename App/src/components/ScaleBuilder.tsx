@@ -5,7 +5,7 @@
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, Show } from 'solid-js'
 import { NOTE_NAMES } from '@/lib/scale-data'
-import { appStore } from '@/stores/app-store'
+import { keyName, setScaleType, showNotification } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import type { NoteName } from '@/types'
 
@@ -86,7 +86,7 @@ export const ScaleBuilder: Component<ScaleBuilderProps> = (props) => {
       /* empty */
     }
 
-    appStore.showNotification(`Scale "${name}" saved`, 'success')
+    showNotification(`Scale "${name}" saved`, 'success')
   }
 
   // Load a saved scale
@@ -116,10 +116,7 @@ export const ScaleBuilder: Component<ScaleBuilderProps> = (props) => {
   // Apply the custom scale to the app
   const applyScale = () => {
     if (customNotes().size < 2) {
-      appStore.showNotification(
-        'Select at least 2 notes for a scale',
-        'warning',
-      )
+      showNotification('Select at least 2 notes for a scale', 'warning')
       return
     }
 
@@ -134,20 +131,17 @@ export const ScaleBuilder: Component<ScaleBuilderProps> = (props) => {
     }
 
     // Update scale type (will use custom logic)
-    appStore.setScaleType(customName)
+    setScaleType(customName)
 
     // Refresh the scale
     melodyStore.refreshScale(
-      appStore.keyName(),
-      melodyStore.currentOctave(),
+      keyName(),
+      melodyStore.getCurrentOctave(),
       customName,
     )
 
     props.onClose()
-    appStore.showNotification(
-      `Custom scale "${scaleName()}" applied`,
-      'success',
-    )
+    showNotification(`Custom scale "${scaleName()}" applied`, 'success')
   }
 
   // Preview the scale as a list of notes

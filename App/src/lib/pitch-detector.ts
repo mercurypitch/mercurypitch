@@ -2,8 +2,16 @@
 // Pitch Detector — YIN algorithm implementation
 // ============================================================
 
-import type { PitchResult } from '@/types'
 import { freqToNote } from './scale-data'
+
+/** Internal pitch detection result (partial PitchResult) */
+export interface DetectedPitch {
+  frequency: number
+  clarity: number
+  noteName: string
+  octave: number
+  cents: number
+}
 
 export interface PitchDetectorOptions {
   /** Audio sample rate (default: 44100) */
@@ -16,7 +24,7 @@ export interface PitchDetectorOptions {
   minFrequency?: number
   /** Maximum frequency to detect (default: 2100 Hz) */
   maxFrequency?: number
-  /** Sensitivity 1-10 (default: 5) */
+  /** Sensitivity 1-12 (default: 7) */
   sensitivity?: number
   /** Minimum confidence to accept pitch (0-1, default: 0.50) */
   minConfidence?: number
@@ -27,7 +35,7 @@ export interface PitchDetectorOptions {
 const DEFAULT_OPTIONS: Required<PitchDetectorOptions> = {
   sampleRate: 44100,
   bufferSize: 2048,
-  threshold: 0.1,
+  threshold: 0.15,
   minFrequency: 65,
   maxFrequency: 2100,
   sensitivity: 7,
@@ -62,7 +70,7 @@ export class PitchDetector {
   }
 
   /** Detect pitch from a time-domain buffer (e.g., AnalyserNode.getFloatTimeDomainData) */
-  detect(timeDomainBuffer: Float32Array): PitchResult {
+  detect(timeDomainBuffer: Float32Array): DetectedPitch {
     // First check amplitude threshold
     let rms = 0
     for (let i = 0; i < timeDomainBuffer.length; i++) {
@@ -201,10 +209,10 @@ export class PitchDetector {
     return frequency
   }
 
-  /** Adjust threshold based on sensitivity (1-10) */
+  /** Adjust threshold based on sensitivity (1-12) */
   private adjustedThreshold(): number {
-    // sensitivity 1 → threshold 0.25 (strict), sensitivity 10 → threshold 0.05 (lenient)
-    return 0.3 - this.sensitivity * 0.025
+    // sensitivity 1 → threshold 0.30 (very strict), sensitivity 12 → threshold 0.01 (very relaxed)
+    return 0.3 - (this.sensitivity - 1) * 0.025
   }
 
   /** Get the current sample rate */

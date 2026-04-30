@@ -5,6 +5,7 @@
     "moduleResolution": "bundler",
     "strict": true,
     "noEmit": true,
+    "resolveJsonModule": true,
     "skipLibCheck": true,
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "jsx": "preserve",
@@ -13,7 +14,9 @@
     "paths": {
       "@/*": ["./src/*"]
     },
-    "baseUrl": "."
+    "baseUrl": ".",
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.d.ts", "vitest.config.ts"],
   "exclude": ["node_modules", "dist"]

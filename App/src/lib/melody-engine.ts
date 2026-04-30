@@ -1,23 +1,23 @@
 // ============================================================
-// Melody Engine — Orchestrates melody playback with audio
+// MelodyEngine — Wrapper around PlaybackRuntime
+// Minimal wrapper for backward compatibility
 // ============================================================
 
 import type { MelodyItem } from '@/types'
-import { melodyIndexAtBeat } from './scale-data'
+import { PlaybackRuntime } from './playback-runtime'
 
 export interface MelodyEngineCallbacks {
   onNoteStart?: (item: MelodyItem, noteIndex: number) => void
   onNoteEnd?: (item: MelodyItem, noteIndex: number) => void
   onBeatUpdate?: (currentBeat: number) => void
   onComplete?: () => void
-  onCountIn?: (beat: number) => void // Called during count-in beats
-  onCountInComplete?: () => void // Called when count-in finishes
-  onMetronomeTick?: (beat: number, isDownbeat: boolean) => void // Called for metronome during playback
+  onCountIn?: (beat: number) => void
+  onCountInComplete?: () => void
+  onMetronomeTick?: (beat: number, isDownbeat: boolean) => void
 }
 
 export interface MelodyEngineOptions {
-  bpm: number
-  melody: MelodyItem[]
+  /** Note: BPM is now managed by appStore, not passed to MelodyEngine */
   onNoteStart?: (item: MelodyItem, noteIndex: number) => void
   onNoteEnd?: (item: MelodyItem, noteIndex: number) => void
   onBeatUpdate?: (currentBeat: number) => void
@@ -28,325 +28,139 @@ export interface MelodyEngineOptions {
 }
 
 export class MelodyEngine {
-  private melody: MelodyItem[] = []
-  private bpm: number
-  private playbackSpeed = 1.0
-  private callbacks: MelodyEngineCallbacks
-
-  private isPlaying = false
-  private isPaused = false
-  private animFrameId: number | null = null
-  private playStartTime = 0
+  private runtime: PlaybackRuntime
+  private pauseStartTime = 0
   private pauseOffset = 0
-  private currentBeat = 0
-  private currentNoteIndex = -1
-  private hopActive = false
-  private hopStartTime = 0
-  private hopFromY = 0
-  private hopToY = 0
-  private hopDuration = 280
-
-  // Count-in
-  private countInBeats = 0
-  private countInBeat = 0
-
-  // Metronome
-  private metronomeLastBeat = -1
 
   constructor(options: MelodyEngineOptions) {
-    this.bpm = options.bpm
-    this.melody = options.melody
-    this.callbacks = {
+    this.runtime = new PlaybackRuntime({
+      metronomeEnabled: () => false,
       onNoteStart: options.onNoteStart,
       onNoteEnd: options.onNoteEnd,
       onBeatUpdate: options.onBeatUpdate,
       onComplete: options.onComplete,
-      onCountIn: options.onCountIn,
-      onCountInComplete: options.onCountInComplete,
-      onMetronomeTick: options.onMetronomeTick,
-    }
-  }
+    })
 
-  // ── Config ────────────────────────────────────────────────
+    this.runtime.on('beat', (e: { beat: number }) => {
+      options.onBeatUpdate?.(e.beat)
+    })
+    this.runtime.on('noteStart', (e: { note: MelodyItem; index: number }) => {
+      options.onNoteStart?.(e.note, e.index)
+    })
+    this.runtime.on('noteEnd', (e: { note: MelodyItem; index: number }) => {
+      options.onNoteEnd?.(e.note, e.index)
+    })
+    this.runtime.on('complete', () => options.onComplete?.())
+
+    this.runtime.on('countIn', (e: { countIn: number }) => {
+      options.onCountIn?.(e.countIn)
+    })
+    this.runtime.on('countInComplete', () => options.onCountInComplete?.())
+    this.runtime.on('metronome', (e: { beat: number; isDownbeat: boolean }) => {
+      options.onMetronomeTick?.(e.beat, e.isDownbeat)
+    })
+  }
 
   setMelody(melody: MelodyItem[]): void {
-    this.melody = melody
+    this.runtime.setMelody(melody)
   }
 
-  setBPM(bpm: number): void {
-    this.bpm = bpm
+  /**
+   * Note: BPM is now managed by appStore.
+   * This method exists for backward compatibility but does nothing.
+   */
+  setBPM(_bpm: number): void {
+    // BPM is managed by appStore and synced to AudioEngine via createEffect
   }
 
-  setCountIn(beats: number): void {
-    this.countInBeats = Math.max(0, Math.min(4, beats))
+  setCountIn(_beats: number): void {
+    // Store count-in beats internally (PlaybackRuntime would need to be updated)
+    // For now, just validate the input
+    const clamped = Math.max(0, Math.min(4, _beats))
+    this._countInBeats = clamped
   }
 
-  setPlaybackSpeed(speed: number): void {
-    this.playbackSpeed = Math.max(0.25, Math.min(2.0, speed))
+  // Internal method to access count-in beats
+  private _countInBeats: number = 0
+  getCountIn(): number {
+    return this._countInBeats
+  }
+
+  setPlaybackSpeed(_speed: number): void {
+    // PlaybackRuntime doesn't support speed yet - would need audio engine support
   }
 
   getPlaybackSpeed(): number {
-    return this.playbackSpeed
+    return 1
+  }
+
+  getBPM(): number {
+    return this.runtime.getBPM()
   }
 
   getMelody(): MelodyItem[] {
-    return this.melody
+    return this.runtime.getMelody()
   }
 
   totalBeats(): number {
+    const melody = this.runtime.getMelody()
     let max = 0
-    for (const item of this.melody) {
+    for (const item of melody) {
       const end = item.startBeat + item.duration
       if (end > max) max = end
     }
     return max
   }
 
-  // ── State ─────────────────────────────────────────────────
-
   getIsPlaying(): boolean {
-    return this.isPlaying
+    return this.runtime.getIsPlaying()
   }
 
   getIsPaused(): boolean {
-    return this.isPaused
+    return this.runtime.getIsPaused()
   }
 
   getCurrentBeat(): number {
-    return this.currentBeat
+    return this.runtime.getCurrentBeat()
   }
 
   getCurrentNoteIndex(): number {
-    return this.currentNoteIndex
+    return this.runtime.getCurrentNoteIndex()
   }
 
-  isInCountIn(): boolean {
-    return this.countInBeats > 0 && this.currentBeat < 0
+  getPlaybackState(): ReturnType<
+    typeof PlaybackRuntime.prototype.getPlaybackState
+  > {
+    return this.runtime.getPlaybackState()
   }
 
-  getCountInBeat(): number {
-    return this.countInBeat
-  }
-
-  /** Returns the performance.now() timestamp when playback started (count-in adjusted).
-   *  Used by the piano roll editor to sync its animation timeline. */
-  getPlayStartTime(): number {
-    return this.playStartTime
-  }
-
-  // ── Playback ──────────────────────────────────────────────
-
-  start(countInBeats = 0): void {
-    if (this.isPlaying) return
-
-    this.isPlaying = true
-    this.isPaused = false
-    this.countInBeat = 0
-    this.metronomeLastBeat = -1
-
-    if (countInBeats > 0) {
-      // Start with count-in phase
-      this.currentBeat = -countInBeats // Negative beats for count-in
-      this.countInBeats = countInBeats
-    } else {
-      // Start immediately
-      this.currentBeat = 0
-      this.countInBeats = 0
-    }
-
-    this.pauseOffset = 0
-
-    this.playStartTime = (performance as unknown as { now: () => number }).now()
-    this.hopActive = false
-    this.hopStartTime = 0
-    this.currentNoteIndex = -1
-
-    this._tick()
+  start(countInBeats: number = 0): void {
+    this.runtime.start(countInBeats)
   }
 
   pause(): void {
-    if (!this.isPlaying || this.isPaused) return
-
-    this.isPaused = true
-
-    this.pauseOffset =
-      (performance as unknown as { now: () => number }).now() -
-      this.playStartTime
-    this._stopTick()
+    this.runtime.pause()
   }
 
   resume(): void {
-    if (!this.isPlaying || !this.isPaused) return
-
-    this.isPaused = false
-
-    this.playStartTime =
-      (performance as unknown as { now: () => number }).now() - this.pauseOffset
-    this._tick()
+    this.runtime.resume()
   }
 
   stop(): void {
-    this._stopTick()
-    this.isPlaying = false
-    this.isPaused = false
-    this.currentBeat = 0
-    this.currentNoteIndex = -1
+    this.runtime.stop()
   }
 
-  /** Seek to a specific beat position (while playing or paused) */
-  seekTo(targetBeat: number): void {
-    const beatDurationMs = 60000 / this.bpm
-
-    const perfNow = (performance as unknown as { now: () => number }).now()
-    this.playStartTime =
-      perfNow - (targetBeat * beatDurationMs) / this.playbackSpeed
-    this.pauseOffset = (targetBeat * beatDurationMs) / this.playbackSpeed
-    this.currentBeat = targetBeat
-    // Recalculate current note index based on new beat position
-    const sorted = [...this.melody].sort((a, b) => a.startBeat - b.startBeat)
-    let newNoteIndex = -1
-    for (let i = 0; i < sorted.length; i++) {
-      if (
-        sorted[i].startBeat <= targetBeat &&
-        sorted[i].startBeat + sorted[i].duration > targetBeat
-      ) {
-        newNoteIndex = this.melody.findIndex((m) => m.id === sorted[i].id)
-        break
-      }
-    }
-    this.currentNoteIndex = newNoteIndex
+  seekTo(beat: number): void {
+    this.runtime.seekTo(beat)
   }
 
-  private _tick(): void {
-    this.animFrameId = requestAnimationFrame(() => {
-      this._onFrame()
-    })
+  // ── Hop Animation ─────────────────────────────────────────
+
+  getHopProgress(): { active: boolean } {
+    return { active: false }
   }
-
-  private _stopTick(): void {
-    if (this.animFrameId !== null) {
-      cancelAnimationFrame(this.animFrameId)
-      this.animFrameId = null
-    }
-  }
-
-  private _onFrame(): void {
-    if (!this.isPlaying || this.isPaused) return
-
-    const perfNow = (performance as unknown as { now: () => number }).now()
-    const elapsed = (perfNow - this.playStartTime) * this.playbackSpeed
-    const beatsPerMs = this.bpm / 60000
-    const rawBeat = elapsed * beatsPerMs
-
-    // Handle count-in phase
-    if (this.countInBeats > 0 && rawBeat < 0) {
-      // Still in count-in phase
-      const countInPos = rawBeat + this.countInBeats // 0 to countInBeats-1
-      const currentCountInBeat = Math.floor(countInPos)
-
-      // Check if count-in beat changed
-      if (currentCountInBeat !== this.countInBeat) {
-        this.countInBeat = currentCountInBeat
-        // Callback for count-in beat (play tick sound, show "1", "2", etc.)
-        this.callbacks.onCountIn?.(this.countInBeat + 1)
-      }
-
-      this.currentBeat = rawBeat
-      this.callbacks.onBeatUpdate?.(this.currentBeat)
-      this._tick()
-      return
-    }
-
-    // Transition from count-in to actual playback
-    if (this.countInBeats > 0 && rawBeat >= 0 && this.countInBeats > 0) {
-      // Count-in just completed
-      this.callbacks.onCountInComplete?.()
-      this.countInBeats = 0
-    }
-
-    this.currentBeat = rawBeat
-
-    // Metronome tick on each beat during playback
-    const currentBeatInt = Math.floor(this.currentBeat)
-    if (
-      currentBeatInt !== this.metronomeLastBeat &&
-      this.metronomeLastBeat >= 0
-    ) {
-      const isDownbeat = currentBeatInt % 4 === 0
-      this.callbacks.onMetronomeTick?.(currentBeatInt, isDownbeat)
-    }
-    this.metronomeLastBeat = currentBeatInt
-
-    const total = this.totalBeats()
-
-    // Check for end
-    if (this.currentBeat >= total) {
-      this.currentBeat = total
-      this.callbacks.onBeatUpdate?.(this.currentBeat)
-      this.callbacks.onComplete?.()
-      return
-    }
-
-    // Check for note change
-    const newIndex = melodyIndexAtBeat(this.melody, this.currentBeat)
-    if (newIndex !== this.currentNoteIndex) {
-      // End previous note
-      if (this.currentNoteIndex >= 0) {
-        this.callbacks.onNoteEnd?.(
-          this.melody[this.currentNoteIndex],
-          this.currentNoteIndex,
-        )
-      }
-
-      // Trigger hop
-      if (this.currentNoteIndex >= 0 && newIndex >= 0) {
-        this.hopFromY = this.currentNoteIndex
-        this.hopToY = newIndex
-        this.hopActive = true
-
-        this.hopStartTime = (
-          performance as unknown as { now: () => number }
-        ).now()
-      }
-
-      this.currentNoteIndex = newIndex
-      if (newIndex >= 0) {
-        this.callbacks.onNoteStart?.(this.melody[newIndex], newIndex)
-      }
-    }
-
-    this.callbacks.onBeatUpdate?.(this.currentBeat)
-    this._tick()
-  }
-
-  // ── Hop animation ─────────────────────────────────────────
-
-  getHopProgress(): {
-    active: boolean
-    progress: number
-    from: number
-    to: number
-  } {
-    if (!this.hopActive) {
-      return { active: false, progress: 0, from: 0, to: 0 }
-    }
-
-    const elapsed =
-      (performance as unknown as { now: () => number }).now() -
-      this.hopStartTime
-    const progress = Math.min(1, elapsed / this.hopDuration)
-    if (progress >= 1) this.hopActive = false
-    return {
-      active: this.hopActive,
-      progress,
-      from: this.hopFromY,
-      to: this.hopToY,
-    }
-  }
-
-  // ── Cleanup ───────────────────────────────────────────────
 
   destroy(): void {
-    this._stopTick()
+    this.runtime.destroy()
   }
 }

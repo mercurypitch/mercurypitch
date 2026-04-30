@@ -3,11 +3,15 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createMemo } from 'solid-js'
-import { appStore } from '@/stores/app-store'
+import { createMemo, createSignal, Show } from 'solid-js'
+import { appStore } from '@/stores'
+import { adsr, playbackSpeed, setPlaybackSpeed, setSensitivity, settings, } from '@/stores'
+import { characterSounds, colorCodeNotes, flameMode, selectedCharacter, setCharacterSounds, setColorCodeNotes, setFlameMode, setShowSidebarNoteList, showSidebarNoteList, } from '@/stores/settings-store'
+import { APP_VERSION } from '@/version'
 
 export const SettingsPanel: Component = () => {
-  const s = () => appStore.settings()
+  const s = () => settings()
+  const [showResetConfirm, setShowResetConfirm] = createSignal(false)
 
   const bandValues = createMemo(() => {
     const bands = s().bands
@@ -40,6 +44,17 @@ export const SettingsPanel: Component = () => {
     }
   }
 
+  const handleResetStorage = () => {
+    // Clear all pitchperfect_ keys
+    Object.keys(localStorage).forEach((key) => {
+      if (key.startsWith('pitchperfect_')) {
+        localStorage.removeItem(key)
+      }
+    })
+    // Reload the page to apply defaults
+    window.location.reload()
+  }
+
   return (
     <div class="settings-panel">
       <div class="settings-content">
@@ -48,6 +63,7 @@ export const SettingsPanel: Component = () => {
         {/* Sensitivity Presets Section */}
         <div class="settings-section">
           <h3 class="settings-section-title">Sensitivity Presets</h3>
+          <div class="settings-divider" />
           <p class="settings-desc">Quick presets for different environments.</p>
 
           <div class="settings-row">
@@ -71,6 +87,7 @@ export const SettingsPanel: Component = () => {
         {/* Pitch Detection Section */}
         <div class="settings-section">
           <h3 class="settings-section-title">Pitch Detection</h3>
+          <div class="settings-divider" />
 
           <div class="settings-row">
             <label for="set-threshold">Detection Threshold</label>
@@ -103,7 +120,7 @@ export const SettingsPanel: Component = () => {
               step="1"
               value={s().sensitivity}
               onInput={(e) => {
-                appStore.setSensitivity(parseInt(e.currentTarget.value))
+                setSensitivity(parseInt(e.currentTarget.value))
               }}
             />
             <span class="settings-val">{s().sensitivity}</span>
@@ -150,20 +167,43 @@ export const SettingsPanel: Component = () => {
         {/* Practice Aids Section */}
         <div class="settings-section">
           <h3 class="settings-section-title">Practice Aids</h3>
+          <div class="settings-divider" />
 
           <div class="settings-row">
             <label for="set-tonic-anchor">Tonic Anchor Tone</label>
-            <input
-              type="checkbox"
-              id="set-tonic-anchor"
-              checked={s().tonicAnchor}
-              onChange={(e) => {
-                appStore.setTonicAnchor(e.currentTarget.checked)
-              }}
-            />
+            <label class="settings-toggle">
+              <input
+                type="checkbox"
+                id="set-tonic-anchor"
+                checked={s().tonicAnchor}
+                onChange={(e) => {
+                  appStore.setTonicAnchor(e.currentTarget.checked)
+                }}
+              />
+              <span class="settings-slider" />
+            </label>
             <small>
               Play a reference tone at the start of each run to help lock in to
               the key
+            </small>
+          </div>
+
+          <div class="settings-row">
+            <label for="vis-sidebar-notes">Sidebar Note List</label>
+            <label class="settings-toggle">
+              <input
+                type="checkbox"
+                id="vis-sidebar-notes"
+                checked={showSidebarNoteList()}
+                onChange={(e) => {
+                  setShowSidebarNoteList(e.currentTarget.checked)
+                }}
+              />
+              <span class="settings-slider" />
+            </label>
+            <small>
+              Show the detailed note list in the Practice sidebar. Hidden by
+              default for a cleaner playback layout.
             </small>
           </div>
         </div>
@@ -171,6 +211,7 @@ export const SettingsPanel: Component = () => {
         {/* Accuracy Bands Section */}
         <div class="settings-section">
           <h3 class="settings-section-title">Accuracy Bands</h3>
+          <div class="settings-divider" />
           <p class="settings-desc">
             Define how many cents off is "Perfect", "Good", etc.
           </p>
@@ -178,6 +219,7 @@ export const SettingsPanel: Component = () => {
           <div class="settings-row">
             <label for="band-perfect">Perfect (&le; cents)</label>
             <input
+              class={'input-number-dark'}
               type="number"
               id="band-perfect"
               min="1"
@@ -235,6 +277,7 @@ export const SettingsPanel: Component = () => {
         {/* Current Values Section */}
         <div class="settings-section">
           <h3 class="settings-section-title">Current Values</h3>
+          <div class="settings-divider" />
           <div class="settings-info">
             <div>
               Threshold: <span>{s().detectionThreshold.toFixed(2)}</span>
@@ -255,6 +298,7 @@ export const SettingsPanel: Component = () => {
         {/* ADSR Envelope Section */}
         <div class="settings-section">
           <h3 class="settings-section-title">Tone Envelope (ADSR)</h3>
+          <div class="settings-divider" />
           <p class="settings-desc">
             Adjust the Attack, Decay, Sustain, Release envelope for note
             playback.
@@ -268,12 +312,12 @@ export const SettingsPanel: Component = () => {
               min="0"
               max="1000"
               step="10"
-              value={appStore.adsr().attack}
+              value={adsr().attack}
               onInput={(e) => {
                 appStore.setAttack(parseInt(e.currentTarget.value))
               }}
             />
-            <span class="settings-val">{appStore.adsr().attack}ms</span>
+            <span class="settings-val">{adsr().attack}ms</span>
             <small>Time to reach full volume</small>
           </div>
 
@@ -285,12 +329,12 @@ export const SettingsPanel: Component = () => {
               min="0"
               max="1000"
               step="10"
-              value={appStore.adsr().decay}
+              value={adsr().decay}
               onInput={(e) => {
                 appStore.setDecay(parseInt(e.currentTarget.value))
               }}
             />
-            <span class="settings-val">{appStore.adsr().decay}ms</span>
+            <span class="settings-val">{adsr().decay}ms</span>
             <small>Time to fall to sustain level</small>
           </div>
 
@@ -302,12 +346,12 @@ export const SettingsPanel: Component = () => {
               min="0"
               max="100"
               step="5"
-              value={appStore.adsr().sustain}
+              value={adsr().sustain}
               onInput={(e) => {
                 appStore.setSustain(parseInt(e.currentTarget.value))
               }}
             />
-            <span class="settings-val">{appStore.adsr().sustain}%</span>
+            <span class="settings-val">{adsr().sustain}%</span>
             <small>Volume during note held</small>
           </div>
 
@@ -319,12 +363,12 @@ export const SettingsPanel: Component = () => {
               min="0"
               max="2000"
               step="50"
-              value={appStore.adsr().release}
+              value={adsr().release}
               onInput={(e) => {
                 appStore.setRelease(parseInt(e.currentTarget.value))
               }}
             />
-            <span class="settings-val">{appStore.adsr().release}ms</span>
+            <span class="settings-val">{adsr().release}ms</span>
             <small>Time to fade after note ends</small>
           </div>
         </div>
@@ -332,18 +376,22 @@ export const SettingsPanel: Component = () => {
         {/* Visibility Toggles */}
         <div class="settings-section">
           <h3 class="settings-section-title">Visibility</h3>
+          <div class="settings-divider" />
           <p class="settings-desc">Show or hide interface elements.</p>
 
           <div class="settings-row">
             <label for="vis-gridlines">Grid Lines</label>
-            <input
-              type="checkbox"
-              id="vis-gridlines"
-              checked={appStore.gridLinesVisible()}
-              onChange={(e) => {
-                appStore.setGridLines(e.currentTarget.checked)
-              }}
-            />
+            <label class="settings-toggle">
+              <input
+                type="checkbox"
+                id="vis-gridlines"
+                checked={appStore.gridLinesVisible()}
+                onChange={(e) => {
+                  appStore.setGridLines(e.currentTarget.checked)
+                }}
+              />
+              <span class="settings-slider" />
+            </label>
             <small>Show horizontal and vertical grid lines</small>
           </div>
 
@@ -363,9 +411,84 @@ export const SettingsPanel: Component = () => {
           </div>
         </div>
 
+        {/* Visualization Section */}
+        <div class="settings-section">
+          <h3 class="settings-section-title">Visualization</h3>
+          <div class="settings-divider" />
+          <p class="settings-desc">
+            Enhance the practice experience with visual feedback effects.
+          </p>
+
+          <div class="settings-row">
+            <label for="vis-flame">Burning Notes</label>
+            <label class="settings-toggle">
+              <input
+                type="checkbox"
+                id="vis-flame"
+                checked={flameMode()}
+                onChange={(e) => {
+                  setFlameMode(e.currentTarget.checked)
+                }}
+              />
+              <span class="settings-slider" />
+            </label>
+            <small>
+              Animate the currently-playing note with a burning fire effect
+              synced to playback.
+            </small>
+          </div>
+
+          <div class="settings-row">
+            <label for="vis-color-code">Accuracy Color Coding</label>
+            <label class="settings-toggle">
+              <input
+                type="checkbox"
+                id="vis-color-code"
+                checked={colorCodeNotes()}
+                onChange={(e) => {
+                  setColorCodeNotes(e.currentTarget.checked)
+                }}
+              />
+              <span class="settings-slider" />
+            </label>
+            <small>
+              Color-code played notes based on pitch accuracy (Green: Perfect,
+              Teal: Excellent, etc).
+            </small>
+          </div>
+
+          {/*
+            Character Sounds — when on, the playback instrument follows
+            the guide character picked in the sidebar so each persona
+            sounds different. When off, the user's manual instrument
+            choice (set elsewhere via appStoreCore.instrument) wins.
+            See EngineContext for the mapping.
+          */}
+          <div class="settings-row">
+            <label for="char-sounds">Character Sounds</label>
+            <label class="settings-toggle">
+              <input
+                type="checkbox"
+                id="char-sounds"
+                checked={characterSounds()}
+                onChange={(e) => {
+                  setCharacterSounds(e.currentTarget.checked)
+                }}
+              />
+              <span class="settings-slider" />
+            </label>
+            <small>
+              Play a different timbre per guide character (currently:{' '}
+              <strong>{selectedCharacter()}</strong>). Disable to use the
+              instrument selected manually.
+            </small>
+          </div>
+        </div>
+
         {/* Playback Speed Section */}
         <div class="settings-section">
           <h3 class="settings-section-title">Playback Speed</h3>
+          <div class="settings-divider" />
           <p class="settings-desc">
             Adjust the playback speed of the practice melody.
           </p>
@@ -378,14 +501,12 @@ export const SettingsPanel: Component = () => {
               min="25"
               max="200"
               step="25"
-              value={Math.round(appStore.playbackSpeed() * 100)}
+              value={Math.round(playbackSpeed() * 100)}
               onInput={(e) => {
-                appStore.setPlaybackSpeed(parseInt(e.currentTarget.value) / 100)
+                setPlaybackSpeed(parseInt(e.currentTarget.value) / 100)
               }}
             />
-            <span class="settings-val">
-              {appStore.playbackSpeed().toFixed(2)}x
-            </span>
+            <span class="settings-val">{playbackSpeed().toFixed(2)}x</span>
             <small>0.25x = slowest, 2.0x = fastest</small>
           </div>
         </div>
@@ -393,6 +514,7 @@ export const SettingsPanel: Component = () => {
         {/* Reverb Section */}
         <div class="settings-section">
           <h3 class="settings-section-title">Reverb</h3>
+          <div class="settings-divider" />
           <p class="settings-desc">
             Add reverb (echo) to the practice playback for a richer sound.
           </p>
@@ -440,6 +562,7 @@ export const SettingsPanel: Component = () => {
         {/* Keyboard Shortcuts Section */}
         <div class="settings-section">
           <h3 class="settings-section-title">Keyboard Shortcuts</h3>
+          <div class="settings-divider" />
           <p class="settings-desc">
             Global shortcuts active when not typing in a text field.
           </p>
@@ -483,6 +606,58 @@ export const SettingsPanel: Component = () => {
           </div>
         </div>
 
+        {/* Danger Zone Section */}
+        <div class="settings-section settings-danger-zone">
+          <h3 class="settings-section-title">Danger Zone</h3>
+          <div class="settings-divider danger-divider" />
+          <p class="settings-desc">
+            Irreversible actions that affect all your data.
+          </p>
+
+          <div class="settings-row danger-row">
+            <div class="danger-content">
+              <label class="danger-label">Reset to Factory Defaults</label>
+              <small class="danger-desc">
+                Clear all stored data and reload the app with initial defaults.
+              </small>
+            </div>
+            <button
+              class="danger-btn"
+              onClick={() => setShowResetConfirm(true)}
+            >
+              Reset
+            </button>
+          </div>
+
+          {/* Reset Confirmation Modal */}
+          <Show when={showResetConfirm()}>
+            <div class="danger-confirm-overlay">
+              <div class="danger-confirm-box">
+                <h4 class="danger-confirm-title">Confirm Reset</h4>
+                <p class="danger-confirm-text">
+                  Are you sure you want to reset all data? This will clear all
+                  stored melodies, presets, sessions, and settings. This action
+                  cannot be undone.
+                </p>
+                <div class="danger-confirm-actions">
+                  <button
+                    class="danger-btn-secondary"
+                    onClick={() => setShowResetConfirm(false)}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    class="danger-btn-primary"
+                    onClick={handleResetStorage}
+                  >
+                    Reset All Data
+                  </button>
+                </div>
+              </div>
+            </div>
+          </Show>
+        </div>
+
         {/* About Section */}
         <div class="settings-section">
           <h3 class="settings-section-title">About PitchPerfect</h3>
@@ -508,7 +683,7 @@ export const SettingsPanel: Component = () => {
               </svg>
             </div>
             <p class="about-name">PitchPerfect</p>
-            <p class="about-version">Version 1.0.0</p>
+            <p class="about-version">Version {APP_VERSION}</p>
             <p class="about-desc">
               A web-based vocal pitch practice tool. Sing into your microphone
               and see your accuracy on the pitch canvas. Use the piano roll
@@ -516,16 +691,63 @@ export const SettingsPanel: Component = () => {
               real-time feedback.
             </p>
             <div class="about-features">
-              <span>🎤 Real-time pitch detection</span>
-              <span>🎹 Piano roll editor</span>
-              <span>📊 Progress tracking</span>
-              <span>🎵 MIDI import/export</span>
-              <span>🔊 ADSR envelope</span>
-              <span>🏛️ Reverb effects</span>
+              <span class="feature-pill pill-detection">
+                <svg viewBox="0 0 24 24" width="14" height="14">
+                  <path
+                    fill="currentColor"
+                    d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zM17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"
+                  />
+                </svg>
+                Real-time pitch detection
+              </span>
+              <span class="feature-pill pill-editor">
+                <svg viewBox="0 0 24 24" width="14" height="14">
+                  <path
+                    fill="currentColor"
+                    d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"
+                  />
+                </svg>
+                Piano roll editor
+              </span>
+              <span class="feature-pill pill-progress">
+                <svg viewBox="0 0 24 24" width="14" height="14">
+                  <path
+                    fill="currentColor"
+                    d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"
+                  />
+                </svg>
+                Progress tracking
+              </span>
+              <span class="feature-pill pill-midi">
+                <svg viewBox="0 0 24 24" width="14" height="14">
+                  <path
+                    fill="currentColor"
+                    d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"
+                  />
+                </svg>
+                MIDI import/export
+              </span>
+              <span class="feature-pill pill-adsr">
+                <svg viewBox="0 0 24 24" width="14" height="14">
+                  <path
+                    fill="currentColor"
+                    d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a.996.996 0 0 0 0-1.41l-2.34-2.34a.996.996 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"
+                  />
+                </svg>
+                ADSR envelope
+              </span>
+              <span class="feature-pill pill-reverb">
+                <svg viewBox="0 0 24 24" width="14" height="14">
+                  <path
+                    fill="currentColor"
+                    d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"
+                  />
+                  <circle cx="12" cy="12" r="3" fill="currentColor" />
+                </svg>
+                Reverb effects
+              </span>
             </div>
-            <p class="about-credits">
-              Built with SolidJS + TypeScript. Audio powered by Web Audio API.
-            </p>
+            <p class="about-credits">Vocal Pitch Practice — Redefined.</p>
             <div class="about-links">
               <a
                 href="https://github.com/Komediruzecki/pitch-perfect"

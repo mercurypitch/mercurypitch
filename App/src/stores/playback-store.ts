@@ -6,6 +6,7 @@ import { createSignal } from 'solid-js'
 import type { TransportState } from '@/types'
 
 export type PlayButtonLabel = 'Start' | 'Pause' | 'Continue'
+export type PlaybackState = TransportState
 
 const [playbackState, setPlaybackState] =
   createSignal<TransportState>('stopped')
@@ -52,4 +53,14 @@ export const playback = {
   isPlaying: () => playbackState() === 'playing',
   isPaused: () => playbackState() === 'paused',
   isStopped: () => playbackState() === 'stopped',
+}
+
+// Playback speed (1.0 = normal, 0.5 = half speed, 2.0 = double speed)
+const [playbackSpeed, setPlaybackSpeed] = createSignal<number>(1.0)
+
+export { playbackSpeed, setPlaybackSpeed }
+
+/** Playback speed accessor function (for compatibility with EditorTabHeader) */
+export function getPlaybackSpeed(): number {
+  return playbackSpeed()
 }

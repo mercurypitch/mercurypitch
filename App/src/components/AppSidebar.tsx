@@ -1,27 +1,34 @@
 // ============================================================
 // AppSidebar — Shared sidebar component
-// Contains: Key/Scale controls, Grid toggle, PresetSelector, NoteList, PitchDisplay, Stats
+// Contains: Key/Scale controls, Grid toggle, NoteList, PitchDisplay, Stats
 // Visible in all tabs; NoteList, PitchDisplay, stats wrapped in Show for Practice only
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { For, Show } from 'solid-js'
+import { createSignal, For, Show } from 'solid-js'
+import { CharacterIcons } from '@/components/CharacterIcons'
+import { LibraryTab } from '@/components/LibraryTab'
 import { NoteList } from '@/components/NoteList'
 import { PitchDisplay } from '@/components/PitchDisplay'
-import { PresetSelector } from '@/components/PresetSelector'
+import { StatsBars } from '@/components/StatsBars'
 import { KEY_OFFSETS, midiToFreq, midiToNote } from '@/lib/scale-data'
-import type { PresetData } from '@/stores/app-store'
-import { activeTab as appActiveTab, appStore } from '@/stores/app-store'
+import { activeTab as appActiveTab, sessionResults, showNotification, } from '@/stores'
+import { keyName, scaleType, setKeyName, setScaleType } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
+import { showSidebarNoteList } from '@/stores/settings-store'
 import type { MelodyItem, NoteResult, PitchResult } from '@/types'
 
 interface AppSidebarProps {
   /** Called when a preset is loaded */
-  onPresetLoad?: (preset: PresetData) => void
+  onPresetLoad?: (name: string) => void
   /** For octave shift handler from parent */
   onOctaveShift?: (delta: number) => void
   /** Open scale builder modal */
   onOpenScaleBuilder?: () => void
+  /** Open Learn walkthroughs */
+  onOpenLearn?: () => void
+  /** Open Guide tours */
+  onOpenGuide?: () => void
   /** Note list props (Practice tab) */
   melody: () => MelodyItem[]
   currentNoteIndex: () => number
@@ -32,13 +39,33 @@ interface AppSidebarProps {
   targetNoteName: () => string | null
   /** Additional CSS class (e.g. 'open' for mobile toggle) */
   class?: string
-  /** Called when mobile close button is clicked */
+  /** Called when the mobile close button is clicked */
   onClose?: () => void
 }
 
 export const AppSidebar: Component<AppSidebarProps> = (props) => {
   // Local alias for reactive tracking
   const activeTab = () => appActiveTab()
+  const [viewOctave, setViewOctave] = createSignal(
+    melodyStore.getCurrentOctave(),
+  )
+
+  const handleViewOctaveShift = (delta: number): void => {
+    if (activeTab() === 'editor') {
+      // Editor is allowed to mutate the actual melody (transpose notes).
+      props.onOctaveShift?.(delta)
+      setViewOctave(melodyStore.getCurrentOctave())
+      return
+    }
+
+    // Practice/sidebar playback setup is view-only: change the displayed
+    // scale/octave reference without modifying the user's saved melody.
+    const nextOctave = Math.max(1, Math.min(6, viewOctave() + delta))
+    setViewOctave(nextOctave)
+    melodyStore.setOctave(nextOctave)
+    melodyStore.refreshScale(keyName(), nextOctave, scaleType())
+  }
+
   return (
     <aside
       class={`app-sidebar${props.class !== undefined && props.class !== '' ? ` ${props.class}` : ''}`}
@@ -57,39 +84,59 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
         </svg>
       </button>
 
-      {/* Tour button */}
-      <button
-        class="tour-btn"
-        onClick={() => {
-          appStore.startWalkthrough()
-        }}
-        title="Take a Tour"
-      >
-        <svg viewBox="0 0 24 24" width="16" height="16">
-          <path
-            fill="currentColor"
-            d="M21 5c-1.11-.35-2.33-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.43.3 4.5 1.5.15.15.35.05.5 0 .1-.1.1-.25 0-.35C21.25 20 21 19.75 21 19.5V5z"
-          />
-        </svg>
-        Take a Tour
-      </button>
+      {/* Learn + Guide buttons */}
+      <div class="walkthrough-control-group">
+        <button
+          class="walkthrough-control-btn"
+          onClick={() => props.onOpenLearn?.()}
+          title="View PitchPerfect walkthroughs"
+        >
+          <svg viewBox="0 0 24 24" width="18" height="18">
+            <path
+              fill="currentColor"
+              d="M21 5c-1.11-.35-2.33-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.43.3 4.5 1.5.15.15.35.05.5 0 .1-.1.1-.25 0-.35C21.25 20 21 19.75 21 19.5V5z"
+            />
+          </svg>
+          <span class="walkthrough-control-text">Learn</span>
+        </button>
+        <button
+          class="walkthrough-control-btn walkthrough-control-btn-guide"
+          onClick={() => props.onOpenGuide?.()}
+          title="Interactive guide tours"
+        >
+          <svg viewBox="0 0 24 24" width="18" height="18">
+            <path
+              fill="currentColor"
+              d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"
+            />
+          </svg>
+          <span class="walkthrough-control-text">Guide</span>
+        </button>
+      </div>
+
+      <CharacterIcons
+        onSelect={(name) => showNotification(`Selected ${name}!`, 'info')}
+      />
 
       {/* Scale section */}
       <div class="sidebar-section">
-        <h2 class="panel-title">Scale</h2>
+        <h2 class="panel-title">Playback Setup</h2>
 
         <div id="scale-info">
-          <span class="key-label">Key:</span>
           <select
+            class="dropdown-select-style"
             id="key-select"
-            value={appStore.keyName()}
+            value={keyName()}
             onChange={(e) => {
               const newKey = e.currentTarget.value
-              const currentKey = appStore.keyName()
+              const currentKey = keyName()
 
-              // Transpose existing melody notes if any
-              const melody = melodyStore.items
-              if (melody.length > 0) {
+              // In Editor tab, the key dropdown is an editing operation and
+              // may transpose the actual melody. In Practice/sidebar usage it
+              // must be view-only: update key/scale display, but never write
+              // transposed notes back into the user's melody.
+              const melody = melodyStore.getCurrentItems()
+              if (activeTab() === 'editor' && melody.length > 0) {
                 const currentOffset = KEY_OFFSETS[currentKey] ?? 0
                 const newOffset = KEY_OFFSETS[newKey] ?? 0
                 const delta = newOffset - currentOffset
@@ -113,11 +160,11 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
                 }
               }
 
-              appStore.setKeyName(newKey)
+              setKeyName(newKey)
               melodyStore.refreshScale(
                 newKey,
-                melodyStore.currentOctave(),
-                appStore.scaleType(),
+                melodyStore.getCurrentOctave(),
+                scaleType(),
               )
             }}
           >
@@ -131,12 +178,11 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
             <option value="Bb">Bb</option>
           </select>
 
-          <span class="octave-label">Oct:</span>
           <div class="octave-ctrl">
             <button
               class="octave-btn"
               title="Lower octave"
-              onClick={() => props.onOctaveShift?.(-1)}
+              onClick={() => handleViewOctaveShift(-1)}
             >
               <svg viewBox="0 0 24 24" width="14" height="14">
                 <path
@@ -145,11 +191,11 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
                 />
               </svg>
             </button>
-            <span class="octave-value">{melodyStore.currentOctave()}</span>
+            <span class="octave-value">{viewOctave()}</span>
             <button
               class="octave-btn"
               title="Higher octave"
-              onClick={() => props.onOctaveShift?.(1)}
+              onClick={() => handleViewOctaveShift(1)}
             >
               <svg viewBox="0 0 24 24" width="14" height="14">
                 <path
@@ -160,16 +206,16 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
             </button>
           </div>
 
-          <span class="preset-label">Scale:</span>
           <select
             id="scale-select"
-            value={appStore.scaleType()}
+            class="dropdown-select-style"
+            value={scaleType()}
             onChange={(e) => {
               const st = e.currentTarget.value
-              appStore.setScaleType(st)
+              setScaleType(st)
               melodyStore.refreshScale(
-                appStore.keyName(),
-                melodyStore.currentOctave(),
+                keyName(),
+                melodyStore.getCurrentOctave(),
                 st,
               )
             }}
@@ -209,13 +255,9 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
         </div>
       </div>
 
-      {/* Preset selector */}
-      <div class="sidebar-section" id="preset-section">
-        <PresetSelector
-          onLoad={(preset) => {
-            props.onPresetLoad?.(preset)
-          }}
-        />
+      {/* Library */}
+      <div class="sidebar-section">
+        <LibraryTab />
       </div>
 
       {/* Stats panel — Practice tab only */}
@@ -223,53 +265,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
         <div class="sidebar-section">
           <div id="stats-panel">
             <h3>Accuracy</h3>
-            <div id="stats-bars">
-              <div class="stat-row" data-band="100">
-                <span class="stat-label">Perfect</span>
-                <div class="stat-bar-bg">
-                  <div class="stat-bar" id="bar-100" />
-                </div>
-                <span class="stat-count" id="cnt-100">
-                  0
-                </span>
-              </div>
-              <div class="stat-row" data-band="90">
-                <span class="stat-label">Excellent</span>
-                <div class="stat-bar-bg">
-                  <div class="stat-bar" id="bar-90" />
-                </div>
-                <span class="stat-count" id="cnt-90">
-                  0
-                </span>
-              </div>
-              <div class="stat-row" data-band="75">
-                <span class="stat-label">Good</span>
-                <div class="stat-bar-bg">
-                  <div class="stat-bar" id="bar-75" />
-                </div>
-                <span class="stat-count" id="cnt-75">
-                  0
-                </span>
-              </div>
-              <div class="stat-row" data-band="50">
-                <span class="stat-label">Okay</span>
-                <div class="stat-bar-bg">
-                  <div class="stat-bar" id="bar-50" />
-                </div>
-                <span class="stat-count" id="cnt-50">
-                  0
-                </span>
-              </div>
-              <div class="stat-row" data-band="0">
-                <span class="stat-label">Off</span>
-                <div class="stat-bar-bg">
-                  <div class="stat-bar" id="bar-0" />
-                </div>
-                <span class="stat-count" id="cnt-0">
-                  0
-                </span>
-              </div>
-            </div>
+            <StatsBars noteResults={props.noteResults} />
             <div id="score-display">
               <span id="score-label">Score:</span>
               <span id="score-value" class="live-score-value">
@@ -278,11 +274,11 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
             </div>
 
             {/* Session history — practice tab only */}
-            <Show when={appStore.sessionResultsStore.length > 0}>
+            <Show when={sessionResults().length > 0}>
               <div id="session-history-panel">
                 <h3>Sessions</h3>
                 <div id="session-history-list">
-                  <For each={appStore.sessionResultsStore}>
+                  <For each={sessionResults()}>
                     {(entry) => (
                       <div class="session-history-entry">
                         <span class="session-history-name">
@@ -306,12 +302,14 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
       {/* Note list + pitch reference — Practice tab only (bottom-anchored) */}
       <Show when={activeTab() === 'practice'}>
         <div class="sidebar-section sidebar-notes-bottom">
-          <NoteList
-            melody={props.melody}
-            currentNoteIndex={props.currentNoteIndex}
-            noteResults={props.noteResults}
-            isPlaying={props.isPlaying}
-          />
+          <Show when={showSidebarNoteList()}>
+            <NoteList
+              melody={props.melody}
+              currentNoteIndex={props.currentNoteIndex}
+              noteResults={props.noteResults}
+              isPlaying={props.isPlaying}
+            />
+          </Show>
           <PitchDisplay pitch={props.pitch} targetNote={props.targetNoteName} />
         </div>
       </Show>

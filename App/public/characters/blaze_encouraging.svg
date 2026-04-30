@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Blaze: Belting Specialist (Encouraging) -->
+  <defs>
+    <linearGradient id="blazeGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#db6d28;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f85149;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <path d="M50 10 L80 40 L70 90 L30 90 L20 40 Z" fill="url(#blazeGrad)" />
+  <!-- Thumbs Up (Simplified) -->
+  <path d="M75 50 Q85 45 90 55 L85 65 Q80 70 75 60" fill="#f85149" />
+  <!-- Eyes (Wink) -->
+  <path d="M35 50 Q40 45 45 50" stroke="white" stroke-width="3" fill="none" />
+  <circle cx="60" cy="50" r="4" fill="white" />
+  <!-- Mouth (Smirk) -->
+  <path d="M45 70 Q55 75 60 68" stroke="white" stroke-width="2" fill="none" />
+</svg>

@@ -24,41 +24,40 @@ const BAND_CLASSES: Record<number | 'off', string> = {
 }
 
 export const NoteList: Component<NoteListProps> = (props) => {
-  // Deduplicate notes by MIDI (show each unique note once)
-  const uniqueNotes = createMemo(() => {
-    const seen = new Map<number, MelodyItem>()
-    for (const item of props.melody()) {
-      seen.set(item.note.midi, item)
-    }
-    return Array.from(seen.values())
-  })
-
-  // Map MIDI → result band
+  // Map playable-note index → result band. Synthetic rest blocks are
+  // present in the view melody for Spaced mode, but they do not produce
+  // NoteResult entries, so we count only non-rest items.
   const bandMap = createMemo(() => {
     const map = new Map<number, number | 'off'>()
-    for (const r of props.noteResults()) {
-      const midi = r.targetNote.midi
+    for (let i = 0; i < props.noteResults().length; i++) {
+      const r = props.noteResults()[i]
       const band = centsToBand(r.avgCents)
-      map.set(midi, band)
+      map.set(i, band)
     }
     return map
   })
 
-  const getNoteIndex = (midi: number): number => {
-    return props.melody().findIndex((item) => item.note.midi === midi)
-  }
+  const playableIndexFor = (absoluteIndex: number): number =>
+    props
+      .melody()
+      .slice(0, absoluteIndex + 1)
+      .filter((item) => item.isRest !== true).length - 1
 
   return (
     <div id="note-list">
-      <For each={uniqueNotes()}>
-        {(item) => {
+      <For each={props.melody()}>
+        {(item, index) => {
+          const absoluteIndex = index()
+          const isRest = item.isRest === true
+          const playableIndex = () =>
+            isRest ? -1 : playableIndexFor(absoluteIndex)
           const midi = item.note.midi
           const isActive = () => {
             if (!props.isPlaying()) return false
-            const idx = getNoteIndex(midi)
-            return idx === props.currentNoteIndex()
+            return absoluteIndex === props.currentNoteIndex()
           }
-          const band = () => bandMap().get(midi)
+          const band = () =>
+            playableIndex() >= 0 ? bandMap().get(playableIndex()) : undefined
           const bandCls = () => {
             const b = band()
             return b !== undefined ? BAND_CLASSES[b] : ''
@@ -66,15 +65,18 @@ export const NoteList: Component<NoteListProps> = (props) => {
 
           return (
             <div
-              class={`note-item ${isActive() ? 'active' : ''} ${bandCls()}`}
+              class={`note-item ${isRest ? 'rest-item' : ''} ${isActive() ? 'active' : ''} ${bandCls()}`}
               data-midi={midi}
             >
               <div class="note-dot" />
               <span class="note-name">
-                {item.note.name}
-                {item.note.octave}
+                {isRest ? '𝄽 Rest' : `${item.note.name}${item.note.octave}`}
               </span>
-              <span class="note-freq">{item.note.freq.toFixed(0)}Hz</span>
+              <span class="note-freq">
+                {isRest
+                  ? `${item.duration} beat${item.duration === 1 ? '' : 's'}`
+                  : `${item.note.freq.toFixed(0)}Hz`}
+              </span>
             </div>
           )
         }}

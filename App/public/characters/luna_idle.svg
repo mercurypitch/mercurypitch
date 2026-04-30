@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Luna: Lower Register Specialist (Idle) -->
+  <defs>
+    <linearGradient id="lunaGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#1f2328;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#58a6ff;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <!-- Body (Heavy/Stable) -->
+  <path d="M20 80 Q50 90 80 80 Q90 60 50 30 Q10 60 20 80" fill="url(#lunaGrad)" />
+  <!-- Moon Detail -->
+  <circle cx="50" cy="45" r="5" fill="white" opacity="0.4" />
+  <!-- Eyes (Calm) -->
+  <path d="M35 60 Q40 55 45 60" stroke="white" stroke-width="2" fill="none" />
+  <path d="M55 60 Q60 55 65 60" stroke="white" stroke-width="2" fill="none" />
+  <!-- Mouth (Steady) -->
+  <path d="M45 75 L55 75" stroke="white" stroke-width="1.5" />
+</svg>

@@ -2,7 +2,16 @@
 // Audio Engine — Web Audio API playback and microphone input
 // ============================================================
 
-import type { AudioEngineCallbacks, EffectType, MelodyItem, MelodyNote, } from '@/types'
+import type { EffectType, MelodyItem, MelodyNote } from '@/types'
+
+export interface AudioEngineCallbacks {
+  onNoteComplete?: (item: MelodyItem, time: number) => void
+  onPlaybackEnd?: () => void
+  onRecordingStart?: () => void
+  onRecordingEnd?: () => void
+  onMicStateChange?: (active: boolean, error?: string) => void
+  onNoteChange?: (note: MelodyNote, noteIndex: number) => void
+}
 
 export type InstrumentType = 'sine' | 'piano' | 'organ' | 'strings' | 'synth'
 
@@ -20,6 +29,7 @@ export class AudioEngine {
   private micAnalyser: AnalyserNode | null = null
   private toneOscillator: OscillatorNode | null = null
   private toneGain: GainNode | null = null
+  private toneCleanupTimer: ReturnType<typeof setTimeout> | null = null
   private isRecording = false
   private isPlaying = false
   private callbacks: AudioEngineCallbacks = {}
@@ -40,6 +50,20 @@ export class AudioEngine {
       lfoGains?: GainNode[]
     }
   >()
+
+  // BPM state (used for timing calculations)
+  private _bpm = 120
+
+  private _appStoreBpm = 120
+
+  setBpm(bpm: number): void {
+    this._bpm = bpm
+    this._appStoreBpm = bpm
+  }
+
+  getBpm(): number {
+    return this._bpm
+  }
 
   // ADSR Envelope configuration (default values)
   private adsrAttack = 0.01 // seconds (10ms)
@@ -303,6 +327,16 @@ export class AudioEngine {
     return ['sine', 'piano', 'organ', 'strings', 'synth']
   }
 
+  /** Set BPM */
+  setBPM(bpm: number): void {
+    this._bpm = Math.max(40, Math.min(280, bpm))
+  }
+
+  /** Get current BPM */
+  getBPM(): number {
+    return this._bpm
+  }
+
   // ============================================================
   // ADSR Envelope
   // ============================================================
@@ -545,54 +579,167 @@ export class AudioEngine {
     await this.resume()
     if (!this.audioCtx || !this.mainGain) return
 
-    // Stop any existing oscillator
-    this.stopTone()
+    // A new note must replace the previous note immediately at the note boundary.
+    // Lingering release tails here make the previous pitch sound over the next note.
+    if (this.toneOscillator !== null) {
+      this.stopTone(0)
+    }
 
-    this.toneOscillator = this.audioCtx.createOscillator()
-    this.toneGain = this.audioCtx.createGain()
+    if (this.toneCleanupTimer !== null) {
+      clearTimeout(this.toneCleanupTimer)
+      this.toneCleanupTimer = null
+    }
 
-    this.toneOscillator.type = 'sine'
-    this.toneOscillator.frequency.value = frequency
+    const startTime = this.audioCtx.currentTime
 
-    // Smooth ramp in
-    this.toneGain.gain.setValueAtTime(0, this.audioCtx.currentTime)
-    this.toneGain.gain.linearRampToValueAtTime(
-      this.volume,
-      this.audioCtx.currentTime + 0.01,
-    )
+    // Use the instrument-aware voice builder so the note timbre matches
+    // the currentInstrument selection (sine/piano/organ/strings/synth).
+    // Previously this method hardcoded oscillator.type='sine', which is
+    // why changing the instrument dropdown didn't audibly affect live
+    // playback even though WAV export (which uses _createVoice) did.
+    // We default to 1 second when no duration is provided so the
+    // per-instrument envelopes inside _createVoice have a sensible
+    // stop time; stopTone() can still cut the note early.
+    const effectiveDurationMs =
+      duration !== undefined && duration > 0 ? duration : 1000
+    const voice = this._createVoice(frequency, effectiveDurationMs)
+    const masterGain = voice.gain
 
-    this.toneOscillator.connect(this.toneGain)
-    this.toneGain.connect(this.mainGain)
-    this.toneOscillator.start()
+    // Apply user volume on top of the per-instrument envelope by
+    // chaining via an extra gain node. This keeps each instrument's
+    // built-in envelope intact while still respecting the global slider.
+    const userGain = this.audioCtx.createGain()
+    userGain.gain.value = this.volume
+    masterGain.connect(userGain)
+    userGain.connect(this.mainGain)
+
+    // Start every oscillator (and any LFO modulators).
+    for (const osc of voice.oscillators) osc.start(startTime)
+    for (const lfo of voice.lfos) lfo.start(startTime)
+
+    // Track the primary oscillator/gain so stopTone() can release it.
+    const primaryOsc = voice.oscillators[0] ?? null
+    this.toneOscillator = primaryOsc
+    this.toneGain = userGain
 
     this.isPlaying = true
 
+    const cleanup = (): void => {
+      for (const osc of voice.oscillators) {
+        try {
+          osc.disconnect()
+        } catch {
+          /* already disconnected */
+        }
+      }
+      for (const lfo of voice.lfos) {
+        try {
+          lfo.stop()
+        } catch {
+          /* already stopped */
+        }
+        try {
+          lfo.disconnect()
+        } catch {
+          /* already disconnected */
+        }
+      }
+      try {
+        masterGain.disconnect()
+      } catch {
+        /* already disconnected */
+      }
+      try {
+        userGain.disconnect()
+      } catch {
+        /* already disconnected */
+      }
+      if (this.toneOscillator === primaryOsc) {
+        this.toneOscillator = null
+      }
+      if (this.toneGain === userGain) {
+        this.toneGain = null
+      }
+      this.isPlaying = false
+    }
+
+    primaryOsc.onended = cleanup
+
     if (duration !== undefined) {
-      const stopTime = this.audioCtx.currentTime + duration / 1000
-      this.toneGain.gain.setValueAtTime(this.volume, stopTime - 0.02)
-      this.toneGain.gain.linearRampToValueAtTime(0, stopTime)
-      this.toneOscillator.stop(stopTime)
-      this.toneOscillator.onended = () => {
-        this.isPlaying = false
+      const durationSeconds = Math.max(0.001, duration / 1000)
+      const stopTime = startTime + durationSeconds
+      for (const osc of voice.oscillators) {
+        try {
+          osc.stop(stopTime)
+        } catch {
+          /* already stopped */
+        }
+      }
+      for (const lfo of voice.lfos) {
+        try {
+          lfo.stop(stopTime)
+        } catch {
+          /* already stopped */
+        }
       }
     }
   }
 
-  /** Stop the current tone */
-  stopTone(): void {
-    if (this.toneOscillator) {
-      try {
-        this.toneOscillator.stop()
-        this.toneOscillator.disconnect()
-      } catch {
-        // already stopped
-      }
+  /** Stop the current tone with release envelope */
+  stopTone(releaseMs: number = 10): void {
+    if (!this.audioCtx || !this.toneGain || !this.toneOscillator) return
+
+    const now = this.audioCtx.currentTime
+    const oscillator = this.toneOscillator
+    const gain = this.toneGain
+    const releaseSeconds = Math.max(0.001, releaseMs / 1000)
+
+    if (this.toneCleanupTimer !== null) {
+      clearTimeout(this.toneCleanupTimer)
+      this.toneCleanupTimer = null
+    }
+
+    // Apply release envelope to fade out smoothly
+    try {
+      gain.gain.cancelScheduledValues(now)
+      gain.gain.setValueAtTime(gain.gain.value, now)
+      gain.gain.linearRampToValueAtTime(0, now + releaseSeconds)
+    } catch {
+      // Gain may already be disconnected or at zero
+    }
+
+    // Schedule the oscillator stop after release
+    const stopTime = now + releaseSeconds
+    try {
+      oscillator.stop(stopTime)
+    } catch {
+      // already stopped
+    }
+
+    if (this.toneOscillator === oscillator) {
       this.toneOscillator = null
     }
-    if (this.toneGain) {
-      this.toneGain.disconnect()
+    if (this.toneGain === gain) {
       this.toneGain = null
     }
+
+    // Clean up after release completes
+    this.toneCleanupTimer = setTimeout(
+      () => {
+        try {
+          oscillator.disconnect()
+        } catch {
+          // already stopped
+        }
+        try {
+          gain.disconnect()
+        } catch {
+          // already disconnected
+        }
+        this.toneCleanupTimer = null
+      },
+      Math.ceil(releaseSeconds * 1000) + 30,
+    )
     this.isPlaying = false
   }
 
@@ -794,10 +941,18 @@ export class AudioEngine {
         break
       }
       default: {
-        // Sine (default) — smooth attack via ADSR
+        // Sine (default) — smooth attack via ADSR.
+        // IMPORTANT: connect to mainGain here. The other branches
+        // already wire per-osc gains into mainGain; without this line
+        // the sine oscillator is created but never reaches the audio
+        // graph, producing silence on the 'sine' instrument.
+        // (playNote used to perform this connect in its outer loop,
+        // but playTone now relies on _createVoice returning a fully
+        // wired voice.)
         const osc = ctx.createOscillator()
         osc.type = 'sine'
         osc.frequency.value = freq
+        osc.connect(mainGain)
         oscillators.push(osc)
         break
       }
@@ -1013,6 +1168,13 @@ export class AudioEngine {
   }
 
   /**
+   * Get all active voice IDs.
+   */
+  getActiveVoices(): Set<number> {
+    return new Set(this._activeVoices.keys())
+  }
+
+  /**
    * Stop all active notes.
    */
   stopAllNotes(): void {
@@ -1052,6 +1214,11 @@ export class AudioEngine {
     this.reverbNode = null
     this.reverbSendGain = null
     this.reverbReturnGain = null
+  }
+
+  /** Get whether audio context is initialized */
+  getIsInitialized(): boolean {
+    return this.audioCtx !== null
   }
 
   // ============================================================

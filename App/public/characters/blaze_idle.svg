@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Blaze: Belting Specialist (Idle) -->
+  <defs>
+    <linearGradient id="blazeGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#db6d28;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f85149;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <!-- Body (Fiery/Energetic) -->
+  <path d="M50 10 L80 40 L70 90 L30 90 L20 40 Z" fill="url(#blazeGrad)" />
+  <!-- Spiky aura -->
+  <path d="M50 5 L60 20 L50 15 L40 20 Z" fill="#db6d28" />
+  <!-- Eyes -->
+  <circle cx="40" cy="50" r="4" fill="white" />
+  <circle cx="60" cy="50" r="4" fill="white" />
+  <!-- Mouth (Singing) -->
+  <ellipse cx="50" cy="70" rx="8" ry="12" fill="#1f2328" />
+</svg>

@@ -1,0 +1,135 @@
+/* Character Animations */
+.character-image {
+  width: 120px;
+  height: 120px;
+  transition: transform 0.3s ease;
+}
+
+.character-image:hover {
+  transform: scale(1.05);
+}
+
+/* Float animation for Aria and Luna */
+.character-aria.selected-anim,
+.character-luna.selected-anim {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Shake/Vibrate animation for Blaze and Glint - refined with better easing */
+.character-blaze.selected-anim,
+.character-glint.selected-anim {
+  animation: vibrate 0.8s ease-in-out infinite;
+}
+
+/* Wave animation for Flux and Echo */
+.character-flux.selected-anim,
+.character-echo.selected-anim {
+  animation: wave 2.5s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes vibrate {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  25% {
+    transform: translate(-1px, 1px) rotate(-1deg);
+  }
+  50% {
+    transform: translate(1px, -1px) rotate(1deg);
+  }
+  75% {
+    transform: translate(-1px, -1px) rotate(-1deg);
+  }
+}
+
+@keyframes wave {
+  0%,
+  100% {
+    transform: rotate(0deg) scale(1);
+  }
+  50% {
+    transform: rotate(4deg) scale(1.02);
+  }
+}
+
+/* Icons Grid in Header */
+.character-icons-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 4px;
+  align-items: center;
+}
+
+.character-icon-btn {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+}
+
+.character-icon-btn:hover {
+  background: var(--bg-card);
+  border-color: var(--accent);
+}
+
+.character-icon-btn.selected {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  box-shadow: 0 0 10px var(--accent-glow);
+}
+
+.character-icon-img {
+  width: 24px;
+  height: 24px;
+}
+
+/* Larger sidebar character picker: 3-column grid, 3-row-ready */
+.character-icons-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-auto-rows: 58px;
+  gap: 8px;
+  width: 100%;
+  padding: 8px;
+  border: 1px solid rgba(88, 166, 255, 0.16);
+  border-radius: 14px;
+  background: linear-gradient(
+    180deg,
+    rgba(22, 27, 34, 0.72),
+    rgba(13, 17, 23, 0.62)
+  );
+}
+
+.character-icon-btn {
+  width: 100%;
+  height: 58px;
+  padding: 5px;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.character-icon-img {
+  width: 50px;
+  height: 50px;
+  object-fit: contain;
+  transform: scale(1.28);
+  transform-origin: center;
+}
