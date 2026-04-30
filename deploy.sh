@@ -97,14 +97,22 @@ rebuild_solidjs() {
         cd "$REPO_DIR"
     fi
 
-    # Copy built files from App/dist to public/
+    # Copy ALL built files from App/dist to public/
     if [[ -d "$REPO_DIR/App/dist" ]]; then
         info "Deploying SolidJS build to public/..."
         mkdir -p "$WEB_DIR/assets"
-        rm -f "$WEB_DIR/assets/"*.js "$WEB_DIR/assets/"*.css
+        rm -f "$WEB_DIR/assets/"*.js "$WEB_DIR/assets/"*.css "$WEB_DIR/assets/"*.map
         cp "$REPO_DIR/App/dist/index.html" "$WEB_DIR/index.html"
-        cp "$REPO_DIR/App/dist/assets/"*.css "$WEB_DIR/assets/" 2>/dev/null || true
-        cp "$REPO_DIR/App/dist/assets/"*.js "$WEB_DIR/assets/" 2>/dev/null || true
+        cp -f "$REPO_DIR/App/dist/assets/"* "$WEB_DIR/assets/" 2>/dev/null || true
+        # Copy any top-level dist assets (characters, favicons, images)
+        for dir in "$REPO_DIR/App/dist"/*; do
+            if [[ -d "$dir" ]]; then
+                local name=$(basename "$dir")
+                mkdir -p "$WEB_DIR/$name"
+                cp -rf "$dir"/* "$WEB_DIR/$name/" 2>/dev/null || true
+            fi
+        done
+        cp -f "$REPO_DIR/App/dist/"*.{ico,png,svg} "$WEB_DIR/" 2>/dev/null || true
         info "  ✓ Files deployed to public/"
     fi
 }
