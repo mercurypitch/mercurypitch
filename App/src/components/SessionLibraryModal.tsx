@@ -6,7 +6,9 @@ import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
 import { appStore, melodyStore, setActiveTab, setEditorView } from '@/stores'
 import { setActiveUserSession, showNotification } from '@/stores'
+import { setPlayMode } from '@/stores/transport-store'
 import { createSession, saveSession } from '@/stores/session-store'
+
 import type { PlaybackSession, SessionCategory, SessionDifficulty, } from '@/types'
 import { SessionMiniTimeline } from './SessionMiniTimeline'
 
@@ -45,10 +47,47 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
       )
   })
 
+  /**
+   * Start playing the selected session, exactly like the Library tab's
+   * "Play All in sequence" button does.
+   *
+   * Flow (must match LibraryTab.handlePlaySessionSequence so users get
+   * consistent behavior regardless of which UI they came from):
+   *   1. Make `session` the active user-session (so userSession() returns
+   *      it inside the playback controller).
+   *   2. Switch to the Practice tab + Practice playMode (the per-item
+   *      runner only triggers when playMode === 'practice').
+   *   3. Close the modal so the practice canvas is visible.
+   *   4. Trigger window.__pp.playSessionSequence(...) which the bridge
+   *      maps to useSessionSequencer.playSessionSequence — same code path
+   *      as the Library button.
+   *
+   * The previous handler only called `appStore.loadSession()` (which
+   * sets the active session) and closed the modal — it never actually
+   * started playback, so the Play button appeared to do nothing.
+   */
   const handlePlay = (session: PlaybackSession) => {
+    setActiveUserSession(session)
+    // appStore.loadSession also seeds bpm/key/scale and other UI state
+    // that Play-All relies on (it's called indirectly via the bridge).
+    // Calling it here keeps the two routes identical.
     appStore.loadSession(session)
+    setActiveTab('practice')
+    setPlayMode('practice')
     props.close()
+
+    const win = window as unknown as {
+      __pp?: { playSessionSequence?: (melodyIds: string[]) => void }
+      __playSessionSequence?: (melodyIds: string[]) => void
+    }
+    const handler = win.__pp?.playSessionSequence ?? win.__playSessionSequence
+    if (handler !== undefined) {
+      // The handler reads userSession() internally; the ids array is
+      // ignored by the production sequencer, so an empty array is fine.
+      handler([])
+    }
   }
+
 
   const handleDelete = (id: string) => {
     if (confirm('Delete this session?')) {
