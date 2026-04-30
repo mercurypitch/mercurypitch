@@ -5,7 +5,7 @@
 import type { Component } from 'solid-js'
 import { createEffect, onCleanup, onMount } from 'solid-js'
 import { appStore } from '@/stores'
-import { colorCodeNotes, flameMode } from '@/stores/settings-store'
+import { colorCodeNotes, flameMode, showAccuracyPercent } from '@/stores/settings-store'
 import type { MelodyItem, NoteResult, PitchSample, ScaleDegree } from '@/types'
 
 interface PitchCanvasProps {
@@ -485,7 +485,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
         ctx.stroke()
 
         // Draw accuracy percentage on played notes
-        if (isPlayed && playedRecord !== null && bw > 20) {
+        if (showAccuracyPercent() && isPlayed && playedRecord !== null && bw > 20) {
           const pct = Math.round(Math.max(0, 100 - playedRecord.avgCents * 2))
           const fontSize = Math.max(9, Math.min(12, boxH * 0.45))
           ctx.font = `bold ${fontSize}px ui-monospace, monospace`
