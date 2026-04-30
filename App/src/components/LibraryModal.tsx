@@ -4,7 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
-import { appStore, setEditorView } from '@/stores'
+import { setEditorView } from '@/stores'
 // Note: setActiveTab is aliased to setAppActiveTab to avoid collision
 // with the local LibraryModal-internal tab signal (Tab = 'melodies' | 'playlists').
 import { setActiveTab as setAppActiveTab, setActiveUserSession, setBpm, setKeyName, setScaleType, showNotification, } from '@/stores'
@@ -143,18 +143,12 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
     const playlistId = playlistEdit?.playlistId ?? null
     if (playlistId === null) return []
 
-    const playlist = library().playlists[playlistId] ?? null
-    if (playlist === null) return []
+    const query = addMelodySearch().toLowerCase()
+    const allSessions = melodyStore.getSessions()
 
-    const selectedKey =
-      playlistEdit?.mode === 'add-melody'
-        ? (playlistEdit.selectedMelodyKey ?? null)
-        : null
-
-    return Object.entries(library().melodies)
-      .filter(([id, _]) => id !== selectedKey)
-      .filter(([id]) => !playlist.melodyKeys.includes(id))
-      .map(([id, m]): { id: string; melody: MelodyData } => ({ id, melody: m }))
+    return allSessions
+      .filter((s) => s.name.toLowerCase().includes(query))
+      .map((s) => ({ id: s.id, session: s }))
   })
 
   const selectedMelody = createMemo(() => {
@@ -163,17 +157,32 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
     return library().melodies[key] ?? null
   })
 
+  const isSessionInPlaylist = (playlistId: string, sessionId: string) => {
+    const playlist = library().playlists[playlistId]
+    return playlist?.sessionKeys?.includes(sessionId) ?? false
+  }
+
+  const handleToggleSessionInPlaylist = (
+    playlistId: string,
+    sessionId: string,
+  ) => {
+    if (isSessionInPlaylist(playlistId, sessionId)) {
+      melodyStore.removeSessionFromPlaylist(playlistId, sessionId)
+    } else {
+      melodyStore.addSessionToPlaylist(playlistId, sessionId)
+    }
+  }
+
   // ===========================================
-  // 3. Regular functions - event handlers
+  // 4. Regular functions - drag and drop
   // ===========================================
 
   const handlePlay = (melody: MelodyData) => {
     melodyStore.loadMelody(melody.id)
-    appStore.setCurrentPresetName(melody.name)
     setBpm(melody.bpm)
     setKeyName(melody.key)
     setScaleType(melody.scaleType)
-    appStore.setOctave(melody.octave ?? 4)
+    melodyStore.setOctave(melody.octave ?? 4)
     props.onPlayMelody?.(melody.name)
     props.close()
   }
@@ -185,7 +194,6 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
 
   const handleLoad = (melody: MelodyData) => {
     melodyStore.loadMelody(melody.id)
-    appStore.setCurrentPresetName(melody.name)
     props.close()
   }
 
@@ -970,14 +978,14 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
 
                   <div class="melody-select-list">
                     <For each={availableForPlaylist()}>
-                      {({ id, melody }) => (
+                      {({ id, session }) => (
                         <div
                           class={`melody-select-item ${selectedMelodyKey() === id ? 'selected' : ''}`}
                           onClick={() => setSelectedMelodyKey(id)}
                         >
-                          <div class="select-item-title">{melody.name}</div>
+                          <div class="select-item-title">{session.name}</div>
                           <div class="select-item-meta">
-                            {melody.key} • {melody.bpm} BPM
+                            {session.created} • {session.items.length} Count
                           </div>
                         </div>
                       )}

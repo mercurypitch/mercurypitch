@@ -1,6 +1,7 @@
 import { createSignal } from 'solid-js'
 import { createPersistedSignal } from '@/lib/storage'
 import { exposeForE2E } from '@/lib/test-utils'
+import { APP_VERSION } from '@/version'
 
 // ── Active tab ───────────────────────────────────────────────
 
@@ -58,13 +59,12 @@ export function exitFocusMode(): void {
 exposeForE2E('__exitFocusMode', exitFocusMode)
 
 // ── Welcome Screen (GH #131) ────────────────────────────────────
-
-const APP_VERSION = '0.1'
+const PITCH_PERFECT_WELCOME_VERSION_KEY = 'pitchperfect_welcome_version'
 
 // The value stored is the version string. We want to show welcome if the stored string doesn't match APP_VERSION.
 // A simpler way: store a boolean 'true' if they have seen this specific version.
 export const [welcomeSeen, setWelcomeSeen] = createPersistedSignal<string>(
-  'pitchperfect_welcome_version',
+  PITCH_PERFECT_WELCOME_VERSION_KEY,
   '',
 )
 

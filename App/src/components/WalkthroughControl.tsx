@@ -3,8 +3,9 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createEffect, createSignal, Show } from 'solid-js'
+import { createSignal, Show } from 'solid-js'
 import { WalkthroughModal, WalkthroughSelection } from '@/components'
+import { selectedWalkthrough, setSelectedWalkthrough, setShowSelection, showSelection, } from '@/stores'
 import type { WalkthroughTab } from '@/stores/walkthrough-store'
 
 interface WalkthroughControlProps {
@@ -18,24 +19,6 @@ export const WalkthroughControl: Component<WalkthroughControlProps> = (
   _props,
 ) => {
   const [showModal, setShowModal] = createSignal(false)
-  const [showSelection, setShowSelection] = createSignal(false)
-  const [selectedWalkthrough, setSelectedWalkthrough] = createSignal<
-    string | null
-  >(null)
-
-  const handleOpenWalkthroughs = () => {
-    setShowSelection(true)
-    setSelectedWalkthrough(null)
-  }
-
-  // Expose for external callers (sidebar)
-  createEffect(() => {
-    if (typeof window !== 'undefined') {
-      ;(
-        window as unknown as { __openWalkthroughs?: () => void }
-      ).__openWalkthroughs = handleOpenWalkthroughs
-    }
-  })
 
   const handleStartWalkthrough = (
     walkthroughId: string,

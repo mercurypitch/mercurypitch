@@ -2,6 +2,8 @@
 // Stores barrel export
 // ============================================================
 
+import { WALKTHROUGH_STEPS, walkthroughActive, walkthroughStep, } from './app-store'
+
 export * from './app-store'
 export * from './mic-store'
 export * from './notifications-store'
@@ -91,13 +93,9 @@ export const appStore = {
   // Audio settings wrappers needed by the app
   reverb: settingsStore.reverbConfig,
 
-  // More missing stubs
+  // NOTE: Add missing stub as required for tests, etc.
   buildSessionItemMelody,
-  walkthroughStep: appStoreCore.getWalkthroughStep,
-  walkthroughActive: appStoreCore.isWalkthroughActive,
-  startWalkthrough: appStoreCore.startWalkthrough,
-  endWalkthrough: appStoreCore.endWalkthrough,
-  nextWalkthroughStep: appStoreCore.nextWalkthroughStep,
-  prevWalkthroughStep: appStoreCore.prevWalkthroughStep,
-  WALKTHROUGH_STEPS: appStoreCore.WALKTHROUGH_STEPS,
+  walkthroughStep,
+  walkthroughActive,
+  WALKTHROUGH_STEPS,
 }

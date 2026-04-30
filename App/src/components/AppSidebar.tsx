@@ -6,13 +6,14 @@
 
 import type { Component } from 'solid-js'
 import { For, Show } from 'solid-js'
+import { CharacterIcons } from '@/components/CharacterIcons'
 import { LibraryTab } from '@/components/LibraryTab'
 import { NoteList } from '@/components/NoteList'
 import { PitchDisplay } from '@/components/PitchDisplay'
 import { StatsBars } from '@/components/StatsBars'
 import { KEY_OFFSETS, midiToFreq, midiToNote } from '@/lib/scale-data'
-import { activeTab as appActiveTab, sessionResults } from '@/stores'
-import { keyName, scaleType, setKeyName, setScaleType, showLibrary, } from '@/stores'
+import { activeTab as appActiveTab, sessionResults, showNotification, } from '@/stores'
+import { keyName, scaleType, setKeyName, setScaleType } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import type { MelodyItem, NoteResult, PitchResult } from '@/types'
 
@@ -62,31 +63,11 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
         </svg>
       </button>
 
-      {/* Library button */}
-      <button
-        class="tour-btn"
-        onClick={() => showLibrary()}
-        title="View Library"
-      >
-        <svg viewBox="0 0 24 24" width="16" height="16">
-          <path
-            fill="currentColor"
-            d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"
-          />
-        </svg>
-        Library
-      </button>
-
       {/* Learn + Guide buttons */}
       <div class="walkthrough-control-group">
         <button
           class="walkthrough-control-btn"
-          onClick={() => {
-            const open = (
-              window as unknown as { __openWalkthroughs?: () => void }
-            ).__openWalkthroughs
-            open?.()
-          }}
+          onClick={() => props.onOpenLearn?.()}
           title="View PitchPerfect walkthroughs"
         >
           <svg viewBox="0 0 24 24" width="18" height="18">
@@ -112,12 +93,15 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
         </button>
       </div>
 
+      <CharacterIcons
+        onSelect={(name) => showNotification(`Selected ${name}!`, 'info')}
+      />
+
       {/* Scale section */}
       <div class="sidebar-section">
-        <h2 class="panel-title">Scale</h2>
+        <h2 class="panel-title">Playback Setup</h2>
 
         <div id="scale-info">
-          <span class="key-label">Key:</span>
           <select
             id="key-select"
             value={keyName()}
@@ -169,7 +153,6 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
             <option value="Bb">Bb</option>
           </select>
 
-          <span class="octave-label">Oct:</span>
           <div class="octave-ctrl">
             <button
               class="octave-btn"
@@ -198,7 +181,6 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
             </button>
           </div>
 
-          <span class="preset-label">Scale:</span>
           <select
             id="scale-select"
             class="sidebar-session-select sidebar-scale-select"

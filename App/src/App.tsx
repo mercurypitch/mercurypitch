@@ -6,7 +6,6 @@
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, onMount, Show } from 'solid-js'
 import { AppSidebar } from '@/components/AppSidebar'
-import { CharacterIcons } from '@/components/CharacterIcons'
 import { FocusMode } from '@/components/FocusMode'
 import { HistoryCanvas } from '@/components/HistoryCanvas'
 import { LibraryModal } from '@/components/LibraryModal'
@@ -36,11 +35,11 @@ import { registerE2EBridge } from '@/lib/e2e-bridge'
 import { melodyIndexAtBeat, melodyTotalBeats } from '@/lib/scale-data'
 import { buildScaleMelody, buildSessionPlaybackMelody, } from '@/lib/session-builder'
 import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
-import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, initBpm, initPresets, initReverb, initSessionHistory, initSettings, initTheme, isLibraryModalOpen, isSessionLibraryModalOpen, keyName as keyNameSignal, micActive, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPlaybackSpeed, setScaleType, showNotification, startPracticeSession, toggleMicWaveVisible, } from '@/stores'
+import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, initBpm, initPresets, initReverb, initSessionHistory, initSettings, initTheme, isLibraryModalOpen, isSessionLibraryModalOpen, keyName as keyNameSignal, micActive, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPlaybackSpeed, setScaleType, showNotification, showWelcome, startPracticeSession, startWalkthrough, toggleMicWaveVisible, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import { getSession } from '@/stores/session-store'
 import type { MelodyItem, PlaybackMode } from '@/types'
-import { Walkthrough } from './components'
+import { Walkthrough, WalkthroughControl } from './components'
 import { GuideSelection } from './components/GuideSelection'
 import { WelcomeScreen } from './components/WelcomeScreen'
 
@@ -121,12 +120,12 @@ const AppShell: Component<AppProps> = (props) => {
     createSignal<PracticeSubMode>('all')
 
   // ── Guide Selection dialog ──────────────────────────────────
-  const [_showGuideSelection, setShowGuideSelection] = createSignal(false)
+  const [showGuideSelection, setShowGuideSelection] = createSignal(false)
   const openGuideSelection = () => setShowGuideSelection(true)
   const closeGuideSelection = () => setShowGuideSelection(false)
-  const _startGuideTour = (sectionIds: string[]) => {
+  const startGuideTour = (sectionIds: string[]) => {
     closeGuideSelection()
-    appStore.startWalkthrough(sectionIds)
+    startWalkthrough(sectionIds)
   }
 
   // ── Recording controller ────────────────────────────────────
@@ -591,7 +590,7 @@ const AppShell: Component<AppProps> = (props) => {
   return (
     <div id="app">
       {/* Welcome Screen (shown on first visit) */}
-      <Show when={appStore.showWelcome()}>
+      <Show when={showWelcome()}>
         <WelcomeScreen onTakeTour={openGuideSelection} />
       </Show>
 
@@ -633,8 +632,10 @@ const AppShell: Component<AppProps> = (props) => {
             <p class="subtitle">Voice Pitch Practice</p>
           </div>
           <div class="header-right">
-            <CharacterIcons
-              onSelect={(name) => showNotification(`Selected ${name}!`, 'info')}
+            {/* Walkthrough Control Button */}
+            <WalkthroughControl
+              showOnStart={false}
+              onOpenGuide={openGuideSelection}
             />
           </div>
           <nav id="app-tabs">
@@ -675,11 +676,7 @@ const AppShell: Component<AppProps> = (props) => {
             }}
             onOctaveShift={handleOctaveShift}
             onOpenScaleBuilder={() => setShowScaleBuilder(true)}
-            onOpenLearn={() => {
-              ;(
-                window as unknown as { __openWalkthroughs?: () => void }
-              ).__openWalkthroughs?.()
-            }}
+            onOpenLearn={openLearningWalkthrough}
             onOpenGuide={openGuideSelection}
             melody={() => melodyStore.items()}
             currentNoteIndex={currentNoteIndex}

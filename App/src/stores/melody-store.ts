@@ -1043,6 +1043,29 @@ export function addSessionToPlaylist(
   }
 }
 
+export function removeSessionFromPlaylist(
+  playlistId: string,
+  sessionId: string,
+): void {
+  const _library = melodyLibrarySignal()
+  const playlist = _library.playlists[playlistId]
+  if (playlist !== undefined) {
+    const updatedPlaylists = {
+      ..._library.playlists,
+      [playlistId]: {
+        ...playlist,
+        sessionKeys: playlist.sessionKeys.filter((id) => id !== sessionId),
+      },
+    }
+    setMelodyLibrary((prev) => ({
+      ...prev,
+      playlists: updatedPlaylists,
+      meta: { ...prev.meta, lastUpdated: Date.now() },
+    }))
+    _saveLibraryToStorage()
+  }
+}
+
 export function updatePlaylist(
   playlistId: string,
   updates: Partial<{
@@ -1221,6 +1244,7 @@ export const melodyStore = {
   addMelodyToPlaylist,
   removeMelodyFromPlaylist,
   addSessionToPlaylist,
+  removeSessionFromPlaylist,
   updatePlaylist,
   deletePlaylist,
   getPlaylists,

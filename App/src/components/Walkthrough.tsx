@@ -5,7 +5,9 @@
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, onCleanup, Show } from 'solid-js'
 import type { WalkthroughStep } from '@/stores/app-store'
-import { appStore, endWalkthrough, GUIDE_SECTIONS, nextWalkthroughStep, prevWalkthroughStep, skipSection, } from '@/stores/app-store'
+import { walkthroughStep } from '@/stores/app-store'
+import { tourSteps, walkthroughActive } from '@/stores/app-store'
+import { endWalkthrough, GUIDE_SECTIONS, nextWalkthroughStep, prevWalkthroughStep, skipSection, } from '@/stores/app-store'
 import { activeTab, setActiveTab } from '@/stores/ui-store'
 
 type Placement = 'top' | 'bottom' | 'left' | 'right'
@@ -19,16 +21,16 @@ export const Walkthrough: Component = () => {
   let tooltipRef: HTMLDivElement | undefined
 
   // Derived signals
-  const steps = () => appStore.tourSteps()
+  const steps = () => tourSteps()
   const currentStep = (): WalkthroughStep | undefined => {
     const s = steps()
-    return s[appStore.walkthroughStep()]
+    return s[walkthroughStep()]
   }
   const isLast = () => {
     const s = steps()
-    return appStore.walkthroughStep() === s.length - 1
+    return walkthroughStep() === s.length - 1
   }
-  const isFirst = () => appStore.walkthroughStep() === 0
+  const isFirst = () => walkthroughStep() === 0
 
   // Current section info
   const currentSection = () => {
@@ -48,7 +50,7 @@ export const Walkthrough: Component = () => {
   // Auto-switch tab when step has requiredTab
   // Only runs while tour is active — stops immediately when tour ends
   createEffect(() => {
-    if (!appStore.walkthroughActive()) return
+    if (!walkthroughActive()) return
     const step = currentStep()
     if (step?.requiredTab) {
       const tab = step.requiredTab
@@ -232,7 +234,7 @@ export const Walkthrough: Component = () => {
   }
 
   createEffect(() => {
-    if (appStore.walkthroughActive()) {
+    if (walkthroughActive()) {
       updateHighlight()
       updateTooltip()
       window.addEventListener('resize', () => {
@@ -269,7 +271,7 @@ export const Walkthrough: Component = () => {
   // This is critical when a tab switch occurs — the new tab's DOM takes
   // at least one frame to render, so we poll until the element appears.
   createEffect(() => {
-    appStore.walkthroughStep()
+    walkthroughStep()
     const step = currentStep()
     if (
       step === undefined ||
@@ -297,9 +299,7 @@ export const Walkthrough: Component = () => {
     if (!sec) return { current: 0, total: 0 }
     const allSteps = steps()
     const secSteps = allSteps.filter((s) => s.section === sec.id)
-    const currentSecStep = secSteps.indexOf(
-      allSteps[appStore.walkthroughStep()],
-    )
+    const currentSecStep = secSteps.indexOf(allSteps[walkthroughStep()])
     return {
       current: currentSecStep >= 0 ? currentSecStep + 1 : 1,
       total: secSteps.length,
@@ -307,7 +307,7 @@ export const Walkthrough: Component = () => {
   })
 
   return (
-    <Show when={appStore.walkthroughActive()}>
+    <Show when={walkthroughActive()}>
       <div class="walkthrough-overlay" onClick={endWalkthrough}>
         <div ref={highlightRef} class="walkthrough-highlight" />
 

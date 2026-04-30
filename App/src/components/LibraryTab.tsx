@@ -653,57 +653,57 @@ export const LibraryTab: Component = () => {
       </Show>
 
       {/* Recent Items Section */}
-      <div class="recent-section recent-items-section">
-        <p class="section-label">Recent Items</p>
-        {recentItems().length === 0 ? (
-          <p class="empty-tip">
-            No items yet. Click "Melodies" or "Sessions" to get started!
-          </p>
-        ) : (
-          <For each={recentItems()}>
-            {(item) => (
-              <div
-                class="recent-item"
-                onClick={() => handleRecentItemClick(item)}
-              >
-                {item.type === 'melody' ? (
-                  <>
-                    <span class="recent-name">{item.data.name}</span>
-                    <span class="recent-meta">{item.data.bpm} BPM</span>
-                    <Show
-                      when={
-                        item.data.tags !== undefined &&
-                        item.data.tags !== null &&
-                        item.data.tags.length > 0
-                      }
-                    >
-                      <div class="recent-tags">
-                        {(item.data.tags as string[]).slice(0, 2).map((tag) => (
-                          <span class="recent-tag">{tag}</span>
-                        ))}
-                        {item.data.tags !== undefined &&
-                          item.data.tags !== null &&
-                          (item.data.tags as string[]).length > 2 && (
-                            <span class="recent-tag more">
-                              +{(item.data.tags as string[]).length - 2}
-                            </span>
-                          )}
-                      </div>
-                    </Show>
-                  </>
-                ) : (
-                  <>
-                    <span class="recent-name">{item.data.name}</span>
-                    <span class="recent-meta">
-                      {item.data.items.length} items
-                    </span>
-                  </>
-                )}
-              </div>
-            )}
-          </For>
-        )}
-      </div>
+      {/*<div class="recent-section recent-items-section">*/}
+      {/*  <p class="section-label">Recent Items</p>*/}
+      {/*  {recentItems().length === 0 ? (*/}
+      {/*    <p class="empty-tip">*/}
+      {/*      No items yet. Click "Melodies" or "Sessions" to get started!*/}
+      {/*    </p>*/}
+      {/*  ) : (*/}
+      {/*    <For each={recentItems()}>*/}
+      {/*      {(item) => (*/}
+      {/*        <div*/}
+      {/*          class="recent-item"*/}
+      {/*          onClick={() => handleRecentItemClick(item)}*/}
+      {/*        >*/}
+      {/*          {item.type === 'melody' ? (*/}
+      {/*            <>*/}
+      {/*              <span class="recent-name">{item.data.name}</span>*/}
+      {/*              <span class="recent-meta">{item.data.bpm} BPM</span>*/}
+      {/*              <Show*/}
+      {/*                when={*/}
+      {/*                  item.data.tags !== undefined &&*/}
+      {/*                  item.data.tags !== null &&*/}
+      {/*                  item.data.tags.length > 0*/}
+      {/*                }*/}
+      {/*              >*/}
+      {/*                <div class="recent-tags">*/}
+      {/*                  {(item.data.tags as string[]).slice(0, 2).map((tag) => (*/}
+      {/*                    <span class="recent-tag">{tag}</span>*/}
+      {/*                  ))}*/}
+      {/*                  {item.data.tags !== undefined &&*/}
+      {/*                    item.data.tags !== null &&*/}
+      {/*                    (item.data.tags as string[]).length > 2 && (*/}
+      {/*                      <span class="recent-tag more">*/}
+      {/*                        +{(item.data.tags as string[]).length - 2}*/}
+      {/*                      </span>*/}
+      {/*                    )}*/}
+      {/*                </div>*/}
+      {/*              </Show>*/}
+      {/*            </>*/}
+      {/*          ) : (*/}
+      {/*            <>*/}
+      {/*              <span class="recent-name">{item.data.name}</span>*/}
+      {/*              <span class="recent-meta">*/}
+      {/*                {item.data.items.length} items*/}
+      {/*              </span>*/}
+      {/*            </>*/}
+      {/*          )}*/}
+      {/*        </div>*/}
+      {/*      )}*/}
+      {/*    </For>*/}
+      {/*  )}*/}
+      {/*</div>*/}
 
       {/* Quick Actions */}
       <div class="quick-actions">

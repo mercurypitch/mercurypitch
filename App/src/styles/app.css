@@ -6883,6 +6883,7 @@ input:checked + .settings-slider:before {
 /* Walkthrough control group - Learn + Guide buttons side by side */
 .walkthrough-control-group {
   display: flex;
+  justify-content: center;
   gap: 6px;
 }
 

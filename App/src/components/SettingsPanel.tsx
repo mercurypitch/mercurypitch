@@ -7,7 +7,7 @@ import { createMemo, createSignal, Show } from 'solid-js'
 import { appStore } from '@/stores'
 import { adsr, playbackSpeed, setPlaybackSpeed, setSensitivity, settings, } from '@/stores'
 import { colorCodeNotes, flameMode, setColorCodeNotes, setFlameMode, } from '@/stores/settings-store'
-import { VERSION } from '@/version'
+import { APP_VERSION } from '@/version'
 
 export const SettingsPanel: Component = () => {
   const s = () => settings()
@@ -636,7 +636,7 @@ export const SettingsPanel: Component = () => {
               </svg>
             </div>
             <p class="about-name">PitchPerfect</p>
-            <p class="about-version">Version {VERSION}</p>
+            <p class="about-version">Version {APP_VERSION}</p>
             <p class="about-desc">
               A web-based vocal pitch practice tool. Sing into your microphone
               and see your accuracy on the pitch canvas. Use the piano roll
