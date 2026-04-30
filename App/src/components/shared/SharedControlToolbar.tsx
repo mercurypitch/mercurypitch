@@ -261,20 +261,6 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
           Stop
         </button>
 
-        {/* Practice sessions - only in practice tab */}
-        <Show when={isPracticeTab() && !sessionActive()}>
-          <div class="app-header-sep" />
-          <button
-            class="ctrl-btn mode-btn"
-            onClick={() => {
-              props.onSessionsClick?.()
-            }}
-            title="Browse practice sessions"
-          >
-            Sessions
-          </button>
-        </Show>
-
         {/* Focus Mode button */}
         <Show when={isPracticeTab()}>
           <div class="app-header-sep" />

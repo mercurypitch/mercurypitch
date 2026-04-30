@@ -1,5 +1,7 @@
-# Memory
+# Project Commands (PitchPerfect App)
 
-- [Project overview map completed](docs/reports/project-overview.md) — 2026-04-23: File tree, dependency graph, naming audit, file size analysis, component interaction map
-- [Learned SolidJS patterns from chaos-master](conventions.md) — SolidJS project conventions including structure, state management patterns (signals, stores, context), CSS modularity (design system, modules), custom hooks, and utility patterns.
-- [SolidJS skills reference](skills.md) — Practical SolidJS patterns for this project: signals, effects, effects, forEach, memo, CSS modules, event handlers, history/undo-redo, portals, and more.
+Use these commands for code validation and formatting:
+
+- **Lint & Fix:** `npm run lint:fix`
+- **Format:** `npm run fmt:write`
+- **Typecheck:** `npm run typecheck`

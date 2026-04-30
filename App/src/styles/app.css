@@ -3787,13 +3787,15 @@ Keeps your existing styles, only adjusts layout
   gap: 12px;
   margin-bottom: 12px;
   flex-wrap: wrap;
+  max-width: 500px; /* Keep everything compact and on the left */
 }
 
 .settings-row label {
   min-width: 160px;
+  width: auto;
   font-size: 0.85rem;
   color: var(--text-primary);
-  padding: 8px 12px;
+  padding: 8px 0; /* Reduced padding */
   display: flex;
   align-items: center;
   cursor: default;
@@ -3801,35 +3803,53 @@ Keeps your existing styles, only adjusts layout
 
 .settings-row input[type='range'] {
   flex: 1;
+  max-width: 200px; /* Restrict range slider width */
   min-width: 120px;
   accent-color: var(--accent);
 }
 
 .settings-row input[type='number'] {
   width: 60px;
-  padding: 4px 8px;
-  background: var(--bg-secondary);
+  padding: 6px 8px;
+  background: var(--bg-tertiary);
   border: 1px solid var(--border);
   color: var(--text-primary);
   border-radius: 4px;
   font-size: 0.85rem;
   text-align: center;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.settings-row input[type='number']:focus {
+  border-color: var(--accent);
+}
+
+/* Darker spin buttons for number inputs in settings */
+.settings-row input[type='number']::-webkit-inner-spin-button,
+.settings-row input[type='number']::-webkit-outer-spin-button {
+  opacity: 0.7;
+  filter: invert(65%) sepia(44%) saturate(711%) hue-rotate(179deg)
+    brightness(96%) contrast(95%);
+  cursor: pointer;
 }
 
 .settings-row select {
-  padding: 16px 28px;
+  padding: 8px 12px;
   background: var(--bg-secondary);
   border: 1px solid var(--border);
   color: var(--text-primary);
   border-radius: 4px;
   font-size: 0.85rem;
   cursor: pointer;
-  min-width: 150px;
+  flex: 1;
+  min-width: 200px;
+  max-width: 280px;
 }
 
 .settings-val {
   min-width: 40px;
-  text-align: right;
+  text-align: left;
   font-size: 0.85rem;
   color: var(--accent);
 }
@@ -3838,7 +3858,86 @@ Keeps your existing styles, only adjusts layout
   width: 100%;
   font-size: 0.72rem;
   color: var(--text-muted);
-  margin-top: -4px;
+  margin-top: 2px;
+}
+
+/* Toggle Switch Styling */
+.settings-toggle {
+  position: relative;
+  display: inline-block;
+  width: 42px !important; /* Strictly enforce width */
+  height: 22px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.settings-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.settings-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--bg-tertiary);
+  transition: 0.3s;
+  border-radius: 22px;
+  border: 1px solid var(--border);
+  width: 42px; /* Match parent width */
+}
+
+.settings-slider:before {
+  position: absolute;
+  content: '';
+  height: 16px;
+  width: 16px;
+  left: 2px;
+  bottom: 2px;
+  background-color: var(--text-secondary);
+  transition: 0.3s;
+  border-radius: 50%;
+}
+
+input:checked + .settings-slider {
+  background-color: var(--accent-dim);
+  border-color: var(--accent);
+}
+
+input:checked + .settings-slider:before {
+  transform: translateX(20px);
+  background-color: var(--accent);
+}
+
+.settings-row input[type='number'] {
+  width: 60px;
+  padding: 6px 8px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  border-radius: 4px;
+  font-size: 0.85rem;
+  text-align: center;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.settings-row input[type='number']:focus {
+  border-color: var(--accent);
+}
+
+/* Darker spin buttons for number inputs in settings */
+.settings-row input[type='number']::-webkit-inner-spin-button,
+.settings-row input[type='number']::-webkit-outer-spin-button {
+  opacity: 0.7;
+  filter: invert(65%) sepia(44%) saturate(711%) hue-rotate(179deg)
+    brightness(96%) contrast(95%);
+  cursor: pointer;
 }
 
 .settings-info {
@@ -4033,17 +4132,53 @@ Keeps your existing styles, only adjusts layout
 .about-features {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
   justify-content: center;
-  font-size: 0.78rem;
-  color: var(--text-muted);
+  font-size: 0.8rem;
 }
-.about-features span {
-  background: var(--bg-secondary);
-  padding: 4px 8px;
-  border-radius: 12px;
+
+.feature-pill {
+  background: var(--bg-tertiary);
+  padding: 6px 12px;
+  border-radius: 16px;
   border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  transition: all 0.2s ease;
 }
+
+.feature-pill svg {
+  flex-shrink: 0;
+}
+
+.feature-pill:hover {
+  background: var(--bg-card);
+  border-color: var(--accent-glow);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+}
+
+.pill-detection svg {
+  color: var(--accent);
+}
+.pill-editor svg {
+  color: var(--purple);
+}
+.pill-progress svg {
+  color: var(--green);
+}
+.pill-midi svg {
+  color: var(--orange);
+}
+.pill-adsr svg {
+  color: var(--teal);
+}
+.pill-reverb svg {
+  color: var(--yellow);
+}
+
 .about-credits {
   font-size: 0.75rem;
   color: var(--text-muted);
@@ -7382,7 +7517,7 @@ Keeps your existing styles, only adjusts layout
 }
 
 .walkthrough-text .md-list-ordered li::before {
-  content: counter(md-list-counter) ".";
+  content: counter(md-list-counter) '.';
   background: none;
   width: auto;
   height: auto;
@@ -7482,10 +7617,18 @@ Keeps your existing styles, only adjusts layout
 }
 
 /* Admonition icon content */
-.walkthrough-text .md-admonition-note .md-admonition-icon::before { content: 'N'; }
-.walkthrough-text .md-admonition-tip .md-admonition-icon::before { content: 'T'; }
-.walkthrough-text .md-admonition-warning .md-admonition-icon::before { content: '!'; }
-.walkthrough-text .md-admonition-info .md-admonition-icon::before { content: 'i'; }
+.walkthrough-text .md-admonition-note .md-admonition-icon::before {
+  content: 'N';
+}
+.walkthrough-text .md-admonition-tip .md-admonition-icon::before {
+  content: 'T';
+}
+.walkthrough-text .md-admonition-warning .md-admonition-icon::before {
+  content: '!';
+}
+.walkthrough-text .md-admonition-info .md-admonition-icon::before {
+  content: 'i';
+}
 
 /* Tables */
 .walkthrough-text table {
@@ -7781,13 +7924,13 @@ Keeps your existing styles, only adjusts layout
   border: 1px solid rgba(88, 166, 255, 0.22);
   border-radius: 999px;
   background: linear-gradient(
-          180deg,
-          rgba(22, 27, 34, 0.95),
-          rgba(13, 17, 23, 0.9)
+    180deg,
+    rgba(22, 27, 34, 0.95),
+    rgba(13, 17, 23, 0.9)
   );
   box-shadow:
-          inset 0 1px 0 rgba(255, 255, 255, 0.04),
-          0 0 0 1px rgba(0, 0, 0, 0.18);
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 0 0 1px rgba(0, 0, 0, 0.18);
 }
 
 .cycles-label {
@@ -7815,8 +7958,8 @@ Keeps your existing styles, only adjusts layout
 .cycles-control-group .cycles-input:focus {
   border-color: rgba(88, 166, 255, 0.9);
   box-shadow:
-          0 0 0 3px rgba(88, 166, 255, 0.16),
-          0 0 18px rgba(88, 166, 255, 0.16);
+    0 0 0 3px rgba(88, 166, 255, 0.16),
+    0 0 18px rgba(88, 166, 255, 0.16);
 }
 
 .cycle-progress-pill {
@@ -7828,9 +7971,9 @@ Keeps your existing styles, only adjusts layout
   border-radius: 999px;
   border: 1px solid rgba(63, 185, 80, 0.28);
   background: linear-gradient(
-          135deg,
-          rgba(63, 185, 80, 0.16),
-          rgba(88, 166, 255, 0.12)
+    135deg,
+    rgba(63, 185, 80, 0.16),
+    rgba(88, 166, 255, 0.12)
   );
   color: var(--text-primary);
   font-size: 0.78rem;
@@ -7866,7 +8009,7 @@ Keeps your existing styles, only adjusts layout
 #bpm-input::-webkit-outer-spin-button {
   opacity: 1;
   filter: invert(65%) sepia(44%) saturate(711%) hue-rotate(179deg)
-  brightness(96%) contrast(95%);
+    brightness(96%) contrast(95%);
   cursor: pointer;
 }
 
@@ -7884,13 +8027,13 @@ Keeps your existing styles, only adjusts layout
   border: 1px solid rgba(88, 166, 255, 0.22);
   border-radius: 999px;
   background: linear-gradient(
-          180deg,
-          rgba(22, 27, 34, 0.95),
-          rgba(13, 17, 23, 0.9)
+    180deg,
+    rgba(22, 27, 34, 0.95),
+    rgba(13, 17, 23, 0.9)
   );
   box-shadow:
-          inset 0 1px 0 rgba(255, 255, 255, 0.04),
-          0 0 0 1px rgba(0, 0, 0, 0.18);
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 0 0 1px rgba(0, 0, 0, 0.18);
 }
 
 .practice-mode-label {
@@ -7915,14 +8058,14 @@ Keeps your existing styles, only adjusts layout
   color-scheme: dark;
   appearance: none;
   background-image:
-          linear-gradient(45deg, transparent 50%, rgba(88, 166, 255, 0.95) 50%),
-          linear-gradient(135deg, rgba(88, 166, 255, 0.95) 50%, transparent 50%);
+    linear-gradient(45deg, transparent 50%, rgba(88, 166, 255, 0.95) 50%),
+    linear-gradient(135deg, rgba(88, 166, 255, 0.95) 50%, transparent 50%);
   background-position:
-          calc(100% - 16px) 11px,
-          calc(100% - 11px) 11px;
+    calc(100% - 16px) 11px,
+    calc(100% - 11px) 11px;
   background-size:
-          5px 5px,
-          5px 5px;
+    5px 5px,
+    5px 5px;
   background-repeat: no-repeat;
 }
 
@@ -7934,8 +8077,8 @@ Keeps your existing styles, only adjusts layout
 .practice-mode-control-group .practice-sub-mode-select:focus {
   border-color: rgba(88, 166, 255, 0.9);
   box-shadow:
-          0 0 0 3px rgba(88, 166, 255, 0.16),
-          0 0 18px rgba(88, 166, 255, 0.16);
+    0 0 0 3px rgba(88, 166, 255, 0.16),
+    0 0 18px rgba(88, 166, 255, 0.16);
 }
 
 .practice-mode-control-group .practice-sub-mode-select option {
@@ -7967,14 +8110,14 @@ Keeps your existing styles, only adjusts layout
   color-scheme: dark;
   appearance: none;
   background-image:
-          linear-gradient(45deg, transparent 50%, rgba(88, 166, 255, 0.95) 50%),
-          linear-gradient(135deg, rgba(88, 166, 255, 0.95) 50%, transparent 50%);
+    linear-gradient(45deg, transparent 50%, rgba(88, 166, 255, 0.95) 50%),
+    linear-gradient(135deg, rgba(88, 166, 255, 0.95) 50%, transparent 50%);
   background-position:
-          calc(100% - 16px) 14px,
-          calc(100% - 11px) 14px;
+    calc(100% - 16px) 14px,
+    calc(100% - 11px) 14px;
   background-size:
-          5px 5px,
-          5px 5px;
+    5px 5px,
+    5px 5px;
   background-repeat: no-repeat;
 }
 
@@ -8046,7 +8189,9 @@ Keeps your existing styles, only adjusts layout
   border-radius: 6px;
   cursor: pointer;
   padding: 4px 8px;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
 }
 
 .walkthrough-skip-section:hover {
@@ -8106,7 +8251,9 @@ Keeps your existing styles, only adjusts layout
   align-items: center;
   justify-content: center;
   border-radius: 6px;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
 }
 
 .guide-close-btn:hover {
@@ -8141,7 +8288,9 @@ Keeps your existing styles, only adjusts layout
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
   width: 100%;
   text-align: left;
 }
@@ -8188,7 +8337,9 @@ Keeps your existing styles, only adjusts layout
   color: var(--text-primary);
   font-size: 14px;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
   text-align: left;
   margin-bottom: 4px;
 }

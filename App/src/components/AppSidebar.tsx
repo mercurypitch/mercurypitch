@@ -11,7 +11,7 @@ import { NoteList } from '@/components/NoteList'
 import { PitchDisplay } from '@/components/PitchDisplay'
 import { StatsBars } from '@/components/StatsBars'
 import { KEY_OFFSETS, midiToFreq, midiToNote } from '@/lib/scale-data'
-import { activeTab as appActiveTab, appStore } from '@/stores'
+import { activeTab as appActiveTab, appStore, sessionResults } from '@/stores'
 import { keyName, scaleType, setKeyName, setScaleType, showLibrary, userSession, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import type { MelodyItem, NoteResult, PitchResult } from '@/types'
@@ -44,9 +44,6 @@ interface AppSidebarProps {
 export const AppSidebar: Component<AppSidebarProps> = (props) => {
   // Local alias for reactive tracking
   const activeTab = () => appActiveTab()
-  // userSession imported from @/stores; wrap in memo for reactive tracking.
-  // Renamed local to avoid TS7022 self-shadowing after appStore→named-import migration.
-  const sessionMemo = createMemo(() => userSession?.())
   return (
     <aside
       class={`app-sidebar${props.class !== undefined && props.class !== '' ? ` ${props.class}` : ''}`}
@@ -85,13 +82,18 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
         <button
           class="walkthrough-control-btn"
           onClick={() => {
-            const open = (window as unknown as { __openWalkthroughs?: () => void }).__openWalkthroughs
+            const open = (
+              window as unknown as { __openWalkthroughs?: () => void }
+            ).__openWalkthroughs
             open?.()
           }}
           title="View PitchPerfect walkthroughs"
         >
           <svg viewBox="0 0 24 24" width="18" height="18">
-            <path fill="currentColor" d="M21 5c-1.11-.35-2.33-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.43.3 4.5 1.5.15.15.35.05.5 0 .1-.1.1-.25 0-.35C21.25 20 21 19.75 21 19.5V5z" />
+            <path
+              fill="currentColor"
+              d="M21 5c-1.11-.35-2.33-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.43.3 4.5 1.5.15.15.35.05.5 0 .1-.1.1-.25 0-.35C21.25 20 21 19.75 21 19.5V5z"
+            />
           </svg>
           <span class="walkthrough-control-text">Learn</span>
         </button>
@@ -101,7 +103,10 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
           title="Interactive guide tours"
         >
           <svg viewBox="0 0 24 24" width="18" height="18">
-            <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
+            <path
+              fill="currentColor"
+              d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"
+            />
           </svg>
           <span class="walkthrough-control-text">Guide</span>
         </button>
@@ -262,11 +267,11 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
             </div>
 
             {/* Session history — practice tab only */}
-            <Show when={appStore.sessionResults().length > 0}>
+            <Show when={sessionResults().length > 0}>
               <div id="session-history-panel">
                 <h3>Sessions</h3>
                 <div id="session-history-list">
-                  <For each={appStore.sessionResults()}>
+                  <For each={sessionResults()}>
                     {(entry) => (
                       <div class="session-history-entry">
                         <span class="session-history-name">
@@ -290,36 +295,6 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
       {/* Note list + pitch reference — Practice tab only (bottom-anchored) */}
       <Show when={activeTab() === 'practice'}>
         <div class="sidebar-section sidebar-notes-bottom">
-          {/* Current session items display */}
-          <div class="session-items-display">
-            <h3>Session Items</h3>
-            <div id="session-items-list">
-              <Show when={sessionMemo() !== null}>
-                <For each={sessionMemo()!.items}>
-                  {(item) => (
-                    <div class="session-item-entry">
-                      <span class="session-item-label">{item.label}</span>
-                      <span class="session-item-type">
-                        {item.type === 'melody'
-                          ? '🎵'
-                          : (item.type as string) === 'scale'
-                            ? '♩'
-                            : '♪'}
-                      </span>
-                    </div>
-                  )}
-                </For>
-              </Show>
-              <Show
-                when={
-                  !sessionMemo()?.items ||
-                  (sessionMemo()?.items?.length ?? 0) === 0
-                }
-              >
-                <p class="session-empty-tip">No items in session</p>
-              </Show>
-            </div>
-          </div>
           <NoteList
             melody={props.melody}
             currentNoteIndex={props.currentNoteIndex}

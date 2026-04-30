@@ -6,13 +6,13 @@
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, onMount, Show } from 'solid-js'
 import { AppSidebar } from '@/components/AppSidebar'
+import { CharacterIcons } from '@/components/CharacterIcons'
 import { FocusMode } from '@/components/FocusMode'
 import { HistoryCanvas } from '@/components/HistoryCanvas'
 import { LibraryModal } from '@/components/LibraryModal'
 import { Notifications } from '@/components/Notifications'
 import { PianoRollCanvas } from '@/components/PianoRollCanvas'
 import { PitchCanvas } from '@/components/PitchCanvas'
-import { PresetsLibraryModal } from '@/components/PresetsLibraryModal'
 import { ScaleBuilder } from '@/components/ScaleBuilder'
 import { SessionBrowser } from '@/components/SessionBrowser'
 import { SessionEditor } from '@/components/SessionEditor'
@@ -21,7 +21,6 @@ import { SessionPlayer } from '@/components/SessionPlayer'
 import { SettingsPanel } from '@/components/SettingsPanel'
 import type { PracticeSubMode } from '@/components/shared/SharedControlToolbar'
 import { SharedControlToolbar } from '@/components/shared/SharedControlToolbar'
-import { WalkthroughControl } from '@/components/WalkthroughControl'
 import { EngineProvider, useEngines } from '@/contexts/EngineContext'
 import { useEditorController } from '@/features/editor/useEditorController'
 import { usePianoRollEvents } from '@/features/events/usePianoRollEvents'
@@ -41,6 +40,9 @@ import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPr
 import { melodyStore } from '@/stores/melody-store'
 import { getSession } from '@/stores/session-store'
 import type { MelodyItem, PlaybackMode } from '@/types'
+import { Walkthrough } from './components'
+import { GuideSelection } from './components/GuideSelection'
+import { WelcomeScreen } from './components/WelcomeScreen'
 
 // ============================================================
 // Tab type
@@ -76,7 +78,11 @@ function filterMelodyForPractice(
     if (history.length === 0) return melody
     const errorCounts = new Map<number, number>()
     for (const session of history) {
+      // Each session has noteResults with avgCents per note
+      // We approximate by looking at score — low scores = many errors
       if (session.score < 70) {
+        // Rough heuristic: low-scoring sessions suggest problem notes
+        // Count each session as a "bad note" indicator
         for (let i = 0; i < Math.ceil((100 - session.score) / 10); i++) {
           const idx = i % melody.length
           errorCounts.set(idx, (errorCounts.get(idx) ?? 0) + 1)
@@ -329,7 +335,9 @@ const AppShell: Component<AppProps> = (props) => {
     const keyName = keyNameSignal()
     const scaleType = scaleTypeSignal()
 
+    // Check if we have notes that can be transposed
     if (melodyStore.items().length > 0) {
+      // Transpose all notes by the octave delta
       const MIDI_OCTAVE_SHIFT = 12
       const transposed = melodyStore.items().map((item) => ({
         ...item,
@@ -345,6 +353,7 @@ const AppShell: Component<AppProps> = (props) => {
       melodyStore.setMelody(transposed)
     }
 
+    // Rebuild scale with new octave
     melodyStore.refreshScale(keyName, newOctave, scaleType)
   }
 
@@ -581,7 +590,20 @@ const AppShell: Component<AppProps> = (props) => {
 
   return (
     <div id="app">
-      <WalkthroughControl showOnStart={true} />
+      {/* Welcome Screen (shown on first visit) */}
+      <Show when={appStore.showWelcome()}>
+        <WelcomeScreen onTakeTour={openGuideSelection} />
+      </Show>
+
+      {/* Guide Selection dialog */}
+      <GuideSelection
+        isOpen={showGuideSelection()}
+        onClose={closeGuideSelection}
+        onStartTour={startGuideTour}
+      />
+
+      {/* Guide Tour — Interactive spotlight overlay */}
+      <Walkthrough />
 
       <Show when={sidebarOpen()}>
         <div class="sidebar-backdrop" onClick={closeSidebar} />
@@ -611,8 +633,9 @@ const AppShell: Component<AppProps> = (props) => {
             <p class="subtitle">Voice Pitch Practice</p>
           </div>
           <div class="header-right">
-            {/* Walkthrough modals (buttons moved to sidebar) */}
-            <WalkthroughControl showButtons={false} onOpenGuide={openGuideSelection} />
+            <CharacterIcons
+              onSelect={(name) => showNotification(`Selected ${name}!`, 'info')}
+            />
           </div>
           <nav id="app-tabs">
             <button
@@ -642,17 +665,23 @@ const AppShell: Component<AppProps> = (props) => {
           </nav>
         </header>
 
+        {/* Main layout: sidebar + content */}
         <div class="main-layout" id="main-layout">
+          {/* Shared sidebar — with mobile open class */}
           <AppSidebar
             class={sidebarOpen() ? 'open' : ''}
-            onPresetLoad={(_name) => {}}
+            onPresetLoad={(_name) => {
+              // Presets now handled by melodyStore/LibraryModal
+            }}
             onOctaveShift={handleOctaveShift}
             onOpenScaleBuilder={() => setShowScaleBuilder(true)}
-            melody={activePlaybackItems}
             onOpenLearn={() => {
-              (window as unknown as { __openWalkthroughs?: () => void }).__openWalkthroughs?.()
+              ;(
+                window as unknown as { __openWalkthroughs?: () => void }
+              ).__openWalkthroughs?.()
             }}
             onOpenGuide={openGuideSelection}
+            melody={() => melodyStore.items()}
             currentNoteIndex={currentNoteIndex}
             noteResults={noteResults}
             isPlaying={isPlaying}
@@ -661,9 +690,12 @@ const AppShell: Component<AppProps> = (props) => {
             onClose={closeSidebar}
           />
 
+          {/* Tab content */}
           <div class="main-content">
             <Show when={activeTab() === 'practice'}>
+              {/* Practice panel */}
               <div id="practice-panel">
+                {/* Shared control toolbar with practice-specific options */}
                 <SharedControlToolbar
                   activeTab={activeTab}
                   practiceTab={() => activeTab() === 'practice'}
@@ -813,6 +845,7 @@ const AppShell: Component<AppProps> = (props) => {
                   PianoRollCanvas + PianoRollEditor.setRemoteBeat. */}
               <Show when={editorView() === 'piano-roll'}>
                 <PianoRollCanvas
+                  // FIXME: Check if playbck items or items should be sent
                   melody={() => melodyStore.items()}
                   scale={() => melodyStore.currentScale()}
                   bpm={() => bpm()}
@@ -996,19 +1029,6 @@ const AppShell: Component<AppProps> = (props) => {
         onClose={() => setShowScaleBuilder(false)}
       />
 
-      <Show when={showSessionBrowser()}>
-        <SessionBrowser
-          onClose={() => setShowSessionBrowser(false)}
-          onStartSession={(session) => {
-            const practiceSess = getSession(session.id)
-            if (practiceSess) {
-              startPracticeSession(practiceSess)
-              setShowSessionBrowser(false)
-            }
-          }}
-        />
-      </Show>
-
       <Show when={sessionSummary() !== null}>
         <div class="overlay" onClick={() => setSessionSummary(null)}>
           <div
@@ -1064,8 +1084,17 @@ const AppShell: Component<AppProps> = (props) => {
         <SessionLibraryModal isOpen={true} close={() => hideSessionLibrary()} />
       </Show>
 
-      <Show when={isPresetsModalOpen()}>
-        <PresetsLibraryModal isOpen={true} close={() => hidePresetsLibrary()} />
+      <Show when={showSessionBrowser()}>
+        <SessionBrowser
+          onClose={() => setShowSessionBrowser(false)}
+          onStartSession={(session) => {
+            const practiceSess = getSession(session.id)
+            if (practiceSess) {
+              startPracticeSession(practiceSess)
+              setShowSessionBrowser(false)
+            }
+          }}
+        />
       </Show>
     </div>
   )

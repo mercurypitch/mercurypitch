@@ -7,6 +7,7 @@ import { createMemo, createSignal, Show } from 'solid-js'
 import { appStore } from '@/stores'
 import { adsr, playbackSpeed, setPlaybackSpeed, setSensitivity, settings, } from '@/stores'
 import { colorCodeNotes, flameMode, setColorCodeNotes, setFlameMode, } from '@/stores/settings-store'
+import { VERSION } from '@/version'
 
 export const SettingsPanel: Component = () => {
   const s = () => settings()
@@ -170,14 +171,17 @@ export const SettingsPanel: Component = () => {
 
           <div class="settings-row">
             <label for="set-tonic-anchor">Tonic Anchor Tone</label>
-            <input
-              type="checkbox"
-              id="set-tonic-anchor"
-              checked={s().tonicAnchor}
-              onChange={(e) => {
-                appStore.setTonicAnchor(e.currentTarget.checked)
-              }}
-            />
+            <label class="settings-toggle">
+              <input
+                type="checkbox"
+                id="set-tonic-anchor"
+                checked={s().tonicAnchor}
+                onChange={(e) => {
+                  appStore.setTonicAnchor(e.currentTarget.checked)
+                }}
+              />
+              <span class="settings-slider" />
+            </label>
             <small>
               Play a reference tone at the start of each run to help lock in to
               the key
@@ -357,14 +361,17 @@ export const SettingsPanel: Component = () => {
 
           <div class="settings-row">
             <label for="vis-gridlines">Grid Lines</label>
-            <input
-              type="checkbox"
-              id="vis-gridlines"
-              checked={appStore.gridLinesVisible()}
-              onChange={(e) => {
-                appStore.setGridLines(e.currentTarget.checked)
-              }}
-            />
+            <label class="settings-toggle">
+              <input
+                type="checkbox"
+                id="vis-gridlines"
+                checked={appStore.gridLinesVisible()}
+                onChange={(e) => {
+                  appStore.setGridLines(e.currentTarget.checked)
+                }}
+              />
+              <span class="settings-slider" />
+            </label>
             <small>Show horizontal and vertical grid lines</small>
           </div>
 
@@ -382,37 +389,51 @@ export const SettingsPanel: Component = () => {
             </select>
             <small>Switch between dark and light mode</small>
           </div>
+        </div>
+
+        {/* Visualization Section */}
+        <div class="settings-section">
+          <h3 class="settings-section-title">Visualization</h3>
+          <div class="settings-divider" />
+          <p class="settings-desc">
+            Enhance the practice experience with visual feedback effects.
+          </p>
 
           <div class="settings-row">
-            <label for="vis-flame">🔥 Burning Notes</label>
-            <input
-              type="checkbox"
-              id="vis-flame"
-              checked={flameMode()}
-              onChange={(e) => {
-                setFlameMode(e.currentTarget.checked)
-              }}
-            />
+            <label for="vis-flame">Burning Notes</label>
+            <label class="settings-toggle">
+              <input
+                type="checkbox"
+                id="vis-flame"
+                checked={flameMode()}
+                onChange={(e) => {
+                  setFlameMode(e.currentTarget.checked)
+                }}
+              />
+              <span class="settings-slider" />
+            </label>
             <small>
-              Animated fire/glow effect on the currently-playing note during
-              practice.
+              Animate the currently-playing note with a burning fire effect
+              synced to playback.
             </small>
           </div>
 
           <div class="settings-row">
-            <label for="vis-color-code">🎨 Color-Code Played Notes</label>
-            <input
-              type="checkbox"
-              id="vis-color-code"
-              checked={colorCodeNotes()}
-              onChange={(e) => {
-                setColorCodeNotes(e.currentTarget.checked)
-              }}
-            />
+            <label for="vis-color-code">Accuracy Color Coding</label>
+            <label class="settings-toggle">
+              <input
+                type="checkbox"
+                id="vis-color-code"
+                checked={colorCodeNotes()}
+                onChange={(e) => {
+                  setColorCodeNotes(e.currentTarget.checked)
+                }}
+              />
+              <span class="settings-slider" />
+            </label>
             <small>
-              Tint already-played notes by accuracy: green = perfect, teal =
-              excellent, lime = good, amber = okay, red = off. Practice tab
-              only.
+              Color-code played notes based on pitch accuracy (Green: Perfect,
+              Teal: Excellent, etc).
             </small>
           </div>
         </div>
@@ -615,7 +636,7 @@ export const SettingsPanel: Component = () => {
               </svg>
             </div>
             <p class="about-name">PitchPerfect</p>
-            <p class="about-version">Version 1.0.0</p>
+            <p class="about-version">Version {VERSION}</p>
             <p class="about-desc">
               A web-based vocal pitch practice tool. Sing into your microphone
               and see your accuracy on the pitch canvas. Use the piano roll
@@ -623,16 +644,63 @@ export const SettingsPanel: Component = () => {
               real-time feedback.
             </p>
             <div class="about-features">
-              <span>🎤 Real-time pitch detection</span>
-              <span>🎹 Piano roll editor</span>
-              <span>📊 Progress tracking</span>
-              <span>🎵 MIDI import/export</span>
-              <span>🔊 ADSR envelope</span>
-              <span>🏛️ Reverb effects</span>
+              <span class="feature-pill pill-detection">
+                <svg viewBox="0 0 24 24" width="14" height="14">
+                  <path
+                    fill="currentColor"
+                    d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zM17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"
+                  />
+                </svg>
+                Real-time pitch detection
+              </span>
+              <span class="feature-pill pill-editor">
+                <svg viewBox="0 0 24 24" width="14" height="14">
+                  <path
+                    fill="currentColor"
+                    d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"
+                  />
+                </svg>
+                Piano roll editor
+              </span>
+              <span class="feature-pill pill-progress">
+                <svg viewBox="0 0 24 24" width="14" height="14">
+                  <path
+                    fill="currentColor"
+                    d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"
+                  />
+                </svg>
+                Progress tracking
+              </span>
+              <span class="feature-pill pill-midi">
+                <svg viewBox="0 0 24 24" width="14" height="14">
+                  <path
+                    fill="currentColor"
+                    d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"
+                  />
+                </svg>
+                MIDI import/export
+              </span>
+              <span class="feature-pill pill-adsr">
+                <svg viewBox="0 0 24 24" width="14" height="14">
+                  <path
+                    fill="currentColor"
+                    d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a.996.996 0 0 0 0-1.41l-2.34-2.34a.996.996 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"
+                  />
+                </svg>
+                ADSR envelope
+              </span>
+              <span class="feature-pill pill-reverb">
+                <svg viewBox="0 0 24 24" width="14" height="14">
+                  <path
+                    fill="currentColor"
+                    d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"
+                  />
+                  <circle cx="12" cy="12" r="3" fill="currentColor" />
+                </svg>
+                Reverb effects
+              </span>
             </div>
-            <p class="about-credits">
-              Built with SolidJS + TypeScript. Audio powered by Web Audio API.
-            </p>
+            <p class="about-credits">Vocal Pitch Practice — Redefined.</p>
             <div class="about-links">
               <a
                 href="https://github.com/Komediruzecki/pitch-perfect"

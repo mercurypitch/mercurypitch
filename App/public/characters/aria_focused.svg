@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Aria: Falsetto Specialist (Focused) -->
+  <defs>
+    <linearGradient id="ariaGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#bc8cff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2dd4bf;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <path d="M50 20 Q75 20 85 45 Q85 85 50 85 Q15 85 15 45 Q25 20 50 20" fill="url(#ariaGrad)" />
+  <!-- Glowing Aura -->
+  <circle cx="50" cy="52" r="40" fill="none" stroke="white" stroke-width="1" opacity="0.3" />
+  <circle cx="50" cy="52" r="35" fill="none" stroke="white" stroke-width="0.5" opacity="0.2" />
+  <!-- Eyes (Deep Focus) -->
+  <path d="M38 52 A2 2 0 0 1 42 52" stroke="white" stroke-width="2" fill="none" />
+  <path d="M58 52 A2 2 0 0 1 62 52" stroke="white" stroke-width="2" fill="none" />
+  <!-- Mouth (O-shape) -->
+  <circle cx="50" cy="72" r="3" stroke="white" stroke-width="1.5" fill="none" />
+</svg>
