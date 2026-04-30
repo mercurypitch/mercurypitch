@@ -10,7 +10,9 @@ import { setActiveTab, setActiveUserSession, showLibrary, showNotification, show
 import { getActiveSession, getSessions } from '@/stores/melody-store'
 import { melodyStore } from '@/stores/melody-store'
 import { createSession, getDefaultSession, getSession, saveSession, } from '@/stores/session-store'
+import { playback } from '@/stores/playback-store'
 import type { MelodyData, PlaybackSession, SessionItem } from '@/types'
+
 
 export const LibraryTab: Component = () => {
   const library = createMemo(() => melodyStore.getMelodyLibrary())
@@ -311,12 +313,35 @@ export const LibraryTab: Component = () => {
       appStore.toggleMelodySelection?.(melodyId)
       return
     }
+    // Guard: changing the active melody mid-playback would desync the
+    // PlaybackRuntime (which is currently iterating notes from the old
+    // melody) from melodyStore (the new melody) and visually swap the
+    // canvas under the playhead. Disallow until the user has fully
+    // stopped. We treat "playing" and "paused" as locked; only when the
+    // global transport store reports stopped can the sidebar mutate the
+    // active melody.
+    if (!playback.isStopped()) {
+      showNotification(
+        'Stop playback before switching melody',
+        'info',
+      )
+      return
+    }
     // Single click: select for playback. We do NOT switch tabs anymore —
     // selection is purely a Practice/sidebar action; the user can decide
     // when to open the editor (double-click goes via handleMelodyDoubleClick
     // → handlePlayMelodyInSession). This was previously force-switching to
     // the editor tab, which was wrong UX.
     melodyStore.loadMelody(melodyId)
+    // The PracticeCanvas reads `playbackDisplayMelody() ?? melodyStore.items()`
+
+    // and previously kept showing the stale post-play session melody after
+    // a sidebar click. The fix lives in usePlaybackController.ts as a
+    // createEffect on melodyStore.getCurrentMelody()?.id which clears the
+    // display whenever the active melody id changes while stopped — so the
+    // loadMelody() call above is sufficient here; no manual clear needed.
+
+
 
     // Ensure default session is loaded if no active session exists.
     const sid = melodyStore.getActiveSessionId()

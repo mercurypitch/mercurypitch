@@ -63,19 +63,47 @@ export const SessionPlayer: Component<SessionPlayerProps> = (props) => {
         </Show>
       </div>
 
-      <div class="session-player-item">
+      {/*
+        Rest items get a distinct visual treatment so the user can see
+        at a glance "the runtime is intentionally silent right now —
+        this is a planned rest, not a hung playback". We swap the
+        regular musical-note icon for a pause glyph and tag the
+        wrapper with `is-rest` for CSS styling (italic muted text).
+        Non-rest (melody) items render as before.
+      */}
+      <div
+        class={`session-player-item ${
+          currentItem()?.type === 'rest' ? 'is-rest' : ''
+        }`}
+      >
         <div class="session-item-icon">
-          <svg viewBox="0 0 24 24" width="14" height="14">
-            <path
-              fill="currentColor"
-              d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"
-            />
-          </svg>
+          <Show
+            when={currentItem()?.type === 'rest'}
+            fallback={
+              <svg viewBox="0 0 24 24" width="14" height="14">
+                <path
+                  fill="currentColor"
+                  d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"
+                />
+              </svg>
+            }
+          >
+            {/* Pause / rest glyph */}
+            <svg viewBox="0 0 24 24" width="14" height="14">
+              <path
+                fill="currentColor"
+                d="M6 5h4v14H6zM14 5h4v14h-4z"
+              />
+            </svg>
+          </Show>
         </div>
         <span class="session-item-label">
-          {currentItem()?.label ?? 'Loading...'}
+          {currentItem()?.type === 'rest'
+            ? `Rest — ${currentItem()?.label ?? 'pause'}`
+            : (currentItem()?.label ?? 'Loading...')}
         </span>
       </div>
+
 
       <div class="session-player-timer">
         <span class="session-elapsed">{formatTime(elapsed())}</span>

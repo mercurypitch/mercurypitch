@@ -8927,3 +8927,12 @@ input:checked + .settings-slider:before {
   color: var(--text-muted, #888);
   font-style: italic;
 }
+
+/* SessionPlayer — Rest item indicator */
+.session-player-item.is-rest .session-item-label {
+  font-style: italic;
+  color: var(--text-muted, #9aa3b2);
+}
+.session-player-item.is-rest .session-item-icon {
+  color: var(--accent-muted, #777);
+}

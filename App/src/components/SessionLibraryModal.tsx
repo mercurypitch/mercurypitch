@@ -6,8 +6,8 @@ import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
 import { appStore, melodyStore, setActiveTab, setEditorView } from '@/stores'
 import { setActiveUserSession, showNotification } from '@/stores'
-import { setPlayMode } from '@/stores/transport-store'
 import { createSession, saveSession } from '@/stores/session-store'
+
 
 import type { PlaybackSession, SessionCategory, SessionDifficulty, } from '@/types'
 import { SessionMiniTimeline } from './SessionMiniTimeline'
@@ -73,8 +73,13 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
     // Calling it here keeps the two routes identical.
     appStore.loadSession(session)
     setActiveTab('practice')
-    setPlayMode('practice')
+    // playMode is forced to 'practice' inside usePlaybackController's
+    // playSessionSequence() handler, so we don't need to set it here —
+    // and there's no store-level setPlayMode export (it's an App-local
+    // signal). Setting the active tab + closing the modal + invoking
+    // the bridge is enough.
     props.close()
+
 
     const win = window as unknown as {
       __pp?: { playSessionSequence?: (melodyIds: string[]) => void }

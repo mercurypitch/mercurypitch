@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- compat shim deps; remove with future redesign */
 import type { Accessor, Setter } from 'solid-js'
-import { createMemo, createSignal } from 'solid-js'
+import { createEffect, createMemo, createSignal } from 'solid-js'
+
 import type { AudioEngine } from '@/lib/audio-engine'
 import { audioRegistry } from '@/lib/audio-registry'
 import type { PlaybackRuntime } from '@/lib/playback-runtime'
@@ -136,6 +137,29 @@ export function usePlaybackController(
   playbackRuntime.on('noteStart', (e: { note: unknown; index: number }) => {
     setCurrentNoteIndex(e.index)
   })
+
+  // Auto-clear playback display when the user switches to a different
+  // melody via the sidebar (LibraryTab.handleMelodyClick) while playback
+  // is fully stopped. Without this, the practice canvas would keep
+  // showing the previously-played session melody (which lives in
+  // playbackDisplayMelody) instead of the newly-selected one.
+  //
+  // We deliberately key off melodyStore.currentMelody()?.id (not items())
+  // so unrelated edits to the same melody don't clobber a frozen
+  // post-play view. While playing/paused we leave the display alone —
+  // LibraryTab's click handler already gates on playback.isStopped(),
+  // but this is defense-in-depth for any other code paths that might
+  // call melodyStore.loadMelody() during a run.
+  let lastSeenMelodyId: string | null = null
+  createEffect(() => {
+    const id = melodyStore.getCurrentMelody()?.id ?? null
+    if (id === lastSeenMelodyId) return
+    lastSeenMelodyId = id
+    if (isPlaying() || isPaused()) return
+    setPlaybackDisplayMelody(null)
+    setPlaybackDisplayBeats(null)
+  })
+
 
   const resetPlaybackState = async () => {
     audioEngine.stopTone()
