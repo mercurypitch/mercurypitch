@@ -484,6 +484,17 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
         ctx.lineWidth = isActive ? 2 : 1.25
         ctx.stroke()
 
+        // Draw accuracy percentage on played notes
+        if (isPlayed && playedRecord !== null && bw > 20) {
+          const pct = Math.round(Math.max(0, 100 - playedRecord.avgCents * 2))
+          const fontSize = Math.max(9, Math.min(12, boxH * 0.45))
+          ctx.font = `bold ${fontSize}px ui-monospace, monospace`
+          ctx.fillStyle = 'rgba(255,255,255,0.9)'
+          ctx.textAlign = 'center'
+          ctx.textBaseline = 'middle'
+          ctx.fillText(`${pct}%`, x1 + bw / 2, y)
+        }
+
         // ── Flame mode: progressive left→right burning fill. ──
         // The fire fills the note's rectangle in lockstep with playback
         // position: at the start of the note bar there's a small flame

@@ -1021,6 +1021,18 @@ header h1 {
   margin-left: auto;
 }
 
+.note-accuracy-pct {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  margin-left: 6px;
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text-primary);
+  min-width: 28px;
+  text-align: right;
+}
+
 /* Pitch reference */
 #pitch-reference {
   background: var(--bg-card);

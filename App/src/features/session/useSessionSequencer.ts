@@ -271,15 +271,20 @@ export function useSessionSequencer(deps: Deps): SessionSequencer {
         nextItem.beats ?? 8,
         nextItem.label,
       )
+      const scaleItems = melodyStore.items()
       playbackRuntime.stop()
-      playbackRuntime.setMelody(melodyStore.items())
+      playbackRuntime.setMelody(scaleItems)
+      setPlaybackDisplayMelody(scaleItems)
+      setPlaybackDisplayBeats(melodyTotalBeats(scaleItems))
       startAfterCompleteCleanup()
     } else if (nextItem.type === 'melody' || nextItem.type === 'preset') {
       const melodyItems = buildSessionItemMelody(nextItem)
       melodyStore.setMelody(melodyItems)
+      const totalBeats = melodyTotalBeats(melodyItems)
       playbackRuntime.stop()
-      playbackRuntime.setMelody(melodyStore.items())
-      // FIXME: countIn behavior decision pending — currently fires per item
+      playbackRuntime.setMelody(melodyItems)
+      setPlaybackDisplayMelody(melodyItems)
+      setPlaybackDisplayBeats(totalBeats)
       startAfterCompleteCleanup()
     }
   }
