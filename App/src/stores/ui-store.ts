@@ -19,7 +19,8 @@ export const [isLibraryModalOpen, setShowLibraryModal] =
   createSignal<boolean>(false)
 export const [isSessionLibraryModalOpen, setShowSessionLibraryModal] =
   createSignal<boolean>(false)
-export const [showSessionBrowser, setShowSessionBrowser] = createSignal<boolean>(false)
+export const [showSessionBrowser, setShowSessionBrowser] =
+  createSignal<boolean>(false)
 
 export function showLibrary(): void {
   setShowLibraryModal(true)

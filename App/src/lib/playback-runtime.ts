@@ -359,8 +359,6 @@ export class PlaybackRuntime {
     this._emit({ type: 'beat', beat: target })
   }
 
-
-
   /**
    * Set count-in beats (0-4). Count-in is shown before playback starts.
    */

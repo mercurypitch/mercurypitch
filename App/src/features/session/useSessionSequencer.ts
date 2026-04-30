@@ -271,9 +271,7 @@ export function useSessionSequencer(deps: Deps): SessionSequencer {
       // a synchronous start there would be killed by the runtime's
       // post-complete stop().
       setTimeout(() => playbackRuntime.start(0), 0)
-
     } else if ((nextItem.type as string) === 'scale') {
-
       buildScaleMelody(
         nextItem.scaleType ?? 'major',
         nextItem.beats ?? 8,

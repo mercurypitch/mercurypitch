@@ -51,7 +51,6 @@ export interface PlaybackController {
   setPlaybackDisplayBeats: (b: number | null) => void
 }
 
-
 interface PlaybackControllerDeps {
   audioEngine: AudioEngine
   playbackRuntime: PlaybackRuntime
@@ -168,7 +167,6 @@ export function usePlaybackController(
     setPlaybackDisplayBeats(null)
   })
 
-
   const resetPlaybackState = async () => {
     audioEngine.stopTone()
     audioEngine.stopAllNotes()
@@ -248,7 +246,6 @@ export function usePlaybackController(
         setSessionActive(true)
         startPracticeSession(activeSession)
 
-
         // Find the first item that actually produces audio. A session
         // may legitimately start with a rest (e.g. "warm up silence");
         // we still skip it on initial Play because the runtime can't
@@ -279,7 +276,6 @@ export function usePlaybackController(
       forcedDurationBeats !== undefined
         ? (playbackDisplayMelody() ?? [])
         : melodyStore.items()
-
 
     if (baseMelody.length === 0) {
       buildScaleMelody(scaleType(), 8)
@@ -446,7 +442,6 @@ export function usePlaybackController(
     void resetPlaybackState()
   }
 
-
   const loadAndPlayMelodyForSession = (melodyId: string) => {
     const melody = melodyStore.getMelody(melodyId)
     if (!melody) return
@@ -505,4 +500,3 @@ export function usePlaybackController(
     setPlaybackDisplayBeats,
   }
 }
-
