@@ -180,11 +180,34 @@ export const LibraryTab: Component = () => {
 
   const handleSessionChange = (e: Event): void => {
     const sessionId = (e.currentTarget as HTMLSelectElement).value
+    // v3: dropdown also lists playlists (with id "playlist:<id>") so the
+    // user can promote a playlist into the active-session slot. Detect the
+    // synthetic prefix and build a synthetic session via melody-store.
+    if (sessionId.startsWith('playlist:')) {
+      const playlistId = sessionId.slice('playlist:'.length)
+      const synth = melodyStore.buildPlaylistAsSession(playlistId)
+      if (synth !== null) {
+        setActiveSessionAndSelectFirstMelody(synth)
+      }
+      return
+    }
     const session = getSession(sessionId)
     if (session !== undefined) {
       setActiveSessionAndSelectFirstMelody(session)
     }
   }
+
+  // List of playlists for the active-session dropdown (rendered as a
+  // separate <optgroup>).
+  const allPlaylists = createMemo(() => {
+    const playlists = library().playlists
+    return Object.entries(playlists).map(([id, p]) => ({
+      id: `playlist:${id}`,
+      name: p.name,
+      count: p.melodyKeys.length + (p.sessionKeys?.length ?? 0),
+    }))
+  })
+
 
   const handleNewSession = () => {
     console.info('[LibraryTab] handleNewSession called')
@@ -424,16 +447,47 @@ export const LibraryTab: Component = () => {
               <p class="section-label">Active Session</p>
               <select
                 class="session-select sidebar-session-select"
-                value={userSession()?.id ?? ''}
                 onChange={handleSessionChange}
                 title="Choose active session"
               >
-                <For each={allSessions()}>
-                  {(session) => (
-                    <option value={session.id}>{session.name}</option>
-                  )}
-                </For>
+                {/*
+                  NOTE: We mark `selected` per-<option> instead of using the
+                  controlled `value=` prop on <select>. With dynamic
+                  <optgroup>/<For> children, the `value` prop applies before
+                  options exist on the first render, so the displayed label
+                  doesn't update when `userSession()` changes. Setting
+                  `selected` reactively on the matching option keeps the
+                  display in sync with the active session/playlist.
+                */}
+                <optgroup label="Sessions">
+                  <For each={allSessions()}>
+                    {(session) => (
+                      <option
+                        value={session.id}
+                        selected={userSession()?.id === session.id}
+                      >
+                        {session.name}
+                      </option>
+                    )}
+                  </For>
+                </optgroup>
+                <Show when={allPlaylists().length > 0}>
+                  <optgroup label="Playlists">
+                    <For each={allPlaylists()}>
+                      {(p) => (
+                        <option
+                          value={p.id}
+                          selected={userSession()?.id === p.id}
+                        >
+                          {p.name} ({p.count})
+                        </option>
+                      )}
+                    </For>
+                  </optgroup>
+                </Show>
               </select>
+
+
               <span class="section-meta">
                 {sessionItems().length} item
                 {sessionItems().length === 1 ? '' : 's'}
@@ -493,79 +547,95 @@ export const LibraryTab: Component = () => {
             <div class="session-items-pills">
               <For each={sessionItems()}>
                 {(item: SessionItem & { melodyData?: MelodyData }) => {
-                  const isMelody =
+                  // ────────────────────────────────────────────────
+                  // BUGFIX: previously these were `const`s computed once
+                  // when the For row was created. That made the "active"
+                  // and "selected" classes stick to whichever melody was
+                  // current at first render — clicking another pill
+                  // updated `currentMelody` but the row's class string
+                  // was already baked in, so the wrong pill kept the
+                  // highlight. Wrap each derived value in an accessor
+                  // so SolidJS re-runs them when signals change.
+                  // ────────────────────────────────────────────────
+                  const melodyId = (): string | null =>
                     item.type === 'melody' &&
                     item.melodyId !== null &&
                     item.melodyId !== undefined
-                  const isSelected =
-                    isMelody &&
-                    item.melodyId !== null &&
-                    item.melodyId !== undefined &&
-                    selectedMelodyIds().includes(item.melodyId)
-                  const isActiveMelody =
-                    isMelody && item.melodyId === activeMelodyId()
-                  const isMissingMelody =
-                    isMelody && item.melodyData === undefined
-                  const itemLabel =
-                    isMelody &&
-                    !isMissingMelody &&
+                      ? item.melodyId
+                      : null
+                  const isMelody = (): boolean => melodyId() !== null
+                  const isMissingMelody = (): boolean =>
+                    isMelody() && item.melodyData === undefined
+                  const isSelected = (): boolean => {
+                    const id = melodyId()
+                    return id !== null && selectedMelodyIds().includes(id)
+                  }
+                  const isActiveMelody = (): boolean =>
+                    melodyId() !== null && melodyId() === activeMelodyId()
+                  const itemLabel = (): string =>
+                    isMelody() &&
+                    !isMissingMelody() &&
                     item.melodyData !== undefined
                       ? item.melodyData.name
                       : item.label
 
-                  // Non-rest items (melody, scale, preset) are all clickable.
-                  // Scales/presets are loaded into melodyStore as a transient melody.
                   const isClickable = item.type !== 'rest'
+
                   const handleClickItem = (e: MouseEvent) => {
                     if (!isClickable) return
-                    if (
-                      isMelody &&
-                      !isMissingMelody &&
-                      item.melodyId !== null &&
-                      item.melodyId !== undefined
-                    ) {
-                      handleMelodyClick(item.melodyId, e)
+                    const id = melodyId()
+                    if (id !== null && !isMissingMelody()) {
+                      handleMelodyClick(id, e)
                       return
                     }
-                    // Scale or preset (legacy): build the items into the melody
-                    // store so the click still loads something. Sessions should
-                    // ideally only contain melody/rest items going forward.
-                    // No tab-switch here — single-click is just selection.
+                    // Legacy scale/preset items — flatten into a transient
+                    // melody. Single-click should not switch tabs.
                     const built = buildSessionItemMelody(item)
-                    if (built.length > 0) {
-                      melodyStore.setMelody(built)
-                    }
+                    if (built.length > 0) melodyStore.setMelody(built)
                   }
                   const handleDblClickItem = () => {
-                    if (
-                      isMelody &&
-                      !isMissingMelody &&
-                      item.melodyId !== null &&
-                      item.melodyId !== undefined
-                    ) {
-                      handleMelodyDoubleClick(item.melodyId)
+                    const id = melodyId()
+                    if (id !== null && !isMissingMelody()) {
+                      handleMelodyDoubleClick(id)
                     }
                   }
+
+                  // Build the class string reactively. We compose with a
+                  // function so each signal access stays inside the JSX
+                  // reactive scope — Solid's compiler picks it up.
+                  const pillClass = (): string =>
+                    [
+                      'session-item-pill',
+                      isMelody() ? 'melody-pill' : '',
+                      isClickable ? 'clickable' : '',
+                      isSelected() ? 'selected' : '',
+                      isActiveMelody() ? 'active' : '',
+                    ]
+                      .filter(Boolean)
+                      .join(' ')
+
                   return (
                     <span
-                      class={`session-item-pill ${isMelody ? 'melody-pill' : ''} ${isClickable ? 'clickable' : ''} ${isSelected ? 'selected' : ''} ${isActiveMelody ? 'active' : ''}`}
-                      title={itemLabel}
+                      class={pillClass()}
+                      title={itemLabel()}
+                      data-melody-id={melodyId() ?? ''}
+                      data-item-id={item.id}
                       onClick={handleClickItem}
                       onDblClick={handleDblClickItem}
                     >
                       <span class="pill-icon">
-                        {isMelody &&
-                        !isMissingMelody &&
+                        {isMelody() &&
+                        !isMissingMelody() &&
                         item.melodyData !== undefined
                           ? getMelodyIcon(item.melodyData)
                           : getItemIcon(item)}
                       </span>
-                      <span class="pill-label">{itemLabel}</span>
+                      <span class="pill-label">{itemLabel()}</span>
 
                       <Show
                         when={
-                          isMelody &&
-                          !isMissingMelody &&
+                          isMelody() &&
+                          !isMissingMelody() &&
                           item.melodyData !== undefined &&
                           item.melodyData.tags !== undefined &&
                           item.melodyData.tags.length > 0
@@ -589,7 +659,7 @@ export const LibraryTab: Component = () => {
 
                       <Show
                         when={
-                          !isMelody &&
+                          !isMelody() &&
                           item.type === 'rest' &&
                           item.restMs !== undefined &&
                           item.restMs !== null
@@ -602,7 +672,7 @@ export const LibraryTab: Component = () => {
 
                       <Show
                         when={
-                          !isMelody &&
+                          !isMelody() &&
                           (item.type as string) === 'scale' &&
                           item.scaleType !== undefined &&
                           item.scaleType !== null
@@ -614,6 +684,7 @@ export const LibraryTab: Component = () => {
                   )
                 }}
               </For>
+
             </div>
           </Show>
         </div>

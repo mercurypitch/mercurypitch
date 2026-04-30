@@ -12,7 +12,12 @@ interface SessionEditorTimelineProps {
   sessionItems: SessionItem[]
   onSave?: (items: SessionItem[]) => void
   onDeleteItem: (itemId: string) => void
-  onAddRest: (startBeat: number, duration: number) => void
+  onAddRest: (
+    startBeat: number,
+    duration: number,
+    insertIndex?: number,
+  ) => void
+
   restDuration?: number
   onDragOver: (index: number) => void
   onDragStart?: (itemId: string) => void
@@ -25,12 +30,27 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
   const [draggedItemId, setDraggedItemId] = createSignal<string | null>(null)
   const [dragSourceIndex, setDragSourceIndex] = createSignal<number>(-1)
 
-  const addRestBetween = (index: number) => {
-    const currentItem = props.sessionItems[index]
-    const startBeat = currentItem.startBeat
+  /**
+   * Insert a rest in the timeline at a specific *array* slot.
+   *
+   * `afterIndex` is the array index of the item the user clicked the
+   * "+ Add Rest" zone *after*. The rest is spliced into the array at
+   * `afterIndex + 1` so it lives literally between item N and item N+1.
+   *
+   * `startBeat` is taken from the item we're following (just nominal
+   * for the existing per-item start-beat label — beat ordering is now
+   * driven by array position throughout the editor / sidebar).
+   *
+   * Pass `afterIndex = -1` to prepend a rest at the very beginning.
+   */
+  const addRestAtSlot = (afterIndex: number) => {
+    const followingItem =
+      afterIndex >= 0 ? props.sessionItems[afterIndex] : undefined
+    const startBeat = followingItem?.startBeat ?? 0
     const duration = props.restDuration ?? 4000
-    props.onAddRest(startBeat, duration)
+    props.onAddRest(startBeat, duration, afterIndex + 1)
   }
+
 
   // Mobile touch handlers - use signals for state
   const [touchStartPos, setTouchStartPos] = createSignal({ x: 0, y: 0 })
@@ -214,8 +234,26 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
             </div>
           )}
 
+          {/*
+            Leading "+ Add Rest" zone — clicking here prepends a rest at
+            the very start of the array (insertIndex = 0). Without this
+            the user could never insert a rest before the first melody.
+          */}
+          {props.sessionItems.length > 0 && (
+            <div
+              class="timeline-drop-zone rest-zone"
+              onClick={() => addRestAtSlot(-1)}
+              onDragOver={(e) => handleDragOver(e, 0)}
+              onDrop={(e) => handleDrop(e, 0)}
+            >
+              <span class="rest-placeholder">+</span>
+              <span class="rest-hint">Add Rest</span>
+            </div>
+          )}
+
           <For each={props.sessionItems}>
             {(item, index) => {
+
               const isMelody =
                 item.type === 'melody' &&
                 item.melodyId !== null &&
@@ -307,7 +345,8 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
                   {index() < props.sessionItems.length - 1 && (
                     <div
                       class="timeline-drop-zone rest-zone"
-                      onClick={() => addRestBetween(index())}
+                      onClick={() => addRestAtSlot(index())}
+
                       onDragOver={(e) => handleDragOver(e, index())}
                       onDrop={(e) => handleDrop(e, index())}
                     >

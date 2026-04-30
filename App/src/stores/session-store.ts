@@ -83,8 +83,40 @@ export function addItemToSession(
   return updatedSession
 }
 
+/**
+ * Insert a brand-new item at a specific array index.
+ *
+ * `addItemToSession` always appends because it materialises through a Map
+ * (insertion order = end of array). The timeline editor renders items in
+ * array order, so the "+ Add Rest" zone between two melodies needs to
+ * splice the new rest into the exact slot the user clicked — not push it
+ * to the end. This helper does just that.
+ *
+ * `atIndex` is clamped to [0, items.length]; passing `items.length`
+ * appends, passing `0` prepends.
+ */
+export function insertItemInSession(
+  sessionId: string,
+  item: Omit<SessionItem, 'id'>,
+  atIndex: number,
+): PlaybackSession | undefined {
+  const session = getSession(sessionId)
+  if (!session) return undefined
+
+  const newId = generateSessionItemId()
+  const newItem: SessionItem = { ...item, id: newId }
+  const items = [...session.items]
+  const idx = Math.max(0, Math.min(atIndex, items.length))
+  items.splice(idx, 0, newItem)
+
+  const updatedSession: PlaybackSession = { ...session, items }
+  saveSession(updatedSession)
+  return updatedSession
+}
+
 /** Update item in session by ID */
 export function updateSessionItem(
+
   sessionId: string,
   itemId: string,
   updates: Partial<SessionItem>,
@@ -181,7 +213,16 @@ export function createSession(
   }
 }
 
-/** Create new internal/default session (not deletable) */
+/**
+ * Create new internal/default session.
+ *
+ * NOTE: `deletable: true` (changed from `false` in v3). The seeded
+ * "Default Session" used to be locked from deletion, which made the
+ * SessionLibraryModal hide it entirely (filter `deletable === true`)
+ * AND prevented `deleteSession` from removing it. Per UX request, the
+ * user can now delete it like any other session — and we lazily
+ * recreate it via `getDefaultSession()` after a "reset all data".
+ */
 export function createInternalSession(
   name: string,
   items: SessionItem[],
@@ -190,12 +231,13 @@ export function createInternalSession(
     id: generateId(),
     name,
     author: 'System',
-    deletable: false,
+    deletable: true,
     items,
     created: Date.now(),
     lastPlayed: undefined,
   }
 }
+
 
 /** Get session by ID */
 export function getSession(id: string): PlaybackSession | undefined {

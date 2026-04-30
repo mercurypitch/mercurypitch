@@ -31,8 +31,11 @@ const DEFAULT_LIBRARY: UnifiedLibrary = {
       id: 'default',
       name: 'Default Session',
       author: 'System',
-      deletable: false,
+      // Per UX request: the seeded "Default Session" is now user-deletable.
+      // If they reset all data we recreate it via getDefaultSession().
+      deletable: true,
       items: [
+
         // NOTE: every non-rest item in the default session is a melody
         // reference so they all behave consistently in the sidebar
         // (clickable, selectable, draggable, can show "active" state).
@@ -82,16 +85,24 @@ function loadLibrary(): UnifiedLibrary {
       ) {
         // Ensure default session exists
         const library = parsed as UnifiedLibrary
-        if (
-          library.sessions['default'] === null ||
-          library.sessions['default'] === undefined
-        ) {
-          const defaultSession = getDefaultSession()
-          if (defaultSession !== null) {
-            library.sessions['default'] = defaultSession
+        // NOTE: we used to resurrect the default session on every load if
+        // it was missing. That meant a user who deleted "Default Session"
+        // saw it reappear after every reload. Now we only resurrect when
+        // the entire library reset happens (`resetMelodyLibrary` /
+        // `resetAllSessions`), and `seedDefaultSession()` re-runs
+        // explicitly. Mid-session deletion is sticky.
+        if (library.sessions['default']?.deletable === false) {
+
+          // Migration: legacy storage had `deletable: false`. Flip it so the
+          // user can delete the default session (and so it actually shows
+          // up in the SessionLibraryModal, which filters by deletable).
+          library.sessions['default'] = {
+            ...library.sessions['default'],
+            deletable: true,
           }
         }
         return library
+
       }
     }
   } catch {
@@ -172,9 +183,28 @@ export function resetMelodyLibrary(): void {
 // Session Operations — Delegate to session-store
 // ============================================================
 
+/**
+ * REACTIVE list of all sessions (default + user-created).
+ *
+ * BUGFIX: previously this delegated to `getSessionStoreSessions()` which
+ * reads `localStorage` directly and is NOT reactive — so the
+ * SessionLibraryModal's `createMemo(() => melodyStore.getSessions())`
+ * never re-ran after a delete and the trash icon appeared "broken".
+ *
+ * We now derive sessions from the reactive `melodyLibrarySignal`. We
+ * also stop filtering by `deletable === true`: the user wants the
+ * built-in "Default Session" to show up alongside their own (and to be
+ * deletable — see `createDefaultSession` in session-store.ts where the
+ * flag was flipped to `true`). On reset-all-data the default is
+ * regenerated automatically by `getDefaultSession()`.
+ */
 export function getSessions(): PlaybackSession[] {
-  return getSessionStoreSessions()
+  const lib = melodyLibrarySignal()
+  return Object.values(lib.sessions ?? {})
+    .filter((s): s is PlaybackSession => s !== null && s !== undefined)
+    .sort((a, b) => (b.lastPlayed ?? b.created ?? 0) - (a.lastPlayed ?? a.created ?? 0))
 }
+
 
 /** Get the currently active session by ID */
 export function getActiveSession(): PlaybackSession | undefined {
@@ -398,12 +428,19 @@ export function seedDefaultSession(): void {
     }
   }
 
-  // Seed default session if not exists
+  // Seed default session ONLY on first launch (or after a hard reset
+  // that cleared STORAGE_KEY_SEEDED). Once the user has run the app
+  // they're allowed to delete the default session permanently — we
+  // must not resurrect it on every reload.
+  const alreadySeeded =
+    typeof localStorage !== 'undefined' &&
+    localStorage.getItem(STORAGE_KEY_SEEDED) === 'true'
   const defaultSession = getSession('default')
-  if (!defaultSession) {
+  if (!defaultSession && !alreadySeeded) {
     const session = getDefaultSession()
     saveSession(session)
   }
+
 
   // Add default session to unified library
   const defaultSessionFromLibrary = getSession('default')
@@ -1146,9 +1183,89 @@ export function getPlaylist(melodyKey: string):
   return melodyLibrarySignal().playlists[melodyKey]
 }
 
+/**
+ * Build an in-memory PlaybackSession from a playlist so it can flow through
+ * the existing session UI / playSessionSequence machinery.
+ *
+ * The synthetic session:
+ *   - Has id `playlist:<playlistId>` so it round-trips through the sidebar
+ *     dropdown without colliding with real sessions.
+ *   - Is `deletable: false` (the user manages playlists separately, not via
+ *     "delete session").
+ *   - Flattens included sub-sessions: any `sessionKeys` entry contributes its
+ *     own melody items (in order) so the user hears the full playlist
+ *     sequentially, just like a top-level session.
+ *
+ * Returns `null` if the playlist doesn't exist.
+ */
+export function buildPlaylistAsSession(
+  playlistId: string,
+): PlaybackSession | null {
+  const playlist = getPlaylist(playlistId)
+  if (playlist === null || playlist === undefined) return null
+
+  const lib = melodyLibrarySignal()
+  const items: import('@/types').SessionItem[] = []
+  let beat = 0
+
+  const pushMelody = (melodyId: string, label: string): void => {
+    items.push({
+      id: `${playlistId}-m-${items.length}`,
+      type: 'melody',
+      startBeat: beat,
+      label,
+      melodyId,
+    })
+    beat += 4
+  }
+
+  for (const melodyId of playlist.melodyKeys) {
+    const m = lib.melodies[melodyId]
+    if (m !== undefined) pushMelody(melodyId, m.name)
+  }
+
+  for (const sessionId of playlist.sessionKeys ?? []) {
+    const sess = lib.sessions[sessionId]
+    if (sess === undefined) continue
+    for (const it of sess.items) {
+      if (
+        it.type === 'melody' &&
+        it.melodyId !== undefined &&
+        it.melodyId !== null
+      ) {
+        const m = lib.melodies[it.melodyId]
+        pushMelody(it.melodyId, m?.name ?? it.label)
+      }
+    }
+  }
+
+  return {
+    id: `playlist:${playlistId}`,
+    name: playlist.name,
+    deletable: false,
+    items,
+    created: playlist.created,
+    description: 'Playlist',
+  }
+}
+
+/**
+ * Get the melody IDs that a playlist would play, in order. Convenience for
+ * triggering window.__pp.playSessionSequence(...) without rebuilding the
+ * synthetic session.
+ */
+export function getPlaylistMelodyIds(playlistId: string): string[] {
+  const synth = buildPlaylistAsSession(playlistId)
+  if (synth === null) return []
+  return synth.items
+    .filter((i) => i.type === 'melody' && i.melodyId !== undefined)
+    .map((i) => i.melodyId as string)
+}
+
 export function playPlaylist(playlistId: string): void {
   const playlist = getPlaylist(playlistId)
   if (playlist === null || playlist === undefined) return
+
 
   const library = melodyLibrarySignal()
   let currentIndex = 0
@@ -1251,6 +1368,9 @@ export const melodyStore = {
   getPlaylist,
   getPlaylistCount,
   playPlaylist,
+  buildPlaylistAsSession,
+  getPlaylistMelodyIds,
+
 
   // Export library
   melodyLibrary: getMelodyLibrary,

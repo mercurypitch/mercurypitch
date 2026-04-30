@@ -222,9 +222,30 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
   }
 
   const handlePlayPlaylist = (playlistId: string) => {
-    melodyStore.playPlaylist(playlistId)
+    // v3: Drive playlist playback through the same session-sequence
+    // pipeline as Library "▶▶" so playback is real (audible), not just a
+    // 3-second melody-cycle stub. We:
+    //   1. Build a synthetic PlaybackSession from the playlist (so the
+    //      sidebar/Active Session UI updates and reflects the queue).
+    //   2. Set it as the active user session.
+    //   3. Trigger window.__pp.playSessionSequence(...) with the melody
+    //      ids — this is the same handler the LibraryTab uses.
+    const synth = melodyStore.buildPlaylistAsSession(playlistId)
+    if (synth !== null) {
+      setActiveUserSession(synth)
+    }
+    const ids = melodyStore.getPlaylistMelodyIds(playlistId)
+    const win = window as unknown as {
+      __pp?: { playSessionSequence?: (melodyIds: string[]) => void }
+      __playSessionSequence?: (melodyIds: string[]) => void
+    }
+    const handler = win.__pp?.playSessionSequence ?? win.__playSessionSequence
+    if (handler !== undefined && ids.length > 0) {
+      handler(ids)
+    }
     props.close()
   }
+
 
   const handleLoad = (melody: MelodyData) => {
     melodyStore.loadMelody(melody.id)

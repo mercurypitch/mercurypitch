@@ -7,7 +7,8 @@
 import type { Component } from 'solid-js'
 import { createSignal, For, Show } from 'solid-js'
 import { melodyStore, setActiveUserSession, showNotification, userSession, } from '@/stores'
-import { addItemToSession, deleteSessionItem } from '@/stores/session-store'
+import { addItemToSession, deleteSessionItem, insertItemInSession, } from '@/stores/session-store'
+
 import type { PlaybackSession, SessionItem } from '@/types'
 import { MelodyPillList } from './MelodyPillList'
 import { SessionEditorTimeline } from './SessionEditorTimeline'
@@ -189,7 +190,11 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
     // Visual feedback can be added here
   }
 
-  const handleAddRest = (startBeat: number, duration?: number) => {
+  const handleAddRest = (
+    startBeat: number,
+    duration?: number,
+    insertIndex?: number,
+  ) => {
     const newItem: Omit<SessionItem, 'id'> = {
       type: 'rest',
       startBeat,
@@ -197,13 +202,23 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
       restMs: duration ?? restDurationInput(),
     }
     const session = currentSession()
-    if (session !== null && session !== undefined) {
-      const updatedSession = addItemToSession(session.id, newItem)
-      if (updatedSession !== undefined) {
-        setActiveUserSession(updatedSession)
-      }
+    if (session === null || session === undefined) return
+
+    // When the user clicks an "+ Add Rest" zone between two items, the
+    // timeline passes the array index where the new rest should land.
+    // Otherwise (trailing zone / no index), we fall back to the
+    // append-at-end behavior provided by addItemToSession. See
+    // session-store.ts:insertItemInSession for why we need the splice
+    // path — addItemToSession routes through a Map and always appends.
+    const updatedSession =
+      insertIndex !== undefined
+        ? insertItemInSession(session.id, newItem, insertIndex)
+        : addItemToSession(session.id, newItem)
+    if (updatedSession !== undefined) {
+      setActiveUserSession(updatedSession)
     }
   }
+
 
   return (
     <div class="session-editor">
