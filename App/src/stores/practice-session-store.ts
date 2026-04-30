@@ -79,7 +79,13 @@ export function advanceSessionItem(): SessionItem | null {
     if (next < session.items.length) {
       setSessionItemIndex(next)
       setSessionItemRepeat(0)
-      return getCurrentSessionItem()
+      // Return the item AFTER advancing. Must read the index we just
+      // set, otherwise the melody/preset path in loadNextSessionItem
+      // loads the item at the OLD index when the previous item was a
+      // rest (rest handler reads getCurrentSessionItem() before the
+      // advance in handleSessionItemComplete).
+      const advanced = session.items[next]
+      return advanced ?? null
     }
   }
   return null
