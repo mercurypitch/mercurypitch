@@ -25,7 +25,7 @@ export const CharacterIcons: Component<CharacterIconsProps> = (props) => {
   }
 
   return (
-    <div class="character-icons-grid">
+    <div id='character-icons' class="character-icons-grid">
       <For each={characters}>
         {(name) => (
           <button

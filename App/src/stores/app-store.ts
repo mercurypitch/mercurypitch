@@ -89,6 +89,15 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     requiredTab: 'practice',
   },
   {
+    title: 'Choose your character!',
+    targetSelector: '#character-icons',
+    description:
+      "Connect with your inner singer by choosing what suites you best!",
+    placement: 'right',
+    section: 'practice',
+    requiredTab: 'practice',
+  },
+  {
     title: 'Scale & Key',
     targetSelector: '#scale-info',
     description:
@@ -157,20 +166,38 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     title: 'Play Modes',
     targetSelector: '#btn-once',
     description:
-      '"Once" plays a single cycle, "Repeat" loops continuously, and "Practice" runs your session in sequence.',
+      'Spaced plays a single cycle with modifiable rests between the notes',
     placement: 'bottom',
     section: 'toolbar',
     requiredTab: 'practice',
   },
   {
-    title: 'Count-In & Cycles',
-    targetSelector: '#countin-display',
+    title: 'Play Modes',
+    targetSelector: '#btn-repeat',
     description:
-      'Set how many beats of count-in you want before playback starts, and how many cycles to run in Practice mode.',
+      'Repeat loops through set number of cycles',
     placement: 'bottom',
     section: 'toolbar',
     requiredTab: 'practice',
   },
+  {
+    title: 'Play Modes',
+    targetSelector: '#btn-session',
+    description:
+      'Practice runs your session in sequence.',
+    placement: 'bottom',
+    section: 'toolbar',
+    requiredTab: 'practice',
+  },
+  // {
+  //   title: 'Count-In & Cycles',
+  //   targetSelector: '#countin-display',
+  //   description:
+  //     'Set how many beats of count-in you want before playback starts, and how many cycles to run in Practice mode.',
+  //   placement: 'bottom',
+  //   section: 'toolbar',
+  //   requiredTab: 'practice',
+  // },
 
   // ── Editor Section ──
   {
