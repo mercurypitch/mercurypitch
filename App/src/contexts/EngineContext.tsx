@@ -44,7 +44,7 @@ export function EngineProvider(props: { children: JSX.Element }) {
   // Initialize from storage/stores
   const savedVol = parseInt(localStorage.getItem('pp_volume') ?? '80', 10)
   audioEngine.setVolume((isNaN(savedVol) ? 80 : savedVol) / 100)
-  audioEngine.setBpm(transportStore.bpm())
+  audioEngine.setBpm(transportStore.bpm() * transportStore.playbackSpeed())
   audioEngine.syncFromAppStore(settingsStore.adsr())
   audioEngine.setReverbType(settingsStore.reverbConfig().type)
   audioEngine.setReverbWetness(settingsStore.reverbConfig().wetness)
@@ -56,9 +56,12 @@ export function EngineProvider(props: { children: JSX.Element }) {
 
   const practiceEngine = new PracticeEngine(audioEngine, { sensitivity: 5 })
 
-  // Sync BPM
+  // Sync BPM (effective BPM = melody BPM × user's playback speed multiplier).
+  // The runtime's tick loop computes beat duration as `60000 / audioEngine.getBpm()`,
+  // so multiplying here is the single source of truth for "play 80 BPM at 2x → 160 BPM"
+  // semantics and keeps the metronome in sync with the playhead.
   createEffect(() => {
-    audioEngine.setBpm(transportStore.bpm())
+    audioEngine.setBpm(transportStore.bpm() * transportStore.playbackSpeed())
   })
 
   // Sync Instrument

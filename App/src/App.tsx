@@ -35,9 +35,9 @@ import { registerE2EBridge } from '@/lib/e2e-bridge'
 import { melodyIndexAtBeat, melodyTotalBeats } from '@/lib/scale-data'
 import { buildScaleMelody, buildSessionPlaybackMelody, } from '@/lib/session-builder'
 import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
-import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initBpm, initPresets, initReverb, initSessionHistory, initSettings, initTheme, isLibraryModalOpen, isSessionLibraryModalOpen, keyName as keyNameSignal, micActive, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPlaybackSpeed, setScaleType, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startPracticeSession, startWalkthrough, toggleMicWaveVisible, } from '@/stores'
+import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initBpm, initPresets, initReverb, initSessionHistory, initSettings, initTheme, isLibraryModalOpen, isSessionLibraryModalOpen, keyName as keyNameSignal, micActive, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPendingSessionStart, setPlaybackSpeed, setScaleType, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, toggleMicWaveVisible, userSession, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
-import { getSession } from '@/stores/session-store'
+import { getSession, templateToSession } from '@/stores/session-store'
 import type { MelodyItem, PlaybackMode, SpacedRestMode } from '@/types'
 import { Walkthrough, WalkthroughControl } from './components'
 import { GuideSelection } from './components/GuideSelection'
@@ -445,8 +445,28 @@ const AppShell: Component<AppProps> = (props) => {
     if (!isPaused()) {
       setCurrentRepeat(1)
     }
+
+    // If the practice tab has a "session-shaped" playback loaded
+    // (multi-item OR contains non-melody types like rest/scale/preset),
+    // signal handlePlay() to enter session mode. A bare single-melody
+    // load stays single-melody, avoiding the silent session hijack
+    // documented as Bug 3 in the session-sequence-advancement plan.
+    if (!isPaused()) {
+      const session = userSession()
+      const isSessionShaped =
+        session !== null &&
+        (session.items.length > 1 ||
+          session.items.some(
+            (it) => (it as { type: string }).type !== 'melody',
+          ))
+      if (isSessionShaped) {
+        setPendingSessionStart(true)
+      }
+    }
+
     handlePlay()
   }
+
 
   const handlePracticeModeChange = (mode: PlaybackMode) => {
     setPlayMode(mode)
@@ -1135,12 +1155,19 @@ const AppShell: Component<AppProps> = (props) => {
       <Show when={showSessionBrowser()}>
         <SessionBrowser
           onClose={hideSessionPresetsLibrary}
-          onStartSession={(session) => {
-            const practiceSess = getSession(session.id)
-            if (practiceSess) {
-              startPracticeSession(practiceSess)
-              hideSessionPresetsLibrary()
-            }
+          onStartSession={(template) => {
+            // 1. Try to find the session in the library (if user previously saved/edited it)
+            // 2. Otherwise, convert the template to a regular session object
+            const practiceSess =
+              getSession(template.id) ?? templateToSession(template)
+
+            // Path B (SessionBrowser template start). Set the active
+            // session, then trigger the unified session-sequence path
+            // by passing an empty `ids` array so playSessionSequence
+            // falls back to userSession() which we just set.
+            setActiveUserSession(practiceSess)
+            playSessionSequence([])
+            hideSessionPresetsLibrary()
           }}
         />
       </Show>

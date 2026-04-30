@@ -459,9 +459,6 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
               aria-label="BPM slider"
               onInput={(e) => setBpm(parseInt(e.currentTarget.value) || 80)}
             />
-            <span id="tempo-value" class="inline-control-value">
-              {bpm()}
-            </span>
           </div>
 
           {/* Volume */}
@@ -475,21 +472,35 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
               </svg>
             </span>
             <input
+              type="number"
+              id="vol-input"
+              min="0"
+              max="80"
+              value={props.volume()}
+              class="vol-number-input"
+              aria-label="Volume"
+              onInput={(e) => {
+                const vol = parseInt(e.currentTarget.value)
+                if (vol >= 0) {
+                  props.onVolumeChange(vol)
+                }
+              }}
+            />
+            <input
               type="range"
               id="volume"
               min="0"
-              max="100"
+              max="80"
               value={props.volume()}
               class="volume-slider"
               aria-label="Volume"
               onInput={(e) => {
-                const vol = parseInt(e.currentTarget.value) || 80
-                props.onVolumeChange(vol)
+                const vol = parseInt(e.currentTarget.value)
+                if (vol >= 0) {
+                  props.onVolumeChange(vol)
+                }
               }}
             />
-            <span id="volume-value" class="inline-control-value">
-              {props.volume()}
-            </span>
           </div>
 
           {/* Speed */}

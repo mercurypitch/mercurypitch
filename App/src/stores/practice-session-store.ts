@@ -10,6 +10,22 @@ export const [sessionItemRepeat, setSessionItemRepeat] = createSignal(0)
 export const [sessionActive, setSessionActive] = createSignal(false)
 export const [sessionModeSignal, setSessionMode] = createSignal(false)
 
+/**
+ * Transient flag set by an entry-point (Library "Play All", session
+ * template launcher, practice-tab session play button) right before
+ * `handlePlay()` is invoked. `handlePlay` reads-and-clears this flag
+ * to decide whether the upcoming Play should enter session mode and
+ * prime the first session item.
+ *
+ * Without this gate, `handlePlay()` would inspect `userSession()` and
+ * silently promote a single-melody Practice play into a session
+ * playback whenever a session happened to be loaded in the editor.
+ * (See `assets/plans/session-sequence-advancement.md` Bug 3.)
+ */
+export const [pendingSessionStart, setPendingSessionStart] =
+  createSignal<boolean>(false)
+
+
 export const [practiceResults, setPracticeResults] = createSignal<
   PracticeResult[]
 >([])

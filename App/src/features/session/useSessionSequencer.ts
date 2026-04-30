@@ -4,7 +4,7 @@ import type { PlaybackRuntime } from '@/lib/playback-runtime'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { melodyTotalBeats } from '@/lib/scale-data'
 import { buildSessionItemMelody } from '@/lib/session-builder'
-import { advanceSessionItem, countIn, getCurrentSessionItem, practiceSession, recordSessionItemResult, sessionItemIndex, setActiveTab, setBpm, setKeyName, setScaleType, setSessionActive, showNotification, startPracticeSession, userSession, } from '@/stores'
+import { advanceSessionItem, countIn, getCurrentSessionItem, recordSessionItemResult, sessionItemIndex, setActiveTab, setBpm, setKeyName, setScaleType, setSessionActive, showNotification, userSession, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import type { MelodyItem, NoteResult, PracticeResult, SessionResult, } from '@/types'
 
@@ -105,17 +105,11 @@ export function useSessionSequencer(deps: Deps): SessionSequencer {
       recordSessionItemResult(practiceRes)
     }
 
-    const current = getCurrentSessionItem()
-    if (!current) {
-      void handleStop()
-      return
-    }
+    // v3 fix: use advanceSessionItem() return value to check for session end.
+    // This correctly handles internal repeats AND the last item's repeats.
+    const nextItem = advanceSessionItem()
 
-    const session = practiceSession()
-    const idx = sessionItemIndex()
-
-    if (idx < (session?.items.length ?? 0) - 1) {
-      advanceSessionItem()
+    if (nextItem) {
       setNoteResults([])
       setLiveScore(null)
       setCurrentBeat(0)
@@ -344,11 +338,8 @@ export function useSessionSequencer(deps: Deps): SessionSequencer {
     setPlayMode('practice')
     setActiveTab('practice')
 
-    startPracticeSession(session)
-    const firstItem = session.items[0]
-    if (firstItem !== undefined && firstItem.type !== 'rest') {
-      melodyStore.setMelody(buildSessionItemMelody(firstItem))
-    }
+    // handlePlay() will take care of startPracticeSession(session)
+    // and loading the first item.
     handlePlay()
   }
 
