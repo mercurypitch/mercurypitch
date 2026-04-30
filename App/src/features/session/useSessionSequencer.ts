@@ -252,22 +252,26 @@ export function useSessionSequencer(deps: Deps): SessionSequencer {
         },
       ]
       melodyStore.setMelody(restMelody)
-      playbackRuntime.setMelody([])
       setPlaybackDisplayMelody(restMelody)
       setPlaybackDisplayBeats(restBeats)
+      // Feed the synthetic rest item to the runtime so the playhead
+      // advances visibly during the silent gap. The actual audio is
+      // suppressed by the isRest guard in App.tsx's noteStart handler,
+      // so the user sees the vertical playhead line crossing the rest
+      // bar but hears nothing — matching how Spaced rests behave.
+      // Runtime's natural 'complete' event will then trigger
+      // handleSessionItemComplete via the global subscription in
+      // App.tsx, advancing to the next item — no manual setTimeout
+      // needed, which also means a user Stop interrupts the rest
+      // immediately instead of letting it auto-advance.
+      playbackRuntime.setMelody(restMelody)
+      playbackRuntime.setDurationBeats(restBeats)
+      // Defer the start one macrotask: loadNextSessionItem can be
+      // invoked from inside the runtime's own 'complete' handler, and
+      // a synchronous start there would be killed by the runtime's
+      // post-complete stop().
+      setTimeout(() => playbackRuntime.start(0), 0)
 
-      // Advance after rest. handleSessionItemComplete is the same hook
-      // PlaybackRuntime would have called via its 'complete' event; it
-      // takes care of advanceSessionItem + loadNextSessionItem (which
-      // will then start the *next* melody).
-      setTimeout(() => {
-        // Guard: if the user has stopped/changed sessions in the
-        // meantime, skip the auto-advance.
-        const stillRest = getCurrentSessionItem()
-        if (stillRest && stillRest.type === 'rest') {
-          handleSessionItemComplete()
-        }
-      }, restDuration)
     } else if ((nextItem.type as string) === 'scale') {
 
       buildScaleMelody(

@@ -471,10 +471,19 @@ const AppShell: Component<AppProps> = (props) => {
       if (activeTab() === 'practice') {
         practiceEngine.onNoteStart(item.note, index)
       }
+      // Suppress audio for rest items. Session rests reuse the runtime
+      // (so the playhead can advance visibly across the rest bar),
+      // which means PlaybackRuntime emits noteStart for the synthetic
+      // rest MelodyItem. Without this guard the placeholder note would
+      // play at full volume during what's supposed to be silent.
+      // Spaced-rest items take the same path and benefit from the same
+      // guard.
+      if ((item as { isRest?: boolean }).isRest === true) return
       if (
         !recording.isRecording() &&
         (isPlaying() || editorPlaybackState() === 'playing')
       ) {
+
         const beatDurationMs = 60000 / bpm()
         const noteDurationMs = item.duration * beatDurationMs
         // Pass the per-note effectType (vibrato/slide-up/etc) through to
