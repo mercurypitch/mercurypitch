@@ -510,14 +510,17 @@ export function usePlaybackController(
     let session = userSession()
 
     if (melodyIds.length > 0) {
-      const items = melodyIds.map<{ id: string; type: 'melody'; melodyId: string; repeat: number }>(
-        (id) => ({
-          id: `transient-${id}`,
-          type: 'melody',
-          melodyId: id,
-          repeat: 1,
-        }),
-      ) as unknown as PlaybackSession['items']
+      const items = melodyIds.map<{
+        id: string
+        type: 'melody'
+        melodyId: string
+        repeat: number
+      }>((id) => ({
+        id: `transient-${id}`,
+        type: 'melody',
+        melodyId: id,
+        repeat: 1,
+      })) as unknown as PlaybackSession['items']
 
       session = {
         id: `transient-playall-${Date.now()}`,
