@@ -255,12 +255,14 @@ const AppShell: Component<AppProps> = (props) => {
   } = practice
 
   // ── Session sequencer ───────────────────────────────────────
-  // We need access to playbackController.setPlaybackDisplayMelody/Beats setters.
-  // The controller doesn't currently expose them — for v3 we inline minimal
-  // versions on the sequencer side using setters from playback state store.
-  const noopSetMelody = (_m: MelodyItem[] | null) => {}
-  const noopSetBeats = (_b: number | null) => {}
-
+  // Wire the sequencer to the SAME playback display setters the
+  // playback controller owns. Previously these were noops, which meant
+  // every per-item advance inside useSessionSequencer (next melody,
+  // rest, scale) silently failed to update the practice canvas — so
+  // canvas froze on whatever melody was loaded at Play time, and rest
+  // items never produced a visible "rest" state. The controller now
+  // exports `setPlaybackDisplayMelody` / `setPlaybackDisplayBeats` so
+  // both modules mutate one shared signal pair.
   const sessionSequencer = useSessionSequencer({
     playbackRuntime,
     practiceEngine,
@@ -269,8 +271,9 @@ const AppShell: Component<AppProps> = (props) => {
     setPitchHistory: setPitchHistory as never,
     setNoteResults,
     setLiveScore,
-    setPlaybackDisplayMelody: noopSetMelody,
-    setPlaybackDisplayBeats: noopSetBeats,
+    setPlaybackDisplayMelody: playbackController.setPlaybackDisplayMelody,
+    setPlaybackDisplayBeats: playbackController.setPlaybackDisplayBeats,
+
     handleStop,
     handlePlay,
     setPlayMode,

@@ -222,12 +222,40 @@ export function useSessionSequencer(deps: Deps): SessionSequencer {
       // We deliberately do NOT call playbackRuntime.start() here.
       const restDuration = nextItem.restMs ?? 2000
       playbackRuntime.stop()
-      // Empty melody → canvas renders the rest state instead of the
-      // previous melody's notes.
-      melodyStore.setMelody([])
+      // Build a synthetic rest "melody" item so the practice canvas
+      // renders a visible rest block, mirroring how Spaced-rest mode
+      // surfaces silent gaps. Without this the canvas just goes empty
+      // for the rest duration and the user can't tell whether playback
+      // hung or is intentionally pausing. We pick a 1-beat duration
+      // scaled by restDuration / (60_000 / bpm()) so the block width
+      // roughly matches the actual silent time at the current BPM.
+      // The `isRest: true` flag tells PitchCanvas to use the muted/
+      // gray rest styling instead of the colored note rendering.
+      const beatMs = 60000 / Math.max(1, playbackRuntime.getBPM?.() ?? 120)
+
+      const restBeats = Math.max(1, Math.round(restDuration / beatMs))
+      // Reuse a placeholder pitch so canvas can lay out the bar; the
+      // isRest flag prevents any audible playback or scoring.
+      const placeholderNote = melodyStore.items()[0]?.note ?? {
+        name: 'C',
+        octave: 4,
+        midi: 60,
+        freq: 261.63,
+      }
+      const restMelody: MelodyItem[] = [
+        {
+          id: -200000 - sessionItemIndex(),
+          note: placeholderNote,
+          startBeat: 0,
+          duration: restBeats,
+          isRest: true,
+        },
+      ]
+      melodyStore.setMelody(restMelody)
       playbackRuntime.setMelody([])
-      setPlaybackDisplayMelody([])
-      setPlaybackDisplayBeats(0)
+      setPlaybackDisplayMelody(restMelody)
+      setPlaybackDisplayBeats(restBeats)
+
       // Advance after rest. handleSessionItemComplete is the same hook
       // PlaybackRuntime would have called via its 'complete' event; it
       // takes care of advanceSessionItem + loadNextSessionItem (which

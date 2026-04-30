@@ -42,7 +42,16 @@ export interface PlaybackController {
 
   loadAndPlayMelodyForSession: (melodyId: string) => void
   playSessionSequence: (melodyIds: string[]) => void
+
+  // Setters exposed so dependent controllers (e.g. useSessionSequencer)
+  // can mutate the same playback display signals the practice canvas
+  // reads from. Without these, the sequencer's per-item advance can't
+  // tell the canvas which melody/rest is active and the canvas freezes
+  // on whatever was loaded at Play time.
+  setPlaybackDisplayMelody: (m: MelodyItem[] | null) => void
+  setPlaybackDisplayBeats: (b: number | null) => void
 }
+
 
 interface PlaybackControllerDeps {
   audioEngine: AudioEngine
@@ -485,5 +494,8 @@ export function usePlaybackController(
     handleEditorStop,
     loadAndPlayMelodyForSession,
     playSessionSequence,
+    setPlaybackDisplayMelody,
+    setPlaybackDisplayBeats,
   }
 }
+
