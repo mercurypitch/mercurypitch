@@ -2,7 +2,7 @@
 // Session Store — Unified session management with localStorage
 // ============================================================
 
-import type { MelodyItem, PlaybackSession, UnifiedLibrary } from '@/types'
+import type { MelodyItem, PlaybackSession, SessionTemplate, UnifiedLibrary, } from '@/types'
 import type { SessionCategory, SessionDifficulty, SessionItem } from '@/types'
 import { melodyStore, STORAGE_KEY_LIBRARY, STORAGE_KEY_SESSION_HIST, } from './melody-store'
 
@@ -209,6 +209,17 @@ export function createSession(
     lastPlayed: undefined,
     difficulty,
     category,
+  }
+}
+
+/** Convert a SessionTemplate to a PlaybackSession */
+export function templateToSession(template: SessionTemplate): PlaybackSession {
+  return {
+    ...template,
+    author: 'System',
+    deletable: true,
+    created: Date.now(),
+    items: template.items,
   }
 }
 

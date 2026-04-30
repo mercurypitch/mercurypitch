@@ -1467,7 +1467,8 @@ header h1 {
   color: var(--text-secondary);
 }
 
-.bpm-number-input {
+.bpm-number-input,
+.vol-number-input {
   width: 50px;
   padding: 2px 4px;
   font-size: 0.8rem;

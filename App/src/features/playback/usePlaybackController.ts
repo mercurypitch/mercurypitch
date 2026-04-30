@@ -8,9 +8,10 @@ import type { PlaybackState } from '@/lib/playback-runtime'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { keyTonicFreq, melodyTotalBeats } from '@/lib/scale-data'
 import { buildSessionItemMelody } from '@/lib/session-builder'
-import { bpm, countIn, keyName, scaleType, setActiveTab, setBpm, setKeyName, setScaleType, setSessionActive, setSessionMode, settings, startPracticeSession, userSession, } from '@/stores'
+import { bpm, countIn, keyName, pendingSessionStart, scaleType, sessionMode, setActiveTab, setActiveUserSession, setBpm, setKeyName, setPendingSessionStart, setScaleType, setSessionActive, setSessionItemIndex, setSessionItemRepeat, setSessionMode, settings, startPracticeSession, userSession, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import { playback } from '@/stores/playback-store'
+import type { PlaybackSession } from '@/types'
 import type { MelodyItem, PlaybackMode, SessionResult } from '@/types'
 
 export interface PlaybackController {
@@ -231,38 +232,73 @@ export function usePlaybackController(
     // handleSessionItemComplete (wired in App.tsx). Rest items are
     // handled inside loadNextSessionItem (silent pause, see
     // useSessionSequencer.ts).
-    if (playMode() === 'practice') {
+    // ── Session-mode entry gate ─────────────────────────────────
+    // Two ways we enter session mode here:
+    //   (a) `pendingSessionStart()` was set by an explicit caller
+    //       (Library "Play All", session template launcher, practice
+    //       tab Play-with-session button). This is the authoritative
+    //       signal — the user *meant* to start a session.
+    //   (b) `sessionMode()` is already true and we're re-priming
+    //       between items (defensive — currently we don't reach
+    //       handlePlay between items, but a future per-item dispatch
+    //       might).
+    //
+    // Without (a), a stray `userSession()` left over from a previous
+    // edit would silently hijack a single-melody Practice Play. See
+    // `assets/plans/session-sequence-advancement.md` Bug 3.
+    const wantsSessionStart = pendingSessionStart()
+    if (wantsSessionStart) setPendingSessionStart(false)
+
+    if (playMode() === 'practice' && (wantsSessionStart || sessionMode())) {
       const activeSession = userSession()
-      // Note: previously this branch was guarded by `!sessionMode()` so
-      // it only ran on the first Play. But handleStop never reset
-      // `sessionMode` back to false, so a Stop → Play sequence skipped
-      // initialization entirely and the runtime ran with whatever was
-      // left in melodyStore (often a stale single-note fallback). We
-      // unconditionally re-prime the per-item PracticeSession here —
-      // it's the same idempotent setup Play-All-In-Sequence performs,
-      // so both routes now produce identical results.
       if (activeSession && activeSession.items.length > 0) {
-        setSessionMode(true)
-        setSessionActive(true)
-        startPracticeSession(activeSession)
+        // Always (re)seed the practice session when an explicit start
+        // was requested — otherwise Library "Play All" of session B
+        // while session A is still mid-flight would leave the
+        // PracticeSession cursor pointing at A's items.
+        if (wantsSessionStart || !sessionMode()) {
+          setSessionMode(true)
+          setSessionActive(true)
+          startPracticeSession(activeSession)
+          setSessionItemIndex(0)
+          setSessionItemRepeat(0)
+        }
 
-        // Find the first item that actually produces audio. A session
-        // may legitimately start with a rest (e.g. "warm up silence");
-        // we still skip it on initial Play because the runtime can't
-        // start from a rest — handleSessionItemComplete will then walk
-        // to the next item naturally on completion.
-        // Session items are typed as 'melody' | 'rest' (see SessionItemType).
-        // Anything that isn't an explicit rest gets played by the runtime.
-        const firstPlayable = activeSession.items.find(
-          (it) => it.type !== 'rest',
-        )
+        // v3 fix: Start from the very first item, even if it's a rest.
+        // Sequential advancement handles the rest duration via the
+        // PlaybackRuntime's completion event.
+        const firstItem = activeSession.items[0]
 
-        if (firstPlayable) {
-          const itemMelody = buildSessionItemMelody(firstPlayable)
-          melodyStore.setMelody(itemMelody)
-          setPlaybackDisplayMelody(itemMelody)
-          setPlaybackDisplayBeats(melodyTotalBeats(itemMelody))
-          forcedDurationBeats = melodyTotalBeats(itemMelody)
+        if (firstItem !== undefined) {
+          if (firstItem.type === 'rest') {
+            // Build a synthetic rest melody so the canvas and runtime
+            // can "play" the silent gap with a visible playhead.
+            const restDuration = firstItem.restMs ?? 2000
+            const bpmValue = playbackRuntime.getBPM?.() ?? 120
+            const beatMs = 60000 / bpmValue
+            const restBeats = Math.max(1, Math.round(restDuration / beatMs))
+
+            // Synthetic rest item
+            const restMelody: MelodyItem[] = [
+              {
+                id: -200000,
+                note: { midi: 60, name: 'C', octave: 4, freq: 261.63 },
+                startBeat: 0,
+                duration: restBeats,
+                isRest: true,
+              },
+            ]
+            melodyStore.setMelody(restMelody)
+            setPlaybackDisplayMelody(restMelody)
+            setPlaybackDisplayBeats(restBeats)
+            forcedDurationBeats = restBeats
+          } else {
+            const itemMelody = buildSessionItemMelody(firstItem)
+            melodyStore.setMelody(itemMelody)
+            setPlaybackDisplayMelody(itemMelody)
+            setPlaybackDisplayBeats(melodyTotalBeats(itemMelody))
+            forcedDurationBeats = melodyTotalBeats(itemMelody)
+          }
         }
       }
     }
@@ -459,13 +495,55 @@ export function usePlaybackController(
     setSessionActive(true)
   }
 
-  const playSessionSequence = (_melodyIds: string[]) => {
-    const session = userSession()
+  /**
+   * Entry point for "Play All in sequence" from Library, Sidebar
+   * Library Modal, Playlist, and Session Library Modal.
+   *
+   * If `melodyIds` is non-empty, builds a transient `PlaybackSession`
+   * from those ids (each id → a `melody` `SessionItem`) and uses it
+   * for playback. Otherwise falls back to the currently-loaded
+   * `userSession()`. This unifies the two historical code paths into
+   * a single session-mode entry — see `assets/plans/session-sequence-advancement.md`
+   * Bug 4.
+   */
+  const playSessionSequence = (melodyIds: string[]) => {
+    let session = userSession()
+
+    if (melodyIds.length > 0) {
+      const items = melodyIds.map<{ id: string; type: 'melody'; melodyId: string; repeat: number }>(
+        (id) => ({
+          id: `transient-${id}`,
+          type: 'melody',
+          melodyId: id,
+          repeat: 1,
+        }),
+      ) as unknown as PlaybackSession['items']
+
+      session = {
+        id: `transient-playall-${Date.now()}`,
+        name: 'Play All',
+        items,
+        author: 'User',
+        deletable: true,
+        created: Date.now(),
+      } as PlaybackSession
+
+      // Persist as the "active" session so the practice canvas /
+      // editor reflect what's playing. This matches what the previous
+      // implicit fallback (using `userSession()`) silently relied on.
+      setActiveUserSession(session)
+    }
+
     if (!session || session.items.length === 0) return
 
     closeSidebar()
     setPlayMode('practice')
     setActiveTab('practice')
+
+    // Mark the upcoming Play as a deliberate session start so
+    // `handlePlay` enters session mode (otherwise the session-priming
+    // gate would skip — see Bug 3 in the plan).
+    setPendingSessionStart(true)
 
     resetPlaybackState().then(() => {
       handlePlay()
