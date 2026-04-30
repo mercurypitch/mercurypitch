@@ -409,7 +409,12 @@ export interface SessionItem {
   restMs?: number
   /** Item-specific settings */
   settings?: Record<string, unknown>
-  /** Repeat count (for session item) */
+  /**
+   * How many times this item plays before the session advances.
+   * Used for all item types: melody (play melody N times), rest
+   * (hold the rest pause N times), scale (play scale N times).
+   * Defaults to 1 when omitted (practice-session-store.ts:advanceSessionItem).
+   */
   repeat?: number
 }
 
