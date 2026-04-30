@@ -35,7 +35,10 @@ import { registerE2EBridge } from '@/lib/e2e-bridge'
 import { melodyIndexAtBeat, melodyTotalBeats } from '@/lib/scale-data'
 import { buildScaleMelody, buildSessionPlaybackMelody, } from '@/lib/session-builder'
 import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
-import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, initBpm, initPresets, initReverb, initSessionHistory, initSettings, initTheme, isLibraryModalOpen, isSessionLibraryModalOpen, keyName as keyNameSignal, micActive, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPlaybackSpeed, setScaleType, showNotification, showWelcome, startPracticeSession, startWalkthrough, toggleMicWaveVisible, } from '@/stores'
+import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary,
+  hideSessionPresetsLibrary, initBpm, initPresets, initReverb, initSessionHistory, initSettings, initTheme, isLibraryModalOpen, isSessionLibraryModalOpen, keyName as keyNameSignal, micActive, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPlaybackSpeed, setScaleType, showNotification,
+  showSessionBrowser,
+  showSessionPresetsLibrary, showWelcome, startPracticeSession, startWalkthrough, toggleMicWaveVisible, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import { getSession } from '@/stores/session-store'
 import type { MelodyItem, PlaybackMode, SpacedRestMode } from '@/types'
@@ -133,7 +136,6 @@ const AppShell: Component<AppProps> = (props) => {
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen())
   const closeSidebar = () => setSidebarOpen(false)
 
-  const [showSessionBrowser, setShowSessionBrowser] = createSignal(false)
   const [showScaleBuilder, setShowScaleBuilder] = createSignal(false)
   const [savedVol, setSavedVol] = createSignal<number>(80)
   const [metronomeEnabled, setMetronomeEnabled] = createSignal(false)
@@ -779,7 +781,6 @@ const AppShell: Component<AppProps> = (props) => {
                   isCountingIn={() => isCountingIn()}
                   countInBeat={() => countInBeat()}
                   countInBeats={() => countIn()}
-                  onSessionsClick={() => setShowSessionBrowser(true)}
                   onMicToggle={() => {
                     void handleMicToggle()
                   }}
@@ -1106,7 +1107,7 @@ const AppShell: Component<AppProps> = (props) => {
                 class="overlay-btn primary"
                 onClick={() => {
                   setSessionSummary(null)
-                  setShowSessionBrowser(true)
+                  showSessionPresetsLibrary()
                 }}
               >
                 New Session
@@ -1138,12 +1139,12 @@ const AppShell: Component<AppProps> = (props) => {
 
       <Show when={showSessionBrowser()}>
         <SessionBrowser
-          onClose={() => setShowSessionBrowser(false)}
+          onClose={hideSessionPresetsLibrary}
           onStartSession={(session) => {
             const practiceSess = getSession(session.id)
             if (practiceSess) {
               startPracticeSession(practiceSess)
-              setShowSessionBrowser(false)
+              hideSessionPresetsLibrary()
             }
           }}
         />

@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- compat shim deps; remove with future redesign */
 import type { Accessor, Setter } from 'solid-js'
 import { createEffect, createMemo, createSignal } from 'solid-js'
-
 import type { AudioEngine } from '@/lib/audio-engine'
 import { audioRegistry } from '@/lib/audio-registry'
 import type { PlaybackRuntime } from '@/lib/playback-runtime'
@@ -9,7 +8,7 @@ import type { PlaybackState } from '@/lib/playback-runtime'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { keyTonicFreq, melodyTotalBeats } from '@/lib/scale-data'
 import { buildSessionItemMelody } from '@/lib/session-builder'
-import { bpm, countIn, keyName, scaleType, sessionMode, setActiveTab, setBpm, setKeyName, setScaleType, setSessionActive, setSessionMode, settings, startPracticeSession, userSession, } from '@/stores'
+import { bpm, countIn, keyName, scaleType, setActiveTab, setBpm, setKeyName, setScaleType, setSessionActive, setSessionMode, settings, startPracticeSession, userSession, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import { playback } from '@/stores/playback-store'
 import type { MelodyItem, PlaybackMode, SessionResult } from '@/types'

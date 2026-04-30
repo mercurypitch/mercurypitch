@@ -2414,38 +2414,60 @@ export class PianoRollEditor {
   }
 
   private seekToRulerPosition(e: MouseEvent): void {
-    // Per user feedback: don't allow seek while playback is actively
-    // running — let the user pause first. This avoids the playhead
-    // fighting the running animation timer.
-    if (this.playbackState === 'playing') return
-
     const rect = this.rulerCanvas?.getBoundingClientRect()
     if (!rect || !this.gridContainer) return
 
     // BUGFIX: the ruler canvas spans `pianoWidth + stretchedWidth`, with
-    // beat markers drawn at `pianoWidth + b * beatWidth`. Previously the
-    // seek math was `beat = (clientX - rect.left) / beatWidth` which
-    // ignored the piano-keys column on the left, producing a constant
-    // ~pianoWidth-pixel (≈62px) rightward offset between where the user
-    // clicked and where the playhead actually landed. Subtract
-    // pianoWidth to land on the correct beat.
+    // beat markers drawn at `pianoWidth + b * beatWidth`. Without
+    // subtracting pianoWidth we'd have a constant rightward offset.
     const x = e.clientX - rect.left - this.pianoWidth
-    const beat = Math.max(0, Math.min(this.totalBeats, x / this.beatWidth))
+
+    // Clamp upper bound to the LAST NOTE END rather than the full grid
+    // width. The grid often extends past the end of the melody (empty
+    // bars at the right) — letting the playhead wander into that region
+    // is misleading because there's nothing to play. Falling back to
+    // `this.totalBeats` when the melody is empty so the user can still
+    // pick a starting point in a fresh editor.
+    let melodyEnd = 0
+    for (const item of this.melody) {
+      const end = item.startBeat + item.duration
+      if (end > melodyEnd) melodyEnd = end
+    }
+    const upperBound = melodyEnd > 0 ? melodyEnd : this.totalBeats
+    const beat = Math.max(0, Math.min(upperBound, x / this.beatWidth))
+
     const targetScroll = beat * this.beatWidth - rect.width / 2
     this.gridContainer.scrollLeft = Math.max(0, targetScroll)
 
-    // Update playhead position visually (only paused/stopped path now;
-    // we early-returned above for the 'playing' case).
+    // Update local playhead immediately for visual feedback.
     this.remoteBeat = beat
     this.drawGridWithPlayhead()
 
     if (this.playbackState === 'paused') {
-      // Update playStartTime so resume continues from the new position.
+      // Local clock rebase (legacy field used by piano-roll's own playback
+      // path; harmless when external playback owns the timer).
       this.playStartTime =
         (performance as unknown as { now: () => number }).now() -
         (beat / this.bpm) * 60000
     }
+
+    // Notify the global PlaybackRuntime so its currentBeat / playStartTime
+    // get rebased too. Without this, clicking the editor ruler while
+    // paused would visually move the playhead but Resume would jump
+    // back to the pre-seek beat (the runtime's internal clock was
+    // never updated). The runtime's seekTo is state-aware and handles
+    // playing / paused / stopped correctly.
+    try {
+      window.dispatchEvent(
+        new CustomEvent('pitchperfect:seekToBeat', {
+          detail: { beat },
+        }),
+      )
+    } catch {
+      // Non-browser environments (tests) — ignore.
+    }
   }
+
 
   /**
    * Get current beat for drawing/playhead based on playback state

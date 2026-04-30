@@ -155,11 +155,15 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
    */
   const handleSeek = (e: MouseEvent) => {
     if (!canvasRef) return
-    // Only allow seek while paused (or stopped — but no playhead is
-    // shown when stopped, so this branch is effectively paused).
-    if (!props.isPaused()) return
+    // Allow seek while either playing OR paused — the PlaybackRuntime's
+    // seekTo is now state-aware (rebases playStartTime instead of
+    // restarting from beat 0), so the visible jump from the old
+    // implementation is gone. While stopped we still do nothing
+    // (no playhead to drag).
+    if (!props.isPlaying() && !props.isPaused()) return
 
     const rect = canvasRef.getBoundingClientRect()
+
     const x = e.clientX - rect.left
     const w = canvasRef.clientWidth
     if (w <= 0) return
