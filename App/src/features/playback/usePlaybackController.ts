@@ -427,17 +427,25 @@ export function usePlaybackController(
   }
 
   const handleEditorStop = () => {
+    // Editor Stop should leave NO dangling state behind. Previously
+    // this was a hand-rolled minimal teardown (stop runtime + clear a
+    // few signals) that diverged from Practice's hard-reset path,
+    // leaving things like noteResults, pitchHistory, sessionMode,
+    // practiceEngine session, and secondary audio engines alive across
+    // a Stop. That manifested as colored notes lingering in the editor
+    // and Play behaving inconsistently after a Stop.
+    //
+    // Now we:
+    //   1. finalize any in-flight recording (editor-specific concern),
+    //   2. delegate to resetPlaybackState() — the same comprehensive
+    //      hard reset used on tab switch — so all state (audio, runtime,
+    //      practice session, signals, secondary engines) is cleared.
     if (isRecording()) {
       finalizeRecording(playbackRuntime.getCurrentBeat())
     }
-    playbackRuntime.stop()
-    audioEngine.stopTone()
-    setCurrentBeat(0)
-    setCurrentNoteIndex(-1)
-    setEditorPlaybackState('stopped')
-    setPlaybackDisplayMelody(null)
-    setPlaybackDisplayBeats(null)
+    void resetPlaybackState()
   }
+
 
   const loadAndPlayMelodyForSession = (melodyId: string) => {
     const melody = melodyStore.getMelody(melodyId)
