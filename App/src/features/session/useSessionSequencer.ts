@@ -202,25 +202,46 @@ export function useSessionSequencer(deps: Deps): SessionSequencer {
     }
 
     if (nextItem.type === 'rest') {
+      // ── REST item ────────────────────────────────────────────────
+      // Previously we *replayed the just-finished melody* during the
+      // rest because `playbackRuntime.setMelody(melodyStore.items())`
+      // was followed by `playbackRuntime.start(...)`. The user-visible
+      // bug was: hitting "Play All in sequence" from the library, the
+      // rest gap between melodies would loop the previous melody
+      // instead of being a silent pause.
+      //
+      // Fix: during a rest we
+      //   1) stop the runtime (no audio),
+      //   2) clear the visible melody so the practice canvas shows a
+      //      "rest" state (empty melody + visible item label still set
+      //      via the session store), and
+      //   3) advance to the next session item after `restMs` has
+      //      elapsed by calling the same completion path the runtime
+      //      would have used.
+      //
+      // We deliberately do NOT call playbackRuntime.start() here.
       const restDuration = nextItem.restMs ?? 2000
       playbackRuntime.stop()
-      playbackRuntime.setMelody(melodyStore.items())
-      startAfterCompleteCleanup()
-      // FIXME: Replace setTimeout chain with awaitable transition
+      // Empty melody → canvas renders the rest state instead of the
+      // previous melody's notes.
+      melodyStore.setMelody([])
+      playbackRuntime.setMelody([])
+      setPlaybackDisplayMelody([])
+      setPlaybackDisplayBeats(0)
+      // Advance after rest. handleSessionItemComplete is the same hook
+      // PlaybackRuntime would have called via its 'complete' event; it
+      // takes care of advanceSessionItem + loadNextSessionItem (which
+      // will then start the *next* melody).
       setTimeout(() => {
-        const afterRest = getCurrentSessionItem()
-        if (afterRest && (afterRest.type as string) === 'scale') {
-          buildScaleMelody(
-            afterRest.scaleType ?? 'major',
-            afterRest.beats ?? 8,
-            afterRest.label,
-          )
-          playbackRuntime.stop()
-          playbackRuntime.setMelody(melodyStore.items())
-          startAfterCompleteCleanup()
+        // Guard: if the user has stopped/changed sessions in the
+        // meantime, skip the auto-advance.
+        const stillRest = getCurrentSessionItem()
+        if (stillRest && stillRest.type === 'rest') {
+          handleSessionItemComplete()
         }
       }, restDuration)
     } else if ((nextItem.type as string) === 'scale') {
+
       buildScaleMelody(
         nextItem.scaleType ?? 'major',
         nextItem.beats ?? 8,

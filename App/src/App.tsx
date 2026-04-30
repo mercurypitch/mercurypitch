@@ -622,7 +622,17 @@ const AppShell: Component<AppProps> = (props) => {
     <div id="app">
       {/* Welcome Screen (shown on first visit) */}
       <Show when={showWelcome()}>
-        <WelcomeScreen onTakeTour={openGuideSelection} />
+        <WelcomeScreen
+          onTakeTour={openGuideSelection}
+          // Wire the welcome overlay's "Enable Mic" button to the same
+          // mic toggle the SharedToolbar uses, so first-run permission
+          // grants actually start the mic stream + pitch detection.
+          // Previously this prop wasn't passed at all, so clicking only
+          // flipped a local "micEnabled" UI signal in WelcomeScreen and
+          // the mic was never opened.
+          onEnableMic={handleMicToggle}
+        />
+
       </Show>
 
       {/* Guide Selection dialog */}

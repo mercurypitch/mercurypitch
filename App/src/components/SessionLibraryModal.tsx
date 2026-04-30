@@ -8,6 +8,8 @@ import { appStore, melodyStore, setActiveTab, setEditorView } from '@/stores'
 import { setActiveUserSession, showNotification } from '@/stores'
 import { createSession, saveSession } from '@/stores/session-store'
 import type { PlaybackSession, SessionCategory, SessionDifficulty, } from '@/types'
+import { SessionMiniTimeline } from './SessionMiniTimeline'
+
 
 // Drag and drop state
 type DragState =
@@ -172,7 +174,7 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
               <For each={filteredSessions()}>
                 {(session) => (
                   <div
-                    class="library-item"
+                    class="library-item session-library-item"
                     draggable={dragState()?.type === 'playlist'}
                     onDragStart={(e) => handleDragStartSession(e, session.id)}
                     onDragEnd={handleDragEnd}
@@ -196,8 +198,18 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
                           </span>
                         </Show>
                       </div>
+                      {/*
+                        Read-only mini timeline preview (Task 5).
+                        Renders one pill per session item so the user
+                        can scan a session's contents at a glance
+                        without opening the editor. Drag/edit/delete
+                        actions remain on the card-level item-actions
+                        cluster below.
+                      */}
+                      <SessionMiniTimeline session={session} />
                     </div>
                     <div class="item-actions">
+
                       <button
                         class="action-btn play-btn"
                         onClick={() => handlePlay(session)}

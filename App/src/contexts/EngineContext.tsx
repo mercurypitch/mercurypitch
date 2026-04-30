@@ -5,9 +5,14 @@ import { AudioEngine } from '@/lib/audio-engine'
 import { PlaybackRuntime } from '@/lib/playback-runtime'
 import { PracticeEngine } from '@/lib/practice-engine'
 import * as appStoreCore from '@/stores/app-store'
-import type { CharacterName } from '@/stores/settings-store'
 import * as settingsStore from '@/stores/settings-store'
 import * as transportStore from '@/stores/transport-store'
+
+// Use the namespace import so we don't end up with two import lines for
+// `@/stores/settings-store` (one for runtime, one for types). ESLint
+// flags the duplicate as `no-duplicate-imports`.
+type CharacterName = settingsStore.CharacterName
+
 
 // Map each guide character to a playback instrument so the practice
 // tab "feels" different per persona. Six characters fan out across the

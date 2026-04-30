@@ -8794,3 +8794,136 @@ input:checked + .settings-slider:before {
 .playlist-edit-form .form-actions .cancel-btn:active {
   transform: translateY(1px);
 }
+
+/* ───────────────────────────────────────────────────────────────
+   Inline transport controls (BPM / Volume / Speed)
+   ───────────────────────────────────────────────────────────────
+   Replaces the older "label : input : slider : number" stacked
+   layout with compact icon-prefixed controls. The cluster is
+   wrapped in `.inline-controls-row` so on narrow viewports
+   (<600px) it wraps onto a second row underneath the playback
+   buttons (Play/Pause/Stop), instead of horizontal-scrolling.
+   ─────────────────────────────────────────────────────────────── */
+.inline-controls-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  /* Take a full row when wrapped so children align cleanly */
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.inline-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: var(--surface-2, rgba(255, 255, 255, 0.04));
+  white-space: nowrap;
+}
+
+.inline-control-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted, #aaa);
+  flex: 0 0 auto;
+}
+
+.inline-control-value {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.8rem;
+  color: var(--text, #ddd);
+  min-width: 2ch;
+  text-align: right;
+}
+
+/* Hide redundant text labels inside inline controls (icon replaces them) */
+.inline-control .opt-label {
+  display: none;
+}
+
+/* On narrow viewports break the row into a second toolbar row */
+@media (max-width: 600px) {
+  .practice-header-bar,
+  .editor-header-bar {
+    flex-wrap: wrap;
+  }
+  .inline-controls-row {
+    width: 100%;
+    order: 99; /* push below the primary controls */
+    justify-content: flex-start;
+  }
+}
+
+/* ───────────────────────────────────────────────────────────────
+   SessionMiniTimeline — read-only preview inside SessionLibraryModal
+   ─────────────────────────────────────────────────────────────── */
+.session-library-item .item-main {
+  /* The mini timeline lives at the bottom of item-main; let it
+     consume horizontal space cleanly. */
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+}
+
+.session-mini-timeline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+  /* Cap height: 2 rows of pills. Beyond that the user can scroll
+     within the card so a 30-item session doesn't blow up the modal. */
+  max-height: 64px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.session-mini-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  background: var(--surface-2, rgba(255, 255, 255, 0.06));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text, #ddd);
+  white-space: nowrap;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.session-mini-pill.is-melody {
+  background: rgba(99, 132, 255, 0.18);
+  border-color: rgba(99, 132, 255, 0.35);
+}
+
+.session-mini-pill.is-rest {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: var(--text-muted, #aaa);
+  font-style: italic;
+}
+
+.session-mini-pill-icon {
+  font-size: 0.75rem;
+  flex: 0 0 auto;
+}
+
+.session-mini-pill-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.session-mini-empty {
+  font-size: 0.75rem;
+  color: var(--text-muted, #888);
+  font-style: italic;
+}

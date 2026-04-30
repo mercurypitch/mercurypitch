@@ -7,7 +7,8 @@ import type { PlaybackRuntime } from '@/lib/playback-runtime'
 import type { PlaybackState } from '@/lib/playback-runtime'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { keyTonicFreq, melodyTotalBeats } from '@/lib/scale-data'
-import { bpm, countIn, keyName, scaleType, sessionMode, setActiveTab, setBpm, setKeyName, setScaleType, setSessionActive, setSessionMode, settings, userSession, } from '@/stores'
+import { buildSessionItemMelody } from '@/lib/session-builder'
+import { bpm, countIn, keyName, scaleType, sessionMode, setActiveTab, setBpm, setKeyName, setScaleType, setSessionActive, setSessionMode, settings, startPracticeSession, userSession, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import { playback } from '@/stores/playback-store'
 import type { MelodyItem, PlaybackMode, SessionResult } from '@/types'
@@ -83,8 +84,13 @@ export function usePlaybackController(
     setLiveScore,
     closeSidebar,
     filterMelodyForPractice,
-    buildSessionPlaybackMelody,
+    // Retained on the deps interface for now (callers still pass it),
+    // but the per-item PracticeSession flow in handlePlay no longer
+    // builds the concatenated session melody. Underscore prefix keeps
+    // the dep wired without tripping no-unused-vars.
+    buildSessionPlaybackMelody: _buildSessionPlaybackMelody,
     buildScaleMelody,
+
     isRecording,
     finalizeRecording,
     totalBeats,
@@ -179,15 +185,56 @@ export function usePlaybackController(
 
     let forcedDurationBeats: number | undefined
 
+    // ── Practice mode + active user session ──────────────────────
+    // Old behavior built ONE giant melody (`buildSessionPlaybackMelody`)
+    // by concatenating every item's notes plus rests. Two problems:
+    //   1) the practice canvas saw a single mega-melody and lost the
+    //      per-item context (no per-melody score, no per-item visual);
+    //   2) the "Play All in sequence" button from the Library used a
+    //      different code path (per-item via PracticeSession), so
+    //      Practice+Play and Play-All behaved differently.
+    //
+    // New behavior unifies both routes on the per-item PracticeSession
+    // API: startPracticeSession() seeds the queue, we load the first
+    // non-rest item's melody into the runtime, and the playback
+    // runtime's `complete` event advances to the next item via
+    // handleSessionItemComplete (wired in App.tsx). Rest items are
+    // handled inside loadNextSessionItem (silent pause, see
+    // useSessionSequencer.ts).
     if (playMode() === 'practice') {
       const activeSession = userSession()
-      if (activeSession && activeSession.items.length > 0 && !sessionMode()) {
-        const sessionPlayback = buildSessionPlaybackMelody(activeSession)
-        setPlaybackDisplayMelody(sessionPlayback.items)
-        setPlaybackDisplayBeats(sessionPlayback.durationBeats)
-        setSessionMode(false)
+      // Note: previously this branch was guarded by `!sessionMode()` so
+      // it only ran on the first Play. But handleStop never reset
+      // `sessionMode` back to false, so a Stop → Play sequence skipped
+      // initialization entirely and the runtime ran with whatever was
+      // left in melodyStore (often a stale single-note fallback). We
+      // unconditionally re-prime the per-item PracticeSession here —
+      // it's the same idempotent setup Play-All-In-Sequence performs,
+      // so both routes now produce identical results.
+      if (activeSession && activeSession.items.length > 0) {
+        setSessionMode(true)
         setSessionActive(true)
-        forcedDurationBeats = sessionPlayback.durationBeats
+        startPracticeSession(activeSession)
+
+
+        // Find the first item that actually produces audio. A session
+        // may legitimately start with a rest (e.g. "warm up silence");
+        // we still skip it on initial Play because the runtime can't
+        // start from a rest — handleSessionItemComplete will then walk
+        // to the next item naturally on completion.
+        // Session items are typed as 'melody' | 'rest' (see SessionItemType).
+        // Anything that isn't an explicit rest gets played by the runtime.
+        const firstPlayable = activeSession.items.find(
+          (it) => it.type !== 'rest',
+        )
+
+        if (firstPlayable) {
+          const itemMelody = buildSessionItemMelody(firstPlayable)
+          melodyStore.setMelody(itemMelody)
+          setPlaybackDisplayMelody(itemMelody)
+          setPlaybackDisplayBeats(melodyTotalBeats(itemMelody))
+          forcedDurationBeats = melodyTotalBeats(itemMelody)
+        }
       }
     }
 
@@ -200,6 +247,7 @@ export function usePlaybackController(
       forcedDurationBeats !== undefined
         ? (playbackDisplayMelody() ?? [])
         : melodyStore.items()
+
 
     if (baseMelody.length === 0) {
       buildScaleMelody(scaleType(), 8)
@@ -286,8 +334,14 @@ export function usePlaybackController(
     setIsPaused(false)
     playback.resetPlayback()
     setSessionActive(false)
+    // Reset sessionMode so the next Play in Practice mode re-enters
+    // the per-item PracticeSession setup branch in handlePlay. Without
+    // this, a Stop → Play cycle leaves sessionMode=true and handlePlay
+    // skips the seed step, leaving the runtime with stale melody data.
+    setSessionMode(false)
     setEditorPlaybackState('stopped')
     const result = endPracticeSession()
+
     // Yield one microtask + one rAF so the browser actually processes
     // pending audio teardown (oscillator stop, gain ramp, AudioContext
     // bookkeeping) before the next Play() builds new voices. Without

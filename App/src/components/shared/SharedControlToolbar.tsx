@@ -417,39 +417,66 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
           </div>
         </Show>
 
-        {/* BPM */}
-        <div class="tempo-group">
-          <label class="opt-label">BPM:</label>
-          <input
-            type="number"
-            id="bpm-input"
-            min="40"
-            max="280"
-            value={bpm()}
-            class="bpm-number-input"
-            onInput={(e) => {
-              const value = parseInt(e.currentTarget.value)
-              if (value !== undefined && !isNaN(value)) {
-                setBpm(value)
-              }
-            }}
-          />
-          <input
-            type="range"
-            id="tempo"
-            min="40"
-            max="280"
-            value={bpm()}
-            class="tempo-slider"
-            onInput={(e) => setBpm(parseInt(e.currentTarget.value) || 80)}
-          />
-          <span id="tempo-value">{bpm()}</span>
-        </div>
+        {/*
+          ── Tempo / Volume / Speed cluster ─────────────────────────
+          Wrapped in `inline-controls-row` so on narrow viewports
+          (<600px) the cluster collapses to a second row underneath
+          the playback controls. Labels were replaced with compact
+          icons so the slider widget reads as one cohesive control
+          instead of "label : value : slider : number" stacked text.
+          See app.css `.inline-controls-row`.
+        */}
+        <div class="inline-controls-row">
+          {/* BPM */}
+          <div class="tempo-group inline-control" title="Tempo (BPM)">
+            <span class="inline-control-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="14" height="14">
+                <path
+                  fill="currentColor"
+                  d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8zm.5-13H11v6l5.2 3.1.8-1.3-4.5-2.7z"
+                />
+              </svg>
+            </span>
+            <input
+              type="number"
+              id="bpm-input"
+              min="40"
+              max="280"
+              value={bpm()}
+              class="bpm-number-input"
+              aria-label="BPM"
+              onInput={(e) => {
+                const value = parseInt(e.currentTarget.value)
+                if (value !== undefined && !isNaN(value)) {
+                  setBpm(value)
+                }
+              }}
+            />
+            <input
+              type="range"
+              id="tempo"
+              min="40"
+              max="280"
+              value={bpm()}
+              class="tempo-slider"
+              aria-label="BPM slider"
+              onInput={(e) => setBpm(parseInt(e.currentTarget.value) || 80)}
+            />
+            <span id="tempo-value" class="inline-control-value">
+              {bpm()}
+            </span>
+          </div>
 
-        {/* Volume */}
-        <ControlGroup>
-          <div class="volume-group">
-            <label class="opt-label">Vol:</label>
+          {/* Volume */}
+          <div class="volume-group inline-control" title="Volume">
+            <span class="inline-control-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="14" height="14">
+                <path
+                  fill="currentColor"
+                  d="M3 10v4h4l5 5V5L7 10H3zm13.5 2A4.5 4.5 0 0 0 14 7.97v8.05A4.5 4.5 0 0 0 16.5 12zM14 3.23v2.06a7 7 0 0 1 0 13.42v2.06A9 9 0 0 0 14 3.23z"
+                />
+              </svg>
+            </span>
             <input
               type="range"
               id="volume"
@@ -457,23 +484,32 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
               max="100"
               value={props.volume()}
               class="volume-slider"
+              aria-label="Volume"
               onInput={(e) => {
                 const vol = parseInt(e.currentTarget.value) || 80
                 props.onVolumeChange(vol)
               }}
             />
-            <span id="volume-value">{props.volume()}</span>
+            <span id="volume-value" class="inline-control-value">
+              {props.volume()}
+            </span>
           </div>
-        </ControlGroup>
 
-        {/* Speed */}
-        <ControlGroup>
-          <div class="speed-group">
-            <label class="opt-label">Speed:</label>
+          {/* Speed */}
+          <div class="speed-group inline-control" title="Playback speed">
+            <span class="inline-control-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="14" height="14">
+                <path
+                  fill="currentColor"
+                  d="M4 5v14l8-7zM14 5v14l8-7z"
+                />
+              </svg>
+            </span>
             <select
               id="speed-select"
               value={playbackSpeed().toString()}
               class="speed-select"
+              aria-label="Playback speed"
               onChange={(e) => {
                 const speed = parseFloat(e.currentTarget.value)
                 setPlaybackSpeed(speed)
@@ -489,7 +525,8 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
               <option value="2">2x</option>
             </select>
           </div>
-        </ControlGroup>
+        </div>
+
 
         {/* Metronome */}
         <ControlGroup>
