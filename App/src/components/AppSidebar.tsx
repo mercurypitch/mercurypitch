@@ -124,6 +124,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
 
         <div id="scale-info">
           <select
+            class="dropdown-select-style"
             id="key-select"
             value={keyName()}
             onChange={(e) => {
@@ -207,7 +208,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
 
           <select
             id="scale-select"
-            class="sidebar-session-select sidebar-scale-select"
+            class="dropdown-select-style"
             value={scaleType()}
             onChange={(e) => {
               const st = e.currentTarget.value

@@ -941,10 +941,18 @@ export class AudioEngine {
         break
       }
       default: {
-        // Sine (default) — smooth attack via ADSR
+        // Sine (default) — smooth attack via ADSR.
+        // IMPORTANT: connect to mainGain here. The other branches
+        // already wire per-osc gains into mainGain; without this line
+        // the sine oscillator is created but never reaches the audio
+        // graph, producing silence on the 'sine' instrument.
+        // (playNote used to perform this connect in its outer loop,
+        // but playTone now relies on _createVoice returning a fully
+        // wired voice.)
         const osc = ctx.createOscillator()
         osc.type = 'sine'
         osc.frequency.value = freq
+        osc.connect(mainGain)
         oscillators.push(osc)
         break
       }

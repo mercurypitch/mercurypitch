@@ -110,6 +110,10 @@ body {
     background-color 0.15s ease,
     box-shadow 0.15s ease;
 }
+.dropdown-select-style option {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
 
 #app {
   display: flex;

@@ -567,7 +567,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
                   e.currentTarget.value as SpacedRestMode,
                 )
               }}
-              class="practice-sub-mode-select spaced-rest-select dropdown-select-style"
+              class="dropdown-select-style spaced-rest-select"
             >
               <option value="none">None</option>
               <option value="fourth">𝄽 Fourth rest</option>

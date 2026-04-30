@@ -1193,14 +1193,14 @@ export class PianoRollEditor {
 
     <!-- Octave -->
     <div class="roll-octave-group">
-      <button id="roll-octave-down" class="octave-btn" title="Lower octave">
+      <button id="roll-octave-up" class="octave-btn" title="Higher octave">
         <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
       </button>
             <span id="roll-octave-value" class="octave-value">${this.octave}</span>
-      <button id="roll-octave-up" class="octave-btn" title="Higher octave">
+      <button id="roll-octave-down" class="octave-btn" title="Lower octave">
         <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M19 13H5v-2h14v2z"/></svg>
       </button>
-          </div>
+    </div>
 
     <!-- Bars -->
     <div class="roll-bars-group">
@@ -3091,6 +3091,7 @@ export class PianoRollEditor {
    * Shift all notes by an octave and rebuild the scale.
    */
   private _shiftOctave(delta: number): void {
+    // FIXME: here we should shift melody notes by octave up/down
     const newOctave = this.octave + delta
     if (newOctave < 1 || newOctave > 6) return
     this.octave = newOctave
