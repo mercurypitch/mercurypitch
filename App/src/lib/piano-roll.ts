@@ -630,7 +630,6 @@ export class PianoRollEditor {
     this.draw()
   }
 
-
   /**
    * Shallow-equality check for melody arrays. Compares length and the
    * stable identity-bearing fields per item. Used to guard setMelody
@@ -2505,7 +2504,6 @@ export class PianoRollEditor {
     }
   }
 
-
   /**
    * Get current beat for drawing/playhead based on playback state.
    *
@@ -2535,7 +2533,6 @@ export class PianoRollEditor {
     const elapsed = performance.now() - this.playStartTime
     return (elapsed / 60000) * this.bpm
   }
-
 
   // ============================================================
   // Drawing
@@ -3216,7 +3213,6 @@ export class PianoRollEditor {
       }),
     )
   }
-
 
   /**
    * Set the scale mode (major, minor, etc.) and rebuild scale.

@@ -10,7 +10,6 @@ import { createSession, saveSession } from '@/stores/session-store'
 import type { PlaybackSession, SessionCategory, SessionDifficulty, } from '@/types'
 import { SessionMiniTimeline } from './SessionMiniTimeline'
 
-
 // Drag and drop state
 type DragState =
   | null
@@ -78,7 +77,6 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
     // the bridge is enough.
     props.close()
 
-
     const win = window as unknown as {
       __pp?: { playSessionSequence?: (melodyIds: string[]) => void }
       __playSessionSequence?: (melodyIds: string[]) => void
@@ -90,7 +88,6 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
       handler([])
     }
   }
-
 
   const handleDelete = (id: string) => {
     if (confirm('Delete this session?')) {
@@ -251,7 +248,6 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
                       <SessionMiniTimeline session={session} />
                     </div>
                     <div class="item-actions">
-
                       <button
                         class="action-btn play-btn"
                         onClick={() => handlePlay(session)}

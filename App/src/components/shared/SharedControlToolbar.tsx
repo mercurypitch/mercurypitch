@@ -496,10 +496,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
           <div class="speed-group inline-control" title="Playback speed">
             <span class="inline-control-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" width="14" height="14">
-                <path
-                  fill="currentColor"
-                  d="M4 5v14l8-7zM14 5v14l8-7z"
-                />
+                <path fill="currentColor" d="M4 5v14l8-7zM14 5v14l8-7z" />
               </svg>
             </span>
             <select
@@ -523,7 +520,6 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
             </select>
           </div>
         </div>
-
 
         {/* Metronome */}
         <ControlGroup>

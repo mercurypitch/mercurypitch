@@ -35,10 +35,7 @@ import { registerE2EBridge } from '@/lib/e2e-bridge'
 import { melodyIndexAtBeat, melodyTotalBeats } from '@/lib/scale-data'
 import { buildScaleMelody, buildSessionPlaybackMelody, } from '@/lib/session-builder'
 import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
-import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary,
-  hideSessionPresetsLibrary, initBpm, initPresets, initReverb, initSessionHistory, initSettings, initTheme, isLibraryModalOpen, isSessionLibraryModalOpen, keyName as keyNameSignal, micActive, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPlaybackSpeed, setScaleType, showNotification,
-  showSessionBrowser,
-  showSessionPresetsLibrary, showWelcome, startPracticeSession, startWalkthrough, toggleMicWaveVisible, } from '@/stores'
+import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initBpm, initPresets, initReverb, initSessionHistory, initSettings, initTheme, isLibraryModalOpen, isSessionLibraryModalOpen, keyName as keyNameSignal, micActive, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPlaybackSpeed, setScaleType, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startPracticeSession, startWalkthrough, toggleMicWaveVisible, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import { getSession } from '@/stores/session-store'
 import type { MelodyItem, PlaybackMode, SpacedRestMode } from '@/types'
@@ -485,7 +482,6 @@ const AppShell: Component<AppProps> = (props) => {
         !recording.isRecording() &&
         (isPlaying() || editorPlaybackState() === 'playing')
       ) {
-
         const beatDurationMs = 60000 / bpm()
         const noteDurationMs = item.duration * beatDurationMs
         // Pass the per-note effectType (vibrato/slide-up/etc) through to
@@ -646,7 +642,6 @@ const AppShell: Component<AppProps> = (props) => {
           // the mic was never opened.
           onEnableMic={handleMicToggle}
         />
-
       </Show>
 
       {/* Guide Selection dialog */}

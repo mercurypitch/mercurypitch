@@ -4,7 +4,7 @@
 
 import { createSignal } from 'solid-js'
 import { buildMultiOctaveScale } from '@/lib/scale-data'
-import type { MelodyData, MelodyItem, MelodyNote, PlaybackSession, ScaleDegree, UnifiedLibrary, } from '@/types'
+import type { MelodyData, MelodyItem, MelodyNote, PlaybackSession, ScaleDegree, SessionItem, UnifiedLibrary, } from '@/types'
 import { addItemToSession, deleteSession as deleteSessionStore, deleteSessionItem, generateSessionItemId, getDefaultSession, getInternalSession, getItemsAtBeat, getSession, getSessionCount, getSessionItem, getSessionItems, getSessionItemsOrdered, getUserSessionCount, saveSession as saveSessionStore, updateSessionItem, } from './session-store'
 
 export const STORAGE_KEY_LIBRARY = 'pitchperfect_library'
@@ -687,8 +687,6 @@ export const setOctave = (octave: number): void => {
   )
 }
 
-
-
 const _currentNoteIndex = createSignal<number>(0)
 export const currentNoteIndex = _currentNoteIndex[0]
 export const setCurrentNoteIndex = _currentNoteIndex[1]
@@ -1038,7 +1036,6 @@ export function setNumOctaves(num: number): void {
   )
 }
 
-
 // ============================================================
 // Playlist Operations
 // ============================================================
@@ -1259,7 +1256,7 @@ export function buildPlaylistAsSession(
   if (playlist === null || playlist === undefined) return null
 
   const lib = melodyLibrarySignal()
-  const items: import('@/types').SessionItem[] = []
+  const items: SessionItem[] = []
   let beat = 0
 
   const pushMelody = (melodyId: string, label: string): void => {
@@ -1409,7 +1406,6 @@ export const melodyStore = {
   setNumOctaves,
   getCurrentOctave,
   getNumOctaves,
-
 
   // Playlist operations
   createPlaylist,

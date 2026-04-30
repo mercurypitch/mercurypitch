@@ -13,7 +13,6 @@ import { playback } from '@/stores/playback-store'
 import { createSession, getDefaultSession, getSession, saveSession, } from '@/stores/session-store'
 import type { MelodyData, PlaybackSession, SessionItem } from '@/types'
 
-
 export const LibraryTab: Component = () => {
   const library = createMemo(() => melodyStore.getMelodyLibrary())
 
@@ -317,10 +316,7 @@ export const LibraryTab: Component = () => {
     // global transport store reports stopped can the sidebar mutate the
     // active melody.
     if (!playback.isStopped()) {
-      showNotification(
-        'Stop playback before switching melody',
-        'info',
-      )
+      showNotification('Stop playback before switching melody', 'info')
       return
     }
     // Single click: select for playback. We do NOT switch tabs anymore —
@@ -336,8 +332,6 @@ export const LibraryTab: Component = () => {
     // createEffect on melodyStore.getCurrentMelody()?.id which clears the
     // display whenever the active melody id changes while stopped — so the
     // loadMelody() call above is sufficient here; no manual clear needed.
-
-
 
     // Ensure default session is loaded if no active session exists.
     const sid = melodyStore.getActiveSessionId()
@@ -643,7 +637,6 @@ export const LibraryTab: Component = () => {
                     ]
                       .filter(Boolean)
                       .join(' ')
-
 
                   return (
                     <span

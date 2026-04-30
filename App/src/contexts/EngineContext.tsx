@@ -13,7 +13,6 @@ import * as transportStore from '@/stores/transport-store'
 // flags the duplicate as `no-duplicate-imports`.
 type CharacterName = settingsStore.CharacterName
 
-
 // Map each guide character to a playback instrument so the practice
 // tab "feels" different per persona. Six characters fan out across the
 // five available instruments (sine/piano/organ/strings/synth) — Echo

@@ -90,10 +90,7 @@ export const SessionPlayer: Component<SessionPlayerProps> = (props) => {
           >
             {/* Pause / rest glyph */}
             <svg viewBox="0 0 24 24" width="14" height="14">
-              <path
-                fill="currentColor"
-                d="M6 5h4v14H6zM14 5h4v14h-4z"
-              />
+              <path fill="currentColor" d="M6 5h4v14H6zM14 5h4v14h-4z" />
             </svg>
           </Show>
         </div>
@@ -103,7 +100,6 @@ export const SessionPlayer: Component<SessionPlayerProps> = (props) => {
             : (currentItem()?.label ?? 'Loading...')}
         </span>
       </div>
-
 
       <div class="session-player-timer">
         <span class="session-elapsed">{formatTime(elapsed())}</span>
