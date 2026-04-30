@@ -6,7 +6,7 @@ import type { Component } from 'solid-js'
 import { createMemo, createSignal, Show } from 'solid-js'
 import { appStore } from '@/stores'
 import { adsr, playbackSpeed, setPlaybackSpeed, setSensitivity, settings, } from '@/stores'
-import { characterSounds, colorCodeNotes, flameMode, selectedCharacter, setCharacterSounds, setColorCodeNotes, setFlameMode, setShowSidebarNoteList, showSidebarNoteList, } from '@/stores/settings-store'
+import { characterSounds, colorCodeNotes, flameMode, selectedCharacter, setCharacterSounds, setColorCodeNotes, setFlameMode, setShowAccuracyPercent, setShowSidebarNoteList, showAccuracyPercent, showSidebarNoteList, } from '@/stores/settings-store'
 import { APP_VERSION } from '@/version'
 
 export const SettingsPanel: Component = () => {
@@ -504,6 +504,24 @@ export const SettingsPanel: Component = () => {
             <small>
               Color-code played notes based on pitch accuracy (Green: Perfect,
               Teal: Excellent, etc).
+            </small>
+          </div>
+
+          <div class="settings-row">
+            <label for="vis-accuracy-pct">Show Accuracy Percentage</label>
+            <label class="settings-toggle">
+              <input
+                type="checkbox"
+                id="vis-accuracy-pct"
+                checked={showAccuracyPercent()}
+                onChange={(e) => {
+                  setShowAccuracyPercent(e.currentTarget.checked)
+                }}
+              />
+              <span class="settings-slider" />
+            </label>
+            <small>
+              Display a numeric accuracy percentage on each played note.
             </small>
           </div>
 

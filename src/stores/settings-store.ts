@@ -214,6 +214,14 @@ export const [showSidebarNoteList, setShowSidebarNoteList] =
     false,
   )
 
+/**
+ * Show a numeric accuracy percentage (0-100%) on each played note
+ * in the PitchCanvas and NoteList. Defaults on so the user sees the
+ * new behavior immediately.
+ */
+export const [showAccuracyPercent, setShowAccuracyPercent] =
+  createPersistedSignal<boolean>('pitchperfect_accuracy_percent', true)
+
 // ── Character-themed playback sounds ───────────────────────────────
 //
 // Each guide character maps to a different timbre + small detune /

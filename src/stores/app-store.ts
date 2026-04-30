@@ -432,3 +432,15 @@ export function endWalkthrough(): void {
     /* empty */
   }
 }
+
+// ── App Crash / Error Handling ────────────────────────────────────────
+export interface AppError {
+  error: Error
+  time: number
+}
+
+export const [appError, setAppError] = createSignal<AppError | null>(null)
+
+export function setError(err: AppError | null): void {
+  setAppError(err)
+}
