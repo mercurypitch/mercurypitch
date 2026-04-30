@@ -38,3 +38,9 @@ test-results/
 
 public/assets/
 **/**/*.patch
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+!.env.example
