@@ -80,6 +80,37 @@ body {
   overflow: hidden;
 }
 
+/* Shared Styles */
+.dropdown-select-style {
+  width: 100%;
+  min-width: 0;
+  padding: 7px 30px 7px 10px;
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: var(--bg-card);
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--text-muted) 50%),
+    linear-gradient(135deg, var(--text-muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 16px) 50%,
+    calc(100% - 11px) 50%;
+  background-size:
+    5px 5px,
+    5px 5px;
+  background-repeat: no-repeat;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.2;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
 #app {
   display: flex;
   flex-direction: column;
@@ -8019,6 +8050,10 @@ input:checked + .settings-slider:before {
   color-scheme: dark;
 }
 
+.settings-row input[type='number'] {
+  color-scheme: dark;
+}
+
 /* Practice sub-mode selector — same polished capsule language as Repeat cycles. */
 .practice-mode-control-group {
   display: inline-flex;
@@ -8447,4 +8482,16 @@ input:checked + .settings-slider:before {
   width: 100%;
   min-height: 34px;
   border-radius: 10px;
+}
+
+#note-list .note-item.rest-item {
+  border-style: dashed;
+  border-color: rgba(139, 148, 158, 0.45);
+  background: rgba(139, 148, 158, 0.1);
+  color: var(--text-secondary);
+}
+
+#note-list .note-item.rest-item .note-dot {
+  background: transparent;
+  border: 1px dashed rgba(139, 148, 158, 0.65);
 }

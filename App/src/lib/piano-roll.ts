@@ -1937,7 +1937,16 @@ export class PianoRollEditor {
     }
 
     if (this.isDragging && this.selectedNoteIds.size > 0) {
-      const deltaBeat = Math.round((x - this.dragStartX) / this.beatWidth)
+      // Drag snap: full beat for notes ≥ 1 beat, otherwise half-beat.
+      const draggedNoteId = this.selectedNoteIds.values().next().value
+      const draggedNote =
+        draggedNoteId !== undefined
+          ? this.melody.find((n) => (n.id ?? 0) === draggedNoteId)
+          : undefined
+      const dragSnapUnit = draggedNote && draggedNote.duration >= 1 ? 1 : 0.5
+      const deltaBeat =
+        Math.round((x - this.dragStartX) / (this.beatWidth * dragSnapUnit)) *
+        dragSnapUnit
       const deltaRow = Math.round((y - this.dragStartY) / this.rowHeight)
       if (deltaBeat !== 0 || deltaRow !== 0) {
         for (const noteId of this.selectedNoteIds) {
@@ -2185,7 +2194,12 @@ export class PianoRollEditor {
     this.pushHistory()
     this.updateUndoRedoButtons()
 
-    const snappedBeat = Math.floor(beat) + (beat % 1 >= 0.5 ? 0.5 : 0)
+    // Snap placement to nearest half-beat for short notes, or whole beat
+    // for notes that are at least one full beat long. This makes bar-
+    // length notes line up cleanly with the bar ruler instead of
+    // floating between half-beat positions.
+    const snapUnit = duration >= 1 ? 1 : 0.5
+    const snappedBeat = Math.round(beat / snapUnit) * snapUnit
     const id = this.nextNoteId++
 
     const item: MelodyItem = {

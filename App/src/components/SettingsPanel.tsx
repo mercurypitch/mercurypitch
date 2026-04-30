@@ -6,7 +6,7 @@ import type { Component } from 'solid-js'
 import { createMemo, createSignal, Show } from 'solid-js'
 import { appStore } from '@/stores'
 import { adsr, playbackSpeed, setPlaybackSpeed, setSensitivity, settings, } from '@/stores'
-import { colorCodeNotes, flameMode, setColorCodeNotes, setFlameMode, } from '@/stores/settings-store'
+import { colorCodeNotes, flameMode, setColorCodeNotes, setFlameMode, setShowSidebarNoteList, showSidebarNoteList, } from '@/stores/settings-store'
 import { APP_VERSION } from '@/version'
 
 export const SettingsPanel: Component = () => {
@@ -187,6 +187,25 @@ export const SettingsPanel: Component = () => {
               the key
             </small>
           </div>
+
+          <div class="settings-row">
+            <label for="vis-sidebar-notes">Sidebar Note List</label>
+            <label class="settings-toggle">
+              <input
+                type="checkbox"
+                id="vis-sidebar-notes"
+                checked={showSidebarNoteList()}
+                onChange={(e) => {
+                  setShowSidebarNoteList(e.currentTarget.checked)
+                }}
+              />
+              <span class="settings-slider" />
+            </label>
+            <small>
+              Show the detailed note list in the Practice sidebar. Hidden by
+              default for a cleaner playback layout.
+            </small>
+          </div>
         </div>
 
         {/* Accuracy Bands Section */}
@@ -200,6 +219,7 @@ export const SettingsPanel: Component = () => {
           <div class="settings-row">
             <label for="band-perfect">Perfect (&le; cents)</label>
             <input
+              class={'input-number-dark'}
               type="number"
               id="band-perfect"
               min="1"

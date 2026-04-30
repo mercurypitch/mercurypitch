@@ -214,6 +214,14 @@ export function usePlaybackController(
           : 'all'
 
     const filteredMelody = filterMelodyForPractice(baseMelody, subMode)
+    // MVC-style split: `filteredMelody` is the transient view/playback
+    // model. It may contain synthetic rest blocks for Spaced mode. Never
+    // write it to melodyStore; just expose it to the practice canvas via
+    // playbackDisplayMelody and feed it to PlaybackRuntime.
+    setPlaybackDisplayMelody(filteredMelody)
+    setPlaybackDisplayBeats(
+      forcedDurationBeats ?? melodyTotalBeats(filteredMelody),
+    )
     playbackRuntime.setMelody(filteredMelody)
     playbackRuntime.setDurationBeats(
       forcedDurationBeats ?? melodyTotalBeats(filteredMelody),
@@ -250,7 +258,6 @@ export function usePlaybackController(
     setIsPlaying(true)
     setIsPaused(false)
     playback.continuePlayback()
-    setEditorPlaybackState('playing')
   }
 
   const handleStop = async (): Promise<SessionResult | null | undefined> => {

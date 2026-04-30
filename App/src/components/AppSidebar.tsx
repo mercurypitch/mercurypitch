@@ -5,7 +5,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { For, Show } from 'solid-js'
+import { createSignal, For, Show } from 'solid-js'
 import { CharacterIcons } from '@/components/CharacterIcons'
 import { LibraryTab } from '@/components/LibraryTab'
 import { NoteList } from '@/components/NoteList'
@@ -15,6 +15,7 @@ import { KEY_OFFSETS, midiToFreq, midiToNote } from '@/lib/scale-data'
 import { activeTab as appActiveTab, sessionResults, showNotification, } from '@/stores'
 import { keyName, scaleType, setKeyName, setScaleType } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
+import { showSidebarNoteList } from '@/stores/settings-store'
 import type { MelodyItem, NoteResult, PitchResult } from '@/types'
 
 interface AppSidebarProps {
@@ -45,20 +46,22 @@ interface AppSidebarProps {
 export const AppSidebar: Component<AppSidebarProps> = (props) => {
   // Local alias for reactive tracking
   const activeTab = () => appActiveTab()
+  const [viewOctave, setViewOctave] = createSignal(
+    melodyStore.getCurrentOctave(),
+  )
 
   const handleViewOctaveShift = (delta: number): void => {
     if (activeTab() === 'editor') {
       // Editor is allowed to mutate the actual melody (transpose notes).
       props.onOctaveShift?.(delta)
+      setViewOctave(melodyStore.getCurrentOctave())
       return
     }
 
     // Practice/sidebar playback setup is view-only: change the displayed
     // scale/octave reference without modifying the user's saved melody.
-    const nextOctave = Math.max(
-      1,
-      Math.min(6, melodyStore.getCurrentOctave() + delta),
-    )
+    const nextOctave = Math.max(1, Math.min(6, viewOctave() + delta))
+    setViewOctave(nextOctave)
     melodyStore.setOctave(nextOctave)
     melodyStore.refreshScale(keyName(), nextOctave, scaleType())
   }
@@ -187,7 +190,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
                 />
               </svg>
             </button>
-            <span class="octave-value">{melodyStore.getCurrentOctave()}</span>
+            <span class="octave-value">{viewOctave()}</span>
             <button
               class="octave-btn"
               title="Higher octave"
@@ -298,12 +301,14 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
       {/* Note list + pitch reference — Practice tab only (bottom-anchored) */}
       <Show when={activeTab() === 'practice'}>
         <div class="sidebar-section sidebar-notes-bottom">
-          <NoteList
-            melody={props.melody}
-            currentNoteIndex={props.currentNoteIndex}
-            noteResults={props.noteResults}
-            isPlaying={props.isPlaying}
-          />
+          <Show when={showSidebarNoteList()}>
+            <NoteList
+              melody={props.melody}
+              currentNoteIndex={props.currentNoteIndex}
+              noteResults={props.noteResults}
+              isPlaying={props.isPlaying}
+            />
+          </Show>
           <PitchDisplay pitch={props.pitch} targetNote={props.targetNoteName} />
         </div>
       </Show>

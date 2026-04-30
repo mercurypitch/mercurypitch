@@ -585,65 +585,102 @@ export class AudioEngine {
       this.stopTone(0)
     }
 
-    const oscillator = this.audioCtx.createOscillator()
-    const gain = this.audioCtx.createGain()
-    const startTime = this.audioCtx.currentTime
-
     if (this.toneCleanupTimer !== null) {
       clearTimeout(this.toneCleanupTimer)
       this.toneCleanupTimer = null
     }
 
-    this.toneOscillator = oscillator
-    this.toneGain = gain
+    const startTime = this.audioCtx.currentTime
 
-    oscillator.type = 'sine'
-    oscillator.frequency.value = frequency
+    // Use the instrument-aware voice builder so the note timbre matches
+    // the currentInstrument selection (sine/piano/organ/strings/synth).
+    // Previously this method hardcoded oscillator.type='sine', which is
+    // why changing the instrument dropdown didn't audibly affect live
+    // playback even though WAV export (which uses _createVoice) did.
+    // We default to 1 second when no duration is provided so the
+    // per-instrument envelopes inside _createVoice have a sensible
+    // stop time; stopTone() can still cut the note early.
+    const effectiveDurationMs =
+      duration !== undefined && duration > 0 ? duration : 1000
+    const voice = this._createVoice(frequency, effectiveDurationMs)
+    const masterGain = voice.gain
 
-    // Smooth ramp in
-    gain.gain.setValueAtTime(0, startTime)
-    gain.gain.linearRampToValueAtTime(this.volume, startTime + 0.01)
+    // Apply user volume on top of the per-instrument envelope by
+    // chaining via an extra gain node. This keeps each instrument's
+    // built-in envelope intact while still respecting the global slider.
+    const userGain = this.audioCtx.createGain()
+    userGain.gain.value = this.volume
+    masterGain.connect(userGain)
+    userGain.connect(this.mainGain)
 
-    oscillator.connect(gain)
-    gain.connect(this.mainGain)
-    oscillator.start(startTime)
+    // Start every oscillator (and any LFO modulators).
+    for (const osc of voice.oscillators) osc.start(startTime)
+    for (const lfo of voice.lfos) lfo.start(startTime)
+
+    // Track the primary oscillator/gain so stopTone() can release it.
+    const primaryOsc = voice.oscillators[0] ?? null
+    this.toneOscillator = primaryOsc
+    this.toneGain = userGain
 
     this.isPlaying = true
 
     const cleanup = (): void => {
-      try {
-        oscillator.disconnect()
-      } catch {
-        // already disconnected
+      for (const osc of voice.oscillators) {
+        try {
+          osc.disconnect()
+        } catch {
+          /* already disconnected */
+        }
+      }
+      for (const lfo of voice.lfos) {
+        try {
+          lfo.stop()
+        } catch {
+          /* already stopped */
+        }
+        try {
+          lfo.disconnect()
+        } catch {
+          /* already disconnected */
+        }
       }
       try {
-        gain.disconnect()
+        masterGain.disconnect()
       } catch {
-        // already disconnected
+        /* already disconnected */
       }
-      if (this.toneOscillator === oscillator) {
+      try {
+        userGain.disconnect()
+      } catch {
+        /* already disconnected */
+      }
+      if (this.toneOscillator === primaryOsc) {
         this.toneOscillator = null
       }
-      if (this.toneGain === gain) {
+      if (this.toneGain === userGain) {
         this.toneGain = null
       }
       this.isPlaying = false
     }
 
-    oscillator.onended = cleanup
+    primaryOsc.onended = cleanup
 
     if (duration !== undefined) {
       const durationSeconds = Math.max(0.001, duration / 1000)
       const stopTime = startTime + durationSeconds
-      const fadeDuration = Math.min(0.01, durationSeconds / 2)
-      const fadeStart = Math.max(startTime + 0.001, stopTime - fadeDuration)
-
-      try {
-        gain.gain.setValueAtTime(this.volume, fadeStart)
-        gain.gain.linearRampToValueAtTime(0, stopTime)
-        oscillator.stop(stopTime)
-      } catch {
-        cleanup()
+      for (const osc of voice.oscillators) {
+        try {
+          osc.stop(stopTime)
+        } catch {
+          /* already stopped */
+        }
+      }
+      for (const lfo of voice.lfos) {
+        try {
+          lfo.stop(stopTime)
+        } catch {
+          /* already stopped */
+        }
       }
     }
   }

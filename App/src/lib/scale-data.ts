@@ -260,9 +260,32 @@ export function buildMultiOctaveScale(
 
   const scale: ScaleDegree[] = []
 
+  // Most scale definitions include both the root (0) and the closing
+  // octave (12). When we stack multiple octaves, the top of octave N
+  // (semitone 12) and the root of octave N+1 (semitone 0) refer to the
+  // same MIDI note, which produced duplicate rows like two C4s sitting
+  // adjacent in the piano-roll grid. Detect this case and skip the
+  // closing-octave degree on every iteration except the topmost so each
+  // pitch appears exactly once.
+  const isTopmost = (oct: number): boolean =>
+    oct === startOctave + numOctaves - 1
+  const intervalsHasOctave = intervals[intervals.length - 1] === 12
+  const intervalsHasRoot = intervals[0] === 0
+
   for (let oct = startOctave + numOctaves - 1; oct >= startOctave; oct--) {
     for (let i = intervals.length - 1; i >= 0; i--) {
       const semitone = intervals[i]
+      // Drop semitone 12 (closing octave) for every iteration below the
+      // top one — its MIDI value collides with the root of the next
+      // octave up, producing a duplicate row.
+      if (
+        intervalsHasOctave &&
+        intervalsHasRoot &&
+        semitone === 12 &&
+        !isTopmost(oct)
+      ) {
+        continue
+      }
       const midi = (oct + 1) * 12 + rootOffset + semitone
       const { name, octave: octOut } = midiToNote(midi)
       scale.push({

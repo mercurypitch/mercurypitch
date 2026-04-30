@@ -207,6 +207,13 @@ export const [flameMode, setFlameMode] = createPersistedSignal<boolean>(
 export const [colorCodeNotes, setColorCodeNotes] =
   createPersistedSignal<boolean>('pitchperfect_color_code_notes', true)
 
+/** Show the Practice sidebar note list. Hidden by default to reduce clutter. */
+export const [showSidebarNoteList, setShowSidebarNoteList] =
+  createPersistedSignal<boolean>(
+    'pitchperfect_sidebar_note_list_visible_v2',
+    false,
+  )
+
 export function toggleGridLines(): void {
   setGridLinesVisible(!gridLinesVisible())
 }
