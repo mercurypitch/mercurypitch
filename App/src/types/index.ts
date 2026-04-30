@@ -24,6 +24,9 @@ export type AccuracyRating = 'perfect' | 'excellent' | 'good' | 'okay' | 'off'
 /** Playback mode for the melody engine */
 export type PlaybackMode = 'once' | 'repeat' | 'practice'
 
+/** Extra rest spacing used by the Practice tab's "Spaced" mode. */
+export type SpacedRestMode = 'none' | 'fourth' | 'half' | 'full'
+
 /** Transport playback state */
 export type TransportState = 'stopped' | 'playing' | 'paused' | 'precount'
 export type PlaybackState = 'stopped' | 'playing' | 'paused'
@@ -73,6 +76,8 @@ export interface MelodyItem {
   effectType?: EffectType
   /** IDs of linked notes (for slides/ease: next note; for vibrato: start note) */
   linkedTo?: number[]
+  /** Visual/playback rest inserted for practice spacing. Not persisted as a real melody note. */
+  isRest?: boolean
 }
 
 /** Scale degree definition */

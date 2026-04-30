@@ -1,5 +1,4 @@
 import { createPersistedSignal } from '@/lib/storage'
-import type { AccuracyBand } from '@/types'
 
 export type SensitivityPreset = 'quiet' | 'home' | 'noisy'
 
@@ -8,8 +7,9 @@ export interface SettingsConfig {
   sensitivity: number
   minConfidence: number
   minAmplitude: number
-  bands: AccuracyBand[]
-  tonicAnchor: boolean
+  bands: Array<{ threshold: number; band: number; color: string }>
+  /** Optional for backwards compatibility with older persisted settings/tests. */
+  tonicAnchor?: boolean
 }
 
 export interface ADSRConfig {
@@ -50,13 +50,14 @@ export const SENSITIVITY_PRESETS: Record<
   },
 }
 
-const DEFAULT_BANDS: AccuracyBand[] = [
-  { threshold: 0, band: 100, color: '#3fb950' },
-  { threshold: 10, band: 90, color: '#58a6ff' },
-  { threshold: 25, band: 75, color: '#2dd4bf' },
-  { threshold: 50, band: 50, color: '#d29922' },
-  { threshold: 999, band: 0, color: '#f85149' },
-]
+const DEFAULT_BANDS: Array<{ threshold: number; band: number; color: string }> =
+  [
+    { threshold: 0, band: 100, color: '#3fb950' },
+    { threshold: 10, band: 90, color: '#58a6ff' },
+    { threshold: 25, band: 75, color: '#2dd4bf' },
+    { threshold: 50, band: 50, color: '#d29922' },
+    { threshold: 999, band: 0, color: '#f85149' },
+  ]
 
 export const DEFAULT_SETTINGS: SettingsConfig = {
   ...SENSITIVITY_PRESETS.noisy, // Use noisy as default config values

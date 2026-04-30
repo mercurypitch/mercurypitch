@@ -12,6 +12,7 @@ import { NOTE_NAMES } from '@/lib/scale-data'
 import { appStore } from '@/stores'
 import { bpm, keyName, micActive, micWaveVisible, playbackSpeed, scaleType, setBpm, setKeyName, setPlaybackSpeed, setScaleType, setSensitivity, settings, toggleMicWaveVisible, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
+import type { SpacedRestMode } from '@/types'
 import { ControlGroup } from './ControlGroup'
 import { MetronomeGroup } from './MetronomeGroup'
 
@@ -94,6 +95,8 @@ interface SharedControlToolbarProps {
   onCyclesChange: (cycles: number) => void
   practiceSubMode: () => PracticeSubMode
   onPracticeSubModeChange: (mode: PracticeSubMode) => void
+  spacedRestMode?: () => SpacedRestMode
+  onSpacedRestModeChange?: (mode: SpacedRestMode) => void
 
   // Editor-specific
   isRecording?: () => boolean
@@ -316,7 +319,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
                 props.playModeChange('once')
               }}
             >
-              Once
+              Spaced
             </button>
             <button
               id="btn-repeat"
@@ -550,6 +553,28 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
               </button>
             </div>
           </ControlGroup>
+        </Show>
+
+        {/* Spaced mode selector — once-through playback with optional rests inserted between notes. */}
+        <Show when={isPracticeTab() && props.playMode() === 'once'}>
+          <div class="secondary-control-group practice-mode-control-group spaced-mode-control-group">
+            <label class="opt-label practice-mode-label">Spacing</label>
+            <select
+              id="spaced-rest-mode"
+              value={props.spacedRestMode?.() ?? 'none'}
+              onChange={(e) => {
+                props.onSpacedRestModeChange?.(
+                  e.currentTarget.value as SpacedRestMode,
+                )
+              }}
+              class="practice-sub-mode-select spaced-rest-select"
+            >
+              <option value="none">None</option>
+              <option value="fourth">𝄽 Fourth rest</option>
+              <option value="half">𝄼 Half rest</option>
+              <option value="full">𝄻 Full bar rest</option>
+            </select>
+          </div>
         </Show>
 
         {/* Sensitivity */}

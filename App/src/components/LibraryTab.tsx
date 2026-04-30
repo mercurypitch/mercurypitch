@@ -38,7 +38,7 @@ export const LibraryTab: Component = () => {
       .slice(0, 5)
   })
 
-  const recentItems = createMemo(() => {
+  const _recentItems = createMemo(() => {
     const items: Array<
       | { type: 'melody'; data: MelodyData }
       | { type: 'session'; data: PlaybackSession }
@@ -219,7 +219,7 @@ export const LibraryTab: Component = () => {
     showNotification(`Melody "${newMelody.name}" created`, 'success')
   }
 
-  const handleRecentItemClick = (
+  const _handleRecentItemClick = (
     item:
       | { type: 'melody'; data: MelodyData }
       | { type: 'session'; data: PlaybackSession },

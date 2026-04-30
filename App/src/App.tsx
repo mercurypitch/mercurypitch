@@ -38,7 +38,7 @@ import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
 import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, initBpm, initPresets, initReverb, initSessionHistory, initSettings, initTheme, isLibraryModalOpen, isSessionLibraryModalOpen, keyName as keyNameSignal, micActive, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPlaybackSpeed, setScaleType, showNotification, showWelcome, startPracticeSession, startWalkthrough, toggleMicWaveVisible, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import { getSession } from '@/stores/session-store'
-import type { MelodyItem, PlaybackMode } from '@/types'
+import type { MelodyItem, PlaybackMode, SpacedRestMode } from '@/types'
 import { Walkthrough, WalkthroughControl } from './components'
 import { GuideSelection } from './components/GuideSelection'
 import { WelcomeScreen } from './components/WelcomeScreen'
@@ -55,6 +55,32 @@ interface AppProps {
 }
 
 /** Filter melody items based on practice sub-mode */
+function applySpacedRests(
+  melody: MelodyItem[],
+  mode: SpacedRestMode,
+): MelodyItem[] {
+  if (mode === 'none') return melody
+  const restBeats = mode === 'fourth' ? 1 : mode === 'half' ? 2 : 4
+  const result: MelodyItem[] = []
+  let cursor = 0
+  for (let i = 0; i < melody.length; i++) {
+    const item = melody[i]
+    result.push({ ...item, startBeat: cursor })
+    cursor += item.duration
+    if (i < melody.length - 1) {
+      result.push({
+        id: -100000 - i,
+        note: item.note,
+        startBeat: cursor,
+        duration: restBeats,
+        isRest: true,
+      })
+      cursor += restBeats
+    }
+  }
+  return result
+}
+
 function filterMelodyForPractice(
   melody: MelodyItem[],
   subMode: PracticeSubMode,
@@ -118,6 +144,8 @@ const AppShell: Component<AppProps> = (props) => {
   const [currentRepeat, setCurrentRepeat] = createSignal<number>(1)
   const [practiceSubMode, setPracticeSubMode] =
     createSignal<PracticeSubMode>('all')
+  const [spacedRestMode, setSpacedRestMode] =
+    createSignal<SpacedRestMode>('none')
 
   // ── Guide Selection dialog ──────────────────────────────────
   const [showGuideSelection, setShowGuideSelection] = createSignal(false)
@@ -161,7 +189,10 @@ const AppShell: Component<AppProps> = (props) => {
       practice.setPracticeResult(v as never)) as never,
     setLiveScore: ((v: unknown) => practice.setLiveScore(v as never)) as never,
     closeSidebar,
-    filterMelodyForPractice,
+    filterMelodyForPractice: (melody, subMode) =>
+      playMode() === 'once'
+        ? applySpacedRests(melody, spacedRestMode())
+        : filterMelodyForPractice(melody, subMode),
     buildSessionPlaybackMelody,
     buildScaleMelody,
     isRecording: recording.isRecording,
@@ -721,6 +752,8 @@ const AppShell: Component<AppProps> = (props) => {
                   currentCycle={() => currentRepeat()}
                   practiceSubMode={() => practiceSubMode()}
                   onPracticeSubModeChange={setPracticeSubMode}
+                  spacedRestMode={spacedRestMode}
+                  onSpacedRestModeChange={setSpacedRestMode}
                   isCountingIn={() => isCountingIn()}
                   countInBeat={() => countInBeat()}
                   countInBeats={() => countIn()}

@@ -145,10 +145,26 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
 
     const query = addMelodySearch().toLowerCase()
     const allSessions = melodyStore.getSessions()
+    const melodyEntries = Object.values(library().melodies) as MelodyData[]
 
-    return allSessions
-      .filter((s) => s.name.toLowerCase().includes(query))
-      .map((s) => ({ id: s.id, session: s }))
+    return [
+      ...allSessions
+        .filter((s) => s.name.toLowerCase().includes(query))
+        .map((s) => ({
+          id: s.id,
+          type: 'session' as const,
+          title: s.name,
+          meta: `${s.items.length} item${s.items.length === 1 ? '' : 's'}`,
+        })),
+      ...melodyEntries
+        .filter((m) => m.name.toLowerCase().includes(query))
+        .map((m) => ({
+          id: m.id,
+          type: 'melody' as const,
+          title: m.name,
+          meta: `${m.key} • ${m.bpm} BPM • ${m.items.length} notes`,
+        })),
+    ]
   })
 
   const selectedMelody = createMemo(() => {
@@ -160,6 +176,24 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
   const isSessionInPlaylist = (playlistId: string, sessionId: string) => {
     const playlist = library().playlists[playlistId]
     return playlist?.sessionKeys?.includes(sessionId) ?? false
+  }
+
+  const isMelodyInPlaylist = (playlistId: string, melodyId: string) => {
+    const playlist = library().playlists[playlistId]
+    return playlist?.melodyKeys?.includes(melodyId) ?? false
+  }
+
+  const handleTogglePlaylistItem = (
+    playlistId: string,
+    item: { id: string; type: 'session' | 'melody' },
+  ) => {
+    if (item.type === 'session') {
+      handleToggleSessionInPlaylist(playlistId, item.id)
+    } else if (isMelodyInPlaylist(playlistId, item.id)) {
+      melodyStore.removeMelodyFromPlaylist(playlistId, item.id)
+    } else {
+      melodyStore.addMelodyToPlaylist(playlistId, item.id)
+    }
   }
 
   const handleToggleSessionInPlaylist = (
@@ -365,7 +399,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
     }
   }
 
-  const handleAddMelodyToPlaylist = (melodyId: string) => {
+  const _handleAddMelodyToPlaylist = (melodyId: string) => {
     const playlistEdit = playlistEditing()
     if (
       playlistEdit !== null &&
@@ -978,22 +1012,41 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
 
                   <div class="melody-select-list">
                     <For each={availableForPlaylist()}>
-                      {({ id, session }) => (
-                        <div
-                          class={`melody-select-item ${selectedMelodyKey() === id ? 'selected' : ''}`}
-                          onClick={() => setSelectedMelodyKey(id)}
-                        >
-                          <div class="select-item-title">{session.name}</div>
-                          <div class="select-item-meta">
-                            {session.created} • {session.items.length} Count
-                          </div>
-                        </div>
-                      )}
+                      {(item) => {
+                        const edit = playlistEditing()
+                        const playlistId = edit?.playlistId ?? ''
+                        const selected =
+                          item.type === 'session'
+                            ? isSessionInPlaylist(playlistId, item.id)
+                            : isMelodyInPlaylist(playlistId, item.id)
+                        return (
+                          <button
+                            type="button"
+                            class={`melody-select-item playlist-picker-pill ${selected ? 'selected' : ''}`}
+                            onClick={() =>
+                              handleTogglePlaylistItem(playlistId, item)
+                            }
+                          >
+                            <span class="playlist-picker-icon">
+                              {item.type === 'session' ? '🎼' : '🎵'}
+                            </span>
+                            <span class="playlist-picker-copy">
+                              <span class="select-item-title">
+                                {item.title}
+                              </span>
+                              <span class="select-item-meta">{item.meta}</span>
+                            </span>
+                            <span class="playlist-picker-check">
+                              {selected ? '✓' : '+'}
+                            </span>
+                          </button>
+                        )
+                      }}
                     </For>
 
                     {availableForPlaylist().length === 0 && (
                       <div class="empty-state">
-                        <p>All melodies already in this playlist!</p>
+                        <p>No matching sessions or melodies found.</p>
                       </div>
                     )}
                   </div>
@@ -1010,17 +1063,9 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                     </button>
                     <button
                       class="save-btn"
-                      onClick={() => {
-                        const edit = playlistEditing()
-                        if (
-                          edit?.mode === 'add-melody' &&
-                          selectedMelodyKey() !== null
-                        ) {
-                          handleAddMelodyToPlaylist(selectedMelodyKey()!)
-                        }
-                      }}
+                      onClick={() => setPlaylistEditing(null)}
                     >
-                      Add to Playlist
+                      Done
                     </button>
                   </div>
                 </div>
@@ -1143,7 +1188,12 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                     each={
                       Object.entries(library().playlists) as [
                         string,
-                        { name: string; melodyKeys: string[]; created: number },
+                        {
+                          name: string
+                          melodyKeys: string[]
+                          sessionKeys?: string[]
+                          created: number
+                        },
                       ][]
                     }
                   >
@@ -1170,7 +1220,8 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                           <div class="playlist-info">
                             <span class="playlist-name">{playlist.name}</span>
                             <span class="playlist-count">
-                              {playlist.melodyKeys.length} melodies
+                              {playlist.melodyKeys.length} melodies ·{' '}
+                              {playlist.sessionKeys?.length ?? 0} sessions
                             </span>
                           </div>
                           <div class="item-actions">

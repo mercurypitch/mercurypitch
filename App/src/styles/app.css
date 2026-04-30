@@ -8383,3 +8383,68 @@ input:checked + .settings-slider:before {
   color: var(--text-muted);
   line-height: 1.4;
 }
+
+/* Playback Setup sidebar redesign */
+.app-sidebar #scale-info {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid rgba(88, 166, 255, 0.18);
+  border-radius: 14px;
+  background: linear-gradient(
+    180deg,
+    rgba(22, 27, 34, 0.82),
+    rgba(13, 17, 23, 0.72)
+  );
+}
+
+.app-sidebar #scale-info #key-select,
+.app-sidebar #scale-info #scale-select {
+  min-height: 36px;
+  border-radius: 10px;
+  border: 1px solid rgba(88, 166, 255, 0.28);
+  background-color: rgba(88, 166, 255, 0.08) !important;
+  color: var(--text-primary);
+  font-weight: 700;
+  color-scheme: dark;
+}
+
+.app-sidebar #scale-info #key-select {
+  width: 100%;
+}
+
+.app-sidebar #scale-info #scale-select {
+  grid-column: 1 / -1;
+  width: 100%;
+}
+
+.app-sidebar #scale-info .octave-ctrl {
+  height: 36px;
+  padding: 3px 6px;
+  border-radius: 999px;
+  border-color: rgba(88, 166, 255, 0.28);
+  background: rgba(88, 166, 255, 0.08);
+}
+
+.app-sidebar #scale-info .octave-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+}
+
+.app-sidebar #scale-info .octave-value {
+  min-width: 24px;
+  color: #7ee787;
+  font-weight: 800;
+  text-align: center;
+}
+
+.app-sidebar #open-scale-builder {
+  grid-column: 1 / -1;
+  justify-content: center;
+  width: 100%;
+  min-height: 34px;
+  border-radius: 10px;
+}

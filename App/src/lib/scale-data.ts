@@ -328,6 +328,7 @@ export function melodyNoteAtBeat(
 export function melodyIndexAtBeat(melody: MelodyItem[], beat: number): number {
   for (let i = 0; i < melody.length; i++) {
     const item = melody[i]
+    if (item.isRest === true) continue
     if (beat >= item.startBeat && beat < item.startBeat + item.duration) {
       return i
     }

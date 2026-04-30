@@ -45,6 +45,24 @@ interface AppSidebarProps {
 export const AppSidebar: Component<AppSidebarProps> = (props) => {
   // Local alias for reactive tracking
   const activeTab = () => appActiveTab()
+
+  const handleViewOctaveShift = (delta: number): void => {
+    if (activeTab() === 'editor') {
+      // Editor is allowed to mutate the actual melody (transpose notes).
+      props.onOctaveShift?.(delta)
+      return
+    }
+
+    // Practice/sidebar playback setup is view-only: change the displayed
+    // scale/octave reference without modifying the user's saved melody.
+    const nextOctave = Math.max(
+      1,
+      Math.min(6, melodyStore.getCurrentOctave() + delta),
+    )
+    melodyStore.setOctave(nextOctave)
+    melodyStore.refreshScale(keyName(), nextOctave, scaleType())
+  }
+
   return (
     <aside
       class={`app-sidebar${props.class !== undefined && props.class !== '' ? ` ${props.class}` : ''}`}
@@ -109,9 +127,12 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
               const newKey = e.currentTarget.value
               const currentKey = keyName()
 
-              // Transpose existing melody notes if any
+              // In Editor tab, the key dropdown is an editing operation and
+              // may transpose the actual melody. In Practice/sidebar usage it
+              // must be view-only: update key/scale display, but never write
+              // transposed notes back into the user's melody.
               const melody = melodyStore.getCurrentItems()
-              if (melody.length > 0) {
+              if (activeTab() === 'editor' && melody.length > 0) {
                 const currentOffset = KEY_OFFSETS[currentKey] ?? 0
                 const newOffset = KEY_OFFSETS[newKey] ?? 0
                 const delta = newOffset - currentOffset
@@ -157,7 +178,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
             <button
               class="octave-btn"
               title="Lower octave"
-              onClick={() => props.onOctaveShift?.(-1)}
+              onClick={() => handleViewOctaveShift(-1)}
             >
               <svg viewBox="0 0 24 24" width="14" height="14">
                 <path
@@ -170,7 +191,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
             <button
               class="octave-btn"
               title="Higher octave"
-              onClick={() => props.onOctaveShift?.(1)}
+              onClick={() => handleViewOctaveShift(1)}
             >
               <svg viewBox="0 0 24 24" width="14" height="14">
                 <path

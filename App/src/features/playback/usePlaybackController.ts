@@ -226,7 +226,7 @@ export function usePlaybackController(
     setIsPaused(false)
     playback.startPlayback()
 
-    if (settings().tonicAnchor) {
+    if (settings().tonicAnchor === true) {
       const tonicFreq = keyTonicFreq(keyName(), melodyStore.getCurrentOctave())
       const tonicDuration = Math.round(60000 / bpm())
       audioEngine.playTone(tonicFreq, tonicDuration)

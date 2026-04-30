@@ -390,12 +390,37 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     drawAccuracyHeatmap(h)
     drawTargetPitch(h)
 
+    let playableResultIndex = 0
     for (let j = 0; j < melody.length; j++) {
       const item = melody[j]
       const x1 = beatToX(item.startBeat, w)
       const x2 = beatToX(item.startBeat + item.duration, w)
       const bw = x2 - x1
       const y = freqToY(item.note.freq, h)
+      if (item.isRest === true) {
+        if (bw > 2) {
+          const boxH = 18
+          ctx.beginPath()
+          ctx.roundRect(x1, h / 2 - boxH / 2, bw, boxH, 6)
+          ctx.fillStyle = 'rgba(139,148,158,0.18)'
+          ctx.fill()
+          ctx.strokeStyle = 'rgba(139,148,158,0.55)'
+          ctx.setLineDash([5, 4])
+          ctx.lineWidth = 1.25
+          ctx.stroke()
+          ctx.setLineDash([])
+          if (bw >= 22) {
+            ctx.fillStyle = 'rgba(201,209,217,0.75)'
+            ctx.font = 'bold 11px sans-serif'
+            ctx.textAlign = 'center'
+            ctx.textBaseline = 'middle'
+            ctx.fillText('𝄽 rest', x1 + bw / 2, h / 2)
+            ctx.textBaseline = 'alphabetic'
+          }
+        }
+        continue
+      }
+      const resultIndex = playableResultIndex++
       const isActive =
         props.isPlaying() && j === props.currentNoteIndex() && !props.isPaused()
 
@@ -411,7 +436,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       // We still gate by `j !== currentNoteIndex` so the active note
       // (the one currently being sung) keeps its blue "active" tint
       // instead of immediately snapping to the played-state color.
-      const playedRecord = props.noteResults?.()[j]
+      const playedRecord = props.noteResults?.()[resultIndex]
       const isPlayed =
         playedRecord !== undefined && playedRecord !== null && !isActive
 
