@@ -296,10 +296,70 @@ export class PlaybackRuntime {
   }
 
   seekTo(beat: number): void {
-    this.stop()
-    this.currentBeat = Math.max(0, beat)
-    this._emit({ type: 'beat', beat: this.currentBeat })
+    // Clamp to melody end so the user can't drag the playhead past the
+    // last note (caller may also pre-clamp, but we defensively re-clamp
+    // here so external callers like the piano-roll's ruler can rely on
+    // sane bounds).
+    const melodyEnd = this._getTotalBeats(this._melody)
+    const upperBound = Math.max(this._durationBeats, melodyEnd)
+    const target = Math.max(
+      0,
+      upperBound > 0 ? Math.min(beat, upperBound) : beat,
+    )
+    const beatDuration = 60000 / this._bpm
+    const countInMs = (this._countInBeats || 0) * beatDuration
+
+    if (this.isPlaying && !this.isPaused) {
+      // PLAYING → stop audio, rebase the wall-clock origin so the next
+      // animation tick computes elapsed = target*beatDuration (i.e.
+      // resumes mid-melody at `target`), then restart the animation
+      // loop without the fresh-start branch in start() (which would
+      // zero everything out).
+      this._stopAnimationLoop()
+      this.audioEngine.stopTone()
+      this.currentBeat = target
+      this.currentNoteIndex = -1
+      // Pretend playback started in the past so `now - playStartTime
+      // - pauseOffset === target*beatDuration + countInMs`.
+      this.playStartTime =
+        performance.now() - (target * beatDuration + countInMs)
+      this.pauseOffset = 0
+      this.pauseStartTime = 0
+      this.metronomeLastBeat = -1
+      this._emit({ type: 'beat', beat: target })
+      this._startAnimationLoop()
+      return
+    }
+
+    if (this.isPaused) {
+      // PAUSED → also rebase playStartTime so when the user hits
+      // resume() (which computes pauseOffset from pauseStartTime), the
+      // animation tick produces elapsed=target*beatDuration. Without
+      // this rebase the playhead jumped back to the pre-seek position
+      // on resume — exact bug the user reported.
+      this.currentBeat = target
+      this.currentNoteIndex = -1
+      const now = performance.now()
+      // Effective elapsed when paused = pauseStartTime - playStartTime
+      //                                  - pauseOffset
+      // We want that to equal target*beatDuration + countInMs. Solve
+      // for playStartTime, treating pauseStartTime as "now" for the
+      // purposes of this snapshot (we leave pauseOffset unchanged so
+      // the eventual resume math still works).
+      this.pauseStartTime = now
+      this.playStartTime =
+        now - (target * beatDuration + countInMs) - this.pauseOffset
+      this.metronomeLastBeat = -1
+      this._emit({ type: 'beat', beat: target })
+      return
+    }
+
+    // Stopped: just relocate the head.
+    this.currentBeat = target
+    this._emit({ type: 'beat', beat: target })
   }
+
+
 
   /**
    * Set count-in beats (0-4). Count-in is shown before playback starts.

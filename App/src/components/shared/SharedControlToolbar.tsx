@@ -106,9 +106,6 @@ interface SharedControlToolbarProps {
   onMicToggle?: () => void
   onWaveToggle?: () => void
 
-  // Practice sessions
-  onSessionsClick?: () => void
-
   // Save button (editor tab only)
   onSaveMelody?: () => void
   onSaveMelodyLabel?: string

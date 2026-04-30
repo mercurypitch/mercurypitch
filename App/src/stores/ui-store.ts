@@ -19,8 +19,7 @@ export const [isLibraryModalOpen, setShowLibraryModal] =
   createSignal<boolean>(false)
 export const [isSessionLibraryModalOpen, setShowSessionLibraryModal] =
   createSignal<boolean>(false)
-export const [isPresetsModalOpen, setShowPresetsModal] =
-  createSignal<boolean>(false)
+export const [showSessionBrowser, setShowSessionBrowser] = createSignal<boolean>(false)
 
 export function showLibrary(): void {
   setShowLibraryModal(true)
@@ -34,11 +33,11 @@ export function showSessionLibrary(): void {
 export function hideSessionLibrary(): void {
   setShowSessionLibraryModal(false)
 }
-export function showPresetsLibrary(): void {
-  setShowPresetsModal(true)
+export function showSessionPresetsLibrary(): void {
+  setShowSessionBrowser(true)
 }
-export function hidePresetsLibrary(): void {
-  setShowPresetsModal(false)
+export function hideSessionPresetsLibrary(): void {
+  setShowSessionBrowser(false)
 }
 
 // ── Focus Mode ─────────────────────────────────────────────────

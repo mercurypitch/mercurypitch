@@ -7,8 +7,6 @@ import { createMemo, createSignal, For, Show } from 'solid-js'
 import { appStore, melodyStore, setActiveTab, setEditorView } from '@/stores'
 import { setActiveUserSession, showNotification } from '@/stores'
 import { createSession, saveSession } from '@/stores/session-store'
-
-
 import type { PlaybackSession, SessionCategory, SessionDifficulty, } from '@/types'
 import { SessionMiniTimeline } from './SessionMiniTimeline'
 

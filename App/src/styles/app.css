@@ -1740,22 +1740,31 @@ header h1 {
   color: var(--text-muted);
 }
 
-/* ===== Count-in Display ===== */
+/* ===== Count-in Display =====
+   Sized to match SharedControlToolbar's circular .ctrl-btn (~32px).
+   Previously the badge was a 48px rounded square that towered over
+   surrounding toolbar icons; we now use a perfectly circular pill so
+   it visually slots into the control row alongside Play/Mic/etc.
+*/
 .countin-badge {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 48px;
-  height: 48px;
-  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
   background: var(--accent-dim);
-  border: 2px solid var(--accent);
+  border: 1.5px solid var(--accent);
   color: var(--accent);
-  font-size: 1.5rem;
+  font-size: 0.95rem;
   font-weight: 700;
+  line-height: 1;
+  margin: 0 4px;
   animation: countin-pulse 0.25s ease-out;
   user-select: none;
+  box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
 }
+
 
 @keyframes countin-pulse {
   0% {
@@ -2223,11 +2232,13 @@ header h1 {
     padding: 2px 5px;
   }
   .countin-badge {
-    min-width: 42px;
-    height: 42px;
-    font-size: 1.2rem;
-    padding: 0 4px;
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    font-size: 0.9rem;
+    padding: 0;
   }
+
   .tempo-group {
     flex-shrink: 0;
   }
@@ -2338,13 +2349,15 @@ header h1 {
     display: none;
   }
 
-  /* Count-in badge: smaller */
+  /* Count-in badge: smaller — match circular toolbar style */
   .countin-badge {
-    min-width: 40px;
-    height: 40px;
-    font-size: 1.1rem;
-    padding: 0 3px;
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    font-size: 0.85rem;
+    padding: 0;
   }
+
 }
 
 /* ===== Small Phones (390px) — iPhone 13/15 Pro ===== */
@@ -8935,4 +8948,16 @@ input:checked + .settings-slider:before {
 }
 .session-player-item.is-rest .session-item-icon {
   color: var(--accent-muted, #777);
+}
+
+/* Sidebar session pills — disabled while playback is running */
+.session-item-pill.pill-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: auto; /* keep so tooltip + click→notification still fire */
+  filter: grayscale(0.4);
+}
+.session-item-pill.pill-disabled:hover {
+  background: inherit;
+  transform: none;
 }

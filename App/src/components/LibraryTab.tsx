@@ -5,12 +5,12 @@
 import type { Component } from 'solid-js'
 import { createMemo, For, onMount, Show } from 'solid-js'
 import { buildSessionItemMelody } from '@/lib/session-builder'
-import { appStore, setEditorView } from '@/stores'
-import { setActiveTab, setActiveUserSession, showLibrary, showNotification, showPresetsLibrary, showSessionLibrary, userSession as userSessionSignal, } from '@/stores'
+import { appStore, setEditorView, showSessionPresetsLibrary } from '@/stores'
+import { setActiveTab, setActiveUserSession, showLibrary, showNotification, showSessionLibrary, userSession as userSessionSignal, } from '@/stores'
 import { getActiveSession, getSessions } from '@/stores/melody-store'
 import { melodyStore } from '@/stores/melody-store'
-import { createSession, getDefaultSession, getSession, saveSession, } from '@/stores/session-store'
 import { playback } from '@/stores/playback-store'
+import { createSession, getDefaultSession, getSession, saveSession, } from '@/stores/session-store'
 import type { MelodyData, PlaybackSession, SessionItem } from '@/types'
 
 
@@ -162,10 +162,6 @@ export const LibraryTab: Component = () => {
 
   const openSessionLibrary = (): void => {
     showSessionLibrary()
-  }
-
-  const openPresetsLibrary = () => {
-    showPresetsLibrary()
   }
 
   const setActiveSessionAndSelectFirstMelody = (
@@ -449,7 +445,7 @@ export const LibraryTab: Component = () => {
           </button>
           <button
             class="tab-action-btn"
-            onClick={openPresetsLibrary}
+            onClick={showSessionPresetsLibrary}
             title="Browse Sessions"
           >
             <svg viewBox="0 0 24 24" width="14" height="14">
@@ -626,6 +622,16 @@ export const LibraryTab: Component = () => {
                   // Build the class string reactively. We compose with a
                   // function so each signal access stays inside the JSX
                   // reactive scope — Solid's compiler picks it up.
+                  //
+                  // Adds a `disabled` modifier whenever playback is not
+                  // fully stopped — clicks are already gated by the
+                  // playback.isStopped() guard in handleMelodyClick, but
+                  // visual feedback (cursor + opacity) makes it clear
+                  // why the click did nothing. The currently-active
+                  // melody pill keeps its `active` style untouched so
+                  // the user can still see which session item is
+                  // playing right now.
+                  const isLocked = (): boolean => !playback.isStopped()
                   const pillClass = (): string =>
                     [
                       'session-item-pill',
@@ -633,9 +639,11 @@ export const LibraryTab: Component = () => {
                       isClickable ? 'clickable' : '',
                       isSelected() ? 'selected' : '',
                       isActiveMelody() ? 'active' : '',
+                      isLocked() && !isActiveMelody() ? 'pill-disabled' : '',
                     ]
                       .filter(Boolean)
                       .join(' ')
+
 
                   return (
                     <span
