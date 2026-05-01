@@ -6,7 +6,8 @@ import type { AudioEngine, InstrumentType } from '@/lib/audio-engine'
 import { PitchDetector } from '@/lib/pitch-detector'
 import { buildMultiOctaveScale, midiToFreq, midiToNote } from '@/lib/scale-data'
 import type { MelodyItem, NoteName, PianoRollConfig, ScaleDegree, } from '@/types'
-import type { NoteBounds, BallPhysicsState } from "@/features/playback/yousician-ball-physics"
+import type { NoteBounds, BallPhysicsState } from '@/features/playback/yousician-ball-physics'
+import { createBallPhysics, getBallPhysics } from '@/features/playback/yousician-ball-physics'
 
 const PIANO_ROLL_CONFIG: PianoRollConfig = {
   rowHeight: 22,
@@ -671,7 +672,6 @@ export class PianoRollEditor {
         bounce: this.ballBounce,
         radius: this.ballRadius,
         padding: this.ballPadding,
-        baseSpeedBpm120: 1.5,
       })
       this.useBallPhysics = true
     } else {
@@ -685,14 +685,12 @@ export class PianoRollEditor {
    */
   private recreateBallPhysics(): void {
     if (this.useBallPhysics && this.ballState && this.ballNotes.length > 0) {
-      const { createBallPhysics } = require('@/features/playback/yousician-ball-physics')
       this.ballState = createBallPhysics({
         speed: this.ballSpeed,
         gravity: this.ballGravity,
         bounce: this.ballBounce,
         radius: this.ballRadius,
         padding: this.ballPadding,
-        baseSpeedBpm120: 1.5,
       })
     }
   }
@@ -1503,7 +1501,7 @@ export class PianoRollEditor {
       this.ballCanvas.height = totalHeight * dpr
       this.ballCanvas.style.width = `${containerWidth}px`
       this.ballCanvas.style.height = `${totalHeight}px`
-      this.ballCtx = this.ballCanvas.getContext('2d')
+      this.ballCtx = this.ballCanvas.getContext('2d') ?? null
       if (this.ballCtx) this.ballCtx.setTransform(dpr, 0, 0, dpr, 0, 0)
     }
 
@@ -2462,6 +2460,8 @@ export class PianoRollEditor {
 
       // Update ball physics position
       if (this.useBallPhysics && this.ballState && this.ballCtx) {
+        const ballCtx = this.ballCtx!
+        const ballCanvas = this.ballCanvas!
         const playheadX = currentBeat * this.beatWidth
 
         const ballConfig: any = {
@@ -2482,22 +2482,22 @@ export class PianoRollEditor {
         const pixelX = this.ballState.x * this.beatWidth
 
         // Draw ball with glowing effect
-        this.ballCtx.clearRect(0, 0, this.ballCanvas.width, this.ballCanvas.height)
+        ballCtx.clearRect(0, 0, ballCanvas.width, ballCanvas.height)
 
         // Glow effect
-        this.ballCtx.save()
-        this.ballCtx.shadowColor = 'rgba(63, 185, 80, 0.9)'
-        this.ballCtx.shadowBlur = 12
-        this.ballCtx.fillStyle = '#3fb950'
-        this.ballCtx.beginPath()
-        this.ballCtx.arc(pixelX, pixelY, this.ballRadius, 0, Math.PI * 2)
-        this.ballCtx.fill()
+        ballCtx.save()
+        ballCtx.shadowColor = 'rgba(63, 185, 80, 0.9)'
+        ballCtx.shadowBlur = 12
+        ballCtx.fillStyle = '#3fb950'
+        ballCtx.beginPath()
+        ballCtx.arc(pixelX, pixelY, this.ballRadius, 0, Math.PI * 2)
+        ballCtx.fill()
         // White core for extra glow
-        this.ballCtx.fillStyle = 'rgba(255, 255, 255, 0.7)'
-        this.ballCtx.beginPath()
-        this.ballCtx.arc(pixelX, pixelY, this.ballRadius * 0.5, 0, Math.PI * 2)
-        this.ballCtx.fill()
-        this.ballCtx.restore()
+        ballCtx.fillStyle = 'rgba(255, 255, 255, 0.7)'
+        ballCtx.beginPath()
+        ballCtx.arc(pixelX, pixelY, this.ballRadius * 0.5, 0, Math.PI * 2)
+        ballCtx.fill()
+        ballCtx.restore()
       }
 
       this.playbackAnimationId = requestAnimationFrame(animate)
@@ -2520,6 +2520,8 @@ export class PianoRollEditor {
 
     // Ball physics update for external playback
     if (this.useBallPhysics && this.ballState && this.ballCtx) {
+        const ballCtx = this.ballCtx
+        const ballCanvas = this.ballCanvas
       const playheadX = beat * this.beatWidth
 
       const ballConfig: any = {
@@ -2540,22 +2542,24 @@ export class PianoRollEditor {
       const pixelX = this.ballState.x * this.beatWidth
 
       // Draw ball with glowing effect
-      this.ballCtx.clearRect(0, 0, this.ballCanvas.width, this.ballCanvas.height)
+      if (ballCanvas) {
+        ballCtx.clearRect(0, 0, ballCanvas.width, ballCanvas.height)
+      }
 
       // Glow effect
-      this.ballCtx.save()
-      this.ballCtx.shadowColor = 'rgba(63, 185, 80, 0.9)'
-      this.ballCtx.shadowBlur = 12
-      this.ballCtx.fillStyle = '#3fb950'
-      this.ballCtx.beginPath()
-      this.ballCtx.arc(pixelX, pixelY, this.ballRadius, 0, Math.PI * 2)
-      this.ballCtx.fill()
+      ballCtx.save()
+      ballCtx.shadowColor = 'rgba(63, 185, 80, 0.9)'
+      ballCtx.shadowBlur = 12
+      ballCtx.fillStyle = '#3fb950'
+      ballCtx.beginPath()
+      ballCtx.arc(pixelX, pixelY, this.ballRadius, 0, Math.PI * 2)
+      ballCtx.fill()
       // White core for extra glow
-      this.ballCtx.fillStyle = 'rgba(255, 255, 255, 0.7)'
-      this.ballCtx.beginPath()
-      this.ballCtx.arc(pixelX, pixelY, this.ballRadius * 0.5, 0, Math.PI * 2)
-      this.ballCtx.fill()
-      this.ballCtx.restore()
+      ballCtx.fillStyle = 'rgba(255, 255, 255, 0.7)'
+      ballCtx.beginPath()
+      ballCtx.arc(pixelX, pixelY, this.ballRadius * 0.5, 0, Math.PI * 2)
+      ballCtx.fill()
+      ballCtx.restore()
 
       // Scroll grid to keep ball within view
       const containerWidth = this.gridContainer?.clientWidth ?? 0
@@ -2640,7 +2644,7 @@ export class PianoRollEditor {
     if (this.ballCanvas) {
       this.ballCanvas.style.display = 'none'
     }
-    if (this.ballCtx) {
+    if (this.ballCtx && this.ballCanvas) {
       this.ballCtx.clearRect(0, 0, this.ballCanvas.width, this.ballCanvas.height)
     }
   }

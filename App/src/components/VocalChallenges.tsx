@@ -5,6 +5,12 @@
 import type { Component } from 'solid-js'
 import { For, createSignal, createMemo, Show } from 'solid-js'
 
+// Alternative: directly render icon with casting
+const renderIcon = (icon: Component | string) => {
+  if (typeof icon === 'string') return icon as any
+  return (icon as () => any)()
+}
+
 // ============================================================
 // SVG Icons
 // ============================================================
@@ -50,67 +56,67 @@ const IconRocket = () => (
 )
 
 const IconVolume = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg" width="20" height="20"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
 )
 
 const IconMusic = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg" width="20" height="20"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
 )
 
 const IconStopwatch = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg" width="20" height="20"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
 )
 
 const IconEagle = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8Z"/></svg>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg" width="20" height="20"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8Z"/></svg>
 )
 
 const IconDiamond = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><path d="M6 3h12l4 6-10 13L2 9z"/><path d="m15 14 3-3"/></svg>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg" width="20" height="20"><path d="M6 3h12l4 6-10 13L2 9z"/><path d="m15 14 3-3"/></svg>
 )
 
 const IconStarChallenge = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg" width="20" height="20"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
 )
 
 const IconBadge = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><circle cx="12" cy="8" r="7"/><path d="M8.21 13.89L7 23l5.25-3.75 5.25 3.75L14.79 13.9"/></svg>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg" width="20" height="20"><circle cx="12" cy="8" r="7"/><path d="M8.21 13.89L7 23l5.25-3.75 5.25 3.75L14.79 13.9"/></svg>
 )
 
 const IconCrown = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><path d="m4 7 4-4 4 4"/><path d="m16 7 4-4 4 4"/><path d="M2 19h20"/><path d="M5 15l7 7 7-7"/><path d="M2 13h20"/></svg>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg" width="20" height="20"><path d="m4 7 4-4 4 4"/><path d="m16 7 4-4 4 4"/><path d="M2 19h20"/><path d="M5 15l7 7 7-7"/><path d="M2 13h20"/></svg>
 )
 
 const IconSparkle = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg" width="20" height="20"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
 )
 
 const IconPaper = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></svg>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg" width="20" height="20"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></svg>
 )
 
 const IconCheck2 = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg" width="20" height="20"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
 )
 
 const IconClose = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><line x1="18" x2="6" y1="6" y2="18"/><line x1="6" x2="18" y1="6" y2="18"/></svg>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg" width="20" height="20"><line x1="18" x2="6" y1="6" y2="18"/><line x1="6" x2="18" y1="6" y2="18"/></svg>
 )
 
 const IconCheckCircle = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg" width="20" height="20"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
 )
 
 const IconWarning = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg" width="20" height="20"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
 )
 
 const IconClipboard = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg" width="20" height="20"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
 )
 
 const IconList = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg" width="20" height="20"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg>
 )
 
 // ============================================================
@@ -129,7 +135,7 @@ export interface ChallengeProgress {
   /** Challenge description */
   description: string
   /** Icon */
-  icon: string
+  icon: Component | string
   /** Target percentage */
   targetScore: number
   /** Current score */
@@ -152,7 +158,7 @@ export interface UserBadge {
   /** Badge description */
   description: string
   /** Icon */
-  icon: string
+  icon: Component | string
   /** Tier */
   tier: 'bronze' | 'silver' | 'gold' | 'platinum'
   /** Earned date */
@@ -169,7 +175,7 @@ export interface UserAchievement {
   /** Achievement description */
   description: string
   /** Icon */
-  icon: string
+  icon: Component | string
   /** Points */
   points: number
   /** Is unlocked */
@@ -230,7 +236,7 @@ export const VocalChallenges: Component = () => {
               onClick={() => setActiveCategory(cat.id as ChallengeType)}
               disabled={cat.id === 'scales' && progress()?.find(c => c.id === 'scales')?.status === 'locked'}
             >
-              <span class="cat-icon">{cat.icon}</span>
+              <span class="cat-icon">{renderIcon(cat.icon)}</span>
               <span class="cat-name">{cat.name}</span>
               <span class="cat-count">{cat.count}</span>
             </button>
@@ -248,7 +254,7 @@ export const VocalChallenges: Component = () => {
               data-challenge-type={challenge.type}
             >
               <div class="challenge-header">
-                <div class="challenge-icon-large">{challenge.icon}</div>
+                <div class="challenge-icon-large">{renderIcon(challenge.icon)}</div>
                 <div class="challenge-status">
                   {challenge.status === 'completed' && '<IconCheck2 />'}
                   {challenge.status === 'in-progress' && '<IconRefresh />'}
@@ -308,7 +314,7 @@ export const VocalChallenges: Component = () => {
           <For each={badges()}>
             {(badge) => (
               <div class={`badge-item ${badge.earned ? 'earned' : 'locked'}`}>
-                <div class="badge-icon">{badge.icon}</div>
+                <div class="badge-icon">{renderIcon(badge.icon)}</div>
                 <div class="badge-info">
                   <span class="badge-name">{badge.name}</span>
                   <span class="badge-tier">{badge.tier}</span>
@@ -327,7 +333,7 @@ export const VocalChallenges: Component = () => {
           <For each={achievements()}>
             {(ach) => (
               <div class={`achievement-item ${ach.unlocked ? 'unlocked' : 'locked'}`}>
-                <div class="achievement-icon">{ach.icon}</div>
+                <div class="achievement-icon">{renderIcon(ach.icon)}</div>
                 <div class="achievement-content">
                   <div class="achievement-header">
                     <span class="achievement-name">{ach.name}</span>
@@ -397,7 +403,7 @@ const ChallengeModal: Component<ChallengeModalProps> = (props) => {
         <button class="modal-close" onClick={props.onClose}><IconClose /></button>
 
         <div class="modal-header">
-          <span class="modal-icon">{props.challenge.icon}</span>
+          <span class="modal-icon">{renderIcon(props.challenge.icon)}</span>
           <div>
             <h2 class="modal-title">{props.challenge.name}</h2>
             <p class="modal-desc">{props.challenge.description}</p>

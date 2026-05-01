@@ -436,7 +436,7 @@ export const CommunityShare: Component = () => {
                   </div>
                   <div class="session-stats">
                     <div class="stat-item">
-                      <span class="stat-icon">{IconSessions()}</span>
+                      <span class="stat-icon">{IconSession()}</span>
                       <span class="stat-value">{session.results.length} runs</span>
                     </div>
                     <div class="stat-item">
@@ -554,7 +554,7 @@ export const CommunityShare: Component = () => {
                   </div>
                 </div>
                 <div class="record-item">
-                  <span class="record-icon">{IconOverall()}</span>
+                  <span class="record-icon">{IconStar()}</span>
                   <div class="record-info">
                     <span class="record-label">Fastest Scale</span>
                     <span class="record-value">8 notes/sec</span>

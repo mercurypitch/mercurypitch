@@ -68,6 +68,7 @@ export class PlaybackRuntime {
   private _melody: MelodyItem[] = []
   private _durationBeats = 0
   private countInCompleteEmitted = false
+  private _lastBpm = 120
 
   private _getTotalBeats(melody: MelodyItem[]): number {
     let max = 0
@@ -87,6 +88,7 @@ export class PlaybackRuntime {
     this.audioEngine.setInstrument(options.instrumentType ?? 'sine')
     this.callbacks = options
     this.metronomeEnabled = options.metronomeEnabled
+    this._lastBpm = this.getBPM()
   }
 
   // ── Subscription API ─────────────────────────────────────
@@ -370,6 +372,53 @@ export class PlaybackRuntime {
     return this._countInBeats
   }
 
+  /**
+   * Check if BPM has changed and adjust playStartTime to maintain beat position.
+   * This prevents the playhead from jumping when the BPM slider is changed during playback.
+   */
+  private _handleBpmChange(): void {
+    const newBpm = this.getBPM()
+    if (newBpm === this._lastBpm) return
+
+    // Only adjust if we're playing and not in count-in phase
+    if (!this.isPlaying || this.isPaused || this._countInBeats > 0) {
+      this._lastBpm = newBpm
+      return
+    }
+
+    // We're in the melody playback phase and BPM has changed.
+    // Adjust playStartTime to maintain the same beat position.
+    const now = performance.now()
+    const beatDurationOld = 60000 / this._lastBpm
+    const beatDurationNew = 60000 / newBpm
+
+    // Current elapsed time (playing time only, not including count-in)
+    const elapsedMs = now - this.playStartTime - this.pauseOffset
+    const countInMs = (this._countInBeats || 0) * beatDurationOld
+
+    // Current beat position (before count-in adjustment)
+    const currentBeat = elapsedMs / beatDurationOld
+
+    // Calculate new playStartTime to keep currentBeat the same with new BPM
+    // beat = (now - newPlayStartTime - pauseOffset) / beatDurationNew
+    // newPlayStartTime = now - pauseOffset - beat * beatDurationNew
+    const countInMsAdjusted = (this._countInBeats || 0) * beatDurationNew
+    this.playStartTime =
+      now - this.pauseOffset - countInMsAdjusted - currentBeat * beatDurationNew
+
+    this._lastBpm = newBpm
+  }
+
+  /**
+   * Sync BPM from AudioEngine and handle playback timing adjustments
+   */
+  private _syncBpm(): void {
+    const newBpm = this.getBPM()
+    if (newBpm !== this._lastBpm) {
+      this._handleBpmChange()
+    }
+  }
+
   setMetronomeEnabled(enabled: () => boolean): void {
     this.metronomeEnabled = enabled
   }
@@ -401,6 +450,9 @@ export class PlaybackRuntime {
 
     const animate = () => {
       if (!this.isPlaying || this.isPaused) return
+
+      // Check for BPM changes and adjust playStartTime if needed
+      this._syncBpm()
 
       const now = performance.now()
       const beatDuration = 60000 / this._bpm

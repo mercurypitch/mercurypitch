@@ -427,7 +427,7 @@ export const VocalAnalysis: Component = () => {
                     style={{ '--exercise-color': exercise.color }}
                     onClick={() => setActiveExercise(exercise.type)}
                   >
-                    <span class="exercise-icon">{exercise.icon}</span>
+                    <span class="exercise-icon">{exercise.icon()}</span>
                     <span class="exercise-name">{exercise.name}</span>
                   </button>
                 )}

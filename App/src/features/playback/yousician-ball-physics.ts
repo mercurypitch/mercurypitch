@@ -98,10 +98,11 @@ export function getBallPhysics(
   state: BallPhysicsState,
   config: BallPhysicsConfig,
 ): { x: number; y: number; note: NoteBounds | null; progress: number } {
-  let { x, y, vy, vx, gravity, bounce, lastEndBeat } = state
+  let { x, y, vy, vx, gravity, bounce, lastNote, lastEndBeat } = state
   const { notes, rowHeight, radius, padding, bpm } = config
   let note = null
   let progress = 0
+  let startY = y
 
   // Get horizontal speed
   const currentVx = getHorizontalSpeed(bpm, vx)
@@ -111,9 +112,8 @@ export function getBallPhysics(
 
   if (nextNoteEndBeat !== null) {
     const startX = lastEndBeat
-    const startY = y // Current Y at start of jump (should be at note top-right)
     const endX = nextNoteEndBeat
-    const endY = lastNote ? lastNote.midi * rowHeight + rowHeight / 2 + padding.top : startY
+    const endY = (lastNote?.midi ?? 0) * rowHeight + rowHeight / 2 + padding.top
 
     // Calculate arc height
     const arcHeight = 120 // Pixels above the note

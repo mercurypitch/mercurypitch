@@ -3,6 +3,8 @@
 // These are used across multiple modules
 // ============================================================
 
+import type { Component } from 'solid-js'
+
 /** Note name within an octave (C through B, with # for sharps) */
 export type NoteName =
   | 'C'
@@ -540,8 +542,8 @@ export interface LeaderboardUser {
   userId: string
   /** Display name */
   displayName: string
-  /** Avatar emoji */
-  avatar?: string
+  /** Avatar emoji or component */
+  avatar?: Component | string
   /** Current score/rank points */
   score: number
   /** Rank position */
@@ -570,7 +572,7 @@ export interface WeeklyChallengeResult {
   /** Challenge description */
   description: string
   /** Icon */
-  icon: string
+  icon: Component | string
   /** Current user's rank */
   userRank: number
   /** Global rank */

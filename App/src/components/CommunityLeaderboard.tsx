@@ -3,6 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
+import type { JSX } from 'solid-js'
 import { For, createSignal, createMemo, onMount, Show } from 'solid-js'
 import type { LeaderboardUser, LeaderboardView, LeaderboardCategory, WeeklyChallengeResult } from '@/types'
 
@@ -73,6 +74,11 @@ const IconSearch = () => (
 const IconFilter = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
 )
+
+// Helper to render icon: handles both Component functions and string values
+function renderIcon(icon: Component | string) {
+  return typeof icon === 'function' ? (icon as () => JSX.Element)() : icon
+}
 
 // ============================================================
 // Mock Data
@@ -319,7 +325,7 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
                 class={`category-tab ${activeCategory() === cat.id ? 'active' : ''}`}
                 onClick={() => setActiveCategory(cat.id as LeaderboardCategory)}
               >
-                {cat.icon}
+                {renderIcon(cat.icon)}
                 <span class="cat-name">{cat.name}</span>
               </button>
             )}
@@ -351,7 +357,7 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
             <For each={weeklyChallengesData}>
               {(challenge) => (
                 <div class="challenge-card" data-challenge={challenge.challengeId}>
-                  <div class="challenge-icon">{challenge.icon()}</div>
+                  <div class="challenge-icon">{renderIcon(challenge.icon)}</div>
                   <div class="challenge-content">
                     <h4 class="challenge-name">{challenge.name}</h4>
                     <p class="challenge-desc">{challenge.description}</p>
@@ -398,7 +404,7 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
                     {index() === 2 && <IconTrophy />}
                     {index() >= 3 && `#${user.rank}`}
                   </div>
-                  <div class="podium-avatar">{user.avatar()}</div>
+                  <div class="podium-avatar">{user.avatar ? renderIcon(user.avatar) : null}</div>
                   <div class="podium-info">
                     <div class="podium-name">{user.displayName}</div>
                     <div class="podard-score">{user.score.toLocaleString()} pts</div>
@@ -443,7 +449,7 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
                       </td>
                       <td class="user-td">
                         <div class="user-cell">
-                          <div class="user-avatar">{user.avatar()}</div>
+                          <div class="user-avatar">{user.avatar ? renderIcon(user.avatar) : null}</div>
                           <div class="user-details">
                             <div class="user-name">{user.displayName}</div>
                             <div class="user-streak-badge">
@@ -493,7 +499,10 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
             </button>
 
             <div class="profile-header">
-              <div class="profile-avatar-large">{selectedUser()?.avatar}</div>
+              {(() => {
+                const user = selectedUser()
+                return user?.avatar ? renderIcon(user.avatar) : null
+              })()}
               <div class="profile-header-info">
                 <div class="profile-rank-badge">
                   Rank #{selectedUser()?.rank}
