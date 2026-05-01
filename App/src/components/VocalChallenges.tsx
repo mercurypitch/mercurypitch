@@ -465,7 +465,7 @@ const challengeCategories = () => [
   { id: 'high-notes' as const, name: 'High Notes', icon: IconMicChallenge, count: 3 },
   { id: 'low-notes' as const, name: 'Low Notes', icon: IconGuitarChallenge, count: 2 },
   { id: 'speed' as const, name: 'Speed', icon: IconBoltChallenge, count: 3 },
-  { id: 'perfect' as const, name: 'Perfect Pitch', icon: '<IconTarget />', count: 2 },
+  { id: 'perfect' as const, name: 'Perfect Pitch', icon: IconTarget, count: 2 },
   { id: 'scales' as const, name: 'Scales', icon: IconMusic, count: 2 },
 ]
 
