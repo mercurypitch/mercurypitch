@@ -671,10 +671,29 @@ export class PianoRollEditor {
         bounce: this.ballBounce,
         radius: this.ballRadius,
         padding: this.ballPadding,
+        baseSpeedBpm120: 1.5,
       })
       this.useBallPhysics = true
     } else {
       this.useBallPhysics = false
+    }
+  }
+
+  /**
+   * Recreate ball physics when BPM changes
+   * Called when user changes the BPM in the editor
+   */
+  private recreateBallPhysics(): void {
+    if (this.useBallPhysics && this.ballState && this.ballNotes.length > 0) {
+      const { createBallPhysics } = require('@/features/playback/yousician-ball-physics')
+      this.ballState = createBallPhysics({
+        speed: this.ballSpeed,
+        gravity: this.ballGravity,
+        bounce: this.ballBounce,
+        radius: this.ballRadius,
+        padding: this.ballPadding,
+        baseSpeedBpm120: 1.5,
+      })
     }
   }
 
@@ -799,6 +818,7 @@ export class PianoRollEditor {
 
   setBPM(bpm: number): void {
     this.bpm = bpm
+    this.recreateBallPhysics()
   }
 
   setInstrument(instrument: InstrumentType): void {
