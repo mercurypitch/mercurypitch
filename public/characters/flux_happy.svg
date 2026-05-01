@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Flux: Vocal Runs & Mixed Voice Specialist (Happy) -->
+  <defs>
+    <linearGradient id="fluxGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#58a6ff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#3fb950;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <!-- Body (More wavy) -->
+  <path d="M50 15 C80 15 90 40 90 65 C90 85 60 95 40 95 C10 95 10 70 10 50 C10 25 20 15 50 15" fill="url(#fluxGrad)" />
+  <!-- Dynamic lines (Speed/Runs) -->
+  <path d="M85 30 Q95 40 85 50" stroke="#58a6ff" stroke-width="3" fill="none" opacity="0.7" />
+  <path d="M90 60 Q100 70 90 80" stroke="#58a6ff" stroke-width="2" fill="none" opacity="0.5" />
+  <path d="M15 20 Q5 30 15 40" stroke="#3fb950" stroke-width="3" fill="none" opacity="0.7" />
+  <!-- Eyes (Excited) -->
+  <path d="M35 45 L45 50 L35 55" stroke="white" stroke-width="2" fill="none" />
+  <path d="M65 45 L55 50 L65 55" stroke="white" stroke-width="2" fill="none" />
+  <!-- Mouth (Big Smile) -->
+  <path d="M40 75 Q50 85 60 75 Z" fill="white" />
+</svg>

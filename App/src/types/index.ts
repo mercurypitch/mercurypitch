@@ -164,6 +164,11 @@ export interface PracticeResult {
   noteResult: NoteResult[]
 }
 
+/** Active tab for the application */
+export type ActiveTab = 'practice' | 'editor' | 'settings' | 'vocal-analysis' | 'community' | 'leaderboard' | 'vocal-challenges'
+/** Practice sub-mode options */
+export type PracticeSubMode = 'all' | 'random' | 'focus' | 'reverse'
+
 /** Pitch result from practice engine */
 export interface PitchResult {
   /** Pitch in Hz */
@@ -520,4 +525,62 @@ export interface WalkthroughContent {
 export interface WalkthroughProgress {
   /** Walkthrough ID -> timestamp when viewed/completed */
   [id: string]: number
+}
+
+// ============================================================
+// Community Leaderboard Types
+// ============================================================
+
+/** Leaderboard view mode */
+export type LeaderboardView = 'global' | 'friends' | 'weekly'
+
+/** User ranking in leaderboard */
+export interface LeaderboardUser {
+  /** User ID */
+  userId: string
+  /** Display name */
+  displayName: string
+  /** Avatar emoji */
+  avatar?: string
+  /** Current score/rank points */
+  score: number
+  /** Rank position */
+  rank: number
+  /** Streak count */
+  streak: number
+  /** Total sessions completed */
+  totalSessions: number
+  /** Best score percentage */
+  bestScore: number
+  /** Current accuracy percentage */
+  accuracy: number
+  /** Join date */
+  joinDate: number
+}
+
+/** Leaderboard category */
+export type LeaderboardCategory = 'overall' | 'best-score' | 'accuracy' | 'streak' | 'sessions'
+
+/** Weekly challenge result */
+export interface WeeklyChallengeResult {
+  /** Challenge ID */
+  challengeId: string
+  /** Challenge name */
+  name: string
+  /** Challenge description */
+  description: string
+  /** Icon */
+  icon: string
+  /** Current user's rank */
+  userRank: number
+  /** Global rank */
+  globalRank: number
+  /** Challenge date range */
+  startDate: number
+  /** Challenge type */
+  type: 'high-notes' | 'low-notes' | 'speed' | 'perfect' | 'scales'
+  /** Target score */
+  targetScore: number
+  /** User's score on this challenge */
+  userScore: number
 }
