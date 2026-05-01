@@ -13,7 +13,7 @@ export interface NoteBounds {
 export interface BallPhysicsState {
   /** Current X position in beats */
   x: number
-  /** Current Y position (0 to 1, normalized height from top) */
+  /** Current Y position in row-height units (not pixels) */
   y: number
   /** Current vertical velocity (jump velocity, positive = up) */
   vy: number
@@ -27,6 +27,8 @@ export interface BallPhysicsState {
   isJumping: boolean
   /** Last note touched */
   lastNote: NoteBounds | null
+  /** Last note's endBeat where the ball bounced */
+  lastEndBeat: number
 }
 
 export interface BallPhysicsOptions {
@@ -45,8 +47,6 @@ export interface BallPhysicsOptions {
 }
 
 export interface BallPhysicsConfig {
-  /** Current X position in beats */
-  currentBeat: number
   /** All note bounds for collision detection */
   notes: NoteBounds[]
   /** Row height in pixels */
@@ -61,7 +61,6 @@ export interface BallPhysicsConfig {
 
 /**
  * Get horizontal speed based on BPM - faster BPM = faster ball
- * At 120 BPM, ball moves through about 2 beats per second
  */
 function getHorizontalSpeed(bpm: number, baseSpeed: number): number {
   const baseAt120 = baseSpeed
@@ -73,59 +72,67 @@ export function getBallPhysics(
   state: BallPhysicsState,
   config: BallPhysicsConfig,
 ): { x: number; y: number; note: NoteBounds | null } {
-  let { x, y, vy, vx, gravity, bounce } = state
+  let { x, y, vy, vx, gravity, bounce, lastEndBeat } = state
   const { notes, rowHeight, radius, padding, bpm } = config
   let note = null
 
   // Get ball's current horizontal velocity based on BPM
   const currentVx = getHorizontalSpeed(bpm, vx)
 
-  // Update horizontal position
-  x += currentVx
+  // Find all note endBeats that are ahead of the ball (potential jump targets)
+  const jumpTargets: number[] = []
+  for (const n of notes) {
+    if (n.endBeat > x && n.endBeat > lastEndBeat) {
+      jumpTargets.push(n.endBeat)
+    }
+  }
+
+  // Get the nearest jump target
+  const nearestJumpTarget = Math.min(...jumpTargets, Infinity)
+
+  if (nearestJumpTarget !== Infinity) {
+    // Ball needs to reach the jump target
+    const distanceToTarget = nearestJumpTarget - x
+
+    // Move towards the target
+    if (distanceToTarget > currentVx) {
+      // Not there yet, just move horizontally
+      x += currentVx
+    } else {
+      // We've reached/near the jump target - snap to it
+      x = nearestJumpTarget
+      lastEndBeat = nearestJumpTarget
+
+      // Check if there's a note at this X position
+      const currentNote = getCurrentNote(x, notes)
+
+      if (currentNote && currentNote.endBeat === nearestJumpTarget) {
+        // This is a valid jump point (note endBeat)
+        // Jump at the TOP of the note (above the note block)
+        y = radius + 1
+
+        // Calculate note height in row units
+        const noteHeightRows = 1
+        // Bounce at the TOP of the note (row height + radius spacing)
+        vy = -12 // Fixed upward velocity for reliable jump
+
+        // Add more bounce for higher notes (lower MIDI = higher up on screen)
+        const midiHeight = 127 - currentNote.midi
+        vy -= midiHeight * 0.15
+
+        note = currentNote
+      }
+    }
+  } else {
+    // No more jump targets, just move freely
+    x += currentVx
+  }
 
   // Apply gravity
   vy += gravity
 
   // Apply vertical position
   y += vy
-
-  // Get the note at current position
-  const currentNoteAtPosition = getCurrentNote(x, notes)
-
-  // Check note collisions (bounce on notes)
-  if (currentNoteAtPosition) {
-    // Ball's X position in beats (accounting for padding)
-    const ballX = x + padding.left
-
-    // Check if ball's X is within note's time range with some padding
-    const noteLeft = currentNoteAtPosition.startBeat
-    const noteRight = currentNoteAtPosition.endBeat
-
-    // Ball radius in beats (approximate)
-    const ballRadiusBeats = radius / 48 // Assuming 48px = 1 beat at default zoom
-
-    if (
-      noteLeft - ballRadiusBeats <= ballX + ballRadiusBeats &&
-      ballX <= noteRight + ballRadiusBeats &&
-      y <= radius
-    ) {
-      // Keep ball just above the note surface
-      y = radius + 1
-
-      // Add extra upward velocity to stay above the note
-      // The higher the note in the scale, the more we need to bounce
-      const midiHeight = 127 - currentNoteAtPosition.midi
-      const extraBounce = Math.max(2, midiHeight * 0.1)
-
-      vy = -(Math.abs(vy) * bounce + extraBounce)
-
-      // Scale vertical bounce with BPM for responsiveness
-      const speedScale = bpm / 120
-      vy *= Math.min(speedScale, 1.5)
-
-      note = currentNoteAtPosition
-    }
-  }
 
   // Floor collision (bottom of the piano roll)
   const maxMidi = notes.length > 0 ? Math.max(...notes.map((n) => n.midi)) : 88
@@ -147,10 +154,12 @@ export function getBallPhysics(
   if (x < minX) {
     x = minX
     vx = Math.abs(vx) * 0.5
+    lastEndBeat = x
   }
   if (x > maxX) {
     x = maxX
     vx = -Math.abs(vx) * 0.5
+    lastEndBeat = x
   }
 
   const isJumping = vy !== 0
@@ -193,6 +202,7 @@ export function createBallPhysics(options: BallPhysicsOptions): BallPhysicsState
     bounce,
     isJumping: false,
     lastNote: null,
+    lastEndBeat: radius,
   }
 }
 

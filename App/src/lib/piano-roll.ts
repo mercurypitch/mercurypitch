@@ -2471,13 +2471,17 @@ export class PianoRollEditor {
           padding: this.ballPadding,
         }
 
-        const { x, y } = getBallPhysics(this.ballState, ballConfig)
+        const result = getBallPhysics(this.ballState, ballConfig)
+        this.ballState.x = result.x
+        this.ballState.y = result.y
+        this.ballState.lastEndBeat = result.note ? result.note.endBeat : this.ballState.lastEndBeat
+        this.ballState.lastNote = result.note
+
+        const centerY = this.ballState.y * this.rowHeight + this.rowHeight / 2
+        const centerX = this.ballState.x * this.beatWidth
 
         // Draw ball with glowing effect
         this.ballCtx.clearRect(0, 0, this.ballCanvas.width, this.ballCanvas.height)
-
-        const centerY = y * this.rowHeight + this.rowHeight / 2
-        const centerX = playheadX
 
         // Glow effect
         this.ballCtx.save()
@@ -2524,13 +2528,17 @@ export class PianoRollEditor {
         padding: this.ballPadding,
       }
 
-      const { x, y } = getBallPhysics(this.ballState, ballConfig)
+      const result = getBallPhysics(this.ballState, ballConfig)
+      this.ballState.x = result.x
+      this.ballState.y = result.y
+      this.ballState.lastEndBeat = result.note ? result.note.endBeat : this.ballState.lastEndBeat
+      this.ballState.lastNote = result.note
+
+      const centerY = this.ballState.y * this.rowHeight + this.rowHeight / 2
+      const centerX = this.ballState.x * this.beatWidth
 
       // Draw ball with glowing effect
       this.ballCtx.clearRect(0, 0, this.ballCanvas.width, this.ballCanvas.height)
-
-      const centerY = y * this.rowHeight + this.rowHeight / 2
-      const centerX = playheadX
 
       // Glow effect
       this.ballCtx.save()
