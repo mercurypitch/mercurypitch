@@ -263,8 +263,8 @@ export const VocalAnalysis: Component = () => {
       const allData = getSessionHistory()
       if (allData.length > 0) {
         // Convert SessionResult[] to PitchResult[] by flattening practiceItemResult
-        const noteResults = allData.flatMap(s => s.practiceItemResult || [])
-        setVocalRunData(noteResults.flatMap(p => p.noteResult || []).map(r => ({
+        const practiceResults = allData.flatMap(s => s.practiceItemResult || [])
+        setVocalRunData(practiceResults.flatMap(p => p.noteResult || []).map(r => ({
           freq: r.pitchFreq || 0,
           midi: r.item.note.midi,
           note: r.item.note.name,
@@ -272,7 +272,7 @@ export const VocalAnalysis: Component = () => {
           clarity: r.avgCents || 0
         })) as PitchResult[])
         // Build spectral approximation
-        const spectral: SpectrumData[] = noteResults.slice(-30).map((r: any, i: number) => ({
+        const spectral: SpectrumData[] = practiceResults.slice(-30).map((r: any, i: number) => ({
           frequency: r.pitchFreq || 0,
           amplitude: (r.avgCents || 0) * 3,
           phase: (i / 30) * Math.PI * 2,
@@ -280,8 +280,8 @@ export const VocalAnalysis: Component = () => {
         setSpectralData(spectral)
       }
 
-      const noteResults = getSessionHistory()
-      if (noteResults.length >= maxNotes || analysisComplete) {
+      const runHistory = getSessionHistory()
+      if (runHistory.length >= maxNotes || analysisComplete) {
         clearInterval(interval)
         setIsAnalyzing(false)
         analysisComplete = true
