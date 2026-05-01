@@ -8982,3 +8982,47 @@ input:checked + .settings-slider:before {
   background: inherit;
   transform: none;
 }
+
+/* SVG Icons sizing */
+.icon-svg {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  vertical-align: -0.25em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.icon-svg.w-24 {
+  width: 24px;
+  height: 24px;
+}
+
+.icon-svg.w-32 {
+  width: 32px;
+  height: 32px;
+}
+
+.icon-svg.w-40 {
+  width: 40px;
+  height: 40px;
+}
+
+.icon-svg.w-48 {
+  width: 48px;
+  height: 48px;
+}
+
+/* Avatar icons */
+.icon-avatar {
+  width: 32px;
+  height: 32px;
+}
+
+.icon-avatar.w-48 {
+  width: 48px;
+  height: 48px;
+}
