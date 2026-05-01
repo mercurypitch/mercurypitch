@@ -35,10 +35,10 @@ import { registerE2EBridge } from '@/lib/e2e-bridge'
 import { melodyIndexAtBeat, melodyTotalBeats } from '@/lib/scale-data'
 import { buildScaleMelody, buildSessionPlaybackMelody, } from '@/lib/session-builder'
 import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
-import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initBpm, initPresets, initReverb, initSessionHistory, initSettings, initTheme, isLibraryModalOpen, isSessionLibraryModalOpen, keyName as keyNameSignal, micActive, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPendingSessionStart, setPlaybackSpeed, setScaleType, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, toggleMicWaveVisible, userSession, } from '@/stores'
+import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initBpm, initPresets, initReverb, initSessionHistory, initSettings, initTheme, isLibraryModalOpen, isSessionLibraryModalOpen, keyName as keyNameSignal, micActive, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPlaybackSpeed, setScaleType, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, toggleMicWaveVisible, userSession, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import { getSession, templateToSession } from '@/stores/session-store'
-import type { MelodyItem, PlaybackMode, SpacedRestMode } from '@/types'
+import type { PlaybackMode, SpacedRestMode } from '@/types'
 import { Walkthrough, WalkthroughControl } from './components'
 import { GuideSelection } from './components/GuideSelection'
 import { WelcomeScreen } from './components/WelcomeScreen'
@@ -295,6 +295,7 @@ const AppShell: Component<AppProps> = (props) => {
     loadAndPlayMelodyForSession,
     playSessionSequence,
     playNextInSessionSequence,
+    startSessionPlayback,
     sessionMelodyIds,
     sessionCurrentMelodyIndex,
   } = sessionSequencer
@@ -448,23 +449,20 @@ const AppShell: Component<AppProps> = (props) => {
 
     // If the practice tab has a "session-shaped" playback loaded
     // (multi-item OR contains non-melody types like rest/scale/preset),
-    // signal handlePlay() to enter session mode. A bare single-melody
-    // load stays single-melody, avoiding the silent session hijack
-    // documented as Bug 3 in the session-sequence-advancement plan.
-    if (!isPaused()) {
-      const session = userSession()
-      const isSessionShaped =
-        session !== null &&
-        (session.items.length > 1 ||
-          session.items.some(
-            (it) => (it as { type: string }).type !== 'melody',
-          ))
-      if (isSessionShaped) {
-        setPendingSessionStart(true)
-      }
+    // use the unified startSessionPlayback API to properly enter session mode.
+    const session = userSession()
+    const isSessionShaped =
+      session !== null &&
+      (session.items.length > 1 ||
+        session.items.some(
+          (it) => (it as { type: string }).type !== 'melody',
+        ))
+    if (isSessionShaped && !isPaused()) {
+      startSessionPlayback()
+    } else {
+      // Single-melody playback: continue with normal flow
+      handlePlay()
     }
-
-    handlePlay()
   }
 
   const handlePracticeModeChange = (mode: PlaybackMode) => {
