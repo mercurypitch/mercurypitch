@@ -9,6 +9,18 @@ import type { SessionResult, PitchResult, PracticeResult } from '@/types'
 import { frequenciesToNoteName } from '@/lib/frequency-to-note'
 
 // ============================================================
+// SVG Icons
+// ============================================================
+
+const IconBolt = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+const IconWind = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2"/></svg>
+const IconChartLine = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+const IconChartBar = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/></svg>
+const IconGuitar = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+const IconKeyboard = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h.01"/><path d="M10 8h.01"/><path d="M14 8h.01"/><path d="M18 8h.01"/><path d="M6 12h.01"/><path d="M10 12h.01"/><path d="M14 12h.01"/><path d="M18 12h.01"/><path d="M7 16h10"/></svg>
+const IconFire = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.1.2-2.2.5-3.3.4.5.7 1.3 1 2.3z"/></svg>
+
+// ============================================================
 // Types for Vocal Analysis
 // ============================================================
 
@@ -294,15 +306,15 @@ export const VocalAnalysis: Component = () => {
   const exercises: Array<{
     type: VocalExerciseType
     name: string
-    icon: string
+    icon: typeof IconBolt
     color: string
   }> = [
-    { type: 'belting', name: 'Belting Check', icon: '⚡', color: '#f85149' },
-    { type: 'falsetto', name: 'Falsetto Check', icon: '💨', color: '#58a6ff' },
-    { type: 'crescendo', name: 'Crescendo', icon: '📈', color: '#3fb950' },
-    { type: 'decrescendo', name: 'Decrescendo', icon: '📉', color: '#d29922' },
-    { type: 'riffs', name: 'Riffs', icon: '🎸', color: '#bc8cff' },
-    { type: 'runs', name: 'Runs', icon: '🎹', color: '#2dd4bf' },
+    { type: 'belting', name: 'Belting Check', icon: IconBolt, color: '#f85149' },
+    { type: 'falsetto', name: 'Falsetto Check', icon: IconWind, color: '#58a6ff' },
+    { type: 'crescendo', name: 'Crescendo', icon: IconChartLine, color: '#3fb950' },
+    { type: 'decrescendo', name: 'Decrescendo', icon: IconChartBar, color: '#d29922' },
+    { type: 'riffs', name: 'Riffs', icon: IconGuitar, color: '#bc8cff' },
+    { type: 'runs', name: 'Runs', icon: IconKeyboard, color: '#2dd4bf' },
   ]
 
   return (
@@ -328,7 +340,7 @@ export const VocalAnalysis: Component = () => {
         <div class="vocal-column-left">
           {/* Streak Card */}
           <div class="stat-card streak-card">
-            <div class="streak-icon">🔥</div>
+            <div class="streak-icon"><IconFire /></div>
             <div class="streak-info">
               <div class="streak-number">{streakInfo().currentStreak}</div>
               <div class="streak-label">Current Streak</div>

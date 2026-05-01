@@ -10,6 +10,106 @@ import { generateId } from '@/lib/id'
 import { frequenciesToNoteName } from '@/lib/frequency-to-note'
 
 // ============================================================
+// SVG Icons (Classy, minimal style)
+// ============================================================
+
+const IconMelody = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+)
+
+const IconSession = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+)
+
+const IconSearch = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+)
+
+const IconStats = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+)
+
+const IconHistory = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg>
+)
+
+const IconUser = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-avatar"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>
+)
+
+const IconStreak = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.1.2-2.2.5-3.3.4.5.7 1.3 1 2.3z"/></svg>
+)
+
+const IconMic = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="23"/><line x1="8" x2="16" y1="23" y2="23"/></svg>
+)
+
+const IconGoal = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+)
+
+const IconShare = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+)
+
+const IconLink = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+)
+
+const IconEye = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+)
+
+const IconUser2 = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-avatar"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>
+)
+
+const IconMusic = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+)
+
+const IconBook = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+)
+
+const IconStreak2 = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.1.2-2.2.5-3.3.4.5.7 1.3 1 2.3z"/></svg>
+)
+
+const IconCheck = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><polyline points="20 6 9 17 4 12"/></svg>
+)
+
+const IconLock = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+)
+
+const IconRefresh = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+)
+
+const IconStar = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+)
+
+const IconTrophy2 = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+)
+
+const IconEmblem = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+)
+
+const IconEdit = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+)
+
+const IconPlus = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>
+)
+
+// ============================================================
 // Types
 // ============================================================
 
@@ -99,7 +199,7 @@ export const CommunityShare: Component = () => {
     return {
       userId,
       displayName: 'SingerPro',
-      avatar: '🎤',
+      avatar: IconMic(),
       bio: 'PitchPerfect enthusiast • Learning vocals • Member since 2026',
       streak: currentStreak,
       totalSessions: sessions.length,
@@ -211,9 +311,9 @@ export const CommunityShare: Component = () => {
 
   // Tabs
   const tabs = [
-    { id: 'melodies' as const, name: 'Melodies', icon: '🎵', count: sharedMelodies().length },
-    { id: 'sessions' as const, name: 'Sessions', icon: '📚', count: sharedSessions().length },
-    { id: 'profile' as const, name: 'Profile', icon: '👤', count: 0 },
+    { id: 'melodies' as const, name: 'Melodies', icon: IconMelody, count: sharedMelodies().length },
+    { id: 'sessions' as const, name: 'Sessions', icon: IconSession, count: sharedSessions().length },
+    { id: 'profile' as const, name: 'Profile', icon: IconUser, count: 0 },
   ]
 
   return (
@@ -226,10 +326,10 @@ export const CommunityShare: Component = () => {
         </div>
         <div class="community-actions">
           <button class="share-btn" onClick={exportMelody}>
-            <span>📤</span> Share Melody
+            <span><IconShare /></span> Share Melody
           </button>
           <button class="share-btn" onClick={exportSession}>
-            <span>📤</span> Share Session
+            <span><IconShare /></span> Share Session
           </button>
         </div>
       </div>
@@ -260,7 +360,7 @@ export const CommunityShare: Component = () => {
               class={`community-tab ${activeTab() === tab.id ? 'active' : ''}`}
               onClick={() => setActiveTab(tab.id)}
             >
-              <span class="tab-icon">{tab.icon}</span>
+              <span class="tab-icon">{tab.icon()}</span>
               <span class="tab-name">{tab.name}</span>
               {tab.count > 0 && <span class="tab-count">{tab.count}</span>}
             </button>
@@ -291,10 +391,10 @@ export const CommunityShare: Component = () => {
                   </div>
                   <div class="melody-footer">
                     <button class="action-btn copy-btn" onClick={() => copyShareLink('melody', melody.id)}>
-                      <span>🔗</span> Copy Link
+                      <span><IconLink /></span> Copy Link
                     </button>
                     <button class="action-btn view-btn">
-                      <span>👀</span> View
+                      <span><IconEye /></span> View
                     </button>
                   </div>
                 </div>
@@ -302,7 +402,7 @@ export const CommunityShare: Component = () => {
             </For>
             {displayMelodies().length === 0 && (
               <div class="empty-state">
-                <span class="empty-icon">🎼</span>
+                <span class="empty-icon">{IconMelody()}</span>
                 <h3>No melodies shared yet</h3>
                 <p>Share your melodies with the community to start building your library.</p>
                 <button class="primary-btn" onClick={exportMelody}>
@@ -336,11 +436,11 @@ export const CommunityShare: Component = () => {
                   </div>
                   <div class="session-stats">
                     <div class="stat-item">
-                      <span class="stat-icon">📊</span>
+                      <span class="stat-icon">{IconSessions()}</span>
                       <span class="stat-value">{session.results.length} runs</span>
                     </div>
                     <div class="stat-item">
-                      <span class="stat-icon">📈</span>
+                      <span class="stat-icon">{IconStats()}</span>
                       <span class="stat-value">
                         {Math.round(session.results.reduce((a,b) => a+b,0)/session.results.length)}% avg
                       </span>
@@ -348,10 +448,10 @@ export const CommunityShare: Component = () => {
                   </div>
                   <div class="session-footer">
                     <button class="action-btn copy-btn" onClick={() => copyShareLink('session', session.id)}>
-                      <span>🔗</span> Copy Link
+                      <span><IconLink /></span> Copy Link
                     </button>
                     <button class="action-btn view-btn">
-                      <span>👀</span> View
+                      <span><IconEye /></span> View
                     </button>
                   </div>
                 </div>
@@ -359,7 +459,7 @@ export const CommunityShare: Component = () => {
             </For>
             {displaySessions().length === 0 && (
               <div class="empty-state">
-                <span class="empty-icon">📚</span>
+                <span class="empty-icon">{IconSession()}</span>
                 <h3>No sessions shared yet</h3>
                 <p>Share your practice sessions to track progress and inspire others.</p>
                 <button class="primary-btn" onClick={exportSession}>
@@ -374,14 +474,14 @@ export const CommunityShare: Component = () => {
           <div class="profile-container">
             {/* Profile Header */}
             <div class="profile-header">
-              <div class="profile-avatar">{userProfile()?.avatar || '👤'}</div>
+              <div class="profile-avatar">{userProfile()?.avatar || IconUser()}</div>
               <div class="profile-info">
                 <h2 class="profile-name">{currentProfile()?.displayName}</h2>
                 <p class="profile-bio">{currentProfile()?.bio}</p>
                 <div class="profile-stats-row">
                   <div class="stat-badge">
                     <span class="stat-label">Streak</span>
-                    <span class="stat-value streak">{currentProfile()?.streak} 🔥</span>
+                    <span class="stat-value streak">{currentProfile()?.streak} <IconStreak /></span>
                   </div>
                   <div class="stat-badge">
                     <span class="stat-label">Sessions</span>
@@ -440,28 +540,28 @@ export const CommunityShare: Component = () => {
               <h3>Personal Records</h3>
               <div class="records-grid">
                 <div class="record-item">
-                  <span class="record-icon">🎤</span>
+                  <span class="record-icon">{IconMic()}</span>
                   <div class="record-info">
                     <span class="record-label">Highest Note</span>
                     <span class="record-value">C5</span>
                   </div>
                 </div>
                 <div class="record-item">
-                  <span class="record-icon">🎯</span>
+                  <span class="record-icon">{IconGoal()}</span>
                   <div class="record-info">
                     <span class="record-label">Perfect Run</span>
                     <span class="record-value">27 notes</span>
                   </div>
                 </div>
                 <div class="record-item">
-                  <span class="record-icon">⚡</span>
+                  <span class="record-icon">{IconOverall()}</span>
                   <div class="record-info">
                     <span class="record-label">Fastest Scale</span>
                     <span class="record-value">8 notes/sec</span>
                   </div>
                 </div>
                 <div class="record-item">
-                  <span class="record-icon">🎵</span>
+                  <span class="record-icon">{IconMelody()}</span>
                   <div class="record-info">
                     <span class="record-label">First Session</span>
                     <span class="record-value">2026-04-01</span>
@@ -476,7 +576,7 @@ export const CommunityShare: Component = () => {
               <div class="preview-list">
                 <Show when={displayMelodies().length > 0}>
                   <div class="preview-section">
-                    <h4>🎵 Shared Melodies</h4>
+                    <h4><IconMusic /> Shared Melodies</h4>
                     <div class="preview-grid">
                       <For each={displayMelodies().slice(0, 3)}>
                         {(melody) => (
@@ -491,7 +591,7 @@ export const CommunityShare: Component = () => {
                 </Show>
                 <Show when={displaySessions().length > 0}>
                   <div class="preview-section">
-                    <h4>📚 Shared Sessions</h4>
+                    <h4><IconBook /> Shared Sessions</h4>
                     <div class="preview-grid">
                       <For each={displaySessions().slice(0, 3)}>
                         {(session) => (
