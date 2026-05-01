@@ -585,7 +585,7 @@ const mockChallenges: ChallengeProgress[] = [
     type: 'perfect',
     name: 'Perfect Pitch Pilot',
     description: 'Hit 100% accuracy in a 10-note sequence',
-    icon: '<IconTarget />',
+    icon: IconTarget,
     targetScore: 100,
     currentScore: 85,
     progress: 85,
@@ -635,18 +635,18 @@ const mockBadges: UserBadge[] = [
   { id: 'b2', name: 'On Fire', description: 'Maintain a 7-day practice streak', icon: IconFireChallenge, tier: 'bronze', earnedDate: Date.now() - 1000 * 60 * 60 * 24 * 7, earned: true },
   { id: 'b3', name: 'High & Mighty', description: 'Complete a high note challenge', icon: IconMicChallenge, tier: 'silver', earnedDate: Date.now() - 1000 * 60 * 60 * 24 * 5, earned: true },
   { id: 'b4', name: 'Speed Demon', description: 'Complete a speed challenge', icon: IconBoltChallenge, tier: 'silver', earnedDate: Date.now() - 1000 * 60 * 60 * 24 * 3, earned: true },
-  { id: 'b5', name: 'Perfect Start', description: 'Complete a perfect pitch challenge', icon: '<IconTarget />', tier: 'silver', earnedDate: Date.now() - 1000 * 60 * 60 * 24 * 2, earned: true },
+  { id: 'b5', name: 'Perfect Start', description: 'Complete a perfect pitch challenge', icon: IconTarget, tier: 'silver', earnedDate: Date.now() - 1000 * 60 * 60 * 24 * 2, earned: true },
   { id: 'b6', name: 'Scale Scholar', description: 'Complete a scale challenge', icon: IconMusic, tier: 'bronze', earnedDate: Date.now() - 1000 * 60 * 60 * 24 * 15, earned: true },
   { id: 'b7', name: 'Streak Master', description: 'Reach a 14-day practice streak', icon: IconCrown, tier: 'gold', earnedDate: Date.now() - 1000 * 60 * 60 * 24 * 14, earned: false },
   { id: 'b8', name: 'All Star', description: 'Complete all bronze badges', icon: IconSparkle, tier: 'gold', earnedDate: 0, earned: false },
 ]
 
 const mockAchievements: UserAchievement[] = [
-  { id: 'a1', name: '10 Notes', description: 'Complete 10 practice sessions', icon: '<IconPaper />', points: 10, unlocked: true, progress: 45, required: 50 },
-  { id: 'a2', name: '50 Sessions', description: 'Complete 50 practice sessions', icon: '<IconChart />', points: 25, unlocked: true, progress: 45, required: 50 },
+  { id: 'a1', name: '10 Notes', description: 'Complete 10 practice sessions', icon: IconPaper, points: 10, unlocked: true, progress: 45, required: 50 },
+  { id: 'a2', name: '50 Sessions', description: 'Complete 50 practice sessions', icon: IconChart, points: 25, unlocked: true, progress: 45, required: 50 },
   { id: 'a3', name: '3 Octaves', description: 'Cover 3 octaves in one run', icon: IconKeyboardChallenge, points: 15, unlocked: false, progress: 1, required: 3 },
   { id: 'a4', name: 'High Note Master', description: 'Hit C5 or higher 100 times', icon: IconMicChallenge, points: 30, unlocked: false, progress: 15, required: 100 },
-  { id: 'a5', name: 'Perfect Run', description: 'Get 100% accuracy on a run', icon: '<IconTarget />', points: 50, unlocked: false, progress: 0, required: 1 },
+  { id: 'a5', name: 'Perfect Run', description: 'Get 100% accuracy on a run', icon: IconTarget, points: 50, unlocked: false, progress: 0, required: 1 },
   { id: 'a6', name: 'Speed Demon', description: 'Hit 10 notes in 3 seconds', icon: IconBoltChallenge, points: 20, unlocked: false, progress: 2, required: 10 },
   { id: 'a7', name: 'Scale Explorer', description: 'Practice 20 different scales', icon: IconMusic, points: 25, unlocked: false, progress: 8, required: 20 },
 ]
