@@ -1,5 +1,5 @@
 // ============================================================
-// YousicianBall Physics — Ball jumps through notes like on platforms
+// YousicianBall Physics — Ball jumps through notes with curved arcs
 // ============================================================
 
 export interface NoteBounds {
@@ -13,54 +13,80 @@ export interface NoteBounds {
 export interface BallPhysicsState {
   /** Current X position in beats */
   x: number
-  /** Current Y position in row-height units (not pixels) */
+  /** Current Y position in row-height units */
   y: number
-  /** Current vertical velocity (jump velocity, positive = up) */
+  /** Current vertical velocity */
   vy: number
   /** Current horizontal velocity */
   vx: number
   /** Gravity constant */
   gravity: number
-  /** Bounce energy (0-1, where 1 = perfect bounce) */
+  /** Bounce energy */
   bounce: number
   /** Is ball in the air */
   isJumping: boolean
   /** Last note touched */
   lastNote: NoteBounds | null
-  /** Last note's endBeat where the ball bounced */
+  /** Last note's endBeat where ball jumped from */
   lastEndBeat: number
 }
 
 export interface BallPhysicsOptions {
-  /** Speed of the ball moving horizontally (base multiplier) */
+  /** Speed multiplier */
   speed: number
   /** Gravity strength */
   gravity?: number
-  /** Bounciness (0-1) */
+  /** Bounciness */
   bounce?: number
   /** Size of the ball in pixels */
   radius?: number
   /** Padding from edges */
   padding?: { top: number; bottom: number; left: number; right: number }
-  /** Base horizontal speed at 120 BPM */
-  baseSpeedBpm120?: number
+  /** Arc height in pixels above notes */
+  arcHeight?: number
+  /** Time scale for animation speed */
+  timeScale?: number
 }
 
 export interface BallPhysicsConfig {
-  /** All note bounds for collision detection */
+  /** All note bounds */
   notes: NoteBounds[]
   /** Row height in pixels */
   rowHeight: number
   /** Ball radius in pixels */
   radius: number
-  /** Padding for the ball (horizontal and vertical) */
+  /** Padding for the ball */
   padding: { top: number; bottom: number; left: number; right: number }
-  /** BPM for speed scaling */
+  /** BPM */
   bpm: number
 }
 
 /**
- * Get horizontal speed based on BPM - faster BPM = faster ball
+ * Quadratic Bezier curve calculation
+ * B(t) = (1-t)²·P0 + 2(1-t)·t·P1 + t²·P2
+ */
+function bezierQuadratic(
+  p0: { x: number; y: number },
+  p1: { x: number; y: number },
+  p2: { x: number; y: number },
+  t: number,
+): { x: number; y: number } {
+  const oneMinusT = 1 - t
+  return {
+    x: oneMinusT * oneMinusT * p0.x + 2 * oneMinusT * t * p1.x + t * t * p2.x,
+    y: oneMinusT * oneMinusT * p0.y + 2 * oneMinusT * t * p1.y + t * t * p2.y,
+  }
+}
+
+/**
+ * Linear interpolation between two values
+ */
+function lerp(a: number, b: number, t: number): number {
+  return a + (b - a) * t
+}
+
+/**
+ * Get horizontal speed based on BPM
  */
 function getHorizontalSpeed(bpm: number, baseSpeed: number): number {
   const baseAt120 = baseSpeed
@@ -71,82 +97,109 @@ function getHorizontalSpeed(bpm: number, baseSpeed: number): number {
 export function getBallPhysics(
   state: BallPhysicsState,
   config: BallPhysicsConfig,
-): { x: number; y: number; note: NoteBounds | null } {
+): { x: number; y: number; note: NoteBounds | null; progress: number } {
   let { x, y, vy, vx, gravity, bounce, lastEndBeat } = state
   const { notes, rowHeight, radius, padding, bpm } = config
   let note = null
+  let progress = 0
 
-  // Get ball's current horizontal velocity based on BPM
+  // Get horizontal speed
   const currentVx = getHorizontalSpeed(bpm, vx)
 
-  // Find all note endBeats that are ahead of the ball (potential jump targets)
-  const jumpTargets: number[] = []
-  for (const n of notes) {
-    if (n.endBeat > x && n.endBeat > lastEndBeat) {
-      jumpTargets.push(n.endBeat)
-    }
-  }
+  // Find next note's endBeat to jump to
+  const nextNoteEndBeat = findNextNoteEndBeat(x, lastEndBeat, notes)
 
-  // Get the nearest jump target
-  const nearestJumpTarget = Math.min(...jumpTargets, Infinity)
+  if (nextNoteEndBeat !== null) {
+    const startX = lastEndBeat
+    const startY = y // Current Y at start of jump (should be at note top-right)
+    const endX = nextNoteEndBeat
+    const endY = lastNote ? lastNote.midi * rowHeight + rowHeight / 2 + padding.top : startY
 
-  if (nearestJumpTarget !== Infinity) {
-    // Ball needs to reach the jump target
-    const distanceToTarget = nearestJumpTarget - x
+    // Calculate arc height
+    const arcHeight = 120 // Pixels above the note
 
-    // Move towards the target
-    if (distanceToTarget > currentVx) {
-      // Not there yet, just move horizontally
-      x += currentVx
+    // Control point for quadratic Bezier arc
+    // Creates a parabolic path from startY to endY with peak at arcHeight
+    const midX = (startX + endX) / 2
+    const midY = Math.min(startY, endY) - arcHeight // Peak is ABOVE both points
+
+    const controlPoint = { x: midX, y: midY }
+
+    // Distance to travel
+    const distanceX = endX - startX
+    const distanceY = endY - startY
+
+    // Check if we need to jump
+    const remainingX = nextNoteEndBeat - x
+    const speed = currentVx
+
+    if (remainingX <= speed * 2) {
+      // We're near the target - do the jump
+      progress = Math.min(1, progress + 0.1)
+
+      const pos = bezierQuadratic(
+        { x: startX, y: startY },
+        controlPoint,
+        { x: endX, y: endY },
+        progress,
+      )
+
+      x = pos.x
+      y = pos.y
     } else {
-      // We've reached/near the jump target - snap to it
-      x = nearestJumpTarget
-      lastEndBeat = nearestJumpTarget
+      // Move horizontally towards jump point
+      x += speed
+      // Add slight wave to Y as we approach
+      const wave = Math.sin((x / 100) * Math.PI) * 5
+      y = startY + wave
+    }
 
-      // Check if there's a note at this X position
-      const currentNote = getCurrentNote(x, notes)
+    // Check if we reached the end of the jump
+    if (progress >= 1) {
+      lastEndBeat = nextNoteEndBeat
 
-      if (currentNote && currentNote.endBeat === nearestJumpTarget) {
-        // This is a valid jump point (note endBeat)
-        // Jump at the TOP of the note (above the note block)
-        y = radius + 1
+      // Check for note at this position
+      note = getCurrentNote(x, notes)
+    }
 
-        // Calculate note height in row units
-        const noteHeightRows = 1
-        // Bounce at the TOP of the note (row height + radius spacing)
-        vy = -12 // Fixed upward velocity for reliable jump
-
-        // Add more bounce for higher notes (lower MIDI = higher up on screen)
-        const midiHeight = 127 - currentNote.midi
-        vy -= midiHeight * 0.15
-
-        note = currentNote
-      }
+    // If jumping between two different notes
+    if (note) {
+      // Snap to top-right corner of the note
+      x = note.endBeat
+      y = note.midi * rowHeight + rowHeight / 2 + padding.top
     }
   } else {
-    // No more jump targets, just move freely
+    // No more notes ahead - continue linearly
     x += currentVx
+
+    // Add small vertical oscillation when traveling long distance
+    if (notes.length > 0 && x > lastEndBeat + notes[0].endBeat) {
+      const travelTime = (x - lastEndBeat) / currentVx
+      const oscillate = Math.sin(travelTime * 2) * 3
+      y += oscillate * 0.01
+    }
   }
 
-  // Apply gravity
-  vy += gravity
+  // Apply gravity when falling
+  if (y > startY) {
+    y += vy
+    vy += gravity * 0.5
+    if (y > startY) {
+      y = startY
+      vy = 0
+    }
+  }
 
-  // Apply vertical position
-  y += vy
-
-  // Floor collision (bottom of the piano roll)
+  // Floor collision
   const maxMidi = notes.length > 0 ? Math.max(...notes.map((n) => n.midi)) : 88
   const maxY = (maxMidi * rowHeight) - radius - padding.bottom
 
   if (y > maxY && vy > 0) {
     y = maxY
-    vy = -vy * bounce
-
-    // Friction when on ground
-    vx *= 0.98
+    vy = -vy * bounce * 0.3
   }
 
-  // Keep ball within horizontal bounds
+  // Keep within bounds
   const containerWidth = 1000
   const minX = padding.left + radius
   const maxX = containerWidth - padding.right - radius
@@ -162,17 +215,32 @@ export function getBallPhysics(
     lastEndBeat = x
   }
 
-  const isJumping = vy !== 0
+  const isJumping = progress > 0 && progress < 1
 
   return {
     x,
     y,
     note,
+    progress,
   }
 }
 
 /**
- * Find the note at a specific X position (in beats)
+ * Find next note's endBeat after current position
+ */
+function findNextNoteEndBeat(x: number, lastEndBeat: number, notes: NoteBounds[]): number | null {
+  const candidates: number[] = []
+  for (const n of notes) {
+    if (n.endBeat > x && n.endBeat > lastEndBeat) {
+      candidates.push(n.endBeat)
+    }
+  }
+  if (candidates.length === 0) return null
+  return Math.min(...candidates)
+}
+
+/**
+ * Find the note at a specific X position
  */
 function getCurrentNote(beatPosition: number, notes: NoteBounds[]): NoteBounds | null {
   for (const n of notes) {
@@ -190,36 +258,29 @@ export function createBallPhysics(options: BallPhysicsOptions): BallPhysicsState
     bounce = 0.8,
     radius = 8,
     padding = { top: 5, bottom: 5, left: 0, right: 0 },
-    baseSpeedBpm120 = 1.5,
+    arcHeight = 120,
+    timeScale = 1.0,
   } = options
 
   return {
     x: radius + padding.left,
     y: radius + padding.top,
     vy: 0,
-    vx: baseSpeedBpm120,
+    vx: speed * timeScale,
     gravity,
     bounce,
     isJumping: false,
     lastNote: null,
-    lastEndBeat: radius,
+    lastEndBeat: radius + padding.left,
   }
 }
 
-// Generate multiple ball instances for a more dynamic effect
+// Generate multiple ball instances
 export function createMultipleBalls(count: number, options: BallPhysicsOptions) {
   return Array.from({ length: count }, (_, i) =>
     createBallPhysics({
       ...options,
-      speed: speedWithVariation(options.speed, i, count),
+      speed: options.speed * (1 + i * 0.1),
     }),
   )
-}
-
-function speedWithVariation(baseSpeed: number, index: number, total: number): number {
-  // Spread balls at different horizontal positions
-  const totalWidth = 1000
-  const spacing = totalWidth / (total + 1)
-  const startX = spacing * (index + 1)
-  return baseSpeed
 }

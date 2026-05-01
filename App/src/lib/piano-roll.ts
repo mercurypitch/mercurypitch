@@ -2477,8 +2477,9 @@ export class PianoRollEditor {
         this.ballState.lastEndBeat = result.note ? result.note.endBeat : this.ballState.lastEndBeat
         this.ballState.lastNote = result.note
 
-        const centerY = this.ballState.y * this.rowHeight + this.rowHeight / 2
-        const centerX = this.ballState.x * this.beatWidth
+        // Convert to pixel coordinates for drawing
+        const pixelY = this.ballState.y * this.rowHeight + this.rowHeight / 2 + this.rowHeight / 2
+        const pixelX = this.ballState.x * this.beatWidth
 
         // Draw ball with glowing effect
         this.ballCtx.clearRect(0, 0, this.ballCanvas.width, this.ballCanvas.height)
@@ -2489,12 +2490,12 @@ export class PianoRollEditor {
         this.ballCtx.shadowBlur = 12
         this.ballCtx.fillStyle = '#3fb950'
         this.ballCtx.beginPath()
-        this.ballCtx.arc(centerX, centerY, this.ballRadius, 0, Math.PI * 2)
+        this.ballCtx.arc(pixelX, pixelY, this.ballRadius, 0, Math.PI * 2)
         this.ballCtx.fill()
         // White core for extra glow
         this.ballCtx.fillStyle = 'rgba(255, 255, 255, 0.7)'
         this.ballCtx.beginPath()
-        this.ballCtx.arc(centerX, centerY, this.ballRadius * 0.5, 0, Math.PI * 2)
+        this.ballCtx.arc(pixelX, pixelY, this.ballRadius * 0.5, 0, Math.PI * 2)
         this.ballCtx.fill()
         this.ballCtx.restore()
       }
@@ -2534,8 +2535,9 @@ export class PianoRollEditor {
       this.ballState.lastEndBeat = result.note ? result.note.endBeat : this.ballState.lastEndBeat
       this.ballState.lastNote = result.note
 
-      const centerY = this.ballState.y * this.rowHeight + this.rowHeight / 2
-      const centerX = this.ballState.x * this.beatWidth
+      // Convert to pixel coordinates for drawing
+      const pixelY = this.ballState.y * this.rowHeight + this.rowHeight / 2 + this.rowHeight / 2
+      const pixelX = this.ballState.x * this.beatWidth
 
       // Draw ball with glowing effect
       this.ballCtx.clearRect(0, 0, this.ballCanvas.width, this.ballCanvas.height)
@@ -2546,12 +2548,12 @@ export class PianoRollEditor {
       this.ballCtx.shadowBlur = 12
       this.ballCtx.fillStyle = '#3fb950'
       this.ballCtx.beginPath()
-      this.ballCtx.arc(centerX, centerY, this.ballRadius, 0, Math.PI * 2)
+      this.ballCtx.arc(pixelX, pixelY, this.ballRadius, 0, Math.PI * 2)
       this.ballCtx.fill()
       // White core for extra glow
       this.ballCtx.fillStyle = 'rgba(255, 255, 255, 0.7)'
       this.ballCtx.beginPath()
-      this.ballCtx.arc(centerX, centerY, this.ballRadius * 0.5, 0, Math.PI * 2)
+      this.ballCtx.arc(pixelX, pixelY, this.ballRadius * 0.5, 0, Math.PI * 2)
       this.ballCtx.fill()
       this.ballCtx.restore()
 
