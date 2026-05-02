@@ -651,7 +651,6 @@ export class PianoRollEditor {
    * Converts melody items to NoteBounds for physics collision
    */
   private async initializeBallPhysics(): Promise<void> {
-    const { createBallPhysics } = await import('@/features/playback/yousician-ball-physics')
     if (this.ballState) return
 
     const midiNotes = this.melody
