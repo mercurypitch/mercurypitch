@@ -3,11 +3,15 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createMemo, createSignal, Show } from 'solid-js'
+import { createMemo, createSignal, For, Show } from 'solid-js'
 import type { AccuracyTier } from '@/stores'
 import { accuracyTier, applyAccuracyTier, appStore } from '@/stores'
 import { adsr, playbackSpeed, setPlaybackSpeed, setSensitivity, settings, } from '@/stores'
+import type { PitchAlgorithm } from '@/stores/settings-store'
+import type { PitchBufferSize } from '@/stores/settings-store'
 import { characterSounds, colorCodeNotes, flameMode, selectedCharacter, setCharacterSounds, setColorCodeNotes, setFlameMode, setShowAccuracyPercent, setShowSidebarNoteList, showAccuracyPercent, showSidebarNoteList, } from '@/stores/settings-store'
+import { pitchAlgorithm, setPitchAlgorithm } from '@/stores/settings-store'
+import { PITCH_BUFFER_DESCRIPTIONS, PITCH_BUFFER_LABELS, PITCH_BUFFER_SIZES, pitchBufferSize, setPitchBufferSize, } from '@/stores/settings-store'
 import { APP_VERSION } from '@/version'
 
 export const SettingsPanel: Component = () => {
@@ -110,6 +114,51 @@ export const SettingsPanel: Component = () => {
               <option value="professional">Professional (Advanced)</option>
             </select>
           </div>
+        </div>
+
+        {/* Pitch Algorithm Section */}
+        <div class="settings-section">
+          <h3 class="settings-section-title">Pitch Algorithm</h3>
+          <div class="settings-divider" />
+          <p class="settings-desc">
+            Select the pitch detection algorithm. YIN is the classic,
+            well-tested default. MPM (McLeod) offers better harmonic handling
+            and fewer octave errors on complex timbres.
+          </p>
+
+          <div class="settings-row">
+            <label for="pitch-algorithm-select">Algorithm</label>
+            <select
+              id="pitch-algorithm-select"
+              value={pitchAlgorithm()}
+              onChange={(e) => {
+                setPitchAlgorithm(e.currentTarget.value as PitchAlgorithm)
+              }}
+            >
+              <option value="yin">YIN (Classic)</option>
+              <option value="mpm">MPM (McLeod)</option>
+            </select>
+          </div>
+
+          <div class="settings-row">
+            <label>Buffer Size</label>
+            <div class="pitch-buffer-pills">
+              <For each={PITCH_BUFFER_SIZES}>
+                {(size) => (
+                  <button
+                    class={`pitch-buffer-pill${pitchBufferSize() === size ? ' pitch-buffer-pill-active' : ''}`}
+                    onClick={() => setPitchBufferSize(size as PitchBufferSize)}
+                    title={PITCH_BUFFER_DESCRIPTIONS[size]}
+                  >
+                    {PITCH_BUFFER_LABELS[size]}
+                  </button>
+                )}
+              </For>
+            </div>
+          </div>
+          <p class="settings-desc" style="margin-top: 4px; font-size: 0.7rem;">
+            {PITCH_BUFFER_DESCRIPTIONS[pitchBufferSize()]}
+          </p>
         </div>
 
         {/* Pitch Detection Section */}

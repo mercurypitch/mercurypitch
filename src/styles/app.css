@@ -8847,6 +8847,63 @@ input:checked + .settings-slider:before {
   color: var(--text-primary);
 }
 
+/* ── Pitch Buffer Size Pill Selector ──────────────────────── */
+
+.pitch-buffer-pills {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.pitch-buffer-pill {
+  flex: 1;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-family: 'Inter', 'SF Mono', monospace;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+@media (hover: hover) {
+  .pitch-buffer-pill:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.7);
+  }
+}
+
+.pitch-buffer-pill-active {
+  background: linear-gradient(
+    135deg,
+    rgba(56, 189, 248, 0.2),
+    rgba(139, 92, 246, 0.2)
+  );
+  color: #fff;
+  box-shadow:
+    0 0 8px rgba(56, 189, 248, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+}
+
+@media (hover: hover) {
+  .pitch-buffer-pill-active:hover {
+    background: linear-gradient(
+      135deg,
+      rgba(56, 189, 248, 0.3),
+      rgba(139, 92, 246, 0.3)
+    );
+  }
+}
+
 /* ============================================================
    Walkthrough Tour — Section Header & Actions (GH #199)
    ============================================================ */

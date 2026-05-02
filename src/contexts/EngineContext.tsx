@@ -110,11 +110,15 @@ export function EngineProvider(props: { children: JSX.Element }) {
   // Sync Practice Engine settings
   createEffect(() => {
     const s = settingsStore.settings()
+    const algo = settingsStore.pitchAlgorithm()
+    const bufSize = settingsStore.pitchBufferSize()
     practiceEngine.syncSettings({
       sensitivity: s.sensitivity,
       minConfidence: s.minConfidence,
       minAmplitude: s.minAmplitude,
       bands: s.bands.map((b) => ({ threshold: b.threshold, band: b.band })),
+      algorithm: algo,
+      bufferSize: bufSize,
     })
   })
 
