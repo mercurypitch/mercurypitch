@@ -4,6 +4,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
+import { For } from 'solid-js'
 import { createMemo, createSignal, onMount, Show } from 'solid-js'
 import { AppSidebar } from '@/components/AppSidebar'
 import { FocusMode } from '@/components/FocusMode'
@@ -35,11 +36,11 @@ import { registerE2EBridge } from '@/lib/e2e-bridge'
 import { melodyIndexAtBeat, melodyTotalBeats } from '@/lib/scale-data'
 import { buildScaleMelody, buildSessionPlaybackMelody, } from '@/lib/session-builder'
 import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
-import { setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPlaybackSpeed, setScaleType, } from '@/stores'
+import { setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPendingSessionStart, setPlaybackSpeed, setScaleType, } from '@/stores'
 import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initBpm, initPresets, initReverb, initSessionHistory, initSettings, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, toggleMicWaveVisible, userSession, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import { getSession, templateToSession } from '@/stores/session-store'
-import type { PlaybackMode, SpacedRestMode } from '@/types'
+import type { MelodyItem, PlaybackMode, SpacedRestMode } from '@/types'
 import { Walkthrough, WalkthroughControl } from './components'
 import { AppErrorBoundary } from './components/AppErrorBoundary'
 import { CrashModal } from './components/CrashModal'
@@ -459,11 +460,11 @@ const AppShell: Component<AppProps> = (props) => {
       (session.items.length > 1 ||
         session.items.some((it) => (it as { type: string }).type !== 'melody'))
     if (isSessionShaped && isPaused() === false) {
-      startSessionPlayback()
-    } else {
-      // Single-melody playback: continue with normal flow
-      handlePlay()
+      setPendingSessionStart(true)
+      // startSessionPlayback()
     }
+    // Single-melody playback: continue with normal flow
+    handlePlay()
   }
 
   const handlePracticeModeChange = (mode: PlaybackMode) => {
