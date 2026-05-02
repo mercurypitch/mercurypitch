@@ -203,7 +203,11 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
 
         {/* Play/Pause — shown when stopped */}
         <Show when={!props.isPlaying() && !props.isPaused()}>
-          <button class="focus-play" onClick={() => props.onPlay()} title="Play">
+          <button
+            class="focus-play"
+            onClick={() => props.onPlay()}
+            title="Play"
+          >
             <svg viewBox="0 0 24 24" width="24" height="24">
               <path fill="currentColor" d="M8 5v14l11-7z" />
             </svg>
@@ -211,7 +215,11 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
         </Show>
 
         <Show when={props.isPlaying()}>
-          <button class="focus-play" onClick={() => props.onPause()} title="Pause">
+          <button
+            class="focus-play"
+            onClick={() => props.onPause()}
+            title="Pause"
+          >
             <svg viewBox="0 0 24 24" width="24" height="24">
               <path fill="currentColor" d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
             </svg>
@@ -219,7 +227,11 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
         </Show>
 
         <Show when={props.isPaused()}>
-          <button class="focus-play" onClick={() => props.onResume()} title="Continue">
+          <button
+            class="focus-play"
+            onClick={() => props.onResume()}
+            title="Continue"
+          >
             <svg viewBox="0 0 24 24" width="24" height="24">
               <path fill="currentColor" d="M8 5v14l11-7z" />
             </svg>
