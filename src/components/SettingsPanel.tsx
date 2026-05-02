@@ -55,6 +55,8 @@ export const SettingsPanel: Component = () => {
     window.location.reload()
   }
 
+  const [testCrash, setTestCrash] = createSignal(false)
+
   return (
     <div class="settings-panel">
       <div class="settings-content">
@@ -725,6 +727,43 @@ export const SettingsPanel: Component = () => {
             </div>
           </Show>
         </div>
+
+        {/* Developer Tools Section */}
+        <Show when={import.meta.env.DEV}>
+          {testCrash() &&
+            (() => {
+              throw new Error('Dev mode injected render crash')
+            })()}
+          <div class="settings-section settings-danger-zone">
+            <h3 class="settings-section-title" style="color: var(--yellow);">
+              Developer Tools
+            </h3>
+            <div
+              class="settings-divider"
+              style="background: linear-gradient(90deg, var(--yellow), transparent);"
+            />
+            <p class="settings-desc">Development-only tools for debugging.</p>
+
+            <div class="settings-row danger-row">
+              <div class="danger-content">
+                <label class="danger-label" style="color: var(--yellow);">
+                  Test Crash Screen
+                </label>
+                <small class="danger-desc">
+                  Inject a rendering error to test the global CrashModal
+                  boundary.
+                </small>
+              </div>
+              <button
+                class="danger-btn"
+                style="background: rgba(220, 160, 0, 0.1); color: var(--yellow); border-color: var(--yellow);"
+                onClick={() => setTestCrash(true)}
+              >
+                Trigger Crash
+              </button>
+            </div>
+          </div>
+        </Show>
 
         {/* About Section */}
         <div class="settings-section">

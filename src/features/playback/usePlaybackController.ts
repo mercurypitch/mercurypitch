@@ -368,7 +368,7 @@ export function usePlaybackController(
     // Play feels clean. resetPlaybackState (called on tab switch) does
     // a hard reset of everything, which is intentional for tab switches.
     playbackRuntime.stop()
-    practiceEngine.endSession()
+    const noteResults = practiceEngine.endSession()
     audioEngine.stopTone()
     audioEngine.stopAllNotes()
     audioRegistry.stopAll()
@@ -376,6 +376,10 @@ export function usePlaybackController(
     setIsPaused(false)
     playback.resetPlayback()
     setSessionActive(false)
+
+    // Check sessionMode before we reset it
+    const wasInSession = sessionMode()
+
     // Reset sessionMode so the next Play in Practice mode re-enters
     // the per-item PracticeSession setup branch in handlePlay. Without
     // this, a Stop → Play cycle leaves sessionMode=true and handlePlay
@@ -383,6 +387,17 @@ export function usePlaybackController(
     setSessionMode(false)
     setEditorPlaybackState('stopped')
     const result = endPracticeSession()
+
+    // If we're not running a multi-item session but we just finished a practice run
+    // with actual notes, calculate and display the single-run summary.
+    if (!wasInSession && noteResults.length > 0) {
+      const pr = practiceEngine.calculatePracticeResult(
+        noteResults,
+        melodyStore.getCurrentMelody()?.name ?? 'Practice Run',
+        playMode(),
+      )
+      setPracticeResult(pr)
+    }
 
     // Yield one microtask + one rAF so the browser actually processes
     // pending audio teardown (oscillator stop, gain ramp, AudioContext
