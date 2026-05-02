@@ -4,12 +4,14 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, Show } from 'solid-js'
-import type { AccuracyTier} from '@/stores';
-import { accuracyTier, applyAccuracyTier, appStore } from '@/stores'
+import { APP_VERSION } from '@/lib/defaults'
+import { appStore } from '@/stores'
 import { adsr, playbackSpeed, setPlaybackSpeed, setSensitivity, settings, } from '@/stores'
-import { characterSounds, colorCodeNotes, flameMode, selectedCharacter, setCharacterSounds, setColorCodeNotes, setFlameMode, setShowAccuracyPercent, setShowSidebarNoteList, showAccuracyPercent, showSidebarNoteList, } from '@/stores/settings-store'
-import { APP_VERSION } from '@/version'
-import { UvrSettings } from './UvrSettings'
+import type { PitchAlgorithm } from '@/stores/settings-store'
+import type { PitchBufferSize } from '@/stores/settings-store'
+import { characterSounds, colorCodeNotes, flameMode, selectedCharacter, setCharacterSounds, setColorCodeNotes, setFlameMode, setShowAccuracyPercent, setShowPracticeResultPopup, setShowSidebarNoteList, showAccuracyPercent, showPracticeResultPopup, showSidebarNoteList, } from '@/stores/settings-store'
+import { pitchAlgorithm, setPitchAlgorithm } from '@/stores/settings-store'
+import { PITCH_BUFFER_DESCRIPTIONS, PITCH_BUFFER_LABELS, PITCH_BUFFER_SIZES, pitchBufferSize, setPitchBufferSize, } from '@/stores/settings-store'
 
 export const SettingsPanel: Component = () => {
   const s = () => settings()
@@ -93,23 +95,63 @@ export const SettingsPanel: Component = () => {
           <h3 class="settings-section-title">Accuracy Tier</h3>
           <div class="settings-divider" />
           <p class="settings-desc">
-            Choose your skill level. Perfect pitch means being within the specified number of cents of the target note.
+            Choose your skill level. Perfect pitch means being within the
+            specified number of cents of the target note.
+          </p>
+
+          <TierSelector class="settings-tier-selector" />
+        </div>
+
+        {/* Pitch Algorithm Section */}
+        <div class="settings-section">
+          <h3 class="settings-section-title">Pitch Algorithm</h3>
+          <div class="settings-divider" />
+          <p class="settings-desc">
+            Select the pitch detection algorithm. YIN is the classic,
+            well-tested default. MPM (McLeod) offers better harmonic handling
+            and fewer octave errors on complex timbres.
           </p>
 
           <div class="settings-row">
-            <label for="accuracy-tier-select">Difficulty</label>
+            <label for="pitch-algorithm-select">Algorithm</label>
             <select
-              id="accuracy-tier-select"
-              value={accuracyTier()}
+              id="pitch-algorithm-select"
+              value={pitchAlgorithm()}
               onChange={(e) => {
-                applyAccuracyTier(e.currentTarget.value as AccuracyTier)
+                setPitchAlgorithm(e.currentTarget.value as PitchAlgorithm)
               }}
             >
-              <option value="learning">Learning (Beginner)</option>
-              <option value="singer">Singer (Intermediate)</option>
-              <option value="professional">Professional (Advanced)</option>
+              <option value="yin">YIN (Classic)</option>
+              <option value="mpm">MPM (McLeod)</option>
             </select>
           </div>
+
+          <Show when={pitchAlgorithm() === 'mpm'}>
+            <div class="settings-row">
+              <label>Buffer Size</label>
+              <div class="pitch-buffer-pills">
+                <For each={PITCH_BUFFER_SIZES}>
+                  {(size) => (
+                    <button
+                      class={`pitch-buffer-pill${pitchBufferSize() === size ? ' pitch-buffer-pill-active' : ''}`}
+                      onClick={() =>
+                        setPitchBufferSize(size as PitchBufferSize)
+                      }
+                      title={PITCH_BUFFER_DESCRIPTIONS[size]}
+                    >
+                      {PITCH_BUFFER_LABELS[size]}
+                    </button>
+                  )}
+                </For>
+              </div>
+            </div>
+            <p
+              class="settings-desc"
+              style="margin-top: 4px; font-size: 0.7rem;"
+            >
+              {PITCH_BUFFER_DESCRIPTIONS[pitchBufferSize()]}
+            </p>
+          </Show>
         </div>
 
         {/* Pitch Detection Section */}
@@ -472,6 +514,25 @@ export const SettingsPanel: Component = () => {
           </div>
 
           <div class="settings-row">
+            <label for="vis-practice-result-popup">Practice Result Popup</label>
+            <label class="settings-toggle">
+              <input
+                type="checkbox"
+                id="vis-practice-result-popup"
+                checked={showPracticeResultPopup()}
+                onChange={(e) => {
+                  setShowPracticeResultPopup(e.currentTarget.checked)
+                }}
+              />
+              <span class="settings-slider" />
+            </label>
+            <small>
+              Show a score overlay after each practice run or session completes.
+              When off, results are still recorded in history.
+            </small>
+          </div>
+
+          <div class="settings-row">
             <label for="vis-theme">Theme</label>
             <label>
               <select
@@ -604,19 +665,6 @@ export const SettingsPanel: Component = () => {
             />
             <span class="settings-val">{playbackSpeed().toFixed(2)}x</span>
             <small>0.25x = slowest, 2.0x = fastest</small>
-          </div>
-        </div>
-
-        {/* UVR Vocal Separation Section */}
-        <div class="settings-section">
-          <h3 class="settings-section-title">Vocal Separation (UVR)</h3>
-          <div class="settings-divider" />
-          <p class="settings-desc">
-            Control how vocals and instrumental tracks are processed during playback.
-          </p>
-
-          <div class="uvr-settings-wrapper">
-            <UvrSettings />
           </div>
         </div>
 
@@ -768,7 +816,7 @@ export const SettingsPanel: Component = () => {
         </div>
 
         {/* Developer Tools Section */}
-        <Show when={import.meta.env.DEV}>
+        <Show when={IS_DEV}>
           {testCrash() &&
             (() => {
               throw new Error('Dev mode injected render crash')

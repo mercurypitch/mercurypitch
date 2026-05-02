@@ -330,6 +330,15 @@ export const [showStats, setShowStats] = createPersistedSignal<boolean>(
 export const [showPitchDisplay, setShowPitchDisplay] =
   createPersistedSignal<boolean>(SHOW_PITCH_DISPLAY_KEY, true)
 
+/**
+ * Show the practice-result popup modal after a run completes
+ * (once mode, repeat mode, or session). Off by default so the
+ * overlay doesn't interrupt the user after every run.
+ */
+const SHOW_PRACTICE_RESULT_POPUP_KEY = 'pitchperfect_show_practice_result_popup'
+export const [showPracticeResultPopup, setShowPracticeResultPopup] =
+  createPersistedSignal<boolean>(SHOW_PRACTICE_RESULT_POPUP_KEY, false)
+
 // FIXME: Initialization functions mapped to no-ops to support old init pattern gracefully
 // before they are completely removed. Storage loading happens on signal creation now.
 export function initSettings(): void {}
