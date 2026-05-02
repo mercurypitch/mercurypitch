@@ -1,8 +1,8 @@
+import ssl from '@vitejs/plugin-basic-ssl'
+import { dirname,resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vite'
 import solidPlugin from 'vite-plugin-solid'
-import { resolve, dirname } from 'node:path'
-import { fileURLToPath } from 'node:url'
-import ssl from '@vitejs/plugin-basic-ssl'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
