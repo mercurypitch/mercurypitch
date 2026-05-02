@@ -1,7 +1,7 @@
 import { createSignal } from 'solid-js'
+import { APP_VERSION } from '@/lib/defaults'
 import { createPersistedSignal } from '@/lib/storage'
 import { exposeForE2E } from '@/lib/test-utils'
-import { APP_VERSION } from '@/version'
 
 // ── Active tab ───────────────────────────────────────────────
 

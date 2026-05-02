@@ -4,8 +4,8 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, Show } from 'solid-js'
+import { APP_VERSION } from '@/lib/defaults'
 import { appError } from '@/stores'
-import { APP_VERSION } from '@/version'
 
 /**
  * App crashed modal shown when an unhandled error occurs.

@@ -4,6 +4,21 @@ import { createPersistedSignal } from '@/lib/storage'
 
 export type { PitchAlgorithm }
 
+export type PitchBufferSize = 512 | 1024 | 2048 | 4096
+export const PITCH_BUFFER_SIZES: PitchBufferSize[] = [512, 1024, 2048, 4096]
+export const PITCH_BUFFER_LABELS: Record<PitchBufferSize, string> = {
+  512: '512',
+  1024: '1K',
+  2048: '2K',
+  4096: '4K',
+}
+export const PITCH_BUFFER_DESCRIPTIONS: Record<PitchBufferSize, string> = {
+  512: 'Lowest latency, less accurate on low notes',
+  1024: 'Low latency, good for higher voices',
+  2048: 'Balanced (recommended)',
+  4096: 'High accuracy, more latency',
+}
+
 export type SensitivityPreset = 'quiet' | 'home' | 'noisy'
 export type AccuracyTier = 'learning' | 'singer' | 'professional'
 
@@ -248,7 +263,36 @@ export const [showSidebarNoteList, setShowSidebarNoteList] =
  * new behavior immediately.
  */
 export const [showAccuracyPercent, setShowAccuracyPercent] =
-  createPersistedSignal<boolean>('pitchperfect_accuracy_percent', true)
+  createPersistedSignal<boolean>('pitchperfect_accuracy_percent', IS_DEV)
+
+// ── Pitch Detection Algorithm ─────────────────────────────────────
+//
+// Choose between YIN (classic, well-tested) and McLeod Pitch Method
+// (MPM — better harmonic handling, fewer octave errors on complex
+// timbres). Default: YIN for stability.
+export const [pitchAlgorithm, setPitchAlgorithm] =
+  createPersistedSignal<PitchAlgorithm>('pitchperfect_pitch_algorithm', 'mpm')
+
+// ── Pitch Detection Buffer Size ───────────────────────────────────
+//
+// Larger buffers give better accuracy (especially for low frequencies)
+// but increase latency. 2048 is the sweet spot for most voices.
+export type PitchBufferSize = 512 | 1024 | 2048 | 4096
+export const PITCH_BUFFER_SIZES: PitchBufferSize[] = [512, 1024, 2048, 4096]
+export const PITCH_BUFFER_LABELS: Record<PitchBufferSize, string> = {
+  512: '512',
+  1024: '1K',
+  2048: '2K',
+  4096: '4K',
+}
+export const PITCH_BUFFER_DESCRIPTIONS: Record<PitchBufferSize, string> = {
+  512: 'Lowest latency, less accurate on low notes',
+  1024: 'Low latency, good for higher voices',
+  2048: 'Balanced (recommended)',
+  4096: 'High accuracy, more latency',
+}
+export const [pitchBufferSize, setPitchBufferSize] =
+  createPersistedSignal<PitchBufferSize>('pitchperfect_pitch_buffer_size', 2048)
 
 // ── Custom Scales ─────────────────────────────────────────────────
 //

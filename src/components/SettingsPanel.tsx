@@ -3,9 +3,10 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createMemo, createSignal, Show } from 'solid-js'
-import { APP_VERSION } from '@/lib/defaults'
-import { appStore } from '@/stores'
+import { createMemo, createSignal, For, Show } from 'solid-js'
+import { IS_DEV } from '@/lib/defaults'
+import type { AccuracyTier } from '@/stores'
+import { accuracyTier, applyAccuracyTier, appStore } from '@/stores'
 import { adsr, playbackSpeed, setPlaybackSpeed, setSensitivity, settings, } from '@/stores'
 import type { PitchAlgorithm } from '@/stores/settings-store'
 import type { PitchBufferSize } from '@/stores/settings-store'
