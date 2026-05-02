@@ -472,18 +472,26 @@ const AppShell: Component<AppProps> = (props) => {
     playbackRuntime.on('noteStart', (e) => {
       const { note: item, index } = e
       melodyStore.setCurrentNoteIndex(index)
-      setTargetPitch(item.note.freq)
-      if (activeTab() === 'practice') {
-        practiceEngine.onNoteStart(item.note, index)
-      }
+
       // Suppress audio for rest items. Session rests reuse the runtime
       // (so the playhead can advance visibly across the rest bar),
       // which means PlaybackRuntime emits noteStart for the synthetic
       // rest MelodyItem. Without this guard the placeholder note would
       // play at full volume during what's supposed to be silent.
       // Spaced-rest items take the same path and benefit from the same
-      // guard.
-      if ((item as { isRest?: boolean }).isRest === true) return
+      // guard. We also avoid passing rests to the practiceEngine.
+      const isRestItem = (item as { isRest?: boolean }).isRest === true
+
+      if (!isRestItem) {
+        setTargetPitch(item.note.freq)
+        if (activeTab() === 'practice') {
+          practiceEngine.onNoteStart(item.note, index)
+        }
+      } else {
+        setTargetPitch(null)
+      }
+
+      if (isRestItem) return
       if (
         !recording.isRecording() &&
         (isPlaying() || editorPlaybackState() === 'playing')
