@@ -11,6 +11,87 @@ export const [instrument, setInstrument] = createSignal<InstrumentType>('sine')
 
 export type InstrumentType = 'sine' | 'piano' | 'organ' | 'strings' | 'synth'
 
+// ── UVR (Vocal Separation) ─────────────────────────────────────
+
+export type UvrMode = 'separate' | 'instrumental' | 'vocal' | 'duo'
+
+export interface UvrSettings {
+  mode: UvrMode
+  vocalIntensity: number // 0-100%
+  instrumentalIntensity: number // 0-100%
+  smoothing: number // 0-1
+}
+
+const DEFAULT_UVR_SETTINGS: UvrSettings = {
+  mode: 'separate',
+  vocalIntensity: 70,
+  instrumentalIntensity: 70,
+  smoothing: 0.3,
+}
+
+export function getUvrSettings(): UvrSettings {
+  const saved = localStorage.getItem('pitchperfect_uvr-settings')
+  if (saved) {
+    try {
+      return { ...DEFAULT_UVR_SETTINGS, ...JSON.parse(saved) }
+    } catch {
+      // Return defaults on parse error
+    }
+  }
+  return DEFAULT_UVR_SETTINGS
+}
+
+export function setUvrSettings(settings: Partial<UvrSettings>): void {
+  const current = getUvrSettings()
+  const newSettings: UvrSettings = {
+    ...current,
+    ...settings,
+  }
+  localStorage.setItem('pitchperfect_uvr-settings', JSON.stringify(newSettings))
+}
+
+export const uvrMode = createSignal<UvrMode>('separate')
+export const uvrVocalIntensity = createSignal(70)
+export const uvrInstrumentalIntensity = createSignal(70)
+export const uvrSmoothing = createSignal(0.3)
+
+// Helper functions to access UVR settings
+export function getUvrMode(): UvrMode {
+  return uvrMode()
+}
+
+export function setUvrMode(mode: UvrMode): void {
+  uvrMode.set(mode)
+  setUvrSettings({ mode })
+}
+
+export function getUvrVocalIntensity(): number {
+  return uvrVocalIntensity()
+}
+
+export function setUvrVocalIntensity(intensity: number): void {
+  uvrVocalIntensity.set(intensity)
+  setUvrSettings({ vocalIntensity: intensity })
+}
+
+export function getUvrInstrumentalIntensity(): number {
+  return uvrInstrumentalIntensity()
+}
+
+export function setUvrInstrumentalIntensity(intensity: number): void {
+  uvrInstrumentalIntensity.set(intensity)
+  setUvrSettings({ instrumentalIntensity: intensity })
+}
+
+export function getUvrSmoothing(): number {
+  return uvrSmoothing()
+}
+
+export function setUvrSmoothing(value: number): void {
+  uvrSmoothing.set(value)
+  setUvrSettings({ smoothing: value })
+}
+
 // ── Audio Engine (single instance) ─────────────────────────────
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -24,6 +105,27 @@ export async function initAudioEngine(): Promise<any> {
 
   _audioEngineInstance = new AudioEngine()
   return _audioEngineInstance
+}
+
+/** Apply current UVR settings to the audio engine */
+export async function applyUvrSettings(): Promise<void> {
+  const engine = _audioEngineInstance
+  if (!engine) return
+
+  const mode = getUvrMode()
+  const vocalIntensity = getUvrVocalIntensity()
+  const instrumentalIntensity = getUvrInstrumentalIntensity()
+  const smoothing = getUvrSmoothing()
+
+  engine.setUvrSettings({
+    mode,
+    vocalIntensity,
+    instrumentalIntensity,
+    smoothing,
+  })
+
+  // Enable UVR processing
+  engine.enableUvr()
 }
 
 // ── Walkthrough Tutorial (GH #140, GH #199) ────────────────────

@@ -64,8 +64,8 @@ run_syntax_check() {
     local failed=0
     for file in $js_files; do
         if [[ -f "$file" ]]; then
-            # node --check doesn't work with Vite's ES modules (import.meta.url)
-            # Skip this check for deployed bundles - TypeScript build already validates
+            # node --check fails on Vite's ES modules (import.meta.url)
+            # Skip this check for bundled files - TypeScript build already validates
             # Local development syntax errors are caught before build
             info "  ✓ $(basename "$file") (skipped - bundled ES module)"
         fi

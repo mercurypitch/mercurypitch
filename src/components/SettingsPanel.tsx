@@ -8,6 +8,7 @@ import { appStore } from '@/stores'
 import { adsr, playbackSpeed, setPlaybackSpeed, setSensitivity, settings, } from '@/stores'
 import { characterSounds, colorCodeNotes, flameMode, selectedCharacter, setCharacterSounds, setColorCodeNotes, setFlameMode, setShowAccuracyPercent, setShowSidebarNoteList, showAccuracyPercent, showSidebarNoteList, } from '@/stores/settings-store'
 import { APP_VERSION } from '@/version'
+import { UvrSettings } from './UvrSettings'
 
 export const SettingsPanel: Component = () => {
   const s = () => settings()
@@ -578,6 +579,19 @@ export const SettingsPanel: Component = () => {
             />
             <span class="settings-val">{playbackSpeed().toFixed(2)}x</span>
             <small>0.25x = slowest, 2.0x = fastest</small>
+          </div>
+        </div>
+
+        {/* UVR Vocal Separation Section */}
+        <div class="settings-section">
+          <h3 class="settings-section-title">Vocal Separation (UVR)</h3>
+          <div class="settings-divider" />
+          <p class="settings-desc">
+            Control how vocals and instrumental tracks are processed during playback.
+          </p>
+
+          <div class="uvr-settings-wrapper">
+            <UvrSettings />
           </div>
         </div>
 

@@ -2798,3 +2798,289 @@
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+/* ============================================================
+   UVR (Vocal Separation) Styles
+   ============================================================ */
+
+.uvr-settings {
+  margin-top: 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.uvr-header {
+  margin-bottom: 20px;
+}
+
+.uvr-header h3 {
+  margin: 0 0 4px 0;
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+.uvr-description {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.uvr-mode-selection label {
+  display: block;
+  margin-bottom: 12px;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+}
+
+.mode-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.mode-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  background: var(--bg-tertiary);
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mode-card:hover {
+  border-color: var(--accent);
+  background: var(--bg-secondary);
+}
+
+.mode-card.active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.mode-icon {
+  width: 32px;
+  height: 32px;
+  color: var(--text-primary);
+}
+
+.mode-label {
+  font-size: 0.875rem;
+  color: var(--text-primary);
+}
+
+.uvr-intensity-controls {
+  margin: 16px 0;
+}
+
+.intensity-group {
+  margin-bottom: 12px;
+}
+
+.intensity-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 16px 0;
+}
+
+.intensity-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.intensity-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+}
+
+.intensity-value {
+  color: var(--accent);
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+.intensity-slider {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--bg-tertiary);
+  outline: none;
+}
+
+.intensity-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.intensity-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+}
+
+.uvr-smoothing {
+  margin: 16px 0;
+}
+
+.smoothing-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.smoothing-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+}
+
+.smoothing-value {
+  color: var(--accent);
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+.smoothing-slider {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--bg-tertiary);
+  outline: none;
+}
+
+.smoothing-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.smoothing-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+}
+
+.uvr-info {
+  margin-top: 20px;
+  background: var(--bg-tertiary);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.info-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.info-icon {
+  font-size: 1rem;
+}
+
+.info-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.info-list li {
+  padding: 4px 0;
+  padding-left: 16px;
+  position: relative;
+}
+
+.info-list li::before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: var(--accent);
+}
+
+.info-list strong {
+  color: var(--text-primary);
+}
+
+/* Settings Panel UVR Integration */
+.settings-panel .uvr-settings-wrapper {
+  padding: 12px;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  margin-top: 12px;
+}
+
+.settings-panel .uvr-mode-selection label {
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+.settings-panel .mode-card {
+  padding: 12px;
+}
+
+.settings-panel .mode-icon {
+  width: 28px;
+  height: 28px;
+}
+
+.settings-panel .mode-label {
+  font-size: 0.8rem;
+}
+
+.settings-panel .intensity-label {
+  font-size: 0.8rem;
+}
+
+.settings-panel .intensity-value {
+  font-size: 0.8rem;
+}
+
+.settings-panel .intensity-slider {
+  height: 4px;
+}
+
+.settings-panel .smoothing-label {
+  font-size: 0.8rem;
+}
+
+.settings-panel .smoothing-value {
+  font-size: 0.8rem;
+}
+
+.settings-panel .smoothing-slider {
+  height: 4px;
+}
+
+.settings-panel .uvr-info {
+  padding: 10px;
+}
+
+.settings-panel .info-list li {
+  padding-left: 14px;
+}
