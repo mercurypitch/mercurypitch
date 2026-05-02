@@ -1,3 +1,4 @@
+import { IS_DEV } from '@/lib/defaults'
 import type { PitchAlgorithm } from '@/lib/pitch-detector'
 import { createPersistedSignal } from '@/lib/storage'
 
@@ -242,7 +243,7 @@ export const [showSidebarNoteList, setShowSidebarNoteList] =
  * new behavior immediately.
  */
 export const [showAccuracyPercent, setShowAccuracyPercent] =
-  createPersistedSignal<boolean>('pitchperfect_accuracy_percent', true)
+  createPersistedSignal<boolean>('pitchperfect_accuracy_percent', IS_DEV)
 
 // ── Pitch Detection Algorithm ─────────────────────────────────────
 //
@@ -250,7 +251,7 @@ export const [showAccuracyPercent, setShowAccuracyPercent] =
 // (MPM — better harmonic handling, fewer octave errors on complex
 // timbres). Default: YIN for stability.
 export const [pitchAlgorithm, setPitchAlgorithm] =
-  createPersistedSignal<PitchAlgorithm>('pitchperfect_pitch_algorithm', 'yin')
+  createPersistedSignal<PitchAlgorithm>('pitchperfect_pitch_algorithm', 'mpm')
 
 // ── Pitch Detection Buffer Size ───────────────────────────────────
 //
