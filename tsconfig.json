@@ -23,5 +23,14 @@
     "src/**/*.d.ts",
     "vitest.config.ts"
   ],
+  "plugins": [
+    {
+      "name": "typescript-plugin-css-modules",
+      "options": {
+        "classnameTransform": "camelCaseOnly",
+        "goToDefinition": true
+      }
+    }
+  ],
   "exclude": ["node_modules", "dist"]
 }

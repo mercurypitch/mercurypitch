@@ -1,6 +1,6 @@
-import path from 'path';
-import solidPlugin from 'vite-plugin-solid';
-import { defineConfig } from 'vitest/config';
+import path from 'path'
+import solidPlugin from 'vite-plugin-solid'
+import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
   plugins: [solidPlugin() as any],
@@ -16,8 +16,13 @@ export default defineConfig({
     include: ['src/tests/**/*.test.ts', 'src/tests/**/*.test.tsx'],
     coverage: {
       reporter: ['text', 'json', 'html'],
-      include: ['src/lib/**/*.ts', 'src/stores/**/*.ts', 'src/components/**/*.tsx'],
+      include: [
+        'src/lib/**/*.ts',
+        'src/stores/**/*.ts',
+        'src/components/**/*.tsx',
+      ],
       exclude: ['src/tests/**', '**/*.d.ts'],
     },
   },
-});
+})
+
