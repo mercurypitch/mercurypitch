@@ -1292,23 +1292,23 @@ export class PianoRollEditor {
   <div class="roll-group roll-group-2col" data-name="Effects">
     <button id="roll-action-slide-up" class="roll-action-btn slide-up" title="Create ascending slide between selected notes">
       <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M4 20l8-16 8 16z"/></svg>
-            <span>↑Slide</span>
+      <span>↑Slide</span>
     </button>
     <button id="roll-action-slide-down" class="roll-action-btn slide-down" title="Create descending slide between selected notes">
       <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M4 4l8 16 8-16z"/></svg>
-            <span>↓Slide</span>
+      <span>↓Slide</span>
     </button>
-          <button id="roll-action-ease-in" class="roll-action-btn ease-in" title="Create ease-in slide (starts level, slides down)">
+    <button id="roll-action-ease-in" class="roll-action-btn ease-in" title="Create ease-in slide (starts level, slides down)">
       <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M4 12h4l4-6 8 10z"/></svg>
-            <span>Ease In</span>
+      <span>Ease In</span>
     </button>
-          <button id="roll-action-ease-out" class="roll-action-btn ease-out" title="Create ease-out slide (slides up, eases to level)">
+    <button id="roll-action-ease-out" class="roll-action-btn ease-out" title="Create ease-out slide (slides up, eases to level)">
       <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M4 12l4-6 4 6h12z"/></svg>
-            <span>Ease Out</span>
+      <span>Ease Out</span>
     </button>
     <button id="roll-action-vibrato" class="roll-action-btn vibrato" title="Create vibrato on selected note">
       <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M3 12c3-4 6 4 9 0s6 4 9 0"/></svg>
-            <span>Vibrato</span>
+      <span>Vibrato</span>
     </button>
           </div>
 

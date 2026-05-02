@@ -3,7 +3,6 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import styles from './MetronomeButton.module.css'
 
 interface MetronomeButtonProps {
   active: boolean
@@ -14,7 +13,7 @@ export const MetronomeButton: Component<MetronomeButtonProps> = (props) => {
   return (
     <button
       id="btn-metronome"
-      class={`${styles.ctrlBtn} ${props.active ? styles.active : ''}`}
+      class={`ctrl-btn metronome-btn ${props.active ? 'active' : ''}`}
       onClick={props.onClick}
       title="Toggle metronome"
     >
