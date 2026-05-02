@@ -461,6 +461,10 @@ const AppShell: Component<AppProps> = (props) => {
         session.items.some((it) => (it as { type: string }).type !== 'melody'))
     if (isSessionShaped && isPaused() === false) {
       setPendingSessionStart(true)
+      // FIXME: startSessionPlayback is unification of session playback, but if we set
+      //        do this here instead of pending start, we don't handle 'Once' and 'Repeat' modes
+      //        as the handlePlay() does that, not sure how to proceed, this has become too
+      //        complicated
       // startSessionPlayback()
     }
     // Single-melody playback: continue with normal flow
