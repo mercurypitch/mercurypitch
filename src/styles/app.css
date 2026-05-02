@@ -5987,7 +5987,6 @@ input:checked + .settings-slider:before {
   transition: all 0.15s;
 }
 
-
 .library-tab.active {
   color: var(--accent);
   border-bottom-color: var(--accent);

@@ -33,12 +33,13 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers): void {
       }
     }
 
-    // Escape → exit focus mode, or stop playback
+    // Escape → exit focus mode, or stop playback (only if running/paused)
     if (e.code === 'Escape' && !isTyping) {
-      e.preventDefault()
       if (uiStore.focusMode()) {
+        e.preventDefault()
         uiStore.exitFocusMode()
-      } else {
+      } else if (handlers.isPlaying() || handlers.isPaused()) {
+        e.preventDefault()
         handlers.stop()
         handlers.seekToStart()
       }

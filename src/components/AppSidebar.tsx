@@ -5,12 +5,13 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createSignal, For, Show } from 'solid-js'
+import { createMemo, createSignal, For, Show } from 'solid-js'
 import { CharacterIcons } from '@/components/CharacterIcons'
 import { LibraryTab } from '@/components/LibraryTab'
 import { NoteList } from '@/components/NoteList'
 import { PitchDisplay } from '@/components/PitchDisplay'
 import { StatsBars } from '@/components/StatsBars'
+import { ratingToScore } from '@/lib/practice-engine'
 import { KEY_OFFSETS, midiToFreq, midiToNote } from '@/lib/scale-data'
 import { activeTab as appActiveTab, appStore, sessionResults, showNotification, } from '@/stores'
 import { keyName, scaleType, setKeyName, setScaleType } from '@/stores'
@@ -67,6 +68,17 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
   }
   const isPracticeOrSettingsTab = () =>
     ['practice', 'settings'].includes(activeTab())
+
+  // Live score derived from noteResults — updates as each note is played.
+  const liveScore = createMemo(() => {
+    const results = props.noteResults()
+    if (results.length === 0) return null
+    let total = 0
+    for (const r of results) {
+      total += ratingToScore(r.rating)
+    }
+    return Math.round(total / results.length)
+  })
 
   return (
     <aside
@@ -273,7 +285,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
             <div id="score-display">
               <span id="score-label">Score:</span>
               <span id="score-value" class="live-score-value">
-                --
+                {liveScore() !== null ? `${liveScore()}%` : '--'}
               </span>
             </div>
 
