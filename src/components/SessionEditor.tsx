@@ -83,6 +83,7 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
     const items = sessionItems()
     if (items.length === 0) return 0
 
+    // eslint-disable-next-line solid/reactivity
     return items.reduce((maxBeat, item) => {
       const itemLength =
         item.type === 'rest'

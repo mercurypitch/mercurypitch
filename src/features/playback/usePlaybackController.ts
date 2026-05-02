@@ -548,6 +548,7 @@ export function usePlaybackController(
     // gate would skip — see Bug 3 in the plan).
     setPendingSessionStart(true)
 
+    // eslint-disable-next-line solid/reactivity
     resetPlaybackState().then(() => {
       handlePlay()
     })

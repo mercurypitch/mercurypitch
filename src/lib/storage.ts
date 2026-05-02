@@ -39,6 +39,7 @@ export function createPersistedSignal<T>(
 
   const [value, setValue] = createSignal<T>(initialValue)
 
+  // eslint-disable-next-line solid/reactivity
   const setValuePersisted = ((newValue: Parameters<Setter<T>>[0]) => {
     const nextValue =
       typeof newValue === 'function'

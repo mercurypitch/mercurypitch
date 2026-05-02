@@ -14,7 +14,7 @@ export const MetronomeButton: Component<MetronomeButtonProps> = (props) => {
     <button
       id="btn-metronome"
       class={`ctrl-btn metronome-btn ${props.active ? 'active' : ''}`}
-      onClick={props.onClick}
+      onClick={() => props.onClick()}
       title="Toggle metronome"
     >
       <svg viewBox="0 0 24 24" width="18" height="18">
