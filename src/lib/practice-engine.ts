@@ -314,7 +314,7 @@ export class PracticeEngine {
   /** Called when a new note starts */
   onNoteStart(note: MelodyNote, noteIndex: number): void {
     // Finalize the previous note's result
-    if (this.currentNoteIndex >= 0 && this.currentSamples.length > 0) {
+    if (this.currentNoteIndex >= 0) {
       this.finalizeNoteResult()
     }
 
@@ -326,7 +326,7 @@ export class PracticeEngine {
 
   /** Called when playback completes */
   onPlaybackComplete(): NoteResult[] | null {
-    if (this.currentNoteIndex >= 0 && this.currentSamples.length > 0) {
+    if (this.currentNoteIndex >= 0) {
       this.finalizeNoteResult()
     }
     return this.noteResults.length > 0 ? this.noteResults : null
@@ -378,7 +378,7 @@ export class PracticeEngine {
 
   endSession(): NoteResult[] {
     this.isPlaying = false
-    if (this.currentNoteIndex >= 0 && this.currentSamples.length > 0) {
+    if (this.currentNoteIndex >= 0) {
       this.finalizeNoteResult()
     }
     const results = [...this.noteResults]
