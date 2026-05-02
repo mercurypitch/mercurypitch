@@ -5,7 +5,7 @@
 import type { Component } from 'solid-js'
 import { createEffect, onCleanup, onMount } from 'solid-js'
 import { appStore } from '@/stores'
-import { colorCodeNotes, flameMode } from '@/stores/settings-store'
+import { colorCodeNotes, flameMode, showAccuracyPercent, } from '@/stores/settings-store'
 import type { MelodyItem, NoteResult, PitchSample, ScaleDegree } from '@/types'
 
 interface PitchCanvasProps {
@@ -32,41 +32,53 @@ interface PitchCanvasProps {
  *  score-stat-* and accuracy-band tints (see app.css) so the practice
  *  canvas feels consistent with the rest of the UI.  */
 function ratingColors(rating: NoteResult['rating']): {
-  fill: string
+  fillTop: string
+  fillBottom: string
   stroke: string
   text: string
+  badgeBg: string
 } {
   switch (rating) {
     case 'perfect':
       return {
-        fill: 'rgba(63,185,80,0.45)', // green
-        stroke: 'rgba(63,185,80,0.9)',
-        text: '#6cd680',
+        fillTop: 'rgba(63,185,80,0.85)',
+        fillBottom: 'rgba(40,130,55,0.7)',
+        stroke: 'rgba(63,185,80,0.95)',
+        text: '#b8f0c4',
+        badgeBg: 'rgba(63,185,80,0.45)',
       }
     case 'excellent':
       return {
-        fill: 'rgba(45,212,191,0.4)', // teal-green
-        stroke: 'rgba(45,212,191,0.85)',
-        text: '#56e1cb',
+        fillTop: 'rgba(45,212,191,0.8)',
+        fillBottom: 'rgba(30,150,135,0.65)',
+        stroke: 'rgba(45,212,191,0.95)',
+        text: '#b0f5ea',
+        badgeBg: 'rgba(45,212,191,0.45)',
       }
     case 'good':
       return {
-        fill: 'rgba(141,203,65,0.4)', // lime
-        stroke: 'rgba(141,203,65,0.85)',
-        text: '#a6dd6e',
+        fillTop: 'rgba(141,203,65,0.8)',
+        fillBottom: 'rgba(100,150,40,0.65)',
+        stroke: 'rgba(141,203,65,0.9)',
+        text: '#c4ec9a',
+        badgeBg: 'rgba(141,203,65,0.4)',
       }
     case 'okay':
       return {
-        fill: 'rgba(210,153,34,0.42)', // amber
+        fillTop: 'rgba(210,153,34,0.82)',
+        fillBottom: 'rgba(160,110,20,0.68)',
         stroke: 'rgba(210,153,34,0.9)',
-        text: '#e1b144',
+        text: '#f0d078',
+        badgeBg: 'rgba(210,153,34,0.45)',
       }
     case 'off':
     default:
       return {
-        fill: 'rgba(248,81,73,0.42)', // red
-        stroke: 'rgba(248,81,73,0.9)',
-        text: '#ff7a72',
+        fillTop: 'rgba(248,81,73,0.82)',
+        fillBottom: 'rgba(180,50,45,0.68)',
+        stroke: 'rgba(248,81,73,0.95)',
+        text: '#ffb0aa',
+        badgeBg: 'rgba(248,81,73,0.45)',
       }
   }
 }
@@ -457,31 +469,89 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
           isPlayed && colorCodeNotes() ? (playedRecord.rating ?? null) : null
         const playedPalette = playedRating ? ratingColors(playedRating) : null
 
-        // Note bar fill — much more opaque than before so the bars are
-        // clearly visible without playback running.
-        if (isActive) {
-          ctx.fillStyle = 'rgba(88,166,255,0.55)'
-        } else if (isPlayed && playedPalette) {
-          ctx.fillStyle = playedPalette.fill
-        } else if (isPlayed) {
-          // Color-code disabled — fall back to neutral green tint.
-          ctx.fillStyle = 'rgba(63,185,80,0.32)'
-        } else {
-          ctx.fillStyle = 'rgba(88,166,255,0.28)'
+        // Default palette
+        let palette = {
+          fillTop: 'rgba(60,110,190,0.75)',
+          fillBottom: 'rgba(35,70,130,0.6)',
+          stroke: 'rgba(88,166,255,0.65)',
+          text: 'rgba(220,235,255,0.92)',
+          badgeBg: 'rgba(88,166,255,0.3)',
         }
+        if (isActive) {
+          palette = {
+            fillTop: 'rgba(88,166,255,0.9)',
+            fillBottom: 'rgba(50,110,200,0.75)',
+            stroke: 'rgba(120,190,255,1)',
+            text: '#ffffff',
+            badgeBg: 'rgba(88,166,255,0.5)',
+          }
+        } else if (isPlayed && playedPalette) {
+          palette = playedPalette
+        } else if (isPlayed) {
+          palette = {
+            fillTop: 'rgba(63,185,80,0.8)',
+            fillBottom: 'rgba(40,130,55,0.65)',
+            stroke: 'rgba(63,185,80,0.8)',
+            text: '#b8f0c4',
+            badgeBg: 'rgba(63,185,80,0.4)',
+          }
+        }
+
+        const r = 6 // corner radius
+
+        // Solid dark base so grid lines never bleed through
+        ctx.beginPath()
+        ctx.roundRect(x1, y - boxHalf, bw, boxH, r)
+        ctx.fillStyle = 'rgba(13,17,23,0.92)'
         ctx.fill()
 
-        // Outline — clearer borders so notes don't blend into the background
-        if (isActive) {
-          ctx.strokeStyle = 'rgba(88,166,255,1)'
-        } else if (isPlayed && playedPalette) {
-          ctx.strokeStyle = playedPalette.stroke
-        } else if (isPlayed) {
-          ctx.strokeStyle = 'rgba(63,185,80,0.7)'
-        } else {
-          ctx.strokeStyle = 'rgba(88,166,255,0.6)'
-        }
-        ctx.lineWidth = isActive ? 2 : 1.25
+        // Fill with gradient on top of the opaque base
+        ctx.beginPath()
+        ctx.roundRect(x1, y - boxHalf, bw, boxH, r)
+        const fillGrad = ctx.createLinearGradient(
+          0,
+          y - boxHalf,
+          0,
+          y + boxHalf,
+        )
+        fillGrad.addColorStop(0, palette.fillTop)
+        fillGrad.addColorStop(1, palette.fillBottom)
+        ctx.fillStyle = fillGrad
+        ctx.fill()
+
+        // Inner highlight — a thin inset rounded rect that follows the
+        // corners properly, drawn inside the top half only to create a
+        // subtle "glass lip" without the straight-line artifact.
+        ctx.save()
+        ctx.beginPath()
+        ctx.roundRect(x1, y - boxHalf, bw, boxH, r)
+        ctx.clip()
+        const inset = 1.5
+        const hlGrad = ctx.createLinearGradient(
+          0,
+          y - boxHalf,
+          0,
+          y - boxHalf + boxH * 0.45,
+        )
+        hlGrad.addColorStop(0, 'rgba(255,255,255,0.18)')
+        hlGrad.addColorStop(1, 'rgba(255,255,255,0)')
+        ctx.beginPath()
+        ctx.roundRect(
+          x1 + inset,
+          y - boxHalf + inset,
+          bw - inset * 2,
+          boxH * 0.45,
+          Math.max(1, r - inset),
+        )
+        ctx.fillStyle = hlGrad
+        ctx.fill()
+        ctx.restore()
+
+        // Outline
+        ctx.beginPath()
+        ctx.roundRect(x1, y - boxHalf, bw, boxH, r)
+        ctx.strokeStyle = palette.stroke
+        ctx.lineWidth = isActive ? 1.5 : 1
         ctx.stroke()
 
         // ── Flame mode: progressive left→right burning fill. ──
@@ -505,18 +575,18 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
           // Clip everything below to the note's rounded rectangle so the
           // fire never bleeds outside the bar.
           ctx.beginPath()
-          ctx.roundRect(x1, y - boxHalf, bw, boxH, 5)
+          ctx.roundRect(x1, y - boxHalf, bw, boxH, 6)
           ctx.clip()
 
           // 1) Burned-zone background gradient (the part already burning).
           //    Goes from a dark-red ember tail on the LEFT to a bright
           //    yellow-white at the burn front on the RIGHT.
-          const fillGrad = ctx.createLinearGradient(x1, 0, burnX, 0)
-          fillGrad.addColorStop(0, 'rgba(120,20,10,0.55)')
-          fillGrad.addColorStop(0.4, 'rgba(220,80,20,0.6)')
-          fillGrad.addColorStop(0.75, 'rgba(255,160,40,0.7)')
-          fillGrad.addColorStop(1, 'rgba(255,255,200,0.8)')
-          ctx.fillStyle = fillGrad
+          const fillGradFire = ctx.createLinearGradient(x1, 0, burnX, 0)
+          fillGradFire.addColorStop(0, 'rgba(120,20,10,0.55)')
+          fillGradFire.addColorStop(0.4, 'rgba(220,80,20,0.6)')
+          fillGradFire.addColorStop(0.75, 'rgba(255,160,40,0.7)')
+          fillGradFire.addColorStop(1, 'rgba(255,255,200,0.8)')
+          ctx.fillStyle = fillGradFire
           ctx.fillRect(x1, y - boxHalf, bw * progress, boxH)
 
           // 2) Flickering flame "tongues" rising from the burned zone.
@@ -576,31 +646,66 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
           // outline (top, bottom, and left cap) — leaving the right edge
           // open so it doesn't draw a hard line at the burn front.
           ctx.beginPath()
-          ctx.moveTo(x1 + 4, y - boxHalf) // skip left round corner
+          ctx.moveTo(x1 + 6, y - boxHalf) // skip left round corner
           ctx.lineTo(x1 + bw * progress, y - boxHalf) // top
           ctx.moveTo(x1 + bw * progress, y + boxHalf)
-          ctx.lineTo(x1 + 4, y + boxHalf) // bottom
+          ctx.lineTo(x1 + 6, y + boxHalf) // bottom
           // Left cap (rounded) — only on first half so it eases in
           if (progress > 0.05) {
-            ctx.moveTo(x1, y - boxHalf + 4)
-            ctx.lineTo(x1, y + boxHalf - 4)
+            ctx.moveTo(x1, y - boxHalf + 6)
+            ctx.lineTo(x1, y + boxHalf - 6)
           }
           ctx.stroke()
           ctx.restore()
         }
 
-        if (bw >= 12) {
-          // Note name text — also more opaque, especially for played notes.
-          if (isActive) {
-            ctx.fillStyle = '#ffffff'
-          } else if (isPlayed && playedPalette) {
-            ctx.fillStyle = playedPalette.text
-          } else if (isPlayed) {
-            ctx.fillStyle = '#3fb950'
-          } else {
-            ctx.fillStyle = 'rgba(220,235,255,0.95)'
+        // Text and badges
+        const hasBadge =
+          showAccuracyPercent() && isPlayed && playedRecord !== null && bw > 65
+        const centerName = bw >= 12 && !hasBadge
+
+        if (hasBadge) {
+          // Note name left aligned
+          ctx.fillStyle = palette.text
+          ctx.font = `bold ${isActive ? 13 : 11}px sans-serif`
+          ctx.textAlign = 'left'
+          ctx.textBaseline = 'middle'
+          ctx.fillText(item.note.name, x1 + 10, y + 0.5)
+
+          // Accuracy badge right aligned
+          let pct = 0
+          if (playedRecord.rating !== 'off') {
+            pct = Math.round(Math.max(0, 100 - playedRecord.avgCents * 2))
           }
-          ctx.font = `${(isActive ? 'bold ' : '') + (isActive ? 13 : 11)}px sans-serif`
+          const textStr = `${pct}%`
+          ctx.font = `bold 10px ui-monospace, monospace`
+          const tw = ctx.measureText(textStr).width
+          const padX = 6
+          const badgeW = tw + padX * 2
+          const badgeH = 16
+          const badgeX = x1 + bw - badgeW - 4
+          const badgeY = y - badgeH / 2
+
+          // Draw badge pill
+          ctx.beginPath()
+          ctx.roundRect(badgeX, badgeY, badgeW, badgeH, badgeH / 2)
+          ctx.fillStyle = palette.badgeBg
+          ctx.fill()
+
+          // Badge outline
+          ctx.strokeStyle = 'rgba(255,255,255,0.1)'
+          ctx.lineWidth = 1
+          ctx.stroke()
+
+          // Badge text
+          ctx.fillStyle = 'rgba(255,255,255,0.9)'
+          ctx.textAlign = 'center'
+          ctx.textBaseline = 'middle'
+          ctx.fillText(textStr, badgeX + badgeW / 2, y + 0.5)
+          ctx.textBaseline = 'alphabetic'
+        } else if (centerName) {
+          ctx.fillStyle = palette.text
+          ctx.font = `bold ${isActive ? 13 : 11}px sans-serif`
           ctx.textAlign = 'center'
           ctx.textBaseline = 'middle'
           ctx.fillText(item.note.name, x1 + bw / 2, y + 0.5)

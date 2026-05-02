@@ -8,10 +8,8 @@ import { Show } from 'solid-js'
 import { MicButton } from '@/components'
 import { PrecCountButton } from '@/components/PrecCountButton'
 import { Tooltip } from '@/components/Tooltip'
-import { NOTE_NAMES } from '@/lib/scale-data'
 import { appStore } from '@/stores'
-import { bpm, keyName, micActive, micWaveVisible, playbackSpeed, scaleType, setBpm, setKeyName, setPlaybackSpeed, setScaleType, setSensitivity, settings, toggleMicWaveVisible, } from '@/stores'
-import { melodyStore } from '@/stores/melody-store'
+import { bpm, micActive, micWaveVisible, playbackSpeed, setBpm, setPlaybackSpeed, setSensitivity, settings, toggleMicWaveVisible, } from '@/stores'
 import type { SpacedRestMode } from '@/types'
 import { ControlGroup } from './ControlGroup'
 import { MetronomeGroup } from './MetronomeGroup'
@@ -294,12 +292,6 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
             {props.countInBeat()}
           </div>
         </Show>
-
-        <Show when={props.playMode() === 'practice'}>
-          <div id="run-indicator">
-            <span id="cycle-counter">⌛</span>
-          </div>
-        </Show>
       </div>
 
       {/* Secondary controls (hidden on mobile < 480px) */}
@@ -316,7 +308,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
                 props.playModeChange('once')
               }}
             >
-              Spaced
+              Once
             </button>
             <button
               id="btn-repeat"
@@ -334,7 +326,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
                 props.playModeChange('practice')
               }}
             >
-              Practice
+              Session
             </button>
           </div>
         </Show>
@@ -395,7 +387,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
         {/* Spaced mode selector — once-through playback with optional rests inserted between notes. */}
         <Show when={isPracticeTab() && props.playMode() === 'once'}>
           <div class="secondary-control-group practice-mode-control-group spaced-mode-control-group">
-            <label class="opt-label practice-mode-label">Spacing</label>
+            <label class="opt-label practice-mode-label">Rest</label>
             <select
               id="spaced-rest-mode"
               value={props.spacedRestMode?.() ?? 'none'}
@@ -586,58 +578,6 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
           />
         </ControlGroup>
 
-        {/* Key — editor tab only */}
-        <Show when={isEditorTab()}>
-          <ControlGroup>
-            <div class="key-group">
-              <label class="opt-label">Key:</label>
-              <select
-                id="key-select"
-                value={keyName()}
-                class="key-select"
-                onChange={(e) => {
-                  const key = e.currentTarget.value
-                  setKeyName(key)
-                  // Refresh scale with new key
-                  melodyStore.refreshScale(
-                    key,
-                    melodyStore.getCurrentOctave(),
-                    scaleType(),
-                  )
-                }}
-              >
-                {NOTE_NAMES.map((k) => (
-                  <option value={k}>{k}</option>
-                ))}
-              </select>
-            </div>
-          </ControlGroup>
-          <ControlGroup>
-            <div class="scale-group">
-              <label class="opt-label">Scale:</label>
-              <select
-                id="scale-select"
-                value={scaleType()}
-                class="scale-select"
-                onChange={(e) => {
-                  const scaleType = e.currentTarget.value
-                  setScaleType(scaleType)
-                  // Refresh scale with new scale type
-                  melodyStore.refreshScale(
-                    keyName(),
-                    melodyStore.getCurrentOctave(),
-                    scaleType,
-                  )
-                }}
-              >
-                {SCALE_TYPES.map((s) => (
-                  <option value={s.value}>{s.label}</option>
-                ))}
-              </select>
-            </div>
-          </ControlGroup>
-        </Show>
-
         {/* Save Melody — editor tab only */}
         <Show when={isEditorTab() && props.onSaveMelody}>
           <ControlGroup>
@@ -645,7 +585,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
               <button
                 id="save-melody-btn"
                 class={`save-melody-btn ${props.onSaveMelodyLabel !== null && props.onSaveMelodyLabel !== undefined && props.onSaveMelodyLabel.length > 0 ? 'with-label' : ''}`}
-                onClick={props.onSaveMelody}
+                onClick={() => props.onSaveMelody?.()}
                 title="Save melody to library"
               >
                 <svg viewBox="0 0 24 24" width="16" height="16">

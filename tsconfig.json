@@ -18,10 +18,22 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false
   },
-  "include": ["src/**/*.ts",
+  "include": [
+    "src/**/*.ts",
     "src/**/*.tsx",
     "src/**/*.d.ts",
-    "vitest.config.ts"
+    "vitest.config.ts",
+    "vite.config.ts",
+    "playwright.config.ts"
+  ],
+  "plugins": [
+    {
+      "name": "typescript-plugin-css-modules",
+      "options": {
+        "classnameTransform": "camelCaseOnly",
+        "goToDefinition": true
+      }
+    }
   ],
   "exclude": ["node_modules", "dist"]
 }

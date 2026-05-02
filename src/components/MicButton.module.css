@@ -3,43 +3,43 @@
    ============================================================ */
 
 .ctrlBtn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-    padding: 6px 12px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    background: var(--bg-tertiary);
-    color: var(--text-primary);
-    font-size: 0.78rem;
-    cursor: pointer;
-    transition: all 0.12s ease;
-    white-space: nowrap;
-    line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  white-space: nowrap;
+  line-height: 1;
 }
 
 .ctrlBtn:hover:not(:disabled) {
-    background: var(--border-light);
-    border-color: var(--accent);
+  background: var(--border-light);
+  border-color: var(--accent);
 }
 
 .ctrlBtn:active:not(:disabled) {
-    transform: translateY(1px);
+  transform: translateY(1px);
 }
 
 .ctrlBtn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .ctrlBtn.recording {
-    background: var(--red);
-    border-color: var(--red);
-    color: white;
+  background: var(--red);
+  border-color: var(--red);
+  color: white;
 }
 
 .ctrlBtn.recording:hover {
-    background: #d04a42;
-    border-color: #d04a42;
+  background: #d04a42;
+  border-color: #d04a42;
 }

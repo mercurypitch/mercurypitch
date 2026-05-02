@@ -5,17 +5,19 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createSignal, For, Show } from 'solid-js'
+import { createMemo, createSignal, For, Show } from 'solid-js'
 import { CharacterIcons } from '@/components/CharacterIcons'
 import { LibraryTab } from '@/components/LibraryTab'
 import { NoteList } from '@/components/NoteList'
 import { PitchDisplay } from '@/components/PitchDisplay'
 import { StatsBars } from '@/components/StatsBars'
+import { ratingToScore } from '@/lib/practice-engine'
 import { KEY_OFFSETS, midiToFreq, midiToNote } from '@/lib/scale-data'
 import { activeTab as appActiveTab, appStore, sessionResults, showNotification, } from '@/stores'
 import { keyName, scaleType, setKeyName, setScaleType } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import { showSidebarNoteList } from '@/stores/settings-store'
+import { customScales as customScalesMap, customScaleTypeId, } from '@/stores/settings-store'
 import type { MelodyItem, NoteResult, PitchResult } from '@/types'
 
 interface AppSidebarProps {
@@ -68,6 +70,17 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
   const isPracticeOrSettingsTab = () =>
     ['practice', 'settings'].includes(activeTab())
 
+  // Live score derived from noteResults — updates as each note is played.
+  const liveScore = createMemo(() => {
+    const results = props.noteResults()
+    if (results.length === 0) return null
+    let total = 0
+    for (const r of results) {
+      total += ratingToScore(r.rating)
+    }
+    return Math.round(total / results.length)
+  })
+
   return (
     <aside
       class={`app-sidebar${props.class !== undefined && props.class !== '' ? ` ${props.class}` : ''}`}
@@ -75,7 +88,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
       {/* Mobile close button */}
       <button
         class="sidebar-close-btn"
-        onClick={props.onClose}
+        onClick={() => props.onClose?.()}
         title="Close menu"
       >
         <svg viewBox="0 0 24 24" width="18" height="18">
@@ -235,6 +248,22 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
               <option value="pentatonic-minor">Pentatonic Minor</option>
               <option value="blues">Blues</option>
               <option value="chromatic">Chromatic</option>
+              {/* Custom scales saved by the user */}
+              <Show when={Object.keys(customScalesMap()).length > 0}>
+                <option disabled class="custom-scale-separator">
+                  {'─── Custom Scales ───'}
+                </option>
+                <For each={Object.keys(customScalesMap()).sort()}>
+                  {(name) => (
+                    <option
+                      class="custom-scale-option"
+                      value={customScaleTypeId(name, customScalesMap()[name])}
+                    >
+                      {`◆ ${name}`}
+                    </option>
+                  )}
+                </For>
+              </Show>
             </select>
             <button
               id="open-scale-builder"
@@ -273,7 +302,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
             <div id="score-display">
               <span id="score-label">Score:</span>
               <span id="score-value" class="live-score-value">
-                --
+                {liveScore() !== null ? `${liveScore()}%` : '--'}
               </span>
             </div>
 

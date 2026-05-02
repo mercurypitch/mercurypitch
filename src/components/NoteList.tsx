@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createMemo, For } from 'solid-js'
+import { createMemo, For, Show } from 'solid-js'
 import { centsToBand } from '@/lib/practice-engine'
 import type { MelodyItem, NoteResult } from '@/types'
 
@@ -28,11 +28,12 @@ export const NoteList: Component<NoteListProps> = (props) => {
   // present in the view melody for Spaced mode, but they do not produce
   // NoteResult entries, so we count only non-rest items.
   const bandMap = createMemo(() => {
-    const map = new Map<number, number | 'off'>()
+    const map = new Map<number, { band: number | 'off'; pct: number }>()
     for (let i = 0; i < props.noteResults().length; i++) {
       const r = props.noteResults()[i]
       const band = centsToBand(r.avgCents)
-      map.set(i, band)
+      const pct = Math.round(Math.max(0, 100 - r.avgCents * 2))
+      map.set(i, { band, pct })
     }
     return map
   })
@@ -47,20 +48,24 @@ export const NoteList: Component<NoteListProps> = (props) => {
     <div id="note-list">
       <For each={props.melody()}>
         {(item, index) => {
-          const absoluteIndex = index()
+          const absoluteIndex = () => index()
           const isRest = item.isRest === true
           const playableIndex = () =>
-            isRest ? -1 : playableIndexFor(absoluteIndex)
+            isRest ? -1 : playableIndexFor(absoluteIndex())
           const midi = item.note.midi
           const isActive = () => {
             if (!props.isPlaying()) return false
-            return absoluteIndex === props.currentNoteIndex()
+            return absoluteIndex() === props.currentNoteIndex()
           }
-          const band = () =>
+          const bandEntry = () =>
             playableIndex() >= 0 ? bandMap().get(playableIndex()) : undefined
           const bandCls = () => {
-            const b = band()
-            return b !== undefined ? BAND_CLASSES[b] : ''
+            const e = bandEntry()
+            return e !== undefined ? BAND_CLASSES[e.band] : ''
+          }
+          const pct = () => {
+            const e = bandEntry()
+            return e !== undefined ? e.pct : null
           }
 
           return (
@@ -77,6 +82,9 @@ export const NoteList: Component<NoteListProps> = (props) => {
                   ? `${item.duration} beat${item.duration === 1 ? '' : 's'}`
                   : `${item.note.freq.toFixed(0)}Hz`}
               </span>
+              <Show when={pct() !== null}>
+                <span class="note-accuracy-pct">{pct()}%</span>
+              </Show>
             </div>
           )
         }}

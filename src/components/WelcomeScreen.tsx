@@ -4,6 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createSignal } from 'solid-js'
+import { TierSelector } from '@/components/TierSelector'
 import { appStore } from '@/stores'
 
 interface WelcomeScreenProps {
@@ -181,6 +182,12 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
             </svg>
             Take a Tour
           </button>
+        </div>
+
+        {/* Quick Accuracy Tier Select */}
+        <div class="welcome-tier-select">
+          <p class="welcome-tier-label">Choose your accuracy level:</p>
+          <TierSelector />
         </div>
       </div>
     </div>

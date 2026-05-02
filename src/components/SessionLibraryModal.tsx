@@ -156,11 +156,11 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
 
   return (
     <Show when={props.isOpen}>
-      <div class="modal-overlay" onClick={props.close}>
+      <div class="modal-overlay" onClick={() => props.close()}>
         <div class="library-modal" onClick={(e) => e.stopPropagation()}>
           <div class="library-header">
             <h2>Practice Sessions</h2>
-            <button class="close-btn" onClick={props.close}>
+            <button class="close-btn" onClick={() => props.close()}>
               <svg viewBox="0 0 24 24" width="20" height="20">
                 <path
                   fill="currentColor"

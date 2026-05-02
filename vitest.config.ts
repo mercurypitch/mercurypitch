@@ -1,8 +1,9 @@
-import path from 'path';
-import solidPlugin from 'vite-plugin-solid';
-import { defineConfig } from 'vitest/config';
+import path from 'path'
+import solidPlugin from 'vite-plugin-solid'
+import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   plugins: [solidPlugin() as any],
   resolve: {
     alias: {
@@ -16,8 +17,13 @@ export default defineConfig({
     include: ['src/tests/**/*.test.ts', 'src/tests/**/*.test.tsx'],
     coverage: {
       reporter: ['text', 'json', 'html'],
-      include: ['src/lib/**/*.ts', 'src/stores/**/*.ts', 'src/components/**/*.tsx'],
+      include: [
+        'src/lib/**/*.ts',
+        'src/stores/**/*.ts',
+        'src/components/**/*.tsx',
+      ],
       exclude: ['src/tests/**', '**/*.d.ts'],
     },
   },
-});
+})
+

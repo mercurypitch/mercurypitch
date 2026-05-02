@@ -74,7 +74,11 @@ export const SessionBrowser: Component<SessionBrowserProps> = (props) => {
       <div class="modal-content session-browser">
         <div class="modal-header">
           <h2>Practice Sessions</h2>
-          <button class="modal-close-btn" onClick={props.onClose} title="Close">
+          <button
+            class="modal-close-btn"
+            onClick={() => props.onClose()}
+            title="Close"
+          >
             <svg viewBox="0 0 24 24" width="20" height="20">
               <path
                 fill="currentColor"

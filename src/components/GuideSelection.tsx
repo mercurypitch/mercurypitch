@@ -43,13 +43,13 @@ export const GuideSelection: Component<GuideSelectionProps> = (props) => {
 
   return (
     <Show when={props.isOpen}>
-      <div class="guide-overlay" onClick={props.onClose}>
+      <div class="guide-overlay" onClick={() => props.onClose()}>
         <div class="guide-selection" onClick={(e) => e.stopPropagation()}>
           <div class="guide-selection-header">
             <h2>Guide Tour</h2>
             <button
               class="guide-close-btn"
-              onClick={props.onClose}
+              onClick={() => props.onClose()}
               title="Close"
             >
               <svg viewBox="0 0 24 24" width="20" height="20">

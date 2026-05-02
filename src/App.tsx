@@ -4,6 +4,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
+import { For } from 'solid-js'
 import { createMemo, createSignal, onMount, Show } from 'solid-js'
 import { AppSidebar } from '@/components/AppSidebar'
 import { FocusMode } from '@/components/FocusMode'
@@ -35,11 +36,15 @@ import { registerE2EBridge } from '@/lib/e2e-bridge'
 import { melodyIndexAtBeat, melodyTotalBeats } from '@/lib/scale-data'
 import { buildScaleMelody, buildSessionPlaybackMelody, } from '@/lib/session-builder'
 import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
-import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initBpm, initPresets, initReverb, initSessionHistory, initSettings, initTheme, isLibraryModalOpen, isSessionLibraryModalOpen, keyName as keyNameSignal, micActive, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPendingSessionStart, setPlaybackSpeed, setScaleType, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, toggleMicWaveVisible, userSession, } from '@/stores'
+import { setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPlaybackSpeed, setScaleType, } from '@/stores'
+import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initBpm, initPresets, initReverb, initSessionHistory, initSettings, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, toggleMicWaveVisible, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import { getSession, templateToSession } from '@/stores/session-store'
+import { selectedCharacter, showPracticeResultPopup, } from '@/stores/settings-store'
 import type { MelodyItem, PlaybackMode, SpacedRestMode } from '@/types'
 import { Walkthrough, WalkthroughControl } from './components'
+import { AppErrorBoundary } from './components/AppErrorBoundary'
+import { CrashModal } from './components/CrashModal'
 import { GuideSelection } from './components/GuideSelection'
 import { WelcomeScreen } from './components/WelcomeScreen'
 
@@ -126,11 +131,11 @@ const AppShell: Component<AppProps> = (props) => {
   const { audioEngine, playbackRuntime, practiceEngine } = useEngines()
 
   // ── Local UI state ──────────────────────────────────────────
-  const activeTab = (): ActiveTab => activeTabSignal() as ActiveTab
+  const activeTab = (): ActiveTab => activeTabSignal()
   const focusMode = focusModeSignal
 
   const [sidebarOpen, setSidebarOpen] = createSignal(false)
-  const toggleSidebar = () => setSidebarOpen(!sidebarOpen())
+  const toggleSidebar = () => setSidebarOpen(sidebarOpen() === false)
   const closeSidebar = () => setSidebarOpen(false)
 
   const [showScaleBuilder, setShowScaleBuilder] = createSignal(false)
@@ -442,28 +447,11 @@ const AppShell: Component<AppProps> = (props) => {
     // Fresh user-triggered Play should always begin Repeat mode at
     // cycle 1/N. Otherwise after a completed N/N run, the next run
     // starts with currentRepeat still at N and stops after one pass.
-    if (!isPaused()) {
+    if (isPaused() === false) {
       setCurrentRepeat(1)
     }
 
-    // If the practice tab has a "session-shaped" playback loaded
-    // (multi-item OR contains non-melody types like rest/scale/preset),
-    // signal handlePlay() to enter session mode. A bare single-melody
-    // load stays single-melody, avoiding the silent session hijack
-    // documented as Bug 3 in the session-sequence-advancement plan.
-    if (!isPaused()) {
-      const session = userSession()
-      const isSessionShaped =
-        session !== null &&
-        (session.items.length > 1 ||
-          session.items.some(
-            (it) => (it as { type: string }).type !== 'melody',
-          ))
-      if (isSessionShaped) {
-        setPendingSessionStart(true)
-      }
-    }
-
+    // handlePlay() correctly branches internally based on playMode() === 'practice'.
     handlePlay()
   }
 
@@ -485,18 +473,26 @@ const AppShell: Component<AppProps> = (props) => {
     playbackRuntime.on('noteStart', (e) => {
       const { note: item, index } = e
       melodyStore.setCurrentNoteIndex(index)
-      setTargetPitch(item.note.freq)
-      if (activeTab() === 'practice') {
-        practiceEngine.onNoteStart(item.note, index)
-      }
+
       // Suppress audio for rest items. Session rests reuse the runtime
       // (so the playhead can advance visibly across the rest bar),
       // which means PlaybackRuntime emits noteStart for the synthetic
       // rest MelodyItem. Without this guard the placeholder note would
       // play at full volume during what's supposed to be silent.
       // Spaced-rest items take the same path and benefit from the same
-      // guard.
-      if ((item as { isRest?: boolean }).isRest === true) return
+      // guard. We also avoid passing rests to the practiceEngine.
+      const isRestItem = (item as { isRest?: boolean }).isRest === true
+
+      if (!isRestItem) {
+        setTargetPitch(item.note.freq)
+        if (activeTab() === 'practice') {
+          practiceEngine.onNoteStart(item.note, index)
+        }
+      } else {
+        setTargetPitch(null)
+      }
+
+      if (isRestItem) return
       if (
         !recording.isRecording() &&
         (isPlaying() || editorPlaybackState() === 'playing')
@@ -535,16 +531,18 @@ const AppShell: Component<AppProps> = (props) => {
 
     playbackRuntime.on(
       'metronome',
+      // eslint-disable-next-line solid/reactivity
       (e: { beat?: number; isDownbeat?: boolean }) => {
         const isCounting =
           playbackRuntime.getCountIn() > 0 &&
           playbackRuntime.getCurrentBeat() < playbackRuntime.getCountIn()
-        if (isCounting || metronomeEnabled()) {
+        if (isCounting || metronomeEnabled() === true) {
           audioEngine.playMetronomeClick(e?.isDownbeat ?? false)
         }
       },
     )
 
+    // eslint-disable-next-line solid/reactivity
     playbackRuntime.on('complete', () => {
       practiceEngine.onPlaybackComplete()
       const mode = playMode()
@@ -701,6 +699,38 @@ const AppShell: Component<AppProps> = (props) => {
             <p class="subtitle">Voice Pitch Practice</p>
           </div>
           <div class="header-right">
+            {/* Current melody indicator pill */}
+            <Show when={melodyStore.getCurrentMelody()}>
+              <button
+                class="melody-indicator-pill"
+                onClick={() => void handleTabChange('practice')}
+                title={`Now loaded: ${melodyStore.getCurrentMelody()?.name ?? 'Untitled'}`}
+              >
+                <svg
+                  class="melody-indicator-icon"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M9 18V5l12-2v13" />
+                  <circle cx="6" cy="18" r="3" />
+                  <circle cx="18" cy="16" r="3" />
+                </svg>
+                <span class="melody-indicator-info">
+                  <span class="melody-indicator-name">
+                    {melodyStore.getCurrentMelody()?.name ?? 'Untitled'}
+                  </span>
+                  <span class="melody-indicator-character">
+                    {selectedCharacter()}
+                  </span>
+                </span>
+              </button>
+            </Show>
             {/* Walkthrough Control Button */}
             <WalkthroughControl
               showOnStart={false}
@@ -739,7 +769,7 @@ const AppShell: Component<AppProps> = (props) => {
         <div class="main-layout" id="main-layout">
           {/* Shared sidebar — with mobile open class */}
           <AppSidebar
-            class={sidebarOpen() ? 'open' : ''}
+            class={sidebarOpen() === true ? 'open' : ''}
             onPresetLoad={(_name) => {
               // Presets now handled by melodyStore/LibraryModal
             }}
@@ -781,7 +811,7 @@ const AppShell: Component<AppProps> = (props) => {
                   onSpeedChange={setPlaybackSpeed}
                   metronomeEnabled={() => metronomeEnabled()}
                   onMetronomeToggle={() =>
-                    setMetronomeEnabled(!metronomeEnabled())
+                    setMetronomeEnabled(metronomeEnabled() === false)
                   }
                   playMode={() => playMode()}
                   playModeChange={handlePracticeModeChange}
@@ -865,7 +895,7 @@ const AppShell: Component<AppProps> = (props) => {
                 onSpeedChange={setPlaybackSpeed}
                 metronomeEnabled={() => metronomeEnabled()}
                 onMetronomeToggle={() =>
-                  setMetronomeEnabled(!metronomeEnabled())
+                  setMetronomeEnabled(metronomeEnabled() === false)
                 }
                 playMode={() => 'once'}
                 playModeChange={() => {}}
@@ -985,7 +1015,7 @@ const AppShell: Component<AppProps> = (props) => {
       </Show>
 
       {/* Score overlay */}
-      <Show when={practiceResult() !== null}>
+      <Show when={showPracticeResultPopup() && practiceResult() !== null}>
         <div class="overlay" onClick={closeScoreOverlay}>
           <div
             id="score-card"
@@ -1073,9 +1103,8 @@ const AppShell: Component<AppProps> = (props) => {
               <div id="score-history">
                 <h3 class="history-title">Recent Progress</h3>
                 <div class="history-chart">
-                  {getSessionHistory()
-                    .slice(0, 10)
-                    .map((session) => (
+                  <For each={getSessionHistory().slice(0, 10)}>
+                    {(session) => (
                       <div
                         class="history-bar"
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1083,7 +1112,8 @@ const AppShell: Component<AppProps> = (props) => {
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         title={`Score: ${(session as any).score}%`}
                       />
-                    ))}
+                    )}
+                  </For>
                 </div>
               </div>
             </Show>
@@ -1096,7 +1126,7 @@ const AppShell: Component<AppProps> = (props) => {
         onClose={() => setShowScaleBuilder(false)}
       />
 
-      <Show when={sessionSummary() !== null}>
+      <Show when={showPracticeResultPopup() && sessionSummary() !== null}>
         <div class="overlay" onClick={() => setSessionSummary(null)}>
           <div
             id="session-summary-card"
@@ -1139,7 +1169,7 @@ const AppShell: Component<AppProps> = (props) => {
 
       <Notifications />
 
-      <Show when={isLibraryModalOpen()}>
+      <Show when={isLibraryModalOpenSignal()}>
         <LibraryModal
           isOpen={true}
           close={() => hideLibrary()}
@@ -1147,7 +1177,7 @@ const AppShell: Component<AppProps> = (props) => {
         />
       </Show>
 
-      <Show when={isSessionLibraryModalOpen()}>
+      <Show when={isSessionLibraryModalOpenSignal()}>
         <SessionLibraryModal isOpen={true} close={() => hideSessionLibrary()} />
       </Show>
 
@@ -1176,8 +1206,11 @@ const AppShell: Component<AppProps> = (props) => {
 
 export const App: Component<AppProps> = (props) => {
   return (
-    <EngineProvider>
-      <AppShell {...props} />
-    </EngineProvider>
+    <AppErrorBoundary>
+      <EngineProvider>
+        <AppShell {...props} />
+        <CrashModal />
+      </EngineProvider>
+    </AppErrorBoundary>
   )
 }

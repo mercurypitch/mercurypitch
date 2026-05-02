@@ -637,11 +637,9 @@ const DEFAULT_BPM = 80
 // Scale - SolidJS Signals
 // ============================================================
 
-const _currentScale = createSignal<ScaleDegree[]>(
+export const [currentScale, setCurrentScale] = createSignal<ScaleDegree[]>(
   buildMultiOctaveScale(DEFAULT_KEY, DEFAULT_OCTAVE, 2, DEFAULT_SCALE_TYPE),
 )
-export const currentScale = _currentScale[0]
-export const setCurrentScale = _currentScale[1]
 
 // Octave state - use function wrapper to avoid circular dependencies
 let _octave = DEFAULT_OCTAVE
@@ -687,13 +685,11 @@ export const setOctave = (octave: number): void => {
   )
 }
 
-const _currentNoteIndex = createSignal<number>(0)
-export const currentNoteIndex = _currentNoteIndex[0]
-export const setCurrentNoteIndex = _currentNoteIndex[1]
+export const [currentNoteIndex, setCurrentNoteIndex] = createSignal<number>(0)
 
-// Active session ID tracking
-const _activeSessionId = createSignal<string | null>(null)
-export const getActiveSessionId = _activeSessionId[0]
+export const [getActiveSessionId, _setActiveSessionId] = createSignal<
+  string | null
+>(null)
 
 function _restoreActiveSessionId(): void {
   try {
@@ -708,7 +704,7 @@ function _restoreActiveSessionId(): void {
 }
 
 export const setActiveSessionId = (id: string | null) => {
-  _activeSessionId[1](id)
+  _setActiveSessionId(id)
   try {
     if (id !== null) {
       localStorage.setItem(STORAGE_KEY_ACTIVE_SESSION_ID, id)
@@ -1462,4 +1458,5 @@ export const melodyStore = {
 // are declared. (See comment near line ~120 for TDZ explanation.)
 // ============================================================
 _restoreActiveSessionId()
+// eslint-disable-next-line solid/reactivity
 _restoreCurrentMelodyId()

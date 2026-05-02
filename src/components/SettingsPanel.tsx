@@ -3,11 +3,17 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createMemo, createSignal, Show } from 'solid-js'
+import { createMemo, createSignal, For, Show } from 'solid-js'
+import { TierSelector } from '@/components/TierSelector'
+import { APP_VERSION } from '@/lib/defaults'
+import { IS_DEV } from '@/lib/defaults'
 import { appStore } from '@/stores'
 import { adsr, playbackSpeed, setPlaybackSpeed, setSensitivity, settings, } from '@/stores'
-import { characterSounds, colorCodeNotes, flameMode, selectedCharacter, setCharacterSounds, setColorCodeNotes, setFlameMode, setShowSidebarNoteList, showSidebarNoteList, } from '@/stores/settings-store'
-import { APP_VERSION } from '@/version'
+import type { PitchAlgorithm } from '@/stores/settings-store'
+import type { PitchBufferSize } from '@/stores/settings-store'
+import { characterSounds, colorCodeNotes, flameMode, selectedCharacter, setCharacterSounds, setColorCodeNotes, setFlameMode, setShowAccuracyPercent, setShowPracticeResultPopup, setShowSidebarNoteList, showAccuracyPercent, showPracticeResultPopup, showSidebarNoteList, } from '@/stores/settings-store'
+import { pitchAlgorithm, setPitchAlgorithm } from '@/stores/settings-store'
+import { PITCH_BUFFER_DESCRIPTIONS, PITCH_BUFFER_LABELS, PITCH_BUFFER_SIZES, pitchBufferSize, setPitchBufferSize, } from '@/stores/settings-store'
 
 export const SettingsPanel: Component = () => {
   const s = () => settings()
@@ -55,6 +61,8 @@ export const SettingsPanel: Component = () => {
     window.location.reload()
   }
 
+  const [testCrash, setTestCrash] = createSignal(false)
+
   return (
     <div class="settings-panel">
       <div class="settings-content">
@@ -82,6 +90,70 @@ export const SettingsPanel: Component = () => {
               <option value="noisy">High Noise (Outside)</option>
             </select>
           </div>
+        </div>
+
+        {/* Accuracy Tier Section */}
+        <div class="settings-section">
+          <h3 class="settings-section-title">Accuracy Tier</h3>
+          <div class="settings-divider" />
+          <p class="settings-desc">
+            Choose your skill level. Perfect pitch means being within the
+            specified number of cents of the target note.
+          </p>
+
+          <TierSelector class="settings-tier-selector" />
+        </div>
+
+        {/* Pitch Algorithm Section */}
+        <div class="settings-section">
+          <h3 class="settings-section-title">Pitch Algorithm</h3>
+          <div class="settings-divider" />
+          <p class="settings-desc">
+            Select the pitch detection algorithm. YIN is the classic,
+            well-tested default. MPM (McLeod) offers better harmonic handling
+            and fewer octave errors on complex timbres.
+          </p>
+
+          <div class="settings-row">
+            <label for="pitch-algorithm-select">Algorithm</label>
+            <select
+              id="pitch-algorithm-select"
+              value={pitchAlgorithm()}
+              onChange={(e) => {
+                setPitchAlgorithm(e.currentTarget.value as PitchAlgorithm)
+              }}
+            >
+              <option value="yin">YIN (Classic)</option>
+              <option value="mpm">MPM (McLeod)</option>
+            </select>
+          </div>
+
+          <Show when={pitchAlgorithm() === 'mpm'}>
+            <div class="settings-row">
+              <label>Buffer Size</label>
+              <div class="pitch-buffer-pills">
+                <For each={PITCH_BUFFER_SIZES}>
+                  {(size) => (
+                    <button
+                      class={`pitch-buffer-pill${pitchBufferSize() === size ? ' pitch-buffer-pill-active' : ''}`}
+                      onClick={() =>
+                        setPitchBufferSize(size as PitchBufferSize)
+                      }
+                      title={PITCH_BUFFER_DESCRIPTIONS[size]}
+                    >
+                      {PITCH_BUFFER_LABELS[size]}
+                    </button>
+                  )}
+                </For>
+              </div>
+            </div>
+            <p
+              class="settings-desc"
+              style="margin-top: 4px; font-size: 0.7rem;"
+            >
+              {PITCH_BUFFER_DESCRIPTIONS[pitchBufferSize()]}
+            </p>
+          </Show>
         </div>
 
         {/* Pitch Detection Section */}
@@ -444,6 +516,25 @@ export const SettingsPanel: Component = () => {
           </div>
 
           <div class="settings-row">
+            <label for="vis-practice-result-popup">Practice Result Popup</label>
+            <label class="settings-toggle">
+              <input
+                type="checkbox"
+                id="vis-practice-result-popup"
+                checked={showPracticeResultPopup()}
+                onChange={(e) => {
+                  setShowPracticeResultPopup(e.currentTarget.checked)
+                }}
+              />
+              <span class="settings-slider" />
+            </label>
+            <small>
+              Show a score overlay after each practice run or session completes.
+              When off, results are still recorded in history.
+            </small>
+          </div>
+
+          <div class="settings-row">
             <label for="vis-theme">Theme</label>
             <label>
               <select
@@ -504,6 +595,24 @@ export const SettingsPanel: Component = () => {
             <small>
               Color-code played notes based on pitch accuracy (Green: Perfect,
               Teal: Excellent, etc).
+            </small>
+          </div>
+
+          <div class="settings-row">
+            <label for="vis-accuracy-pct">Show Accuracy Percentage</label>
+            <label class="settings-toggle">
+              <input
+                type="checkbox"
+                id="vis-accuracy-pct"
+                checked={showAccuracyPercent()}
+                onChange={(e) => {
+                  setShowAccuracyPercent(e.currentTarget.checked)
+                }}
+              />
+              <span class="settings-slider" />
+            </label>
+            <small>
+              Display a numeric accuracy percentage on each played note.
             </small>
           </div>
 
@@ -707,6 +816,43 @@ export const SettingsPanel: Component = () => {
             </div>
           </Show>
         </div>
+
+        {/* Developer Tools Section */}
+        <Show when={IS_DEV}>
+          {testCrash() &&
+            (() => {
+              throw new Error('Dev mode injected render crash')
+            })()}
+          <div class="settings-section settings-danger-zone">
+            <h3 class="settings-section-title" style="color: var(--yellow);">
+              Developer Tools
+            </h3>
+            <div
+              class="settings-divider"
+              style="background: linear-gradient(90deg, var(--yellow), transparent);"
+            />
+            <p class="settings-desc">Development-only tools for debugging.</p>
+
+            <div class="settings-row danger-row">
+              <div class="danger-content">
+                <label class="danger-label" style="color: var(--yellow);">
+                  Test Crash Screen
+                </label>
+                <small class="danger-desc">
+                  Inject a rendering error to test the global CrashModal
+                  boundary.
+                </small>
+              </div>
+              <button
+                class="danger-btn"
+                style="background: rgba(220, 160, 0, 0.1); color: var(--yellow); border-color: var(--yellow);"
+                onClick={() => setTestCrash(true)}
+              >
+                Trigger Crash
+              </button>
+            </div>
+          </div>
+        </Show>
 
         {/* About Section */}
         <div class="settings-section">

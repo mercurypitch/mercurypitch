@@ -7,6 +7,7 @@ import { createEffect, createMemo, createSignal, For, Show } from 'solid-js'
 import { NOTE_NAMES } from '@/lib/scale-data'
 import { keyName, setScaleType, showNotification } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
+import { customScales, customScaleTypeId, deleteCustomScale, saveCustomScale, } from '@/stores/settings-store'
 import type { NoteName } from '@/types'
 
 interface ScaleBuilderProps {
@@ -17,9 +18,6 @@ interface ScaleBuilderProps {
 export const ScaleBuilder: Component<ScaleBuilderProps> = (props) => {
   const [customNotes, setCustomNotes] = createSignal<Set<string>>(new Set())
   const [scaleName, setScaleName] = createSignal<string>('My Scale')
-  const [savedScales, setSavedScales] = createSignal<Record<string, string[]>>(
-    {},
-  )
 
   // Current base notes (C through B)
   const baseNotes = [
@@ -36,18 +34,6 @@ export const ScaleBuilder: Component<ScaleBuilderProps> = (props) => {
     'A#',
     'B',
   ]
-
-  // Load custom scales from storage on open
-  const loadSavedScales = () => {
-    try {
-      const stored = localStorage.getItem('pitchperfect_custom_scales')
-      if (stored !== null && stored !== '') {
-        setSavedScales(JSON.parse(stored))
-      }
-    } catch {
-      /* empty */
-    }
-  }
 
   // Toggle a note in the custom scale
   const toggleNote = (note: string) => {
@@ -70,78 +56,80 @@ export const ScaleBuilder: Component<ScaleBuilderProps> = (props) => {
     setCustomNotes(new Set<string>())
   }
 
-  // Save the custom scale
+  // Save the custom scale (without applying)
   const saveScale = () => {
     const name = scaleName().trim() || 'Custom Scale'
     if (customNotes().size === 0) return
-
-    const updated = { ...savedScales(), [name]: Array.from(customNotes()) }
-    setSavedScales(updated)
-    try {
-      localStorage.setItem(
-        'pitchperfect_custom_scales',
-        JSON.stringify(updated),
-      )
-    } catch {
-      /* empty */
-    }
-
+    saveCustomScale(name, Array.from(customNotes()))
     showNotification(`Scale "${name}" saved`, 'success')
   }
 
-  // Load a saved scale
+  // Load a saved scale into the builder
   const loadScale = (name: string) => {
-    const scale = savedScales()[name]
+    const scales = customScales()
+    const scale = scales[name]
     if (scale !== null && scale !== undefined) {
       setScaleName(name)
       setCustomNotes(new Set(scale))
     }
   }
 
-  // Delete a saved scale
-  const deleteScale = (name: string) => {
-    const updated = { ...savedScales() }
-    delete updated[name]
-    setSavedScales(updated)
+  // Delete a saved scale; if it's the active one, revert to major
+  const handleDeleteScale = (name: string) => {
+    deleteCustomScale(name)
+
+    // If the deleted scale was the active custom scale, revert to major
     try {
-      localStorage.setItem(
-        'pitchperfect_custom_scales',
-        JSON.stringify(updated),
-      )
+      const current = localStorage.getItem('pitchperfect_active_custom_scale')
+      if (current !== null && current.includes(`:${name}:`)) {
+        localStorage.removeItem('pitchperfect_active_custom_scale')
+        setScaleType('major')
+        melodyStore.refreshScale(
+          keyName(),
+          melodyStore.getCurrentOctave(),
+          'major',
+        )
+        showNotification('Reverted to Major scale', 'info')
+      }
     } catch {
       /* empty */
     }
   }
 
-  // Apply the custom scale to the app
+  // Apply the custom scale — also auto-saves it
   const applyScale = () => {
     if (customNotes().size < 2) {
       showNotification('Select at least 2 notes for a scale', 'warning')
       return
     }
 
-    // Create a custom scale type name
-    const customName = `custom:${scaleName().trim()}:${Array.from(customNotes()).join(',')}`
+    const name = scaleName().trim() || 'Custom Scale'
+    const notes = Array.from(customNotes())
 
-    // Store custom scale info in localStorage for refreshScale to use
+    // Auto-save so it appears in the dropdown
+    saveCustomScale(name, notes)
+
+    const customId = customScaleTypeId(name, notes)
+
+    // Store active custom scale marker
     try {
-      localStorage.setItem('pitchperfect_active_custom_scale', customName)
+      localStorage.setItem('pitchperfect_active_custom_scale', customId)
     } catch {
       /* empty */
     }
 
-    // Update scale type (will use custom logic)
-    setScaleType(customName)
+    // Update scale type (sidebar dropdown reacts to this)
+    setScaleType(customId)
 
     // Refresh the scale
     melodyStore.refreshScale(
       keyName(),
       melodyStore.getCurrentOctave(),
-      customName,
+      customId,
     )
 
     props.onClose()
-    showNotification(`Custom scale "${scaleName()}" applied`, 'success')
+    showNotification(`Custom scale "${name}" applied`, 'success')
   }
 
   // Preview the scale as a list of notes
@@ -155,7 +143,6 @@ export const ScaleBuilder: Component<ScaleBuilderProps> = (props) => {
   })
 
   const handleOpen = () => {
-    loadSavedScales()
     // Try to load current custom scale if active
     try {
       const current = localStorage.getItem('pitchperfect_active_custom_scale')
@@ -266,11 +253,11 @@ export const ScaleBuilder: Component<ScaleBuilderProps> = (props) => {
             </div>
 
             {/* Saved scales */}
-            <Show when={Object.keys(savedScales()).length > 0}>
+            <Show when={Object.keys(customScales()).length > 0}>
               <div class="saved-scales">
                 <h4>Saved Scales</h4>
                 <div class="saved-scales-list">
-                  <For each={Object.keys(savedScales()).sort()}>
+                  <For each={Object.keys(customScales()).sort()}>
                     {(name) => (
                       <div class="saved-scale-item">
                         <button
@@ -284,7 +271,7 @@ export const ScaleBuilder: Component<ScaleBuilderProps> = (props) => {
                         <button
                           class="btn-delete"
                           onClick={() => {
-                            deleteScale(name)
+                            handleDeleteScale(name)
                           }}
                           title="Delete"
                         >

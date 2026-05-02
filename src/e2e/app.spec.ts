@@ -55,29 +55,22 @@ test.describe('PitchPerfect App', () => {
 
   test('tab navigation switches content', async ({ page }) => {
     await dismissOverlays(page)
-    // Click Editor tab - use evaluate to directly call the store method
+    // Use __pp.appStore (always available) or __appStore fallback
     await page.evaluate(() => {
-      const w = window as Window & {
-        __appStore?: { setActiveTab: (tab: string) => void }
-      }
-      if (w.__appStore) {
-        w.__appStore.setActiveTab('editor')
-      }
+      const w = window as any
+      const store = w.__pp?.appStore ?? w.__appStore
+      if (store) store.setActiveTab('editor')
     })
-    await page.waitForTimeout(1000)
+    await page.waitForTimeout(500)
     // Check that editor content is visible (piano roll toolbar)
     await expect(page.locator('.roll-toolbar')).toBeVisible({ timeout: 5000 })
 
-    // Click Settings tab - use evaluate to directly call the store method
     await page.evaluate(() => {
-      const w = window as Window & {
-        __appStore?: { setActiveTab: (tab: string) => void }
-      }
-      if (w.__appStore) {
-        w.__appStore.setActiveTab('settings')
-      }
+      const w = window as any
+      const store = w.__pp?.appStore ?? w.__appStore
+      if (store) store.setActiveTab('settings')
     })
-    await page.waitForTimeout(2000)
+    await page.waitForTimeout(500)
     // Check that Settings content is visible (ADSR section)
     await expect(
       page.locator(
@@ -85,16 +78,12 @@ test.describe('PitchPerfect App', () => {
       ),
     ).toBeVisible({ timeout: 5000 })
 
-    // Click Practice tab - use evaluate to directly call the store method
     await page.evaluate(() => {
-      const w = window as Window & {
-        __appStore?: { setActiveTab: (tab: string) => void }
-      }
-      if (w.__appStore) {
-        w.__appStore.setActiveTab('practice')
-      }
+      const w = window as any
+      const store = w.__pp?.appStore ?? w.__appStore
+      if (store) store.setActiveTab('practice')
     })
-    await page.waitForTimeout(1000)
+    await page.waitForTimeout(500)
     // Check that Practice content is visible (BPM control)
     await expect(page.locator('.tempo-group')).toBeVisible({ timeout: 5000 })
   })
@@ -239,7 +228,7 @@ test.describe('PitchPerfect App', () => {
     await page.locator('#tab-editor').click()
     const recordBtn = page.locator('#record-btn')
     await expect(recordBtn).toBeVisible()
-    await expect(recordBtn).toContainText('Record')
+    await expect(recordBtn).toContainText('RECORD')
     // Clicking should attempt to start recording (mic permission may block, but button state changes)
     await recordBtn.click()
     await page.waitForTimeout(500)
@@ -334,7 +323,7 @@ test.describe('PitchPerfect App', () => {
     // BPM control is in the practice tab content area
     await expect(page.locator('.tempo-group')).toBeVisible()
     await expect(page.locator('#tempo')).toBeVisible()
-    await expect(page.locator('#tempo-value')).toBeVisible()
+    await expect(page.locator('#bpm-input')).toBeVisible()
   })
 
   test('octave shift buttons change octave value', async ({ page }) => {

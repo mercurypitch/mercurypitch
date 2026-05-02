@@ -8,7 +8,7 @@ import type { PlaybackState } from '@/lib/playback-runtime'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { keyTonicFreq, melodyTotalBeats } from '@/lib/scale-data'
 import { buildSessionItemMelody } from '@/lib/session-builder'
-import { bpm, countIn, keyName, pendingSessionStart, scaleType, sessionMode, setActiveTab, setActiveUserSession, setBpm, setKeyName, setPendingSessionStart, setScaleType, setSessionActive, setSessionItemIndex, setSessionItemRepeat, setSessionMode, settings, startPracticeSession, userSession, } from '@/stores'
+import { bpm, countIn, keyName, scaleType, sessionMode, setActiveTab, setActiveUserSession, setBpm, setKeyName, setScaleType, setSessionActive, setSessionItemIndex, setSessionItemRepeat, setSessionMode, settings, startPracticeSession, userSession, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import { playback } from '@/stores/playback-store'
 import type { PlaybackSession } from '@/types'
@@ -232,31 +232,11 @@ export function usePlaybackController(
     // handleSessionItemComplete (wired in App.tsx). Rest items are
     // handled inside loadNextSessionItem (silent pause, see
     // useSessionSequencer.ts).
-    // ── Session-mode entry gate ─────────────────────────────────
-    // Two ways we enter session mode here:
-    //   (a) `pendingSessionStart()` was set by an explicit caller
-    //       (Library "Play All", session template launcher, practice
-    //       tab Play-with-session button). This is the authoritative
-    //       signal — the user *meant* to start a session.
-    //   (b) `sessionMode()` is already true and we're re-priming
-    //       between items (defensive — currently we don't reach
-    //       handlePlay between items, but a future per-item dispatch
-    //       might).
-    //
-    // Without (a), a stray `userSession()` left over from a previous
-    // edit would silently hijack a single-melody Practice Play. See
-    // `assets/plans/session-sequence-advancement.md` Bug 3.
-    const wantsSessionStart = pendingSessionStart()
-    if (wantsSessionStart) setPendingSessionStart(false)
-
-    if (playMode() === 'practice' && (wantsSessionStart || sessionMode())) {
+    if (playMode() === 'practice') {
       const activeSession = userSession()
       if (activeSession && activeSession.items.length > 0) {
-        // Always (re)seed the practice session when an explicit start
-        // was requested — otherwise Library "Play All" of session B
-        // while session A is still mid-flight would leave the
-        // PracticeSession cursor pointing at A's items.
-        if (wantsSessionStart || !sessionMode()) {
+        // Always (re)seed the practice session
+        if (!sessionMode()) {
           setSessionMode(true)
           setSessionActive(true)
           startPracticeSession(activeSession)
@@ -288,13 +268,11 @@ export function usePlaybackController(
                 isRest: true,
               },
             ]
-            melodyStore.setMelody(restMelody)
             setPlaybackDisplayMelody(restMelody)
             setPlaybackDisplayBeats(restBeats)
             forcedDurationBeats = restBeats
           } else {
             const itemMelody = buildSessionItemMelody(firstItem)
-            melodyStore.setMelody(itemMelody)
             setPlaybackDisplayMelody(itemMelody)
             setPlaybackDisplayBeats(melodyTotalBeats(itemMelody))
             forcedDurationBeats = melodyTotalBeats(itemMelody)
@@ -390,7 +368,7 @@ export function usePlaybackController(
     // Play feels clean. resetPlaybackState (called on tab switch) does
     // a hard reset of everything, which is intentional for tab switches.
     playbackRuntime.stop()
-    practiceEngine.endSession()
+    const noteResults = practiceEngine.endSession()
     audioEngine.stopTone()
     audioEngine.stopAllNotes()
     audioRegistry.stopAll()
@@ -398,6 +376,10 @@ export function usePlaybackController(
     setIsPaused(false)
     playback.resetPlayback()
     setSessionActive(false)
+
+    // Check sessionMode before we reset it
+    const wasInSession = sessionMode()
+
     // Reset sessionMode so the next Play in Practice mode re-enters
     // the per-item PracticeSession setup branch in handlePlay. Without
     // this, a Stop → Play cycle leaves sessionMode=true and handlePlay
@@ -405,6 +387,17 @@ export function usePlaybackController(
     setSessionMode(false)
     setEditorPlaybackState('stopped')
     const result = endPracticeSession()
+
+    // If we're not running a multi-item session but we just finished a practice run
+    // with actual notes, calculate and display the single-run summary.
+    if (!wasInSession && noteResults.length > 0) {
+      const pr = practiceEngine.calculatePracticeResult(
+        noteResults,
+        melodyStore.getCurrentMelody()?.name ?? 'Practice Run',
+        playMode(),
+      )
+      setPracticeResult(pr)
+    }
 
     // Yield one microtask + one rAF so the browser actually processes
     // pending audio teardown (oscillator stop, gain ramp, AudioContext
@@ -543,11 +536,7 @@ export function usePlaybackController(
     setPlayMode('practice')
     setActiveTab('practice')
 
-    // Mark the upcoming Play as a deliberate session start so
-    // `handlePlay` enters session mode (otherwise the session-priming
-    // gate would skip — see Bug 3 in the plan).
-    setPendingSessionStart(true)
-
+    // eslint-disable-next-line solid/reactivity
     resetPlaybackState().then(() => {
       handlePlay()
     })

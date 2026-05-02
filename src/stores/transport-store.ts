@@ -9,7 +9,7 @@ export const [countIn, setCountIn] = createPersistedSignal<CountInOption>(
 
 export const [bpm, _setBpm] = createPersistedSignal<number>(
   'pitchperfect_bpm',
-  120,
+  60,
 )
 
 export function setBpm(value: number): void {

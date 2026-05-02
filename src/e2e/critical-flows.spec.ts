@@ -83,7 +83,7 @@ test.describe('Critical Flows — GH #121', () => {
     }) => {
       const btnOnce = page.locator('#btn-once')
       const btnRepeat = page.locator('#btn-repeat')
-      const btnPractice = page.locator('#btn-practice')
+      const btnPractice = page.locator('#btn-session')
 
       await expect(btnOnce).toBeVisible()
       await expect(btnRepeat).toBeVisible()
@@ -165,7 +165,7 @@ test.describe('Critical Flows — GH #121', () => {
 
     test('BPM slider changes tempo', async ({ page }) => {
       const tempoSlider = page.locator('#tempo')
-      const tempoValue = page.locator('#tempo-value')
+      const tempoValue = page.locator('#bpm-input')
 
       await expect(tempoSlider).toBeVisible()
       await expect(tempoValue).toBeVisible()
@@ -873,7 +873,7 @@ test.describe('Critical Flows — GH #121', () => {
   test.describe('Playback Fixes (GH #184)', () => {
     test('BPM slider properly updates tempo', async ({ page }) => {
       const tempoSlider = page.locator('#tempo')
-      const tempoValue = page.locator('#tempo-value')
+      const tempoValue = page.locator('#bpm-input')
 
       await expect(tempoSlider).toBeVisible()
       await expect(tempoValue).toBeVisible()
@@ -919,7 +919,7 @@ test.describe('Critical Flows — GH #121', () => {
       await page.waitForTimeout(300)
 
       const tempoSlider = page.locator('#tempo')
-      const tempoValue = page.locator('#tempo-value')
+      const tempoValue = page.locator('#bpm-input')
 
       // Set BPM via slider
       await tempoSlider.fill('150')
