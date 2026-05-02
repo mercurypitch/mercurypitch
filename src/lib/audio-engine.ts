@@ -155,6 +155,28 @@ export class AudioEngine {
     return this.bufferSize
   }
 
+  /** Update the analyser buffer size (fftSize) at runtime.
+   *  This must be kept in sync with the PitchDetector's bufferSize
+   *  so the time-domain data array matches what the detector expects. */
+  setBufferSize(size: number): void {
+    if (size === this.bufferSize) return
+    this.bufferSize = size
+
+    if (this.analyser) {
+      this.analyser.fftSize = size
+    }
+    if (this.playbackAnalyser) {
+      this.playbackAnalyser.fftSize = size
+    }
+
+    // Reallocate typed arrays to match the new fftSize
+    const binCount = this.analyser?.frequencyBinCount ?? size / 2
+    this._frequencyData = new Float32Array(binCount)
+    this._timeData = new Float32Array(size)
+    this._playbackTimeData = new Float32Array(size)
+    this._frequencyByteData = new Uint8Array(binCount)
+  }
+
   // ============================================================
   // Volume
   // ============================================================

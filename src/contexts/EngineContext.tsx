@@ -112,6 +112,11 @@ export function EngineProvider(props: { children: JSX.Element }) {
     const s = settingsStore.settings()
     const algo = settingsStore.pitchAlgorithm()
     const bufSize = settingsStore.pitchBufferSize()
+    // Keep the AudioEngine's AnalyserNode fftSize in sync with the
+    // PitchDetector's expected buffer size. Without this the detector
+    // receives fewer samples than it expects (e.g. 2048 vs 4096),
+    // causing out-of-bounds NaN reads and silent detection failures.
+    audioEngine.setBufferSize(bufSize)
     practiceEngine.syncSettings({
       sensitivity: s.sensitivity,
       minConfidence: s.minConfidence,
