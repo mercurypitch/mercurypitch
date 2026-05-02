@@ -8,6 +8,12 @@ export function initGlobalErrorHandlers(): void {
   if (typeof window === 'undefined') return
 
   window.addEventListener('error', (e: ErrorEvent) => {
+    // Ignore benign ResizeObserver loop errors (see AppErrorBoundary.tsx)
+    const msg = e.message ?? ''
+    if (msg.includes('ResizeObserver')) {
+      e.preventDefault()
+      return
+    }
     const errorMsg = e.error !== null ? e.error : e.message
     console.error('Global error:', errorMsg)
     exposeForE2E('__globalError', errorMsg)

@@ -18,6 +18,19 @@ interface AppErrorBoundaryProps {
  */
 const setupGlobalErrorHandler = () => {
   const errorHandler = (event: ErrorEvent | PromiseRejectionEvent): void => {
+    // ResizeObserver loop errors are benign browser internals — they fire
+    // when a ResizeObserver callback triggers further layout changes that
+    // can't be delivered in the same frame. iOS Safari is particularly
+    // aggressive about surfacing these as unhandled errors. They are NOT
+    // real app crashes and must never trigger the CrashModal.
+    if (event instanceof ErrorEvent) {
+      const msg = event.message ?? ''
+      if (msg.includes('ResizeObserver')) {
+        event.preventDefault()
+        return
+      }
+    }
+
     const err: Error =
       event instanceof ErrorEvent
         ? (event.error ?? new Error(event.message))
