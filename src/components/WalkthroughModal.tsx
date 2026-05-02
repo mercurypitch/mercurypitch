@@ -119,6 +119,7 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
       const doc = typeof document !== 'undefined' ? document : undefined
       if (doc) {
         doc.addEventListener('keydown', handleKeyDown)
+        // eslint-disable-next-line solid/reactivity
         return () => doc.removeEventListener('keydown', handleKeyDown)
       }
     }

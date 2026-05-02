@@ -48,14 +48,14 @@ export const NoteList: Component<NoteListProps> = (props) => {
     <div id="note-list">
       <For each={props.melody()}>
         {(item, index) => {
-          const absoluteIndex = index()
+          const absoluteIndex = () => index()
           const isRest = item.isRest === true
           const playableIndex = () =>
-            isRest ? -1 : playableIndexFor(absoluteIndex)
+            isRest ? -1 : playableIndexFor(absoluteIndex())
           const midi = item.note.midi
           const isActive = () => {
             if (!props.isPlaying()) return false
-            return absoluteIndex === props.currentNoteIndex()
+            return absoluteIndex() === props.currentNoteIndex()
           }
           const bandEntry = () =>
             playableIndex() >= 0 ? bandMap().get(playableIndex()) : undefined

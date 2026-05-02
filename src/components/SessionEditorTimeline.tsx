@@ -359,6 +359,7 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
               onDrop={(e) => handleDrop(e, props.sessionItems.length)}
               onClick={() =>
                 props.onAddRest(
+                  // eslint-disable-next-line solid/reactivity
                   props.sessionItems.reduce((maxBeat, item) => {
                     const itemLength =
                       item.type === 'rest'

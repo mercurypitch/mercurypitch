@@ -4,7 +4,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createMemo, createSignal, onMount, Show } from 'solid-js'
+import { createMemo, createSignal, For, onMount, Show } from 'solid-js'
 import { AppSidebar } from '@/components/AppSidebar'
 import { FocusMode } from '@/components/FocusMode'
 import { HistoryCanvas } from '@/components/HistoryCanvas'
@@ -534,6 +534,7 @@ const AppShell: Component<AppProps> = (props) => {
 
     playbackRuntime.on(
       'metronome',
+      // eslint-disable-next-line solid/reactivity
       (e: { beat?: number; isDownbeat?: boolean }) => {
         const isCounting =
           playbackRuntime.getCountIn() > 0 &&
@@ -544,6 +545,7 @@ const AppShell: Component<AppProps> = (props) => {
       },
     )
 
+    // eslint-disable-next-line solid/reactivity
     playbackRuntime.on('complete', () => {
       practiceEngine.onPlaybackComplete()
       const mode = playMode()

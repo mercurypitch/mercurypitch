@@ -4,7 +4,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { Show } from 'solid-js'
+import { For, Show } from 'solid-js'
 import { MicButton } from '@/components'
 import { PrecCountButton } from '@/components/PrecCountButton'
 import { Tooltip } from '@/components/Tooltip'
@@ -639,7 +639,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
               <button
                 id="save-melody-btn"
                 class={`save-melody-btn ${props.onSaveMelodyLabel !== null && props.onSaveMelodyLabel !== undefined && props.onSaveMelodyLabel.length > 0 ? 'with-label' : ''}`}
-                onClick={props.onSaveMelody}
+                onClick={() => props.onSaveMelody?.()}
                 title="Save melody to library"
               >
                 <svg viewBox="0 0 24 24" width="16" height="16">

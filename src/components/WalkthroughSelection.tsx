@@ -32,7 +32,7 @@ export const WalkthroughSelection: Component<WalkthroughSelectionProps> = (
 
   return (
     <Show when={props.isOpen}>
-      <div class="walkthrough-selection-overlay" onClick={props.onClose}>
+      <div class="walkthrough-selection-overlay" onClick={() => props.onClose()}>
         <div
           class="walkthrough-selection-card"
           onClick={(e) => e.stopPropagation()}
@@ -55,7 +55,7 @@ export const WalkthroughSelection: Component<WalkthroughSelectionProps> = (
               </svg>
               <h2 class="ws-title">Learn</h2>
             </div>
-            <button class="ws-close-btn" onClick={props.onClose} title="Close">
+            <button class="ws-close-btn" onClick={() => props.onClose()} title="Close">
               <svg viewBox="0 0 24 24" width="20" height="20">
                 <path
                   fill="currentColor"
@@ -126,7 +126,7 @@ export const WalkthroughSelection: Component<WalkthroughSelectionProps> = (
 
           {/* Footer */}
           <div class="ws-footer">
-            <button class="ws-close-footer" onClick={props.onClose}>
+            <button class="ws-close-footer" onClick={() => props.onClose()}>
               Got it
             </button>
           </div>
