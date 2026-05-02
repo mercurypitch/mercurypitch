@@ -45,7 +45,7 @@ import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPr
 import { melodyStore } from '@/stores/melody-store'
 import { getSession, templateToSession } from '@/stores/session-store'
 import { selectedCharacter } from '@/stores/settings-store'
-import type { MelodyItem, PlaybackMode, SpacedRestMode } from '@/types'
+import type { ActiveTab, MelodyItem, PlaybackMode, SpacedRestMode } from '@/types'
 import { Walkthrough, WalkthroughControl } from './components'
 import { AppErrorBoundary } from './components/AppErrorBoundary'
 import { CrashModal } from './components/CrashModal'
@@ -134,7 +134,7 @@ const AppShell: Component<AppProps> = (props) => {
   const { audioEngine, playbackRuntime, practiceEngine } = useEngines()
 
   // ── Local UI state ──────────────────────────────────────────
-  const activeTab = (): UiActiveTab => activeTabSignal()
+  const activeTab = (): ActiveTab => activeTabSignal()
   const focusMode = focusModeSignal
 
   const [sidebarOpen, setSidebarOpen] = createSignal(false)
@@ -343,7 +343,7 @@ const AppShell: Component<AppProps> = (props) => {
   })
 
   // ── Tab change handler with audio cleanup ──────────────────
-  const handleTabChange = async (newTab: UiActiveTab) => {
+  const handleTabChange = async (newTab: ActiveTab) => {
     const currentTab = activeTab()
     if (currentTab === 'practice' || currentTab === 'editor') {
       await resetPlaybackState()

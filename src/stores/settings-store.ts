@@ -89,7 +89,7 @@ const DEFAULT_BANDS: Array<{ threshold: number; band: number; color: string }> =
 
 export const DEFAULT_SETTINGS: SettingsConfig = {
   ...SENSITIVITY_PRESETS.noisy, // Use noisy as default config values
-  bands: ACCURACY_PRESETS.professional,
+  bands: ACCURACY_PRESETS.learning,
   tonicAnchor: false,
 }
 
