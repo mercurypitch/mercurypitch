@@ -698,6 +698,21 @@ const AppShell: Component<AppProps> = (props) => {
             <p class="subtitle">Voice Pitch Practice</p>
           </div>
           <div class="header-right">
+            {/* Current melody indicator pill */}
+            <Show when={melodyStore.getCurrentMelody()}>
+              <button
+                class="melody-indicator-pill"
+                onClick={() => void handleTabChange('practice')}
+                title={`Now loaded: ${melodyStore.getCurrentMelody()?.name ?? 'Untitled'}`}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M9 18V5l12-2v13" />
+                  <circle cx="6" cy="18" r="3" />
+                  <circle cx="18" cy="16" r="3" />
+                </svg>
+                <span class="melody-indicator-name">{melodyStore.getCurrentMelody()?.name ?? 'Untitled'}</span>
+              </button>
+            </Show>
             {/* Walkthrough Control Button */}
             <WalkthroughControl
               showOnStart={false}
