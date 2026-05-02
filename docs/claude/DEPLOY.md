@@ -3,9 +3,6 @@
 ## Build Commands
 
 ```bash
-# From the App directory
-cd App
-
 # Install dependencies (first time only)
 npm install
 
@@ -24,7 +21,7 @@ npm run test
 
 ## What the Build Produces
 
-`npm run build` generates static files in `App/dist/` with base path `/solid/`:
+`npm run build` generates static files in `dist/` with base path `/solid/`:
 
 ```
 dist/
@@ -45,6 +42,7 @@ cd /var/www/pitchperfect.clodhost.com/pitch-perfect-repo
 ```
 
 The deploy script:
+
 1. Pulls latest `main` branch from GitHub
 2. Runs syntax checks on JS files
 3. Rebuilds the SolidJS app (`npm run build` in App/)
@@ -62,14 +60,13 @@ The deploy script:
 
 If you need to configure NodeDeploy or similar service:
 
-- **Build command**: `cd App && npm run build`
-- **Output directory**: `App/dist/` (or leave blank — most deploy UIs detect it)
+- **Build command**: `npm run build`
+- **Output directory**: `dist/` (or leave blank — most deploy UIs detect it)
 - **Node version**: 18+ recommended
 
 ## Local Development
 
 ```bash
-cd App
 npm install
 npm run dev    # dev server at localhost:3000
 npm run test   # run tests

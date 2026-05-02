@@ -28,6 +28,7 @@ This document contains my Claude Code workflow preferences for this project.
 8. **If ANY errors found in steps 3-6, fix them immediately and repeat**
 
 **Rules:**
+
 - If app doesn't start, fix it before continuing
 - If errors appear in console, fix them immediately
 - Never leave the user with broken functionality

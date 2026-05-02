@@ -17,12 +17,14 @@ src/
 ## Component Architecture
 
 ### Directory Pattern
+
 - Components organized by purpose, named in PascalCase (singular nouns)
 - Each component directory contains:
   - `<Component>.tsx` - Main component
   - `<Component>.module.css` - Scoped styles (CSS modules)
 
 ### Component Structure
+
 ```tsx
 export interface ComponentProps {
   // Props typed with explicit types
@@ -33,18 +35,16 @@ export function Component(props: ComponentProps) {
   // Use SolidJS signals/memo/store for state
   const [signal, setSignal] = createSignal<Value>()
 
-  return (
-    <div class={styles.wrapper}>
-      {/* JSX with CSS modules */}
-    </div>
-  )
+  return <div class={styles.wrapper}>{/* JSX with CSS modules */}</div>
 }
 ```
 
 ## State Management Patterns
 
 ### Signals
+
 For simple reactive values:
+
 ```tsx
 const [theme, setTheme] = createSignal<Theme>('dark')
 
@@ -55,6 +55,7 @@ setTheme('light')
 ```
 
 ### Context Providers
+
 ```tsx
 export const ThemeContext = createContext<{
   theme: Accessor<Theme>
@@ -81,6 +82,7 @@ export function useTheme() {
 ```
 
 ### Safety Utility
+
 ```tsx
 // Provides type-safe context access with helpful errors
 export function useContextSafe<T>(
@@ -91,6 +93,7 @@ export function useContextSafe<T>(
 ```
 
 ### Styled Store (Complex State)
+
 ```tsx
 import { createStore } from 'solid-js/store'
 import { createStoreHistory } from '@/utils/createStoreHistory'
@@ -114,6 +117,7 @@ historyController.redo()
 ### Design System (designSystem/)
 
 **colors.css** - Color tokens using OKLCH
+
 ```css
 :root {
   --neutral-50: oklch(0.985 0 0);
@@ -123,6 +127,7 @@ historyController.redo()
 ```
 
 **layout.css** - Spacing tokens
+
 ```css
 :root {
   --spacing: 0.25rem;
@@ -133,6 +138,7 @@ historyController.redo()
 ```
 
 **dark-mode.css** - Theme overrides via data attribute
+
 ```css
 body[data-theme='dark'] {
   background-color: black;
@@ -140,6 +146,7 @@ body[data-theme='dark'] {
 ```
 
 ### Module Styles
+
 ```css
 /* ComponentName.module.css */
 .container {
@@ -148,6 +155,7 @@ body[data-theme='dark'] {
 ```
 
 ### Global Entry (index.css)
+
 - Imports design system
 - Sets default fonts (Inter)
 - Global body styles
@@ -155,6 +163,7 @@ body[data-theme='dark'] {
 ## Custom Hooks
 
 ### Event Handlers
+
 ```tsx
 // createDragHandler - Pointer event handling with capture
 export function createDragHandler(
@@ -164,6 +173,7 @@ export function createDragHandler(
 ```
 
 ### Animation
+
 ```tsx
 // createAnimationFrame - Throttled animation loop
 export function createAnimationFrame(callback: FrameCallback)
@@ -172,6 +182,7 @@ export function createAnimationFrame(callback: FrameCallback)
 ## Utility Patterns
 
 ### History-Aware Updates
+
 ```tsx
 // compose history setter with produce()
 historySetState((draft) => {
@@ -187,12 +198,15 @@ historyController.commit()
 ## Build Configuration
 
 ### Vite
+
 - SolidJS plugin (`vite-plugin-solid`)
 - SVG as components (`vite-plugin-solid-svg`)
 - Path aliases (`@/*` → `./src/*`)
 - CSS modules (camelCase naming)
 
 ### TypeScript
+
 - Extends root tsconfig
 - Path aliases
 - Module resolution configured
+
