@@ -24,4 +24,9 @@ export default defineConfig({
   define: {
     'process.env': {},
   },
+  css: {
+    modules: {
+      localsConvention: 'camelCaseOnly',
+    },
+  },
 })
