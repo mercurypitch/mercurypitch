@@ -35,6 +35,7 @@ info.md
 # Playwright
 playwright-report/
 test-results/
+.vite/
 
 public/assets/
 **/**/*.patch

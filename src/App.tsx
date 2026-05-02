@@ -33,13 +33,13 @@ import { audioRegistry } from '@/lib/audio-registry'
 import { debounce } from '@/lib/debounce'
 import { registerE2EBridge } from '@/lib/e2e-bridge'
 import { melodyIndexAtBeat, melodyTotalBeats } from '@/lib/scale-data'
-import { buildScaleMelody, buildSessionPlaybackMelody } from '@/lib/session-builder'
+import { buildScaleMelody, buildSessionPlaybackMelody, } from '@/lib/session-builder'
 import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
-import { setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPlaybackSpeed, setScaleType } from '@/stores'
-import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initBpm, initPresets, initReverb, initSessionHistory, initSettings, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, toggleMicWaveVisible, userSession } from '@/stores'
+import { setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPlaybackSpeed, setScaleType, } from '@/stores'
+import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initBpm, initPresets, initReverb, initSessionHistory, initSettings, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, toggleMicWaveVisible, userSession, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
-import { getSession, setError,templateToSession } from '@/stores/session-store'
-import type { PlaybackMode, SpacedRestMode } from '@/types'
+import { getSession, templateToSession } from '@/stores/session-store'
+import type { MelodyItem, PlaybackMode, SpacedRestMode } from '@/types'
 import { Walkthrough, WalkthroughControl } from './components'
 import { AppErrorBoundary } from './components/AppErrorBoundary'
 import { CrashModal } from './components/CrashModal'
@@ -457,9 +457,7 @@ const AppShell: Component<AppProps> = (props) => {
     const isSessionShaped =
       session !== null &&
       (session.items.length > 1 ||
-        session.items.some(
-          (it) => (it as { type: string }).type !== 'melody',
-        ))
+        session.items.some((it) => (it as { type: string }).type !== 'melody'))
     if (isSessionShaped && isPaused() === false) {
       startSessionPlayback()
     } else {
@@ -1074,9 +1072,8 @@ const AppShell: Component<AppProps> = (props) => {
               <div id="score-history">
                 <h3 class="history-title">Recent Progress</h3>
                 <div class="history-chart">
-                  {getSessionHistory()
-                    .slice(0, 10)
-                    .map((session) => (
+                  <For each={getSessionHistory().slice(0, 10)}>
+                    {(session) => (
                       <div
                         class="history-bar"
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1084,7 +1081,8 @@ const AppShell: Component<AppProps> = (props) => {
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         title={`Score: ${(session as any).score}%`}
                       />
-                    ))}
+                    )}
+                  </For>
                 </div>
               </div>
             </Show>
