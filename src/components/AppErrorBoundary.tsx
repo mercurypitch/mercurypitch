@@ -6,6 +6,7 @@ import type { JSX, ParentComponent } from 'solid-js'
 import { onMount } from 'solid-js'
 import { ErrorBoundary } from 'solid-js/web'
 import { setAppError as setAppErrorSignal } from '@/stores/app-store'
+import { CrashModal } from './CrashModal'
 
 interface AppErrorBoundaryProps {
   children: JSX.Element
@@ -47,28 +48,21 @@ export const AppErrorBoundary: ParentComponent<AppErrorBoundaryProps> = (
   onMount(setupGlobalErrorHandler)
 
   return (
-    <ErrorBoundary fallback={() => <ErrorContent />}>
+    <ErrorBoundary
+      fallback={(err) => {
+        const errorObj = err instanceof Error ? err : new Error(String(err))
+        // We set it in a microtask so we don't trigger SolidJS warnings about
+        // setting signals during the render phase.
+        queueMicrotask(() => {
+          setAppErrorSignal({
+            error: errorObj,
+            time: Date.now(),
+          })
+        })
+        return <CrashModal />
+      }}
+    >
       {props.children}
     </ErrorBoundary>
-  )
-}
-
-/**
- * Error UI shown when an error occurs.
- */
-const ErrorContent = () => {
-  return (
-    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif; padding: 20px; text-align: center;">
-      <h1 style="font-size: 2rem; margin-bottom: 1rem;">Application Error</h1>
-      <p style="color: #666; max-width: 500px; line-height: 1.5;">
-        An unexpected error occurred. Please refresh the page.
-      </p>
-      <button
-        style="margin-top: 2rem; padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;"
-        onClick={() => window.location.reload()}
-      >
-        Refresh Page
-      </button>
-    </div>
   )
 }

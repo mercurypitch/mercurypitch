@@ -4,7 +4,7 @@ import type { PlaybackRuntime } from '@/lib/playback-runtime'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { melodyTotalBeats } from '@/lib/scale-data'
 import { buildSessionItemMelody } from '@/lib/session-builder'
-import { advanceSessionItem, countIn, getCurrentSessionItem, recordSessionItemResult, sessionItemIndex, setActiveTab, setBpm, setKeyName, setScaleType, setSessionActive, showNotification, startPracticeSession, userSession, } from '@/stores'
+import { advanceSessionItem, countIn, getCurrentSessionItem, recordSessionItemResult, sessionItemIndex, setActiveTab, setBpm, setKeyName, setScaleType, setSessionActive, showNotification, userSession, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import type { MelodyItem, NoteResult, PracticeResult, SessionResult, } from '@/types'
 
