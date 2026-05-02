@@ -2638,8 +2638,11 @@ header h1 {
     font-size: 0.72rem;
   }
 
-  /* App header: hide subtitle */
+  /* App header: hide subtitle and melody pill */
   .subtitle {
+    display: none;
+  }
+  .melody-indicator-pill {
     display: none;
   }
 
@@ -8225,6 +8228,58 @@ input:checked + .settings-slider:before {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+/* Melody indicator pill — shows current melody name in the header */
+.melody-indicator-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px 5px 10px;
+  border: 1px solid rgba(88,166,255,0.25);
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(88,166,255,0.12), rgba(130,80,220,0.10));
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  max-width: 200px;
+  overflow: hidden;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.melody-indicator-pill:hover {
+  background: linear-gradient(135deg, rgba(88,166,255,0.22), rgba(130,80,220,0.18));
+  border-color: rgba(88,166,255,0.45);
+  box-shadow: 0 0 12px rgba(88,166,255,0.15);
+  transform: translateY(-1px);
+}
+.melody-indicator-pill:active {
+  transform: translateY(0);
+}
+.melody-indicator-pill svg {
+  flex-shrink: 0;
+  opacity: 0.75;
+}
+.melody-indicator-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Light theme */
+[data-theme="light"] .melody-indicator-pill {
+  background: linear-gradient(135deg, rgba(88,166,255,0.10), rgba(130,80,220,0.08));
+  border-color: rgba(88,166,255,0.3);
+  color: var(--accent);
+}
+[data-theme="light"] .melody-indicator-pill:hover {
+  background: linear-gradient(135deg, rgba(88,166,255,0.18), rgba(130,80,220,0.14));
+  border-color: rgba(88,166,255,0.5);
+  box-shadow: 0 0 12px rgba(88,166,255,0.12);
 }
 
 /* =====================================================================
