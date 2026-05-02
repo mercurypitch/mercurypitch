@@ -16,8 +16,10 @@ export default defineConfig(
       '**/.pnpm-store',
       '**/*.spec.ts',
       '**/e2e/**',
+      'docs/**',
       'src/index.tsx',
       'src/lib/engine-bridge.ts',
+      'e2e-server.js',
     ],
   },
   importX.flatConfigs.recommended,
@@ -37,7 +39,9 @@ export default defineConfig(
     },
     languageOptions: {
       parserOptions: {
-        projectService: true,
+        projectService: {
+          allowDefaultProject: ['*.js', '*.mjs'],
+        },
       },
     },
   },

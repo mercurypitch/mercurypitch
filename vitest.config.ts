@@ -3,6 +3,7 @@ import solidPlugin from 'vite-plugin-solid'
 import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   plugins: [solidPlugin() as any],
   resolve: {
     alias: {

@@ -18,10 +18,13 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false
   },
-  "include": ["src/**/*.ts",
+  "include": [
+    "src/**/*.ts",
     "src/**/*.tsx",
     "src/**/*.d.ts",
-    "vitest.config.ts"
+    "vitest.config.ts",
+    "vite.config.ts",
+    "playwright.config.ts"
   ],
   "plugins": [
     {

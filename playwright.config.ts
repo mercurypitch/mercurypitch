@@ -3,9 +3,9 @@ import { defineConfig, devices } from '@playwright/test'
 export default defineConfig({
   testDir: './src/e2e',
   fullyParallel: true,
-  forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 4 : undefined,
+  forbidOnly: process.env.CI !== undefined,
+  retries: process.env.CI !== undefined ? 2 : 0,
+  workers: process.env.CI !== undefined ? 4 : undefined,
   reporter: 'html',
   use: {
     // Use production build served on port 3001 (no SSL needed)
