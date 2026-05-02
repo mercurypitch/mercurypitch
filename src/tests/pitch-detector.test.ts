@@ -367,7 +367,7 @@ describe('PitchDetector', () => {
     it('handles maximum threshold (0.30)', () => {
       const d = new PitchDetector({
         sampleRate: 44100,
-        threshold: 0.30,
+        threshold: 0.3,
         bufferSize: 2048,
       })
       const buffer = createSineBuffer(44100, 440, 0.1)
@@ -419,7 +419,9 @@ describe('PitchDetector', () => {
       // Mix two sine waves with same frequency but opposite phase
       const buffer = new Float32Array(2048)
       for (let i = 0; i < buffer.length; i++) {
-        buffer[i] = Math.sin((2 * Math.PI * 440 * i) / 44100) - Math.sin((2 * Math.PI * 440 * i) / 44100)
+        buffer[i] =
+          Math.sin((2 * Math.PI * 440 * i) / 44100) -
+          Math.sin((2 * Math.PI * 440 * i) / 44100)
       }
       const result = detector.detect(buffer)
 
@@ -441,7 +443,7 @@ describe('PitchDetector', () => {
       const buffer = new Float32Array(2048)
       for (let i = 0; i < buffer.length; i++) {
         const angle = (2 * Math.PI * 440 * i) / 44100
-        buffer[i] = 2 / Math.PI * Math.asin(Math.sin(angle))
+        buffer[i] = (2 / Math.PI) * Math.asin(Math.sin(angle))
       }
       const result = detector.detect(buffer)
 
@@ -463,8 +465,9 @@ describe('PitchDetector', () => {
       // Create buffer with 440 Hz and 880 Hz harmonics
       const buffer = new Float32Array(2048)
       for (let i = 0; i < buffer.length; i++) {
-        buffer[i] = Math.sin((2 * Math.PI * 440 * i) / 44100) +
-                    0.5 * Math.sin((2 * Math.PI * 880 * i) / 44100)
+        buffer[i] =
+          Math.sin((2 * Math.PI * 440 * i) / 44100) +
+          0.5 * Math.sin((2 * Math.PI * 880 * i) / 44100)
       }
       const result = detector.detect(buffer)
 
@@ -501,7 +504,7 @@ describe('PitchDetector', () => {
     })
 
     it('stability filter works with different pitch ranges', () => {
-      const testFrequencies = [130.81, 261.63, 440, 659.25, 1046.50] // C3 to C6
+      const testFrequencies = [130.81, 261.63, 440, 659.25, 1046.5] // C3 to C6
       detector.resetHistory()
 
       for (const freq of testFrequencies) {
@@ -594,8 +597,9 @@ describe('PitchDetector', () => {
     it('handles slow beat frequency (10 Hz beat between 440 and 446 Hz)', () => {
       const buffer = new Float32Array(2048)
       for (let i = 0; i < buffer.length; i++) {
-        buffer[i] = Math.sin((2 * Math.PI * 440 * i) / 44100) +
-                    Math.sin((2 * Math.PI * 446 * i) / 44100)
+        buffer[i] =
+          Math.sin((2 * Math.PI * 440 * i) / 44100) +
+          Math.sin((2 * Math.PI * 446 * i) / 44100)
       }
       const result = detector.detect(buffer)
 
@@ -606,8 +610,9 @@ describe('PitchDetector', () => {
     it('handles fast beat frequency (100 Hz beat between 440 and 445 Hz)', () => {
       const buffer = new Float32Array(2048)
       for (let i = 0; i < buffer.length; i++) {
-        buffer[i] = Math.sin((2 * Math.PI * 440 * i) / 44100) +
-                    0.5 * Math.sin((2 * Math.PI * 445 * i) / 44100)
+        buffer[i] =
+          Math.sin((2 * Math.PI * 440 * i) / 44100) +
+          0.5 * Math.sin((2 * Math.PI * 445 * i) / 44100)
       }
       const result = detector.detect(buffer)
 
@@ -649,9 +654,10 @@ describe('PitchDetector', () => {
       const buffer = new Float32Array(2048)
       for (let i = 0; i < buffer.length; i++) {
         const angle = (2 * Math.PI * 440 * i) / 44100
-        buffer[i] = Math.sin(angle) +
-                    0.3 * Math.sin(2 * angle) +
-                    0.15 * Math.sin(3 * angle) // Harmonics
+        buffer[i] =
+          Math.sin(angle) +
+          0.3 * Math.sin(2 * angle) +
+          0.15 * Math.sin(3 * angle) // Harmonics
       }
       const result = detector.detect(buffer)
 

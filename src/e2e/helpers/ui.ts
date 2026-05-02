@@ -52,9 +52,7 @@ export async function switchTab(
 ) {
   await page.evaluate((name) => {
     const store =
-      (window as any).__pp?.appStore ??
-      (window as any).__appStore ??
-      null
+      (window as any).__pp?.appStore ?? (window as any).__appStore ?? null
     if (store) {
       store.setActiveTab(name)
     } else {

@@ -764,12 +764,6 @@ header h1 {
   font-size: 0.8rem;
 }
 
-#run-indicator {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
 #cycle-counter {
   font-size: 0.8rem;
   color: var(--text-secondary);
@@ -1740,23 +1734,6 @@ header h1 {
   border: 1px solid var(--border);
   border-radius: 4px;
   font-size: 0.8rem;
-}
-
-/* ===== Run Indicator ===== */
-#run-indicator {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding-left: 8px;
-  border-left: 1px solid var(--border);
-  font-size: 0.78rem;
-  color: var(--text-secondary);
-}
-
-#run-counter {
-  font-weight: 600;
-  color: var(--accent);
 }
 
 #cycle-counter {
