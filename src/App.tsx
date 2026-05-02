@@ -131,7 +131,7 @@ const AppShell: Component<AppProps> = (props) => {
   const { audioEngine, playbackRuntime, practiceEngine } = useEngines()
 
   // ── Local UI state ──────────────────────────────────────────
-  const activeTab = (): ActiveTab => activeTabSignal() as ActiveTab
+  const activeTab = (): ActiveTab => activeTabSignal()
   const focusMode = focusModeSignal
 
   const [sidebarOpen, setSidebarOpen] = createSignal(false)
