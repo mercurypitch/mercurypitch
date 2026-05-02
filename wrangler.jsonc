@@ -6,7 +6,7 @@
     "enabled": true
   },
   "assets": {
-    "directory": "App"
+    "directory": "/"
   },
   "compatibility_flags": [
     "nodejs_compat"

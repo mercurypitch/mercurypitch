@@ -4,7 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
-import { WalkthroughModal, WalkthroughSelection } from '@/components'
+import { WalkthroughModal, WalkthroughSelection } from '@/components/index'
 import { selectedWalkthrough, setSelectedWalkthrough, setShowSelection, showSelection, } from '@/stores'
 import type { WalkthroughTab } from '@/stores/walkthrough-store'
 

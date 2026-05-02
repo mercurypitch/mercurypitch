@@ -35,16 +35,16 @@ Open [pitchperfect.clodhost.com](https://pitchperfect.clodhost.com) in a modern 
 
 ### Controls
 
-| Control | Description |
-|---------|-------------|
-| Mic | Toggle microphone input |
-| Play / Pause / Stop | Playback transport |
-| Once / Repeat / Practice | Playback mode |
-| BPM | Tempo (40–280) |
-| Pre | Metronome precount (4 beats) |
-| Sens | Pitch detection sensitivity (1–10) |
-| Focus | Toggle Focus Mode |
-| Sessions | Browse and replay past practice sessions |
+| Control                  | Description                              |
+| ------------------------ | ---------------------------------------- |
+| Mic                      | Toggle microphone input                  |
+| Play / Pause / Stop      | Playback transport                       |
+| Once / Repeat / Practice | Playback mode                            |
+| BPM                      | Tempo (40–280)                           |
+| Pre                      | Metronome precount (4 beats)             |
+| Sens                     | Pitch detection sensitivity (1–10)       |
+| Focus                    | Toggle Focus Mode                        |
+| Sessions                 | Browse and replay past practice sessions |
 
 ### Practice Modes
 
@@ -56,18 +56,17 @@ Open [pitchperfect.clodhost.com](https://pitchperfect.clodhost.com) in a modern 
 
 Each sung note is rated by cents deviation from the target pitch:
 
-| Band | Threshold (cents) |
-|------|------------------|
-| Perfect | ≤ configurable |
-| Excellent | ≤ configurable |
-| Good | ≤ configurable |
-| Okay | ≤ configurable |
-| Off | > Okay threshold |
+| Band      | Threshold (cents) |
+| --------- | ----------------- |
+| Perfect   | ≤ configurable    |
+| Excellent | ≤ configurable    |
+| Good      | ≤ configurable    |
+| Okay      | ≤ configurable    |
+| Off       | > Okay threshold  |
 
 ## Project Structure
 
 ```
-App/
 ├── src/
 │   ├── App.tsx              # Main SolidJS application
 │   ├── components/          # UI components
@@ -151,7 +150,7 @@ Uses the YIN autocorrelation algorithm (via `pitchfinder`):
 
 ## Deployment
 
-The `App/` directory builds to `App/dist/`, which is served as a static site. Any static hosting works (GitHub Pages, Netlify, Vercel, Apache, etc.).
+The root dir builds to `dist/`, which is served as a static site. Any static hosting works (GitHub Pages, Netlify, Vercel, Apache, etc.).
 
 ## Requirements
 

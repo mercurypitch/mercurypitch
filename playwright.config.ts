@@ -12,8 +12,6 @@ export default defineConfig({
     baseURL: 'https://localhost:3000',
     ignoreHTTPSErrors: true,
     trace: 'on-first-retry',
-    /* Mark as E2E mode so exposeForE2E() registers window.__appStore etc. */
-    addInitScript: () => { (window as any).E2E_TEST_MODE = true },
   },
   projects: [
     {
@@ -23,10 +21,6 @@ export default defineConfig({
   ],
   webServer: {
     command: 'npm run dev',
-    // The vite dev server runs on port 3000 (configured in vite.config.ts) over
-    // HTTPS via the basic SSL plugin. Playwright was previously pointed at
-    // http://localhost:3001 — wrong port AND wrong protocol — so the
-    // webServer wait would timeout after 30s.
     url: 'https://localhost:3000',
     reuseExistingServer: true,
     timeout: 60000,

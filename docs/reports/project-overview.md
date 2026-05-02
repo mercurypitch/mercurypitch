@@ -8,15 +8,15 @@
 
 ## 📊 Executive Summary
 
-| Aspect | Status | Notes |
-|--------|--------|-------|
-| Total Files (src) | 49 | TS/TSX source files |
-| Test Files | 30 | Unit + E2E |
-| Lines of Code | ~13,000 | Approximate |
-| Stores | 3 | appStore, melodyStore, playbackStore |
-| Components | 26 | Excluding shared utilities |
-| External Libraries | 0 | No npm dependencies |
-| Architecture | State-Driven | SolidJS reactive pattern |
+| Aspect             | Status       | Notes                                |
+| ------------------ | ------------ | ------------------------------------ |
+| Total Files (src)  | 49           | TS/TSX source files                  |
+| Test Files         | 30           | Unit + E2E                           |
+| Lines of Code      | ~13,000      | Approximate                          |
+| Stores             | 3            | appStore, melodyStore, playbackStore |
+| Components         | 26           | Excluding shared utilities           |
+| External Libraries | 0            | No npm dependencies                  |
+| Architecture       | State-Driven | SolidJS reactive pattern             |
 
 **Overall Consistency:** 🟡 **MEDIUM** (Good naming, some inconsistencies)
 
@@ -25,7 +25,7 @@
 ## 🌳 File Tree (Cleaned)
 
 ```
-pitch-perfect/App/src/
+pitch-perfect/src/
 ├── components/
 │   ├── AppHeader.tsx           # Transport controls toolbar
 │   ├── AppSidebar.tsx          # Sidebar navigation
@@ -168,22 +168,22 @@ pitch-perfect/App/src/
 
 ### ✅ **Observed Patterns (Good)**
 
-| Pattern | Examples | Consistency |
-|---------|----------|-------------|
-| **camelCase variables** | `isPlaying`, `isPaused`, `bpm` | ✅ Consistent |
-| **PascalCase Components** | `PianoRollCanvas`, `SessionBrowser` | ✅ Consistent |
-| **kebab-case CSS classes** | `.app-header`, `.ctrl-btn` | ✅ Consistent |
-| **descriptive verbs** | `startPlayback`, `endPracticeSession` | ✅ Clear |
-| **plural collection names** | `melodyItems`, `sessionResults` | ✅ Consistent |
+| Pattern                     | Examples                              | Consistency   |
+| --------------------------- | ------------------------------------- | ------------- |
+| **camelCase variables**     | `isPlaying`, `isPaused`, `bpm`        | ✅ Consistent |
+| **PascalCase Components**   | `PianoRollCanvas`, `SessionBrowser`   | ✅ Consistent |
+| **kebab-case CSS classes**  | `.app-header`, `.ctrl-btn`            | ✅ Consistent |
+| **descriptive verbs**       | `startPlayback`, `endPracticeSession` | ✅ Clear      |
+| **plural collection names** | `melodyItems`, `sessionResults`       | ✅ Consistent |
 
 ### ⚠️ **Inconsistent Patterns**
 
-| Issue | Current | Better | Occurrences |
-|-------|---------|--------|-------------|
-| **Underscore prefixes** | `_bpmValue`, `_idCounter`, `_notifId` | Prefix without underscore | 3 |
-| **Underscore-only properties** | `instrument`, `bpm` | With `app` prefix | 4 |
-| **Separate files for same concept** | `playback-runtime.ts` vs `playback-store.ts` | May be intentional (runtime vs store) | 2 |
-| **Signal-like names** | `activeTabGetter` | Just `activeTab` | 1 |
+| Issue                               | Current                                      | Better                                | Occurrences |
+| ----------------------------------- | -------------------------------------------- | ------------------------------------- | ----------- |
+| **Underscore prefixes**             | `_bpmValue`, `_idCounter`, `_notifId`        | Prefix without underscore             | 3           |
+| **Underscore-only properties**      | `instrument`, `bpm`                          | With `app` prefix                     | 4           |
+| **Separate files for same concept** | `playback-runtime.ts` vs `playback-store.ts` | May be intentional (runtime vs store) | 2           |
+| **Signal-like names**               | `activeTabGetter`                            | Just `activeTab`                      | 1           |
 
 ---
 
@@ -191,27 +191,27 @@ pitch-perfect/App/src/
 
 ### State Variables (Signals/Stores)
 
-| Type | Examples | Total |
-|------|----------|-------|
-| **Signals** | `bpm`, `theme`, `countIn`, `practiceCount` | ~15 |
-| **Stores** | `melodyItems`, `sessionHistory`, `presets` | ~5 |
-| **Config Objects** | `settings`, `adsr`, `reverbConfig` | 3 |
+| Type               | Examples                                   | Total |
+| ------------------ | ------------------------------------------ | ----- |
+| **Signals**        | `bpm`, `theme`, `countIn`, `practiceCount` | ~15   |
+| **Stores**         | `melodyItems`, `sessionHistory`, `presets` | ~5    |
+| **Config Objects** | `settings`, `adsr`, `reverbConfig`         | 3     |
 
 ### Private State
 
-| Type | Examples | Purpose |
-|------|----------|---------|
-| **Engine Instances** | `audioEngine`, `playbackRuntime`, `practiceEngine` | Singletons |
-| **Buffers** | `_frequencyData`, `_timeData`, `yinBuffer` | Audio processing |
-| **Callbacks** | `callbacks: PlaybackRuntimeCallbacks` | Event handling |
-| **Tracking** | `currentBeat`, `currentNoteIndex`, `micHealthFailures` | Runtime state |
+| Type                 | Examples                                               | Purpose          |
+| -------------------- | ------------------------------------------------------ | ---------------- |
+| **Engine Instances** | `audioEngine`, `playbackRuntime`, `practiceEngine`     | Singletons       |
+| **Buffers**          | `_frequencyData`, `_timeData`, `yinBuffer`             | Audio processing |
+| **Callbacks**        | `callbacks: PlaybackRuntimeCallbacks`                  | Event handling   |
+| **Tracking**         | `currentBeat`, `currentNoteIndex`, `micHealthFailures` | Runtime state    |
 
 ### Event/Callback Variables
 
-| Type | Examples | Pattern |
-|------|----------|---------|
-| **Listener Maps** | `onEventCallbacks: Map<type, Set<callback>>` | Event subscription |
-| **Callbacks Object** | `callbacks: PracticeEngineCallbacks` | Hook pattern |
+| Type                 | Examples                                     | Pattern            |
+| -------------------- | -------------------------------------------- | ------------------ |
+| **Listener Maps**    | `onEventCallbacks: Map<type, Set<callback>>` | Event subscription |
+| **Callbacks Object** | `callbacks: PracticeEngineCallbacks`         | Hook pattern       |
 
 ---
 
@@ -219,24 +219,26 @@ pitch-perfect/App/src/
 
 ### Consistency Scores
 
-| Category | Score | Issues |
-|----------|-------|--------|
-| **Variable Naming** | 🟢 9/10 | Mostly clear, underscore prefixes are rare |
-| **Function Naming** | 🟢 10/10 | Verbs clearly indicate action |
-| **Component Naming** | 🟢 10/10 | PascalCase, descriptive names |
-| **Type Naming** | 🟢 9/10 | Mostly PascalCase, some acronyms |
-| **CSS Naming** | 🟢 10/10 | Consistent kebab-case |
-| **Store Naming** | 🟢 9/10 | Clear, some store + signal overlap |
+| Category             | Score    | Issues                                     |
+| -------------------- | -------- | ------------------------------------------ |
+| **Variable Naming**  | 🟢 9/10  | Mostly clear, underscore prefixes are rare |
+| **Function Naming**  | 🟢 10/10 | Verbs clearly indicate action              |
+| **Component Naming** | 🟢 10/10 | PascalCase, descriptive names              |
+| **Type Naming**      | 🟢 9/10  | Mostly PascalCase, some acronyms           |
+| **CSS Naming**       | 🟢 10/10 | Consistent kebab-case                      |
+| **Store Naming**     | 🟢 9/10  | Clear, some store + signal overlap         |
 
 ### Naming Grade: B+ (Very Good)
 
 **Strengths:**
+
 - Clear, descriptive names throughout
 - Verbs in action functions
 - Consistent casing patterns
 - Logical grouping
 
 **Minor Issues:**
+
 - Underscore prefixes on private variables (`_bpmValue`, `_idCounter`)
 - Some signal/getter pairs (`activeTabGetter` / `activeTab`)
 - No file-level JSDoc explaining purpose
@@ -245,33 +247,36 @@ pitch-perfect/App/src/
 
 ## 📈 File Size Analysis
 
-| File | Lines | Classification | Recommendation |
-|------|-------|----------------|----------------|
-| `src/stores/app-store.ts` | 1,142 | 🟢 Acceptable | Large but well-organized |
-| `src/lib/piano-roll.ts` | 3,120 | 🔴 Monolithic | **Split into components** |
-| `src/App.tsx` | 1,690 | 🟡 Large | Extract sub-tabs |
-| `src/lib/audio-engine.ts` | 1,395 | 🟢 Acceptable | Well-structured |
-| `src/lib/playback-runtime.ts` | 425 | 🟢 Acceptable | Good size |
+| File                          | Lines | Classification | Recommendation            |
+| ----------------------------- | ----- | -------------- | ------------------------- |
+| `src/stores/app-store.ts`     | 1,142 | 🟢 Acceptable  | Large but well-organized  |
+| `src/lib/piano-roll.ts`       | 3,120 | 🔴 Monolithic  | **Split into components** |
+| `src/App.tsx`                 | 1,690 | 🟡 Large       | Extract sub-tabs          |
+| `src/lib/audio-engine.ts`     | 1,395 | 🟢 Acceptable  | Well-structured           |
+| `src/lib/playback-runtime.ts` | 425   | 🟢 Acceptable  | Good size                 |
 
 ---
 
 ## 🔍 Potential Naming Issues
 
 ### Underscore Prefixes (3 occurrences)
+
 ```typescript
-let _bpmValue = loadBpmFromStorage()          // Store without prefix is better
-let _idCounter = 100                           // GenerateId uses arrow, can expose
-let _notifId = 0                               // Unused - can remove
+let _bpmValue = loadBpmFromStorage() // Store without prefix is better
+let _idCounter = 100 // GenerateId uses arrow, can expose
+let _notifId = 0 // Unused - can remove
 ```
 
 ### Signal-Getters (1 occurrence)
+
 ```typescript
 const [activeTabGetter, _setActiveTab] = createSignal<ActiveTab>('practice')
-export const activeTab = activeTabGetter       // Just use activeTabGetter
-export const setActiveTab = _setActiveTab      // Keep the wrapper
+export const activeTab = activeTabGetter // Just use activeTabGetter
+export const setActiveTab = _setActiveTab // Keep the wrapper
 ```
 
 ### Potential Overlaps (2 occurrences)
+
 ```typescript
 // src/types/index.ts
 export type PlaybackState = 'stopped' | 'playing' | 'paused'
@@ -286,13 +291,13 @@ export type PlaybackState = 'stopped' | 'playing' | 'paused'
 
 ## 📊 Code Quality Metrics
 
-| Metric | Value | Status |
-|--------|-------|--------|
-| Export statements | 130+ | ✅ Well-organized |
-| Private variables | 3 (underscores) | ⚠️ Minor |
-| File separation | 49 source files | ✅ Good |
-| Test ratio | 30 test files | ✅ Good |
-| Type safety | All TS | ✅ Strict mode |
+| Metric            | Value           | Status            |
+| ----------------- | --------------- | ----------------- |
+| Export statements | 130+            | ✅ Well-organized |
+| Private variables | 3 (underscores) | ⚠️ Minor          |
+| File separation   | 49 source files | ✅ Good           |
+| Test ratio        | 30 test files   | ✅ Good           |
+| Type safety       | All TS          | ✅ Strict mode    |
 
 ---
 
@@ -368,9 +373,11 @@ The PitchPerfect project demonstrates **excellent naming consistency** with mino
 - **Tests** provide comprehensive coverage
 
 **Overall Grade: B+**
+
 - Naming: 9/10
 - Organization: 9/10
 - Documentation: 7/10
 - Type Safety: 10/10
 
 The project is in good shape for refactoring with CSS modules. Naming inconsistencies are minor and don't require immediate attention.
+
