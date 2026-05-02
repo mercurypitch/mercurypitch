@@ -17,10 +17,7 @@ import { activeTab as appActiveTab, appStore, sessionResults, showNotification, 
 import { keyName, scaleType, setKeyName, setScaleType } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import { showSidebarNoteList } from '@/stores/settings-store'
-import {
-  customScales as customScalesMap,
-  customScaleTypeId,
-} from '@/stores/settings-store'
+import { customScales as customScalesMap, customScaleTypeId, } from '@/stores/settings-store'
 import type { MelodyItem, NoteResult, PitchResult } from '@/types'
 
 interface AppSidebarProps {
@@ -262,7 +259,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
                       class="custom-scale-option"
                       value={customScaleTypeId(name, customScalesMap()[name])}
                     >
-                      {`◆ ${  name}`}
+                      {`◆ ${name}`}
                     </option>
                   )}
                 </For>

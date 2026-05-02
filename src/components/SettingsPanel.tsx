@@ -4,10 +4,10 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
+import { TierSelector } from '@/components/TierSelector'
 import { APP_VERSION } from '@/lib/defaults'
 import { IS_DEV } from '@/lib/defaults'
-import type { AccuracyTier } from '@/stores'
-import { accuracyTier, applyAccuracyTier, appStore } from '@/stores'
+import { appStore } from '@/stores'
 import { adsr, playbackSpeed, setPlaybackSpeed, setSensitivity, settings, } from '@/stores'
 import type { PitchAlgorithm } from '@/stores/settings-store'
 import type { PitchBufferSize } from '@/stores/settings-store'
@@ -101,20 +101,7 @@ export const SettingsPanel: Component = () => {
             specified number of cents of the target note.
           </p>
 
-          <div class="settings-row">
-            <label for="accuracy-tier-select">Difficulty</label>
-            <select
-              id="accuracy-tier-select"
-              value={accuracyTier()}
-              onChange={(e) => {
-                applyAccuracyTier(e.currentTarget.value as AccuracyTier)
-              }}
-            >
-              <option value="learning">Learning (Beginner)</option>
-              <option value="singer">Singer (Intermediate)</option>
-              <option value="professional">Professional (Advanced)</option>
-            </select>
-          </div>
+          <TierSelector class="settings-tier-selector" />
         </div>
 
         {/* Pitch Algorithm Section */}

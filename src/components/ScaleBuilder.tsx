@@ -7,12 +7,7 @@ import { createEffect, createMemo, createSignal, For, Show } from 'solid-js'
 import { NOTE_NAMES } from '@/lib/scale-data'
 import { keyName, setScaleType, showNotification } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
-import {
-  customScales,
-  customScaleTypeId,
-  deleteCustomScale,
-  saveCustomScale,
-} from '@/stores/settings-store'
+import { customScales, customScaleTypeId, deleteCustomScale, saveCustomScale, } from '@/stores/settings-store'
 import type { NoteName } from '@/types'
 
 interface ScaleBuilderProps {
