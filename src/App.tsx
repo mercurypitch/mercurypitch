@@ -40,6 +40,7 @@ import { setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrumen
 import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initBpm, initPresets, initReverb, initSessionHistory, initSettings, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, toggleMicWaveVisible, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import { getSession, templateToSession } from '@/stores/session-store'
+import { selectedCharacter } from '@/stores/settings-store'
 import type { MelodyItem, PlaybackMode, SpacedRestMode } from '@/types'
 import { Walkthrough, WalkthroughControl } from './components'
 import { AppErrorBoundary } from './components/AppErrorBoundary'
@@ -705,12 +706,29 @@ const AppShell: Component<AppProps> = (props) => {
                 onClick={() => void handleTabChange('practice')}
                 title={`Now loaded: ${melodyStore.getCurrentMelody()?.name ?? 'Untitled'}`}
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg
+                  class="melody-indicator-icon"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
                   <path d="M9 18V5l12-2v13" />
                   <circle cx="6" cy="18" r="3" />
                   <circle cx="18" cy="16" r="3" />
                 </svg>
-                <span class="melody-indicator-name">{melodyStore.getCurrentMelody()?.name ?? 'Untitled'}</span>
+                <span class="melody-indicator-info">
+                  <span class="melody-indicator-name">
+                    {melodyStore.getCurrentMelody()?.name ?? 'Untitled'}
+                  </span>
+                  <span class="melody-indicator-character">
+                    {selectedCharacter()}
+                  </span>
+                </span>
               </button>
             </Show>
             {/* Walkthrough Control Button */}
