@@ -11,7 +11,7 @@ import { appStore } from '@/stores'
 import { adsr, playbackSpeed, setPlaybackSpeed, setSensitivity, settings, } from '@/stores'
 import type { PitchAlgorithm } from '@/stores/settings-store'
 import type { PitchBufferSize } from '@/stores/settings-store'
-import { characterSounds, colorCodeNotes, flameMode, selectedCharacter, setCharacterSounds, setColorCodeNotes, setFlameMode, setShowAccuracyPercent, setShowSidebarNoteList, showAccuracyPercent, showSidebarNoteList, } from '@/stores/settings-store'
+import { characterSounds, colorCodeNotes, flameMode, selectedCharacter, setCharacterSounds, setColorCodeNotes, setFlameMode, setShowAccuracyPercent, setShowPracticeResultPopup, setShowSidebarNoteList, showAccuracyPercent, showPracticeResultPopup, showSidebarNoteList, } from '@/stores/settings-store'
 import { pitchAlgorithm, setPitchAlgorithm } from '@/stores/settings-store'
 import { PITCH_BUFFER_DESCRIPTIONS, PITCH_BUFFER_LABELS, PITCH_BUFFER_SIZES, pitchBufferSize, setPitchBufferSize, } from '@/stores/settings-store'
 
@@ -513,6 +513,25 @@ export const SettingsPanel: Component = () => {
               <span class="settings-slider" />
             </label>
             <small>Show live pitch tracker (Practice tab)</small>
+          </div>
+
+          <div class="settings-row">
+            <label for="vis-practice-result-popup">Practice Result Popup</label>
+            <label class="settings-toggle">
+              <input
+                type="checkbox"
+                id="vis-practice-result-popup"
+                checked={showPracticeResultPopup()}
+                onChange={(e) => {
+                  setShowPracticeResultPopup(e.currentTarget.checked)
+                }}
+              />
+              <span class="settings-slider" />
+            </label>
+            <small>
+              Show a score overlay after each practice run or session completes.
+              When off, results are still recorded in history.
+            </small>
           </div>
 
           <div class="settings-row">

@@ -40,7 +40,7 @@ import { setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrumen
 import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initBpm, initPresets, initReverb, initSessionHistory, initSettings, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, toggleMicWaveVisible, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import { getSession, templateToSession } from '@/stores/session-store'
-import { selectedCharacter } from '@/stores/settings-store'
+import { selectedCharacter, showPracticeResultPopup, } from '@/stores/settings-store'
 import type { MelodyItem, PlaybackMode, SpacedRestMode } from '@/types'
 import { Walkthrough, WalkthroughControl } from './components'
 import { AppErrorBoundary } from './components/AppErrorBoundary'
@@ -1015,7 +1015,7 @@ const AppShell: Component<AppProps> = (props) => {
       </Show>
 
       {/* Score overlay */}
-      <Show when={practiceResult() !== null}>
+      <Show when={showPracticeResultPopup() && practiceResult() !== null}>
         <div class="overlay" onClick={closeScoreOverlay}>
           <div
             id="score-card"
@@ -1126,7 +1126,7 @@ const AppShell: Component<AppProps> = (props) => {
         onClose={() => setShowScaleBuilder(false)}
       />
 
-      <Show when={sessionSummary() !== null}>
+      <Show when={showPracticeResultPopup() && sessionSummary() !== null}>
         <div class="overlay" onClick={() => setSessionSummary(null)}>
           <div
             id="session-summary-card"
