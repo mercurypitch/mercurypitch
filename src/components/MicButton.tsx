@@ -15,7 +15,7 @@ export const MicButton: Component<MicButtonProps> = (props) => {
     <button
       id="btn-mic"
       class={`ctrl-btn ${props.active ? 'recording' : ''}`}
-      onClick={props.onClick}
+      onClick={() => props.onClick?.()}
       disabled={props.disabled}
       title={props.active ? 'Disable microphone' : 'Enable microphone'}
     >

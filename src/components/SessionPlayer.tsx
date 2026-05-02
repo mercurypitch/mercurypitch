@@ -108,14 +108,14 @@ export const SessionPlayer: Component<SessionPlayerProps> = (props) => {
       <div class="session-player-controls">
         <button
           class="ctrl-btn session-skip-btn"
-          onClick={props.onSkip}
+          onClick={() => props.onSkip()}
           title="Skip this item"
         >
           Skip
         </button>
         <button
           class="ctrl-btn session-end-btn"
-          onClick={props.onEnd}
+          onClick={() => props.onEnd()}
           title="End session"
         >
           End

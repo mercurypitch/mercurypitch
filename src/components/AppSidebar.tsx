@@ -75,7 +75,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
       {/* Mobile close button */}
       <button
         class="sidebar-close-btn"
-        onClick={props.onClose}
+        onClick={() => props.onClose?.()}
         title="Close menu"
       >
         <svg viewBox="0 0 24 24" width="18" height="18">
