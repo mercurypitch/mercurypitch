@@ -4,7 +4,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createMemo, createSignal, For, onMount, Show } from 'solid-js'
+import { createMemo, createSignal, onMount, Show } from 'solid-js'
 import { AppSidebar } from '@/components/AppSidebar'
 import { FocusMode } from '@/components/FocusMode'
 import { HistoryCanvas } from '@/components/HistoryCanvas'
@@ -39,7 +39,7 @@ import { setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrumen
 import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initBpm, initPresets, initReverb, initSessionHistory, initSettings, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, toggleMicWaveVisible, userSession, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import { getSession, templateToSession } from '@/stores/session-store'
-import type { MelodyItem, PlaybackMode, SpacedRestMode } from '@/types'
+import type { PlaybackMode, SpacedRestMode } from '@/types'
 import { Walkthrough, WalkthroughControl } from './components'
 import { AppErrorBoundary } from './components/AppErrorBoundary'
 import { CrashModal } from './components/CrashModal'
