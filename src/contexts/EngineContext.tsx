@@ -7,6 +7,7 @@ import { PracticeEngine } from '@/lib/practice-engine'
 import * as appStoreCore from '@/stores/app-store'
 import * as settingsStore from '@/stores/settings-store'
 import * as transportStore from '@/stores/transport-store'
+import * as uiStore from '@/stores/ui-store'
 
 // Use the namespace import so we don't end up with two import lines for
 // `@/stores/settings-store` (one for runtime, one for types). ESLint
@@ -67,21 +68,23 @@ export function EngineProvider(props: { children: JSX.Element }) {
   // Sync Instrument
   //
   // Two sources can drive the playback timbre:
-  //   1) the instrument dropdown in Settings (`appStoreCore.instrument()`)
+  //   1) the instrument dropdown in Settings/Editor (`appStoreCore.instrument()`)
   //   2) the selected character (`settingsStore.selectedCharacter()`)
-  //      when "Character Sounds" is enabled.
-  // The character mapping wins when the toggle is on so each persona
-  // sounds distinct in the practice tab. Flipping the toggle off
-  // immediately falls back to the user's chosen instrument — no
-  // reload required, because this whole effect re-runs as soon as
-  // `characterSounds()` flips.
+  //      when "Character Sounds" is enabled AND the active tab is Practice.
+  // The character mapping wins only in the practice tab so each persona
+  // sounds distinct during vocal exercises, while the editor always
+  // respects the user's explicit instrument dropdown choice. Flipping
+  // the toggle or switching tabs immediately re-evaluates — no reload
+  // required, because this whole effect re-runs reactively.
   createEffect(() => {
     const userInstrument = appStoreCore.instrument()
     const useCharacter = settingsStore.characterSounds()
     const character = settingsStore.selectedCharacter()
-    const effective: InstrumentType = useCharacter
-      ? CHARACTER_INSTRUMENT[character]
-      : userInstrument
+    const tab = uiStore.activeTab()
+    const effective: InstrumentType =
+      useCharacter && tab === 'practice'
+        ? CHARACTER_INSTRUMENT[character]
+        : userInstrument
     audioEngine.setInstrument(effective)
   })
 
