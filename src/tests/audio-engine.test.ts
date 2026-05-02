@@ -146,7 +146,7 @@ global.navigator = {
 } as any
 
 // Mock browser APIs for test environment
-global.AudioContext = vi.fn().mockImplementation(function(this: object) {
+global.AudioContext = vi.fn().mockImplementation(function (this: object) {
   Object.assign(this, {
     state: 'running' as const,
     sampleRate: 44100,
@@ -207,7 +207,9 @@ global.AudioContext = vi.fn().mockImplementation(function(this: object) {
   })
 })
 
-global.OfflineAudioContext = vi.fn().mockImplementation(function(this: object) {
+global.OfflineAudioContext = vi.fn().mockImplementation(function (
+  this: object,
+) {
   Object.assign(this, {
     sampleRate: 44100,
     currentTime: 0,
@@ -259,14 +261,16 @@ global.OfflineAudioContext = vi.fn().mockImplementation(function(this: object) {
 
 // Mock URL.createObjectURL for download tests
 global.URL = {
-  createObjectURL: vi.fn().mockReturnValue('mock-url' as any),
+  createObjectURL: vi.fn().mockReturnValue('mock-url'),
   revokeObjectURL: vi.fn().mockImplementation(() => {}),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 } as any
 
 global.navigator = {
   mediaDevices: {
     getUserMedia: vi.fn().mockResolvedValue({
       getTracks: vi.fn().mockReturnValue([]),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     }) as any,
     ondevicechange: null,
     enumerateDevices: vi.fn(),
@@ -277,6 +281,7 @@ global.navigator = {
   credentials: null,
   doNotTrack: null,
   geolocation: null,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 } as any
 
 describe('AudioEngine', () => {
