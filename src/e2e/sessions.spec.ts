@@ -486,7 +486,7 @@ test.describe('Practice Sessions', () => {
     await switchTab(page, 'practice')
     await page.waitForTimeout(300)
 
-    const tempoValue = page.locator('#tempo-value')
+    const tempoValue = page.locator('#bpm-input')
     await expect(tempoValue).toBeVisible()
   })
 
@@ -507,7 +507,7 @@ test.describe('Practice Sessions', () => {
     await page.waitForTimeout(300)
 
     const tempoSlider = page.locator('#tempo')
-    const tempoValue = page.locator('#tempo-value')
+    const tempoValue = page.locator('#bpm-input')
 
     if ((await tempoSlider.count()) > 0) {
       const initialValue = await tempoValue.textContent()

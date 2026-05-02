@@ -6,8 +6,11 @@ import ssl from '@vitejs/plugin-basic-ssl'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
+// Only use SSL in dev mode - production builds don't need it
+const isDev = process.env.NODE_ENV !== 'production'
+
 export default defineConfig({
-  plugins: [ssl(), solidPlugin()],
+  plugins: [isDev ? ssl() : [], solidPlugin()],
   base: './',
   resolve: {
     alias: {

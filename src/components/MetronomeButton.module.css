@@ -3,38 +3,38 @@
    ============================================================ */
 
 .ctrlBtn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-    padding: 6px 12px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    background: var(--bg-tertiary);
-    color: var(--text-primary);
-    font-size: 0.78rem;
-    cursor: pointer;
-    transition: all 0.12s ease;
-    white-space: nowrap;
-    line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  white-space: nowrap;
+  line-height: 1;
 }
 
 .ctrlBtn:hover:not(:disabled) {
-    background: var(--border-light);
-    border-color: var(--accent);
+  background: var(--border-light);
+  border-color: var(--accent);
 }
 
 .ctrlBtn:active:not(:disabled) {
-    transform: translateY(1px);
+  transform: translateY(1px);
 }
 
 .ctrlBtn.active {
-    background: var(--yellow);
-    border-color: var(--yellow);
-    color: var(--bg-primary);
+  background: var(--yellow);
+  border-color: var(--yellow);
+  color: var(--bg-primary);
 }
 
 .ctrlBtn.active:hover {
-    background: #e0a020;
-    border-color: #e0a020;
+  background: #e0a020;
+  border-color: #e0a020;
 }

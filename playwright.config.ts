@@ -8,9 +8,8 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
   use: {
-    // Vite dev server is HTTPS via @vitejs/plugin-basic-ssl on port 3000.
-    baseURL: 'https://localhost:3000',
-    ignoreHTTPSErrors: true,
+    // Use production build served on port 3001 (no SSL needed)
+    baseURL: 'http://localhost:3001',
     trace: 'on-first-retry',
   },
   projects: [
@@ -20,10 +19,9 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npm run dev',
-    url: 'https://localhost:3000',
+    command: 'npm run build && npx serve dist -l 3001',
+    url: 'http://localhost:3001',
     reuseExistingServer: true,
-    timeout: 60000,
-    ignoreHTTPSErrors: true,
+    timeout: 120000,
   },
 })

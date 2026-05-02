@@ -1265,7 +1265,9 @@ export class AudioEngine {
     if (instrument) this.currentInstrument = instrument
 
     // TODO: Check if we need this! Validate melody items before rendering
-    const hasValidFreq = melody.some((item) => item.note !== null && item.note.freq !== null)
+    const hasValidFreq = melody.some(
+      (item) => item.note !== null && item.note.freq !== null,
+    )
     if (!hasValidFreq) {
       return null
     }
