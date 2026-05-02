@@ -5,6 +5,7 @@
 import type { Component } from 'solid-js'
 import { createSignal } from 'solid-js'
 import { appStore } from '@/stores'
+import { accuracyTier, applyAccuracyTier } from '@/stores/settings-store'
 
 interface WelcomeScreenProps {
   onTakeTour?: () => void
@@ -181,6 +182,45 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
             </svg>
             Take a Tour
           </button>
+        </div>
+
+        {/* Quick Accuracy Tier Select */}
+        <div class="welcome-tier-select">
+          <p class="welcome-tier-label">
+            Choose your skill level to get started:
+          </p>
+          <div class="welcome-tier-buttons">
+            <button
+              class="welcome-tier-btn welcome-tier-learning"
+              onClick={() => applyAccuracyTier('learning')}
+              title={
+                'Perfect within 15 cents. Great for beginners starting out.'
+              }
+            >
+              <span class="tier-icon">🌱</span>
+              <span class="tier-name">Learning</span>
+            </button>
+            <button
+              class="welcome-tier-btn welcome-tier-singer"
+              onClick={() => applyAccuracyTier('singer')}
+              title={
+                'Perfect within 8 cents. Good for intermediate singers.'
+              }
+            >
+              <span class="tier-icon">🎤</span>
+              <span class="tier-name">Singer</span>
+            </button>
+            <button
+              class="welcome-tier-btn welcome-tier-professional"
+              onClick={() => applyAccuracyTier('professional')}
+              title={
+                'Perfect within 0 cents. Advanced virtuosos level.'
+              }
+            >
+              <span class="tier-icon">🌟</span>
+              <span class="tier-name">Professional</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>

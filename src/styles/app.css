@@ -5762,6 +5762,85 @@ input:checked + .settings-slider:before {
   color: var(--accent);
 }
 
+/* Quick tier select */
+.welcome-tier-select {
+  margin-top: 20px;
+  padding: 14px 16px;
+  background: var(--bg-tertiary);
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+}
+
+.welcome-tier-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin: 0 0 10px;
+  text-align: center;
+}
+
+.welcome-tier-buttons {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.welcome-tier-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 8px;
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.welcome-tier-btn .tier-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.welcome-tier-btn .tier-name {
+  line-height: 1.2;
+}
+
+.welcome-tier-btn:hover {
+  border-color: var(--accent);
+  background: var(--bg-tertiary);
+}
+
+.welcome-tier-learning {
+  border-color: #22c55e;
+}
+
+.welcome-tier-learning:hover {
+  border-color: #22c55e;
+  background: rgba(34, 197, 94, 0.1);
+}
+
+.welcome-tier-singer {
+  border-color: #f59e0b;
+}
+
+.welcome-tier-singer:hover {
+  border-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.welcome-tier-professional {
+  border-color: #8b5cf6;
+}
+
+.welcome-tier-professional:hover {
+  border-color: #8b5cf6;
+  background: rgba(139, 92, 246, 0.1);
+}
+
 /* ============================================================
    Walkthrough Tutorial (GH #140)
    ============================================================ */

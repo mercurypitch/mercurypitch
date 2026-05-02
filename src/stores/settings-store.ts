@@ -1,6 +1,7 @@
 import { createPersistedSignal } from '@/lib/storage'
 
 export type SensitivityPreset = 'quiet' | 'home' | 'noisy'
+export type AccuracyTier = 'learning' | 'singer' | 'professional'
 
 export interface SettingsConfig {
   detectionThreshold: number
@@ -50,6 +51,33 @@ export const SENSITIVITY_PRESETS: Record<
   },
 }
 
+const ACCURACY_PRESETS: Record<
+  AccuracyTier,
+  Array<{ threshold: number; band: number; color: string }>
+> = {
+  learning: [
+    { threshold: 15, band: 100, color: '#3fb950' },
+    { threshold: 30, band: 90, color: '#58a6ff' },
+    { threshold: 50, band: 75, color: '#2dd4bf' },
+    { threshold: 75, band: 50, color: '#d29922' },
+    { threshold: 999, band: 0, color: '#f85149' },
+  ],
+  singer: [
+    { threshold: 8, band: 100, color: '#3fb950' },
+    { threshold: 15, band: 90, color: '#58a6ff' },
+    { threshold: 25, band: 75, color: '#2dd4bf' },
+    { threshold: 40, band: 50, color: '#d29922' },
+    { threshold: 999, band: 0, color: '#f85149' },
+  ],
+  professional: [
+    { threshold: 0, band: 100, color: '#3fb950' },
+    { threshold: 3, band: 90, color: '#58a6ff' },
+    { threshold: 8, band: 75, color: '#2dd4bf' },
+    { threshold: 15, band: 50, color: '#d29922' },
+    { threshold: 999, band: 0, color: '#f85149' },
+  ],
+}
+
 const DEFAULT_BANDS: Array<{ threshold: number; band: number; color: string }> =
   [
     { threshold: 0, band: 100, color: '#3fb950' },
@@ -61,7 +89,7 @@ const DEFAULT_BANDS: Array<{ threshold: number; band: number; color: string }> =
 
 export const DEFAULT_SETTINGS: SettingsConfig = {
   ...SENSITIVITY_PRESETS.noisy, // Use noisy as default config values
-  bands: DEFAULT_BANDS,
+  bands: ACCURACY_PRESETS.professional,
   tonicAnchor: false,
 }
 
@@ -263,3 +291,50 @@ export const [showPitchDisplay, setShowPitchDisplay] =
 export function initSettings(): void {}
 export function initADSR(): void {}
 export function initReverb(): void {}
+
+// ── Accuracy Presets ───────────────────────────────────────────────────
+
+export const [accuracyTier, _setAccuracyTier] = createPersistedSignal<
+  AccuracyTier
+>('pitchperfect_accuracy_tier', 'professional')
+
+/** Apply accuracy tier preset to current settings */
+export function applyAccuracyTier(tier: AccuracyTier): void {
+  const bands = ACCURACY_PRESETS[tier]
+  const base = SENSITIVITY_PRESETS.noisy
+  setSettings((s) => ({
+    ...base,
+    bands,
+    tonicAnchor: s.tonicAnchor,
+  }))
+  _setAccuracyTier(tier)
+}
+
+/** Get current accuracy tier preset information */
+export function getAccuracyTierInfo(tier: AccuracyTier): {
+  label: string
+  description: string
+  difficulty: 'Beginner' | 'Intermediate' | 'Advanced'
+} {
+  const info = {
+    learning: {
+      label: 'Learning',
+      description:
+        'Perfect pitch means being within 15 cents of the target note. Great for beginners.',
+      difficulty: 'Beginner',
+    },
+    singer: {
+      label: 'Singer',
+      description:
+        'Perfect pitch means being within 8 cents of the target note. For intermediate singers.',
+      difficulty: 'Intermediate',
+    },
+    professional: {
+      label: 'Professional',
+      description:
+        'Perfect pitch means being within 0 cents of the target note. For advanced virtuosos.',
+      difficulty: 'Advanced',
+    },
+  }
+  return info[tier]
+}
