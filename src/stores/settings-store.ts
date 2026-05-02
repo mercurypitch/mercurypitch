@@ -1,4 +1,8 @@
+import { IS_DEV } from '@/lib/defaults'
+import type { PitchAlgorithm } from '@/lib/pitch-detector'
 import { createPersistedSignal } from '@/lib/storage'
+
+export type { PitchAlgorithm }
 
 export type SensitivityPreset = 'quiet' | 'home' | 'noisy'
 export type AccuracyTier = 'learning' | 'singer' | 'professional'
@@ -78,15 +82,6 @@ const ACCURACY_PRESETS: Record<
   ],
 }
 
-const DEFAULT_BANDS: Array<{ threshold: number; band: number; color: string }> =
-  [
-    { threshold: 0, band: 100, color: '#3fb950' },
-    { threshold: 10, band: 90, color: '#58a6ff' },
-    { threshold: 25, band: 75, color: '#2dd4bf' },
-    { threshold: 50, band: 50, color: '#d29922' },
-    { threshold: 999, band: 0, color: '#f85149' },
-  ]
-
 export const DEFAULT_SETTINGS: SettingsConfig = {
   ...SENSITIVITY_PRESETS.noisy, // Use noisy as default config values
   bands: ACCURACY_PRESETS.learning,
@@ -104,6 +99,11 @@ export const DEFAULT_REVERB: ReverbConfig = {
   wetness: 30,
   type: 'room',
 }
+
+// ── TODO: Merge custom settings from UVR branch with dev settings ─────────────────────────────
+// The dev branch has new settings in the multi-setting form in SettingsPanel.
+// We need to add: perfect pitch sensitivity sliders, camera preview toggle,
+// and other UVR-specific controls while maintaining backward compatibility.
 
 export const [sensitivityPreset, _setSensitivityPreset] =
   createPersistedSignal<SensitivityPreset>(
