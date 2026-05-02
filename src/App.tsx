@@ -36,7 +36,7 @@ import { registerE2EBridge } from '@/lib/e2e-bridge'
 import { melodyIndexAtBeat, melodyTotalBeats } from '@/lib/scale-data'
 import { buildScaleMelody, buildSessionPlaybackMelody, } from '@/lib/session-builder'
 import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
-import { setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPendingSessionStart, setPlaybackSpeed, setScaleType, } from '@/stores'
+import { setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPlaybackSpeed, setScaleType, } from '@/stores'
 import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initBpm, initPresets, initReverb, initSessionHistory, initSettings, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, toggleMicWaveVisible, userSession, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import { getSession, templateToSession } from '@/stores/session-store'
@@ -451,23 +451,7 @@ const AppShell: Component<AppProps> = (props) => {
       setCurrentRepeat(1)
     }
 
-    // If the practice tab has a "session-shaped" playback loaded
-    // (multi-item OR contains non-melody types like rest/scale/preset),
-    // use the unified startSessionPlayback API to properly enter session mode.
-    const session = userSession()
-    const isSessionShaped =
-      session !== null &&
-      (session.items.length > 1 ||
-        session.items.some((it) => (it as { type: string }).type !== 'melody'))
-    if (isSessionShaped && isPaused() === false) {
-      setPendingSessionStart(true)
-      // FIXME: startSessionPlayback is unification of session playback, but if we set
-      //        do this here instead of pending start, we don't handle 'Once' and 'Repeat' modes
-      //        as the handlePlay() does that, not sure how to proceed, this has become too
-      //        complicated
-      // startSessionPlayback()
-    }
-    // Single-melody playback: continue with normal flow
+    // handlePlay() correctly branches internally based on playMode() === 'practice'.
     handlePlay()
   }
 

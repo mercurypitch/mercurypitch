@@ -22,8 +22,6 @@ export const [sessionModeSignal, setSessionMode] = createSignal(false)
  * playback whenever a session happened to be loaded in the editor.
  * (See `assets/plans/session-sequence-advancement.md` Bug 3.)
  */
-export const [pendingSessionStart, setPendingSessionStart] =
-  createSignal<boolean>(false)
 
 export const [practiceResults, setPracticeResults] = createSignal<
   PracticeResult[]
