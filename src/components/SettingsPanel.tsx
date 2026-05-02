@@ -4,7 +4,8 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, Show } from 'solid-js'
-import { appStore } from '@/stores'
+import type { AccuracyTier } from '@/stores'
+import { accuracyTier, applyAccuracyTier, appStore } from '@/stores'
 import { adsr, playbackSpeed, setPlaybackSpeed, setSensitivity, settings, } from '@/stores'
 import { characterSounds, colorCodeNotes, flameMode, selectedCharacter, setCharacterSounds, setColorCodeNotes, setFlameMode, setShowAccuracyPercent, setShowSidebarNoteList, showAccuracyPercent, showSidebarNoteList, } from '@/stores/settings-store'
 import { APP_VERSION } from '@/version'
@@ -82,6 +83,31 @@ export const SettingsPanel: Component = () => {
               <option value="quiet">Quiet Room (Studio)</option>
               <option value="home">Some Noise (At Home)</option>
               <option value="noisy">High Noise (Outside)</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Accuracy Tier Section */}
+        <div class="settings-section">
+          <h3 class="settings-section-title">Accuracy Tier</h3>
+          <div class="settings-divider" />
+          <p class="settings-desc">
+            Choose your skill level. Perfect pitch means being within the
+            specified number of cents of the target note.
+          </p>
+
+          <div class="settings-row">
+            <label for="accuracy-tier-select">Difficulty</label>
+            <select
+              id="accuracy-tier-select"
+              value={accuracyTier()}
+              onChange={(e) => {
+                applyAccuracyTier(e.currentTarget.value as AccuracyTier)
+              }}
+            >
+              <option value="learning">Learning (Beginner)</option>
+              <option value="singer">Singer (Intermediate)</option>
+              <option value="professional">Professional (Advanced)</option>
             </select>
           </div>
         </div>
