@@ -4,6 +4,7 @@
 
 import type { AccuracyRating, MelodyNote, NoteResult, PitchResult, PitchSample, PlaybackMode, PracticeResult, } from '@/types'
 import type { AudioEngine } from './audio-engine'
+import type { PitchAlgorithm } from './pitch-detector'
 import { PitchDetector } from './pitch-detector'
 
 // Accuracy bands (threshold in cents → band score)
@@ -94,7 +95,22 @@ export class PracticeEngine {
     minConfidence?: number
     minAmplitude?: number
     bands?: { threshold: number; band: number }[]
+    algorithm?: PitchAlgorithm
+    bufferSize?: number
   }): void {
+    // Buffer size requires recreating the detector (it's a construction param)
+    if (
+      config.bufferSize !== undefined &&
+      config.bufferSize !== this.bufferSize
+    ) {
+      this.bufferSize = config.bufferSize
+      this.detector = new PitchDetector({
+        sampleRate: this.sampleRate,
+        bufferSize: this.bufferSize,
+        sensitivity: this.sensitivity,
+        algorithm: config.algorithm ?? this.detector.getAlgorithm(),
+      })
+    }
     if (config.sensitivity !== undefined) {
       this.sensitivity = Math.max(1, Math.min(10, config.sensitivity))
       this.detector.setSensitivity(this.sensitivity)
@@ -107,6 +123,9 @@ export class PracticeEngine {
     }
     if (config.bands !== undefined) {
       this.bands = [...config.bands]
+    }
+    if (config.algorithm !== undefined) {
+      this.detector.setAlgorithm(config.algorithm)
     }
   }
 

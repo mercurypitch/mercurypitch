@@ -1,4 +1,7 @@
+import type { PitchAlgorithm } from '@/lib/pitch-detector'
 import { createPersistedSignal } from '@/lib/storage'
+
+export type { PitchAlgorithm }
 
 export type SensitivityPreset = 'quiet' | 'home' | 'noisy'
 export type AccuracyTier = 'learning' | 'singer' | 'professional'
@@ -241,6 +244,35 @@ export const [showSidebarNoteList, setShowSidebarNoteList] =
 export const [showAccuracyPercent, setShowAccuracyPercent] =
   createPersistedSignal<boolean>('pitchperfect_accuracy_percent', true)
 
+// ── Pitch Detection Algorithm ─────────────────────────────────────
+//
+// Choose between YIN (classic, well-tested) and McLeod Pitch Method
+// (MPM — better harmonic handling, fewer octave errors on complex
+// timbres). Default: YIN for stability.
+export const [pitchAlgorithm, setPitchAlgorithm] =
+  createPersistedSignal<PitchAlgorithm>('pitchperfect_pitch_algorithm', 'yin')
+
+// ── Pitch Detection Buffer Size ───────────────────────────────────
+//
+// Larger buffers give better accuracy (especially for low frequencies)
+// but increase latency. 2048 is the sweet spot for most voices.
+export type PitchBufferSize = 512 | 1024 | 2048 | 4096
+export const PITCH_BUFFER_SIZES: PitchBufferSize[] = [512, 1024, 2048, 4096]
+export const PITCH_BUFFER_LABELS: Record<PitchBufferSize, string> = {
+  512: '512',
+  1024: '1K',
+  2048: '2K',
+  4096: '4K',
+}
+export const PITCH_BUFFER_DESCRIPTIONS: Record<PitchBufferSize, string> = {
+  512: 'Lowest latency, less accurate on low notes',
+  1024: 'Low latency, good for higher voices',
+  2048: 'Balanced (recommended)',
+  4096: 'High accuracy, more latency',
+}
+export const [pitchBufferSize, setPitchBufferSize] =
+  createPersistedSignal<PitchBufferSize>('pitchperfect_pitch_buffer_size', 2048)
+
 // ── Character-themed playback sounds ───────────────────────────────
 //
 // Each guide character maps to a different timbre + small detune /
@@ -288,15 +320,27 @@ export function initReverb(): void {}
 export const [accuracyTier, _setAccuracyTier] =
   createPersistedSignal<AccuracyTier>('pitchperfect_accuracy_tier', 'singer')
 
+// Each accuracy tier implies a different mic sensitivity.
+// "quiet" has the LOWEST thresholds (most forgiving, easiest to trigger) —
+// perfect for beginners who need the tracker to pick up anything.
+// "noisy" has the HIGHEST thresholds (requires strong, clean signal) —
+// suited for pros who want to filter out everything but precise singing.
+const TIER_SENSITIVITY: Record<AccuracyTier, SensitivityPreset> = {
+  learning: 'quiet',
+  singer: 'home',
+  professional: 'noisy',
+}
+
 /** Apply accuracy tier preset to current settings */
 export function applyAccuracyTier(tier: AccuracyTier): void {
   const bands = ACCURACY_PRESETS[tier]
-  const base = SENSITIVITY_PRESETS.noisy
+  const base = SENSITIVITY_PRESETS[TIER_SENSITIVITY[tier]]
   setSettings((s) => ({
     ...base,
     bands,
     tonicAnchor: s.tonicAnchor,
   }))
+  _setSensitivityPreset(TIER_SENSITIVITY[tier])
   _setAccuracyTier(tier)
 }
 
