@@ -51,15 +51,15 @@ export async function switchTab(
   tabName: 'editor' | 'practice' | 'settings',
 ) {
   await page.evaluate((name) => {
-    // Try to use appStore first (triggers SolidJS reactivity)
-    if ((window as any).__appStore) {
-      ;(window as any).__appStore.setActiveTab(name)
+    const store =
+      (window as any).__pp?.appStore ?? (window as any).__appStore ?? null
+    if (store) {
+      store.setActiveTab(name)
     } else {
-      // Fallback to localStorage
       localStorage.setItem('pitchperfect_active_tab', name)
     }
   }, tabName)
-  await page.waitForTimeout(300)
+  await page.waitForTimeout(500)
 }
 
 export async function goToAndWait(page: Page, url: string) {

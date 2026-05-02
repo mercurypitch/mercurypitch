@@ -2,6 +2,7 @@ import eslint from '@eslint/js'
 import { defineConfig } from 'eslint/config'
 import { importX } from 'eslint-plugin-import-x'
 import simpleImportSort from 'eslint-plugin-simple-import-sort'
+import solid from 'eslint-plugin-solid'
 import tseslint from 'typescript-eslint'
 
 export default defineConfig(
@@ -22,6 +23,14 @@ export default defineConfig(
   importX.flatConfigs.recommended,
   eslint.configs.recommended,
   ...tseslint.configs.strict,
+  {
+    ...solid.configs['flat/recommended'],
+    rules: {
+      // SolidJS rules as warnings — fix in dedicated cleanup pass
+      'solid/reactivity': 'warn',
+      'solid/prefer-for': 'warn',
+    },
+  },
   {
     plugins: {
       'simple-import-sort': simpleImportSort,

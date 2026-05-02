@@ -294,12 +294,6 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
             {props.countInBeat()}
           </div>
         </Show>
-
-        <Show when={props.playMode() === 'practice'}>
-          <div id="run-indicator">
-            <span id="cycle-counter">⌛</span>
-          </div>
-        </Show>
       </div>
 
       {/* Secondary controls (hidden on mobile < 480px) */}
