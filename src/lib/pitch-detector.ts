@@ -1,8 +1,11 @@
 // ============================================================
-// Pitch Detector — YIN algorithm implementation
+// Pitch Detector — YIN + McLeod Pitch Method (MPM)
 // ============================================================
 
 import { freqToNote } from './scale-data'
+
+/** Supported pitch detection algorithms */
+export type PitchAlgorithm = 'yin' | 'mpm'
 
 /** Internal pitch detection result (partial PitchResult) */
 export interface DetectedPitch {
@@ -30,6 +33,8 @@ export interface PitchDetectorOptions {
   minConfidence?: number
   /** Minimum amplitude (RMS) threshold (0-1, default: 0.05) */
   minAmplitude?: number
+  /** Pitch detection algorithm (default: 'yin') */
+  algorithm?: PitchAlgorithm
 }
 
 const DEFAULT_OPTIONS: Required<PitchDetectorOptions> = {
@@ -41,6 +46,7 @@ const DEFAULT_OPTIONS: Required<PitchDetectorOptions> = {
   sensitivity: 7,
   minConfidence: 0.3,
   minAmplitude: 0.02,
+  algorithm: 'yin',
 }
 
 export class PitchDetector {
@@ -52,6 +58,7 @@ export class PitchDetector {
   private sensitivity: number
   private minConfidence: number
   private minAmplitude: number
+  private algorithm: PitchAlgorithm
   private readonly yinBuffer: Float32Array
   private readonly pitchHistory: number[] = []
   private readonly maxHistory = 5
@@ -66,6 +73,7 @@ export class PitchDetector {
     this.sensitivity = opts.sensitivity
     this.minConfidence = opts.minConfidence
     this.minAmplitude = opts.minAmplitude
+    this.algorithm = opts.algorithm
     this.yinBuffer = new Float32Array(Math.floor(this.bufferSize / 2))
   }
 
@@ -87,12 +95,21 @@ export class PitchDetector {
       }
     }
 
-    const result = this.analyzeBuffer(timeDomainBuffer)
+    // Dispatch to selected algorithm
+    const result =
+      this.algorithm === 'mpm'
+        ? this.analyzeMPM(timeDomainBuffer)
+        : this.analyzeYIN(timeDomainBuffer)
 
-    if (
-      result.confidence < this.adjustedThreshold() ||
-      result.confidence < this.minConfidence
-    ) {
+    // Confidence gate — YIN uses adjustedThreshold() as a minimum;
+    // MPM confidence is the NSDF peak value (0–1) so only minConfidence
+    // applies.
+    const confFloor =
+      this.algorithm === 'mpm'
+        ? this.minConfidence
+        : Math.max(this.adjustedThreshold(), this.minConfidence)
+
+    if (result.confidence < confFloor) {
       return {
         frequency: 0,
         clarity: 0,
@@ -112,8 +129,10 @@ export class PitchDetector {
     }
   }
 
+  // ── YIN Algorithm ─────────────────────────────────────────────
+
   /** Core YIN analysis */
-  private analyzeBuffer(buffer: Float32Array): {
+  private analyzeYIN(buffer: Float32Array): {
     frequency: number
     confidence: number
   } {
@@ -174,7 +193,151 @@ export class PitchDetector {
     return { frequency: stableFreq, confidence }
   }
 
-  /** Parabolic interpolation around the minimum */
+  // ── McLeod Pitch Method (MPM) ─────────────────────────────────
+  //
+  // Based on Philip McLeod's "A Smarter Way to Find Pitch" (2005).
+  // Uses the Normalized Square Difference Function (NSDF) which
+  // produces peaks in the range [-1, 1], making confidence
+  // estimation natural. Peak picking uses positive-going zero
+  // crossings to avoid octave errors.
+
+  /** Core MPM analysis */
+  private analyzeMPM(buffer: Float32Array): {
+    frequency: number
+    confidence: number
+  } {
+    const halfSize = Math.floor(this.bufferSize / 2)
+    const nsdf = this.yinBuffer // reuse the buffer
+
+    // Step 1: Compute NSDF (Normalized Square Difference Function)
+    //
+    // NSDF(τ) = 2 * r(τ) / (m(τ))
+    // where r(τ) = autocorrelation at lag τ
+    //       m(τ) = sum of squares normalization term
+    //
+    // We compute both terms with the correct shrinking window per
+    // McLeod's paper: for lag τ, only sum over i = 0 .. (N-1-τ).
+    const N = buffer.length
+    for (let tau = 0; tau < halfSize; tau++) {
+      let acf = 0 // autocorrelation
+      let m = 0 // normalization
+      const windowLen = N - tau
+      for (let i = 0; i < windowLen; i++) {
+        acf += buffer[i] * buffer[i + tau]
+        m += buffer[i] * buffer[i] + buffer[i + tau] * buffer[i + tau]
+      }
+      nsdf[tau] = m > 0 ? (2 * acf) / m : 0
+    }
+
+    // Step 2: Find key maxima using positive-going zero crossings.
+    // We collect the highest peak in each "positive lobe" of the NSDF.
+    // This is the core MPM innovation that avoids octave errors.
+    //
+    // CRITICAL: The NSDF always starts near 1.0 at τ=0 and stays
+    // positive for the first few lags. This initial region is NOT a
+    // meaningful pitch period — we must skip past it by waiting for
+    // the NSDF to go negative at least once before collecting peaks.
+    const maxPositions: number[] = []
+    const maxValues: number[] = []
+    let inPositiveRegion = false
+    let currentMaxPos = 0
+    let currentMaxVal = 0
+    let seenNegative = false
+
+    for (let tau = 1; tau < halfSize; tau++) {
+      if (nsdf[tau] < 0) {
+        seenNegative = true
+      }
+      // Only start collecting peaks after the first zero crossing
+      if (!seenNegative) continue
+
+      if (nsdf[tau] > 0 && !inPositiveRegion) {
+        // Entering a positive lobe
+        inPositiveRegion = true
+        currentMaxPos = tau
+        currentMaxVal = nsdf[tau]
+      } else if (inPositiveRegion) {
+        if (nsdf[tau] > currentMaxVal) {
+          currentMaxPos = tau
+          currentMaxVal = nsdf[tau]
+        }
+        if (nsdf[tau] <= 0) {
+          // Leaving the positive lobe — record the peak
+          maxPositions.push(currentMaxPos)
+          maxValues.push(currentMaxVal)
+          inPositiveRegion = false
+        }
+      }
+    }
+
+    // Capture the last lobe if we ended in one
+    if (inPositiveRegion) {
+      maxPositions.push(currentMaxPos)
+      maxValues.push(currentMaxVal)
+    }
+
+    if (maxPositions.length === 0) {
+      return { frequency: 0, confidence: 0 }
+    }
+
+    // Step 3: Pick the first peak that is above a proportion of the
+    // global maximum. This selects the fundamental, not a harmonic.
+    const globalMax = Math.max(...maxValues)
+    const pickThreshold = globalMax * this.mpmPickThreshold()
+
+    let bestTau = maxPositions[0]
+    let bestVal = maxValues[0]
+    for (let i = 0; i < maxPositions.length; i++) {
+      if (maxValues[i] >= pickThreshold) {
+        bestTau = maxPositions[i]
+        bestVal = maxValues[i]
+        break
+      }
+    }
+
+    // Step 4: Parabolic interpolation around the chosen peak
+    const betterTau = this.parabolicInterpolationMax(bestTau, nsdf)
+    const frequency = this.sampleRate / betterTau
+
+    // Reject frequencies outside the valid range
+    if (frequency < this.minFrequency || frequency > this.maxFrequency) {
+      return { frequency: 0, confidence: 0 }
+    }
+
+    // Step 5: Stability filter
+    const stableFreq = this.applyStabilityFilter(frequency)
+
+    // NSDF peak value directly represents confidence (0-1 range)
+    const confidence = Math.max(0, Math.min(1, bestVal))
+
+    return { frequency: stableFreq, confidence }
+  }
+
+  /** Parabolic interpolation around a MAXIMUM (for MPM/NSDF peaks) */
+  private parabolicInterpolationMax(tau: number, buf: Float32Array): number {
+    if (tau <= 0 || tau >= buf.length - 1) return tau
+
+    const s0 = buf[tau - 1]
+    const s1 = buf[tau]
+    const s2 = buf[tau + 1]
+    const denom = 2 * (2 * s1 - s2 - s0)
+    if (Math.abs(denom) < 1e-10) return tau
+    const shift = (s0 - s2) / denom
+
+    return tau + shift
+  }
+
+  /** MPM pick threshold — maps sensitivity to how aggressively we
+   *  pick the first peak vs waiting for a stronger one.
+   *  Higher sensitivity → lower threshold → picks earlier (more
+   *  responsive). Range: 0.5 (strict) to 0.9 (relaxed). */
+  private mpmPickThreshold(): number {
+    return 0.9 - (this.sensitivity - 1) * 0.04
+  }
+
+  // ── Shared utilities ──────────────────────────────────────────
+
+  /** Parabolic interpolation around a MINIMUM (for YIN) */
   private parabolicInterpolation(tau: number): number {
     if (tau <= 0 || tau >= this.yinBuffer.length - 1) return tau
 
@@ -239,6 +402,17 @@ export class PitchDetector {
   setMinAmplitude(value: number): void {
     // Convert 1-10 scale to 0.01-0.20 range
     this.minAmplitude = Math.max(0.01, Math.min(0.2, (value / 10) * 0.2))
+  }
+
+  /** Set the pitch detection algorithm at runtime */
+  setAlgorithm(algo: PitchAlgorithm): void {
+    this.algorithm = algo
+    this.resetHistory()
+  }
+
+  /** Get the current algorithm */
+  getAlgorithm(): PitchAlgorithm {
+    return this.algorithm
   }
 
   /** Reset pitch history (call when sound starts) */
