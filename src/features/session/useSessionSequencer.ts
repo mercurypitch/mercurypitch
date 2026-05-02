@@ -4,7 +4,7 @@ import type { PlaybackRuntime } from '@/lib/playback-runtime'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { melodyTotalBeats } from '@/lib/scale-data'
 import { buildSessionItemMelody } from '@/lib/session-builder'
-import { advanceSessionItem, countIn, getCurrentSessionItem, recordSessionItemResult, sessionItemIndex, setActiveTab, setBpm, setKeyName, setPendingSessionStart, setScaleType, setSessionActive, showNotification, startPracticeSession, userSession, } from '@/stores'
+import { advanceSessionItem, countIn, getCurrentSessionItem, recordSessionItemResult, sessionItemIndex, setActiveTab, setBpm, setKeyName, setScaleType, setSessionActive, showNotification, startPracticeSession, userSession, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import type { MelodyItem, NoteResult, PracticeResult, SessionResult, } from '@/types'
 
@@ -246,7 +246,6 @@ export function useSessionSequencer(deps: Deps): SessionSequencer {
           isRest: true,
         },
       ]
-      melodyStore.setMelody(restMelody)
       setPlaybackDisplayMelody(restMelody)
       setPlaybackDisplayBeats(restBeats)
       // Feed the synthetic rest item to the runtime so the playhead
@@ -280,7 +279,6 @@ export function useSessionSequencer(deps: Deps): SessionSequencer {
       startAfterCompleteCleanup()
     } else if (nextItem.type === 'melody' || nextItem.type === 'preset') {
       const melodyItems = buildSessionItemMelody(nextItem)
-      melodyStore.setMelody(melodyItems)
       const totalBeats = melodyTotalBeats(melodyItems)
       playbackRuntime.stop()
       playbackRuntime.setMelody(melodyItems)
@@ -357,12 +355,6 @@ export function useSessionSequencer(deps: Deps): SessionSequencer {
     setSessionCurrentMelodyIndex(-1)
     setPlayMode('practice')
     setActiveTab('practice')
-
-    // Seed the session state so handlePlay() enters the session-mode
-    // branch (pendingSessionStart=true triggers startPracticeSession
-    // inside handlePlay).
-    // startPracticeSession(session)
-    setPendingSessionStart(true)
 
     handlePlay()
   }
