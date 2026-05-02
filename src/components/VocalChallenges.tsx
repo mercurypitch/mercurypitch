@@ -158,6 +158,8 @@ export interface ChallengeProgress {
   unlockedDate?: number
   /** Completion date */
   completedDate?: number
+  /** Array of actual scores achieved */
+  actualScores?: number[]
 }
 
 export interface UserChallengeProgress {
@@ -203,13 +205,101 @@ export interface UserAchievement {
 }
 
 // ============================================================
+// ============================================================
 // Component
 // ============================================================
 
+// Export signals and functions for use in other components
+export const [showChallengeModal, setShowChallengeModal] = createSignal(false)
+export const [selectedChallenge, setSelectedChallenge] = createSignal<ChallengeProgress | null>(null)
+
 export const VocalChallenges: Component = () => {
   const [activeCategory, setActiveCategory] = createSignal<ChallengeType>('high-notes')
-  const [showChallengeModal, setShowChallengeModal] = createSignal(false)
-  const [selectedChallenge, setSelectedChallenge] = createSignal<ChallengeProgress | null>(null)
+
+  // Update challenge progress
+  function updateChallengeProgress(challengeId: string, score: number, completed: boolean) {
+    const progress = userProgress() || {} as any
+    const progressKey = `ch-${challengeId}`
+    const saved = progress[progressKey] as ChallengeProgress || {
+      id: challengeId,
+      type: challengeId.substring(0, challengeId.indexOf('-')) as ChallengeType,
+      name: challengeId,
+      description: `Challenge progress for ${challengeId}`,
+      icon: IconMicChallenge,
+      targetScore: 100,
+      currentScore: 0,
+      progress: 0,
+      status: 'not-started' as const,
+      unlockedDate: undefined,
+      completedDate: undefined,
+      actualScores: [],
+    }
+
+    saved.currentScore = score
+    saved.progress = Math.min(100, score)
+    ;(saved.actualScores || []).push(score)
+
+    if (completed) {
+      saved.status = 'completed'
+      saved.completedDate = Date.now()
+      if (!saved.unlockedDate) {
+        saved.unlockedDate = Date.now()
+      }
+    } else if (score >= 80) {
+      saved.status = 'in-progress'
+      if (!saved.unlockedDate) {
+        saved.unlockedDate = Date.now()
+      }
+    } else if (score >= 50) {
+      saved.status = 'in-progress'
+    }
+
+    progress[progressKey] = saved
+    saveProgress(progress)
+  }
+
+  // Start challenge handler
+  function handleStartChallenge(challenge: ChallengeProgress) {
+    const sessions = getSessionHistory()
+
+    if (challenge.status === 'completed') {
+      const completedScore = challenge.actualScores?.[0] || 0
+      alert(`"${challenge.name}" completed!\nYour score: ${completedScore}%\n${challenge.actualScores?.length || 1} session(s) played`)
+      return
+    }
+
+    if (challenge.status === 'in-progress') {
+      const scores = challenge.actualScores || []
+      const avgScore = scores.length > 0
+        ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
+        : 0
+      alert(`Continue "${challenge.name}"!\nCurrent progress: ${avgScore}%\n(${challenge.actualScores?.length || 0} session(s))`)
+      return
+    }
+
+    // Get recent session scores to pre-fill progress
+    const recentSessions = sessions.slice(-3)
+    const sessionScores = recentSessions.map(s => s.score || 0)
+    const avgScore = sessionScores.length > 0
+      ? Math.round(sessionScores.reduce((a, b) => a + b, 0) / sessionScores.length)
+      : 0
+
+    // Show dialog to confirm starting the challenge
+    const confirmed = confirm(
+      `Starting "${challenge.name}"!\n\nYour recent average score: ${avgScore}%\n\nStart this challenge?`
+    )
+
+    if (confirmed) {
+      // If we have scores, show the modal directly
+      if (avgScore > 0) {
+        setSelectedChallenge(challenge)
+        setShowChallengeModal(true)
+      } else {
+        setSelectedChallenge(challenge)
+        setShowChallengeModal(true)
+      }
+    }
+  }
 
   // Load session history for real progress tracking
   const sessionHistory = createMemo(() => getSessionHistory())
@@ -314,10 +404,10 @@ export const VocalChallenges: Component = () => {
 
     // Merge real progress with mock challenge data
     return challenges.map(c => {
-      const progressKey = `ch-${c.id}`
-      const stored = (userProgress() || {})[progressKey]
-      if (stored) {
-        return stored
+      const challengeKey = `ch-${c.id}`
+      const storedProgress = (userProgress() || {})[challengeKey]
+      if (storedProgress) {
+        return storedProgress
       }
       return c
     })
@@ -338,43 +428,46 @@ export const VocalChallenges: Component = () => {
 
     return mockBadges.map(badge => {
       let earned = false
-      let earnedDate: number | undefined
+      let earnedDate: number
 
       switch (badge.id) {
         case 'b1':
           earned = totalSessions > 0
-          earnedDate = totalSessions > 0 ? sessions[0].completedAt! : 0
+          earnedDate = totalSessions > 0 ? (sessions[0].completedAt ?? Date.now()) : Date.now()
           break
         case 'b2':
           earned = streak >= 7
-          earnedDate = streak >= 7 ? Date.now() - streak * 24 * 60 * 60 * 1000 : 0
+          earnedDate = streak >= 7 ? Date.now() - streak * 24 * 60 * 60 * 1000 : Date.now()
           break
         case 'b3':
           earned = bestScore >= 90
-          earnedDate = bestScore >= 90 ? Date.now() : 0
+          earnedDate = bestScore >= 90 ? Date.now() : Date.now()
           break
         case 'b4':
           earned = bestScore >= 95
-          earnedDate = bestScore >= 95 ? Date.now() : 0
+          earnedDate = bestScore >= 95 ? Date.now() : Date.now()
           break
         case 'b5':
           earned = avgScore >= 90
-          earnedDate = avgScore >= 90 ? Date.now() : 0
+          earnedDate = avgScore >= 90 ? Date.now() : Date.now()
           break
         case 'b6':
           earned = totalSessions >= 10
-          earnedDate = totalSessions >= 10 ? sessions[0].completedAt! : 0
+          earnedDate = totalSessions >= 10 ? (sessions[0].completedAt ?? Date.now()) : Date.now()
           break
         case 'b7':
           earned = streak >= 14
-          earnedDate = streak >= 14 ? Date.now() - streak * 24 * 60 * 60 * 1000 : 0
+          earnedDate = streak >= 14 ? Date.now() - streak * 24 * 60 * 60 * 1000 : Date.now()
           break
+        default:
+          earned = false
+          earnedDate = Date.now()
       }
 
       return {
         ...badge,
         earned,
-        earnedDate: earned ? earnedDate : undefined,
+        earnedDate,
       }
     })
   }
@@ -457,48 +550,6 @@ export const VocalChallenges: Component = () => {
       return challenges().filter(c => c.type === 'scales').length === 0
     }
     return false
-  }
-
-  // Update challenge progress
-  function updateChallengeProgress(challengeId: string, score: number, completed: boolean) {
-    const progress = userProgress() || {}
-    const progressKey = `ch-${challengeId}`
-    const saved = progress[progressKey] || {
-      id: challengeId,
-      type: challengeId.substring(0, challengeId.indexOf('-')) as ChallengeType,
-      name: challengeId,
-      description: `Challenge progress for ${challengeId}`,
-      icon: IconMicChallenge,
-      targetScore: 100,
-      currentScore: 0,
-      progress: 0,
-      status: 'not-started' as const,
-      unlockedDate: undefined,
-      completedDate: undefined,
-      actualScores: [],
-    }
-
-    saved.currentScore = score
-    saved.progress = Math.min(100, score)
-    saved.actualScores.push(score)
-
-    if (completed) {
-      saved.status = 'completed'
-      saved.completedDate = Date.now()
-      if (!saved.unlockedDate) {
-        saved.unlockedDate = Date.now()
-      }
-    } else if (score >= 80) {
-      saved.status = 'in-progress'
-      if (!saved.unlockedDate) {
-        saved.unlockedDate = Date.now()
-      }
-    } else if (score >= 50) {
-      saved.status = 'in-progress'
-    }
-
-    progress[progressKey] = saved
-    saveProgress(progress)
   }
 
   const totalCompletedChallenges = createMemo(() => {
@@ -596,7 +647,7 @@ export const VocalChallenges: Component = () => {
 
               <button
                 class={`challenge-action-btn ${challenge.status}`}
-                onClick={() => startChallenge(challenge)}
+                onClick={() => handleStartChallenge(challenge)}
               >
                 {challenge.status === 'completed' && 'View Complete'}
                 {challenge.status === 'in-progress' && 'Continue'}
@@ -671,6 +722,7 @@ export const VocalChallenges: Component = () => {
       <Show when={showChallengeModal() && selectedChallenge()}>
         <ChallengeModal
           challenge={selectedChallenge()!}
+          updateProgress={updateChallengeProgress}
           onClose={() => {
             setShowChallengeModal(false)
             setSelectedChallenge(null)
@@ -694,6 +746,7 @@ interface ChallengeModalProps {
   challenge: ChallengeProgress
   onClose: () => void
   onComplete: () => void
+  updateProgress?: (challengeId: string, score: number, completed: boolean) => void
 }
 
 const ChallengeModal: Component<ChallengeModalProps> = (props) => {
@@ -710,7 +763,7 @@ const ChallengeModal: Component<ChallengeModalProps> = (props) => {
     const target = props.challenge.targetScore
     const completed = avgScore >= target
 
-    updateChallengeProgress(props.challenge.id, avgScore, completed)
+    props.updateProgress?.(props.challenge.id, avgScore, completed)
 
     setIsPracticing(false)
     props.onComplete()
@@ -1009,46 +1062,6 @@ function getAchievementColor(progress: number): string {
   return 'var(--teal)'
 }
 
-function startChallenge(challenge: ChallengeProgress) {
-  const sessions = getSessionHistory()
-
-  if (challenge.status === 'completed') {
-    const completedScore = challenge.actualScores?.[0] || 0
-    alert(`"${challenge.name}" completed!\nYour score: ${completedScore}%\n${challenge.actualScores?.length || 1} session(s) played`)
-    return
-  }
-
-  if (challenge.status === 'in-progress') {
-    const avgScore = challenge.actualScores?.length > 0
-      ? Math.round(challenge.actualScores.reduce((a, b) => a + b, 0) / challenge.actualScores.length)
-      : 0
-    alert(`Continue "${challenge.name}"!\nCurrent progress: ${avgScore}%\n(${challenge.actualScores?.length || 0} session(s))`)
-    return
-  }
-
-  // Get recent session scores to pre-fill progress
-  const recentSessions = sessions.slice(-3)
-  const sessionScores = recentSessions.map(s => s.score || 0)
-  const avgScore = sessionScores.length > 0
-    ? Math.round(sessionScores.reduce((a, b) => a + b, 0) / sessionScores.length)
-    : 0
-
-  // Show dialog to confirm starting the challenge
-  const confirmed = confirm(
-    `Starting "${challenge.name}"!\n\nYour recent average score: ${avgScore}%\n\nStart this challenge?`
-  )
-
-  if (confirmed) {
-    // If we have scores, show the modal directly
-    if (avgScore > 0) {
-      setSelectedChallenge(challenge)
-      setShowChallengeModal(true)
-    } else {
-      setSelectedChallenge(challenge)
-      setShowChallengeModal(true)
-    }
-  }
-}
 
 // ============================================================
 // CSS Styles (inline for this component)

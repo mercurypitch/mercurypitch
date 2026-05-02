@@ -266,15 +266,15 @@ export class UvrProcessor {
     ctx: AudioContext
   ): AudioNode {
     const fadeNode = ctx.createGain()
-    const gain = fadeNode.gain
+    const gain = fadeNode.gain as AudioParam
 
     const rampIn = ctx.currentTime + 0.05
     const rampOut = ctx.currentTime + duration - 0.05
 
-    gain.gain.setValueAtTime(0, rampIn)
-    gain.gain.linearRampToValueAtTime(1, rampIn + 0.02)
-    gain.gain.linearRampToValueAtTime(1, rampOut)
-    gain.gain.linearRampToValueAtTime(0, rampOut + 0.02)
+    gain.setValueAtTime(0, rampIn)
+    gain.linearRampToValueAtTime(1, rampIn + 0.02)
+    gain.linearRampToValueAtTime(1, rampOut)
+    gain.linearRampToValueAtTime(0, rampOut + 0.02)
 
     source.connect(fadeNode)
     fadeNode.connect(ctx.destination)
@@ -291,13 +291,13 @@ export class UvrProcessor {
     this.analyserNode = null
   }
 
-  getFrequencyData(dataArray: Uint8Array): void {
+  getFrequencyData(dataArray: Uint8Array<ArrayBuffer>): void {
     if (this.analyserNode && this.isInitialized) {
       this.analyserNode.getByteFrequencyData(dataArray)
     }
   }
 
-  getTimeDomainData(dataArray: Float32Array): void {
+  getTimeDomainData(dataArray: Float32Array<ArrayBuffer>): void {
     if (this.analyserNode && this.isInitialized) {
       this.analyserNode.getFloatTimeDomainData(dataArray)
     }

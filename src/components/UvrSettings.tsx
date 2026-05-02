@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createEffect, onMount, createSignal } from 'solid-js'
+import { createEffect, onMount, createSignal, Show } from 'solid-js'
 import {
   getUvrMode,
   getUvrInstrumentalIntensity,
@@ -101,7 +101,16 @@ export const UvrSettings: Component = () => {
 
   const handleSmoothingChange = (value: number) => {
     setSmoothing(value)
-    saveSettings()
+  }
+
+  const saveSettings = () => {
+    const settings = {
+      mode: mode(),
+      vocalIntensity: vocalIntensity(),
+      instrumentalIntensity: instrumentalIntensity(),
+      smoothing: smoothing(),
+    }
+    localStorage.setItem('pitchperfect_uvr-settings', JSON.stringify(settings))
   }
 
   return (

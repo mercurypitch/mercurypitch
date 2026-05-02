@@ -50,47 +50,32 @@ export function setUvrSettings(settings: Partial<UvrSettings>): void {
   localStorage.setItem('pitchperfect_uvr-settings', JSON.stringify(newSettings))
 }
 
-export const uvrMode = createSignal<UvrMode>('separate')
-export const uvrVocalIntensity = createSignal(70)
-export const uvrInstrumentalIntensity = createSignal(70)
-export const uvrSmoothing = createSignal(0.3)
+export const [uvrMode, setUvrMode] = createSignal<UvrMode>('separate')
+export const [uvrVocalIntensity, _setUvrVocalIntensity] = createSignal(70)
+export const [uvrInstrumentalIntensity, _setUvrInstrumentalIntensity] = createSignal(70)
+export const [uvrSmoothing, _setUvrSmoothing] = createSignal(0.3)
 
-// Helper functions to access UVR settings
-export function getUvrMode(): UvrMode {
-  return uvrMode()
-}
-
-export function setUvrMode(mode: UvrMode): void {
-  uvrMode.set(mode)
-  setUvrSettings({ mode })
-}
-
-export function getUvrVocalIntensity(): number {
-  return uvrVocalIntensity()
-}
-
-export function setUvrVocalIntensity(intensity: number): void {
-  uvrVocalIntensity.set(intensity)
+// Export for direct usage in components (internal setters that also persist)
+export const setUvrVocalIntensity = (intensity: number): void => {
+  _setUvrVocalIntensity(intensity)
   setUvrSettings({ vocalIntensity: intensity })
 }
 
-export function getUvrInstrumentalIntensity(): number {
-  return uvrInstrumentalIntensity()
-}
-
-export function setUvrInstrumentalIntensity(intensity: number): void {
-  uvrInstrumentalIntensity.set(intensity)
+export const setUvrInstrumentalIntensity = (intensity: number): void => {
+  _setUvrInstrumentalIntensity(intensity)
   setUvrSettings({ instrumentalIntensity: intensity })
 }
 
-export function getUvrSmoothing(): number {
-  return uvrSmoothing()
-}
-
-export function setUvrSmoothing(value: number): void {
-  uvrSmoothing.set(value)
+export const setUvrSmoothing = (value: number): void => {
+  _setUvrSmoothing(value)
   setUvrSettings({ smoothing: value })
 }
+
+// Getters for UVR settings
+export const getUvrMode = (): UvrMode => uvrMode()
+export const getUvrVocalIntensity = (): number => uvrVocalIntensity()
+export const getUvrInstrumentalIntensity = (): number => uvrInstrumentalIntensity()
+export const getUvrSmoothing = (): number => uvrSmoothing()
 
 // ── Audio Engine (single instance) ─────────────────────────────
 
