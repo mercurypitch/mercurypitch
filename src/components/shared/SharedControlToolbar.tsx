@@ -310,7 +310,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
                 props.playModeChange('once')
               }}
             >
-              Spaced
+              Once
             </button>
             <button
               id="btn-repeat"
