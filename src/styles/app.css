@@ -80,6 +80,69 @@ body {
   overflow: hidden;
 }
 
+/* ── Global Select Normalizer ─────────────────────────────────
+   Ensures ALL dropdowns across the app share the same dark
+   background, border, custom chevron arrow, and hover/focus
+   states. Individual component styles can still override
+   size, padding, or layout-specific properties.
+   ───────────────────────────────────────────────────────────── */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: #161b22;
+  color: var(--text-primary);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  padding: 6px 30px 6px 10px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  line-height: 1.3;
+  cursor: pointer;
+  color-scheme: dark;
+  /* Custom chevron arrow */
+  background-image:
+    linear-gradient(45deg, transparent 50%, rgba(88, 166, 255, 0.8) 50%),
+    linear-gradient(135deg, rgba(88, 166, 255, 0.8) 50%, transparent 50%);
+  background-position:
+    calc(100% - 14px) 50%,
+    calc(100% - 9px) 50%;
+  background-size:
+    5px 5px,
+    5px 5px;
+  background-repeat: no-repeat;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+select:hover {
+  border-color: rgba(88, 166, 255, 0.4);
+  background-color: #1c2128;
+}
+
+select:focus {
+  outline: none;
+  border-color: rgba(88, 166, 255, 0.7);
+  box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.15);
+}
+
+select option {
+  background: #161b22;
+  color: var(--text-primary);
+}
+
+select option:disabled {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+}
+
+/* Custom scale options — slightly brighter to distinguish */
+select option.custom-scale-option {
+  color: rgba(56, 189, 248, 0.9);
+}
+
 /* ===== Crash Modal Styles ===== */
 .crash-modal-overlay {
   position: fixed;
@@ -1916,7 +1979,7 @@ header h1 {
 }
 
 .speed-select option {
-  background: var(--bg-secondary);
+  background: #161b22;
   color: var(--text-primary);
 }
 
@@ -1947,7 +2010,7 @@ header h1 {
 }
 
 .preset-select option {
-  background: var(--bg-secondary);
+  background: #161b22;
   color: var(--text-primary);
 }
 
@@ -8778,7 +8841,7 @@ input:checked + .settings-slider:before {
 
 .practice-mode-control-group .practice-sub-mode-select:hover {
   border-color: rgba(88, 166, 255, 0.55);
-  background-color: rgba(88, 166, 255, 0.12);
+  background-color: #1c2128;
 }
 
 .practice-mode-control-group .practice-sub-mode-select:focus {
@@ -8796,7 +8859,7 @@ input:checked + .settings-slider:before {
 /* Stronger override: practice mode dropdown must stay dark (not browser white). */
 .practice-mode-control-group select.practice-sub-mode-select,
 .practice-mode-control-group .practice-sub-mode-select {
-  background-color: rgba(88, 166, 255, 0.08) !important;
+  background-color: #161b22 !important;
   color: var(--text-primary) !important;
   border-color: rgba(88, 166, 255, 0.35) !important;
   color-scheme: dark !important;
@@ -8810,7 +8873,7 @@ input:checked + .settings-slider:before {
   padding: 0 32px 0 12px;
   border-radius: 10px;
   border: 1px solid var(--border);
-  background-color: var(--bg-tertiary);
+  background-color: #161b22;
   color: var(--text-primary);
   font-size: 0.9rem;
   line-height: 34px;
@@ -8831,7 +8894,7 @@ input:checked + .settings-slider:before {
 .settings-panel .settings-row select:hover,
 #settings-panel .settings-row select:hover {
   border-color: rgba(88, 166, 255, 0.55);
-  background-color: rgba(88, 166, 255, 0.08);
+  background-color: #1c2128;
 }
 
 .settings-panel .settings-row select:focus,
@@ -9168,7 +9231,7 @@ input:checked + .settings-slider:before {
   min-height: 36px;
   border-radius: 10px;
   border: 1px solid rgba(88, 166, 255, 0.28);
-  background-color: rgba(88, 166, 255, 0.08) !important;
+  background-color: #161b22 !important;
   color: var(--text-primary);
   font-weight: 700;
   color-scheme: dark;
