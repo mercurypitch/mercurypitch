@@ -361,7 +361,7 @@ export function useSessionSequencer(deps: Deps): SessionSequencer {
     // Seed the session state so handlePlay() enters the session-mode
     // branch (pendingSessionStart=true triggers startPracticeSession
     // inside handlePlay).
-    startPracticeSession(session)
+    // startPracticeSession(session)
     setPendingSessionStart(true)
 
     handlePlay()
