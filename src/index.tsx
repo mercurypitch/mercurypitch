@@ -4,6 +4,7 @@
 
 import { render } from 'solid-js/web'
 import '@/styles/app.css'
+import '@/styles/vocal-analysis.css'
 import { App } from './App'
 
 import { initGlobalErrorHandlers } from '@/lib/global-error-handler'

@@ -5,8 +5,9 @@
   "observability": {
     "enabled": true
   },
+  "main": "src/index.js",
   "assets": {
-    "directory": "/"
+    "directory": "dist"
   },
   "compatibility_flags": [
     "nodejs_compat"

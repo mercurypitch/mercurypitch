@@ -19,6 +19,10 @@ import { SessionEditor } from '@/components/SessionEditor'
 import { SessionLibraryModal } from '@/components/SessionLibraryModal'
 import { SessionPlayer } from '@/components/SessionPlayer'
 import { SettingsPanel } from '@/components/SettingsPanel'
+import { VocalAnalysis } from '@/components/VocalAnalysis'
+import { CommunityShare } from '@/components/CommunityShare'
+import { VocalChallenges } from '@/components/VocalChallenges'
+import { CommunityLeaderboard } from '@/components/CommunityLeaderboard'
 import type { PracticeSubMode } from '@/components/shared/SharedControlToolbar'
 import { SharedControlToolbar } from '@/components/shared/SharedControlToolbar'
 import { EngineProvider, useEngines } from '@/contexts/EngineContext'
@@ -53,7 +57,6 @@ import { WelcomeScreen } from './components/WelcomeScreen'
 // ============================================================
 
 export type EditorView = 'piano-roll' | 'session-editor'
-export type ActiveTab = 'practice' | 'editor' | 'settings'
 
 interface AppProps {
   onMounted?: () => void
@@ -131,7 +134,7 @@ const AppShell: Component<AppProps> = (props) => {
   const { audioEngine, playbackRuntime, practiceEngine } = useEngines()
 
   // ── Local UI state ──────────────────────────────────────────
-  const activeTab = (): ActiveTab => activeTabSignal() as ActiveTab
+  const activeTab = (): UiActiveTab => activeTabSignal()
   const focusMode = focusModeSignal
 
   const [sidebarOpen, setSidebarOpen] = createSignal(false)
@@ -340,7 +343,7 @@ const AppShell: Component<AppProps> = (props) => {
   })
 
   // ── Tab change handler with audio cleanup ──────────────────
-  const handleTabChange = async (newTab: ActiveTab) => {
+  const handleTabChange = async (newTab: UiActiveTab) => {
     const currentTab = activeTab()
     if (currentTab === 'practice' || currentTab === 'editor') {
       await resetPlaybackState()
@@ -756,6 +759,46 @@ const AppShell: Component<AppProps> = (props) => {
               </Show>
             </button>
             <button
+              id="tab-vocal-analysis"
+              class={`app-tab ${activeTab() === 'vocal-analysis' ? 'active' : ''}`}
+              onClick={() => void handleTabChange('vocal-analysis')}
+            >
+              <svg viewBox="0 0 24 24" width="18" height="18">
+                <path fill="currentColor" d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
+              </svg>
+              Analysis
+            </button>
+            <button
+              id="tab-community"
+              class={`app-tab ${activeTab() === 'community' ? 'active' : ''}`}
+              onClick={() => void handleTabChange('community')}
+            >
+              <svg viewBox="0 0 24 24" width="18" height="18">
+                <path fill="currentColor" d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" />
+              </svg>
+              Community
+            </button>
+            <button
+              id="tab-leaderboard"
+              class={`app-tab ${activeTab() === 'leaderboard' ? 'active' : ''}`}
+              onClick={() => void handleTabChange('leaderboard')}
+            >
+              <svg viewBox="0 0 24 24" width="18" height="18">
+                <path fill="currentColor" d="M5 3H3v18h2V3zm4 0H7v18h2V3zm4 0h-2v18h2V3zm4 0h-2v18h2V3zm4 0h-2v18h2V3z" />
+              </svg>
+              Leaderboard
+            </button>
+            <button
+              id="tab-vocal-challenges"
+              class={`app-tab ${activeTab() === 'vocal-challenges' ? 'active' : ''}`}
+              onClick={() => void handleTabChange('vocal-challenges')}
+            >
+              <svg viewBox="0 0 24 24" width="18" height="18">
+                <path fill="currentColor" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+              </svg>
+              Challenges
+            </button>
+            <button
               id="tab-settings"
               class={`app-tab ${activeTab() === 'settings' ? 'active' : ''}`}
               onClick={() => void handleTabChange('settings')}
@@ -982,6 +1025,30 @@ const AppShell: Component<AppProps> = (props) => {
                   getWaveform={() => audioEngine?.getWaveformData() ?? null}
                 />
               </Show>
+            </Show>
+
+            <Show when={activeTab() === 'vocal-analysis'}>
+              <div class="vocal-analysis-panel">
+                <VocalAnalysis />
+              </div>
+            </Show>
+
+            <Show when={activeTab() === 'community'}>
+              <div class="community-panel">
+                <CommunityShare />
+              </div>
+            </Show>
+
+            <Show when={activeTab() === 'leaderboard'}>
+              <div class="leaderboard-panel">
+                <CommunityLeaderboard />
+              </div>
+            </Show>
+
+            <Show when={activeTab() === 'vocal-challenges'}>
+              <div class="vocal-challenges-panel">
+                <VocalChallenges />
+              </div>
             </Show>
 
             <Show when={activeTab() === 'settings'}>

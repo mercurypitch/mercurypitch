@@ -52,7 +52,7 @@ export const SCALE_TYPES = [
 ] as const
 
 export type PracticeSubMode = 'all' | 'random' | 'focus' | 'reverse'
-export type ActiveTab = 'practice' | 'editor' | 'settings'
+import type { ActiveTab } from '@/types'
 
 interface SharedControlToolbarProps {
   // Tab identification

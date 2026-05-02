@@ -5,7 +5,7 @@ import { APP_VERSION } from '@/version'
 
 // ── Active tab ───────────────────────────────────────────────
 
-export type ActiveTab = 'practice' | 'editor' | 'settings'
+export type ActiveTab = 'practice' | 'editor' | 'settings' | 'vocal-analysis' | 'community' | 'leaderboard' | 'vocal-challenges'
 export const [activeTab, setActiveTab] = createSignal<ActiveTab>('practice')
 
 // Editor view within the Editor tab

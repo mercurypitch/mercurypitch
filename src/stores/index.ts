@@ -3,6 +3,7 @@
 // ============================================================
 
 import { WALKTHROUGH_STEPS, walkthroughActive, walkthroughStep, } from './app-store'
+import { getSessionHistory, sessionResults, } from './practice-session-store'
 
 export * from './app-store'
 export * from './mic-store'
@@ -16,6 +17,7 @@ export * from './user-session-store'
 export * from './walkthrough-store'
 export * from './playback-state-store'
 export * from './session-store'
+export { getSessionHistory, sessionResults, } from './practice-session-store'
 
 export { playback } from './playback-store'
 export { melodyStore } from './melody-store'
@@ -28,6 +30,12 @@ export const isInSessionMode = () => _sessionMode()
 
 // No-op kept for backward compat (was a presets-store init).
 export const initPresets = (): void => {}
+
+// Session presets library (stub for backward compat)
+export const showSessionPresetsLibrary = (): void => {}
+export const hideSessionPresetsLibrary = (): void => {}
+export const isSessionPresetsLibraryOpen = () => false
+export const initSessionPresetsLibrary = (): void => {}
 
 // Composer for starting a practice session — sets practice store fields together.
 import type { PlaybackSession as _PlaybackSession } from '@/types'
@@ -98,4 +106,8 @@ export const appStore = {
   walkthroughStep,
   walkthroughActive,
   WALKTHROUGH_STEPS,
+
+  // Session history for vocal analysis
+  getSessionHistory,
+  sessionResults,
 }
