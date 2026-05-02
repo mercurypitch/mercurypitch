@@ -2,17 +2,18 @@
 // UVR Settings Component - Vocal Separation Controls
 // ============================================================
 
-import type { Component } from 'solid-js'
-import { createEffect, onMount, createSignal, Show } from 'solid-js'
+import type { Component} from 'solid-js';
+import  { For } from 'solid-js'
+import { createEffect, createSignal, onMount, Show } from 'solid-js'
 import {
-  getUvrMode,
   getUvrInstrumentalIntensity,
-  getUvrVocalIntensity,
+  getUvrMode,
   getUvrSmoothing,
-  setUvrMode,
+  getUvrVocalIntensity,
   setUvrInstrumentalIntensity,
-  setUvrVocalIntensity,
+  setUvrMode,
   setUvrSmoothing,
+  setUvrVocalIntensity,
 } from '@/stores/app-store'
 
 // ============================================================
@@ -126,7 +127,7 @@ export const UvrSettings: Component = () => {
       <div class="uvr-mode-selection">
         <label>Separation Mode</label>
         <div class="mode-grid">
-          {modeOptions.map(option => (
+          <For each={modeOptions}>{option => (
             <button
               class={`mode-card ${mode() === option.value ? 'active' : ''}`}
               onClick={() => handleModeChange(option.value)}
@@ -135,7 +136,7 @@ export const UvrSettings: Component = () => {
               <span class="mode-icon">{option.icon}</span>
               <span class="mode-label">{option.label}</span>
             </button>
-          ))}
+          )}</For>
         </div>
       </div>
 

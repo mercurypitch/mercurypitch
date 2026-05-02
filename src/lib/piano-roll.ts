@@ -2,12 +2,12 @@
 // Piano Roll Editor — Canvas-based note editor
 // ============================================================
 
+import type { BallPhysicsState,NoteBounds } from '@/features/playback/yousician-ball-physics'
+import { createBallPhysics, getBallPhysics } from '@/features/playback/yousician-ball-physics'
 import type { AudioEngine, InstrumentType } from '@/lib/audio-engine'
 import { PitchDetector } from '@/lib/pitch-detector'
 import { buildMultiOctaveScale, midiToFreq, midiToNote } from '@/lib/scale-data'
 import type { MelodyItem, NoteName, PianoRollConfig, ScaleDegree, } from '@/types'
-import type { NoteBounds, BallPhysicsState } from '@/features/playback/yousician-ball-physics'
-import { createBallPhysics, getBallPhysics } from '@/features/playback/yousician-ball-physics'
 
 const PIANO_ROLL_CONFIG: PianoRollConfig = {
   rowHeight: 22,

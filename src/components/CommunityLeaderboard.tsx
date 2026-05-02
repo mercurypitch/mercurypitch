@@ -4,8 +4,8 @@
 
 import type { Component } from 'solid-js'
 import type { JSX } from 'solid-js'
-import { For, createSignal, createMemo, onMount, Show } from 'solid-js'
-import type { LeaderboardUser, LeaderboardView, LeaderboardCategory, WeeklyChallengeResult } from '@/types'
+import { createMemo, createSignal, For, Show } from 'solid-js'
+import type { LeaderboardCategory, LeaderboardUser, LeaderboardView, WeeklyChallengeResult } from '@/types'
 
 // ============================================================
 // SVG Icons (Classy, minimal style)

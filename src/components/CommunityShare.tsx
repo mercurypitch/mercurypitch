@@ -3,11 +3,10 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { For, Show, createSignal, createMemo, onMount } from 'solid-js'
-import { appStore, getSessionHistory, melodyStore } from '@/stores'
-import type { SessionResult, MelodyItem, PlaybackSession } from '@/types'
+import { createMemo, createSignal, For, Show } from 'solid-js'
 import { generateId } from '@/lib/id'
-import { frequenciesToNoteName } from '@/lib/frequency-to-note'
+import { appStore, getSessionHistory, melodyStore } from '@/stores'
+import type { MelodyItem, PlaybackSession } from '@/types'
 
 // ============================================================
 // SVG Icons (Classy, minimal style)
@@ -384,9 +383,9 @@ export const CommunityShare: Component = () => {
                   <div class="melody-info">
                     <span class="melody-author">by {melody.author}</span>
                     <div class="melody-tags">
-                      {melody.tags?.map(tag => (
+                      {<For each={melody.tags}>{tag => (
                         <span class="tag">{tag}</span>
-                      ))}
+                      )}</For>}
                     </div>
                   </div>
                   <div class="melody-footer">
@@ -598,7 +597,7 @@ export const CommunityShare: Component = () => {
                           <div class="preview-card">
                             <span class="preview-name">{session.name}</span>
                             <span class="preview-scores">
-                              {session.results.slice(0, 2).map(s => `${s}%`)}
+                              <For each={session.results.slice(0, 2)}>{s => `${s}%`}</For>
                               {session.results.length > 2 && `+${session.results.length - 2}`}
                             </span>
                           </div>

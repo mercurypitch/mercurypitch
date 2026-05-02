@@ -3,10 +3,10 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { For, Show, createSignal, createMemo, onMount, onCleanup } from 'solid-js'
-import { appStore, getSessionHistory, } from '@/stores'
-import type { SessionResult, PitchResult, PracticeResult } from '@/types'
+import { createMemo, createSignal, For, onCleanup, Show } from 'solid-js'
 import { frequenciesToNoteName } from '@/lib/frequency-to-note'
+import {getSessionHistory, } from '@/stores'
+import type { PitchResult, SessionResult } from '@/types'
 
 // ============================================================
 // SVG Icons

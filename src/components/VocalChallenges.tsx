@@ -3,9 +3,8 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { For, createSignal, createMemo, Show, onMount } from 'solid-js'
-import { appStore, getSessionHistory } from '@/stores'
-import type { SessionResult, AccuracyRating } from '@/types'
+import { createMemo, createSignal, For, onMount,Show } from 'solid-js'
+import { getSessionHistory } from '@/stores'
 
 // Alternative: directly render icon with casting
 const renderIcon = (icon: Component | string) => {

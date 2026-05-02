@@ -102,7 +102,7 @@ export function getBallPhysics(
   const { notes, rowHeight, radius, padding, bpm } = config
   let note = null
   let progress = 0
-  let startY = y
+  const startY = y
 
   // Get horizontal speed
   const currentVx = getHorizontalSpeed(bpm, vx)

@@ -3,9 +3,9 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createSignal, onMount, Show, For } from 'solid-js'
-import { appStore } from '@/stores'
+import { createSignal, For,onMount, Show } from 'solid-js'
 import type { SharedMelody, SharedSession } from '@/components/CommunityShare'
+import { appStore } from '@/stores'
 
 export const SharePage: Component = () => {
   const [contentType, setContentType] = createSignal<string>('')
@@ -151,9 +151,9 @@ const MelodyShareContent: Component<{
           <div class="tags-section">
             <h3>Tags</h3>
             <div class="tags-container">
-              {content.tags.map((tag: string) => (
+              <For each={content.tags}>{(tag: string) => (
                 <span class="tag">{tag}</span>
-              ))}
+              )}</For>
             </div>
           </div>
         </Show>
@@ -266,9 +266,9 @@ const SessionShareContent: Component<{
           <div class="tags-section">
             <h3>Tags</h3>
             <div class="tags-container">
-              {content.tags.map((tag: string) => (
+              <For each={content.tags}>{(tag: string) => (
                 <span class="tag">{tag}</span>
-              ))}
+              )}</For>
             </div>
           </div>
         </Show>
