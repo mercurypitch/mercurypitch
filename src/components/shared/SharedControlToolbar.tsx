@@ -308,7 +308,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
                 props.playModeChange('once')
               }}
             >
-              Spaced
+              Once
             </button>
             <button
               id="btn-repeat"
@@ -326,7 +326,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
                 props.playModeChange('practice')
               }}
             >
-              Practice
+              Session
             </button>
           </div>
         </Show>
@@ -387,7 +387,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
         {/* Spaced mode selector — once-through playback with optional rests inserted between notes. */}
         <Show when={isPracticeTab() && props.playMode() === 'once'}>
           <div class="secondary-control-group practice-mode-control-group spaced-mode-control-group">
-            <label class="opt-label practice-mode-label">Spacing</label>
+            <label class="opt-label practice-mode-label">Rest</label>
             <select
               id="spaced-rest-mode"
               value={props.spacedRestMode?.() ?? 'none'}
