@@ -4,7 +4,7 @@
 export default {
   async fetch(request) {
     const url = new URL(request.url)
-    
+
     // Serve index.html (the built SPA)
     if (url.pathname === '/') {
       return new Response(await Deno.readTextFile('./dist/index.html'), {
@@ -14,12 +14,12 @@ export default {
         },
       })
     }
-    
+
     // Serve static assets
-    const assetPath = './dist' + url.pathname
+    const assetPath = `./dist${url.pathname}`
     try {
       const content = await Deno.readTextFile(assetPath)
-      const ext = url.pathname.split('.').pop() || ''
+      const ext = url.pathname.split('.').pop() ?? ''
       const contentTypes = {
         js: 'application/javascript',
         css: 'text/css',
@@ -30,7 +30,7 @@ export default {
       }
       return new Response(content, {
         headers: {
-          'content-type': contentTypes[ext] || 'text/plain',
+          'content-type': contentTypes[ext] ?? 'text/plain',
           'cache-control': 'public, max-age=31536000',
         },
       })

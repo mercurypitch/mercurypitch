@@ -40,7 +40,7 @@ export default defineConfig(
     languageOptions: {
       parserOptions: {
         projectService: {
-          allowDefaultProject: ['*.js', '*.mjs'],
+          allowDefaultProject: ['*.js', '*.mjs', 'src/index.js'],
         },
       },
     },
@@ -274,6 +274,14 @@ export default defineConfig(
         'webkitResolveLocalFileSystemURL',
         'webkitStorageInfo',
       ],
+    },
+  },
+  {
+    files: ['src/index.js'],
+    languageOptions: {
+      globals: {
+        Deno: 'readonly',
+      },
     },
   },
 )

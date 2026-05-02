@@ -104,16 +104,6 @@ export const UvrSettings: Component = () => {
     setSmoothing(value)
   }
 
-  const saveSettings = () => {
-    const settings = {
-      mode: mode(),
-      vocalIntensity: vocalIntensity(),
-      instrumentalIntensity: instrumentalIntensity(),
-      smoothing: smoothing(),
-    }
-    localStorage.setItem('pitchperfect_uvr-settings', JSON.stringify(settings))
-  }
-
   return (
     <div class="uvr-settings">
       <div class="uvr-header">

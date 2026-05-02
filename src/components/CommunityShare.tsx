@@ -20,7 +20,7 @@ const IconSession = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
 )
 
-const IconSearch = () => (
+const _IconSearch = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
 )
 
@@ -28,7 +28,7 @@ const IconStats = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
 )
 
-const IconHistory = () => (
+const _IconHistory = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg>
 )
 
@@ -60,7 +60,7 @@ const IconEye = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
 )
 
-const IconUser2 = () => (
+const _IconUser2 = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-avatar"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>
 )
 
@@ -72,19 +72,19 @@ const IconBook = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
 )
 
-const IconStreak2 = () => (
+const _IconStreak2 = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.1.2-2.2.5-3.3.4.5.7 1.3 1 2.3z"/></svg>
 )
 
-const IconCheck = () => (
+const _IconCheck = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><polyline points="20 6 9 17 4 12"/></svg>
 )
 
-const IconLock = () => (
+const _IconLock = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
 )
 
-const IconRefresh = () => (
+const _IconRefresh = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
 )
 
@@ -92,19 +92,19 @@ const IconStar = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
 )
 
-const IconTrophy2 = () => (
+const _IconTrophy2 = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
 )
 
-const IconEmblem = () => (
+const _IconEmblem = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
 )
 
-const IconEdit = () => (
+const _IconEdit = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
 )
 
-const IconPlus = () => (
+const _IconPlus = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>
 )
 
@@ -158,41 +158,45 @@ export interface SharedProfile {
 
 export const CommunityShare: Component = () => {
   const [activeTab, setActiveTab] = createSignal<'melodies' | 'sessions' | 'profile'>('melodies')
-  const [userProfile, setUserProfile] = createSignal<SharedProfile | null>(null)
+  const [_userProfile, _setUserProfile] = createSignal<SharedProfile | null>(null)
   const [searchQuery, setSearchQuery] = createSignal('')
   const [sortBy, setSortBy] = createSignal<'recent' | 'popular' | 'highest'>('recent')
-  const [selectedShare, setSelectedShare] = createSignal<ShareableContent | null>(null)
+  const [_selectedShare, _setSelectedShare] = createSignal<ShareableContent | null>(null)
 
   // Load shared data from localStorage
   const sharedMelodies = createMemo(() => {
     try {
       const stored = localStorage.getItem('pp_shared_melodies')
-      if (stored) {
+      if (stored !== null) {
         return JSON.parse(stored) as SharedMelody[]
       }
-    } catch { }
+    } catch {
+      // Ignore parse errors
+    }
     return []
   })
 
   const sharedSessions = createMemo(() => {
     try {
       const stored = localStorage.getItem('pp_shared_sessions')
-      if (stored) {
+      if (stored !== null) {
         return JSON.parse(stored) as SharedSession[]
       }
-    } catch { }
+    } catch {
+      // Ignore parse errors
+    }
     return []
   })
 
   // Current user profile (in-memory for demo)
   const currentProfile = createMemo(() => {
-    const userId = localStorage.getItem('pp_user_id') || `user_${Date.now()}`
+    const userId = localStorage.getItem('pp_user_id') ?? `user_${Date.now()}`
     localStorage.setItem('pp_user_id', userId)
 
     const sessions = getSessionHistory()
-    const totalScore = sessions.reduce((sum, s) => sum + (s.score || 0), 0)
+    const totalScore = sessions.reduce((sum, s) => sum + (s.score ?? 0), 0)
     const avgScore = sessions.length > 0 ? totalScore / sessions.length : 0
-    const maxStreak = 5
+    const _maxStreak = 5
     const currentStreak = 2
 
     return {
@@ -202,7 +206,7 @@ export const CommunityShare: Component = () => {
       bio: 'PitchPerfect enthusiast • Learning vocals • Member since 2026',
       streak: currentStreak,
       totalSessions: sessions.length,
-      bestScore: sessions.length > 0 ? Math.max(...sessions.map(s => s.score || 0)) : 0,
+      bestScore: sessions.length > 0 ? Math.max(...sessions.map(s => s.score ?? 0)) : 0,
       accuracy: sessions.length > 0 ? avgScore : 0,
       joinDate: Date.now() - 1000 * 60 * 60 * 24 * 30, // 30 days ago
     }
@@ -214,9 +218,9 @@ export const CommunityShare: Component = () => {
 
     if (searchQuery()) {
       const query = searchQuery().toLowerCase()
-      result = result.filter(m =>
+      result = result.filter((m) =>
         m.name.toLowerCase().includes(query) ||
-        m.tags?.some(t => t.toLowerCase().includes(query))
+        (m.tags ?? []).some((t) => t.toLowerCase().includes(query))
       )
     }
 
@@ -235,9 +239,9 @@ export const CommunityShare: Component = () => {
 
     if (searchQuery()) {
       const query = searchQuery().toLowerCase()
-      result = result.filter(s =>
+      result = result.filter((s) =>
         s.name.toLowerCase().includes(query) ||
-        s.results.some(r => r >= 80) // Show sessions with good scores
+        s.results.some((r) => r >= 80)
       )
     }
 
@@ -303,17 +307,17 @@ export const CommunityShare: Component = () => {
   }
 
   // Generate shareable URL for content
-  const generateShareUrl = (type: ShareableContent, id: string) => {
+  const _generateShareUrl = (type: ShareableContent, id: string) => {
     const baseUrl = window.location.origin
     return `${baseUrl}/share?type=${type}&id=${id}`
   }
 
   // Tabs
-  const tabs = [
+  const tabs = createMemo(() => [
     { id: 'melodies' as const, name: 'Melodies', icon: IconMelody, count: sharedMelodies().length },
     { id: 'sessions' as const, name: 'Sessions', icon: IconSession, count: sharedSessions().length },
     { id: 'profile' as const, name: 'Profile', icon: IconUser, count: 0 },
-  ]
+  ])
 
   return (
     <div class="community-share-tab">
@@ -343,7 +347,10 @@ export const CommunityShare: Component = () => {
           onInput={(e) => setSearchQuery(e.currentTarget.value)}
         />
         <div class="sort-select">
-          <select value={sortBy()} onChange={(e) => setSortBy(e.currentTarget.value as any)}>
+          <select
+            value={sortBy()}
+            onChange={(e) => setSortBy(e.currentTarget.value as 'recent' | 'popular' | 'highest')}
+          >
             <option value="recent">Most Recent</option>
             <option value="popular">Most Popular</option>
             <option value="highest">Highest Scores</option>
@@ -353,7 +360,7 @@ export const CommunityShare: Component = () => {
 
       {/* Tabs */}
       <div class="community-tabs">
-        <For each={tabs}>
+        <For each={tabs()}>
           {(tab) => (
             <button
               class={`community-tab ${activeTab() === tab.id ? 'active' : ''}`}
@@ -361,7 +368,7 @@ export const CommunityShare: Component = () => {
             >
               <span class="tab-icon">{tab.icon()}</span>
               <span class="tab-name">{tab.name}</span>
-              {tab.count > 0 && <span class="tab-count">{tab.count}</span>}
+              {tab.count !== 0 && <span class="tab-count">{tab.count}</span>}
             </button>
           )}
         </For>
@@ -383,7 +390,7 @@ export const CommunityShare: Component = () => {
                   <div class="melody-info">
                     <span class="melody-author">by {melody.author}</span>
                     <div class="melody-tags">
-                      {<For each={melody.tags}>{tag => (
+                      {melody.tags !== null && <For each={melody.tags}>{(tag) => (
                         <span class="tag">{tag}</span>
                       )}</For>}
                     </div>
@@ -420,11 +427,11 @@ export const CommunityShare: Component = () => {
                   <div class="session-header">
                     <h3 class="session-name">{session.name}</h3>
                     <div class="session-scores">
-                      {session.results.map((score, i) => (
+                      <For each={session.results}>{(score) => (
                         <span class="session-score-badge" style={{ '--score': score }}>
                           {score}%
                         </span>
-                      ))}
+                      )}</For>
                     </div>
                   </div>
                   <div class="session-info">
@@ -473,7 +480,7 @@ export const CommunityShare: Component = () => {
           <div class="profile-container">
             {/* Profile Header */}
             <div class="profile-header">
-              <div class="profile-avatar">{userProfile()?.avatar || IconUser()}</div>
+              <div class="profile-avatar">{_userProfile()?.avatar ?? IconUser()}</div>
               <div class="profile-info">
                 <h2 class="profile-name">{currentProfile()?.displayName}</h2>
                 <p class="profile-bio">{currentProfile()?.bio}</p>
@@ -503,7 +510,7 @@ export const CommunityShare: Component = () => {
               <div class="chart-card">
                 <h3>Weekly Progress</h3>
                 <div class="mini-chart">
-                  {[65, 78, 72, 85, 90, 82, 75].map((score, i) => (
+                  <For each={[65, 78, 72, 85, 90, 82, 75]}>{(score) => (
                     <div class="mini-bar-wrapper">
                       <div
                         class="mini-bar"
@@ -513,13 +520,13 @@ export const CommunityShare: Component = () => {
                         }}
                       />
                     </div>
-                  ))}
+                  )}</For>
                 </div>
               </div>
               <div class="chart-card">
                 <h3>Accuracy Over Time</h3>
                 <div class="mini-chart">
-                  {[70, 72, 71, 75, 78, 80, 82].map((score, i) => (
+                  <For each={[70, 72, 71, 75, 78, 80, 82]}>{(score) => (
                     <div class="mini-bar-wrapper">
                       <div
                         class="mini-bar line-chart"
@@ -529,7 +536,7 @@ export const CommunityShare: Component = () => {
                         }}
                       />
                     </div>
-                  ))}
+                  )}</For>
                 </div>
               </div>
             </div>

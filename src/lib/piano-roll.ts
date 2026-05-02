@@ -2461,13 +2461,20 @@ export class PianoRollEditor {
       if (this.useBallPhysics && this.ballState && this.ballCtx) {
         const ballCtx = this.ballCtx!
         const ballCanvas = this.ballCanvas!
-        const playheadX = currentBeat * this.beatWidth
+        const _playheadX = currentBeat * this.beatWidth
 
-        const ballConfig: any = {
+        const ballConfig: {
+          notes: NoteBounds[]
+          rowHeight: number
+          radius: number
+          padding: { top: number; bottom: number; left: number; right: number }
+          bpm: number
+        } = {
           notes: this.ballNotes,
           rowHeight: this.rowHeight,
           radius: this.ballRadius,
           padding: this.ballPadding,
+          bpm: this.bpm,
         }
 
         const result = getBallPhysics(this.ballState, ballConfig)
@@ -2521,13 +2528,20 @@ export class PianoRollEditor {
     if (this.useBallPhysics && this.ballState && this.ballCtx) {
         const ballCtx = this.ballCtx
         const ballCanvas = this.ballCanvas
-      const playheadX = beat * this.beatWidth
+      const _playheadX = beat * this.beatWidth
 
-      const ballConfig: any = {
+      const ballConfig: {
+        notes: NoteBounds[]
+        rowHeight: number
+        radius: number
+        padding: { top: number; bottom: number; left: number; right: number }
+        bpm: number
+      } = {
         notes: this.ballNotes,
         rowHeight: this.rowHeight,
         radius: this.ballRadius,
         padding: this.ballPadding,
+        bpm: this.bpm,
       }
 
       const result = getBallPhysics(this.ballState, ballConfig)
@@ -2562,7 +2576,7 @@ export class PianoRollEditor {
 
       // Scroll grid to keep ball within view
       const containerWidth = this.gridContainer?.clientWidth ?? 0
-      const targetScroll = playheadX - containerWidth * 0.3
+      const targetScroll = _playheadX - containerWidth * 0.3
       if (targetScroll > 0) {
         this.gridContainer!.scrollLeft = targetScroll
       }

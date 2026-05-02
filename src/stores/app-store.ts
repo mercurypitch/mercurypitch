@@ -31,7 +31,7 @@ const DEFAULT_UVR_SETTINGS: UvrSettings = {
 
 export function getUvrSettings(): UvrSettings {
   const saved = localStorage.getItem('pitchperfect_uvr-settings')
-  if (saved) {
+  if (saved !== null && saved !== undefined) {
     try {
       return { ...DEFAULT_UVR_SETTINGS, ...JSON.parse(saved) }
     } catch {
@@ -94,8 +94,8 @@ export async function initAudioEngine(): Promise<any> {
 
 /** Apply current UVR settings to the audio engine */
 export async function applyUvrSettings(): Promise<void> {
-  const engine = _audioEngineInstance
-  if (!engine) return
+  const engine = _audioEngineInstance as AudioEngine | null
+  if (engine === null) return
 
   const mode = getUvrMode()
   const vocalIntensity = getUvrVocalIntensity()

@@ -4,7 +4,7 @@
 
 import type { Component } from 'solid-js'
 import type { JSX } from 'solid-js'
-import { createMemo, createSignal, For, Show } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, Show } from 'solid-js'
 import type { LeaderboardCategory, LeaderboardUser, LeaderboardView, WeeklyChallengeResult } from '@/types'
 
 // ============================================================
@@ -43,15 +43,15 @@ const IconTrophy = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
 )
 
-const IconNotes = () => (
+const _IconNotes = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
 )
 
-const IconCrown = () => (
+const _IconCrown = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><path d="m3 14.5 2-11 4.5 6.5 4.5-11L19 12.5 21 11l2-1v10"/><path d="M8 21v-6"/><path d="M16 21v-6"/></svg>
 )
 
-const IconGuitar = () => (
+const _IconGuitar = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/><path d="M11 14a3 3 0 1 0-4 0"/></svg>
 )
 
@@ -63,7 +63,7 @@ const IconChallenge = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
 )
 
-const IconFire = () => (
+const _IconFire = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.1.2-2.2.5-3.3.4.5.7 1.3 1 2.3z"/></svg>
 )
 
@@ -71,7 +71,7 @@ const IconSearch = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
 )
 
-const IconFilter = () => (
+const _IconFilter = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
 )
 
@@ -259,13 +259,22 @@ const weeklyChallengesData: WeeklyChallengeResult[] = [
 // ============================================================
 
 export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
-  const [activeView, setActiveView] = createSignal<LeaderboardView>(props.view || 'global')
-  const [activeCategory, setActiveCategory] = createSignal<LeaderboardCategory>(props.category || 'overall')
+  const [activeView, setActiveView] = createSignal<LeaderboardView>(props.view ?? 'global')
+  const [activeCategory, setActiveCategory] = createSignal<LeaderboardCategory>(props.category ?? 'overall')
   const [searchQuery, setSearchQuery] = createSignal('')
   const [selectedUser, setSelectedUser] = createSignal<LeaderboardUser | null>(null)
 
+  createEffect(() => {
+    if (props.view !== undefined) {
+      setActiveView(props.view)
+    }
+    if (props.category !== undefined) {
+      setActiveCategory(props.category)
+    }
+  })
+
   // Current user's data
-  const currentUser = createMemo(() => {
+  const _currentUser = createMemo(() => {
     return mockLeaderboardUsers.find(u => u.userId === 'me') || null
   })
 
@@ -399,12 +408,11 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
               {(user, index) => (
                 <div class={`podium-item podium-${index() + 1}`}>
                   <div class="podium-rank">
-                    {index() === 0 && <TrophyIcon />}
-                    {index() === 1 && <IconTrophy />}
-                    {index() === 2 && <IconTrophy />}
-                    {index() >= 3 && `#${user.rank}`}
+                    {index() === 0 ? <TrophyIcon /> : index() === 1 ? <IconTrophy /> : index() === 2 ? <IconTrophy /> : `#${user.rank}`}
                   </div>
-                  <div class="podium-avatar">{user.avatar ? renderIcon(user.avatar) : null}</div>
+                  <div class="podium-avatar">
+                    {user.avatar !== null && user.avatar !== undefined && renderIcon(user.avatar)}
+                  </div>
                   <div class="podium-info">
                     <div class="podium-name">{user.displayName}</div>
                     <div class="podard-score">{user.score.toLocaleString()} pts</div>
@@ -442,14 +450,13 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
                       onClick={() => setSelectedUser(user)}
                     >
                       <td class="rank-td">
-                        {index() < 3 && index() === 0 && <TrophyIcon />}
-                        {index() < 3 && index() === 1 && <IconTrophy />}
-                        {index() < 3 && index() === 2 && <IconTrophy />}
-                        {index() >= 3 && index() + 1}
+                        {index() < 3 ? index() === 0 ? <TrophyIcon /> : index() === 1 ? <IconTrophy /> : index() === 2 ? <IconTrophy /> : index() + 1 : index() + 1}
                       </td>
                       <td class="user-td">
                         <div class="user-cell">
-                          <div class="user-avatar">{user.avatar ? renderIcon(user.avatar) : null}</div>
+                          <div class="user-avatar">
+                          {user.avatar !== null && user.avatar !== undefined && renderIcon(user.avatar)}
+                        </div>
                           <div class="user-details">
                             <div class="user-name">{user.displayName}</div>
                             <div class="user-streak-badge">
@@ -501,7 +508,11 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
             <div class="profile-header">
               {(() => {
                 const user = selectedUser()
-                return user?.avatar ? renderIcon(user.avatar) : null
+                if (user === null) return null
+                if (user.avatar !== null && user.avatar !== undefined) {
+                  return renderIcon(user.avatar)
+                }
+                return null
               })()}
               <div class="profile-header-info">
                 <div class="profile-rank-badge">
@@ -549,7 +560,7 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
             <div class="profile-charts">
               <h4>Weekly Performance</h4>
               <div class="mini-chart">
-                {[75, 82, 68, 90, 85, 92, 78].map((score: number, i: number) => (
+                <For each={[75, 82, 68, 90, 85, 92, 78]}>{(score: number) => (
                   <div class="mini-bar-wrapper">
                     <div
                       class="mini-bar leaderboard-bar"
@@ -559,7 +570,7 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
                       }}
                     />
                   </div>
-                ))}
+                )}</For>
               </div>
             </div>
 
@@ -581,9 +592,9 @@ interface LeaderboardProps {
 
 function getPodiumData(): LeaderboardUser[] {
   return [
-    mockLeaderboardUsers[0] || { userId: '', displayName: '—', avatar: '', score: 0, rank: 0, streak: 0, totalSessions: 0, bestScore: 0, accuracy: 0, joinDate: 0 },
-    mockLeaderboardUsers[1] || { userId: '', displayName: '—', avatar: '', score: 0, rank: 0, streak: 0, totalSessions: 0, bestScore: 0, accuracy: 0, joinDate: 0 },
-    mockLeaderboardUsers[2] || { userId: '', displayName: '—', avatar: '', score: 0, rank: 0, streak: 0, totalSessions: 0, bestScore: 0, accuracy: 0, joinDate: 0 },
+    mockLeaderboardUsers[0] ?? { userId: '', displayName: '—', avatar: '', score: 0, rank: 0, streak: 0, totalSessions: 0, bestScore: 0, accuracy: 0, joinDate: 0 },
+    mockLeaderboardUsers[1] ?? { userId: '', displayName: '—', avatar: '', score: 0, rank: 0, streak: 0, totalSessions: 0, bestScore: 0, accuracy: 0, joinDate: 0 },
+    mockLeaderboardUsers[2] ?? { userId: '', displayName: '—', avatar: '', score: 0, rank: 0, streak: 0, totalSessions: 0, bestScore: 0, accuracy: 0, joinDate: 0 },
   ]
 }
 

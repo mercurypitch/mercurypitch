@@ -61,7 +61,7 @@ export const VocalAnalysis: Component = () => {
   const [vocalRunData, setVocalRunData] = createSignal<PitchResult[]>([])
   const [isAnalyzing, setIsAnalyzing] = createSignal(false)
   const [history] = createSignal<SessionResult[]>(getSessionHistory())
-  const [selectedDate, setSelectedDate] = createSignal<string>('all')
+  const [_selectedDate, _setSelectedDate] = createSignal<string>('all')
 
   // Get recent session scores
   const recentSessions = createMemo(() => {
@@ -70,7 +70,7 @@ export const VocalAnalysis: Component = () => {
   })
 
   // Calculate practice heatmap data (by day and hour)
-  const heatmapData = createMemo(() => {
+  const _heatmapData = createMemo(() => {
     const heatmap = new Map<string, { sessions: number; totalScore: number }>()
     const sessions = history()
 
@@ -151,8 +151,8 @@ export const VocalAnalysis: Component = () => {
 
     const freqs = runData.map(r => r.freq)
     const avgFreq = freqs.reduce((a, b) => a + b, 0) / freqs.length
-    const midFreq = 440 // A4
-    const isHighRange = avgFreq > midFreq * 1.5 // Belting is usually above A4
+    const _midFreq = 440 // A4
+    const isHighRange = avgFreq > 440 * 1.5 // Belting is usually above A4
     const volumeVariation = maxVolume() / minVolume()
 
     return {
@@ -269,24 +269,41 @@ export const VocalAnalysis: Component = () => {
     // Simulate real analysis (would connect to real mic data in production)
     let analysisComplete = false
     const maxNotes = 100
-    const midFreq = 440 // A4 frequency for mid-range reference
+    const _midFreq = 440 // A4 frequency for mid-range reference
 
     const interval = setInterval(() => {
       const allData = getSessionHistory()
       if (allData.length > 0) {
-        // Convert SessionResult[] to PitchResult[] by flattening practiceItemResult
-        const practiceResults = allData.flatMap(s => s.practiceItemResult || [])
-        setVocalRunData(practiceResults.flatMap(p => p.noteResult || []).map(r => ({
-          freq: r.pitchFreq || 0,
-          midi: r.item.note.midi,
-          note: r.item.note.name,
-          noteName: r.item.note.name,
-          clarity: r.avgCents || 0
-        })) as PitchResult[])
-        // Build spectral approximation
-        const spectral: SpectrumData[] = practiceResults.slice(-30).map((r: any, i: number) => ({
-          frequency: r.pitchFreq || 0,
-          amplitude: (r.avgCents || 0) * 3,
+        const practiceResults = allData.flatMap(s => s.practiceItemResult ?? [])
+        const melodyItems: PitchResult[] = []
+
+        for (const p of practiceResults) {
+          const item = p.noteResult
+          if (item?.length > 0) {
+            for (const r of item) {
+              const note = r.item?.note
+              if (note !== null) {
+                melodyItems.push({
+                  freq: r.pitchFreq ?? 0,
+                  midi: r.item.note.midi ?? 0,
+                  note: r.item.note.name ?? '',
+                  noteName: r.item.note.name ?? '',
+                  clarity: r.avgCents ?? 0,
+                  targetMidi: 60,
+                  targetNote: 'C4',
+                  cents: 0,
+                  frequency: 0,
+                  octave: 4
+                })
+              }
+            }
+          }
+        }
+        setVocalRunData(melodyItems)
+
+        const spectral: SpectrumData[] = practiceResults.slice(-30).map((pr, i) => ({
+          frequency: 0,
+          amplitude: pr.avgCents ?? 0,
           phase: (i / 30) * Math.PI * 2,
         }))
         setSpectralData(spectral)
@@ -438,7 +455,7 @@ export const VocalAnalysis: Component = () => {
             <Show when={activeExercise()}>
               <div class="exercise-result">
                 <h4>
-                  {exercises.find(e => e.type === activeExercise())?.name || 'Analysis'}
+                  {exercises.find(e => e.type === activeExercise())?.name ?? 'Analysis'}
                 </h4>
                 <Show when={isAnalyzing()}>
                   <div class="analyzing-overlay">
@@ -592,7 +609,7 @@ export const VocalAnalysis: Component = () => {
     return checkFn.feedback
   }
 
-  function metrics(): any {
+  function metrics(): ExerciseCheck['metrics'] {
     if (isAnalyzing()) return { noteCount: 0, minFreq: 0, maxFreq: 0, avgVolume: 0 }
     if (vocalRunData().length === 0) return { noteCount: 0, minFreq: 0, maxFreq: 0, avgVolume: 0 }
     const checkFn = getExerciseCheck(activeExercise() ?? 'belting')

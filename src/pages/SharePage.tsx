@@ -3,22 +3,22 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createSignal, For,onMount, Show } from 'solid-js'
+import { createSignal, For, onMount, Show } from 'solid-js'
 import type { SharedMelody, SharedSession } from '@/components/CommunityShare'
-import { appStore } from '@/stores'
+import type { MelodyItem } from '@/types'
 
 export const SharePage: Component = () => {
   const [contentType, setContentType] = createSignal<string>('')
-  const [contentId, setContentId] = createSignal<string>('')
-  const [content, setContent] = createSignal<any>(null)
+  const [_contentId, setContentId] = createSignal<string>('')
+  const [content, setContent] = createSignal<SharedMelody | SharedSession | null>(null)
   const [error, setError] = createSignal<string>('')
 
   onMount(() => {
     const params = new URLSearchParams(window.location.search)
-    const type = params.get('type')
-    const id = params.get('id')
+    const type = params.get('type') ?? ''
+    const id = params.get('id') ?? ''
 
-    if (!type || !id) {
+    if (type === '' || id === '') {
       setError('Invalid share link. Please use a valid link.')
       return
     }
@@ -31,21 +31,21 @@ export const SharePage: Component = () => {
   const loadSharedContent = (type: string, id: string) => {
     try {
       const storedKey = `pp_shared_${type === 'melody' ? 'melodies' : 'sessions'}`
-      const stored = localStorage.getItem(storedKey)
-      if (!stored) {
-        setError(`Content not found. It may have been removed or never existed.`)
-        return
-      }
-
-      const allContent = JSON.parse(stored)
-      const found = allContent.find((item: any) => item.id === id)
+      const stored = localStorage.getItem(storedKey) ?? '[]'
+      const allContent: { id: string; name?: string; items?: MelodyItem[]; results?: number[]; author?: string; date?: string; tags?: string[] }[] = JSON.parse(stored)
+      const found = allContent.find((item) => item.id === id)
 
       if (!found) {
         setError(`Content not found. ID: ${id}`)
         return
       }
 
-      setContent(found)
+      // Type assertion based on the stored key
+      const content = type === 'melody'
+        ? { ...found, items: found.items || [] } as unknown as SharedMelody
+        : { ...found, results: found.results || [] } as unknown as SharedSession
+
+      setContent(content)
     } catch (err) {
       setError('Failed to load content. Please try again later.')
       console.error('Share page error:', err)
@@ -73,12 +73,12 @@ export const SharePage: Component = () => {
           </div>
         </Show>
 
-        <Show when={contentType() === 'melody' && content()}>
-          <MelodyShareContent content={content()} onShare={shareContent} />
+        <Show when={contentType() === 'melody' && content() !== null}>
+          <MelodyShareContent content={content()!} onShare={shareContent} />
         </Show>
 
-        <Show when={contentType() === 'session' && content()}>
-          <SessionShareContent content={content()} onShare={shareContent} />
+        <Show when={contentType() === 'session' && content() !== null}>
+          <SessionShareContent content={content()!} onShare={shareContent} />
         </Show>
 
         <Show when={!error() && !content()}>
@@ -97,23 +97,32 @@ export const SharePage: Component = () => {
 // ============================================================
 
 const MelodyShareContent: Component<{
-  content: any
+  content: SharedMelody | SharedSession
   onShare: (type: 'melody' | 'session', id: string) => void
 }> = (props) => {
   const { content, onShare } = props
 
-  const notes = content.items
-    .filter((item: any) => !item.isRest && item.note)
-    .map((item: any) => {
-      const note = item.note
-      return {
-        midi: note.midi,
-        noteName: note.name,
-        octave: note.octave,
-        freq: note.freq,
-        duration: item.duration,
-      }
-    })
+  const melodyContent = content as SharedMelody
+
+  function isMelodyItem(item: MelodyItem): boolean {
+    return (item.isRest ?? false) === false && item.note !== null
+  }
+
+  const melodyItems = melodyContent.items?.filter(isMelodyItem) ?? []
+
+  const notes: Array<{
+    midi: number
+    noteName: string
+    octave: number
+    freq: number
+    duration: number
+  }> = melodyItems.map((item: MelodyItem) => ({
+    midi: item.note.midi ?? 0,
+    noteName: item.note.name ?? '',
+    octave: item.note.octave ?? 0,
+    freq: item.note.freq ?? 0,
+    duration: item.duration ?? 0,
+  }))
 
   return (
     <div class="share-content">
@@ -132,7 +141,7 @@ const MelodyShareContent: Component<{
             </div>
             <div class="info-item">
               <span class="info-label">Duration</span>
-              <span class="info-value">{notes.reduce((a: number, b: any) => a + b.duration, 0)} beats</span>
+              <span class="info-value">{notes.reduce((a: number, b) => a + b.duration, 0)} beats</span>
             </div>
             <div class="info-item">
               <span class="info-label">Author</span>
@@ -141,22 +150,22 @@ const MelodyShareContent: Component<{
             <div class="info-item">
               <span class="info-label">Shared</span>
               <span class="info-value">
-                {new Date(content.date).toLocaleDateString()}
+                {content.date ? new Date(content.date).toLocaleDateString() : 'N/A'}
               </span>
             </div>
           </div>
         </div>
 
-        <Show when={content.tags && content.tags.length > 0}>
+        {(melodyContent.tags && Array.isArray(melodyContent.tags) && melodyContent.tags.length > 0) && (
           <div class="tags-section">
             <h3>Tags</h3>
             <div class="tags-container">
-              <For each={content.tags}>{(tag: string) => (
+              <For each={melodyContent.tags}>{(tag: string) => (
                 <span class="tag">{tag}</span>
               )}</For>
             </div>
           </div>
-        </Show>
+        )}
 
         <div class="notes-section">
           <h3>Melody Notes</h3>
@@ -167,7 +176,7 @@ const MelodyShareContent: Component<{
               <span class="note-column">Frequency (Hz)</span>
             </div>
             <For each={notes}>
-              {(n: any, i) => (
+              {(n) => (
                 <div class="note-row">
                   <span class="note-column">{n.noteName}{n.octave}</span>
                   <span class="note-column">{n.midi}</span>
@@ -196,10 +205,14 @@ const MelodyShareContent: Component<{
 // ============================================================
 
 const SessionShareContent: Component<{
-  content: any
+  content: SharedMelody | SharedSession
   onShare: (type: 'melody' | 'session', id: string) => void
 }> = (props) => {
   const { content, onShare } = props
+
+  const sessionContent = content as SharedSession
+
+  const hasValidResults = () => sessionContent.results !== null && Array.isArray(sessionContent.results) && sessionContent.results.length > 0
 
   return (
     <div class="share-content">
@@ -211,39 +224,40 @@ const SessionShareContent: Component<{
       <div class="share-body">
         <div class="info-section">
           <h3>Session Results</h3>
-          <div class="results-list">
-            {content.results.map((score: number, i: number) => (
-              <div class="result-item">
-                <span class="result-index">Run {i + 1}</span>
-                <span
-                  class="result-score"
-                  style={{
-                    '--score': score,
-                    '--score-color': getScoreColor(score),
-                  }}
-                >
-                  {score}%
-                </span>
+          <Show when={hasValidResults()}>
+            <>
+              <div class="results-list">
+                <For each={sessionContent.results}>{(score: number) => (
+                  <div class="result-item">
+                    <span class="result-index">Run {score + 1}</span>
+                    <span
+                      class="result-score"
+                      style={{
+                        '--score': score,
+                        '--score-color': getScoreColor(score),
+                      }}
+                    >
+                      {score}%
+                    </span>
+                  </div>
+                )}</For>
               </div>
-            ))}
-          </div>
-
-          {content.results.length > 0 && (
-            <div class="stats-row">
-              <div class="stat-item">
-                <span class="stat-label">Total Runs</span>
-                <span class="stat-value">{content.results.length}</span>
+              <div class="stats-row">
+                <div class="stat-item">
+                  <span class="stat-label">Total Runs</span>
+                  <span class="stat-value">{sessionContent.results.length}</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">Average</span>
+                  <span class="stat-value">
+                    {Math.round(
+                      sessionContent.results.reduce((a: number, b: number) => a + b, 0) / sessionContent.results.length
+                    )}%
+                  </span>
+                </div>
               </div>
-              <div class="stat-item">
-                <span class="stat-label">Average</span>
-                <span class="stat-value">
-                  {Math.round(
-                    content.results.reduce((a: number, b: number) => a + b, 0) / content.results.length
-                  )}%
-                </span>
-              </div>
-            </div>
-          )}
+            </>
+          </Show>
         </div>
 
         <div class="details-section">
@@ -261,17 +275,6 @@ const SessionShareContent: Component<{
             </div>
           </div>
         </div>
-
-        <Show when={content.tags && content.tags.length > 0}>
-          <div class="tags-section">
-            <h3>Tags</h3>
-            <div class="tags-container">
-              <For each={content.tags}>{(tag: string) => (
-                <span class="tag">{tag}</span>
-              )}</For>
-            </div>
-          </div>
-        </Show>
       </div>
 
       <div class="share-footer">
