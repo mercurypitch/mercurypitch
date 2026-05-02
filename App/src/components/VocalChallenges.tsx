@@ -3,7 +3,9 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { For, createSignal, createMemo, Show } from 'solid-js'
+import { For, createSignal, createMemo, Show, onMount } from 'solid-js'
+import { appStore, getSessionHistory } from '@/stores'
+import type { SessionResult, AccuracyRating } from '@/types'
 
 // Alternative: directly render icon with casting
 const renderIcon = (icon: Component | string) => {
@@ -158,6 +160,10 @@ export interface ChallengeProgress {
   completedDate?: number
 }
 
+export interface UserChallengeProgress {
+  [challengeId: string]: ChallengeProgress
+}
+
 export interface UserBadge {
   /** Badge ID */
   id: string
@@ -205,15 +211,298 @@ export const VocalChallenges: Component = () => {
   const [showChallengeModal, setShowChallengeModal] = createSignal(false)
   const [selectedChallenge, setSelectedChallenge] = createSignal<ChallengeProgress | null>(null)
 
-  // Challenges data (in-memory for demo)
-  const challenges = createMemo(() => generateMockChallenges())
-  const badges = createMemo(() => generateMockBadges())
-  const achievements = createMemo(() => generateMockAchievements())
-  const progress = createMemo(() => generateMockProgress())
+  // Load session history for real progress tracking
+  const sessionHistory = createMemo(() => getSessionHistory())
 
-  // Streak display
+  // Challenge progress stored in localStorage
+  const [userProgress, setUserProgress] = createSignal<UserChallengeProgress | null>(null)
+
+  // Streak display (derived from real session history)
   const currentStreak = createMemo(() => {
-    return 7
+    const sessions = sessionHistory()
+    const scores = sessions.filter(s => s.score !== undefined && s.score > 70)
+    if (scores.length === 0) return 0
+    return calculateStreak(scores.map(s => s.completedAt || 0))
+  })
+
+  const weeklyScores = createMemo(() => {
+    const sessions = sessionHistory()
+    const scores = [0, 0, 0, 0, 0, 0, 0] // Mon-Sun
+    const counts = [0, 0, 0, 0, 0, 0, 0]
+
+    for (const session of sessions) {
+      const date = new Date(session.completedAt || 0)
+      const dayIndex = date.getDay() || 7 // Sunday = 7
+      if (dayIndex > 0 && dayIndex < 8) {
+        scores[dayIndex - 1] += (session.score || 0)
+        counts[dayIndex - 1]++
+      }
+    }
+
+    return scores.map((s, i) => ({
+      day: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][i],
+      score: counts[i] ? Math.round(s / counts[i]) : 0,
+      count: counts[i],
+    }))
+  })
+
+  // Load user progress from localStorage
+  onMount(() => {
+    try {
+      const stored = localStorage.getItem('pp_challenge_progress')
+      if (stored) {
+        setUserProgress(JSON.parse(stored))
+      }
+    } catch { }
+  })
+
+  // Save user progress to localStorage
+  const saveProgress = (progress: UserChallengeProgress | null) => {
+    setUserProgress(progress)
+    if (progress) {
+      localStorage.setItem('pp_challenge_progress', JSON.stringify(progress))
+    } else {
+      localStorage.removeItem('pp_challenge_progress')
+    }
+  }
+
+  // Calculate streak from array of timestamps
+  function calculateStreak(dates: number[]): number {
+    if (dates.length === 0) return 0
+
+    const sorted = [...dates].sort((a, b) => b - a)
+    const today = new Date().setHours(0, 0, 0, 0)
+    const yesterday = today - 24 * 60 * 60 * 1000
+    const oneDay = 24 * 60 * 60 * 1000
+
+    let streak = 0
+    let currentDate = today
+
+    for (const date of sorted) {
+      if (date >= currentDate - oneDay) {
+        streak++
+        currentDate -= oneDay
+      } else {
+        break
+      }
+    }
+
+    return streak
+  }
+
+  // Challenges data (merged with real progress)
+  function getChallengesForCategory(category: ChallengeType): ChallengeProgress[] {
+    let challenges: ChallengeProgress[] = []
+
+    switch (category) {
+      case 'high-notes':
+        challenges = mockChallenges.filter(c => c.type === 'high-notes')
+        break
+      case 'low-notes':
+        challenges = mockChallenges.filter(c => c.type === 'low-notes')
+        break
+      case 'speed':
+        challenges = mockChallenges.filter(c => c.type === 'speed')
+        break
+      case 'perfect':
+        challenges = mockChallenges.filter(c => c.type === 'perfect')
+        break
+      case 'scales':
+        challenges = mockChallenges.filter(c => c.type === 'scales')
+        break
+    }
+
+    // Merge real progress with mock challenge data
+    return challenges.map(c => {
+      const progressKey = `ch-${c.id}`
+      const stored = (userProgress() || {})[progressKey]
+      if (stored) {
+        return stored
+      }
+      return c
+    })
+  }
+
+  // Get filtered challenges with real progress
+  const challenges = createMemo(() => getChallengesForCategory(activeCategory()))
+
+  // Calculate user badges from session history
+  function getBadges(): UserBadge[] {
+    const sessions = sessionHistory()
+    const totalSessions = sessions.length
+    const bestScore = sessions.length > 0 ? Math.max(...sessions.map(s => s.score || 0)) : 0
+    const avgScore = sessions.length > 0
+      ? sessions.reduce((sum, s) => sum + (s.score || 0), 0) / sessions.length
+      : 0
+    const streak = calculateStreak(sessions.map(s => s.completedAt || 0))
+
+    return mockBadges.map(badge => {
+      let earned = false
+      let earnedDate: number | undefined
+
+      switch (badge.id) {
+        case 'b1':
+          earned = totalSessions > 0
+          earnedDate = totalSessions > 0 ? sessions[0].completedAt! : 0
+          break
+        case 'b2':
+          earned = streak >= 7
+          earnedDate = streak >= 7 ? Date.now() - streak * 24 * 60 * 60 * 1000 : 0
+          break
+        case 'b3':
+          earned = bestScore >= 90
+          earnedDate = bestScore >= 90 ? Date.now() : 0
+          break
+        case 'b4':
+          earned = bestScore >= 95
+          earnedDate = bestScore >= 95 ? Date.now() : 0
+          break
+        case 'b5':
+          earned = avgScore >= 90
+          earnedDate = avgScore >= 90 ? Date.now() : 0
+          break
+        case 'b6':
+          earned = totalSessions >= 10
+          earnedDate = totalSessions >= 10 ? sessions[0].completedAt! : 0
+          break
+        case 'b7':
+          earned = streak >= 14
+          earnedDate = streak >= 14 ? Date.now() - streak * 24 * 60 * 60 * 1000 : 0
+          break
+      }
+
+      return {
+        ...badge,
+        earned,
+        earnedDate: earned ? earnedDate : undefined,
+      }
+    })
+  }
+
+  // Calculate user achievements from session history
+  function getAchievements(): UserAchievement[] {
+    const sessions = sessionHistory()
+    const totalSessions = sessions.length
+    const bestScore = sessions.length > 0 ? Math.max(...sessions.map(s => s.score || 0)) : 0
+    const avgScore = sessions.length > 0
+      ? sessions.reduce((sum, s) => sum + (s.score || 0), 0) / sessions.length
+      : 0
+
+    // Track high note completions
+    let highNoteCount = 0
+    sessions.forEach(session => {
+      if (session.practiceItemResult) {
+        session.practiceItemResult.forEach(item => {
+          if (item.noteResult) {
+            item.noteResult.forEach(note => {
+              if (note.pitchFreq > 880 && note.rating === 'perfect') {
+                highNoteCount++
+              }
+            })
+          }
+        })
+      }
+    })
+
+    return mockAchievements.map(ach => {
+      let unlocked = false
+      let progress = 0
+
+      switch (ach.id) {
+        case 'a1':
+          progress = totalSessions
+          unlocked = totalSessions >= 10
+          break
+        case 'a2':
+          progress = totalSessions
+          unlocked = totalSessions >= 50
+          break
+        case 'a3':
+          progress = Math.min(highNoteCount / 10, 3)
+          unlocked = highNoteCount >= 30
+          break
+        case 'a4':
+          progress = highNoteCount
+          unlocked = highNoteCount >= 100
+          break
+        case 'a5':
+          progress = bestScore
+          unlocked = bestScore >= 100
+          break
+        case 'a6':
+          progress = Math.min(avgScore, 10)
+          unlocked = avgScore >= 95 && totalSessions >= 5
+          break
+        case 'a7':
+          progress = Math.min(totalSessions / 2, 20)
+          unlocked = totalSessions >= 40
+          break
+      }
+
+      return {
+        ...ach,
+        unlocked,
+        progress,
+        required: ach.required,
+      }
+    })
+  }
+
+  const badges = createMemo(() => getBadges())
+  const achievements = createMemo(() => getAchievements())
+
+  // Check if category is locked based on actual progress
+  const isCategoryLocked = (categoryId: string): boolean => {
+    if (categoryId === 'scales') {
+      return challenges().filter(c => c.type === 'scales').length === 0
+    }
+    return false
+  }
+
+  // Update challenge progress
+  function updateChallengeProgress(challengeId: string, score: number, completed: boolean) {
+    const progress = userProgress() || {}
+    const progressKey = `ch-${challengeId}`
+    const saved = progress[progressKey] || {
+      id: challengeId,
+      type: challengeId.substring(0, challengeId.indexOf('-')) as ChallengeType,
+      name: challengeId,
+      description: `Challenge progress for ${challengeId}`,
+      icon: IconMicChallenge,
+      targetScore: 100,
+      currentScore: 0,
+      progress: 0,
+      status: 'not-started' as const,
+      unlockedDate: undefined,
+      completedDate: undefined,
+      actualScores: [],
+    }
+
+    saved.currentScore = score
+    saved.progress = Math.min(100, score)
+    saved.actualScores.push(score)
+
+    if (completed) {
+      saved.status = 'completed'
+      saved.completedDate = Date.now()
+      if (!saved.unlockedDate) {
+        saved.unlockedDate = Date.now()
+      }
+    } else if (score >= 80) {
+      saved.status = 'in-progress'
+      if (!saved.unlockedDate) {
+        saved.unlockedDate = Date.now()
+      }
+    } else if (score >= 50) {
+      saved.status = 'in-progress'
+    }
+
+    progress[progressKey] = saved
+    saveProgress(progress)
+  }
+
+  const totalCompletedChallenges = createMemo(() => {
+    return challenges().filter(c => c.status === 'completed').length
   })
 
   return (
@@ -238,23 +527,27 @@ export const VocalChallenges: Component = () => {
       {/* Category Tabs */}
       <div class="category-tabs">
         <For each={challengeCategories()}>
-          {(cat) => (
-            <button
-              class={`category-tab ${activeCategory() === cat.id ? 'active' : ''}`}
-              onClick={() => setActiveCategory(cat.id as ChallengeType)}
-              disabled={cat.id === 'scales' && progress()?.find(c => c.id === 'scales')?.status === 'locked'}
-            >
-              <span class="cat-icon">{renderIcon(cat.icon)}</span>
-              <span class="cat-name">{cat.name}</span>
-              <span class="cat-count">{cat.count}</span>
-            </button>
-          )}
+          {(cat) => {
+            const locked = isCategoryLocked(cat.id)
+            return (
+              <button
+                class={`category-tab ${activeCategory() === cat.id ? 'active' : ''}`}
+                onClick={() => setActiveCategory(cat.id as ChallengeType)}
+                disabled={locked}
+              >
+                <span class="cat-icon">{renderIcon(cat.icon)}</span>
+                <span class="cat-name">{cat.name}</span>
+                <span class="cat-count">{cat.count}</span>
+                {locked && <span class="cat-locked">🔒</span>}
+              </button>
+            )
+          }}
         </For>
       </div>
 
       {/* Challenges Grid */}
       <div class="challenges-grid">
-        <For each={challenges().filter(c => c.type === activeCategory())}>
+        <For each={challenges()}>
           {(challenge) => (
             <div
               class={`challenge-card ${challenge.status}`}
@@ -404,6 +697,25 @@ interface ChallengeModalProps {
 }
 
 const ChallengeModal: Component<ChallengeModalProps> = (props) => {
+  const [isPracticing, setIsPracticing] = createSignal(false)
+  const [sessionScore, setSessionScore] = createSignal(0)
+
+  const handleComplete = () => {
+    const sessions = getSessionHistory()
+    const recentSessions = sessions.slice(-5)
+    const avgScore = recentSessions.length > 0
+      ? recentSessions.reduce((sum, s) => sum + (s.score || 0), 0) / recentSessions.length
+      : 0
+
+    const target = props.challenge.targetScore
+    const completed = avgScore >= target
+
+    updateChallengeProgress(props.challenge.id, avgScore, completed)
+
+    setIsPracticing(false)
+    props.onComplete()
+  }
+
   return (
     <div class="challenge-modal">
       <div class="modal-backdrop" onClick={props.onClose} />
@@ -418,54 +730,70 @@ const ChallengeModal: Component<ChallengeModalProps> = (props) => {
           </div>
         </div>
 
-        <div class="modal-stats">
-          <div class="stat-card">
-            <span class="stat-label">Target Score</span>
-            <span class="stat-value">{props.challenge.targetScore}%</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-label">Your Progress</span>
-            <span class="stat-value">{props.challenge.progress}%</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-label">Days Left</span>
-            <span class="stat-value">{7 - Math.floor(props.challenge.progress / 15)} days</span>
-          </div>
-        </div>
+        {isPracticing() ? (
+          <>
+            <div class="modal-practice-status">
+              <div class="practice-pulse"><IconMicChallenge /></div>
+              <p class="practice-text">Practice session in progress...</p>
+              <p class="practice-instruction">Complete a session to track your progress</p>
+            </div>
+            <div class="modal-actions">
+              <button class="modal-btn primary" onClick={handleComplete}>
+                Complete Session
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div class="modal-stats">
+              <div class="stat-card">
+                <span class="stat-label">Target Score</span>
+                <span class="stat-value">{props.challenge.targetScore}%</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-label">Your Progress</span>
+                <span class="stat-value">{props.challenge.progress}%</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-label">Sessions</span>
+                <span class="stat-value">{props.challenge.actualScores?.length || 0}</span>
+              </div>
+            </div>
 
-        <div class="modal-instructions">
-          <h3><IconPaper /> How to Complete</h3>
-          <ul class="instructions-list">
-            <li>Practice the target notes for at least 5 minutes</li>
-            <li>Try to achieve {props.challenge.targetScore}% or higher accuracy</li>
-            <li>Practice at least 3 sessions this week</li>
-            <li>Track your progress in the Analysis tab</li>
-          </ul>
-        </div>
+            <div class="modal-instructions">
+              <h3><IconPaper /> How to Complete</h3>
+              <ul class="instructions-list">
+                <li>Practice the target notes for at least 5 minutes</li>
+                <li>Try to achieve {props.challenge.targetScore}% or higher accuracy</li>
+                <li>Practice at least 3 sessions this week</li>
+                <li>Track your progress in the Analysis tab</li>
+              </ul>
+            </div>
 
-        <div class="modal-progress-large">
-          <div class="progress-bar-large">
-            <div
-              class="progress-fill-large"
-              style={{
-                width: `${props.challenge.progress}%`,
-                background: getChallengeProgressColor(props.challenge.progress),
-              }}
-            />
-          </div>
-          <span class="progress-text-large">{props.challenge.progress}% to {props.challenge.targetScore}%</span>
-        </div>
+            <div class="modal-progress-large">
+              <div class="progress-bar-large">
+                <div
+                  class="progress-fill-large"
+                  style={{
+                    width: `${props.challenge.progress}%`,
+                    background: getChallengeProgressColor(props.challenge.progress),
+                  }}
+                />
+              </div>
+              <span class="progress-text-large">{props.challenge.progress}% to {props.challenge.targetScore}%</span>
+            </div>
 
-        <div class="modal-actions">
-          <button class="modal-btn secondary" onClick={props.onClose}>Cancel</button>
-          <button
-            class="modal-btn primary"
-            disabled={props.challenge.progress >= props.challenge.targetScore}
-            onClick={props.onComplete}
-          >
-            Mark Complete
-          </button>
-        </div>
+            <div class="modal-actions">
+              <button class="modal-btn secondary" onClick={props.onClose}>Cancel</button>
+              <button
+                class="modal-btn primary"
+                onClick={() => setIsPracticing(true)}
+              >
+                Start Practice
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   )
@@ -682,17 +1010,44 @@ function getAchievementColor(progress: number): string {
 }
 
 function startChallenge(challenge: ChallengeProgress) {
+  const sessions = getSessionHistory()
+
   if (challenge.status === 'completed') {
-    alert('Challenge already completed! View your progress.')
+    const completedScore = challenge.actualScores?.[0] || 0
+    alert(`"${challenge.name}" completed!\nYour score: ${completedScore}%\n${challenge.actualScores?.length || 1} session(s) played`)
     return
   }
 
   if (challenge.status === 'in-progress') {
-    alert('Continue practicing to increase your progress!')
+    const avgScore = challenge.actualScores?.length > 0
+      ? Math.round(challenge.actualScores.reduce((a, b) => a + b, 0) / challenge.actualScores.length)
+      : 0
+    alert(`Continue "${challenge.name}"!\nCurrent progress: ${avgScore}%\n(${challenge.actualScores?.length || 0} session(s))`)
     return
   }
 
-  alert(`Starting "${challenge.name}"! Good luck! <IconTarget />`)
+  // Get recent session scores to pre-fill progress
+  const recentSessions = sessions.slice(-3)
+  const sessionScores = recentSessions.map(s => s.score || 0)
+  const avgScore = sessionScores.length > 0
+    ? Math.round(sessionScores.reduce((a, b) => a + b, 0) / sessionScores.length)
+    : 0
+
+  // Show dialog to confirm starting the challenge
+  const confirmed = confirm(
+    `Starting "${challenge.name}"!\n\nYour recent average score: ${avgScore}%\n\nStart this challenge?`
+  )
+
+  if (confirmed) {
+    // If we have scores, show the modal directly
+    if (avgScore > 0) {
+      setSelectedChallenge(challenge)
+      setShowChallengeModal(true)
+    } else {
+      setSelectedChallenge(challenge)
+      setShowChallengeModal(true)
+    }
+  }
 }
 
 // ============================================================
