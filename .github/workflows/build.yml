@@ -18,20 +18,18 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: App/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: Install dependencies
         run: npm ci
-        working-directory: App
 
       - name: Build app
         run: npm run build
-        working-directory: App
 
       - name: Verify build output
         run: |
           # Verify critical build artifacts exist
-          test -f App/dist/index.html || exit 1
-          test -f App/dist/assets/*.js || exit 1
-          test -f App/dist/assets/*.css || exit 1
+          test -f dist/index.html || exit 1
+          test -f dist/assets/*.js || exit 1
+          test -f dist/assets/*.css || exit 1
           echo "Build artifacts verified"
