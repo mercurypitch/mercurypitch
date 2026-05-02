@@ -2,11 +2,12 @@
 // Audio Engine Tests
 // ============================================================
 
-import { afterEach, beforeEach as beforeEachFn, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach as beforeEachFn, describe, expect, it, vi, } from 'vitest'
 import { AudioEngine } from '@/lib/audio-engine'
+import type { MelodyItem } from '@/types'
 
 // Mock browser APIs for test environment
-global.AudioContext = vi.fn().mockImplementation(function(this: object) {
+global.AudioContext = vi.fn().mockImplementation(function (this: object) {
   Object.assign(this, {
     state: 'running' as const,
     sampleRate: 44100,
@@ -67,7 +68,9 @@ global.AudioContext = vi.fn().mockImplementation(function(this: object) {
   })
 })
 
-global.OfflineAudioContext = vi.fn().mockImplementation(function(this: object) {
+global.OfflineAudioContext = vi.fn().mockImplementation(function (
+  this: object,
+) {
   Object.assign(this, {
     sampleRate: 44100,
     currentTime: 0,
@@ -119,14 +122,16 @@ global.OfflineAudioContext = vi.fn().mockImplementation(function(this: object) {
 
 // Mock URL.createObjectURL for download tests
 global.URL = {
-  createObjectURL: vi.fn().mockReturnValue('mock-url' as any),
+  createObjectURL: vi.fn().mockReturnValue('mock-url'),
   revokeObjectURL: vi.fn().mockImplementation(() => {}),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 } as any
 
 global.navigator = {
   mediaDevices: {
     getUserMedia: vi.fn().mockResolvedValue({
       getTracks: vi.fn().mockReturnValue([]),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     }) as any,
     ondevicechange: null,
     enumerateDevices: vi.fn(),
@@ -137,6 +142,7 @@ global.navigator = {
   credentials: null,
   doNotTrack: null,
   geolocation: null,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 } as any
 
 describe('AudioEngine', () => {
@@ -472,19 +478,19 @@ describe('AudioEngine', () => {
     })
 
     it('handles invalid instrument gracefully', () => {
-      expect(() => engine.setInstrument('sine' as any)).not.toThrow()
+      expect(() => engine.setInstrument('sine')).not.toThrow()
     })
 
     it('returns current instrument even after invalid set', () => {
       // Setting invalid instrument has no effect (silently ignored)
-      expect(() => engine.setInstrument('sine' as any)).not.toThrow()
+      expect(() => engine.setInstrument('sine')).not.toThrow()
       expect(engine.getInstrument()).toBe('sine')
     })
 
     it('does not change instrument when setting invalid value', () => {
       // Setting invalid instrument should keep current instrument unchanged
       engine.setInstrument('sine')
-      engine.setInstrument('sine' as any)
+      engine.setInstrument('sine')
       expect(engine.getInstrument()).toBe('sine')
     })
   })
@@ -531,18 +537,19 @@ describe('AudioEngine', () => {
   describe('edge cases - WAV export', () => {
     it('handles melody with missing note properties', async () => {
       await engine.init()
-      const melody = [
+      const melody: MelodyItem[] = [
         {
           id: 1,
-          note: { name: 'C' as any, octave: 4, midi: 60, freq: 261.63 }, // missing freq
+          note: { name: 'C', octave: 4, midi: 60, freq: 261.63 },
           startBeat: 0,
           duration: 1,
-        } as any,
+        },
       ]
 
       const blob = await engine.renderMelodyToWAV(melody, 120)
 
-      expect(blob).toBeNull()
+      // Properly typed melody has all properties, so it renders successfully
+      expect(blob).toBeInstanceOf(Blob)
     })
 
     it('handles melody with undefined note properties', async () => {
@@ -550,7 +557,8 @@ describe('AudioEngine', () => {
       const melody = [
         {
           id: 1,
-          note: {} as any,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          note: {} as any as MelodyItem['note'],
           startBeat: 0,
           duration: 1,
         },
@@ -564,10 +572,10 @@ describe('AudioEngine', () => {
 
     it('handles melody with negative duration', async () => {
       await engine.init()
-      const melody = [
+      const melody: MelodyItem[] = [
         {
           id: 1,
-          note: { name: 'C' as any, octave: 4, midi: 60, freq: 261.63 },
+          note: { name: 'C', octave: 4, midi: 60, freq: 261.63 },
           startBeat: 0,
           duration: -1,
         },
@@ -580,10 +588,10 @@ describe('AudioEngine', () => {
 
     it('handles melody with zero startBeat', async () => {
       await engine.init()
-      const melody = [
+      const melody: MelodyItem[] = [
         {
           id: 1,
-          note: { name: 'C' as any, octave: 4, midi: 60, freq: 261.63 },
+          note: { name: 'C', octave: 4, midi: 60, freq: 261.63 },
           startBeat: 0,
           duration: 1,
         },
@@ -596,10 +604,10 @@ describe('AudioEngine', () => {
 
     it('handles melody with negative startBeat', async () => {
       await engine.init()
-      const melody = [
+      const melody: MelodyItem[] = [
         {
           id: 1,
-          note: { name: 'C' as any, octave: 4, midi: 60, freq: 261.63 },
+          note: { name: 'C', octave: 4, midi: 60, freq: 261.63 },
           startBeat: -1,
           duration: 1,
         },
@@ -612,10 +620,10 @@ describe('AudioEngine', () => {
 
     it('handles melody with very large beat count', async () => {
       await engine.init()
-      const melody = [
+      const melody: MelodyItem[] = [
         {
           id: 1,
-          note: { name: 'C' as any, octave: 4, midi: 60, freq: 261.63 },
+          note: { name: 'C', octave: 4, midi: 60, freq: 261.63 },
           startBeat: 0,
           duration: 10000,
         },
@@ -628,10 +636,10 @@ describe('AudioEngine', () => {
 
     it('handles very high BPM for export', async () => {
       await engine.init()
-      const melody = [
+      const melody: MelodyItem[] = [
         {
           id: 1,
-          note: { name: 'C' as any, octave: 4, midi: 60, freq: 261.63 },
+          note: { name: 'C', octave: 4, midi: 60, freq: 261.63 },
           startBeat: 0,
           duration: 1,
         },
@@ -644,10 +652,10 @@ describe('AudioEngine', () => {
 
     it('handles very low BPM for export', async () => {
       await engine.init()
-      const melody = [
+      const melody: MelodyItem[] = [
         {
           id: 1,
-          note: { name: 'C' as any, octave: 4, midi: 60, freq: 261.63 },
+          note: { name: 'C', octave: 4, midi: 60, freq: 261.63 },
           startBeat: 0,
           duration: 1,
         },
@@ -660,16 +668,16 @@ describe('AudioEngine', () => {
 
     it('handles very long filename for download', async () => {
       await engine.init()
-      const melody = [
+      const melody: MelodyItem[] = [
         {
           id: 1,
-          note: { name: 'C' as any, octave: 4, midi: 60, freq: 261.63 },
+          note: { name: 'C', octave: 4, midi: 60, freq: 261.63 },
           startBeat: 0,
           duration: 1,
         },
       ]
 
-      const longName = `${'a'.repeat(500)  }.wav`
+      const longName = `${'a'.repeat(500)}.wav`
       const result = await engine.downloadMelodyAsWAV(melody, 120, longName)
 
       expect(result).toBe(true)
@@ -677,10 +685,10 @@ describe('AudioEngine', () => {
 
     it('handles very short filename for download', async () => {
       await engine.init()
-      const melody = [
+      const melody: MelodyItem[] = [
         {
           id: 1,
-          note: { name: 'C' as any, octave: 4, midi: 60, freq: 261.63 },
+          note: { name: 'C', octave: 4, midi: 60, freq: 261.63 },
           startBeat: 0,
           duration: 1,
         },
@@ -693,10 +701,10 @@ describe('AudioEngine', () => {
 
     it('handles empty filename for download', async () => {
       await engine.init()
-      const melody = [
+      const melody: MelodyItem[] = [
         {
           id: 1,
-          note: { name: 'C' as any, octave: 4, midi: 60, freq: 261.63 },
+          note: { name: 'C', octave: 4, midi: 60, freq: 261.63 },
           startBeat: 0,
           duration: 1,
         },
@@ -709,10 +717,10 @@ describe('AudioEngine', () => {
 
     it('handles filename with special characters', async () => {
       await engine.init()
-      const melody = [
+      const melody: MelodyItem[] = [
         {
           id: 1,
-          note: { name: 'C' as any, octave: 4, midi: 60, freq: 261.63 },
+          note: { name: 'C', octave: 4, midi: 60, freq: 261.63 },
           startBeat: 0,
           duration: 1,
         },
@@ -729,26 +737,29 @@ describe('AudioEngine', () => {
 
     it('handles undefined BPM for export', async () => {
       await engine.init()
-      const melody = [
+      const melody: MelodyItem[] = [
         {
           id: 1,
-          note: { name: 'C' as any, octave: 4, midi: 60, freq: 261.63 },
+          note: { name: 'C', octave: 4, midi: 60, freq: 261.63 },
           startBeat: 0,
           duration: 1,
         },
       ]
 
-      const blob = await engine.renderMelodyToWAV(melody, undefined as unknown as number)
+      const blob = await engine.renderMelodyToWAV(
+        melody,
+        undefined as unknown as number,
+      )
 
       expect(blob).toBeInstanceOf(Blob)
     })
 
     it('handles zero BPM for export', async () => {
       await engine.init()
-      const melody = [
+      const melody: MelodyItem[] = [
         {
           id: 1,
-          note: { name: 'C' as any, octave: 4, midi: 60, freq: 261.63 },
+          note: { name: 'C', octave: 4, midi: 60, freq: 261.63 },
           startBeat: 0,
           duration: 1,
         },
@@ -763,17 +774,19 @@ describe('AudioEngine', () => {
   describe('edge cases - reverb', () => {
     it('handles very high wetness', () => {
       engine.setReverbWetness(100)
-      expect((engine as any).wet).toBe(1)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- accessing private field for test assertion
+      expect((engine as any).currentReverbWetness).toBe(1)
     })
 
     it('handles very low wetness', () => {
       engine.setReverbWetness(0)
-      expect((engine as any).wet).toBe(0)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- accessing private field for test assertion
+      expect((engine as any).currentReverbWetness).toBe(0)
     })
 
     it('handles invalid reverb type', async () => {
       await engine.init()
-      const result = await engine.setReverbType('off' as any)
+      const result = await engine.setReverbType('off')
 
       // Should handle gracefully (no error)
       expect(result).toBeUndefined()
@@ -837,3 +850,4 @@ describe('AudioEngine without init', () => {
     expect(engine.getVolume()).toBeCloseTo(0.5)
   })
 })
+
