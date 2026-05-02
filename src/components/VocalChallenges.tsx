@@ -702,7 +702,6 @@ interface ChallengeModalProps {
 
 const ChallengeModal: Component<ChallengeModalProps> = (props) => {
   const [isPracticing, setIsPracticing] = createSignal(false)
-  const [, _setSessionScore] = createSignal(0)
 
   const handleComplete = () => {
     const sessions = getSessionHistory()

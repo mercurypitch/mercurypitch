@@ -4,7 +4,7 @@
 
 import type { Component } from 'solid-js'
 import type { JSX } from 'solid-js'
-import { createEffect, createMemo, createSignal, For, Show } from 'solid-js'
+import { createMemo, createSignal, For, Show } from 'solid-js'
 import type { LeaderboardCategory, LeaderboardUser, LeaderboardView, WeeklyChallengeResult } from '@/types'
 
 // ============================================================
@@ -258,20 +258,11 @@ const weeklyChallengesData: WeeklyChallengeResult[] = [
 // Component
 // ============================================================
 
-export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
-  const [activeView, setActiveView] = createSignal<LeaderboardView>(props.view ?? 'global')
-  const [activeCategory, setActiveCategory] = createSignal<LeaderboardCategory>(props.category ?? 'overall')
+export const CommunityLeaderboard: Component<LeaderboardProps> = (_props) => {
+  const [activeView, setActiveView] = createSignal<LeaderboardView>('global')
+  const [activeCategory, setActiveCategory] = createSignal<LeaderboardCategory>('overall')
   const [searchQuery, setSearchQuery] = createSignal('')
   const [selectedUser, setSelectedUser] = createSignal<LeaderboardUser | null>(null)
-
-  createEffect(() => {
-    if (props.view !== undefined) {
-      setActiveView(props.view)
-    }
-    if (props.category !== undefined) {
-      setActiveCategory(props.category)
-    }
-  })
 
   // Current user's data
   const _currentUser = createMemo(() => {
