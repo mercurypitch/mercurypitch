@@ -250,6 +250,50 @@ export const [showSidebarNoteList, setShowSidebarNoteList] =
 export const [showAccuracyPercent, setShowAccuracyPercent] =
   createPersistedSignal<boolean>('pitchperfect_accuracy_percent', true)
 
+// ── Custom Scales ─────────────────────────────────────────────────
+//
+// Persisted map of user-created scales: { "My Scale": ["C","D","E",...] }
+// Reactive so the sidebar dropdown auto-updates when scales are
+// saved/deleted from the ScaleBuilder.
+export type CustomScalesMap = Record<string, string[]>
+
+export const [customScales, setCustomScales] =
+  createPersistedSignal<CustomScalesMap>('pitchperfect_custom_scales', {})
+
+/** Save (or overwrite) a named custom scale. */
+export function saveCustomScale(name: string, notes: string[]): void {
+  setCustomScales((prev) => ({ ...prev, [name]: notes }))
+}
+
+/** Delete a named custom scale. */
+export function deleteCustomScale(name: string): void {
+  setCustomScales((prev) => {
+    const next = { ...prev }
+    delete next[name]
+    return next
+  })
+}
+
+/** Encode a custom scale as the scale-type string used by the dropdown. */
+export function customScaleTypeId(name: string, notes: string[]): string {
+  return `custom:${name}:${notes.join(',')}`
+}
+
+/** Check whether a scale-type string represents a custom scale. */
+export function isCustomScaleType(st: string): boolean {
+  return st.startsWith('custom:')
+}
+
+/** Parse a custom scale-type string into { name, notes }. */
+export function parseCustomScaleType(
+  st: string,
+): { name: string; notes: string[] } | null {
+  if (!st.startsWith('custom:')) return null
+  const parts = st.split(':')
+  if (parts.length < 3) return null
+  return { name: parts[1], notes: parts[2].split(',') }
+}
+
 // ── Character-themed playback sounds ───────────────────────────────
 //
 // Each guide character maps to a different timbre + small detune /

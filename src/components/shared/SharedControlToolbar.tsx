@@ -4,14 +4,12 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { For, Show } from 'solid-js'
+import { Show } from 'solid-js'
 import { MicButton } from '@/components'
 import { PrecCountButton } from '@/components/PrecCountButton'
 import { Tooltip } from '@/components/Tooltip'
-import { NOTE_NAMES } from '@/lib/scale-data'
 import { appStore } from '@/stores'
-import { bpm, keyName, micActive, micWaveVisible, playbackSpeed, scaleType, setBpm, setKeyName, setPlaybackSpeed, setScaleType, setSensitivity, settings, toggleMicWaveVisible, } from '@/stores'
-import { melodyStore } from '@/stores/melody-store'
+import { bpm, micActive, micWaveVisible, playbackSpeed, setBpm, setPlaybackSpeed, setSensitivity, settings, toggleMicWaveVisible, } from '@/stores'
 import type { SpacedRestMode } from '@/types'
 import { ControlGroup } from './ControlGroup'
 import { MetronomeGroup } from './MetronomeGroup'
@@ -310,7 +308,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
                 props.playModeChange('once')
               }}
             >
-              Once
+              Spaced
             </button>
             <button
               id="btn-repeat"
@@ -579,58 +577,6 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
             onClick={props.onMetronomeToggle}
           />
         </ControlGroup>
-
-        {/* Key — editor tab only */}
-        <Show when={isEditorTab()}>
-          <ControlGroup>
-            <div class="key-group">
-              <label class="opt-label">Key:</label>
-              <select
-                id="key-select"
-                value={keyName()}
-                class="key-select"
-                onChange={(e) => {
-                  const key = e.currentTarget.value
-                  setKeyName(key)
-                  // Refresh scale with new key
-                  melodyStore.refreshScale(
-                    key,
-                    melodyStore.getCurrentOctave(),
-                    scaleType(),
-                  )
-                }}
-              >
-                <For each={NOTE_NAMES}>
-                  {(k) => <option value={k}>{k}</option>}
-                </For>
-              </select>
-            </div>
-          </ControlGroup>
-          <ControlGroup>
-            <div class="scale-group">
-              <label class="opt-label">Scale:</label>
-              <select
-                id="scale-select"
-                value={scaleType()}
-                class="scale-select"
-                onChange={(e) => {
-                  const scaleType = e.currentTarget.value
-                  setScaleType(scaleType)
-                  // Refresh scale with new scale type
-                  melodyStore.refreshScale(
-                    keyName(),
-                    melodyStore.getCurrentOctave(),
-                    scaleType,
-                  )
-                }}
-              >
-                <For each={SCALE_TYPES}>
-                  {(s) => <option value={s.value}>{s.label}</option>}
-                </For>
-              </select>
-            </div>
-          </ControlGroup>
-        </Show>
 
         {/* Save Melody — editor tab only */}
         <Show when={isEditorTab() && props.onSaveMelody}>
