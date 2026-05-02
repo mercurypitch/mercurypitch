@@ -120,9 +120,16 @@ body {
 }
 
 @keyframes crash-shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-8px); }
-  75% { transform: translateX(8px); }
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-8px);
+  }
+  75% {
+    transform: translateX(8px);
+  }
 }
 
 .crash-title {
@@ -283,7 +290,6 @@ body {
 [data-theme='light'] .crash-stacktrace {
   background: var(--bg-card);
 }
-
 
 /* Shared Styles */
 .dropdown-select-style {

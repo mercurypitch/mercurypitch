@@ -661,9 +661,9 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                           setCreateKey(e.currentTarget.value as NoteName)
                         }
                       >
-                        {keyNames.map((k) => (
-                          <option value={k}>{k}</option>
-                        ))}
+                        <For each={keyNames}>
+                          {(k) => <option value={k}>{k}</option>}
+                        </For>
                       </select>
                     </div>
 
@@ -673,9 +673,9 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                         value={createScale()}
                         onChange={(e) => setCreateScale(e.currentTarget.value)}
                       >
-                        {scaleTypes.map((s) => (
-                          <option value={s.value}>{s.label}</option>
-                        ))}
+                        <For each={scaleTypes}>
+                          {(s) => <option value={s.value}>{s.label}</option>}
+                        </For>
                       </select>
                     </div>
                   </div>
@@ -768,9 +768,9 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                           setEditKey(e.currentTarget.value as NoteName)
                         }
                       >
-                        {keyNames.map((k) => (
-                          <option value={k}>{k}</option>
-                        ))}
+                        <For each={keyNames}>
+                          {(k) => <option value={k}>{k}</option>}
+                        </For>
                       </select>
                     </div>
 
@@ -780,9 +780,9 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                         value={editScale()}
                         onChange={(e) => setEditScale(e.currentTarget.value)}
                       >
-                        {scaleTypes.map((s) => (
-                          <option value={s.value}>{s.label}</option>
-                        ))}
+                        <For each={scaleTypes}>
+                          {(s) => <option value={s.value}>{s.label}</option>}
+                        </For>
                       </select>
                     </div>
                   </div>
@@ -856,11 +856,9 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                         </div>
                         <Show when={melody.tags && melody.tags.length > 0}>
                           <div class="item-tags">
-                            {(melody.tags as string[])
-                              .slice(0, 3)
-                              .map((tag) => (
-                                <span class="tag-pill">{tag}</span>
-                              ))}
+                            <For each={(melody.tags as string[]).slice(0, 3)}>
+                              {(tag) => <span class="tag-pill">{tag}</span>}
+                            </For>
                             {(melody.tags as string[]).length > 3 && (
                               <span class="tag-pill more">
                                 +{(melody.tags as string[]).length - 3}
@@ -963,16 +961,14 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                           <Show when={(m().tags?.length ?? 0) > 0}>
                             <div class="tag-pills">
                               <Show when={(m().tags as string[]).length <= 50}>
-                                {(m().tags as string[]).map((tag) => (
-                                  <span class="tag-pill">{tag}</span>
-                                ))}
+                                <For each={m().tags as string[]}>
+                                  {(tag) => <span class="tag-pill">{tag}</span>}
+                                </For>
                               </Show>
                               <Show when={(m().tags as string[]).length > 3}>
-                                {(m().tags as string[])
-                                  .slice(0, 50)
-                                  .map((tag) => (
-                                    <span class="tag-pill">{tag}</span>
-                                  ))}
+                                <For each={(m().tags as string[]).slice(0, 50)}>
+                                  {(tag) => <span class="tag-pill">{tag}</span>}
+                                </For>
                                 <Show when={(m().tags as string[]).length > 50}>
                                   <span class="tag-pill more">
                                     +{(m().tags as string[]).length - 50}

@@ -44,7 +44,9 @@ export const CrashModal: Component = () => {
         <div class="crash-header">
           <div class="crash-icon">💥</div>
           <h2 class="crash-title">Something went wrong</h2>
-          <p class="crash-subtitle">The app encountered an unexpected error and had to close.</p>
+          <p class="crash-subtitle">
+            The app encountered an unexpected error and had to close.
+          </p>
         </div>
 
         <Show when={error() !== null}>
@@ -90,7 +92,8 @@ export const CrashModal: Component = () => {
         </div>
 
         <p class="crash-footer">
-          If the problem persists, try clearing your local storage and reloading.
+          If the problem persists, try clearing your local storage and
+          reloading.
         </p>
       </div>
     </div>

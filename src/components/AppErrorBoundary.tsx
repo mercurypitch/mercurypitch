@@ -19,8 +19,8 @@ const setupGlobalErrorHandler = () => {
   const errorHandler = (event: ErrorEvent | PromiseRejectionEvent): void => {
     const err: Error =
       event instanceof ErrorEvent
-        ? event.error ?? new Error(event.message)
-        : event.reason ?? new Error('Unhandled promise rejection')
+        ? (event.error ?? new Error(event.message))
+        : (event.reason ?? new Error('Unhandled promise rejection'))
     console.error('Unhandled error:', err)
     setAppErrorSignal({
       error: err,
@@ -41,7 +41,9 @@ const setupGlobalErrorHandler = () => {
  * ErrorBoundary for the entire app.
  * Wraps children and catches rendering errors.
  */
-export const AppErrorBoundary: ParentComponent<AppErrorBoundaryProps> = (props) => {
+export const AppErrorBoundary: ParentComponent<AppErrorBoundaryProps> = (
+  props,
+) => {
   onMount(setupGlobalErrorHandler)
 
   return (

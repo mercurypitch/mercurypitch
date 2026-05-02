@@ -666,11 +666,14 @@ export const LibraryTab: Component = () => {
                         }
                       >
                         <span class="pill-tags">
-                          {(item.melodyData?.tags as string[])
-                            .slice(0, 2)
-                            .map((tag) => (
-                              <span class="pill-tag">{tag}</span>
-                            ))}
+                          <For
+                            each={(item.melodyData?.tags as string[]).slice(
+                              0,
+                              2,
+                            )}
+                          >
+                            {(tag) => <span class="pill-tag">{tag}</span>}
+                          </For>
                           {item.melodyData !== undefined &&
                             item.melodyData.tags !== undefined &&
                             (item.melodyData.tags as string[]).length > 2 && (

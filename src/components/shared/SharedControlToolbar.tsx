@@ -600,9 +600,9 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
                   )
                 }}
               >
-                {NOTE_NAMES.map((k) => (
-                  <option value={k}>{k}</option>
-                ))}
+                <For each={NOTE_NAMES}>
+                  {(k) => <option value={k}>{k}</option>}
+                </For>
               </select>
             </div>
           </ControlGroup>
@@ -624,9 +624,9 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
                   )
                 }}
               >
-                {SCALE_TYPES.map((s) => (
-                  <option value={s.value}>{s.label}</option>
-                ))}
+                <For each={SCALE_TYPES}>
+                  {(s) => <option value={s.value}>{s.label}</option>}
+                </For>
               </select>
             </div>
           </ControlGroup>
