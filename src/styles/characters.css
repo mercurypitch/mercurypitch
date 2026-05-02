@@ -109,13 +109,9 @@
   gap: 8px;
   width: 100%;
   padding: 8px;
-  border: 1px solid rgba(88, 166, 255, 0.16);
+  border: 1px solid var(--accent-dim);
   border-radius: 14px;
-  background: linear-gradient(
-    180deg,
-    rgba(22, 27, 34, 0.72),
-    rgba(13, 17, 23, 0.62)
-  );
+  background: linear-gradient(180deg, var(--bg-secondary), var(--bg-primary));
 }
 
 .character-icon-btn {
