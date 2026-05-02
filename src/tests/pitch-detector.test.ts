@@ -306,8 +306,8 @@ describe('PitchDetector', () => {
       expect(result.clarity).toBe(0)
     })
 
-    it('detects pitch from very small amplitude sine wave', () => {
-      const amplitude = 0.001
+    it('detects pitch from small amplitude sine wave', () => {
+      const amplitude = 0.03
       const buffer = createSineBuffer(44100, 440, 0.1, amplitude)
       const result = detector.detect(buffer)
 

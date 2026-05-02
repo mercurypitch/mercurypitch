@@ -41,15 +41,14 @@ export const CrashModal: Component = () => {
   return (
     <Show when={error() !== null}>
       <div class="crash-modal-overlay">
-      <div class="crash-modal">
-        <div class="crash-header">
-          <div class="crash-icon">💥</div>
-          <h2 class="crash-title">Something went wrong</h2>
-          <p class="crash-subtitle">
-            The app encountered an unexpected error and had to close.
-          </p>
-        </div>
-
+        <div class="crash-modal">
+          <div class="crash-header">
+            <div class="crash-icon">💥</div>
+            <h2 class="crash-title">Something went wrong</h2>
+            <p class="crash-subtitle">
+              The app encountered an unexpected error and had to close.
+            </p>
+          </div>
 
           <div class="crash-error-details">
             <div class="crash-error-header">
@@ -73,30 +72,29 @@ export const CrashModal: Component = () => {
             </div>
           </div>
 
+          <div class="crash-actions">
+            <a
+              href="https://github.com/yourusername/pitch-perfect/issues/new"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn btn-secondary"
+            >
+              Report Bug on GitHub
+            </a>
+            <button onClick={handleReload} class="btn btn-primary">
+              Reload App
+            </button>
+            <button onClick={handleClearStorage} class="btn btn-tertiary">
+              Clear Storage & Reload
+            </button>
+          </div>
 
-        <div class="crash-actions">
-          <a
-            href="https://github.com/yourusername/pitch-perfect/issues/new"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="btn btn-secondary"
-          >
-            Report Bug on GitHub
-          </a>
-          <button onClick={handleReload} class="btn btn-primary">
-            Reload App
-          </button>
-          <button onClick={handleClearStorage} class="btn btn-tertiary">
-            Clear Storage & Reload
-          </button>
+          <p class="crash-footer">
+            If the problem persists, try clearing your local storage and
+            reloading.
+          </p>
         </div>
-
-        <p class="crash-footer">
-          If the problem persists, try clearing your local storage and
-          reloading.
-        </p>
       </div>
-    </div>
     </Show>
   )
 }

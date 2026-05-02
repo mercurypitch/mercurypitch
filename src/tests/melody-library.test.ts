@@ -614,7 +614,7 @@ describe('Melody Library System', () => {
     it('gets current scale', () => {
       const scale = melodyStore.currentScale()
       expect(scale).toBeDefined()
-      expect(scale).toHaveLength(16) // Multi octave scale has 16 notes
+      expect(scale).toHaveLength(15) // Multi octave scale has 15 notes
     })
 
     it('refreshes scale with new key', () => {

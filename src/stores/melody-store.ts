@@ -687,7 +687,9 @@ export const setOctave = (octave: number): void => {
 
 export const [currentNoteIndex, setCurrentNoteIndex] = createSignal<number>(0)
 
-export const [getActiveSessionId, _setActiveSessionId] = createSignal<string | null>(null)
+export const [getActiveSessionId, _setActiveSessionId] = createSignal<
+  string | null
+>(null)
 
 function _restoreActiveSessionId(): void {
   try {
