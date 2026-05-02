@@ -6,11 +6,20 @@ import type { Component } from 'solid-js'
 import { createEffect, onCleanup, onMount } from 'solid-js'
 import type { ArcState } from '@/lib/arc-physics'
 import { BALL_RADIUS, buildPlayable, computeArcCy, computeArcEndBeat, computeBallPos, computeInitialArc, isBackwardsSeek, } from '@/lib/arc-physics'
+import { AudioEngine } from '@/lib/audio-engine'
+import { audioRegistry } from '@/lib/audio-registry'
 import { eventBus } from '@/lib/event-bus'
 import { beatToHistoryX } from '@/lib/pitch-history-window'
+import { melodyIndexAtBeat } from '@/lib/scale-data'
 import { bpm, focusMode, micWaveVisible } from '@/stores'
 import { colorCodeNotes, flameMode, gridLinesVisible, showAccuracyPercent, showFocusBall, showPlaybackBall, showPlayhead, } from '@/stores/settings-store'
 import type { MelodyItem, NoteResult, PitchSample, ScaleDegree } from '@/types'
+
+// Click-to-play settings (GH #230)
+const QUICK_CLICK_THRESHOLD = 500 // ms
+const TRILL_CLICKS = 3
+const TRILL_NOTE_PLAYS = 5
+const TRILL_BAR_REST = 4 // beats between each play
 
 interface PitchCanvasProps {
   melody: () => MelodyItem[]
@@ -112,6 +121,8 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
   let ctx: CanvasRenderingContext2D | null = null
   let animFrameId: number | null = null
   let isSeeking = false
+  let audioEngine: AudioEngine | null = null
+  const noteClickMap = new Map<number, number[]>() // noteMidi -> timestamps
 
   // Yousician jumping-ball arc state
   const arcState: RenderArcState = {
@@ -136,8 +147,20 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     ctx = canvasRef.getContext('2d')
     resizeCanvas()
 
-    // Mouse handlers for dragging the playhead
+    // Initialize audio engine for click-to-play
+    audioEngine = new AudioEngine()
+    audioRegistry.register(audioEngine)
+    // Expose for click-to-play handlers
+    ;(
+      window as unknown as { pitchCanvasAudioEngine: typeof audioEngine }
+    ).pitchCanvasAudioEngine = audioEngine
+
+    // Mouse handlers for dragging the playhead and clicking notes
     canvasRef.addEventListener('mousedown', (e) => {
+      // Only handle note clicks when not seeking and playback is paused/stopped
+      if (!isSeeking && !props.isPlaying() && !props.isPaused()) {
+        handleNoteClick(e)
+      }
       isSeeking = true
       handleSeek(e)
     })
@@ -173,6 +196,12 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     onCleanup(() => {
       ro.disconnect()
       if (animFrameId !== null) cancelAnimationFrame(animFrameId)
+      if (audioEngine) {
+        audioRegistry.unregister(audioEngine)
+        audioEngine.destroy()
+      }
+      delete (window as unknown as { pitchCanvasAudioEngine?: unknown })
+        .pitchCanvasAudioEngine
     })
   })
 
@@ -247,6 +276,130 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       Math.min(totalBeats, (x / w) * windowBeats + windowStart),
     )
     eventBus.dispatch('pitchperfect:seekToBeat', { beat: seekBeat })
+  }
+
+  /**
+   * Click-to-play for practice mode (GH #230).
+   * Plays a note when paused/stopped, with trill detection for 3 quick clicks.
+   */
+  const handleNoteClick = (e: MouseEvent): void => {
+    if (!canvasRef || !audioEngine) return
+
+    const rect = canvasRef.getBoundingClientRect()
+    const x = e.clientX - rect.left
+    const y = e.clientY - rect.top
+    const w = canvasRef.clientWidth
+    const h = canvasRef.clientHeight
+
+    // Determine beat from x position
+    const totalBeats = props.totalBeats()
+    const beat = Math.max(0, Math.min(totalBeats, (x / w) * totalBeats))
+
+    // Determine which note in the scale was clicked
+    const scale = props.scale()
+    const scaleY = h - 20 // Account for top padding in freqToY
+    const noteIndex = Math.floor(y / (scaleY / (scale.length - 1)))
+
+    if (noteIndex >= 0 && noteIndex < scale.length) {
+      const clickedNote = scale[noteIndex]
+      const freq = clickedNote.freq
+      const midi = clickedNote.midi
+
+      // Find the melody item at this beat to get its actual duration
+      const melody = props.melody()
+      const melodyNoteIndex = melodyIndexAtBeat(melody, beat)
+      let durationBeats = 0.25 // Default quarter note if not found
+
+      if (melodyNoteIndex >= 0 && melody[melodyNoteIndex]) {
+        durationBeats = melody[melodyNoteIndex].duration
+      }
+
+      // Track click and detect trill
+      const isTrill = trackNoteClick(midi, freq)
+      if (isTrill) {
+        playNoteTrill(freq, durationBeats)
+      } else {
+        playNoteFrequency(freq, durationBeats)
+      }
+    }
+  }
+
+  /**
+   * Play a single note at the given frequency with specified duration.
+   */
+  const playNoteFrequency = (
+    freq: number,
+    durationBeats: number = 0.25,
+  ): void => {
+    const engine = (
+      window as unknown as {
+        pitchCanvasAudioEngine?: {
+          playNote: (freq: number, durationMs: number) => void
+        }
+      }
+    ).pitchCanvasAudioEngine
+
+    if (!engine?.playNote) return
+
+    const bpm = appStore.bpm()
+    const beatDurationMs = 60000 / bpm
+
+    engine.playNote(freq, durationBeats * beatDurationMs)
+  }
+
+  /**
+   * Plays a trill: plays the note 5 times with ~1 bar rest between each.
+   * Called when the same note is clicked 3 times quickly.
+   */
+  const playNoteTrill = (freq: number, durationBeats: number = 0.25): void => {
+    const engine = (
+      window as unknown as {
+        pitchCanvasAudioEngine?: {
+          playNote: (freq: number, durationMs: number) => void
+        }
+      }
+    ).pitchCanvasAudioEngine
+
+    if (!engine?.playNote) return
+
+    const bpm = appStore.bpm()
+    const beatDurationMs = 60000 / bpm
+    const oneBarBeats = 4
+
+    // First play immediately
+    engine.playNote(freq, durationBeats * beatDurationMs)
+
+    // Play 4 more times with 1 bar rest between each
+    for (let i = 1; i < TRILL_NOTE_PLAYS; i++) {
+      const delay = oneBarBeats * beatDurationMs
+      setTimeout(() => {
+        ;(
+          engine as { playNote: (freq: number, durationMs: number) => void }
+        ).playNote(freq, durationBeats * beatDurationMs)
+      }, delay * i)
+    }
+  }
+
+  /**
+   * Tracks click timing for trill detection.
+   * Returns true if 3 quick clicks were detected on the same note.
+   */
+  const trackNoteClick = (midi: number, freq: number): boolean => {
+    const now = performance.now()
+    const timestamps = noteClickMap.get(midi) || []
+
+    // Remove timestamps older than threshold
+    const filtered = timestamps.filter((t) => now - t < QUICK_CLICK_THRESHOLD)
+    noteClickMap.set(midi, filtered)
+    filtered.push(now)
+
+    // Check for trill condition (3 quick clicks)
+    if (filtered.length >= TRILL_CLICKS) {
+      noteClickMap.set(midi, [])
+      return true
+    }
+
+    return false
   }
 
   const resizeCanvas = () => {
