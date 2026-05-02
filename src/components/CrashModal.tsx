@@ -39,7 +39,8 @@ export const CrashModal: Component = () => {
   })
 
   return (
-    <div class="crash-modal-overlay">
+    <Show when={error() !== null}>
+      <div class="crash-modal-overlay">
       <div class="crash-modal">
         <div class="crash-header">
           <div class="crash-icon">💥</div>
@@ -49,7 +50,7 @@ export const CrashModal: Component = () => {
           </p>
         </div>
 
-        <Show when={error() !== null}>
+
           <div class="crash-error-details">
             <div class="crash-error-header">
               <span class="crash-error-label">Error:</span>
@@ -59,20 +60,19 @@ export const CrashModal: Component = () => {
               <pre>{errorStack()}</pre>
             </div>
           </div>
-        </Show>
+          <div class="crash-info">
+            <div class="crash-info-item">
+              <span class="crash-info-label">Version:</span>
+              <span class="crash-info-value">{APP_VERSION}</span>
+            </div>
+            <div class="crash-info-item">
+              <span class="crash-info-label">Time:</span>
+              <span class="crash-info-value">
+                {new Date(error()!.time).toLocaleString()}
+              </span>
+            </div>
+          </div>
 
-        <div class="crash-info">
-          <div class="crash-info-item">
-            <span class="crash-info-label">Version:</span>
-            <span class="crash-info-value">{APP_VERSION}</span>
-          </div>
-          <div class="crash-info-item">
-            <span class="crash-info-label">Time:</span>
-            <span class="crash-info-value">
-              {new Date(error()!.time).toLocaleString()}
-            </span>
-          </div>
-        </div>
 
         <div class="crash-actions">
           <a
@@ -97,5 +97,6 @@ export const CrashModal: Component = () => {
         </p>
       </div>
     </div>
+    </Show>
   )
 }
