@@ -3,15 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import {
-  createEffect,
-  createMemo,
-  createRoot,
-  createSignal,
-  For,
-  onCleanup,
-  Show,
-} from 'solid-js'
+import { createEffect, createMemo, createRoot, createSignal, For, onCleanup, Show, } from 'solid-js'
 import type { PitchDetectionResult } from '@/lib/pitch-algorithms'
 import { AutocorrelatorDetector, FFTDetector, YINDetector, } from '@/lib/pitch-algorithms'
 
@@ -24,14 +16,34 @@ type DetectionMode = 'mic' | 'file' | 'generate'
 // Helper function to compute error items - create outside component to avoid reactivity
 function computeErrorItems(errors: number[]) {
   const testFreqs = [
-    65.41, 73.42, 82.41, 87.31, 98.0, 110.0, 130.81, 146.83,
-    164.81, 196.0, 220.0, 261.63, 293.66, 329.63, 392.0,
-    440.0, 523.25, 587.33, 659.25, 783.99, 880.0, 1046.5,
+    65.41, 73.42, 82.41, 87.31, 98.0, 110.0, 130.81, 146.83, 164.81, 196.0,
+    220.0, 261.63, 293.66, 329.63, 392.0, 440.0, 523.25, 587.33, 659.25, 783.99,
+    880.0, 1046.5,
   ]
   const noteNames = [
-    'C3', 'C#3', 'D3', 'D#3', 'E3', 'F3', 'F#3', 'G3',
-    'G#3', 'A3', 'A#3', 'B3', 'C4', 'C#4', 'D4', 'D#4',
-    'E4', 'F4', 'F#4', 'G4', 'G#4', 'A4', 'A#4',
+    'C3',
+    'C#3',
+    'D3',
+    'D#3',
+    'E3',
+    'F3',
+    'F#3',
+    'G3',
+    'G#3',
+    'A3',
+    'A#3',
+    'B3',
+    'C4',
+    'C#4',
+    'D4',
+    'D#4',
+    'E4',
+    'F4',
+    'F#4',
+    'G4',
+    'G#4',
+    'A4',
+    'A#4',
   ]
 
   const items: { idx: number; freq: number; noteName: string }[] = []
@@ -710,10 +722,18 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
               <div class="error-list">
                 <p>Failed at test indexes:</p>
                 <div class="error-grid">
-                  <Show when={computeErrorItems(testResults().errors).length > 0}>
+                  <Show
+                    when={computeErrorItems(testResults().errors).length > 0}
+                  >
                     <For each={computeErrorItems(testResults().errors)}>
-                      {(item: { idx: number; freq: number; noteName: string }) => (
-                        <div class="error-item">{item.noteName} ({item.freq.toFixed(2)} Hz)</div>
+                      {(item: {
+                        idx: number
+                        freq: number
+                        noteName: string
+                      }) => (
+                        <div class="error-item">
+                          {item.noteName} ({item.freq.toFixed(2)} Hz)
+                        </div>
                       )}
                     </For>
                   </Show>

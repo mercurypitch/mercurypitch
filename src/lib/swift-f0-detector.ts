@@ -2,7 +2,7 @@
 // SwiftF0 Detector - ML-Based Pitch Detection (ONNX Runtime Web)
 // ============================================================
 
-import ort from 'onnxruntime-web'
+import type ort from 'onnxruntime-web'
 import type { PitchAlgorithm } from './pitch-detector'
 
 /** SwiftF0 pitch result */

@@ -2,9 +2,9 @@
 // Pitch Detector — YIN + McLeod Pitch Method (MPM)
 // ============================================================
 
-import { freqToNote } from './scale-data'
 import type { DetectorMetrics, DetectorSettings, IPitchDetector, PitchDetectionResult, } from '@/types/pitch-algorithms'
-import { SwiftF0Detector } from './swift-f0-detector'
+import { freqToNote } from './scale-data'
+import type { SwiftF0Detector } from './swift-f0-detector'
 
 /** Supported pitch detection algorithms */
 export type PitchAlgorithm = 'yin' | 'mpm' | 'swift'

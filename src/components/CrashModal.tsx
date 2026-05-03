@@ -26,7 +26,9 @@ export const CrashModal: Component = () => {
       // Fallback for mobile/safari compatibility
       if (!navigator.clipboard || !navigator.clipboard.writeText) {
         // Fallback: select and copy to document
-        const stacktraceElement = document.querySelector('.crash-stacktrace-content')
+        const stacktraceElement = document.querySelector(
+          '.crash-stacktrace-content',
+        )
         if (stacktraceElement) {
           const text = stacktraceElement.textContent || ''
           const textarea = document.createElement('textarea')
@@ -128,7 +130,7 @@ export const CrashModal: Component = () => {
                   <button
                     classList={{
                       'crash-copy-btn': true,
-                      'error': copyError() !== null,
+                      error: copyError() !== null,
                     }}
                     onClick={handleCopy}
                     title="Copy to clipboard"
@@ -141,15 +143,22 @@ export const CrashModal: Component = () => {
                       stroke="currentColor"
                       stroke-width="2"
                     >
-                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                      <rect
+                        x="9"
+                        y="9"
+                        width="13"
+                        height="13"
+                        rx="2"
+                        ry="2"
+                      ></rect>
                       <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                     </svg>
                     <span class="crash-copy-text">
                       {copyError()
                         ? copyError()
                         : copied()
-                        ? 'Copied!'
-                        : 'Copy'}
+                          ? 'Copied!'
+                          : 'Copy'}
                     </span>
                   </button>
                 </div>

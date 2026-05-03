@@ -10451,7 +10451,9 @@ input:checked + .settings-slider:before {
   height: 6px;
   border-radius: 50%;
   background: var(--accent);
-  transition: left 0.05s linear, top 0.05s linear;
+  transition:
+    left 0.05s linear,
+    top 0.05s linear;
 }
 
 .pitch-testing-visualization .info-panel {

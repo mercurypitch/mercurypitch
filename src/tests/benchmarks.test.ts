@@ -3,25 +3,17 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import {
-  TEST_FREQUENCIES,
-  TEST_INTERVALS,
-  ALL_TEST_FREQUENCIES,
-  errorInCents,
-  errorInHz,
-  generateTestWaveform,
-  measureTime,
-} from '../lib/pitch-algorithms/benchmarks'
+import { ALL_TEST_FREQUENCIES, errorInCents, errorInHz, generateTestWaveform, measureTime, TEST_FREQUENCIES, TEST_INTERVALS, } from '../lib/pitch-algorithms/benchmarks'
 
 describe('Test Frequencies', () => {
   it('should include C3 (130.81 Hz)', () => {
-    const c3 = TEST_FREQUENCIES.find(f => f.frequency === 130.81)
+    const c3 = TEST_FREQUENCIES.find((f) => f.frequency === 130.81)
     expect(c3).toBeDefined()
     expect(c3?.expectedNote).toBe('C3')
   })
 
   it('should include A4 (440 Hz)', () => {
-    const a4 = TEST_FREQUENCIES.find(f => f.frequency === 440.0)
+    const a4 = TEST_FREQUENCIES.find((f) => f.frequency === 440.0)
     expect(a4).toBeDefined()
     expect(a4?.expectedNote).toBe('A4')
   })
@@ -38,18 +30,18 @@ describe('Test Frequencies', () => {
 
 describe('Frequency Constants', () => {
   it('should define A4 (440 Hz) correctly', () => {
-    const a4 = ALL_TEST_FREQUENCIES.find(f => f.frequency === 440.0)
+    const a4 = ALL_TEST_FREQUENCIES.find((f) => f.frequency === 440.0)
     expect(a4).toBeDefined()
     expect(a4?.expectedMidi).toBe(69)
   })
 
   it('should include A2 (55 Hz)', () => {
-    const a2 = ALL_TEST_FREQUENCIES.find(f => f.frequency === 55.0)
+    const a2 = ALL_TEST_FREQUENCIES.find((f) => f.frequency === 55.0)
     expect(a2).toBeDefined()
   })
 
   it('should include C6 (1046.5 Hz)', () => {
-    const c6 = ALL_TEST_FREQUENCIES.find(f => f.frequency === 1046.5)
+    const c6 = ALL_TEST_FREQUENCIES.find((f) => f.frequency === 1046.5)
     expect(c6).toBeDefined()
   })
 })
@@ -192,7 +184,7 @@ describe('Test Frequency Structure', () => {
   })
 
   it('should have consistent cents for perfect matches', () => {
-    TEST_FREQUENCIES.forEach(freq => {
+    TEST_FREQUENCIES.forEach((freq) => {
       if (freq.expectedCents === 0) {
         const error = Math.abs(freq.frequency - freq.expectedFreq)
         expect(error).toBeLessThan(0.01) // Should be nearly equal

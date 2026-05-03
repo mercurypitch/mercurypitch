@@ -101,9 +101,7 @@ export class AutocorrelatorDetector implements IPitchDetector {
     return this.metrics.lastResult?.computationTime ?? 0
   }
 
-  private detectWithAutocorrelation(
-    data: Float32Array,
-  ): {
+  private detectWithAutocorrelation(data: Float32Array): {
     frequency: number
     clarity: number
     noteName: string

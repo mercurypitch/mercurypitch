@@ -3,12 +3,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import {
-  getPerformanceClassification,
-  ACCURACY_BAND_COLORS,
-  ACCURACY_BAND_LABELS,
-  DEFAULT_ALGORITHMS,
-} from '../lib/pitch-algorithm-tester'
+import { ACCURACY_BAND_COLORS, ACCURACY_BAND_LABELS, DEFAULT_ALGORITHMS, getPerformanceClassification, } from '../lib/pitch-algorithm-tester'
 
 describe('Pitch Algorithm Tester', () => {
   describe('Performance Classification', () => {

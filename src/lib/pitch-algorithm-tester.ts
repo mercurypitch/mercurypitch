@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { PitchDetectionResult } from './pitch-algorithms'
-import type { PitchAlgorithm, DetectedPitch } from './pitch-detector'
+import type { DetectedPitch, PitchAlgorithm } from './pitch-detector'
 import { PitchDetector } from './pitch-detector'
 import { SwiftF0Detector } from './swift-f0-detector'
 

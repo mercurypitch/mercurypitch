@@ -3,22 +3,10 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import {
-  createSignal,
-  createMemo,
-  For,
-  Show,
-  onMount,
-  onCleanup,
-} from 'solid-js'
+import { createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import { REGISTERED_ALGORITHMS, TEST_SAMPLES } from '@/data/pitch-test-samples'
 import type { AlgorithmResult, TestSample } from '@/lib/pitch-algorithm-tester'
-import {
-  ACCURACY_BAND_COLORS,
-  benchmarkAlgorithmAsync,
-  DEFAULT_ALGORITHMS,
-  getPerformanceClassification,
-} from '@/lib/pitch-algorithm-tester'
+import { ACCURACY_BAND_COLORS, benchmarkAlgorithmAsync, DEFAULT_ALGORITHMS, getPerformanceClassification, } from '@/lib/pitch-algorithm-tester'
 import type { PitchAlgorithm } from '@/lib/pitch-detector'
 
 interface PitchAlgorithmTesterProps {
@@ -49,7 +37,11 @@ export const PitchAlgorithmTester: Component<PitchAlgorithmTesterProps> = (
   // Stable function for checkbox change handler
   const toggleAlgorithm = (algo: PitchAlgorithm) => {
     const selected = selectedAlgorithms()
-    setSelectedAlgorithms(selected.includes(algo) ? selected.filter((a) => a !== algo) : [...selected, algo])
+    setSelectedAlgorithms(
+      selected.includes(algo)
+        ? selected.filter((a) => a !== algo)
+        : [...selected, algo],
+    )
   }
 
   const playSample = async () => {
@@ -103,11 +95,15 @@ export const PitchAlgorithmTester: Component<PitchAlgorithmTesterProps> = (
           <h3>Algorithms to Test</h3>
           <div class="algorithm-list">
             <For each={algorithms}>
-              {(algo: { id: PitchAlgorithm, name: string, description: string }) => (
+              {(algo: {
+                id: PitchAlgorithm
+                name: string
+                description: string
+              }) => (
                 <label
                   classList={{
                     'algorithm-item': true,
-                    'selected': selectedAlgorithms().includes(algo.id),
+                    selected: selectedAlgorithms().includes(algo.id),
                   }}
                 >
                   <input
@@ -136,7 +132,7 @@ export const PitchAlgorithmTester: Component<PitchAlgorithmTesterProps> = (
                 <button
                   classList={{
                     'sample-btn': true,
-                    'selected': selectedSample()?.id === sample.id,
+                    selected: selectedSample()?.id === sample.id,
                   }}
                   onClick={() => setSelectedSample(sample)}
                 >
@@ -170,8 +166,18 @@ export const PitchAlgorithmTester: Component<PitchAlgorithmTesterProps> = (
                   const perf = getPerformanceClassification(
                     result.avgComputationTime,
                   )
-                  const color = ACCURACY_BAND_COLORS[result.totalScore as keyof typeof ACCURACY_BAND_COLORS] || '#666'
-                  const offsetColor = result.avgOffsetCents <= 10 ? ACCURACY_BAND_COLORS[100 as keyof typeof ACCURACY_BAND_COLORS] : ACCURACY_BAND_COLORS[50 as keyof typeof ACCURACY_BAND_COLORS]
+                  const color =
+                    ACCURACY_BAND_COLORS[
+                      result.totalScore as keyof typeof ACCURACY_BAND_COLORS
+                    ] || '#666'
+                  const offsetColor =
+                    result.avgOffsetCents <= 10
+                      ? ACCURACY_BAND_COLORS[
+                          100 as keyof typeof ACCURACY_BAND_COLORS
+                        ]
+                      : ACCURACY_BAND_COLORS[
+                          50 as keyof typeof ACCURACY_BAND_COLORS
+                        ]
 
                   return (
                     <div class="result-card">
@@ -194,8 +200,8 @@ export const PitchAlgorithmTester: Component<PitchAlgorithmTesterProps> = (
                         <span
                           classList={{
                             'offset-val': true,
-                            'good': result.avgOffsetCents <= 10,
-                            'bad': result.avgOffsetCents > 10,
+                            good: result.avgOffsetCents <= 10,
+                            bad: result.avgOffsetCents > 10,
                           }}
                         >
                           {result.avgOffsetCents.toFixed(1)}¢
@@ -223,7 +229,9 @@ export const PitchAlgorithmTester: Component<PitchAlgorithmTesterProps> = (
                   <For each={sample.notes}>
                     {(note: { name: string; frequency: number }) => {
                       const algorithmResults = results().filter((r) =>
-                        r.results.some((rr) => rr.targetFreq === note.frequency)
+                        r.results.some(
+                          (rr) => rr.targetFreq === note.frequency,
+                        ),
                       )
 
                       return (
@@ -235,9 +243,15 @@ export const PitchAlgorithmTester: Component<PitchAlgorithmTesterProps> = (
                           <For each={algorithmResults}>
                             {(result: AlgorithmResult) => {
                               // Pre-compute the result for this frequency to avoid reactivity issues
-                              const matchingResult = result.results.find(rr => rr.targetFreq === note.frequency)
-                              const color = ACCURACY_BAND_COLORS[matchingResult?.accuracyBand as keyof typeof ACCURACY_BAND_COLORS] || '#666'
-                              const offsetCents = matchingResult?.offsetCents ?? 0
+                              const matchingResult = result.results.find(
+                                (rr) => rr.targetFreq === note.frequency,
+                              )
+                              const color =
+                                ACCURACY_BAND_COLORS[
+                                  matchingResult?.accuracyBand as keyof typeof ACCURACY_BAND_COLORS
+                                ] || '#666'
+                              const offsetCents =
+                                matchingResult?.offsetCents ?? 0
 
                               return (
                                 <span class="note-offset" style={{ color }}>
