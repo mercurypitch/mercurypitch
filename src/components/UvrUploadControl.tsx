@@ -8,6 +8,7 @@ import { FileUpload, MusicNote } from './icons'
 
 interface UploadControlProps {
   onFileSelect?: (file: File) => void
+  onFileReady?: (file: File) => void
   onProcessStart?: (sessionId: string) => void
   maxSize?: number
   allowedTypes?: string[]
@@ -64,6 +65,9 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
     setSelectedFile(file)
     if (props.onFileSelect) {
       props.onFileSelect(file)
+    }
+    if (props.onFileReady) {
+      props.onFileReady(file)
     }
   }
 

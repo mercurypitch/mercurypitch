@@ -15,14 +15,54 @@ import {
   startUvrSession,
   updateUvrSessionProgress,
 } from '@/stores/app-store'
+import { processAudio, pollForCompletion, type OutputFile } from '@/lib/uvr-api'
 import {
   UvrGuide,
   UvrProcessControl,
   UvrResultViewer,
   UvrSessionResult,
   UvrUploadControl,
-} from "."
-import { History, Music, Play, Settings, X } from './icons'
+} from '.'
+import { History, Music, Play, Settings, X, Loader2 } from './icons'
+
+/**
+ * Progress callback type for processing
+ */
+type OnProgress = (progress: number) => void
+
+/**
+ * Handle starting the actual audio processing via API
+ */
+async function startRealProcessing(
+  file: File,
+  sessionId: string,
+  onProgress: OnProgress,
+  onComplete: (files: OutputFile[]) => void,
+  onError: (error: string) => void
+): Promise<void> {
+  try {
+    const response = await processAudio(file, {
+      model: 'UVR-MDX-NET-Inst_HQ',
+      output_format: 'WAV',
+    })
+
+    if (response.status !== 'processing') {
+      throw new Error('Failed to start processing')
+    }
+
+    // Poll for completion
+    await pollForCompletion(
+      response.session_id,
+      onProgress,
+      (files) => onComplete(files),
+      onError,
+      1000
+    )
+  } catch (error) {
+    onError(error instanceof Error ? error.message : 'Processing failed')
+    throw error
+  }
+}
 
 type UvrView = 'upload' | 'processing' | 'results' | 'history'
 
@@ -46,7 +86,16 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     props.defaultView || 'upload',
   )
   const [sessionResultsVisible, setSessionResultsVisible] = createSignal(false)
+  const [onError, setOnError] = createSignal('')
+
+  // Error handling
+  const showError = (message: string) => {
+    console.error(message)
+    setOnError(message)
+  }
+  const clearError = () => setOnError('')
   const [showGuide, setShowGuide] = createSignal(false)
+  const [selectedFile, setSelectedFile] = createSignal<File | null>(null)
 
   // Computed session state
   const session = () => currentUvrSession()
@@ -68,7 +117,8 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   })
 
   const handleFileSelect = (file: File) => {
-    const _sessionId = startUvrSession(
+    setSelectedFile(file)
+    const sessionId = startUvrSession(
       file.name,
       file.size,
       file.type,
@@ -76,9 +126,17 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     )
     setCurrentView('processing')
     setSessionResultsVisible(false)
+    // Immediately start processing with the created session
+    handleProcessStart(sessionId)
   }
 
-  const handleProcessStart = (sessionId: string) => {
+  const handleProcessStart = async (sessionId: string) => {
+    const file = selectedFile()
+    if (!file) {
+      console.error('No file selected')
+      return
+    }
+
     // Set session to processing status
     const sessions = getAllUvrSessions()
     const session = sessions.find((s) => s.sessionId === sessionId)
@@ -87,8 +145,37 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       saveAllUvrSessions(sessions)
       setCurrentUvrSession(session)
     }
-    // Simulate processing (real processing will be added in Phase 2)
-    simulateProcessing(sessionId)
+
+    // Start real processing
+    try {
+      await startRealProcessing(
+        file,
+        sessionId,
+        (progress) => updateUvrSessionProgress(sessionId, progress),
+        (files) => {
+          // Convert API output to session format
+          const outputs: UvrSession['outputs'] = {
+            vocal: '',
+            instrumental: '',
+            vocalMidi: '',
+          }
+
+          for (const f of files) {
+            if (f.stem === 'vocal') {
+              outputs.vocal = f.path
+            } else if (f.stem === 'instrumental') {
+              outputs.instrumental = f.path
+            }
+          }
+
+          completeUvrSession(sessionId, outputs)
+        },
+        showError
+      )
+    } catch (error) {
+      console.error('Processing error:', error)
+      showError(error instanceof Error ? error.message : 'Processing failed')
+    }
   }
 
   const handleExport = (
@@ -214,6 +301,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
             </div>
             <UvrUploadControl
               onFileSelect={handleFileSelect}
+              onFileReady={setSelectedFile}
               onProcessStart={handleProcessStart}
               processing={session()?.status === 'processing'}
             />
