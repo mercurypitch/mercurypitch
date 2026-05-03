@@ -11,6 +11,7 @@ import { colorCodeNotes, flameMode, gridLinesVisible, showAccuracyPercent, showF
 import type { MelodyItem, NoteResult, PitchSample, ScaleDegree } from '@/types'
 import { AudioEngine } from '@/lib/audio-engine'
 import { audioRegistry } from '@/lib/audio-registry'
+import { melodyIndexAtBeat } from '@/lib/scale-data'
 
 // Click-to-play settings (GH #230)
 const QUICK_CLICK_THRESHOLD = 500 // ms
@@ -244,20 +245,29 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       const freq = clickedNote.freq
       const midi = clickedNote.midi
 
+      // Find the melody item at this beat to get its actual duration
+      const melody = props.melody()
+      const melodyNoteIndex = melodyIndexAtBeat(melody, beat)
+      let durationBeats = 0.25 // Default quarter note if not found
+
+      if (melodyNoteIndex >= 0 && melody[melodyNoteIndex]) {
+        durationBeats = melody[melodyNoteIndex].duration
+      }
+
       // Track click and detect trill
       const isTrill = trackNoteClick(midi, freq)
       if (isTrill) {
-        playNoteTrill(freq)
+        playNoteTrill(freq, durationBeats)
       } else {
-        playNoteFrequency(freq, 0)
+        playNoteFrequency(freq, durationBeats)
       }
     }
   }
 
   /**
-   * Play a single note at the given frequency.
+   * Play a single note at the given frequency with specified duration.
    */
-  const playNoteFrequency = (freq: number, beatsBetween: number = 0): void => {
+  const playNoteFrequency = (freq: number, durationBeats: number = 0.25): void => {
     const engine = (window as unknown as {
       pitchCanvasAudioEngine?: { playNote: (freq: number, durationMs: number) => void }
     }).pitchCanvasAudioEngine
@@ -267,14 +277,14 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     const bpm = appStore.bpm()
     const beatDurationMs = 60000 / bpm
 
-    engine.playNote(freq, 0.25 * beatDurationMs)
+    engine.playNote(freq, durationBeats * beatDurationMs)
   }
 
   /**
    * Plays a trill: plays the note 5 times with ~1 bar rest between each.
    * Called when the same note is clicked 3 times quickly.
    */
-  const playNoteTrill = (freq: number): void => {
+  const playNoteTrill = (freq: number, durationBeats: number = 0.25): void => {
     const engine = (window as unknown as {
       pitchCanvasAudioEngine?: { playNote: (freq: number, durationMs: number) => void }
     }).pitchCanvasAudioEngine
@@ -284,10 +294,9 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     const bpm = appStore.bpm()
     const beatDurationMs = 60000 / bpm
     const oneBarBeats = 4
-    const duration = 0.25
 
     // First play immediately
-    engine.playNote(freq, duration * beatDurationMs)
+    engine.playNote(freq, durationBeats * beatDurationMs)
 
     // Play 4 more times with 1 bar rest between each
     for (let i = 1; i < TRILL_NOTE_PLAYS; i++) {
@@ -295,7 +304,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       setTimeout(() => {
         ;(engine as { playNote: (freq: number, durationMs: number) => void }).playNote(
           freq,
-          duration * beatDurationMs,
+          durationBeats * beatDurationMs,
         )
       }, delay * i)
     }
