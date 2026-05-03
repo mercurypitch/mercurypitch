@@ -9938,6 +9938,16 @@ input:checked + .settings-slider:before {
   cursor: not-allowed;
 }
 
+.crash-copy-btn.error {
+  border-color: var(--red);
+  color: var(--red);
+  background: rgba(var(--red-rgb), 0.1);
+}
+
+.crash-copy-btn.error:hover {
+  background: rgba(var(--red-rgb), 0.15);
+}
+
 .results-section {
   margin-top: 20px;
 }

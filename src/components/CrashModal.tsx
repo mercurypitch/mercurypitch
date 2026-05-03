@@ -14,18 +14,44 @@ import { appError } from '@/stores'
 export const CrashModal: Component = () => {
   const error = createMemo(() => appError())
   const [copied, setCopied] = createSignal(false)
+  const [copyError, setCopyError] = createSignal<string | null>(null)
 
   const handleReload = (): void => {
     window.location.reload()
   }
 
   const handleCopy = async (): Promise<void> => {
+    setCopyError(null)
     try {
-      await navigator.clipboard.writeText(errorStack())
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    } catch (e) {
-      console.error('Failed to copy to clipboard:', e)
+      // Fallback for mobile/safari compatibility
+      if (!navigator.clipboard || !navigator.clipboard.writeText) {
+        // Fallback: select and copy to document
+        const stacktraceElement = document.querySelector('.crash-stacktrace-content')
+        if (stacktraceElement) {
+          const text = stacktraceElement.textContent || ''
+          const textarea = document.createElement('textarea')
+          textarea.value = text
+          textarea.style.position = 'fixed'
+          textarea.style.opacity = '0'
+          document.body.appendChild(textarea)
+          textarea.select()
+          try {
+            document.execCommand('copy')
+            setCopied(true)
+            setTimeout(() => setCopied(false), 2000)
+          } catch {
+            setCopyError('Unable to copy')
+          }
+          document.body.removeChild(textarea)
+        }
+      } else {
+        await navigator.clipboard.writeText(errorStack())
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      }
+    } catch (err) {
+      console.error('Failed to copy to clipboard:', err)
+      setCopyError('Unable to copy')
     }
   }
 
@@ -100,7 +126,10 @@ export const CrashModal: Component = () => {
                 <div class="crash-stacktrace-header">
                   <pre class="crash-stacktrace-content">{errorStack()}</pre>
                   <button
-                    class="crash-copy-btn"
+                    classList={{
+                      'crash-copy-btn': true,
+                      'error': copyError() !== null,
+                    }}
                     onClick={handleCopy}
                     title="Copy to clipboard"
                   >
@@ -115,7 +144,13 @@ export const CrashModal: Component = () => {
                       <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                       <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                     </svg>
-                    <span class="crash-copy-text">{copied() ? 'Copied!' : 'Copy'}</span>
+                    <span class="crash-copy-text">
+                      {copyError()
+                        ? copyError()
+                        : copied()
+                        ? 'Copied!'
+                        : 'Copy'}
+                    </span>
                   </button>
                 </div>
               </div>

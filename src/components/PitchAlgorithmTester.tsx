@@ -3,10 +3,22 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createSignal, For, Show, onMount } from 'solid-js'
+import {
+  createSignal,
+  createMemo,
+  For,
+  Show,
+  onMount,
+  onCleanup,
+} from 'solid-js'
 import { REGISTERED_ALGORITHMS, TEST_SAMPLES } from '@/data/pitch-test-samples'
-import type { AlgorithmResult, TestSample, } from '@/lib/pitch-algorithm-tester'
-import { ACCURACY_BAND_COLORS, benchmarkAlgorithmAsync, DEFAULT_ALGORITHMS, getPerformanceClassification, } from '@/lib/pitch-algorithm-tester'
+import type { AlgorithmResult, TestSample } from '@/lib/pitch-algorithm-tester'
+import {
+  ACCURACY_BAND_COLORS,
+  benchmarkAlgorithmAsync,
+  DEFAULT_ALGORITHMS,
+  getPerformanceClassification,
+} from '@/lib/pitch-algorithm-tester'
 import type { PitchAlgorithm } from '@/lib/pitch-detector'
 
 interface PitchAlgorithmTesterProps {
@@ -28,6 +40,11 @@ export const PitchAlgorithmTester: Component<PitchAlgorithmTesterProps> = (
 
   const algorithms = REGISTERED_ALGORITHMS
   const samples = TEST_SAMPLES
+
+  // Cleanup function for when component unmounts
+  onCleanup(() => {
+    // Any pending cleanup code would go here
+  })
 
   // Stable function for checkbox change handler
   const toggleAlgorithm = (algo: PitchAlgorithm) => {
@@ -217,11 +234,14 @@ export const PitchAlgorithmTester: Component<PitchAlgorithmTesterProps> = (
                           </span>
                           <For each={algorithmResults}>
                             {(result: AlgorithmResult) => {
-                              const color = ACCURACY_BAND_COLORS[result.results.find(rr => rr.targetFreq === note.frequency)?.accuracyBand as keyof typeof ACCURACY_BAND_COLORS] || '#666'
+                              // Pre-compute the result for this frequency to avoid reactivity issues
+                              const matchingResult = result.results.find(rr => rr.targetFreq === note.frequency)
+                              const color = ACCURACY_BAND_COLORS[matchingResult?.accuracyBand as keyof typeof ACCURACY_BAND_COLORS] || '#666'
+                              const offsetCents = matchingResult?.offsetCents ?? 0
 
                               return (
                                 <span class="note-offset" style={{ color }}>
-                                  {result.results.find(rr => rr.targetFreq === note.frequency)?.offsetCents.toFixed(0)}¢
+                                  {offsetCents.toFixed(0)}¢
                                 </span>
                               )
                             }}
