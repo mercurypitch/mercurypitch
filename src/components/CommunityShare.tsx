@@ -164,7 +164,7 @@ const IconEye = () => (
   </svg>
 )
 
-const IconUser2 = () => (
+const _IconUser2 = () => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -210,7 +210,7 @@ const IconBook = () => (
   </svg>
 )
 
-const IconStreak2 = () => (
+const _IconStreak2 = () => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -224,7 +224,7 @@ const IconStreak2 = () => (
   </svg>
 )
 
-const IconCheck = () => (
+const _IconCheck = () => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -238,7 +238,7 @@ const IconCheck = () => (
   </svg>
 )
 
-const IconLock = () => (
+const _IconLock = () => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -253,7 +253,7 @@ const IconLock = () => (
   </svg>
 )
 
-const IconRefresh = () => (
+const _IconRefresh = () => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -283,7 +283,7 @@ const IconStar = () => (
   </svg>
 )
 
-const IconTrophy2 = () => (
+const _IconTrophy2 = () => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -302,7 +302,7 @@ const IconTrophy2 = () => (
   </svg>
 )
 
-const IconEmblem = () => (
+const _IconEmblem = () => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -318,7 +318,7 @@ const IconEmblem = () => (
   </svg>
 )
 
-const IconEdit = () => (
+const _IconEdit = () => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -333,7 +333,7 @@ const IconEdit = () => (
   </svg>
 )
 
-const IconPlus = () => (
+const _IconPlus = () => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
