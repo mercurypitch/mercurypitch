@@ -12,12 +12,14 @@ import { adsr, playbackSpeed, setPlaybackSpeed, setSensitivity, settings, } from
 import type { PitchAlgorithm } from '@/stores/settings-store'
 import type { PitchBufferSize } from '@/stores/settings-store'
 import { characterSounds, colorCodeNotes, flameMode, selectedCharacter, setCharacterSounds, setColorCodeNotes, setFlameMode, setShowAccuracyPercent, setShowPracticeResultPopup, setShowSidebarNoteList, showAccuracyPercent, showPracticeResultPopup, showSidebarNoteList, } from '@/stores/settings-store'
+import { PitchAlgorithmTester } from '@/components'
 import { pitchAlgorithm, setPitchAlgorithm } from '@/stores/settings-store'
 import { PITCH_BUFFER_DESCRIPTIONS, PITCH_BUFFER_LABELS, PITCH_BUFFER_SIZES, pitchBufferSize, setPitchBufferSize, } from '@/stores/settings-store'
 
 export const SettingsPanel: Component = () => {
   const s = () => settings()
   const [showResetConfirm, setShowResetConfirm] = createSignal(false)
+  const [showAlgoTester, setShowAlgoTester] = createSignal(false)
 
   const bandValues = createMemo(() => {
     const bands = s().bands
@@ -852,6 +854,34 @@ export const SettingsPanel: Component = () => {
               </button>
             </div>
           </div>
+
+          {/* Algorithm Tester */}
+          <div class="settings-section">
+            <h3 class="settings-section-title">Algorithm Testing</h3>
+            <div class="settings-divider" />
+            <p class="settings-desc">
+              Test and compare pitch detection algorithms on known samples.
+              Measures accuracy (cents), computation time, and realtime viability.
+            </p>
+
+            <div class="settings-row">
+              <label>Algorithm Tester</label>
+              <button
+                class="primary-btn"
+                onClick={() => setShowAlgoTester(true)}
+              >
+                Open Tester
+              </button>
+            </div>
+          </div>
+
+          <Show when={showAlgoTester()}>
+            <div class="modal-overlay">
+              <div class="modal-content">
+                <PitchAlgorithmTester onClose={() => setShowAlgoTester(false)} />
+              </div>
+            </div>
+          </Show>
         </Show>
 
         {/* About Section */}

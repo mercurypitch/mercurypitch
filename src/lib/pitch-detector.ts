@@ -5,7 +5,7 @@
 import { freqToNote } from './scale-data'
 
 /** Supported pitch detection algorithms */
-export type PitchAlgorithm = 'yin' | 'mpm'
+export type PitchAlgorithm = 'yin' | 'mpm' | 'swift'
 
 /** Internal pitch detection result (partial PitchResult) */
 export interface DetectedPitch {
@@ -62,6 +62,9 @@ export class PitchDetector {
   private readonly yinBuffer: Float32Array
   private readonly pitchHistory: number[] = []
   private readonly maxHistory = 5
+  private swiftDetector: any = null // SwiftF0Detector instance
+  private onnxModule: any = null // ort module cache
+  private initialized: boolean = false
 
   constructor(options: PitchDetectorOptions = {}) {
     const opts = { ...DEFAULT_OPTIONS, ...options }
@@ -75,6 +78,42 @@ export class PitchDetector {
     this.minAmplitude = opts.minAmplitude
     this.algorithm = opts.algorithm
     this.yinBuffer = new Float32Array(Math.floor(this.bufferSize / 2))
+  }
+
+  /** Initialize SwiftF0 detector (async, called once when algorithm is set to 'swift') */
+  async initializeSwiftDetector(): Promise<boolean> {
+    // Only initialize if using Swift and not already initialized
+    if (this.algorithm !== 'swift' || this.swiftDetector) return this.swiftDetector?.isInitialized() ?? false
+
+    try {
+      const { SwiftF0Detector } = await import('./swift-f0-detector')
+      this.swiftDetector = new SwiftF0Detector({
+        sampleRate: this.sampleRate,
+        modelPath: '/models/swiftf0.onnx',
+        fundamentalBin: 91,
+        fallbackFreq: 0,
+        minProbability: 0.05,
+      })
+      this.initialized = await this.swiftDetector.init(this.onnxModule)
+      return this.initialized
+    } catch (error) {
+      console.warn('[PitchDetector] SwiftF0 initialization failed:', error)
+      // Don't throw - allow fallback to yin/mpm
+      return false
+    }
+  }
+
+  /** Get the SwiftF0 detector instance */
+  getSwiftDetector(): any {
+    return this.swiftDetector
+  }
+
+  /** Set ONNX module for SwiftF0 (useful for testing without actual ONNX) */
+  setOnnxModule(ort: any): void {
+    this.onnxModule = ort
+    if (this.swiftDetector) {
+      this.swiftDetector.init(ort).catch(() => {})
+    }
   }
 
   /** Detect pitch from a time-domain buffer (e.g., AnalyserNode.getFloatTimeDomainData) */
@@ -95,7 +134,15 @@ export class PitchDetector {
       }
     }
 
-    // Dispatch to selected algorithm
+    // For SwiftF0, we need frequency-domain input
+    if (this.algorithm === 'swift') {
+      // Convert time-domain to frequency-domain using FFT approximation
+      const freqData = this.fftToFrequencyData(timeDomainBuffer)
+      // Always use DSP fallback for synchronous detection
+      return this.detectFromFreqDataFallback(freqData)
+    }
+
+    // Dispatch to YIN or MPM
     const result =
       this.algorithm === 'mpm'
         ? this.analyzeMPM(timeDomainBuffer)
@@ -127,6 +174,131 @@ export class PitchDetector {
       octave,
       cents,
     }
+  }
+
+  /** Detect pitch from a frequency-domain buffer (for SwiftF0) */
+  async detectFromFreqData(freqData: Float32Array): Promise<DetectedPitch> {
+    // Initialize Swift detector if needed
+    await this.initializeSwiftDetector()
+
+    if (this.algorithm === 'swift' && this.swiftDetector?.isInitialized()) {
+      const swiftResult = await this.swiftDetector.detectFromFreqData(freqData)
+
+      // Convert Swift result to DetectedPitch format
+      if (swiftResult.pitch > 0 && swiftResult.probability >= this.minConfidence) {
+        const { name, octave, cents } = freqToNote(swiftResult.pitch)
+        return {
+          frequency: swiftResult.pitch,
+          clarity: swiftResult.probability,
+          noteName: name,
+          octave,
+          cents,
+        }
+      }
+    }
+
+    // Fallback to YIN or MPM
+    return this.detectFromFreqDataFallback(freqData)
+  }
+
+  /** Detect pitch from freqData using DSP algorithm (fallback for SwiftF0) */
+  private detectFromFreqDataFallback(freqData: Float32Array): DetectedPitch {
+    // For freq-domain input, use a simple peak detection algorithm
+    // This is a fallback when SwiftF0 is not available or not working
+
+    let maxVal = -Infinity
+    let maxIdx = 0
+    const bufferSize = freqData.length
+
+    for (let i = 0; i < bufferSize; i++) {
+      if (freqData[i] > maxVal) {
+        maxVal = freqData[i]
+        maxIdx = i
+      }
+    }
+
+    if (maxVal < this.minAmplitude * 10) {
+      return {
+        frequency: 0,
+        clarity: 0,
+        noteName: '',
+        octave: 0,
+        cents: 0,
+      }
+    }
+
+    const frequency = (maxIdx * this.sampleRate) / (this.bufferSize / 2)
+
+    if (frequency < this.minFrequency || frequency > this.maxFrequency) {
+      return {
+        frequency: 0,
+        clarity: 0,
+        noteName: '',
+        octave: 0,
+        cents: 0,
+      }
+    }
+
+    const { name, octave, cents } = freqToNote(frequency)
+    return {
+      frequency,
+      clarity: maxVal / 255, // Normalize 0-255 range
+      noteName: name,
+      octave,
+      cents,
+    }
+  }
+
+  /** Simple FFT approximation for frequency-domain conversion */
+  private fftToFrequencyData(timeDomainBuffer: Float32Array): Float32Array {
+    const N = Math.floor(timeDomainBuffer.length / 2)
+    const freqData = new Float32Array(N)
+    const sampleRate = this.sampleRate
+
+    for (let i = 0; i < N; i++) {
+      let real = 0
+      let imag = 0
+
+      for (let j = 0; j < timeDomainBuffer.length; j += 2) {
+        const angle = (2 * Math.PI * i * j) / this.bufferSize
+        real += timeDomainBuffer[j] * Math.cos(angle)
+        imag -= timeDomainBuffer[j] * Math.sin(angle)
+      }
+
+      // Single-sided spectrum
+      if (i === 0) {
+        freqData[i] = real / this.bufferSize
+      } else if (i === Math.floor(this.bufferSize / 2)) {
+        freqData[i] = real / this.bufferSize
+      } else {
+        freqData[i] = Math.sqrt(real * real + imag * imag) / this.bufferSize
+      }
+    }
+
+    return freqData
+  }
+
+  /** Detect pitch using SwiftF0 algorithm */
+  private async detectSwift(freqData: Float32Array): Promise<DetectedPitch> {
+    await this.initializeSwiftDetector()
+
+    if (this.swiftDetector?.isInitialized()) {
+      const swiftResult = await this.swiftDetector.detectFromFreqData(freqData)
+
+      if (swiftResult.pitch > 0 && swiftResult.probability >= this.minConfidence) {
+        const { name, octave, cents } = freqToNote(swiftResult.pitch)
+        return {
+          frequency: swiftResult.pitch,
+          clarity: swiftResult.probability,
+          noteName: name,
+          octave,
+          cents,
+        }
+      }
+    }
+
+    // Fallback to peak detection if SwiftF0 fails
+    return this.detectFromFreqDataFallback(freqData)
   }
 
   // ── YIN Algorithm ─────────────────────────────────────────────
