@@ -47,13 +47,16 @@ import { AppErrorBoundary } from './components/AppErrorBoundary'
 import { CrashModal } from './components/CrashModal'
 import { GuideSelection } from './components/GuideSelection'
 import { WelcomeScreen } from './components/WelcomeScreen'
+import { IS_DEV } from '@/lib/defaults'
+import { PitchTestingTab } from '@/components/PitchTestingTab'
+import { PitchAlgorithmTester } from '@/components/PitchAlgorithmTester'
 
 // ============================================================
 // Tab type
 // ============================================================
 
 export type EditorView = 'piano-roll' | 'session-editor'
-export type ActiveTab = 'practice' | 'editor' | 'settings'
+export type ActiveTab = 'practice' | 'editor' | 'settings' | 'pitch-test' | 'pitch-algo'
 
 interface AppProps {
   onMounted?: () => void
@@ -762,6 +765,22 @@ const AppShell: Component<AppProps> = (props) => {
             >
               Settings
             </button>
+            <Show when={IS_DEV}>
+              <button
+                id="tab-pitch-test"
+                class={`app-tab ${activeTab() === 'pitch-test' ? 'active' : ''}`}
+                onClick={() => void handleTabChange('pitch-test')}
+              >
+                Pitch Test
+              </button>
+              <button
+                id="tab-pitch-algo"
+                class={`app-tab ${activeTab() === 'pitch-algo' ? 'active' : ''}`}
+                onClick={() => void handleTabChange('pitch-algo')}
+              >
+                Algo Tester
+              </button>
+            </Show>
           </nav>
         </header>
 
@@ -793,7 +812,7 @@ const AppShell: Component<AppProps> = (props) => {
               <div id="practice-panel">
                 {/* Shared control toolbar with practice-specific options */}
                 <SharedControlToolbar
-                  activeTab={activeTab}
+                  activeTab={() => activeTab() === 'practice'}
                   practiceTab={() => activeTab() === 'practice'}
                   editorTab={() => activeTab() === 'editor'}
                   isPlaying={isPlaying}
@@ -878,7 +897,7 @@ const AppShell: Component<AppProps> = (props) => {
 
             <Show when={activeTab() === 'editor'}>
               <SharedControlToolbar
-                activeTab={activeTab}
+                activeTab={() => activeTab() === 'editor'}
                 editorTab={() => activeTab() === 'editor'}
                 isPlaying={editorIsPlaying}
                 isPaused={editorIsPaused}
@@ -988,6 +1007,14 @@ const AppShell: Component<AppProps> = (props) => {
               <div id="settings-panel">
                 <SettingsPanel />
               </div>
+            </Show>
+            <Show when={IS_DEV}>
+              <Show when={activeTab() === 'pitch-test'}>
+                <PitchTestingTab onClose={() => setActiveTab('practice')} />
+              </Show>
+              <Show when={activeTab() === 'pitch-algo'}>
+                <PitchAlgorithmTester onClose={() => setActiveTab('practice')} />
+              </Show>
             </Show>
           </div>
         </div>

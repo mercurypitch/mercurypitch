@@ -11,6 +11,7 @@ import { Tooltip } from '@/components/Tooltip'
 import { appStore } from '@/stores'
 import { bpm, micActive, micWaveVisible, playbackSpeed, setBpm, setPlaybackSpeed, setSensitivity, settings, toggleMicWaveVisible, } from '@/stores'
 import type { SpacedRestMode } from '@/types'
+import type { ActiveTab as AppActiveTab } from '@/stores/ui-store'
 import { ControlGroup } from './ControlGroup'
 import { MetronomeGroup } from './MetronomeGroup'
 
@@ -53,8 +54,8 @@ export type PracticeSubMode = 'all' | 'random' | 'focus' | 'reverse'
 export type ActiveTab = 'practice' | 'editor' | 'settings'
 
 interface SharedControlToolbarProps {
-  // Tab identification
-  activeTab: () => ActiveTab
+  // Tab identification - matching App's ActiveTab
+  activeTab: () => boolean
   practiceTab?: () => boolean
   editorTab?: () => boolean
 
@@ -113,9 +114,9 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
   props,
 ) => {
   const isPracticeTab = () =>
-    props.practiceTab?.() ?? props.activeTab() === 'practice'
+    props.activeTab?.() ?? props.practiceTab?.() ?? false
   const isEditorTab = () =>
-    props.editorTab?.() ?? props.activeTab() === 'editor'
+    props.activeTab?.() ?? props.editorTab?.() ?? false
 
   const isActive = () => props.isPlaying() || props.isPaused()
   const isStopped = () => !props.isPlaying() && !props.isPaused()
