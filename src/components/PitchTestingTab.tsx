@@ -268,11 +268,17 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
 
     if (detectionMode() === 'mic') {
       if (!isMicStartedByUser()) {
-        // If mic hasn't been enabled by user, enable it first
         void startMicrophoneInput()
+        // Wait a moment for mic to initialize, then start detection
+        setTimeout(() => {
+          if (isDetecting() && isMicStartedByUser()) {
+            updateMicDetection()
+          }
+        }, 100)
+      } else {
+        // Mic already enabled, start detection loop
+        updateMicDetection()
       }
-      // Always start detection loop for mic mode
-      updateMicDetection()
       return
     }
 

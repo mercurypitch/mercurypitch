@@ -10487,13 +10487,14 @@ input:checked + .settings-slider:before {
 
 .pitch-testing-visualization .waveform-dot {
   position: absolute;
+  top: var(--y, 50%);
+  left: var(--freq, 50%);
   width: 6px;
   height: 6px;
   border-radius: 50%;
   background: var(--accent);
-  transition:
-    left 0.05s linear,
-    top 0.05s linear;
+  transform: translate(-50%, -50%);
+  transition: top 0.1s ease;
 }
 
 .pitch-testing-visualization .info-panel {
