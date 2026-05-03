@@ -10317,6 +10317,13 @@ input:checked + .settings-slider:before {
   color: var(--green);
 }
 
+.pitch-testing-controls .mic-hint {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-top: 6px;
+}
+
 .pitch-testing-controls .btn {
   width: 100%;
   padding: 10px 14px;

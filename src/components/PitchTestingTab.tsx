@@ -86,6 +86,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
   const [mediaStream, setMediaStream] = createSignal<MediaStream | null>(null)
   const [sourceNode, setSourceNode] = createSignal<AudioNode | null>(null)
   const [analyser, setAnalyser] = createSignal<AnalyserNode | null>(null)
+  const [isMicStartedByUser, setIsMicStartedByUser] = createSignal(false)
 
   // Detection results over time
   const [liveResults, setLiveResults] = createSignal<
@@ -159,7 +160,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
     }
   }
 
-  // Start microphone input
+  // Start microphone input (only sets up, doesn't start detection loop)
   const startMicrophoneInput = async () => {
     try {
       const ctx = new AudioContext({ sampleRate: 44100 })
@@ -177,9 +178,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
       setAnalyser(analyserNode)
 
       source.connect(analyserNode)
-      setIsDetecting(true)
-
-      updateMicDetection()
+      setIsMicStartedByUser(true)
     } catch (error) {
       console.error('Error accessing microphone:', error)
       alert(
@@ -206,7 +205,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
   }
 
   const updateMicDetection = () => {
-    if (!isDetecting()) return
+    if (!isDetecting() || !isMicStartedByUser()) return
     const analyserVal = analyser()
     if (!analyserVal) return
 
@@ -268,7 +267,12 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
     setLiveResults([])
 
     if (detectionMode() === 'mic') {
-      startMicrophoneInput()
+      if (!isMicStartedByUser()) {
+        // If mic hasn't been enabled by user, enable it first
+        void startMicrophoneInput()
+      }
+      // Always start detection loop for mic mode
+      updateMicDetection()
       return
     }
 
@@ -352,6 +356,10 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
   const runTest = () => {
     setIsRunningTest(true)
     setTestResults({ passed: 0, failed: 0, errors: [] })
+
+    // Stop any ongoing detection modes (mic, file, generate)
+    stopLiveDetection()
+    setIsMicStartedByUser(false)
 
     // Test frequencies from MIDI 40-100 (C3-A6)
     const testFrequencies = [
@@ -488,12 +496,17 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
           <Show when={detectionMode() === 'mic'}>
             <div class="mic-controls">
               {!audioContext() && (
-                <button
-                  class="btn btn-primary btn-sm"
-                  onclick={() => void startMicrophoneInput()}
-                >
-                  Enable Microphone
-                </button>
+                <>
+                  <button
+                    class="btn btn-primary btn-sm"
+                    onclick={() => void startMicrophoneInput()}
+                  >
+                    Enable Microphone
+                  </button>
+                  <span class="mic-hint">
+                    Allows live testing with your voice or instrument
+                  </span>
+                </>
               )}
               {audioContext() && (
                 <button
