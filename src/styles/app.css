@@ -2892,6 +2892,23 @@ header h1 {
 #app-tabs {
   display: flex;
   gap: 4px;
+  overflow-x: auto;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+#app-tabs::-webkit-scrollbar {
+  height: 6px;
+}
+
+#app-tabs::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+#app-tabs::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 .app-tab {
