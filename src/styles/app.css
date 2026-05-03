@@ -4018,8 +4018,6 @@ Keeps your existing styles, only adjusts layout
   text-transform: uppercase;
   padding-bottom: 12px;
   border-bottom: 1px solid var(--border-color);
-=======
->>>>>>> 319ab26 (Fix more style issue)
 }
 
 .settings-divider {
@@ -5671,7 +5669,11 @@ input:checked + .settings-slider:before {
 .welcome-mic-btn {
   flex-shrink: 0;
   padding: 8px 16px;
-  background: linear-gradient(135deg, rgba(88, 166, 255, 0.85), rgba(100, 130, 255, 0.8));
+  background: linear-gradient(
+    135deg,
+    rgba(88, 166, 255, 0.85),
+    rgba(100, 130, 255, 0.8)
+  );
   color: #fff;
   border: 1px solid rgba(120, 190, 255, 0.35);
   border-radius: 8px;
@@ -5684,7 +5686,11 @@ input:checked + .settings-slider:before {
 
 @media (hover: hover) {
   .welcome-mic-btn:hover {
-    background: linear-gradient(135deg, rgba(100, 180, 255, 0.95), rgba(115, 145, 255, 0.9));
+    background: linear-gradient(
+      135deg,
+      rgba(100, 180, 255, 0.95),
+      rgba(115, 145, 255, 0.9)
+    );
     border-color: rgba(140, 200, 255, 0.5);
     transform: translateY(-1px);
     box-shadow: 0 4px 16px rgba(88, 166, 255, 0.25);
@@ -5793,7 +5799,11 @@ input:checked + .settings-slider:before {
   justify-content: center;
   gap: 8px;
   padding: 12px 20px;
-  background: linear-gradient(135deg, rgba(88, 166, 255, 0.9), rgba(100, 130, 255, 0.85));
+  background: linear-gradient(
+    135deg,
+    rgba(88, 166, 255, 0.9),
+    rgba(100, 130, 255, 0.85)
+  );
   color: #fff;
   border: 1px solid rgba(120, 190, 255, 0.4);
   border-radius: 10px;
@@ -5806,7 +5816,11 @@ input:checked + .settings-slider:before {
 
 @media (hover: hover) {
   .welcome-cta:hover {
-    background: linear-gradient(135deg, rgba(100, 180, 255, 1), rgba(115, 145, 255, 0.95));
+    background: linear-gradient(
+      135deg,
+      rgba(100, 180, 255, 1),
+      rgba(115, 145, 255, 0.95)
+    );
     border-color: rgba(140, 200, 255, 0.6);
     transform: translateY(-1px);
     box-shadow: 0 6px 24px rgba(88, 166, 255, 0.3);
@@ -5853,7 +5867,11 @@ input:checked + .settings-slider:before {
 .welcome-tier-select {
   margin-top: 20px;
   padding: 14px 16px;
-  background: linear-gradient(180deg, rgba(22, 27, 34, 0.6), rgba(13, 17, 23, 0.5));
+  background: linear-gradient(
+    180deg,
+    rgba(22, 27, 34, 0.6),
+    rgba(13, 17, 23, 0.5)
+  );
   border-radius: 12px;
   border: 1px solid rgba(48, 54, 61, 0.6);
 }
@@ -9656,4 +9674,33 @@ input:checked + .settings-slider:before {
 .icon-avatar.w-48 {
   width: 48px;
   height: 48px;
+}
+
+/* Tab Panels - Community & Related */
+.community-panel,
+.leaderboard-panel,
+.vocal-challenges-panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+  min-height: 400px;
+  text-align: center;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.vocal-challenges-panel {
+  padding: 1.5rem;
 }

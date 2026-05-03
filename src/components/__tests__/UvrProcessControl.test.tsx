@@ -2,8 +2,8 @@
 // UVR Process Control Component Tests
 // ============================================================
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, fireEvent } from '@solidjs/testing-library'
+import { fireEvent,render, screen } from '@solidjs/testing-library'
+import { afterEach,beforeEach, describe, expect, it, vi } from 'vitest'
 import { UvrProcessControl } from '../UvrProcessControl'
 
 describe('UvrProcessControl Component', () => {

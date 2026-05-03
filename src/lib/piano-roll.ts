@@ -2,8 +2,8 @@
 // Piano Roll Editor — Canvas-based note editor
 // ============================================================
 
-import type { BallPhysicsState,NoteBounds } from '@/features/playback/yousician-ball-physics'
-import { createBallPhysics, getBallPhysics } from '@/features/playback/yousician-ball-physics'
+import type { BallPhysicsState, NoteBounds, } from '@/features/playback/yousician-ball-physics'
+import { createBallPhysics, getBallPhysics, } from '@/features/playback/yousician-ball-physics'
 import type { AudioEngine, InstrumentType } from '@/lib/audio-engine'
 import { PitchDetector } from '@/lib/pitch-detector'
 import { buildMultiOctaveScale, midiToFreq, midiToNote } from '@/lib/scale-data'
@@ -2473,11 +2473,16 @@ export class PianoRollEditor {
         const result = getBallPhysics(this.ballState, ballConfig)
         this.ballState.x = result.x
         this.ballState.y = result.y
-        this.ballState.lastEndBeat = result.note ? result.note.endBeat : this.ballState.lastEndBeat
+        this.ballState.lastEndBeat = result.note
+          ? result.note.endBeat
+          : this.ballState.lastEndBeat
         this.ballState.lastNote = result.note
 
         // Convert to pixel coordinates for drawing
-        const pixelY = this.ballState.y * this.rowHeight + this.rowHeight / 2 + this.rowHeight / 2
+        const pixelY =
+          this.ballState.y * this.rowHeight +
+          this.rowHeight / 2 +
+          this.rowHeight / 2
         const pixelX = this.ballState.x * this.beatWidth
 
         // Draw ball with glowing effect
@@ -2519,8 +2524,8 @@ export class PianoRollEditor {
 
     // Ball physics update for external playback
     if (this.useBallPhysics && this.ballState && this.ballCtx) {
-        const ballCtx = this.ballCtx
-        const ballCanvas = this.ballCanvas
+      const ballCtx = this.ballCtx
+      const ballCanvas = this.ballCanvas
       const playheadX = beat * this.beatWidth
 
       const ballConfig: any = {
@@ -2533,11 +2538,16 @@ export class PianoRollEditor {
       const result = getBallPhysics(this.ballState, ballConfig)
       this.ballState.x = result.x
       this.ballState.y = result.y
-      this.ballState.lastEndBeat = result.note ? result.note.endBeat : this.ballState.lastEndBeat
+      this.ballState.lastEndBeat = result.note
+        ? result.note.endBeat
+        : this.ballState.lastEndBeat
       this.ballState.lastNote = result.note
 
       // Convert to pixel coordinates for drawing
-      const pixelY = this.ballState.y * this.rowHeight + this.rowHeight / 2 + this.rowHeight / 2
+      const pixelY =
+        this.ballState.y * this.rowHeight +
+        this.rowHeight / 2 +
+        this.rowHeight / 2
       const pixelX = this.ballState.x * this.beatWidth
 
       // Draw ball with glowing effect
@@ -2644,7 +2654,12 @@ export class PianoRollEditor {
       this.ballCanvas.style.display = 'none'
     }
     if (this.ballCtx && this.ballCanvas) {
-      this.ballCtx.clearRect(0, 0, this.ballCanvas.width, this.ballCanvas.height)
+      this.ballCtx.clearRect(
+        0,
+        0,
+        this.ballCanvas.width,
+        this.ballCanvas.height,
+      )
     }
   }
 

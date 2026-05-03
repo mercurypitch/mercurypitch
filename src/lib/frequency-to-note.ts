@@ -2,7 +2,19 @@
 // Frequency to Note Name Converter
 // ============================================================
 
-export type NoteName = 'C' | 'C#' | 'D' | 'D#' | 'E' | 'F' | 'F#' | 'G' | 'G#' | 'A' | 'A#' | 'B'
+export type NoteName =
+  | 'C'
+  | 'C#'
+  | 'D'
+  | 'D#'
+  | 'E'
+  | 'F'
+  | 'F#'
+  | 'G'
+  | 'G#'
+  | 'A'
+  | 'A#'
+  | 'B'
 
 /**
  * Convert frequency (Hz) to musical note name (e.g., C4, A#3)
@@ -24,7 +36,18 @@ export function frequenciesToNoteName(frequency: number): string {
   const semitone = midiNote % 12
 
   const noteNames: NoteName[] = [
-    'C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B',
+    'C',
+    'C#',
+    'D',
+    'D#',
+    'E',
+    'F',
+    'F#',
+    'G',
+    'G#',
+    'A',
+    'A#',
+    'B',
   ]
 
   return `${noteNames[semitone]}${octave}`

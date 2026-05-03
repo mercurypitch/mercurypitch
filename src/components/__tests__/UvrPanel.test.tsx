@@ -2,8 +2,8 @@
 // UVR Panel Component Tests
 // ============================================================
 
-import { describe, it, expect, vi } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@solidjs/testing-library'
+import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library'
+import { describe, expect, it, vi } from 'vitest'
 import { UvrPanel } from '../UvrPanel'
 
 // Mock the entire stores barrel

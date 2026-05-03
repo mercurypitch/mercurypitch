@@ -4,7 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
-import { FileText, Music, Download, Play, X } from './icons'
+import { Download, FileText, Music, Play, X } from './icons'
 
 interface ResultViewerProps {
   outputs?: {
@@ -15,22 +15,30 @@ interface ResultViewerProps {
   }
   processingTime?: number
   onStartPractice?: (mode: 'vocal' | 'instrumental' | 'full' | 'midi') => void
-  onExport?: (type: 'vocal' | 'instrumental' | 'vocal-midi' | 'instrumental-midi') => void
+  onExport?: (
+    type: 'vocal' | 'instrumental' | 'vocal-midi' | 'instrumental-midi',
+  ) => void
   onClose?: () => void
 }
 
 export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
-  const [selectedOutput, setSelectedOutput] = createSignal<'vocal' | 'instrumental' | null>(null)
+  const [selectedOutput, setSelectedOutput] = createSignal<
+    'vocal' | 'instrumental' | null
+  >(null)
 
   const outputs = () => props.outputs || {}
 
-  const handleStartPractice = (mode: 'vocal' | 'instrumental' | 'full' | 'midi') => {
+  const handleStartPractice = (
+    mode: 'vocal' | 'instrumental' | 'full' | 'midi',
+  ) => {
     if (props.onStartPractice) {
       props.onStartPractice(mode)
     }
   }
 
-  const handleExport = (type: 'vocal' | 'instrumental' | 'vocal-midi' | 'instrumental-midi') => {
+  const handleExport = (
+    type: 'vocal' | 'instrumental' | 'vocal-midi' | 'instrumental-midi',
+  ) => {
     if (props.onExport) {
       props.onExport(type)
     }
@@ -54,7 +62,7 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
             <span class="info-label">Processing Time</span>
             <span class="info-value">
               {props.processingTime
-                ? Math.round(props.processingTime / 1000) + 's'
+                ? `${Math.round(props.processingTime / 1000)  }s`
                 : 'Not available'}
             </span>
           </div>

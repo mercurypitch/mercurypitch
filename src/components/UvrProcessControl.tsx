@@ -3,12 +3,18 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createSignal, createEffect, For, Show } from 'solid-js'
-import { Settings, Music, Loader2, CheckCircle, XCircle, Pause, Play } from './icons'
+import { createEffect, createSignal, For, Show } from 'solid-js'
+import { CheckCircle, Loader2, Music, Pause, Play,Settings, XCircle,  } from './icons'
 
 interface ProcessControlProps {
   sessionId: string
-  status: 'idle' | 'uploading' | 'processing' | 'completed' | 'error' | 'cancelled'
+  status:
+    | 'idle'
+    | 'uploading'
+    | 'processing'
+    | 'completed'
+    | 'error'
+    | 'cancelled'
   progress: number
   processingTime?: number
   error?: string
@@ -33,7 +39,7 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
   }
 
   const formatPercentage = (percent: number): string => {
-    return Math.round(percent) + '%'
+    return `${Math.round(percent)  }%`
   }
 
   const getProcessStage = () => {
@@ -97,7 +103,8 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
             />
           </div>
           <div class="progress-text">
-            {formatPercentage(props.progress)} • {formatTime(props.processingTime || 0)}
+            {formatPercentage(props.progress)} •{' '}
+            {formatTime(props.processingTime || 0)}
           </div>
         </div>
       </Show>
@@ -105,12 +112,26 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
       {/* Stage Indicators */}
       <Show when={props.status === 'completed' && props.outputs}>
         <div class="stage-indicators">
-          <For each={[
-            { label: 'Original File', icon: Music, active: true },
-            { label: 'Vocal Stem', icon: Music, active: !!props.outputs?.vocal },
-            { label: 'Instrumental', icon: Settings, active: !!props.outputs?.instrumental },
-            { label: 'Vocal MIDI', icon: Settings, active: !!props.outputs?.vocalMidi },
-          ]}>
+          <For
+            each={[
+              { label: 'Original File', icon: Music, active: true },
+              {
+                label: 'Vocal Stem',
+                icon: Music,
+                active: !!props.outputs?.vocal,
+              },
+              {
+                label: 'Instrumental',
+                icon: Settings,
+                active: !!props.outputs?.instrumental,
+              },
+              {
+                label: 'Vocal MIDI',
+                icon: Settings,
+                active: !!props.outputs?.vocalMidi,
+              },
+            ]}
+          >
             {(stage) => (
               <div class={`stage-item ${stage.active ? 'active' : ''}`}>
                 <span class="stage-icon">{(stage.icon as any)()}</span>

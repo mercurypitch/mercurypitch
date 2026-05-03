@@ -314,7 +314,9 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ============================================================
@@ -995,7 +997,11 @@
   font-weight: 600;
   font-size: 1.1rem;
   --score: 85%;
-  background: linear-gradient(90deg, var(--score-color, var(--accent)) var(--score), var(--bg-primary) 0);
+  background: linear-gradient(
+    90deg,
+    var(--score-color, var(--accent)) var(--score),
+    var(--bg-primary) 0
+  );
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -1281,7 +1287,8 @@
   display: flex;
   gap: 1px;
   overflow: hidden;
-  background: linear-gradient(90deg,
+  background: linear-gradient(
+    90deg,
     hsl(0, 70%, 50%) 0%,
     hsl(60, 70%, 50%) 33%,
     hsl(120, 70%, 50%) 66%,
@@ -1681,17 +1688,29 @@
 }
 
 .podium-1 {
-  background: linear-gradient(180deg, rgba(255, 215, 0, 0.1) 0%, transparent 100%);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 215, 0, 0.1) 0%,
+    transparent 100%
+  );
   border: 1px solid rgba(255, 215, 0, 0.3);
 }
 
 .podium-2 {
-  background: linear-gradient(180deg, rgba(192, 192, 192, 0.1) 0%, transparent 100%);
+  background: linear-gradient(
+    180deg,
+    rgba(192, 192, 192, 0.1) 0%,
+    transparent 100%
+  );
   border: 1px solid rgba(192, 192, 192, 0.3);
 }
 
 .podium-3 {
-  background: linear-gradient(180deg, rgba(205, 127, 50, 0.1) 0%, transparent 100%);
+  background: linear-gradient(
+    180deg,
+    rgba(205, 127, 50, 0.1) 0%,
+    transparent 100%
+  );
   border: 1px solid rgba(205, 127, 50, 0.3);
 }
 
@@ -3016,7 +3035,7 @@
 }
 
 .info-list li::before {
-  content: "•";
+  content: '•';
   position: absolute;
   left: 0;
   color: var(--accent);

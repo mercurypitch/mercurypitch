@@ -4,6 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
+import { TierSelector } from '@/components'
 import { APP_VERSION, IS_DEV } from '@/lib/defaults'
 import type { AccuracyTier } from '@/stores'
 import { accuracyTier, applyAccuracyTier, appStore } from '@/stores'
@@ -13,7 +14,6 @@ import type { PitchBufferSize } from '@/stores/settings-store'
 import { characterSounds, colorCodeNotes, flameMode, selectedCharacter, setCharacterSounds, setColorCodeNotes, setFlameMode, setShowAccuracyPercent, setShowPracticeResultPopup, setShowSidebarNoteList, showAccuracyPercent, showPracticeResultPopup, showSidebarNoteList, } from '@/stores/settings-store'
 import { pitchAlgorithm, setPitchAlgorithm } from '@/stores/settings-store'
 import { PITCH_BUFFER_DESCRIPTIONS, PITCH_BUFFER_LABELS, PITCH_BUFFER_SIZES, pitchBufferSize, setPitchBufferSize, } from '@/stores/settings-store'
-import { TierSelector } from '@/components'
 
 export const SettingsPanel: Component = () => {
   const s = () => settings()

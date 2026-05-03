@@ -40,9 +40,7 @@ export const UvrGuide: Component = () => {
       title: 'Separation Modes',
       content: (
         <div class="guide-section">
-          <p class="guide-text">
-            Choose a mode that fits your practice goals:
-          </p>
+          <p class="guide-text">Choose a mode that fits your practice goals:</p>
           <div class="guide-mode-cards">
             <div class="mode-card guide-mode">
               <div class="mode-icon">🎭</div>
@@ -101,8 +99,8 @@ export const UvrGuide: Component = () => {
             </div>
           </div>
           <p class="guide-tip">
-            💡 <strong>Pro Tip:</strong> In "Separate" mode, the two sliders work
-            together to create your preferred mix. Experiment to find your
+            💡 <strong>Pro Tip:</strong> In "Separate" mode, the two sliders
+            work together to create your preferred mix. Experiment to find your
             ideal balance!
           </p>
         </div>
@@ -113,8 +111,8 @@ export const UvrGuide: Component = () => {
       content: (
         <div class="guide-section">
           <p class="guide-text">
-            The <strong>Transition Smoothness</strong> slider controls how smoothly
-            the vocal/instrumental balance changes:
+            The <strong>Transition Smoothness</strong> slider controls how
+            smoothly the vocal/instrumental balance changes:
           </p>
           <div class="smooth-examples">
             <div class="smooth-item">
@@ -122,7 +120,9 @@ export const UvrGuide: Component = () => {
                 <span class="toggle-label">Low</span>
                 <span class="toggle-value">0%</span>
               </div>
-              <span class="smooth-result">Abrupt changes — noticeable splits</span>
+              <span class="smooth-result">
+                Abrupt changes — noticeable splits
+              </span>
             </div>
             <div class="smooth-item">
               <div class="smooth-toggle active">
@@ -136,7 +136,9 @@ export const UvrGuide: Component = () => {
                 <span class="toggle-label">High</span>
                 <span class="toggle-value">100%</span>
               </div>
-              <span class="smooth-result">Very smooth — blended transitions</span>
+              <span class="smooth-result">
+                Very smooth — blended transitions
+              </span>
             </div>
           </div>
           <p class="guide-tip">
@@ -156,28 +158,39 @@ export const UvrGuide: Component = () => {
               <div class="use-case-icon">🎵</div>
               <div class="use-case-content">
                 <strong>Learning Melodies</strong>
-                <p>Use <em>Instrumental Mode</em> to focus on the melody line without vocals.</p>
+                <p>
+                  Use <em>Instrumental Mode</em> to focus on the melody line
+                  without vocals.
+                </p>
               </div>
             </div>
             <div class="use-case">
               <div class="use-case-icon">🎤</div>
               <div class="use-case-content">
                 <strong>Vocal Training</strong>
-                <p>Use <em>Vocal Only</em> to practice hitting exact pitch targets.</p>
+                <p>
+                  Use <em>Vocal Only</em> to practice hitting exact pitch
+                  targets.
+                </p>
               </div>
             </div>
             <div class="use-case">
               <div class="use-case-icon">🎭</div>
               <div class="use-case-content">
                 <strong>Full Practice</strong>
-                <p>Use <em>Separate Mode</em> to hear the full arrangement.</p>
+                <p>
+                  Use <em>Separate Mode</em> to hear the full arrangement.
+                </p>
               </div>
             </div>
             <div class="use-case">
               <div class="use-case-icon">🎧</div>
               <div class="use-case-content">
                 <strong>Background Practice</strong>
-                <p>Lower both intensities and set smoothing to high for subtle accompaniment.</p>
+                <p>
+                  Lower both intensities and set smoothing to high for subtle
+                  accompaniment.
+                </p>
               </div>
             </div>
           </div>
@@ -201,14 +214,19 @@ export const UvrGuide: Component = () => {
               <div class="step-number">2</div>
               <div class="step-content">
                 <strong>Choose Your Mode</strong>
-                <p>Select Separate, Instrumental, or Vocal Only based on your goal.</p>
+                <p>
+                  Select Separate, Instrumental, or Vocal Only based on your
+                  goal.
+                </p>
               </div>
             </div>
             <div class="step">
               <div class="step-number">3</div>
               <div class="step-content">
                 <strong>Adjust Intensities</strong>
-                <p>Tune the sliders to your preferred vocal/instrumental balance.</p>
+                <p>
+                  Tune the sliders to your preferred vocal/instrumental balance.
+                </p>
               </div>
             </div>
             <div class="step">
@@ -243,7 +261,9 @@ export const UvrGuide: Component = () => {
           <span class="guide-icon">🎤🎵</span>
         </div>
         <h2>Vocal Separation Guide</h2>
-        <p class="guide-subtitle">Learn how to use UVR for effective practice</p>
+        <p class="guide-subtitle">
+          Learn how to use UVR for effective practice
+        </p>
       </div>
 
       {/* Steps Navigation */}
@@ -282,7 +302,9 @@ export const UvrGuide: Component = () => {
         </button>
         <button
           class="guide-btn guide-btn-primary"
-          onClick={() => setActiveStep((s) => Math.min(steps.length - 1, s + 1))}
+          onClick={() =>
+            setActiveStep((s) => Math.min(steps.length - 1, s + 1))
+          }
           disabled={activeStep() === steps.length - 1}
         >
           {activeStep() === steps.length - 1 ? 'Complete!' : 'Next →'}
@@ -291,7 +313,9 @@ export const UvrGuide: Component = () => {
 
       {/* Progress Indicator */}
       <div class="guide-progress-indicator">
-        <span class="progress-text">{activeStep() + 1} of {steps.length}</span>
+        <span class="progress-text">
+          {activeStep() + 1} of {steps.length}
+        </span>
       </div>
     </div>
   )

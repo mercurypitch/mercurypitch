@@ -3,41 +3,12 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createSignal, createEffect, onCleanup, Show, For } from 'solid-js'
-import {
-  Music,
-  Settings,
-  X,
-  Play,
-  SlidersHorizontal,
-  History,
-  ChevronDown,
-  ChevronUp,
-} from './icons'
-import {
-  UvrGuide,
-  UvrGuideStyles,
-  UvrUploadControl,
-  UvrUploadControlStyles,
-  UvrProcessControl,
-  UvrProcessControlStyles,
-  UvrResultViewer,
-  UvrResultViewerStyles,
-  UvrSessionResult,
-  UvrSessionResultStyles,
-} from './'
-import {
-  currentUvrSession,
-  getAllUvrSessions,
-  startUvrSession,
-  updateUvrSessionProgress,
-  completeUvrSession,
-  setErrorUvrSession,
-  cancelUvrSession,
-  getUvrSession,
-  type UvrStatus,
-} from '@/stores/app-store'
+import { createEffect, createSignal, For,onCleanup, Show } from 'solid-js'
+import type {UvrStatus} from '@/stores/app-store';
+import { cancelUvrSession, completeUvrSession, currentUvrSession, getAllUvrSessions, getUvrSession, setErrorUvrSession, startUvrSession, updateUvrSessionProgress  } from '@/stores/app-store'
 import type { UvrMode } from '@/types/uvr'
+import { UvrGuide, UvrGuideStyles, UvrProcessControl, UvrProcessControlStyles, UvrResultViewer, UvrResultViewerStyles, UvrSessionResult, UvrSessionResultStyles,UvrUploadControl, UvrUploadControlStyles,  } from "."
+import { ChevronDown, ChevronUp,History, Music, Play, Settings, SlidersHorizontal, X,  } from './icons'
 
 type UvrView = 'upload' | 'processing' | 'results' | 'history'
 
@@ -47,7 +18,9 @@ interface UvrPanelProps {
   /** Callback when practice is started */
   onPracticeStart?: (mode: 'vocal' | 'instrumental' | 'midi' | 'full') => void
   /** Callback when a session is exported */
-  onExport?: (type: 'vocal' | 'instrumental' | 'vocal-midi' | 'instrumental-midi') => void
+  onExport?: (
+    type: 'vocal' | 'instrumental' | 'vocal-midi' | 'instrumental-midi',
+  ) => void
   /** Callback when session is viewed */
   onSessionView?: (sessionId: string) => void
   /** Callback to close panel */
@@ -55,7 +28,9 @@ interface UvrPanelProps {
 }
 
 export const UvrPanel: Component<UvrPanelProps> = (props) => {
-  const [currentView, setCurrentView] = createSignal<UvrView>(props.defaultView || 'upload')
+  const [currentView, setCurrentView] = createSignal<UvrView>(
+    props.defaultView || 'upload',
+  )
   const [sessionResultsVisible, setSessionResultsVisible] = createSignal(false)
   const [showGuide, setShowGuide] = createSignal(false)
 
@@ -79,7 +54,12 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   })
 
   const handleFileSelect = (file: File) => {
-    const sessionId = startUvrSession(file.name, file.size, file.type, 'separate')
+    const sessionId = startUvrSession(
+      file.name,
+      file.size,
+      file.type,
+      'separate',
+    )
     setCurrentView('processing')
     setSessionResultsVisible(false)
   }
@@ -89,7 +69,9 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     simulateProcessing(sessionId)
   }
 
-  const handleExport = (type: 'vocal' | 'instrumental' | 'vocal-midi' | 'instrumental-midi') => {
+  const handleExport = (
+    type: 'vocal' | 'instrumental' | 'vocal-midi' | 'instrumental-midi',
+  ) => {
     if (props.onExport) {
       props.onExport(type)
     }
@@ -103,13 +85,18 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     setSessionResultsVisible(true)
   }
 
-  const handlePracticeStart = (mode: 'vocal' | 'instrumental' | 'midi' | 'full') => {
+  const handlePracticeStart = (
+    mode: 'vocal' | 'instrumental' | 'midi' | 'full',
+  ) => {
     if (props.onPracticeStart) {
       props.onPracticeStart(mode)
     }
   }
 
-  const handleExportSession = (sessionId: string, type: 'vocal' | 'instrumental' | 'vocal-midi') => {
+  const handleExportSession = (
+    sessionId: string,
+    type: 'vocal' | 'instrumental' | 'vocal-midi',
+  ) => {
     // Session export logic
     console.log('Exporting:', sessionId, type)
   }
@@ -162,10 +149,18 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
           >
             <Music />
           </button>
-          <button class="header-btn header-btn-ghost" onClick={() => setCurrentView('history')} title="History">
+          <button
+            class="header-btn header-btn-ghost"
+            onClick={() => setCurrentView('history')}
+            title="History"
+          >
             <History />
           </button>
-          <button class="header-btn header-btn-close" onClick={closePanel} title="Close">
+          <button
+            class="header-btn header-btn-close"
+            onClick={closePanel}
+            title="Close"
+          >
             <X />
           </button>
         </div>
@@ -268,15 +263,24 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 <div class="history-empty">
                   <Music />
                   <p>No processing history yet</p>
-                  <button onClick={() => setCurrentView('upload')}>Start First Session</button>
+                  <button onClick={() => setCurrentView('upload')}>
+                    Start First Session
+                  </button>
                 </div>
               ) : (
-                <For each={allSessions().sort((a, b) => b.createdAt - a.createdAt)}>
+                <For
+                  each={allSessions().sort((a, b) => b.createdAt - a.createdAt)}
+                >
                   {(s) => (
                     <UvrSessionResult
                       sessionId={s.sessionId}
                       onView={() => handleSessionView(s.sessionId)}
-                      onExport={(type) => handleExportSession(s.sessionId, type as 'vocal' | 'instrumental' | 'vocal-midi')}
+                      onExport={(type) =>
+                        handleExportSession(
+                          s.sessionId,
+                          type as 'vocal' | 'instrumental' | 'vocal-midi',
+                        )
+                      }
                       onClose={() => setCurrentView('upload')}
                     />
                   )}
@@ -295,7 +299,8 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
           </span>
           <span class="stat-divider">|</span>
           <span class="stat-item">
-            <Play /> {allSessions().filter(s => s.status === 'completed').length} done
+            <Play />{' '}
+            {allSessions().filter((s) => s.status === 'completed').length} done
           </span>
         </div>
         <div class="footer-actions">
@@ -319,7 +324,10 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
               onClose={() => setSessionResultsVisible(false)}
             />
           </div>
-          <button class="panel-overlay" onClick={() => setSessionResultsVisible(false)} />
+          <button
+            class="panel-overlay"
+            onClick={() => setSessionResultsVisible(false)}
+          />
         </div>
       </Show>
     </div>

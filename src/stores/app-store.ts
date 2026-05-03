@@ -52,7 +52,8 @@ export function setUvrSettings(settings: Partial<UvrSettings>): void {
 
 export const [uvrMode, setUvrMode] = createSignal<UvrMode>('separate')
 export const [uvrVocalIntensity, _setUvrVocalIntensity] = createSignal(70)
-export const [uvrInstrumentalIntensity, _setUvrInstrumentalIntensity] = createSignal(70)
+export const [uvrInstrumentalIntensity, _setUvrInstrumentalIntensity] =
+  createSignal(70)
 export const [uvrSmoothing, _setUvrSmoothing] = createSignal(0.3)
 
 // Export for direct usage in components (internal setters that also persist)
@@ -74,13 +75,20 @@ export const setUvrSmoothing = (value: number): void => {
 // Getters for UVR settings
 export const getUvrMode = (): UvrMode => uvrMode()
 export const getUvrVocalIntensity = (): number => uvrVocalIntensity()
-export const getUvrInstrumentalIntensity = (): number => uvrInstrumentalIntensity()
+export const getUvrInstrumentalIntensity = (): number =>
+  uvrInstrumentalIntensity()
 export const getUvrSmoothing = (): number => uvrSmoothing()
 
 // ── UVR Session Management (Full Workflow) ─────────────────────────
 
 /** UVR processing status */
-export type UvrStatus = 'idle' | 'uploading' | 'processing' | 'completed' | 'error' | 'cancelled'
+export type UvrStatus =
+  | 'idle'
+  | 'uploading'
+  | 'processing'
+  | 'completed'
+  | 'error'
+  | 'cancelled'
 
 /** UVR session interface */
 export interface UvrSession {
@@ -104,12 +112,13 @@ export interface UvrSession {
 }
 
 /** Current UVR session state */
-export const [currentUvrSession, setCurrentUvrSession] = createSignal<UvrSession | null>(null)
+export const [currentUvrSession, setCurrentUvrSession] =
+  createSignal<UvrSession | null>(null)
 
 /** Get session by ID */
 export function getUvrSession(sessionId: string): UvrSession | undefined {
   const sessions = getAllUvrSessions()
-  return sessions.find(s => s.sessionId === sessionId)
+  return sessions.find((s) => s.sessionId === sessionId)
 }
 
 /** Get all sessions */
@@ -135,9 +144,9 @@ export function startUvrSession(
   fileName: string,
   fileSize: number,
   mimeType: string,
-  mode: UvrMode = 'separate'
+  mode: UvrMode = 'separate',
 ): string {
-  const sessionId = 'uvr-session-' + Date.now()
+  const sessionId = `uvr-session-${  Date.now()}`
   const now = Date.now()
 
   const newSession: UvrSession = {
@@ -157,9 +166,13 @@ export function startUvrSession(
 }
 
 /** Update UVR session progress */
-export function updateUvrSessionProgress(sessionId: string, progress: number, processingTime?: number): void {
+export function updateUvrSessionProgress(
+  sessionId: string,
+  progress: number,
+  processingTime?: number,
+): void {
   const sessions = getAllUvrSessions()
-  const session = sessions.find(s => s.sessionId === sessionId)
+  const session = sessions.find((s) => s.sessionId === sessionId)
   if (session) {
     session.progress = progress
     if (processingTime) {
@@ -173,10 +186,10 @@ export function updateUvrSessionProgress(sessionId: string, progress: number, pr
 /** Complete UVR session with results */
 export function completeUvrSession(
   sessionId: string,
-  outputs: UvrSession['outputs']
+  outputs: UvrSession['outputs'],
 ): void {
   const sessions = getAllUvrSessions()
-  const session = sessions.find(s => s.sessionId === sessionId)
+  const session = sessions.find((s) => s.sessionId === sessionId)
   if (session) {
     session.status = 'completed'
     session.outputs = outputs
@@ -190,7 +203,7 @@ export function completeUvrSession(
 /** Set UVR session error */
 export function setErrorUvrSession(sessionId: string, error: string): void {
   const sessions = getAllUvrSessions()
-  const session = sessions.find(s => s.sessionId === sessionId)
+  const session = sessions.find((s) => s.sessionId === sessionId)
   if (session) {
     session.status = 'error'
     session.error = error
@@ -202,7 +215,7 @@ export function setErrorUvrSession(sessionId: string, error: string): void {
 /** Cancel UVR session */
 export function cancelUvrSession(sessionId: string): void {
   const sessions = getAllUvrSessions()
-  const session = sessions.find(s => s.sessionId === sessionId)
+  const session = sessions.find((s) => s.sessionId === sessionId)
   if (session) {
     session.status = 'cancelled'
     saveAllUvrSessions(sessions)
@@ -212,7 +225,7 @@ export function cancelUvrSession(sessionId: string): void {
 
 /** Delete UVR session */
 export function deleteUvrSession(sessionId: string): void {
-  const sessions = getAllUvrSessions().filter(s => s.sessionId !== sessionId)
+  const sessions = getAllUvrSessions().filter((s) => s.sessionId !== sessionId)
   saveAllUvrSessions(sessions)
   if (currentUvrSession()?.sessionId === sessionId) {
     setCurrentUvrSession(null)
@@ -229,10 +242,10 @@ export function getUvrSessionStats(): {
   const sessions = getAllUvrSessions()
   return {
     totalSessions: sessions.length,
-    completedSessions: sessions.filter(s => s.status === 'completed').length,
-    failedSessions: sessions.filter(s => s.status === 'error').length,
+    completedSessions: sessions.filter((s) => s.status === 'completed').length,
+    failedSessions: sessions.filter((s) => s.status === 'error').length,
     totalProcessingTime: sessions
-      .filter(s => s.processingTime)
+      .filter((s) => s.processingTime)
       .reduce((sum, s) => sum + (s.processingTime || 0), 0),
   }
 }

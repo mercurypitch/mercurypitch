@@ -5,7 +5,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { appStore } from '@/stores'
-import type { ActiveTab, PracticeSubMode, } from '@/types'
+import type { ActiveTab, PracticeSubMode } from '@/types'
 
 // ========================================
 // Utility functions (copied for testing without triggering imports)

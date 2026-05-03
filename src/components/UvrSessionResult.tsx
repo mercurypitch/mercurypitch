@@ -4,14 +4,17 @@
 
 import type { Component } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
-import { FileText, Music, XCircle, CheckCircle, Download, Play, Loader2 } from './icons'
 import { deleteUvrSession, getUvrSession } from '@/stores/app-store'
-import type { UvrStatus, UvrSession } from '@/types/uvr'
+import type { UvrSession,UvrStatus } from '@/types/uvr'
+import { CheckCircle, Download, FileText, Loader2,Music, Play, XCircle,  } from './icons'
 
 interface SessionResultProps {
   sessionId: string
   onView?: (sessionId: string) => void
-  onExport?: (sessionId: string, type: 'vocal' | 'instrumental' | 'vocal-midi') => void
+  onExport?: (
+    sessionId: string,
+    type: 'vocal' | 'instrumental' | 'vocal-midi',
+  ) => void
   onClose?: () => void
 }
 
@@ -20,7 +23,11 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
 
   const formatDate = (timestamp: number): string => {
     const date = new Date(timestamp)
-    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    return (
+      `${date.toLocaleDateString() 
+      } ${ 
+      date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+    )
   }
 
   const formatFileSize = (bytes: number): string => {
@@ -28,7 +35,7 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
     const k = 1024
     const sizes = ['Bytes', 'KB', 'MB']
     const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i]
+    return `${Math.round((bytes / Math.pow(k, i)) * 100) / 100  } ${  sizes[i]}`
   }
 
   const handleDelete = () => {
@@ -46,19 +53,27 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
 
   const getStatusColor = (status: UvrStatus): string => {
     switch (status) {
-      case 'completed': return 'var(--success)'
-      case 'error': return 'var(--error)'
-      case 'processing': return 'var(--accent)'
-      default: return 'var(--fg-tertiary)'
+      case 'completed':
+        return 'var(--success)'
+      case 'error':
+        return 'var(--error)'
+      case 'processing':
+        return 'var(--accent)'
+      default:
+        return 'var(--fg-tertiary)'
     }
   }
 
   const getStatusIcon = (status: UvrStatus) => {
     switch (status) {
-      case 'completed': return <CheckCircle />
-      case 'error': return <XCircle />
-      case 'processing': return <Loader2 />
-      default: return <Loader2 />
+      case 'completed':
+        return <CheckCircle />
+      case 'error':
+        return <XCircle />
+      case 'processing':
+        return <Loader2 />
+      default:
+        return <Loader2 />
     }
   }
 
@@ -71,7 +86,9 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
         </div>
         <div class="session-title-area">
           <h3>UVR Session</h3>
-          <p class="session-filename">{session()?.originalFile?.name || 'Unknown'}</p>
+          <p class="session-filename">
+            {session()?.originalFile?.name || 'Unknown'}
+          </p>
         </div>
         <button class="close-btn" onClick={props.onClose} aria-label="Close">
           <Download />
@@ -79,13 +96,22 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
       </div>
 
       {/* Status */}
-      <div class="status-bar" style={{ '--status-color': getStatusColor(session()?.status || 'idle') }}>
-        <span class="status-icon">{getStatusIcon(session()?.status || 'idle')}</span>
+      <div
+        class="status-bar"
+        style={{
+          '--status-color': getStatusColor(session()?.status || 'idle'),
+        }}
+      >
+        <span class="status-icon">
+          {getStatusIcon(session()?.status || 'idle')}
+        </span>
         <span class="status-text">{session()?.status || 'Idle'}</span>
         <span class="status-time">
           {(() => {
             const s = session() as UvrSession | null
-            return s?.processingTime ? `${Math.round(s.processingTime / 1000)}s` : ''
+            return s?.processingTime
+              ? `${Math.round(s.processingTime / 1000)}s`
+              : ''
           })()}
         </span>
         <Show when={!session()}>
@@ -99,7 +125,9 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
           <span class="info-icon">📅</span>
           <div class="info-content">
             <span class="info-label">Created</span>
-            <span class="info-value">{formatDate(session()?.createdAt || 0)}</span>
+            <span class="info-value">
+              {formatDate(session()?.createdAt || 0)}
+            </span>
           </div>
         </div>
         <Show when={session()?.originalFile}>
@@ -137,7 +165,10 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
                   <span class="file-name">Instrumental</span>
                   <span class="file-format">WAV</span>
                 </div>
-                <button class="file-action" onClick={() => handleExport('instrumental')}>
+                <button
+                  class="file-action"
+                  onClick={() => handleExport('instrumental')}
+                >
                   <Download />
                 </button>
               </div>
@@ -149,7 +180,10 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
                   <span class="file-name">Vocal MIDI</span>
                   <span class="file-format">MIDI</span>
                 </div>
-                <button class="file-action" onClick={() => handleExport('vocal-midi')}>
+                <button
+                  class="file-action"
+                  onClick={() => handleExport('vocal-midi')}
+                >
                   <Download />
                 </button>
               </div>
@@ -161,7 +195,10 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
       {/* Actions */}
       <div class="session-actions">
         <Show when={session()?.outputs && session()?.status === 'completed'}>
-          <button class="action-btn action-btn-primary" onClick={() => props.onView?.(props.sessionId)}>
+          <button
+            class="action-btn action-btn-primary"
+            onClick={() => props.onView?.(props.sessionId)}
+          >
             <Play /> View Results
           </button>
         </Show>

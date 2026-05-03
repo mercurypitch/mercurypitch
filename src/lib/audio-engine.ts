@@ -215,7 +215,12 @@ export class AudioEngine {
   }
 
   /** Get UVR settings */
-  getUvrSettings(): { mode: 'separate' | 'instrumental' | 'vocal' | 'duo'; vocalIntensity: number; instrumentalIntensity: number; smoothing: number } {
+  getUvrSettings(): {
+    mode: 'separate' | 'instrumental' | 'vocal' | 'duo'
+    vocalIntensity: number
+    instrumentalIntensity: number
+    smoothing: number
+  } {
     const settings = this.uvrProcessor.getSettings()
     return {
       mode: settings.mode,
@@ -226,7 +231,12 @@ export class AudioEngine {
   }
 
   /** Set UVR settings */
-  setUvrSettings(settings: { mode?: 'separate' | 'instrumental' | 'vocal' | 'duo'; vocalIntensity?: number; instrumentalIntensity?: number; smoothing?: number }): void {
+  setUvrSettings(settings: {
+    mode?: 'separate' | 'instrumental' | 'vocal' | 'duo'
+    vocalIntensity?: number
+    instrumentalIntensity?: number
+    smoothing?: number
+  }): void {
     this.uvrProcessor.setSettings(settings)
   }
 
@@ -562,7 +572,9 @@ export class AudioEngine {
 
     // Apply UVR processing if enabled
     const processedNodes = this._applyUvrProcessing(gain)
-    processedNodes.forEach(node => node.connect(this.uvrMainGain! || this.mainGain))
+    processedNodes.forEach((node) =>
+      node.connect(this.uvrMainGain! || this.mainGain),
+    )
 
     osc.start(this.audioCtx.currentTime)
     osc.stop(this.audioCtx.currentTime + 0.08)
@@ -740,7 +752,9 @@ export class AudioEngine {
 
     // Apply UVR processing if enabled
     const processedNodes = this._applyUvrProcessing(userGain)
-    processedNodes.forEach(node => node.connect(this.uvrMainGain! || this.mainGain))
+    processedNodes.forEach((node) =>
+      node.connect(this.uvrMainGain! || this.mainGain),
+    )
 
     // Start every oscillator (and any LFO modulators).
     for (const osc of voice.oscillators) osc.start(startTime)

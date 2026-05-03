@@ -19,20 +19,21 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
   const [selectedFile, setSelectedFile] = createSignal<File | null>(null)
 
   const maxSize = () => props.maxSize || 100 * 1024 * 1024 // 100MB default
-  const allowedTypes = () => props.allowedTypes || [
-    'audio/mpeg',
-    'audio/wav',
-    'audio/mp3',
-    'audio/wave',
-    'audio/x-wav',
-  ]
+  const allowedTypes = () =>
+    props.allowedTypes || [
+      'audio/mpeg',
+      'audio/wav',
+      'audio/mp3',
+      'audio/wave',
+      'audio/x-wav',
+    ]
 
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes'
     const k = 1024
     const sizes = ['Bytes', 'KB', 'MB', 'GB']
     const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i]
+    return `${Math.round((bytes / Math.pow(k, i)) * 100) / 100  } ${  sizes[i]}`
   }
 
   const formatDuration = (seconds: number): string => {
@@ -50,9 +51,12 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
 
     // Validate file type
     const mimeType = file.type.toLowerCase()
-    const extension = '.' + file.name.split('.').pop()?.toLowerCase() || ''
+    const extension = `.${  file.name.split('.').pop()?.toLowerCase()}` || ''
 
-    if (!allowedTypes().includes(mimeType) && !allowedTypes().includes(extension)) {
+    if (
+      !allowedTypes().includes(mimeType) &&
+      !allowedTypes().includes(extension)
+    ) {
       alert('Invalid file type. Please upload MP3 or WAV files.')
       return
     }
@@ -82,14 +86,16 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
 
   const handleClear = () => {
     setSelectedFile(null)
-    const fileInput = document.getElementById('uvr-file-input') as HTMLInputElement | null
+    const fileInput = document.getElementById(
+      'uvr-file-input',
+    ) as HTMLInputElement | null
     if (fileInput) fileInput.value = ''
   }
 
   const handleProcess = () => {
     if (selectedFile()) {
       // Generate session ID
-      const sessionId = 'session-' + Date.now()
+      const sessionId = `session-${  Date.now()}`
       if (props.onProcessStart) {
         props.onProcessStart(sessionId)
       }
@@ -157,7 +163,10 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
               </div>
             ) : (
               <div class="upload-actions">
-                <button class="upload-btn upload-btn-secondary" onClick={handleClear}>
+                <button
+                  class="upload-btn upload-btn-secondary"
+                  onClick={handleClear}
+                >
                   Change File
                 </button>
                 <button

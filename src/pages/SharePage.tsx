@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createSignal, For,onMount, Show } from 'solid-js'
+import { createSignal, For, onMount, Show } from 'solid-js'
 import type { SharedMelody, SharedSession } from '@/components/CommunityShare'
 import { appStore } from '@/stores'
 
@@ -33,7 +33,9 @@ export const SharePage: Component = () => {
       const storedKey = `pp_shared_${type === 'melody' ? 'melodies' : 'sessions'}`
       const stored = localStorage.getItem(storedKey)
       if (!stored) {
-        setError(`Content not found. It may have been removed or never existed.`)
+        setError(
+          `Content not found. It may have been removed or never existed.`,
+        )
         return
       }
 
@@ -67,7 +69,10 @@ export const SharePage: Component = () => {
             <span class="error-icon">⚠️</span>
             <h2>Share Link Not Found</h2>
             <p>{error()}</p>
-            <button class="back-btn" onClick={() => window.location.href = '/'}>
+            <button
+              class="back-btn"
+              onClick={() => (window.location.href = '/')}
+            >
               ← Back to Home
             </button>
           </div>
@@ -132,7 +137,9 @@ const MelodyShareContent: Component<{
             </div>
             <div class="info-item">
               <span class="info-label">Duration</span>
-              <span class="info-value">{notes.reduce((a: number, b: any) => a + b.duration, 0)} beats</span>
+              <span class="info-value">
+                {notes.reduce((a: number, b: any) => a + b.duration, 0)} beats
+              </span>
             </div>
             <div class="info-item">
               <span class="info-label">Author</span>
@@ -151,9 +158,9 @@ const MelodyShareContent: Component<{
           <div class="tags-section">
             <h3>Tags</h3>
             <div class="tags-container">
-              <For each={content.tags}>{(tag: string) => (
-                <span class="tag">{tag}</span>
-              )}</For>
+              <For each={content.tags}>
+                {(tag: string) => <span class="tag">{tag}</span>}
+              </For>
             </div>
           </div>
         </Show>
@@ -169,7 +176,10 @@ const MelodyShareContent: Component<{
             <For each={notes}>
               {(n: any, i) => (
                 <div class="note-row">
-                  <span class="note-column">{n.noteName}{n.octave}</span>
+                  <span class="note-column">
+                    {n.noteName}
+                    {n.octave}
+                  </span>
                   <span class="note-column">{n.midi}</span>
                   <span class="note-column">{n.freq.toFixed(2)}</span>
                 </div>
@@ -183,7 +193,12 @@ const MelodyShareContent: Component<{
         <button class="share-btn" onClick={() => onShare('melody', content.id)}>
           <span>🔗</span> Share Again
         </button>
-        <button class="load-btn" onClick={() => window.location.href = '/'} loaded-type="melody" data-melody-id={content.id}>
+        <button
+          class="load-btn"
+          onClick={() => (window.location.href = '/')}
+          loaded-type="melody"
+          data-melody-id={content.id}
+        >
           <span>📥</span> Load in App
         </button>
       </div>
@@ -238,8 +253,10 @@ const SessionShareContent: Component<{
                 <span class="stat-label">Average</span>
                 <span class="stat-value">
                   {Math.round(
-                    content.results.reduce((a: number, b: number) => a + b, 0) / content.results.length
-                  )}%
+                    content.results.reduce((a: number, b: number) => a + b, 0) /
+                      content.results.length,
+                  )}
+                  %
                 </span>
               </div>
             </div>
@@ -266,19 +283,27 @@ const SessionShareContent: Component<{
           <div class="tags-section">
             <h3>Tags</h3>
             <div class="tags-container">
-              <For each={content.tags}>{(tag: string) => (
-                <span class="tag">{tag}</span>
-              )}</For>
+              <For each={content.tags}>
+                {(tag: string) => <span class="tag">{tag}</span>}
+              </For>
             </div>
           </div>
         </Show>
       </div>
 
       <div class="share-footer">
-        <button class="share-btn" onClick={() => onShare('session', content.id)}>
+        <button
+          class="share-btn"
+          onClick={() => onShare('session', content.id)}
+        >
           <span>🔗</span> Share Again
         </button>
-        <button class="load-btn" onClick={() => window.location.href = '/'} loaded-type="session" data-session-id={content.id}>
+        <button
+          class="load-btn"
+          onClick={() => (window.location.href = '/')}
+          loaded-type="session"
+          data-session-id={content.id}
+        >
           <span>📥</span> Load in App
         </button>
       </div>

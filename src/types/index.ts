@@ -167,7 +167,15 @@ export interface PracticeResult {
 }
 
 /** Active tab for the application */
-export type ActiveTab = 'practice' | 'editor' | 'settings' | 'vocal-analysis' | 'community' | 'leaderboard' | 'vocal-challenges' | 'uvr'
+export type ActiveTab =
+  | 'practice'
+  | 'editor'
+  | 'settings'
+  | 'vocal-analysis'
+  | 'community'
+  | 'leaderboard'
+  | 'vocal-challenges'
+  | 'uvr'
 /** Practice sub-mode options */
 export type PracticeSubMode = 'all' | 'random' | 'focus' | 'reverse'
 
@@ -566,7 +574,12 @@ export interface LeaderboardUser {
 }
 
 /** Leaderboard category */
-export type LeaderboardCategory = 'overall' | 'best-score' | 'accuracy' | 'streak' | 'sessions'
+export type LeaderboardCategory =
+  | 'overall'
+  | 'best-score'
+  | 'accuracy'
+  | 'streak'
+  | 'sessions'
 
 /** Weekly challenge result */
 export interface WeeklyChallengeResult {

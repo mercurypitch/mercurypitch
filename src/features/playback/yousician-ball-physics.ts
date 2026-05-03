@@ -192,7 +192,7 @@ export function getBallPhysics(
 
   // Floor collision
   const maxMidi = notes.length > 0 ? Math.max(...notes.map((n) => n.midi)) : 88
-  const maxY = (maxMidi * rowHeight) - radius - padding.bottom
+  const maxY = maxMidi * rowHeight - radius - padding.bottom
 
   if (y > maxY && vy > 0) {
     y = maxY
@@ -228,7 +228,11 @@ export function getBallPhysics(
 /**
  * Find next note's endBeat after current position
  */
-function findNextNoteEndBeat(x: number, lastEndBeat: number, notes: NoteBounds[]): number | null {
+function findNextNoteEndBeat(
+  x: number,
+  lastEndBeat: number,
+  notes: NoteBounds[],
+): number | null {
   const candidates: number[] = []
   for (const n of notes) {
     if (n.endBeat > x && n.endBeat > lastEndBeat) {
@@ -242,7 +246,10 @@ function findNextNoteEndBeat(x: number, lastEndBeat: number, notes: NoteBounds[]
 /**
  * Find the note at a specific X position
  */
-function getCurrentNote(beatPosition: number, notes: NoteBounds[]): NoteBounds | null {
+function getCurrentNote(
+  beatPosition: number,
+  notes: NoteBounds[],
+): NoteBounds | null {
   for (const n of notes) {
     if (n.startBeat <= beatPosition && beatPosition < n.endBeat) {
       return n
@@ -251,7 +258,9 @@ function getCurrentNote(beatPosition: number, notes: NoteBounds[]): NoteBounds |
   return null
 }
 
-export function createBallPhysics(options: BallPhysicsOptions): BallPhysicsState {
+export function createBallPhysics(
+  options: BallPhysicsOptions,
+): BallPhysicsState {
   const {
     speed = 0.05,
     gravity = 0.003,
@@ -276,7 +285,10 @@ export function createBallPhysics(options: BallPhysicsOptions): BallPhysicsState
 }
 
 // Generate multiple ball instances
-export function createMultipleBalls(count: number, options: BallPhysicsOptions) {
+export function createMultipleBalls(
+  count: number,
+  options: BallPhysicsOptions,
+) {
   return Array.from({ length: count }, (_, i) =>
     createBallPhysics({
       ...options,

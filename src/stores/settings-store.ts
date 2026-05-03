@@ -373,9 +373,11 @@ export function initReverb(): void {}
 
 // ── Accuracy Presets ───────────────────────────────────────────────────
 
-export const [accuracyTier, _setAccuracyTier] = createPersistedSignal<
-  AccuracyTier
->('pitchperfect_accuracy_tier', 'professional')
+export const [accuracyTier, _setAccuracyTier] =
+  createPersistedSignal<AccuracyTier>(
+    'pitchperfect_accuracy_tier',
+    'professional',
+  )
 
 /** Apply accuracy tier preset to current settings */
 export function applyAccuracyTier(tier: AccuracyTier): void {

@@ -46,7 +46,8 @@ export class UvrProcessor {
   setSettings(settings: Partial<UvrSettings>): void {
     this.mode = settings.mode ?? this.mode
     this.vocalIntensity = settings.vocalIntensity ?? this.vocalIntensity
-    this.instrumentalIntensity = settings.instrumentalIntensity ?? this.instrumentalIntensity
+    this.instrumentalIntensity =
+      settings.instrumentalIntensity ?? this.instrumentalIntensity
     this.smoothing = settings.smoothing ?? this.smoothing
   }
 
@@ -87,7 +88,7 @@ export class UvrProcessor {
   processSegment(
     sourceNode: AudioNode,
     time: number,
-    ctx: AudioContext
+    ctx: AudioContext,
   ): AudioNode[] {
     if (!this.isInitialized) return [sourceNode]
 
@@ -109,7 +110,7 @@ export class UvrProcessor {
   private processSeparate(
     sourceNode: AudioNode,
     time: number,
-    ctx: AudioContext
+    ctx: AudioContext,
   ): AudioNode[] {
     const separateNode = ctx.createChannelSplitter(2)
     const vocalGain = ctx.createGain()
@@ -143,7 +144,7 @@ export class UvrProcessor {
   private processInstrumental(
     sourceNode: AudioNode,
     time: number,
-    ctx: AudioContext
+    ctx: AudioContext,
   ): AudioNode[] {
     const instrumentalNode = ctx.createGain()
     const vocalFilter = ctx.createBiquadFilter()
@@ -164,7 +165,7 @@ export class UvrProcessor {
   private processVocal(
     sourceNode: AudioNode,
     time: number,
-    ctx: AudioContext
+    ctx: AudioContext,
   ): AudioNode[] {
     const vocalNode = ctx.createGain()
     const instrumentalFilter = ctx.createBiquadFilter()
@@ -185,7 +186,7 @@ export class UvrProcessor {
   private processDuo(
     sourceNode: AudioNode,
     time: number,
-    ctx: AudioContext
+    ctx: AudioContext,
   ): AudioNode[] {
     const vocalNode = ctx.createGain()
     const instrumentalNode = ctx.createGain()
@@ -213,10 +214,7 @@ export class UvrProcessor {
     return [vocalNode, instrumentalNode]
   }
 
-  analyzeBuffer(
-    buffer: Float32Array,
-    sampleRate: number
-  ): UvrAnalysis {
+  analyzeBuffer(buffer: Float32Array, sampleRate: number): UvrAnalysis {
     if (!this.isInitialized) {
       return {
         hasVocals: false,
@@ -244,9 +242,13 @@ export class UvrProcessor {
     }
 
     const totalEnergy = sum / (bufferLength / sampleRate)
-    const highFreqEnergy = sumHigh / ((bufferLength / sampleRate) - sampleRate / 2000)
+    const highFreqEnergy =
+      sumHigh / (bufferLength / sampleRate - sampleRate / 2000)
 
-    const vocalDominance = Math.max(0, Math.min(1, (highFreqEnergy / totalEnergy) * 2))
+    const vocalDominance = Math.max(
+      0,
+      Math.min(1, (highFreqEnergy / totalEnergy) * 2),
+    )
     const hasVocals = vocalDominance > 0.15
     const isVocalHeavy = vocalDominance > 0.5
 
@@ -263,7 +265,7 @@ export class UvrProcessor {
     source: AudioNode,
     time: number,
     duration: number,
-    ctx: AudioContext
+    ctx: AudioContext,
   ): AudioNode {
     const fadeNode = ctx.createGain()
     const gain = fadeNode.gain as AudioParam

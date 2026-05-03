@@ -153,7 +153,9 @@
 }
 
 @keyframes pulse {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .upload-actions {
@@ -662,10 +664,18 @@
   margin-top: 0.25rem;
 }
 
-.vocal-icon { color: #ef4444; }
-.instrumental-icon { color: #22c55e; }
-.full-icon { color: #f59e0b; }
-.midi-icon { color: #3b82f6; }
+.vocal-icon {
+  color: #ef4444;
+}
+.instrumental-icon {
+  color: #22c55e;
+}
+.full-icon {
+  color: #f59e0b;
+}
+.midi-icon {
+  color: #3b82f6;
+}
 
 .output-actions {
   display: flex;

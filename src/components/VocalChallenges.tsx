@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createMemo, createSignal, For, onMount,Show } from 'solid-js'
+import { createMemo, createSignal, For, onMount, Show } from 'solid-js'
 import { getSessionHistory } from '@/stores'
 
 // Alternative: directly render icon with casting
@@ -17,122 +17,489 @@ const renderIcon = (icon: Component | string) => {
 // ============================================================
 
 const IconMicChallenge = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="23"/><line x1="8" x2="16" y1="23" y2="23"/></svg>
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    class="icon-svg"
+  >
+    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+    <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+    <line x1="12" x2="12" y1="19" y2="23" />
+    <line x1="8" x2="16" y1="23" y2="23" />
+  </svg>
 )
 
 const IconGuitarChallenge = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    class="icon-svg"
+  >
+    <path d="M9 18V5l12-2v13" />
+    <circle cx="6" cy="18" r="3" />
+    <circle cx="18" cy="16" r="3" />
+  </svg>
 )
 
 const IconBoltChallenge = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    class="icon-svg"
+  >
+    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+  </svg>
 )
 
 const IconTarget = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    class="icon-svg"
+  >
+    <circle cx="12" cy="12" r="10" />
+    <circle cx="12" cy="12" r="6" />
+    <circle cx="12" cy="12" r="2" />
+  </svg>
 )
 
 const IconChart = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    class="icon-svg"
+  >
+    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+  </svg>
 )
 
 const IconKeyboardChallenge = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h.01"/><path d="M10 8h.01"/><path d="M14 8h.01"/><path d="M18 8h.01"/><path d="M6 12h.01"/><path d="M10 12h.01"/><path d="M14 12h.01"/><path d="M18 12h.01"/><path d="M7 16h10"/></svg>
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    class="icon-svg"
+  >
+    <rect x="2" y="4" width="20" height="16" rx="2" />
+    <path d="M6 8h.01" />
+    <path d="M10 8h.01" />
+    <path d="M14 8h.01" />
+    <path d="M18 8h.01" />
+    <path d="M6 12h.01" />
+    <path d="M10 12h.01" />
+    <path d="M14 12h.01" />
+    <path d="M18 12h.01" />
+    <path d="M7 16h10" />
+  </svg>
 )
 
 const IconMoon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    class="icon-svg"
+  >
+    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+  </svg>
 )
 
 const IconLeaf = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg>
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    class="icon-svg"
+  >
+    <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z" />
+    <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" />
+  </svg>
 )
 
 const IconFireChallenge = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.1.2-2.2.5-3.3.4.5.7 1.3 1 2.3z"/></svg>
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    class="icon-svg"
+  >
+    <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.1.2-2.2.5-3.3.4.5.7 1.3 1 2.3z" />
+  </svg>
 )
 
 const IconRocket = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    class="icon-svg"
+  >
+    <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" />
+    <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" />
+    <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0" />
+    <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" />
+  </svg>
 )
 
 const IconVolume = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg" width="20" height="20"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    class="icon-svg"
+    width="20"
+    height="20"
+  >
+    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+    <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+    <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+  </svg>
 )
 
 const IconMusic = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg" width="20" height="20"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    class="icon-svg"
+    width="20"
+    height="20"
+  >
+    <path d="M9 18V5l12-2v13" />
+    <circle cx="6" cy="18" r="3" />
+    <circle cx="18" cy="16" r="3" />
+  </svg>
 )
 
 const IconStopwatch = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg" width="20" height="20"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    class="icon-svg"
+    width="20"
+    height="20"
+  >
+    <circle cx="12" cy="12" r="10" />
+    <polyline points="12 6 12 12 16 14" />
+  </svg>
 )
 
 const IconEagle = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg" width="20" height="20"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8Z"/></svg>
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    class="icon-svg"
+    width="20"
+    height="20"
+  >
+    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8Z" />
+  </svg>
 )
 
 const IconDiamond = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg" width="20" height="20"><path d="M6 3h12l4 6-10 13L2 9z"/><path d="m15 14 3-3"/></svg>
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    class="icon-svg"
+    width="20"
+    height="20"
+  >
+    <path d="M6 3h12l4 6-10 13L2 9z" />
+    <path d="m15 14 3-3" />
+  </svg>
 )
 
 const IconStarChallenge = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg" width="20" height="20"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    class="icon-svg"
+    width="20"
+    height="20"
+  >
+    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+  </svg>
 )
 
 const IconBadge = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg" width="20" height="20"><circle cx="12" cy="8" r="7"/><path d="M8.21 13.89L7 23l5.25-3.75 5.25 3.75L14.79 13.9"/></svg>
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    class="icon-svg"
+    width="20"
+    height="20"
+  >
+    <circle cx="12" cy="8" r="7" />
+    <path d="M8.21 13.89L7 23l5.25-3.75 5.25 3.75L14.79 13.9" />
+  </svg>
 )
 
 const IconCrown = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg" width="20" height="20"><path d="m4 7 4-4 4 4"/><path d="m16 7 4-4 4 4"/><path d="M2 19h20"/><path d="M5 15l7 7 7-7"/><path d="M2 13h20"/></svg>
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    class="icon-svg"
+    width="20"
+    height="20"
+  >
+    <path d="m4 7 4-4 4 4" />
+    <path d="m16 7 4-4 4 4" />
+    <path d="M2 19h20" />
+    <path d="M5 15l7 7 7-7" />
+    <path d="M2 13h20" />
+  </svg>
 )
 
 const IconSparkle = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg" width="20" height="20"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    class="icon-svg"
+    width="20"
+    height="20"
+  >
+    <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
+  </svg>
 )
 
 const IconPaper = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg" width="20" height="20"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></svg>
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    class="icon-svg"
+    width="20"
+    height="20"
+  >
+    <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+    <polyline points="14 2 14 8 20 8" />
+    <line x1="16" x2="8" y1="13" y2="13" />
+    <line x1="16" x2="8" y1="17" y2="17" />
+    <line x1="10" x2="8" y1="9" y2="9" />
+  </svg>
 )
 
 const IconCheck2 = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg" width="20" height="20"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    class="icon-svg"
+    width="20"
+    height="20"
+  >
+    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+    <polyline points="22 4 12 14.01 9 11.01" />
+  </svg>
 )
 
 const IconClose = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg" width="20" height="20"><line x1="18" x2="6" y1="6" y2="18"/><line x1="6" x2="18" y1="6" y2="18"/></svg>
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    class="icon-svg"
+    width="20"
+    height="20"
+  >
+    <line x1="18" x2="6" y1="6" y2="18" />
+    <line x1="6" x2="18" y1="6" y2="18" />
+  </svg>
 )
 
 const IconCheckCircle = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg" width="20" height="20"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    class="icon-svg"
+    width="20"
+    height="20"
+  >
+    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+    <polyline points="22 4 12 14.01 9 11.01" />
+  </svg>
 )
 
 const IconWarning = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg" width="20" height="20"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    class="icon-svg"
+    width="20"
+    height="20"
+  >
+    <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+    <line x1="12" x2="12" y1="9" y2="13" />
+    <line x1="12" x2="12.01" y1="17" y2="17" />
+  </svg>
 )
 
 const IconRefresh = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    class="icon-svg"
+  >
+    <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+    <path d="M21 3v5h-5" />
+    <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+    <path d="M8 16H3v5" />
+  </svg>
 )
 
 const IconLock = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    class="icon-svg"
+  >
+    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+  </svg>
 )
 
 const IconClipboard = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg" width="20" height="20"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    class="icon-svg"
+    width="20"
+    height="20"
+  >
+    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+    <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+  </svg>
 )
 
 const IconList = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-svg" width="20" height="20"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg>
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    class="icon-svg"
+    width="20"
+    height="20"
+  >
+    <line x1="8" x2="21" y1="6" y2="6" />
+    <line x1="8" x2="21" y1="12" y2="12" />
+    <line x1="8" x2="21" y1="18" y2="18" />
+    <line x1="3" x2="3.01" y1="6" y2="6" />
+    <line x1="3" x2="3.01" y1="12" y2="12" />
+    <line x1="3" x2="3.01" y1="18" y2="18" />
+  </svg>
 )
 
 // ============================================================
 // Types
 // ============================================================
 
-export type ChallengeType = 'high-notes' | 'low-notes' | 'speed' | 'perfect' | 'scales'
+export type ChallengeType =
+  | 'high-notes'
+  | 'low-notes'
+  | 'speed'
+  | 'perfect'
+  | 'scales'
 
 export interface ChallengeProgress {
   /** Challenge ID */
@@ -210,16 +577,22 @@ export interface UserAchievement {
 
 // Export signals and functions for use in other components
 export const [showChallengeModal, setShowChallengeModal] = createSignal(false)
-export const [selectedChallenge, setSelectedChallenge] = createSignal<ChallengeProgress | null>(null)
+export const [selectedChallenge, setSelectedChallenge] =
+  createSignal<ChallengeProgress | null>(null)
 
 export const VocalChallenges: Component = () => {
-  const [activeCategory, setActiveCategory] = createSignal<ChallengeType>('high-notes')
+  const [activeCategory, setActiveCategory] =
+    createSignal<ChallengeType>('high-notes')
 
   // Update challenge progress
-  function updateChallengeProgress(challengeId: string, score: number, completed: boolean) {
-    const progress = userProgress() || {} as any
+  function updateChallengeProgress(
+    challengeId: string,
+    score: number,
+    completed: boolean,
+  ) {
+    const progress = userProgress() || ({} as any)
     const progressKey = `ch-${challengeId}`
-    const saved = progress[progressKey] as ChallengeProgress || {
+    const saved = (progress[progressKey] as ChallengeProgress) || {
       id: challengeId,
       type: challengeId.substring(0, challengeId.indexOf('-')) as ChallengeType,
       name: challengeId,
@@ -263,29 +636,37 @@ export const VocalChallenges: Component = () => {
 
     if (challenge.status === 'completed') {
       const completedScore = challenge.actualScores?.[0] || 0
-      alert(`"${challenge.name}" completed!\nYour score: ${completedScore}%\n${challenge.actualScores?.length || 1} session(s) played`)
+      alert(
+        `"${challenge.name}" completed!\nYour score: ${completedScore}%\n${challenge.actualScores?.length || 1} session(s) played`,
+      )
       return
     }
 
     if (challenge.status === 'in-progress') {
       const scores = challenge.actualScores || []
-      const avgScore = scores.length > 0
-        ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
-        : 0
-      alert(`Continue "${challenge.name}"!\nCurrent progress: ${avgScore}%\n(${challenge.actualScores?.length || 0} session(s))`)
+      const avgScore =
+        scores.length > 0
+          ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
+          : 0
+      alert(
+        `Continue "${challenge.name}"!\nCurrent progress: ${avgScore}%\n(${challenge.actualScores?.length || 0} session(s))`,
+      )
       return
     }
 
     // Get recent session scores to pre-fill progress
     const recentSessions = sessions.slice(-3)
-    const sessionScores = recentSessions.map(s => s.score || 0)
-    const avgScore = sessionScores.length > 0
-      ? Math.round(sessionScores.reduce((a, b) => a + b, 0) / sessionScores.length)
-      : 0
+    const sessionScores = recentSessions.map((s) => s.score || 0)
+    const avgScore =
+      sessionScores.length > 0
+        ? Math.round(
+            sessionScores.reduce((a, b) => a + b, 0) / sessionScores.length,
+          )
+        : 0
 
     // Show dialog to confirm starting the challenge
     const confirmed = confirm(
-      `Starting "${challenge.name}"!\n\nYour recent average score: ${avgScore}%\n\nStart this challenge?`
+      `Starting "${challenge.name}"!\n\nYour recent average score: ${avgScore}%\n\nStart this challenge?`,
     )
 
     if (confirmed) {
@@ -304,14 +685,15 @@ export const VocalChallenges: Component = () => {
   const sessionHistory = createMemo(() => getSessionHistory())
 
   // Challenge progress stored in localStorage
-  const [userProgress, setUserProgress] = createSignal<UserChallengeProgress | null>(null)
+  const [userProgress, setUserProgress] =
+    createSignal<UserChallengeProgress | null>(null)
 
   // Streak display (derived from real session history)
   const currentStreak = createMemo(() => {
     const sessions = sessionHistory()
-    const scores = sessions.filter(s => s.score !== undefined && s.score > 70)
+    const scores = sessions.filter((s) => s.score !== undefined && s.score > 70)
     if (scores.length === 0) return 0
-    return calculateStreak(scores.map(s => s.completedAt || 0))
+    return calculateStreak(scores.map((s) => s.completedAt || 0))
   })
 
   const weeklyScores = createMemo(() => {
@@ -323,7 +705,7 @@ export const VocalChallenges: Component = () => {
       const date = new Date(session.completedAt || 0)
       const dayIndex = date.getDay() || 7 // Sunday = 7
       if (dayIndex > 0 && dayIndex < 8) {
-        scores[dayIndex - 1] += (session.score || 0)
+        scores[dayIndex - 1] += session.score || 0
         counts[dayIndex - 1]++
       }
     }
@@ -342,7 +724,7 @@ export const VocalChallenges: Component = () => {
       if (stored) {
         setUserProgress(JSON.parse(stored))
       }
-    } catch { }
+    } catch {}
   })
 
   // Save user progress to localStorage
@@ -380,29 +762,31 @@ export const VocalChallenges: Component = () => {
   }
 
   // Challenges data (merged with real progress)
-  function getChallengesForCategory(category: ChallengeType): ChallengeProgress[] {
+  function getChallengesForCategory(
+    category: ChallengeType,
+  ): ChallengeProgress[] {
     let challenges: ChallengeProgress[] = []
 
     switch (category) {
       case 'high-notes':
-        challenges = mockChallenges.filter(c => c.type === 'high-notes')
+        challenges = mockChallenges.filter((c) => c.type === 'high-notes')
         break
       case 'low-notes':
-        challenges = mockChallenges.filter(c => c.type === 'low-notes')
+        challenges = mockChallenges.filter((c) => c.type === 'low-notes')
         break
       case 'speed':
-        challenges = mockChallenges.filter(c => c.type === 'speed')
+        challenges = mockChallenges.filter((c) => c.type === 'speed')
         break
       case 'perfect':
-        challenges = mockChallenges.filter(c => c.type === 'perfect')
+        challenges = mockChallenges.filter((c) => c.type === 'perfect')
         break
       case 'scales':
-        challenges = mockChallenges.filter(c => c.type === 'scales')
+        challenges = mockChallenges.filter((c) => c.type === 'scales')
         break
     }
 
     // Merge real progress with mock challenge data
-    return challenges.map(c => {
+    return challenges.map((c) => {
       const challengeKey = `ch-${c.id}`
       const storedProgress = (userProgress() || {})[challengeKey]
       if (storedProgress) {
@@ -413,30 +797,38 @@ export const VocalChallenges: Component = () => {
   }
 
   // Get filtered challenges with real progress
-  const challenges = createMemo(() => getChallengesForCategory(activeCategory()))
+  const challenges = createMemo(() =>
+    getChallengesForCategory(activeCategory()),
+  )
 
   // Calculate user badges from session history
   function getBadges(): UserBadge[] {
     const sessions = sessionHistory()
     const totalSessions = sessions.length
-    const bestScore = sessions.length > 0 ? Math.max(...sessions.map(s => s.score || 0)) : 0
-    const avgScore = sessions.length > 0
-      ? sessions.reduce((sum, s) => sum + (s.score || 0), 0) / sessions.length
-      : 0
-    const streak = calculateStreak(sessions.map(s => s.completedAt || 0))
+    const bestScore =
+      sessions.length > 0 ? Math.max(...sessions.map((s) => s.score || 0)) : 0
+    const avgScore =
+      sessions.length > 0
+        ? sessions.reduce((sum, s) => sum + (s.score || 0), 0) / sessions.length
+        : 0
+    const streak = calculateStreak(sessions.map((s) => s.completedAt || 0))
 
-    return mockBadges.map(badge => {
+    return mockBadges.map((badge) => {
       let earned = false
       let earnedDate: number
 
       switch (badge.id) {
         case 'b1':
           earned = totalSessions > 0
-          earnedDate = totalSessions > 0 ? (sessions[0].completedAt ?? Date.now()) : Date.now()
+          earnedDate =
+            totalSessions > 0
+              ? (sessions[0].completedAt ?? Date.now())
+              : Date.now()
           break
         case 'b2':
           earned = streak >= 7
-          earnedDate = streak >= 7 ? Date.now() - streak * 24 * 60 * 60 * 1000 : Date.now()
+          earnedDate =
+            streak >= 7 ? Date.now() - streak * 24 * 60 * 60 * 1000 : Date.now()
           break
         case 'b3':
           earned = bestScore >= 90
@@ -452,11 +844,17 @@ export const VocalChallenges: Component = () => {
           break
         case 'b6':
           earned = totalSessions >= 10
-          earnedDate = totalSessions >= 10 ? (sessions[0].completedAt ?? Date.now()) : Date.now()
+          earnedDate =
+            totalSessions >= 10
+              ? (sessions[0].completedAt ?? Date.now())
+              : Date.now()
           break
         case 'b7':
           earned = streak >= 14
-          earnedDate = streak >= 14 ? Date.now() - streak * 24 * 60 * 60 * 1000 : Date.now()
+          earnedDate =
+            streak >= 14
+              ? Date.now() - streak * 24 * 60 * 60 * 1000
+              : Date.now()
           break
         default:
           earned = false
@@ -475,18 +873,20 @@ export const VocalChallenges: Component = () => {
   function getAchievements(): UserAchievement[] {
     const sessions = sessionHistory()
     const totalSessions = sessions.length
-    const bestScore = sessions.length > 0 ? Math.max(...sessions.map(s => s.score || 0)) : 0
-    const avgScore = sessions.length > 0
-      ? sessions.reduce((sum, s) => sum + (s.score || 0), 0) / sessions.length
-      : 0
+    const bestScore =
+      sessions.length > 0 ? Math.max(...sessions.map((s) => s.score || 0)) : 0
+    const avgScore =
+      sessions.length > 0
+        ? sessions.reduce((sum, s) => sum + (s.score || 0), 0) / sessions.length
+        : 0
 
     // Track high note completions
     let highNoteCount = 0
-    sessions.forEach(session => {
+    sessions.forEach((session) => {
       if (session.practiceItemResult) {
-        session.practiceItemResult.forEach(item => {
+        session.practiceItemResult.forEach((item) => {
           if (item.noteResult) {
-            item.noteResult.forEach(note => {
+            item.noteResult.forEach((note) => {
               if (note.pitchFreq > 880 && note.rating === 'perfect') {
                 highNoteCount++
               }
@@ -496,7 +896,7 @@ export const VocalChallenges: Component = () => {
       }
     })
 
-    return mockAchievements.map(ach => {
+    return mockAchievements.map((ach) => {
       let unlocked = false
       let progress = 0
 
@@ -546,13 +946,13 @@ export const VocalChallenges: Component = () => {
   // Check if category is locked based on actual progress
   const isCategoryLocked = (categoryId: string): boolean => {
     if (categoryId === 'scales') {
-      return challenges().filter(c => c.type === 'scales').length === 0
+      return challenges().filter((c) => c.type === 'scales').length === 0
     }
     return false
   }
 
   const totalCompletedChallenges = createMemo(() => {
-    return challenges().filter(c => c.status === 'completed').length
+    return challenges().filter((c) => c.status === 'completed').length
   })
 
   return (
@@ -560,13 +960,17 @@ export const VocalChallenges: Component = () => {
       {/* Header */}
       <div class="challenges-header">
         <div class="challenges-header-content">
-          <h2><IconTarget /> Vocal Challenges</h2>
+          <h2>
+            <IconTarget /> Vocal Challenges
+          </h2>
           <p class="challenges-subtitle">
             Complete challenges to earn badges and level up your skills
           </p>
         </div>
         <div class="streak-card">
-          <div class="streak-icon"><IconFireChallenge /></div>
+          <div class="streak-icon">
+            <IconFireChallenge />
+          </div>
           <div class="streak-info">
             <span class="streak-label">Current Streak</span>
             <span class="streak-value">{currentStreak()} days</span>
@@ -605,7 +1009,9 @@ export const VocalChallenges: Component = () => {
               data-challenge-type={challenge.type}
             >
               <div class="challenge-header">
-                <div class="challenge-icon-large">{renderIcon(challenge.icon)}</div>
+                <div class="challenge-icon-large">
+                  {renderIcon(challenge.icon)}
+                </div>
                 <div class="challenge-status">
                   {challenge.status === 'completed' && <IconCheck2 />}
                   {challenge.status === 'in-progress' && <IconRefresh />}
@@ -619,11 +1025,15 @@ export const VocalChallenges: Component = () => {
 
                 <div class="challenge-stats">
                   <div class="stat-item">
-                    <span class="stat-icon"><IconTarget /></span>
+                    <span class="stat-icon">
+                      <IconTarget />
+                    </span>
                     <span class="stat-value">{challenge.targetScore}%</span>
                   </div>
                   <div class="stat-item">
-                    <span class="stat-icon"><IconChart /></span>
+                    <span class="stat-icon">
+                      <IconChart />
+                    </span>
                     <span class="stat-value">{challenge.progress}%</span>
                   </div>
                 </div>
@@ -635,7 +1045,9 @@ export const VocalChallenges: Component = () => {
                     class="progress-fill"
                     style={{
                       width: `${challenge.progress}%`,
-                      '--progress-color': getChallengeProgressColor(challenge.progress),
+                      '--progress-color': getChallengeProgressColor(
+                        challenge.progress,
+                      ),
                     }}
                   />
                 </div>
@@ -660,7 +1072,9 @@ export const VocalChallenges: Component = () => {
 
       {/* Badges Section */}
       <div class="badges-section">
-        <h3 class="section-title"><IconBadge /> Badges Earned</h3>
+        <h3 class="section-title">
+          <IconBadge /> Badges Earned
+        </h3>
         <div class="badges-grid">
           <For each={badges()}>
             {(badge) => (
@@ -670,7 +1084,11 @@ export const VocalChallenges: Component = () => {
                   <span class="badge-name">{badge.name}</span>
                   <span class="badge-tier">{badge.tier}</span>
                 </div>
-                {badge.earned && <span class="badge-check"><IconCheck2 /></span>}
+                {badge.earned && (
+                  <span class="badge-check">
+                    <IconCheck2 />
+                  </span>
+                )}
               </div>
             )}
           </For>
@@ -679,11 +1097,15 @@ export const VocalChallenges: Component = () => {
 
       {/* Achievements Section */}
       <div class="achievements-section">
-        <h3 class="section-title"><IconStarChallenge /> Achievements</h3>
+        <h3 class="section-title">
+          <IconStarChallenge /> Achievements
+        </h3>
         <div class="achievements-list">
           <For each={achievements()}>
             {(ach) => (
-              <div class={`achievement-item ${ach.unlocked ? 'unlocked' : 'locked'}`}>
+              <div
+                class={`achievement-item ${ach.unlocked ? 'unlocked' : 'locked'}`}
+              >
                 <div class="achievement-icon">{renderIcon(ach.icon)}</div>
                 <div class="achievement-content">
                   <div class="achievement-header">
@@ -710,7 +1132,11 @@ export const VocalChallenges: Component = () => {
                     </div>
                   </div>
                 </div>
-                {ach.unlocked && <span class="achievement-locked"><IconCheck2 /></span>}
+                {ach.unlocked && (
+                  <span class="achievement-locked">
+                    <IconCheck2 />
+                  </span>
+                )}
               </div>
             )}
           </For>
@@ -745,7 +1171,11 @@ interface ChallengeModalProps {
   challenge: ChallengeProgress
   onClose: () => void
   onComplete: () => void
-  updateProgress?: (challengeId: string, score: number, completed: boolean) => void
+  updateProgress?: (
+    challengeId: string,
+    score: number,
+    completed: boolean,
+  ) => void
 }
 
 const ChallengeModal: Component<ChallengeModalProps> = (props) => {
@@ -755,9 +1185,11 @@ const ChallengeModal: Component<ChallengeModalProps> = (props) => {
   const handleComplete = () => {
     const sessions = getSessionHistory()
     const recentSessions = sessions.slice(-5)
-    const avgScore = recentSessions.length > 0
-      ? recentSessions.reduce((sum, s) => sum + (s.score || 0), 0) / recentSessions.length
-      : 0
+    const avgScore =
+      recentSessions.length > 0
+        ? recentSessions.reduce((sum, s) => sum + (s.score || 0), 0) /
+          recentSessions.length
+        : 0
 
     const target = props.challenge.targetScore
     const completed = avgScore >= target
@@ -772,7 +1204,9 @@ const ChallengeModal: Component<ChallengeModalProps> = (props) => {
     <div class="challenge-modal">
       <div class="modal-backdrop" onClick={props.onClose} />
       <div class="modal-content">
-        <button class="modal-close" onClick={props.onClose}><IconClose /></button>
+        <button class="modal-close" onClick={props.onClose}>
+          <IconClose />
+        </button>
 
         <div class="modal-header">
           <span class="modal-icon">{renderIcon(props.challenge.icon)}</span>
@@ -785,9 +1219,13 @@ const ChallengeModal: Component<ChallengeModalProps> = (props) => {
         {isPracticing() ? (
           <>
             <div class="modal-practice-status">
-              <div class="practice-pulse"><IconMicChallenge /></div>
+              <div class="practice-pulse">
+                <IconMicChallenge />
+              </div>
               <p class="practice-text">Practice session in progress...</p>
-              <p class="practice-instruction">Complete a session to track your progress</p>
+              <p class="practice-instruction">
+                Complete a session to track your progress
+              </p>
             </div>
             <div class="modal-actions">
               <button class="modal-btn primary" onClick={handleComplete}>
@@ -808,15 +1246,22 @@ const ChallengeModal: Component<ChallengeModalProps> = (props) => {
               </div>
               <div class="stat-card">
                 <span class="stat-label">Sessions</span>
-                <span class="stat-value">{props.challenge.actualScores?.length || 0}</span>
+                <span class="stat-value">
+                  {props.challenge.actualScores?.length || 0}
+                </span>
               </div>
             </div>
 
             <div class="modal-instructions">
-              <h3><IconPaper /> How to Complete</h3>
+              <h3>
+                <IconPaper /> How to Complete
+              </h3>
               <ul class="instructions-list">
                 <li>Practice the target notes for at least 5 minutes</li>
-                <li>Try to achieve {props.challenge.targetScore}% or higher accuracy</li>
+                <li>
+                  Try to achieve {props.challenge.targetScore}% or higher
+                  accuracy
+                </li>
                 <li>Practice at least 3 sessions this week</li>
                 <li>Track your progress in the Analysis tab</li>
               </ul>
@@ -828,15 +1273,21 @@ const ChallengeModal: Component<ChallengeModalProps> = (props) => {
                   class="progress-fill-large"
                   style={{
                     width: `${props.challenge.progress}%`,
-                    background: getChallengeProgressColor(props.challenge.progress),
+                    background: getChallengeProgressColor(
+                      props.challenge.progress,
+                    ),
                   }}
                 />
               </div>
-              <span class="progress-text-large">{props.challenge.progress}% to {props.challenge.targetScore}%</span>
+              <span class="progress-text-large">
+                {props.challenge.progress}% to {props.challenge.targetScore}%
+              </span>
             </div>
 
             <div class="modal-actions">
-              <button class="modal-btn secondary" onClick={props.onClose}>Cancel</button>
+              <button class="modal-btn secondary" onClick={props.onClose}>
+                Cancel
+              </button>
               <button
                 class="modal-btn primary"
                 onClick={() => setIsPracticing(true)}
@@ -856,8 +1307,18 @@ const ChallengeModal: Component<ChallengeModalProps> = (props) => {
 // ============================================================
 
 const challengeCategories = () => [
-  { id: 'high-notes' as const, name: 'High Notes', icon: IconMicChallenge, count: 3 },
-  { id: 'low-notes' as const, name: 'Low Notes', icon: IconGuitarChallenge, count: 2 },
+  {
+    id: 'high-notes' as const,
+    name: 'High Notes',
+    icon: IconMicChallenge,
+    count: 3,
+  },
+  {
+    id: 'low-notes' as const,
+    name: 'Low Notes',
+    icon: IconGuitarChallenge,
+    count: 2,
+  },
   { id: 'speed' as const, name: 'Speed', icon: IconBoltChallenge, count: 3 },
   { id: 'perfect' as const, name: 'Perfect Pitch', icon: IconTarget, count: 2 },
   { id: 'scales' as const, name: 'Scales', icon: IconMusic, count: 2 },
@@ -1011,24 +1472,151 @@ const mockChallenges: ChallengeProgress[] = [
 ]
 
 const mockBadges: UserBadge[] = [
-  { id: 'b1', name: 'First Steps', description: 'Complete your first challenge', icon: IconLeaf, tier: 'bronze', earnedDate: Date.now() - 1000 * 60 * 60 * 24 * 10, earned: true },
-  { id: 'b2', name: 'On Fire', description: 'Maintain a 7-day practice streak', icon: IconFireChallenge, tier: 'bronze', earnedDate: Date.now() - 1000 * 60 * 60 * 24 * 7, earned: true },
-  { id: 'b3', name: 'High & Mighty', description: 'Complete a high note challenge', icon: IconMicChallenge, tier: 'silver', earnedDate: Date.now() - 1000 * 60 * 60 * 24 * 5, earned: true },
-  { id: 'b4', name: 'Speed Demon', description: 'Complete a speed challenge', icon: IconBoltChallenge, tier: 'silver', earnedDate: Date.now() - 1000 * 60 * 60 * 24 * 3, earned: true },
-  { id: 'b5', name: 'Perfect Start', description: 'Complete a perfect pitch challenge', icon: IconTarget, tier: 'silver', earnedDate: Date.now() - 1000 * 60 * 60 * 24 * 2, earned: true },
-  { id: 'b6', name: 'Scale Scholar', description: 'Complete a scale challenge', icon: IconMusic, tier: 'bronze', earnedDate: Date.now() - 1000 * 60 * 60 * 24 * 15, earned: true },
-  { id: 'b7', name: 'Streak Master', description: 'Reach a 14-day practice streak', icon: IconCrown, tier: 'gold', earnedDate: Date.now() - 1000 * 60 * 60 * 24 * 14, earned: false },
-  { id: 'b8', name: 'All Star', description: 'Complete all bronze badges', icon: IconSparkle, tier: 'gold', earnedDate: 0, earned: false },
+  {
+    id: 'b1',
+    name: 'First Steps',
+    description: 'Complete your first challenge',
+    icon: IconLeaf,
+    tier: 'bronze',
+    earnedDate: Date.now() - 1000 * 60 * 60 * 24 * 10,
+    earned: true,
+  },
+  {
+    id: 'b2',
+    name: 'On Fire',
+    description: 'Maintain a 7-day practice streak',
+    icon: IconFireChallenge,
+    tier: 'bronze',
+    earnedDate: Date.now() - 1000 * 60 * 60 * 24 * 7,
+    earned: true,
+  },
+  {
+    id: 'b3',
+    name: 'High & Mighty',
+    description: 'Complete a high note challenge',
+    icon: IconMicChallenge,
+    tier: 'silver',
+    earnedDate: Date.now() - 1000 * 60 * 60 * 24 * 5,
+    earned: true,
+  },
+  {
+    id: 'b4',
+    name: 'Speed Demon',
+    description: 'Complete a speed challenge',
+    icon: IconBoltChallenge,
+    tier: 'silver',
+    earnedDate: Date.now() - 1000 * 60 * 60 * 24 * 3,
+    earned: true,
+  },
+  {
+    id: 'b5',
+    name: 'Perfect Start',
+    description: 'Complete a perfect pitch challenge',
+    icon: IconTarget,
+    tier: 'silver',
+    earnedDate: Date.now() - 1000 * 60 * 60 * 24 * 2,
+    earned: true,
+  },
+  {
+    id: 'b6',
+    name: 'Scale Scholar',
+    description: 'Complete a scale challenge',
+    icon: IconMusic,
+    tier: 'bronze',
+    earnedDate: Date.now() - 1000 * 60 * 60 * 24 * 15,
+    earned: true,
+  },
+  {
+    id: 'b7',
+    name: 'Streak Master',
+    description: 'Reach a 14-day practice streak',
+    icon: IconCrown,
+    tier: 'gold',
+    earnedDate: Date.now() - 1000 * 60 * 60 * 24 * 14,
+    earned: false,
+  },
+  {
+    id: 'b8',
+    name: 'All Star',
+    description: 'Complete all bronze badges',
+    icon: IconSparkle,
+    tier: 'gold',
+    earnedDate: 0,
+    earned: false,
+  },
 ]
 
 const mockAchievements: UserAchievement[] = [
-  { id: 'a1', name: '10 Notes', description: 'Complete 10 practice sessions', icon: IconPaper, points: 10, unlocked: true, progress: 45, required: 50 },
-  { id: 'a2', name: '50 Sessions', description: 'Complete 50 practice sessions', icon: IconChart, points: 25, unlocked: true, progress: 45, required: 50 },
-  { id: 'a3', name: '3 Octaves', description: 'Cover 3 octaves in one run', icon: IconKeyboardChallenge, points: 15, unlocked: false, progress: 1, required: 3 },
-  { id: 'a4', name: 'High Note Master', description: 'Hit C5 or higher 100 times', icon: IconMicChallenge, points: 30, unlocked: false, progress: 15, required: 100 },
-  { id: 'a5', name: 'Perfect Run', description: 'Get 100% accuracy on a run', icon: IconTarget, points: 50, unlocked: false, progress: 0, required: 1 },
-  { id: 'a6', name: 'Speed Demon', description: 'Hit 10 notes in 3 seconds', icon: IconBoltChallenge, points: 20, unlocked: false, progress: 2, required: 10 },
-  { id: 'a7', name: 'Scale Explorer', description: 'Practice 20 different scales', icon: IconMusic, points: 25, unlocked: false, progress: 8, required: 20 },
+  {
+    id: 'a1',
+    name: '10 Notes',
+    description: 'Complete 10 practice sessions',
+    icon: IconPaper,
+    points: 10,
+    unlocked: true,
+    progress: 45,
+    required: 50,
+  },
+  {
+    id: 'a2',
+    name: '50 Sessions',
+    description: 'Complete 50 practice sessions',
+    icon: IconChart,
+    points: 25,
+    unlocked: true,
+    progress: 45,
+    required: 50,
+  },
+  {
+    id: 'a3',
+    name: '3 Octaves',
+    description: 'Cover 3 octaves in one run',
+    icon: IconKeyboardChallenge,
+    points: 15,
+    unlocked: false,
+    progress: 1,
+    required: 3,
+  },
+  {
+    id: 'a4',
+    name: 'High Note Master',
+    description: 'Hit C5 or higher 100 times',
+    icon: IconMicChallenge,
+    points: 30,
+    unlocked: false,
+    progress: 15,
+    required: 100,
+  },
+  {
+    id: 'a5',
+    name: 'Perfect Run',
+    description: 'Get 100% accuracy on a run',
+    icon: IconTarget,
+    points: 50,
+    unlocked: false,
+    progress: 0,
+    required: 1,
+  },
+  {
+    id: 'a6',
+    name: 'Speed Demon',
+    description: 'Hit 10 notes in 3 seconds',
+    icon: IconBoltChallenge,
+    points: 20,
+    unlocked: false,
+    progress: 2,
+    required: 10,
+  },
+  {
+    id: 'a7',
+    name: 'Scale Explorer',
+    description: 'Practice 20 different scales',
+    icon: IconMusic,
+    points: 25,
+    unlocked: false,
+    progress: 8,
+    required: 20,
+  },
 ]
 
 function generateMockChallenges(): ChallengeProgress[] {
@@ -1060,7 +1648,6 @@ function getAchievementColor(progress: number): string {
   if (progress >= 75) return 'var(--accent)'
   return 'var(--teal)'
 }
-
 
 // ============================================================
 // CSS Styles (inline for this component)

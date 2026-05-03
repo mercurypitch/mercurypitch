@@ -3,7 +3,7 @@
 // ============================================================
 
 import { WALKTHROUGH_STEPS, walkthroughActive, walkthroughStep, } from './app-store'
-import { getSessionHistory, sessionResults, } from './practice-session-store'
+import { getSessionHistory, sessionResults } from './practice-session-store'
 
 export * from './app-store'
 export * from './mic-store'
@@ -17,7 +17,7 @@ export * from './user-session-store'
 export * from './walkthrough-store'
 export * from './playback-state-store'
 export * from './session-store'
-export { getSessionHistory, sessionResults, } from './practice-session-store'
+export { getSessionHistory, sessionResults } from './practice-session-store'
 
 export { playback } from './playback-store'
 export { melodyStore } from './melody-store'

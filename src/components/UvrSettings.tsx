@@ -2,19 +2,10 @@
 // UVR Settings Component - Vocal Separation Controls
 // ============================================================
 
-import type { Component} from 'solid-js';
-import  { For } from 'solid-js'
+import type { Component } from 'solid-js'
+import { For } from 'solid-js'
 import { createEffect, createSignal, onMount, Show } from 'solid-js'
-import {
-  getUvrInstrumentalIntensity,
-  getUvrMode,
-  getUvrSmoothing,
-  getUvrVocalIntensity,
-  setUvrInstrumentalIntensity,
-  setUvrMode,
-  setUvrSmoothing,
-  setUvrVocalIntensity,
-} from '@/stores/app-store'
+import { getUvrInstrumentalIntensity, getUvrMode, getUvrSmoothing, getUvrVocalIntensity, setUvrInstrumentalIntensity, setUvrMode, setUvrSmoothing, setUvrVocalIntensity, } from '@/stores/app-store'
 
 // ============================================================
 // SVG Icons
@@ -22,34 +13,34 @@ import {
 
 const IconVocal = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-    <path d="M12 2a5 5 0 0 0-5 5v7a5 5 0 0 0 10 0V7a5 5 0 0 0-5-5z"/>
-    <path d="M8 11a4 4 0 0 1 8 0v7a4 4 0 0 1-8 0z"/>
-    <path d="M6 15a1 1 0 0 1 1 1v1a3 3 0 0 0 6 0v-1a1 1 0 0 1 1-1"/>
+    <path d="M12 2a5 5 0 0 0-5 5v7a5 5 0 0 0 10 0V7a5 5 0 0 0-5-5z" />
+    <path d="M8 11a4 4 0 0 1 8 0v7a4 4 0 0 1-8 0z" />
+    <path d="M6 15a1 1 0 0 1 1 1v1a3 3 0 0 0 6 0v-1a1 1 0 0 1 1-1" />
   </svg>
 )
 
 const IconMusic = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-    <path d="M9 18V5l12-2v13"/>
-    <circle cx="6" cy="18" r="3"/>
-    <circle cx="18" cy="16" r="3"/>
+    <path d="M9 18V5l12-2v13" />
+    <circle cx="6" cy="18" r="3" />
+    <circle cx="18" cy="16" r="3" />
   </svg>
 )
 
 const IconDuo = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-    <circle cx="8" cy="6" r="3"/>
-    <path d="M6 9v3a3 3 0 0 0 6 0V9"/>
-    <circle cx="18" cy="9" r="3"/>
-    <path d="M16 12v3a3 3 0 0 0 6 0v-3"/>
-    <line x1="11" y1="12" x2="9" y2="12"/>
-    <line x1="15" y1="12" x2="17" y2="12"/>
+    <circle cx="8" cy="6" r="3" />
+    <path d="M6 9v3a3 3 0 0 0 6 0V9" />
+    <circle cx="18" cy="9" r="3" />
+    <path d="M16 12v3a3 3 0 0 0 6 0v-3" />
+    <line x1="11" y1="12" x2="9" y2="12" />
+    <line x1="15" y1="12" x2="17" y2="12" />
   </svg>
 )
 
 const IconWaveform = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-    <path d="M2 12h3l2-4 3 8 3-6 3 6 3-8 3 4h3"/>
+    <path d="M2 12h3l2-4 3 8 3-6 3 6 3-8 3 4h3" />
   </svg>
 )
 
@@ -83,16 +74,34 @@ export const UvrSettings: Component = () => {
 
   // Mode options
   const modeOptions = [
-    { value: 'separate' as UvrMode, label: 'Separate', description: 'Vocals and instrumental separated', icon: <IconDuo /> },
-    { value: 'instrumental' as UvrMode, label: 'Instrumental', description: 'Remove vocals, play only music', icon: <IconMusic /> },
-    { value: 'vocal' as UvrMode, label: 'Vocal Only', description: 'Isolate vocals only', icon: <IconVocal /> },
+    {
+      value: 'separate' as UvrMode,
+      label: 'Separate',
+      description: 'Vocals and instrumental separated',
+      icon: <IconDuo />,
+    },
+    {
+      value: 'instrumental' as UvrMode,
+      label: 'Instrumental',
+      description: 'Remove vocals, play only music',
+      icon: <IconMusic />,
+    },
+    {
+      value: 'vocal' as UvrMode,
+      label: 'Vocal Only',
+      description: 'Isolate vocals only',
+      icon: <IconVocal />,
+    },
   ]
 
   const handleModeChange = (newMode: UvrMode) => {
     setMode(newMode)
   }
 
-  const handleIntensityChange = (type: 'vocal' | 'instrumental', value: number) => {
+  const handleIntensityChange = (
+    type: 'vocal' | 'instrumental',
+    value: number,
+  ) => {
     if (type === 'vocal') {
       setVocalIntensity(value)
     } else {
@@ -119,7 +128,8 @@ export const UvrSettings: Component = () => {
       <div class="uvr-header">
         <h3>Vocal Separation (UVR)</h3>
         <p class="uvr-description">
-          Control how vocals and instrumental tracks are processed during playback
+          Control how vocals and instrumental tracks are processed during
+          playback
         </p>
       </div>
 
@@ -127,16 +137,18 @@ export const UvrSettings: Component = () => {
       <div class="uvr-mode-selection">
         <label>Separation Mode</label>
         <div class="mode-grid">
-          <For each={modeOptions}>{option => (
-            <button
-              class={`mode-card ${mode() === option.value ? 'active' : ''}`}
-              onClick={() => handleModeChange(option.value)}
-              title={option.description}
-            >
-              <span class="mode-icon">{option.icon}</span>
-              <span class="mode-label">{option.label}</span>
-            </button>
-          )}</For>
+          <For each={modeOptions}>
+            {(option) => (
+              <button
+                class={`mode-card ${mode() === option.value ? 'active' : ''}`}
+                onClick={() => handleModeChange(option.value)}
+                title={option.description}
+              >
+                <span class="mode-icon">{option.icon}</span>
+                <span class="mode-label">{option.label}</span>
+              </button>
+            )}
+          </For>
         </div>
       </div>
 
@@ -157,7 +169,9 @@ export const UvrSettings: Component = () => {
               min="0"
               max="100"
               value={vocalIntensity()}
-              onInput={(e) => handleIntensityChange('vocal', parseInt(e.currentTarget.value))}
+              onInput={(e) =>
+                handleIntensityChange('vocal', parseInt(e.currentTarget.value))
+              }
             />
           </div>
 
@@ -178,7 +192,12 @@ export const UvrSettings: Component = () => {
                 min="0"
                 max="100"
                 value={instrumentalIntensity()}
-                onInput={(e) => handleIntensityChange('instrumental', parseInt(e.currentTarget.value))}
+                onInput={(e) =>
+                  handleIntensityChange(
+                    'instrumental',
+                    parseInt(e.currentTarget.value),
+                  )
+                }
               />
             </div>
           </Show>
@@ -200,7 +219,9 @@ export const UvrSettings: Component = () => {
           min="0"
           max="100"
           value={smoothing()}
-          onInput={(e) => handleSmoothingChange(parseInt(e.currentTarget.value))}
+          onInput={(e) =>
+            handleSmoothingChange(parseInt(e.currentTarget.value))
+          }
         />
       </div>
 
@@ -212,16 +233,20 @@ export const UvrSettings: Component = () => {
         </div>
         <ul class="info-list">
           <li>
-            <strong>Separate Mode:</strong> Best for practice - hear both vocals and instrumental
+            <strong>Separate Mode:</strong> Best for practice - hear both vocals
+            and instrumental
           </li>
           <li>
-            <strong>Instrumental Mode:</strong> Learn the melody without distracting vocals
+            <strong>Instrumental Mode:</strong> Learn the melody without
+            distracting vocals
           </li>
           <li>
-            <strong>Vocal Only:</strong> Practice singing along to isolated vocals
+            <strong>Vocal Only:</strong> Practice singing along to isolated
+            vocals
           </li>
           <li>
-            <strong>Smoothing:</strong> Higher values create smoother transitions between modes
+            <strong>Smoothing:</strong> Higher values create smoother
+            transitions between modes
           </li>
         </ul>
       </div>
