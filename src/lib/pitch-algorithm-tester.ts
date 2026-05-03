@@ -2,7 +2,8 @@
 // Pitch Algorithm Tester — Compare pitch detection algorithms
 // ============================================================
 
-import type { PitchAlgorithm } from './pitch-detector'
+import type { PitchDetectionResult } from './pitch-algorithms'
+import type { PitchAlgorithm, DetectedPitch } from './pitch-detector'
 import { PitchDetector } from './pitch-detector'
 import { SwiftF0Detector } from './swift-f0-detector'
 
@@ -21,6 +22,16 @@ export interface TestSample {
   notes: TestNote[]
 }
 
+/** Pitch result for a single note */
+export interface PitchResultForNote {
+  targetFreq: number
+  detectedFreq: number
+  offsetCents: number
+  accuracyBand: number // 100, 90, 75, 50, 0
+  computedTime: number
+  passed: boolean // is within +/- 10 cents?
+}
+
 /** Results from running an algorithm on a sample */
 export interface AlgorithmResult {
   algorithm: PitchAlgorithm
@@ -31,16 +42,6 @@ export interface AlgorithmResult {
   avgOffsetCents: number
   avgComputationTime: number
   maxOffsetCents: number
-}
-
-/** Pitch result for a single note */
-export interface PitchResultForNote {
-  targetFreq: number
-  detectedFreq: number
-  offsetCents: number
-  accuracyBand: number // 100, 90, 75, 50, 0
-  computedTime: number
-  passed: boolean // is within +/- 10 cents?
 }
 
 /** Accuracy bands (threshold in cents → score) */
@@ -65,13 +66,23 @@ function generateDefaultSamples(): TestSample[] {
       id: 'octave1',
       name: 'Octave 1 Sine (261.63 Hz)',
       notes: [
-        { name: 'C4', frequency: 261.63, deviationCents: 0, description: 'Perfect C4' },
-        { name: 'C#4', frequency: 277.18, deviationCents: 0, description: 'C#4' },
+        {
+          name: 'C4',
+          frequency: 261.63,
+          deviationCents: 0,
+          description: 'Perfect C4',
+        },
+        {
+          name: 'C#4',
+          frequency: 277.18,
+          deviationCents: 0,
+          description: 'C#4',
+        },
         { name: 'D4', frequency: 293.66, deviationCents: 0, description: 'D4' },
         { name: 'E4', frequency: 329.63, deviationCents: 0, description: 'E4' },
         { name: 'F4', frequency: 349.23, deviationCents: 0, description: 'F4' },
-        { name: 'G4', frequency: 392.00, deviationCents: 0, description: 'G4' },
-        { name: 'A4', frequency: 440.00, deviationCents: 0, description: 'A4' },
+        { name: 'G4', frequency: 392.0, deviationCents: 0, description: 'G4' },
+        { name: 'A4', frequency: 440.0, deviationCents: 0, description: 'A4' },
         { name: 'B4', frequency: 493.88, deviationCents: 0, description: 'B4' },
       ],
     },
@@ -80,12 +91,17 @@ function generateDefaultSamples(): TestSample[] {
       name: 'Octave 2 Sine (523.25 Hz)',
       notes: [
         { name: 'C5', frequency: 523.25, deviationCents: 0, description: 'C5' },
-        { name: 'C#5', frequency: 554.37, deviationCents: 0, description: 'C#5' },
+        {
+          name: 'C#5',
+          frequency: 554.37,
+          deviationCents: 0,
+          description: 'C#5',
+        },
         { name: 'D5', frequency: 587.33, deviationCents: 0, description: 'D5' },
         { name: 'E5', frequency: 659.25, deviationCents: 0, description: 'E5' },
         { name: 'F5', frequency: 698.46, deviationCents: 0, description: 'F5' },
         { name: 'G5', frequency: 783.99, deviationCents: 0, description: 'G5' },
-        { name: 'A5', frequency: 880.00, deviationCents: 0, description: 'A5' },
+        { name: 'A5', frequency: 880.0, deviationCents: 0, description: 'A5' },
         { name: 'B5', frequency: 987.77, deviationCents: 0, description: 'B5' },
       ],
     },
@@ -93,19 +109,54 @@ function generateDefaultSamples(): TestSample[] {
       id: 'sharp-flat',
       name: 'Sharp & Flat Variations',
       notes: [
-        { name: 'A4 Sharp', frequency: 445.00, deviationCents: 24, description: '+24 cents' },
-        { name: 'A4 Flat', frequency: 435.00, deviationCents: -24, description: '-24 cents' },
-        { name: 'A4 +48', frequency: 445.00, deviationCents: 48, description: '+48 cents' },
-        { name: 'A4 -48', frequency: 435.00, deviationCents: -48, description: '-48 cents' },
-        { name: 'A4 -90', frequency: 430.51, deviationCents: -90, description: '-90 cents' },
+        {
+          name: 'A4 Sharp',
+          frequency: 445.0,
+          deviationCents: 24,
+          description: '+24 cents',
+        },
+        {
+          name: 'A4 Flat',
+          frequency: 435.0,
+          deviationCents: -24,
+          description: '-24 cents',
+        },
+        {
+          name: 'A4 +48',
+          frequency: 445.0,
+          deviationCents: 48,
+          description: '+48 cents',
+        },
+        {
+          name: 'A4 -48',
+          frequency: 435.0,
+          deviationCents: -48,
+          description: '-48 cents',
+        },
+        {
+          name: 'A4 -90',
+          frequency: 430.51,
+          deviationCents: -90,
+          description: '-90 cents',
+        },
       ],
     },
     {
       id: 'noisy',
       name: 'Low Amplitude (High Noise)',
       notes: [
-        { name: 'C4 Low', frequency: 261.63, deviationCents: 0, description: 'Low volume' },
-        { name: 'A4 Low', frequency: 440.00, deviationCents: 0, description: 'Low volume' },
+        {
+          name: 'C4 Low',
+          frequency: 261.63,
+          deviationCents: 0,
+          description: 'Low volume',
+        },
+        {
+          name: 'A4 Low',
+          frequency: 440.0,
+          deviationCents: 0,
+          description: 'Low volume',
+        },
       ],
     },
   ]
@@ -135,8 +186,39 @@ export function frequencyToCents(detected: number, target: number): number {
 }
 
 /** Compute absolute offset in cents */
-export function getAbsoluteOffsetCents(detected: number, target: number): number {
+export function getAbsoluteOffsetCents(
+  detected: number,
+  target: number,
+): number {
   return Math.abs(frequencyToCents(detected, target))
+}
+
+/** Convert DetectedPitch to PitchDetectionResult format */
+function detectedToPitchResult(
+  detected: {
+    frequency: number
+    clarity: number
+    noteName: string
+    octave: number
+    cents: number
+  },
+  computationTime: number,
+): PitchDetectionResult {
+  const midi = getMidiFromFreq(detected.frequency)
+  return {
+    frequency: detected.frequency,
+    clarity: detected.clarity,
+    noteName: detected.noteName,
+    octave: detected.octave,
+    cents: detected.cents,
+    midi,
+    timestamp: Date.now(),
+    computationTime,
+  }
+}
+
+function getMidiFromFreq(freq: number): number {
+  return Math.round(69 + 12 * Math.log2(freq / 440))
 }
 
 /** Benchmark an algorithm on a test sample */
@@ -147,7 +229,7 @@ export function benchmarkAlgorithm(
     sampleRate?: number
     bufferSize?: number
     minConfidence?: number
-    onnxModule?: any // For SwiftF0 testing
+    onnxModule?: { run: (data: Float32Array, dim: number) => number }
   } = {},
 ): AlgorithmResult | null {
   // For SwiftF0, we need async handling
@@ -169,17 +251,24 @@ export function benchmarkAlgorithm(
 
   const results: PitchResultForNote[] = []
   let totalOffset = 0
-  let passedCount = 0
 
   // Generate sine wave for each note
   for (const note of sample.notes) {
-    const waveform = generateSineWave(note.frequency, 0.5, detector.getSampleRate())
+    const waveform = generateSineWave(
+      note.frequency,
+      0.5,
+      detector.getSampleRate(),
+    )
     const startTime = performance.now()
-    const detected = detector.detect(waveform)
+    const detected: DetectedPitch | null = detector.detect(waveform)
     const computedTime = performance.now() - startTime
 
     // Ignore zero frequency (no pitch detected)
-    if (!detected || detected.frequency === 0) {
+    if (
+      detected === null ||
+      detected.frequency === undefined ||
+      detected.frequency === 0
+    ) {
       results.push({
         targetFreq: note.frequency,
         detectedFreq: 0,
@@ -191,13 +280,13 @@ export function benchmarkAlgorithm(
       continue
     }
 
-    const offsetCents = getAbsoluteOffsetCents(detected.frequency, note.frequency)
+    const offsetCents = getAbsoluteOffsetCents(
+      detected.frequency,
+      note.frequency,
+    )
     const accuracyBand = getAccuracyBand(offsetCents)
 
     totalOffset += offsetCents
-    if (offsetCents <= 10) {
-      passedCount++
-    }
 
     results.push({
       targetFreq: note.frequency,
@@ -216,8 +305,9 @@ export function benchmarkAlgorithm(
     results,
     totalScore: calculateAlgorithmScore(results),
     avgOffsetCents: totalOffset / results.length,
-    avgComputationTime: results.reduce((sum, r) => sum + r.computedTime, 0) / results.length,
-    maxOffsetCents: Math.max(...results.map(r => Math.abs(r.offsetCents))),
+    avgComputationTime:
+      results.reduce((sum, r) => sum + r.computedTime, 0) / results.length,
+    maxOffsetCents: Math.max(...results.map((r) => Math.abs(r.offsetCents))),
   }
 }
 
@@ -229,7 +319,7 @@ export async function benchmarkAlgorithmAsync(
     sampleRate?: number
     bufferSize?: number
     minConfidence?: number
-    onnxModule?: any
+    onnxModule?: { run: (data: Float32Array, dim: number) => number }
   } = {},
 ): Promise<AlgorithmResult> {
   const sampleRate = options.sampleRate ?? 44100
@@ -248,7 +338,6 @@ export async function benchmarkAlgorithmAsync(
 
   const results: PitchResultForNote[] = []
   let totalOffset = 0
-  let passedCount = 0
 
   // Generate sine wave for each note
   for (const note of sample.notes) {
@@ -257,12 +346,12 @@ export async function benchmarkAlgorithmAsync(
     const freqData = fftToFrequencyData(waveform, sampleRate, bufferSize)
 
     const startTime = performance.now()
-    let detected: any
+    let detectedFrequency: number | null = null
 
     if (algorithm === 'swift' && detector.isInitialized()) {
       const swiftResult = await detector.detectFromFreqData(freqData)
       if (swiftResult.pitch > 0) {
-        detected = { frequency: swiftResult.pitch, clarity: swiftResult.probability }
+        detectedFrequency = swiftResult.pitch
       }
     } else {
       // Fallback to simple peak detection
@@ -274,16 +363,19 @@ export async function benchmarkAlgorithmAsync(
           maxIdx = i
         }
       }
-      detected = {
-        frequency: (maxIdx * sampleRate) / bufferSize,
-        clarity: maxVal / 255,
+      if (maxIdx > 0) {
+        detectedFrequency = (maxIdx * sampleRate) / bufferSize
       }
     }
 
     const computedTime = performance.now() - startTime
 
     // Ignore zero frequency (no pitch detected)
-    if (!detected || detected.frequency === 0) {
+    if (
+      detectedFrequency === null ||
+      detectedFrequency === undefined ||
+      detectedFrequency === 0
+    ) {
       results.push({
         targetFreq: note.frequency,
         detectedFreq: 0,
@@ -295,17 +387,17 @@ export async function benchmarkAlgorithmAsync(
       continue
     }
 
-    const offsetCents = getAbsoluteOffsetCents(detected.frequency, note.frequency)
+    const offsetCents = getAbsoluteOffsetCents(
+      detectedFrequency,
+      note.frequency,
+    )
     const accuracyBand = getAccuracyBand(offsetCents)
 
     totalOffset += offsetCents
-    if (offsetCents <= 10) {
-      passedCount++
-    }
 
     results.push({
       targetFreq: note.frequency,
-      detectedFreq: detected.frequency,
+      detectedFreq: detectedFrequency,
       offsetCents,
       accuracyBand,
       computedTime,
@@ -320,13 +412,18 @@ export async function benchmarkAlgorithmAsync(
     results,
     totalScore: calculateAlgorithmScore(results),
     avgOffsetCents: totalOffset / results.length,
-    avgComputationTime: results.reduce((sum, r) => sum + r.computedTime, 0) / results.length,
-    maxOffsetCents: Math.max(...results.map(r => Math.abs(r.offsetCents))),
+    avgComputationTime:
+      results.reduce((sum, r) => sum + r.computedTime, 0) / results.length,
+    maxOffsetCents: Math.max(...results.map((r) => Math.abs(r.offsetCents))),
   }
 }
 
 /** Convert time-domain to frequency-domain using FFT approximation */
-function fftToFrequencyData(timeData: Float32Array, sampleRate: number, fftSize: number): Float32Array {
+function fftToFrequencyData(
+  timeData: Float32Array,
+  sampleRate: number,
+  fftSize: number,
+): Float32Array {
   const N = Math.floor(fftSize / 2)
   const freqData = new Float32Array(N)
 
@@ -367,7 +464,7 @@ function generateSineWave(
   const wave = new Float32Array(numSamples)
 
   for (let i = 0; i < numSamples; i++) {
-    wave[i] = Math.sin(2 * Math.PI * frequency * i / sampleRate)
+    wave[i] = Math.sin((2 * Math.PI * frequency * i) / sampleRate)
   }
 
   return wave
@@ -389,9 +486,14 @@ export function runAllTests(
       }
     }
 
-    const bestSample = sampleResults.reduce((best: AlgorithmResult | null, current: AlgorithmResult) => {
-      return !best || current.avgComputationTime < best.avgComputationTime ? current : best
-    }, null)
+    const bestSample = sampleResults.reduce(
+      (best: AlgorithmResult | null, current: AlgorithmResult) => {
+        return !best || current.avgComputationTime < best.avgComputationTime
+          ? current
+          : best
+      },
+      null,
+    )
 
     if (bestSample) {
       results.push({

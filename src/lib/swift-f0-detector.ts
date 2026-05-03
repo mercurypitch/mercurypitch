@@ -2,8 +2,8 @@
 // SwiftF0 Detector - ML-Based Pitch Detection (ONNX Runtime Web)
 // ============================================================
 
-import type { PitchAlgorithm } from './pitch-detector'
 import ort from 'onnxruntime-web'
+import type { PitchAlgorithm } from './pitch-detector'
 
 /** SwiftF0 pitch result */
 export interface SwiftPitchResult {
@@ -36,17 +36,39 @@ export class SwiftF0Detector {
   readonly algorithm: PitchAlgorithm = 'swift'
 
   private settings: Required<SwiftDetectorSettings>
-  private onnxSession: any = null
+  private onnxSession: {
+    numInputs: number
+    numOutputs: number
+    run: (
+      inputs: Record<string, unknown>,
+    ) => Promise<{ output: { data: Float32Array } }>
+  } | null = null
   private initialized: boolean = false
   private isModelLoading: boolean = false
-  private ortModule: any = null
+  private ortModule: {
+    InferenceSession: {
+      create: (
+        path: string,
+        options: { executionProviders: string[] },
+      ) => Promise<{
+        numInputs: number
+        numOutputs: number
+        run: (
+          inputs: Record<string, unknown>,
+        ) => Promise<{ output: { data: Float32Array } }>
+      }>
+    }
+  } | null = null
+  private ortInstance: typeof ort | null = null
 
   constructor(options: SwiftDetectorSettings = {}) {
     this.settings = { ...DEFAULT_SETTINGS, ...options }
   }
 
   /** Initialize the ONNX session (lazy loading) */
-  async init(onnxInstance?: any): Promise<boolean> {
+  async init(onnxInstance?: {
+    run: (data: Float32Array, dim: number) => number
+  }): Promise<boolean> {
     if (this.initialized) return true
     if (this.isModelLoading) return false
 
@@ -54,23 +76,40 @@ export class SwiftF0Detector {
 
     try {
       // If onnxInstance is provided, use it; otherwise import ort
-      const ort = onnxInstance || (await import('onnxruntime-web'))
+      let ortModule: any = onnxInstance
+      if (!ortModule) {
+        ortModule = (await import('onnxruntime-web')) as any
+      }
+      this.ortInstance = ortModule
 
       // Validate sample rate requirement
       if (this.settings.sampleRate !== 16000) {
         console.warn(
           `[SwiftF0] SwiftF0 requires 16000 Hz sample rate, got ${this.settings.sampleRate} Hz. ` +
-            `Consider using AnalyserNode with sampleRate: 16000 for accurate results.`
+            `Consider using AnalyserNode with sampleRate: 16000 for accurate results.`,
         )
       }
 
-      // Create ONNX inference session
-      this.onnxSession = await ort.InferenceSession.create(this.settings.modelPath, {
-        executionProviders: ['wasm'],
-      })
+      // Create ONNX inference session (ortInstance is guaranteed non-null here)
+      if (!this.ortInstance) {
+        throw new Error('ortInstance is null')
+      }
+      const session = await this.ortInstance.InferenceSession.create(
+        this.settings.modelPath,
+        {
+          executionProviders: ['wasm'],
+        },
+      )
+
+      // Type assertion to match the expected interface
+      this.onnxSession = {
+        numInputs: (session as any).numInputs || 1,
+        numOutputs: (session as any).numOutputs || 1,
+        run: session.run.bind(session) as any,
+      }
 
       console.log(
-        `[SwiftF0] Initialized with ${this.onnxSession.numInputs} input and ${this.onnxSession.numOutputs} output tensors`
+        `[SwiftF0] Initialized with ${this.onnxSession.numInputs} input and ${this.onnxSession.numOutputs} output tensors`,
       )
 
       this.initialized = true
@@ -85,13 +124,21 @@ export class SwiftF0Detector {
 
   /** Detect pitch from a frequency-domain buffer */
   async detectFromFreqData(freqData: Float32Array): Promise<SwiftPitchResult> {
-    if (!this.initialized || !this.onnxSession) {
+    if (!this.initialized || !this.onnxSession || !this.ortInstance) {
       // Try to initialize if not done yet
-      const ort = await import('onnxruntime-web')
-      const session = await ort.InferenceSession.create(this.settings.modelPath, {
-        executionProviders: ['wasm'],
-      })
-      this.onnxSession = session
+      this.ortInstance = this.ortInstance || (await import('onnxruntime-web'))
+      const session = await this.ortInstance.InferenceSession.create(
+        this.settings.modelPath,
+        {
+          executionProviders: ['wasm'],
+        },
+      )
+
+      this.onnxSession = {
+        numInputs: (session as any).numInputs || 1,
+        numOutputs: (session as any).numOutputs || 1,
+        run: session.run.bind(session) as any,
+      }
       this.initialized = true
     }
 
@@ -108,11 +155,15 @@ export class SwiftF0Detector {
       const swiftInput = freqData.slice(3, 134)
 
       // Create input tensor (1, 1, 1, 132) as specified in the issue
-      const tensor = new ort.Tensor('float32', swiftInput, [1, 1, 1, 132])
+      const tensor = new (this.ortInstance as any).Tensor(
+        'float32',
+        swiftInput,
+        [1, 1, 1, 132],
+      )
 
       // Run inference
-      const results = await this.onnxSession.run({ input: tensor })
-      const logits = results.output.data as Float32Array
+      const sessionResult = await this.onnxSession.run({ input: tensor } as any)
+      const logits = sessionResult.output.data
 
       // Find the bin with highest probability
       let maxVal = -Infinity
@@ -156,7 +207,7 @@ export class SwiftF0Detector {
   }
 
   /** Detect pitch from a time-domain buffer */
-  detectFromTimeData(timeData: Float32Array): SwiftPitchResult {
+  detectFromTimeData(_timeData: Float32Array): SwiftPitchResult {
     // Note: SwiftF0 is designed for frequency-domain input.
     // For time-domain, we'd need to transform to frequency domain first.
     // This is a placeholder - in production use the frequency-domain path.

@@ -3,7 +3,7 @@
 // Simple max-amplitude frequency bin approach
 // ============================================================
 
-import type { IPitchDetector, PitchDetectionResult, PitchAlgorithm, DetectorSettings, DetectorMetrics } from '@/types/pitch-algorithms'
+import type { DetectorMetrics, DetectorSettings, IPitchDetector, PitchAlgorithm, PitchDetectionResult, } from '@/types/pitch-algorithms'
 
 export class FFTDetector implements IPitchDetector {
   readonly algorithm: PitchAlgorithm = 'fft'
@@ -129,7 +129,7 @@ export class FFTDetector implements IPitchDetector {
   // In production, use Web Audio API's AnalyserNode
   private computeFFT(input: Float32Array, output: Float32Array): void {
     const N = Math.floor(input.length / 2)
-    const sampleRate = this.settings.sampleRate || 44100
+    const _sampleRate = this.settings.sampleRate || 44100
 
     // Simple frequency bin calculation
     for (let i = 0; i < N; i++) {
@@ -149,15 +149,27 @@ export class FFTDetector implements IPitchDetector {
         // Nyquist frequency (only real part)
         output[i] = real / this.settings.bufferSize
       } else {
-        output[i] = Math.sqrt(real * real + imag * imag) / this.settings.bufferSize
+        output[i] =
+          Math.sqrt(real * real + imag * imag) / this.settings.bufferSize
       }
     }
   }
 
-  private findPeakFrequency(freqData: Float32Array): { frequency: number; clarity: number; noteName: string; octave: number; cents: number; midi: number; timestamp: number; computationTime: number } | null {
-    const sampleRate = this.settings.sampleRate || 44100
+  private findPeakFrequency(
+    freqData: Float32Array,
+  ): {
+    frequency: number
+    clarity: number
+    noteName: string
+    octave: number
+    cents: number
+    midi: number
+    timestamp: number
+    computationTime: number
+  } | null {
+    const _sampleRate = this.settings.sampleRate || 44100
     const bufferSize = this.settings.bufferSize
-    const nyquist = sampleRate / 2
+    const _nyquist = _sampleRate / 2
 
     let maxVal = -Infinity
     let maxIdx = 0
@@ -173,10 +185,13 @@ export class FFTDetector implements IPitchDetector {
       return null
     }
 
-    const frequency = (maxIdx * sampleRate) / bufferSize
+    const frequency = (maxIdx * _sampleRate) / bufferSize
 
     // Validate frequency range
-    if (frequency < this.settings.minFrequency || frequency > this.settings.maxFrequency) {
+    if (
+      frequency < this.settings.minFrequency ||
+      frequency > this.settings.maxFrequency
+    ) {
       return null
     }
 
@@ -195,7 +210,9 @@ export class FFTDetector implements IPitchDetector {
     }
   }
 
-  private normalizeSettings(options: DetectorSettings): Required<DetectorSettings> {
+  private normalizeSettings(
+    options: DetectorSettings,
+  ): Required<DetectorSettings> {
     return {
       sampleRate: options.sampleRate ?? 44100,
       bufferSize: options.bufferSize ?? 2048,
@@ -207,8 +224,25 @@ export class FFTDetector implements IPitchDetector {
     }
   }
 
-  private freqToNote(freq: number): { note: string; octave: number; cents: number } {
-    const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+  private freqToNote(freq: number): {
+    note: string
+    octave: number
+    cents: number
+  } {
+    const noteNames = [
+      'C',
+      'C#',
+      'D',
+      'D#',
+      'E',
+      'F',
+      'F#',
+      'G',
+      'G#',
+      'A',
+      'A#',
+      'B',
+    ]
     const a4Freq = 440.0
     const midi = 12 * Math.log2(freq / a4Freq) + 69
     const midiInt = Math.round(midi)

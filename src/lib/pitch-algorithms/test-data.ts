@@ -3,7 +3,7 @@
 // Predefined waveforms and test cases for pitch detection
 // ============================================================
 
-import type { TestFrequency, TestWaveform } from '@/types/pitch-algorithms'
+import type { TestFrequency } from '@/types/pitch-algorithms'
 
 // Basic test frequencies
 export const BASIC_FREQUENCIES: TestFrequency[] = [

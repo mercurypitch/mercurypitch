@@ -3,6 +3,8 @@
 // ============================================================
 
 import { freqToNote } from './scale-data'
+import type { DetectorMetrics, DetectorSettings, IPitchDetector, PitchDetectionResult, } from '@/types/pitch-algorithms'
+import { SwiftF0Detector } from './swift-f0-detector'
 
 /** Supported pitch detection algorithms */
 export type PitchAlgorithm = 'yin' | 'mpm' | 'swift'
@@ -14,6 +16,9 @@ export interface DetectedPitch {
   noteName: string
   octave: number
   cents: number
+  computationTime?: number
+  midi?: number
+  timestamp?: number
 }
 
 export interface PitchDetectorOptions {
@@ -62,8 +67,11 @@ export class PitchDetector {
   private readonly yinBuffer: Float32Array
   private readonly pitchHistory: number[] = []
   private readonly maxHistory = 5
-  private swiftDetector: any = null // SwiftF0Detector instance
-  private onnxModule: any = null // ort module cache
+  private detectStartTime: number = 0
+  private swiftDetector: SwiftF0Detector | null = null
+  private onnxModule: {
+    run: (data: Float32Array, dim: number) => number
+  } | null = null
   private initialized: boolean = false
 
   constructor(options: PitchDetectorOptions = {}) {
@@ -83,7 +91,8 @@ export class PitchDetector {
   /** Initialize SwiftF0 detector (async, called once when algorithm is set to 'swift') */
   async initializeSwiftDetector(): Promise<boolean> {
     // Only initialize if using Swift and not already initialized
-    if (this.algorithm !== 'swift' || this.swiftDetector) return this.swiftDetector?.isInitialized() ?? false
+    if (this.algorithm !== 'swift' || this.swiftDetector)
+      return this.swiftDetector?.isInitialized() ?? false
 
     try {
       const { SwiftF0Detector } = await import('./swift-f0-detector')
@@ -94,7 +103,10 @@ export class PitchDetector {
         fallbackFreq: 0,
         minProbability: 0.05,
       })
-      this.initialized = await this.swiftDetector.init(this.onnxModule)
+      this.initialized =
+        this.onnxModule !== null
+          ? await this.swiftDetector.init(this.onnxModule)
+          : false
       return this.initialized
     } catch (error) {
       console.warn('[PitchDetector] SwiftF0 initialization failed:', error)
@@ -104,12 +116,18 @@ export class PitchDetector {
   }
 
   /** Get the SwiftF0 detector instance */
-  getSwiftDetector(): any {
+  getSwiftDetector(): {
+    init: (module: {
+      run: (data: Float32Array, dim: number) => number
+    }) => Promise<boolean>
+  } | null {
     return this.swiftDetector
   }
 
   /** Set ONNX module for SwiftF0 (useful for testing without actual ONNX) */
-  setOnnxModule(ort: any): void {
+  setOnnxModule(ort: {
+    run: (data: Float32Array, dim: number) => number
+  }): void {
     this.onnxModule = ort
     if (this.swiftDetector) {
       this.swiftDetector.init(ort).catch(() => {})
@@ -133,6 +151,8 @@ export class PitchDetector {
         cents: 0,
       }
     }
+
+    this.detectStartTime = performance.now()
 
     // For SwiftF0, we need frequency-domain input
     if (this.algorithm === 'swift') {
@@ -181,18 +201,28 @@ export class PitchDetector {
     // Initialize Swift detector if needed
     await this.initializeSwiftDetector()
 
-    if (this.algorithm === 'swift' && this.swiftDetector?.isInitialized()) {
+    if (
+      this.algorithm === 'swift' &&
+      this.swiftDetector !== null &&
+      this.swiftDetector.isInitialized() !== null
+    ) {
       const swiftResult = await this.swiftDetector.detectFromFreqData(freqData)
 
       // Convert Swift result to DetectedPitch format
-      if (swiftResult.pitch > 0 && swiftResult.probability >= this.minConfidence) {
+      if (
+        swiftResult.pitch > 0 &&
+        swiftResult.probability >= this.minConfidence
+      ) {
         const { name, octave, cents } = freqToNote(swiftResult.pitch)
+        const midi = this.getMidiFromFreq(swiftResult.pitch)
         return {
           frequency: swiftResult.pitch,
           clarity: swiftResult.probability,
           noteName: name,
           octave,
           cents,
+          midi,
+          timestamp: Date.now(),
         }
       }
     }
@@ -240,6 +270,16 @@ export class PitchDetector {
     }
 
     const { name, octave, cents } = freqToNote(frequency)
+    const midi = this.getMidiFromFreq(frequency)
+    return {
+      frequency,
+      clarity: maxVal / 255, // normalize for fallback
+      noteName: name,
+      octave,
+      cents,
+      midi,
+      timestamp: Date.now(),
+    }
     return {
       frequency,
       clarity: maxVal / 255, // Normalize 0-255 range
@@ -253,7 +293,7 @@ export class PitchDetector {
   private fftToFrequencyData(timeDomainBuffer: Float32Array): Float32Array {
     const N = Math.floor(timeDomainBuffer.length / 2)
     const freqData = new Float32Array(N)
-    const sampleRate = this.sampleRate
+    const _sampleRate = this.sampleRate
 
     for (let i = 0; i < N; i++) {
       let real = 0
@@ -282,10 +322,16 @@ export class PitchDetector {
   private async detectSwift(freqData: Float32Array): Promise<DetectedPitch> {
     await this.initializeSwiftDetector()
 
-    if (this.swiftDetector?.isInitialized()) {
+    if (
+      this.swiftDetector !== null &&
+      this.swiftDetector.isInitialized() !== null
+    ) {
       const swiftResult = await this.swiftDetector.detectFromFreqData(freqData)
 
-      if (swiftResult.pitch > 0 && swiftResult.probability >= this.minConfidence) {
+      if (
+        swiftResult.pitch > 0 &&
+        swiftResult.probability >= this.minConfidence
+      ) {
         const { name, octave, cents } = freqToNote(swiftResult.pitch)
         return {
           frequency: swiftResult.pitch,
@@ -590,5 +636,73 @@ export class PitchDetector {
   /** Reset pitch history (call when sound starts) */
   resetHistory(): void {
     this.pitchHistory.length = 0
+  }
+
+  /** Get settings for display (basic implementation) */
+  getSettings(): DetectorSettings {
+    return {
+      sampleRate: this.sampleRate,
+      bufferSize: this.bufferSize,
+      threshold: this.threshold,
+      minFrequency: this.minFrequency,
+      maxFrequency: this.maxFrequency,
+      minConfidence: this.minConfidence,
+      minAmplitude: this.minAmplitude,
+    }
+  }
+
+  /** Detect from frequency domain (basic implementation) */
+  detectFromFrequencyData(freqData: Float32Array): PitchDetectionResult | null {
+    const result = this.detectFromFreqDataFallback(freqData)
+    if (result.midi === undefined) {
+      return null
+    }
+    return {
+      frequency: result.frequency,
+      clarity: result.clarity,
+      noteName: result.noteName,
+      octave: result.octave,
+      cents: result.cents,
+      midi: result.midi as number,
+      timestamp: result.timestamp,
+      computationTime: 0,
+    } as PitchDetectionResult
+  }
+
+  /** Get algorithm name */
+  getName(): string {
+    return this.algorithm.charAt(0).toUpperCase() + this.algorithm.slice(1)
+  }
+
+  /** Get description */
+  getDescription(): string {
+    const descriptions: Record<string, string> = {
+      yin: 'YIN algorithm using difference function and cumulative mean normalization',
+      mpm: 'McLeod Pitch Method using NSDF and positive-going zero crossings',
+      swift: 'ML-based pitch detection using SwiftF0 ONNX model',
+    }
+    return descriptions[this.algorithm] || 'Custom pitch detection'
+  }
+
+  /** Get metrics (basic implementation) */
+  getMetrics(): DetectorMetrics {
+    return {
+      status: this.pitchHistory.length > 0 ? 'detection-active' : 'ready',
+      lastResult: null,
+      totalDetections: this.pitchHistory.length,
+      consecutiveFailures: 0,
+      averageClarity: 0,
+      averageFrequency: 0,
+    }
+  }
+
+  /** Get last computation time */
+  getLastComputationTime(): number {
+    return 0
+  }
+
+  /** Compute MIDI note from frequency */
+  private getMidiFromFreq(freq: number): number {
+    return Math.round(69 + 12 * Math.log2(freq / 440))
   }
 }

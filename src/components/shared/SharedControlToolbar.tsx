@@ -11,7 +11,6 @@ import { Tooltip } from '@/components/Tooltip'
 import { appStore } from '@/stores'
 import { bpm, micActive, micWaveVisible, playbackSpeed, setBpm, setPlaybackSpeed, setSensitivity, settings, toggleMicWaveVisible, } from '@/stores'
 import type { SpacedRestMode } from '@/types'
-import type { ActiveTab as AppActiveTab } from '@/stores/ui-store'
 import { ControlGroup } from './ControlGroup'
 import { MetronomeGroup } from './MetronomeGroup'
 
@@ -51,6 +50,9 @@ export const SCALE_TYPES = [
 ] as const
 
 export type PracticeSubMode = 'all' | 'random' | 'focus' | 'reverse'
+export type LocalActiveTab = 'practice' | 'editor' | 'settings'
+
+// Re-export for use in tests
 export type ActiveTab = 'practice' | 'editor' | 'settings'
 
 interface SharedControlToolbarProps {

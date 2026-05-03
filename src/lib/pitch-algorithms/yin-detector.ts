@@ -3,8 +3,9 @@
 // Ported from existing PitchDetector with interface compliance
 // ============================================================
 
-import { PitchDetector, type PitchDetectorOptions } from '@/lib/pitch-detector'
-import type { IPitchDetector, PitchDetectionResult, PitchAlgorithm, DetectorSettings, DetectorMetrics } from '@/types/pitch-algorithms'
+import type {PitchDetectorOptions} from '@/lib/pitch-detector';
+import { PitchDetector  } from '@/lib/pitch-detector'
+import type { DetectorMetrics,DetectorSettings, IPitchDetector, PitchAlgorithm, PitchDetectionResult } from '@/types/pitch-algorithms'
 
 export class YINDetector implements IPitchDetector {
   readonly algorithm: PitchAlgorithm = 'yin'

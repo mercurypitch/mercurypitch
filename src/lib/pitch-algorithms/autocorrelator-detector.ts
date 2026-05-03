@@ -2,7 +2,7 @@
 // Autocorrelator Detector - Time Domain Autocorrelation Detection
 // ============================================================
 
-import type { IPitchDetector, PitchDetectionResult, PitchAlgorithm, DetectorSettings, DetectorMetrics } from '@/types/pitch-algorithms'
+import type { DetectorMetrics,DetectorSettings, IPitchDetector, PitchAlgorithm, PitchDetectionResult } from '@/types/pitch-algorithms'
 
 export class AutocorrelatorDetector implements IPitchDetector {
   readonly algorithm: PitchAlgorithm = 'autocorr'

@@ -2,7 +2,7 @@
 // Pitch Detection Algorithm Base Interface
 // ============================================================
 
-import type { PitchDetectionResult, PitchAlgorithm } from '@/types/pitch-algorithms'
+import type { PitchAlgorithm,PitchDetectionResult } from '@/types/pitch-algorithms'
 
 export interface IPitchDetector {
   /** Algorithm identifier */

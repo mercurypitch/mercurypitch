@@ -2,7 +2,7 @@
 // Pitch Test Samples — Test data for algorithm comparison
 // ============================================================
 
-import type { TestNote, TestSample } from '@/lib/pitch-algorithm-tester'
+import type { TestSample } from '@/lib/pitch-algorithm-tester'
 import type { PitchAlgorithm } from '@/lib/pitch-detector'
 
 /** Comprehensive test samples for pitch algorithm comparison */

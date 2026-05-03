@@ -4,6 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
+import { PitchAlgorithmTester } from '@/components'
 import { TierSelector } from '@/components/TierSelector'
 import { APP_VERSION } from '@/lib/defaults'
 import { IS_DEV } from '@/lib/defaults'
@@ -12,7 +13,6 @@ import { adsr, playbackSpeed, setPlaybackSpeed, setSensitivity, settings, } from
 import type { PitchAlgorithm } from '@/stores/settings-store'
 import type { PitchBufferSize } from '@/stores/settings-store'
 import { characterSounds, colorCodeNotes, flameMode, selectedCharacter, setCharacterSounds, setColorCodeNotes, setFlameMode, setShowAccuracyPercent, setShowPracticeResultPopup, setShowSidebarNoteList, showAccuracyPercent, showPracticeResultPopup, showSidebarNoteList, } from '@/stores/settings-store'
-import { PitchAlgorithmTester } from '@/components'
 import { pitchAlgorithm, setPitchAlgorithm } from '@/stores/settings-store'
 import { PITCH_BUFFER_DESCRIPTIONS, PITCH_BUFFER_LABELS, PITCH_BUFFER_SIZES, pitchBufferSize, setPitchBufferSize, } from '@/stores/settings-store'
 

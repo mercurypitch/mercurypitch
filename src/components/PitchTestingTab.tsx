@@ -3,8 +3,9 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { For, Show, createSignal, createEffect, onCleanup } from 'solid-js'
-import { YINDetector, FFTDetector, AutocorrelatorDetector, type PitchDetectionResult } from '@/lib/pitch-algorithms'
+import { createEffect, createMemo, createSignal, For, onCleanup, Show, } from 'solid-js'
+import type { PitchDetectionResult } from '@/lib/pitch-algorithms'
+import { AutocorrelatorDetector, FFTDetector, YINDetector, } from '@/lib/pitch-algorithms'
 
 interface PitchTestingTabProps {
   onClose?: () => void
@@ -19,30 +20,40 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
     new AutocorrelatorDetector(),
   ])
 
-  const [selectedAlgorithm, setSelectedAlgorithm] = createSignal<'yin' | 'fft' | 'autocorr'>('yin')
-  const [detectionMode, setDetectionMode] = createSignal<DetectionMode>('generate')
+  const [selectedAlgorithm, setSelectedAlgorithm] = createSignal<
+    'yin' | 'fft' | 'autocorr'
+  >('yin')
+  const [detectionMode, setDetectionMode] =
+    createSignal<DetectionMode>('generate')
   const [frequency, setFrequency] = createSignal(440)
-  const [generatedWaveform, setGeneratedWaveform] = createSignal<Float32Array | null>(null)
+  const [generatedWaveform, setGeneratedWaveform] =
+    createSignal<Float32Array | null>(null)
 
   // File upload state
   const [uploadedFile, setUploadedFile] = createSignal<File | null>(null)
-  const [fileWaveform, setFileWaveform] = createSignal<Float32Array | null>(null)
+  const [fileWaveform, setFileWaveform] = createSignal<Float32Array | null>(
+    null,
+  )
   const [fileDuration, setFileDuration] = createSignal(0)
 
   // Microphone state
-  const [audioContext, setAudioContext] = createSignal<AudioContext | null>(null)
+  const [audioContext, setAudioContext] = createSignal<AudioContext | null>(
+    null,
+  )
   const [mediaStream, setMediaStream] = createSignal<MediaStream | null>(null)
   const [sourceNode, setSourceNode] = createSignal<AudioNode | null>(null)
   const [analyser, setAnalyser] = createSignal<AnalyserNode | null>(null)
 
   // Detection results over time
-  const [liveResults, setLiveResults] = createSignal<(PitchDetectionResult | null)[]>([])
+  const [liveResults, setLiveResults] = createSignal<
+    (PitchDetectionResult | null)[]
+  >([])
   const [isDetecting, setIsDetecting] = createSignal(false)
 
   // Metrics display
-  const [totalDetections, setTotalDetections] = createSignal(0)
-  const [avgClarity, setAvgClarity] = createSignal(0)
-  const [avgErrorHz, setAvgErrorHz] = createSignal(0)
+  const [_totalDetections, setTotalDetections] = createSignal(0)
+  const [_avgClarity, setAvgClarity] = createSignal(0)
+  const [_avgErrorHz, setAvgErrorHz] = createSignal(0)
 
   // Test results
   const [testResults, setTestResults] = createSignal<{
@@ -55,7 +66,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
   const [isRunningTest, setIsRunningTest] = createSignal(false)
 
   let animationFrameId: number | null = null
-  let testAnimationFrameId: number | null = null
+  const testAnimationFrameId: number | null = null
   let streamStopTimeout: number | null = null
 
   // Load audio file
@@ -128,12 +139,16 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
       updateMicDetection()
     } catch (error) {
       console.error('Error accessing microphone:', error)
-      alert('Failed to access microphone. Please ensure you have granted permission.')
+      alert(
+        'Failed to access microphone. Please ensure you have granted permission.',
+      )
     }
   }
 
   const stopMicrophoneInput = () => {
-    mediaStream()?.getTracks().forEach(track => track.stop())
+    mediaStream()
+      ?.getTracks()
+      .forEach((track) => track.stop())
     setMediaStream(null)
     sourceNode()?.disconnect()
     setSourceNode(null)
@@ -150,11 +165,13 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
     const dataArray = new Float32Array(analyserVal.frequencyBinCount)
     analyserVal.getFloatTimeDomainData(dataArray)
 
-    const detector = detectors().find(d => d.algorithm === selectedAlgorithm())
-    if (!detector) return
+    const detector = detectors().find(
+      (d) => d.algorithm === selectedAlgorithm(),
+    )
+    if (detector === null || detector === undefined) return
 
     const result = detector.detect(dataArray)
-    setLiveResults(prev => [...prev.slice(-100), result])
+    setLiveResults((prev) => [...prev.slice(-100), result])
 
     animationFrameId = requestAnimationFrame(updateMicDetection)
   }
@@ -227,8 +244,10 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
     const updateLoop = () => {
       if (!isDetecting()) return
 
-      const detector = detectors().find(d => d.algorithm === selectedAlgorithm())
-      if (!detector) return
+      const detector = detectors().find(
+        (d) => d.algorithm === selectedAlgorithm(),
+      )
+      if (detector === null || detector === undefined) return
 
       const wave = generatedWaveform()
       if (!wave) {
@@ -237,7 +256,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
       }
 
       const result = detector.detect(wave)
-      setLiveResults(prev => [...prev.slice(-100), result])
+      setLiveResults((prev) => [...prev.slice(-100), result])
 
       animationFrameId = requestAnimationFrame(updateLoop)
     }
@@ -253,8 +272,10 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
       return
     }
 
-    const detector = detectors().find(d => d.algorithm === selectedAlgorithm())
-    if (!detector) {
+    const detector = detectors().find(
+      (d) => d.algorithm === selectedAlgorithm(),
+    )
+    if (detector === null || detector === undefined) {
       stopLiveDetection()
       return
     }
@@ -263,7 +284,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
       if (!isDetecting()) return
 
       const result = detector.detect(wave)
-      setLiveResults(prev => [...prev.slice(-100), result])
+      setLiveResults((prev) => [...prev.slice(-100), result])
 
       animationFrameId = requestAnimationFrame(updateLoop)
     }
@@ -291,15 +312,21 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
     setTestResults({ passed: 0, failed: 0, errors: [] })
 
     // Test frequencies from MIDI 40-100 (C3-A6)
-    const testFrequencies = [65.41, 73.42, 82.41, 87.31, 98.00, 110.00, 130.81, 146.83, 164.81, 196.00, 220.00, 261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25, 783.99, 880.00, 1046.50]
+    const testFrequencies = [
+      65.41, 73.42, 82.41, 87.31, 98.0, 110.0, 130.81, 146.83, 164.81, 196.0,
+      220.0, 261.63, 293.66, 329.63, 392.0, 440.0, 523.25, 587.33, 659.25,
+      783.99, 880.0, 1046.5,
+    ]
 
-    const detector = detectors().find(d => d.algorithm === selectedAlgorithm())
-    if (!detector) {
+    const detector = detectors().find(
+      (d) => d.algorithm === selectedAlgorithm(),
+    )
+    if (detector === null || detector === undefined) {
       setIsRunningTest(false)
       return
     }
 
-    let errors: number[] = []
+    const errors: number[] = []
     let passed = 0
 
     testFrequencies.forEach((freq, index) => {
@@ -314,7 +341,11 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
 
         const result = detector.detect(wave)
 
-        if (result && Math.abs(result.frequency - freq) < 5) {
+        if (
+          result !== null &&
+          result !== undefined &&
+          Math.abs(result.frequency - freq) < 5
+        ) {
           passed++
         } else {
           errors.push(index)
@@ -333,7 +364,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
 
   // Reset everything
   const resetAll = () => {
-    detectors().forEach(d => d.reset())
+    detectors().forEach((d) => d.reset())
     setLiveResults([])
     setTestResults({ passed: 0, failed: 0, errors: [] })
     setTotalDetections(0)
@@ -349,14 +380,18 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
     }
   })
 
-  const currentDetector = detectors().find(d => d.algorithm === selectedAlgorithm())
+  const currentDetector = createMemo(() =>
+    detectors().find((d) => d.algorithm === selectedAlgorithm()),
+  )
 
   return (
     <div class="pitch-testing-tab">
       <div class="pitch-testing-header">
         <h2>Pitch Detection Testing</h2>
         {props.onClose && (
-          <button class="close-btn" onclick={props.onClose}>×</button>
+          <button class="close-btn" onclick={props.onClose}>
+            ×
+          </button>
         )}
       </div>
 
@@ -367,7 +402,11 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
             <label>Algorithm</label>
             <select
               value={selectedAlgorithm()}
-              onChange={(e) => setSelectedAlgorithm(e.currentTarget.value as 'yin' | 'fft' | 'autocorr')}
+              onChange={(e) =>
+                setSelectedAlgorithm(
+                  e.currentTarget.value as 'yin' | 'fft' | 'autocorr',
+                )
+              }
             >
               <option value="yin">YIN Algorithm</option>
               <option value="autocorr">Autocorrelation</option>
@@ -377,7 +416,12 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
 
           <div class="control-group">
             <label>Detection Mode</label>
-            <select value={detectionMode()} onChange={(e) => setDetectionMode(e.currentTarget.value as DetectionMode)}>
+            <select
+              value={detectionMode()}
+              onChange={(e) =>
+                setDetectionMode(e.currentTarget.value as DetectionMode)
+              }
+            >
               <option value="generate">Generate Sine Wave</option>
               <option value="file">Load Audio File</option>
               <option value="mic">Microphone Input</option>
@@ -388,12 +432,18 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
           <Show when={detectionMode() === 'mic'}>
             <div class="mic-controls">
               {!audioContext() && (
-                <button class="btn btn-primary btn-sm" onclick={startMicrophoneInput}>
+                <button
+                  class="btn btn-primary btn-sm"
+                  onclick={() => void startMicrophoneInput()}
+                >
                   Enable Microphone
                 </button>
               )}
               {audioContext() && (
-                <button class="btn btn-secondary btn-sm" onclick={stopMicrophoneInput}>
+                <button
+                  class="btn btn-secondary btn-sm"
+                  onclick={stopMicrophoneInput}
+                >
                   Stop Microphone
                 </button>
               )}
@@ -417,7 +467,8 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
               />
               <Show when={fileWaveform()}>
                 <span class="file-info">
-                  Loaded: {uploadedFile()?.name ?? 'audio'} • {fileDuration().toFixed(2)}s
+                  Loaded: {uploadedFile()?.name ?? 'audio'} •{' '}
+                  {fileDuration().toFixed(2)}s
                 </span>
               </Show>
               <Show when={!fileWaveform()}>
@@ -429,7 +480,10 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
           {/* Generate Mode UI */}
           <Show when={detectionMode() === 'generate'}>
             <div class="generate-controls">
-              <button class="btn btn-secondary btn-sm" onclick={loadGeneratedWaveform}>
+              <button
+                class="btn btn-secondary btn-sm"
+                onclick={loadGeneratedWaveform}
+              >
                 Regenerate Waveform
               </button>
               <span class="waveform-info">
@@ -473,7 +527,9 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
             {isRunningTest() ? 'Running Test...' : 'Run Benchmark'}
           </button>
 
-          <button class="btn btn-outline" onclick={resetAll}>Reset All</button>
+          <button class="btn btn-outline" onclick={resetAll}>
+            Reset All
+          </button>
         </div>
 
         {/* Right Panel - Visualization */}
@@ -483,46 +539,59 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
             <div class="detection-panel">
               <h3>Live Detection</h3>
 
-              {currentDetector && (
+              {currentDetector() !== undefined && (
                 <div class="metrics-grid">
                   <div class="metric-item">
                     <span class="metric-label">Status</span>
-                    <span class="metric-value">{currentDetector.getMetrics().status}</span>
+                    <span class="metric-value">
+                      {currentDetector()?.getMetrics().status}
+                    </span>
                   </div>
                   <div class="metric-item">
                     <span class="metric-label">Frequency</span>
                     <span class="metric-value">
-                      {currentDetector.getMetrics().lastResult?.frequency.toFixed(2) ?? '—'} Hz
+                      {currentDetector()
+                        ?.getMetrics()
+                        .lastResult?.frequency.toFixed(2) ?? '—'}{' '}
+                      Hz
                     </span>
                   </div>
                   <div class="metric-item">
                     <span class="metric-label">Note</span>
                     <span class="metric-value">
-                      {currentDetector.getMetrics().lastResult?.noteName ?? '—'}
+                      {currentDetector()?.getMetrics().lastResult?.noteName ??
+                        '—'}
                     </span>
                   </div>
                   <div class="metric-item">
                     <span class="metric-label">Midi</span>
                     <span class="metric-value">
-                      {currentDetector.getMetrics().lastResult?.midi.toFixed(0) ?? '—'}
+                      {currentDetector()
+                        ?.getMetrics()
+                        .lastResult?.midi.toFixed(0) ?? '—'}
                     </span>
                   </div>
                   <div class="metric-item">
                     <span class="metric-label">Cents</span>
                     <span class="metric-value">
-                      {currentDetector.getMetrics().lastResult?.cents.toFixed(1) ?? '—'}
+                      {currentDetector()
+                        ?.getMetrics()
+                        .lastResult?.cents.toFixed(1) ?? '—'}
                     </span>
                   </div>
                   <div class="metric-item">
                     <span class="metric-label">Clarity</span>
                     <span class="metric-value">
-                      {currentDetector.getMetrics().lastResult?.clarity.toFixed(2) ?? '—'}
+                      {currentDetector()
+                        ?.getMetrics()
+                        .lastResult?.clarity.toFixed(2) ?? '—'}
                     </span>
                   </div>
                   <div class="metric-item">
                     <span class="metric-label">Computation</span>
                     <span class="metric-value">
-                      {currentDetector.getLastComputationTime().toFixed(3)} ms
+                      {currentDetector()?.getLastComputationTime().toFixed(3)}{' '}
+                      ms
                     </span>
                   </div>
                 </div>
@@ -532,21 +601,25 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
               <div class="waveform-display">
                 <h4>Detection Over Time</h4>
                 <div class="waveform-canvas">
-                  {liveResults().map((result, i) => (
-                    <div
-                      ref={(el: HTMLDivElement) => {
-                        if (el) el.dataset.index = i.toString()
-                      }}
-                      class="waveform-dot"
-                      style={{
-                        '--y': result
-                          ? `${((440 - result.frequency) / 440) * 100}%`
-                          : '50%',
-                        '--freq': result ? `${result.frequency}` : '0',
-                      }}
-                      title={`${result?.noteName ?? 'No signal'} (${result?.frequency?.toFixed(2)} Hz)`}
-                    />
-                  ))}
+                  <For each={liveResults()}>
+                    {(result, i) => (
+                      <div
+                        ref={(el: HTMLDivElement) => {
+                          if (el !== null) el.dataset.index = i.toString()
+                        }}
+                        class="waveform-dot"
+                        style={{
+                          '--y':
+                            result?.frequency !== null &&
+                            result?.frequency !== undefined
+                              ? `${((440 - result.frequency) / 440) * 100}%`
+                              : '50%',
+                          '--freq': result?.frequency ?? '0',
+                        }}
+                        title={`${result?.noteName ?? 'No signal'} (${result?.frequency?.toFixed(2)} Hz)`}
+                      />
+                    )}
+                  </For>
                 </div>
               </div>
             </div>
@@ -573,7 +646,12 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                   <div class="metric-row result">
                     <span>Success Rate</span>
                     <span>
-                      {((testResults().passed / (testResults().passed + testResults().failed)) * 100).toFixed(1)}%
+                      {(
+                        (testResults().passed /
+                          (testResults().passed + testResults().failed)) *
+                        100
+                      ).toFixed(1)}
+                      %
                     </span>
                   </div>
                 )}
@@ -585,22 +663,57 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
               <div class="error-list">
                 <p>Failed at test indexes:</p>
                 <div class="error-grid">
-                  {testResults().errors.slice(0, 20).map((idx, i) => {
-                    // Map index to frequency
-                    const testFreqs = [65.41, 73.42, 82.41, 87.31, 98.00, 110.00, 130.81, 146.83, 164.81, 196.00, 220.00, 261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25, 783.99, 880.00, 1046.50]
-                    const noteNames = ['C3','C#3','D3','D#3','E3','F3','F#3','G3','G#3','A3','A#3','B3','C4','C#4','D4','D#4','E4','F4','F#4','G4','G#4','A4','A#4']
-                    const freq = testFreqs[idx] ?? 440
-                    const noteName = noteNames[idx] ?? 'Unknown'
-                    return (
-                      <div ref={(el: HTMLDivElement) => {
-                        if (el) el.dataset.index = i.toString()
-                      }} class="error-item">
-                        {noteName} ({freq.toFixed(2)} Hz)
-                      </div>
-                    )
-                  })}
+                  <For each={testResults().errors.slice(0, 20)}>
+                    {(idx, i) => {
+                      // Map index to frequency
+                      const testFreqs = [
+                        65.41, 73.42, 82.41, 87.31, 98.0, 110.0, 130.81, 146.83,
+                        164.81, 196.0, 220.0, 261.63, 293.66, 329.63, 392.0,
+                        440.0, 523.25, 587.33, 659.25, 783.99, 880.0, 1046.5,
+                      ]
+                      const noteNames = [
+                        'C3',
+                        'C#3',
+                        'D3',
+                        'D#3',
+                        'E3',
+                        'F3',
+                        'F#3',
+                        'G3',
+                        'G#3',
+                        'A3',
+                        'A#3',
+                        'B3',
+                        'C4',
+                        'C#4',
+                        'D4',
+                        'D#4',
+                        'E4',
+                        'F4',
+                        'F#4',
+                        'G4',
+                        'G#4',
+                        'A4',
+                        'A#4',
+                      ]
+                      const freq = testFreqs[idx] ?? 440
+                      const noteName = noteNames[idx] ?? 'Unknown'
+                      return (
+                        <div
+                          ref={(el: HTMLDivElement) => {
+                            if (el !== null) el.dataset.index = i.toString()
+                          }}
+                          class="error-item"
+                        >
+                          {noteName} ({freq.toFixed(2)} Hz)
+                        </div>
+                      )
+                    }}
+                  </For>
                   {testResults().errors.length > 20 && (
-                    <div class="error-item">... and {testResults().errors.length - 20} more</div>
+                    <div class="error-item">
+                      ... and {testResults().errors.length - 20} more
+                    </div>
                   )}
                 </div>
               </div>
@@ -608,20 +721,44 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
           )}
 
           {/* Algorithm Info */}
-          {currentDetector && (
+          {currentDetector() !== undefined && (
             <div class="info-panel">
-              <h3>{currentDetector.getName()}</h3>
-              <p>{currentDetector.getDescription()}</p>
+              <h3>{currentDetector()?.getName()}</h3>
+              <p>{currentDetector()?.getDescription()}</p>
 
-              {currentDetector.getMetrics().lastResult && (
+              {currentDetector()?.getMetrics().lastResult !== null && (
                 <div class="last-result">
                   <h4>Last Detection</h4>
                   <div class="result-details">
-                    <div>Frequency: {currentDetector.getMetrics().lastResult!.frequency.toFixed(4)} Hz</div>
-                    <div>Note: {currentDetector.getMetrics().lastResult!.noteName}</div>
-                    <div>Midi: {currentDetector.getMetrics().lastResult!.midi.toFixed(2)}</div>
-                    <div>Cents: {currentDetector.getMetrics().lastResult!.cents.toFixed(4)}</div>
-                    <div>Clarity: {currentDetector.getMetrics().lastResult!.clarity.toFixed(4)}</div>
+                    <div>
+                      Frequency:{' '}
+                      {currentDetector()
+                        ?.getMetrics()
+                        .lastResult!.frequency.toFixed(4)}{' '}
+                      Hz
+                    </div>
+                    <div>
+                      Note:{' '}
+                      {currentDetector()?.getMetrics().lastResult!.noteName}
+                    </div>
+                    <div>
+                      Midi:{' '}
+                      {currentDetector()
+                        ?.getMetrics()
+                        .lastResult!.midi.toFixed(2)}
+                    </div>
+                    <div>
+                      Cents:{' '}
+                      {currentDetector()
+                        ?.getMetrics()
+                        .lastResult!.cents.toFixed(4)}
+                    </div>
+                    <div>
+                      Clarity:{' '}
+                      {currentDetector()
+                        ?.getMetrics()
+                        .lastResult!.clarity.toFixed(4)}
+                    </div>
                   </div>
                 </div>
               )}
