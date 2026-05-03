@@ -82,7 +82,12 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
       {/* Status Header */}
       <div class="process-header">
         <div class="process-icon-wrapper" style={{ color: currentStage.color }}>
-          {currentStage.icon}
+          <Show when={props.status === 'processing'}>
+            <div class="pulse-spinner" />
+          </Show>
+          <Show when={props.status !== 'processing'}>
+            {currentStage.icon}
+          </Show>
         </div>
         <div class="process-info">
           <h3>{currentStage.title}</h3>
@@ -347,5 +352,18 @@ export const UvrProcessControlStyles: string = `
 .action-btn-danger:hover:not(:disabled) {
   background: rgba(239, 68, 68, 0.1);
   color: var(--error);
+}
+
+.pulse-spinner {
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 2px solid var(--progress-color, var(--accent));
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 `
