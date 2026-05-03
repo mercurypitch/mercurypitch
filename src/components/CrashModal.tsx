@@ -24,7 +24,14 @@ export const CrashModal: Component = () => {
     setCopyError(null)
     try {
       // Fallback for mobile/safari compatibility
-      if (!navigator.clipboard || !navigator.clipboard.writeText) {
+      const clipboard = navigator.clipboard
+      const hasWriteText =
+        typeof clipboard === 'object' &&
+        clipboard !== null &&
+        typeof (clipboard as { writeText?: (text: string) => Promise<void> })
+          .writeText === 'function'
+
+      if (!hasWriteText) {
         // Fallback: select and copy to document
         const stacktraceElement = document.querySelector(
           '.crash-stacktrace-content',
@@ -47,7 +54,9 @@ export const CrashModal: Component = () => {
           document.body.removeChild(textarea)
         }
       } else {
-        await navigator.clipboard.writeText(errorStack())
+        await (
+          navigator.clipboard as { writeText: (text: string) => Promise<void> }
+        ).writeText(errorStack())
         setCopied(true)
         setTimeout(() => setCopied(false), 2000)
       }
@@ -132,7 +141,9 @@ export const CrashModal: Component = () => {
                       'crash-copy-btn': true,
                       error: copyError() !== null,
                     }}
-                    onClick={handleCopy}
+                    onClick={() => {
+                      void handleCopy()
+                    }}
                     title="Copy to clipboard"
                   >
                     <svg
@@ -154,11 +165,7 @@ export const CrashModal: Component = () => {
                       <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                     </svg>
                     <span class="crash-copy-text">
-                      {copyError()
-                        ? copyError()
-                        : copied()
-                          ? 'Copied!'
-                          : 'Copy'}
+                      {copyError() ?? (copied() ? 'Copied!' : 'Copy')}
                     </span>
                   </button>
                 </div>

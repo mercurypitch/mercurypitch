@@ -24,6 +24,18 @@ export interface SwiftDetectorSettings {
   minProbability?: number
 }
 
+/** Mock ONNX module for testing without actual ONNX Runtime */
+export interface MockOnnxModule {
+  create: (
+    path: string,
+    options: { executionProviders: string[] },
+  ) => Promise<{
+    run: (
+      inputs: Record<string, unknown>,
+    ) => Promise<{ output: { data: Float32Array } }>
+  }>
+}
+
 const DEFAULT_SETTINGS: Required<SwiftDetectorSettings> = {
   sampleRate: 16000,
   modelPath: '/models/swiftf0.onnx',
@@ -37,50 +49,34 @@ export class SwiftF0Detector {
 
   private settings: Required<SwiftDetectorSettings>
   private onnxSession: {
-    numInputs: number
-    numOutputs: number
     run: (
       inputs: Record<string, unknown>,
     ) => Promise<{ output: { data: Float32Array } }>
   } | null = null
   private initialized: boolean = false
   private isModelLoading: boolean = false
-  private ortModule: {
-    InferenceSession: {
-      create: (
-        path: string,
-        options: { executionProviders: string[] },
-      ) => Promise<{
-        numInputs: number
-        numOutputs: number
-        run: (
-          inputs: Record<string, unknown>,
-        ) => Promise<{ output: { data: Float32Array } }>
-      }>
-    }
-  } | null = null
-  private ortInstance: typeof ort | null = null
+  private ortModule: typeof ort | MockOnnxModule | null = null
 
   constructor(options: SwiftDetectorSettings = {}) {
     this.settings = { ...DEFAULT_SETTINGS, ...options }
   }
 
   /** Initialize the ONNX session (lazy loading) */
-  async init(onnxInstance?: {
-    run: (data: Float32Array, dim: number) => number
-  }): Promise<boolean> {
+  async init(
+    onnxModule?: typeof ort | MockOnnxModule | null,
+  ): Promise<boolean> {
     if (this.initialized) return true
     if (this.isModelLoading) return false
 
     this.isModelLoading = true
 
     try {
-      // If onnxInstance is provided, use it; otherwise import ort
-      let ortModule: any = onnxInstance
-      if (!ortModule) {
-        ortModule = (await import('onnxruntime-web')) as any
+      // If onnxModule is provided (for testing), use it; otherwise import ort
+      if (onnxModule) {
+        this.ortModule = onnxModule
+      } else {
+        this.ortModule = (await import('onnxruntime-web')) as typeof ort
       }
-      this.ortInstance = ortModule
 
       // Validate sample rate requirement
       if (this.settings.sampleRate !== 16000) {
@@ -90,27 +86,42 @@ export class SwiftF0Detector {
         )
       }
 
-      // Create ONNX inference session (ortInstance is guaranteed non-null here)
-      if (!this.ortInstance) {
-        throw new Error('ortInstance is null')
+      // Validate ortModule is available
+      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+      if (!this.ortModule) {
+        throw new Error('ortModule is null')
       }
-      const session = await this.ortInstance.InferenceSession.create(
-        this.settings.modelPath,
-        {
-          executionProviders: ['wasm'],
-        },
-      )
 
-      // Type assertion to match the expected interface
+      // Create ONNX inference session
+      let session
+      // Check if it's the real ONNX Runtime module or mock
+      const isMock =
+        'create' in (this.ortModule as unknown as { create: unknown })
+
+      if (!isMock) {
+        session = await (this.ortModule as typeof ort).InferenceSession.create(
+          this.settings.modelPath,
+          {
+            executionProviders: ['wasm'],
+          },
+        )
+      } else {
+        // Mock module
+        session = await (this.ortModule as MockOnnxModule).create(
+          this.settings.modelPath,
+          {
+            executionProviders: ['wasm'],
+          },
+        )
+      }
+
+      // Set up session run method
       this.onnxSession = {
-        numInputs: (session as any).numInputs || 1,
-        numOutputs: (session as any).numOutputs || 1,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         run: session.run.bind(session) as any,
       }
 
-      console.log(
-        `[SwiftF0] Initialized with ${this.onnxSession.numInputs} input and ${this.onnxSession.numOutputs} output tensors`,
-      )
+      console.log('[SwiftF0] Initialized')
 
       this.initialized = true
       this.isModelLoading = false
@@ -124,24 +135,18 @@ export class SwiftF0Detector {
 
   /** Detect pitch from a frequency-domain buffer */
   async detectFromFreqData(freqData: Float32Array): Promise<SwiftPitchResult> {
-    if (!this.initialized || !this.onnxSession || !this.ortInstance) {
+    if (!this.initialized || !this.onnxSession) {
       // Try to initialize if not done yet
-      this.ortInstance = this.ortInstance || (await import('onnxruntime-web'))
-      const session = await this.ortInstance.InferenceSession.create(
-        this.settings.modelPath,
-        {
-          executionProviders: ['wasm'],
-        },
-      )
-
-      this.onnxSession = {
-        numInputs: (session as any).numInputs || 1,
-        numOutputs: (session as any).numOutputs || 1,
-        run: session.run.bind(session) as any,
+      await this.init()
+      if (!this.onnxSession) {
+        return {
+          pitch: this.settings.fallbackFreq,
+          probability: 0,
+        }
       }
-      this.initialized = true
     }
 
+    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
     if (!this.onnxSession) {
       return {
         pitch: this.settings.fallbackFreq,
@@ -154,15 +159,15 @@ export class SwiftF0Detector {
       // The model expects frequency data for bins 3 to 134 (132 bins)
       const swiftInput = freqData.slice(3, 134)
 
-      // Create input tensor (1, 1, 1, 132) as specified in the issue
-      const tensor = new (this.ortInstance as any).Tensor(
+      // Create input tensor (1, 1, 1, 132)
+      const tensor = new (this.ortModule as typeof ort).Tensor(
         'float32',
         swiftInput,
         [1, 1, 1, 132],
       )
 
       // Run inference
-      const sessionResult = await this.onnxSession.run({ input: tensor } as any)
+      const sessionResult = await this.onnxSession.run({ input: tensor })
       const logits = sessionResult.output.data
 
       // Find the bin with highest probability

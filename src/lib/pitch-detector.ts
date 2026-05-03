@@ -2,7 +2,7 @@
 // Pitch Detector — YIN + McLeod Pitch Method (MPM)
 // ============================================================
 
-import type { DetectorMetrics, DetectorSettings, IPitchDetector, PitchDetectionResult, } from '@/types/pitch-algorithms'
+import type { DetectorMetrics, DetectorSettings, PitchDetectionResult, } from '@/types/pitch-algorithms'
 import { freqToNote } from './scale-data'
 import type { SwiftF0Detector } from './swift-f0-detector'
 
@@ -105,7 +105,8 @@ export class PitchDetector {
       })
       this.initialized =
         this.onnxModule !== null
-          ? await this.swiftDetector.init(this.onnxModule)
+          ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            await this.swiftDetector.init(this.onnxModule as any)
           : false
       return this.initialized
     } catch (error) {
@@ -116,18 +117,13 @@ export class PitchDetector {
   }
 
   /** Get the SwiftF0 detector instance */
-  getSwiftDetector(): {
-    init: (module: {
-      run: (data: Float32Array, dim: number) => number
-    }) => Promise<boolean>
-  } | null {
+  getSwiftDetector(): SwiftF0Detector | null {
     return this.swiftDetector
   }
 
   /** Set ONNX module for SwiftF0 (useful for testing without actual ONNX) */
-  setOnnxModule(ort: {
-    run: (data: Float32Array, dim: number) => number
-  }): void {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  setOnnxModule(ort: any): void {
     this.onnxModule = ort
     if (this.swiftDetector) {
       this.swiftDetector.init(ort).catch(() => {})

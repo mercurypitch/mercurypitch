@@ -193,7 +193,8 @@ export function getAbsoluteOffsetCents(
   return Math.abs(frequencyToCents(detected, target))
 }
 
-/** Convert DetectedPitch to PitchDetectionResult format */
+/** Convert DetectedPitch to PitchDetectionResult format - TODO: Implement if needed */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function detectedToPitchResult(
   detected: {
     frequency: number
@@ -319,7 +320,16 @@ export async function benchmarkAlgorithmAsync(
     sampleRate?: number
     bufferSize?: number
     minConfidence?: number
-    onnxModule?: { run: (data: Float32Array, dim: number) => number }
+    onnxModule?: {
+      create: (
+        path: string,
+        options: { executionProviders: string[] },
+      ) => Promise<{
+        run: (
+          inputs: Record<string, unknown>,
+        ) => Promise<{ output: { data: Float32Array } }>
+      }>
+    }
   } = {},
 ): Promise<AlgorithmResult> {
   const sampleRate = options.sampleRate ?? 44100
@@ -332,7 +342,7 @@ export async function benchmarkAlgorithmAsync(
   })
 
   // Initialize with onnx module if provided
-  if (options.onnxModule) {
+  if (options.onnxModule !== undefined && options.onnxModule !== null) {
     detector.init(options.onnxModule).catch(() => {})
   }
 

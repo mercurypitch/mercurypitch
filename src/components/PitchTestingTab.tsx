@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createEffect, createMemo, createRoot, createSignal, For, onCleanup, Show, } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, onCleanup, Show, } from 'solid-js'
 import type { PitchDetectionResult } from '@/lib/pitch-algorithms'
 import { AutocorrelatorDetector, FFTDetector, YINDetector, } from '@/lib/pitch-algorithms'
 
@@ -431,9 +431,6 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
     }
     return undefined
   })
-
-  // Use a separate signal for updates to prevent cascading reactivity
-  const [updateTrigger, setUpdateTrigger] = createSignal(0)
 
   // Use createMemo to get the current detector without calling find repeatedly
   const detectorForAlgorithm = createMemo(() => {

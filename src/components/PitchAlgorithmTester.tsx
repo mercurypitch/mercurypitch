@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
+import { createSignal, For, onCleanup, Show } from 'solid-js'
 import { REGISTERED_ALGORITHMS, TEST_SAMPLES } from '@/data/pitch-test-samples'
 import type { AlgorithmResult, TestSample } from '@/lib/pitch-algorithm-tester'
 import { ACCURACY_BAND_COLORS, benchmarkAlgorithmAsync, DEFAULT_ALGORITHMS, getPerformanceClassification, } from '@/lib/pitch-algorithm-tester'
@@ -13,9 +13,9 @@ interface PitchAlgorithmTesterProps {
   onClose?: () => void
 }
 
-export const PitchAlgorithmTester: Component<PitchAlgorithmTesterProps> = (
-  props,
-) => {
+export const PitchAlgorithmTester: Component<
+  PitchAlgorithmTesterProps
+> = () => {
   // State
   const [selectedAlgorithms, setSelectedAlgorithms] =
     createSignal<PitchAlgorithm[]>(DEFAULT_ALGORITHMS)
@@ -58,7 +58,6 @@ export const PitchAlgorithmTester: Component<PitchAlgorithmTesterProps> = (
     // Run real benchmarking for selected algorithms
     const results: AlgorithmResult[] = []
     const totalAlgos = selectedAlgorithms().length
-    const notesPerAlgo = sample.notes.length
 
     // Batch algorithms into smaller groups to avoid blocking
     const batchedAlgos = []
@@ -71,13 +70,12 @@ export const PitchAlgorithmTester: Component<PitchAlgorithmTesterProps> = (
 
     for (let batchIndex = 0; batchIndex < batchedAlgos.length; batchIndex++) {
       const batch = batchedAlgos[batchIndex]
-
-      // Update progress for this batch
-      const algoProgress = 100 / batchedAlgos.length
       setProgress(Math.round((batchIndex / batchedAlgos.length) * 100))
-      setProgressText(`Running batch ${batchIndex + 1}/${batchedAlgos.length}...`)
+      setProgressText(
+        `Running batch ${batchIndex + 1}/${batchedAlgos.length}...`,
+      )
 
-      const batchPromises = batch.map((algo, idx) =>
+      const batchPromises = batch.map((algo) =>
         benchmarkAlgorithmAsync(algo, sample, {
           sampleRate: 44100,
           bufferSize: 2048,
@@ -90,12 +88,16 @@ export const PitchAlgorithmTester: Component<PitchAlgorithmTesterProps> = (
 
       const batchResults = await Promise.all(batchPromises)
       results.push(
-        ...batchResults.filter((r): r is AlgorithmResult => r !== null),
+        ...batchResults.filter(
+          (r: AlgorithmResult | null): r is AlgorithmResult => r !== null,
+        ),
       )
 
       completedAlgos += batch.length
       setProgress(Math.round((completedAlgos / totalAlgos) * 100))
-      setProgressText(`Running tests... ${completedAlgos}/${totalAlgos} algorithms`)
+      setProgressText(
+        `Running tests... ${completedAlgos}/${totalAlgos} algorithms`,
+      )
     }
 
     setResults(results)
