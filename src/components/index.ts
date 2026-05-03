@@ -43,3 +43,5 @@ export {
 } from './icons'
 export { UvrSessionResult } from './UvrSessionResult'
 export { UvrSessionResultStyles } from './UvrSessionResult'
+export { UvrPanel } from './UvrPanel'
+export { UvrPanelStyles } from './UvrPanel'
