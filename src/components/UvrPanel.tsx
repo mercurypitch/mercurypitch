@@ -3,21 +3,18 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createEffect, createSignal, For,onCleanup, Show } from 'solid-js'
+import { createSignal, For, onCleanup, Show } from 'solid-js'
 import type { UvrSession } from '@/stores/app-store'
 import {
   cancelUvrSession,
   completeUvrSession,
   currentUvrSession,
   getAllUvrSessions,
-  getUvrSession,
   saveAllUvrSessions,
   setCurrentUvrSession,
-  setErrorUvrSession,
   startUvrSession,
   updateUvrSessionProgress,
 } from '@/stores/app-store'
-import type { UvrMode } from '@/types/uvr'
 import {
   UvrGuide,
   UvrProcessControl,
@@ -25,7 +22,7 @@ import {
   UvrSessionResult,
   UvrUploadControl,
 } from "."
-import { ChevronDown, ChevronUp,History, Music, Play, Settings, SlidersHorizontal, X,  } from './icons'
+import { History, Music, Play, Settings, X } from './icons'
 
 type UvrView = 'upload' | 'processing' | 'results' | 'history'
 
@@ -71,7 +68,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   })
 
   const handleFileSelect = (file: File) => {
-    const sessionId = startUvrSession(
+    _ = startUvrSession(
       file.name,
       file.size,
       file.type,
