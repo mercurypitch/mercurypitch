@@ -28,7 +28,7 @@ describe('UvrSessionResult Component', () => {
     })
 
     it('renders session filename', () => {
-      const session = {
+      const _session = {
         sessionId: 'session-123',
         status: 'completed' as const,
         progress: 100,
@@ -46,7 +46,7 @@ describe('UvrSessionResult Component', () => {
     })
 
     it('renders unknown filename when no original file', () => {
-      const session = {
+      const _session = {
         sessionId: 'session-123',
         status: 'completed' as const,
         progress: 100,
@@ -61,7 +61,7 @@ describe('UvrSessionResult Component', () => {
 
   describe('Status Display', () => {
     it('renders completed status with check icon', () => {
-      const session = {
+      const _session = {
         sessionId: 'session-123',
         status: 'completed' as const,
         progress: 100,
@@ -74,7 +74,7 @@ describe('UvrSessionResult Component', () => {
     })
 
     it('renders processing status with loader', () => {
-      const session = {
+      const _session = {
         sessionId: 'session-123',
         status: 'processing' as const,
         progress: 45,
@@ -87,7 +87,7 @@ describe('UvrSessionResult Component', () => {
     })
 
     it('renders error status with X icon', () => {
-      const session = {
+      const _session = {
         sessionId: 'session-123',
         status: 'error' as const,
         progress: 0,
@@ -101,7 +101,7 @@ describe('UvrSessionResult Component', () => {
     })
 
     it('shows processing time in status bar', () => {
-      const session = {
+      const _session = {
         sessionId: 'session-123',
         status: 'completed' as const,
         progress: 100,
@@ -123,7 +123,7 @@ describe('UvrSessionResult Component', () => {
 
   describe('Info Grid', () => {
     it('renders created date', () => {
-      const session = {
+      const _session = {
         sessionId: 'session-123',
         status: 'completed' as const,
         progress: 100,
@@ -137,7 +137,7 @@ describe('UvrSessionResult Component', () => {
     })
 
     it('renders file size when original file exists', () => {
-      const session = {
+      const _session = {
         sessionId: 'session-123',
         status: 'completed' as const,
         progress: 100,
@@ -155,7 +155,7 @@ describe('UvrSessionResult Component', () => {
     })
 
     it('does not show size when no original file', () => {
-      const session = {
+      const _session = {
         sessionId: 'session-123',
         status: 'completed' as const,
         progress: 100,
@@ -188,7 +188,7 @@ describe('UvrSessionResult Component', () => {
 
   describe('Outputs Section', () => {
     it('renders outputs section header', () => {
-      const session = {
+      const _session = {
         sessionId: 'session-123',
         status: 'completed' as const,
         progress: 100,
@@ -206,7 +206,7 @@ describe('UvrSessionResult Component', () => {
     })
 
     it('renders vocal stem file item', () => {
-      const session = {
+      const _session = {
         sessionId: 'session-123',
         status: 'completed' as const,
         progress: 100,
@@ -225,7 +225,7 @@ describe('UvrSessionResult Component', () => {
     })
 
     it('renders instrumental stem when available', () => {
-      const session = {
+      const _session = {
         sessionId: 'session-123',
         status: 'completed' as const,
         progress: 100,
@@ -244,7 +244,7 @@ describe('UvrSessionResult Component', () => {
     })
 
     it('renders vocal MIDI when available', () => {
-      const session = {
+      const _session = {
         sessionId: 'session-123',
         status: 'completed' as const,
         progress: 100,
@@ -263,7 +263,7 @@ describe('UvrSessionResult Component', () => {
     })
 
     it('calls export with vocal type when download clicked', () => {
-      const session = {
+      const _session = {
         sessionId: 'session-123',
         status: 'completed' as const,
         progress: 100,
@@ -290,7 +290,7 @@ describe('UvrSessionResult Component', () => {
     })
 
     it('calls export with instrumental type for instrumental download', async () => {
-      const session = {
+      const _session = {
         sessionId: 'session-123',
         status: 'completed' as const,
         progress: 100,
@@ -320,7 +320,7 @@ describe('UvrSessionResult Component', () => {
     })
 
     it('renders view results button for completed sessions', () => {
-      const session = {
+      const _session = {
         sessionId: 'session-123',
         status: 'completed' as const,
         progress: 100,
@@ -333,7 +333,7 @@ describe('UvrSessionResult Component', () => {
     })
 
     it('calls onView when view results button clicked', () => {
-      const session = {
+      const _session = {
         sessionId: 'session-123',
         status: 'completed' as const,
         progress: 100,
@@ -351,7 +351,7 @@ describe('UvrSessionResult Component', () => {
     })
 
     it('renders delete button', () => {
-      const session = {
+      const _session = {
         sessionId: 'session-123',
         status: 'completed' as const,
         progress: 100,
@@ -364,7 +364,7 @@ describe('UvrSessionResult Component', () => {
     })
 
     it('does not show view results button for non-completed sessions', () => {
-      const session = {
+      const _session = {
         sessionId: 'session-123',
         status: 'processing' as const,
         progress: 45,
@@ -379,7 +379,7 @@ describe('UvrSessionResult Component', () => {
 
   describe('Date Formatting', () => {
     it('formats date with time', () => {
-      const session = {
+      const _session = {
         sessionId: 'session-123',
         status: 'completed' as const,
         progress: 100,
@@ -440,7 +440,7 @@ describe('UvrSessionResult Component', () => {
 
   describe('Status Colors', () => {
     it('uses success color for completed status', () => {
-      const session = {
+      const _session = {
         sessionId: 'session-123',
         status: 'completed' as const,
         progress: 100,
@@ -453,7 +453,7 @@ describe('UvrSessionResult Component', () => {
     })
 
     it('uses accent color for processing status', () => {
-      const session = {
+      const _session = {
         sessionId: 'session-123',
         status: 'processing' as const,
         progress: 45,
@@ -466,7 +466,7 @@ describe('UvrSessionResult Component', () => {
     })
 
     it('uses error color for error status', () => {
-      const session = {
+      const _session = {
         sessionId: 'session-123',
         status: 'error' as const,
         progress: 0,
