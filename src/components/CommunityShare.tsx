@@ -43,21 +43,6 @@ const IconSession = () => (
   </svg>
 )
 
-const IconSearch = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    class="icon-svg"
-  >
-    <circle cx="11" cy="11" r="8" />
-    <path d="m21 21-4.3-4.3" />
-  </svg>
-)
-
 const IconStats = () => (
   <svg
     viewBox="0 0 24 24"
@@ -69,21 +54,6 @@ const IconStats = () => (
     class="icon-svg"
   >
     <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-  </svg>
-)
-
-const IconHistory = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    class="icon-svg"
-  >
-    <path d="M12 8v4l3 3" />
-    <circle cx="12" cy="12" r="10" />
   </svg>
 )
 
