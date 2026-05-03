@@ -51,6 +51,16 @@ import { AppErrorBoundary } from './components/AppErrorBoundary'
 import { CrashModal } from './components/CrashModal'
 import { GuideSelection } from './components/GuideSelection'
 import { WelcomeScreen } from './components/WelcomeScreen'
+import {
+  _UvrGuideStyles,
+} from './components/UvrGuide'
+import {
+  UvrPanelStyles,
+  UvrUploadControlStyles,
+  UvrProcessControlStyles,
+  UvrResultViewerStyles,
+  UvrSessionResultStyles,
+} from './components'
 
 // ============================================================
 // Tab type
@@ -580,6 +590,24 @@ const AppShell: Component<AppProps> = (props) => {
     initSessionHistory()
     initSettings()
     initReverb()
+
+    // Inject UVR component styles
+    const styleElements = [
+      UvrPanelStyles,
+      UvrUploadControlStyles,
+      UvrProcessControlStyles,
+      UvrResultViewerStyles,
+      UvrSessionResultStyles,
+      _UvrGuideStyles,
+    ]
+
+    styleElements.forEach((styleString) => {
+      if (typeof styleString === 'string' && styleString.trim()) {
+        const style = document.createElement('style')
+        style.textContent = styleString
+        document.head.appendChild(style)
+      }
+    })
 
     melodyStore.seedDefaultSession()
 
