@@ -21,3 +21,25 @@ export { VocalAnalysis } from './VocalAnalysis'
 export { VocalChallenges } from './VocalChallenges'
 export { UvrGuide } from './UvrGuide'
 export { UvrSettings } from './UvrSettings'
+export { UvrGuideStyles } from './UvrGuide'
+export { UvrUploadControl } from './UvrUploadControl'
+export { UvrUploadControlStyles } from './UvrUploadControl'
+export { UvrProcessControl } from './UvrProcessControl'
+export { UvrProcessControlStyles } from './UvrProcessControl'
+export { UvrResultViewer } from './UvrResultViewer'
+export { UvrResultViewerStyles } from './UvrResultViewer'
+export {
+  FileUpload,
+  MusicNote,
+  Settings,
+  Loader2,
+  CheckCircle,
+  XCircle,
+  Pause,
+  Play,
+  X,
+  Download,
+  FileText,
+} from './icons'
+export { UvrSessionResult } from './UvrSessionResult'
+export { UvrSessionResultStyles } from './UvrSessionResult'

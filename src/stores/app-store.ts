@@ -77,6 +77,166 @@ export const getUvrVocalIntensity = (): number => uvrVocalIntensity()
 export const getUvrInstrumentalIntensity = (): number => uvrInstrumentalIntensity()
 export const getUvrSmoothing = (): number => uvrSmoothing()
 
+// ── UVR Session Management (Full Workflow) ─────────────────────────
+
+/** UVR processing status */
+export type UvrStatus = 'idle' | 'uploading' | 'processing' | 'completed' | 'error' | 'cancelled'
+
+/** UVR session interface */
+export interface UvrSession {
+  sessionId: string
+  status: UvrStatus
+  progress: number
+  processingTime?: number
+  error?: string
+  originalFile?: {
+    name: string
+    size: number
+    mimeType: string
+  }
+  outputs?: {
+    vocal?: string
+    instrumental?: string
+    vocalMidi?: string
+    instrumentalMidi?: string
+  }
+  createdAt: number
+}
+
+/** Current UVR session state */
+export const [currentUvrSession, setCurrentUvrSession] = createSignal<UvrSession | null>(null)
+
+/** Get session by ID */
+export function getUvrSession(sessionId: string): UvrSession | undefined {
+  const sessions = getAllUvrSessions()
+  return sessions.find(s => s.sessionId === sessionId)
+}
+
+/** Get all sessions */
+export function getAllUvrSessions(): UvrSession[] {
+  const saved = localStorage.getItem('pitchperfect_uvr_sessions')
+  if (saved) {
+    try {
+      return JSON.parse(saved)
+    } catch {
+      return []
+    }
+  }
+  return []
+}
+
+/** Save all sessions */
+function saveAllUvrSessions(sessions: UvrSession[]): void {
+  localStorage.setItem('pitchperfect_uvr_sessions', JSON.stringify(sessions))
+}
+
+/** Start a new UVR session */
+export function startUvrSession(
+  fileName: string,
+  fileSize: number,
+  mimeType: string,
+  mode: UvrMode = 'separate'
+): string {
+  const sessionId = 'uvr-session-' + Date.now()
+  const now = Date.now()
+
+  const newSession: UvrSession = {
+    sessionId,
+    status: 'idle',
+    progress: 0,
+    originalFile: { name: fileName, size: fileSize, mimeType },
+    createdAt: now,
+  }
+
+  const sessions = getAllUvrSessions()
+  sessions.push(newSession)
+  saveAllUvrSessions(sessions)
+
+  setCurrentUvrSession(newSession)
+  return sessionId
+}
+
+/** Update UVR session progress */
+export function updateUvrSessionProgress(sessionId: string, progress: number, processingTime?: number): void {
+  const sessions = getAllUvrSessions()
+  const session = sessions.find(s => s.sessionId === sessionId)
+  if (session) {
+    session.progress = progress
+    if (processingTime) {
+      session.processingTime = processingTime
+    }
+    saveAllUvrSessions(sessions)
+    setCurrentUvrSession(session)
+  }
+}
+
+/** Complete UVR session with results */
+export function completeUvrSession(
+  sessionId: string,
+  outputs: UvrSession['outputs']
+): void {
+  const sessions = getAllUvrSessions()
+  const session = sessions.find(s => s.sessionId === sessionId)
+  if (session) {
+    session.status = 'completed'
+    session.outputs = outputs
+    session.progress = 100
+    session.processingTime = Date.now() - session.createdAt
+    saveAllUvrSessions(sessions)
+    setCurrentUvrSession(session)
+  }
+}
+
+/** Set UVR session error */
+export function setErrorUvrSession(sessionId: string, error: string): void {
+  const sessions = getAllUvrSessions()
+  const session = sessions.find(s => s.sessionId === sessionId)
+  if (session) {
+    session.status = 'error'
+    session.error = error
+    saveAllUvrSessions(sessions)
+    setCurrentUvrSession(session)
+  }
+}
+
+/** Cancel UVR session */
+export function cancelUvrSession(sessionId: string): void {
+  const sessions = getAllUvrSessions()
+  const session = sessions.find(s => s.sessionId === sessionId)
+  if (session) {
+    session.status = 'cancelled'
+    saveAllUvrSessions(sessions)
+    setCurrentUvrSession(session)
+  }
+}
+
+/** Delete UVR session */
+export function deleteUvrSession(sessionId: string): void {
+  const sessions = getAllUvrSessions().filter(s => s.sessionId !== sessionId)
+  saveAllUvrSessions(sessions)
+  if (currentUvrSession()?.sessionId === sessionId) {
+    setCurrentUvrSession(null)
+  }
+}
+
+/** Get UVR session stats */
+export function getUvrSessionStats(): {
+  totalSessions: number
+  completedSessions: number
+  failedSessions: number
+  totalProcessingTime: number
+} {
+  const sessions = getAllUvrSessions()
+  return {
+    totalSessions: sessions.length,
+    completedSessions: sessions.filter(s => s.status === 'completed').length,
+    failedSessions: sessions.filter(s => s.status === 'error').length,
+    totalProcessingTime: sessions
+      .filter(s => s.processingTime)
+      .reduce((sum, s) => sum + (s.processingTime || 0), 0),
+  }
+}
+
 // ── Audio Engine (single instance) ─────────────────────────────
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
