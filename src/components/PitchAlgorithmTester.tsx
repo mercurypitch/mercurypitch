@@ -3,9 +3,9 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createSignal, For, Show } from 'solid-js'
+import { createSignal, For, Show, onMount } from 'solid-js'
 import { REGISTERED_ALGORITHMS, TEST_SAMPLES } from '@/data/pitch-test-samples'
-import type { AlgorithmResult, PitchResultForNote, TestSample, } from '@/lib/pitch-algorithm-tester'
+import type { AlgorithmResult, TestSample, } from '@/lib/pitch-algorithm-tester'
 import { ACCURACY_BAND_COLORS, benchmarkAlgorithmAsync, DEFAULT_ALGORITHMS, getPerformanceClassification, } from '@/lib/pitch-algorithm-tester'
 import type { PitchAlgorithm } from '@/lib/pitch-detector'
 
@@ -29,17 +29,10 @@ export const PitchAlgorithmTester: Component<PitchAlgorithmTesterProps> = (
   const algorithms = REGISTERED_ALGORITHMS
   const samples = TEST_SAMPLES
 
-  const isAlgorithmSelected = (algo: PitchAlgorithm) =>
-    selectedAlgorithms().includes(algo)
-
+  // Stable function for checkbox change handler
   const toggleAlgorithm = (algo: PitchAlgorithm) => {
-    if (isAlgorithmSelected(algo)) {
-      setSelectedAlgorithms((prev: PitchAlgorithm[]) =>
-        prev.filter((a) => a !== algo),
-      )
-    } else {
-      setSelectedAlgorithms((prev: PitchAlgorithm[]) => [...prev, algo])
-    }
+    const selected = selectedAlgorithms()
+    setSelectedAlgorithms(selected.includes(algo) ? selected.filter((a) => a !== algo) : [...selected, algo])
   }
 
   const playSample = async () => {
@@ -93,17 +86,16 @@ export const PitchAlgorithmTester: Component<PitchAlgorithmTesterProps> = (
           <h3>Algorithms to Test</h3>
           <div class="algorithm-list">
             <For each={algorithms}>
-              {(algo: {
-                id: PitchAlgorithm
-                name: string
-                description: string
-              }) => (
+              {(algo: { id: PitchAlgorithm, name: string, description: string }) => (
                 <label
-                  class={`algorithm-item ${isAlgorithmSelected(algo.id) ? 'selected' : ''}`}
+                  classList={{
+                    'algorithm-item': true,
+                    'selected': selectedAlgorithms().includes(algo.id),
+                  }}
                 >
                   <input
                     type="checkbox"
-                    checked={isAlgorithmSelected(algo.id)}
+                    checked={selectedAlgorithms().includes(algo.id)}
                     onChange={() => toggleAlgorithm(algo.id)}
                   />
                   <div class="algo-info">
@@ -125,7 +117,10 @@ export const PitchAlgorithmTester: Component<PitchAlgorithmTesterProps> = (
             <For each={samples}>
               {(sample: TestSample) => (
                 <button
-                  class={`sample-btn ${selectedSample()?.id === sample.id ? 'selected' : ''}`}
+                  classList={{
+                    'sample-btn': true,
+                    'selected': selectedSample()?.id === sample.id,
+                  }}
                   onClick={() => setSelectedSample(sample)}
                 >
                   {sample.name}
@@ -158,19 +153,14 @@ export const PitchAlgorithmTester: Component<PitchAlgorithmTesterProps> = (
                   const perf = getPerformanceClassification(
                     result.avgComputationTime,
                   )
+                  const color = ACCURACY_BAND_COLORS[result.totalScore as keyof typeof ACCURACY_BAND_COLORS] || '#666'
+                  const offsetColor = result.avgOffsetCents <= 10 ? ACCURACY_BAND_COLORS[100 as keyof typeof ACCURACY_BAND_COLORS] : ACCURACY_BAND_COLORS[50 as keyof typeof ACCURACY_BAND_COLORS]
+
                   return (
                     <div class="result-card">
                       <div class="result-header">
                         <span class="result-algo-name">{result.algorithm}</span>
-                        <span
-                          class="result-score"
-                          style={{
-                            color:
-                              ACCURACY_BAND_COLORS[
-                                result.totalScore as keyof typeof ACCURACY_BAND_COLORS
-                              ] || '#666',
-                          }}
-                        >
+                        <span class="result-score" style={{ color }}>
                           {result.totalScore}/100
                         </span>
                       </div>
@@ -185,7 +175,11 @@ export const PitchAlgorithmTester: Component<PitchAlgorithmTesterProps> = (
                       <div class="offset-metrics">
                         <span class="offset-label">Avg Offset:</span>
                         <span
-                          class={`offset-val ${result.avgOffsetCents <= 10 ? 'good' : 'bad'}`}
+                          classList={{
+                            'offset-val': true,
+                            'good': result.avgOffsetCents <= 10,
+                            'bad': result.avgOffsetCents > 10,
+                          }}
                         >
                           {result.avgOffsetCents.toFixed(1)}¢
                         </span>
@@ -195,14 +189,7 @@ export const PitchAlgorithmTester: Component<PitchAlgorithmTesterProps> = (
                           class="offset-fill"
                           style={{
                             width: `${Math.min(100, result.avgOffsetCents)}%`,
-                            background:
-                              result.avgOffsetCents <= 10
-                                ? ACCURACY_BAND_COLORS[
-                                    100 as keyof typeof ACCURACY_BAND_COLORS
-                                  ]
-                                : ACCURACY_BAND_COLORS[
-                                    50 as keyof typeof ACCURACY_BAND_COLORS
-                                  ],
+                            background: offsetColor,
                           }}
                         />
                       </div>
@@ -214,41 +201,37 @@ export const PitchAlgorithmTester: Component<PitchAlgorithmTesterProps> = (
 
             {/* Detailed Results Table */}
             <div class="detailed-results">
-              <For each={selectedSample()?.notes}>
-                {(note: { name: string; frequency: number }) => {
-                  const algorithmResults = results().map((r) =>
-                    r.results.find((rr) => rr.targetFreq === note.frequency),
-                  )
-                  return (
-                    <div class="note-row">
-                      <span class="note-name">{note.name}</span>
-                      <span class="note-freq">
-                        {note.frequency.toFixed(2)} Hz
-                      </span>
-                      <For each={algorithmResults}>
-                        {(result: PitchResultForNote | undefined) => {
-                          if (result === undefined) {
-                            return <span class="note-offset missing">-</span>
-                          }
-                          return (
-                            <span
-                              class="note-offset"
-                              style={{
-                                color:
-                                  ACCURACY_BAND_COLORS[
-                                    result.accuracyBand as keyof typeof ACCURACY_BAND_COLORS
-                                  ] || '#666',
-                              }}
-                            >
-                              {result.offsetCents.toFixed(0)}¢
-                            </span>
-                          )
-                        }}
-                      </For>
-                    </div>
-                  )
-                }}
-              </For>
+              <Show when={selectedSample()}>
+                {(sample) => (
+                  <For each={sample.notes}>
+                    {(note: { name: string; frequency: number }) => {
+                      const algorithmResults = results().filter((r) =>
+                        r.results.some((rr) => rr.targetFreq === note.frequency)
+                      )
+
+                      return (
+                        <div class="note-row">
+                          <span class="note-name">{note.name}</span>
+                          <span class="note-freq">
+                            {note.frequency.toFixed(2)} Hz
+                          </span>
+                          <For each={algorithmResults}>
+                            {(result: AlgorithmResult) => {
+                              const color = ACCURACY_BAND_COLORS[result.results.find(rr => rr.targetFreq === note.frequency)?.accuracyBand as keyof typeof ACCURACY_BAND_COLORS] || '#666'
+
+                              return (
+                                <span class="note-offset" style={{ color }}>
+                                  {result.results.find(rr => rr.targetFreq === note.frequency)?.offsetCents.toFixed(0)}¢
+                                </span>
+                              )
+                            }}
+                          </For>
+                        </div>
+                      )
+                    }}
+                  </For>
+                )}
+              </Show>
             </div>
           </div>
         </Show>
