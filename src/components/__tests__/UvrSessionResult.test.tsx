@@ -14,23 +14,6 @@ describe('UvrSessionResult Component', () => {
     onClose: vi.fn(),
   }
 
-  // Helper to click instrumental download button
-  const clickInstrumentalDownload = () => {
-    // Search for the guitar emoji which is unique to instrumental
-    const guitarIcons = screen.getAllByText('🎸')
-    if (guitarIcons.length === 0) return false
-
-    const guitarIconElement = guitarIcons[0].closest('.output-file') as HTMLElement
-    if (!guitarIconElement) return false
-
-    const downloadButton = guitarIconElement.querySelector('button.file-action') as HTMLButtonElement
-    if (downloadButton) {
-      fireEvent.click(downloadButton)
-      return true
-    }
-    return false
-  }
-
   beforeEach(() => {
     vi.clearAllMocks()
     // Clear localStorage to reset mock data
