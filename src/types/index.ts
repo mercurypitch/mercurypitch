@@ -167,7 +167,7 @@ export interface PracticeResult {
 }
 
 /** Active tab for the application */
-export type ActiveTab = 'practice' | 'editor' | 'settings' | 'vocal-analysis' | 'community' | 'leaderboard' | 'vocal-challenges'
+export type ActiveTab = 'practice' | 'editor' | 'settings' | 'vocal-analysis' | 'community' | 'leaderboard' | 'vocal-challenges' | 'uvr'
 /** Practice sub-mode options */
 export type PracticeSubMode = 'all' | 'random' | 'focus' | 'reverse'
 

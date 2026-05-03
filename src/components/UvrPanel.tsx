@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createSignal, createEffect, onCleanup, Show } from 'solid-js'
+import { createSignal, createEffect, onCleanup, Show, For } from 'solid-js'
 import {
   Music,
   Settings,
@@ -276,7 +276,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                     <UvrSessionResult
                       sessionId={s.sessionId}
                       onView={() => handleSessionView(s.sessionId)}
-                      onExport={(type) => handleExportSession(s.sessionId, type)}
+                      onExport={(type) => handleExportSession(s.sessionId, type as 'vocal' | 'instrumental' | 'vocal-midi')}
                       onClose={() => setCurrentView('upload')}
                     />
                   )}

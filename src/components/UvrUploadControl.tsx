@@ -67,8 +67,9 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
     e.preventDefault()
     setIsDragging(false)
 
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      handleFileSelect(e.dataTransfer.files[0])
+    const files = e.dataTransfer?.files
+    if (files && files.length > 0) {
+      handleFileSelect(files[0])
     }
   }
 
@@ -81,7 +82,7 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
 
   const handleClear = () => {
     setSelectedFile(null)
-    const fileInput = document.getElementById('uvr-file-input')
+    const fileInput = document.getElementById('uvr-file-input') as HTMLInputElement | null
     if (fileInput) fileInput.value = ''
   }
 
@@ -141,10 +142,10 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
             <div class="file-preview">
               <div class="file-icon">🎵</div>
               <div class="file-details">
-                <p class="file-name">{selectedFile().name}</p>
+                <p class="file-name">{selectedFile()?.name || 'Unknown'}</p>
                 <p class="file-meta">
-                  {formatFileSize(selectedFile().size)} •
-                  {selectedFile().type || 'Unknown type'}
+                  {formatFileSize(selectedFile()?.size || 0)} •
+                  {selectedFile()?.type || 'Unknown type'}
                 </p>
               </div>
             </div>

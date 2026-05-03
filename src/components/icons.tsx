@@ -96,3 +96,49 @@ export const FileText: Component = () => (
     <polyline points="10 9 9 9 8 9" />
   </svg>
 )
+
+// Music Icon
+export const Music: Component = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="24" height="24">
+    <path d="M9 18V5l12-2v13" />
+    <circle cx="6" cy="18" r="3" />
+    <circle cx="18" cy="16" r="3" />
+  </svg>
+)
+
+// Sliders Horizontal Icon
+export const SlidersHorizontal: Component = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="24" height="24">
+    <line x1="4" y1="21" x2="4" y2="14" />
+    <line x1="4" y1="10" x2="4" y2="3" />
+    <line x1="12" y1="21" x2="12" y2="12" />
+    <line x1="12" y1="8" x2="12" y2="3" />
+    <line x1="20" y1="21" x2="20" y2="16" />
+    <line x1="20" y1="12" x2="20" y2="3" />
+    <circle cx="4" cy="14" r="2" />
+    <circle cx="12" cy="8" r="2" />
+    <circle cx="20" cy="16" r="2" />
+  </svg>
+)
+
+// History Icon
+export const History: Component = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="24" height="24">
+    <circle cx="12" cy="12" r="10" />
+    <polyline points="12 6 12 12 16 14" />
+  </svg>
+)
+
+// Chevron Down Icon
+export const ChevronDown: Component = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="24" height="24">
+    <polyline points="6 9 12 15 18 9" />
+  </svg>
+)
+
+// Chevron Up Icon
+export const ChevronUp: Component = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="24" height="24">
+    <polyline points="18 15 12 9 6 15" />
+  </svg>
+)

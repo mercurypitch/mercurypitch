@@ -8,8 +8,8 @@ import { For } from 'solid-js'
 import { createMemo, createSignal, onMount, Show } from 'solid-js'
 import { AppSidebar } from '@/components/AppSidebar'
 import { CommunityLeaderboard } from '@/components/CommunityLeaderboard'
-import { VocalAnalysis } from '@/components'
-import { VocalChallenges } from '@/components'
+import { VocalAnalysis, VocalChallenges, TierSelector } from '@/components'
+import { UvrPanel } from '@/components/UvrPanel'
 import { CommunityShare } from '@/components/CommunityShare'
 import { FocusMode } from '@/components/FocusMode'
 import { HistoryCanvas } from '@/components/HistoryCanvas'
@@ -22,8 +22,8 @@ import { SessionBrowser } from '@/components/SessionBrowser'
 import { SessionEditor } from '@/components/SessionEditor'
 import { SessionLibraryModal } from '@/components/SessionLibraryModal'
 import { SessionPlayer } from '@/components/SessionPlayer'
+import type { UvrMode } from '@/types/uvr'
 import { SettingsPanel } from '@/components/SettingsPanel'
-import { TierSelector } from '@/components'
 import type { PracticeSubMode } from '@/components/shared/SharedControlToolbar'
 import { SharedControlToolbar } from '@/components/shared/SharedControlToolbar'
 import { EngineProvider, useEngines } from '@/contexts/EngineContext'
@@ -801,6 +801,18 @@ const AppShell: Component<AppProps> = (props) => {
               Challenges
             </button>
             <button
+              id="tab-uvr"
+              class={`app-tab ${activeTab() === 'uvr' ? 'active' : ''}`}
+              onClick={() => void handleTabChange('uvr')}
+            >
+              <svg viewBox="0 0 24 24" width="18" height="18">
+                <path fill="currentColor" d="M9 18V5l12-2v13" />
+                <circle cx="6" cy="18" r="3" />
+                <circle cx="18" cy="16" r="3" />
+              </svg>
+              Vocal Sep
+            </button>
+            <button
               id="tab-settings"
               class={`app-tab ${activeTab() === 'settings' ? 'active' : ''}`}
               onClick={() => void handleTabChange('settings')}
@@ -1056,6 +1068,24 @@ const AppShell: Component<AppProps> = (props) => {
             <Show when={activeTab() === 'settings'}>
               <div id="settings-panel">
                 <SettingsPanel />
+              </div>
+            </Show>
+
+            <Show when={activeTab() === 'uvr'}>
+              <div id="uvr-panel">
+                <UvrPanel
+                  defaultView='upload'
+                  onPracticeStart={(mode) => {
+                    // For now, this could load a session from UVR
+                    console.log('Starting practice with mode:', mode)
+                  }}
+                  onExport={(type) => {
+                    console.log('Exporting:', type)
+                  }}
+                  onSessionView={(sessionId) => {
+                    console.log('Viewing session:', sessionId)
+                  }}
+                />
               </div>
             </Show>
           </div>

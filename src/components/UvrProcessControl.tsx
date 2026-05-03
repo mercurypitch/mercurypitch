@@ -3,12 +3,12 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createSignal, createEffect, For } from 'solid-js'
+import { createSignal, createEffect, For, Show } from 'solid-js'
 import { Settings, Music, Loader2, CheckCircle, XCircle, Pause, Play } from './icons'
 
 interface ProcessControlProps {
   sessionId: string
-  status: 'processing' | 'completed' | 'error'
+  status: 'idle' | 'uploading' | 'processing' | 'completed' | 'error' | 'cancelled'
   progress: number
   processingTime?: number
   error?: string
@@ -59,6 +59,13 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
           description: props.error || 'Unknown error occurred',
           color: 'var(--error)',
         }
+      default:
+        return {
+          icon: <Loader2 />,
+          title: 'Waiting to start',
+          description: 'Ready to process',
+          color: 'var(--fg-tertiary)',
+        }
     }
   }
 
@@ -106,7 +113,7 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
           ]}>
             {(stage) => (
               <div class={`stage-item ${stage.active ? 'active' : ''}`}>
-                <div class="stage-icon">{stage.icon}</div>
+                <span class="stage-icon">{(stage.icon as any)()}</span>
                 <span class="stage-label">{stage.label}</span>
               </div>
             )}
