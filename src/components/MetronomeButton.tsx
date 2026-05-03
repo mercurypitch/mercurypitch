@@ -3,6 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
+import styles from './MetronomeButton.module.css'
 
 interface MetronomeButtonProps {
   active: boolean

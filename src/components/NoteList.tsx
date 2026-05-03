@@ -6,6 +6,7 @@ import type { Component } from 'solid-js'
 import { createMemo, For, Show } from 'solid-js'
 import { centsToBand } from '@/lib/practice-engine'
 import type { MelodyItem, NoteResult } from '@/types'
+import styles from './NoteList.module.css'
 
 interface NoteListProps {
   melody: () => MelodyItem[]
@@ -70,20 +71,20 @@ export const NoteList: Component<NoteListProps> = (props) => {
 
           return (
             <div
-              class={`note-item ${isRest ? 'rest-item' : ''} ${isActive() ? 'active' : ''} ${bandCls()}`}
+              class={`${styles.noteItem} ${isRest ? 'rest-item' : ''} ${isActive() ? 'active' : ''} ${bandCls()}`}
               data-midi={midi}
             >
-              <div class="note-dot" />
-              <span class="note-name">
+              <div class={styles.noteDot} />
+              <span class={styles.noteName}>
                 {isRest ? '𝄽 Rest' : `${item.note.name}${item.note.octave}`}
               </span>
-              <span class="note-freq">
+              <span class={styles.noteFreq}>
                 {isRest
                   ? `${item.duration} beat${item.duration === 1 ? '' : 's'}`
                   : `${item.note.freq.toFixed(0)}Hz`}
               </span>
               <Show when={pct() !== null}>
-                <span class="note-accuracy-pct">{pct()}%</span>
+                <span class={styles.noteAccuracyPct}>{pct()}%</span>
               </Show>
             </div>
           )

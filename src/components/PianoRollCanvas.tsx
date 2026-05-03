@@ -9,6 +9,7 @@ import { audioRegistry } from '@/lib/audio-registry'
 import type { PlaybackState } from '@/lib/piano-roll'
 import { PianoRollEditor } from '@/lib/piano-roll'
 import type { MelodyItem, ScaleDegree } from '@/types'
+import styles from './PianoRollCanvas.module.css'
 
 interface PianoRollCanvasProps {
   melody: () => MelodyItem[]
@@ -160,8 +161,8 @@ export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
   })
 
   return (
-    <div class="piano-roll-wrapper">
-      <div ref={containerRef} class="piano-roll-container" />
+    <div class={styles.pianoRollWrapper}>
+      <div ref={containerRef} class={styles.pianoRollContainer} />
     </div>
   )
 }

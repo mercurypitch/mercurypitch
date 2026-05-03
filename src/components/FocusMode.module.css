@@ -1,0 +1,359 @@
+/* Extracted from: Focus Mode — full-screen minimal practice UI */
+
+.focus-mode {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  background: var(--bg-primary);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Top stats bar */
+.focus-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  background: var(--bg-secondary);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  gap: 16px;
+  min-height: 48px;
+}
+.focus-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.focus-key-badge {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--accent-dim);
+  border: 1px solid var(--accent-glow);
+  padding: 3px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+.focus-session-badge {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  padding: 3px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+.focus-repeat-count {
+  color: var(--accent);
+}
+.focus-topbar-center {
+  flex: 1;
+  max-width: 360px;
+  margin: 0 auto;
+}
+.focus-progress-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.focus-progress-bar {
+  width: 100%;
+  height: 6px;
+  background: var(--bg-secondary);
+  border-radius: 3px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.focus-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent) 0%, var(--green) 100%);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+  min-width: 0;
+}
+.focus-progress-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+}
+.focus-topbar-right {
+  flex-shrink: 0;
+  min-width: 60px;
+  text-align: right;
+}
+.focus-score {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: var(--accent);
+}
+.focus-score-unit {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  margin-left: 2px;
+}
+
+.focus-canvas {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Playhead for Focus Mode */
+.focus-playhead {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 3px;
+  height: 100%;
+  background: var(--accent);
+  box-shadow:
+    0 0 8px var(--accent-glow),
+    0 0 16px var(--accent-glow);
+  border-radius: 2px;
+  pointer-events: none;
+  display: none;
+  z-index: 10;
+}
+
+.focus-playhead::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -7px;
+  width: 17px;
+  height: 9px;
+  background: var(--accent);
+  border-radius: 0 0 4px 4px;
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+}
+
+.focus-playhead .playhead-marker {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 50%;
+  background: var(--accent-glow);
+  border-radius: 0 0 2px 2px;
+  transition: left 0.1s linear;
+}
+
+/* Glowing pitch dot that follows the current note vertically */
+.focus-pitch-dot {
+  position: absolute;
+  left: 2px;
+  width: 5px;
+  height: 5px;
+  background: var(--accent);
+  border-radius: 50%;
+  box-shadow:
+    0 0 4px var(--accent-glow),
+    0 0 8px var(--accent-glow),
+    0 0 12px var(--accent-glow),
+    0 0 16px var(--accent-glow);
+  transform: translateY(calc(var(--pitch-position, 50%) * -100%));
+  animation: pitch-dot-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pitch-dot-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow:
+      0 0 4px var(--accent-glow),
+      0 0 8px var(--accent-glow),
+      0 0 12px var(--accent-glow),
+      0 0 16px var(--accent-glow);
+  }
+  50% {
+    opacity: 0.7;
+    box-shadow:
+      0 0 6px var(--accent-glow),
+      0 0 12px var(--accent-glow),
+      0 0 18px var(--accent-glow),
+      0 0 24px var(--accent-glow);
+  }
+}
+
+.focus-history {
+  height: 56px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.focus-toolbar {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 40px;
+  padding: 10px 20px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+}
+
+.focus-exit {
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 6px 10px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+.focus-exit:hover {
+  opacity: 1;
+}
+
+.focus-play {
+  background: var(--accent);
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 8px 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 56px;
+  min-height: 56px;
+  transition: background 0.15s;
+}
+.focus-play:hover {
+  filter: brightness(1.15);
+}
+.focus-play svg {
+  width: 24px;
+  height: 24px;
+}
+
+.focus-info {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  min-width: 60px;
+  text-align: center;
+}
+
+.focus-key-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.focus-speed-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.focus-speed-btn {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+
+.focus-speed-btn:hover:not(:disabled) {
+  background: var(--accent);
+  color: #fff;
+}
+
+.focus-speed-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.focus-speed-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  min-width: 48px;
+  text-align: center;
+}
+
+@media (max-width: 480px) {
+  .focus-topbar {
+    padding: 8px 12px;
+    min-height: 44px;
+  }
+  .focus-topbar-left {
+    gap: 6px;
+  }
+  .focus-key-badge,
+  .focus-session-badge {
+    font-size: 0.7rem;
+    padding: 2px 8px;
+  }
+  .focus-topbar-center {
+    max-width: 200px;
+  }
+  .focus-progress-bar {
+    height: 5px;
+  }
+  .focus-toolbar {
+    bottom: 16px;
+    padding: 8px 16px;
+    gap: 8px;
+  }
+}
+
+.session-player-progress {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.session-player-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.session-item-icon {
+  color: var(--text-muted);
+}
+
+.session-item-label {
+  font-size: 0.78rem;
+  color: var(--text-primary);
+}
+
+.session-player-timer {
+  margin-left: auto;
+}
+
+.session-elapsed {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.session-player-controls {
+  display: flex;
+  gap: 6px;
+}

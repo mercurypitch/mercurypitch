@@ -1,0 +1,742 @@
+/* Extracted from: Piano Roll Editor */
+
+#editor-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  background: var(--bg-primary);
+}
+
+/* Editor fullscreen — takes full main-layout when active */
+#editor-panel.editor-fullscreen {
+  width: 100%;
+  flex: 1;
+}
+
+#piano-roll-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* Piano roll wrapper — fills its flex parent */
+.piano-roll-wrapper {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Piano roll container — fills wrapper */
+.piano-roll-container {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* Tab bar */
+#app-tabs {
+  display: flex;
+  gap: 4px;
+}
+
+.app-tab {
+  padding: 5px 14px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.app-tab:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.app-tab.active {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+.tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  margin-left: 6px;
+  border-radius: 9px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+/* Piano roll toolbar */
+/* =========================================================
+ROLL TOOLBAR — GRID RIBBON REFACTOR (NON-DESTRUCTIVE)
+Keeps your existing styles, only adjusts layout
+========================================================= */
+
+/* 🔥 MAIN TOOLBAR: force ONE horizontal row */
+.roll-toolbar {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: max-content;
+
+  align-items: stretch;
+  gap: 10px;
+
+  padding: 8px 14px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+
+  flex-wrap: unset; /* disable old wrapping */
+  flex-shrink: 0;
+
+  overflow-x: auto; /* Enables the horizontal scrollbar when needed */
+  max-width: 100%; /* Ensures it doesn't push past the screen width */
+
+  /* Optional: Smooth scrolling for touch devices */
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 📦 GROUP CONTAINER (NEW) */
+.roll-group {
+  display: grid;
+  grid-template-rows: repeat(3, auto);
+  grid-auto-flow: column;
+  grid-auto-columns: max-content;
+
+  gap: 5px;
+  padding: 8px 8px;
+
+  background: var(--bg-secondary);
+  /*border: 1px solid var(--border);*/
+  /*border-radius: 6px;*/
+
+  position: relative;
+}
+
+.roll-group:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  right: -6px;
+  top: 6px;
+  bottom: 6px;
+  width: 1px;
+  /*background: var(--border);*/
+}
+
+/* 🧩 Two-column groups (for complex sections like Musical / Effects / IO) */
+.roll-group-2col {
+  grid-template-columns: repeat(2, max-content);
+}
+
+/* 🧠 Ensure inner elements behave nicely inside grid cells */
+.roll-group > * {
+  align-self: center;
+}
+
+.roll-group::before {
+  content: attr(data-name);
+  position: absolute;
+  top: -7px;
+  left: 4px;
+  font-weight: bold;
+
+  color: var(--text-secondary);
+  font-size: 0.62rem;
+}
+
+/* 🔧 Keep internal flex layouts working inside grid */
+.roll-durations,
+.roll-octave-group,
+.roll-octaves-group,
+.roll-bars-group,
+.roll-bars-btn,
+.roll-octave-btn,
+.roll-zoom-group,
+.roll-mode-group,
+.roll-instrument-group,
+.roll-effects-group,
+.roll-export-btn,
+.roll-export-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* 🧼 Prevent labels from stretching weirdly */
+.roll-toolbar label {
+  white-space: nowrap;
+}
+
+/* 🎯 Optional polish: subtle panel depth (Word-like feel) */
+.roll-group {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+}
+
+.roll-tool-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.roll-tool-btn:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.roll-tool-btn.active {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+.roll-effects-label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-right: 2px;
+}
+
+.roll-effect-btn {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.roll-effect-btn:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.roll-effect-btn.active {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+/* Effect-specific colors */
+.roll-effect-btn.slide-up {
+  border-left: 2px solid #4ecdc4;
+}
+.roll-effect-btn.slide-down {
+  border-left: 2px solid #4ecdc4;
+}
+.roll-effect-btn.ease-in {
+  border-left: 2px solid #ffe66d;
+}
+.roll-effect-btn.ease-out {
+  border-left: 2px solid #ffe66d;
+}
+.roll-effect-btn.vibrato {
+  border-left: 2px solid #ff6b6b;
+}
+
+.roll-octave-btn {
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  min-width: 36px;
+}
+
+.roll-octave-btn:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.roll-octave-value {
+  font-size: 0.72rem;
+  color: var(--accent);
+  min-width: 20px;
+  text-align: center;
+  font-weight: 600;
+}
+.roll-octave-value {
+  font-size: 0.72rem;
+  color: var(--accent);
+  min-width: 20px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.dur-label {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  margin-right: 2px;
+}
+
+.dur-btn {
+  padding: 4px 7px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  min-width: 32px;
+}
+
+.dur-btn:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.dur-btn.active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+/* Rows (numOctaves) controls */
+.roll-octaves-group {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.octaves-label {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  margin-right: 2px;
+}
+
+.octave-btn {
+  padding: 3px 6px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  min-width: 24px;
+  font-weight: 600;
+}
+
+.octave-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Scale mode select */
+.roll-mode-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mode-label {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+
+.roll-mode-select {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text-primary);
+  padding: 4px 8px;
+  font-size: 0.72rem;
+  max-width: 140px;
+  outline: none;
+}
+
+.roll-mode-select:focus {
+  border-color: var(--accent);
+}
+
+/* Custom scale builder */
+.roll-custom-scale {
+  display: flex;
+  gap: 2px;
+  flex-wrap: wrap;
+  max-width: 200px;
+  padding: 4px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+}
+
+.scale-note-btn {
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 0.6rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: all 0.1s ease;
+}
+
+.scale-note-btn:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.scale-note-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #0d1117;
+  font-weight: 700;
+}
+
+.scale-note-btn.black {
+  background: rgba(0, 0, 0, 0.3);
+  color: var(--text-muted);
+}
+
+.scale-note-btn.black:hover {
+  background: rgba(0, 0, 0, 0.5);
+  color: var(--text-primary);
+}
+
+.scale-note-btn.black.active {
+  background: var(--accent);
+  color: #0d1117;
+}
+
+/* Share button */
+.roll-share-btn {
+  padding: 5px 10px;
+  border: 1px solid var(--green);
+  border-radius: 5px;
+  background: var(--green-dim);
+  color: var(--green);
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.roll-share-btn:hover {
+  background: var(--green);
+  color: #fff;
+}
+
+/* Effect action buttons row */
+.roll-effects-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.roll-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  white-space: nowrap;
+}
+
+.roll-action-btn:hover {
+  border-color: var(--purple);
+  color: var(--purple);
+  background: rgba(188, 140, 255, 0.08);
+}
+
+.roll-action-btn:active {
+  transform: scale(0.96);
+}
+
+.roll-action-btn.slide-up:hover {
+  border-color: var(--teal);
+  color: var(--teal);
+  background: rgba(45, 212, 191, 0.08);
+}
+
+.roll-action-btn.slide-down:hover {
+  border-color: var(--orange);
+  color: var(--orange);
+  background: rgba(219, 109, 40, 0.08);
+}
+
+.roll-action-btn.ease-in:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.roll-action-btn.ease-out:hover {
+  border-color: var(--yellow);
+  color: var(--yellow);
+  background: rgba(210, 153, 34, 0.08);
+}
+
+.roll-action-btn.vibrato:hover {
+  border-color: var(--purple);
+  color: var(--purple);
+  background: rgba(188, 140, 255, 0.08);
+}
+
+/* Instrument label */
+.instrument-label {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+
+.octave-label {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+
+.roll-instrument-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.roll-instrument-select {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text-primary);
+  padding: 4px 8px;
+  font-size: 0.72rem;
+  max-width: 100px;
+  outline: none;
+}
+
+.roll-instrument-select:focus {
+  border-color: var(--accent);
+}
+
+/* Bar controls */
+.roll-bars-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.roll-bars-btn {
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  min-width: 36px;
+}
+
+.roll-bars-btn:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+/* Zoom controls */
+.roll-zoom-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.roll-zoom-btn {
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  min-width: 30px;
+}
+
+.roll-zoom-btn:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+/* Grid toggle button in piano roll toolbar */
+.roll-grid-toggle-btn {
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.roll-grid-toggle-btn:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+.roll-grid-toggle-btn.active {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+.zoom-value {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  min-width: 40px;
+  text-align: center;
+}
+
+/* Duration buttons */
+.roll-durations {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.dur-label {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  margin-right: 2px;
+}
+
+.dur-btn {
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  min-width: 34px;
+}
+
+.dur-btn:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.dur-btn.active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+/* Grid controls */
+.roll-ctrl-btn {
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.roll-ctrl-btn:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.roll-ctrl-btn.danger:hover {
+  border-color: var(--red);
+  color: var(--red);
+}
+
+/* Undo/Redo buttons */
+.roll-undo-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.roll-undo-btn,
+.roll-redo-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+.roll-undo-btn:hover:not(:disabled),
+.roll-redo-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.roll-undo-btn:disabled,
+.roll-redo-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* Delete Selected button */
+.roll-selection-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.roll-delete-btn {
+  padding: 5px 10px;
+  border: 1px solid var(--red);
+  border-radius: 5px;
+  background: var(--bg-tertiary);
+  color: var(--red);
+  cursor: pointer;
+  font-size: 0.78rem;
+  transition: all 0.12s ease;
+}
+.roll-delete-btn:hover {
+  background: var(--red);
+  color: var(--bg-primary);
+}
+.roll-delete-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}

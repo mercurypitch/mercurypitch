@@ -1,0 +1,147 @@
+/* Extracted from: Melody Pill List */
+
+.melody-pill-list {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.pill-list-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.search-input {
+  flex: 1;
+  min-width: 150px;
+  padding: 6px 10px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.select-all-btn,
+.clear-selection-btn {
+  padding: 6px 12px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.select-all-btn:hover,
+.clear-selection-btn:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.pill-list-items {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.pill-list-items::-webkit-scrollbar {
+  width: 6px;
+}
+
+.pill-list-items::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+.pill-list-items::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+.pill-list-items::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+.melody-pill {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  cursor: grab;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+  gap: 8px;
+}
+
+.melody-pill:last-child {
+  border-bottom: none;
+}
+
+.melody-pill:hover {
+  background: var(--bg-secondary);
+}
+
+.melody-pill.selected {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+}
+
+.pill-name {
+  flex: 1;
+  font-size: 13px;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pill-bpm {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  background: var(--bg-tertiary);
+  padding: 2px 6px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+.empty-state {
+  padding: 20px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+/* Session Editor Save/Load Buttons */
+.save-btn,
+.load-btn {
+  padding: 6px 12px;
+  background: var(--accent);
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--bg-primary);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.save-btn:hover,
+.load-btn:hover {
+  background: var(--accent);
+}
+
+.item-count {
+  font-size: 13px;
+  color: var(--text-secondary);
+}

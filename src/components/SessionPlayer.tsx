@@ -8,6 +8,7 @@ import { createSignal, onCleanup, onMount, Show } from 'solid-js'
 import { appStore } from '@/stores'
 import { getCurrentSessionItem } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
+import styles from './SessionPlayer.module.css'
 
 interface SessionPlayerProps {
   onSkip: () => void
@@ -47,9 +48,9 @@ export const SessionPlayer: Component<SessionPlayerProps> = (props) => {
   }
 
   return (
-    <div class="session-player">
-      <div class="session-player-header">
-        <div class="session-player-title">
+    <div class={styles.sessionPlayer}>
+      <div class={styles.sessionPlayerHeader}>
+        <div class={styles.sessionPlayerTitle}>
           <svg viewBox="0 0 24 24" width="16" height="16">
             <path
               fill="currentColor"

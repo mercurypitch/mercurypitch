@@ -19,6 +19,7 @@ import { melodyStore } from '@/stores/melody-store'
 import { showSidebarNoteList } from '@/stores/settings-store'
 import { customScales as customScalesMap, customScaleTypeId, } from '@/stores/settings-store'
 import type { MelodyItem, NoteResult, PitchResult } from '@/types'
+import styles from './AppSidebar.module.css'
 
 interface AppSidebarProps {
   /** Called when a preset is loaded */
@@ -87,7 +88,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
     >
       {/* Mobile close button */}
       <button
-        class="sidebar-close-btn"
+        class={styles.sidebarCloseBtn}
         onClick={() => props.onClose?.()}
         title="Close menu"
       >
@@ -135,7 +136,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
 
       {/* Playback Setup section */}
       <Show when={appStore.showPlaybackSetupInfo()}>
-        <div class="sidebar-section">
+        <div class={styles.sidebarSection}>
           <h2 class="panel-title">Playback Setup</h2>
 
           <div id="scale-info">
@@ -289,13 +290,13 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
       </Show>
 
       {/* Library */}
-      <div class="sidebar-section">
+      <div class={styles.sidebarSection}>
         <LibraryTab />
       </div>
 
       {/* Stats panel */}
       <Show when={isPracticeOrSettingsTab() && appStore.showStats()}>
-        <div class="sidebar-section">
+        <div class={styles.sidebarSection}>
           <div id="stats-panel">
             <h3>Accuracy</h3>
             <StatsBars noteResults={props.noteResults} />
@@ -334,7 +335,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
 
       {/* Note list (bottom-anchored) */}
       <Show when={isPracticeOrSettingsTab() && showSidebarNoteList()}>
-        <div class="sidebar-section sidebar-notes-bottom">
+        <div class={`${styles.sidebarSection} ${styles.sidebarNotesBottom}`}>
           <NoteList
             melody={props.melody}
             currentNoteIndex={props.currentNoteIndex}
@@ -346,7 +347,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
 
       {/* Pitch display (bottom-anchored) */}
       <Show when={isPracticeOrSettingsTab() && appStore.showPitchDisplay()}>
-        <div class="sidebar-section sidebar-notes-bottom">
+        <div class={`${styles.sidebarSection} ${styles.sidebarNotesBottom}`}>
           <PitchDisplay pitch={props.pitch} targetNote={props.targetNoteName} />
         </div>
       </Show>

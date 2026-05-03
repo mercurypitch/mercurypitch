@@ -1,0 +1,2249 @@
+/* Extracted from: Notification Toast */
+
+.notification-toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  z-index: 2000;
+  animation:
+    slideIn 0.3s ease,
+    fadeOut 0.3s ease 2.7s forwards;
+  max-width: 350px;
+}
+
+.notification-toast--info {
+  border-left: 4px solid var(--accent);
+}
+
+.notification-toast--success {
+  border-left: 4px solid var(--green);
+}
+
+.notification-toast--warning {
+  border-left: 4px solid var(--yellow);
+}
+
+.notification-toast--error {
+  border-left: 4px solid var(--red);
+}
+
+.notification-toast-icon {
+  font-size: 1.1rem;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+}
+
+.notification-toast--info .notification-toast-icon {
+  color: var(--accent);
+}
+
+.notification-toast--success .notification-toast-icon {
+  color: var(--green);
+}
+
+.notification-toast--warning .notification-toast-icon {
+  color: var(--yellow);
+}
+
+.notification-toast--error .notification-toast-icon {
+  color: var(--red);
+}
+
+.notification-toast-message {
+  flex: 1;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* ============================================================
+// Walkthrough Styles (GH #199)
+// ============================================================ */
+
+/* Walkthrough control group - Learn + Guide buttons side by side */
+.walkthrough-control-group {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+
+/* Walkthrough control button - aligned with tabs */
+.walkthrough-control-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  height: 32px;
+  line-height: 32px;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.walkthrough-control-btn:hover {
+  background: var(--bg-card);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.walkthrough-control-btn:active {
+  transform: scale(0.98);
+}
+
+.walkthrough-control-text {
+  font-size: 0.85rem;
+}
+
+/* Guide button - subtle variant */
+.walkthrough-control-btn-guide {
+  background: var(--surface-dim, var(--surface));
+  border-color: var(--border-muted, var(--border));
+  opacity: 0.85;
+}
+
+.walkthrough-control-btn-guide:hover {
+  opacity: 1;
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Walkthrough / Learn Selection Overlay */
+.walkthrough-selection-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  backdrop-filter: blur(4px);
+  animation: welcome-fadein 0.25s ease;
+}
+
+.walkthrough-selection-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  width: 400px;
+  max-width: 92vw;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  animation: welcome-slidein 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  display: flex;
+  flex-direction: column;
+}
+
+.ws-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 16px;
+  flex-shrink: 0;
+}
+
+.ws-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ws-header-icon {
+  color: var(--accent);
+}
+
+.ws-title {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+.ws-close-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+}
+
+.ws-close-btn:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+/* Progress */
+.ws-progress {
+  padding: 0 24px 16px;
+  flex-shrink: 0;
+}
+
+.ws-progress-bar {
+  width: 100%;
+  height: 4px;
+  background: var(--bg-tertiary);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.ws-progress-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.ws-progress-text {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* Chapters list */
+.ws-chapters {
+  padding: 0 16px 16px;
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ws-chapter-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s;
+  width: 100%;
+  font-size: 0.88rem;
+  color: var(--text-primary);
+}
+
+.ws-chapter-item:hover {
+  border-color: var(--accent);
+  background: var(--bg-secondary);
+}
+
+.ws-chapter-icon {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: var(--bg-secondary);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+
+.ws-chapter-icon-done {
+  color: var(--green);
+  border-color: var(--green);
+  background: rgba(34, 197, 94, 0.08);
+}
+
+.ws-chapter-title {
+  flex: 1;
+  font-weight: 500;
+  font-size: 0.85rem;
+}
+
+.ws-chapter-tab {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  background: var(--bg-secondary);
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: capitalize;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  border: 1px solid var(--border);
+}
+
+.ws-chapter-done {
+  opacity: 0.6;
+}
+
+.ws-chapter-done:hover {
+  opacity: 1;
+}
+
+.ws-completed {
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Footer */
+.ws-footer {
+  padding: 16px 24px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.ws-close-footer {
+  width: 100%;
+  padding: 10px 16px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.ws-close-footer:hover {
+  background: var(--accent);
+}
+
+/* Walkthrough Modal */
+.walkthrough-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  backdrop-filter: blur(4px);
+}
+
+.walkthrough-modal {
+  background: var(--bg-primary);
+  border-radius: 12px;
+  max-width: 680px;
+  width: 95vw;
+  max-width: min(680px, 95vw);
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+}
+
+.walkthrough-content {
+  display: flex;
+  flex-direction: column;
+  max-height: 100%;
+  overflow: hidden;
+}
+
+.walkthrough-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+  text-align: center;
+}
+
+.walkthrough-title {
+  margin: 0 0 8px 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.walkthrough-subtitle {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.walkthrough-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 12px 24px 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-primary);
+  border-radius: 12px 12px 0 0;
+}
+
+.walkthrough-tab {
+  padding: 10px 20px;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-weight: 500;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.walkthrough-tab:hover {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.walkthrough-tab.active {
+  color: var(--accent);
+  background: var(--bg-primary);
+}
+
+.walkthrough-list {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.walkthrough-item {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 16px;
+  padding: 16px;
+  margin-bottom: 12px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+  width: 100%;
+}
+
+.walkthrough-item:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+
+.walkthrough-item.completed {
+  opacity: 0.75;
+  border-color: var(--green);
+  background: var(--green-dim);
+  position: relative;
+}
+
+.walkthrough-item.completed::before {
+  content: '✓';
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 1rem;
+  color: var(--green);
+  background: var(--green-dim);
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+.walkthrough-item.completed .walkthrough-item-title {
+  position: relative;
+  padding-right: 28px;
+}
+
+.walkthrough-item.completed .walkthrough-item-title::after {
+  content: ' - Completed';
+  color: var(--green);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.walkthrough-thumbnail {
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.walkthrough-item-content {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+}
+
+.walkthrough-item-title {
+  margin: 0 0 6px 0;
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.walkthrough-item-desc {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.walkthrough-status {
+  font-size: 1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(34, 197, 94, 0.15);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: 20px;
+  color: #22c55e;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.walkthrough-footer {
+  padding: 16px 24px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-primary);
+  border-radius: 0 0 12px 12px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.walkthrough-close-btn {
+  padding: 10px 20px;
+  background: var(--text-primary);
+  border: none;
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.walkthrough-close-btn:hover {
+  background: var(--accent);
+}
+
+.walkthrough-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  overscroll-behavior: contain;
+}
+
+.walkthrough-back-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.85rem;
+  margin: 16px 24px 0;
+  transition: all 0.2s;
+}
+
+.walkthrough-back-btn:hover {
+  border-color: var(--text-primary);
+  color: var(--text-primary);
+}
+
+.walkthrough-back-list-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.85rem;
+  margin: 16px auto 0;
+  max-width: 200px;
+  transition: all 0.2s;
+}
+
+.walkthrough-back-list-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.walkthrough-main-title {
+  text-align: center;
+  margin: 0 0 16px 0;
+  font-size: 1.75rem;
+  font-weight: 600;
+  padding-top: 12px;
+}
+
+.walkthrough-main-desc {
+  text-align: left;
+  margin: 0 0 24px 0;
+  color: var(--text-secondary);
+  max-width: 600px;
+  align-self: start;
+}
+
+.walkthrough-text {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 0 24px;
+  overscroll-behavior: contain;
+}
+
+.walkthrough-paragraph {
+  text-align: left;
+  margin: 0 0 12px 0;
+  line-height: 1.6;
+  color: var(--text-primary);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+/* ============================================================
+   Markdown Rendered Content — Walkthrough tutorial text
+   ============================================================ */
+
+/* Paragraphs */
+.walkthrough-text .md-paragraph {
+  text-align: left;
+  margin: 0 0 12px 0;
+  line-height: 1.7;
+  color: var(--text-primary);
+  font-size: 0.92rem;
+}
+
+/* Headings */
+.walkthrough-text .md-h2 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin: 24px 0 10px 0;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+.walkthrough-text .md-h2:first-child {
+  margin-top: 0;
+}
+
+.walkthrough-text .md-h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 18px 0 8px 0;
+  color: var(--text-primary);
+}
+
+/* Bold / italic inherited from strong/em but ensure contrast */
+.walkthrough-text strong {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.walkthrough-text em {
+  font-style: italic;
+  color: var(--text-secondary, var(--text-muted));
+}
+
+/* Lists */
+.walkthrough-text .md-list {
+  margin: 0 0 14px 0;
+  padding-left: 22px;
+  list-style: none;
+  counter-reset: md-list-counter;
+}
+
+.walkthrough-text .md-list li {
+  position: relative;
+  margin: 0 0 6px 0;
+  padding-left: 4px;
+  line-height: 1.6;
+  font-size: 0.92rem;
+  color: var(--text-primary);
+}
+
+.walkthrough-text .md-list li::before {
+  position: absolute;
+  left: -18px;
+  top: 2px;
+  width: 7px;
+  height: 7px;
+  background: var(--accent);
+  border-radius: 50%;
+  opacity: 0.7;
+  content: '';
+}
+
+/* Ordered lists */
+.walkthrough-text .md-list-ordered {
+  counter-reset: md-list-counter;
+}
+
+.walkthrough-text .md-list-ordered li {
+  counter-increment: md-list-counter;
+  list-style: none;
+}
+
+.walkthrough-text .md-list-ordered li::before {
+  content: counter(md-list-counter) '.';
+  background: none;
+  width: auto;
+  height: auto;
+  opacity: 1;
+  left: -22px;
+  top: 0;
+  font-weight: 600;
+  color: var(--accent);
+  border-radius: 0;
+}
+
+/* Admonitions (callouts) */
+.walkthrough-text .md-admonition {
+  display: flex;
+  gap: 12px;
+  margin: 16px 0;
+  padding: 14px 16px;
+  border-radius: 8px;
+  border-left: 4px solid var(--accent);
+  background: var(--bg-tertiary);
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+
+.walkthrough-text .md-admonition p {
+  margin: 0 0 6px 0;
+  color: var(--text-primary);
+}
+
+.walkthrough-text .md-admonition p:last-child {
+  margin-bottom: 0;
+}
+
+.walkthrough-text .md-admonition-icon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  margin-top: 1px;
+  color: white;
+}
+
+.walkthrough-text .md-admonition-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.walkthrough-text .md-admonition-label {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 4px;
+  color: var(--text-secondary, var(--text-muted));
+}
+
+/* Note — blue */
+.walkthrough-text .md-admonition-note {
+  border-left-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.08);
+}
+.walkthrough-text .md-admonition-note .md-admonition-icon {
+  background: #3b82f6;
+}
+
+/* Tip — green */
+.walkthrough-text .md-admonition-tip {
+  border-left-color: #22c55e;
+  background: rgba(34, 197, 94, 0.08);
+}
+.walkthrough-text .md-admonition-tip .md-admonition-icon {
+  background: #22c55e;
+}
+
+/* Warning — orange */
+.walkthrough-text .md-admonition-warning {
+  border-left-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.08);
+}
+.walkthrough-text .md-admonition-warning .md-admonition-icon {
+  background: #f59e0b;
+}
+
+/* Info — purple */
+.walkthrough-text .md-admonition-info {
+  border-left-color: #8b5cf6;
+  background: rgba(139, 92, 246, 0.08);
+}
+.walkthrough-text .md-admonition-info .md-admonition-icon {
+  background: #8b5cf6;
+}
+
+/* Admonition icon content */
+.walkthrough-text .md-admonition-note .md-admonition-icon::before {
+  content: 'N';
+}
+.walkthrough-text .md-admonition-tip .md-admonition-icon::before {
+  content: 'T';
+}
+.walkthrough-text .md-admonition-warning .md-admonition-icon::before {
+  content: '!';
+}
+.walkthrough-text .md-admonition-info .md-admonition-icon::before {
+  content: 'i';
+}
+
+/* Tables */
+.walkthrough-text table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0 16px 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.walkthrough-text thead {
+  background: var(--bg-tertiary);
+}
+
+.walkthrough-text th {
+  padding: 8px 12px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.82rem;
+  color: var(--text-primary);
+  border-bottom: 2px solid var(--border);
+  white-space: nowrap;
+}
+
+.walkthrough-text td {
+  padding: 7px 12px;
+  border-top: 1px solid var(--border);
+  color: var(--text-primary);
+}
+
+.walkthrough-text tr:last-child td {
+  border-bottom: none;
+}
+
+/* Inline text styling inside walkthrough */
+.walkthrough-text p strong,
+.walkthrough-text li strong {
+  font-weight: 600;
+}
+
+.walkthrough-steps {
+  margin: 0 0 20px 24px;
+}
+
+.walkthrough-steps-title {
+  margin: 0 0 16px 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.walkthrough-steps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.walkthrough-step-item {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.walkthrough-step-item.active {
+  border-color: var(--accent);
+  background: var(--bg-tertiary);
+}
+
+.walkthrough-step-number {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent);
+  color: white;
+  border-radius: 50%;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.walkthrough-step-details {
+  flex: 1;
+}
+
+.walkthrough-step-title {
+  margin: 0 0 6px 0;
+  font-weight: 600;
+}
+
+.walkthrough-step-desc {
+  margin: 0 0 8px 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.walkthrough-step-action {
+  display: inline-block;
+  padding: 4px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-family: monospace;
+}
+
+.walkthrough-controls {
+  padding: 0 24px 20px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.walkthrough-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.85rem;
+  transition: all 0.2s;
+}
+
+.walkthrough-nav-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.walkthrough-nav-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.walkthrough-done-btn {
+  padding: 10px 20px;
+  background: var(--accent);
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-weight: 500;
+}
+
+.walkthrough-done-btn:hover {
+  background: var(--accent);
+}
+
+.walkthrough-nav-btn-next {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
+.walkthrough-nav-btn-next:hover {
+  filter: brightness(1.15);
+}
+
+.walkthrough-complete {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 32px;
+  text-align: center;
+  min-height: 400px;
+}
+
+.walkthrough-complete-icon {
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.walkthrough-complete-icon svg {
+  filter: drop-shadow(0 0 16px var(--green-glow));
+}
+
+/* Checkmark draw-in animation */
+.walkthrough-check-path {
+  stroke-dasharray: 48;
+  stroke-dashoffset: 48;
+  animation: drawCheck 0.6s ease-out 0.3s forwards;
+}
+
+@keyframes drawCheck {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.walkthrough-complete-title {
+  margin: 0 0 16px 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.walkthrough-complete-desc {
+  margin: 0 0 32px 0;
+  color: var(--text-secondary);
+}
+
+.walkthrough-complete-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.85rem;
+  transition: all 0.2s;
+}
+
+.walkthrough-complete-btn:hover {
+  filter: brightness(1.15);
+}
+
+/* Add header-right class if needed */
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Melody indicator pill — shows current melody name in the header */
+.melody-indicator-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 14px 4px 10px;
+  border: 1px solid rgba(88, 166, 255, 0.25);
+  border-radius: 12px;
+  background: linear-gradient(
+    135deg,
+    rgba(88, 166, 255, 0.12),
+    rgba(130, 80, 220, 0.1)
+  );
+  color: var(--accent);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  max-width: 220px;
+  overflow: hidden;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.melody-indicator-pill:hover {
+  background: linear-gradient(
+    135deg,
+    rgba(88, 166, 255, 0.22),
+    rgba(130, 80, 220, 0.18)
+  );
+  border-color: rgba(88, 166, 255, 0.45);
+  box-shadow: 0 0 12px rgba(88, 166, 255, 0.15);
+  transform: translateY(-1px);
+}
+.melody-indicator-pill:active {
+  transform: translateY(0);
+}
+.melody-indicator-icon {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+.melody-indicator-info {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  line-height: 1.2;
+}
+.melody-indicator-name {
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.melody-indicator-character {
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-transform: capitalize;
+  opacity: 0.75;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Light theme */
+[data-theme='light'] .melody-indicator-pill {
+  background: linear-gradient(
+    135deg,
+    rgba(88, 166, 255, 0.1),
+    rgba(130, 80, 220, 0.08)
+  );
+  border-color: rgba(88, 166, 255, 0.3);
+  color: var(--accent);
+}
+[data-theme='light'] .melody-indicator-pill:hover {
+  background: linear-gradient(
+    135deg,
+    rgba(88, 166, 255, 0.18),
+    rgba(130, 80, 220, 0.14)
+  );
+  border-color: rgba(88, 166, 255, 0.5);
+  box-shadow: 0 0 12px rgba(88, 166, 255, 0.12);
+}
+
+/* =====================================================================
+ * Practice tab layout — anchor history-container at bottom, no scroll
+ * on desktop. Mic spectrum / live score should always be visible
+ * without the user having to scroll.
+ * ===================================================================== */
+#practice-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+#practice-panel #canvas-container {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+#practice-panel #history-container {
+  flex: 0 0 auto;
+  margin-top: auto;
+}
+
+/* On desktop, .main-content shouldn't itself scroll for the practice
+ * panel — the layout fits in the viewport. We keep `overflow:auto` as
+ * a safety fallback for very small heights. */
+@media (min-width: 768px) {
+  .main-content {
+    overflow: hidden;
+  }
+  .main-content > #practice-panel {
+    overflow: hidden;
+  }
+}
+
+/* =====================================================================
+ * Bottom safe-area padding on every long-scroll panel so the last
+ * actionable element (e.g. Settings → GitHub link) is always reachable
+ * on mobile. iOS especially likes to clip the last 60-90px behind the
+ * home-indicator/url-bar.
+ * ===================================================================== */
+#settings-panel,
+.settings-panel,
+.library-tab,
+.session-editor-container,
+.app-sidebar,
+#main-layout,
+.main-content {
+  padding-bottom: max(24px, env(safe-area-inset-bottom, 24px));
+}
+
+/* Editor playhead overlay (matches the practice playhead style). */
+.editor-playhead {
+  background: var(--accent, #4caf50);
+  box-shadow: 0 0 6px var(--accent-glow, rgba(76, 175, 80, 0.6));
+}
+
+/* Editor playhead — triangle marker on top of the vertical line.
+ * Mirrors the practice tab's #playhead .playhead-marker style so users
+ * see consistent playback indicators across both tabs. */
+.editor-playhead {
+  background: var(--accent, #4caf50);
+  box-shadow: 0 0 6px var(--accent-glow, rgba(76, 175, 80, 0.6));
+}
+
+.editor-playhead .editor-playhead-marker {
+  position: absolute;
+  top: -8px;
+  left: -6px;
+  width: 0;
+  height: 0;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-top: 9px solid var(--accent, #4caf50);
+  filter: drop-shadow(0 0 4px var(--accent-glow, rgba(76, 175, 80, 0.6)));
+}
+
+/* Repeat cycles control — polished inline counter next to the input */
+.cycles-control-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border: 1px solid var(--accent-dim);
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--bg-secondary), var(--bg-primary));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+.cycles-label {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.cycles-control-group .cycles-input {
+  width: 54px;
+  min-width: 54px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 999px;
+  border: 1px solid var(--accent-glow);
+  background: var(--accent-dim);
+  color: var(--text-primary);
+  font-weight: 700;
+  text-align: center;
+  outline: none;
+}
+
+.cycles-control-group .cycles-input:focus {
+  border-color: var(--accent);
+  box-shadow:
+    0 0 0 3px var(--accent-dim),
+    0 0 18px var(--accent-dim);
+}
+
+.cycle-progress-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid var(--green-dim);
+  background: linear-gradient(135deg, var(--green-dim), var(--accent-dim));
+  color: var(--text-primary);
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.cycle-progress-label {
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.cycle-progress-value {
+  color: var(--green);
+  text-shadow: 0 0 10px var(--green-dim);
+}
+
+/* Sidebar scale select: reuse session-select chrome, sized for the scale row. */
+.sidebar-scale-select {
+  width: 100%;
+  max-width: 100%;
+  min-height: 34px;
+  margin-top: 4px;
+}
+
+/* Number input spinner styling — avoid default white spin button chrome. */
+.cycles-control-group .cycles-input::-webkit-inner-spin-button,
+.cycles-control-group .cycles-input::-webkit-outer-spin-button,
+#bpm-input::-webkit-inner-spin-button,
+#bpm-input::-webkit-outer-spin-button {
+  opacity: 1;
+  filter: invert(65%) sepia(44%) saturate(711%) hue-rotate(179deg)
+    brightness(96%) contrast(95%);
+  cursor: pointer;
+}
+
+.cycles-control-group .cycles-input[type='number'],
+#bpm-input[type='number'] {
+}
+
+.settings-row input[type='number'] {
+}
+
+/* Practice sub-mode selector — same polished capsule language as Repeat cycles. */
+.practice-mode-control-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border: 1px solid var(--accent-dim);
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--bg-secondary), var(--bg-primary));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+.practice-mode-label {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.practice-mode-control-group .practice-sub-mode-select {
+  height: 28px;
+  min-width: 132px;
+  padding: 0 30px 0 10px;
+  border-radius: 999px;
+  border: 1px solid var(--accent-glow);
+  background: var(--accent-dim);
+  color: var(--text-primary);
+  font-weight: 700;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--text-muted) 50%),
+    linear-gradient(135deg, var(--text-muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 16px) 11px,
+    calc(100% - 11px) 11px;
+  background-size:
+    5px 5px,
+    5px 5px;
+  background-repeat: no-repeat;
+}
+
+.practice-mode-control-group .practice-sub-mode-select:hover {
+  border-color: var(--accent-glow);
+  background-color: var(--bg-card);
+}
+
+.practice-mode-control-group .practice-sub-mode-select:focus {
+  border-color: var(--accent);
+  box-shadow:
+    0 0 0 3px var(--accent-dim),
+    0 0 18px var(--accent-dim);
+}
+
+.practice-mode-control-group .practice-sub-mode-select option {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+/* Stronger override: practice mode dropdown must stay dark (not browser white). */
+.practice-mode-control-group select.practice-sub-mode-select,
+.practice-mode-control-group .practice-sub-mode-select {
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--accent-glow) !important;
+}
+
+/* Compact Settings selects/buttons — match app control density. */
+.settings-panel .settings-row select,
+#settings-panel .settings-row select {
+  min-height: 34px;
+  height: 34px;
+  padding: 0 32px 0 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  line-height: 34px;
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--text-muted) 50%),
+    linear-gradient(135deg, var(--text-muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 16px) 14px,
+    calc(100% - 11px) 14px;
+  background-size:
+    5px 5px,
+    5px 5px;
+  background-repeat: no-repeat;
+}
+
+.settings-panel .settings-row select:hover,
+#settings-panel .settings-row select:hover {
+  border-color: var(--accent-glow);
+  background-color: var(--bg-card);
+}
+
+.settings-panel .settings-row select:focus,
+#settings-panel .settings-row select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+
+.settings-panel .settings-row select option,
+#settings-panel .settings-row select option {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+/* ── Pitch Buffer Size Pill Selector ──────────────────────── */
+
+.pitch-buffer-pills {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.pitch-buffer-pill {
+  flex: 1;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-family: 'Inter', 'SF Mono', monospace;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+@media (hover: hover) {
+  .pitch-buffer-pill:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.7);
+  }
+}
+
+.pitch-buffer-pill-active {
+  background: linear-gradient(
+    135deg,
+    rgba(56, 189, 248, 0.2),
+    rgba(139, 92, 246, 0.2)
+  );
+  color: #fff;
+  box-shadow:
+    0 0 8px rgba(56, 189, 248, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+}
+
+@media (hover: hover) {
+  .pitch-buffer-pill-active:hover {
+    background: linear-gradient(
+      135deg,
+      rgba(56, 189, 248, 0.3),
+      rgba(139, 92, 246, 0.3)
+    );
+  }
+}
+
+/* ============================================================
+   Walkthrough Tour — Section Header & Actions (GH #199)
+   ============================================================ */
+
+.walkthrough-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.walkthrough-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+}
+
+.walkthrough-section-steps {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+/* Actions layout: skip left, center group, next right */
+.walkthrough-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.walkthrough-actions-center {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.walkthrough-skip-section {
+  font-size: 11px;
+  color: var(--text-muted);
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  padding: 4px 8px;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.walkthrough-skip-section:hover {
+  color: var(--text-secondary);
+  background: var(--bg-tertiary);
+}
+
+/* ============================================================
+   Guide Selection Dialog (GH #199)
+   ============================================================ */
+
+.guide-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+}
+
+.guide-selection {
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px;
+  max-width: 480px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.3);
+  color: var(--text-primary);
+}
+
+.guide-selection-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.guide-selection-header h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.guide-close-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.guide-close-btn:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.guide-selection-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0 0 20px 0;
+  line-height: 1.5;
+}
+
+/* Quick action buttons */
+.guide-quick-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.guide-quick-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+  width: 100%;
+  text-align: left;
+}
+
+.guide-quick-btn:hover {
+  background: var(--bg-secondary);
+  border-color: var(--accent);
+}
+
+.guide-quick-incomplete {
+  border-color: var(--accent);
+  background: var(--accent-light, rgba(108, 99, 255, 0.08));
+  color: var(--accent);
+}
+
+.guide-quick-incomplete:hover {
+  background: var(--accent-light, rgba(108, 99, 255, 0.15));
+}
+
+/* Section list */
+.guide-sections-list {
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+}
+
+.guide-sections-list h3 {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0 0 12px 0;
+}
+
+.guide-section-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: none;
+  color: var(--text-primary);
+  font-size: 14px;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+  text-align: left;
+  margin-bottom: 4px;
+}
+
+.guide-section-item:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--border);
+}
+
+.guide-section-item.completed {
+  opacity: 0.6;
+}
+
+.guide-section-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  color: var(--accent);
+}
+
+.guide-section-item.completed .guide-section-icon {
+  color: #4caf50;
+}
+
+.guide-section-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.guide-section-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.guide-section-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* Playback Setup sidebar redesign */
+.app-sidebar #scale-info {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid var(--accent-dim);
+  border-radius: 14px;
+  background: linear-gradient(180deg, var(--bg-secondary), var(--bg-primary));
+}
+
+.app-sidebar #scale-info #key-select,
+.app-sidebar #scale-info #scale-select {
+  min-height: 36px;
+  border-radius: 10px;
+  border: 1px solid var(--accent-dim);
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.app-sidebar #scale-info #key-select {
+  width: 100%;
+}
+
+.app-sidebar #scale-info #scale-select {
+  grid-column: 1 / -1;
+  width: 100%;
+}
+
+.app-sidebar #scale-info .octave-ctrl {
+  height: 36px;
+  padding: 3px 6px;
+  border-radius: 999px;
+  border-color: var(--accent-dim);
+  background: var(--accent-dim);
+}
+
+.app-sidebar #scale-info .octave-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+}
+
+.app-sidebar #scale-info .octave-value {
+  min-width: 24px;
+  color: #7ee787;
+  font-weight: 800;
+  text-align: center;
+}
+
+.app-sidebar #open-scale-builder {
+  grid-column: 1 / -1;
+  justify-content: center;
+  width: 100%;
+  min-height: 34px;
+  border-radius: 10px;
+}
+
+#note-list .note-item.rest-item {
+  border-style: dashed;
+  border-color: rgba(139, 148, 158, 0.45);
+  background: rgba(139, 148, 158, 0.1);
+  color: var(--text-secondary);
+}
+
+#note-list .note-item.rest-item .note-dot {
+  background: transparent;
+  border: 1px dashed rgba(139, 148, 158, 0.65);
+}
+
+/* ============================================================
+   Playlist picker — "Add Melody/Session to Playlist" view
+   ============================================================
+   Replaces the previous unstyled wall of pills with a clean,
+   grid-based pill gallery that matches the rest of the app's
+   token system (radii, spacing, accent colors).
+*/
+.playlist-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 4px 2px;
+}
+
+.playlist-edit-form h3 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.playlist-edit-form .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.playlist-edit-form .form-group label {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.playlist-edit-form .search-input {
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  outline: none;
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.playlist-edit-form .search-input::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+
+.playlist-edit-form .search-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+
+.playlist-edit-form .melody-select-list {
+  /*
+    3-column responsive grid. Was previously
+    `repeat(auto-fill, minmax(220px, 1fr))` which collapsed to 2 columns
+    inside the modal width. Force exactly 3 on desktop, then degrade to
+    2/1 on smaller screens.
+  */
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  max-height: 50vh;
+  overflow-y: auto;
+  padding: 4px 4px 8px;
+  scrollbar-width: thin;
+}
+
+.playlist-edit-form .melody-select-list::-webkit-scrollbar {
+  width: 8px;
+}
+.playlist-edit-form .melody-select-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+}
+
+@media (max-width: 900px) {
+  .playlist-edit-form .melody-select-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 600px) {
+  .playlist-edit-form .melody-select-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Pill-style picker entry: icon | title+meta | check */
+
+.playlist-picker-pill {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease,
+    transform 80ms ease,
+    box-shadow 120ms ease;
+}
+
+.playlist-picker-pill:hover {
+  border-color: rgba(74, 158, 255, 0.4);
+  background: rgba(74, 158, 255, 0.08);
+}
+
+.playlist-picker-pill:active {
+  transform: translateY(1px);
+}
+
+.playlist-picker-pill.selected {
+  border-color: var(--accent-color, #4a9eff);
+  background: linear-gradient(
+    135deg,
+    rgba(74, 158, 255, 0.18),
+    rgba(74, 158, 255, 0.06)
+  );
+  box-shadow: 0 0 0 1px rgba(74, 158, 255, 0.45) inset;
+}
+
+.playlist-picker-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.playlist-picker-pill.selected .playlist-picker-icon {
+  background: rgba(74, 158, 255, 0.25);
+}
+
+.playlist-picker-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.playlist-picker-copy .select-item-title {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.playlist-picker-copy .select-item-meta {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.playlist-picker-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  transition:
+    background 120ms ease,
+    color 120ms ease;
+}
+
+.playlist-picker-pill.selected .playlist-picker-check {
+  background: var(--accent-color, #4a9eff);
+  color: #fff;
+}
+
+.playlist-edit-form .empty-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 24px;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  border: 1px dashed rgba(255, 255, 255, 0.08);
+}
+
+.playlist-edit-form .form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.playlist-edit-form .form-actions .cancel-btn,
+.playlist-edit-form .form-actions .save-btn {
+  padding: 9px 16px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease,
+    transform 80ms ease;
+}
+
+.playlist-edit-form .form-actions .cancel-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+}
+
+.playlist-edit-form .form-actions .cancel-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.playlist-edit-form .form-actions .save-btn {
+  background: var(--accent-color, #4a9eff);
+  color: #fff;
+}
+
+.playlist-edit-form .form-actions .save-btn:hover {
+  filter: brightness(1.08);
+}
+
+.playlist-edit-form .form-actions .save-btn:active,
+.playlist-edit-form .form-actions .cancel-btn:active {
+  transform: translateY(1px);
+}
+
+/* ───────────────────────────────────────────────────────────────
+   Inline transport controls (BPM / Volume / Speed)
+   ───────────────────────────────────────────────────────────────
+   Replaces the older "label : input : slider : number" stacked
+   layout with compact icon-prefixed controls. The cluster is
+   wrapped in `.inline-controls-row` so on narrow viewports
+   (<600px) it wraps onto a second row underneath the playback
+   buttons (Play/Pause/Stop), instead of horizontal-scrolling.
+   ─────────────────────────────────────────────────────────────── */
+.inline-controls-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  /* Take a full row when wrapped so children align cleanly */
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.inline-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: var(--surface-2, rgba(255, 255, 255, 0.04));
+  white-space: nowrap;
+}
+
+.inline-control-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted, #aaa);
+  flex: 0 0 auto;
+}
+
+.inline-control-value {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.8rem;
+  color: var(--text, #ddd);
+  min-width: 2ch;
+  text-align: right;
+}
+
+/* Hide redundant text labels inside inline controls (icon replaces them) */
+.inline-control .opt-label {
+  display: none;
+}
+
+/* On narrow viewports break the row into a second toolbar row */
+@media (max-width: 600px) {
+  .practice-header-bar,
+  .editor-header-bar {
+    flex-wrap: wrap;
+  }
+  .inline-controls-row {
+    width: 100%;
+    order: 99; /* push below the primary controls */
+    justify-content: flex-start;
+  }
+}
+
+/* ───────────────────────────────────────────────────────────────
+   SessionMiniTimeline — read-only preview inside SessionLibraryModal
+   ─────────────────────────────────────────────────────────────── */
+.session-library-item .item-main {
+  /* The mini timeline lives at the bottom of item-main; let it
+     consume horizontal space cleanly. */
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+}
+
+.session-mini-timeline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+  /* Cap height: 2 rows of pills. Beyond that the user can scroll
+     within the card so a 30-item session doesn't blow up the modal. */
+  max-height: 64px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.session-mini-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  background: var(--surface-2, rgba(255, 255, 255, 0.06));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text, #ddd);
+  white-space: nowrap;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.session-mini-pill.is-melody {
+  background: rgba(99, 132, 255, 0.18);
+  border-color: rgba(99, 132, 255, 0.35);
+}
+
+.session-mini-pill.is-rest {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: var(--text-muted, #aaa);
+  font-style: italic;
+}
+
+.session-mini-pill-icon {
+  font-size: 0.75rem;
+  flex: 0 0 auto;
+}
+
+.session-mini-pill-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.session-mini-empty {
+  font-size: 0.75rem;
+  color: var(--text-muted, #888);
+  font-style: italic;
+}
+
+/* SessionPlayer — Rest item indicator */
+.session-player-item.is-rest .session-item-label {
+  font-style: italic;
+  color: var(--text-muted, #9aa3b2);
+}
+.session-player-item.is-rest .session-item-icon {
+  color: var(--accent-muted, #777);
+}
+
+/* Sidebar session pills — disabled while playback is running */
+.session-item-pill.pill-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: auto; /* keep so tooltip + click→notification still fire */
+  filter: grayscale(0.4);
+}
+.session-item-pill.pill-disabled:hover {
+  background: inherit;
+  transform: none;
+}
+
+/* ── Settings-panel tier selector sizing ──────────────── */
+.settings-tier-selector .welcome-tier-buttons {
+  gap: 8px;
+}
+
+.settings-tier-selector .welcome-tier-btn {
+  padding: 10px 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.settings-tier-selector .tier-icon-wrap svg {
+  width: 18px;
+  height: 18px;
+}
+
+.settings-tier-selector .tier-name {
+  font-size: 0.8rem;
+}
+
+.settings-tier-selector .tier-desc {
+  font-size: 0.65rem;
+}

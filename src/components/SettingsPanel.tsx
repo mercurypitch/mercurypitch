@@ -14,6 +14,7 @@ import type { PitchBufferSize } from '@/stores/settings-store'
 import { characterSounds, colorCodeNotes, flameMode, selectedCharacter, setCharacterSounds, setColorCodeNotes, setFlameMode, setShowAccuracyPercent, setShowPracticeResultPopup, setShowSidebarNoteList, showAccuracyPercent, showPracticeResultPopup, showSidebarNoteList, } from '@/stores/settings-store'
 import { pitchAlgorithm, setPitchAlgorithm } from '@/stores/settings-store'
 import { PITCH_BUFFER_DESCRIPTIONS, PITCH_BUFFER_LABELS, PITCH_BUFFER_SIZES, pitchBufferSize, setPitchBufferSize, } from '@/stores/settings-store'
+import styles from './SettingsPanel.module.css'
 
 export const SettingsPanel: Component = () => {
   const s = () => settings()
@@ -64,17 +65,17 @@ export const SettingsPanel: Component = () => {
   const [testCrash, setTestCrash] = createSignal(false)
 
   return (
-    <div class="settings-panel">
-      <div class="settings-content">
-        <h2 class="settings-title">Settings</h2>
+    <div class={styles.settingsPanel}>
+      <div class={styles.settingsContent}>
+        <h2 class={styles.settingsTitle}>Settings</h2>
 
         {/* Sensitivity Presets Section */}
-        <div class="settings-section">
-          <h3 class="settings-section-title">Sensitivity Presets</h3>
-          <div class="settings-divider" />
-          <p class="settings-desc">Quick presets for different environments.</p>
+        <div class={styles.settingsSection}>
+          <h3 class={styles.settingsSectionTitle}>Sensitivity Presets</h3>
+          <div class={styles.settingsDivider} />
+          <p class={styles.settingsDesc}>Quick presets for different environments.</p>
 
-          <div class="settings-row">
+          <div class={styles.settingsRow}>
             <label for="preset-select">Environment</label>
             <select
               id="preset-select"
@@ -93,10 +94,10 @@ export const SettingsPanel: Component = () => {
         </div>
 
         {/* Accuracy Tier Section */}
-        <div class="settings-section">
-          <h3 class="settings-section-title">Accuracy Tier</h3>
-          <div class="settings-divider" />
-          <p class="settings-desc">
+        <div class={styles.settingsSection}>
+          <h3 class={styles.settingsSectionTitle}>Accuracy Tier</h3>
+          <div class={styles.settingsDivider} />
+          <p class={styles.settingsDesc}>
             Choose your skill level. Perfect pitch means being within the
             specified number of cents of the target note.
           </p>
@@ -105,16 +106,16 @@ export const SettingsPanel: Component = () => {
         </div>
 
         {/* Pitch Algorithm Section */}
-        <div class="settings-section">
-          <h3 class="settings-section-title">Pitch Algorithm</h3>
-          <div class="settings-divider" />
-          <p class="settings-desc">
+        <div class={styles.settingsSection}>
+          <h3 class={styles.settingsSectionTitle}>Pitch Algorithm</h3>
+          <div class={styles.settingsDivider} />
+          <p class={styles.settingsDesc}>
             Select the pitch detection algorithm. YIN is the classic,
             well-tested default. MPM (McLeod) offers better harmonic handling
             and fewer octave errors on complex timbres.
           </p>
 
-          <div class="settings-row">
+          <div class={styles.settingsRow}>
             <label for="pitch-algorithm-select">Algorithm</label>
             <select
               id="pitch-algorithm-select"
@@ -129,7 +130,7 @@ export const SettingsPanel: Component = () => {
           </div>
 
           <Show when={pitchAlgorithm() === 'mpm'}>
-            <div class="settings-row">
+            <div class={styles.settingsRow}>
               <label>Buffer Size</label>
               <div class="pitch-buffer-pills">
                 <For each={PITCH_BUFFER_SIZES}>
@@ -148,7 +149,7 @@ export const SettingsPanel: Component = () => {
               </div>
             </div>
             <p
-              class="settings-desc"
+              class={styles.settingsDesc}
               style="margin-top: 4px; font-size: 0.7rem;"
             >
               {PITCH_BUFFER_DESCRIPTIONS[pitchBufferSize()]}
@@ -157,11 +158,11 @@ export const SettingsPanel: Component = () => {
         </div>
 
         {/* Pitch Detection Section */}
-        <div class="settings-section">
-          <h3 class="settings-section-title">Pitch Detection</h3>
-          <div class="settings-divider" />
+        <div class={styles.settingsSection}>
+          <h3 class={styles.settingsSectionTitle}>Pitch Detection</h3>
+          <div class={styles.settingsDivider} />
 
-          <div class="settings-row">
+          <div class={styles.settingsRow}>
             <label for="set-threshold">Detection Threshold</label>
             <input
               type="range"
@@ -176,13 +177,13 @@ export const SettingsPanel: Component = () => {
                 )
               }}
             />
-            <span class="settings-val">
+            <span class={styles.settingsVal}>
               {s().detectionThreshold.toFixed(2)}
             </span>
             <small>Lower = stricter pitch detection</small>
           </div>
 
-          <div class="settings-row">
+          <div class={styles.settingsRow}>
             <label for="set-sensitivity">Sensitivity</label>
             <input
               type="range"
@@ -195,11 +196,11 @@ export const SettingsPanel: Component = () => {
                 setSensitivity(parseInt(e.currentTarget.value))
               }}
             />
-            <span class="settings-val">{s().sensitivity}</span>
+            <span class={styles.settingsVal}>{s().sensitivity}</span>
             <small>Higher = more responsive to quiet signals</small>
           </div>
 
-          <div class="settings-row">
+          <div class={styles.settingsRow}>
             <label for="set-min-confidence">Min Confidence</label>
             <input
               type="range"
@@ -212,13 +213,13 @@ export const SettingsPanel: Component = () => {
                 appStore.setMinConfidence(parseInt(e.currentTarget.value) / 100)
               }}
             />
-            <span class="settings-val">
+            <span class={styles.settingsVal}>
               {Math.round(s().minConfidence * 100)}%
             </span>
             <small>Minimum confidence to accept a pitch</small>
           </div>
 
-          <div class="settings-row">
+          <div class={styles.settingsRow}>
             <label for="set-amplitude">Min Amplitude</label>
             <input
               type="range"
@@ -231,19 +232,19 @@ export const SettingsPanel: Component = () => {
                 appStore.setMinAmplitude(parseInt(e.currentTarget.value))
               }}
             />
-            <span class="settings-val">{s().minAmplitude}</span>
+            <span class={styles.settingsVal}>{s().minAmplitude}</span>
             <small>Minimum signal loudness required</small>
           </div>
         </div>
 
         {/* Practice Aids Section */}
-        <div class="settings-section">
-          <h3 class="settings-section-title">Practice Aids</h3>
-          <div class="settings-divider" />
+        <div class={styles.settingsSection}>
+          <h3 class={styles.settingsSectionTitle}>Practice Aids</h3>
+          <div class={styles.settingsDivider} />
 
-          <div class="settings-row">
+          <div class={styles.settingsRow}>
             <label for="set-tonic-anchor">Tonic Anchor Tone</label>
-            <label class="settings-toggle">
+            <label class={styles.settingsToggle}>
               <input
                 type="checkbox"
                 id="set-tonic-anchor"
@@ -252,7 +253,7 @@ export const SettingsPanel: Component = () => {
                   appStore.setTonicAnchor(e.currentTarget.checked)
                 }}
               />
-              <span class="settings-slider" />
+              <span class={styles.settingsSlider} />
             </label>
             <small>
               Play a reference tone at the start of each run to help lock in to
@@ -262,14 +263,14 @@ export const SettingsPanel: Component = () => {
         </div>
 
         {/* Accuracy Bands Section */}
-        <div class="settings-section">
-          <h3 class="settings-section-title">Accuracy Bands</h3>
-          <div class="settings-divider" />
-          <p class="settings-desc">
+        <div class={styles.settingsSection}>
+          <h3 class={styles.settingsSectionTitle}>Accuracy Bands</h3>
+          <div class={styles.settingsDivider} />
+          <p class={styles.settingsDesc}>
             Define how many cents off is "Perfect", "Good", etc.
           </p>
 
-          <div class="settings-row">
+          <div class={styles.settingsRow}>
             <label for="band-perfect">Perfect (&le; cents)</label>
             <input
               class={'input-number-dark'}
@@ -284,7 +285,7 @@ export const SettingsPanel: Component = () => {
             />
           </div>
 
-          <div class="settings-row">
+          <div class={styles.settingsRow}>
             <label for="band-excellent">Excellent (&le; cents)</label>
             <input
               type="number"
@@ -298,7 +299,7 @@ export const SettingsPanel: Component = () => {
             />
           </div>
 
-          <div class="settings-row">
+          <div class={styles.settingsRow}>
             <label for="band-good">Good (&le; cents)</label>
             <input
               type="number"
@@ -312,7 +313,7 @@ export const SettingsPanel: Component = () => {
             />
           </div>
 
-          <div class="settings-row">
+          <div class={styles.settingsRow}>
             <label for="band-okay">Okay (&le; cents)</label>
             <input
               type="number"
@@ -328,10 +329,10 @@ export const SettingsPanel: Component = () => {
         </div>
 
         {/* Current Values Section */}
-        <div class="settings-section">
-          <h3 class="settings-section-title">Current Values</h3>
-          <div class="settings-divider" />
-          <div class="settings-info">
+        <div class={styles.settingsSection}>
+          <h3 class={styles.settingsSectionTitle}>Current Values</h3>
+          <div class={styles.settingsDivider} />
+          <div class={styles.settingsInfo}>
             <div>
               Threshold: <span>{s().detectionThreshold.toFixed(2)}</span>
             </div>
@@ -349,15 +350,15 @@ export const SettingsPanel: Component = () => {
         </div>
 
         {/* ADSR Envelope Section */}
-        <div class="settings-section">
-          <h3 class="settings-section-title">Tone Envelope (ADSR)</h3>
-          <div class="settings-divider" />
-          <p class="settings-desc">
+        <div class={styles.settingsSection}>
+          <h3 class={styles.settingsSectionTitle}>Tone Envelope (ADSR)</h3>
+          <div class={styles.settingsDivider} />
+          <p class={styles.settingsDesc}>
             Adjust the Attack, Decay, Sustain, Release envelope for note
             playback.
           </p>
 
-          <div class="settings-row">
+          <div class={styles.settingsRow}>
             <label for="adsr-attack">Attack</label>
             <input
               type="range"
@@ -370,11 +371,11 @@ export const SettingsPanel: Component = () => {
                 appStore.setAttack(parseInt(e.currentTarget.value))
               }}
             />
-            <span class="settings-val">{adsr().attack}ms</span>
+            <span class={styles.settingsVal}>{adsr().attack}ms</span>
             <small>Time to reach full volume</small>
           </div>
 
-          <div class="settings-row">
+          <div class={styles.settingsRow}>
             <label for="adsr-decay">Decay</label>
             <input
               type="range"
@@ -387,11 +388,11 @@ export const SettingsPanel: Component = () => {
                 appStore.setDecay(parseInt(e.currentTarget.value))
               }}
             />
-            <span class="settings-val">{adsr().decay}ms</span>
+            <span class={styles.settingsVal}>{adsr().decay}ms</span>
             <small>Time to fall to sustain level</small>
           </div>
 
-          <div class="settings-row">
+          <div class={styles.settingsRow}>
             <label for="adsr-sustain">Sustain</label>
             <input
               type="range"
@@ -404,11 +405,11 @@ export const SettingsPanel: Component = () => {
                 appStore.setSustain(parseInt(e.currentTarget.value))
               }}
             />
-            <span class="settings-val">{adsr().sustain}%</span>
+            <span class={styles.settingsVal}>{adsr().sustain}%</span>
             <small>Volume during note held</small>
           </div>
 
-          <div class="settings-row">
+          <div class={styles.settingsRow}>
             <label for="adsr-release">Release</label>
             <input
               type="range"
@@ -421,20 +422,20 @@ export const SettingsPanel: Component = () => {
                 appStore.setRelease(parseInt(e.currentTarget.value))
               }}
             />
-            <span class="settings-val">{adsr().release}ms</span>
+            <span class={styles.settingsVal}>{adsr().release}ms</span>
             <small>Time to fade after note ends</small>
           </div>
         </div>
 
         {/* Visibility Toggles */}
-        <div class="settings-section">
-          <h3 class="settings-section-title">Visibility</h3>
-          <div class="settings-divider" />
-          <p class="settings-desc">Show or hide interface elements.</p>
+        <div class={styles.settingsSection}>
+          <h3 class={styles.settingsSectionTitle}>Visibility</h3>
+          <div class={styles.settingsDivider} />
+          <p class={styles.settingsDesc}>Show or hide interface elements.</p>
 
-          <div class="settings-row">
+          <div class={styles.settingsRow}>
             <label for="vis-gridlines">Grid Lines</label>
-            <label class="settings-toggle">
+            <label class={styles.settingsToggle}>
               <input
                 type="checkbox"
                 id="vis-gridlines"
@@ -443,14 +444,14 @@ export const SettingsPanel: Component = () => {
                   appStore.setGridLinesVisible(e.currentTarget.checked)
                 }}
               />
-              <span class="settings-slider" />
+              <span class={styles.settingsSlider} />
             </label>
             <small>Show horizontal and vertical grid lines</small>
           </div>
 
-          <div class="settings-row">
+          <div class={styles.settingsRow}>
             <label for="vis-sidebar-notes">Sidebar Note List</label>
-            <label class="settings-toggle">
+            <label class={styles.settingsToggle}>
               <input
                 type="checkbox"
                 id="vis-sidebar-notes"
@@ -459,7 +460,7 @@ export const SettingsPanel: Component = () => {
                   setShowSidebarNoteList(e.currentTarget.checked)
                 }}
               />
-              <span class="settings-slider" />
+              <span class={styles.settingsSlider} />
             </label>
             <small>
               Show the detailed note list in the Practice sidebar. Hidden by
@@ -467,9 +468,9 @@ export const SettingsPanel: Component = () => {
             </small>
           </div>
 
-          <div class="settings-row">
+          <div class={styles.settingsRow}>
             <label for="vis-playback-setup">Playback Setup</label>
-            <label class="settings-toggle">
+            <label class={styles.settingsToggle}>
               <input
                 type="checkbox"
                 id="vis-playback-setup"
@@ -478,14 +479,14 @@ export const SettingsPanel: Component = () => {
                   appStore.setShowPlaybackSetup(e.currentTarget.checked)
                 }}
               />
-              <span class="settings-slider" />
+              <span class={styles.settingsSlider} />
             </label>
             <small>Show Playback setup component in sidebar</small>
           </div>
 
-          <div class="settings-row">
+          <div class={styles.settingsRow}>
             <label for="vis-stats">Stats Panel</label>
-            <label class="settings-toggle">
+            <label class={styles.settingsToggle}>
               <input
                 type="checkbox"
                 id="vis-stats"
@@ -494,14 +495,14 @@ export const SettingsPanel: Component = () => {
                   appStore.setShowStats(e.currentTarget.checked)
                 }}
               />
-              <span class="settings-slider" />
+              <span class={styles.settingsSlider} />
             </label>
             <small>Show accuracy stats (Practice tab)</small>
           </div>
 
-          <div class="settings-row">
+          <div class={styles.settingsRow}>
             <label for="vis-pitch-display">Pitch Display</label>
-            <label class="settings-toggle">
+            <label class={styles.settingsToggle}>
               <input
                 type="checkbox"
                 id="vis-pitch-display"
@@ -510,14 +511,14 @@ export const SettingsPanel: Component = () => {
                   appStore.setShowPitchDisplay(e.currentTarget.checked)
                 }}
               />
-              <span class="settings-slider" />
+              <span class={styles.settingsSlider} />
             </label>
             <small>Show live pitch tracker (Practice tab)</small>
           </div>
 
-          <div class="settings-row">
+          <div class={styles.settingsRow}>
             <label for="vis-practice-result-popup">Practice Result Popup</label>
-            <label class="settings-toggle">
+            <label class={styles.settingsToggle}>
               <input
                 type="checkbox"
                 id="vis-practice-result-popup"
@@ -526,7 +527,7 @@ export const SettingsPanel: Component = () => {
                   setShowPracticeResultPopup(e.currentTarget.checked)
                 }}
               />
-              <span class="settings-slider" />
+              <span class={styles.settingsSlider} />
             </label>
             <small>
               Show a score overlay after each practice run or session completes.
@@ -534,7 +535,7 @@ export const SettingsPanel: Component = () => {
             </small>
           </div>
 
-          <div class="settings-row">
+          <div class={styles.settingsRow}>
             <label for="vis-theme">Theme</label>
             <label>
               <select
@@ -553,16 +554,16 @@ export const SettingsPanel: Component = () => {
         </div>
 
         {/* Visualization Section */}
-        <div class="settings-section">
-          <h3 class="settings-section-title">Visualization</h3>
-          <div class="settings-divider" />
-          <p class="settings-desc">
+        <div class={styles.settingsSection}>
+          <h3 class={styles.settingsSectionTitle}>Visualization</h3>
+          <div class={styles.settingsDivider} />
+          <p class={styles.settingsDesc}>
             Enhance the practice experience with visual feedback effects.
           </p>
 
-          <div class="settings-row">
+          <div class={styles.settingsRow}>
             <label for="vis-flame">Burning Notes</label>
-            <label class="settings-toggle">
+            <label class={styles.settingsToggle}>
               <input
                 type="checkbox"
                 id="vis-flame"
@@ -571,7 +572,7 @@ export const SettingsPanel: Component = () => {
                   setFlameMode(e.currentTarget.checked)
                 }}
               />
-              <span class="settings-slider" />
+              <span class={styles.settingsSlider} />
             </label>
             <small>
               Animate the currently-playing note with a burning fire effect
@@ -579,9 +580,9 @@ export const SettingsPanel: Component = () => {
             </small>
           </div>
 
-          <div class="settings-row">
+          <div class={styles.settingsRow}>
             <label for="vis-color-code">Accuracy Color Coding</label>
-            <label class="settings-toggle">
+            <label class={styles.settingsToggle}>
               <input
                 type="checkbox"
                 id="vis-color-code"
@@ -590,7 +591,7 @@ export const SettingsPanel: Component = () => {
                   setColorCodeNotes(e.currentTarget.checked)
                 }}
               />
-              <span class="settings-slider" />
+              <span class={styles.settingsSlider} />
             </label>
             <small>
               Color-code played notes based on pitch accuracy (Green: Perfect,
@@ -598,9 +599,9 @@ export const SettingsPanel: Component = () => {
             </small>
           </div>
 
-          <div class="settings-row">
+          <div class={styles.settingsRow}>
             <label for="vis-accuracy-pct">Show Accuracy Percentage</label>
-            <label class="settings-toggle">
+            <label class={styles.settingsToggle}>
               <input
                 type="checkbox"
                 id="vis-accuracy-pct"
@@ -609,7 +610,7 @@ export const SettingsPanel: Component = () => {
                   setShowAccuracyPercent(e.currentTarget.checked)
                 }}
               />
-              <span class="settings-slider" />
+              <span class={styles.settingsSlider} />
             </label>
             <small>
               Display a numeric accuracy percentage on each played note.
@@ -623,9 +624,9 @@ export const SettingsPanel: Component = () => {
             choice (set elsewhere via appStoreCore.instrument) wins.
             See EngineContext for the mapping.
           */}
-          <div class="settings-row">
+          <div class={styles.settingsRow}>
             <label for="char-sounds">Character Sounds</label>
-            <label class="settings-toggle">
+            <label class={styles.settingsToggle}>
               <input
                 type="checkbox"
                 id="char-sounds"
@@ -634,7 +635,7 @@ export const SettingsPanel: Component = () => {
                   setCharacterSounds(e.currentTarget.checked)
                 }}
               />
-              <span class="settings-slider" />
+              <span class={styles.settingsSlider} />
             </label>
             <small>
               Play a different timbre per guide character (currently:{' '}
@@ -645,14 +646,14 @@ export const SettingsPanel: Component = () => {
         </div>
 
         {/* Playback Speed Section */}
-        <div class="settings-section">
-          <h3 class="settings-section-title">Playback Speed</h3>
-          <div class="settings-divider" />
-          <p class="settings-desc">
+        <div class={styles.settingsSection}>
+          <h3 class={styles.settingsSectionTitle}>Playback Speed</h3>
+          <div class={styles.settingsDivider} />
+          <p class={styles.settingsDesc}>
             Adjust the playback speed of the practice melody.
           </p>
 
-          <div class="settings-row">
+          <div class={styles.settingsRow}>
             <label for="playback-speed">Speed</label>
             <input
               type="range"
@@ -665,20 +666,20 @@ export const SettingsPanel: Component = () => {
                 setPlaybackSpeed(parseInt(e.currentTarget.value) / 100)
               }}
             />
-            <span class="settings-val">{playbackSpeed().toFixed(2)}x</span>
+            <span class={styles.settingsVal}>{playbackSpeed().toFixed(2)}x</span>
             <small>0.25x = slowest, 2.0x = fastest</small>
           </div>
         </div>
 
         {/* Reverb Section */}
-        <div class="settings-section">
-          <h3 class="settings-section-title">Reverb</h3>
-          <div class="settings-divider" />
-          <p class="settings-desc">
+        <div class={styles.settingsSection}>
+          <h3 class={styles.settingsSectionTitle}>Reverb</h3>
+          <div class={styles.settingsDivider} />
+          <p class={styles.settingsDesc}>
             Add reverb (echo) to the practice playback for a richer sound.
           </p>
 
-          <div class="settings-row">
+          <div class={styles.settingsRow}>
             <label for="reverb-type">Type</label>
             <select
               id="reverb-type"
@@ -700,7 +701,7 @@ export const SettingsPanel: Component = () => {
             </select>
           </div>
 
-          <div class="settings-row">
+          <div class={styles.settingsRow}>
             <label for="reverb-wetness">Wet Mix</label>
             <input
               type="range"
@@ -713,52 +714,52 @@ export const SettingsPanel: Component = () => {
                 appStore.setReverbWetness(parseInt(e.currentTarget.value))
               }}
             />
-            <span class="settings-val">{appStore.reverb().wetness}%</span>
+            <span class={styles.settingsVal}>{appStore.reverb().wetness}%</span>
             <small>How much reverb vs dry signal</small>
           </div>
         </div>
 
         {/* Keyboard Shortcuts Section */}
-        <div class="settings-section">
-          <h3 class="settings-section-title">Keyboard Shortcuts</h3>
-          <div class="settings-divider" />
-          <p class="settings-desc">
+        <div class={styles.settingsSection}>
+          <h3 class={styles.settingsSectionTitle}>Keyboard Shortcuts</h3>
+          <div class={styles.settingsDivider} />
+          <p class={styles.settingsDesc}>
             Global shortcuts active when not typing in a text field.
           </p>
-          <div class="keymap-table">
-            <div class="keymap-row keymap-header">
+          <div class={styles.keymapTable}>
+            <div class={`${styles.keymapRow} ${styles.keymapHeader}`}>
               <span>Key</span>
               <span>Action</span>
             </div>
-            <div class="keymap-row">
+            <div class={styles.keymapRow}>
               <kbd>Space</kbd>
               <span>Play / Pause / Resume (focus mode)</span>
             </div>
-            <div class="keymap-row">
+            <div class={styles.keymapRow}>
               <kbd>Esc</kbd>
               <span>Exit focus mode / Stop playback</span>
             </div>
-            <div class="keymap-row">
+            <div class={styles.keymapRow}>
               <kbd>Home</kbd>
               <span>Go to beginning</span>
             </div>
-            <div class="keymap-row">
+            <div class={styles.keymapRow}>
               <kbd>R</kbd>
               <span>Toggle Repeat mode</span>
             </div>
-            <div class="keymap-row">
+            <div class={styles.keymapRow}>
               <kbd>P</kbd>
               <span>Toggle Practice mode</span>
             </div>
-            <div class="keymap-row">
+            <div class={styles.keymapRow}>
               <kbd>O</kbd>
               <span>Toggle Once mode</span>
             </div>
-            <div class="keymap-row">
+            <div class={styles.keymapRow}>
               <kbd>↑</kbd>
               <span>Increase playback speed</span>
             </div>
-            <div class="keymap-row">
+            <div class={styles.keymapRow}>
               <kbd>↓</kbd>
               <span>Decrease playback speed</span>
             </div>
@@ -766,14 +767,14 @@ export const SettingsPanel: Component = () => {
         </div>
 
         {/* Danger Zone Section */}
-        <div class="settings-section settings-danger-zone">
-          <h3 class="settings-section-title">Danger Zone</h3>
-          <div class="settings-divider danger-divider" />
-          <p class="settings-desc">
+        <div class={`${styles.settingsSection} settings-danger-zone`}>
+          <h3 class={styles.settingsSectionTitle}>Danger Zone</h3>
+          <div class={`${styles.settingsDivider} danger-divider`} />
+          <p class={styles.settingsDesc}>
             Irreversible actions that affect all your data.
           </p>
 
-          <div class="settings-row danger-row">
+          <div class={`${styles.settingsRow} danger-row`}>
             <div class="danger-content">
               <label class="danger-label">Reset to Factory Defaults</label>
               <small class="danger-desc">
@@ -823,17 +824,17 @@ export const SettingsPanel: Component = () => {
             (() => {
               throw new Error('Dev mode injected render crash')
             })()}
-          <div class="settings-section settings-danger-zone">
-            <h3 class="settings-section-title" style="color: var(--yellow);">
+          <div class={`${styles.settingsSection} settings-danger-zone`}>
+            <h3 class={styles.settingsSectionTitle} style="color: var(--yellow);">
               Developer Tools
             </h3>
             <div
-              class="settings-divider"
+              class={styles.settingsDivider}
               style="background: linear-gradient(90deg, var(--yellow), transparent);"
             />
-            <p class="settings-desc">Development-only tools for debugging.</p>
+            <p class={styles.settingsDesc}>Development-only tools for debugging.</p>
 
-            <div class="settings-row danger-row">
+            <div class={`${styles.settingsRow} danger-row`}>
               <div class="danger-content">
                 <label class="danger-label" style="color: var(--yellow);">
                   Test Crash Screen
@@ -855,9 +856,9 @@ export const SettingsPanel: Component = () => {
         </Show>
 
         {/* About Section */}
-        <div class="settings-section">
-          <h3 class="settings-section-title">About PitchPerfect</h3>
-          <div class="settings-divider" />
+        <div class={styles.settingsSection}>
+          <h3 class={styles.settingsSectionTitle}>About PitchPerfect</h3>
+          <div class={styles.settingsDivider} />
           <div class="about-content">
             <div class="about-logo">
               <svg viewBox="0 0 48 48" width="40" height="40">

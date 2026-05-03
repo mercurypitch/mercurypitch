@@ -12,6 +12,7 @@ import { melodyStore } from '@/stores/melody-store'
 import { playback } from '@/stores/playback-store'
 import { createSession, getDefaultSession, getSession, saveSession, } from '@/stores/session-store'
 import type { MelodyData, PlaybackSession, SessionItem } from '@/types'
+import styles from './LibraryTab.module.css'
 
 export const LibraryTab: Component = () => {
   const library = createMemo(() => melodyStore.getMelodyLibrary())
@@ -420,12 +421,12 @@ export const LibraryTab: Component = () => {
   })
 
   return (
-    <div class="library-tab">
-      <div class="tab-header">
+    <div class={styles.libraryTab}>
+      <div class={styles.tabHeader}>
         <h3>Library</h3>
-        <div class="tab-actions">
+        <div class={styles.tabActions}>
           <button
-            class="tab-action-btn"
+            class={styles.tabActionBtn}
             onClick={openLibrary}
             title="Open Library"
           >
@@ -438,7 +439,7 @@ export const LibraryTab: Component = () => {
             Browse
           </button>
           <button
-            class="tab-action-btn"
+            class={styles.tabActionBtn}
             onClick={showSessionPresetsLibrary}
             title="Browse Sessions"
           >
@@ -455,12 +456,12 @@ export const LibraryTab: Component = () => {
 
       {/* User Session Melodies (new melody-ID model) */}
       <Show when={userSession() !== null}>
-        <div class="session-items-section">
-          <div class="session-header">
-            <div class="active-session-summary">
-              <p class="section-label">Active Session</p>
+        <div class={styles.sessionItemsSection}>
+          <div class={styles.sessionHeader}>
+            <div class={styles.activeSessionSummary}>
+              <p class={styles.sectionLabel}>Active Session</p>
               <select
-                class="session-select sidebar-session-select"
+                class={`session-select ${styles.sidebarSessionSelect}`}
                 onChange={handleSessionChange}
                 title="Choose active session"
               >
@@ -501,14 +502,14 @@ export const LibraryTab: Component = () => {
                 </Show>
               </select>
 
-              <span class="section-meta">
+              <span class={styles.sectionMeta}>
                 {sessionItems().length} item
                 {sessionItems().length === 1 ? '' : 's'}
               </span>
             </div>
-            <div class="session-actions">
+            <div class={styles.sessionActions}>
               <button
-                class="pill-action-btn"
+                class={styles.pillActionBtn}
                 onClick={handlePlaySessionSequence}
                 title="Play All in sequence"
               >
@@ -516,7 +517,7 @@ export const LibraryTab: Component = () => {
               </button>
               <Show when={selectedMelodyIds().length > 1}>
                 <button
-                  class="pill-action-btn"
+                  class={styles.pillActionBtn}
                   onClick={handlePlaySelected}
                   title="Play Selected"
                 >
@@ -531,7 +532,7 @@ export const LibraryTab: Component = () => {
                 }
               >
                 <button
-                  class="pill-action-btn"
+                  class={styles.pillActionBtn}
                   onClick={() => appStore.selectAllMelodies?.()}
                   title="Select All"
                 >
@@ -540,7 +541,7 @@ export const LibraryTab: Component = () => {
               </Show>
               <Show when={selectedMelodyIds().length > 0}>
                 <button
-                  class="pill-action-btn"
+                  class={styles.pillActionBtn}
                   onClick={() => appStore.clearMelodySelection?.()}
                   title="Clear Selection"
                 >
@@ -552,12 +553,12 @@ export const LibraryTab: Component = () => {
           <Show
             when={sessionItems().length > 0}
             fallback={
-              <p class="empty-tip">
+              <p class={styles.emptyTip}>
                 No melodies in this session yet. Create a melody to add it here.
               </p>
             }
           >
-            <div class="session-items-pills">
+            <div class={styles.sessionItemsPills}>
               <For each={sessionItems()}>
                 {(item: SessionItem & { melodyData?: MelodyData }) => {
                   // ────────────────────────────────────────────────
@@ -647,14 +648,14 @@ export const LibraryTab: Component = () => {
                       onClick={handleClickItem}
                       onDblClick={handleDblClickItem}
                     >
-                      <span class="pill-icon">
+                      <span class={styles.pillIcon}>
                         {isMelody() &&
                         !isMissingMelody() &&
                         item.melodyData !== undefined
                           ? getMelodyIcon(item.melodyData)
                           : getItemIcon(item)}
                       </span>
-                      <span class="pill-label">{itemLabel()}</span>
+                      <span class={styles.pillLabel}>{itemLabel()}</span>
 
                       <Show
                         when={
@@ -665,19 +666,19 @@ export const LibraryTab: Component = () => {
                           item.melodyData.tags.length > 0
                         }
                       >
-                        <span class="pill-tags">
+                        <span class={styles.pillTags}>
                           <For
                             each={(item.melodyData?.tags as string[]).slice(
                               0,
                               2,
                             )}
                           >
-                            {(tag) => <span class="pill-tag">{tag}</span>}
+                            {(tag) => <span class={styles.pillTag}>{tag}</span>}
                           </For>
                           {item.melodyData !== undefined &&
                             item.melodyData.tags !== undefined &&
                             (item.melodyData.tags as string[]).length > 2 && (
-                              <span class="pill-tag more">
+                              <span class={`${styles.pillTag} ${styles.more}`}>
                                 +{(item.melodyData.tags as string[]).length - 2}
                               </span>
                             )}
@@ -718,21 +719,21 @@ export const LibraryTab: Component = () => {
 
       {/* Practice Session Items (legacy model) */}
       <Show when={hasActivePracticeSession()}>
-        <div class="session-items-section practice-session">
-          <p class="section-label">
+        <div class={`${styles.sessionItemsSection} practice-session`}>
+          <p class={styles.sectionLabel}>
             Practice ({practiceSessionItems().length})
           </p>
-          <div class="session-items-pills">
+          <div class={styles.sessionItemsPills}>
             <For each={practiceSessionItems()}>
               {(item, index) => (
                 <span
-                  class={`session-item-pill ${
+                  class={`${styles.sessionItemPill} ${
                     index() === currentSessionItemIndex() ? 'active' : ''
                   }`}
                   title={`${item.type}: ${item.label}`}
                 >
-                  <span class="pill-icon">{getItemIcon(item)}</span>
-                  <span class="pill-label">{item.label}</span>
+                  <span class={styles.pillIcon}>{getItemIcon(item)}</span>
+                  <span class={styles.pillLabel}>{item.label}</span>
                   <Show
                     when={
                       item.repeat !== undefined &&
@@ -740,7 +741,7 @@ export const LibraryTab: Component = () => {
                       item.repeat > 1
                     }
                   >
-                    <span class="pill-repeat">×{item.repeat}</span>
+                    <span class={styles.pillRepeat}>×{item.repeat}</span>
                   </Show>
                 </span>
               )}
@@ -750,23 +751,23 @@ export const LibraryTab: Component = () => {
       </Show>
 
       {/* Recent Items Section */}
-      {/*<div class="recent-section recent-items-section">*/}
-      {/*  <p class="section-label">Recent Items</p>*/}
+      {/*<div class={`${styles.recentSection} recent-items-section`}>*/}
+      {/*  <p class={styles.sectionLabel}>Recent Items</p>*/}
       {/*  {recentItems().length === 0 ? (*/}
-      {/*    <p class="empty-tip">*/}
+      {/*    <p class={styles.emptyTip}>*/}
       {/*      No items yet. Click "Melodies" or "Sessions" to get started!*/}
       {/*    </p>*/}
       {/*  ) : (*/}
       {/*    <For each={recentItems()}>*/}
       {/*      {(item) => (*/}
       {/*        <div*/}
-      {/*          class="recent-item"*/}
+      {/*          class={styles.recentItem}*/}
       {/*          onClick={() => handleRecentItemClick(item)}*/}
       {/*        >*/}
       {/*          {item.type === 'melody' ? (*/}
       {/*            <>*/}
-      {/*              <span class="recent-name">{item.data.name}</span>*/}
-      {/*              <span class="recent-meta">{item.data.bpm} BPM</span>*/}
+      {/*              <span class={styles.recentName}>{item.data.name}</span>*/}
+      {/*              <span class={styles.recentMeta}>{item.data.bpm} BPM</span>*/}
       {/*              <Show*/}
       {/*                when={*/}
       {/*                  item.data.tags !== undefined &&*/}
@@ -774,14 +775,14 @@ export const LibraryTab: Component = () => {
       {/*                  item.data.tags.length > 0*/}
       {/*                }*/}
       {/*              >*/}
-      {/*                <div class="recent-tags">*/}
+      {/*                <div class={styles.recentTags}>*/}
       {/*                  {(item.data.tags as string[]).slice(0, 2).map((tag) => (*/}
-      {/*                    <span class="recent-tag">{tag}</span>*/}
+      {/*                    <span class={styles.recentTag}>{tag}</span>*/}
       {/*                  ))}*/}
       {/*                  {item.data.tags !== undefined &&*/}
       {/*                    item.data.tags !== null &&*/}
       {/*                    (item.data.tags as string[]).length > 2 && (*/}
-      {/*                      <span class="recent-tag more">*/}
+      {/*                      <span class={`${styles.recentTag} ${styles.more}`}>*/}
       {/*                        +{(item.data.tags as string[]).length - 2}*/}
       {/*                      </span>*/}
       {/*                    )}*/}
@@ -790,8 +791,8 @@ export const LibraryTab: Component = () => {
       {/*            </>*/}
       {/*          ) : (*/}
       {/*            <>*/}
-      {/*              <span class="recent-name">{item.data.name}</span>*/}
-      {/*              <span class="recent-meta">*/}
+      {/*              <span class={styles.recentName}>{item.data.name}</span>*/}
+      {/*              <span class={styles.recentMeta}>*/}
       {/*                {item.data.items.length} items*/}
       {/*              </span>*/}
       {/*            </>*/}
@@ -803,14 +804,14 @@ export const LibraryTab: Component = () => {
       {/*</div>*/}
 
       {/* Quick Actions */}
-      <div class="quick-actions">
-        <button class="quick-action-btn" onClick={handleNewSession}>
+      <div class={styles.quickActions}>
+        <button class={styles.quickActionBtn} onClick={handleNewSession}>
           <svg viewBox="0 0 24 24" width="14" height="14">
             <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
           </svg>
           New Session
         </button>
-        <button class="quick-action-btn" onClick={handleQuickNewMelody}>
+        <button class={styles.quickActionBtn} onClick={handleQuickNewMelody}>
           <svg viewBox="0 0 24 24" width="14" height="14">
             <path
               fill="currentColor"
@@ -819,7 +820,7 @@ export const LibraryTab: Component = () => {
           </svg>
           New Melody
         </button>
-        <button class="quick-action-btn" onClick={openSessionLibrary}>
+        <button class={styles.quickActionBtn} onClick={openSessionLibrary}>
           <svg viewBox="0 0 24 24" width="14" height="14">
             <path
               fill="currentColor"
