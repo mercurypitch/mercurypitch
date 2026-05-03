@@ -68,7 +68,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   })
 
   const handleFileSelect = (file: File) => {
-    _ = startUvrSession(
+    const _sessionId = startUvrSession(
       file.name,
       file.size,
       file.type,
