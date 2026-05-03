@@ -1,0 +1,18 @@
+{
+  "imports": {
+    "solid-js": "https://esm.sh/solid-js@1.9.12",
+    "midi-writer-js": "https://esm.sh/midi-writer-js@3.2.1"
+  },
+  "tasks": {
+    "dev": "deno run -A --unstable npm run dev",
+    "build": "deno run -A npm run build",
+    "build:dev": "deno run -A npm run build --mode development",
+    "preview": "deno run -A npm run preview",
+    "test": "deno run -A npm run test",
+    "typecheck": "deno run -A npm run typecheck"
+  },
+  "compat": {
+    "date": "2024-03-01",
+    "nodeVersion": "22.0.0"
+  }
+}
