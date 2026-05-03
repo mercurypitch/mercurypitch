@@ -1180,6 +1180,20 @@ header h1 {
   min-height: 0;
   overflow: auto;
   height: 100%;
+  padding-bottom: 40px;
+}
+
+/* Ensure content is visible on smaller screens/tablets */
+@media (max-height: 768px) {
+  .main-content {
+    padding-bottom: 20px;
+  }
+
+  .pitch-algorithm-tester,
+  .pitch-testing-tab {
+    padding-bottom: 20px;
+    margin-bottom: 20px;
+  }
 }
 
 /* ===== Notes Panel (Legacy — kept for NoteList component) ===== */
@@ -10121,4 +10135,360 @@ input:checked + .settings-slider:before {
 .note-offset.bad {
   color: var(--red);
   font-weight: 600;
+}
+
+/* ── Pitch Testing Tab ────────────────────────────────────── */
+.pitch-testing-tab {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  padding-bottom: 20px;
+  margin-bottom: 20px;
+}
+
+.pitch-testing-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-card);
+  flex-shrink: 0;
+  border-radius: 8px 8px 0 0;
+}
+
+.pitch-testing-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.pitch-testing-layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+}
+
+.pitch-testing-controls {
+  width: 320px;
+  flex-shrink: 0;
+  padding: 16px;
+  overflow-y: auto;
+  border-right: 1px solid var(--border);
+  background: var(--bg-card);
+  border-radius: 0 0 8px 8px;
+}
+
+.pitch-testing-controls .control-group {
+  margin-bottom: 16px;
+}
+
+.pitch-testing-controls .control-group label {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.pitch-testing-controls select,
+.pitch-testing-controls input[type='number'] {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  margin-bottom: 4px;
+}
+
+.pitch-testing-controls select:focus,
+.pitch-testing-controls input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.pitch-testing-controls .control-hint {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.pitch-testing-controls .file-input {
+  width: 100%;
+  padding: 8px;
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  margin-bottom: 8px;
+}
+
+.pitch-testing-controls .file-info {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  display: block;
+  margin-top: 4px;
+}
+
+.pitch-testing-controls .mic-controls,
+.pitch-testing-controls .file-controls,
+.pitch-testing-controls .generate-controls {
+  margin-bottom: 16px;
+  padding: 12px;
+  border-radius: 8px;
+  background: var(--bg-secondary);
+}
+
+.pitch-testing-controls .waveform-info {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-top: 6px;
+}
+
+.mic-status {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  margin-top: 8px;
+}
+
+.mic-status.active {
+  background: var(--green-dim);
+  color: var(--green);
+}
+
+.pitch-testing-controls .btn {
+  width: 100%;
+  padding: 10px 14px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  margin-bottom: 8px;
+}
+
+.pitch-testing-controls .btn-sm {
+  padding: 6px 10px;
+  font-size: 0.8rem;
+}
+
+.pitch-testing-controls .btn-primary {
+  background: var(--accent);
+  color: white;
+}
+
+.pitch-testing-controls .btn-primary:hover:not(:disabled) {
+  background: var(--accent);
+}
+
+.pitch-testing-controls .btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pitch-testing-controls .btn-secondary {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.pitch-testing-controls .btn-secondary:hover:not(:disabled) {
+  background: var(--bg-secondary);
+}
+
+.pitch-testing-controls .btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pitch-testing-controls .btn-test {
+  background: linear-gradient(135deg, var(--accent), var(--accent-glow));
+  color: white;
+}
+
+.pitch-testing-controls .btn-test:hover:not(:disabled) {
+  opacity: 0.95;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px var(--accent-glow);
+}
+
+.pitch-testing-controls .btn-test:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pitch-testing-controls .btn-outline {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+}
+
+.pitch-testing-controls .btn-outline:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.pitch-testing-visualization {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  background: var(--bg-secondary);
+  min-height: 0;
+  border-radius: 0 0 8px 8px;
+  border-top: 1px solid var(--border);
+}
+
+.pitch-testing-visualization .detection-panel,
+.pitch-testing-visualization .results-panel,
+.pitch-testing-visualization .info-panel {
+  margin-bottom: 16px;
+}
+
+.pitch-testing-visualization h3 {
+  margin: 0 0 12px 0;
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.pitch-testing-visualization h4 {
+  margin: 0 0 8px 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.pitch-testing-visualization .metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.pitch-testing-visualization .metric-item {
+  padding: 8px;
+  border-radius: 6px;
+  background: var(--bg-tertiary);
+}
+
+.pitch-testing-visualization .metric-label {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.pitch-testing-visualization .metric-value {
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.pitch-testing-visualization .metric-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 8px;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.pitch-testing-visualization .metric-row.passed {
+  color: var(--green);
+}
+
+.pitch-testing-visualization .metric-row.failed {
+  color: var(--red);
+}
+
+.pitch-testing-visualization .metric-row.result {
+  background: var(--bg-tertiary);
+}
+
+.pitch-testing-visualization .waveform-display {
+  margin-bottom: 16px;
+}
+
+.pitch-testing-visualization .waveform-canvas {
+  height: 120px;
+  border-radius: 6px;
+  background: var(--bg-tertiary);
+  overflow: hidden;
+  position: relative;
+}
+
+.pitch-testing-visualization .waveform-dot {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  transition: left 0.05s linear, top 0.05s linear;
+}
+
+.pitch-testing-visualization .info-panel {
+  padding: 12px;
+  border-radius: 6px;
+  background: var(--bg-tertiary);
+}
+
+.pitch-testing-visualization .last-result {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.pitch-testing-visualization .result-details div {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.pitch-testing-visualization .error-list {
+  margin-top: 8px;
+}
+
+.pitch-testing-visualization .error-list p {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.pitch-testing-visualization .error-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 6px;
+}
+
+.pitch-testing-visualization .error-item {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0 8px;
+  line-height: 1;
+}
+
+.close-btn:hover {
+  color: var(--text-primary);
 }

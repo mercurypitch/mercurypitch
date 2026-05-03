@@ -3,7 +3,15 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createEffect, createMemo, createSignal, For, onCleanup, Show, } from 'solid-js'
+import {
+  createEffect,
+  createMemo,
+  createRoot,
+  createSignal,
+  For,
+  onCleanup,
+  Show,
+} from 'solid-js'
 import type { PitchDetectionResult } from '@/lib/pitch-algorithms'
 import { AutocorrelatorDetector, FFTDetector, YINDetector, } from '@/lib/pitch-algorithms'
 
@@ -12,6 +20,29 @@ interface PitchTestingTabProps {
 }
 
 type DetectionMode = 'mic' | 'file' | 'generate'
+
+// Helper function to compute error items - create outside component to avoid reactivity
+function computeErrorItems(errors: number[]) {
+  const testFreqs = [
+    65.41, 73.42, 82.41, 87.31, 98.0, 110.0, 130.81, 146.83,
+    164.81, 196.0, 220.0, 261.63, 293.66, 329.63, 392.0,
+    440.0, 523.25, 587.33, 659.25, 783.99, 880.0, 1046.5,
+  ]
+  const noteNames = [
+    'C3', 'C#3', 'D3', 'D#3', 'E3', 'F3', 'F#3', 'G3',
+    'G#3', 'A3', 'A#3', 'B3', 'C4', 'C#4', 'D4', 'D#4',
+    'E4', 'F4', 'F#4', 'G4', 'G#4', 'A4', 'A#4',
+  ]
+
+  const items: { idx: number; freq: number; noteName: string }[] = []
+  for (let i = 0; i < errors.length && i < 20; i++) {
+    const idx = errors[i]
+    const freq = testFreqs[idx] ?? 440
+    const noteName = noteNames[idx] ?? 'Unknown'
+    items.push({ idx, freq, noteName })
+  }
+  return items
+}
 
 export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
   const [detectors] = createSignal([
@@ -380,9 +411,23 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
     }
   })
 
-  const currentDetector = createMemo(() =>
-    detectors().find((d) => d.algorithm === selectedAlgorithm()),
-  )
+  // Memoized detector lookup to avoid reactivity loops
+  const currentDetector = createMemo(() => {
+    const selected = selectedAlgorithm()
+    for (const d of detectors()) {
+      if (d.algorithm === selected) return d
+    }
+    return undefined
+  })
+
+  // Use a separate signal for updates to prevent cascading reactivity
+  const [updateTrigger, setUpdateTrigger] = createSignal(0)
+
+  // Use createMemo to get the current detector without calling find repeatedly
+  const detectorForAlgorithm = createMemo(() => {
+    const alg = selectedAlgorithm()
+    return detectors().find((d) => d.algorithm === alg)
+  })
 
   return (
     <div class="pitch-testing-tab">
@@ -535,11 +580,11 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
         {/* Right Panel - Visualization */}
         <div class="pitch-testing-visualization">
           {/* Live Detection Display */}
-          {isDetecting() && (
+          <Show when={isDetecting()}>
             <div class="detection-panel">
               <h3>Live Detection</h3>
 
-              {currentDetector() !== undefined && (
+              <Show when={currentDetector() !== undefined}>
                 <div class="metrics-grid">
                   <div class="metric-item">
                     <span class="metric-label">Status</span>
@@ -595,35 +640,37 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                     </span>
                   </div>
                 </div>
-              )}
+              </Show>
 
               {/* Waveform and Frequency Over Time */}
               <div class="waveform-display">
                 <h4>Detection Over Time</h4>
                 <div class="waveform-canvas">
                   <For each={liveResults()}>
-                    {(result, i) => (
-                      <div
-                        ref={(el: HTMLDivElement) => {
-                          if (el !== null) el.dataset.index = i.toString()
-                        }}
-                        class="waveform-dot"
-                        style={{
-                          '--y':
-                            result?.frequency !== null &&
-                            result?.frequency !== undefined
-                              ? `${((440 - result.frequency) / 440) * 100}%`
-                              : '50%',
-                          '--freq': result?.frequency ?? '0',
-                        }}
-                        title={`${result?.noteName ?? 'No signal'} (${result?.frequency?.toFixed(2)} Hz)`}
-                      />
-                    )}
+                    {(result) => {
+                      // Pre-compute display values outside render
+                      const displayFreq = result?.frequency ?? 0
+                      const isTarget = displayFreq > 0
+                      const position = isTarget
+                        ? `${((440 - displayFreq) / 440) * 100}%`
+                        : '50%'
+
+                      return (
+                        <div
+                          class="waveform-dot"
+                          style={{
+                            '--y': position,
+                            '--freq': displayFreq.toString(),
+                          }}
+                          title={`${result?.noteName ?? 'No signal'} (${displayFreq.toFixed(2)} Hz)`}
+                        />
+                      )
+                    }}
                   </For>
                 </div>
               </div>
             </div>
-          )}
+          </Show>
 
           {/* Test Results Display */}
           {testResults().errors.length === 0 || isRunningTest() ? (
@@ -663,53 +710,13 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
               <div class="error-list">
                 <p>Failed at test indexes:</p>
                 <div class="error-grid">
-                  <For each={testResults().errors.slice(0, 20)}>
-                    {(idx, i) => {
-                      // Map index to frequency
-                      const testFreqs = [
-                        65.41, 73.42, 82.41, 87.31, 98.0, 110.0, 130.81, 146.83,
-                        164.81, 196.0, 220.0, 261.63, 293.66, 329.63, 392.0,
-                        440.0, 523.25, 587.33, 659.25, 783.99, 880.0, 1046.5,
-                      ]
-                      const noteNames = [
-                        'C3',
-                        'C#3',
-                        'D3',
-                        'D#3',
-                        'E3',
-                        'F3',
-                        'F#3',
-                        'G3',
-                        'G#3',
-                        'A3',
-                        'A#3',
-                        'B3',
-                        'C4',
-                        'C#4',
-                        'D4',
-                        'D#4',
-                        'E4',
-                        'F4',
-                        'F#4',
-                        'G4',
-                        'G#4',
-                        'A4',
-                        'A#4',
-                      ]
-                      const freq = testFreqs[idx] ?? 440
-                      const noteName = noteNames[idx] ?? 'Unknown'
-                      return (
-                        <div
-                          ref={(el: HTMLDivElement) => {
-                            if (el !== null) el.dataset.index = i.toString()
-                          }}
-                          class="error-item"
-                        >
-                          {noteName} ({freq.toFixed(2)} Hz)
-                        </div>
-                      )
-                    }}
-                  </For>
+                  <Show when={computeErrorItems(testResults().errors).length > 0}>
+                    <For each={computeErrorItems(testResults().errors)}>
+                      {(item: { idx: number; freq: number; noteName: string }) => (
+                        <div class="error-item">{item.noteName} ({item.freq.toFixed(2)} Hz)</div>
+                      )}
+                    </For>
+                  </Show>
                   {testResults().errors.length > 20 && (
                     <div class="error-item">
                       ... and {testResults().errors.length - 20} more
