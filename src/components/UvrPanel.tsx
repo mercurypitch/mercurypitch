@@ -4,8 +4,19 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, For,onCleanup, Show } from 'solid-js'
-import type {UvrStatus} from '@/stores/app-store';
-import { cancelUvrSession, completeUvrSession, currentUvrSession, getAllUvrSessions, getUvrSession, setErrorUvrSession, startUvrSession, updateUvrSessionProgress  } from '@/stores/app-store'
+import type { UvrSession } from '@/stores/app-store'
+import {
+  cancelUvrSession,
+  completeUvrSession,
+  currentUvrSession,
+  getAllUvrSessions,
+  getUvrSession,
+  saveAllUvrSessions,
+  setCurrentUvrSession,
+  setErrorUvrSession,
+  startUvrSession,
+  updateUvrSessionProgress,
+} from '@/stores/app-store'
 import type { UvrMode } from '@/types/uvr'
 import { UvrGuide, UvrGuideStyles, UvrProcessControl, UvrProcessControlStyles, UvrResultViewer, UvrResultViewerStyles, UvrSessionResult, UvrSessionResultStyles,UvrUploadControl, UvrUploadControlStyles,  } from "."
 import { ChevronDown, ChevronUp,History, Music, Play, Settings, SlidersHorizontal, X,  } from './icons'
@@ -65,6 +76,14 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   }
 
   const handleProcessStart = (sessionId: string) => {
+    // Set session to processing status
+    const sessions = getAllUvrSessions()
+    const session = sessions.find((s) => s.sessionId === sessionId)
+    if (session) {
+      session.status = 'processing'
+      saveAllUvrSessions(sessions)
+      setCurrentUvrSession(session)
+    }
     // Simulate processing (real processing will be added in Phase 2)
     simulateProcessing(sessionId)
   }

@@ -115,12 +115,13 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
       </div>
 
       {/* Upload Zone */}
-      <div
+      <label
         class={`upload-zone ${isDragging() ? 'dragging' : ''}`}
         onDragEnter={() => setIsDragging(true)}
         onDragOver={(e) => e.preventDefault()}
         onDragLeave={() => setIsDragging(false)}
         onDrop={handleDrop}
+        for="uvr-file-input"
       >
         <input
           id="uvr-file-input"
@@ -130,7 +131,7 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
           class="file-input"
         />
 
-        {!selectedFile() ? (
+        <Show when={!selectedFile()}>
           <div class="upload-content">
             <div class="upload-icon">
               <FileUpload />
@@ -143,7 +144,9 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
               Supports MP3, WAV files up to {formatFileSize(maxSize())}
             </p>
           </div>
-        ) : (
+        </Show>
+
+        <Show when={selectedFile()}>
           <div class="file-info">
             <div class="file-preview">
               <div class="file-icon">🎵</div>
@@ -156,12 +159,14 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
               </div>
             </div>
 
-            {props.processing ? (
+            <Show when={props.processing}>
               <div class="processing-indicator">
                 <div class="pulse-spinner" />
                 <span>Processing...</span>
               </div>
-            ) : (
+            </Show>
+
+            <Show when={!props.processing}>
               <div class="upload-actions">
                 <button
                   class="upload-btn upload-btn-secondary"
@@ -172,15 +177,15 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
                 <button
                   class="upload-btn upload-btn-primary"
                   onClick={handleProcess}
-                  disabled={!selectedFile() || props.processing}
+                  disabled={!selectedFile()}
                 >
                   Process with UVR
                 </button>
               </div>
-            )}
+            </Show>
           </div>
-        )}
-      </div>
+        </Show>
+      </label>
 
       {/* Supported Formats */}
       <div class="supported-formats">

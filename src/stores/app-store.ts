@@ -135,7 +135,7 @@ export function getAllUvrSessions(): UvrSession[] {
 }
 
 /** Save all sessions */
-function saveAllUvrSessions(sessions: UvrSession[]): void {
+export function saveAllUvrSessions(sessions: UvrSession[]): void {
   localStorage.setItem('pitchperfect_uvr_sessions', JSON.stringify(sessions))
 }
 
