@@ -9745,28 +9745,26 @@ input:checked + .settings-slider:before {
 
 /* ── Pitch Algorithm Tester (GH #232, #234) ───────────────── */
 .pitch-algorithm-tester {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
   display: flex;
   flex-direction: column;
+  height: 100%;
+  min-height: 0;
 }
 
 .tester-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
   padding: 16px 20px;
   border-bottom: 1px solid var(--border);
   background: var(--bg-card);
+  flex-shrink: 0;
 }
 
 .tester-header h2 {
   font-size: 1.1rem;
   font-weight: 600;
   margin: 0;
+  margin-right: auto;
 }
 
 .tester-content {

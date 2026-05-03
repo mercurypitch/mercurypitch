@@ -85,9 +85,6 @@ export const PitchAlgorithmTester: Component<PitchAlgorithmTesterProps> = (
     <div class="pitch-algorithm-tester">
       <div class="tester-header">
         <h2>Pitch Algorithm Tester</h2>
-        <button class="close-btn" onClick={() => props.onClose?.()}>
-          ✕
-        </button>
       </div>
 
       <div class="tester-content">
