@@ -280,13 +280,6 @@ export class PitchDetector {
       midi,
       timestamp: Date.now(),
     }
-    return {
-      frequency,
-      clarity: maxVal / 255, // Normalize 0-255 range
-      noteName: name,
-      octave,
-      cents,
-    }
   }
 
   /** Simple FFT approximation for frequency-domain conversion */

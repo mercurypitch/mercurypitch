@@ -210,13 +210,11 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
     const analyserVal = analyser()
     if (!analyserVal) return
 
+    const detector = detectorForAlgorithm()
+    if (detector === undefined) return
+
     const dataArray = new Float32Array(analyserVal.frequencyBinCount)
     analyserVal.getFloatTimeDomainData(dataArray)
-
-    const detector = detectors().find(
-      (d) => d.algorithm === selectedAlgorithm(),
-    )
-    if (detector === null || detector === undefined) return
 
     const result = detector.detect(dataArray)
     setLiveResults((prev) => [...prev.slice(-100), result])
@@ -292,10 +290,8 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
     const updateLoop = () => {
       if (!isDetecting()) return
 
-      const detector = detectors().find(
-        (d) => d.algorithm === selectedAlgorithm(),
-      )
-      if (detector === null || detector === undefined) return
+      const detector = detectorForAlgorithm()
+      if (detector === undefined) return
 
       const wave = generatedWaveform()
       if (!wave) {
@@ -320,10 +316,8 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
       return
     }
 
-    const detector = detectors().find(
-      (d) => d.algorithm === selectedAlgorithm(),
-    )
-    if (detector === null || detector === undefined) {
+    const detector = detectorForAlgorithm()
+    if (detector === undefined) {
       stopLiveDetection()
       return
     }
@@ -464,6 +458,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
           <div class="control-group">
             <label>Algorithm</label>
             <select
+              disabled={isDetecting() || isRunningTest()}
               value={selectedAlgorithm()}
               onChange={(e) =>
                 setSelectedAlgorithm(
@@ -480,6 +475,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
           <div class="control-group">
             <label>Detection Mode</label>
             <select
+              disabled={isDetecting() || isRunningTest()}
               value={detectionMode()}
               onChange={(e) =>
                 setDetectionMode(e.currentTarget.value as DetectionMode)

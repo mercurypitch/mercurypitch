@@ -226,7 +226,7 @@ export const PitchAlgorithmTester: Component<PitchAlgorithmTesterProps> = (
             <div class="detailed-results">
               <Show when={selectedSample()}>
                 {(sample) => (
-                  <For each={sample.notes}>
+                  <For each={sample().notes}>
                     {(note: { name: string; frequency: number }) => {
                       const algorithmResults = results().filter((r) =>
                         r.results.some(
