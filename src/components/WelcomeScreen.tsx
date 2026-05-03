@@ -1,11 +1,11 @@
 // ============================================================
 // WelcomeScreen — first-run welcome overlay (GH #131)
 // ============================================================
-
 import type { Component } from 'solid-js'
 import { createSignal } from 'solid-js'
 import { TierSelector } from '@/components/TierSelector'
 import { appStore } from '@/stores'
+import styles from "./WelcomeScreen.module.css"
 
 interface WelcomeScreenProps {
   onTakeTour?: () => void
@@ -42,14 +42,14 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
   }
 
   return (
-    <div class="welcome-overlay" onClick={handleClose}>
+    <div class={styles.welcomeOverlay} onClick={handleClose}>
       <div
-        class="welcome-card"
+        class={styles.welcomeCard}
         onClick={(e) => {
           e.stopPropagation()
         }}
       >
-        <button class="welcome-close" onClick={handleClose} title="Dismiss">
+        <button class={styles.welcomeClose} onClick={handleClose} title="Dismiss">
           <svg viewBox="0 0 24 24" width="20" height="20">
             <path
               fill="currentColor"
@@ -59,20 +59,20 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
         </button>
 
         {/* Hero */}
-        <div class="welcome-hero">
-          <svg class="welcome-icon" viewBox="0 0 24 24" width="56" height="56">
+        <div class={styles.welcomeHero}>
+          <svg class={styles.welcomeIcon} viewBox="0 0 24 24" width="56" height="56">
             <path
               fill="currentColor"
               d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"
             />
           </svg>
-          <h1 class="welcome-title">Welcome to PitchPerfect</h1>
-          <p class="welcome-subtitle">Your voice, visualized and refined</p>
+          <h1 class={styles.welcomeTitle}>Welcome to PitchPerfect</h1>
+          <p class={styles.welcomeSubtitle}>Your voice, visualized and refined</p>
         </div>
 
         {/* Mic Permission */}
-        <div class="welcome-mic-section">
-          <div class="welcome-mic-icon">
+        <div class={styles.welcomeMicSection}>
+          <div class={styles.welcomeMicIcon}>
             <svg viewBox="0 0 24 24" width="20" height="20">
               <path
                 fill="currentColor"
@@ -84,7 +84,7 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
               />
             </svg>
           </div>
-          <div class="welcome-mic-text">
+          <div class={styles.welcomeMicText}>
             <strong>Microphone Access</strong>
             <p>
               PitchPerfect needs microphone access to detect your singing pitch
@@ -93,14 +93,14 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
           </div>
           {micEnabled() === false && micError() === null && (
             <button
-              class="welcome-mic-btn"
+              class={styles.welcomeMicBtn}
               onClick={() => void handleEnableMic()}
             >
               Enable Mic
             </button>
           )}
           {micEnabled() && (
-            <div class="welcome-mic-success">
+            <div class={styles.welcomeMicSuccess}>
               <svg viewBox="0 0 24 24" width="16" height="16">
                 <path
                   fill="currentColor"
@@ -111,14 +111,14 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
             </div>
           )}
           {micError() !== null && (
-            <div class="welcome-mic-error">{micError()}</div>
+            <div class={styles.welcomeMicError}>{micError()}</div>
           )}
         </div>
 
         {/* Features */}
-        <div class="welcome-features">
-          <div class="welcome-feature">
-            <div class="welcome-feature-icon welcome-feature-icon-practice">
+        <div class={styles.welcomeFeatures}>
+          <div class={styles.welcomeFeature}>
+            <div class={`${styles.welcomeFeatureIcon} ${styles.welcomeFeatureIconPractice}`}>
               <svg viewBox="0 0 24 24" width="20" height="20">
                 <path
                   fill="currentColor"
@@ -126,15 +126,15 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
                 />
               </svg>
             </div>
-            <div class="welcome-feature-text">
+            <div class={styles.welcomeFeatureText}>
               <strong>Practice</strong>
               <p>
                 Sing along to melodies with real-time pitch feedback and scoring
               </p>
             </div>
           </div>
-          <div class="welcome-feature">
-            <div class="welcome-feature-icon welcome-feature-icon-editor">
+          <div class={styles.welcomeFeature}>
+            <div class={`${styles.welcomeFeatureIcon} ${styles.welcomeFeatureIconEditor}`}>
               <svg viewBox="0 0 24 24" width="20" height="20">
                 <path
                   fill="currentColor"
@@ -142,15 +142,15 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
                 />
               </svg>
             </div>
-            <div class="welcome-feature-text">
+            <div class={styles.welcomeFeatureText}>
               <strong>Create</strong>
               <p>
                 Build melodies in the piano roll editor, import MIDI, or record
               </p>
             </div>
           </div>
-          <div class="welcome-feature">
-            <div class="welcome-feature-icon welcome-feature-icon-improve">
+          <div class={styles.welcomeFeature}>
+            <div class={`${styles.welcomeFeatureIcon} ${styles.welcomeFeatureIconImprove}`}>
               <svg viewBox="0 0 24 24" width="20" height="20">
                 <path
                   fill="currentColor"
@@ -158,7 +158,7 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
                 />
               </svg>
             </div>
-            <div class="welcome-feature-text">
+            <div class={styles.welcomeFeatureText}>
               <strong>Improve</strong>
               <p>Track progress with sessions and detailed accuracy reports</p>
             </div>
@@ -166,14 +166,14 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
         </div>
 
         {/* Actions */}
-        <div class="welcome-actions">
-          <button class="welcome-cta" onClick={handleClose}>
+        <div class={styles.welcomeActions}>
+          <button class={styles.welcomeCta} onClick={handleClose}>
             <svg viewBox="0 0 24 24" width="20" height="20">
               <path fill="currentColor" d="M8 5v14l11-7z" />
             </svg>
             Start Singing
           </button>
-          <button class="welcome-tour-btn" onClick={handleTakeTour}>
+          <button class={styles.welcomeTourBtn} onClick={handleTakeTour}>
             <svg viewBox="0 0 24 24" width="18" height="18">
               <path
                 fill="currentColor"
@@ -185,8 +185,8 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
         </div>
 
         {/* Quick Accuracy Tier Select */}
-        <div class="welcome-tier-select">
-          <p class="welcome-tier-label">Choose your accuracy level:</p>
+        <div class={styles.welcomeTierSelect}>
+          <p class={styles.welcomeTierLabel}>Choose your accuracy level:</p>
           <TierSelector />
         </div>
       </div>

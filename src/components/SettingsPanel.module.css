@@ -1,0 +1,410 @@
+/* Extracted from: Settings Panel */
+
+#settings-panel {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  background: var(--bg-primary);
+}
+
+.settings-panel {
+  width: 100%;
+  height: 100%;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.settings-content {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.settings-title {
+  font-size: 1.2rem;
+  color: var(--text-primary);
+  margin: 0 0 20px 0;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.settings-section {
+  margin-bottom: 30px;
+}
+
+.settings-section-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 0 0;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.settings-divider {
+  height: 4px;
+  width: 100%;
+  background: linear-gradient(
+    90deg,
+    var(--border) 0%,
+    var(--border) 60%,
+    var(--accent) 60%,
+    var(--accent) 100%
+  );
+  margin: 16px 0;
+  border-radius: 2px;
+}
+
+.settings-desc {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin: -8px 0 12px 0;
+}
+
+/* ============================================================
+   Keymap Table (GH #147)
+   ============================================================ */
+
+.keymap-table {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.keymap-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+  color: var(--text-primary);
+}
+
+.keymap-action {
+  flex: 1;
+}
+
+.keymap-row kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 24px;
+  padding: 0 8px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.keymap-row kbd.ctrl-kbd {
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  font-size: 0.68rem;
+}
+
+.keymap-row kbd + kbd {
+  margin-left: 4px;
+}
+
+/* ============================================================
+   Tooltip System (GH #150)
+   ============================================================ */
+
+.tooltip-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.tooltip {
+  position: absolute;
+  z-index: 9000;
+  padding: 5px 10px;
+  background: var(--bg-inverse);
+  color: var(--text-inverse);
+  font-size: 0.72rem;
+  border-radius: 6px;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  line-height: 1.4;
+}
+
+.tooltip-top {
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.tooltip-bottom {
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.tooltip-left {
+  right: calc(100% + 6px);
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.tooltip-right {
+  left: calc(100% + 6px);
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* Keyboard shortcuts table */
+.keymap-table {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+.keymap-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.keymap-row:last-child {
+  border-bottom: none;
+}
+
+.keymap-row.keymap-header {
+  background: var(--bg-secondary);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  padding: 6px 14px;
+}
+
+.keymap-row kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 52px;
+  padding: 3px 8px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  font-size: 0.75rem;
+  font-family: monospace;
+  color: var(--text-primary);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+.keymap-row span:last-child {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  max-width: 500px; /* Keep everything compact and on the left */
+}
+
+.settings-row label {
+  min-width: 160px;
+  width: auto;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  padding: 8px 0; /* Reduced padding */
+  display: flex;
+  align-items: center;
+  cursor: default;
+}
+
+.settings-row input[type='range'] {
+  flex: 1;
+  max-width: 200px; /* Restrict range slider width */
+  min-width: 120px;
+  accent-color: var(--accent);
+}
+
+.settings-row input[type='number'] {
+  width: 60px;
+  padding: 6px 8px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  border-radius: 4px;
+  font-size: 0.85rem;
+  text-align: center;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.settings-row input[type='number']:focus {
+  border-color: var(--accent);
+}
+
+/* Darker spin buttons for number inputs in settings */
+.settings-row input[type='number']::-webkit-inner-spin-button,
+.settings-row input[type='number']::-webkit-outer-spin-button {
+  opacity: 0.7;
+  filter: invert(65%) sepia(44%) saturate(711%) hue-rotate(179deg)
+    brightness(96%) contrast(95%);
+  cursor: pointer;
+}
+
+.settings-row select {
+  padding: 8px 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  border-radius: 4px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  flex: 1;
+  min-width: 200px;
+  max-width: 280px;
+}
+
+.settings-val {
+  min-width: 40px;
+  text-align: left;
+  font-size: 0.85rem;
+  color: var(--accent);
+}
+
+.settings-row small {
+  width: 100%;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* Toggle Switch Styling */
+.settings-toggle {
+  position: relative;
+  display: inline-block;
+  width: 42px !important; /* Strictly enforce width */
+  height: 22px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.settings-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.settings-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--bg-tertiary);
+  transition: 0.3s;
+  border-radius: 22px;
+  border: 1px solid var(--border);
+  width: 42px; /* Match parent width */
+}
+
+.settings-slider:before {
+  position: absolute;
+  content: '';
+  height: 16px;
+  width: 16px;
+  left: 2px;
+  bottom: 2px;
+  background-color: var(--text-secondary);
+  transition: 0.3s;
+  border-radius: 50%;
+}
+
+input:checked + .settings-slider {
+  background-color: var(--accent-dim);
+  border-color: var(--accent);
+}
+
+input:checked + .settings-slider:before {
+  transform: translateX(20px);
+  background-color: var(--accent);
+}
+
+.settings-row input[type='number'] {
+  width: 60px;
+  padding: 6px 8px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  border-radius: 4px;
+  font-size: 0.85rem;
+  text-align: center;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.settings-row input[type='number']:focus {
+  border-color: var(--accent);
+}
+
+/* Darker spin buttons for number inputs in settings */
+.settings-row input[type='number']::-webkit-inner-spin-button,
+.settings-row input[type='number']::-webkit-outer-spin-button {
+  opacity: 0.7;
+  filter: invert(65%) sepia(44%) saturate(711%) hue-rotate(179deg)
+    brightness(96%) contrast(95%);
+  cursor: pointer;
+}
+
+.settings-info {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 12px;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.settings-info span {
+  color: var(--accent);
+  font-weight: bold;
+}
+
+
+
+.danger-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.danger-content {
+  flex: 1;
+}
+
+.danger-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #ff3b30;
+  margin-bottom: 4px;
+}
+
+.danger-desc {
+  display: block;
+  font-size: 0.75rem;
+}

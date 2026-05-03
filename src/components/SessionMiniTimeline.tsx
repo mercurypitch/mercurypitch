@@ -16,7 +16,6 @@
 // component's API significantly murkier. A purpose-built read-only
 // view keeps each component's responsibility narrow.
 // ============================================================
-
 import type { Component } from 'solid-js'
 import { For, Show } from 'solid-js'
 import { melodyStore } from '@/stores'
@@ -72,7 +71,7 @@ export const SessionMiniTimeline: Component<SessionMiniTimelineProps> = (
             const isRest = item.type === 'rest'
             return (
               <div
-                class={`session-mini-pill ${isRest ? 'is-rest' : 'is-melody'}`}
+                class={`${styles.sessionMiniPill} ${isRest ? 'is-rest' : 'is-melody'}`}
                 role="listitem"
                 title={`${index() + 1}. ${labelFor(item)}`}
               >

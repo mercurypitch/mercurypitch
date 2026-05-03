@@ -1,0 +1,190 @@
+/* Extracted from: Header */
+
+header {
+  padding: 10px 24px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+header h1 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  cursor: pointer;
+  background: linear-gradient(135deg, var(--accent), var(--purple));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.subtitle {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+/* Logo button in header — makes title clickable to navigate home */
+.logo-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+}
+.logo-btn #app-title-text {
+  font-size: 1.3rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--accent), var(--purple));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0;
+  line-height: 1.2;
+}
+.logo-btn:hover #app-title-text {
+  opacity: 0.85;
+}
+.logo-btn:active #app-title-text {
+  opacity: 0.7;
+}
+
+
+/* Extracted from: Shared Header Bar */
+
+.app-header-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.app-header-sep {
+  width: 1px;
+  height: 22px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+
+/* Extracted from: Practice Tab Header (second header bar) */
+
+.practice-header-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.practice-header-bar::-webkit-scrollbar {
+  display: none;
+}
+.practice-header-bar .essential-controls,
+.practice-header-bar .secondary-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+
+/* Extracted from: Editor Tab Header (second header bar) */
+
+.editor-header-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.editor-header-bar::-webkit-scrollbar {
+  display: none;
+}
+.editor-header-bar .essential-controls,
+.editor-header-bar .secondary-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.practice-header-bar .essential-control-group,
+.editor-header-bar .essential-control-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.practice-header-bar .secondary-control-group,
+.editor-header-bar .secondary-control-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.key-group,
+.scale-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.key-select,
+.scale-select {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 3px 7px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  outline: none;
+  min-width: 75px;
+}
+
+.key-select:focus,
+.scale-select:focus {
+  border-color: var(--accent);
+}
+
+.mode-group {
+  display: flex;
+  gap: 4px;
+}
+
+.cycles-input {
+  width: 52px;
+  padding: 3px 6px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
+
+#cycle-counter {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.app-header-score {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 4px;
+}
+
+.app-score-value {
+  font-weight: 700;
+  color: var(--green);
+  font-size: 0.9rem;
+}

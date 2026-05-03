@@ -6,6 +6,7 @@ import type { Component } from 'solid-js'
 import { createMemo, Show } from 'solid-js'
 import { APP_VERSION } from '@/lib/defaults'
 import { appError } from '@/stores'
+import styles from './CrashModal.module.css'
 
 /**
  * App crashed modal shown when an unhandled error occurs.
@@ -40,14 +41,14 @@ export const CrashModal: Component = () => {
 
   return (
     <Show when={error() !== null}>
-      <div class="crash-modal-overlay">
-        <div class="crash-modal-glass">
+      <div class={styles.crashModalOverlay}>
+        <div class={styles.crashModalGlass}>
           <div class="crash-modal-content">
-            <div class="crash-header">
-              <div class="crash-icon-container">
+            <div class={styles.crashHeader}>
+              <div class={styles.crashIconContainer}>
                 <svg
                   viewBox="0 0 24 24"
-                  class="crash-svg-icon"
+                  class={styles.crashSvgIcon}
                   fill="none"
                   stroke="currentColor"
                   stroke-width="2"
@@ -59,19 +60,19 @@ export const CrashModal: Component = () => {
                   <line x1="12" y1="17" x2="12.01" y2="17"></line>
                 </svg>
               </div>
-              <div class="crash-header-text">
-                <h2 class="crash-title">Application Error</h2>
-                <p class="crash-subtitle">
+              <div class={styles.crashHeaderText}>
+                <h2 class={styles.crashTitle}>Application Error</h2>
+                <p class={styles.crashSubtitle}>
                   We've encountered an unexpected issue and had to suspend the
                   current session.
                 </p>
               </div>
             </div>
 
-            <div class="crash-error-panel">
-              <div class="crash-error-message-box">
+            <div class={styles.crashErrorPanel}>
+              <div class={styles.crashErrorMessageBox}>
                 <svg
-                  class="crash-error-bullet"
+                  class={styles.crashErrorBullet}
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -81,32 +82,32 @@ export const CrashModal: Component = () => {
                   <line x1="12" y1="8" x2="12" y2="12"></line>
                   <line x1="12" y1="16" x2="12.01" y2="16"></line>
                 </svg>
-                <code class="crash-error-message">
+                <code class={styles.crashErrorMessage}>
                   {error()!.error.message}
                 </code>
               </div>
-              <div class="crash-stacktrace-wrapper">
-                <pre class="crash-stacktrace-content">{errorStack()}</pre>
+              <div class={styles.crashStacktraceWrapper}>
+                <pre class={styles.crashStacktraceContent}>{errorStack()}</pre>
               </div>
             </div>
 
-            <div class="crash-metadata">
-              <div class="crash-meta-badge">
-                <span class="crash-meta-label">v</span>
-                <span class="crash-meta-value">{APP_VERSION}</span>
+            <div class={styles.crashMetadata}>
+              <div class={styles.crashMetaBadge}>
+                <span class={styles.crashMetaLabel}>v</span>
+                <span class={styles.crashMetaValue}>{APP_VERSION}</span>
               </div>
-              <div class="crash-meta-badge">
-                <span class="crash-meta-label">Time</span>
-                <span class="crash-meta-value">
+              <div class={styles.crashMetaBadge}>
+                <span class={styles.crashMetaLabel}>Time</span>
+                <span class={styles.crashMetaValue}>
                   {new Date(error()!.time).toLocaleTimeString()}
                 </span>
               </div>
             </div>
 
-            <div class="crash-actions-container">
+            <div class={styles.crashActionsContainer}>
               <button
                 onClick={handleReload}
-                class="crash-btn crash-btn-primary"
+                class={`${styles.crashBtn} ${styles.crashBtnPrimary}`}
               >
                 <svg
                   viewBox="0 0 24 24"
@@ -124,12 +125,12 @@ export const CrashModal: Component = () => {
                 Reload App
               </button>
 
-              <div class="crash-secondary-actions">
+              <div class={styles.crashSecondaryActions}>
                 <a
                   href="https://github.com/yourusername/pitch-perfect/issues/new"
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="crash-action-link"
+                  class={styles.crashActionLink}
                 >
                   <svg
                     viewBox="0 0 24 24"
@@ -145,10 +146,10 @@ export const CrashModal: Component = () => {
                   </svg>
                   Report Bug
                 </a>
-                <span class="crash-action-divider">•</span>
+                <span class={styles.crashActionDivider}>•</span>
                 <button
                   onClick={handleClearStorage}
-                  class="crash-action-link crash-danger-link"
+                  class={`${styles.crashActionLink} ${styles.crashDangerLink}`}
                 >
                   <svg
                     viewBox="0 0 24 24"

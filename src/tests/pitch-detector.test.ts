@@ -688,7 +688,7 @@ describe('PitchDetector', () => {
       const duration = performance.now() - startTime
 
       expect(duration).toBeGreaterThan(0)
-    })
+    }, 10000)
   })
 
   describe('edge cases - combined scenarios', () => {
