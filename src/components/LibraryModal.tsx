@@ -563,14 +563,14 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
 
           <div class="library-tabs">
             <button
-              class={`library-modal-tab ${activeTab() === 'melodies' ? 'active' : ''}`}
+              class={`${'library-modal-tab'} ${activeTab() === 'melodies' ? 'active' : ''}`}
               onClick={() => setActiveTab('melodies')}
             >
               Melodies
               <span class="tab-count">{filteredMelodies().length}</span>
             </button>
             <button
-              class={`library-modal-tab ${activeTab() === 'playlists' ? 'active' : ''}`}
+              class={`${'library-modal-tab'} ${activeTab() === 'playlists' ? 'active' : ''}`}
               onClick={() => setActiveTab('playlists')}
             >
               Playlists

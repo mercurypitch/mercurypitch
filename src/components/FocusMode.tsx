@@ -11,6 +11,7 @@ import { keyName, playbackSpeed, scaleType, sessionActive, setPlaybackSpeed, } f
 import { melodyStore } from '@/stores/melody-store'
 import type { MelodyItem, PitchSample } from '@/types'
 import type { NoteResult, PitchResult, PracticeResult } from '@/types'
+import styles from './FocusMode.module.css'
 
 interface FocusModeProps {
   isPlaying: () => boolean
@@ -103,50 +104,50 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
   }
 
   return (
-    <div class="focus-mode">
+    <div class={styles.focusMode}>
       {/* Top stats bar */}
-      <div class="focus-topbar">
-        <div class="focus-topbar-left">
-          <span class="focus-key-badge">{keyDisplay()}</span>
+      <div class={styles.focusTopbar}>
+        <div class={styles.focusTopbarLeft}>
+          <span class={styles.focusKeyBadge}>{keyDisplay()}</span>
           <Show when={isSession()}>
-            <span class="focus-session-badge">
+            <span class={styles.focusSessionBadge}>
               Run {sessionItem() + 1}
               <Show when={sessionRepeat() > 0}>
-                <span class="focus-repeat-count"> ×{sessionRepeat() + 1}</span>
+                <span class={styles.focusRepeatCount}> ×{sessionRepeat() + 1}</span>
               </Show>
             </span>
           </Show>
         </div>
 
-        <div class="focus-topbar-center">
-          <div class="focus-progress-container">
-            <div class="focus-progress-bar">
+        <div class={styles.focusTopbarCenter}>
+          <div class={styles.focusProgressContainer}>
+            <div class={styles.focusProgressBar}>
               <div
-                class="focus-progress-fill"
+                class={styles.focusProgressFill}
                 style={{ width: `${progress()}%` }}
               />
             </div>
-            <span class="focus-progress-label">
+            <span class={styles.focusProgressLabel}>
               Bar {Math.max(1, currentBar())} / {totalBars()}
             </span>
           </div>
         </div>
 
-        <div class="focus-topbar-right">
+        <div class={styles.focusTopbarRight}>
           <Show when={props.liveScore() !== null}>
-            <span class="focus-score">
+            <span class={styles.focusScore}>
               {Math.round(props.liveScore() ?? 0)}
-              <span class="focus-score-unit">pts</span>
+              <span class={styles.focusScoreUnit}>pts</span>
             </span>
           </Show>
         </div>
       </div>
 
       {/* History canvas — thin strip below top bar */}
-      <div id="history-container" class="focus-history" />
+      <div id="history-container" class={styles.focusHistory} />
 
       {/* Main pitch canvas fills remaining space */}
-      <div class="focus-canvas">
+      <div class={styles.focusCanvas}>
         <PitchCanvas
           melody={props.melody}
           scale={() => melodyStore.currentScale()}
@@ -168,26 +169,26 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
         />
         <div
           id="playhead"
-          class="focus-playhead"
+          class={styles.focusPlayhead}
           style={{
             display: props.isPlaying() || props.isPaused() ? 'block' : 'none',
             left: `${playheadPosition()}%`,
           }}
         >
-          <div class="playhead-marker" style={{ left: '0' }} />
+          <div class={styles.playheadMarker} style={{ left: '0' }} />
           {/* Glowing pitch dot with dynamic vertical position */}
           <div
-            class="focus-pitch-dot"
+            class={styles.focusPitchDot}
             style={{ '--pitch-position': `${pitchDotPosition()}%` }}
           />
         </div>
       </div>
 
       {/* Bottom floating toolbar */}
-      <div class="focus-toolbar">
+      <div class={styles.focusToolbar}>
         {/* Exit button */}
         <button
-          class="focus-exit"
+          class={styles.focusExit}
           onClick={() => {
             appStore.exitFocusMode()
           }}
@@ -204,7 +205,7 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
         {/* Play/Pause — shown when stopped */}
         <Show when={!props.isPlaying() && !props.isPaused()}>
           <button
-            class="focus-play"
+            class={styles.focusPlay}
             onClick={() => props.onPlay()}
             title="Play"
           >
@@ -216,7 +217,7 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
 
         <Show when={props.isPlaying()}>
           <button
-            class="focus-play"
+            class={styles.focusPlay}
             onClick={() => props.onPause()}
             title="Pause"
           >
@@ -228,7 +229,7 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
 
         <Show when={props.isPaused()}>
           <button
-            class="focus-play"
+            class={styles.focusPlay}
             onClick={() => props.onResume()}
             title="Continue"
           >
@@ -239,9 +240,9 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
         </Show>
 
         {/* Playback speed controls */}
-        <div class="focus-speed-controls">
+        <div class={styles.focusSpeedControls}>
           <button
-            class="focus-speed-btn"
+            class={styles.focusSpeedBtn}
             onClick={speedUp}
             disabled={currentSpeedIndex() === SPEED_STEPS.length - 1}
             title="Faster"
@@ -253,9 +254,9 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
               />
             </svg>
           </button>
-          <span class="focus-speed-label">{playbackSpeed().toFixed(2)}x</span>
+          <span class={styles.focusSpeedLabel}>{playbackSpeed().toFixed(2)}x</span>
           <button
-            class="focus-speed-btn"
+            class={styles.focusSpeedBtn}
             onClick={speedDown}
             disabled={currentSpeedIndex() === 0}
             title="Slower"

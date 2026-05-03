@@ -1,0 +1,31 @@
+/* Extracted from: Session Player */
+
+.session-player {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  background: linear-gradient(
+    90deg,
+    var(--accent-dim) 0%,
+    var(--green-dim) 100%
+  );
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.session-player-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.session-player-title {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--green);
+}

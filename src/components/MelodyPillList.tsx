@@ -6,6 +6,7 @@
 import type { Component } from 'solid-js'
 import { createSignal, For } from 'solid-js'
 import { melodyStore } from '@/stores'
+import styles from './MelodyPillList.module.css'
 
 interface MelodyPillListProps {
   selectedMelodyIds?: Set<string>
@@ -42,28 +43,28 @@ export const MelodyPillList: Component<MelodyPillListProps> = (props) => {
   }
 
   return (
-    <div class={`melody-pill-list ${props.className ?? ''}`}>
-      <div class="pill-list-header">
+    <div class={`${styles.melodyPillList} ${props.className ?? ''}`}>
+      <div class={styles.pillListHeader}>
         <input
           type="text"
-          class="search-input"
+          class={styles.searchInput}
           placeholder="Search melodies..."
           value={searchQuery()}
           onInput={(e) => setSearchQuery(e.currentTarget.value)}
         />
         {props.onSelectAll && (
-          <button class="select-all-btn" onClick={props.onSelectAll}>
+          <button class={styles.selectAllBtn} onClick={props.onSelectAll}>
             Select All
           </button>
         )}
         {props.onClearSelection && (
-          <button class="clear-selection-btn" onClick={props.onClearSelection}>
+          <button class={styles.clearSelectionBtn} onClick={props.onClearSelection}>
             Clear
           </button>
         )}
       </div>
 
-      <div class="pill-list-items">
+      <div class={styles.pillListItems}>
         <For each={filteredMelodies()}>
           {(melody) => (
             <div
@@ -83,14 +84,14 @@ export const MelodyPillList: Component<MelodyPillListProps> = (props) => {
               }}
               title={melody.name}
             >
-              <span class="pill-name">{melody.name}</span>
-              <span class="pill-bpm">{melody.bpm}</span>
+              <span class={styles.pillName}>{melody.name}</span>
+              <span class={styles.pillBpm}>{melody.bpm}</span>
             </div>
           )}
         </For>
 
         {filteredMelodies().length === 0 && (
-          <div class="empty-state">
+          <div class={styles.emptyState}>
             <p>No melodies found</p>
           </div>
         )}

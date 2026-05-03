@@ -92,7 +92,7 @@ export const SessionBrowser: Component<SessionBrowserProps> = (props) => {
           <For each={categories}>
             {(cat) => (
               <button
-                class={`session-cat-btn ${activeCategory() === cat ? 'active' : ''}`}
+                class={`${styles.sessionCatBtn} ${activeCategory() === cat ? 'active' : ''}`}
                 onClick={() => setActiveCategory(cat)}
               >
                 {cat === 'all' ? 'All' : (CATEGORY_LABELS[cat] ?? cat)}
@@ -119,10 +119,10 @@ export const SessionBrowser: Component<SessionBrowserProps> = (props) => {
                   <span class="session-category-badge">
                     {CATEGORY_LABELS[session.category] ?? session.category}
                   </span>
-                  <span class="session-item-count">
+                  <span class={styles.sessionItemCount}>
                     {session.items.length} items
                   </span>
-                  <span class="session-duration">
+                  <span class={styles.sessionDuration}>
                     ~{estimateDuration(session.items)}
                   </span>
                 </div>
