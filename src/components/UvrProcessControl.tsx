@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createEffect, createSignal, For, Show } from 'solid-js'
+import { createSignal, For, Show } from 'solid-js'
 import { CheckCircle, Loader2, Music, Pause, Play,Settings, XCircle,  } from './icons'
 
 interface ProcessControlProps {
@@ -29,7 +29,7 @@ interface ProcessControlProps {
 }
 
 export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
-  const [isRunning, setIsRunning] = createSignal(false)
+  const _isRunning = createSignal(false)
 
   const formatTime = (ms: number): string => {
     const seconds = Math.floor(ms / 1000)
@@ -62,7 +62,7 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
         return {
           icon: <XCircle />,
           title: 'Processing Failed',
-          description: props.error || 'Unknown error occurred',
+          description: (props.error && props.error.length > 0) ? props.error : 'Unknown error occurred',
           color: 'var(--error)',
         }
       default:
