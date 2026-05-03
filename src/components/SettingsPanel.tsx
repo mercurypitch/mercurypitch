@@ -861,7 +861,8 @@ export const SettingsPanel: Component = () => {
             <div class="settings-divider" />
             <p class="settings-desc">
               Test and compare pitch detection algorithms on known samples.
-              Measures accuracy (cents), computation time, and realtime viability.
+              Measures accuracy (cents), computation time, and realtime
+              viability.
             </p>
 
             <div class="settings-row">
@@ -878,7 +879,9 @@ export const SettingsPanel: Component = () => {
           <Show when={showAlgoTester()}>
             <div class="modal-overlay">
               <div class="modal-content">
-                <PitchAlgorithmTester onClose={() => setShowAlgoTester(false)} />
+                <PitchAlgorithmTester
+                  onClose={() => setShowAlgoTester(false)}
+                />
               </div>
             </div>
           </Show>

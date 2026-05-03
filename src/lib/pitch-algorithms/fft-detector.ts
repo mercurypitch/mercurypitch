@@ -155,9 +155,7 @@ export class FFTDetector implements IPitchDetector {
     }
   }
 
-  private findPeakFrequency(
-    freqData: Float32Array,
-  ): {
+  private findPeakFrequency(freqData: Float32Array): {
     frequency: number
     clarity: number
     noteName: string

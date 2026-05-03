@@ -9815,7 +9815,7 @@ input:checked + .settings-slider:before {
   background: var(--accent-dim);
 }
 
-.algorithm-item input[type="checkbox"] {
+.algorithm-item input[type='checkbox'] {
   width: 18px;
   height: 18px;
   cursor: pointer;
@@ -9877,7 +9877,9 @@ input:checked + .settings-slider:before {
   font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.1s ease, box-shadow 0.1s ease;
+  transition:
+    transform 0.1s ease,
+    box-shadow 0.1s ease;
 }
 
 .play-btn:hover:not(:disabled) {

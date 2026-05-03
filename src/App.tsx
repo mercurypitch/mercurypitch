@@ -56,7 +56,12 @@ import { WelcomeScreen } from './components/WelcomeScreen'
 // ============================================================
 
 export type EditorView = 'piano-roll' | 'session-editor'
-export type ActiveTab = 'practice' | 'editor' | 'settings' | 'pitch-test' | 'pitch-algo'
+export type ActiveTab =
+  | 'practice'
+  | 'editor'
+  | 'settings'
+  | 'pitch-test'
+  | 'pitch-algo'
 
 interface AppProps {
   onMounted?: () => void
@@ -1013,7 +1018,9 @@ const AppShell: Component<AppProps> = (props) => {
                 <PitchTestingTab onClose={() => setActiveTab('practice')} />
               </Show>
               <Show when={activeTab() === 'pitch-algo'}>
-                <PitchAlgorithmTester onClose={() => setActiveTab('practice')} />
+                <PitchAlgorithmTester
+                  onClose={() => setActiveTab('practice')}
+                />
               </Show>
             </Show>
           </div>

@@ -3,9 +3,9 @@
 // Ported from existing PitchDetector with interface compliance
 // ============================================================
 
-import type {PitchDetectorOptions} from '@/lib/pitch-detector';
-import { PitchDetector  } from '@/lib/pitch-detector'
-import type { DetectorMetrics,DetectorSettings, IPitchDetector, PitchAlgorithm, PitchDetectionResult } from '@/types/pitch-algorithms'
+import type { PitchDetectorOptions } from '@/lib/pitch-detector'
+import { PitchDetector } from '@/lib/pitch-detector'
+import type { DetectorMetrics, DetectorSettings, IPitchDetector, PitchAlgorithm, PitchDetectionResult, } from '@/types/pitch-algorithms'
 
 export class YINDetector implements IPitchDetector {
   readonly algorithm: PitchAlgorithm = 'yin'
@@ -79,7 +79,9 @@ export class YINDetector implements IPitchDetector {
     }
   }
 
-  detectFromFrequencyData(_freqData: Float32Array): PitchDetectionResult | null {
+  detectFromFrequencyData(
+    _freqData: Float32Array,
+  ): PitchDetectionResult | null {
     // YIN requires time-domain data
     return null
   }
@@ -112,7 +114,9 @@ export class YINDetector implements IPitchDetector {
     return this.metrics.lastResult?.computationTime ?? 0
   }
 
-  private normalizeSettings(options: DetectorSettings): Required<PitchDetectorOptions> {
+  private normalizeSettings(
+    options: DetectorSettings,
+  ): Required<PitchDetectorOptions> {
     return {
       sampleRate: options.sampleRate ?? 44100,
       bufferSize: options.bufferSize ?? 2048,
@@ -127,6 +131,6 @@ export class YINDetector implements IPitchDetector {
   }
 
   private frequencyToMidi(freq: number): number {
-    return 12 * (Math.log2(freq / 440)) + 69
+    return 12 * Math.log2(freq / 440) + 69
   }
 }

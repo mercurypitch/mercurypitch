@@ -117,8 +117,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
 ) => {
   const isPracticeTab = () =>
     props.activeTab?.() ?? props.practiceTab?.() ?? false
-  const isEditorTab = () =>
-    props.activeTab?.() ?? props.editorTab?.() ?? false
+  const isEditorTab = () => props.activeTab?.() ?? props.editorTab?.() ?? false
 
   const isActive = () => props.isPlaying() || props.isPaused()
   const isStopped = () => !props.isPlaying() && !props.isPaused()

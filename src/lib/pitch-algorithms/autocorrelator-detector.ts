@@ -2,7 +2,7 @@
 // Autocorrelator Detector - Time Domain Autocorrelation Detection
 // ============================================================
 
-import type { DetectorMetrics,DetectorSettings, IPitchDetector, PitchAlgorithm, PitchDetectionResult } from '@/types/pitch-algorithms'
+import type { DetectorMetrics, DetectorSettings, IPitchDetector, PitchAlgorithm, PitchDetectionResult, } from '@/types/pitch-algorithms'
 
 export class AutocorrelatorDetector implements IPitchDetector {
   readonly algorithm: PitchAlgorithm = 'autocorr'
@@ -101,7 +101,18 @@ export class AutocorrelatorDetector implements IPitchDetector {
     return this.metrics.lastResult?.computationTime ?? 0
   }
 
-  private detectWithAutocorrelation(data: Float32Array): { frequency: number; clarity: number; noteName: string; octave: number; cents: number; midi: number; timestamp: number; computationTime: number } | null {
+  private detectWithAutocorrelation(
+    data: Float32Array,
+  ): {
+    frequency: number
+    clarity: number
+    noteName: string
+    octave: number
+    cents: number
+    midi: number
+    timestamp: number
+    computationTime: number
+  } | null {
     const sampleRate = this.settings.sampleRate || 44100
 
     // Apply Hanning window to reduce spectral leakage
@@ -113,12 +124,18 @@ export class AutocorrelatorDetector implements IPitchDetector {
     // Find fundamental frequency using first peak (excluding zero lag)
     const fundamentalFreq = this.findFundamentalFrequency(autocorr, sampleRate)
 
-    if (!fundamentalFreq || fundamentalFreq.clarity < this.settings.minConfidence) {
+    if (
+      !fundamentalFreq ||
+      fundamentalFreq.clarity < this.settings.minConfidence
+    ) {
       return null
     }
 
     // Validate frequency range
-    if (fundamentalFreq.frequency < this.settings.minFrequency || fundamentalFreq.frequency > this.settings.maxFrequency) {
+    if (
+      fundamentalFreq.frequency < this.settings.minFrequency ||
+      fundamentalFreq.frequency > this.settings.maxFrequency
+    ) {
       return null
     }
 
@@ -160,7 +177,10 @@ export class AutocorrelatorDetector implements IPitchDetector {
     return result
   }
 
-  private findFundamentalFrequency(autocorr: number[], sampleRate: number): { frequency: number; clarity: number } | null {
+  private findFundamentalFrequency(
+    autocorr: number[],
+    sampleRate: number,
+  ): { frequency: number; clarity: number } | null {
     const n = autocorr.length
     const maxLag = Math.floor(sampleRate / this.settings.minFrequency)
     const minLag = Math.floor(sampleRate / this.settings.maxFrequency)
@@ -192,7 +212,9 @@ export class AutocorrelatorDetector implements IPitchDetector {
     return { frequency, clarity }
   }
 
-  private normalizeSettings(options: DetectorSettings): Required<DetectorSettings> {
+  private normalizeSettings(
+    options: DetectorSettings,
+  ): Required<DetectorSettings> {
     return {
       sampleRate: options.sampleRate ?? 44100,
       bufferSize: options.bufferSize ?? 2048,
@@ -204,8 +226,25 @@ export class AutocorrelatorDetector implements IPitchDetector {
     }
   }
 
-  private freqToNote(freq: number): { note: string; octave: number; cents: number } {
-    const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+  private freqToNote(freq: number): {
+    note: string
+    octave: number
+    cents: number
+  } {
+    const noteNames = [
+      'C',
+      'C#',
+      'D',
+      'D#',
+      'E',
+      'F',
+      'F#',
+      'G',
+      'G#',
+      'A',
+      'A#',
+      'B',
+    ]
     const a4Freq = 440.0
     const midi = 12 * Math.log2(freq / a4Freq) + 69
     const midiInt = Math.round(midi)

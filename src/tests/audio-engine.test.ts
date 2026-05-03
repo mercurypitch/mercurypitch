@@ -850,4 +850,3 @@ describe('AudioEngine without init', () => {
     expect(engine.getVolume()).toBeCloseTo(0.5)
   })
 })
-
