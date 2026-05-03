@@ -139,7 +139,7 @@ const IconTrophy = () => (
   </svg>
 )
 
-const IconGuitar = () => (
+const _IconGuitar = () => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -188,7 +188,7 @@ const IconChallenge = () => (
   </svg>
 )
 
-const IconFire = () => (
+const _IconFire = () => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -217,7 +217,7 @@ const IconSearch = () => (
   </svg>
 )
 
-const IconFilter = () => (
+const _IconFilter = () => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -427,7 +427,7 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
   )
 
   // Current user's data
-  const currentUser = createMemo(() => {
+  const _currentUser = createMemo(() => {
     return mockLeaderboardUsers.find((u) => u.userId === 'me') || null
   })
 
@@ -765,8 +765,7 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
             <div class="profile-charts">
               <h4>Weekly Performance</h4>
               <div class="mini-chart">
-                {[75, 82, 68, 90, 85, 92, 78].map(
-                  (score: number, i: number) => (
+                {[75, 82, 68, 90, 85, 92, 78].map((score: number, _i: number) => (
                     <div class="mini-bar-wrapper">
                       <div
                         class="mini-bar leaderboard-bar"
