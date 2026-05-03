@@ -23,8 +23,10 @@ export const PitchAlgorithmTester: Component<PitchAlgorithmTesterProps> = (
     null,
   )
   const [running, setRunning] = createSignal(false)
-  const [results, setResults] = createSignal<AlgorithmResult[]>([])
   const [showResults, setShowResults] = createSignal(false)
+  const [results, setResults] = createSignal<AlgorithmResult[]>([])
+  const [progress, setProgress] = createSignal(0)
+  const [progressText, setProgressText] = createSignal('Initializing...')
 
   const algorithms = REGISTERED_ALGORITHMS
   const samples = TEST_SAMPLES
@@ -50,9 +52,13 @@ export const PitchAlgorithmTester: Component<PitchAlgorithmTesterProps> = (
 
     setRunning(true)
     setShowResults(false)
+    setProgress(0)
+    setProgressText('Running tests...')
 
     // Run real benchmarking for selected algorithms
     const results: AlgorithmResult[] = []
+    const totalAlgos = selectedAlgorithms().length
+    const notesPerAlgo = sample.notes.length
 
     // Batch algorithms into smaller groups to avoid blocking
     const batchedAlgos = []
@@ -61,8 +67,17 @@ export const PitchAlgorithmTester: Component<PitchAlgorithmTesterProps> = (
       batchedAlgos.push(selectedAlgorithms().slice(i, i + batchSize))
     }
 
-    for (const batch of batchedAlgos) {
-      const batchPromises = batch.map((algo) =>
+    let completedAlgos = 0
+
+    for (let batchIndex = 0; batchIndex < batchedAlgos.length; batchIndex++) {
+      const batch = batchedAlgos[batchIndex]
+
+      // Update progress for this batch
+      const algoProgress = 100 / batchedAlgos.length
+      setProgress(Math.round((batchIndex / batchedAlgos.length) * 100))
+      setProgressText(`Running batch ${batchIndex + 1}/${batchedAlgos.length}...`)
+
+      const batchPromises = batch.map((algo, idx) =>
         benchmarkAlgorithmAsync(algo, sample, {
           sampleRate: 44100,
           bufferSize: 2048,
@@ -72,14 +87,26 @@ export const PitchAlgorithmTester: Component<PitchAlgorithmTesterProps> = (
           return null
         }),
       )
+
       const batchResults = await Promise.all(batchPromises)
       results.push(
         ...batchResults.filter((r): r is AlgorithmResult => r !== null),
       )
+
+      completedAlgos += batch.length
+      setProgress(Math.round((completedAlgos / totalAlgos) * 100))
+      setProgressText(`Running tests... ${completedAlgos}/${totalAlgos} algorithms`)
     }
 
     setResults(results)
     setShowResults(true)
+    setProgress(100)
+    setProgressText('Complete!')
+    setTimeout(() => {
+      setProgress(0)
+      setProgressText('')
+    }, 1000)
+
     setRunning(false)
   }
 
@@ -89,7 +116,7 @@ export const PitchAlgorithmTester: Component<PitchAlgorithmTesterProps> = (
         <h2>Pitch Algorithm Tester</h2>
       </div>
 
-      <div class="tester-content">
+      <div class="tester-content" classList={{ busy: running() }}>
         {/* Algorithm Selection */}
         <div class="section">
           <h3>Algorithms to Test</h3>
@@ -153,6 +180,21 @@ export const PitchAlgorithmTester: Component<PitchAlgorithmTesterProps> = (
         >
           {running() ? 'Running...' : 'Run Tests'}
         </button>
+
+        {/* Progress Bar */}
+        <Show when={running()}>
+          <div class="progress-container">
+            <div class="progress-bar">
+              <div
+                class="progress-fill"
+                style={{
+                  width: `${progress()}%`,
+                }}
+              />
+            </div>
+            <span class="progress-text">{progressText()}</span>
+          </div>
+        </Show>
 
         {/* Results */}
         <Show when={showResults()}>
