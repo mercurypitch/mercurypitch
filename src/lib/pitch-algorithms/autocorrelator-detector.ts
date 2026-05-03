@@ -5,7 +5,7 @@
 import type { IPitchDetector, PitchDetectionResult, PitchAlgorithm, DetectorSettings, DetectorMetrics } from '@/types/pitch-algorithms'
 
 export class AutocorrelatorDetector implements IPitchDetector {
-  readonly algorithm: PitchAlgorithm = 'autocorrelator'
+  readonly algorithm: PitchAlgorithm = 'autocorr'
 
   private settings: Required<DetectorSettings>
   private metrics: DetectorMetrics

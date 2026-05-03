@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { For, createSignal, createEffect, onCleanup } from 'solid-js'
+import { For, Show, createSignal, createEffect, onCleanup } from 'solid-js'
 import { YINDetector, FFTDetector, AutocorrelatorDetector, type PitchDetectionResult } from '@/lib/pitch-algorithms'
 
 interface PitchTestingTabProps {
@@ -23,6 +23,17 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
   const [detectionMode, setDetectionMode] = createSignal<DetectionMode>('generate')
   const [frequency, setFrequency] = createSignal(440)
   const [generatedWaveform, setGeneratedWaveform] = createSignal<Float32Array | null>(null)
+
+  // File upload state
+  const [uploadedFile, setUploadedFile] = createSignal<File | null>(null)
+  const [fileWaveform, setFileWaveform] = createSignal<Float32Array | null>(null)
+  const [fileDuration, setFileDuration] = createSignal(0)
+
+  // Microphone state
+  const [audioContext, setAudioContext] = createSignal<AudioContext | null>(null)
+  const [mediaStream, setMediaStream] = createSignal<MediaStream | null>(null)
+  const [sourceNode, setSourceNode] = createSignal<AudioNode | null>(null)
+  const [analyser, setAnalyser] = createSignal<AnalyserNode | null>(null)
 
   // Detection results over time
   const [liveResults, setLiveResults] = createSignal<(PitchDetectionResult | null)[]>([])
@@ -45,6 +56,128 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
 
   let animationFrameId: number | null = null
   let testAnimationFrameId: number | null = null
+  let streamStopTimeout: number | null = null
+
+  // Load audio file
+  const handleFileUpload = (event: Event) => {
+    const target = event.currentTarget as HTMLInputElement
+    const file = target.files?.[0]
+    if (!file) return
+
+    setUploadedFile(file)
+
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const audioData = e.target?.result as ArrayBuffer
+      processAudioFile(audioData)
+    }
+    reader.readAsArrayBuffer(file)
+  }
+
+  const processAudioFile = async (audioData: ArrayBuffer) => {
+    const ctx = audioContext()
+    if (!ctx) return
+
+    try {
+      const audioBuffer = await ctx.decodeAudioData(audioData)
+
+      // Convert to Float32Array and normalize
+      const rawData = audioBuffer!.getChannelData(0)
+      const sampleRate = audioBuffer!.sampleRate
+
+      // Downsample if necessary for performance
+      let samples = rawData
+      if (sampleRate > 44100) {
+        const ratio = 44100 / sampleRate
+        const newLength = Math.floor(rawData.length * ratio)
+        samples = new Float32Array(newLength)
+        for (let i = 0; i < newLength; i++) {
+          samples[i] = rawData[Math.floor(i / ratio)]
+        }
+      }
+
+      setFileWaveform(samples)
+      setFileDuration(audioBuffer!.duration)
+      stopLiveDetection() // Reset detection
+    } catch (error) {
+      console.error('Error processing audio file:', error)
+      alert('Failed to process audio file')
+    }
+  }
+
+  // Start microphone input
+  const startMicrophoneInput = async () => {
+    try {
+      const ctx = new AudioContext({ sampleRate: 44100 })
+      setAudioContext(ctx)
+
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      setMediaStream(stream)
+
+      const source = ctx.createMediaStreamSource(stream)
+      setSourceNode(source)
+
+      const analyserNode = ctx.createAnalyser()
+      analyserNode.fftSize = 2048
+      analyserNode.smoothingTimeConstant = 0.8
+      setAnalyser(analyserNode)
+
+      source.connect(analyserNode)
+      setIsDetecting(true)
+
+      updateMicDetection()
+    } catch (error) {
+      console.error('Error accessing microphone:', error)
+      alert('Failed to access microphone. Please ensure you have granted permission.')
+    }
+  }
+
+  const stopMicrophoneInput = () => {
+    mediaStream()?.getTracks().forEach(track => track.stop())
+    setMediaStream(null)
+    sourceNode()?.disconnect()
+    setSourceNode(null)
+    audioContext()?.close()
+    setAudioContext(null)
+    stopLiveDetection()
+  }
+
+  const updateMicDetection = () => {
+    if (!isDetecting()) return
+    const analyserVal = analyser()
+    if (!analyserVal) return
+
+    const dataArray = new Float32Array(analyserVal.frequencyBinCount)
+    analyserVal.getFloatTimeDomainData(dataArray)
+
+    const detector = detectors().find(d => d.algorithm === selectedAlgorithm())
+    if (!detector) return
+
+    const result = detector.detect(dataArray)
+    setLiveResults(prev => [...prev.slice(-100), result])
+
+    animationFrameId = requestAnimationFrame(updateMicDetection)
+  }
+
+  // Load generated waveform
+  const loadGeneratedWaveform = () => {
+    stopLiveDetection()
+    const sampleRate = 44100
+    const duration = 0.5
+    const samples = Math.floor(duration * sampleRate)
+    const wave = new Float32Array(samples)
+
+    for (let i = 0; i < samples; i++) {
+      const t = i / sampleRate
+      const amplitude = t < 0.01 ? t / 0.01 : 1
+      wave[i] = Math.sin(2 * Math.PI * frequency() * t) * amplitude
+    }
+
+    setGeneratedWaveform(wave)
+    setUploadedFile(null)
+    setFileWaveform(null)
+    setFileDuration(0)
+  }
 
   // Generate test waveform
   const generateWaveform = () => {
@@ -71,7 +204,27 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
     setIsDetecting(true)
     setLiveResults([])
 
-    const updateDetection = () => {
+    if (detectionMode() === 'mic') {
+      startMicrophoneInput()
+      return
+    }
+
+    if (detectionMode() === 'file' && fileWaveform()) {
+      updateFileDetection()
+      return
+    }
+
+    if (detectionMode() === 'generate' && generatedWaveform()) {
+      updateGenerateDetection()
+      return
+    }
+
+    stopLiveDetection()
+  }
+
+  // Update detection from generated waveform
+  const updateGenerateDetection = () => {
+    const updateLoop = () => {
       if (!isDetecting()) return
 
       const detector = detectors().find(d => d.algorithm === selectedAlgorithm())
@@ -79,18 +232,43 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
 
       const wave = generatedWaveform()
       if (!wave) {
-        animationFrameId = requestAnimationFrame(updateDetection)
+        animationFrameId = requestAnimationFrame(updateLoop)
         return
       }
 
       const result = detector.detect(wave)
-
       setLiveResults(prev => [...prev.slice(-100), result])
 
-      animationFrameId = requestAnimationFrame(updateDetection)
+      animationFrameId = requestAnimationFrame(updateLoop)
     }
 
-    animationFrameId = requestAnimationFrame(updateDetection)
+    animationFrameId = requestAnimationFrame(updateLoop)
+  }
+
+  // Update detection from uploaded file
+  const updateFileDetection = () => {
+    const wave = fileWaveform()
+    if (!wave) {
+      stopLiveDetection()
+      return
+    }
+
+    const detector = detectors().find(d => d.algorithm === selectedAlgorithm())
+    if (!detector) {
+      stopLiveDetection()
+      return
+    }
+
+    const updateLoop = () => {
+      if (!isDetecting()) return
+
+      const result = detector.detect(wave)
+      setLiveResults(prev => [...prev.slice(-100), result])
+
+      animationFrameId = requestAnimationFrame(updateLoop)
+    }
+
+    animationFrameId = requestAnimationFrame(updateLoop)
   }
 
   // Stop live detection
@@ -100,6 +278,11 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
       cancelAnimationFrame(animationFrameId)
       animationFrameId = null
     }
+    if (streamStopTimeout !== null) {
+      clearTimeout(streamStopTimeout)
+      streamStopTimeout = null
+    }
+    stopMicrophoneInput()
   }
 
   // Run automated test
@@ -196,10 +379,64 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
             <label>Detection Mode</label>
             <select value={detectionMode()} onChange={(e) => setDetectionMode(e.currentTarget.value as DetectionMode)}>
               <option value="generate">Generate Sine Wave</option>
-              <option value="file">Load File (TODO)</option>
-              <option value="mic">Microphone (TODO)</option>
+              <option value="file">Load Audio File</option>
+              <option value="mic">Microphone Input</option>
             </select>
           </div>
+
+          {/* Microphone Mode UI */}
+          <Show when={detectionMode() === 'mic'}>
+            <div class="mic-controls">
+              {!audioContext() && (
+                <button class="btn btn-primary btn-sm" onclick={startMicrophoneInput}>
+                  Enable Microphone
+                </button>
+              )}
+              {audioContext() && (
+                <button class="btn btn-secondary btn-sm" onclick={stopMicrophoneInput}>
+                  Stop Microphone
+                </button>
+              )}
+              {audioContext() && (
+                <span class="mic-status active">Microphone Active</span>
+              )}
+              {!audioContext() && (
+                <span class="mic-status">Microphone Inactive</span>
+              )}
+            </div>
+          </Show>
+
+          {/* File Upload Mode UI */}
+          <Show when={detectionMode() === 'file'}>
+            <div class="file-controls">
+              <input
+                type="file"
+                accept="audio/*"
+                class="file-input"
+                onChange={handleFileUpload}
+              />
+              <Show when={fileWaveform()}>
+                <span class="file-info">
+                  Loaded: {uploadedFile()?.name ?? 'audio'} • {fileDuration().toFixed(2)}s
+                </span>
+              </Show>
+              <Show when={!fileWaveform()}>
+                <span class="file-info">No file loaded</span>
+              </Show>
+            </div>
+          </Show>
+
+          {/* Generate Mode UI */}
+          <Show when={detectionMode() === 'generate'}>
+            <div class="generate-controls">
+              <button class="btn btn-secondary btn-sm" onclick={loadGeneratedWaveform}>
+                Regenerate Waveform
+              </button>
+              <span class="waveform-info">
+                Generated: {frequency()} Hz • 0.5s
+              </span>
+            </div>
+          </Show>
 
           <div class="control-group">
             <label>Test Frequency (Hz)</label>
@@ -255,31 +492,31 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                   <div class="metric-item">
                     <span class="metric-label">Frequency</span>
                     <span class="metric-value">
-                      {currentDetector.getLastResult()?.frequency.toFixed(2) ?? '—'} Hz
+                      {currentDetector.getMetrics().lastResult?.frequency.toFixed(2) ?? '—'} Hz
                     </span>
                   </div>
                   <div class="metric-item">
                     <span class="metric-label">Note</span>
                     <span class="metric-value">
-                      {currentDetector.getLastResult()?.noteName ?? '—'}
+                      {currentDetector.getMetrics().lastResult?.noteName ?? '—'}
                     </span>
                   </div>
                   <div class="metric-item">
                     <span class="metric-label">Midi</span>
                     <span class="metric-value">
-                      {currentDetector.getLastResult()?.midi.toFixed(0) ?? '—'}
+                      {currentDetector.getMetrics().lastResult?.midi.toFixed(0) ?? '—'}
                     </span>
                   </div>
                   <div class="metric-item">
                     <span class="metric-label">Cents</span>
                     <span class="metric-value">
-                      {currentDetector.getLastResult()?.cents.toFixed(1) ?? '—'}
+                      {currentDetector.getMetrics().lastResult?.cents.toFixed(1) ?? '—'}
                     </span>
                   </div>
                   <div class="metric-item">
                     <span class="metric-label">Clarity</span>
                     <span class="metric-value">
-                      {currentDetector.getLastResult()?.clarity.toFixed(2) ?? '—'}
+                      {currentDetector.getMetrics().lastResult?.clarity.toFixed(2) ?? '—'}
                     </span>
                   </div>
                   <div class="metric-item">
@@ -297,7 +534,9 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                 <div class="waveform-canvas">
                   {liveResults().map((result, i) => (
                     <div
-                      key={i}
+                      ref={(el: HTMLDivElement) => {
+                        if (el) el.dataset.index = i.toString()
+                      }}
                       class="waveform-dot"
                       style={{
                         '--y': result
@@ -346,14 +585,16 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
               <div class="error-list">
                 <p>Failed at test indexes:</p>
                 <div class="error-grid">
-                  {testResults().errors.slice(0, 20).map(idx => {
+                  {testResults().errors.slice(0, 20).map((idx, i) => {
                     // Map index to frequency
                     const testFreqs = [65.41, 73.42, 82.41, 87.31, 98.00, 110.00, 130.81, 146.83, 164.81, 196.00, 220.00, 261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25, 783.99, 880.00, 1046.50]
                     const noteNames = ['C3','C#3','D3','D#3','E3','F3','F#3','G3','G#3','A3','A#3','B3','C4','C#4','D4','D#4','E4','F4','F#4','G4','G#4','A4','A#4']
                     const freq = testFreqs[idx] ?? 440
                     const noteName = noteNames[idx] ?? 'Unknown'
                     return (
-                      <div key={idx} class="error-item">
+                      <div ref={(el: HTMLDivElement) => {
+                        if (el) el.dataset.index = i.toString()
+                      }} class="error-item">
                         {noteName} ({freq.toFixed(2)} Hz)
                       </div>
                     )
@@ -372,15 +613,15 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
               <h3>{currentDetector.getName()}</h3>
               <p>{currentDetector.getDescription()}</p>
 
-              {currentDetector.getLastResult() && (
+              {currentDetector.getMetrics().lastResult && (
                 <div class="last-result">
                   <h4>Last Detection</h4>
                   <div class="result-details">
-                    <div>Frequency: {currentDetector.getLastResult().frequency.toFixed(4)} Hz</div>
-                    <div>Note: {currentDetector.getLastResult().noteName}</div>
-                    <div>Midi: {currentDetector.getLastResult().midi.toFixed(2)}</div>
-                    <div>Cents: {currentDetector.getLastResult().cents.toFixed(4)}</div>
-                    <div>Clarity: {currentDetector.getLastResult().clarity.toFixed(4)}</div>
+                    <div>Frequency: {currentDetector.getMetrics().lastResult!.frequency.toFixed(4)} Hz</div>
+                    <div>Note: {currentDetector.getMetrics().lastResult!.noteName}</div>
+                    <div>Midi: {currentDetector.getMetrics().lastResult!.midi.toFixed(2)}</div>
+                    <div>Cents: {currentDetector.getMetrics().lastResult!.cents.toFixed(4)}</div>
+                    <div>Clarity: {currentDetector.getMetrics().lastResult!.clarity.toFixed(4)}</div>
                   </div>
                 </div>
               )}
