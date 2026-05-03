@@ -188,7 +188,8 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
     }
   }
 
-  const stopMicrophoneInput = () => {
+  // Dedicated cleanup for microphone resources (no reactivity)
+  const cleanupMicrophoneResources = () => {
     mediaStream()
       ?.getTracks()
       .forEach((track) => track.stop())
@@ -197,7 +198,11 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
     setSourceNode(null)
     audioContext()?.close()
     setAudioContext(null)
-    stopLiveDetection()
+  }
+
+  const stopMicrophoneInput = () => {
+    cleanupMicrophoneResources()
+    // Don't call stopLiveDetection here to avoid circular calls
   }
 
   const updateMicDetection = () => {
@@ -346,7 +351,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
       clearTimeout(streamStopTimeout)
       streamStopTimeout = null
     }
-    stopMicrophoneInput()
+    cleanupMicrophoneResources()
   }
 
   // Run automated test
@@ -407,6 +412,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
 
   // Reset everything
   const resetAll = () => {
+    stopLiveDetection()
     detectors().forEach((d) => d.reset())
     setLiveResults([])
     setTestResults({ passed: 0, failed: 0, errors: [] })
