@@ -139,38 +139,6 @@ const IconTrophy = () => (
   </svg>
 )
 
-const IconNotes = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    class="icon-svg"
-  >
-    <path d="M9 18V5l12-2v13" />
-    <circle cx="6" cy="18" r="3" />
-    <circle cx="18" cy="16" r="3" />
-  </svg>
-)
-
-const IconCrown = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    class="icon-svg"
-  >
-    <path d="m3 14.5 2-11 4.5 6.5 4.5-11L19 12.5 21 11l2-1v10" />
-    <path d="M8 21v-6" />
-    <path d="M16 21v-6" />
-  </svg>
-)
-
 const IconGuitar = () => (
   <svg
     viewBox="0 0 24 24"
