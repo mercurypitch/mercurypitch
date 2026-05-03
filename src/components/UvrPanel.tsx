@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createSignal, For, onCleanup, Show } from 'solid-js'
+import { createEffect, createSignal, For, onCleanup, Show } from 'solid-js'
 import type { UvrSession } from '@/stores/app-store'
 import {
   cancelUvrSession,
