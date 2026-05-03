@@ -4,7 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
-import { Download, FileText, Music, Play, X } from './icons'
+import { Download, FileText, Music, Play, Voice, Headphones, Midi, MusicBoard, X } from './icons'
 
 interface ResultViewerProps {
   outputs?: {
@@ -57,7 +57,9 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
       {/* Processing Info */}
       <div class="result-info">
         <div class="info-item">
-          <span class="info-icon">⏱️</span>
+          <span class="info-icon">
+            <Music />
+          </span>
           <div>
             <span class="info-label">Processing Time</span>
             <span class="info-value">
@@ -74,7 +76,9 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
         {/* Vocal Output */}
         <div class="output-section">
           <div class="section-header">
-            <div class="section-icon vocal-icon">🎤</div>
+            <div class="section-icon vocal-icon">
+              <Voice />
+            </div>
             <div class="section-title">
               <h4>Vocal Stem</h4>
               <span class="section-tag">WAV</span>
@@ -102,7 +106,9 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
         {/* Instrumental Output */}
         <div class="output-section">
           <div class="section-header">
-            <div class="section-icon instrumental-icon">🎵</div>
+            <div class="section-icon instrumental-icon">
+              <Headphones />
+            </div>
             <div class="section-title">
               <h4>Instrumental</h4>
               <span class="section-tag">WAV</span>
@@ -130,7 +136,9 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
         {/* Vocal MIDI Output */}
         <div class="output-section">
           <div class="section-header">
-            <div class="section-icon vocal-icon">🎹</div>
+            <div class="section-icon vocal-icon">
+              <Midi />
+            </div>
             <div class="section-title">
               <h4>Vocal MIDI</h4>
               <span class="section-tag">MIDI</span>
@@ -158,7 +166,9 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
         {/* Full Mix (Karaoke style) */}
         <div class="output-section">
           <div class="section-header">
-            <div class="section-icon full-icon">🎸</div>
+            <div class="section-icon full-icon">
+              <MusicBoard />
+            </div>
             <div class="section-title">
               <h4>Full Mix (Karaoke)</h4>
               <span class="section-tag">Both Stems</span>

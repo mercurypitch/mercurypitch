@@ -4,6 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createSignal } from 'solid-js'
+import { Voice, Headphones, MusicBoard, Music, ChevronDown } from './icons'
 
 export const UvrGuide: Component = () => {
   const [activeStep, setActiveStep] = createSignal(0)
@@ -21,15 +22,21 @@ export const UvrGuide: Component = () => {
           </p>
           <div class="guide-features">
             <div class="feature-card">
-              <span class="feature-icon">🎤</span>
+              <span class="feature-icon">
+                <Voice />
+              </span>
               <span>Practice with clean vocals</span>
             </div>
             <div class="feature-card">
-              <span class="feature-icon">🎵</span>
+              <span class="feature-icon">
+                <Headphones />
+              </span>
               <span>Improve pitch accuracy</span>
             </div>
             <div class="feature-card">
-              <span class="feature-icon">🎶</span>
+              <span class="feature-icon">
+                <MusicBoard />
+              </span>
               <span>Learn melodies independently</span>
             </div>
           </div>
@@ -43,21 +50,27 @@ export const UvrGuide: Component = () => {
           <p class="guide-text">Choose a mode that fits your practice goals:</p>
           <div class="guide-mode-cards">
             <div class="mode-card guide-mode">
-              <div class="mode-icon">🎭</div>
+              <div class="mode-icon">
+                <MusicBoard />
+              </div>
               <div class="mode-info">
                 <strong>Separate</strong>
                 <span>Default — hear both vocals & instrumental</span>
               </div>
             </div>
             <div class="mode-card guide-mode">
-              <div class="mode-icon">🎵</div>
+              <div class="mode-icon">
+                <Headphones />
+              </div>
               <div class="mode-info">
                 <strong>Instrumental</strong>
                 <span>Remove vocals, focus on melody</span>
               </div>
             </div>
             <div class="mode-card guide-mode">
-              <div class="mode-icon">🎤</div>
+              <div class="mode-icon">
+                <Voice />
+              </div>
               <div class="mode-info">
                 <strong>Vocal Only</strong>
                 <span>Isolate vocals, practice singing</span>
@@ -99,7 +112,7 @@ export const UvrGuide: Component = () => {
             </div>
           </div>
           <p class="guide-tip">
-            💡 <strong>Pro Tip:</strong> In "Separate" mode, the two sliders
+            <strong>Pro Tip:</strong> In "Separate" mode, the two sliders
             work together to create your preferred mix. Experiment to find your
             ideal balance!
           </p>
@@ -142,7 +155,7 @@ export const UvrGuide: Component = () => {
             </div>
           </div>
           <p class="guide-tip">
-            💡 <strong>Pro Tip:</strong> Use medium smoothing for most practice
+            <strong>Pro Tip:</strong> Use medium smoothing for most practice
             sessions. Increase for seamless playback between different parts.
           </p>
         </div>
@@ -155,7 +168,9 @@ export const UvrGuide: Component = () => {
           <h4 class="use-case-title">Practice Scenarios</h4>
           <div class="use-cases">
             <div class="use-case">
-              <div class="use-case-icon">🎵</div>
+              <div class="use-case-icon">
+                <Headphones />
+              </div>
               <div class="use-case-content">
                 <strong>Learning Melodies</strong>
                 <p>
@@ -165,7 +180,9 @@ export const UvrGuide: Component = () => {
               </div>
             </div>
             <div class="use-case">
-              <div class="use-case-icon">🎤</div>
+              <div class="use-case-icon">
+                <Voice />
+              </div>
               <div class="use-case-content">
                 <strong>Vocal Training</strong>
                 <p>
@@ -175,7 +192,9 @@ export const UvrGuide: Component = () => {
               </div>
             </div>
             <div class="use-case">
-              <div class="use-case-icon">🎭</div>
+              <div class="use-case-icon">
+                <MusicBoard />
+              </div>
               <div class="use-case-content">
                 <strong>Full Practice</strong>
                 <p>
@@ -184,7 +203,9 @@ export const UvrGuide: Component = () => {
               </div>
             </div>
             <div class="use-case">
-              <div class="use-case-icon">🎧</div>
+              <div class="use-case-icon">
+                <Headphones />
+              </div>
               <div class="use-case-content">
                 <strong>Background Practice</strong>
                 <p>
@@ -245,7 +266,7 @@ export const UvrGuide: Component = () => {
             </div>
           </div>
           <div class="guide-success">
-            <span class="success-icon">✓</span>
+            <Music />
             <span>Your settings are saved automatically!</span>
           </div>
         </div>
@@ -258,7 +279,10 @@ export const UvrGuide: Component = () => {
       {/* Header */}
       <div class="guide-header">
         <div class="guide-icon-wrapper">
-          <span class="guide-icon">🎤🎵</span>
+          <div class="guide-icons-row">
+            <Voice />
+            <Music />
+          </div>
         </div>
         <h2>Vocal Separation Guide</h2>
         <p class="guide-subtitle">
@@ -344,8 +368,21 @@ export const _UvrGuideStyles: string = `
 }
 
 .guide-icon-wrapper {
-  font-size: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   margin-bottom: 0.5rem;
+}
+
+.guide-icons-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.guide-icons-row svg {
+  width: 2.5rem;
+  height: 2.5rem;
 }
 
 .guide-subtitle {
@@ -435,6 +472,19 @@ export const _UvrGuideStyles: string = `
   margin-top: 1rem;
 }
 
+.feature-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+.feature-icon svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
 .guide-mode-cards {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -459,7 +509,16 @@ export const _UvrGuideStyles: string = `
 }
 
 .mode-icon {
-  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+.mode-icon svg {
+  width: 1.5rem;
+  height: 1.5rem;
 }
 
 .mode-info strong {
@@ -580,7 +639,16 @@ export const _UvrGuideStyles: string = `
 }
 
 .use-case-icon {
-  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+.use-case-icon svg {
+  width: 1.5rem;
+  height: 1.5rem;
 }
 
 .use-case-content strong {
