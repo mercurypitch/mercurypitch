@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createMemo, Show } from 'solid-js'
+import { createMemo, createSignal, Show } from 'solid-js'
 import { APP_VERSION } from '@/lib/defaults'
 import { appError } from '@/stores'
 
@@ -13,9 +13,20 @@ import { appError } from '@/stores'
  */
 export const CrashModal: Component = () => {
   const error = createMemo(() => appError())
+  const [copied, setCopied] = createSignal(false)
 
   const handleReload = (): void => {
     window.location.reload()
+  }
+
+  const handleCopy = async (): Promise<void> => {
+    try {
+      await navigator.clipboard.writeText(errorStack())
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch (e) {
+      console.error('Failed to copy to clipboard:', e)
+    }
   }
 
   const handleClearStorage = (): void => {
@@ -86,7 +97,27 @@ export const CrashModal: Component = () => {
                 </code>
               </div>
               <div class="crash-stacktrace-wrapper">
-                <pre class="crash-stacktrace-content">{errorStack()}</pre>
+                <div class="crash-stacktrace-header">
+                  <pre class="crash-stacktrace-content">{errorStack()}</pre>
+                  <button
+                    class="crash-copy-btn"
+                    onClick={handleCopy}
+                    title="Copy to clipboard"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="16"
+                      height="16"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                    <span class="crash-copy-text">{copied() ? 'Copied!' : 'Copy'}</span>
+                  </button>
+                </div>
               </div>
             </div>
 
