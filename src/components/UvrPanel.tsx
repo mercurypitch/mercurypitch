@@ -18,7 +18,13 @@ import {
   updateUvrSessionProgress,
 } from '@/stores/app-store'
 import type { UvrMode } from '@/types/uvr'
-import { UvrGuide, UvrGuideStyles, UvrProcessControl, UvrProcessControlStyles, UvrResultViewer, UvrResultViewerStyles, UvrSessionResult, UvrSessionResultStyles,UvrUploadControl, UvrUploadControlStyles,  } from "."
+import {
+  UvrGuide,
+  UvrProcessControl,
+  UvrResultViewer,
+  UvrSessionResult,
+  UvrUploadControl,
+} from "."
 import { ChevronDown, ChevronUp,History, Music, Play, Settings, SlidersHorizontal, X,  } from './icons'
 
 type UvrView = 'upload' | 'processing' | 'results' | 'history'

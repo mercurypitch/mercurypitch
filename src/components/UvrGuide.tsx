@@ -325,7 +325,7 @@ export const UvrGuide: Component = () => {
 // CSS Styles (inline for this component)
 // ============================================================
 
-export const UvrGuideStyles: string = `
+export const _UvrGuideStyles: string = `
 .uvr-guide-container {
   display: flex;
   flex-direction: column;
