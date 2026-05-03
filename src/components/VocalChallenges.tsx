@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createMemo, createSignal, For, onMount, Show } from 'solid-js'
+import { createMemo, For, onMount, Show } from 'solid-js'
 import { getSessionHistory } from '@/stores'
 
 // Alternative: directly render icon with casting

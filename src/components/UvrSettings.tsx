@@ -4,7 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { For } from 'solid-js'
-import { createEffect, createSignal, onMount, Show } from 'solid-js'
+import { createEffect, onMount, Show } from 'solid-js'
 import { getUvrInstrumentalIntensity, getUvrMode, getUvrSmoothing, getUvrVocalIntensity, setUvrInstrumentalIntensity, setUvrMode, setUvrSmoothing, setUvrVocalIntensity, } from '@/stores/app-store'
 
 // ============================================================
