@@ -4,6 +4,8 @@
 
 import { freqToNote } from './scale-data'
 
+export type PitchAlgorithm = 'yin' | 'mpm'
+
 /** Internal pitch detection result (partial PitchResult) */
 export interface DetectedPitch {
   frequency: number

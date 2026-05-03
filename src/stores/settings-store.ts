@@ -273,24 +273,6 @@ export const [showAccuracyPercent, setShowAccuracyPercent] =
 export const [pitchAlgorithm, setPitchAlgorithm] =
   createPersistedSignal<PitchAlgorithm>('pitchperfect_pitch_algorithm', 'mpm')
 
-// ── Pitch Detection Buffer Size ───────────────────────────────────
-//
-// Larger buffers give better accuracy (especially for low frequencies)
-// but increase latency. 2048 is the sweet spot for most voices.
-export type PitchBufferSize = 512 | 1024 | 2048 | 4096
-export const PITCH_BUFFER_SIZES: PitchBufferSize[] = [512, 1024, 2048, 4096]
-export const PITCH_BUFFER_LABELS: Record<PitchBufferSize, string> = {
-  512: '512',
-  1024: '1K',
-  2048: '2K',
-  4096: '4K',
-}
-export const PITCH_BUFFER_DESCRIPTIONS: Record<PitchBufferSize, string> = {
-  512: 'Lowest latency, less accurate on low notes',
-  1024: 'Low latency, good for higher voices',
-  2048: 'Balanced (recommended)',
-  4096: 'High accuracy, more latency',
-}
 export const [pitchBufferSize, setPitchBufferSize] =
   createPersistedSignal<PitchBufferSize>('pitchperfect_pitch_buffer_size', 2048)
 
@@ -432,6 +414,6 @@ export function getAccuracyTierInfo(tier: AccuracyTier): {
         'Perfect pitch means being within 0 cents of the target note. For advanced virtuosos.',
       difficulty: 'Advanced',
     },
-  }
+  } as const
   return info[tier]
 }
