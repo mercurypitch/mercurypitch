@@ -6,6 +6,7 @@
 import type { Component } from 'solid-js'
 import { For } from 'solid-js'
 import { createMemo, createSignal, onMount, Show } from 'solid-js'
+import styles from '@/components/App.module.css'
 import { AppSidebar } from '@/components/AppSidebar'
 import { FocusMode } from '@/components/FocusMode'
 import { HistoryCanvas } from '@/components/HistoryCanvas'
@@ -47,7 +48,6 @@ import { AppErrorBoundary } from './components/AppErrorBoundary'
 import { CrashModal } from './components/CrashModal'
 import { GuideSelection } from './components/GuideSelection'
 import { WelcomeScreen } from './components/WelcomeScreen'
-import styles from '@/components/App.module.css'
 
 // ============================================================
 // Tab type

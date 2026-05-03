@@ -3,6 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
+import styles from '@/components/HeaderControls.module.css'
 
 interface SpeedGroupProps {
   speed: number
@@ -10,12 +11,12 @@ interface SpeedGroupProps {
 }
 
 export const SpeedGroup: Component<SpeedGroupProps> = (props) => (
-  <div class="speed-group">
-    <label class="opt-label">Speed:</label>
+  <div class={styles.speedGroup}>
+    <label class={styles.optLabel}>Speed:</label>
     <select
       id="speed-select"
       value={props.speed.toString()}
-      class="speed-select"
+      class={styles.speedSelect}
       onChange={(e) => {
         const speed = parseFloat(e.currentTarget.value)
         props.onSpeedChange(speed)

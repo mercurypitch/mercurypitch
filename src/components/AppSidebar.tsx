@@ -137,7 +137,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
       {/* Playback Setup section */}
       <Show when={appStore.showPlaybackSetupInfo()}>
         <div class={styles.sidebarSection}>
-          <h2 class="panel-title">Playback Setup</h2>
+          <h2 class={styles['panel-title']}>Playback Setup</h2>
 
           <div id="scale-info">
             <select
@@ -319,7 +319,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
                           {entry.sessionName}
                         </span>
                         <span
-                          class={`session-history-score ${entry.score >= 80 ? 'score-high' : entry.score >= 50 ? 'score-mid' : 'score-low'}`}
+                          class={`${'session-history-score'} ${entry.score >= 80 ? 'score-high' : entry.score >= 50 ? 'score-mid' : 'score-low'}`}
                         >
                           {entry.score}%
                         </span>

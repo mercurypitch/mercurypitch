@@ -1,9 +1,8 @@
 // ============================================================
 // MetronomeButton — Toggle metronome with precount
 // ============================================================
-
 import type { Component } from 'solid-js'
-import styles from './MetronomeButton.module.css'
+import styles from "./MetronomeButton.module.css"
 
 interface MetronomeButtonProps {
   active: boolean
@@ -14,7 +13,7 @@ export const MetronomeButton: Component<MetronomeButtonProps> = (props) => {
   return (
     <button
       id="btn-metronome"
-      class={`ctrl-btn metronome-btn ${props.active ? 'active' : ''}`}
+      class={`${styles.ctrlBtn} ${styles.metronomeBtn} ${props.active ? 'active' : ''}`}
       onClick={() => props.onClick()}
       title="Toggle metronome"
     >

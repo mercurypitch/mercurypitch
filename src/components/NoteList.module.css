@@ -321,3 +321,15 @@
   color: var(--text-muted);
   margin-top: 2px;
 }
+
+
+
+.panel-title {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 0;
+  padding: 8px 12px;
+}

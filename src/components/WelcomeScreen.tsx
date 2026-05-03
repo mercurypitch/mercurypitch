@@ -1,11 +1,11 @@
 // ============================================================
 // WelcomeScreen — first-run welcome overlay (GH #131)
 // ============================================================
-
 import type { Component } from 'solid-js'
 import { createSignal } from 'solid-js'
 import { TierSelector } from '@/components/TierSelector'
 import { appStore } from '@/stores'
+import styles from "./WelcomeScreen.module.css"
 
 interface WelcomeScreenProps {
   onTakeTour?: () => void
@@ -146,7 +146,6 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
               <strong>Create</strong>
               <p>
                 Build melodies in the piano roll editor, import MIDI, or record
-import styles from './WelcomeScreen.module.css'
               </p>
             </div>
           </div>

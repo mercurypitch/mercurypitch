@@ -206,7 +206,7 @@ export const ScaleBuilder: Component<ScaleBuilderProps> = (props) => {
               <For each={baseNotes}>
                 {(note) => (
                   <button
-                    class={`${styles.scaleNoteBtn} ${customNotes().has(note) ? 'active' : ''} ${note.includes('#') ? 'black-key' : 'white-key'}`}
+                    class={`${styles.scaleNoteBtn} ${customNotes().has(note) ? 'active' : ''} ${note.includes('#') ? styles.blackKey : styles.whiteKey}`}
                     onClick={() => {
                       toggleNote(note)
                     }}

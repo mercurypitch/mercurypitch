@@ -78,11 +78,11 @@ export const SessionPlayer: Component<SessionPlayerProps> = (props) => {
       */}
       <Show when={isSessionSequence()}>
         <div
-          class={`session-player-item ${
+          class={`${styles.sessionPlayerItem} ${
             currentItem()?.type === 'rest' ? 'is-rest' : ''
           }`}
         >
-          <div class="session-item-icon">
+          <div class={styles.sessionItemIcon}>
             <Show
               when={currentItem()?.type === 'rest'}
               fallback={

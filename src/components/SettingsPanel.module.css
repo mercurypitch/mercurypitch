@@ -381,3 +381,30 @@ input:checked + .settings-slider:before {
   color: var(--accent);
   font-weight: bold;
 }
+
+
+
+.danger-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.danger-content {
+  flex: 1;
+}
+
+.danger-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #ff3b30;
+  margin-bottom: 4px;
+}
+
+.danger-desc {
+  display: block;
+  font-size: 0.75rem;
+}

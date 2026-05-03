@@ -3,7 +3,6 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import styles from './MicButton.module.css'
 
 interface MicButtonProps {
   active: boolean

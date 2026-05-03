@@ -10,8 +10,8 @@ import { melodyStore, setActiveUserSession, showNotification, userSession, } fro
 import { addItemToSession, deleteSessionItem, insertItemInSession, } from '@/stores/session-store'
 import type { PlaybackSession, SessionItem } from '@/types'
 import { MelodyPillList } from './MelodyPillList'
-import { SessionEditorTimeline } from './SessionEditorTimeline'
 import styles from './SessionEditor.module.css'
+import { SessionEditorTimeline } from './SessionEditorTimeline'
 
 interface SessionEditorProps {
   currentSession?: SessionItem[]
@@ -312,7 +312,7 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
             <div class={styles.sectionHeader}>
               <h4 class={styles.sectionTitle}>Session Timeline</h4>
               {sessionItems().length > 0 && (
-                <span class="item-count">{sessionItems().length} items</span>
+                <span class={styles.itemCount}>{sessionItems().length} items</span>
               )}
             </div>
             <SessionEditorTimeline

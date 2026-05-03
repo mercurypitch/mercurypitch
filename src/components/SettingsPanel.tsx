@@ -774,10 +774,10 @@ export const SettingsPanel: Component = () => {
             Irreversible actions that affect all your data.
           </p>
 
-          <div class={`${styles.settingsRow} danger-row`}>
-            <div class="danger-content">
-              <label class="danger-label">Reset to Factory Defaults</label>
-              <small class="danger-desc">
+          <div class={`${styles.settingsRow} ${styles.dangerRow}`}>
+            <div class={styles.dangerContent}>
+              <label class={styles.dangerLabel}>Reset to Factory Defaults</label>
+              <small class={styles.dangerDesc}>
                 Clear all stored data and reload the app with initial defaults.
               </small>
             </div>
@@ -834,12 +834,12 @@ export const SettingsPanel: Component = () => {
             />
             <p class={styles.settingsDesc}>Development-only tools for debugging.</p>
 
-            <div class={`${styles.settingsRow} danger-row`}>
-              <div class="danger-content">
-                <label class="danger-label" style="color: var(--yellow);">
+            <div class={`${styles.settingsRow} ${styles.dangerRow}`}>
+              <div class={styles.dangerContent}>
+                <label class={styles.dangerLabel} style="color: var(--yellow);">
                   Test Crash Screen
                 </label>
-                <small class="danger-desc">
+                <small class={styles.dangerDesc}>
                   Inject a rendering error to test the global CrashModal
                   boundary.
                 </small>
