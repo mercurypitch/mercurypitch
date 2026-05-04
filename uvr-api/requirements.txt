@@ -3,6 +3,8 @@
 # ============================================================
 
 # Audio processing
+# audio-separator[gpu]
+#  for AMD GPUs
 audio-separator[gpu]
 
 # Web framework

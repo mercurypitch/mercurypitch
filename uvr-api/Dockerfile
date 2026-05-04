@@ -24,9 +24,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Create working directory
 WORKDIR /app
 
-# Install Python dependencies
+RUN pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/rocm7.2 --no-cache-dir
+
+# 1. Install your normal requirements first
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+
+# 2. Rip out any NVIDIA/Standard ONNX packages that audio-separator downloaded
+RUN pip uninstall -y onnxruntime onnxruntime-gpu
+
+# 3. Force the AMD ROCm ONNX Runtime
+RUN pip install --no-cache-dir onnxruntime-rocm 
 
 # Create output directories
 RUN mkdir -p /app/output /app/uploads /tmp/uvr
@@ -42,4 +50,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
 # Run server
-CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

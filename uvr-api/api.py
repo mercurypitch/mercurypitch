@@ -1,7 +1,6 @@
 # ============================================================
 # UVR Audio Separator API Server
 # ============================================================
-
 from fastapi import FastAPI, UploadFile, BackgroundTasks, HTTPException
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -12,6 +11,10 @@ import uuid
 import logging
 from typing import Optional, List, Dict, Any
 import threading
+from audio_separator.separator import Separator
+import subprocess
+import json
+from fastapi import HTTPException
 
 # Setup logging
 logging.basicConfig(
@@ -49,28 +52,6 @@ SESSION_DIR = "/tmp/uvr"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(SESSION_DIR, exist_ok=True)
-
-# Global separator instance (lazy loaded)
-_separator: Optional[Any] = None
-_separator_lock = threading.Lock()
-
-
-def get_separator() -> Any:
-    """Get or create audio separator instance"""
-    global _separator
-    if _separator is None:
-        with _separator_lock:
-            if _separator is None:
-                try:
-                    from audio_separator.separator import Separator
-                    logger.info("Initializing audio separator...")
-                    _separator = Separator()
-                    logger.info("Audio separator initialized successfully")
-                except Exception as e:
-                    logger.error(f"Failed to initialize separator: {e}")
-                    raise
-    return _separator
-
 
 # Request/Response models
 class ProcessRequest(BaseModel):
@@ -126,38 +107,52 @@ async def health_check() -> HealthResponse:
         processing_sessions=0  # Could be tracked separately
     )
 
-
 @app.get("/models")
-async def list_models() -> Dict[str, Any]:
-    """List available UVR models"""
-    separator = get_separator()
+async def list_models():
+    """List available UVR models by hooking into the CLI"""
     try:
-        models = separator.list_available_models()
-        return {"models": models}
+        # Call the CLI and tell it to dump the models as JSON
+        result = subprocess.run(
+            ["audio-separator", "--list_models", "--list_format=json"],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        # Parse the JSON string returned by the CLI
+        models_data = json.loads(result.stdout)
+        return {"models": models_data}
+    except subprocess.CalledProcessError as e:
+        logger.error(f"CLI failed: {e.stderr}")
+        raise HTTPException(status_code=500, detail="Failed to fetch models from CLI")
     except Exception as e:
-        logger.error(f"Error listing models: {e}")
+        logger.error(f"Error parsing models: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# @app.get("/models")
+# async def list_models():
+#     """List available UVR models"""
+#     try:
+#         # In v0.44.1, use 'info_only=True' to access metadata without 
+#         # initializing the heavy audio engine.
+#         separator = Separator(info_only=True)
+#
+#         # The correct method name in this version is 'list_available_models()'
+#         # Note: This returns a dictionary of model metadata.
+#         models = separator.list_available_models()
+#     except Exception as e:
+#         logger.error(f"Error listing models: {e}")
+#         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/process", response_model=ProcessResponse)
 async def process_audio(
     background_tasks: BackgroundTasks,
     file: UploadFile,
-    model: str = "UVR-MDX-NET-Inst_HQ",
+    model: str = 'UVR_MDXNET_KARA_2',
     output_format: str = "WAV",
     stems: List[str] = ["vocal", "instrumental"]
 ):
     """
     Process an uploaded audio file to separate vocals and instrumental
-
-    Args:
-        file: Audio file (MP3, WAV, FLAC)
-        model: UVR model to use (default: UVR-MDX-NET-Inst_HQ)
-        output_format: Output format (WAV, MP3, FLAC)
-        stems: List of stems to extract
-
-    Returns:
-        Session ID for tracking progress
     """
     if not file.filename:
         raise HTTPException(status_code=400, detail="No filename provided")
@@ -191,20 +186,35 @@ async def process_audio(
         raise HTTPException(status_code=500, detail="Failed to save uploaded file")
 
     # Start processing in background
-    async def process_task(session_id: str, input_path: str):
+    async def process_task(session_id: str, input_path: str, model_name: str):
         try:
             logger.info(f"Starting processing for session {session_id}")
-            separator = get_separator()
-            separator.separate(
-                input_path,
+            
+            # 1. Initialize with configuration (Fixed for v0.44.1)
+            separator = Separator(
                 output_dir=session_output_dir,
-                output_format=output_format
+                output_format=output_format,
+                model_file_dir="/tmp/audio-separator-models/"
+                # FORCE the library to use AMD ROCm instead of guessing
+                execution_providers=["ROCMExecutionProvider", "CPUExecutionProvider"]
             )
+
+            # Specify multiple models for ensembling
+            if not model_name.endswith('onnx'):
+                model_name_wext = model_name + '.onnx'
+            else:
+                model_name_wext = model_name
+            
+            separator.load_model(model_filename=model_name_wext)
+
+            # 3. Separate
+            separator.separate(input_path)
+            
             logger.info(f"Processing completed for session {session_id}")
         except Exception as e:
             logger.error(f"Processing error for session {session_id}: {e}")
 
-    background_tasks.add_task(process_task, session_id, input_path)
+    background_tasks.add_task(process_task, session_id, input_path, model)
 
     return ProcessResponse(
         session_id=session_id,
