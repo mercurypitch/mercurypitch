@@ -5,7 +5,7 @@
 import type { Component } from 'solid-js'
 import { createEffect, onCleanup, onMount } from 'solid-js'
 import { appStore, bpm } from '@/stores'
-import { colorCodeNotes, flameMode, showAccuracyPercent, } from '@/stores/settings-store'
+import { colorCodeNotes, flameMode, showAccuracyPercent, showPlaybackBall, } from '@/stores/settings-store'
 import type { MelodyItem, NoteResult, PitchSample, ScaleDegree } from '@/types'
 import {
   BALL_RADIUS,
@@ -834,7 +834,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     }
 
     // Yousician-style jumping ball — quadratic Bezier arcs between notes
-    if (props.isPlaying() && !props.isPaused() && arcState.noteIndex >= 0) {
+    if (showPlaybackBall() && props.isPlaying() && !props.isPaused() && arcState.noteIndex >= 0) {
       const beat = props.currentBeat()
       const pos = computeBallPos(beat, arcState)
       const ballX = pos.x

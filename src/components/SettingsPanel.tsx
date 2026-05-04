@@ -535,6 +535,42 @@ export const SettingsPanel: Component = () => {
           </div>
 
           <div class="settings-row">
+            <label for="vis-playback-ball">Jumping Ball (Playback)</label>
+            <label class="settings-toggle">
+              <input
+                type="checkbox"
+                id="vis-playback-ball"
+                checked={appStore.showPlaybackBall()}
+                onChange={(e) => {
+                  appStore.setShowPlaybackBall(e.currentTarget.checked)
+                }}
+              />
+              <span class="settings-slider" />
+            </label>
+            <small>
+              Show the animated jumping ball during playback mode. Off by default.
+            </small>
+          </div>
+
+          <div class="settings-row">
+            <label for="vis-focus-ball">Jumping Ball (Focus Mode)</label>
+            <label class="settings-toggle">
+              <input
+                type="checkbox"
+                id="vis-focus-ball"
+                checked={appStore.showFocusBall()}
+                onChange={(e) => {
+                  appStore.setShowFocusBall(e.currentTarget.checked)
+                }}
+              />
+              <span class="settings-slider" />
+            </label>
+            <small>
+              Show the animated jumping ball during Focus mode. On by default.
+            </small>
+          </div>
+
+          <div class="settings-row">
             <label for="vis-theme">Theme</label>
             <label>
               <select

@@ -365,6 +365,22 @@ const SHOW_PRACTICE_RESULT_POPUP_KEY = 'pitchperfect_show_practice_result_popup'
 export const [showPracticeResultPopup, setShowPracticeResultPopup] =
   createPersistedSignal<boolean>(SHOW_PRACTICE_RESULT_POPUP_KEY, false)
 
+/**
+ * Show the jumping ball during playback mode. Off by default so the
+ * ball doesn't distract during regular practice / playback.
+ */
+const SHOW_PLAYBACK_BALL_KEY = 'pitchperfect_show_playback_ball'
+export const [showPlaybackBall, setShowPlaybackBall] =
+  createPersistedSignal<boolean>(SHOW_PLAYBACK_BALL_KEY, false)
+
+/**
+ * Show the jumping ball during Focus mode. On by default — Focus mode
+ * is explicitly for visual pitch tracking.
+ */
+const SHOW_FOCUS_BALL_KEY = 'pitchperfect_show_focus_ball'
+export const [showFocusBall, setShowFocusBall] =
+  createPersistedSignal<boolean>(SHOW_FOCUS_BALL_KEY, true)
+
 // FIXME: Initialization functions mapped to no-ops to support old init pattern gracefully
 // before they are completely removed. Storage loading happens on signal creation now.
 export function initSettings(): void {}
