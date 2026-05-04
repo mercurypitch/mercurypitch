@@ -4020,7 +4020,8 @@ Keeps your existing styles, only adjusts layout
   letter-spacing: 0.06em;
 }
 
-.settings-divider {
+.settings-divider,
+.changelog-divider {
   height: 4px;
   width: 100%;
   background: linear-gradient(
@@ -4745,12 +4746,6 @@ input:checked + .settings-slider:before {
   color: var(--text-secondary);
   line-height: 1.45;
   margin-bottom: 2px;
-}
-.changelog-divider {
-  height: 1px;
-  width: 100%;
-  background: var(--border);
-  margin: 20px 0;
 }
 
 /* ===== What's New Button ===== */
