@@ -4680,6 +4680,91 @@ input:checked + .settings-slider:before {
   justify-content: flex-end;
 }
 
+/* ===== Changelog Modal ===== */
+.changelog-version {
+  margin-bottom: 24px;
+}
+.changelog-version:last-child {
+  margin-bottom: 0;
+}
+.changelog-version-header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.changelog-version-tag {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.changelog-date {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+.changelog-section {
+  margin-bottom: 10px;
+}
+.changelog-section:last-child {
+  margin-bottom: 0;
+}
+.changelog-badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-bottom: 6px;
+}
+.badge-added {
+  background: rgba(46, 160, 67, 0.15);
+  color: #2ea043;
+}
+.badge-changed {
+  background: rgba(56, 139, 253, 0.15);
+  color: #388bfd;
+}
+.badge-fixed {
+  background: rgba(212, 167, 44, 0.15);
+  color: #d4a72c;
+}
+.changelog-entries {
+  margin: 4px 0 0 0;
+  padding-left: 18px;
+  list-style: disc;
+}
+.changelog-entry {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 2px;
+}
+
+/* ===== What's New Button ===== */
+.whats-new-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--accent);
+  background: transparent;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  padding: 5px 14px;
+  cursor: pointer;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+.whats-new-btn:hover {
+  background: var(--accent);
+  color: var(--bg-primary);
+  box-shadow: 0 0 8px rgba(99, 102, 241, 0.3);
+}
+.whats-new-btn:active {
+  transform: scale(0.97);
+}
+
 /* ===== Scale Builder ===== */
 .scale-builder .scale-desc {
   font-size: 0.85rem;
