@@ -52,5 +52,14 @@
     "vite": "^6.0.0",
     "vite-plugin-solid": "^2.10.0",
     "vitest": "^4.1.5"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@parcel/watcher",
+      "esbuild",
+      "midi-writer-js",
+      "protobufjs",
+      "unrs-resolver"
+    ]
   }
 }
