@@ -196,7 +196,7 @@ async def process_audio(
                 output_format=output_format,
                 model_file_dir="/tmp/audio-separator-models/"
                 # FORCE the library to use AMD ROCm instead of guessing
-                execution_providers=["ROCMExecutionProvider", "CPUExecutionProvider"]
+                # execution_providers=["ROCMExecutionProvider", "CPUExecutionProvider"]
             )
 
             # Specify multiple models for ensembling

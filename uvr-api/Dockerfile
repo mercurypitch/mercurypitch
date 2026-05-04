@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
 # Install FFmpeg (required for audio-separator)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
+    execstack \
     && rm -rf /var/lib/apt/lists/*
 
 # Create working directory
@@ -35,6 +36,7 @@ RUN pip uninstall -y onnxruntime onnxruntime-gpu
 
 # 3. Force the AMD ROCm ONNX Runtime
 RUN pip install --no-cache-dir onnxruntime-rocm 
+RUN find /usr/local/lib/python3.11/site-packages/onnxruntime -name "*.so" -exec execstack -c {} \;
 
 # Create output directories
 RUN mkdir -p /app/output /app/uploads /tmp/uvr
