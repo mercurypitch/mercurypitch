@@ -7,6 +7,17 @@ import { createEffect, onCleanup, onMount } from 'solid-js'
 import { appStore, bpm } from '@/stores'
 import { colorCodeNotes, flameMode, showAccuracyPercent, } from '@/stores/settings-store'
 import type { MelodyItem, NoteResult, PitchSample, ScaleDegree } from '@/types'
+import {
+  BALL_RADIUS,
+  buildPlayable,
+  computeArcCy,
+  computeArcEndBeat,
+  computeBallPos,
+  computeInitialArc,
+  isBackwardsSeek,
+  shouldAdvanceArc,
+  type ArcState,
+} from '@/lib/arc-physics'
 
 interface PitchCanvasProps {
   melody: () => MelodyItem[]
@@ -83,33 +94,14 @@ function ratingColors(rating: NoteResult['rating']): {
   }
 }
 
-// Quadratic Bezier arc state for Yousician-style jumping ball
-interface ArcState {
-  /** Source position (pixels) — ball launches from here */
-  sx: number
-  sy: number
-  /** Target position (pixels) — top-right corner of target note */
-  ex: number
-  ey: number
-  /** Control point Y for the quadratic Bezier (peak of the arc) */
-  cy: number
-  /** Beat the arc starts (launch point) */
-  startBeat: number
-  /** Beat the arc ends (landing point) */
-  endBeat: number
-  /** Trail buffer for ghost rendering along the arc path */
+const GLOW_RADIUS = 20
+
+// Extended arc state with render-only fields
+interface RenderArcState extends ArcState {
   trail: { x: number; y: number; alpha: number; time: number }[]
-  /** Index of the source note in the playable-notes array */
-  noteIndex: number
-  /** Ball's current computed pixel position (set every draw frame) */
   ballX: number
   ballY: number
-  /** Whether the ball has been initialized (first playback start) */
-  initialized: boolean
 }
-
-const BALL_RADIUS = 8
-const GLOW_RADIUS = 20
 
 export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
   let canvasRef: HTMLCanvasElement | undefined
@@ -118,7 +110,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
   let isSeeking = false
 
   // Yousician jumping-ball arc state
-  const arcState: ArcState = {
+  const arcState: RenderArcState = {
     sx: 0,
     sy: 0,
     ex: 0,
@@ -132,7 +124,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     ballY: 0,
     initialized: false,
   }
-  let _lastRafTime = 0
+  let _prevBeat = -1
 
   onMount(() => {
     if (!canvasRef) return
@@ -225,30 +217,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       draw()
       animFrameId = requestAnimationFrame(loop)
     }
-    _lastRafTime = 0
     animFrameId = requestAnimationFrame(loop)
-  }
-
-  // Compute ball position from arc state at a given beat
-  const computeBallPos = (beat: number, s: ArcState): { x: number; y: number } => {
-    if (s.startBeat < s.endBeat) {
-      const t = Math.max(0, Math.min(1, (beat - s.startBeat) / (s.endBeat - s.startBeat)))
-      const midX = (s.sx + s.ex) / 2
-      return {
-        x: (1 - t) * (1 - t) * s.sx + 2 * (1 - t) * t * midX + t * t * s.ex,
-        y: (1 - t) * (1 - t) * s.sy + 2 * (1 - t) * t * s.cy + t * t * s.ey,
-      }
-    }
-    return { x: s.sx, y: s.sy }
-  }
-
-  // Build the list of playable notes (runs every frame — cheap for melody sizes)
-  const buildPlayable = (melody: MelodyItem[]) => {
-    const out: { idx: number; item: MelodyItem }[] = []
-    for (let i = 0; i < melody.length; i++) {
-      if (!melody[i].isRest) out.push({ idx: i, item: melody[i] })
-    }
-    return out
   }
 
   // Quadratic Bezier arc physics — call once per RAF frame
@@ -266,59 +235,61 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
 
     // ---- Initial arc: ball appears ~100px above first note --------
     if (!arcState.initialized) {
-      arcState.initialized = true
       const first = playable[0].item
       const topY = freqToY(first.note.freq, h) - boxHalf
       const rightX = beatToX(first.startBeat + first.duration, w)
-      arcState.noteIndex = 0
-      arcState.sx = rightX
-      arcState.sy = topY - 100
-      arcState.ex = rightX
-      arcState.ey = topY
-      arcState.cy = topY - 160
-      arcState.startBeat = Math.max(0, first.startBeat - 0.5)
-      arcState.endBeat = first.startBeat + first.duration * 0.3
-      arcState.trail = []
+      const init = computeInitialArc(
+        { startBeat: first.startBeat, duration: first.duration },
+        rightX,
+        topY,
+      )
+      Object.assign(arcState, init, { trail: [], initialized: true })
+      _prevBeat = beat
       return
     }
 
-    // ---- Backwards seek / loop: reset when playhead goes behind ----
-    const cur = playable[arcState.noteIndex]?.item
-    if (!cur || beat < cur.startBeat - 1) {
+    // ---- Backwards seek: detect when playhead jumps backwards -------
+    if (isBackwardsSeek(beat, _prevBeat)) {
+      arcState.initialized = false
+      _prevBeat = beat
+      return
+    }
+    _prevBeat = beat
+
+    // ---- Guard: ensure current note index is valid ------------------
+    const curItem = playable[arcState.noteIndex]?.item
+    if (!curItem) {
       arcState.initialized = false
       return
+    }
+    const cur: { startBeat: number; duration: number } = {
+      startBeat: curItem.startBeat,
+      duration: curItem.duration,
     }
 
     // ---- Advance at most 1 note per frame to never skip ------------
     const nextIdx = arcState.noteIndex + 1
     if (nextIdx < playable.length) {
-      const next = playable[nextIdx].item
-      // Only advance when the playhead has entered the next note's beat range
-      // (or is past the current note and approaching the next one)
-      const shouldAdvance = beat >= next.startBeat
-        || (beat >= cur.startBeat + cur.duration && beat < next.startBeat + next.duration)
+      const nextItem = playable[nextIdx].item
+      const next: { startBeat: number; duration: number } = {
+        startBeat: nextItem.startBeat,
+        duration: nextItem.duration,
+      }
 
-      if (shouldAdvance) {
+      if (shouldAdvanceArc(cur, next, beat)) {
         const src = computeBallPos(beat, arcState)
-        const targetY = freqToY(next.note.freq, h) - boxHalf
-        const targetX = beatToX(next.startBeat + next.duration, w)
+        const targetY = freqToY(nextItem.note.freq, h) - boxHalf
+        const targetX = beatToX(nextItem.startBeat + nextItem.duration, w)
 
         arcState.noteIndex = nextIdx
         arcState.sx = src.x
         arcState.sy = src.y
         arcState.ex = targetX
         arcState.ey = targetY
-
-        // Arc height proportional to vertical distance (with BPM influence)
-        const vert = Math.abs(src.y - targetY)
-        const bpmFactor = Math.sqrt(120 / Math.max(40, Math.min(280, bpm())))
-        arcState.cy = Math.min(src.y, targetY) - Math.max(vert * 0.5, 60) * bpmFactor
-
-        // Arc spans from now until 30 % into the target note
+        arcState.cy = computeArcCy(src.y, targetY, bpm())
         arcState.startBeat = beat
-        arcState.endBeat = next.startBeat + next.duration * 0.3
+        arcState.endBeat = computeArcEndBeat(next)
 
-        // Paranoia: if the arc would go backwards, stretch it forward
         if (arcState.endBeat <= arcState.startBeat) {
           arcState.endBeat = arcState.startBeat + 0.5
         }
