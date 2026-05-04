@@ -83,20 +83,29 @@ function ratingColors(rating: NoteResult['rating']): {
   }
 }
 
-// Spring-physics state for Yousician-style bouncing dot animation
-interface DotState {
-  freq: number
-  targetFreq: number
-  velocity: number
-  prevNoteIndex: number
-  noteStartTime: number
-  trail: { freq: number; alpha: number; time: number }[]
+// Quadratic Bezier arc state for Yousician-style jumping ball
+interface ArcState {
+  /** Source position (pixels) — top of the note the ball launches from */
+  sx: number
+  sy: number
+  /** Target position (pixels) — top of the note the ball lands on */
+  ex: number
+  ey: number
+  /** Control point Y for the quadratic Bezier (peak of the arc) */
+  cy: number
+  /** Beat the arc starts (launch point) */
+  startBeat: number
+  /** Beat the arc ends (landing point) */
+  endBeat: number
+  /** Trail buffer for ghost rendering along the arc path */
+  trail: { x: number; y: number; alpha: number; time: number }[]
+  /** Index of the source note in the playable-notes array */
+  noteIndex: number
 }
 
-const SPRING_STIFFNESS = 280
-const SPRING_DAMPING = 14
-const DOT_RADIUS = 7
-const GLOW_RADIUS = 18
+const BALL_RADIUS = 8
+const GLOW_RADIUS = 20
+const ARC_HEIGHT = 100
 
 export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
   let canvasRef: HTMLCanvasElement | undefined
@@ -104,14 +113,17 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
   let animFrameId: number | null = null
   let isSeeking = false
 
-  // Yousician spring-bounce state
-  const dotState: DotState = {
-    freq: 0,
-    targetFreq: 0,
-    velocity: 0,
-    prevNoteIndex: -1,
-    noteStartTime: 0,
+  // Yousician jumping-ball arc state
+  const arcState: ArcState = {
+    sx: 0,
+    sy: 0,
+    ex: 0,
+    ey: 0,
+    cy: 0,
+    startBeat: 0,
+    endBeat: 0,
     trail: [],
+    noteIndex: -1,
   }
   let _lastRafTime = 0
 
@@ -202,7 +214,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
 
   const startLoop = () => {
     const loop = (ts: number) => {
-      updateSpring(ts)
+      updateArc(ts)
       draw()
       animFrameId = requestAnimationFrame(loop)
     }
@@ -210,48 +222,87 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     animFrameId = requestAnimationFrame(loop)
   }
 
-  // Spring physics tick — call once per RAF frame
-  const updateSpring = (now: number) => {
-    const _melody = props.melody()
-    const noteIndex = props.currentNoteIndex()
-    const _beat = props.currentBeat()
+  // Quadratic Bezier arc physics — call once per RAF frame
+  const updateArc = (now: number) => {
+    const melody = props.melody()
+    const beat = props.currentBeat()
+    if (!props.isPlaying?.() || props.isPaused?.()) return
+    if (!canvasRef) return
+    const w = canvasRef.clientWidth
+    const h = canvasRef.clientHeight
 
-    // Detect note change → snap target and trigger jump
-    if (noteIndex !== dotState.prevNoteIndex) {
-      dotState.prevNoteIndex = noteIndex
-      dotState.noteStartTime = now
-
-      if (noteIndex >= 0) {
-        const note = _melody[noteIndex]
-        if (note !== null && note !== undefined) {
-          dotState.targetFreq = note.note.freq
-          if (!Number.isFinite(dotState.freq) || dotState.freq <= 0) {
-            dotState.freq = note.note.freq
-          }
-        }
+    // Build playable-note list (skip rests)
+    const playable: { idx: number; item: MelodyItem }[] = []
+    for (let i = 0; i < melody.length; i++) {
+      if (!melody[i].isRest) {
+        playable.push({ idx: i, item: melody[i] })
       }
     }
+    if (playable.length === 0) return
 
-    // Always track melody head with linear x-position
-    // Spring only handles Y (frequency = pitch)
-    const springT = SPRING_STIFFNESS * (dotState.targetFreq - dotState.freq)
-    const dampT = SPRING_DAMPING * dotState.velocity
-    dotState.velocity += (springT - dampT) * 0.001
-    dotState.freq += dotState.velocity * 0.016
-    if (!Number.isFinite(dotState.freq) || dotState.freq <= 0) {
-      dotState.freq = dotState.targetFreq > 0 ? dotState.targetFreq : 0
-      dotState.velocity = 0
+    // Find which playable note the playhead is on
+    let currentPlayableIdx = -1
+    for (let i = 0; i < playable.length; i++) {
+      const item = playable[i].item
+      if (beat >= item.startBeat && beat < item.startBeat + item.duration) {
+        currentPlayableIdx = i
+        break
+      }
+    }
+    if (currentPlayableIdx === -1) return
+
+    const boxHalf = 11
+
+    // Note changed → compute arc to the next note
+    if (currentPlayableIdx !== arcState.noteIndex) {
+      arcState.noteIndex = currentPlayableIdx
+      const cur = playable[currentPlayableIdx].item
+      const next =
+        currentPlayableIdx + 1 < playable.length
+          ? playable[currentPlayableIdx + 1].item
+          : null
+
+      if (next) {
+        arcState.sx = beatToX(cur.startBeat + cur.duration, w)
+        arcState.sy = freqToY(cur.note.freq, h) - boxHalf
+        arcState.ex = beatToX(next.startBeat, w)
+        arcState.ey = freqToY(next.note.freq, h) - boxHalf
+        arcState.cy = Math.min(arcState.sy, arcState.ey) - ARC_HEIGHT
+        // Launch at 70% through current note, land at 30% into next note
+        arcState.startBeat = cur.startBeat + cur.duration * 0.7
+        arcState.endBeat = next.startBeat + next.duration * 0.3
+      } else {
+        // Last note — ball sits on it
+        arcState.sx = beatToX(cur.startBeat + cur.duration, w)
+        arcState.sy = freqToY(cur.note.freq, h) - boxHalf
+        arcState.ex = arcState.sx
+        arcState.ey = arcState.sy
+        arcState.cy = arcState.sy
+        arcState.startBeat = cur.startBeat
+        arcState.endBeat = cur.startBeat + cur.duration
+      }
+      arcState.trail = []
     }
 
-    // Add trail points for glow fade
-    if (props.isPlaying?.() && !props.isPaused?.()) {
-      dotState.trail.push({
-        freq: dotState.freq,
-        alpha: 0.6,
-        time: now,
-      })
-      // Fade and prune trail (keep last 80ms)
-      dotState.trail = dotState.trail.filter((pt) => now - pt.time < 80)
+    // Add trail points while in flight
+    if (arcState.startBeat < arcState.endBeat) {
+      const t = Math.max(
+        0,
+        Math.min(1, (beat - arcState.startBeat) / (arcState.endBeat - arcState.startBeat)),
+      )
+      if (t > 0 && t < 1) {
+        const midX = (arcState.sx + arcState.ex) / 2
+        const bx =
+          (1 - t) * (1 - t) * arcState.sx +
+          2 * (1 - t) * t * midX +
+          t * t * arcState.ex
+        const by =
+          (1 - t) * (1 - t) * arcState.sy +
+          2 * (1 - t) * t * arcState.cy +
+          t * t * arcState.ey
+        arcState.trail.push({ x: bx, y: by, alpha: 0.6, time: now })
+      }
+      arcState.trail = arcState.trail.filter((pt) => now - pt.time < 80)
     }
   }
 
@@ -776,64 +827,102 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       }
     }
 
-    // Yousician-style animated dot — uses spring physics for Y, linear for X
-    // Drawn on top of the melody static bars (which come from melody items)
-    if (props.isPlaying() && !props.isPaused()) {
-      const _melody = props.melody()
+    // Yousician-style jumping ball — quadratic Bezier arcs between notes
+    if (props.isPlaying() && !props.isPaused() && arcState.noteIndex >= 0) {
       const beat = props.currentBeat()
-      const tx = beatToX(beat, w)
 
-      if (dotState.targetFreq > 0) {
-        const ty = freqToY(dotState.freq, h)
-        if (!Number.isFinite(tx) || !Number.isFinite(ty)) {
-          ctx.restore()
-          return
-        }
+      // Compute ball position from arc state
+      let ballX: number
+      let ballY: number
 
-        // Spring overshoot trail: draw fading ghosts from trail buffer
-        for (const pt of dotState.trail) {
-          const age = (performance.now() - pt.time) / 80
-          const alpha = Math.max(0, 0.35 * (1 - age))
-          if (alpha > 0.01) {
-            const trailY = freqToY(pt.freq, h)
-            if (!Number.isFinite(trailY)) continue
-            const grad = ctx.createRadialGradient(tx, trailY, 0, tx, trailY, 12)
-            grad.addColorStop(0, `rgba(88,166,255,${alpha})`)
-            grad.addColorStop(1, `rgba(88,166,255,0)`)
-            ctx.fillStyle = grad
-            ctx.beginPath()
-            ctx.arc(tx, trailY, 12, 0, Math.PI * 2)
-            ctx.fill()
-          }
-        }
-
-        // Outer glow
-        const grad2 = ctx.createRadialGradient(tx, ty, 0, tx, ty, GLOW_RADIUS)
-        grad2.addColorStop(0, 'rgba(88,166,255,0.5)')
-        grad2.addColorStop(1, 'rgba(88,166,255,0)')
-        ctx.fillStyle = grad2
-        ctx.beginPath()
-        ctx.arc(tx, ty, GLOW_RADIUS, 0, Math.PI * 2)
-        ctx.fill()
-
-        // Dot body
-        ctx.fillStyle = '#58a6ff'
-        ctx.beginPath()
-        ctx.arc(tx, ty, DOT_RADIUS, 0, Math.PI * 2)
-        ctx.fill()
-
-        // Highlight
-        ctx.fillStyle = 'rgba(255,255,255,0.9)'
-        ctx.beginPath()
-        ctx.arc(tx - 2, ty - 2, 2.5, 0, Math.PI * 2)
-        ctx.fill()
+      if (arcState.startBeat < arcState.endBeat) {
+        const t = Math.max(
+          0,
+          Math.min(1, (beat - arcState.startBeat) / (arcState.endBeat - arcState.startBeat)),
+        )
+        const midX = (arcState.sx + arcState.ex) / 2
+        ballX =
+          (1 - t) * (1 - t) * arcState.sx +
+          2 * (1 - t) * t * midX +
+          t * t * arcState.ex
+        ballY =
+          (1 - t) * (1 - t) * arcState.sy +
+          2 * (1 - t) * t * arcState.cy +
+          t * t * arcState.ey
+      } else {
+        ballX = arcState.sx
+        ballY = arcState.sy
       }
+
+      if (!Number.isFinite(ballX) || !Number.isFinite(ballY)) {
+        ctx.restore()
+        return
+      }
+
+      // Arc trail: draw fading ghosts along the path
+      for (const pt of arcState.trail) {
+        const age = (performance.now() - pt.time) / 80
+        const alpha = Math.max(0, 0.3 * (1 - age))
+        if (alpha > 0.01) {
+          if (!Number.isFinite(pt.x) || !Number.isFinite(pt.y)) continue
+          const grad = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, 12)
+          grad.addColorStop(0, `rgba(200,220,255,${alpha})`)
+          grad.addColorStop(1, 'rgba(200,220,255,0)')
+          ctx.fillStyle = grad
+          ctx.beginPath()
+          ctx.arc(pt.x, pt.y, 12, 0, Math.PI * 2)
+          ctx.fill()
+        }
+      }
+
+      // Outer glow (white with subtle blue tint)
+      const glowGrad = ctx.createRadialGradient(
+        ballX, ballY, 0,
+        ballX, ballY, GLOW_RADIUS,
+      )
+      glowGrad.addColorStop(0, 'rgba(200,220,255,0.45)')
+      glowGrad.addColorStop(0.5, 'rgba(150,180,230,0.15)')
+      glowGrad.addColorStop(1, 'rgba(100,140,220,0)')
+      ctx.fillStyle = glowGrad
+      ctx.beginPath()
+      ctx.arc(ballX, ballY, GLOW_RADIUS, 0, Math.PI * 2)
+      ctx.fill()
+
+      // Shadow/depth ring beneath the ball
+      ctx.fillStyle = 'rgba(0,0,0,0.2)'
+      ctx.beginPath()
+      ctx.arc(ballX, ballY + 2, BALL_RADIUS, 0, Math.PI * 2)
+      ctx.fill()
+
+      // Ball body (white gradient for 3D sphere look)
+      const ballGrad = ctx.createRadialGradient(
+        ballX - 2, ballY - 3, 0,
+        ballX, ballY, BALL_RADIUS,
+      )
+      ballGrad.addColorStop(0, '#ffffff')
+      ballGrad.addColorStop(0.7, '#e8ecf0')
+      ballGrad.addColorStop(1, '#c0c8d4')
+      ctx.fillStyle = ballGrad
+      ctx.beginPath()
+      ctx.arc(ballX, ballY, BALL_RADIUS, 0, Math.PI * 2)
+      ctx.fill()
+
+      // Specular highlight (upper-left reflection shine)
+      ctx.fillStyle = 'rgba(255,255,255,0.95)'
+      ctx.beginPath()
+      ctx.arc(ballX - 2.5, ballY - 2.5, 3, 0, Math.PI * 2)
+      ctx.fill()
     } else if (!props.isPlaying() && !props.isPaused()) {
-      // Reset spring when stopped
-      dotState.freq = 0
-      dotState.targetFreq = 0
-      dotState.velocity = 0
-      dotState.trail = []
+      // Reset arc state when stopped
+      arcState.sx = 0
+      arcState.sy = 0
+      arcState.ex = 0
+      arcState.ey = 0
+      arcState.cy = 0
+      arcState.startBeat = 0
+      arcState.endBeat = 0
+      arcState.trail = []
+      arcState.noteIndex = -1
     }
 
     ctx.restore()
