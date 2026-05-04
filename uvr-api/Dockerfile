@@ -17,9 +17,15 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install FFmpeg (required for audio-separator)
+# NOTE: execstack used to strip bad lib flag from rocm, see about removing this when fixed in
+# different rocm version
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
-    execstack \
+    wget \
+    wget \
+    && wget http://archive.ubuntu.com/ubuntu/pool/universe/p/prelink/execstack_0.0.20131005-1.1_amd64.deb \
+    && apt-get install -y --no-install-recommends ./execstack_0.0.20131005-1.1_amd64.deb \
+    && rm execstack_0.0.20131005-1.1_amd64.deb \
     && rm -rf /var/lib/apt/lists/*
 
 # Create working directory
