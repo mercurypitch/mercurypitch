@@ -4706,7 +4706,7 @@ input:checked + .settings-slider:before {
   margin-bottom: 10px;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
 }
 .changelog-section:last-child {
   margin-bottom: 0;
@@ -4738,12 +4738,19 @@ input:checked + .settings-slider:before {
   padding-left: 14px;
   list-style: disc;
   max-width: 85%;
+  text-align: left;
 }
 .changelog-entry {
   font-size: 0.82rem;
   color: var(--text-secondary);
   line-height: 1.45;
   margin-bottom: 2px;
+}
+.changelog-divider {
+  height: 1px;
+  width: 100%;
+  background: var(--border);
+  margin: 20px 0;
 }
 
 /* ===== What's New Button ===== */

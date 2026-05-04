@@ -152,27 +152,30 @@ export const ChangelogModal: Component<ChangelogModalProps> = (props) => {
           </div>
           <div class="modal-body">
             <For each={changelog}>
-              {(entry) => (
-                <div class="changelog-version">
-                  <div class="changelog-version-header">
-                    <span class="changelog-version-tag">v{entry.version}</span>
-                    <span class="changelog-date">{entry.date}</span>
+              {(entry, i) => (
+                <>
+                  {i() > 0 && <div class="changelog-divider" />}
+                  <div class="changelog-version">
+                    <div class="changelog-version-header">
+                      <span class="changelog-version-tag">v{entry.version}</span>
+                      <span class="changelog-date">{entry.date}</span>
+                    </div>
+                    <For each={entry.sections}>
+                      {(section) => (
+                        <div class="changelog-section">
+                          <span class={sectionBadgeClass(section.label)}>
+                            {section.label}
+                          </span>
+                          <ul class="changelog-entries">
+                            <For each={section.items}>
+                              {(item) => <li class="changelog-entry">{item}</li>}
+                            </For>
+                          </ul>
+                        </div>
+                      )}
+                    </For>
                   </div>
-                  <For each={entry.sections}>
-                    {(section) => (
-                      <div class="changelog-section">
-                        <span class={sectionBadgeClass(section.label)}>
-                          {section.label}
-                        </span>
-                        <ul class="changelog-entries">
-                          <For each={section.items}>
-                            {(item) => <li class="changelog-entry">{item}</li>}
-                          </For>
-                        </ul>
-                      </div>
-                    )}
-                  </For>
-                </div>
+                </>
               )}
             </For>
           </div>
