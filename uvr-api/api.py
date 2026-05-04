@@ -15,6 +15,7 @@ from audio_separator.separator import Separator
 import subprocess
 import json
 from fastapi import HTTPException
+import onnxruntime as ort
 
 # Setup logging
 logging.basicConfig(
@@ -42,6 +43,30 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# --- START AMD ROCm OVERRIDE ---
+# 1. Trick the library into passing the "Is CUDA installed?" check
+original_get_providers = ort.get_available_providers
+def rocm_get_providers():
+    providers = original_get_providers()
+    if "ROCMExecutionProvider" in providers and "CUDAExecutionProvider" not in providers:
+        providers.append("CUDAExecutionProvider")
+    return providers
+
+ort.get_available_providers = rocm_get_providers
+
+# 2. Silently swap the NVIDIA provider for the AMD one when the model loads
+original_session = ort.InferenceSession
+def rocm_inference_session(*args, **kwargs):
+    if "providers" in kwargs:
+        kwargs["providers"] = [
+            "ROCMExecutionProvider" if p == "CUDAExecutionProvider" else p
+            for p in kwargs["providers"]
+        ]
+    return original_session(*args, **kwargs)
+
+ort.InferenceSession = rocm_inference_session
+# --- END AMD ROCm OVERRIDE ---
 
 # Configure paths
 OUTPUT_DIR = "/app/output"
@@ -186,7 +211,7 @@ async def process_audio(
         raise HTTPException(status_code=500, detail="Failed to save uploaded file")
 
     # Start processing in background
-    async def process_task(session_id: str, input_path: str, model_name: str):
+    def process_task(session_id: str, input_path: str, model_name: str):
         try:
             logger.info(f"Starting processing for session {session_id}")
             
@@ -195,8 +220,6 @@ async def process_audio(
                 output_dir=session_output_dir,
                 output_format=output_format,
                 model_file_dir="/tmp/audio-separator-models/"
-                # FORCE the library to use AMD ROCm instead of guessing
-                # execution_providers=["ROCMExecutionProvider", "CPUExecutionProvider"]
             )
 
             # Specify multiple models for ensembling
@@ -211,6 +234,7 @@ async def process_audio(
             separator.separate(input_path)
             
             logger.info(f"Processing completed for session {session_id}")
+            open(os.path.join(session_output_dir, "done.txt"), 'w').close()
         except Exception as e:
             logger.error(f"Processing error for session {session_id}: {e}")
 
@@ -251,7 +275,7 @@ async def get_status(session_id: str):
     for root, dirs, filenames in os.walk(session_output_dir):
         for filename in filenames:
             # Skip input files
-            if filename.startswith("input"):
+            if filename.startswith("input") or filename.startswith("done"):
                 continue
 
             stem_name = os.path.basename(root) if root != session_output_dir else "root"
@@ -272,16 +296,17 @@ async def get_status(session_id: str):
                 "path": f"/api/output/{session_id}/{rel_path}/{filename}",
                 "size": os.path.getsize(file_path)
             })
-
-    if files:
-        status = "completed"
-        message = "Processing completed successfully"
+    # Check if finished
+    is_done = os.path.exists(os.path.join(session_output_dir, "done.txt"))
+    if is_done:
+         status = "completed"
+         message = "Processing completed successfully"
     elif is_processing:
-        status = "processing"
-        message = "Processing in progress..."
+         status = "processing"
+         message = "Processing in progress..."
     else:
-        status = "error"
-        message = "Unknown status"
+         status = "error"
+         message = "Process failed or unknown status"
 
     return ProcessStatusResponse(
         session_id=session_id,

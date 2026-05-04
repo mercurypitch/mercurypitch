@@ -5,24 +5,9 @@
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, Show } from 'solid-js'
 import type { UvrSession } from '@/stores/app-store'
-import {
-  cancelUvrSession,
-  completeUvrSession,
-  currentUvrSession,
-  getAllUvrSessions,
-  saveAllUvrSessions,
-  setCurrentUvrSession,
-  startUvrSession,
-  updateUvrSessionProgress,
-} from '@/stores/app-store'
-import { processAudio, pollForCompletion, type OutputFile } from '@/lib/uvr-api'
-import {
-  UvrGuide,
-  UvrProcessControl,
-  UvrResultViewer,
-  UvrSessionResult,
-  UvrUploadControl,
-} from '.'
+import { cancelUvrSession, completeUvrSession, currentUvrSession, getAllUvrSessions, saveAllUvrSessions, setCurrentUvrSession, startUvrSession, updateUvrSessionProgress, } from '@/stores/app-store'
+import { processAudio, pollForCompletion, type OutputFile, DEFAULT_PROCESS_REQUEST, } from '@/lib/uvr-api'
+import { UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrUploadControl, } from '.'
 import { History, Music, Play, Settings, X, Loader2 } from './icons'
 
 /**
@@ -38,13 +23,10 @@ async function startRealProcessing(
   sessionId: string,
   onProgress: OnProgress,
   onComplete: (files: OutputFile[]) => void,
-  onError: (error: string) => void
+  onError: (error: string) => void,
 ): Promise<void> {
   try {
-    const response = await processAudio(file, {
-      model: 'UVR-MDX-NET-Inst_HQ',
-      output_format: 'WAV',
-    })
+    const response = await processAudio(file, DEFAULT_PROCESS_REQUEST)
 
     if (response.status !== 'processing') {
       throw new Error('Failed to start processing')
@@ -56,7 +38,7 @@ async function startRealProcessing(
       onProgress,
       (files) => onComplete(files),
       onError,
-      1000
+      1000,
     )
   } catch (error) {
     onError(error instanceof Error ? error.message : 'Processing failed')
@@ -170,7 +152,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
 
           completeUvrSession(sessionId, outputs)
         },
-        showError
+        showError,
       )
     } catch (error) {
       console.error('Processing error:', error)

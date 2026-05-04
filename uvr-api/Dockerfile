@@ -9,6 +9,10 @@ ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHOME=/app \
     PATH=/app/.local/bin:$PATH
+# Tell Linux to look inside PyTorch for missing AMD GPU libraries
+ENV LD_LIBRARY_PATH="/usr/local/lib/python3.11/site-packages/torch/lib:$LD_LIBRARY_PATH"
+# Force ROCm 6.2 to treat the RDNA 4 GPU as an RDNA 3 (RX 7000 series) GPU
+ENV HSA_OVERRIDE_GFX_VERSION=11.0.0
 
 # For diffq, wheels package compilaton
 RUN apt-get update && apt-get install -y \
@@ -31,7 +35,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Create working directory
 WORKDIR /app
 
-RUN pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/rocm7.2 --no-cache-dir
+# Do not use latest ROCM
+# RUN pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/rocm7.2 --no-cache-dir
+RUN pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/rocm6.2 --no-cache-dir
 
 # 1. Install your normal requirements first
 COPY requirements.txt .
@@ -43,6 +49,12 @@ RUN pip uninstall -y onnxruntime onnxruntime-gpu
 # 3. Force the AMD ROCm ONNX Runtime
 RUN pip install --no-cache-dir onnxruntime-rocm 
 RUN find /usr/local/lib/python3.11/site-packages/onnxruntime -name "*.so" -exec execstack -c {} \;
+
+# Create symlinks for ONNX Runtime to find the PyTorch AMD libraries
+# Create symlinks for ONNX Runtime to find the PyTorch AMD libraries
+RUN ln -s /usr/local/lib/python3.11/site-packages/torch/lib/libhipblas.so /usr/local/lib/python3.11/site-packages/torch/lib/libhipblas.so.2 \
+    && ln -s /usr/local/lib/python3.11/site-packages/torch/lib/librocm_smi64.so /usr/local/lib/python3.11/site-packages/torch/lib/librocm_smi64.so.7 \
+    && ln -s /usr/local/lib/python3.11/site-packages/torch/lib/libamdhip64.so /usr/local/lib/python3.11/site-packages/torch/lib/libamdhip64.so.6
 
 # Create output directories
 RUN mkdir -p /app/output /app/uploads /tmp/uvr
