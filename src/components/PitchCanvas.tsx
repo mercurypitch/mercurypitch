@@ -4,8 +4,8 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, onCleanup, onMount } from 'solid-js'
-import { appStore, bpm } from '@/stores'
-import { colorCodeNotes, flameMode, showAccuracyPercent, showPlaybackBall, } from '@/stores/settings-store'
+import { appStore, bpm, focusMode } from '@/stores'
+import { colorCodeNotes, flameMode, showAccuracyPercent, showFocusBall, showPlaybackBall, } from '@/stores/settings-store'
 import type { MelodyItem, NoteResult, PitchSample, ScaleDegree } from '@/types'
 import {
   BALL_RADIUS,
@@ -233,9 +233,18 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     const playable = buildPlayable(melody)
     if (playable.length === 0) return
 
-    // ---- Initial arc: ball appears ~100px above first note --------
+    // ---- Initial arc: find correct note for current beat ----------
     if (!arcState.initialized) {
-      const first = playable[0].item
+      // Find which playable note covers the current beat position.
+      // Walk backwards so we pick the note whose startBeat <= beat.
+      let startIdx = 0
+      for (let i = playable.length - 1; i >= 0; i--) {
+        if (beat >= playable[i].item.startBeat) {
+          startIdx = i
+          break
+        }
+      }
+      const first = playable[startIdx].item
       const topY = freqToY(first.note.freq, h) - boxHalf
       const startX = beatToX(first.startBeat, w)
       const rightX = beatToX(first.startBeat + first.duration, w)
@@ -245,7 +254,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
         rightX,
         topY,
       )
-      Object.assign(arcState, init, { trail: [], initialized: true })
+      Object.assign(arcState, init, { trail: [], initialized: true, noteIndex: startIdx })
       _prevBeat = beat
       return
     }
@@ -834,7 +843,8 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     }
 
     // Yousician-style jumping ball — quadratic Bezier arcs between notes
-    if (showPlaybackBall() && props.isPlaying() && !props.isPaused() && arcState.noteIndex >= 0) {
+    const ballToggle = focusMode() ? showFocusBall() : showPlaybackBall()
+    if (ballToggle && (props.isPlaying() || props.isPaused()) && arcState.noteIndex >= 0) {
       const beat = props.currentBeat()
       const pos = computeBallPos(beat, arcState)
       const ballX = pos.x
