@@ -237,9 +237,11 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     if (!arcState.initialized) {
       const first = playable[0].item
       const topY = freqToY(first.note.freq, h) - boxHalf
+      const startX = beatToX(first.startBeat, w)
       const rightX = beatToX(first.startBeat + first.duration, w)
       const init = computeInitialArc(
         { startBeat: first.startBeat, duration: first.duration },
+        startX,
         rightX,
         topY,
       )

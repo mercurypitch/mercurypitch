@@ -55,7 +55,7 @@ export const computeArcCy = (
 
 /** Compute when the arc should end (beat value). */
 export const computeArcEndBeat = (targetNote: PlayableNote): number => {
-  return targetNote.startBeat + targetNote.duration * 0.3
+  return targetNote.startBeat + targetNote.duration
 }
 
 /**
@@ -94,18 +94,19 @@ export const buildPlayable = <T extends { isRest?: boolean }>(
  */
 export const computeInitialArc = (
   firstNote: PlayableNote,
+  startX: number,
   targetX: number,
   targetY: number,
 ): Pick<ArcState, 'sx' | 'sy' | 'ex' | 'ey' | 'cy' | 'startBeat' | 'endBeat' | 'noteIndex'> => {
   const aboveY = targetY - 100
   return {
-    sx: targetX,
+    sx: startX,
     sy: aboveY,
     ex: targetX,
     ey: targetY,
     cy: targetY - 160,
     startBeat: Math.max(0, firstNote.startBeat - 0.5),
-    endBeat: firstNote.startBeat + firstNote.duration * 0.3,
+    endBeat: firstNote.startBeat + firstNote.duration,
     noteIndex: 0,
   }
 }
