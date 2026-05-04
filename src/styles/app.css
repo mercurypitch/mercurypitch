@@ -4734,11 +4734,11 @@ input:checked + .settings-slider:before {
   color: #d4a72c;
 }
 .changelog-entries {
-  margin: 0 0 0 8px;
+  margin: 0;
   padding-left: 14px;
   list-style: disc;
-  max-width: 85%;
   text-align: left;
+  width: 100%;
 }
 .changelog-entry {
   font-size: 0.82rem;
