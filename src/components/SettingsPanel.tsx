@@ -571,6 +571,22 @@ export const SettingsPanel: Component = () => {
           </div>
 
           <div class="settings-row">
+            <label for="vis-playhead">Playhead</label>
+            <label class="settings-toggle">
+              <input
+                type="checkbox"
+                id="vis-playhead"
+                checked={appStore.showPlayhead()}
+                onChange={(e) => {
+                  appStore.setShowPlayhead(e.currentTarget.checked)
+                }}
+              />
+              <span class="settings-slider" />
+            </label>
+            <small>Show the vertical playhead line during playback</small>
+          </div>
+
+          <div class="settings-row">
             <label for="vis-theme">Theme</label>
             <label>
               <select

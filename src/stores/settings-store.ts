@@ -381,6 +381,14 @@ const SHOW_FOCUS_BALL_KEY = 'pitchperfect_show_focus_ball'
 export const [showFocusBall, setShowFocusBall] =
   createPersistedSignal<boolean>(SHOW_FOCUS_BALL_KEY, true)
 
+/**
+ * Show the playhead vertical line during playback/pause. On by default.
+ * When off, users can rely solely on the jumping ball for position tracking.
+ */
+const SHOW_PLAYHEAD_KEY = 'pitchperfect_show_playhead'
+export const [showPlayhead, setShowPlayhead] =
+  createPersistedSignal<boolean>(SHOW_PLAYHEAD_KEY, true)
+
 // FIXME: Initialization functions mapped to no-ops to support old init pattern gracefully
 // before they are completely removed. Storage loading happens on signal creation now.
 export function initSettings(): void {}

@@ -579,6 +579,48 @@ header h1 {
   gap: 6px;
 }
 
+/* Compact 2×3 visibility toggle grid */
+.sidebar-vis-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 6px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+}
+.vis-grid-cell {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 6px;
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+  min-height: 26px;
+}
+.vis-grid-label {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.vis-grid-toggle {
+  width: 34px !important;
+  height: 18px;
+}
+.vis-grid-toggle.settings-toggle .settings-slider {
+  width: 34px;
+  border-radius: 18px;
+}
+.vis-grid-toggle.settings-toggle .settings-slider:before {
+  height: 12px;
+  width: 12px;
+  left: 2px;
+  bottom: 2px;
+}
+.vis-grid-toggle.settings-toggle input:checked + .settings-slider:before {
+  transform: translateX(16px);
+}
+
 /* Bottom-anchored sections in sidebar */
 .sidebar-section.sidebar-notes-bottom {
   margin-top: auto;

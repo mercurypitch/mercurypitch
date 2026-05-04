@@ -953,7 +953,7 @@ const AppShell: Component<AppProps> = (props) => {
                   <div
                     id="playhead"
                     style={{
-                      display: isPlaying() || isPaused() ? 'block' : 'none',
+                      display: (isPlaying() || isPaused()) && appStore.showPlayhead() ? 'block' : 'none',
                       left: `${playheadPosition()}%`,
                     }}
                   >

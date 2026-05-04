@@ -16,7 +16,7 @@ import { KEY_OFFSETS, midiToFreq, midiToNote } from '@/lib/scale-data'
 import { activeTab as appActiveTab, appStore, sessionResults, showNotification, } from '@/stores'
 import { keyName, scaleType, setKeyName, setScaleType } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
-import { showSidebarNoteList } from '@/stores/settings-store'
+import { showSidebarNoteList, setShowSidebarNoteList, } from '@/stores/settings-store'
 import { customScales as customScalesMap, customScaleTypeId, } from '@/stores/settings-store'
 import type { MelodyItem, NoteResult, PitchResult } from '@/types'
 
@@ -287,6 +287,88 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
           </div>
         </div>
       </Show>
+
+      {/* Quick visibility toggles — compact 2x3 grid */}
+      <div class="sidebar-section sidebar-vis-grid">
+        <div class="vis-grid-cell">
+          <span class="vis-grid-label">Ball</span>
+          <label class="settings-toggle vis-grid-toggle">
+            <input
+              type="checkbox"
+              checked={appStore.showPlaybackBall()}
+              onChange={(e) => {
+                appStore.setShowPlaybackBall(e.currentTarget.checked)
+              }}
+            />
+            <span class="settings-slider" />
+          </label>
+        </div>
+        <div class="vis-grid-cell">
+          <span class="vis-grid-label">Playhead</span>
+          <label class="settings-toggle vis-grid-toggle">
+            <input
+              type="checkbox"
+              checked={appStore.showPlayhead()}
+              onChange={(e) => {
+                appStore.setShowPlayhead(e.currentTarget.checked)
+              }}
+            />
+            <span class="settings-slider" />
+          </label>
+        </div>
+        <div class="vis-grid-cell">
+          <span class="vis-grid-label">Grid</span>
+          <label class="settings-toggle vis-grid-toggle">
+            <input
+              type="checkbox"
+              checked={appStore.gridLinesVisible()}
+              onChange={(e) => {
+                appStore.setGridLinesVisible(e.currentTarget.checked)
+              }}
+            />
+            <span class="settings-slider" />
+          </label>
+        </div>
+        <div class="vis-grid-cell">
+          <span class="vis-grid-label">Notes</span>
+          <label class="settings-toggle vis-grid-toggle">
+            <input
+              type="checkbox"
+              checked={showSidebarNoteList()}
+              onChange={(e) => {
+                setShowSidebarNoteList(e.currentTarget.checked)
+              }}
+            />
+            <span class="settings-slider" />
+          </label>
+        </div>
+        <div class="vis-grid-cell">
+          <span class="vis-grid-label">Stats</span>
+          <label class="settings-toggle vis-grid-toggle">
+            <input
+              type="checkbox"
+              checked={appStore.showStats()}
+              onChange={(e) => {
+                appStore.setShowStats(e.currentTarget.checked)
+              }}
+            />
+            <span class="settings-slider" />
+          </label>
+        </div>
+        <div class="vis-grid-cell">
+          <span class="vis-grid-label">Pitch</span>
+          <label class="settings-toggle vis-grid-toggle">
+            <input
+              type="checkbox"
+              checked={appStore.showPitchDisplay()}
+              onChange={(e) => {
+                appStore.setShowPitchDisplay(e.currentTarget.checked)
+              }}
+            />
+            <span class="settings-slider" />
+          </label>
+        </div>
+      </div>
 
       {/* Library */}
       <div class="sidebar-section">
