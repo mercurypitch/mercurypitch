@@ -6,7 +6,7 @@ import type { Component } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
 import { deleteUvrSession, getUvrSession } from '@/stores/app-store'
 import type { UvrSession, UvrStatus } from '@/types/uvr'
-import { Box, Calendar, CheckCircle, Download, FileText, Loader2, Music, Play, Trash2, XCircle, } from './icons'
+import { Box, Calendar, CheckCircle, Headphones, Loader2, Midi, Music, Play, SlidersHorizontal, Trash2, Voice, XCircle, } from './icons'
 
 interface SessionResultProps {
   sessionId: string
@@ -15,6 +15,7 @@ interface SessionResultProps {
     sessionId: string,
     type: 'vocal' | 'instrumental' | 'vocal-midi',
   ) => void
+  onOpenMixer?: (sessionId: string) => void
   onClose?: () => void
 }
 
@@ -166,70 +167,40 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
         </Show>
       </div>
 
-      {/* Outputs */}
+      {/* Outputs — compact stem pills */}
       <Show when={session()?.outputs}>
         <div class="outputs-section">
-          <h4>Generated Outputs</h4>
-          <div class="output-files">
+          <h4>Available Stems</h4>
+          <div class="stem-pills">
             <Show when={session()?.outputs?.vocal}>
-              <div class="output-file">
-                <div class="file-badge badge-vocal">
-                  <Music />
-                </div>
-                <div class="file-content">
-                  <span class="file-name">Vocal Stem</span>
-                  <span class="file-meta">
-                    <span class="file-pill pill-vocal">VOCAL</span>
-                    <span class="file-format">WAV</span>
-                  </span>
-                </div>
-                <button
-                  class="file-action"
-                  onClick={() => handleExport('vocal')}
-                >
-                  <Download />
-                </button>
-              </div>
+              <button
+                class="stem-pill stem-pill-vocal"
+                onClick={() => handleExport('vocal')}
+                title="Download Vocal Stem"
+              >
+                <Voice />
+                <span>Vocal</span>
+              </button>
             </Show>
             <Show when={session()?.outputs?.instrumental}>
-              <div class="output-file">
-                <div class="file-badge badge-instrumental">
-                  <Download />
-                </div>
-                <div class="file-content">
-                  <span class="file-name">Instrumental</span>
-                  <span class="file-meta">
-                    <span class="file-pill pill-instrumental">INST</span>
-                    <span class="file-format">WAV</span>
-                  </span>
-                </div>
-                <button
-                  class="file-action"
-                  onClick={() => handleExport('instrumental')}
-                >
-                  <Download />
-                </button>
-              </div>
+              <button
+                class="stem-pill stem-pill-instrumental"
+                onClick={() => handleExport('instrumental')}
+                title="Download Instrumental"
+              >
+                <Headphones />
+                <span>Inst</span>
+              </button>
             </Show>
             <Show when={session()?.outputs?.vocalMidi}>
-              <div class="output-file">
-                <div class="file-badge badge-midi">
-                  <FileText />
-                </div>
-                <div class="file-content">
-                  <span class="file-name">Vocal MIDI</span>
-                  <span class="file-meta">
-                    <span class="file-pill pill-midi">MIDI</span>
-                    <span class="file-format">MIDI</span>
-                  </span>
-                </div>
-                <button
-                  class="file-action"
-                  onClick={() => handleExport('vocal-midi')}
-                >
-                  <Download />
-                </button>
-              </div>
+              <button
+                class="stem-pill stem-pill-midi"
+                onClick={() => handleExport('vocal-midi')}
+                title="Download MIDI"
+              >
+                <Midi />
+                <span>MIDI</span>
+              </button>
             </Show>
           </div>
         </div>
@@ -244,6 +215,14 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
           >
             <Play /> View Results
           </button>
+          <Show when={session()?.outputs?.vocal || session()?.outputs?.instrumental}>
+            <button
+              class="session-result-btn session-result-btn-mixer"
+              onClick={() => props.onOpenMixer?.(props.sessionId)}
+            >
+              <SlidersHorizontal /> Mix
+            </button>
+          </Show>
         </div>
       </Show>
 
@@ -488,129 +467,62 @@ export const UvrSessionResultStyles: string = `
   color: var(--fg-primary);
 }
 
-.output-files {
+.stem-pills {
   display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-
-.output-file {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.5rem 0.6rem;
-  background: var(--bg-secondary);
-  border-radius: 0.5rem;
-  transition: background 0.15s;
-}
-
-.output-file:hover {
-  background: var(--bg-hover);
-}
-
-.file-badge {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  border-radius: 0.5rem;
-  flex-shrink: 0;
-}
-
-.file-badge svg {
-  width: 0.95rem;
-  height: 0.95rem;
-}
-
-.badge-vocal {
-  background: rgba(245, 158, 11, 0.12);
-  color: #f59e0b;
-}
-
-.badge-instrumental {
-  background: rgba(59, 130, 246, 0.12);
-  color: #3b82f6;
-}
-
-.badge-midi {
-  background: rgba(139, 92, 246, 0.12);
-  color: #8b5cf6;
-}
-
-.file-content {
-  flex: 1;
-  min-width: 0;
-}
-
-.file-name {
-  display: block;
-  font-size: 0.78rem;
-  color: var(--fg-primary);
-  font-weight: 500;
-  margin-bottom: 0.2rem;
-}
-
-.file-meta {
-  display: flex;
-  align-items: center;
   gap: 0.4rem;
+  flex-wrap: wrap;
 }
 
-.file-pill {
-  display: inline-block;
-  font-size: 0.55rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  padding: 0.1rem 0.4rem;
-  border-radius: 999px;
-  text-transform: uppercase;
-}
-
-.pill-vocal {
-  background: rgba(245, 158, 11, 0.15);
-  color: #f59e0b;
-}
-
-.pill-instrumental {
-  background: rgba(59, 130, 246, 0.15);
-  color: #3b82f6;
-}
-
-.pill-midi {
-  background: rgba(139, 92, 246, 0.15);
-  color: #8b5cf6;
-}
-
-.file-format {
-  font-size: 0.65rem;
-  color: var(--fg-tertiary);
-}
-
-.file-action {
-  display: flex;
+.stem-pill {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 1.75rem;
-  height: 1.75rem;
-  padding: 0;
-  background: var(--bg-tertiary);
+  gap: 0.35rem;
+  padding: 0.35rem 0.65rem;
   border: 1px solid var(--border);
-  border-radius: 0.35rem;
-  color: var(--fg-primary);
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
-  flex-shrink: 0;
+  transition: all 0.15s;
+  background: var(--bg-secondary);
 }
 
-.file-action svg {
-  width: 0.85rem;
-  height: 0.85rem;
+.stem-pill svg {
+  width: 0.75rem;
+  height: 0.75rem;
 }
 
-.file-action:hover {
-  background: var(--border);
-  color: var(--accent);
+.stem-pill-vocal {
+  color: #f59e0b;
+  border-color: rgba(245, 158, 11, 0.25);
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.stem-pill-vocal:hover {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.4);
+}
+
+.stem-pill-instrumental {
+  color: #3b82f6;
+  border-color: rgba(59, 130, 246, 0.25);
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.stem-pill-instrumental:hover {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.4);
+}
+
+.stem-pill-midi {
+  color: #8b5cf6;
+  border-color: rgba(139, 92, 246, 0.25);
+  background: rgba(139, 92, 246, 0.08);
+}
+
+.stem-pill-midi:hover {
+  background: rgba(139, 92, 246, 0.15);
+  border-color: rgba(139, 92, 246, 0.4);
 }
 
 .session-result-actions {
@@ -647,6 +559,17 @@ export const UvrSessionResultStyles: string = `
 
 .session-result-btn-primary:hover:not(:disabled) {
   opacity: 0.85;
+}
+
+.session-result-btn-mixer {
+  background: var(--bg-tertiary);
+  color: var(--accent);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+}
+
+.session-result-btn-mixer:hover {
+  background: rgba(139, 92, 246, 0.1);
+  border-color: rgba(139, 92, 246, 0.5);
 }
 
 .session-result-btn-danger {

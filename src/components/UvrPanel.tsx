@@ -208,6 +208,17 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     }
   }
 
+  const handleOpenMixerFromHistory = (sessionId: string) => {
+    const s = getUvrSession(sessionId)
+    if (!s?.outputs) return
+    setCurrentUvrSession(s)
+    setStemMixerStems({
+      vocal: s.outputs.vocal,
+      instrumental: s.outputs.instrumental,
+    })
+    setShowStemMixer(true)
+  }
+
   const handleExportSession = (
     sessionId: string,
     type: 'vocal' | 'instrumental' | 'vocal-midi',
@@ -441,6 +452,9 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                           s.sessionId,
                           type as 'vocal' | 'instrumental' | 'vocal-midi',
                         )
+                      }
+                      onOpenMixer={(sessionId) =>
+                        handleOpenMixerFromHistory(sessionId)
                       }
                     />
                   )}
