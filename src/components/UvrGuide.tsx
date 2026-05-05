@@ -294,40 +294,58 @@ export const UvrGuide: Component<UvrGuideProps> = (props) => {
         </p>
       </div>
 
-      {/* Steps Navigation */}
-      <div class="guide-steps-nav">
+      {/* Step Header — shows current step as a tab */}
+      <div class="guide-step-header">
+        <button
+          class="guide-step-arrow"
+          onClick={() => setActiveStep((s) => Math.max(0, s - 1))}
+          disabled={activeStep() === 0}
+          aria-label="Previous step"
+        >
+          ←
+        </button>
+        <div class="guide-step-title-area">
+          <span class="guide-step-badge">
+            {activeStep() + 1} / {steps.length}
+          </span>
+          <h3 class="guide-step-title">{steps[activeStep()].title}</h3>
+        </div>
+        <button
+          class="guide-step-arrow"
+          onClick={() => setActiveStep((s) => Math.min(steps.length - 1, s + 1))}
+          disabled={activeStep() === steps.length - 1}
+          aria-label="Next step"
+        >
+          →
+        </button>
+      </div>
+
+      {/* Step Dots */}
+      <div class="guide-step-dots">
         {steps.map((_, i) => (
           <button
-            class={`step-nav-btn ${activeStep() === i ? 'active' : ''}`}
+            class={`guide-step-dot ${activeStep() === i ? 'active' : ''}`}
             onClick={() => setActiveStep(i)}
             aria-label={`Go to step ${i + 1}`}
-          >
-            <span class="step-nav-num">{i + 1}</span>
-            <span class="step-nav-label">{steps[i].title}</span>
-          </button>
+          />
         ))}
+      </div>
+
+      {/* Progress bar */}
+      <div class="guide-progress-bar">
+        <div
+          class="guide-progress-fill"
+          style={{ width: `${((activeStep() + 1) / steps.length) * 100}%` }}
+        />
       </div>
 
       {/* Content Area */}
       <div class="guide-content">
-        <div class="guide-progress-bar">
-          <div
-            class="guide-progress-fill"
-            style={{ width: `${((activeStep() + 1) / steps.length) * 100}%` }}
-          />
-        </div>
         {steps[activeStep()].content}
       </div>
 
       {/* Navigation Buttons */}
       <div class="guide-nav-buttons">
-        <button
-          class="guide-btn guide-btn-secondary"
-          onClick={() => setActiveStep((s) => Math.max(0, s - 1))}
-          disabled={activeStep() === 0}
-        >
-          ← Previous
-        </button>
         <button
           class="guide-btn guide-btn-primary"
           onClick={() => {
@@ -340,13 +358,6 @@ export const UvrGuide: Component<UvrGuideProps> = (props) => {
         >
           {activeStep() === steps.length - 1 ? 'Close' : 'Next →'}
         </button>
-      </div>
-
-      {/* Progress Indicator */}
-      <div class="guide-progress-indicator">
-        <span class="progress-text">
-          {activeStep() + 1} of {steps.length}
-        </span>
       </div>
     </div>
   )
@@ -368,16 +379,16 @@ export const _UvrGuideStyles: string = `
 
 .uvr-guide-header {
   text-align: center;
-  padding: 1.25rem 1rem;
+  padding: 1rem 1rem 0.75rem;
   background: var(--bg-secondary);
   border-bottom: 1px solid var(--border);
   color: var(--text-primary);
 }
 
 .uvr-guide-header h2 {
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   font-weight: 700;
-  margin: 0.5rem 0 0.25rem;
+  margin: 0.35rem 0 0.15rem;
   color: var(--text-primary);
 }
 
@@ -396,8 +407,8 @@ export const _UvrGuideStyles: string = `
 }
 
 .guide-icons-row svg {
-  width: 2rem;
-  height: 2rem;
+  width: 1.5rem;
+  height: 1.5rem;
 }
 
 .guide-subtitle {
@@ -406,45 +417,101 @@ export const _UvrGuideStyles: string = `
   margin: 0;
 }
 
-.guide-steps-nav {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-  gap: 0.5rem;
+.guide-step-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
 }
 
-.step-nav-btn {
+.guide-step-arrow {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 0.25rem;
-  padding: 0.6rem 0.4rem;
-  background: var(--bg-secondary);
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  background: var(--bg-tertiary);
   border: 1px solid var(--border);
   border-radius: 0.5rem;
   color: var(--text-primary);
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.guide-step-arrow:hover:not(:disabled) {
+  background: var(--bg-hover);
+  border-color: var(--accent);
+}
+
+.guide-step-arrow:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.guide-step-title-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.guide-step-badge {
+  display: inline-block;
+  padding: 0.15rem 0.6rem;
+  background: var(--accent);
+  color: var(--bg-primary);
+  border-radius: 1rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.guide-step-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.guide-step-dots {
+  display: flex;
+  justify-content: center;
+  gap: 0.45rem;
+}
+
+.guide-step-dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  padding: 0;
+  background: var(--border);
+  border: none;
+  border-radius: 50%;
   cursor: pointer;
   transition: all 0.2s;
 }
 
-.step-nav-btn:hover:not(:disabled) {
-  background: var(--bg-tertiary);
-}
-
-.step-nav-btn.active {
+.guide-step-dot:hover {
   background: var(--accent);
-  color: var(--bg-primary);
-  border-color: var(--accent);
+  opacity: 0.6;
 }
 
-.step-nav-num {
-  font-size: 1.1rem;
-  font-weight: bold;
-}
-
-.step-nav-label {
-  font-size: 0.68rem;
-  text-align: center;
-  line-height: 1.2;
+.guide-step-dot.active {
+  background: var(--accent);
+  width: 1.25rem;
+  border-radius: 0.5rem;
 }
 
 .guide-content {
@@ -456,10 +523,9 @@ export const _UvrGuideStyles: string = `
 }
 
 .guide-progress-bar {
-  height: 4px;
+  height: 3px;
   background: var(--border);
   border-radius: 2px;
-  margin-bottom: 1rem;
   overflow: hidden;
 }
 
@@ -807,11 +873,4 @@ export const _UvrGuideStyles: string = `
   cursor: not-allowed;
 }
 
-.guide-progress-indicator {
-  text-align: center;
-  padding: 0.5rem;
-  color: var(--text-muted);
-  font-size: 0.8rem;
-  border-top: 1px solid var(--border);
-}
 `
