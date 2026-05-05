@@ -293,6 +293,7 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
     // Actions
     startMic,
     stopMic,
+    isMicActive: () => engine.isMicActive(),
     startGame,
     pauseGame,
     resumeGame,

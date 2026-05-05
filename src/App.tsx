@@ -27,6 +27,7 @@ import { usePianoRollEvents } from '@/features/events/usePianoRollEvents'
 import { useKeyboardShortcuts } from '@/features/keyboard/useKeyboardShortcuts'
 import { usePlaybackController } from '@/features/playback/usePlaybackController'
 import { usePracticeController } from '@/features/practice/usePracticeController'
+import { useFallingNotesController } from '@/features/falling-notes/useFallingNotesController'
 import { useRecordingController } from '@/features/recording/useRecordingController'
 import { useSessionSequencer } from '@/features/session/useSessionSequencer'
 import type { InstrumentType } from '@/lib/audio-engine'
@@ -45,6 +46,8 @@ import type { MelodyItem, PlaybackMode, SpacedRestMode } from '@/types'
 import { Walkthrough, WalkthroughControl } from './components'
 import { AppErrorBoundary } from './components/AppErrorBoundary'
 import { CrashModal } from './components/CrashModal'
+import { FallingNotesCanvas } from './components/FallingNotesCanvas'
+import { FallingNotesSongPicker } from './components/FallingNotesSongPicker'
 import { GuideSelection } from './components/GuideSelection'
 import { WelcomeScreen } from './components/WelcomeScreen'
 
@@ -309,6 +312,9 @@ const AppShell: Component<AppProps> = (props) => {
   // for future toolbar integration. Currently unused at the App level.
   useEditorController({ audioEngine })
 
+  // ── Falling Notes controller ─────────────────────────────────
+  const fallingNotes = useFallingNotesController(audioEngine)
+
   // ── Keyboard shortcuts & piano roll events ─────────────────
   useKeyboardShortcuts({
     isPlaying,
@@ -347,6 +353,9 @@ const AppShell: Component<AppProps> = (props) => {
     const currentTab = activeTab()
     if (currentTab === 'practice' || currentTab === 'editor') {
       await resetPlaybackState()
+    }
+    if (currentTab === 'falling-notes' && fallingNotes.isMicActive()) {
+      fallingNotes.stopMic()
     }
     setActiveTab(newTab)
   }
@@ -760,6 +769,13 @@ const AppShell: Component<AppProps> = (props) => {
             >
               Settings
             </button>
+            <button
+              id="tab-falling-notes"
+              class={`app-tab ${activeTab() === 'falling-notes' ? 'active' : ''}`}
+              onClick={() => void handleTabChange('falling-notes')}
+            >
+              Piano Practice
+            </button>
           </nav>
         </header>
 
@@ -985,6 +1001,88 @@ const AppShell: Component<AppProps> = (props) => {
             <Show when={activeTab() === 'settings'}>
               <div id="settings-panel">
                 <SettingsPanel />
+              </div>
+            </Show>
+            <Show when={activeTab() === 'falling-notes'}>
+              <div id="falling-notes-panel">
+                <FallingNotesSongPicker onSongLoaded={fallingNotes.loadSong} />
+                <div id="falling-notes-canvas-container">
+                  <FallingNotesCanvas
+                    songNotes={fallingNotes.songNotes}
+                    gameState={fallingNotes.gameState}
+                    playheadBeat={fallingNotes.playheadBeat}
+                    hitResults={fallingNotes.hitResults}
+                    combo={fallingNotes.combo}
+                    score={fallingNotes.score}
+                    totalNotes={fallingNotes.totalNotes}
+                    notesMissed={fallingNotes.notesMissed}
+                  />
+                </div>
+                <div id="fn-game-controls">
+                  <Show when={fallingNotes.gameState() === 'idle' || fallingNotes.gameState() === 'finished'}>
+                    <button
+                      class="fn-btn fn-btn-play"
+                      disabled={fallingNotes.songNotes().length === 0}
+                      onClick={fallingNotes.startGame}
+                    >
+                      Start
+                    </button>
+                  </Show>
+                  <Show when={fallingNotes.gameState() === 'playing'}>
+                    <button class="fn-btn fn-btn-pause" onClick={fallingNotes.pauseGame}>
+                      Pause
+                    </button>
+                  </Show>
+                  <Show when={fallingNotes.gameState() === 'paused'}>
+                    <button class="fn-btn fn-btn-play" onClick={fallingNotes.resumeGame}>
+                      Resume
+                    </button>
+                  </Show>
+                  <Show when={fallingNotes.gameState() === 'paused' || fallingNotes.gameState() === 'finished'}>
+                    <button class="fn-btn fn-btn-reset" onClick={fallingNotes.resetGame}>
+                      Reset
+                    </button>
+                  </Show>
+                  <button
+                    class="fn-btn fn-btn-mic"
+                    onClick={() => {
+                      if (fallingNotes.isMicActive()) {
+                        fallingNotes.stopMic()
+                      } else {
+                        void fallingNotes.startMic()
+                      }
+                    }}
+                  >
+                    {fallingNotes.isMicActive() ? 'Mic On' : 'Mic Off'}
+                  </button>
+                </div>
+                {/* Score overlay for finished game */}
+                <Show when={fallingNotes.gameState() === 'finished'}>
+                  <div class="fn-score-overlay">
+                    <div class="fn-score-card">
+                      <h2>Complete!</h2>
+                      <div class="fn-score-grade">
+                        {(() => {
+                          const s = fallingNotes.score()
+                          const t = fallingNotes.totalNotes()
+                          const pct = t > 0 ? Math.round((s / (t * 100)) * 100) : 0
+                          return pct >= 90 ? 'Pitch Perfect!' : pct >= 80 ? 'Excellent!' : pct >= 65 ? 'Good!' : pct >= 50 ? 'Okay!' : 'Keep Practicing!'
+                        })()}
+                      </div>
+                      <div class="fn-score-pct">
+                        {fallingNotes.totalNotes() > 0
+                          ? Math.round((fallingNotes.score() / (fallingNotes.totalNotes() * 100)) * 100)
+                          : 0}%
+                      </div>
+                      <div class="fn-score-detail">
+                        {fallingNotes.totalNotes()} notes · Max Combo: {fallingNotes.maxCombo()}x
+                      </div>
+                      <button class="fn-btn fn-btn-play" onClick={fallingNotes.resetGame}>
+                        Play Again
+                      </button>
+                    </div>
+                  </div>
+                </Show>
               </div>
             </Show>
           </div>
