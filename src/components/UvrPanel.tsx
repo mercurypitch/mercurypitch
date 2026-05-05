@@ -641,7 +641,8 @@ export const UvrPanelStyles: string = `
 .guide-container {
   background: var(--bg-secondary);
   border-radius: 1rem;
-  max-width: 800px;
+  width: 620px;
+  max-width: 90vw;
   max-height: 90vh;
   overflow: hidden;
   display: flex;
