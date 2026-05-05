@@ -193,16 +193,16 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
       </Show>
 
       {/* Actions */}
-      <div class="session-actions">
+      <div class="result-actions">
         <Show when={session()?.outputs && session()?.status === 'completed'}>
           <button
-            class="action-btn action-btn-primary"
+            class="result-btn result-btn-primary"
             onClick={() => props.onView?.(props.sessionId)}
           >
             <Play /> View Results
           </button>
         </Show>
-        <button class="action-btn action-btn-danger" onClick={handleDelete}>
+        <button class="result-btn result-btn-danger" onClick={handleDelete}>
           <XCircle /> Delete
         </button>
       </div>
@@ -437,13 +437,13 @@ export const UvrSessionResultStyles: string = `
   color: var(--accent);
 }
 
-.session-actions {
+.result-actions {
   display: flex;
   gap: 0.75rem;
   margin-top: 0.5rem;
 }
 
-.action-btn {
+.result-btn {
   flex: 1;
   display: inline-flex;
   align-items: center;
@@ -459,7 +459,7 @@ export const UvrSessionResultStyles: string = `
   white-space: nowrap;
 }
 
-.action-btn-primary {
+.result-btn-primary {
   background: var(--accent);
   color: var(--bg-primary);
 }
@@ -468,7 +468,7 @@ export const UvrSessionResultStyles: string = `
   opacity: 0.85;
 }
 
-.action-btn-danger {
+.result-btn-danger {
   background: var(--bg-tertiary);
   color: var(--fg-primary);
   border: 1px solid var(--border);

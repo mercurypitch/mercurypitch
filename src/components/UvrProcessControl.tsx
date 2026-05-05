@@ -157,17 +157,17 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
       {/* Action Buttons */}
       <div class="process-actions">
         <Show when={props.status === 'processing'}>
-          <button class="action-btn action-btn-danger" onClick={props.onCancel}>
+          <button class="process-btn process-btn-danger" onClick={props.onCancel}>
             <Pause /> Cancel
           </button>
         </Show>
         <Show when={props.status === 'error' && props.onRetry}>
-          <button class="action-btn action-btn-primary" onClick={props.onRetry}>
+          <button class="process-btn process-btn-primary" onClick={props.onRetry}>
             <Play /> Retry
           </button>
         </Show>
         <Show when={props.status === 'completed'}>
-          <button class="action-btn action-btn-primary" disabled={true}>
+          <button class="process-btn process-btn-primary" disabled={true}>
             <CheckCircle /> Complete
           </button>
         </Show>
@@ -315,7 +315,7 @@ export const UvrProcessControlStyles: string = `
   justify-content: flex-end;
 }
 
-.action-btn {
+.process-btn {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
@@ -329,7 +329,7 @@ export const UvrProcessControlStyles: string = `
   white-space: nowrap;
 }
 
-.action-btn-primary {
+.process-btn-primary {
   background: var(--accent);
   color: var(--bg-primary);
 }
@@ -343,7 +343,7 @@ export const UvrProcessControlStyles: string = `
   cursor: not-allowed;
 }
 
-.action-btn-danger {
+.process-btn-danger {
   background: var(--bg-primary);
   color: var(--error);
   border: 1px solid rgba(239, 68, 68, 0.3);
