@@ -149,6 +149,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
             vocalMidi: '',
           }
 
+          console.info('Got files', files)
           for (const f of files) {
             if (f.stem === 'vocal') {
               outputs.vocal = f.path
@@ -331,7 +332,10 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
             <div class="guide-container" onClick={(e) => e.stopPropagation()}>
               <div class="guide-header">
                 <h3>UVR Settings</h3>
-                <button class="guide-close" onClick={() => setShowSettings(false)}>
+                <button
+                  class="guide-close"
+                  onClick={() => setShowSettings(false)}
+                >
                   <X />
                 </button>
               </div>
@@ -511,7 +515,6 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
           onClose={() => setShowStemMixer(false)}
         />
       </Show>
-
     </div>
   )
 }

@@ -420,10 +420,11 @@ async def get_status(session_id: str):
             # Normalize rel_path: os.walk yields "." for root, strip it
             clean_rel = rel_path.lstrip("./") if rel_path != "." else ""
             path_segment = f"{clean_rel}/{filename}" if clean_rel else filename
+            print(f"{detected} {filename} {session_id} {path_segment} ...")
             files.append({
                 "stem": detected,
                 "filename": filename,
-                "path": f"/api/uvr/api/output/{session_id}/{path_segment}",
+                "path": f"/api/uvr/output/{session_id}/{path_segment}",
                 "size": os.path.getsize(file_path)
             })
 
