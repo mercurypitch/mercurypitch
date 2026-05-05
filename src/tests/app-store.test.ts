@@ -3,12 +3,11 @@
 // ============================================================
 
 import { beforeEach, describe, expect, it } from 'vitest'
-import { appStore, getBandRating, initSettings, setBand, setDetectionThreshold, setMinAmplitude, setMinConfidence, setSensitivity, setSettings, } from '@/stores'
+import { appStore, getBandRating, setBand, setDetectionThreshold, setMinAmplitude, setMinConfidence, setSensitivity, setSettings, } from '@/stores'
 
 describe('Settings — init and defaults', () => {
   beforeEach(() => {
     localStorage.removeItem('pitchperfect_settings')
-    initSettings()
   })
 
   it('loads default settings when no localStorage', () => {
@@ -47,7 +46,6 @@ describe('Settings — init and defaults', () => {
 describe('Settings — setDetectionThreshold', () => {
   beforeEach(() => {
     localStorage.removeItem('pitchperfect_settings')
-    initSettings()
   })
 
   it('sets threshold within valid range', () => {
@@ -75,7 +73,6 @@ describe('Settings — setDetectionThreshold', () => {
 describe('Settings — setSensitivity', () => {
   beforeEach(() => {
     localStorage.removeItem('pitchperfect_settings')
-    initSettings()
   })
 
   it('sets sensitivity within valid range', () => {
@@ -97,7 +94,6 @@ describe('Settings — setSensitivity', () => {
 describe('Settings — setMinConfidence', () => {
   beforeEach(() => {
     localStorage.removeItem('pitchperfect_settings')
-    initSettings()
   })
 
   it('sets minConfidence within valid range', () => {
@@ -119,7 +115,6 @@ describe('Settings — setMinConfidence', () => {
 describe('Settings — setMinAmplitude', () => {
   beforeEach(() => {
     localStorage.removeItem('pitchperfect_settings')
-    initSettings()
   })
 
   it('sets minAmplitude within valid range', () => {
@@ -141,7 +136,6 @@ describe('Settings — setMinAmplitude', () => {
 describe('Settings — setBand', () => {
   beforeEach(() => {
     localStorage.removeItem('pitchperfect_settings')
-    initSettings()
   })
 
   it('updates a band threshold', () => {
@@ -165,7 +159,6 @@ describe('Settings — setBand', () => {
 describe('Settings — getBandRating', () => {
   beforeEach(() => {
     localStorage.removeItem('pitchperfect_settings')
-    initSettings()
   })
 
   it('returns 100 for cents <= 0', () => {

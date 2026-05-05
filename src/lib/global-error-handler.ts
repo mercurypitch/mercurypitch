@@ -34,6 +34,7 @@ export function initGlobalErrorHandlers(): void {
       type: 'log',
       args: args.map((a) => String(a)),
     })
+    if (logs.length > 500) logs.splice(0, logs.length - 500)
     oldLog(...args)
   }
 
@@ -43,6 +44,7 @@ export function initGlobalErrorHandlers(): void {
       type: 'error',
       args: args.map((a) => String(a)),
     })
+    if (logs.length > 500) logs.splice(0, logs.length - 500)
     oldError(...args)
   }
 

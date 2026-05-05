@@ -20,14 +20,10 @@ export * from './session-store'
 export { playback } from './playback-store'
 export { melodyStore } from './melody-store'
 
-// Kept as no-op stub: still referenced by tests/session-store.test.ts.
-// True session-mode state lives in practice-session-store.sessionMode().
+
+// Session-mode state lives in practice-session-store.sessionMode().
 import { sessionMode as _sessionMode } from './practice-session-store'
-
 export const isInSessionMode = () => _sessionMode()
-
-// No-op kept for backward compat (was a presets-store init).
-export const initPresets = (): void => {}
 
 // Composer for starting a practice session — sets practice store fields together.
 import type { PlaybackSession as _PlaybackSession } from '@/types'
@@ -84,12 +80,6 @@ export const appStore = {
     practiceStore.setSessionItemIndex(0)
     practiceStore.setSessionItemRepeat(0)
   },
-  isInSessionMode: () => false,
-  sessionMode: practiceStore.sessionMode,
-  setSessionMode: practiceStore.setSessionMode,
-  sessionActive: practiceStore.sessionActive,
-  setSessionActive: practiceStore.setSessionActive,
-
   // Audio settings wrappers needed by the app
   reverb: settingsStore.reverbConfig,
 
