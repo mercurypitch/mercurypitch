@@ -12,7 +12,6 @@ import { appStore } from '@/stores'
 import { bpm, micActive, micWaveVisible, playbackSpeed, setBpm, setPlaybackSpeed, setSensitivity, settings, toggleMicWaveVisible, } from '@/stores'
 import type { SpacedRestMode } from '@/types'
 import { ControlGroup } from './ControlGroup'
-import { MetronomeGroup } from './MetronomeGroup'
 
 // ========================================
 // Utility functions
@@ -281,12 +280,32 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
           </button>
         </Show>
 
-        {/* Precount toggle */}
-        <div class="app-header-sep" />
+        {/* Precount + Metronome */}
         <div class="app-header-sep" />
         <div class="control-group">
           <PrecCountButton />
         </div>
+        <button
+          class={`ctrl-btn metronome-btn ${props.metronomeEnabled() ? 'active' : ''}`}
+          onClick={props.onMetronomeToggle}
+          title="Toggle metronome"
+        >
+          <svg viewBox="0 0 24 24" width="16" height="16">
+            <path
+              fill="currentColor"
+              d="M12 2L8 22h8L12 2zm0 5.5l2.5 10h-5L12 7.5z"
+            />
+            <line
+              x1="12"
+              y1="2"
+              x2="12"
+              y2="5"
+              stroke="currentColor"
+              stroke-width="1.5"
+            />
+            <circle cx="12" cy="3.5" r="0.5" fill="currentColor" />
+          </svg>
+        </button>
 
         {/* Count-in badge */}
         <Show when={props.isCountingIn()}>
@@ -571,14 +590,6 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
             </select>
           </div>
         </div>
-
-        {/* Metronome */}
-        <ControlGroup>
-          <MetronomeGroup
-            active={props.metronomeEnabled}
-            onClick={props.onMetronomeToggle}
-          />
-        </ControlGroup>
 
         {/* Save Melody — editor tab only */}
         <Show when={isEditorTab() && props.onSaveMelody}>
