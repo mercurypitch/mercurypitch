@@ -2,8 +2,8 @@
 // UVR Process Control Component Tests
 // ============================================================
 
-import { fireEvent,render, screen } from '@solidjs/testing-library'
-import { afterEach,beforeEach, describe, expect, it, vi } from 'vitest'
+import { fireEvent, render, screen } from '@solidjs/testing-library'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { UvrProcessControl } from '../UvrProcessControl'
 
 describe('UvrProcessControl Component', () => {
@@ -45,7 +45,9 @@ describe('UvrProcessControl Component', () => {
     it('renders progress bar fill with correct width', () => {
       render(() => <UvrProcessControl {...defaultProps} />)
 
-      const progressBar = document.querySelector('.progress-bar-fill') as HTMLElement
+      const progressBar = document.querySelector(
+        '.progress-bar-fill',
+      ) as HTMLElement
       expect(progressBar).toBeTruthy()
       expect(progressBar.style.width).toBe('45%')
     })
@@ -115,7 +117,9 @@ describe('UvrProcessControl Component', () => {
       render(() => <UvrProcessControl {...errorProps} />)
 
       // Error text appears in both description and error section
-      expect(screen.getAllByText(/Processing Failed/i).length).toBeGreaterThan(0)
+      expect(screen.getAllByText(/Processing Failed/i).length).toBeGreaterThan(
+        0,
+      )
       expect(screen.getAllByText(/timeout/i).length).toBeGreaterThan(0)
     })
 
@@ -128,7 +132,9 @@ describe('UvrProcessControl Component', () => {
 
       render(() => <UvrProcessControl {...errorProps} />)
 
-      expect(screen.getAllByText(/GPU memory exceeded/i).length).toBeGreaterThan(0)
+      expect(
+        screen.getAllByText(/GPU memory exceeded/i).length,
+      ).toBeGreaterThan(0)
     })
 
     it('shows fallback message when error prop is empty', () => {
@@ -274,7 +280,9 @@ describe('UvrProcessControl Component', () => {
     it('uses accent color for processing', () => {
       render(() => <UvrProcessControl {...defaultProps} />)
 
-      const iconWrapper = document.querySelector('.process-icon-wrapper') as HTMLElement
+      const iconWrapper = document.querySelector(
+        '.process-icon-wrapper',
+      ) as HTMLElement
       expect(iconWrapper).toBeTruthy()
       expect(iconWrapper.style.color).toBe('var(--accent)')
     })
@@ -284,7 +292,9 @@ describe('UvrProcessControl Component', () => {
 
       render(() => <UvrProcessControl {...completedProps} />)
 
-      const iconWrapper = document.querySelector('.process-icon-wrapper') as HTMLElement
+      const iconWrapper = document.querySelector(
+        '.process-icon-wrapper',
+      ) as HTMLElement
       expect(iconWrapper).toBeTruthy()
       expect(iconWrapper.style.color).toBe('var(--success)')
     })
@@ -298,7 +308,9 @@ describe('UvrProcessControl Component', () => {
 
       render(() => <UvrProcessControl {...errorProps} />)
 
-      const iconWrapper = document.querySelector('.process-icon-wrapper') as HTMLElement
+      const iconWrapper = document.querySelector(
+        '.process-icon-wrapper',
+      ) as HTMLElement
       expect(iconWrapper).toBeTruthy()
       expect(iconWrapper.style.color).toBe('var(--error)')
     })

@@ -2,8 +2,8 @@
 // UVR Result Viewer Component Tests
 // ============================================================
 
-import { fireEvent,render, screen } from '@solidjs/testing-library'
-import { afterEach,beforeEach, describe, expect, it, vi } from 'vitest'
+import { fireEvent, render, screen } from '@solidjs/testing-library'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { UvrResultViewer } from '../UvrResultViewer'
 
 describe('UvrResultViewer Component', () => {

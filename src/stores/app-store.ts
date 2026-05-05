@@ -158,7 +158,7 @@ export function startUvrSession(
   mimeType: string,
   mode: UvrMode = 'separate',
 ): string {
-  const sessionId = `uvr-session-${  Date.now()}`
+  const sessionId = `uvr-session-${Date.now()}`
   const now = Date.now()
 
   const newSession: UvrSession = {

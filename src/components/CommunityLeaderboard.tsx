@@ -765,7 +765,8 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
             <div class="profile-charts">
               <h4>Weekly Performance</h4>
               <div class="mini-chart">
-                {[75, 82, 68, 90, 85, 92, 78].map((score: number, _i: number) => (
+                {[75, 82, 68, 90, 85, 92, 78].map(
+                  (score: number, _i: number) => (
                     <div class="mini-bar-wrapper">
                       <div
                         class="mini-bar leaderboard-bar"

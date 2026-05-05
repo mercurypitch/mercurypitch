@@ -4,7 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createSignal, For, Show } from 'solid-js'
-import { CheckCircle, Loader2, Music, Pause, Play,Settings, XCircle,  } from './icons'
+import { CheckCircle, Loader2, Music, Pause, Play, Settings, XCircle, } from './icons'
 
 interface ProcessControlProps {
   sessionId: string
@@ -39,7 +39,7 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
   }
 
   const formatPercentage = (percent: number): string => {
-    return `${Math.round(percent)  }%`
+    return `${Math.round(percent)}%`
   }
 
   const getProcessStage = () => {
@@ -62,7 +62,10 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
         return {
           icon: <XCircle />,
           title: 'Processing Failed',
-          description: (props.error && props.error.length > 0) ? props.error : 'Unknown error occurred',
+          description:
+            props.error && props.error.length > 0
+              ? props.error
+              : 'Unknown error occurred',
           color: 'var(--error)',
         }
       default:
@@ -85,9 +88,7 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
           <Show when={props.status === 'processing'}>
             <div class="pulse-spinner" />
           </Show>
-          <Show when={props.status !== 'processing'}>
-            {currentStage.icon}
-          </Show>
+          <Show when={props.status !== 'processing'}>{currentStage.icon}</Show>
         </div>
         <div class="process-info">
           <h3>{currentStage.title}</h3>
@@ -157,12 +158,18 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
       {/* Action Buttons */}
       <div class="process-actions">
         <Show when={props.status === 'processing'}>
-          <button class="process-btn process-btn-danger" onClick={props.onCancel}>
+          <button
+            class="process-btn process-btn-danger"
+            onClick={props.onCancel}
+          >
             <Pause /> Cancel
           </button>
         </Show>
         <Show when={props.status === 'error' && props.onRetry}>
-          <button class="process-btn process-btn-primary" onClick={props.onRetry}>
+          <button
+            class="process-btn process-btn-primary"
+            onClick={props.onRetry}
+          >
             <Play /> Retry
           </button>
         </Show>

@@ -34,7 +34,7 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
     const k = 1024
     const sizes = ['Bytes', 'KB', 'MB', 'GB']
     const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return `${Math.round((bytes / Math.pow(k, i)) * 100) / 100  } ${  sizes[i]}`
+    return `${Math.round((bytes / Math.pow(k, i)) * 100) / 100} ${sizes[i]}`
   }
 
   const formatDuration = (seconds: number): string => {
@@ -52,7 +52,7 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
 
     // Validate file type
     const mimeType = file.type.toLowerCase()
-    const extension = `.${  file.name.split('.').pop()?.toLowerCase()}` || ''
+    const extension = `.${file.name.split('.').pop()?.toLowerCase()}` || ''
 
     if (
       !allowedTypes().includes(mimeType) &&
@@ -99,7 +99,7 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
   const handleProcess = () => {
     if (selectedFile()) {
       // Generate session ID
-      const sessionId = `session-${  Date.now()}`
+      const sessionId = `session-${Date.now()}`
       if (props.onProcessStart) {
         props.onProcessStart(sessionId)
       }

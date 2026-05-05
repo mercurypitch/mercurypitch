@@ -116,9 +116,9 @@ export const UvrGuide: Component<UvrGuideProps> = (props) => {
             </div>
           </div>
           <p class="guide-tip">
-            <strong>Pro Tip:</strong> In "Separate" mode, the two sliders
-            work together to create your preferred mix. Experiment to find your
-            ideal balance!
+            <strong>Pro Tip:</strong> In "Separate" mode, the two sliders work
+            together to create your preferred mix. Experiment to find your ideal
+            balance!
           </p>
         </div>
       ),

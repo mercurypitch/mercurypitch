@@ -159,7 +159,8 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       )
     } catch (error) {
       console.error('Processing error:', error)
-      const message = error instanceof Error ? error.message : 'Processing failed'
+      const message =
+        error instanceof Error ? error.message : 'Processing failed'
       setErrorUvrSession(sessionId, message)
       showError(message)
     }
@@ -371,7 +372,10 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                     <Trash2 /> Delete All
                   </button>
                 </Show>
-                <button class="back-btn" onClick={() => setCurrentView('upload')}>
+                <button
+                  class="back-btn"
+                  onClick={() => setCurrentView('upload')}
+                >
                   <Settings /> New Upload
                 </button>
               </div>
@@ -414,14 +418,12 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
           class="delete-all-overlay"
           onClick={() => setShowDeleteAllConfirm(false)}
         >
-          <div
-            class="delete-all-dialog"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div class="delete-all-dialog" onClick={(e) => e.stopPropagation()}>
             <h4>Delete All Sessions</h4>
             <p>
-              This will permanently remove all {allSessions().length} session{allSessions().length !== 1 ? 's' : ''} and
-              their generated files. This action cannot be undone.
+              This will permanently remove all {allSessions().length} session
+              {allSessions().length !== 1 ? 's' : ''} and their generated files.
+              This action cannot be undone.
             </p>
             <div class="delete-all-actions">
               <button

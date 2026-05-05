@@ -202,11 +202,7 @@ describe('UvrUploadControl Component', () => {
     })
 
     it('shows processing indicator when file selected and processing', () => {
-      const testFile = createMockFile(
-        'song.mp3',
-        1024 * 5000,
-        'audio/mpeg',
-      )
+      const testFile = createMockFile('song.mp3', 1024 * 5000, 'audio/mpeg')
 
       render(() => <UvrUploadControl {...defaultProps} processing={true} />)
       selectFileViaInput(testFile)
@@ -234,11 +230,7 @@ describe('UvrUploadControl Component', () => {
 
   describe('Process Button', () => {
     it('calls onProcessStart when clicked', () => {
-      const testFile = createMockFile(
-        'song.mp3',
-        1024 * 5000,
-        'audio/mpeg',
-      )
+      const testFile = createMockFile('song.mp3', 1024 * 5000, 'audio/mpeg')
 
       render(() => <UvrUploadControl {...defaultProps} />)
       selectFileViaInput(testFile)
@@ -257,11 +249,7 @@ describe('UvrUploadControl Component', () => {
     })
 
     it('replaces button with processing indicator when processing', () => {
-      const testFile = createMockFile(
-        'song.mp3',
-        1024 * 5000,
-        'audio/mpeg',
-      )
+      const testFile = createMockFile('song.mp3', 1024 * 5000, 'audio/mpeg')
 
       render(() => <UvrUploadControl {...defaultProps} processing={true} />)
       selectFileViaInput(testFile)
@@ -271,11 +259,7 @@ describe('UvrUploadControl Component', () => {
     })
 
     it('is enabled when file is selected and not processing', () => {
-      const testFile = createMockFile(
-        'song.mp3',
-        1024 * 5000,
-        'audio/mpeg',
-      )
+      const testFile = createMockFile('song.mp3', 1024 * 5000, 'audio/mpeg')
 
       render(() => <UvrUploadControl {...defaultProps} />)
       selectFileViaInput(testFile)
@@ -298,11 +282,7 @@ describe('UvrUploadControl Component', () => {
     })
 
     it('formats medium files in KB', () => {
-      const testFile = createMockFile(
-        'medium.mp3',
-        1024 * 500,
-        'audio/mpeg',
-      )
+      const testFile = createMockFile('medium.mp3', 1024 * 500, 'audio/mpeg')
       render(() => <UvrUploadControl {...defaultProps} />)
 
       selectFileViaInput(testFile)

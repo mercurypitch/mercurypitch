@@ -4,7 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
-import { Download, FileText, Music, Play, Voice, Headphones, Midi, MusicBoard, X } from './icons'
+import { Download, FileText, Music, Play, Voice, Headphones, Midi, MusicBoard, X, } from './icons'
 
 interface ResultViewerProps {
   outputs?: {
@@ -64,7 +64,7 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
             <span class="info-label">Processing Time</span>
             <span class="info-value">
               {props.processingTime
-                ? `${Math.round(props.processingTime / 1000)  }s`
+                ? `${Math.round(props.processingTime / 1000)}s`
                 : 'Not available'}
             </span>
           </div>

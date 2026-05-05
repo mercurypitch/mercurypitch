@@ -6,7 +6,7 @@ import type { Component } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
 import { deleteUvrSession, getUvrSession } from '@/stores/app-store'
 import type { UvrSession, UvrStatus } from '@/types/uvr'
-import { Box, Calendar, CheckCircle, Download, FileText, Loader2, Music, Play, Trash2, XCircle } from './icons'
+import { Box, Calendar, CheckCircle, Download, FileText, Loader2, Music, Play, Trash2, XCircle, } from './icons'
 
 interface SessionResultProps {
   sessionId: string
@@ -25,11 +25,10 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
 
   const formatDate = (timestamp: number): string => {
     const date = new Date(timestamp)
-    return (
-      `${date.toLocaleDateString()
-      } ${
-      date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-    )
+    return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+    })}`
   }
 
   const formatFileSize = (bytes: number): string => {
@@ -98,7 +97,11 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
             {session()?.originalFile?.name || 'Unknown'}
           </p>
         </div>
-        <button class="session-delete-btn" onClick={handleDelete} aria-label="Delete session">
+        <button
+          class="session-delete-btn"
+          onClick={handleDelete}
+          aria-label="Delete session"
+        >
           <Trash2 />
         </button>
       </div>
@@ -138,7 +141,9 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
       {/* Info Grid */}
       <div class="info-grid">
         <div class="info-item">
-          <span class="info-icon"><Calendar /></span>
+          <span class="info-icon">
+            <Calendar />
+          </span>
           <div class="info-content">
             <span class="info-label">Created</span>
             <span class="info-value">
@@ -148,7 +153,9 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
         </div>
         <Show when={session()?.originalFile}>
           <div class="info-item">
-            <span class="info-icon"><Box /></span>
+            <span class="info-icon">
+              <Box />
+            </span>
             <div class="info-content">
               <span class="info-label">Size</span>
               <span class="info-value">
@@ -166,19 +173,26 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
           <div class="output-files">
             <Show when={session()?.outputs?.vocal}>
               <div class="output-file">
-                <div class="file-icon"><Music /></div>
+                <div class="file-icon">
+                  <Music />
+                </div>
                 <div class="file-content">
                   <span class="file-name">Vocal Stem</span>
                   <span class="file-format">WAV</span>
                 </div>
-                <button class="file-action" onClick={() => handleExport('vocal')}>
+                <button
+                  class="file-action"
+                  onClick={() => handleExport('vocal')}
+                >
                   <Download />
                 </button>
               </div>
             </Show>
             <Show when={session()?.outputs?.instrumental}>
               <div class="output-file">
-                <div class="file-icon"><Download /></div>
+                <div class="file-icon">
+                  <Download />
+                </div>
                 <div class="file-content">
                   <span class="file-name">Instrumental</span>
                   <span class="file-format">WAV</span>
@@ -193,7 +207,9 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
             </Show>
             <Show when={session()?.outputs?.vocalMidi}>
               <div class="output-file">
-                <div class="file-icon"><FileText /></div>
+                <div class="file-icon">
+                  <FileText />
+                </div>
                 <div class="file-content">
                   <span class="file-name">Vocal MIDI</span>
                   <span class="file-format">MIDI</span>

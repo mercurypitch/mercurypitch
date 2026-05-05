@@ -51,16 +51,8 @@ import { AppErrorBoundary } from './components/AppErrorBoundary'
 import { CrashModal } from './components/CrashModal'
 import { GuideSelection } from './components/GuideSelection'
 import { WelcomeScreen } from './components/WelcomeScreen'
-import {
-  _UvrGuideStyles,
-} from './components/UvrGuide'
-import {
-  UvrPanelStyles,
-  UvrUploadControlStyles,
-  UvrProcessControlStyles,
-  UvrResultViewerStyles,
-  UvrSessionResultStyles,
-} from './components'
+import { _UvrGuideStyles } from './components/UvrGuide'
+import { UvrPanelStyles, UvrUploadControlStyles, UvrProcessControlStyles, UvrResultViewerStyles, UvrSessionResultStyles, } from './components'
 
 // ============================================================
 // Tab type
