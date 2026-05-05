@@ -192,6 +192,7 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
             appStore.exitFocusMode()
           }}
           title="Exit Focus Mode"
+          aria-label="Exit Focus Mode"
         >
           <svg viewBox="0 0 24 24" width="20" height="20">
             <path
@@ -207,6 +208,7 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
             class="focus-play"
             onClick={() => props.onPlay()}
             title="Play"
+            aria-label="Play"
           >
             <svg viewBox="0 0 24 24" width="24" height="24">
               <path fill="currentColor" d="M8 5v14l11-7z" />
@@ -219,6 +221,7 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
             class="focus-play"
             onClick={() => props.onPause()}
             title="Pause"
+            aria-label="Pause"
           >
             <svg viewBox="0 0 24 24" width="24" height="24">
               <path fill="currentColor" d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
@@ -231,6 +234,7 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
             class="focus-play"
             onClick={() => props.onResume()}
             title="Continue"
+            aria-label="Continue"
           >
             <svg viewBox="0 0 24 24" width="24" height="24">
               <path fill="currentColor" d="M8 5v14l11-7z" />
@@ -245,6 +249,7 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
             onClick={speedUp}
             disabled={currentSpeedIndex() === SPEED_STEPS.length - 1}
             title="Faster"
+            aria-label="Faster"
           >
             <svg viewBox="0 0 24 24" width="16" height="16">
               <path
@@ -259,6 +264,7 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
             onClick={speedDown}
             disabled={currentSpeedIndex() === 0}
             title="Slower"
+            aria-label="Slower"
           >
             <svg viewBox="0 0 24 24" width="16" height="16">
               <path

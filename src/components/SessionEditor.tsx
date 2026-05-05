@@ -26,11 +26,6 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
   const sessions = (): PlaybackSession[] => {
     const sessions = melodyStore.getSessions()
     return sessions
-    // FIXME: fiasco with user vs non user (default) session, probs just remove below code
-    // const defaultSession = melodyStore.getDefaultSession()
-    // return defaultSession === null
-    //   ? userSessions
-    //   : [defaultSession, ...userSessions]
   }
 
   // BUGFIX: read the active session through the REACTIVE `userSession`
@@ -280,7 +275,7 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
               }}
             />
           </div>
-          <button class="toggle-btn">
+          <button class="toggle-btn" aria-label="Toggle rest settings">
             <svg
               viewBox="0 0 24 24"
               width="20"

@@ -51,6 +51,7 @@ export const GuideSelection: Component<GuideSelectionProps> = (props) => {
               class="guide-close-btn"
               onClick={() => props.onClose()}
               title="Close"
+              aria-label="Close"
             >
               <svg viewBox="0 0 24 24" width="20" height="20">
                 <path
