@@ -40,7 +40,7 @@ import { melodyIndexAtBeat, melodyTotalBeats } from '@/lib/scale-data'
 import { buildScaleMelody, buildSessionPlaybackMelody, } from '@/lib/session-builder'
 import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
 import { setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPlaybackSpeed, setScaleType, } from '@/stores'
-import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initBpm, initPresets, initReverb, initSessionHistory, initSettings, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, toggleMicWaveVisible, } from '@/stores'
+import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initSessionHistory, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, toggleMicWaveVisible, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import { getSession, templateToSession } from '@/stores/session-store'
 import { selectedCharacter, showPracticeResultPopup, } from '@/stores/settings-store'
@@ -580,11 +580,7 @@ const AppShell: Component<AppProps> = (props) => {
 
   onMount(() => {
     initTheme()
-    initBpm()
-    initPresets()
     initSessionHistory()
-    initSettings()
-    initReverb()
 
     melodyStore.seedDefaultSession()
 

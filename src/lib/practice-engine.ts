@@ -260,7 +260,7 @@ export class PracticeEngine {
     this.micHealthCounter++
     if (this.micHealthCounter >= PracticeEngine.MIC_HEALTH_INTERVAL) {
       this.micHealthCounter = 0
-      this.audioEngine.resume().catch(() => {})
+      this.audioEngine.resume().catch((err) => console.warn('AudioContext resume failed during mic health check:', err))
     }
 
     const pitch = this.detectPitch()

@@ -363,12 +363,6 @@ const SHOW_PRACTICE_RESULT_POPUP_KEY = 'pitchperfect_show_practice_result_popup'
 export const [showPracticeResultPopup, setShowPracticeResultPopup] =
   createPersistedSignal<boolean>(SHOW_PRACTICE_RESULT_POPUP_KEY, false)
 
-// FIXME: Initialization functions mapped to no-ops to support old init pattern gracefully
-// before they are completely removed. Storage loading happens on signal creation now.
-export function initSettings(): void {}
-export function initADSR(): void {}
-export function initReverb(): void {}
-
 // ── Accuracy Presets ───────────────────────────────────────────────────
 
 export const [accuracyTier, _setAccuracyTier] =
