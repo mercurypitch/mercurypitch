@@ -5,7 +5,7 @@
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, Show } from 'solid-js'
 import type { UvrSession } from '@/stores/app-store'
-import { cancelUvrSession, completeUvrSession, currentUvrSession, deleteAllUvrSessions, getAllUvrSessions, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, startUvrSession, updateUvrSessionProgress, } from '@/stores/app-store'
+import { cancelUvrSession, completeUvrSession, currentUvrSession, deleteAllUvrSessions, getAllUvrSessions, getAllUvrSessionsReactive, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, startUvrSession, updateUvrSessionProgress, } from '@/stores/app-store'
 import { processAudio, pollForCompletion, type OutputFile, DEFAULT_PROCESS_REQUEST, } from '@/lib/uvr-api'
 import { UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrUploadControl, } from '.'
 import { CheckCircle, History, Music, Settings, Trash2, X } from './icons'
@@ -84,7 +84,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
 
   // Computed session state
   const session = () => currentUvrSession()
-  const allSessions = () => getAllUvrSessions()
+  const allSessions = () => getAllUvrSessionsReactive()
 
   // Load initial view
   createEffect(() => {
@@ -479,7 +479,7 @@ export const UvrPanelStyles: string = `
   flex-direction: column;
   height: 100%;
   background: var(--bg-secondary);
-  border-radius: 1rem;
+  border-radius: 1rem 1rem 0 0;
   overflow: hidden;
 }
 

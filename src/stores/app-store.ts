@@ -115,6 +115,18 @@ export interface UvrSession {
 export const [currentUvrSession, setCurrentUvrSession] =
   createSignal<UvrSession | null>(null)
 
+/** Reactive version counter — bumped on every session mutation */
+const [sessionsVersion, setSessionsVersion] = createSignal(0)
+function bumpSessions() {
+  setSessionsVersion((v) => v + 1)
+}
+
+/** Get all sessions (reactive — reads sessionsVersion to track dependency) */
+export function getAllUvrSessionsReactive(): UvrSession[] {
+  sessionsVersion() // track signal dependency
+  return getAllUvrSessions()
+}
+
 /** Get session by ID */
 export function getUvrSession(sessionId: string): UvrSession | undefined {
   const sessions = getAllUvrSessions()
@@ -160,6 +172,7 @@ export function startUvrSession(
   const sessions = getAllUvrSessions()
   sessions.push(newSession)
   saveAllUvrSessions(sessions)
+  bumpSessions()
 
   setCurrentUvrSession(newSession)
   return sessionId
@@ -179,6 +192,7 @@ export function updateUvrSessionProgress(
       session.processingTime = processingTime
     }
     saveAllUvrSessions(sessions)
+    bumpSessions()
     setCurrentUvrSession(session)
   }
 }
@@ -196,6 +210,7 @@ export function completeUvrSession(
     session.progress = 100
     session.processingTime = Date.now() - session.createdAt
     saveAllUvrSessions(sessions)
+    bumpSessions()
     setCurrentUvrSession(session)
   }
 }
@@ -208,6 +223,7 @@ export function setErrorUvrSession(sessionId: string, error: string): void {
     session.status = 'error'
     session.error = error
     saveAllUvrSessions(sessions)
+    bumpSessions()
     setCurrentUvrSession(session)
   }
 }
@@ -219,6 +235,7 @@ export function cancelUvrSession(sessionId: string): void {
   if (session) {
     session.status = 'cancelled'
     saveAllUvrSessions(sessions)
+    bumpSessions()
     setCurrentUvrSession(session)
   }
 }
@@ -227,6 +244,7 @@ export function cancelUvrSession(sessionId: string): void {
 export function deleteUvrSession(sessionId: string): void {
   const sessions = getAllUvrSessions().filter((s) => s.sessionId !== sessionId)
   saveAllUvrSessions(sessions)
+  bumpSessions()
   if (currentUvrSession()?.sessionId === sessionId) {
     setCurrentUvrSession(null)
   }
@@ -235,6 +253,7 @@ export function deleteUvrSession(sessionId: string): void {
 /** Delete all UVR sessions */
 export function deleteAllUvrSessions(): void {
   saveAllUvrSessions([])
+  bumpSessions()
   setCurrentUvrSession(null)
 }
 
