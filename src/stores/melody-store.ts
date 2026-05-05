@@ -176,6 +176,12 @@ export function resetMelodyLibrary(): void {
   setMelodyLibrary(defaultLibrary)
 }
 
+/** Reload library from localStorage without wiping (used by tests) */
+export function _reloadLibraryFromStorage(): void {
+  _idCounter = 100
+  setMelodyLibrary(loadLibrary())
+}
+
 // ============================================================
 // Session Operations — Delegate to session-store
 // ============================================================
