@@ -5,6 +5,7 @@
 import type { JSX, ParentComponent } from 'solid-js'
 import { onMount } from 'solid-js'
 import { ErrorBoundary } from 'solid-js/web'
+import { exposeForE2E } from '@/lib/test-utils'
 import { setAppError as setAppErrorSignal } from '@/stores/app-store'
 import { CrashModal } from './CrashModal'
 
@@ -36,6 +37,7 @@ const setupGlobalErrorHandler = () => {
         ? (event.error ?? new Error(event.message))
         : (event.reason ?? new Error('Unhandled promise rejection'))
     console.error('Unhandled error:', err)
+    exposeForE2E('__globalError', err)
     setAppErrorSignal({
       error: err,
       time: performance.now(),
