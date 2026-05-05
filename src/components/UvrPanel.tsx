@@ -666,8 +666,11 @@ export const UvrPanelStyles: string = `
 
 .history-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 0.75rem;
+  overflow-y: auto;
+  max-height: calc(100vh - 200px);
+  padding-right: 0.25rem;
 }
 
 .history-empty {
