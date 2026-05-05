@@ -277,7 +277,7 @@ export const UvrGuide: Component = () => {
   return (
     <div class="uvr-guide-container">
       {/* Header */}
-      <div class="guide-header">
+      <div class="uvr-guide-header">
         <div class="guide-icon-wrapper">
           <div class="guide-icons-row">
             <Voice />
@@ -353,42 +353,50 @@ export const _UvrGuideStyles: string = `
 .uvr-guide-container {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
-  max-width: 800px;
+  gap: 1rem;
+  max-width: 720px;
   margin: 0 auto;
+  overflow-y: auto;
 }
 
-.guide-header {
+.uvr-guide-header {
   text-align: center;
-  padding: 2rem 1rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 1rem;
-  color: white;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  padding: 1.25rem 1rem;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  color: var(--text-primary);
+}
+
+.uvr-guide-header h2 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0.5rem 0 0.25rem;
+  color: var(--text-primary);
 }
 
 .guide-icon-wrapper {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
 }
 
 .guide-icons-row {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  color: var(--accent);
 }
 
 .guide-icons-row svg {
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 2rem;
+  height: 2rem;
 }
 
 .guide-subtitle {
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 0.9rem;
-  margin-top: 0.25rem;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  margin: 0;
 }
 
 .guide-steps-nav {
@@ -402,39 +410,40 @@ export const _UvrGuideStyles: string = `
   flex-direction: column;
   align-items: center;
   gap: 0.25rem;
-  padding: 0.75rem 0.5rem;
+  padding: 0.6rem 0.4rem;
   background: var(--bg-secondary);
   border: 1px solid var(--border);
   border-radius: 0.5rem;
-  color: var(--fg-primary);
+  color: var(--text-primary);
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .step-nav-btn:hover:not(:disabled) {
-  background: var(--bg-hover);
+  background: var(--bg-tertiary);
 }
 
 .step-nav-btn.active {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border-color: transparent;
+  background: var(--accent);
+  color: var(--bg-primary);
+  border-color: var(--accent);
 }
 
 .step-nav-num {
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   font-weight: bold;
 }
 
 .step-nav-label {
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   text-align: center;
   line-height: 1.2;
 }
 
 .guide-content {
-  padding: 1.5rem;
-  background: var(--bg-secondary);
+  padding: 1.25rem;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
   border-radius: 0.75rem;
   min-height: 200px;
 }
@@ -443,64 +452,83 @@ export const _UvrGuideStyles: string = `
   height: 4px;
   background: var(--border);
   border-radius: 2px;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
   overflow: hidden;
 }
 
 .guide-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #667eea, #764ba2);
+  background: var(--accent);
   transition: width 0.3s ease;
 }
 
 .guide-section h4 {
-  font-size: 1.1rem;
-  margin-bottom: 1rem;
-  color: var(--fg-primary);
+  font-size: 1rem;
+  margin: 0 0 0.75rem 0;
+  color: var(--text-primary);
 }
 
 .guide-text {
-  color: var(--fg-secondary);
-  line-height: 1.7;
-  margin-bottom: 1.5rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0 0 1rem 0;
 }
 
-.guide-feature-cards {
+.guide-features {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 0.75rem;
-  margin-top: 1rem;
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+}
+
+.feature-card {
+  padding: 0.75rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.feature-card:hover {
+  border-color: var(--accent);
 }
 
 .feature-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 2rem;
+  height: 2rem;
+  color: var(--accent);
 }
 
 .feature-icon svg {
-  width: 1.5rem;
-  height: 1.5rem;
+  width: 1.25rem;
+  height: 1.25rem;
 }
 
 .guide-mode-cards {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 0.75rem;
-  margin-top: 1rem;
+  gap: 0.6rem;
+  margin-top: 0.75rem;
 }
 
 .mode-card.guide-mode {
-  padding: 1rem;
-  background: var(--bg-primary);
-  border: 2px solid var(--border);
-  border-radius: 0.75rem;
+  padding: 0.75rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.4rem;
   transition: all 0.2s;
 }
 
@@ -512,102 +540,111 @@ export const _UvrGuideStyles: string = `
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 2rem;
+  height: 2rem;
+  color: var(--accent);
 }
 
 .mode-icon svg {
-  width: 1.5rem;
-  height: 1.5rem;
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.mode-info {
+  text-align: center;
 }
 
 .mode-info strong {
   display: block;
-  color: var(--fg-primary);
-  font-size: 0.9rem;
+  color: var(--text-primary);
+  font-size: 0.85rem;
 }
 
 .mode-info span {
-  font-size: 0.75rem;
-  color: var(--fg-secondary);
+  font-size: 0.72rem;
+  color: var(--text-secondary);
 }
 
 .intensity-explanation {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  margin-top: 1rem;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
 }
 
 .intensity-item {
-  padding: 1rem;
-  background: var(--bg-primary);
+  padding: 0.75rem;
+  background: var(--bg-secondary);
   border-radius: 0.5rem;
+  border: 1px solid var(--border);
 }
 
 .intensity-name {
   display: block;
-  color: var(--fg-primary);
+  color: var(--text-primary);
   margin-bottom: 0.25rem;
   font-weight: 600;
+  font-size: 0.9rem;
 }
 
 .intensity-desc {
   display: block;
-  color: var(--fg-secondary);
-  font-size: 0.85rem;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
 }
 
 .intensity-range {
   display: flex;
   justify-content: space-between;
-  font-size: 0.75rem;
-  color: var(--fg-tertiary);
-  margin-top: 0.5rem;
-  padding: 0.25rem;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 0.4rem;
+  padding: 0.25rem 0.5rem;
   background: var(--bg-tertiary);
   border-radius: 0.25rem;
 }
 
 .guide-tip {
-  margin-top: 1rem;
-  padding: 0.75rem;
-  background: rgba(102, 126, 234, 0.1);
-  border-left: 3px solid #667eea;
-  color: var(--fg-primary);
-  font-size: 0.9rem;
+  margin-top: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  background: var(--bg-secondary);
+  border-left: 3px solid var(--accent);
+  color: var(--text-secondary);
+  font-size: 0.85rem;
   border-radius: 0 0.25rem 0.25rem 0;
 }
 
 .smooth-examples {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  margin-top: 1rem;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
 }
 
 .smooth-item {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.35rem;
 }
 
 .smooth-toggle {
   display: flex;
   justify-content: space-between;
-  padding: 0.75rem;
-  background: var(--bg-primary);
+  padding: 0.6rem 0.75rem;
+  background: var(--bg-secondary);
   border-radius: 0.5rem;
+  border: 1px solid var(--border);
 }
 
 .smooth-toggle.active {
-  background: rgba(102, 126, 234, 0.1);
-  border-left: 3px solid #667eea;
+  background: var(--bg-tertiary);
+  border-left: 3px solid var(--accent);
 }
 
 .toggle-label {
   font-weight: 600;
-  color: var(--fg-primary);
+  color: var(--text-primary);
+  font-size: 0.9rem;
 }
 
 .toggle-value {
@@ -616,122 +653,131 @@ export const _UvrGuideStyles: string = `
 }
 
 .smooth-result {
-  color: var(--fg-secondary);
-  font-size: 0.9rem;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
 }
 
 .use-case-title {
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
 }
 
 .use-cases {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.5rem;
 }
 
 .use-case {
   display: flex;
-  gap: 0.75rem;
-  padding: 1rem;
-  background: var(--bg-primary);
+  gap: 0.6rem;
+  padding: 0.75rem;
+  background: var(--bg-secondary);
   border-radius: 0.5rem;
+  border: 1px solid var(--border);
 }
 
 .use-case-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 2rem;
+  height: 2rem;
+  color: var(--accent);
 }
 
 .use-case-icon svg {
-  width: 1.5rem;
-  height: 1.5rem;
+  width: 1.25rem;
+  height: 1.25rem;
 }
 
 .use-case-content strong {
   display: block;
-  color: var(--fg-primary);
-  margin-bottom: 0.25rem;
+  color: var(--text-primary);
+  margin-bottom: 0.15rem;
+  font-size: 0.9rem;
 }
 
 .use-case-content p {
-  font-size: 0.9rem;
-  color: var(--fg-secondary);
-  line-height: 1.5;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin: 0;
 }
 
 .quick-steps {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.5rem;
 }
 
 .step {
   display: flex;
-  gap: 1rem;
-  padding: 1rem;
-  background: var(--bg-primary);
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: var(--bg-secondary);
   border-radius: 0.5rem;
+  border: 1px solid var(--border);
 }
 
 .step-number {
   flex-shrink: 0;
   width: 2rem;
   height: 2rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: var(--accent);
+  color: var(--bg-primary);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: bold;
+  font-size: 0.85rem;
 }
 
 .step-content strong {
   display: block;
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.15rem;
+  font-size: 0.9rem;
 }
 
 .step-content p {
-  font-size: 0.9rem;
-  color: var(--fg-secondary);
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  margin: 0;
 }
 
 .guide-success {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-top: 1rem;
-  padding: 0.75rem;
-  background: rgba(32, 201, 151, 0.1);
-  border: 1px solid rgba(32, 201, 151, 0.2);
+  margin-top: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
   border-radius: 0.5rem;
-  color: var(--success);
+  color: var(--accent);
+  font-size: 0.85rem;
 }
 
 .guide-nav-buttons {
   display: flex;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 .guide-btn {
   flex: 1;
-  padding: 0.75rem 1.5rem;
+  padding: 0.65rem 1rem;
   border: none;
   border-radius: 0.5rem;
-  font-size: 0.95rem;
+  font-size: 0.88rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .guide-btn-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: var(--accent);
+  color: var(--bg-primary);
 }
 
 .guide-btn-primary:hover:not(:disabled) {
@@ -741,12 +787,12 @@ export const _UvrGuideStyles: string = `
 
 .guide-btn-secondary {
   background: var(--bg-secondary);
-  color: var(--fg-primary);
+  color: var(--text-primary);
   border: 1px solid var(--border);
 }
 
 .guide-btn-secondary:hover:not(:disabled) {
-  background: var(--bg-hover);
+  background: var(--bg-tertiary);
 }
 
 .guide-btn:disabled {
@@ -756,9 +802,9 @@ export const _UvrGuideStyles: string = `
 
 .guide-progress-indicator {
   text-align: center;
-  padding: 0.75rem;
-  color: var(--fg-tertiary);
-  font-size: 0.85rem;
+  padding: 0.5rem;
+  color: var(--text-muted);
+  font-size: 0.8rem;
   border-top: 1px solid var(--border);
 }
 `
