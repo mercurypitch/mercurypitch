@@ -10,6 +10,7 @@ import { freqToMidi } from '@/lib/scale-data'
 import { centsToRating, ratingToScore } from '@/lib/practice-engine'
 import type { AccuracyRating } from '@/types'
 import type { FallingNote, NoteJudgment } from '@/stores/falling-notes-store'
+import { setMicActive } from '@/stores'
 import {
   gameState,
   setGameState,
@@ -30,6 +31,7 @@ import {
   songNotes,
   setSongNotes,
   setSelectedSongName,
+  currentSongBpm,
   setCurrentSongBpm,
   beatsPerSecond,
 } from '@/stores/falling-notes-store'
@@ -46,6 +48,8 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
     octave: number
     cents: number
   } | null>(null)
+  const [speed, setSpeed] = createSignal(1)
+  const [micOn, setMicOn] = createSignal(false)
 
   let animFrameId: number | null = null
   let gameStartTime = 0
@@ -78,7 +82,7 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
       if (gameState() === 'playing') {
         const now = performance.now()
         const elapsedMs = now - gameStartTime
-        const bps = beatsPerSecond()
+        const bps = beatsPerSecond() * speed()
         const elapsedBeats = elapsedMs / 1000 * bps
         const newBeat = elapsedBeats
         setPlayheadBeat(newBeat)
@@ -107,7 +111,7 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
 
   const checkHits = (currentBeat: number) => {
     const notes = songNotes()
-    const bps = beatsPerSecond()
+    const bps = beatsPerSecond() * speed()
     const pitch = currentPitch()
     const detectedMidi = pitch ? freqToMidi(pitch.frequency) : null
     const detectedCents = pitch?.cents ?? null
@@ -196,11 +200,18 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
   // ── Actions ──────────────────────────────────────────────────
 
   const startMic = async (): Promise<boolean> => {
-    return engine.startMic()
+    const ok = await engine.startMic()
+    if (ok) {
+      setMicOn(true)
+      setMicActive(true)
+    }
+    return ok
   }
 
   const stopMic = () => {
     engine.stopMic()
+    setMicOn(false)
+    setMicActive(false)
   }
 
   const startGame = () => {
@@ -214,7 +225,7 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
     setPlayheadBeat(-2)
 
     // After 2-beat count-in, begin
-    const bps = beatsPerSecond()
+    const bps = beatsPerSecond() * speed()
     const countdownMs = (2 / bps) * 1000
     setTimeout(() => {
       setGameState('playing')
@@ -237,7 +248,7 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
       setGameState('playing')
       // Rebase gameStartTime so playhead continues from where we paused
       const currentBeat = playheadBeat()
-      const bps = beatsPerSecond()
+      const bps = beatsPerSecond() * speed()
       gameStartTime = performance.now() - (currentBeat / bps) * 1000
     }
   }
@@ -293,13 +304,16 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
     // Actions
     startMic,
     stopMic,
-    isMicActive: () => engine.isMicActive(),
+    isMicActive: micOn,
     startGame,
     pauseGame,
     resumeGame,
     finishGame,
     resetGame,
     loadSong,
+    speed,
+    setSpeed,
+    setBpm: setCurrentSongBpm,
 
     // Engine (for waveform display)
     engine,

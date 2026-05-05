@@ -1005,6 +1005,42 @@ const AppShell: Component<AppProps> = (props) => {
             </Show>
             <Show when={activeTab() === 'falling-notes'}>
               <div id="falling-notes-panel">
+                <SharedControlToolbar
+                  activeTab={activeTab}
+                  fallingNotesTab={() => activeTab() === 'falling-notes'}
+                  isPlaying={() => fallingNotes.gameState() === 'playing' || fallingNotes.gameState() === 'countdown'}
+                  isPaused={() => fallingNotes.gameState() === 'paused'}
+                  onPlay={fallingNotes.startGame}
+                  onPause={fallingNotes.pauseGame}
+                  onResume={fallingNotes.resumeGame}
+                  onStop={fallingNotes.resetGame}
+                  volume={savedVol}
+                  onVolumeChange={(vol) => {
+                    setSavedVol(vol)
+                    audioEngine?.setVolume(vol / 100)
+                  }}
+                  speed={fallingNotes.speed()}
+                  onSpeedChange={fallingNotes.setSpeed}
+                  metronomeEnabled={() => false}
+                  onMetronomeToggle={() => {}}
+                  playMode={() => 'once' as const}
+                  playModeChange={() => {}}
+                  practiceCycles={() => 1}
+                  onCyclesChange={() => {}}
+                  currentCycle={() => 1}
+                  practiceSubMode={() => 'all' as const}
+                  onPracticeSubModeChange={() => {}}
+                  isCountingIn={() => fallingNotes.gameState() === 'countdown'}
+                  countInBeat={() => 0}
+                  countInBeats={() => 2}
+                  onMicToggle={() => {
+                    if (fallingNotes.isMicActive()) {
+                      fallingNotes.stopMic()
+                    } else {
+                      void fallingNotes.startMic()
+                    }
+                  }}
+                />
                 <FallingNotesSongPicker onSongLoaded={fallingNotes.loadSong} />
                 <div id="falling-notes-canvas-container">
                   <FallingNotesCanvas
@@ -1017,44 +1053,6 @@ const AppShell: Component<AppProps> = (props) => {
                     totalNotes={fallingNotes.totalNotes}
                     notesMissed={fallingNotes.notesMissed}
                   />
-                </div>
-                <div id="fn-game-controls">
-                  <Show when={fallingNotes.gameState() === 'idle' || fallingNotes.gameState() === 'finished'}>
-                    <button
-                      class="fn-btn fn-btn-play"
-                      disabled={fallingNotes.songNotes().length === 0}
-                      onClick={fallingNotes.startGame}
-                    >
-                      Start
-                    </button>
-                  </Show>
-                  <Show when={fallingNotes.gameState() === 'playing'}>
-                    <button class="fn-btn fn-btn-pause" onClick={fallingNotes.pauseGame}>
-                      Pause
-                    </button>
-                  </Show>
-                  <Show when={fallingNotes.gameState() === 'paused'}>
-                    <button class="fn-btn fn-btn-play" onClick={fallingNotes.resumeGame}>
-                      Resume
-                    </button>
-                  </Show>
-                  <Show when={fallingNotes.gameState() === 'paused' || fallingNotes.gameState() === 'finished'}>
-                    <button class="fn-btn fn-btn-reset" onClick={fallingNotes.resetGame}>
-                      Reset
-                    </button>
-                  </Show>
-                  <button
-                    class="fn-btn fn-btn-mic"
-                    onClick={() => {
-                      if (fallingNotes.isMicActive()) {
-                        fallingNotes.stopMic()
-                      } else {
-                        void fallingNotes.startMic()
-                      }
-                    }}
-                  >
-                    {fallingNotes.isMicActive() ? 'Mic On' : 'Mic Off'}
-                  </button>
                 </div>
                 {/* Score overlay for finished game */}
                 <Show when={fallingNotes.gameState() === 'finished'}>
@@ -1077,9 +1075,14 @@ const AppShell: Component<AppProps> = (props) => {
                       <div class="fn-score-detail">
                         {fallingNotes.totalNotes()} notes · Max Combo: {fallingNotes.maxCombo()}x
                       </div>
-                      <button class="fn-btn fn-btn-play" onClick={fallingNotes.resetGame}>
-                        Play Again
-                      </button>
+                      <div class="fn-score-actions">
+                        <button class="fn-btn fn-btn-play" onClick={fallingNotes.startGame}>
+                          Play Again
+                        </button>
+                        <button class="fn-btn fn-btn-close" onClick={fallingNotes.resetGame}>
+                          Close
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </Show>

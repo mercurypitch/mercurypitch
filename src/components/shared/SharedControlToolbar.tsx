@@ -49,13 +49,14 @@ export const SCALE_TYPES = [
 ] as const
 
 export type PracticeSubMode = 'all' | 'random' | 'focus' | 'reverse'
-export type ActiveTab = 'practice' | 'editor' | 'settings'
+export type ActiveTab = 'practice' | 'editor' | 'settings' | 'falling-notes'
 
 interface SharedControlToolbarProps {
   // Tab identification
   activeTab: () => ActiveTab
   practiceTab?: () => boolean
   editorTab?: () => boolean
+  fallingNotesTab?: () => boolean
 
   // Playback state
   isPlaying: () => boolean
@@ -115,6 +116,8 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
     props.practiceTab?.() ?? props.activeTab() === 'practice'
   const isEditorTab = () =>
     props.editorTab?.() ?? props.activeTab() === 'editor'
+  const isFallingNotesTab = () =>
+    props.fallingNotesTab?.() ?? props.activeTab() === 'falling-notes'
 
   const isActive = () => props.isPlaying() || props.isPaused()
   const isStopped = () => !props.isPlaying() && !props.isPaused()
@@ -279,33 +282,35 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
           </button>
         </Show>
 
-        {/* Precount + Metronome */}
-        <div class="app-header-sep" />
-        <div class="control-group">
-          <PrecCountButton />
-        </div>
-        <button
-          class={`ctrl-btn metronome-btn ${props.metronomeEnabled() ? 'active' : ''}`}
-          onClick={props.onMetronomeToggle}
-          title="Toggle metronome"
-          aria-label="Toggle metronome"
-        >
-          <svg viewBox="0 0 24 24" width="16" height="16">
-            <path
-              fill="currentColor"
-              d="M12 2L8 22h8L12 2zm0 5.5l2.5 10h-5L12 7.5z"
-            />
-            <line
-              x1="12"
-              y1="2"
-              x2="12"
-              y2="5"
-              stroke="currentColor"
-              stroke-width="1.5"
-            />
-            <circle cx="12" cy="3.5" r="0.5" fill="currentColor" />
-          </svg>
-        </button>
+        {/* Precount + Metronome — hidden for falling notes */}
+        <Show when={!isFallingNotesTab()}>
+          <div class="app-header-sep" />
+          <div class="control-group">
+            <PrecCountButton />
+          </div>
+          <button
+            class={`ctrl-btn metronome-btn ${props.metronomeEnabled() ? 'active' : ''}`}
+            onClick={props.onMetronomeToggle}
+            title="Toggle metronome"
+            aria-label="Toggle metronome"
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16">
+              <path
+                fill="currentColor"
+                d="M12 2L8 22h8L12 2zm0 5.5l2.5 10h-5L12 7.5z"
+              />
+              <line
+                x1="12"
+                y1="2"
+                x2="12"
+                y2="5"
+                stroke="currentColor"
+                stroke-width="1.5"
+              />
+              <circle cx="12" cy="3.5" r="0.5" fill="currentColor" />
+            </svg>
+          </button>
+        </Show>
 
         {/* Count-in badge */}
         <Show when={props.isCountingIn()}>
