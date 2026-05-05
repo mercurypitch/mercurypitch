@@ -3,7 +3,7 @@
 // ============================================================
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { advanceSessionItem, appStore, endPracticeSession, getCurrentSessionItem, initSessionHistory, isInSessionMode, recordSessionItemResult, } from '@/stores'
+import { advanceSessionItem, appStore, endPracticeSession, getCurrentSessionItem, isInSessionMode, recordSessionItemResult, } from '@/stores'
 import { createScaleItem } from '@/stores/session-store'
 import type { PracticeResult, SessionItem } from '@/types'
 
@@ -191,13 +191,6 @@ const makeSession = (id: string, itemCount: number): TestSession => ({
   created: Date.now(),
 })
 
-// FIXME: Check if this is needed! Helper for test isolation (not used directly due to limitation)
-function _resetAppStoreSignals() {
-  // This would need to access private signals - for now, we rely on localStorage clearing
-  // and explicit endPracticeSession calls where needed
-  localStorageMock.clear()
-}
-
 describe('startPracticeSession', () => {
   beforeEach(() => {
     localStorageMock.clear()
@@ -221,8 +214,7 @@ describe('startPracticeSession', () => {
 describe('getCurrentSessionItem', () => {
   beforeEach(() => {
     localStorageMock.clear()
-    // Init stores then clean any lingering session
-    initSessionHistory()
+    // Clean any lingering session
     endPracticeSession()
   })
 

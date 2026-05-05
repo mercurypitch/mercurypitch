@@ -90,6 +90,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
         class="sidebar-close-btn"
         onClick={() => props.onClose?.()}
         title="Close menu"
+        aria-label="Close menu"
       >
         <svg viewBox="0 0 24 24" width="18" height="18">
           <path
@@ -198,6 +199,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
               <button
                 class="octave-btn"
                 title="Lower octave"
+                aria-label="Lower octave"
                 onClick={() => handleViewOctaveShift(-1)}
               >
                 <svg viewBox="0 0 24 24" width="14" height="14">
@@ -211,6 +213,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
               <button
                 class="octave-btn"
                 title="Higher octave"
+                aria-label="Higher octave"
                 onClick={() => handleViewOctaveShift(1)}
               >
                 <svg viewBox="0 0 24 24" width="14" height="14">

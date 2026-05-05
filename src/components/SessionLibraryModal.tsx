@@ -160,7 +160,7 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
         <div class="library-modal" onClick={(e) => e.stopPropagation()}>
           <div class="library-header">
             <h2>Practice Sessions</h2>
-            <button class="close-btn" onClick={() => props.close()}>
+            <button class="close-btn" onClick={() => props.close()} aria-label="Close">
               <svg viewBox="0 0 24 24" width="20" height="20">
                 <path
                   fill="currentColor"
@@ -252,6 +252,7 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
                         class="action-btn play-btn"
                         onClick={() => handlePlay(session)}
                         title="Play"
+                        aria-label="Play"
                       >
                         <svg viewBox="0 0 24 24" width="14" height="14">
                           <path fill="currentColor" d="M8 5v14l11-7z" />
@@ -261,6 +262,7 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
                         class="action-btn edit-btn"
                         onClick={() => handleEdit(session)}
                         title="Edit"
+                        aria-label="Edit"
                       >
                         <svg viewBox="0 0 24 24" width="14" height="14">
                           <path
@@ -273,6 +275,7 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
                         class="action-btn delete-btn"
                         onClick={() => handleDelete(session.id)}
                         title="Delete"
+                        aria-label="Delete"
                       >
                         <svg viewBox="0 0 24 24" width="14" height="14">
                           <path
