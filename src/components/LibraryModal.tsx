@@ -551,7 +551,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
         <div class="library-modal" onClick={(e) => e.stopPropagation()}>
           <div class="library-header">
             <h2>Library</h2>
-            <button class="close-btn" onClick={() => props.close()}>
+            <button class="close-btn" onClick={() => props.close()} aria-label="Close">
               <svg viewBox="0 0 24 24" width="20" height="20">
                 <path
                   fill="currentColor"
@@ -606,6 +606,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                         setCreateTags('')
                         setCreateNotes('')
                       }}
+                      aria-label="Reset form"
                     >
                       <svg viewBox="0 0 24 24" width="20" height="20">
                         <path
@@ -875,6 +876,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                             handlePlay(melody)
                           }}
                           title="Play"
+                          aria-label="Play"
                         >
                           <svg viewBox="0 0 24 24" width="14" height="14">
                             <path fill="currentColor" d="M8 5v14l11-7z" />
@@ -887,6 +889,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                             handleLoad(melody)
                           }}
                           title="Load"
+                          aria-label="Load"
                         >
                           <svg viewBox="0 0 24 24" width="14" height="14">
                             <path
@@ -902,6 +905,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                             handleEdit(melody)
                           }}
                           title="Edit"
+                          aria-label="Edit"
                         >
                           <svg viewBox="0 0 24 24" width="14" height="14">
                             <path
@@ -917,6 +921,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                             handleDelete(_)
                           }}
                           title="Delete"
+                          aria-label="Delete"
                         >
                           <svg viewBox="0 0 24 24" width="14" height="14">
                             <path
@@ -1247,6 +1252,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                                 handlePlayPlaylist(_id)
                               }}
                               title="Play All"
+                              aria-label="Play All"
                             >
                               <svg viewBox="0 0 24 24" width="14" height="14">
                                 <path fill="currentColor" d="M8 5v14l11-7z" />
@@ -1256,6 +1262,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                               class="action-btn edit-btn"
                               onClick={() => startAddMelodyMode(_id)}
                               title="Add Melody"
+                              aria-label="Add Melody"
                             >
                               <svg viewBox="0 0 24 24" width="14" height="14">
                                 <path
@@ -1273,6 +1280,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                                 })
                               }
                               title="Delete"
+                              aria-label="Delete"
                             >
                               <svg viewBox="0 0 24 24" width="14" height="14">
                                 <path

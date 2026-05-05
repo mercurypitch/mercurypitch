@@ -275,7 +275,7 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
               }}
             />
           </div>
-          <button class="toggle-btn">
+          <button class="toggle-btn" aria-label="Toggle rest settings">
             <svg
               viewBox="0 0 24 24"
               width="20"
