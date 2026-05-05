@@ -8,7 +8,7 @@ import type { UvrSession } from '@/stores/app-store'
 import { cancelUvrSession, completeUvrSession, currentUvrSession, getAllUvrSessions, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, startUvrSession, updateUvrSessionProgress, } from '@/stores/app-store'
 import { processAudio, pollForCompletion, type OutputFile, DEFAULT_PROCESS_REQUEST, } from '@/lib/uvr-api'
 import { UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrUploadControl, } from '.'
-import { History, Music, Play, Settings, X, Loader2 } from './icons'
+import { History, Music, Settings, X } from './icons'
 
 /**
  * Progress callback type for processing
@@ -232,7 +232,11 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
           </div>
           <div>
             <h3>Vocal Separation</h3>
-            <p class="header-subtitle">Separate vocals and create MIDI</p>
+            <p class="header-subtitle">
+              {allSessions().length > 0
+                ? `${allSessions().length} session${allSessions().length !== 1 ? 's' : ''} · ${allSessions().filter((s) => s.status === 'completed').length} done`
+                : 'Separate vocals and create MIDI'}
+            </p>
           </div>
         </div>
         <div class="header-actions">
@@ -384,28 +388,6 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
             </div>
           </div>
         </Show>
-      </div>
-
-      {/* Bottom Bar */}
-      <div class="panel-footer">
-        <div class="footer-stats">
-          <span class="stat-item">
-            <Settings /> {allSessions().length} sessions
-          </span>
-          <span class="stat-divider">|</span>
-          <span class="stat-item">
-            <Play />{' '}
-            {allSessions().filter((s) => s.status === 'completed').length} done
-          </span>
-        </div>
-        <div class="footer-actions">
-          <button class="footer-btn" onClick={() => setShowGuide(true)}>
-            <Music /> Guide
-          </button>
-          <button class="footer-btn" onClick={() => setCurrentView('history')}>
-            <History /> History
-          </button>
-        </div>
       </div>
 
       {/* Session Results Panel (side view for viewing session details) */}
@@ -709,11 +691,12 @@ export const UvrPanelStyles: string = `
 
 .history-empty button {
   padding: 0.625rem 1.25rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: var(--accent);
+  color: var(--bg-primary);
   border: none;
   border-radius: 0.5rem;
   font-size: 0.9rem;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -744,55 +727,5 @@ export const UvrPanelStyles: string = `
   position: absolute;
   inset: 0;
   background: rgba(0, 0, 0, 0.3);
-}
-
-.panel-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.75rem 1.25rem;
-  background: var(--bg-primary);
-  border-top: 1px solid var(--border);
-}
-
-.footer-stats {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  font-size: 0.8rem;
-  color: var(--fg-secondary);
-}
-
-.stat-item {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.stat-divider {
-  color: var(--border);
-}
-
-.footer-actions {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.footer-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  color: var(--fg-primary);
-  font-size: 0.8rem;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.footer-btn:hover {
-  background: var(--bg-hover);
 }
 `

@@ -6,7 +6,7 @@ import type { Component } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
 import { deleteUvrSession, getUvrSession } from '@/stores/app-store'
 import type { UvrSession,UvrStatus } from '@/types/uvr'
-import { CheckCircle, Download, FileText, Loader2,Music, Play, XCircle,  } from './icons'
+import { Box, Calendar, CheckCircle, Download, FileText, Loader2, Music, Play, XCircle } from './icons'
 
 interface SessionResultProps {
   sessionId: string
@@ -122,7 +122,7 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
       {/* Info Grid */}
       <div class="info-grid">
         <div class="info-item">
-          <span class="info-icon">📅</span>
+          <span class="info-icon"><Calendar /></span>
           <div class="info-content">
             <span class="info-label">Created</span>
             <span class="info-value">
@@ -132,7 +132,7 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
         </div>
         <Show when={session()?.originalFile}>
           <div class="info-item">
-            <span class="info-icon">📦</span>
+            <span class="info-icon"><Box /></span>
             <div class="info-content">
               <span class="info-label">Size</span>
               <span class="info-value">
@@ -149,7 +149,7 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
           <h4>Generated Outputs</h4>
           <div class="output-files">
             <div class="output-file">
-              <div class="file-icon">🎵</div>
+              <div class="file-icon"><Music /></div>
               <div class="file-content">
                 <span class="file-name">Vocal Stem</span>
                 <span class="file-format">WAV</span>
@@ -160,7 +160,7 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
             </div>
             <Show when={session()?.outputs?.instrumental}>
               <div class="output-file">
-                <div class="file-icon">🎸</div>
+                <div class="file-icon"><Download /></div>
                 <div class="file-content">
                   <span class="file-name">Instrumental</span>
                   <span class="file-format">WAV</span>
@@ -175,7 +175,7 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
             </Show>
             <Show when={session()?.outputs?.vocalMidi}>
               <div class="output-file">
-                <div class="file-icon">🎹</div>
+                <div class="file-icon"><FileText /></div>
                 <div class="file-content">
                   <span class="file-name">Vocal MIDI</span>
                   <span class="file-format">MIDI</span>
@@ -330,7 +330,15 @@ export const UvrSessionResultStyles: string = `
 }
 
 .info-icon {
-  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--fg-tertiary);
+}
+
+.info-icon svg {
+  width: 1rem;
+  height: 1rem;
 }
 
 .info-content {
@@ -379,7 +387,16 @@ export const UvrSessionResultStyles: string = `
 }
 
 .file-icon {
-  font-size: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--fg-tertiary);
+}
+
+.file-icon svg {
+  width: 1.25rem;
+  height: 1.25rem;
 }
 
 .file-content {
@@ -428,7 +445,7 @@ export const UvrSessionResultStyles: string = `
 
 .action-btn {
   flex: 1;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
@@ -439,16 +456,18 @@ export const UvrSessionResultStyles: string = `
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-width: 0;
 }
 
 .action-btn-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: var(--accent);
+  color: var(--bg-primary);
 }
 
 .action-btn-primary:hover:not(:disabled) {
-  opacity: 0.9;
-  transform: translateY(-1px);
+  opacity: 0.85;
 }
 
 .action-btn-danger {
