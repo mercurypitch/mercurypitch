@@ -45,6 +45,8 @@ export { UvrPanel } from './UvrPanel'
 export { UvrPanelStyles } from './UvrPanel'
 export { StemMixer } from './StemMixer'
 export { StemMixerStyles } from './StemMixer'
+export { LyricsUploader } from './LyricsUploader'
+export { LyricsUploaderStyles } from './LyricsUploader'
 export {
   Volume2,
   VolumeX,

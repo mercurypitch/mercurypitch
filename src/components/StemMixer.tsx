@@ -6,7 +6,9 @@ import type { Component } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, onMount, Show } from 'solid-js'
 import { PitchDetector, type DetectedPitch } from '@/lib/pitch-detector'
 import { freqToNote } from '@/lib/scale-data'
-import { Download, Ear, Pause, Play, RotateCcw, SkipBack, SkipForward, Volume2, VolumeX, X } from './icons'
+import { ChevronLeft, Download, Ear, Pause, Play, RotateCcw, SkipBack, SkipForward, Volume2, VolumeX } from './icons'
+import { extractTitle, getCurrentLineIndex, getCurrentLrcIndex, parseLrcFile, parseTextLyrics, searchLyrics, type LrcLine } from '@/lib/lyrics-service'
+import { LyricsUploader, type LyricsUploadResult } from './LyricsUploader'
 
 // ── Types ──────────────────────────────────────────────────────
 
@@ -16,7 +18,8 @@ interface StemMixerProps {
     instrumental?: string
   }
   sessionId: string
-  onClose: () => void
+  songTitle?: string
+  onBack?: () => void
 }
 
 interface StemTrack {
@@ -57,6 +60,13 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   const [elapsed, setElapsed] = createSignal(0)
   const [currentPitch, setCurrentPitch] = createSignal<DetectedPitch | null>(null)
   const [anySoloed, setAnySoloed] = createSignal(false)
+
+  // ── Lyrics state ──────────────────────────────────────────────
+  const [lyricsLines, setLyricsLines] = createSignal<string[]>([])
+  const [lrcLines, setLrcLines] = createSignal<LrcLine[]>([])
+  const [currentLineIdx, setCurrentLineIdx] = createSignal(-1)
+  const [lyricsSource, setLyricsSource] = createSignal<'api' | 'upload' | 'none'>('none')
+  const [lyricsLoading, setLyricsLoading] = createSignal(false)
 
   // ── Refs ─────────────────────────────────────────────────────
   let audioCtx: AudioContext | null = null
@@ -181,6 +191,66 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }
   }
 
+  // ── Lyrics Loading ────────────────────────────────────────────
+  const loadLyrics = async () => {
+    const title = props.songTitle || extractTitle(props.sessionId || '')
+    if (!title || title === 'Unknown') {
+      setLyricsSource('none')
+      return
+    }
+
+    setLyricsLoading(true)
+    try {
+      const text = await searchLyrics(title)
+      if (text) {
+        setLyricsLines(parseTextLyrics(text))
+        setLyricsSource('api')
+      } else {
+        setLyricsSource('none')
+      }
+    } catch {
+      setLyricsSource('none')
+    } finally {
+      setLyricsLoading(false)
+    }
+  }
+
+  const handleLyricsUpload = (result: LyricsUploadResult) => {
+    if (result.format === 'lrc') {
+      setLrcLines(parseLrcFile(result.text))
+      setLyricsLines([])
+    } else {
+      setLyricsLines(parseTextLyrics(result.text))
+      setLrcLines([])
+    }
+    setLyricsSource('upload')
+  }
+
+  const updateCurrentLine = () => {
+    if (lrcLines().length > 0) {
+      setCurrentLineIdx(getCurrentLrcIndex(lrcLines(), elapsed()))
+    } else if (lyricsLines().length > 0 && duration() > 0) {
+      setCurrentLineIdx(getCurrentLineIndex(lyricsLines().length, elapsed(), duration()))
+    }
+  }
+
+  const handleLyricLineClick = (idx: number) => {
+    if (lrcLines().length > 0 && idx < lrcLines().length) {
+      const time = lrcLines()[idx].time
+      pauseOffset = Math.min(time, duration())
+    } else if (lyricsLines().length > 0 && duration() > 0) {
+      pauseOffset = (idx / lyricsLines().length) * duration()
+    }
+    setElapsed(pauseOffset)
+    if (playing()) {
+      disconnectSources()
+      createSources(pauseOffset)
+      startTime = audioCtx!.currentTime - pauseOffset
+      pitchHistory = []
+      pitchDetector?.resetHistory()
+    }
+  }
+
   // ── Create Source Nodes ──────────────────────────────────────
   const createSources = (offset: number) => {
     const ctx = audioCtx!
@@ -252,6 +322,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     disconnectSources()
     setPlaying(false)
     cancelAnimationFrame(rafId)
+    drawWaveformOverview()
   }
 
   const handleStop = () => {
@@ -262,6 +333,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     setCurrentPitch(null)
     pitchHistory = []
     cancelAnimationFrame(rafId)
+    drawWaveformOverview()
     drawPitchCanvas()
     drawLiveWaveform()
   }
@@ -374,8 +446,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         }
       }
 
+      drawWaveformOverview()
       drawPitchCanvas()
       drawLiveWaveform()
+      updateCurrentLine()
 
       if (elapsedTime >= duration()) {
         handleStop()
@@ -614,6 +688,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
   onMount(() => {
     loadStems()
+    loadLyrics()
 
     resizeObserver = new ResizeObserver(() => {
       drawWaveformOverview()
@@ -661,18 +736,19 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
   // ── Render ───────────────────────────────────────────────────
   return (
-    <div class="stem-mixer-overlay" onClick={props.onClose}>
-      <div class="stem-mixer" onClick={(e) => e.stopPropagation()}>
-        {/* Header */}
-        <div class="sm-header">
-          <div class="sm-header-left">
-            <h2>Stem Mixer</h2>
-            <span class="sm-session-id">{props.sessionId.slice(0, 8)}</span>
-          </div>
-          <button class="sm-close-btn" onClick={props.onClose}>
-            <X />
-          </button>
+    <div class="stem-mixer">
+      {/* Header */}
+      <div class="sm-header">
+        <div class="sm-header-left">
+          <Show when={props.onBack}>
+            <button class="sm-back-btn" onClick={props.onBack} title="Back">
+              <ChevronLeft />
+            </button>
+          </Show>
+          <h2>Stem Mixer</h2>
+          <span class="sm-session-id">{props.sessionId.slice(0, 8)}</span>
         </div>
+      </div>
 
         {/* Loading / Error */}
         <Show when={loading()}>
@@ -709,105 +785,156 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
             {/* Right — Controls */}
             <div class="sm-controls">
-              {/* Vocal stem strip */}
-              {vocal().url && (
-                <div class="sm-stem-strip">
-                  <div class="sm-stem-header">
-                    <span
-                      class="sm-stem-dot"
-                      style={{ background: vocal().color }}
+              {/* Stem strips row */}
+              <div class="sm-strips-row">
+                {vocal().url && (
+                  <div class="sm-stem-strip">
+                    <div class="sm-stem-header">
+                      <span
+                        class="sm-stem-dot"
+                        style={{ background: vocal().color }}
+                      />
+                      <span class="sm-stem-label">{vocal().label}</span>
+                      <span class="sm-stem-vol-pct">
+                        {Math.round((vocal().muted || (anySoloed() && !vocal().soloed)) ? 0 : vocal().volume * 100)}%
+                      </span>
+                    </div>
+                    <div class="sm-stem-actions">
+                      <button
+                        class={`sm-action-btn ${vocal().soloed ? 'sm-active' : ''}`}
+                        onClick={() => toggleSolo('Vocal')}
+                        title="Solo"
+                        style={{ color: vocal().soloed ? vocal().color : '' }}
+                      >
+                        <Ear />
+                      </button>
+                      <button
+                        class={`sm-action-btn ${vocal().muted ? 'sm-muted' : ''}`}
+                        onClick={() => toggleMute('Vocal')}
+                        title="Mute"
+                      >
+                        {vocal().muted ? <VolumeX /> : <Volume2 />}
+                      </button>
+                      <button
+                        class="sm-action-btn"
+                        onClick={() => handleDownload(vocal())}
+                        title="Download"
+                      >
+                        <Download />
+                      </button>
+                    </div>
+                    <input
+                      type="range"
+                      class="sm-volume-slider"
+                      min="0"
+                      max="100"
+                      value={Math.round(vocal().volume * 100)}
+                      onInput={(e) =>
+                        setTrackVolume('Vocal', parseInt(e.currentTarget.value) / 100)
+                      }
                     />
-                    <span class="sm-stem-label">{vocal().label}</span>
-                    <span class="sm-stem-vol-pct">
-                      {Math.round((vocal().muted || (anySoloed() && !vocal().soloed)) ? 0 : vocal().volume * 100)}%
-                    </span>
                   </div>
-                  <div class="sm-stem-actions">
-                    <button
-                      class={`sm-action-btn ${vocal().soloed ? 'sm-active' : ''}`}
-                      onClick={() => toggleSolo('Vocal')}
-                      title="Solo"
-                      style={{ color: vocal().soloed ? vocal().color : '' }}
-                    >
-                      <Ear />
-                    </button>
-                    <button
-                      class={`sm-action-btn ${vocal().muted ? 'sm-muted' : ''}`}
-                      onClick={() => toggleMute('Vocal')}
-                      title="Mute"
-                    >
-                      {vocal().muted ? <VolumeX /> : <Volume2 />}
-                    </button>
-                    <button
-                      class="sm-action-btn"
-                      onClick={() => handleDownload(vocal())}
-                      title="Download"
-                    >
-                      <Download />
-                    </button>
-                  </div>
-                  <input
-                    type="range"
-                    class="sm-volume-slider"
-                    min="0"
-                    max="100"
-                    value={Math.round(vocal().volume * 100)}
-                    onInput={(e) =>
-                      setTrackVolume('Vocal', parseInt(e.currentTarget.value) / 100)
-                    }
-                  />
-                </div>
-              )}
+                )}
 
-              {/* Instrumental stem strip */}
-              {instrumental().url && (
-                <div class="sm-stem-strip">
-                  <div class="sm-stem-header">
-                    <span
-                      class="sm-stem-dot"
-                      style={{ background: instrumental().color }}
+                {instrumental().url && (
+                  <div class="sm-stem-strip">
+                    <div class="sm-stem-header">
+                      <span
+                        class="sm-stem-dot"
+                        style={{ background: instrumental().color }}
+                      />
+                      <span class="sm-stem-label">{instrumental().label}</span>
+                      <span class="sm-stem-vol-pct">
+                        {Math.round((instrumental().muted || (anySoloed() && !instrumental().soloed)) ? 0 : instrumental().volume * 100)}%
+                      </span>
+                    </div>
+                    <div class="sm-stem-actions">
+                      <button
+                        class={`sm-action-btn ${instrumental().soloed ? 'sm-active' : ''}`}
+                        onClick={() => toggleSolo('Instrumental')}
+                        title="Solo"
+                        style={{ color: instrumental().soloed ? instrumental().color : '' }}
+                      >
+                        <Ear />
+                      </button>
+                      <button
+                        class={`sm-action-btn ${instrumental().muted ? 'sm-muted' : ''}`}
+                        onClick={() => toggleMute('Instrumental')}
+                        title="Mute"
+                      >
+                        {instrumental().muted ? <VolumeX /> : <Volume2 />}
+                      </button>
+                      <button
+                        class="sm-action-btn"
+                        onClick={() => handleDownload(instrumental())}
+                        title="Download"
+                      >
+                        <Download />
+                      </button>
+                    </div>
+                    <input
+                      type="range"
+                      class="sm-volume-slider"
+                      min="0"
+                      max="100"
+                      value={Math.round(instrumental().volume * 100)}
+                      onInput={(e) =>
+                        setTrackVolume('Instrumental', parseInt(e.currentTarget.value) / 100)
+                      }
                     />
-                    <span class="sm-stem-label">{instrumental().label}</span>
-                    <span class="sm-stem-vol-pct">
-                      {Math.round((instrumental().muted || (anySoloed() && !instrumental().soloed)) ? 0 : instrumental().volume * 100)}%
-                    </span>
                   </div>
-                  <div class="sm-stem-actions">
-                    <button
-                      class={`sm-action-btn ${instrumental().soloed ? 'sm-active' : ''}`}
-                      onClick={() => toggleSolo('Instrumental')}
-                      title="Solo"
-                      style={{ color: instrumental().soloed ? instrumental().color : '' }}
-                    >
-                      <Ear />
-                    </button>
-                    <button
-                      class={`sm-action-btn ${instrumental().muted ? 'sm-muted' : ''}`}
-                      onClick={() => toggleMute('Instrumental')}
-                      title="Mute"
-                    >
-                      {instrumental().muted ? <VolumeX /> : <Volume2 />}
-                    </button>
-                    <button
-                      class="sm-action-btn"
-                      onClick={() => handleDownload(instrumental())}
-                      title="Download"
-                    >
-                      <Download />
-                    </button>
-                  </div>
-                  <input
-                    type="range"
-                    class="sm-volume-slider"
-                    min="0"
-                    max="100"
-                    value={Math.round(instrumental().volume * 100)}
-                    onInput={(e) =>
-                      setTrackVolume('Instrumental', parseInt(e.currentTarget.value) / 100)
-                    }
-                  />
+                )}
+              </div>
+
+              {/* Lyrics Panel */}
+              <div class="sm-lyrics-panel">
+                <div class="sm-lyrics-header">
+                  <span>Lyrics</span>
+                  <Show when={lyricsSource() === 'api'}>
+                    <span class="sm-lyrics-source">found</span>
+                  </Show>
+                  <Show when={lyricsSource() === 'upload'}>
+                    <span class="sm-lyrics-source sm-lyrics-source-upload">uploaded</span>
+                  </Show>
                 </div>
-              )}
+                <Show when={lyricsLoading()}>
+                  <div class="sm-lyrics-loading">Searching...</div>
+                </Show>
+                <Show when={!lyricsLoading() && lyricsSource() !== 'none'}>
+                  <div class="sm-lyrics-lines">
+                    <Show when={lrcLines().length > 0}>
+                      <For each={lrcLines()}>
+                        {(line, idx) => (
+                          <span
+                            class={`sm-lyrics-line${idx() === currentLineIdx() ? ' sm-lyrics-line-active' : ''}`}
+                            onClick={() => handleLyricLineClick(idx())}
+                          >
+                            {line.text}
+                          </span>
+                        )}
+                      </For>
+                    </Show>
+                    <Show when={lrcLines().length === 0 && lyricsLines().length > 0}>
+                      <For each={lyricsLines()}>
+                        {(line, idx) => (
+                          <span
+                            class={`sm-lyrics-line${idx() === currentLineIdx() ? ' sm-lyrics-line-active' : ''}`}
+                            onClick={() => handleLyricLineClick(idx())}
+                          >
+                            {line}
+                          </span>
+                        )}
+                      </For>
+                    </Show>
+                  </div>
+                </Show>
+                <Show when={!lyricsLoading() && lyricsSource() === 'none'}>
+                  <LyricsUploader
+                    onUpload={handleLyricsUpload}
+                    suggestion={props.songTitle}
+                  />
+                </Show>
+              </div>
             </div>
           </div>
 
@@ -849,7 +976,6 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             </div>
           </div>
         </Show>
-      </div>
     </div>
   )
 }
@@ -859,42 +985,12 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 // ============================================================
 
 export const StemMixerStyles: string = `
-.stem-mixer-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 2000;
-  animation: sm-overlay-in 0.2s ease;
-  padding: 1.5rem;
-}
-
-@keyframes sm-overlay-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
 .stem-mixer {
   display: flex;
   flex-direction: column;
-  width: 100%;
-  max-width: 1100px;
-  height: 90vh;
-  max-height: 800px;
+  height: 100%;
   background: var(--bg-secondary, #161b22);
-  border: 1px solid var(--border, #30363d);
-  border-radius: 1rem;
   overflow: hidden;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
-  animation: sm-dialog-in 0.25s ease;
-}
-
-@keyframes sm-dialog-in {
-  from { transform: scale(0.96); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
 }
 
 /* Header */
@@ -929,29 +1025,30 @@ export const StemMixerStyles: string = `
   font-family: monospace;
 }
 
-.sm-close-btn {
+.sm-back-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 2rem;
-  height: 2rem;
+  width: 1.75rem;
+  height: 1.75rem;
   padding: 0;
   background: var(--bg-tertiary, #21262d);
   border: 1px solid var(--border, #30363d);
-  border-radius: 0.5rem;
-  color: var(--fg-primary, #c9d1d9);
+  border-radius: 0.4rem;
+  color: var(--fg-secondary, #8b949e);
   cursor: pointer;
   transition: all 0.15s;
+  flex-shrink: 0;
 }
 
-.sm-close-btn:hover {
-  background: rgba(239, 68, 68, 0.1);
-  color: var(--error, #f85149);
+.sm-back-btn:hover {
+  background: var(--bg-hover, #30363d);
+  color: var(--fg-primary, #c9d1d9);
 }
 
-.sm-close-btn svg {
-  width: 1rem;
-  height: 1rem;
+.sm-back-btn svg {
+  width: 0.9rem;
+  height: 0.9rem;
 }
 
 /* Loading */
@@ -1056,10 +1153,17 @@ export const StemMixerStyles: string = `
 /* Controls panel */
 .sm-controls {
   display: flex;
+  flex-direction: column;
   gap: 0.5rem;
   padding: 0.75rem 0.75rem 0.75rem 0;
   width: 220px;
   flex-shrink: 0;
+  overflow: hidden;
+}
+
+.sm-strips-row {
+  display: flex;
+  gap: 0.5rem;
 }
 
 .sm-stem-strip {
@@ -1167,6 +1271,83 @@ export const StemMixerStyles: string = `
   border-radius: 50%;
   cursor: pointer;
   border: 2px solid var(--bg-primary, #0d1117);
+}
+
+/* Lyrics Panel */
+.sm-lyrics-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  background: var(--bg-primary, #0d1117);
+  border-radius: 0.5rem;
+  overflow: hidden;
+  border: 1px solid var(--border, #30363d);
+}
+
+.sm-lyrics-header {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.6rem;
+  background: var(--bg-tertiary, #21262d);
+  font-size: 0.65rem;
+  color: var(--fg-tertiary, #484f58);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+}
+
+.sm-lyrics-source {
+  font-size: 0.55rem;
+  padding: 0.05rem 0.3rem;
+  border-radius: 0.2rem;
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.sm-lyrics-source-upload {
+  background: rgba(139, 92, 246, 0.15);
+  color: #8b5cf6;
+}
+
+.sm-lyrics-loading {
+  padding: 0.5rem;
+  font-size: 0.62rem;
+  color: var(--fg-tertiary, #484f58);
+  text-align: center;
+}
+
+.sm-lyrics-lines {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.35rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.sm-lyrics-line {
+  font-size: 0.65rem;
+  color: var(--fg-tertiary, #484f58);
+  padding: 0.12rem 0.3rem;
+  border-radius: 0.2rem;
+  cursor: pointer;
+  transition: all 0.1s;
+  line-height: 1.3;
+}
+
+.sm-lyrics-line:hover {
+  color: var(--fg-secondary, #8b949e);
+  background: var(--bg-tertiary, #21262d);
+}
+
+.sm-lyrics-line-active {
+  color: var(--accent, #58a6ff);
+  background: rgba(88, 166, 255, 0.1);
+  font-weight: 500;
 }
 
 /* Transport */

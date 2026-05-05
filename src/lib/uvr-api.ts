@@ -58,6 +58,7 @@ export interface OutputFile {
   filename: string
   path: string
   size?: number
+  duration?: number
 }
 
 /**

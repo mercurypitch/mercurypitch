@@ -56,7 +56,7 @@ async function startRealProcessing(
   }
 }
 
-type UvrView = 'upload' | 'processing' | 'results' | 'history'
+type UvrView = 'upload' | 'processing' | 'results' | 'history' | 'mixer'
 
 interface UvrPanelProps {
   /** Currently active view */
@@ -90,11 +90,12 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   const [showDeleteAllConfirm, setShowDeleteAllConfirm] = createSignal(false)
   const [deleteAllToast, setDeleteAllToast] = createSignal('')
   const [selectedFile, setSelectedFile] = createSignal<File | null>(null)
-  const [showStemMixer, setShowStemMixer] = createSignal(false)
-  const [stemMixerStems, setStemMixerStems] = createSignal<{
+  const [prevView, setPrevView] = createSignal<UvrView>('upload')
+  const [mixerStems, setMixerStems] = createSignal<{
     vocal?: string
     instrumental?: string
   }>({})
+  const [mixerSessionId, setMixerSessionId] = createSignal('')
 
   // Computed session state
   const session = () => currentUvrSession()
@@ -159,16 +160,19 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
             instrumental: '',
             vocalMidi: '',
           }
+          const meta: Record<string, { duration?: number; size?: number }> = {}
 
           for (const f of files) {
             if (f.stem === 'vocal') {
               outputs.vocal = f.path
+              meta.vocal = { duration: f.duration, size: f.size }
             } else if (f.stem === 'instrumental') {
               outputs.instrumental = f.path
+              meta.instrumental = { duration: f.duration, size: f.size }
             }
           }
 
-          completeUvrSession(sessionId, outputs)
+          completeUvrSession(sessionId, outputs, meta)
           setCurrentView('results')
         },
         showError,
@@ -212,26 +216,35 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     const s = currentUvrSession()
     if (!s?.outputs) return
 
-    setStemMixerStems({
+    setPrevView(currentView())
+    setMixerStems({
       vocal: s.outputs.vocal,
       instrumental: s.outputs.instrumental,
     })
-    setShowStemMixer(true)
+    setMixerSessionId(s.sessionId)
+    setCurrentView('mixer')
 
     if (props.onPracticeStart) {
       props.onPracticeStart(mode)
     }
   }
 
-  const handleOpenMixerFromHistory = (sessionId: string) => {
+  const handleOpenMixerFromHistory = (
+    sessionId: string,
+    stems?: { vocal?: boolean; instrumental?: boolean },
+  ) => {
     const s = getUvrSession(sessionId)
     if (!s?.outputs) return
     setCurrentUvrSession(s)
-    setStemMixerStems({
-      vocal: s.outputs.vocal,
-      instrumental: s.outputs.instrumental,
+
+    setPrevView(currentView())
+    const filter = stems || {}
+    setMixerStems({
+      vocal: filter.vocal !== false ? s.outputs.vocal : undefined,
+      instrumental: filter.instrumental !== false ? s.outputs.instrumental : undefined,
     })
-    setShowStemMixer(true)
+    setMixerSessionId(s.sessionId)
+    setCurrentView('mixer')
   }
 
   const handleExportSession = (
@@ -448,7 +461,9 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
             {session() && (
               <UvrResultViewer
                 outputs={session()!.outputs}
+                stemMeta={session()!.stemMeta}
                 processingTime={session()!.processingTime}
+                sessionId={session()!.sessionId}
                 onStartPractice={handlePracticeStart}
                 onExport={handleExport}
               />
@@ -500,8 +515,8 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                           type as 'vocal' | 'instrumental' | 'vocal-midi',
                         )
                       }
-                      onOpenMixer={(sessionId) =>
-                        handleOpenMixerFromHistory(sessionId)
+                      onOpenMixer={(sessionId, stems) =>
+                        handleOpenMixerFromHistory(sessionId, stems)
                       }
                     />
                   )}
@@ -550,13 +565,16 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
         </div>
       </Show>
 
-      {/* Stem Mixer Overlay */}
-      <Show when={showStemMixer()}>
-        <StemMixer
-          stems={stemMixerStems()}
-          sessionId={session()?.sessionId || ''}
-          onClose={() => setShowStemMixer(false)}
-        />
+      {/* Stem Mixer Inline */}
+      <Show when={currentView() === 'mixer'}>
+        <div class="view-section mixer-section">
+          <StemMixer
+            stems={mixerStems()}
+            sessionId={mixerSessionId()}
+            songTitle={currentUvrSession()?.originalFile?.name ?? 'Unknown'}
+            onBack={() => setCurrentView(prevView())}
+          />
+        </div>
       </Show>
     </div>
   )
@@ -666,6 +684,14 @@ export const UvrPanelStyles: string = `
 .view-section {
   padding: 1.5rem;
   min-height: 400px;
+}
+
+.mixer-section {
+  padding: 0;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .section-header {

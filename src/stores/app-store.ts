@@ -109,6 +109,7 @@ export interface UvrSession {
     vocalMidi?: string
     instrumentalMidi?: string
   }
+  stemMeta?: Record<string, { duration?: number; size?: number }>
   createdAt: number
 }
 
@@ -217,12 +218,14 @@ export function setUvrSessionApiId(
 export function completeUvrSession(
   sessionId: string,
   outputs: UvrSession['outputs'],
+  stemMeta?: UvrSession['stemMeta'],
 ): void {
   const sessions = getAllUvrSessions()
   const session = sessions.find((s) => s.sessionId === sessionId)
   if (session) {
     session.status = 'completed'
     session.outputs = outputs
+    session.stemMeta = stemMeta
     session.progress = 100
     session.processingTime = Date.now() - session.createdAt
     saveAllUvrSessions(sessions)
@@ -294,7 +297,7 @@ export function getUvrSessionStats(): {
 /** Refresh session output files from API data */
 export function updateUvrSessionOutputs(
   sessionId: string,
-  files: { stem: string; path: string }[],
+  files: { stem: string; path: string; duration?: number; size?: number }[],
 ): void {
   const sessions = getAllUvrSessions()
   const session = sessions.find((s) => s.sessionId === sessionId)
@@ -305,13 +308,20 @@ export function updateUvrSessionOutputs(
     instrumental: session.outputs?.instrumental || '',
     vocalMidi: session.outputs?.vocalMidi || '',
   }
+  const meta: Record<string, { duration?: number; size?: number }> = {}
 
   for (const f of files) {
-    if (f.stem === 'vocal') outputs.vocal = f.path
-    else if (f.stem === 'instrumental') outputs.instrumental = f.path
+    if (f.stem === 'vocal') {
+      outputs.vocal = f.path
+      meta.vocal = { duration: f.duration, size: f.size }
+    } else if (f.stem === 'instrumental') {
+      outputs.instrumental = f.path
+      meta.instrumental = { duration: f.duration, size: f.size }
+    }
   }
 
   session.outputs = outputs
+  session.stemMeta = meta
   saveAllUvrSessions(sessions)
   bumpSessions()
   if (currentUvrSession()?.sessionId === sessionId) {

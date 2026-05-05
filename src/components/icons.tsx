@@ -271,6 +271,22 @@ export const ChevronDown: Component = () => (
   </svg>
 )
 
+// Chevron Left Icon
+export const ChevronLeft: Component = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    width="24"
+    height="24"
+  >
+    <polyline points="15 18 9 12 15 6" />
+  </svg>
+)
+
 // Chevron Up Icon
 export const ChevronUp: Component = () => (
   <svg
@@ -504,6 +520,26 @@ export const RotateCcw: Component = () => (
   >
     <polyline points="1 4 1 10 7 10" />
     <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+  </svg>
+)
+
+// Share Icon
+export const Share: Component = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    width="24"
+    height="24"
+  >
+    <circle cx="18" cy="5" r="3" />
+    <circle cx="6" cy="12" r="3" />
+    <circle cx="18" cy="19" r="3" />
+    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
   </svg>
 )
 

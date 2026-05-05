@@ -15,7 +15,7 @@ interface SessionResultProps {
     sessionId: string,
     type: 'vocal' | 'instrumental' | 'vocal-midi',
   ) => void
-  onOpenMixer?: (sessionId: string) => void
+  onOpenMixer?: (sessionId: string, stems?: { vocal?: boolean; instrumental?: boolean }) => void
   onClose?: () => void
 }
 
@@ -23,6 +23,7 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
   const session = () => getUvrSession(props.sessionId)
   const [showDeleteConfirm, setShowDeleteConfirm] = createSignal(false)
   const [toastMessage, setToastMessage] = createSignal('')
+  const [selectedStems, setSelectedStems] = createSignal<Set<string>>(new Set())
 
   const formatDate = (timestamp: number): string => {
     const date = new Date(timestamp)
@@ -38,6 +39,13 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
     const sizes = ['Bytes', 'KB', 'MB']
     const i = Math.floor(Math.log(bytes) / Math.log(k))
     return `${Math.round((bytes / Math.pow(k, i)) * 100) / 100} ${sizes[i]}`
+  }
+
+  const formatDuration = (secs?: number): string => {
+    if (!secs || secs <= 0) return ''
+    const m = Math.floor(secs / 60)
+    const s = Math.floor(secs % 60)
+    return `${m}:${s.toString().padStart(2, '0')}`
   }
 
   const handleDelete = (e: Event) => {
@@ -58,6 +66,26 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
       props.onExport(props.sessionId, type)
     }
   }
+
+  const toggleStemSelection = (stem: string) => {
+    setSelectedStems(prev => {
+      const next = new Set(prev)
+      if (next.has(stem)) next.delete(stem)
+      else next.add(stem)
+      return next
+    })
+  }
+
+  const handleMixSelected = () => {
+    const sel = selectedStems()
+    if (sel.size === 0) return
+    props.onOpenMixer?.(props.sessionId, {
+      vocal: sel.has('vocal'),
+      instrumental: sel.has('instrumental'),
+    })
+  }
+
+  const hasSelection = () => selectedStems().size > 0
 
   const getStatusColor = (status: UvrStatus): string => {
     switch (status) {
@@ -180,36 +208,46 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
         </Show>
       </div>
 
-      {/* Outputs — compact stem pills */}
+      {/* Outputs — compact multi-select stem pills */}
       <Show when={session()?.outputs}>
         <div class="outputs-section">
           <h4>Available Stems</h4>
           <div class="stem-pills">
             <Show when={session()?.outputs?.vocal}>
               <button
-                class="stem-pill stem-pill-vocal"
-                onClick={() => handleExport('vocal')}
-                title="Download Vocal Stem"
+                class={`stem-pill stem-pill-vocal ${selectedStems().has('vocal') ? 'stem-pill-selected' : ''}`}
+                onClick={() => toggleStemSelection('vocal')}
+                title={selectedStems().has('vocal') ? 'Deselect Vocal' : 'Select Vocal for Mix'}
               >
                 <Voice />
                 <span>Vocal</span>
+                <Show when={formatDuration(session()?.stemMeta?.vocal?.duration)}>
+                  <span class="stem-pill-duration">
+                    {formatDuration(session()?.stemMeta?.vocal?.duration)}
+                  </span>
+                </Show>
               </button>
             </Show>
             <Show when={session()?.outputs?.instrumental}>
               <button
-                class="stem-pill stem-pill-instrumental"
-                onClick={() => handleExport('instrumental')}
-                title="Download Instrumental"
+                class={`stem-pill stem-pill-instrumental ${selectedStems().has('instrumental') ? 'stem-pill-selected' : ''}`}
+                onClick={() => toggleStemSelection('instrumental')}
+                title={selectedStems().has('instrumental') ? 'Deselect Instrumental' : 'Select Instrumental for Mix'}
               >
                 <Headphones />
                 <span>Inst</span>
+                <Show when={formatDuration(session()?.stemMeta?.instrumental?.duration)}>
+                  <span class="stem-pill-duration">
+                    {formatDuration(session()?.stemMeta?.instrumental?.duration)}
+                  </span>
+                </Show>
               </button>
             </Show>
             <Show when={session()?.outputs?.vocalMidi}>
               <button
-                class="stem-pill stem-pill-midi"
-                onClick={() => handleExport('vocal-midi')}
-                title="Download MIDI"
+                class={`stem-pill stem-pill-midi ${selectedStems().has('vocal-midi') ? 'stem-pill-selected' : ''}`}
+                onClick={() => toggleStemSelection('vocal-midi')}
+                title={selectedStems().has('vocal-midi') ? 'Deselect MIDI' : 'Select MIDI for Mix'}
               >
                 <Midi />
                 <span>MIDI</span>
@@ -228,12 +266,12 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
           >
             <Play /> View Results
           </button>
-          <Show when={session()?.outputs?.vocal || session()?.outputs?.instrumental}>
+          <Show when={hasSelection()}>
             <button
               class="session-result-btn session-result-btn-mixer"
-              onClick={() => props.onOpenMixer?.(props.sessionId)}
+              onClick={handleMixSelected}
             >
-              <SlidersHorizontal /> Mix
+              <SlidersHorizontal /> Mix Selected
             </button>
           </Show>
         </div>
@@ -550,6 +588,31 @@ export const UvrSessionResultStyles: string = `
 .stem-pill-midi:hover {
   background: rgba(139, 92, 246, 0.15);
   border-color: rgba(139, 92, 246, 0.4);
+}
+
+.stem-pill-duration {
+  font-size: 0.65rem;
+  font-family: monospace;
+  opacity: 0.7;
+  margin-left: 0.1rem;
+}
+
+.stem-pill-selected {
+  outline: 2px solid currentColor;
+  outline-offset: 1px;
+  filter: brightness(1.2);
+}
+
+.stem-pill-vocal.stem-pill-selected {
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.3);
+}
+
+.stem-pill-instrumental.stem-pill-selected {
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.3);
+}
+
+.stem-pill-midi.stem-pill-selected {
+  box-shadow: 0 0 8px rgba(139, 92, 246, 0.3);
 }
 
 .session-result-actions {

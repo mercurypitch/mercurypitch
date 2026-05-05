@@ -1,10 +1,15 @@
 // ============================================================
-// UVR Result Viewer
+// UVR Result Viewer — Compact stem cards with metadata
 // ============================================================
 
 import type { Component } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
-import { Download, FileText, Music, Play, Voice, Headphones, Midi, MusicBoard, X, } from './icons'
+import { Download, Headphones, Midi, MusicBoard, Play, Share, SlidersHorizontal, Voice, X, } from './icons'
+
+interface StemMeta {
+  duration?: number
+  size?: number
+}
 
 interface ResultViewerProps {
   outputs?: {
@@ -13,8 +18,11 @@ interface ResultViewerProps {
     vocalMidi?: string
     instrumentalMidi?: string
   }
+  stemMeta?: Record<string, StemMeta>
   processingTime?: number
+  sessionId?: string
   onStartPractice?: (mode: 'vocal' | 'instrumental' | 'full' | 'midi') => void
+  onOpenMixer?: (sessionId: string) => void
   onExport?: (
     type: 'vocal' | 'instrumental' | 'vocal-midi' | 'instrumental-midi',
   ) => void
@@ -22,184 +30,216 @@ interface ResultViewerProps {
 }
 
 export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
-  const [selectedOutput, setSelectedOutput] = createSignal<
-    'vocal' | 'instrumental' | null
-  >(null)
+  const [shareToast, setShareToast] = createSignal('')
 
-  const outputs = () => props.outputs || {}
-
-  const handleStartPractice = (
-    mode: 'vocal' | 'instrumental' | 'full' | 'midi',
-  ) => {
-    if (props.onStartPractice) {
-      props.onStartPractice(mode)
-    }
+  const formatDuration = (secs?: number): string => {
+    if (!secs || secs <= 0) return ''
+    const m = Math.floor(secs / 60)
+    const s = Math.floor(secs % 60)
+    return `${m}:${s.toString().padStart(2, '0')}`
   }
 
-  const handleExport = (
-    type: 'vocal' | 'instrumental' | 'vocal-midi' | 'instrumental-midi',
-  ) => {
-    if (props.onExport) {
-      props.onExport(type)
+  const formatFileSize = (bytes?: number): string => {
+    if (!bytes || bytes === 0) return ''
+    if (bytes < 1024) return `${bytes} B`
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+  }
+
+  const handleStartPractice = (mode: 'vocal' | 'instrumental' | 'full' | 'midi') => {
+    props.onStartPractice?.(mode)
+  }
+
+  const handleExport = (type: 'vocal' | 'instrumental' | 'vocal-midi' | 'instrumental-midi') => {
+    props.onExport?.(type)
+  }
+
+  const handleShare = async () => {
+    const url = `${window.location.origin}/uvr/session/${props.sessionId || ''}`
+    try {
+      await navigator.clipboard.writeText(url)
+      setShareToast('Link copied to clipboard!')
+    } catch {
+      // Fallback
+      const input = document.createElement('input')
+      input.value = url
+      document.body.appendChild(input)
+      input.select()
+      document.execCommand('copy')
+      document.body.removeChild(input)
+      setShareToast('Link copied!')
     }
+    setTimeout(() => setShareToast(''), 2500)
+  }
+
+  const stems = () => {
+    const list: {
+      key: string
+      label: string
+      icon: Component
+      color: string
+      url?: string
+      format: string
+      practiceMode: 'vocal' | 'instrumental' | 'midi'
+      exportType: 'vocal' | 'instrumental' | 'vocal-midi'
+    }[] = []
+
+    if (props.outputs?.vocal) {
+      list.push({
+        key: 'vocal',
+        label: 'Vocal',
+        icon: Voice,
+        color: '#f59e0b',
+        url: props.outputs.vocal,
+        format: 'WAV',
+        practiceMode: 'vocal',
+        exportType: 'vocal',
+      })
+    }
+    if (props.outputs?.instrumental) {
+      list.push({
+        key: 'instrumental',
+        label: 'Instrumental',
+        icon: Headphones,
+        color: '#3b82f6',
+        url: props.outputs.instrumental,
+        format: 'WAV',
+        practiceMode: 'instrumental',
+        exportType: 'instrumental',
+      })
+    }
+    if (props.outputs?.vocalMidi) {
+      list.push({
+        key: 'vocalMidi',
+        label: 'Vocal MIDI',
+        icon: Midi,
+        color: '#8b5cf6',
+        url: props.outputs.vocalMidi,
+        format: 'MID',
+        practiceMode: 'midi',
+        exportType: 'vocal-midi',
+      })
+    }
+
+    return list
   }
 
   return (
     <div class="uvr-result-viewer">
       {/* Header */}
-      <div class="result-header">
-        <h3>Processing Results</h3>
-        <button class="close-btn" onClick={props.onClose} aria-label="Close">
-          <X />
-        </button>
-      </div>
-
-      {/* Processing Info */}
-      <div class="result-info">
-        <div class="info-item">
-          <span class="info-icon">
-            <Music />
-          </span>
-          <div>
-            <span class="info-label">Processing Time</span>
-            <span class="info-value">
-              {props.processingTime
-                ? `${Math.round(props.processingTime / 1000)}s`
-                : 'Not available'}
+      <div class="rv-header">
+        <div class="rv-header-left">
+          <h3>Stems</h3>
+          <Show when={props.processingTime}>
+            <span class="rv-processing-time">
+              processed in {Math.round(props.processingTime! / 1000)}s
             </span>
-          </div>
+          </Show>
+        </div>
+        <div class="rv-header-right">
+          <button class="rv-share-btn" onClick={handleShare} title="Copy share link">
+            <Share /> Share
+          </button>
+          <Show when={props.onClose}>
+            <button class="rv-close-btn" onClick={props.onClose} aria-label="Close">
+              <X />
+            </button>
+          </Show>
         </div>
       </div>
 
-      {/* Output Sections */}
-      <div class="output-sections">
-        {/* Vocal Output */}
-        <div class="output-section">
-          <div class="section-header">
-            <div class="section-icon vocal-icon">
-              <Voice />
+      {/* Stem Cards Grid */}
+      <div class="rv-stems-grid">
+        {stems().map((stem) => {
+          const meta = props.stemMeta?.[stem.key]
+          return (
+            <div
+              class="rv-stem-card"
+              style={{ '--stem-color': stem.color }}
+            >
+              <div class="rv-stem-card-top">
+                <div class="rv-stem-icon" style={{ color: stem.color }}>
+                  {<stem.icon />}
+                </div>
+                <div class="rv-stem-info">
+                  <span class="rv-stem-name">{stem.label}</span>
+                  <div class="rv-stem-meta">
+                    <span class="rv-stem-format">{stem.format}</span>
+                    <Show when={formatDuration(meta?.duration)}>
+                      <span class="rv-stem-duration">
+                        {formatDuration(meta?.duration)}
+                      </span>
+                    </Show>
+                    <Show when={formatFileSize(meta?.size)}>
+                      <span class="rv-stem-size">
+                        {formatFileSize(meta?.size)}
+                      </span>
+                    </Show>
+                  </div>
+                </div>
+              </div>
+              <div class="rv-stem-card-actions">
+                <button
+                  class="rv-stem-btn rv-stem-btn-play"
+                  onClick={() => handleStartPractice(stem.practiceMode)}
+                >
+                  <Play /> Play
+                </button>
+                <button
+                  class="rv-stem-btn rv-stem-btn-download"
+                  onClick={() => handleExport(stem.exportType)}
+                >
+                  <Download />
+                </button>
+              </div>
             </div>
-            <div class="section-title">
-              <h4>Vocal Stem</h4>
-              <span class="section-tag">WAV</span>
-            </div>
-          </div>
+          )
+        })}
+      </div>
 
-          <Show when={outputs().vocal}>
-            <div class="output-actions">
-              <button
-                class="output-btn output-btn-primary"
-                onClick={() => handleStartPractice('vocal')}
-              >
-                <Play /> Practice with Vocal
-              </button>
-              <button
-                class="output-btn output-btn-secondary"
-                onClick={() => handleExport('vocal')}
-              >
-                <Download /> Download
-              </button>
-            </div>
-          </Show>
-        </div>
-
-        {/* Instrumental Output */}
-        <div class="output-section">
-          <div class="section-header">
-            <div class="section-icon instrumental-icon">
-              <Headphones />
-            </div>
-            <div class="section-title">
-              <h4>Instrumental</h4>
-              <span class="section-tag">WAV</span>
-            </div>
-          </div>
-
-          <Show when={outputs().instrumental}>
-            <div class="output-actions">
-              <button
-                class="output-btn output-btn-primary"
-                onClick={() => handleStartPractice('instrumental')}
-              >
-                <Play /> Practice Instrumental
-              </button>
-              <button
-                class="output-btn output-btn-secondary"
-                onClick={() => handleExport('instrumental')}
-              >
-                <Download /> Download
-              </button>
-            </div>
-          </Show>
-        </div>
-
-        {/* Vocal MIDI Output */}
-        <div class="output-section">
-          <div class="section-header">
-            <div class="section-icon vocal-icon">
-              <Midi />
-            </div>
-            <div class="section-title">
-              <h4>Vocal MIDI</h4>
-              <span class="section-tag">MIDI</span>
-            </div>
-          </div>
-
-          <Show when={outputs().vocalMidi}>
-            <div class="output-actions">
-              <button
-                class="output-btn output-btn-primary"
-                onClick={() => handleStartPractice('midi')}
-              >
-                <Play /> Practice MIDI
-              </button>
-              <button
-                class="output-btn output-btn-secondary"
-                onClick={() => handleExport('vocal-midi')}
-              >
-                <Download /> Download
-              </button>
-            </div>
-          </Show>
-        </div>
-
-        {/* Full Mix (Karaoke style) */}
-        <div class="output-section">
-          <div class="section-header">
-            <div class="section-icon full-icon">
+      {/* Full Mix Card */}
+      <Show when={props.outputs?.vocal && props.outputs?.instrumental}>
+        <div class="rv-full-mix-card">
+          <div class="rv-full-mix-left">
+            <div class="rv-stem-icon" style={{ color: '#10b981' }}>
               <MusicBoard />
             </div>
-            <div class="section-title">
-              <h4>Full Mix (Karaoke)</h4>
-              <span class="section-tag">Both Stems</span>
+            <div class="rv-stem-info">
+              <span class="rv-stem-name">Full Mix</span>
+              <span class="rv-stem-format">Vocal + Instrumental</span>
             </div>
           </div>
-
-          <Show when={outputs().vocal && outputs().instrumental}>
-            <div class="output-actions">
-              <button
-                class="output-btn output-btn-primary"
-                onClick={() => handleStartPractice('full')}
-              >
-                <Play /> Practice Full Mix
-              </button>
-            </div>
-          </Show>
+          <div class="rv-full-mix-actions">
+            <button
+              class="rv-stem-btn rv-stem-btn-play"
+              onClick={() => handleStartPractice('full')}
+            >
+              <Play /> Play
+            </button>
+            <button
+              class="rv-stem-btn rv-stem-btn-mixer"
+              onClick={() => {
+                if (props.sessionId) {
+                  handleStartPractice('full')
+                }
+              }}
+            >
+              <SlidersHorizontal /> Mix
+            </button>
+          </div>
         </div>
-      </div>
+      </Show>
 
-      {/* Share Button */}
-      <div class="result-footer">
-        <button class="share-btn" disabled={true}>
-          <FileText /> Share Session
-        </button>
-      </div>
+      {/* Share Toast */}
+      <Show when={shareToast()}>
+        <div class="rv-toast">{shareToast()}</div>
+      </Show>
     </div>
   )
 }
 
 // ============================================================
-// CSS Styles (inline for this component)
+// CSS Styles
 // ============================================================
 
 export const UvrResultViewerStyles: string = `
@@ -210,19 +250,65 @@ export const UvrResultViewerStyles: string = `
   width: 100%;
 }
 
-.result-header {
+/* Header */
+.rv-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
-.result-header h3 {
+.rv-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.rv-header-left h3 {
   margin: 0;
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   color: var(--fg-primary);
 }
 
-.close-btn {
+.rv-processing-time {
+  font-size: 0.72rem;
+  color: var(--fg-tertiary);
+  background: var(--bg-tertiary);
+  padding: 0.15rem 0.5rem;
+  border-radius: 0.3rem;
+}
+
+.rv-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.rv-share-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.85rem;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+  color: var(--fg-primary);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.rv-share-btn svg {
+  width: 0.8rem;
+  height: 0.8rem;
+}
+
+.rv-share-btn:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.rv-close-btn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -234,150 +320,208 @@ export const UvrResultViewerStyles: string = `
   border-radius: 0.5rem;
   color: var(--fg-primary);
   cursor: pointer;
-  transition: all 0.2s;
 }
 
-.close-btn:hover {
-  background: var(--border);
-  color: var(--fg-secondary);
+.rv-close-btn:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--error);
 }
 
-.result-info {
+.rv-close-btn svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+/* Stem Cards Grid */
+.rv-stems-grid {
   display: flex;
-  gap: 1.5rem;
-}
-
-.info-item {
-  display: flex;
+  flex-direction: column;
   gap: 0.5rem;
+}
+
+.rv-stem-card {
+  display: flex;
   align-items: center;
+  justify-content: space-between;
+  padding: 0.65rem 0.85rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  border-left: 3px solid var(--stem-color, var(--border));
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-.info-icon {
-  font-size: 1rem;
+.rv-stem-card:hover {
+  border-color: var(--stem-color, var(--accent));
+  box-shadow: 0 0 0 1px rgba(from var(--stem-color) r g b / 0.15);
 }
 
-.info-label {
-  font-size: 0.75rem;
-  color: var(--fg-secondary);
+.rv-stem-card-top {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
 }
 
-.info-value {
+.rv-stem-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  background: var(--bg-primary);
+  border-radius: 0.5rem;
+  flex-shrink: 0;
+}
+
+.rv-stem-icon svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.rv-stem-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.rv-stem-name {
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--fg-primary);
 }
 
-.output-sections {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.output-section {
-  padding: 1rem;
-  background: var(--bg-secondary);
-  border-radius: 0.75rem;
-  border: 2px solid var(--border);
-  transition: all 0.2s;
-}
-
-.output-section:hover {
-  border-color: var(--accent);
-}
-
-.section-header {
+.rv-stem-meta {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 0.75rem;
+  gap: 0.4rem;
+  flex-wrap: wrap;
 }
 
-.section-icon {
-  font-size: 1.25rem;
-}
-
-.vocal-icon { color: #f59e0b; }
-.instrumental-icon { color: #3b82f6; }
-.vocal-icon, .full-icon { color: #10b981; }
-.instrumental-icon, .full-icon { color: #8b5cf6; }
-
-.section-title {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.section-title h4 {
-  margin: 0;
-  font-size: 0.95rem;
-  color: var(--fg-primary);
-}
-
-.section-tag {
-  font-size: 0.7rem;
-  padding: 0.125rem 0.5rem;
+.rv-stem-format {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.1rem 0.35rem;
   background: var(--bg-tertiary);
-  border-radius: 0.25rem;
+  border-radius: 0.2rem;
   color: var(--fg-tertiary);
 }
 
-.output-actions {
-  display: flex;
-  gap: 0.5rem;
+.rv-stem-duration {
+  font-size: 0.68rem;
+  font-family: monospace;
+  color: var(--fg-secondary);
 }
 
-.output-btn {
-  flex: 1;
+.rv-stem-size {
+  font-size: 0.65rem;
+  color: var(--fg-tertiary);
+}
+
+.rv-stem-card-actions {
   display: flex;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.rv-stem-btn {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0.625rem;
+  gap: 0.3rem;
+  padding: 0.4rem 0.75rem;
   border: none;
-  border-radius: 0.5rem;
-  font-size: 0.85rem;
+  border-radius: 0.4rem;
+  font-size: 0.78rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.15s;
+  white-space: nowrap;
 }
 
-.output-btn-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+.rv-stem-btn svg {
+  width: 0.75rem;
+  height: 0.75rem;
 }
 
-.output-btn-primary:hover {
-  opacity: 0.9;
-  transform: translateY(-1px);
+.rv-stem-btn-play {
+  background: var(--accent);
+  color: var(--bg-primary);
 }
 
-.output-btn-secondary {
-  background: var(--bg-primary);
-  color: var(--fg-primary);
+.rv-stem-btn-play:hover {
+  opacity: 0.85;
+}
+
+.rv-stem-btn-download {
+  background: var(--bg-tertiary);
+  color: var(--fg-secondary);
   border: 1px solid var(--border);
+  padding: 0.4rem 0.5rem;
 }
 
-.output-btn-secondary:hover {
+.rv-stem-btn-download:hover {
   background: var(--bg-hover);
+  color: var(--fg-primary);
 }
 
-.result-footer {
-  display: flex;
-  justify-content: center;
+.rv-stem-btn-mixer {
+  background: var(--bg-tertiary);
+  color: var(--accent);
+  border: 1px solid rgba(139, 92, 246, 0.3);
 }
 
-.share-btn {
+.rv-stem-btn-mixer:hover {
+  background: rgba(139, 92, 246, 0.1);
+  border-color: rgba(139, 92, 246, 0.5);
+}
+
+/* Full Mix Card */
+.rv-full-mix-card {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 0.85rem;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(139, 92, 246, 0.08));
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: 0.6rem;
+}
+
+.rv-full-mix-left {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.rv-full-mix-actions {
+  display: flex;
   gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  background: var(--bg-secondary);
+  flex-shrink: 0;
+}
+
+/* Toast */
+.rv-toast {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.6rem 1.25rem;
+  background: var(--bg-primary);
   border: 1px solid var(--border);
   border-radius: 0.5rem;
-  color: var(--fg-secondary);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
   font-size: 0.85rem;
-  cursor: not-allowed;
+  color: var(--fg-primary);
+  z-index: 1001;
+  animation: rv-toast-in 0.25s ease, rv-toast-out 0.25s ease 2s forwards;
+}
+
+@keyframes rv-toast-in {
+  from { transform: translateX(-50%) translateY(1rem); opacity: 0; }
+  to { transform: translateX(-50%) translateY(0); opacity: 1; }
+}
+
+@keyframes rv-toast-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
 }
 `

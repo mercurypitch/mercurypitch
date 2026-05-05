@@ -228,7 +228,7 @@ async def list_models():
 async def process_audio(
     background_tasks: BackgroundTasks,
     file: UploadFile,
-    model: str = 'UVR_MDXNET_KARA_2',
+    model: str = 'UVR-MDX-NET-Inst_HQ_3',
     output_format: str = "WAV",
     stems: List[str] = ["vocal", "instrumental"]
 ):
@@ -427,7 +427,8 @@ async def get_status(session_id: str):
                 "stem": detected,
                 "filename": filename,
                 "path": f"/api/uvr/output/{session_id}/{path_segment}",
-                "size": os.path.getsize(file_path)
+                "size": os.path.getsize(file_path),
+                "duration": get_audio_duration(file_path),
             })
 
     # Determine status and message
