@@ -443,6 +443,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
         */}
         <div class="inline-controls-row">
           {/* BPM */}
+          <Show when={!isFallingNotesTab()}>
           <div class="tempo-group inline-control" title="Tempo (BPM)">
             <span class="inline-control-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" width="14" height="14">
@@ -478,6 +479,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
               onInput={(e) => setBpm(parseInt(e.currentTarget.value) || 80)}
             />
           </div>
+          </Show>
 
           {/* Volume */}
           <div class="volume-group inline-control" title="Volume">
@@ -524,6 +526,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
           {/* Sensitivity — styled like BPM/Volume so the entire mic
               sensitivity widget reads as one cohesive control instead
               of a stray label-slider pair tucked at the right edge. */}
+          <Show when={!isFallingNotesTab()}>
           <div
             class="sensitivity-group inline-control"
             title="Mic sensitivity (1 = quiet rooms, 10 = noisy)"
@@ -566,6 +569,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
               }}
             />
           </div>
+          </Show>
 
           {/* Speed */}
           <div class="speed-group inline-control" title="Playback speed">
