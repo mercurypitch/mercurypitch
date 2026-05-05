@@ -5,7 +5,7 @@
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, Show } from 'solid-js'
 import type { UvrSession } from '@/stores/app-store'
-import { cancelUvrSession, completeUvrSession, currentUvrSession, deleteAllUvrSessions, getAllUvrSessions, getAllUvrSessionsReactive, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, startUvrSession, updateUvrSessionProgress, } from '@/stores/app-store'
+import { cancelUvrSession, completeUvrSession, currentUvrSession, deleteAllUvrSessions, getAllUvrSessions, getAllUvrSessionsReactive, getUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, startUvrSession, updateUvrSessionProgress, } from '@/stores/app-store'
 import { processAudio, pollForCompletion, type OutputFile, DEFAULT_PROCESS_REQUEST, } from '@/lib/uvr-api'
 import { UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrSettings, UvrUploadControl, } from '.'
 import { CheckCircle, History, Music, Settings, Trash2, X } from './icons'
@@ -68,7 +68,6 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   const [currentView, setCurrentView] = createSignal<UvrView>(
     props.defaultView || 'upload',
   )
-  const [sessionResultsVisible, setSessionResultsVisible] = createSignal(false)
   const [onError, setOnError] = createSignal('')
 
   // Error handling
@@ -111,7 +110,6 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       'separate',
     )
     setCurrentView('processing')
-    setSessionResultsVisible(false)
     // Immediately start processing with the created session
     handleProcessStart(sessionId)
   }
@@ -155,6 +153,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
           }
 
           completeUvrSession(sessionId, outputs)
+          setCurrentView('results')
         },
         showError,
       )
@@ -179,8 +178,12 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     if (props.onSessionView) {
       props.onSessionView(sessionId)
     }
+    // Set the session from history into current view
+    const session = getUvrSession(sessionId)
+    if (session) {
+      setCurrentUvrSession(session)
+    }
     setCurrentView('results')
-    setSessionResultsVisible(true)
   }
 
   const handlePracticeStart = (
@@ -472,23 +475,6 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
         </div>
       </Show>
 
-      {/* Session Results Panel (side view for viewing session details) */}
-      <Show when={sessionResultsVisible() && session()}>
-        <div class="session-results-panel">
-          <div class="session-results-content">
-            <UvrSessionResult
-              sessionId={session()!.sessionId}
-              onView={handleSessionView}
-              onExport={handleExportSession}
-              onClose={() => setSessionResultsVisible(false)}
-            />
-          </div>
-          <button
-            class="panel-overlay"
-            onClick={() => setSessionResultsVisible(false)}
-          />
-        </div>
-      </Show>
     </div>
   )
 }
@@ -792,30 +778,6 @@ export const UvrPanelStyles: string = `
 
 .history-empty button:hover {
   opacity: 0.9;
-}
-
-/* Session Results Panel */
-.session-results-panel {
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  display: flex;
-  justify-content: flex-end;
-}
-
-.session-results-content {
-  width: 400px;
-  max-width: 100%;
-  background: var(--bg-secondary);
-  height: 100%;
-  overflow-y: auto;
-  box-shadow: -4px 0 15px rgba(0, 0, 0, 0.3);
-}
-
-.panel-overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.3);
 }
 
 /* Section Header Actions */

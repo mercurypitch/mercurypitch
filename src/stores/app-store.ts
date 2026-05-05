@@ -193,7 +193,7 @@ export function updateUvrSessionProgress(
     }
     saveAllUvrSessions(sessions)
     bumpSessions()
-    setCurrentUvrSession(session)
+    setCurrentUvrSession({ ...session })
   }
 }
 
@@ -211,7 +211,7 @@ export function completeUvrSession(
     session.processingTime = Date.now() - session.createdAt
     saveAllUvrSessions(sessions)
     bumpSessions()
-    setCurrentUvrSession(session)
+    setCurrentUvrSession({ ...session })
   }
 }
 
@@ -224,7 +224,7 @@ export function setErrorUvrSession(sessionId: string, error: string): void {
     session.error = error
     saveAllUvrSessions(sessions)
     bumpSessions()
-    setCurrentUvrSession(session)
+    setCurrentUvrSession({ ...session })
   }
 }
 
@@ -236,7 +236,7 @@ export function cancelUvrSession(sessionId: string): void {
     session.status = 'cancelled'
     saveAllUvrSessions(sessions)
     bumpSessions()
-    setCurrentUvrSession(session)
+    setCurrentUvrSession({ ...session })
   }
 }
 
