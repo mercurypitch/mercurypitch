@@ -137,13 +137,16 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
 
       const activeNotes = props.songNotes()
       if (activeNotes.length === 0) continue
-      const minMidi = Math.min(...activeNotes.map((n) => n.midi))
-      const maxMidi = Math.max(...activeNotes.map((n) => n.midi))
-      const minWhite = midiToWhiteIndex(minMidi)
-      const maxWhite = midiToWhiteIndex(maxMidi)
-      const numWhite = Math.max(maxWhite - minWhite + 1, MIN_WHITE_KEYS_VISIBLE)
-      const colWidth = w / numWhite
-      const x = (col - minWhite) * colWidth + colWidth / 2
+      const pMinMidi = Math.min(...activeNotes.map((n) => n.midi))
+      const pMaxMidi = Math.max(...activeNotes.map((n) => n.midi))
+      const pMinWhite = midiToWhiteIndex(pMinMidi)
+      const pMaxWhite = midiToWhiteIndex(pMaxMidi)
+      const pRange = pMaxWhite - pMinWhite + 1
+      const pDisplay = Math.max(pRange, MIN_WHITE_KEYS_VISIBLE)
+      const pPad = Math.floor((pDisplay - pRange) / 2)
+      const pDisplayMin = pMinWhite - pPad
+      const pColWidth = w / pDisplay
+      const x = (col - pDisplayMin) * pColWidth + pColWidth / 2
 
       const color = r.timing === 'miss' ? '#f85149' : '#3fb950'
       for (let p = 0; p < PARTICLE_BURST_COUNT; p++) {
@@ -215,14 +218,16 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
     const kbHeight = h - kbTop
     const noteAreaH = jLineY
 
-    // Compute column layout
+    // Compute column layout with minimum visible range for good scaling
     const minMidi = Math.min(...notes.map((n) => n.midi))
     const maxMidi = Math.max(...notes.map((n) => n.midi))
     const minWhite = midiToWhiteIndex(minMidi)
     const maxWhite = midiToWhiteIndex(maxMidi)
-    const numWhite = Math.max(maxWhite - minWhite + 1, MIN_WHITE_KEYS_VISIBLE)
     const rangeWhite = maxWhite - minWhite + 1
-    const colWidth = w / rangeWhite
+    const displayRange = Math.max(rangeWhite, MIN_WHITE_KEYS_VISIBLE)
+    const padding = Math.floor((displayRange - rangeWhite) / 2)
+    const displayMinWhite = minWhite - padding
+    const colWidth = w / displayRange
 
     const currentBeat = props.playheadBeat()
     const visibleBeats = 8
@@ -240,10 +245,10 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
       if (y + noteH < 0 || y > jLineY) continue // off-screen
 
       const col = midiToWhiteIndex(note.midi)
-      const x = (col - minWhite) * colWidth
+      const x = (col - displayMinWhite) * colWidth
       const isBlack = IS_BLACK_KEY[note.midi % 12]
-      const wNote = isBlack ? colWidth * 0.65 : colWidth - 2
-      const xOffset = isBlack ? (colWidth - wNote) / 2 : 1
+      const wNote = isBlack ? colWidth * 0.52 : colWidth * 0.82
+      const xOffset = (colWidth - wNote) / 2
 
       // Determine if note has been judged
       const results = props.hitResults()
@@ -309,7 +314,7 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
     drawJudgmentLine(w, jLineY, currentBeat)
 
     // Draw keyboard
-    drawKeyboard(w, kbTop, kbHeight, minMidi, maxMidi, minWhite, rangeWhite, colWidth, currentBeat, notes, jLineY)
+    drawKeyboard(w, kbTop, kbHeight, displayMinWhite, displayRange, colWidth, currentBeat, notes, jLineY)
 
     // Draw particles on top
     drawParticles()
@@ -400,8 +405,6 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
     w: number,
     kbTop: number,
     kbHeight: number,
-    _minMidi: number,
-    _maxMidi: number,
     minWhite: number,
     rangeWhite: number,
     colWidth: number,

@@ -274,11 +274,8 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
     setCombo(0)
     setMaxCombo(0)
     setHitResults([])
-    setTotalNotes(0)
     setNotesMissed(0)
     setPlayheadBeat(0)
-    setSongNotes([])
-    setSelectedSongName('')
     startLoop()
   }
 

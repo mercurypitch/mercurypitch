@@ -50,11 +50,8 @@ export function resetGame(): void {
   setCombo(0)
   setMaxCombo(0)
   setHitResults([])
-  setTotalNotes(0)
   setNotesMissed(0)
   setPlayheadBeat(0)
-  setSongNotes([])
-  setSelectedSongName('')
 }
 
 export function startGame(): void {
@@ -125,7 +122,13 @@ export function loadSong(notes: FallingNote[], name: string, bpm: number): void 
   setSelectedSongName(name)
   setCurrentSongBpm(bpm)
   setTotalNotes(notes.length)
-  resetGame()
+  setGameState('idle')
+  setScore(0)
+  setCombo(0)
+  setMaxCombo(0)
+  setHitResults([])
+  setNotesMissed(0)
+  setPlayheadBeat(0)
 }
 
 export function beatsPerSecond(): number {
