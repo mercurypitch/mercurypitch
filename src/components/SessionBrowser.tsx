@@ -78,6 +78,7 @@ export const SessionBrowser: Component<SessionBrowserProps> = (props) => {
             class="modal-close-btn"
             onClick={() => props.onClose()}
             title="Close"
+            aria-label="Close"
           >
             <svg viewBox="0 0 24 24" width="20" height="20">
               <path

@@ -1149,25 +1149,25 @@ export class PianoRollEditor {
 
   <!-- TOOLS -->
   <div class="roll-group" data-name="Edit">
-              <button class="roll-tool-btn active" data-tool="place" title="Place notes">
+              <button class="roll-tool-btn active" data-tool="place" title="Place notes" aria-label="Place notes">
                 <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
               </button>
-              <button class="roll-tool-btn" data-tool="erase" title="Erase notes">
+              <button class="roll-tool-btn" data-tool="erase" title="Erase notes" aria-label="Erase notes">
                 <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
               </button>
-              <button class="roll-tool-btn" data-tool="select" title="Select notes">
+              <button class="roll-tool-btn" data-tool="select" title="Select notes" aria-label="Select notes">
                 <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/></svg>
               </button>
   <!-- EDIT -->
     <div class="roll-undo-group">
-              <button id="roll-undo-btn" class="roll-undo-btn" title="Undo (Ctrl+Z)" disabled>
+              <button id="roll-undo-btn" class="roll-undo-btn" title="Undo (Ctrl+Z)" aria-label="Undo" disabled>
                 <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/></svg>
               </button>
-              <button id="roll-redo-btn" class="roll-redo-btn" title="Redo (Ctrl+Y)" disabled>
+              <button id="roll-redo-btn" class="roll-redo-btn" title="Redo (Ctrl+Y)" aria-label="Redo" disabled>
                 <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M18.4 10.6C16.55 8.99 14.15 8 11.5 8c-4.65 0-8.58 3.03-9.96 7.22L3.9 16c1.05-3.19 4.05-5.5 7.6-5.5 1.95 0 3.73.72 5.12 1.88L13 16h9V7l-3.6 3.6z"/></svg>
               </button>
               </div>
-    <button id="roll-clear-all" class="roll-ctrl-btn danger" title="Clear all notes">
+    <button id="roll-clear-all" class="roll-ctrl-btn danger" title="Clear all notes" aria-label="Clear all notes">
       <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M15 16h4v2h-4zm0-8h7v2h-7zm0 4h6v2h-6zM3 18c0 1.1.9 2 2 2h6c1.1 0 2-.9 2-2V8H3v10zM14 5h-3l-1-1H6L5 5H2v2h12z"/></svg>
     <!--  <span>Clear</span>-->
               </button>
@@ -1185,11 +1185,11 @@ export class PianoRollEditor {
               </button>
     
     <div class="roll-zoom-inline">
-      <button id="roll-zoom-out" class="roll-zoom-btn" title="Zoom out">
+      <button id="roll-zoom-out" class="roll-zoom-btn" title="Zoom out" aria-label="Zoom out">
         <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
               </button>
       <span id="roll-zoom-value" class="zoom-value">100%</span>
-      <button id="roll-zoom-in" class="roll-zoom-btn" title="Zoom in">
+      <button id="roll-zoom-in" class="roll-zoom-btn" title="Zoom in" aria-label="Zoom in">
           <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M19 13H5v-2h14v2z"/></svg>
               </button>
             </div>
@@ -1218,33 +1218,33 @@ export class PianoRollEditor {
 
     <!-- Rows -->
     <div class="roll-octaves-group">
-       <button id="roll-octaves-minus" class="octave-btn" title="Fewer octaves">
+       <button id="roll-octaves-minus" class="octave-btn" title="Fewer octaves" aria-label="Fewer octaves">
         <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M19 13H5v-2h14v2z"/></svg>
        </button>
        <span id="roll-octaves-value" class="octave-value">${this.numOctaves}</span>
-       <button id="roll-octaves-plus" class="octave-btn" title="More octaves">
+       <button id="roll-octaves-plus" class="octave-btn" title="More octaves" aria-label="More octaves">
           <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
        </button>
     </div>
 
     <!-- Octave -->
     <div class="roll-octave-group">
-      <button id="roll-octave-up" class="octave-btn" title="Higher octave">
+      <button id="roll-octave-up" class="octave-btn" title="Higher octave" aria-label="Higher octave">
         <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
       </button>
             <span id="roll-octave-value" class="octave-value">${this.octave}</span>
-      <button id="roll-octave-down" class="octave-btn" title="Lower octave">
+      <button id="roll-octave-down" class="octave-btn" title="Lower octave" aria-label="Lower octave">
         <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M19 13H5v-2h14v2z"/></svg>
       </button>
     </div>
 
     <!-- Bars -->
     <div class="roll-bars-group">
-      <button id="roll-bars-down" class="roll-bars-btn" title="Remove 4 bars">
+      <button id="roll-bars-down" class="roll-bars-btn" title="Remove 4 bars" aria-label="Remove 4 bars">
         <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
       </button>
 
-      <button id="roll-bars-up" class="roll-bars-btn" title="Add 4 bars">
+      <button id="roll-bars-up" class="roll-bars-btn" title="Add 4 bars" aria-label="Add 4 bars">
         <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
       </button>
     </div>

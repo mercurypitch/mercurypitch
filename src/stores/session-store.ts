@@ -11,26 +11,9 @@ export function generateSessionItemId(): string {
   return `item-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
 }
 
-/** Get all sessions from localStorage (UnifiedLibrary) */
+/** Get all sessions from the unified melody library */
 export function getAllSessions(): Record<string, PlaybackSession> {
-  // FIXME: we should just get the melody-store whole library here (this here is duplicate code) and return sessions from there!!
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY_LIBRARY)
-    if (stored !== null) {
-      const parsed = JSON.parse(stored) as unknown
-      if (
-        parsed !== null &&
-        typeof parsed === 'object' &&
-        !Array.isArray(parsed)
-      ) {
-        const lib = parsed as { sessions?: Record<string, PlaybackSession> }
-        return lib.sessions ?? {}
-      }
-    }
-  } catch {
-    // Fail silently
-  }
-  return {}
+  return melodyStore.getMelodyLibrary().sessions ?? {}
 }
 
 /** Save sessions to localStorage (UnifiedLibrary) */
@@ -361,39 +344,6 @@ export function deleteSession(id: string): boolean {
   }
   return false
 }
-
-// FIXME: These commented out functions should be removed when tests are written for new
-// session/session-practice stores
-// export function clearSessionHistory() {
-//   localStorage.removeItem(STORAGE_KEY_SESSION_HIST)
-// }
-
-// /** Get session history from localStorage */
-// export function getSessionHistory(): SessionResult[] {
-//   try {
-//     const stored = localStorage.getItem(STORAGE_KEY_SESSION_HIST)
-//     if (stored !== null) {
-//       const parsed = JSON.parse(stored) as unknown
-//       if (Array.isArray(parsed)) {
-//         return parsed as SessionResult[]
-//       }
-//     }
-//   } catch {
-//     // Fail silently
-//   }
-//   return []
-// }
-
-// /** Save session result to history */
-// export function saveSessionResult(result: SessionResult): void {
-//   const history = getSessionHistory()
-//   const updated = [result, ...history].slice(0, 50) // Keep max 50
-//   try {
-//     localStorage.setItem(STORAGE_KEY_SESSION_HIST, JSON.stringify(updated))
-//   } catch {
-//     // Fail silently
-//   }
-// }
 
 /** Reset all sessions (clear localStorage) */
 export function resetAllSessions(): void {
