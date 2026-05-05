@@ -10,10 +10,6 @@ services:
       - ./api.py:/app/api.py
       - .:/app
     command: uvicorn api:app --host 0.0.0.0 --port 8000 --reload
-    # Add these devices for AMD GPU Pass-through (otherwise CPU based)
-    devices:
-      - "/dev/kfd:/dev/kfd"
-      - "/dev/dri:/dev/dri"
     group_add:
       - video
     environment:
