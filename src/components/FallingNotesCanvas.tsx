@@ -240,12 +240,18 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
     // Draw grid guide lines
     drawGridLines(w, noteAreaH, currentBeat, bps, jLineY)
 
+    // Clip notes so they are consumed by the piano keyboard
+    ctx.save()
+    ctx.beginPath()
+    ctx.rect(0, 0, w, kbTop)
+    ctx.clip()
+
     // Draw notes
     for (const note of notes) {
       const endBeat = note.startBeat + note.duration
       const y = beatToY(endBeat)
       const noteH = Math.max(note.duration * bps, 8)
-      if (y + noteH < 0 || y > jLineY + 80) continue // off-screen
+      if (y + noteH < 0 || y > jLineY) continue // off-screen or past piano
 
       const col = midiToWhiteIndex(note.midi)
       const x = (col - displayMinWhite) * colWidth
@@ -312,6 +318,8 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
         ctx.fillText(`${noteName}${octave}`, x + xOffset + wNote / 2, y + noteH / 2)
       }
     }
+
+    ctx.restore()
 
     // Draw judgment line
     drawJudgmentLine(w, jLineY, currentBeat)
