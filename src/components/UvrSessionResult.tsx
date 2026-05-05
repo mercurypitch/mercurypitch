@@ -173,12 +173,15 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
           <div class="output-files">
             <Show when={session()?.outputs?.vocal}>
               <div class="output-file">
-                <div class="file-icon">
+                <div class="file-badge badge-vocal">
                   <Music />
                 </div>
                 <div class="file-content">
                   <span class="file-name">Vocal Stem</span>
-                  <span class="file-format">WAV</span>
+                  <span class="file-meta">
+                    <span class="file-pill pill-vocal">VOCAL</span>
+                    <span class="file-format">WAV</span>
+                  </span>
                 </div>
                 <button
                   class="file-action"
@@ -190,12 +193,15 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
             </Show>
             <Show when={session()?.outputs?.instrumental}>
               <div class="output-file">
-                <div class="file-icon">
+                <div class="file-badge badge-instrumental">
                   <Download />
                 </div>
                 <div class="file-content">
                   <span class="file-name">Instrumental</span>
-                  <span class="file-format">WAV</span>
+                  <span class="file-meta">
+                    <span class="file-pill pill-instrumental">INST</span>
+                    <span class="file-format">WAV</span>
+                  </span>
                 </div>
                 <button
                   class="file-action"
@@ -207,12 +213,15 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
             </Show>
             <Show when={session()?.outputs?.vocalMidi}>
               <div class="output-file">
-                <div class="file-icon">
+                <div class="file-badge badge-midi">
                   <FileText />
                 </div>
                 <div class="file-content">
                   <span class="file-name">Vocal MIDI</span>
-                  <span class="file-format">MIDI</span>
+                  <span class="file-meta">
+                    <span class="file-pill pill-midi">MIDI</span>
+                    <span class="file-format">MIDI</span>
+                  </span>
                 </div>
                 <button
                   class="file-action"
@@ -488,23 +497,45 @@ export const UvrSessionResultStyles: string = `
 .output-file {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.35rem;
+  gap: 0.6rem;
+  padding: 0.5rem 0.6rem;
   background: var(--bg-secondary);
-  border-radius: 0.35rem;
+  border-radius: 0.5rem;
+  transition: background 0.15s;
 }
 
-.file-icon {
+.output-file:hover {
+  background: var(--bg-hover);
+}
+
+.file-badge {
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.5rem;
   flex-shrink: 0;
-  color: var(--fg-tertiary);
 }
 
-.file-icon svg {
-  width: 1rem;
-  height: 1rem;
+.file-badge svg {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.badge-vocal {
+  background: rgba(245, 158, 11, 0.12);
+  color: #f59e0b;
+}
+
+.badge-instrumental {
+  background: rgba(59, 130, 246, 0.12);
+  color: #3b82f6;
+}
+
+.badge-midi {
+  background: rgba(139, 92, 246, 0.12);
+  color: #8b5cf6;
 }
 
 .file-content {
@@ -516,11 +547,42 @@ export const UvrSessionResultStyles: string = `
   display: block;
   font-size: 0.78rem;
   color: var(--fg-primary);
-  margin-bottom: 0.1rem;
+  font-weight: 500;
+  margin-bottom: 0.2rem;
+}
+
+.file-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.file-pill {
+  display: inline-block;
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  text-transform: uppercase;
+}
+
+.pill-vocal {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+}
+
+.pill-instrumental {
+  background: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
+}
+
+.pill-midi {
+  background: rgba(139, 92, 246, 0.15);
+  color: #8b5cf6;
 }
 
 .file-format {
-  display: block;
   font-size: 0.65rem;
   color: var(--fg-tertiary);
 }

@@ -7,7 +7,7 @@ import { createEffect, createSignal, For, onCleanup, Show } from 'solid-js'
 import type { UvrSession } from '@/stores/app-store'
 import { cancelUvrSession, completeUvrSession, currentUvrSession, deleteAllUvrSessions, getAllUvrSessions, getAllUvrSessionsReactive, getUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, startUvrSession, updateUvrSessionProgress, } from '@/stores/app-store'
 import { processAudio, pollForCompletion, type OutputFile, DEFAULT_PROCESS_REQUEST, } from '@/lib/uvr-api'
-import { UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrSettings, UvrUploadControl, } from '.'
+import { StemMixer, UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrSettings, UvrUploadControl, } from '.'
 import { CheckCircle, History, Music, Settings, Trash2, X } from './icons'
 
 /**
@@ -81,6 +81,11 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   const [showDeleteAllConfirm, setShowDeleteAllConfirm] = createSignal(false)
   const [deleteAllToast, setDeleteAllToast] = createSignal('')
   const [selectedFile, setSelectedFile] = createSignal<File | null>(null)
+  const [showStemMixer, setShowStemMixer] = createSignal(false)
+  const [stemMixerStems, setStemMixerStems] = createSignal<{
+    vocal?: string
+    instrumental?: string
+  }>({})
 
   // Computed session state
   const session = () => currentUvrSession()
@@ -189,6 +194,15 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   const handlePracticeStart = (
     mode: 'vocal' | 'instrumental' | 'midi' | 'full',
   ) => {
+    const s = currentUvrSession()
+    if (!s?.outputs) return
+
+    setStemMixerStems({
+      vocal: s.outputs.vocal,
+      instrumental: s.outputs.instrumental,
+    })
+    setShowStemMixer(true)
+
     if (props.onPracticeStart) {
       props.onPracticeStart(mode)
     }
@@ -473,6 +487,15 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
           </span>
           {deleteAllToast()}
         </div>
+      </Show>
+
+      {/* Stem Mixer Overlay */}
+      <Show when={showStemMixer()}>
+        <StemMixer
+          stems={stemMixerStems()}
+          sessionId={session()?.sessionId || ''}
+          onClose={() => setShowStemMixer(false)}
+        />
       </Show>
 
     </div>

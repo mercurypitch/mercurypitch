@@ -52,7 +52,7 @@ import { CrashModal } from './components/CrashModal'
 import { GuideSelection } from './components/GuideSelection'
 import { WelcomeScreen } from './components/WelcomeScreen'
 import { _UvrGuideStyles } from './components/UvrGuide'
-import { UvrPanelStyles, UvrUploadControlStyles, UvrProcessControlStyles, UvrResultViewerStyles, UvrSessionResultStyles, } from './components'
+import { StemMixerStyles, UvrPanelStyles, UvrUploadControlStyles, UvrProcessControlStyles, UvrResultViewerStyles, UvrSessionResultStyles, } from './components'
 
 // ============================================================
 // Tab type
@@ -585,6 +585,7 @@ const AppShell: Component<AppProps> = (props) => {
 
     // Inject UVR component styles
     const styleElements = [
+      StemMixerStyles,
       UvrPanelStyles,
       UvrUploadControlStyles,
       UvrProcessControlStyles,

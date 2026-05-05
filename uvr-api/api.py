@@ -9,6 +9,7 @@ import shutil
 import os
 import uuid
 import logging
+import time
 from typing import Optional, List, Dict, Any
 import threading
 from audio_separator.separator import Separator
@@ -77,6 +78,62 @@ SESSION_DIR = "/tmp/uvr"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(SESSION_DIR, exist_ok=True)
+
+# ── Progress tracking ──────────────────────────────────────────
+
+def get_audio_duration(file_path: str) -> float:
+    """Get audio duration in seconds using ffprobe."""
+    try:
+        result = subprocess.run(
+            ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+             "-of", "default=noprint_wrappers=1:nokey=1", file_path],
+            capture_output=True, text=True, timeout=15
+        )
+        return float(result.stdout.strip())
+    except Exception:
+        return 0.0
+
+
+def write_progress(session_dir: str, progress: float, status: str,
+                   duration: float = 0.0, started_at: float = 0.0,
+                   estimated_total: float = 0.0):
+    """Write progress data to session directory."""
+    progress_file = os.path.join(session_dir, "progress.json")
+    data = {
+        "progress": progress,
+        "status": status,
+        "duration_secs": duration,
+        "started_at": started_at,
+        "estimated_total_secs": estimated_total,
+        "updated_at": time.time(),
+    }
+    with open(progress_file, 'w') as f:
+        json.dump(data, f)
+
+
+def estimate_processing_time(duration_secs: float, file_size_bytes: int) -> float:
+    """Estimate total processing time based on audio duration and file size.
+
+    On ROCm GPU: ~2-4x realtime. On CPU: ~8-15x realtime.
+    We use a conservative 6x multiplier to avoid overshooting,
+    then scale up based on file size for higher-quality audio.
+    """
+    if duration_secs <= 0:
+        return 120.0  # 2 minute fallback
+
+    # Base estimate: 6x realtime for average GPU processing
+    base_ratio = 6.0
+
+    # Adjust for file size: larger files = higher bitrate = more processing
+    # 10MB WAV ~ 1 min stereo 44.1kHz → baseline
+    # Files > 30MB likely have higher sample rates or longer duration
+    size_mb = file_size_bytes / (1024 * 1024)
+    if size_mb > 50:
+        base_ratio *= 1.4
+    elif size_mb > 30:
+        base_ratio *= 1.2
+
+    return duration_secs * base_ratio
 
 # Request/Response models
 class ProcessRequest(BaseModel):
@@ -214,29 +271,74 @@ async def process_audio(
     def process_task(session_id: str, input_path: str, model_name: str):
         try:
             logger.info(f"Starting processing for session {session_id}")
-            
-            # 1. Initialize with configuration (Fixed for v0.44.1)
+
+            # Get audio duration and file size for progress estimation
+            file_size = os.path.getsize(input_path)
+            duration = get_audio_duration(input_path)
+            estimated = estimate_processing_time(duration, file_size)
+            logger.info(
+                f"Session {session_id}: duration={duration:.1f}s, "
+                f"size={file_size/1024/1024:.1f}MB, "
+                f"estimated={estimated:.1f}s"
+            )
+
+            # Write initial progress
+            started_at = time.time()
+            write_progress(session_output_dir, 0.0, "processing",
+                           duration, started_at, estimated)
+
+            # Initialize separator
             separator = Separator(
                 output_dir=session_output_dir,
                 output_format=output_format,
                 model_file_dir="/tmp/audio-separator-models/"
             )
 
-            # Specify multiple models for ensembling
             if not model_name.endswith('onnx'):
                 model_name_wext = model_name + '.onnx'
             else:
                 model_name_wext = model_name
-            
+
             separator.load_model(model_filename=model_name_wext)
 
-            # 3. Separate
-            separator.separate(input_path)
-            
+            # Run separation in a thread so we can update progress
+            separation_error = [None]  # mutable container for thread exception
+
+            def run_separation():
+                try:
+                    separator.separate(input_path)
+                except Exception as e:
+                    separation_error[0] = e
+
+            sep_thread = threading.Thread(target=run_separation, daemon=True)
+            sep_thread.start()
+
+            # Update progress while separation runs
+            while sep_thread.is_alive():
+                sep_thread.join(timeout=2.0)  # check every 2 seconds
+                elapsed = time.time() - started_at
+                if estimated > 0:
+                    pct = min(95, (elapsed / estimated) * 100)
+                    write_progress(session_output_dir, pct, "processing",
+                                   duration, started_at, estimated)
+
+            # Check for separation errors
+            if separation_error[0]:
+                raise separation_error[0]
+
             logger.info(f"Processing completed for session {session_id}")
+
+            # Write completion markers
+            write_progress(session_output_dir, 100.0, "completed",
+                           duration, started_at, estimated)
             open(os.path.join(session_output_dir, "done.txt"), 'w').close()
+
         except Exception as e:
             logger.error(f"Processing error for session {session_id}: {e}")
+            try:
+                write_progress(session_output_dir, 0.0, "error", 0, 0)
+            except Exception:
+                pass
 
     background_tasks.add_task(process_task, session_id, input_path, model)
 
@@ -261,21 +363,39 @@ async def get_status(session_id: str):
             files=[]
         )
 
-    # Check if still processing
-    is_processing = False
-    input_file = os.path.join(
-        os.path.join(UPLOAD_DIR, session_id),
-        f"input.wav"
-    )
+    # Check if done
+    is_done = os.path.exists(os.path.join(session_output_dir, "done.txt"))
 
-    if os.path.exists(input_file):
-        is_processing = True
+    # Read progress file for real progress data
+    progress = None
+    progress_file = os.path.join(session_output_dir, "progress.json")
+    if os.path.exists(progress_file):
+        try:
+            with open(progress_file) as f:
+                pdata = json.load(f)
+            progress = pdata.get("progress")
+        except Exception:
+            pass
 
+    # If processing is ongoing, calculate live progress from elapsed time
+    if not is_done and progress is not None and progress < 100:
+        try:
+            with open(progress_file) as f:
+                pdata = json.load(f)
+            started = pdata.get("started_at", 0)
+            estimated = pdata.get("estimated_total_secs", 0)
+            if started > 0 and estimated > 0:
+                elapsed = time.time() - started
+                progress = min(95, (elapsed / estimated) * 100)
+        except Exception:
+            pass
+
+    # Collect output files
     files = []
     for root, dirs, filenames in os.walk(session_output_dir):
         for filename in filenames:
-            # Skip input files
-            if filename.startswith("input") or filename.startswith("done"):
+            if filename.startswith("input") or filename.startswith("done") \
+               or filename == "progress.json":
                 continue
 
             stem_name = os.path.basename(root) if root != session_output_dir else "root"
@@ -283,7 +403,6 @@ async def get_status(session_id: str):
             file_path = os.path.join(root, filename)
             rel_path = os.path.relpath(root, session_output_dir)
 
-            # Try to determine stem from path
             stem = stem_name
             for s in ["vocal", "instrumental", "drums", "bass", "other"]:
                 if s in stem.lower():
@@ -296,21 +415,29 @@ async def get_status(session_id: str):
                 "path": f"/api/output/{session_id}/{rel_path}/{filename}",
                 "size": os.path.getsize(file_path)
             })
-    # Check if finished
-    is_done = os.path.exists(os.path.join(session_output_dir, "done.txt"))
+
+    # Determine status and message
     if is_done:
          status = "completed"
          message = "Processing completed successfully"
-    elif is_processing:
+         progress = 100
+    elif progress is not None:
          status = "processing"
          message = "Processing in progress..."
     else:
-         status = "error"
-         message = "Process failed or unknown status"
+         # Check if upload exists to distinguish not_started vs error
+         upload_dir = os.path.join(UPLOAD_DIR, session_id)
+         if os.path.exists(upload_dir) and os.listdir(upload_dir):
+             status = "processing"
+             message = "Processing in progress..."
+         else:
+             status = "error"
+             message = "Process failed or unknown status"
 
     return ProcessStatusResponse(
         session_id=session_id,
         status=status,
+        progress=progress,
         files=files,
         message=message
     )

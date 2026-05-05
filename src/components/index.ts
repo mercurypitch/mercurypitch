@@ -43,3 +43,24 @@ export { UvrSessionResult } from './UvrSessionResult'
 export { UvrSessionResultStyles } from './UvrSessionResult'
 export { UvrPanel } from './UvrPanel'
 export { UvrPanelStyles } from './UvrPanel'
+export { StemMixer } from './StemMixer'
+export { StemMixerStyles } from './StemMixer'
+export {
+  Volume2,
+  VolumeX,
+  SkipBack,
+  SkipForward,
+  RotateCcw,
+  Ear,
+  Headphones,
+  Voice,
+  Midi,
+  MusicBoard,
+  Calendar,
+  Box,
+  Trash2,
+  SlidersHorizontal,
+  History,
+  ChevronDown,
+  ChevronUp,
+} from './icons'
