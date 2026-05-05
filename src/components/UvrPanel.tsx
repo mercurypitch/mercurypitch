@@ -268,7 +268,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                   <X />
                 </button>
               </div>
-              <UvrGuide />
+              <UvrGuide onClose={() => setShowGuide(false)} />
             </div>
           </div>
         )}

@@ -6,7 +6,11 @@ import type { Component } from 'solid-js'
 import { createSignal } from 'solid-js'
 import { Voice, Headphones, MusicBoard, Music, ChevronDown } from './icons'
 
-export const UvrGuide: Component = () => {
+interface UvrGuideProps {
+  onClose?: () => void
+}
+
+export const UvrGuide: Component<UvrGuideProps> = (props) => {
   const [activeStep, setActiveStep] = createSignal(0)
 
   const steps = [
@@ -326,12 +330,15 @@ export const UvrGuide: Component = () => {
         </button>
         <button
           class="guide-btn guide-btn-primary"
-          onClick={() =>
-            setActiveStep((s) => Math.min(steps.length - 1, s + 1))
-          }
-          disabled={activeStep() === steps.length - 1}
+          onClick={() => {
+            if (activeStep() === steps.length - 1) {
+              props.onClose?.()
+            } else {
+              setActiveStep((s) => Math.min(steps.length - 1, s + 1))
+            }
+          }}
         >
-          {activeStep() === steps.length - 1 ? 'Complete!' : 'Next →'}
+          {activeStep() === steps.length - 1 ? 'Close' : 'Next →'}
         </button>
       </div>
 
