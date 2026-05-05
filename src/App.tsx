@@ -5,7 +5,7 @@
 
 import type { Component } from 'solid-js'
 import { For } from 'solid-js'
-import { createMemo, createSignal, onMount, Show } from 'solid-js'
+import { createMemo, createSignal, onCleanup, onMount, Show } from 'solid-js'
 import { AppSidebar } from '@/components/AppSidebar'
 import { FocusMode } from '@/components/FocusMode'
 import { HistoryCanvas } from '@/components/HistoryCanvas'
@@ -346,6 +346,9 @@ const AppShell: Component<AppProps> = (props) => {
       // which propagates back through playbackRuntime.on('beat') already.
     }) as never,
   })
+
+  // Clean up pending session sequencer timeouts on unmount
+  onCleanup(() => sessionSequencer.destroy())
 
   // ── Tab change handler with audio cleanup ──────────────────
   const handleTabChange = async (newTab: ActiveTab) => {

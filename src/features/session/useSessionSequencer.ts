@@ -34,6 +34,7 @@ export interface SessionSequencer {
   startSessionPlayback: () => void
   playNextInSessionSequence: () => void
   loadNextSessionItem: () => void
+  destroy: () => void
 }
 
 interface Deps {
@@ -82,6 +83,24 @@ export function useSessionSequencer(deps: Deps): SessionSequencer {
     setCurrentBeat,
     setCurrentNoteIndex,
   } = deps
+
+  const pendingTimeouts = new Set<ReturnType<typeof setTimeout>>()
+
+  const scheduleCleanup = (fn: () => void, ms: number): ReturnType<typeof setTimeout> => {
+    const id = setTimeout(() => {
+      pendingTimeouts.delete(id)
+      fn()
+    }, ms)
+    pendingTimeouts.add(id)
+    return id
+  }
+
+  const destroy = (): void => {
+    for (const id of pendingTimeouts) {
+      clearTimeout(id)
+    }
+    pendingTimeouts.clear()
+  }
 
   const [sessionMelodyIds, setSessionMelodyIds] = createSignal<string[]>([])
   const [sessionCurrentMelodyIndex, setSessionCurrentMelodyIndex] =
@@ -169,7 +188,7 @@ export function useSessionSequencer(deps: Deps): SessionSequencer {
       // Defer the restart one macrotask so the runtime's own post-complete
       // stop has already finished. Then re-arm the runtime melody and
       // start a genuinely fresh cycle.
-      setTimeout(() => {
+      scheduleCleanup(() => {
         practiceEngine.resetSession()
         practiceEngine.startSession()
         playbackRuntime.setMelody(melodyStore.items())
@@ -193,7 +212,7 @@ export function useSessionSequencer(deps: Deps): SessionSequencer {
       // PlaybackRuntime emits `complete` and only then calls its own stop(),
       // so a synchronous start here would be killed by that post-complete
       // stop. Defer one macrotask so runtime cleanup completes first.
-      setTimeout(() => playbackRuntime.start(countIn()), 0)
+      scheduleCleanup(() => playbackRuntime.start(countIn()), 0)
     }
 
     if (nextItem.type === 'rest') {
@@ -264,7 +283,7 @@ export function useSessionSequencer(deps: Deps): SessionSequencer {
       // invoked from inside the runtime's own 'complete' handler, and
       // a synchronous start there would be killed by the runtime's
       // post-complete stop().
-      setTimeout(() => playbackRuntime.start(0), 0)
+      scheduleCleanup(() => playbackRuntime.start(0), 0)
     } else if ((nextItem.type as string) === 'scale') {
       buildScaleMelody(
         nextItem.scaleType ?? 'major',
@@ -389,5 +408,6 @@ export function useSessionSequencer(deps: Deps): SessionSequencer {
     playNextInSessionSequence,
     loadNextSessionItem,
     startSessionPlayback,
+    destroy,
   }
 }
