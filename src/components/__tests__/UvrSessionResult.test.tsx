@@ -95,7 +95,7 @@ describe('UvrSessionResult Component', () => {
 
       render(() => <UvrSessionResult {...defaultProps} />)
 
-      expect(screen.getByText('completed')).toBeInTheDocument()
+      expect(screen.getByText('Completed')).toBeInTheDocument()
     })
 
     it('renders processing status with loader', () => {
@@ -108,7 +108,7 @@ describe('UvrSessionResult Component', () => {
 
       render(() => <UvrSessionResult {...defaultProps} />)
 
-      expect(screen.getByText('processing')).toBeInTheDocument()
+      expect(screen.getByText('Processing...')).toBeInTheDocument()
     })
 
     it('renders error status with X icon', () => {
@@ -122,7 +122,7 @@ describe('UvrSessionResult Component', () => {
 
       render(() => <UvrSessionResult {...defaultProps} />)
 
-      expect(screen.getByText('error')).toBeInTheDocument()
+      expect(screen.getByText('Processing failed')).toBeInTheDocument()
     })
 
     it('shows processing time in status bar', () => {
@@ -382,19 +382,6 @@ describe('UvrSessionResult Component', () => {
       }
 
       expect(defaultProps.onView).toHaveBeenCalledWith('session-123')
-    })
-
-    it('renders delete button', () => {
-      seedSession({
-        sessionId: 'session-123',
-        status: 'completed',
-        progress: 100,
-        createdAt: Date.now() - 3600000,
-      })
-
-      render(() => <UvrSessionResult {...defaultProps} />)
-
-      expect(screen.getByText('Delete')).toBeInTheDocument()
     })
 
     it('does not show view results button for non-completed sessions', () => {

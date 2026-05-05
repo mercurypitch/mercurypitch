@@ -662,12 +662,14 @@ export const UvrPanelStyles: string = `
 /* History Section */
 .history-section {
   padding: 1.5rem;
+  max-width: 85%;
+  margin: 0 auto;
 }
 
 .history-list {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 0.75rem;
+  gap: 0.5rem;
   overflow-y: auto;
   max-height: calc(100vh - 200px);
   padding-right: 0.25rem;

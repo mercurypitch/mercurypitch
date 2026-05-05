@@ -106,7 +106,15 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
         <span class="status-icon">
           {getStatusIcon(session()?.status || 'idle')}
         </span>
-        <span class="status-text">{session()?.status || 'Idle'}</span>
+        <span class="status-text">
+          {session()?.status === 'error'
+            ? session()?.error || 'Processing failed'
+            : session()?.status === 'completed'
+              ? 'Completed'
+              : session()?.status === 'processing'
+                ? 'Processing...'
+                : session()?.status || 'Idle'}
+        </span>
         <span class="status-time">
           {(() => {
             const s = session() as UvrSession | null
@@ -196,19 +204,16 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
       </Show>
 
       {/* Actions */}
-      <div class="session-result-actions">
-        <Show when={session()?.status === 'completed'}>
+      <Show when={session()?.status === 'completed'}>
+        <div class="session-result-actions">
           <button
             class="session-result-btn session-result-btn-primary"
             onClick={() => props.onView?.(props.sessionId)}
           >
             <Play /> View Results
           </button>
-        </Show>
-        <button class="session-result-btn session-result-btn-danger" onClick={handleDelete}>
-          <Trash2 /> Delete
-        </button>
-      </div>
+        </div>
+      </Show>
     </div>
   )
 }
@@ -317,6 +322,17 @@ export const UvrSessionResultStyles: string = `
   background: var(--bg-primary);
   border-radius: 0.4rem;
   border-left: 3px solid var(--status-color, var(--fg-tertiary));
+  position: relative;
+  overflow: hidden;
+}
+
+.status-bar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--status-color, var(--fg-tertiary));
+  opacity: 0.08;
+  pointer-events: none;
 }
 
 .status-bar svg {
@@ -327,6 +343,7 @@ export const UvrSessionResultStyles: string = `
 .status-icon {
   display: flex;
   align-items: center;
+  position: relative;
 }
 
 .status-text {
@@ -334,6 +351,7 @@ export const UvrSessionResultStyles: string = `
   font-size: 0.78rem;
   font-weight: 500;
   color: var(--fg-primary);
+  position: relative;
 }
 
 .status-time {
