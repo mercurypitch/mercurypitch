@@ -9752,7 +9752,7 @@ input:checked + .settings-slider:before {
   flex-direction: column;
   height: 100%;
   gap: 8px;
-  padding: 8px;
+  padding: 8px 8px 40px 8px;
   background: #0d1117;
 }
 

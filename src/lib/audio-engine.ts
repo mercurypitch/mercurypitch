@@ -911,7 +911,7 @@ export class AudioEngine {
         // Smooth attack to prevent click at note start, hold, then release
         mainGain.gain.setValueAtTime(0, now)
         mainGain.gain.linearRampToValueAtTime(0.7, now + 0.015)
-        mainGain.gain.setValueAtTime(0.7, now + dur - 0.1)
+        mainGain.gain.setValueAtTime(0.7, Math.max(now, now + dur - 0.1))
         mainGain.gain.linearRampToValueAtTime(0, now + dur)
         hasCustomEnvelope = true
         break
@@ -934,7 +934,7 @@ export class AudioEngine {
         // Slow fade in/out for strings feel
         mainGain.gain.setValueAtTime(0, now)
         mainGain.gain.linearRampToValueAtTime(0.6, now + 0.1)
-        mainGain.gain.setValueAtTime(0.6, now + dur - 0.1)
+        mainGain.gain.setValueAtTime(0.6, Math.max(now, now + dur - 0.1))
         mainGain.gain.linearRampToValueAtTime(0, now + dur)
         hasCustomEnvelope = true
         break
@@ -961,7 +961,7 @@ export class AudioEngine {
         // Smooth attack to prevent click, sustain at 70%, then release
         mainGain.gain.setValueAtTime(0, now)
         mainGain.gain.linearRampToValueAtTime(1.0, now + 0.015)
-        mainGain.gain.setValueAtTime(1.0, now + dur - 0.1)
+        mainGain.gain.setValueAtTime(1.0, Math.max(now, now + dur - 0.1))
         mainGain.gain.linearRampToValueAtTime(0, now + dur)
         hasCustomEnvelope = true
         break
@@ -1031,7 +1031,7 @@ export class AudioEngine {
     // Sustain until release phase (near end of note)
     gainNode.gain.setValueAtTime(
       sustainLevel,
-      now + duration - this.adsrRelease,
+      Math.max(now, now + duration - this.adsrRelease),
     )
     gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration)
   }
