@@ -27,5 +27,3 @@ export function setPlaybackSpeed(speed: number): void {
   _setPlaybackSpeed(clamped)
 }
 
-export function initBpm(): void {}
-export function initPlaybackSpeed(): void {}
