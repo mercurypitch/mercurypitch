@@ -114,19 +114,18 @@ def write_progress(session_dir: str, progress: float, status: str,
 def estimate_processing_time(duration_secs: float, file_size_bytes: int) -> float:
     """Estimate total processing time based on audio duration and file size.
 
-    On ROCm GPU: ~2-4x realtime. On CPU: ~8-15x realtime.
-    We use a conservative 6x multiplier to avoid overshooting,
-    then scale up based on file size for higher-quality audio.
+    GPU-accelerated processing typically runs at 0.5-2x realtime.
+    CPU fallback is slower at 6-12x realtime.
+    We use a 3x multiplier as a middle-ground starting estimate,
+    then adjust based on file size.
     """
     if duration_secs <= 0:
         return 120.0  # 2 minute fallback
 
-    # Base estimate: 6x realtime for average GPU processing
-    base_ratio = 6.0
+    # Base estimate: 3x realtime (reasonable for both GPU and CPU)
+    base_ratio = 3.0
 
     # Adjust for file size: larger files = higher bitrate = more processing
-    # 10MB WAV ~ 1 min stereo 44.1kHz → baseline
-    # Files > 30MB likely have higher sample rates or longer duration
     size_mb = file_size_bytes / (1024 * 1024)
     if size_mb > 50:
         base_ratio *= 1.4
@@ -398,21 +397,33 @@ async def get_status(session_id: str):
                or filename == "progress.json":
                 continue
 
-            stem_name = os.path.basename(root) if root != session_output_dir else "root"
-
             file_path = os.path.join(root, filename)
             rel_path = os.path.relpath(root, session_output_dir)
 
-            stem = stem_name
+            # Detect stem type from directory name AND filename
+            stem = os.path.basename(root) if root != session_output_dir else ""
+            combined = (stem + "/" + filename).lower()
+            detected = None
             for s in ["vocal", "instrumental", "drums", "bass", "other"]:
-                if s in stem.lower():
-                    stem = s
+                if s in combined:
+                    detected = s
                     break
+            if detected is None:
+                # Fallback: try file extension hints or skip
+                if "(Vocals)" in filename or "vocals" in filename.lower():
+                    detected = "vocal"
+                elif "(Instrumental)" in filename or "instrumental" in filename.lower():
+                    detected = "instrumental"
+                else:
+                    detected = stem if stem else "unknown"
 
+            # Normalize rel_path: os.walk yields "." for root, strip it
+            clean_rel = rel_path.lstrip("./") if rel_path != "." else ""
+            path_segment = f"{clean_rel}/{filename}" if clean_rel else filename
             files.append({
-                "stem": stem,
+                "stem": detected,
                 "filename": filename,
-                "path": f"/api/output/{session_id}/{rel_path}/{filename}",
+                "path": f"/api/uvr/api/output/{session_id}/{path_segment}",
                 "size": os.path.getsize(file_path)
             })
 

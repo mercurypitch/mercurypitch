@@ -97,6 +97,16 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
           <p class="session-filename">
             {session()?.originalFile?.name || 'Unknown'}
           </p>
+          <p
+            class="session-id-pill"
+            title={session()?.sessionId || ''}
+          >
+            {session()?.sessionId
+              ? session()!.sessionId.length > 16
+                ? session()!.sessionId.slice(-8)
+                : session()!.sessionId
+              : ''}
+          </p>
         </div>
         <button
           class="session-delete-btn"
@@ -332,6 +342,20 @@ export const UvrSessionResultStyles: string = `
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.session-id-pill {
+  display: inline-block;
+  margin: 0.2rem 0 0;
+  padding: 0.1rem 0.35rem;
+  font-size: 0.6rem;
+  font-family: monospace;
+  color: var(--fg-tertiary);
+  background: var(--bg-primary);
+  border-radius: 0.25rem;
+  letter-spacing: 0.02em;
+  cursor: default;
+  max-width: fit-content;
 }
 
 .session-delete-btn {

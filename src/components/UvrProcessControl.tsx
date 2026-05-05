@@ -93,6 +93,14 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
         <div class="process-info">
           <h3>{currentStage.title}</h3>
           <p>{currentStage.description}</p>
+          <p
+            class="process-session-id"
+            title={props.sessionId}
+          >
+            {props.sessionId.length > 16
+              ? props.sessionId.slice(-8)
+              : props.sessionId}
+          </p>
         </div>
       </div>
 
@@ -226,6 +234,20 @@ export const UvrProcessControlStyles: string = `
   margin: 0.25rem 0 0;
   font-size: 0.85rem;
   color: var(--fg-secondary);
+}
+
+.process-session-id {
+  display: inline-block !important;
+  margin: 0.25rem 0 0 !important;
+  padding: 0.1rem 0.35rem;
+  font-size: 0.6rem !important;
+  font-family: monospace;
+  color: var(--fg-tertiary) !important;
+  background: var(--bg-primary);
+  border-radius: 0.25rem;
+  letter-spacing: 0.02em;
+  cursor: default;
+  max-width: fit-content;
 }
 
 .progress-section {
