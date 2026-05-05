@@ -9843,6 +9843,14 @@ input:checked + .settings-slider:before {
   overflow: hidden;
 }
 
+.bpm-display-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #f0f6fc;
+  padding: 0 6px;
+  white-space: nowrap;
+}
+
 #fn-game-controls {
   display: flex;
   gap: 8px;

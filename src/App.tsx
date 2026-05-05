@@ -1030,9 +1030,9 @@ const AppShell: Component<AppProps> = (props) => {
                   currentCycle={() => 1}
                   practiceSubMode={() => 'all' as const}
                   onPracticeSubModeChange={() => {}}
-                  isCountingIn={() => fallingNotes.gameState() === 'countdown'}
-                  countInBeat={() => 0}
-                  countInBeats={() => 2}
+                  isCountingIn={() => fallingNotes.isCountingIn()}
+                  countInBeat={() => fallingNotes.countInBeat()}
+                  countInBeats={() => countIn()}
                   onMicToggle={() => {
                     if (fallingNotes.isMicActive()) {
                       fallingNotes.stopMic()
@@ -1052,6 +1052,8 @@ const AppShell: Component<AppProps> = (props) => {
                     score={fallingNotes.score}
                     totalNotes={fallingNotes.totalNotes}
                     notesMissed={fallingNotes.notesMissed}
+                    currentPitch={fallingNotes.currentPitch}
+                    isMicActive={fallingNotes.isMicActive}
                   />
                 </div>
                 {/* Score overlay for finished game */}

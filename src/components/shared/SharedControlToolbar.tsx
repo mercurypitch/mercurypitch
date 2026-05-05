@@ -10,6 +10,7 @@ import { PrecCountButton } from '@/components/PrecCountButton'
 import { Tooltip } from '@/components/Tooltip'
 import { appStore } from '@/stores'
 import { bpm, micActive, micWaveVisible, playbackSpeed, setBpm, setPlaybackSpeed, setSensitivity, settings, toggleMicWaveVisible, } from '@/stores'
+import { currentSongBpm } from '@/stores/falling-notes-store'
 import type { SpacedRestMode } from '@/types'
 import { ControlGroup } from './ControlGroup'
 
@@ -282,12 +283,14 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
           </button>
         </Show>
 
-        {/* Precount + Metronome — hidden for falling notes */}
+        {/* Precount — always visible */}
+        <div class="app-header-sep" />
+        <div class="control-group">
+          <PrecCountButton />
+        </div>
+
+        {/* Metronome — hidden for falling notes */}
         <Show when={!isFallingNotesTab()}>
-          <div class="app-header-sep" />
-          <div class="control-group">
-            <PrecCountButton />
-          </div>
           <button
             class={`ctrl-btn metronome-btn ${props.metronomeEnabled() ? 'active' : ''}`}
             onClick={props.onMetronomeToggle}
@@ -478,6 +481,21 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
               aria-label="BPM slider"
               onInput={(e) => setBpm(parseInt(e.currentTarget.value) || 80)}
             />
+          </div>
+          </Show>
+
+          {/* BPM display — read-only for falling notes */}
+          <Show when={isFallingNotesTab() && currentSongBpm() > 0}>
+          <div class="tempo-group inline-control" title="Song BPM">
+            <span class="inline-control-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="14" height="14">
+                <path
+                  fill="currentColor"
+                  d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8zm.5-13H11v6l5.2 3.1.8-1.3-4.5-2.7z"
+                />
+              </svg>
+            </span>
+            <span class="bpm-display-label">{currentSongBpm()} BPM</span>
           </div>
           </Show>
 

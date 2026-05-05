@@ -35,6 +35,7 @@ import {
   setCurrentSongBpm,
   beatsPerSecond,
 } from '@/stores/falling-notes-store'
+import { countIn } from '@/stores'
 
 const PERFECT_MS = 30
 const GREAT_MS = 75
@@ -50,6 +51,8 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
   } | null>(null)
   const [speed, setSpeed] = createSignal(1)
   const [micOn, setMicOn] = createSignal(false)
+  const [isCountingIn, setIsCountingIn] = createSignal(false)
+  const [countInBeatTracker, setCountInBeatTracker] = createSignal(0)
 
   let animFrameId: number | null = null
   let gameStartTime = 0
@@ -126,7 +129,7 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
       // Play audio when note reaches the judgment line
       if (!playedNotes.has(note.id) && deltaMs <= 0) {
         playedNotes.add(note.id)
-        audioEngine.playTone(note.targetFreq, note.duration > 0 ? note.duration / bps : 0.3)
+        audioEngine.playTone(note.targetFreq, note.duration > 0 ? (note.duration / bps) * 1000 : 300)
       }
 
       // Note has passed the max timing window — miss
@@ -224,22 +227,44 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
   const startGame = () => {
     judgedNotes = new Set<number>()
     playedNotes = new Set<number>()
-    setGameState('countdown')
     setScore(0)
     setCombo(0)
     setMaxCombo(0)
     setHitResults([])
     setNotesMissed(0)
-    setPlayheadBeat(-2)
 
-    // After 2-beat count-in, begin
-    const bps = beatsPerSecond() * speed()
-    const countdownMs = (2 / bps) * 1000
-    setTimeout(() => {
+    const countInBeats = countIn()
+    if (countInBeats > 0) {
+      setGameState('countdown')
+      setPlayheadBeat(-countInBeats)
+      setIsCountingIn(true)
+
+      const bps = beatsPerSecond() * speed()
+      const beatMs = (1 / bps) * 1000
+      let currentBeat = countInBeats
+
+      const tick = () => {
+        if (currentBeat > 0) {
+          setCountInBeatTracker(currentBeat)
+          setPlayheadBeat(-currentBeat)
+        }
+        if (currentBeat <= 0) {
+          setIsCountingIn(false)
+          setCountInBeatTracker(0)
+          setGameState('playing')
+          setPlayheadBeat(0)
+          gameStartTime = performance.now()
+          return
+        }
+        currentBeat--
+        setTimeout(tick, beatMs)
+      }
+      setTimeout(tick, beatMs)
+    } else {
       setGameState('playing')
       setPlayheadBeat(0)
       gameStartTime = performance.now()
-    }, countdownMs)
+    }
   }
 
   const pauseGame = () => {
@@ -307,6 +332,10 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
     currentPitch,
     songNotes,
     playheadBeat,
+
+    // Signals
+    isCountingIn,
+    countInBeat: countInBeatTracker,
 
     // Actions
     startMic,

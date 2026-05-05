@@ -15,6 +15,8 @@ interface FallingNotesCanvasProps {
   score: () => number
   totalNotes: () => number
   notesMissed: () => number
+  currentPitch: () => { frequency: number; noteName: string; octave: number; cents: number } | null
+  isMicActive: () => boolean
 }
 
 interface Particle {
@@ -240,8 +242,10 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
 
     // Draw notes
     for (const note of notes) {
-      const y = beatToY(note.startBeat)
+      const endBeat = note.startBeat + note.duration
+      const endY = beatToY(endBeat)
       const noteH = Math.max(note.duration * bps, 8)
+      const y = endY - noteH
       if (y + noteH < 0 || y > jLineY) continue // off-screen
 
       const col = midiToWhiteIndex(note.midi)
@@ -265,7 +269,7 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
         fillColor = '#f8514966'
       } else if (wasHit) {
         fillColor = '#3fb95066'
-      } else if (note.startBeat <= currentBeat && y + noteH >= jLineY) {
+      } else if (note.startBeat <= currentBeat && currentBeat <= endBeat) {
         fillColor = '#f0f6fc'
       } else {
         const base = noteColor(note.midi)
@@ -276,7 +280,7 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
       let strokeColor = 'transparent'
       if (wasMiss) strokeColor = '#f85149'
       else if (wasHit) strokeColor = '#3fb950'
-      else if (note.startBeat <= currentBeat && y + noteH >= jLineY)
+      else if (note.startBeat <= currentBeat && currentBeat <= endBeat)
         strokeColor = '#ffffff'
 
       // Draw note rectangle
@@ -315,6 +319,9 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
 
     // Draw keyboard
     drawKeyboard(w, kbTop, kbHeight, displayMinWhite, displayRange, colWidth, currentBeat, notes, jLineY)
+
+    // Draw pitch indicator on keyboard
+    drawPitchIndicator(w, kbTop, kbHeight, displayMinWhite, displayRange, colWidth)
 
     // Draw particles on top
     drawParticles()
@@ -484,10 +491,10 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
       }
     }
 
-    // Highlight keys near judgment line
+    // Highlight keys for notes currently playing
     for (const note of _notes) {
-      const y = _jLineY - (note.startBeat - _currentBeat) * (_jLineY / 8)
-      const atLine = Math.abs(y - _jLineY) < 20
+      const endBeat = note.startBeat + note.duration
+      const atLine = note.startBeat <= _currentBeat && _currentBeat <= endBeat
       if (!atLine) continue
 
       const col = midiToWhiteIndex(note.midi)
@@ -497,6 +504,73 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
 
       ctx.fillStyle = 'rgba(56,139,253,0.5)'
       ctx.fillRect(x + 1, kbTop, colWidth - 2, kbHeight - 1)
+    }
+  }
+
+  // ── Pitch Indicator ───────────────────────────────────────────
+
+  const noteNameToMidi = (noteName: string, octave: number): number => {
+    const names = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+    const semitone = names.indexOf(noteName)
+    if (semitone < 0) return 60
+    return (octave + 1) * 12 + semitone
+  }
+
+  const drawPitchIndicator = (
+    w: number,
+    kbTop: number,
+    kbHeight: number,
+    minWhite: number,
+    rangeWhite: number,
+    colWidth: number,
+  ) => {
+    if (!ctx) return
+    const pitch = props.currentPitch()
+    if (!pitch || !props.isMicActive()) return
+
+    const midi = noteNameToMidi(pitch.noteName, pitch.octave)
+    const col = midiToWhiteIndex(midi)
+    const wi = col - minWhite
+    if (wi < -0.5 || wi > rangeWhite + 0.5) return
+
+    const x = wi * colWidth + colWidth / 2
+    const y = kbTop + kbHeight * 0.25
+
+    // Glow
+    const glow = ctx.createRadialGradient(x, y, 0, x, y, colWidth * 0.7)
+    glow.addColorStop(0, 'rgba(56,200,120,0.7)')
+    glow.addColorStop(0.5, 'rgba(56,200,120,0.25)')
+    glow.addColorStop(1, 'rgba(56,200,120,0)')
+    ctx.fillStyle = glow
+    ctx.fillRect(x - colWidth * 0.7, y - colWidth * 0.7, colWidth * 1.4, colWidth * 1.4)
+
+    // Dot
+    ctx.fillStyle = '#3fb950'
+    ctx.beginPath()
+    ctx.arc(x, y, 5, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.strokeStyle = '#f0f6fc'
+    ctx.lineWidth = 2
+    ctx.stroke()
+
+    // Label
+    const labelY = kbTop - 8
+    ctx.fillStyle = 'rgba(0,0,0,0.7)'
+    const labelW = ctx.measureText(`${pitch.noteName}${pitch.octave}`).width + 12
+    ctx.fillRect(x - labelW / 2, labelY - 14, labelW, 18)
+
+    ctx.fillStyle = '#3fb950'
+    ctx.font = 'bold 12px sans-serif'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText(`${pitch.noteName}${pitch.octave}`, x, labelY - 5)
+
+    // Cents deviation
+    if (pitch.cents !== 0) {
+      const centsStr = pitch.cents > 0 ? `+${Math.round(pitch.cents)}¢` : `${Math.round(pitch.cents)}¢`
+      ctx.fillStyle = Math.abs(pitch.cents) < 15 ? '#3fb950' : Math.abs(pitch.cents) < 30 ? '#f1c40f' : '#f85149'
+      ctx.font = '9px sans-serif'
+      ctx.fillText(centsStr, x, labelY - 28)
     }
   }
 

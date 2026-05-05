@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createSignal, For } from 'solid-js'
+import { createSignal, For, onMount } from 'solid-js'
 import type { MelodyData, MelodyItem } from '@/types'
 import { getAllMelodies, loadMelody } from '@/stores/melody-store'
 import { importMelodyFromMIDI } from '@/lib/piano-roll'
@@ -39,6 +39,14 @@ export const FallingNotesSongPicker: Component<FallingNotesSongPickerProps> = (
     const notes = melodyToFallingNotes(melody.items)
     props.onSongLoaded(notes, melody.name, melody.bpm)
   }
+
+  onMount(() => {
+    const list = melodies()
+    if (list.length > 0) {
+      setSelectedId(list[0].id)
+      handleLoadWithId(list[0].id)
+    }
+  })
 
   const handleMidiImport = () => {
     const input = document.createElement('input')
