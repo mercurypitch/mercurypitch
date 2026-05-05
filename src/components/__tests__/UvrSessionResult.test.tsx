@@ -12,11 +12,10 @@ vi.mock('../icons', () => ({
   CheckCircle: () => <span data-testid="check-icon">CheckCircle</span>,
   XCircle: () => <span data-testid="x-icon">XCircle</span>,
   Loader2: () => <span data-testid="loader-icon">Loader2</span>,
-  Calendar: () => <span data-testid="calendar-icon">Calendar</span>,
-  Box: () => <span data-testid="box-icon">Box</span>,
   Download: () => <span data-testid="download-icon">Download</span>,
   FileText: () => <span data-testid="filetext-icon">FileText</span>,
   Play: () => <span data-testid="play-icon">Play</span>,
+  Trash2: () => <span data-testid="trash-icon">Trash2</span>,
 }))
 
 // Helper to seed a session into localStorage so getUvrSession can find it
@@ -38,20 +37,25 @@ describe('UvrSessionResult Component', () => {
   })
 
   describe('Rendering', () => {
-    it('renders session header with icon and title', () => {
+    it('renders session card with filename', () => {
       seedSession({
         sessionId: 'session-123',
         status: 'completed',
         progress: 100,
         createdAt: Date.now() - 3600000,
+        originalFile: {
+          name: 'song.mp3',
+          size: 1024 * 50000,
+          mimeType: 'audio/mpeg',
+        },
       })
 
       render(() => <UvrSessionResult {...defaultProps} />)
 
-      expect(screen.getByText('UVR Session')).toBeInTheDocument()
+      expect(screen.getByText('song.mp3')).toBeInTheDocument()
     })
 
-    it('renders session filename', () => {
+    it('renders filename', () => {
       seedSession({
         sessionId: 'session-123',
         status: 'completed',
@@ -124,7 +128,7 @@ describe('UvrSessionResult Component', () => {
       expect(screen.getByText('error')).toBeInTheDocument()
     })
 
-    it('shows processing time in status bar', () => {
+    it('shows processing time in meta row', () => {
       seedSession({
         sessionId: 'session-123',
         status: 'completed',
@@ -141,30 +145,11 @@ describe('UvrSessionResult Component', () => {
     it('shows idle status when session is null', () => {
       render(() => <UvrSessionResult {...defaultProps} />)
 
-      expect(screen.getAllByText('Idle').length).toBeGreaterThan(0)
+      expect(screen.getByText('idle')).toBeInTheDocument()
     })
   })
 
-  describe('Info Grid', () => {
-    it('renders created date', () => {
-      // Use a known timestamp that produces a predictable locale date
-      const knownTimestamp = new Date('2026-05-03T12:00:00').getTime()
-      seedSession({
-        sessionId: 'session-123',
-        status: 'completed',
-        progress: 100,
-        createdAt: knownTimestamp,
-      })
-
-      render(() => <UvrSessionResult {...defaultProps} />)
-
-      expect(screen.getByText('Created')).toBeInTheDocument()
-      // formatDate should produce a non-empty date string
-      const dateText = screen.getByText(/Created/).nextElementSibling
-      expect(dateText).toBeTruthy()
-      expect(dateText?.textContent?.length).toBeGreaterThan(0)
-    })
-
+  describe('File Size', () => {
     it('renders file size when original file exists', () => {
       seedSession({
         sessionId: 'session-123',
@@ -193,7 +178,7 @@ describe('UvrSessionResult Component', () => {
 
       render(() => <UvrSessionResult {...defaultProps} />)
 
-      expect(screen.queryByText(/Size/i)).not.toBeInTheDocument()
+      expect(screen.queryByText(/MB|KB|Bytes/)).not.toBeInTheDocument()
     })
 
     it('formats large files correctly', () => {
@@ -215,8 +200,8 @@ describe('UvrSessionResult Component', () => {
     })
   })
 
-  describe('Outputs Section', () => {
-    it('renders outputs section header', () => {
+  describe('Output Chips', () => {
+    it('renders vocal chip when vocal output exists', () => {
       seedSession({
         sessionId: 'session-123',
         status: 'completed',
@@ -231,10 +216,10 @@ describe('UvrSessionResult Component', () => {
 
       render(() => <UvrSessionResult {...defaultProps} />)
 
-      expect(screen.getByText('Generated Outputs')).toBeInTheDocument()
+      expect(screen.getByText('Vocal')).toBeInTheDocument()
     })
 
-    it('renders vocal stem file item', () => {
+    it('renders instrumental chip when available', () => {
       seedSession({
         sessionId: 'session-123',
         status: 'completed',
@@ -249,12 +234,10 @@ describe('UvrSessionResult Component', () => {
 
       render(() => <UvrSessionResult {...defaultProps} />)
 
-      expect(screen.getByText('Vocal Stem')).toBeInTheDocument()
-      // WAV appears twice (vocal + instrumental), use getAllByText
-      expect(screen.getAllByText('WAV').length).toBeGreaterThan(0)
+      expect(screen.getByText('Inst')).toBeInTheDocument()
     })
 
-    it('renders instrumental stem when available', () => {
+    it('renders MIDI chip when vocal MIDI available', () => {
       seedSession({
         sessionId: 'session-123',
         status: 'completed',
@@ -269,79 +252,43 @@ describe('UvrSessionResult Component', () => {
 
       render(() => <UvrSessionResult {...defaultProps} />)
 
-      expect(screen.getByText('Instrumental')).toBeInTheDocument()
-      expect(screen.getAllByText('WAV').length).toBeGreaterThan(0)
-    })
-
-    it('renders vocal MIDI when available', () => {
-      seedSession({
-        sessionId: 'session-123',
-        status: 'completed',
-        progress: 100,
-        outputs: {
-          vocal: '/stems/vocal.wav',
-          instrumental: '/stems/instrumental.wav',
-          vocalMidi: '/midi/vocal.mid',
-        },
-        createdAt: Date.now() - 3600000,
-      })
-
-      render(() => <UvrSessionResult {...defaultProps} />)
-
-      expect(screen.getByText('Vocal MIDI')).toBeInTheDocument()
       expect(screen.getByText('MIDI')).toBeInTheDocument()
     })
 
-    it('calls export with vocal type when download clicked', () => {
+    it('calls export with vocal type when vocal chip clicked', () => {
       seedSession({
         sessionId: 'session-123',
         status: 'completed',
         progress: 100,
         outputs: {
           vocal: '/stems/vocal.wav',
-          instrumental: '/stems/instrumental.wav',
-          vocalMidi: '/midi/vocal.mid',
         },
         createdAt: Date.now() - 3600000,
       })
 
       render(() => <UvrSessionResult {...defaultProps} />)
 
-      const fileActionButtons = Array.from(
-        document.querySelectorAll('button.file-action'),
-      )
-      const vocalDownloadBtn = fileActionButtons[0]
-      if (vocalDownloadBtn) {
-        fireEvent.click(vocalDownloadBtn)
-      }
+      const vocalChip = screen.getByText('Vocal')
+      fireEvent.click(vocalChip)
 
       expect(defaultProps.onExport).toHaveBeenCalledWith('session-123', 'vocal')
     })
 
-    it('calls export with instrumental type for instrumental download', async () => {
+    it('calls export with instrumental type for instrumental chip', () => {
       seedSession({
         sessionId: 'session-123',
         status: 'completed',
         progress: 100,
         outputs: {
-          vocal: '/stems/vocal.wav',
           instrumental: '/stems/instrumental.wav',
-          vocalMidi: '/midi/vocal.mid',
         },
         createdAt: Date.now() - 3600000,
       })
 
       render(() => <UvrSessionResult {...defaultProps} />)
 
-      await new Promise((resolve) => setTimeout(resolve, 0))
-
-      const fileActionButtons = Array.from(
-        document.querySelectorAll('button.file-action'),
-      )
-      const instrumentalDownloadBtn = fileActionButtons[1]
-      if (instrumentalDownloadBtn) {
-        fireEvent.click(instrumentalDownloadBtn)
-      }
+      const instChip = screen.getByText('Inst')
+      fireEvent.click(instChip)
 
       expect(defaultProps.onExport).toHaveBeenCalledWith(
         'session-123',
@@ -349,7 +296,31 @@ describe('UvrSessionResult Component', () => {
       )
     })
 
-    it('renders view results button for completed sessions', () => {
+    it('calls export with vocal-midi type for MIDI chip', () => {
+      seedSession({
+        sessionId: 'session-123',
+        status: 'completed',
+        progress: 100,
+        outputs: {
+          vocalMidi: '/midi/vocal.mid',
+        },
+        createdAt: Date.now() - 3600000,
+      })
+
+      render(() => <UvrSessionResult {...defaultProps} />)
+
+      const midiChip = screen.getByText('MIDI')
+      fireEvent.click(midiChip)
+
+      expect(defaultProps.onExport).toHaveBeenCalledWith(
+        'session-123',
+        'vocal-midi',
+      )
+    })
+  })
+
+  describe('View Button', () => {
+    it('renders view button for completed sessions', () => {
       seedSession({
         sessionId: 'session-123',
         status: 'completed',
@@ -362,10 +333,10 @@ describe('UvrSessionResult Component', () => {
 
       render(() => <UvrSessionResult {...defaultProps} />)
 
-      expect(screen.getByText('View Results')).toBeInTheDocument()
+      expect(screen.getByText('View')).toBeInTheDocument()
     })
 
-    it('calls onView when view results button clicked', () => {
+    it('calls onView when view button clicked', () => {
       seedSession({
         sessionId: 'session-123',
         status: 'completed',
@@ -378,28 +349,13 @@ describe('UvrSessionResult Component', () => {
 
       render(() => <UvrSessionResult {...defaultProps} />)
 
-      const viewButton = screen.getByText('View Results')
-      if (viewButton) {
-        fireEvent.click(viewButton)
-      }
+      const viewButton = screen.getByText('View')
+      fireEvent.click(viewButton)
 
       expect(defaultProps.onView).toHaveBeenCalledWith('session-123')
     })
 
-    it('renders delete button', () => {
-      seedSession({
-        sessionId: 'session-123',
-        status: 'completed',
-        progress: 100,
-        createdAt: Date.now() - 3600000,
-      })
-
-      render(() => <UvrSessionResult {...defaultProps} />)
-
-      expect(screen.getByText('Delete')).toBeInTheDocument()
-    })
-
-    it('does not show view results button for non-completed sessions', () => {
+    it('does not show view button for non-completed sessions', () => {
       seedSession({
         sessionId: 'session-123',
         status: 'processing',
@@ -409,12 +365,12 @@ describe('UvrSessionResult Component', () => {
 
       render(() => <UvrSessionResult {...defaultProps} />)
 
-      expect(screen.queryByText('View Results')).not.toBeInTheDocument()
+      expect(screen.queryByText('View')).not.toBeInTheDocument()
     })
   })
 
-  describe('Date Formatting', () => {
-    it('formats date with time', () => {
+  describe('Delete Button', () => {
+    it('renders delete button with aria-label', () => {
       seedSession({
         sessionId: 'session-123',
         status: 'completed',
@@ -424,33 +380,85 @@ describe('UvrSessionResult Component', () => {
 
       render(() => <UvrSessionResult {...defaultProps} />)
 
-      expect(screen.getByText(/Created/i)).toBeInTheDocument()
+      expect(screen.getByLabelText('Delete session')).toBeInTheDocument()
     })
 
-    it('handles older dates', () => {
+    it('calls delete with confirm and onClose on click', () => {
+      vi.spyOn(window, 'confirm').mockReturnValue(true)
       seedSession({
         sessionId: 'session-123',
         status: 'completed',
         progress: 100,
-        createdAt: Date.now() - 86400000,
+        createdAt: Date.now() - 3600000,
       })
 
       render(() => <UvrSessionResult {...defaultProps} />)
 
-      expect(screen.getByText(/Created/i)).toBeInTheDocument()
+      const deleteButton = screen.getByLabelText('Delete session')
+      fireEvent.click(deleteButton)
+
+      expect(window.confirm).toHaveBeenCalled()
+      expect(defaultProps.onClose).toHaveBeenCalled()
     })
 
-    it('handles recent dates', () => {
+    it('does not call onClose when confirm is cancelled', () => {
+      vi.spyOn(window, 'confirm').mockReturnValue(false)
       seedSession({
         sessionId: 'session-123',
         status: 'completed',
         progress: 100,
-        createdAt: Date.now() - 60000,
+        createdAt: Date.now() - 3600000,
       })
 
       render(() => <UvrSessionResult {...defaultProps} />)
 
-      expect(screen.getByText(/Created/i)).toBeInTheDocument()
+      const deleteButton = screen.getByLabelText('Delete session')
+      fireEvent.click(deleteButton)
+
+      expect(window.confirm).toHaveBeenCalled()
+      expect(defaultProps.onClose).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('Time Formatting', () => {
+    it('shows relative time for recent sessions', () => {
+      seedSession({
+        sessionId: 'session-123',
+        status: 'completed',
+        progress: 100,
+        createdAt: Date.now() - 3600000,
+      })
+
+      render(() => <UvrSessionResult {...defaultProps} />)
+
+      // 1 hour ago should show "1h ago"
+      expect(screen.getByText(/h ago/)).toBeInTheDocument()
+    })
+
+    it('shows minutes for very recent sessions', () => {
+      seedSession({
+        sessionId: 'session-123',
+        status: 'completed',
+        progress: 100,
+        createdAt: Date.now() - 120000,
+      })
+
+      render(() => <UvrSessionResult {...defaultProps} />)
+
+      expect(screen.getByText(/m ago|Just now/)).toBeInTheDocument()
+    })
+
+    it('shows days for older sessions', () => {
+      seedSession({
+        sessionId: 'session-123',
+        status: 'completed',
+        progress: 100,
+        createdAt: Date.now() - 172800000,
+      })
+
+      render(() => <UvrSessionResult {...defaultProps} />)
+
+      expect(screen.getByText(/d ago/)).toBeInTheDocument()
     })
   })
 
@@ -458,23 +466,12 @@ describe('UvrSessionResult Component', () => {
     it('handles null session gracefully', () => {
       render(() => <UvrSessionResult {...defaultProps} />)
 
-      expect(screen.getAllByText('Idle').length).toBeGreaterThan(0)
-      expect(screen.queryByText('song.mp3')).not.toBeInTheDocument()
+      expect(screen.getByText('idle')).toBeInTheDocument()
+      expect(screen.getByText('Unknown')).toBeInTheDocument()
     })
   })
 
-  describe('Close Handler', () => {
-    it('calls onClose when close button clicked', () => {
-      render(() => <UvrSessionResult {...defaultProps} />)
-
-      const closeButton = screen.getByLabelText('Close')
-      fireEvent.click(closeButton)
-
-      expect(defaultProps.onClose).toHaveBeenCalled()
-    })
-  })
-
-  describe('Status Colors', () => {
+  describe('Status Dot Colors', () => {
     it('uses success color for completed status', () => {
       seedSession({
         sessionId: 'session-123',
@@ -485,11 +482,9 @@ describe('UvrSessionResult Component', () => {
 
       render(() => <UvrSessionResult {...defaultProps} />)
 
-      const statusBar = document.querySelector('.status-bar') as HTMLElement
-      expect(statusBar).toBeTruthy()
-      expect(statusBar.style.getPropertyValue('--status-color')).toBe(
-        'var(--success)',
-      )
+      const statusDot = document.querySelector('.session-status-dot') as HTMLElement
+      expect(statusDot).toBeTruthy()
+      expect(statusDot.style.background).toBe('var(--success)')
     })
 
     it('uses accent color for processing status', () => {
@@ -502,11 +497,9 @@ describe('UvrSessionResult Component', () => {
 
       render(() => <UvrSessionResult {...defaultProps} />)
 
-      const statusBar = document.querySelector('.status-bar') as HTMLElement
-      expect(statusBar).toBeTruthy()
-      expect(statusBar.style.getPropertyValue('--status-color')).toBe(
-        'var(--accent)',
-      )
+      const statusDot = document.querySelector('.session-status-dot') as HTMLElement
+      expect(statusDot).toBeTruthy()
+      expect(statusDot.style.background).toBe('var(--accent)')
     })
 
     it('uses error color for error status', () => {
@@ -520,11 +513,27 @@ describe('UvrSessionResult Component', () => {
 
       render(() => <UvrSessionResult {...defaultProps} />)
 
-      const statusBar = document.querySelector('.status-bar') as HTMLElement
-      expect(statusBar).toBeTruthy()
-      expect(statusBar.style.getPropertyValue('--status-color')).toBe(
-        'var(--error)',
-      )
+      const statusDot = document.querySelector('.session-status-dot') as HTMLElement
+      expect(statusDot).toBeTruthy()
+      expect(statusDot.style.background).toBe('var(--error)')
+    })
+  })
+
+  describe('Card Interaction', () => {
+    it('calls onView when card is clicked', () => {
+      seedSession({
+        sessionId: 'session-123',
+        status: 'completed',
+        progress: 100,
+        createdAt: Date.now() - 3600000,
+      })
+
+      render(() => <UvrSessionResult {...defaultProps} />)
+
+      const card = document.querySelector('.uvr-session-result') as HTMLElement
+      fireEvent.click(card)
+
+      expect(defaultProps.onView).toHaveBeenCalledWith('session-123')
     })
   })
 })

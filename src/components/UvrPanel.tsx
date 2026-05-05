@@ -665,9 +665,9 @@ export const UvrPanelStyles: string = `
 }
 
 .history-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.75rem;
 }
 
 .history-empty {
