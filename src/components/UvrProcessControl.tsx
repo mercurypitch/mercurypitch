@@ -316,26 +316,27 @@ export const UvrProcessControlStyles: string = `
 }
 
 .action-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.625rem 1rem;
+  gap: 0.4rem;
+  padding: 0.5rem 0.75rem;
   border: none;
-  border-radius: 0.5rem;
-  font-size: 0.9rem;
+  border-radius: 0.4rem;
+  font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .action-btn-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: var(--accent);
+  color: var(--bg-primary);
 }
 
 .action-btn-primary:hover:not(:disabled) {
-  opacity: 0.9;
-  transform: translateY(-1px);
+  opacity: 0.85;
 }
 
 .action-btn-primary:disabled {
@@ -344,14 +345,13 @@ export const UvrProcessControlStyles: string = `
 }
 
 .action-btn-danger {
-  background: var(--bg-tertiary);
-  color: var(--fg-primary);
-  border: 1px solid var(--border);
+  background: var(--bg-primary);
+  color: var(--error);
+  border: 1px solid rgba(239, 68, 68, 0.3);
 }
 
 .action-btn-danger:hover:not(:disabled) {
   background: rgba(239, 68, 68, 0.1);
-  color: var(--error);
 }
 
 .pulse-spinner {
