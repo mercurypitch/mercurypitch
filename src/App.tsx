@@ -53,7 +53,7 @@ import { WelcomeScreen } from './components/WelcomeScreen'
 // ============================================================
 
 export type EditorView = 'piano-roll' | 'session-editor'
-export type ActiveTab = 'practice' | 'editor' | 'settings'
+export type ActiveTab = 'practice' | 'editor' | 'settings' | 'falling-notes'
 
 interface AppProps {
   onMounted?: () => void

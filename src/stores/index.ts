@@ -41,6 +41,7 @@ export * from './ui-store'
 export * from './user-session-store'
 export * from './walkthrough-store'
 export * from './playback-state-store'
+export * from './falling-notes-store'
 export * from './session-store'
 
 export { playback } from './playback-store'
