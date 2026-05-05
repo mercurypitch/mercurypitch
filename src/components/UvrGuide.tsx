@@ -231,8 +231,8 @@ export const UvrGuide: Component<UvrGuideProps> = (props) => {
             <div class="step">
               <div class="step-number">1</div>
               <div class="step-content">
-                <strong>Open the UVR Settings</strong>
-                <p>Access in the Settings panel under the Music section.</p>
+                <strong>Open UVR Settings</strong>
+                <p>Click the gear icon in the Vocal Separation panel header.</p>
               </div>
             </div>
             <div class="step">
@@ -280,21 +280,7 @@ export const UvrGuide: Component<UvrGuideProps> = (props) => {
 
   return (
     <div class="uvr-guide-container">
-      {/* Header */}
-      <div class="uvr-guide-header">
-        <div class="guide-icon-wrapper">
-          <div class="guide-icons-row">
-            <Voice />
-            <Music />
-          </div>
-        </div>
-        <h2>Vocal Separation Guide</h2>
-        <p class="guide-subtitle">
-          Learn how to use UVR for effective practice
-        </p>
-      </div>
-
-      {/* Step Header — shows current step as a tab */}
+      {/* Unified Header — icons + current step title with arrows */}
       <div class="guide-step-header">
         <button
           class="guide-step-arrow"
@@ -304,11 +290,15 @@ export const UvrGuide: Component<UvrGuideProps> = (props) => {
         >
           ←
         </button>
+        <div class="guide-step-icons">
+          <Voice />
+          <Music />
+        </div>
         <div class="guide-step-title-area">
+          <h3 class="guide-step-title">{steps[activeStep()].title}</h3>
           <span class="guide-step-badge">
             {activeStep() + 1} / {steps.length}
           </span>
-          <h3 class="guide-step-title">{steps[activeStep()].title}</h3>
         </div>
         <button
           class="guide-step-arrow"
@@ -377,51 +367,11 @@ export const _UvrGuideStyles: string = `
   overflow-y: auto;
 }
 
-.uvr-guide-header {
-  text-align: center;
-  padding: 1rem 1rem 0.75rem;
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border);
-  color: var(--text-primary);
-}
-
-.uvr-guide-header h2 {
-  font-size: 1.05rem;
-  font-weight: 700;
-  margin: 0.35rem 0 0.15rem;
-  color: var(--text-primary);
-}
-
-.guide-icon-wrapper {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 0.25rem;
-}
-
-.guide-icons-row {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: var(--accent);
-}
-
-.guide-icons-row svg {
-  width: 1.5rem;
-  height: 1.5rem;
-}
-
-.guide-subtitle {
-  color: var(--text-secondary);
-  font-size: 0.85rem;
-  margin: 0;
-}
-
 .guide-step-header {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.85rem 1rem;
+  gap: 0.65rem;
+  padding: 0.8rem 0.85rem;
   background: var(--bg-secondary);
   border: 1px solid var(--border);
   border-radius: 0.75rem;
@@ -431,14 +381,14 @@ export const _UvrGuideStyles: string = `
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 2rem;
-  height: 2rem;
+  width: 1.85rem;
+  height: 1.85rem;
   padding: 0;
   background: var(--bg-tertiary);
   border: 1px solid var(--border);
   border-radius: 0.5rem;
   color: var(--text-primary);
-  font-size: 1rem;
+  font-size: 0.95rem;
   cursor: pointer;
   transition: all 0.15s;
   flex-shrink: 0;
@@ -450,8 +400,21 @@ export const _UvrGuideStyles: string = `
 }
 
 .guide-step-arrow:disabled {
-  opacity: 0.3;
+  opacity: 0.25;
   cursor: not-allowed;
+}
+
+.guide-step-icons {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.guide-step-icons svg {
+  width: 1.25rem;
+  height: 1.25rem;
 }
 
 .guide-step-title-area {
@@ -459,24 +422,25 @@ export const _UvrGuideStyles: string = `
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.2rem;
+  gap: 0.15rem;
   min-width: 0;
 }
 
 .guide-step-badge {
   display: inline-block;
-  padding: 0.15rem 0.6rem;
+  padding: 0.12rem 0.5rem;
   background: var(--accent);
   color: var(--bg-primary);
   border-radius: 1rem;
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   font-weight: 600;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.03em;
+  line-height: 1.3;
 }
 
 .guide-step-title {
   margin: 0;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 600;
   color: var(--text-primary);
   text-align: center;

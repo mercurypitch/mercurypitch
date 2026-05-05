@@ -7,7 +7,7 @@ import { createEffect, createSignal, For, onCleanup, Show } from 'solid-js'
 import type { UvrSession } from '@/stores/app-store'
 import { cancelUvrSession, completeUvrSession, currentUvrSession, deleteAllUvrSessions, getAllUvrSessions, getAllUvrSessionsReactive, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, startUvrSession, updateUvrSessionProgress, } from '@/stores/app-store'
 import { processAudio, pollForCompletion, type OutputFile, DEFAULT_PROCESS_REQUEST, } from '@/lib/uvr-api'
-import { UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrUploadControl, } from '.'
+import { UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrSettings, UvrUploadControl, } from '.'
 import { CheckCircle, History, Music, Settings, Trash2, X } from './icons'
 
 /**
@@ -78,6 +78,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   }
   const clearError = () => setOnError('')
   const [showGuide, setShowGuide] = createSignal(false)
+  const [showSettings, setShowSettings] = createSignal(false)
   const [showDeleteAllConfirm, setShowDeleteAllConfirm] = createSignal(false)
   const [deleteAllToast, setDeleteAllToast] = createSignal('')
   const [selectedFile, setSelectedFile] = createSignal<File | null>(null)
@@ -252,6 +253,13 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
         <div class="header-actions">
           <button
             class="header-btn header-btn-ghost"
+            onClick={() => setShowSettings(!showSettings())}
+            title="UVR Settings"
+          >
+            <Settings />
+          </button>
+          <button
+            class="header-btn header-btn-ghost"
             onClick={() => setShowGuide(!showGuide())}
             title="View Guide"
           >
@@ -286,6 +294,20 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 </button>
               </div>
               <UvrGuide onClose={() => setShowGuide(false)} />
+            </div>
+          </div>
+        )}
+
+        {showSettings() && (
+          <div class="guide-modal" onClick={() => setShowSettings(false)}>
+            <div class="guide-container" onClick={(e) => e.stopPropagation()}>
+              <div class="guide-header">
+                <h3>UVR Settings</h3>
+                <button class="guide-close" onClick={() => setShowSettings(false)}>
+                  <X />
+                </button>
+              </div>
+              <UvrSettings />
             </div>
           </div>
         )}
