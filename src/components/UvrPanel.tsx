@@ -5,7 +5,7 @@
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, Show } from 'solid-js'
 import type { UvrSession } from '@/stores/app-store'
-import { cancelUvrSession, completeUvrSession, currentUvrSession, getAllUvrSessions, saveAllUvrSessions, setCurrentUvrSession, startUvrSession, updateUvrSessionProgress, } from '@/stores/app-store'
+import { cancelUvrSession, completeUvrSession, currentUvrSession, getAllUvrSessions, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, startUvrSession, updateUvrSessionProgress, } from '@/stores/app-store'
 import { processAudio, pollForCompletion, type OutputFile, DEFAULT_PROCESS_REQUEST, } from '@/lib/uvr-api'
 import { UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrUploadControl, } from '.'
 import { History, Music, Play, Settings, X, Loader2 } from './icons'
@@ -41,8 +41,9 @@ async function startRealProcessing(
       1000,
     )
   } catch (error) {
-    onError(error instanceof Error ? error.message : 'Processing failed')
-    throw error
+    const message = error instanceof Error ? error.message : 'Processing failed'
+    setErrorUvrSession(sessionId, message)
+    onError(message)
   }
 }
 
@@ -156,7 +157,9 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       )
     } catch (error) {
       console.error('Processing error:', error)
-      showError(error instanceof Error ? error.message : 'Processing failed')
+      const message = error instanceof Error ? error.message : 'Processing failed'
+      setErrorUvrSession(sessionId, message)
+      showError(message)
     }
   }
 
