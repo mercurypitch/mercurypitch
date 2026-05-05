@@ -32,10 +32,7 @@ export const FallingNotesSongPicker: Component<FallingNotesSongPickerProps> = (
 
   const melodies = () => getAllMelodies().filter((m) => m.items.length > 0)
 
-  const handleLoad = () => {
-    const id = selectedId()
-    if (!id) return
-
+  const handleLoadWithId = (id: string) => {
     const melody = loadMelody(id)
     if (!melody) return
 
@@ -80,7 +77,11 @@ export const FallingNotesSongPicker: Component<FallingNotesSongPickerProps> = (
         <select
           class="fn-song-select"
           value={selectedId() ?? ''}
-          onChange={(e) => setSelectedId(e.currentTarget.value || null)}
+          onChange={(e) => {
+            const id = e.currentTarget.value || null
+            setSelectedId(id)
+            if (id) handleLoadWithId(id)
+          }}
         >
           <option value="">-- Select a song --</option>
           <For each={melodies()}>
@@ -91,14 +92,6 @@ export const FallingNotesSongPicker: Component<FallingNotesSongPickerProps> = (
             )}
           </For>
         </select>
-
-        <button
-          class="fn-btn fn-btn-load"
-          disabled={!selectedId()}
-          onClick={handleLoad}
-        >
-          Load Song
-        </button>
 
         <button class="fn-btn fn-btn-import" onClick={handleMidiImport}>
           Import MIDI
