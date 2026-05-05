@@ -8,6 +8,7 @@ import { CheckCircle, Loader2, Music, Pause, Play, Settings, XCircle, } from './
 
 interface ProcessControlProps {
   sessionId: string
+  apiSessionId?: string
   status:
     | 'idle'
     | 'uploading'
@@ -95,11 +96,11 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
           <p>{currentStage.description}</p>
           <p
             class="process-session-id"
-            title={props.sessionId}
+            title={props.apiSessionId || props.sessionId}
           >
-            {props.sessionId.length > 16
-              ? props.sessionId.slice(-8)
-              : props.sessionId}
+            {(props.apiSessionId || props.sessionId).length > 16
+              ? (props.apiSessionId || props.sessionId).slice(-8)
+              : (props.apiSessionId || props.sessionId)}
           </p>
         </div>
       </div>

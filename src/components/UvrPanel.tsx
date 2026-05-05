@@ -5,8 +5,8 @@
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, Show } from 'solid-js'
 import type { UvrSession } from '@/stores/app-store'
-import { cancelUvrSession, completeUvrSession, currentUvrSession, deleteAllUvrSessions, getAllUvrSessions, getAllUvrSessionsReactive, getUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, startUvrSession, updateUvrSessionProgress, } from '@/stores/app-store'
-import { processAudio, pollForCompletion, type OutputFile, DEFAULT_PROCESS_REQUEST, } from '@/lib/uvr-api'
+import { cancelUvrSession, completeUvrSession, currentUvrSession, deleteAllUvrSessions, getAllUvrSessions, getAllUvrSessionsReactive, getUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrSessionApiId, startUvrSession, updateUvrSessionOutputs, updateUvrSessionProgress, } from '@/stores/app-store'
+import { getProcessStatus, processAudio, pollForCompletion, type OutputFile, DEFAULT_PROCESS_REQUEST, } from '@/lib/uvr-api'
 import { StemMixer, UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrSettings, UvrUploadControl, } from '.'
 import { CheckCircle, History, Music, Settings, Trash2, X } from './icons'
 
@@ -32,10 +32,19 @@ async function startRealProcessing(
       throw new Error('Failed to start processing')
     }
 
-    // Poll for completion
+    // Store the API session UUID for future queries
+    setUvrSessionApiId(sessionId, response.session_id)
+
+    const processingStartTime = Date.now()
+
+    // Poll for completion, passing elapsed time with progress updates
     await pollForCompletion(
       response.session_id,
-      onProgress,
+      (progress) => {
+        const elapsed = Date.now() - processingStartTime
+        updateUvrSessionProgress(sessionId, progress, elapsed)
+        onProgress(progress)
+      },
       (files) => onComplete(files),
       onError,
       1000,
@@ -140,7 +149,9 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       await startRealProcessing(
         file,
         sessionId,
-        (progress) => updateUvrSessionProgress(sessionId, progress),
+        (_progress) => {
+          // Session state already updated inside startRealProcessing
+        },
         (files) => {
           // Convert API output to session format
           const outputs: UvrSession['outputs'] = {
@@ -149,7 +160,6 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
             vocalMidi: '',
           }
 
-          console.info('Got files', files)
           for (const f of files) {
             if (f.stem === 'vocal') {
               outputs.vocal = f.path
@@ -188,6 +198,10 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     const session = getUvrSession(sessionId)
     if (session) {
       setCurrentUvrSession(session)
+      // Refresh outputs from API if we have an API session ID
+      if (session.apiSessionId && session.status === 'completed') {
+        refreshSessionOutputs(session)
+      }
     }
     setCurrentView('results')
   }
@@ -234,6 +248,34 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     setDeleteAllToast('All sessions deleted')
     setTimeout(() => setDeleteAllToast(''), 2500)
   }
+
+  // Refresh session outputs from API
+  const refreshSessionOutputs = async (sessionToRefresh?: UvrSession) => {
+    const sessions = sessionToRefresh
+      ? [sessionToRefresh]
+      : getAllUvrSessions().filter(
+          (s) => s.apiSessionId && s.status === 'completed',
+        )
+
+    for (const s of sessions) {
+      if (!s.apiSessionId) continue
+      try {
+        const status = await getProcessStatus(s.apiSessionId)
+        if (status.status === 'completed' && status.files.length > 0) {
+          updateUvrSessionOutputs(s.sessionId, status.files)
+        }
+      } catch {
+        // API unavailable — keep stored data
+      }
+    }
+  }
+
+  // Refresh outputs when viewing history
+  createEffect(() => {
+    if (currentView() === 'history') {
+      refreshSessionOutputs()
+    }
+  })
 
   // Simulate UVR processing (Phase 2 will replace this with real UVR CLI calls)
   function simulateProcessing(sessionId: string) {
@@ -377,6 +419,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
             {session() && (
               <UvrProcessControl
                 sessionId={session()!.sessionId}
+                apiSessionId={session()!.apiSessionId}
                 status={session()!.status}
                 progress={session()!.progress}
                 processingTime={session()!.processingTime}

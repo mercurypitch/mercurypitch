@@ -93,6 +93,7 @@ export type UvrStatus =
 /** UVR session interface */
 export interface UvrSession {
   sessionId: string
+  apiSessionId?: string
   status: UvrStatus
   progress: number
   processingTime?: number
@@ -197,6 +198,21 @@ export function updateUvrSessionProgress(
   }
 }
 
+/** Set the API session ID on a local session */
+export function setUvrSessionApiId(
+  sessionId: string,
+  apiSessionId: string,
+): void {
+  const sessions = getAllUvrSessions()
+  const session = sessions.find((s) => s.sessionId === sessionId)
+  if (session) {
+    session.apiSessionId = apiSessionId
+    saveAllUvrSessions(sessions)
+    bumpSessions()
+    setCurrentUvrSession({ ...session })
+  }
+}
+
 /** Complete UVR session with results */
 export function completeUvrSession(
   sessionId: string,
@@ -272,6 +288,34 @@ export function getUvrSessionStats(): {
     totalProcessingTime: sessions
       .filter((s) => s.processingTime)
       .reduce((sum, s) => sum + (s.processingTime || 0), 0),
+  }
+}
+
+/** Refresh session output files from API data */
+export function updateUvrSessionOutputs(
+  sessionId: string,
+  files: { stem: string; path: string }[],
+): void {
+  const sessions = getAllUvrSessions()
+  const session = sessions.find((s) => s.sessionId === sessionId)
+  if (!session) return
+
+  const outputs: UvrSession['outputs'] = {
+    vocal: session.outputs?.vocal || '',
+    instrumental: session.outputs?.instrumental || '',
+    vocalMidi: session.outputs?.vocalMidi || '',
+  }
+
+  for (const f of files) {
+    if (f.stem === 'vocal') outputs.vocal = f.path
+    else if (f.stem === 'instrumental') outputs.instrumental = f.path
+  }
+
+  session.outputs = outputs
+  saveAllUvrSessions(sessions)
+  bumpSessions()
+  if (currentUvrSession()?.sessionId === sessionId) {
+    setCurrentUvrSession({ ...session })
   }
 }
 

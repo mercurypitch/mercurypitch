@@ -393,8 +393,11 @@ async def get_status(session_id: str):
     files = []
     for root, dirs, filenames in os.walk(session_output_dir):
         for filename in filenames:
-            if filename.startswith("input") or filename.startswith("done") \
-               or filename == "progress.json":
+            # Skip the uploaded input file (e.g. input.wav) but NOT
+            # audio-separator output files (e.g. input_(Vocals)_Model.wav)
+            if filename == "done.txt" or filename == "progress.json":
+                continue
+            if filename.startswith("input") and not filename.startswith("input_"):
                 continue
 
             file_path = os.path.join(root, filename)
@@ -420,7 +423,6 @@ async def get_status(session_id: str):
             # Normalize rel_path: os.walk yields "." for root, strip it
             clean_rel = rel_path.lstrip("./") if rel_path != "." else ""
             path_segment = f"{clean_rel}/{filename}" if clean_rel else filename
-            print(f"{detected} {filename} {session_id} {path_segment} ...")
             files.append({
                 "stem": detected,
                 "filename": filename,
@@ -455,7 +457,7 @@ async def get_status(session_id: str):
     )
 
 
-@app.get("/api/output/{session_id}/{path:path}")
+@app.get("/output/{session_id}/{path:path}")
 async def get_output_file(session_id: str, path: str):
     """Serve processed output file"""
     file_path = os.path.join(OUTPUT_DIR, session_id, path)
@@ -508,7 +510,7 @@ async def root():
             "list_models": "/models",
             "process": "/process (POST)",
             "status": "/status/{session_id}",
-            "output": "/api/output/{session_id}/{path}",
+            "output": "/output/{session_id}/{path}",
             "delete_session": "/session/{session_id} (DELETE)",
         }
     }

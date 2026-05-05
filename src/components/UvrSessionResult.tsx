@@ -99,13 +99,16 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
           </p>
           <p
             class="session-id-pill"
-            title={session()?.sessionId || ''}
+            title={session()?.apiSessionId || session()?.sessionId || ''}
           >
-            {session()?.sessionId
-              ? session()!.sessionId.length > 16
-                ? session()!.sessionId.slice(-8)
-                : session()!.sessionId
-              : ''}
+            {(() => {
+              const id = session()?.apiSessionId || session()?.sessionId
+              return id
+                ? id.length > 16
+                  ? id.slice(-8)
+                  : id
+                : ''
+            })()}
           </p>
         </div>
         <button
