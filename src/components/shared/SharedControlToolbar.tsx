@@ -101,6 +101,11 @@ interface SharedControlToolbarProps {
   isRecording?: () => boolean
   onRecordToggle?: () => Promise<void>
 
+  // MIDI (falling-notes tab only)
+  inputMode?: () => 'mic' | 'midi'
+  midiConnected?: () => boolean
+  onMidiToggle?: () => void
+
   // Common
   onMicToggle?: () => void
   onWaveToggle?: () => void
@@ -139,6 +144,30 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
             </div>
           </div>
         )}
+
+        {/* MIDI — falling notes only, toggle between mic and MIDI input */}
+        <Show when={isFallingNotesTab() && props.onMidiToggle}>
+          <div class="essential-control-group">
+            <button
+              class={`ctrl-btn midi-btn ${(props.midiConnected?.() ?? false) ? 'active' : ''}`}
+              onClick={props.onMidiToggle}
+              title={(props.midiConnected?.() ?? false) ? 'Disconnect MIDI' : 'Connect MIDI Keyboard'}
+              aria-label={(props.midiConnected?.() ?? false) ? 'Disconnect MIDI' : 'Connect MIDI Keyboard'}
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <circle cx="12" cy="12" r="3" />
+                {/* 5-pin DIN connector dots */}
+                <circle cx="12" cy="5" r="1" fill="currentColor" stroke="none" />
+                <circle cx="18.7" cy="7.7" r="1" fill="currentColor" stroke="none" />
+                <circle cx="16.2" cy="16.2" r="1" fill="currentColor" stroke="none" />
+                <circle cx="7.8" cy="16.2" r="1" fill="currentColor" stroke="none" />
+                <circle cx="5.3" cy="7.7" r="1" fill="currentColor" stroke="none" />
+              </svg>
+              <span>MIDI</span>
+            </button>
+          </div>
+        </Show>
 
         {/* Wave toggle - practice tab only */}
         <Show when={isPracticeTab()}>

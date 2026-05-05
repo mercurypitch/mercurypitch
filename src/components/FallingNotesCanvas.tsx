@@ -17,6 +17,7 @@ interface FallingNotesCanvasProps {
   notesMissed: () => number
   currentPitch: () => { frequency: number; noteName: string; octave: number; cents: number } | null
   isMicActive: () => boolean
+  inputMode?: () => 'mic' | 'midi'
 }
 
 interface Particle {
@@ -533,7 +534,8 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
   ) => {
     if (!ctx) return
     const pitch = props.currentPitch()
-    if (!pitch || !props.isMicActive()) return
+    const isMidi = props.inputMode?.() === 'midi'
+    if (!pitch || (!props.isMicActive() && !isMidi)) return
 
     const midi = noteNameToMidi(pitch.noteName, pitch.octave)
     const col = midiToWhiteIndex(midi)

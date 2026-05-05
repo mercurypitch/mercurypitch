@@ -1066,6 +1066,15 @@ const AppShell: Component<AppProps> = (props) => {
                       void fallingNotes.startMic()
                     }
                   }}
+                  inputMode={fallingNotes.inputMode}
+                  midiConnected={fallingNotes.midiConnected}
+                  onMidiToggle={() => {
+                    if (fallingNotes.midiConnected()) {
+                      fallingNotes.midiDisconnect()
+                    } else {
+                      void fallingNotes.midiConnect()
+                    }
+                  }}
                 />
                 <FallingNotesSongPicker onSongLoaded={fallingNotes.loadSong} />
                 <div id="falling-notes-canvas-container">
@@ -1080,6 +1089,7 @@ const AppShell: Component<AppProps> = (props) => {
                     notesMissed={fallingNotes.notesMissed}
                     currentPitch={fallingNotes.currentPitch}
                     isMicActive={fallingNotes.isMicActive}
+                    inputMode={fallingNotes.inputMode}
                   />
                 </div>
                 {/* Score overlay for finished game */}

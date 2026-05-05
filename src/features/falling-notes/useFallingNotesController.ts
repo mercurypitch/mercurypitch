@@ -6,7 +6,8 @@
 import { createSignal, onCleanup } from 'solid-js'
 import type { AudioEngine } from '@/lib/audio-engine'
 import { FallingNotesEngine } from '@/lib/falling-notes-engine'
-import { freqToMidi } from '@/lib/scale-data'
+import { MidiEngine } from '@/lib/midi-engine'
+import { freqToMidi, midiToFreq, midiToNote } from '@/lib/scale-data'
 import { centsToRating, ratingToScore } from '@/lib/practice-engine'
 import type { AccuracyRating } from '@/types'
 import type { FallingNote, NoteJudgment } from '@/stores/falling-notes-store'
@@ -34,6 +35,10 @@ import {
   currentSongBpm,
   setCurrentSongBpm,
   beatsPerSecond,
+  inputMode,
+  setInputMode,
+  midiConnected,
+  setMidiConnected,
 } from '@/stores/falling-notes-store'
 import { countIn } from '@/stores'
 
@@ -43,6 +48,8 @@ const GOOD_MS = 150
 
 export function useFallingNotesController(audioEngine: AudioEngine) {
   const engine = new FallingNotesEngine(audioEngine)
+  const midiEngine = new MidiEngine()
+
   const [currentPitch, setCurrentPitch] = createSignal<{
     frequency: number
     noteName: string
@@ -64,23 +71,43 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
     void active
   }
 
+  // MIDI callbacks — inject pitch data via the same currentPitch signal
+  midiEngine.callbacks.onNoteOn = (e) => {
+    const { name, octave } = midiToNote(e.midi)
+    setCurrentPitch({
+      frequency: midiToFreq(e.midi),
+      noteName: name,
+      octave,
+      cents: 0, // MIDI notes are exact — no cents deviation
+    })
+  }
+
+  midiEngine.callbacks.onNoteOff = () => {
+    // If no more notes are held, clear pitch
+    if (midiEngine.getHeldNotes().size === 0) {
+      setCurrentPitch(null)
+    }
+  }
+
   // ── RAF Game Loop ────────────────────────────────────────────
 
   const startLoop = () => {
     const loop = () => {
-      // Detect pitch
-      const pitch = engine.detectPitch()
-      if (pitch) {
-        const midi = freqToMidi(pitch.frequency)
-        setCurrentPitch({
-          frequency: pitch.frequency,
-          noteName: pitch.noteName,
-          octave: pitch.octave,
-          cents: pitch.cents,
-        })
-      } else {
-        setCurrentPitch(null)
+      // Detect pitch from mic (only in mic mode)
+      if (inputMode() === 'mic') {
+        const pitch = engine.detectPitch()
+        if (pitch) {
+          setCurrentPitch({
+            frequency: pitch.frequency,
+            noteName: pitch.noteName,
+            octave: pitch.octave,
+            cents: pitch.cents,
+          })
+        } else {
+          setCurrentPitch(null)
+        }
       }
+      // MIDI mode: pitch is set synchronously by midiEngine callbacks
 
       // Advance playhead if playing
       if (gameState() === 'playing') {
@@ -109,7 +136,10 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
 
   // Start the loop immediately
   startLoop()
-  onCleanup(stopLoop)
+  onCleanup(() => {
+    stopLoop()
+    midiEngine.disconnect()
+  })
 
   // ── Hit Detection ────────────────────────────────────────────
 
@@ -212,8 +242,11 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
   const startMic = async (): Promise<boolean> => {
     const ok = await engine.startMic()
     if (ok) {
+      // Disconnect MIDI if it's connected — only one input mode at a time
+      if (midiConnected()) midiDisconnect()
       setMicOn(true)
       setMicActive(true)
+      setInputMode('mic')
     }
     return ok
   }
@@ -222,6 +255,24 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
     engine.stopMic()
     setMicOn(false)
     setMicActive(false)
+  }
+
+  const midiConnect = async (): Promise<boolean> => {
+    const ok = await midiEngine.connect()
+    if (ok) {
+      // Stop mic if it's running — only one input mode at a time
+      if (micOn()) stopMic()
+      setInputMode('midi')
+      setMidiConnected(true)
+    }
+    return ok
+  }
+
+  const midiDisconnect = () => {
+    midiEngine.disconnect()
+    setCurrentPitch(null)
+    setInputMode('mic')
+    setMidiConnected(false)
   }
 
   const startGame = () => {
@@ -341,6 +392,10 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
     startMic,
     stopMic,
     isMicActive: micOn,
+    midiConnect,
+    midiDisconnect,
+    inputMode,
+    midiConnected,
     startGame,
     pauseGame,
     resumeGame,

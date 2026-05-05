@@ -42,6 +42,10 @@ export const [songNotes, setSongNotes] = createSignal<FallingNote[]>([])
 export const [selectedSongName, setSelectedSongName] = createSignal('')
 export const [visibleBeatWindow, setVisibleBeatWindow] = createSignal(8)
 
+export type InputMode = 'mic' | 'midi'
+export const [inputMode, setInputMode] = createSignal<InputMode>('mic')
+export const [midiConnected, setMidiConnected] = createSignal(false)
+
 // ── Actions ─────────────────────────────────────────────────
 
 export function resetGame(): void {
