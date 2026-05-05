@@ -243,10 +243,9 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
     // Draw notes
     for (const note of notes) {
       const endBeat = note.startBeat + note.duration
-      const endY = beatToY(endBeat)
+      const y = beatToY(endBeat)
       const noteH = Math.max(note.duration * bps, 8)
-      const y = endY - noteH
-      if (y + noteH < 0 || y > jLineY) continue // off-screen
+      if (y + noteH < 0 || y > jLineY + 80) continue // off-screen
 
       const col = midiToWhiteIndex(note.midi)
       const x = (col - displayMinWhite) * colWidth

@@ -70,6 +70,7 @@ export const FallingNotesSongPicker: Component<FallingNotesSongPickerProps> = (
         const name = file.name.replace(/\.(mid|midi)$/i, '')
         const bpm = 120
         const fallingNotes = melodyToFallingNotes(items)
+        setSelectedId(null)
         props.onSongLoaded(fallingNotes, name, bpm)
         setImportStatus(`Loaded: ${name} (${items.length} notes)`)
       } catch (err) {
@@ -84,7 +85,6 @@ export const FallingNotesSongPicker: Component<FallingNotesSongPickerProps> = (
       <div class="fn-picker-row">
         <select
           class="fn-song-select"
-          value={selectedId() ?? ''}
           onChange={(e) => {
             const id = e.currentTarget.value || null
             setSelectedId(id)
@@ -94,7 +94,7 @@ export const FallingNotesSongPicker: Component<FallingNotesSongPickerProps> = (
           <option value="">-- Select a song --</option>
           <For each={melodies()}>
             {(m: MelodyData) => (
-              <option value={m.id}>
+              <option value={m.id} selected={m.id === selectedId()}>
                 {m.name} ({m.items.length} notes, {m.bpm} BPM, {m.key})
               </option>
             )}
