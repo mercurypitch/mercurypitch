@@ -186,9 +186,8 @@ export async function healthCheck(): Promise<{
   }
   return response.json() as Promise<{ status: string; version: string }>
 }
-
 /**
- * Poll for processing completion
+ * Poll for processing completion with timeout and abort support
  */
 export async function pollForCompletion(
   sessionId: string,
@@ -196,12 +195,28 @@ export async function pollForCompletion(
   onComplete: (files: OutputFile[]) => void,
   onError: (error: string) => void,
   intervalMs: number = 1000,
+  signal?: AbortSignal, // <-- ADDED ABORT SIGNAL
 ): Promise<void> {
   const startTime = Date.now()
   const maxTimeMs = 10 * 60 * 1000 // 10 minutes max
 
   return new Promise((resolve, reject) => {
     const poll = async () => {
+      // 1. Check if the user navigated away
+      if (signal?.aborted) {
+        reject(new DOMException('Polling aborted', 'AbortError'))
+        return
+      }
+
+      // 2. Check for absolute timeout
+      const elapsed = Date.now() - startTime
+      if (elapsed > maxTimeMs) {
+        const timeoutErr = 'Processing timed out after 10 minutes'
+        onError(timeoutErr)
+        reject(new Error(timeoutErr))
+        return
+      }
+
       try {
         const status = await getProcessStatus(sessionId)
 
@@ -217,15 +232,9 @@ export async function pollForCompletion(
           return
         }
 
-        // Calculate progress based on time
-        const elapsed = Date.now() - startTime
+        // Calculate progress
         const progress = Math.min(95, (elapsed / maxTimeMs) * 100)
-
-        if (status.progress !== undefined) {
-          onProgress(status.progress)
-        } else {
-          onProgress(progress)
-        }
+        onProgress(status.progress !== undefined ? status.progress : progress)
 
         // Continue polling
         setTimeout(poll, intervalMs)
@@ -238,6 +247,58 @@ export async function pollForCompletion(
     poll()
   })
 }
+
+// /**
+//  * Poll for processing completion
+//  */
+// export async function pollForCompletion(
+//   sessionId: string,
+//   onProgress: (progress: number) => void,
+//   onComplete: (files: OutputFile[]) => void,
+//   onError: (error: string) => void,
+//   intervalMs: number = 1000,
+// ): Promise<void> {
+//   const startTime = Date.now()
+//   const maxTimeMs = 10 * 60 * 1000 // 10 minutes max
+//
+//   return new Promise((resolve, reject) => {
+//     const poll = async () => {
+//       try {
+//         const status = await getProcessStatus(sessionId)
+//
+//         if (status.status === 'completed') {
+//           onComplete(status.files)
+//           resolve()
+//           return
+//         }
+//
+//         if (status.status === 'error') {
+//           onError(status.error || 'Processing failed')
+//           reject(new Error(status.error || 'Processing failed'))
+//           return
+//         }
+//
+//         // Calculate progress based on time
+//         const elapsed = Date.now() - startTime
+//         const progress = Math.min(95, (elapsed / maxTimeMs) * 100)
+//
+//         if (status.progress !== undefined) {
+//           onProgress(status.progress)
+//         } else {
+//           onProgress(progress)
+//         }
+//
+//         // Continue polling
+//         setTimeout(poll, intervalMs)
+//       } catch (error) {
+//         onError(error instanceof Error ? error.message : 'Unknown error')
+//         reject(error)
+//       }
+//     }
+//
+//     poll()
+//   })
+// }
 
 /**
  * Convert file size to human readable
