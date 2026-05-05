@@ -232,6 +232,12 @@ export function deleteUvrSession(sessionId: string): void {
   }
 }
 
+/** Delete all UVR sessions */
+export function deleteAllUvrSessions(): void {
+  saveAllUvrSessions([])
+  setCurrentUvrSession(null)
+}
+
 /** Get UVR session stats */
 export function getUvrSessionStats(): {
   totalSessions: number

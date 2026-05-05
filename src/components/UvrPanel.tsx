@@ -5,10 +5,10 @@
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, Show } from 'solid-js'
 import type { UvrSession } from '@/stores/app-store'
-import { cancelUvrSession, completeUvrSession, currentUvrSession, getAllUvrSessions, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, startUvrSession, updateUvrSessionProgress, } from '@/stores/app-store'
+import { cancelUvrSession, completeUvrSession, currentUvrSession, deleteAllUvrSessions, getAllUvrSessions, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, startUvrSession, updateUvrSessionProgress, } from '@/stores/app-store'
 import { processAudio, pollForCompletion, type OutputFile, DEFAULT_PROCESS_REQUEST, } from '@/lib/uvr-api'
 import { UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrUploadControl, } from '.'
-import { History, Music, Settings, X } from './icons'
+import { CheckCircle, History, Music, Settings, Trash2, X } from './icons'
 
 /**
  * Progress callback type for processing
@@ -78,6 +78,8 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   }
   const clearError = () => setOnError('')
   const [showGuide, setShowGuide] = createSignal(false)
+  const [showDeleteAllConfirm, setShowDeleteAllConfirm] = createSignal(false)
+  const [deleteAllToast, setDeleteAllToast] = createSignal('')
   const [selectedFile, setSelectedFile] = createSignal<File | null>(null)
 
   // Computed session state
@@ -193,6 +195,13 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   ) => {
     // Session export logic
     console.log('Exporting:', sessionId, type)
+  }
+
+  const handleDeleteAll = () => {
+    deleteAllUvrSessions()
+    setShowDeleteAllConfirm(false)
+    setDeleteAllToast('All sessions deleted')
+    setTimeout(() => setDeleteAllToast(''), 2500)
   }
 
   // Simulate UVR processing (Phase 2 will replace this with real UVR CLI calls)
@@ -353,9 +362,19 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
           <div class="view-section history-section">
             <div class="section-header">
               <h4>Processing History</h4>
-              <button class="back-btn" onClick={() => setCurrentView('upload')}>
-                <Settings /> New Upload
-              </button>
+              <div class="section-header-actions">
+                <Show when={allSessions().length > 0}>
+                  <button
+                    class="delete-all-btn"
+                    onClick={() => setShowDeleteAllConfirm(true)}
+                  >
+                    <Trash2 /> Delete All
+                  </button>
+                </Show>
+                <button class="back-btn" onClick={() => setCurrentView('upload')}>
+                  <Settings /> New Upload
+                </button>
+              </div>
             </div>
             <div class="history-list">
               {allSessions().length === 0 ? (
@@ -380,7 +399,6 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                           type as 'vocal' | 'instrumental' | 'vocal-midi',
                         )
                       }
-                      onClose={() => setCurrentView('upload')}
                     />
                   )}
                 </For>
@@ -389,6 +407,46 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
           </div>
         </Show>
       </div>
+
+      {/* Delete All Confirmation Modal */}
+      <Show when={showDeleteAllConfirm()}>
+        <div
+          class="delete-all-overlay"
+          onClick={() => setShowDeleteAllConfirm(false)}
+        >
+          <div
+            class="delete-all-dialog"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h4>Delete All Sessions</h4>
+            <p>
+              This will permanently remove all {allSessions().length} session{allSessions().length !== 1 ? 's' : ''} and
+              their generated files. This action cannot be undone.
+            </p>
+            <div class="delete-all-actions">
+              <button
+                class="delete-all-cancel"
+                onClick={() => setShowDeleteAllConfirm(false)}
+              >
+                Cancel
+              </button>
+              <button class="delete-all-confirm" onClick={handleDeleteAll}>
+                <Trash2 /> Delete All
+              </button>
+            </div>
+          </div>
+        </div>
+      </Show>
+
+      {/* Delete All Toast */}
+      <Show when={deleteAllToast()}>
+        <div class="history-toast">
+          <span class="history-toast-icon">
+            <CheckCircle />
+          </span>
+          {deleteAllToast()}
+        </div>
+      </Show>
 
       {/* Session Results Panel (side view for viewing session details) */}
       <Show when={sessionResultsVisible() && session()}>
@@ -733,5 +791,167 @@ export const UvrPanelStyles: string = `
   position: absolute;
   inset: 0;
   background: rgba(0, 0, 0, 0.3);
+}
+
+/* Section Header Actions */
+.section-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.delete-all-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.75rem;
+  background: transparent;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 0.4rem;
+  color: var(--error);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.delete-all-btn:hover {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.delete-all-btn svg {
+  width: 0.8rem;
+  height: 0.8rem;
+}
+
+/* Delete All Confirmation Modal */
+.delete-all-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: overlay-in 0.15s ease;
+}
+
+@keyframes overlay-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.delete-all-dialog {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  max-width: 420px;
+  width: 90%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  animation: dialog-in 0.2s ease;
+}
+
+@keyframes dialog-in {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.delete-all-dialog h4 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  color: var(--fg-primary);
+}
+
+.delete-all-dialog p {
+  margin: 0 0 1.25rem;
+  font-size: 0.85rem;
+  color: var(--fg-secondary);
+  line-height: 1.5;
+}
+
+.delete-all-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.delete-all-cancel {
+  padding: 0.5rem 1rem;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+  color: var(--fg-primary);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.delete-all-cancel:hover {
+  background: var(--bg-hover);
+}
+
+.delete-all-confirm {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem 1rem;
+  background: var(--error);
+  color: white;
+  border: none;
+  border-radius: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.delete-all-confirm:hover {
+  opacity: 0.85;
+}
+
+.delete-all-confirm svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+/* History Toast Notification */
+.history-toast {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.25rem;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  font-size: 0.85rem;
+  color: var(--fg-primary);
+  z-index: 1001;
+  animation: toast-in 0.25s ease, toast-out 0.25s ease 2s forwards;
+}
+
+@keyframes toast-in {
+  from { transform: translateX(-50%) translateY(1rem); opacity: 0; }
+  to { transform: translateX(-50%) translateY(0); opacity: 1; }
+}
+
+@keyframes toast-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+.history-toast-icon {
+  display: flex;
+  align-items: center;
+  color: var(--success);
+}
+
+.history-toast-icon svg {
+  width: 0.9rem;
+  height: 0.9rem;
 }
 `

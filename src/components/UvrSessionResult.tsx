@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { Show } from 'solid-js'
+import { createSignal, Show } from 'solid-js'
 import { deleteUvrSession, getUvrSession } from '@/stores/app-store'
 import type { UvrSession, UvrStatus } from '@/types/uvr'
 import { Box, Calendar, CheckCircle, Download, FileText, Loader2, Music, Play, Trash2, XCircle } from './icons'
@@ -20,6 +20,8 @@ interface SessionResultProps {
 
 export const UvrSessionResult: Component<SessionResultProps> = (props) => {
   const session = () => getUvrSession(props.sessionId)
+  const [showDeleteConfirm, setShowDeleteConfirm] = createSignal(false)
+  const [toastMessage, setToastMessage] = createSignal('')
 
   const formatDate = (timestamp: number): string => {
     const date = new Date(timestamp)
@@ -40,10 +42,15 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
 
   const handleDelete = (e: Event) => {
     e.stopPropagation()
-    if (confirm('Delete this session?')) {
-      deleteUvrSession(props.sessionId)
-      if (props.onClose) props.onClose()
-    }
+    setShowDeleteConfirm(true)
+  }
+
+  const confirmDelete = () => {
+    deleteUvrSession(props.sessionId)
+    setShowDeleteConfirm(false)
+    if (props.onClose) props.onClose()
+    setToastMessage('Session deleted')
+    setTimeout(() => setToastMessage(''), 2500)
   }
 
   const handleExport = (type: 'vocal' | 'instrumental' | 'vocal-midi') => {
@@ -212,6 +219,46 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
           >
             <Play /> View Results
           </button>
+        </div>
+      </Show>
+
+      {/* Delete Confirmation Modal */}
+      <Show when={showDeleteConfirm()}>
+        <div
+          class="delete-confirm-overlay"
+          onClick={() => setShowDeleteConfirm(false)}
+        >
+          <div
+            class="delete-confirm-dialog"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h4>Delete Session</h4>
+            <p>
+              This action cannot be undone. The session and all generated files
+              will be permanently removed.
+            </p>
+            <div class="delete-confirm-actions">
+              <button
+                class="delete-confirm-cancel"
+                onClick={() => setShowDeleteConfirm(false)}
+              >
+                Cancel
+              </button>
+              <button class="delete-confirm-delete" onClick={confirmDelete}>
+                <Trash2 /> Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      </Show>
+
+      {/* Toast Notification */}
+      <Show when={toastMessage()}>
+        <div class="session-toast">
+          <span class="session-toast-icon">
+            <CheckCircle />
+          </span>
+          {toastMessage()}
         </div>
       </Show>
     </div>
@@ -534,5 +581,137 @@ export const UvrSessionResultStyles: string = `
   background: rgba(239, 68, 68, 0.1);
   color: var(--error);
   border-color: rgba(239, 68, 68, 0.3);
+}
+
+/* Delete Confirmation Modal */
+.delete-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: overlay-in 0.15s ease;
+}
+
+@keyframes overlay-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.delete-confirm-dialog {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  max-width: 380px;
+  width: 90%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  animation: dialog-in 0.2s ease;
+}
+
+@keyframes dialog-in {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.delete-confirm-dialog h4 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  color: var(--fg-primary);
+}
+
+.delete-confirm-dialog p {
+  margin: 0 0 1.25rem;
+  font-size: 0.85rem;
+  color: var(--fg-secondary);
+  line-height: 1.5;
+}
+
+.delete-confirm-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.delete-confirm-cancel {
+  padding: 0.5rem 1rem;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+  color: var(--fg-primary);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.delete-confirm-cancel:hover {
+  background: var(--bg-hover);
+}
+
+.delete-confirm-delete {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem 1rem;
+  background: var(--error);
+  color: white;
+  border: none;
+  border-radius: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.delete-confirm-delete:hover {
+  opacity: 0.85;
+}
+
+.delete-confirm-delete svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+/* Toast Notification */
+.session-toast {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.25rem;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  font-size: 0.85rem;
+  color: var(--fg-primary);
+  z-index: 1001;
+  animation: toast-in 0.25s ease, toast-out 0.25s ease 2s forwards;
+}
+
+@keyframes toast-in {
+  from { transform: translateX(-50%) translateY(1rem); opacity: 0; }
+  to { transform: translateX(-50%) translateY(0); opacity: 1; }
+}
+
+@keyframes toast-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+.session-toast-icon {
+  display: flex;
+  align-items: center;
+  color: var(--success);
+}
+
+.session-toast-icon svg {
+  width: 0.9rem;
+  height: 0.9rem;
 }
 `
