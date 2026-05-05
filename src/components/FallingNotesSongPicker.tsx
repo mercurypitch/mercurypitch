@@ -4,10 +4,10 @@
 
 import type { Component } from 'solid-js'
 import { createSignal, For, onMount } from 'solid-js'
-import type { MelodyData, MelodyItem } from '@/types'
-import { getAllMelodies, loadMelody } from '@/stores/melody-store'
 import { importMelodyFromMIDI } from '@/lib/piano-roll'
 import type { FallingNote } from '@/stores/falling-notes-store'
+import { getAllMelodies, loadMelody } from '@/stores/melody-store'
+import type { MelodyData, MelodyItem } from '@/types'
 
 interface FallingNotesSongPickerProps {
   onSongLoaded: (notes: FallingNote[], name: string, bpm: number) => void
@@ -88,7 +88,7 @@ export const FallingNotesSongPicker: Component<FallingNotesSongPickerProps> = (
           onChange={(e) => {
             const id = e.currentTarget.value || null
             setSelectedId(id)
-            if (id) handleLoadWithId(id)
+            if (id !== null && id !== '') handleLoadWithId(id)
           }}
         >
           <option value="">-- Select a song --</option>

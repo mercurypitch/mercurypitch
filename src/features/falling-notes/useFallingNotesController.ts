@@ -7,40 +7,39 @@ import { createSignal, onCleanup } from 'solid-js'
 import type { AudioEngine } from '@/lib/audio-engine'
 import { FallingNotesEngine } from '@/lib/falling-notes-engine'
 import { MidiEngine } from '@/lib/midi-engine'
-import { freqToMidi, midiToFreq, midiToNote } from '@/lib/scale-data'
 import { centsToRating, ratingToScore } from '@/lib/practice-engine'
-import type { AccuracyRating } from '@/types'
-import type { FallingNote, NoteJudgment } from '@/stores/falling-notes-store'
+import { freqToMidi, midiToFreq, midiToNote } from '@/lib/scale-data'
 import { setMicActive } from '@/stores'
-import {
-  gameState,
-  setGameState,
-  score,
-  setScore,
-  combo,
-  setCombo,
-  maxCombo,
-  setMaxCombo,
-  hitResults,
-  setHitResults,
-  totalNotes,
-  setTotalNotes,
-  notesMissed,
-  setNotesMissed,
-  playheadBeat,
-  setPlayheadBeat,
-  songNotes,
-  setSongNotes,
-  setSelectedSongName,
-  currentSongBpm,
-  setCurrentSongBpm,
-  beatsPerSecond,
-  inputMode,
-  setInputMode,
-  midiConnected,
-  setMidiConnected,
-} from '@/stores/falling-notes-store'
 import { countIn } from '@/stores'
+import type { FallingNote, NoteJudgment } from '@/stores/falling-notes-store'
+import {
+  beatsPerSecond,
+  combo,
+  gameState,
+  hitResults,
+  inputMode,
+  maxCombo,
+  midiConnected,
+  notesMissed,
+  playheadBeat,
+  score,
+  setCombo,
+  setCurrentSongBpm,
+  setGameState,
+  setHitResults,
+  setInputMode,
+  setMaxCombo,
+  setMidiConnected,
+  setNotesMissed,
+  setPlayheadBeat,
+  setScore,
+  setSelectedSongName,
+  setSongNotes,
+  setTotalNotes,
+  songNotes,
+  totalNotes,
+} from '@/stores/falling-notes-store'
+import type { AccuracyRating } from '@/types'
 
 const PERFECT_MS = 30
 const GREAT_MS = 75

@@ -67,7 +67,6 @@ export class MidiEngine {
 
     // Attach listeners to all inputs
     for (const entry of this.access.inputs.values()) {
-      if (!entry) continue
       entry.onmidimessage = (msg: MIDIMessageEvent) => this.handleMessage(msg)
       this.inputs.set(entry.id, entry)
     }

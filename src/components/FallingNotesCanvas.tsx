@@ -82,7 +82,7 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
   let canvasRef: HTMLCanvasElement | undefined
   let ctx: CanvasRenderingContext2D | null = null
   let animFrameId: number | null = null
-  let particles: Particle[] = []
+  const particles: Particle[] = []
 
   let lastHitCount = 0
 
@@ -484,8 +484,6 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
         const nextIsBlack = IS_BLACK_KEY[nextMidi % 12]
         if (nextIsBlack) {
           // Draw black key between this white key and the next one
-          const nextWi = midiToWhiteIndex(nextMidi)
-          const nextX = (nextWi - minWhite) * colWidth
           const bw = colWidth * BLACK_KEY_WIDTH_RATIO
           const bx = (wi * colWidth + colWidth * 0.7) - bw / 2
 

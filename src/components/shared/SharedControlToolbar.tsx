@@ -150,7 +150,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
           <div class="essential-control-group">
             <button
               class={`ctrl-btn midi-btn ${(props.midiConnected?.() ?? false) ? 'active' : ''}`}
-              onClick={props.onMidiToggle}
+              onClick={() => props.onMidiToggle?.()}
               title={(props.midiConnected?.() ?? false) ? 'Disconnect MIDI' : 'Connect MIDI Keyboard'}
               aria-label={(props.midiConnected?.() ?? false) ? 'Disconnect MIDI' : 'Connect MIDI Keyboard'}
             >
@@ -322,7 +322,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
         <Show when={!isFallingNotesTab()}>
           <button
             class={`ctrl-btn metronome-btn ${props.metronomeEnabled() ? 'active' : ''}`}
-            onClick={props.onMetronomeToggle}
+            onClick={() => props.onMetronomeToggle()}
             title="Toggle metronome"
             aria-label="Toggle metronome"
           >
