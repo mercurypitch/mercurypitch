@@ -457,8 +457,6 @@ export const UvrSessionResultStyles: string = `
   cursor: pointer;
   transition: all 0.2s;
   white-space: nowrap;
-  flex-shrink: 0;
-  min-width: 0;
 }
 
 .action-btn-primary {

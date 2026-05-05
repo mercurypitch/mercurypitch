@@ -586,6 +586,7 @@ export const UvrPanelStyles: string = `
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  padding: 1.5rem;
 }
 
 .guide-header {

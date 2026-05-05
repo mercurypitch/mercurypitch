@@ -327,7 +327,6 @@ export const UvrProcessControlStyles: string = `
   cursor: pointer;
   transition: all 0.2s;
   white-space: nowrap;
-  flex-shrink: 0;
 }
 
 .action-btn-primary {
