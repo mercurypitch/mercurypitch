@@ -2734,7 +2734,15 @@ header h1 {
   }
   .app-tab {
     padding: 4px 8px;
-    font-size: 0.72rem;
+    font-size: 0.7rem;
+    gap: 3px;
+  }
+  .tab-icon {
+    width: 12px;
+    height: 12px;
+  }
+  .tab-group-label {
+    font-size: 0.58rem;
   }
 
   /* Practice header: single essential row only */
@@ -2833,11 +2841,36 @@ header h1 {
 /* Tab bar */
 #app-tabs {
   display: flex;
-  gap: 4px;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* Practice group container */
+.tab-group {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 4px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-secondary);
+}
+
+.tab-group-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  padding: 0 5px;
+  user-select: none;
 }
 
 .app-tab {
-  padding: 5px 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--bg-tertiary);
@@ -2856,6 +2889,17 @@ header h1 {
   border-color: var(--accent);
   background: var(--accent-dim);
   color: var(--accent);
+}
+
+.tab-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  opacity: 0.75;
+}
+
+.app-tab.active .tab-icon {
+  opacity: 1;
 }
 
 .tab-badge {
@@ -3810,8 +3854,16 @@ Keeps your existing styles, only adjusts layout
 /* ===== Mobile Piano Roll ===== */
 @media (max-width: 768px) {
   .app-tab {
-    padding: 4px 10px;
-    font-size: 0.72rem;
+    padding: 4px 8px;
+    font-size: 0.7rem;
+    gap: 3px;
+  }
+  .tab-icon {
+    width: 12px;
+    height: 12px;
+  }
+  .tab-group-label {
+    font-size: 0.58rem;
   }
   .roll-toolbar {
     display: grid; /* Ensure grid is active */

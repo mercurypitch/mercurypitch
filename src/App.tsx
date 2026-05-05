@@ -745,18 +745,47 @@ const AppShell: Component<AppProps> = (props) => {
             />
           </div>
           <nav id="app-tabs">
-            <button
-              id="tab-practice"
-              class={`app-tab ${activeTab() === 'practice' ? 'active' : ''}`}
-              onClick={() => void handleTabChange('practice')}
-            >
-              Practice
-            </button>
+            <div class="tab-group">
+              <span class="tab-group-label">Practice</span>
+              <button
+                id="tab-practice"
+                class={`app-tab ${activeTab() === 'practice' ? 'active' : ''}`}
+                onClick={() => void handleTabChange('practice')}
+              >
+                <svg class="tab-icon" viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                  <path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+                  <path d="M19 10v1a7 7 0 0 1-14 0v-1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  <line x1="12" y1="19" x2="12" y2="22" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  <line x1="8" y1="22" x2="16" y2="22" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                </svg>
+                Singing
+              </button>
+              <button
+                id="tab-falling-notes"
+                class={`app-tab ${activeTab() === 'falling-notes' ? 'active' : ''}`}
+                onClick={() => void handleTabChange('falling-notes')}
+              >
+                <svg class="tab-icon" viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                  <rect x="2" y="5" width="4" height="15" rx="0.5" />
+                  <rect x="7" y="5" width="4" height="15" rx="0.5" />
+                  <rect x="12" y="5" width="4" height="15" rx="0.5" />
+                  <rect x="17" y="5" width="4" height="15" rx="0.5" />
+                  <rect x="4" y="5" width="2.5" height="10" rx="0.5" fill="var(--bg-primary)" />
+                  <rect x="9.5" y="5" width="2.5" height="10" rx="0.5" fill="var(--bg-primary)" />
+                  <rect x="14.5" y="5" width="2.5" height="10" rx="0.5" fill="var(--bg-primary)" />
+                </svg>
+                Piano
+              </button>
+            </div>
             <button
               id="tab-editor"
               class={`app-tab ${activeTab() === 'editor' ? 'active' : ''}`}
               onClick={() => void handleTabChange('editor')}
             >
+              <svg class="tab-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                <path d="m15 5 4 4" />
+              </svg>
               Editor
               <Show when={melodyStore.items().length > 0}>
                 <span class="tab-badge">{melodyStore.items().length}</span>
@@ -767,14 +796,11 @@ const AppShell: Component<AppProps> = (props) => {
               class={`app-tab ${activeTab() === 'settings' ? 'active' : ''}`}
               onClick={() => void handleTabChange('settings')}
             >
+              <svg class="tab-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3" />
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" />
+              </svg>
               Settings
-            </button>
-            <button
-              id="tab-falling-notes"
-              class={`app-tab ${activeTab() === 'falling-notes' ? 'active' : ''}`}
-              onClick={() => void handleTabChange('falling-notes')}
-            >
-              Piano Practice
             </button>
           </nav>
         </header>
