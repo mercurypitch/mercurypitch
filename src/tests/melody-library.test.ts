@@ -3,7 +3,7 @@
 // ============================================================
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { melodyStore, STORAGE_KEY_LIBRARY } from '@/stores/melody-store'
+import { _reloadLibraryFromStorage, melodyStore, STORAGE_KEY_LIBRARY } from '@/stores/melody-store'
 import { createRestItem, createScaleItem, createSession, } from '@/stores/session-store'
 import type { MelodyData, MelodyItem, MelodyNote, PlaybackSession, } from '@/types'
 
@@ -202,7 +202,7 @@ describe('Melody Library System', () => {
       expect(playlists[_playlistId].melodyKeys).toHaveLength(0)
     })
 
-    it.skip('stores updated library to localStorage on delete', () => {
+    it('stores updated library to localStorage on delete', () => {
       // Skip - localStorage mock is cleared in beforeEach
       const _melody = melodyStore.createNewMelody('To Delete')
       melodyStore.setMelody([
@@ -217,16 +217,15 @@ describe('Melody Library System', () => {
       melodyStore.deleteMelody(_melody.id)
 
       const calls = localStorageMock.setItem.mock.calls
-      const libraryCall = calls.find(
-        (call) => call[0] === 'pitchperfect_melody_library',
+      const libraryCall = calls.findLast(
+        (call) => call[0] === STORAGE_KEY_LIBRARY,
       )
       expect(libraryCall).toBeDefined()
       const parsed = JSON.parse(libraryCall![1] as string)
       expect(parsed.melodies).not.toHaveProperty(_melody.id)
     })
 
-    it.skip('stores updated library to localStorage on save', () => {
-      // Skip - localStorage mock is cleared in beforeEach
+    it('stores updated library to localStorage on save', () => {
       const _melody = melodyStore.createNewMelody('Test Melody')
       melodyStore.setMelody([
         {
@@ -240,29 +239,27 @@ describe('Melody Library System', () => {
       melodyStore.saveCurrentMelody('Saved Name')
 
       const calls = localStorageMock.setItem.mock.calls
-      const libraryCall = calls.find(
-        (call) => call[0] === 'pitchperfect_melody_library',
+      const libraryCall = calls.findLast(
+        (call) => call[0] === STORAGE_KEY_LIBRARY,
       )
       expect(libraryCall).toBeDefined()
       const parsed = JSON.parse(libraryCall![1] as string)
       expect(parsed.melodies).toHaveProperty(_melody.id)
     })
 
-    it.skip('stores playlists to localStorage on create', () => {
-      // Skip - localStorage mock is cleared in beforeEach
+    it('stores playlists to localStorage on create', () => {
       const _id = melodyStore.createPlaylist('My Playlist')
 
       const calls = localStorageMock.setItem.mock.calls
-      const libraryCall = calls.find(
-        (call) => call[0] === 'pitchperfect_melody_library',
+      const libraryCall = calls.findLast(
+        (call) => call[0] === STORAGE_KEY_LIBRARY,
       )
       expect(libraryCall).toBeDefined()
       const parsed = JSON.parse(libraryCall![1] as string)
       expect(parsed.playlists).toHaveProperty(_id)
     })
 
-    it.skip('persists library to localStorage on save', () => {
-      // Skip - localStorage mock is cleared in beforeEach
+    it('persists library to localStorage on save', () => {
       const _melody = melodyStore.createNewMelody('Test Melody')
       melodyStore.setMelody([
         {
@@ -276,16 +273,15 @@ describe('Melody Library System', () => {
       melodyStore.saveCurrentMelody('Saved Name')
 
       const calls = localStorageMock.setItem.mock.calls
-      const libraryCall = calls.find(
-        (call) => call[0] === 'pitchperfect_melody_library',
+      const libraryCall = calls.findLast(
+        (call) => call[0] === STORAGE_KEY_LIBRARY,
       )
       expect(libraryCall).toBeDefined()
       const parsed = JSON.parse(libraryCall![1] as string)
       expect(parsed.melodies).toHaveProperty(_melody.id)
     })
 
-    it.skip('loads library from localStorage on init', () => {
-      // Skip - localStorage mock is cleared in beforeEach
+    it('loads library from localStorage on init', () => {
       const savedMelody: MelodyData = {
         id: 'melody-123',
         name: 'Saved Melody',
@@ -306,7 +302,7 @@ describe('Melody Library System', () => {
       }
 
       localStorageMock.setItem(
-        'pitchperfect_melody_library',
+        STORAGE_KEY_LIBRARY,
         JSON.stringify({
           meta: { author: 'User', version: '1.0', lastUpdated: Date.now() },
           renderSettings: {
@@ -316,10 +312,11 @@ describe('Melody Library System', () => {
           },
           melodies: { [savedMelody.id]: savedMelody },
           playlists: {},
+          sessions: {},
         }),
       )
 
-      melodyStore.resetMelodyLibrary()
+      _reloadLibraryFromStorage()
 
       const _loaded = melodyStore.getMelody(savedMelody.id)
       expect(_loaded).toBeDefined()
@@ -597,12 +594,12 @@ describe('Melody Library System', () => {
       expect(melodyStore.getCurrentMelody()?.id).toBeUndefined()
     })
 
-    it.skip('stores playlists to localStorage on create', () => {
+    it('stores playlists to localStorage on create', () => {
       const _id = melodyStore.createPlaylist('My Playlist')
 
       const calls = localStorageMock.setItem.mock.calls
-      const libraryCall = calls.find(
-        (call) => call[0] === 'pitchperfect_melody_library',
+      const libraryCall = calls.findLast(
+        (call) => call[0] === STORAGE_KEY_LIBRARY,
       )
       expect(libraryCall).toBeDefined()
       const parsed = JSON.parse(libraryCall![1] as string)
@@ -644,8 +641,7 @@ describe('Melody Library System', () => {
   })
 
   describe('Melody Library Persistence', () => {
-    it.skip('persists library to localStorage on save', () => {
-      // Skip - localStorage mock is cleared in beforeEach
+    it('persists library to localStorage on save', () => {
       const _melody = melodyStore.createNewMelody('Test Melody')
       melodyStore.setMelody([
         {
@@ -659,15 +655,15 @@ describe('Melody Library System', () => {
       melodyStore.saveCurrentMelody('Saved Name')
 
       const calls = localStorageMock.setItem.mock.calls
-      const libraryCall = calls.find(
-        (call) => call[0] === 'pitchperfect_melody_library',
+      const libraryCall = calls.findLast(
+        (call) => call[0] === STORAGE_KEY_LIBRARY,
       )
       expect(libraryCall).toBeDefined()
       const parsed = JSON.parse(libraryCall![1] as string)
       expect(parsed.melodies).toHaveProperty(_melody.id)
     })
 
-    it.skip('loads library from localStorage on init', () => {
+    it('loads library from localStorage on init', () => {
       const savedMelody: MelodyData = {
         id: 'melody-123',
         name: 'Saved Melody',
@@ -688,7 +684,7 @@ describe('Melody Library System', () => {
       }
 
       localStorageMock.setItem(
-        'pitchperfect_melody_library',
+        STORAGE_KEY_LIBRARY,
         JSON.stringify({
           meta: { author: 'User', version: '1.0', lastUpdated: Date.now() },
           renderSettings: {
@@ -698,10 +694,11 @@ describe('Melody Library System', () => {
           },
           melodies: { [savedMelody.id]: savedMelody },
           playlists: {},
+          sessions: {},
         }),
       )
 
-      melodyStore.resetMelodyLibrary()
+      _reloadLibraryFromStorage()
 
       const _loaded = melodyStore.getMelody(savedMelody.id)
       expect(_loaded).toBeDefined()
@@ -710,33 +707,28 @@ describe('Melody Library System', () => {
     })
 
     it('fails gracefully when localStorage is corrupted', () => {
-      // Skip - localStorage mock is cleared in beforeEach
-      const _melody = melodyStore.createNewMelody('Test')
-      localStorageMock.setItem('pitchperfect_melody_library', 'invalid json')
+      localStorageMock.setItem(STORAGE_KEY_LIBRARY, 'invalid json')
 
-      melodyStore.resetMelodyLibrary()
+      _reloadLibraryFromStorage()
 
       const all = melodyStore.getAllMelodies()
       expect(all).toEqual([])
     })
 
-    it.skip('fails gracefully when localStorage is null', () => {
-      // @ts-expect-error - skip test won't execute so we need error message
-      localStorageMock.getItem.mockReturnValue(null)
-
-      melodyStore.resetMelodyLibrary()
+    it('fails gracefully when localStorage is null', () => {
+      // beforeEach clears localStorage, so getItem returns null.
+      // _reloadLibraryFromStorage should gracefully fall back to defaults.
+      _reloadLibraryFromStorage()
 
       const all = melodyStore.getAllMelodies()
       expect(all).toEqual([])
     })
 
     it('uses default library when localStorage is empty', () => {
-      localStorageMock.setItem(
-        'pitchperfect_melody_library',
-        JSON.stringify({}),
-      )
+      // Seed with empty JSON (no melodies/sessions keys) — should fall back to DEFAULT_LIBRARY
+      localStorageMock.setItem(STORAGE_KEY_LIBRARY, JSON.stringify({}))
 
-      melodyStore.resetMelodyLibrary()
+      _reloadLibraryFromStorage()
 
       const library = melodyStore.getMelodyLibrary()
       expect(library.melodies).toEqual({})
@@ -1103,28 +1095,32 @@ describe('Melody Library System', () => {
       expect(parsed.sessions[_sessionId]!.id).toBe(_sessionId)
     })
 
-    it.skip('loads sessions from localStorage on init', () => {
-      // Skip - localStorage mock is cleared in beforeEach
-      const savedSessions: PlaybackSession[] = [
-        {
-          id: 'session-1',
-          name: 'Session 1',
-          author: 'User',
-          items: [],
-          created: Date.now(),
-          deletable: true,
-          lastPlayed: Date.now(),
-          difficulty: 'beginner' as const,
-          category: 'vocal' as const,
-        } as PlaybackSession,
-      ]
-
+    it('loads sessions from localStorage on init', () => {
+      const savedSessionId = 'session-1'
       localStorageMock.setItem(
-        'pitchperfect_user_sessions',
-        JSON.stringify(savedSessions),
+        STORAGE_KEY_LIBRARY,
+        JSON.stringify({
+          meta: { author: 'User', version: '1.0', lastUpdated: Date.now() },
+          renderSettings: { gridlines: true, showLabels: true, showNumbers: false },
+          melodies: {},
+          playlists: {},
+          sessions: {
+            [savedSessionId]: {
+              id: savedSessionId,
+              name: 'Session 1',
+              author: 'User',
+              items: [],
+              created: Date.now(),
+              deletable: true,
+              lastPlayed: Date.now(),
+              difficulty: 'beginner',
+              category: 'vocal',
+            },
+          },
+        }),
       )
 
-      melodyStore.resetMelodyLibrary()
+      _reloadLibraryFromStorage()
 
       const sessions = melodyStore.getSessions()
       expect(sessions).toHaveLength(1)
@@ -1132,12 +1128,14 @@ describe('Melody Library System', () => {
     })
 
     it('fails gracefully when session storage is corrupted', () => {
-      localStorageMock.setItem('pitchperfect_user_sessions', 'invalid json')
+      localStorageMock.setItem(STORAGE_KEY_LIBRARY, 'invalid json')
 
-      melodyStore.resetMelodyLibrary()
+      _reloadLibraryFromStorage()
 
+      // Falls back to DEFAULT_LIBRARY which has the default session
       const sessions = melodyStore.getSessions()
-      expect(sessions).toEqual([])
+      expect(sessions).toHaveLength(1)
+      expect(sessions[0].id).toBe('default')
     })
 
     it('handles session with items', () => {
