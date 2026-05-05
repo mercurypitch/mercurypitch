@@ -79,4 +79,74 @@ A living list of proposed features and improvements for PitchPerfect.
 
 ---
 
-_Last updated: 2026-04-17_
+## Accessibility
+
+- [ ] **ARIA labels for SVG buttons** — Add `aria-label` to all icon-only buttons (mic, play, pause, stop, settings, etc.) — currently invisible to screen readers
+- [ ] **Modal focus traps** — Add `role="dialog"`, `aria-modal`, and focus trapping to CrashModal, SessionSummaryCard, ScoreOverlay
+- [ ] **Keyboard shortcut cheat sheet** — Accessible overlay (press `?`) documenting all keyboard shortcuts
+- [ ] **Skip link** — Add a skip-to-main-content link for keyboard users
+
+---
+
+## Mobile & Responsive
+
+- [ ] **Hidden content alternatives** — At 480px/390px breakpoints, major controls (history, stats, note-list, secondary controls, tempo, count-in, volume) are hidden entirely — add expandable sections or a "more" menu
+- [ ] **Touch target sizes** — Increase interactive elements to meet WCAG 44px minimum at mobile breakpoints (`.ctrl-btn`, count-in badge, etc.)
+- [ ] **Horizontal scroll indicators** — Mobile practice header hides scrollbar with `scrollbar-width: none` but content is scrollable — add visual gradient fade to indicate scrollability
+- [ ] **CSS module responsive styles** — Extend responsive styles to component CSS modules (`Notifications.module.css`, `TabControls.module.css`)
+
+---
+
+## Testing
+
+- [ ] **Store unit tests** — Add tests for settings-store, transport-store, practice-session-store, and other 13 stores (currently zero coverage)
+- [ ] **Component tests** — Add render tests for high-impact components: SettingsPanel, AppSidebar, PitchCanvas
+- [ ] **Fix skipped melody-library tests** — 12 localStorage persistence tests are `.skip`'d — investigate and fix mock
+- [ ] **Fix flaky pitch-detector tests** — Replace `Math.random()` with seeded data, use `toBeCloseTo()` for float comparisons, remove `performance.now()` timing dependency
+- [ ] **E2E test for mobile breakpoints** — Add Playwright tests verifying mobile layout doesn't break at 480px/390px
+
+---
+
+## Performance
+
+- [ ] **Canvas draw throttling** — Skip PitchCanvas RAF redraw when nothing has changed (paused, no new pitch data)
+- [ ] **Virtual scrolling for NoteList** — For 100+ note melodies, virtualize the note list rendering
+- [ ] **Lazy-load tabs** — Defer loading of Community, Leaderboard, Analysis, Challenges tabs until first visit
+- [ ] **Global error handler memory leak** — Cap `logs[]` array in `global-error-handler.ts` at 500 entries (currently unbounded, leaks in production)
+
+---
+
+## Bug Fixes
+
+- [ ] **`appStore.isInSessionMode` returns hardcoded `false`** — Any component reading this gets wrong session state (src/stores/index.ts:87)
+- [ ] **Mic state mismatch warning** — `practice-engine.ts:196` warns of mic active state mismatch with audioEngine — investigate root cause race condition
+- [ ] **Silent AudioContext resume failures** — Three locations swallow resume errors with empty `.catch(() => {})` — user gets no feedback if audio is blocked
+- [ ] **`setTimeout` without cleanup** — `useSessionSequencer.ts` schedules timeouts without storing IDs for unmount cancellation
+- [ ] **Empty catch in WelcomeScreen** — `catch (_err) { }` silently swallows all errors (src/components/WelcomeScreen.tsx:26)
+- [ ] **Duplicate error handlers** — Both `AppErrorBoundary.tsx` and `global-error-handler.ts` attach `window.onerror`/`unhandledrejection` handlers — consolidate
+
+---
+
+## Code Quality
+
+- [ ] **Remove `user-session-store.ts`** — Entire file flagged for removal (wrong types, duplicate of session-store)
+- [ ] **Phase out `appStore` monolith** — Replace `appStore.*` calls with direct named store imports to prevent stale signal captures (~50 component files)
+- [ ] **Remove dead code** — `initPresets` no-op, commented-out session functions, no-op `initSettings`/`initADSR`/`initReverb` stubs
+- [ ] **Playback state machine** — Formalize playback lifecycle (stopped → count-in → playing → paused → stopped) to prevent impossible states
+
+---
+
+## Feature Ideas
+
+- [ ] **Guided warmup routine** — Structured warmup with ascending/descending scales, increasing range, consistency tracking
+- [ ] **Practice streaks** — Daily practice streak tracking with calendar heatmap in sidebar
+- [ ] **Pitch drift visualization** — Show trend lines for consistently flat/sharp notes over time
+- [ ] **Vocal range detector** — Quick test to determine comfortable range, suggest appropriate keys
+- [ ] **Sheet music notation view** — Render melody as standard notation alongside piano roll
+- [ ] **Loading skeletons** — Skeleton placeholders while melody/session data loads
+- [ ] **Transition animations** — Smooth transitions for sidebar panels, tab switches, modal open/close
+- [ ] **Undo toast** — Show "Undo" action in toast notifications after destructive operations
+
+---
+
+_Last updated: 2026-05-05_
