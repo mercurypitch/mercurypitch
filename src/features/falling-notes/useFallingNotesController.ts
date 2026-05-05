@@ -54,6 +54,7 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
   let animFrameId: number | null = null
   let gameStartTime = 0
   let judgedNotes = new Set<number>()
+  let playedNotes = new Set<number>()
 
   engine.callbacks.onMicStateChange = (active, _error) => {
     // Mic state changes are handled by the caller via isMicActive()
@@ -121,6 +122,12 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
 
       const deltaBeats = note.startBeat - currentBeat
       const deltaMs = (deltaBeats / bps) * 1000
+
+      // Play audio when note reaches the judgment line
+      if (!playedNotes.has(note.id) && deltaMs <= 0) {
+        playedNotes.add(note.id)
+        audioEngine.playTone(note.targetFreq, note.duration > 0 ? note.duration / bps : 0.3)
+      }
 
       // Note has passed the max timing window — miss
       if (deltaMs < -GOOD_MS) {
@@ -216,6 +223,7 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
 
   const startGame = () => {
     judgedNotes = new Set<number>()
+    playedNotes = new Set<number>()
     setGameState('countdown')
     setScore(0)
     setCombo(0)
@@ -260,6 +268,7 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
   const resetGame = () => {
     stopLoop()
     judgedNotes = new Set<number>()
+    playedNotes = new Set<number>()
     setGameState('idle')
     setScore(0)
     setCombo(0)
@@ -275,6 +284,7 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
 
   const loadSong = (notes: FallingNote[], name: string, bpm: number) => {
     judgedNotes = new Set<number>()
+    playedNotes = new Set<number>()
     setSongNotes(notes)
     setSelectedSongName(name)
     setCurrentSongBpm(bpm)
