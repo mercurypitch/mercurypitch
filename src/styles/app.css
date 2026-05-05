@@ -493,6 +493,12 @@ header h1 {
 }
 
 /* Logo button in header — makes title clickable to navigate home */
+.header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
 .logo-btn {
   background: none;
   border: none;
@@ -613,6 +619,7 @@ header h1 {
   background: var(--bg-tertiary);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
+  min-height: 44px;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
@@ -1046,6 +1053,7 @@ header h1 {
   background: var(--bg-tertiary);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
+  min-height: 44px;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
@@ -1102,6 +1110,7 @@ header h1 {
 .mode-group {
   display: flex;
   gap: 4px;
+  flex-shrink: 0;
 }
 
 .cycles-input {
@@ -1588,6 +1597,7 @@ header h1 {
   transition: all 0.12s ease;
   white-space: nowrap;
   line-height: 1;
+  flex-shrink: 0;
 }
 
 .ctrl-btn:hover:not(:disabled) {
@@ -1708,6 +1718,7 @@ header h1 {
   font-size: 0.78rem;
   cursor: pointer;
   transition: all 0.15s ease;
+  flex-shrink: 0;
 }
 
 .mode-btn:hover {
@@ -2537,6 +2548,11 @@ header h1 {
     height: 50px;
   }
 
+  /* Header: make room for the fixed sidebar toggle button */
+  header {
+    padding-left: 56px;
+  }
+
   /* Header: compact gap */
   .app-header-bar {
     gap: 4px;
@@ -2707,7 +2723,18 @@ header h1 {
     font-size: 0.72rem;
   }
 
-  /* App header: hide subtitle and melody pill */
+  /* App header: hide subtitle and melody pill, stack vertically */
+  header {
+    flex-wrap: wrap;
+    padding-left: 50px;
+  }
+  .header-left {
+    flex: 1 1 auto;
+  }
+  .header-right {
+    width: 100%;
+    order: 99;
+  }
   .subtitle {
     display: none;
   }
@@ -2787,6 +2814,9 @@ header h1 {
   .practice-header-bar .record-btn {
     min-width: auto;
   }
+  .practice-header-bar .app-header-sep {
+    display: none;
+  }
   .mode-group {
     gap: 2px;
   }
@@ -2849,6 +2879,12 @@ header h1 {
   align-items: center;
   gap: 6px;
   flex-wrap: wrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+#app-tabs::-webkit-scrollbar {
+  display: none;
 }
 
 /* Practice group container */
@@ -8737,15 +8773,10 @@ input:checked + .settings-slider:before {
 
 /* On desktop, .main-content shouldn't itself scroll for the practice
  * panel — the layout fits in the viewport. We keep `overflow:auto` as
- * a safety fallback for very small heights. */
-@media (min-width: 768px) {
-  .main-content {
-    overflow: hidden;
-  }
-  .main-content > #practice-panel {
-    overflow: hidden;
-  }
-}
+ * a safety fallback for very small heights.
+ * NOTE: Do NOT set overflow:hidden on #practice-panel — the practice
+ * header bar needs overflow-x:auto to scroll its toolbar buttons on
+ * narrower screens (e.g. iPhone landscape at 844px). */
 
 /* =====================================================================
  * Bottom safe-area padding on every long-scroll panel so the last
@@ -9682,6 +9713,21 @@ input:checked + .settings-slider:before {
     width: 100%;
     order: 99; /* push below the primary controls */
     justify-content: flex-start;
+  }
+
+  /* Tabs: horizontal scroll instead of wrapping */
+  #app-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 2px; /* breathing room for active border */
+  }
+  #app-tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .tab-group {
+    flex-shrink: 0;
   }
 }
 
