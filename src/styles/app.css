@@ -628,6 +628,10 @@ header h1 {
   flex-shrink: 0;
 }
 
+.practice-header-bar .essential-controls > * {
+  flex-shrink: 0;
+}
+
 /* ===== Session Editor ===== */
 .session-editor {
   border-top: 1px solid var(--border);
@@ -1061,6 +1065,7 @@ header h1 {
   display: flex;
   align-items: center;
   gap: 6px;
+  flex-shrink: 0;
 }
 .practice-header-bar .secondary-control-group,
 .editor-header-bar .secondary-control-group {
