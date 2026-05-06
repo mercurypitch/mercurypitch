@@ -157,7 +157,7 @@ export class SwiftF0Detector {
     try {
       // SwiftF0 requires specific frequency bins
       // The model expects frequency data for bins 3 to 134 (132 bins)
-      const swiftInput = freqData.slice(3, 134)
+      const swiftInput = freqData.slice(3, 135)
 
       // Create input tensor (1, 1, 1, 132)
       const tensor = new (this.ortModule as typeof ort).Tensor(

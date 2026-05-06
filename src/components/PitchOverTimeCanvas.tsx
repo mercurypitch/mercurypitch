@@ -202,21 +202,29 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
     const notes = props.scaleNotes?.()
     if (!notes || notes.length === 0) return
 
-    ctx.strokeStyle = 'rgba(88,166,255,0.12)'
-    ctx.lineWidth = 0.5
-    ctx.setLineDash([2, 8])
+    const rightX = w - 8
 
     for (const note of notes) {
       const y = freqToY(note.freq, h, logMin, logRange)
       if (y < 4 || y > h - 4) continue
 
+      // Grid line
+      ctx.strokeStyle = 'rgba(88,166,255,0.22)'
+      ctx.lineWidth = 1.0
+      ctx.setLineDash([3, 6])
       ctx.beginPath()
       ctx.moveTo(MARGIN, y)
       ctx.lineTo(w - MARGIN, y)
       ctx.stroke()
-    }
+      ctx.setLineDash([])
 
-    ctx.setLineDash([])
+      // Note label on the right
+      ctx.fillStyle = 'rgba(88,166,255,0.45)'
+      ctx.font = '9px sans-serif'
+      ctx.textAlign = 'right'
+      ctx.textBaseline = 'middle'
+      ctx.fillText(note.name, rightX, y)
+    }
   }
 
   const drawTimeLabels = (w: number, h: number) => {
