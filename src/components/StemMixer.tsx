@@ -47,7 +47,6 @@ interface PitchNote {
 
 const FFT_SIZE = 256
 const PITCH_FFT_SIZE = 2048
-const WAVEFORM_RESOLUTION = 2 // pixels per sample peak
 
 // ── Component ──────────────────────────────────────────────────
 
@@ -616,7 +615,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       const visibleStart = Math.floor((winStart / totalDur) * totalSamples)
       const visibleEnd = Math.min(totalSamples, Math.floor((winEnd / totalDur) * totalSamples))
       const visibleSamples = visibleEnd - visibleStart
-      const step = Math.max(1, Math.floor(visibleSamples / w / WAVEFORM_RESOLUTION))
+      const step = Math.max(1, Math.floor(visibleSamples / w))
       const yOff = ti * trackHeight
 
       // Center line
@@ -633,9 +632,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       ctx.lineWidth = 1
       ctx.beginPath()
       for (let x = 0; x < w; x++) {
-        const start = visibleStart + Math.floor(x * step * WAVEFORM_RESOLUTION)
+        const start = visibleStart + Math.floor(x * step)
         let min = 1, max = -1
-        const end = Math.min(start + step, visibleEnd)
+        const end = Math.min(Math.floor(start + step), visibleEnd)
         for (let s = start; s < end; s++) {
           const v = data[s]
           if (v < min) min = v

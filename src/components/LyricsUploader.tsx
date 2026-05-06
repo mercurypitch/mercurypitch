@@ -71,10 +71,10 @@ export const LyricsUploader: Component<LyricsUploaderProps> = (props) => {
     <div class="lu-root">
       <div class="lu-message">
         <FileText />
-        <span>
+        <span class="lu-title">
           No lyrics found{props.suggestion ? ` for "${props.suggestion}"` : ''}
         </span>
-        <span class="lu-hint">Upload a .txt or .lrc file</span>
+        <span class="lu-hint">Upload a .txt or .lrc file to sync lyrics with playback</span>
       </div>
 
       <label
@@ -93,9 +93,12 @@ export const LyricsUploader: Component<LyricsUploaderProps> = (props) => {
           when={!loading()}
           fallback={<span class="lu-loading">Reading file...</span>}
         >
-          <FileUpload />
-          <span>Drop .txt or .lrc file here</span>
-          <span class="lu-or">or click to browse</span>
+          <div class="lu-dropzone-icon">
+            <FileUpload />
+          </div>
+          <span class="lu-dropzone-label">Drop file here</span>
+          <span class="lu-divider">or</span>
+          <span class="lu-browse-btn">Browse files</span>
         </Show>
       </label>
 
@@ -121,8 +124,8 @@ export const LyricsUploaderStyles: string = `
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 0.5rem;
+  gap: 0.75rem;
+  padding: 0.75rem 0.75rem 0.5rem;
   width: 100%;
   box-sizing: border-box;
 }
@@ -131,86 +134,125 @@ export const LyricsUploaderStyles: string = `
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.15rem;
-  font-size: 0.7rem;
-  color: var(--fg-secondary);
+  gap: 0.25rem;
   text-align: center;
   width: 100%;
 }
 
 .lu-message svg {
-  width: 1rem;
-  height: 1rem;
+  width: 1.25rem;
+  height: 1.25rem;
   color: var(--fg-tertiary);
-  margin-bottom: 0.1rem;
+  margin-bottom: 0.15rem;
+}
+
+.lu-title {
+  font-size: 0.72rem;
+  color: var(--fg-secondary, #8b949e);
+  font-weight: 500;
 }
 
 .lu-hint {
   font-size: 0.62rem;
-  color: var(--fg-tertiary);
+  color: var(--fg-tertiary, #484f58);
 }
 
 .lu-dropzone {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.2rem;
-  padding: 0.6rem;
-  border: 1.5px dashed var(--border);
-  border-radius: 0.4rem;
+  gap: 0.4rem;
+  padding: 1.25rem 1rem;
+  border: 2px dashed var(--border, #30363d);
+  border-radius: 0.5rem;
   cursor: pointer;
   transition: all 0.15s;
-  font-size: 0.62rem;
-  color: var(--fg-tertiary);
   width: 100%;
   box-sizing: border-box;
   text-align: center;
 }
 
-.lu-dropzone svg {
-  width: 0.85rem;
-  height: 0.85rem;
-  opacity: 0.6;
+.lu-dropzone-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: var(--bg-tertiary, #21262d);
+}
+
+.lu-dropzone-icon svg {
+  width: 0.9rem;
+  height: 0.9rem;
+  color: var(--fg-tertiary, #484f58);
+}
+
+.lu-dropzone-label {
+  font-size: 0.65rem;
+  color: var(--fg-secondary, #8b949e);
+}
+
+.lu-divider {
+  font-size: 0.58rem;
+  color: var(--fg-tertiary, #484f58);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.lu-browse-btn {
+  display: inline-block;
+  padding: 0.35rem 1rem;
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: var(--accent, #58a6ff);
+  background: rgba(from var(--accent, #58a6ff) r g b / 0.08);
+  border: 1px solid rgba(from var(--accent, #58a6ff) r g b / 0.2);
+  border-radius: 0.35rem;
+  transition: all 0.15s;
 }
 
 .lu-dropzone:hover,
 .lu-dropzone-over {
-  border-color: var(--accent);
-  color: var(--accent);
-  background: rgba(from var(--accent) r g b / 0.04);
+  border-color: var(--accent, #58a6ff);
+  background: rgba(from var(--accent, #58a6ff) r g b / 0.03);
+}
+
+.lu-dropzone:hover .lu-browse-btn,
+.lu-dropzone-over .lu-browse-btn {
+  background: rgba(from var(--accent, #58a6ff) r g b / 0.15);
+  border-color: rgba(from var(--accent, #58a6ff) r g b / 0.4);
 }
 
 .lu-dropzone-over {
-  background: rgba(from var(--accent) r g b / 0.08);
-}
-
-.lu-or {
-  font-size: 0.58rem;
-  opacity: 0.7;
+  background: rgba(from var(--accent, #58a6ff) r g b / 0.06);
 }
 
 .lu-loading {
   font-size: 0.65rem;
-  color: var(--fg-tertiary);
+  color: var(--fg-tertiary, #484f58);
+  padding: 0.15rem 0;
 }
 
 .lu-error {
   font-size: 0.62rem;
-  color: var(--error);
+  color: var(--error, #f85149);
+  text-align: center;
 }
 
 .lu-dismiss {
   background: none;
   border: none;
-  color: var(--fg-tertiary);
-  font-size: 0.62rem;
+  color: var(--fg-tertiary, #484f58);
+  font-size: 0.6rem;
   cursor: pointer;
-  padding: 0.15rem 0.4rem;
+  padding: 0.2rem 0.5rem;
   border-radius: 0.25rem;
+  transition: all 0.15s;
 }
 
 .lu-dismiss:hover {
-  color: var(--fg-secondary);
-  background: var(--bg-tertiary);
+  color: var(--fg-secondary, #8b949e);
+  background: var(--bg-tertiary, #21262d);
 }
 `
