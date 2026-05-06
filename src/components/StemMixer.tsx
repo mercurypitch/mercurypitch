@@ -641,24 +641,65 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     })
   })
 
+  const LRC_GEN_KEY = () => `lyrics_gen_v1_${props.sessionId}`
+
+  const saveLrcGenProgress = () => {
+    try {
+      const payload = {
+        lineTimes: lrcGenLineTimes(),
+        wordTimings: lrcGenWordTimings(),
+        lineIdx: lrcGenLineIdx(),
+        wordIdx: lrcGenWordIdx(),
+        timestamp: Date.now(),
+      }
+      localStorage.setItem(LRC_GEN_KEY(), JSON.stringify(payload))
+    } catch { /* storage full */ }
+  }
+
+  const clearLrcGenProgress = () => {
+    try { localStorage.removeItem(LRC_GEN_KEY()) } catch { /* ignore */ }
+  }
+
   const startLrcGen = () => {
     const lines = getGenLines()
     if (lines.length === 0) return
-    // If entering from edit mode, carry over the edit buffer as starting timings
-    const eb = editBuffer()
-    if (Object.keys(eb).length > 0) {
-      setLrcGenLineTimes(Object.keys(eb).map(k => eb[+k][0] ?? 0).slice(0, lines.length))
-      setLrcGenWordTimings(structuredClone(eb))
-    } else if (Object.keys(wordTimings()).length > 0) {
-      const wt = wordTimings()
-      setLrcGenLineTimes(Object.keys(wt).map(k => wt[+k][0] ?? 0).slice(0, lines.length))
-      setLrcGenWordTimings(structuredClone(wt))
-    } else {
-      setLrcGenLineTimes([])
-      setLrcGenWordTimings({})
+
+    // Check for saved in-progress gen state
+    let resumeLineIdx = 0
+    let resumeWordIdx = 0
+    try {
+      const saved = localStorage.getItem(LRC_GEN_KEY())
+      if (saved) {
+        const data = JSON.parse(saved)
+        if (data.lineTimes && Array.isArray(data.lineTimes) && data.lineTimes.length > 0) {
+          setLrcGenLineTimes(data.lineTimes)
+          if (data.wordTimings && typeof data.wordTimings === 'object') {
+            setLrcGenWordTimings(data.wordTimings)
+          }
+          resumeLineIdx = Math.min(data.lineIdx ?? 0, lines.length)
+          resumeWordIdx = data.wordIdx ?? 0
+        }
+      }
+    } catch { /* ignore */ }
+
+    // Only load edit buffer if not resuming from saved progress
+    if (resumeLineIdx === 0 && resumeWordIdx === 0) {
+      const eb = editBuffer()
+      if (Object.keys(eb).length > 0) {
+        setLrcGenLineTimes(Object.keys(eb).map(k => eb[+k][0] ?? 0).slice(0, lines.length))
+        setLrcGenWordTimings(structuredClone(eb))
+      } else if (Object.keys(wordTimings()).length > 0) {
+        const wt = wordTimings()
+        setLrcGenLineTimes(Object.keys(wt).map(k => wt[+k][0] ?? 0).slice(0, lines.length))
+        setLrcGenWordTimings(structuredClone(wt))
+      } else {
+        setLrcGenLineTimes([])
+        setLrcGenWordTimings({})
+      }
     }
-    setLrcGenLineIdx(0)
-    setLrcGenWordIdx(0)
+
+    setLrcGenLineIdx(resumeLineIdx)
+    setLrcGenWordIdx(resumeWordIdx)
     setEditMode(false)
     setLrcGenMode(true)
   }
@@ -695,9 +736,16 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       }
     }
 
-    // Advance to next line
+    // Advance to next line, or finish if this was the last
+    if (idx + 1 >= lines.length) {
+      setLrcGenLineIdx(idx + 1) // mark all lines done before finishing
+      setLrcGenWordIdx(0)
+      handleLrcGenFinish()
+      return
+    }
     setLrcGenLineIdx(idx + 1)
     setLrcGenWordIdx(0)
+    saveLrcGenProgress()
   }
 
   const handleNextWord = () => {
@@ -731,10 +779,18 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
     // Advance word cursor; auto-advance line if at end of words
     if (wordIdx + 1 >= words.length) {
+      if (lineIdx + 1 >= lines.length) {
+        setLrcGenLineIdx(lineIdx + 1)
+        setLrcGenWordIdx(0)
+        handleLrcGenFinish()
+        return
+      }
       setLrcGenLineIdx(lineIdx + 1)
       setLrcGenWordIdx(0)
+      saveLrcGenProgress()
     } else {
       setLrcGenWordIdx(wordIdx + 1)
+      saveLrcGenProgress()
     }
   }
 
@@ -758,6 +814,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     setLyricsLines([])
     setWordTimings(wordTimes)
     setLrcGenMode(false)
+    clearLrcGenProgress()
   }
 
   const handleLrcGenReset = () => {
@@ -765,6 +822,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     setLrcGenWordIdx(0)
     setLrcGenLineTimes([])
     setLrcGenWordTimings({})
+    clearLrcGenProgress()
   }
 
   // ── Create Source Nodes ──────────────────────────────────────
@@ -1933,8 +1991,16 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                       </button>
                     </Show>
                     <span class="sm-lyrics-gen-progress">
-                      {lrcGenLineIdx()}/{getGenLines().length}
-                      {getGenLines()[lrcGenLineIdx()] && <> w{lrcGenWordIdx()}/{getGenLines()[lrcGenLineIdx()].split(/\s+/).filter(w => w.length > 0).length}</>}
+                      {Math.min(lrcGenLineIdx(), getGenLines().length)}/{getGenLines().length}
+                      {(() => {
+                        const lines = getGenLines()
+                        const idx = lrcGenLineIdx()
+                        if (idx < lines.length) {
+                          const wc = lines[idx].split(/\s+/).filter(w => w.length > 0).length
+                          return <> w{Math.min(lrcGenWordIdx(), wc)}/{wc}</>
+                        }
+                        return null
+                      })()}
                     </span>
                     <button class="sm-lyrics-gen-nextword-btn" onClick={handleNextWord} title="Mark next word time [W]">
                       Next Word
