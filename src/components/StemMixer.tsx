@@ -969,11 +969,28 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
     if (dragTargetOrder !== dragStartOrder) {
       reorderPanels(dragPanelId, dragTargetOrder)
+      // Redraw canvases after grid reflow settles
+      requestAnimationFrame(() => {
+        syncCanvasSizes()
+        drawWaveformOverview()
+        drawLiveWaveform()
+        drawPitchCanvas()
+      })
     }
 
     dragPanelId = null
     dragStartOrder = -1
     dragTargetOrder = -1
+  }
+
+  // Redraw canvases after layout change (column toggle, etc.)
+  const queueCanvasRedraw = () => {
+    requestAnimationFrame(() => {
+      syncCanvasSizes()
+      drawWaveformOverview()
+      drawLiveWaveform()
+      drawPitchCanvas()
+    })
   }
 
   // ── Resize handlers ──────────────────────────────────────────
@@ -1069,14 +1086,14 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
               <div class="sm-col-toggle">
                 <button
                   class={`sm-col-btn${workspaceColumns() === 1 ? ' sm-col-active' : ''}`}
-                  onClick={() => setWorkspaceColumns(1)}
+                  onClick={() => { setWorkspaceColumns(1); queueCanvasRedraw() }}
                   title="Single column"
                 >
                   <svg viewBox="0 0 24 24" width="12" height="12"><rect x="4" y="4" width="16" height="16" rx="1" fill="currentColor"/></svg>
                 </button>
                 <button
                   class={`sm-col-btn${workspaceColumns() === 2 ? ' sm-col-active' : ''}`}
-                  onClick={() => setWorkspaceColumns(2)}
+                  onClick={() => { setWorkspaceColumns(2); queueCanvasRedraw() }}
                   title="Two columns"
                 >
                   <svg viewBox="0 0 24 24" width="12" height="12"><rect x="3" y="4" width="8" height="16" rx="1" fill="currentColor"/><rect x="13" y="4" width="8" height="16" rx="1" fill="currentColor"/></svg>
