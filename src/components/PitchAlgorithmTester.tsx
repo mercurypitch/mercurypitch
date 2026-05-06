@@ -88,6 +88,10 @@ export const PitchAlgorithmTester: Component<
         if (result) allResults.push(result)
         completed++
         setProgress(Math.round((completed / totalOps) * 100))
+        // Yield to the browser so the progress bar can paint between iterations.
+        // Fast algorithms (YIN, FFT, Autocorr) complete synchronously, which
+        // would otherwise jump from 0→100% without any visible progress.
+        await new Promise((r) => setTimeout(r, 0))
       }
     }
 

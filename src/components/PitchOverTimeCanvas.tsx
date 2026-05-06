@@ -111,9 +111,14 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
 
   const sampleToX = (sampleTime: number, nowTime: number, w: number): number => {
     const window = visibleWindow()
-    const windowStart = nowTime <= window ? 0 : nowTime - window
-    const x = ((sampleTime - windowStart) / window) * w
-    return Number.isFinite(x) ? x : 0
+    const windowStart = nowTime - window
+    // Pin the latest sample at 45% of canvas width so the timeline
+    // slides naturally — the dot never reaches the right-side labels.
+    const targetRight = w * 0.45
+    const effectiveWidth = targetRight - MARGIN
+    const pct = Math.max(0, Math.min(1, (sampleTime - windowStart) / window))
+    const x = MARGIN + pct * effectiveWidth
+    return Number.isFinite(x) ? x : MARGIN
   }
 
   const startDrawLoop = () => {
@@ -235,11 +240,15 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
 
     const nowTime = samples[samples.length - 1]!.time
     const window = visibleWindow()
-    const windowStart = nowTime <= window ? 0 : nowTime - window
+    const windowStart = nowTime - window
+
+    // Match the sample-to-x mapping so ticks align with dots
+    const targetRight = w * 0.45
+    const effectiveWidth = targetRight - MARGIN
 
     // Draw tick marks at 1s intervals
     const startSec = Math.floor(windowStart)
-    const endSec = Math.ceil(windowStart + window)
+    const endSec = Math.ceil(nowTime)
 
     ctx.fillStyle = '#484f58'
     ctx.font = '10px sans-serif'
@@ -248,8 +257,10 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
 
     const tickY = h - MARGIN + 8
     for (let sec = startSec; sec <= endSec; sec++) {
-      const x = ((sec - windowStart) / window) * w
-      if (x < MARGIN || x > w - MARGIN) continue
+      const pct = (sec - windowStart) / window
+      if (pct < 0 || pct > 1) continue
+      const x = MARGIN + pct * effectiveWidth
+      if (x < MARGIN || x > targetRight) continue
 
       // Tick line
       ctx.strokeStyle = 'rgba(48,54,61,0.5)'
