@@ -327,7 +327,7 @@ export async function benchmarkAlgorithmAsync(
       ) => Promise<{
         run: (
           inputs: Record<string, unknown>,
-        ) => Promise<{ output: { data: Float32Array } }>
+        ) => Promise<Record<string, { data: Float32Array; dims: number[] }>>
       }>
     }
   } = {},
@@ -368,12 +368,13 @@ export async function benchmarkAlgorithmAsync(
     let detectedFrequency: number | null = null
 
     if (algorithm === 'swift') {
-      if (detector.isInitialized()) {
-        const freqData = fftToFrequencyData(waveform, sampleRate, bufferSize)
-        const swiftResult = await detector.detectFromFreqData(freqData)
-        if (swiftResult.pitch > 0) {
-          detectedFrequency = swiftResult.pitch
-        }
+      // Init the ONNX session if a mock module was provided
+      if (options.onnxModule) {
+        await detector.init(options.onnxModule)
+      }
+      const swiftResult = await detector.detect(waveform)
+      if (swiftResult.pitch > 0) {
+        detectedFrequency = swiftResult.pitch
       }
     } else if (timeDomainDetector) {
       const result = timeDomainDetector.detect(waveform)

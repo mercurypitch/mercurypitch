@@ -1,27 +1,36 @@
 // ============================================================
 // SwiftF0 Detector - ML-Based Pitch Detection (ONNX Runtime Web)
 // ============================================================
+//
+// The SwiftF0 model (model.onnx) takes raw 16kHz mono audio and
+// outputs per-frame pitch (Hz) + confidence via built-in STFT +
+// CNN layers. No manual FFT needed — just feed it the waveform.
 
 import type ort from 'onnxruntime-web'
 import type { PitchAlgorithm } from './pitch-detector'
 
-/** SwiftF0 pitch result */
+/** SwiftF0 pitch result (aggregated from per-frame outputs) */
 export interface SwiftPitchResult {
   pitch: number
   probability: number
 }
 
 export interface SwiftDetectorSettings {
-  /** Audio sample rate (required by SwiftF0: must be 16000 Hz) */
+  /** Audio sample rate (SwiftF0 requires 16000 Hz) */
   sampleRate?: number
   /** ONNX model path (default: /models/swiftf0.onnx) */
   modelPath?: string
-  /** Frequency bin to use (SwiftF0 requires bins 3-134, typically use 91 for A4) */
-  fundamentalBin?: number
   /** Fallback frequency for zero pitch detection */
   fallbackFreq?: number
   /** Minimum probability threshold (0-1) */
   minProbability?: number
+}
+
+/** Shape of the ONNX session's run method */
+type OnnxSession = {
+  run: (
+    inputs: Record<string, unknown>,
+  ) => Promise<Record<string, { data: Float32Array; dims: number[] }>>
 }
 
 /** Mock ONNX module for testing without actual ONNX Runtime */
@@ -32,14 +41,13 @@ export interface MockOnnxModule {
   ) => Promise<{
     run: (
       inputs: Record<string, unknown>,
-    ) => Promise<{ output: { data: Float32Array } }>
+    ) => Promise<Record<string, { data: Float32Array; dims: number[] }>>
   }>
 }
 
 const DEFAULT_SETTINGS: Required<SwiftDetectorSettings> = {
   sampleRate: 16000,
   modelPath: '/models/swiftf0.onnx',
-  fundamentalBin: 91, // Should correspond to A4 (440 Hz) in the model
   fallbackFreq: 0,
   minProbability: 0.1,
 }
@@ -48,11 +56,7 @@ export class SwiftF0Detector {
   readonly algorithm: PitchAlgorithm = 'swift'
 
   private settings: Required<SwiftDetectorSettings>
-  private onnxSession: {
-    run: (
-      inputs: Record<string, unknown>,
-    ) => Promise<{ output: { data: Float32Array } }>
-  } | null = null
+  private onnxSession: OnnxSession | null = null
   private initialized: boolean = false
   private isModelLoading: boolean = false
   private ortModule: typeof ort | MockOnnxModule | null = null
@@ -71,14 +75,12 @@ export class SwiftF0Detector {
     this.isModelLoading = true
 
     try {
-      // If onnxModule is provided (for testing), use it; otherwise import ort
       if (onnxModule) {
         this.ortModule = onnxModule
       } else {
         this.ortModule = (await import('onnxruntime-web')) as typeof ort
       }
 
-      // Validate sample rate requirement
       if (this.settings.sampleRate !== 16000) {
         console.warn(
           `[SwiftF0] SwiftF0 requires 16000 Hz sample rate, got ${this.settings.sampleRate} Hz. ` +
@@ -86,43 +88,31 @@ export class SwiftF0Detector {
         )
       }
 
-      // Validate ortModule is available
-      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
       if (!this.ortModule) {
         throw new Error('ortModule is null')
       }
 
-      // Create ONNX inference session
       let session
-      // Check if it's the real ONNX Runtime module or mock
       const isMock =
         'create' in (this.ortModule as unknown as { create: unknown })
 
       if (!isMock) {
         session = await (this.ortModule as typeof ort).InferenceSession.create(
           this.settings.modelPath,
-          {
-            executionProviders: ['wasm'],
-          },
+          { executionProviders: ['wasm'] },
         )
       } else {
-        // Mock module
         session = await (this.ortModule as MockOnnxModule).create(
           this.settings.modelPath,
-          {
-            executionProviders: ['wasm'],
-          },
+          { executionProviders: ['wasm'] },
         )
       }
 
-      // Set up session run method
       this.onnxSession = {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        run: session.run.bind(session) as any,
+        run: session.run.bind(session) as OnnxSession['run'],
       }
 
       console.log('[SwiftF0] Initialized')
-
       this.initialized = true
       this.isModelLoading = false
       return true
@@ -133,95 +123,72 @@ export class SwiftF0Detector {
     }
   }
 
-  /** Detect pitch from a frequency-domain buffer */
-  async detectFromFreqData(freqData: Float32Array): Promise<SwiftPitchResult> {
+  /**
+   * Detect pitch from raw time-domain audio.
+   * The model expects 16kHz mono float32 samples.
+   * Returns a single pitch value aggregated from per-frame outputs.
+   */
+  async detect(timeData: Float32Array): Promise<SwiftPitchResult> {
     if (!this.initialized || !this.onnxSession) {
-      // Try to initialize if not done yet
       await this.init()
       if (!this.onnxSession) {
-        return {
-          pitch: this.settings.fallbackFreq,
-          probability: 0,
-        }
+        return { pitch: this.settings.fallbackFreq, probability: 0 }
       }
     }
 
-    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
     if (!this.onnxSession) {
-      return {
-        pitch: this.settings.fallbackFreq,
-        probability: 0,
-      }
+      return { pitch: this.settings.fallbackFreq, probability: 0 }
     }
 
     try {
-      // SwiftF0 requires specific frequency bins
-      // The model expects frequency data for bins 3 to 134 (132 bins)
-      const swiftInput = freqData.slice(3, 135)
-
-      // Create input tensor (1, 1, 1, 132)
+      // Create input tensor: [1, N] raw audio
       const tensor = new (this.ortModule as typeof ort).Tensor(
         'float32',
-        swiftInput,
-        [1, 1, 1, 132],
+        timeData,
+        [1, timeData.length],
       )
 
-      // Run inference
-      const sessionResult = await this.onnxSession.run({ input: tensor })
-      const logits = sessionResult.output.data
+      const result = await this.onnxSession.run({ input_audio: tensor })
 
-      // Find the bin with highest probability
-      let maxVal = -Infinity
-      let bestBin = -1
+      const pitchHz = result.pitch_hz?.data
+      const confidence = result.confidence?.data
 
-      for (let b = 0; b < logits.length; b++) {
-        if (logits[b] > maxVal) {
-          maxVal = logits[b]
-          bestBin = b
+      if (!pitchHz || !confidence || pitchHz.length === 0) {
+        return { pitch: this.settings.fallbackFreq, probability: 0 }
+      }
+
+      // Aggregate per-frame results: confidence-weighted average
+      let weightedSum = 0
+      let totalConf = 0
+      let maxConf = 0
+
+      for (let i = 0; i < pitchHz.length; i++) {
+        const p = pitchHz[i]!
+        const c = confidence[i]!
+        if (c > maxConf) maxConf = c
+        if (c >= this.settings.minProbability && p > 0) {
+          weightedSum += p * c
+          totalConf += c
         }
       }
 
-      // Validate confidence
-      if (maxVal < this.settings.minProbability) {
-        return {
-          pitch: this.settings.fallbackFreq,
-          probability: 0,
-        }
+      if (totalConf <= 0 || weightedSum <= 0) {
+        return { pitch: this.settings.fallbackFreq, probability: 0 }
       }
-
-      // Convert bin to frequency using the provided formula:
-      // frequency = 46.875 * 2^((bin * (log2(2093.75/46.875)) / 199))
-      // Where bin index 91 should give approximately 440 Hz (A4)
-      const log2Ratio = Math.log2(2093.75 / 46.875)
-      const frequency =
-        bestBin > 0
-          ? 46.875 * Math.pow(2, (bestBin * log2Ratio) / 199)
-          : this.settings.fallbackFreq
 
       return {
-        pitch: frequency,
-        probability: maxVal,
+        pitch: weightedSum / totalConf,
+        probability: maxConf,
       }
     } catch (error) {
       console.error('[SwiftF0] Detection error:', error)
-      return {
-        pitch: this.settings.fallbackFreq,
-        probability: 0,
-      }
+      return { pitch: this.settings.fallbackFreq, probability: 0 }
     }
   }
 
-  /** Detect pitch from a time-domain buffer */
-  detectFromTimeData(_timeData: Float32Array): SwiftPitchResult {
-    // Note: SwiftF0 is designed for frequency-domain input.
-    // For time-domain, we'd need to transform to frequency domain first.
-    // This is a placeholder - in production use the frequency-domain path.
-
-    // Fallback to zero pitch
-    return {
-      pitch: 0,
-      probability: 0,
-    }
+  /** Backward-compat: detect from raw time-domain audio (same as detect) */
+  async detectFromFreqData(timeData: Float32Array): Promise<SwiftPitchResult> {
+    return this.detect(timeData)
   }
 
   getName(): string {
@@ -232,9 +199,7 @@ export class SwiftF0Detector {
     return 'ML-based pitch detection using SwiftF0 model. Best for noisy environments and requires 16kHz sample rate.'
   }
 
-  reset(): void {
-    // No state to reset
-  }
+  reset(): void {}
 
   isInitialized(): boolean {
     return this.initialized

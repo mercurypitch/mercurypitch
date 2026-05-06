@@ -97,9 +97,8 @@ export class PitchDetector {
     try {
       const { SwiftF0Detector } = await import('./swift-f0-detector')
       this.swiftDetector = new SwiftF0Detector({
-        sampleRate: this.sampleRate,
+        sampleRate: 16000,
         modelPath: '/models/swiftf0.onnx',
-        fundamentalBin: 91,
         fallbackFreq: 0,
         minProbability: 0.05,
       })
@@ -192,17 +191,22 @@ export class PitchDetector {
     }
   }
 
-  /** Detect pitch from a frequency-domain buffer (for SwiftF0) */
-  async detectFromFreqData(freqData: Float32Array): Promise<DetectedPitch> {
+  /** Detect pitch from a frequency-domain buffer (for SwiftF0).
+   *  Pass optional timeData for SwiftF0 ML model (requires raw audio). */
+  async detectFromFreqData(
+    freqData: Float32Array,
+    timeData?: Float32Array,
+  ): Promise<DetectedPitch> {
     // Initialize Swift detector if needed
     await this.initializeSwiftDetector()
 
     if (
       this.algorithm === 'swift' &&
-      this.swiftDetector !== null &&
-      this.swiftDetector.isInitialized() !== null
+      this.swiftDetector !== null
     ) {
-      const swiftResult = await this.swiftDetector.detectFromFreqData(freqData)
+      // SwiftF0 model expects raw audio — use timeData if provided
+      const input = timeData ?? freqData
+      const swiftResult = await this.swiftDetector.detect(input)
 
       // Convert Swift result to DetectedPitch format
       if (
@@ -308,14 +312,14 @@ export class PitchDetector {
   }
 
   /** Detect pitch using SwiftF0 algorithm */
-  private async detectSwift(freqData: Float32Array): Promise<DetectedPitch> {
+  private async detectSwift(timeData: Float32Array): Promise<DetectedPitch> {
     await this.initializeSwiftDetector()
 
     if (
       this.swiftDetector !== null &&
-      this.swiftDetector.isInitialized() !== null
+      this.swiftDetector.isInitialized()
     ) {
-      const swiftResult = await this.swiftDetector.detectFromFreqData(freqData)
+      const swiftResult = await this.swiftDetector.detect(timeData)
 
       if (
         swiftResult.pitch > 0 &&
@@ -333,7 +337,7 @@ export class PitchDetector {
     }
 
     // Fallback to peak detection if SwiftF0 fails
-    return this.detectFromFreqDataFallback(freqData)
+    return this.detectFromFreqDataFallback(timeData)
   }
 
   // ── YIN Algorithm ─────────────────────────────────────────────
