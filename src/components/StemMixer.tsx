@@ -1225,9 +1225,9 @@ export const StemMixerStyles: string = `
   min-height: 0;
 }
 
-.sm-viz-overview { flex: 2; min-height: 70px; }
-.sm-viz-live { flex: 1; min-height: 50px; max-height: 140px; }
-.sm-viz-pitch { flex: 2; min-height: 100px; }
+.sm-viz-overview { flex: 0 2 auto; height: 130px; min-height: 70px; max-height: 180px; }
+.sm-viz-live { flex: 0 1 auto; height: 90px; min-height: 50px; max-height: 120px; }
+.sm-viz-pitch { flex: 1 2 auto; min-height: 100px; max-height: 240px; }
 
 .sm-viz-label {
   font-size: 0.65rem;
