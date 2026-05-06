@@ -529,14 +529,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         }
       }
 
-      // Auto-scroll time window: slide forward when playhead passes 40%
-      const winDur = windowDuration()
-      const winStart = windowStart()
-      const playheadInWindow = elapsedTime - winStart
-      if (playheadInWindow > winDur * 0.4) {
-        const newStart = elapsedTime - winDur * 0.3
-        setWindowStart(Math.max(0, newStart))
-      }
+      // Continuous-scroll time window: keep playhead at 30% from left
+      const newStart = elapsedTime - windowDuration() * 0.3
+      setWindowStart(Math.max(0, newStart))
 
       syncCanvasSizes()
       drawWaveformOverview()
