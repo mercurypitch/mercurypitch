@@ -565,28 +565,18 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
     const filename = loadPersistedLyrics()?.filename || 'edited.lrc'
     const hasLrc = lrcLines().length > 0
+
+    // Build clean LRC text (no word tags) + persist wordTimings as metadata
     let text: string
     if (hasLrc) {
-      text = lrcLines().map((l, i) => {
-        const times = merged[i]
-        if (times && times.length > 0) {
-          const words = l.text.split(/\s+/).filter(w => w.length > 0)
-          const wordTags = words.map((w, wi) =>
-            `<${formatTimeLrcWord(times[wi] ?? l.time)}> ${w}`
-          ).join(' ')
-          return `[${formatTimeLrcWord(l.time)}] ${wordTags}`
-        }
-        return `[${formatTimeLrcWord(l.time)}] ${l.text}`
-      }).join('\n')
+      text = lrcLines().map((l) =>
+        `[${formatTimeLrcWord(l.time)}] ${l.text}`
+      ).join('\n')
     } else {
       text = lyricsLines().map((line, i) => {
-        const words = line.split(/\s+/).filter(w => w.length > 0)
-        if (words.length === 0) return ''
+        if (!line.trim()) return ''
         const baseTime = merged[i]?.[0] ?? (duration() > 0 ? (i / lyricsLines().length) * duration() : i * 3)
-        const wordTags = words.map((w, wi) =>
-          `<${formatTimeLrcWord(merged[i]?.[wi] ?? (baseTime + wi * 0.3))}> ${w}`
-        ).join(' ')
-        return `[${formatTimeLrcWord(baseTime)}] ${wordTags}`
+        return `[${formatTimeLrcWord(baseTime)}] ${line}`
       }).join('\n')
     }
 
