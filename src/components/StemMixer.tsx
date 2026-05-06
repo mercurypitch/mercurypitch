@@ -562,22 +562,22 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   }
 
   // ── Canvas Sizing ───────────────────────────────────────────
-  // Only set canvas dimensions when they actually change — avoids per-frame
-  // reflow that caused vertical squishing in the flex layout during playback.
+  // Lock CSS pixel dimensions first, then set internal buffer from those
+  // exact integers — ensures canvas.width = cssW * dpr with no rounding gap.
   const syncCanvasSizes = () => {
     const dpr = window.devicePixelRatio || 1
     for (const ref of [waveformCanvasRef, pitchCanvasRef, liveWaveCanvasRef]) {
       if (!ref) continue
       const rect = ref.getBoundingClientRect()
-      const w = Math.round(rect.width * dpr)
-      const h = Math.round(rect.height * dpr)
+      const cssW = Math.round(rect.width)
+      const cssH = Math.round(rect.height)
+      const w = cssW * dpr
+      const h = cssH * dpr
       if (ref.width !== w || ref.height !== h) {
+        ref.style.width = `${cssW}px`
+        ref.style.height = `${cssH}px`
         ref.width = w
         ref.height = h
-        // Lock CSS size to match internal buffer so DPR-scaled draws
-        // fill every physical pixel — prevents stripe artifacts.
-        ref.style.width = `${Math.round(rect.width)}px`
-        ref.style.height = `${Math.round(rect.height)}px`
       }
     }
   }
@@ -587,9 +587,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     const canvas = waveformCanvasRef
     if (!canvas) return
     const dpr = window.devicePixelRatio || 1
-    const rect = canvas.getBoundingClientRect()
-    const w = Math.round(rect.width)
-    const h = Math.round(rect.height)
+    const w = canvas.width / dpr
+    const h = canvas.height / dpr
     if (h <= 0) { overviewRect = { w, h }; return }
     overviewRect = { w, h }
     const ctx = canvas.getContext('2d')!
@@ -668,9 +667,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     const canvas = liveWaveCanvasRef
     if (!canvas) return
     const dpr = window.devicePixelRatio || 1
-    const rect = canvas.getBoundingClientRect()
-    const w = Math.round(rect.width)
-    const h = Math.round(rect.height)
+    const w = canvas.width / dpr
+    const h = canvas.height / dpr
     if (h <= 0) { liveRect = { w, h }; return }
     liveRect = { w, h }
     const ctx = canvas.getContext('2d')!
@@ -717,9 +715,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     const canvas = pitchCanvasRef
     if (!canvas) return
     const dpr = window.devicePixelRatio || 1
-    const rect = canvas.getBoundingClientRect()
-    const w = Math.round(rect.width)
-    const h = Math.round(rect.height)
+    const w = canvas.width / dpr
+    const h = canvas.height / dpr
     if (h <= 0) { pitchRect = { w, h }; return }
     pitchRect = { w, h }
     const ctx = canvas.getContext('2d')!
