@@ -6,7 +6,7 @@ import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show } from 'solid-js'
 import { PitchDetector, type DetectedPitch } from '@/lib/pitch-detector'
 import { freqToNote } from '@/lib/scale-data'
-import { ChevronLeft, Download, Ear, Midi, Pause, Play, SkipBack, Volume2, VolumeX } from './icons'
+import { ChevronLeft, Download, Ear, Mic, Midi, Pause, Play, SkipBack, Volume2, VolumeX } from './icons'
 import { extractTitle, getCurrentLineIndex, getCurrentLrcIndex, parseLrcFile, parseTextLyrics, searchLyrics, type LrcLine, type LyricsSearchResult } from '@/lib/lyrics-service'
 import { LyricsUploader, type LyricsUploadResult } from './LyricsUploader'
 
@@ -100,6 +100,12 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   const [showBlockForm, setShowBlockForm] = createSignal(false)
   const [blockEditTarget, setBlockEditTarget] = createSignal<string | null>(null)  // block ID being edited
 
+  // ── Mic pitch comparison state ────────────────────────────────
+  const [micEnabled, setMicEnabled] = createSignal(false)
+  const [micActive, setMicActive] = createSignal(false)
+  const [micPitch, setMicPitch] = createSignal<DetectedPitch | null>(null)
+  const [micError, setMicError] = createSignal('')
+
   // ── Workspace panel state ─────────────────────────────────────
   interface WorkspacePanel {
     id: 'overview' | 'live' | 'pitch' | 'controls' | 'lyrics'
@@ -150,6 +156,14 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   let startTime = 0
   let pauseOffset = 0
   let pitchHistory: PitchNote[] = []
+
+  // Mic pitch comparison refs (not signals — no reactivity needed in RAF loop)
+  let micStream: MediaStream | null = null
+  let micGainNode: GainNode | null = null
+  let micAnalyserNode: AnalyserNode | null = null
+  let micPitchDetector: PitchDetector | null = null
+  let micPitchHistory: PitchNote[] = []
+
   let waveformCanvasRef: HTMLCanvasElement | undefined
   let pitchCanvasRef: HTMLCanvasElement | undefined
   let liveWaveCanvasRef: HTMLCanvasElement | undefined
@@ -1410,6 +1424,64 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }
   }
 
+  // ── Mic Toggle ──────────────────────────────────────────────
+  const toggleMic = async () => {
+    if (micActive()) {
+      // Stop mic
+      micStream?.getTracks().forEach(t => t.stop())
+      micGainNode?.disconnect()
+      micAnalyserNode?.disconnect()
+      micStream = null
+      micGainNode = null
+      micAnalyserNode = null
+      micPitchDetector = null
+      micPitchHistory = []
+      setMicActive(false)
+      setMicEnabled(false)
+      setMicPitch(null)
+      setMicError('')
+    } else {
+      // Start mic
+      try {
+        if (!audioCtx) {
+          await ensureAudioCtx()
+          if (!audioCtx) throw new Error('Failed to create AudioContext')
+        }
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
+        })
+        const source = audioCtx.createMediaStreamSource(stream)
+        micGainNode = audioCtx.createGain()
+        micGainNode.gain.value = 1.0
+        micAnalyserNode = audioCtx.createAnalyser()
+        micAnalyserNode.fftSize = PITCH_FFT_SIZE
+        micAnalyserNode.smoothingTimeConstant = 0.3
+        source.connect(micGainNode)
+        micGainNode.connect(micAnalyserNode)
+
+        micPitchDetector = new PitchDetector({
+          sampleRate: audioCtx.sampleRate,
+          bufferSize: PITCH_FFT_SIZE,
+          minConfidence: 0.35,
+          minAmplitude: 0.01,
+        })
+
+        micStream = stream
+        micPitchHistory = []
+        setMicActive(true)
+        setMicEnabled(true)
+        setMicPitch(null)
+        setMicError('')
+      } catch (err: any) {
+        const msg = err?.name === 'NotAllowedError' || err?.name === 'PermissionDeniedError'
+          ? 'Microphone access denied'
+          : err?.message || 'Microphone unavailable'
+        setMicError(msg)
+        setMicEnabled(false)
+      }
+    }
+  }
+
   // ── RAF Loop ─────────────────────────────────────────────────
   const startRafLoop = () => {
     const tick = () => {
@@ -1432,6 +1504,22 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             noteName: pitch.noteName,
             frequency: pitch.frequency,
             octave: pitch.octave,
+          })
+        }
+      }
+
+      // Mic pitch detection
+      if (micActive() && micAnalyserNode) {
+        const micData = new Float32Array(PITCH_FFT_SIZE)
+        micAnalyserNode.getFloatTimeDomainData(micData)
+        const mp = micPitchDetector!.detect(micData)
+        setMicPitch(mp.frequency > 0 ? mp : null)
+        if (mp.frequency > 0) {
+          micPitchHistory.push({
+            time: elapsedTime,
+            noteName: mp.noteName,
+            frequency: mp.frequency,
+            octave: mp.octave,
           })
         }
       }
@@ -2009,6 +2097,15 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                   <svg viewBox="0 0 24 24" width="12" height="12"><rect x="3" y="4" width="8" height="16" rx="1" fill="currentColor"/><rect x="13" y="4" width="8" height="16" rx="1" fill="currentColor"/></svg>
                 </button>
               </div>
+
+              <button
+                class={`sm-mic-toggle-btn${micActive() ? ' sm-mic-toggle-btn--active' : ''}${micError() ? ' sm-mic-toggle-btn--error' : ''}`}
+                onClick={toggleMic}
+                title={micError() ? micError() : micActive() ? 'Disable microphone' : 'Enable microphone pitch comparison'}
+                disabled={!!micError()}
+              >
+                <Mic />
+              </button>
 
               <div class="sm-zoom-control">
                 <button class="sm-zoom-btn" onClick={() => setWindowDuration(prev => Math.max(10, prev - 5))} title="Zoom in (shorter window)">−</button>
@@ -4295,6 +4392,61 @@ export const StemMixerStyles: string = `
   background: var(--accent, #58a6ff);
   border-radius: 0.2rem;
   transition: width 0.1s linear;
+}
+
+/* Mic toggle button */
+.sm-mic-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  background: var(--bg-tertiary, #21262d);
+  border: 1px solid var(--border, #30363d);
+  border-radius: 0.4rem;
+  color: var(--fg-secondary, #8b949e);
+  cursor: pointer;
+  transition: all 0.15s;
+  margin: 0 0.5rem;
+}
+
+.sm-mic-toggle-btn svg {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.sm-mic-toggle-btn:hover:not(:disabled) {
+  background: var(--bg-hover, #30363d);
+  color: var(--fg-primary, #c9d1d9);
+}
+
+.sm-mic-toggle-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.sm-mic-toggle-btn--active {
+  background: var(--accent, #58a6ff);
+  border-color: var(--accent, #58a6ff);
+  color: var(--bg-primary, #0d1117);
+  animation: sm-mic-pulse 1.5s ease-in-out infinite;
+}
+
+.sm-mic-toggle-btn--active:hover:not(:disabled) {
+  opacity: 0.85;
+  color: var(--bg-primary, #0d1117);
+}
+
+.sm-mic-toggle-btn--error {
+  background: var(--danger, #da3633);
+  border-color: var(--danger, #da3633);
+  color: var(--fg-primary, #c9d1d9);
+}
+
+@keyframes sm-mic-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(88, 166, 255, 0.4); }
+  50% { box-shadow: 0 0 0 4px rgba(88, 166, 255, 0); }
 }
 
 `
