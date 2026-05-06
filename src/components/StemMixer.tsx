@@ -69,6 +69,11 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   const [lyricsLoading, setLyricsLoading] = createSignal(false)
   const [lyricsFontSize, setLyricsFontSize] = createSignal(0.65)    // rem
   const [lyricsColumns, setLyricsColumns] = createSignal<1 | 2>(1)
+  const [editMode, setEditMode] = createSignal(false)
+  type WordTimingsMap = Record<number, number[]>  // line idx → word start times (seconds)
+  const [wordTimings, setWordTimings] = createSignal<WordTimingsMap>({})
+  // Unsaved edit buffer — merged into wordTimings on save
+  const [editBuffer, setEditBuffer] = createSignal<WordTimingsMap>({})
   const [windowDuration, setWindowDuration] = createSignal(30) // seconds, range 10-150
   const [windowStart, setWindowStart] = createSignal(0)
 
@@ -246,21 +251,27 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   // ── Lyrics Loading ────────────────────────────────────────────
   const LYRICS_STORE_KEY = () => `lyrics_v1_${props.sessionId}`
 
-  const persistLyrics = (text: string, format: 'txt' | 'lrc', filename: string) => {
+  const persistLyrics = (text: string, format: 'txt' | 'lrc', filename: string, wt?: WordTimingsMap) => {
     try {
-      localStorage.setItem(LYRICS_STORE_KEY(), JSON.stringify({
-        text, format, filename, timestamp: Date.now(),
-      }))
+      const payload: Record<string, unknown> = { text, format, filename, timestamp: Date.now() }
+      if (wt && Object.keys(wt).length > 0) payload.wordTimings = wt
+      localStorage.setItem(LYRICS_STORE_KEY(), JSON.stringify(payload))
     } catch { /* storage full or unavailable */ }
   }
 
-  const loadPersistedLyrics = (): LyricsUploadResult | null => {
+  const loadPersistedLyrics = (): (LyricsUploadResult & { wordTimings?: WordTimingsMap }) | null => {
     try {
       const raw = localStorage.getItem(LYRICS_STORE_KEY())
       if (!raw) return null
       const data = JSON.parse(raw)
       if (data.text && (data.format === 'txt' || data.format === 'lrc')) {
-        return { text: data.text, format: data.format, filename: data.filename || 'saved.txt' }
+        const result: LyricsUploadResult & { wordTimings?: WordTimingsMap } = {
+          text: data.text, format: data.format, filename: data.filename || 'saved.txt',
+        }
+        if (data.wordTimings && typeof data.wordTimings === 'object') {
+          result.wordTimings = data.wordTimings as WordTimingsMap
+        }
+        return result
       }
     } catch { /* corrupted data */ }
     return null
@@ -277,6 +288,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         setLyricsLines(parseTextLyrics(persisted.text))
         setLrcLines([])
       }
+      if (persisted.wordTimings) setWordTimings(persisted.wordTimings)
       setLyricsSource('upload')
       return
     }
@@ -436,6 +448,154 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       pitchHistory = []
       pitchDetector?.resetHistory()
     }
+  }
+
+  // ── Edit mode helpers ─────────────────────────────────────────
+
+  const parseTimeInput = (input: string): number | null => {
+    const trimmed = input.trim()
+    const match = trimmed.match(/^(\d{1,3}):(\d{1,2}(?:\.\d+)?)$/)
+    if (match) {
+      const mins = parseInt(match[1], 10)
+      const secs = parseFloat(match[2])
+      if (secs < 60) return mins * 60 + secs
+    }
+    const num = parseFloat(trimmed)
+    if (!isNaN(num) && num >= 0) return Math.round(num * 1000) / 1000
+    return null
+  }
+
+  const formatTimeMs = (secs: number): string => {
+    const m = Math.floor(secs / 60)
+    const s = (secs % 60).toFixed(1)
+    return `${m}:${s.padStart(4, '0')}`
+  }
+
+  const formatTimeLrcWord = (secs: number): string => {
+    const m = Math.floor(secs / 60).toString().padStart(2, '0')
+    const s = (secs % 60).toFixed(2).padStart(5, '0')
+    return `${m}:${s}`
+  }
+
+  const estimateWordTimings = (): WordTimingsMap => {
+    const dur = duration()
+    const hasLrc = lrcLines().length > 0
+    const lines: string[] = hasLrc
+      ? lrcLines().map(l => l.text)
+      : lyricsLines()
+    const lineTimes: number[] = hasLrc
+      ? lrcLines().map(l => l.time)
+      : lines.map((_, i) => dur > 0 ? (i / lines.length) * dur : i * 3)
+    const lineEndTimes: number[] = hasLrc
+      ? lrcLines().map((l, i) => i + 1 < lrcLines().length ? lrcLines()[i + 1].time : l.time + 3)
+      : lines.map((_, i) => dur > 0 ? ((i + 1) / lines.length) * dur : (i + 1) * 3)
+
+    const timings: WordTimingsMap = {}
+    for (let i = 0; i < lines.length; i++) {
+      const words = lines[i].split(/\s+/).filter(w => w.length > 0)
+      if (words.length === 0) continue
+      const lineDur = Math.max(0.1, lineEndTimes[i] - lineTimes[i])
+      const charTotal = words.reduce((sum, w) => sum + w.length, 0) || 1
+      let charPos = 0
+      timings[i] = words.map(w => {
+        const start = lineTimes[i] + (charPos / charTotal) * lineDur
+        charPos += w.length
+        return Math.round(start * 1000) / 1000
+      })
+    }
+    return timings
+  }
+
+  const toggleEditMode = () => {
+    if (editMode()) {
+      // Cancel — discard buffer
+      setEditBuffer({})
+      setEditMode(false)
+      return
+    }
+    // Enter edit mode — load or estimate word timings
+    const existing = wordTimings()
+    if (Object.keys(existing).length > 0) {
+      setEditBuffer(structuredClone(existing))
+    } else {
+      setEditBuffer(estimateWordTimings())
+    }
+    setEditMode(true)
+  }
+
+  const handleLineTimeEdit = (lineIdx: number, value: string) => {
+    const parsed = parseTimeInput(value)
+    if (parsed === null) return
+    const prev = editBuffer()
+    const lineData = (lrcLines().length > 0 ? lrcLines()[lineIdx]?.text : lyricsLines()[lineIdx]) || ''
+    const wordList = lineData.split(/\s+/).filter(w => w.length > 0)
+    const oldStart = prev[lineIdx]?.[0] ?? 0
+    const delta = parsed - oldStart
+    const next: WordTimingsMap = {}
+    for (const key of Object.keys(prev)) next[+key] = [...prev[+key]]
+    if (prev[lineIdx]) {
+      next[lineIdx] = prev[lineIdx].map(t => Math.max(0, Math.round((t + delta) * 1000) / 1000))
+    }
+    setEditBuffer(next)
+  }
+
+  const handleWordTimeEdit = (lineIdx: number, wordIdx: number, value: string) => {
+    const parsed = parseTimeInput(value)
+    if (parsed === null) return
+    const next: WordTimingsMap = {}
+    for (const key of Object.keys(editBuffer())) next[+key] = [...editBuffer()[+key]]
+    if (!next[lineIdx]) next[lineIdx] = []
+    const line = [...next[lineIdx]]
+    line[wordIdx] = parsed
+    next[lineIdx] = line
+    setEditBuffer(next)
+  }
+
+  const getEditWordTime = (lineIdx: number, wordIdx: number): number => {
+    return editBuffer()[lineIdx]?.[wordIdx] ?? 0
+  }
+
+  const getEditLineTime = (lineIdx: number): number => {
+    return editBuffer()[lineIdx]?.[0] ?? 0
+  }
+
+  const handleSaveEdits = () => {
+    const merged = { ...wordTimings(), ...editBuffer() }
+    setWordTimings(merged)
+
+    const filename = loadPersistedLyrics()?.filename || 'edited.lrc'
+    const hasLrc = lrcLines().length > 0
+    let text: string
+    if (hasLrc) {
+      text = lrcLines().map((l, i) => {
+        const times = merged[i]
+        if (times && times.length > 0) {
+          const words = l.text.split(/\s+/).filter(w => w.length > 0)
+          const wordTags = words.map((w, wi) =>
+            `<${formatTimeLrcWord(times[wi] ?? l.time)}> ${w}`
+          ).join(' ')
+          return `[${formatTimeLrcWord(l.time)}] ${wordTags}`
+        }
+        return `[${formatTimeLrcWord(l.time)}] ${l.text}`
+      }).join('\n')
+    } else {
+      text = lyricsLines().map((line, i) => {
+        const words = line.split(/\s+/).filter(w => w.length > 0)
+        if (words.length === 0) return ''
+        const baseTime = merged[i]?.[0] ?? (duration() > 0 ? (i / lyricsLines().length) * duration() : i * 3)
+        const wordTags = words.map((w, wi) =>
+          `<${formatTimeLrcWord(merged[i]?.[wi] ?? (baseTime + wi * 0.3))}> ${w}`
+        ).join(' ')
+        return `[${formatTimeLrcWord(baseTime)}] ${wordTags}`
+      }).join('\n')
+    }
+
+    persistLyrics(text, 'lrc', filename, merged)
+    const parsed = parseLrcFile(text)
+    setLrcLines(parsed)
+    setLyricsLines([])
+    setEditMode(false)
+    setEditBuffer({})
   }
 
   // ── Create Source Nodes ──────────────────────────────────────
@@ -1530,6 +1690,15 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                     onChange={handleLyricsChange}
                   />
                 </Show>
+                <Show when={lyricsSource() === 'upload' && !editMode() || lyricsSource() === 'api' && !editMode()}>
+                  <button
+                    class="sm-lyrics-edit-btn"
+                    onClick={(e) => { e.stopPropagation(); toggleEditMode() }}
+                    title="Edit word timings"
+                  >
+                    <svg viewBox="0 0 24 24" width="11" height="11"><path fill="currentColor" d="M16.474 5.408l2.118 2.117-10.8 10.8-2.544.426.426-2.544 10.8-10.8zM13.296 2.38l1.414 1.414-1.908 1.908-1.414-1.414L13.296 2.38zM3.5 20.5h3l9.9-9.9-3-3L3.5 17.5v3z"/></svg>
+                  </button>
+                </Show>
                 <div class="sm-lyrics-toolbar">
                   <div class="sm-lyrics-zoom">
                     <button
@@ -1567,45 +1736,103 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                 <div class="sm-lyrics-loading">Searching...</div>
               </Show>
               <Show when={!lyricsLoading() && lyricsSource() !== 'none'}>
-                <div
-                  class="sm-lyrics-lines"
-                  classList={{ 'sm-lyrics-columns-2': lyricsColumns() === 2 }}
-                  style={{ 'font-size': `${lyricsFontSize()}rem` }}
-                  onWheel={(e) => {
-                    e.stopPropagation()
-                    // Ctrl/Cmd+scroll = zoom; plain scroll = pass through for native scroll
-                    if (e.ctrlKey || e.metaKey) {
-                      e.preventDefault()
-                      setLyricsFontSize(prev =>
-                        Math.min(1.5, Math.max(0.45, +(prev - e.deltaY * 0.001).toFixed(2)))
-                      )
-                    }
-                  }}
-                >
-                  <For each={lyricsRenderData()}>
-                    {(rl) => {
-                      const idx = parseInt(rl.key.split('-')[1])
-                      return (
-                        <span
-                          class={`sm-lyrics-line${rl.isActive ? ' sm-lyrics-line-active' : ''}`}
-                          onClick={() => handleLyricLineClick(idx)}
-                        >
-                          <span class="sm-lyrics-time">{formatTime(rl.time)}</span>
-                          {rl.words.length === 0
-                            ? (rl.key.startsWith('lrc-')
-                                ? lrcLines()[idx]?.text || ''
-                                : lyricsLines()[idx] || '')
-                            : rl.words.map((word, wi) => (
-                                <span
-                                  class={`sm-lyrics-word${wi <= rl.activeUpTo ? ' sm-lyrics-word-done' : ''}`}
-                                >{word}{' '}</span>
-                              ))
-                          }
-                        </span>
-                      )
+                {/* ── Edit mode toolbar ────────────────────────── */}
+                <Show when={editMode()}>
+                  <div class="sm-lyrics-edit-toolbar">
+                    <button class="sm-lyrics-save-btn" onClick={handleSaveEdits}>Save</button>
+                    <button
+                      class="sm-lyrics-cancel-btn"
+                      onClick={() => { setEditBuffer({}); setEditMode(false) }}
+                    >Cancel</button>
+                  </div>
+                </Show>
+
+                {/* ── Edit mode view ───────────────────────────── */}
+                <Show when={editMode()}>
+                  <div class="sm-lyrics-lines sm-lyrics-lines-edit"
+                    style={{ 'font-size': `${lyricsFontSize()}rem` }}
+                    onWheel={(e) => {
+                      e.stopPropagation()
+                      if (e.ctrlKey || e.metaKey) {
+                        e.preventDefault()
+                        setLyricsFontSize(prev =>
+                          Math.min(1.5, Math.max(0.45, +(prev - e.deltaY * 0.001).toFixed(2)))
+                        )
+                      }
                     }}
-                  </For>
-                </div>
+                  >
+                    <For each={lyricsRenderData()}>
+                      {(rl) => {
+                        const idx = parseInt(rl.key.split('-')[1])
+                        return (
+                          <div class="sm-lyrics-line-edit">
+                            <input
+                              class="sm-lyrics-time-input"
+                              type="text"
+                              value={formatTimeMs(getEditLineTime(idx))}
+                              onInput={(e) => handleLineTimeEdit(idx, e.currentTarget.value)}
+                            />
+                            <For each={rl.words}>
+                              {(word, wi) => (
+                                <span class="sm-lyrics-word-edit">
+                                  <span class="sm-lyrics-word-text">{word}</span>
+                                  <input
+                                    class="sm-lyrics-word-time-input"
+                                    type="text"
+                                    value={formatTimeMs(getEditWordTime(idx, wi()))}
+                                    onInput={(e) => handleWordTimeEdit(idx, wi(), e.currentTarget.value)}
+                                  />
+                                </span>
+                              )}
+                            </For>
+                          </div>
+                        )
+                      }}
+                    </For>
+                  </div>
+                </Show>
+
+                {/* ── Normal view ──────────────────────────────── */}
+                <Show when={!editMode()}>
+                  <div
+                    class="sm-lyrics-lines"
+                    classList={{ 'sm-lyrics-columns-2': lyricsColumns() === 2 }}
+                    style={{ 'font-size': `${lyricsFontSize()}rem` }}
+                    onWheel={(e) => {
+                      e.stopPropagation()
+                      if (e.ctrlKey || e.metaKey) {
+                        e.preventDefault()
+                        setLyricsFontSize(prev =>
+                          Math.min(1.5, Math.max(0.45, +(prev - e.deltaY * 0.001).toFixed(2)))
+                        )
+                      }
+                    }}
+                  >
+                    <For each={lyricsRenderData()}>
+                      {(rl) => {
+                        const idx = parseInt(rl.key.split('-')[1])
+                        return (
+                          <span
+                            class={`sm-lyrics-line${rl.isActive ? ' sm-lyrics-line-active' : ''}`}
+                            onClick={() => handleLyricLineClick(idx)}
+                          >
+                            <span class="sm-lyrics-time">{formatTime(rl.time)}</span>
+                            {rl.words.length === 0
+                              ? (rl.key.startsWith('lrc-')
+                                  ? lrcLines()[idx]?.text || ''
+                                  : lyricsLines()[idx] || '')
+                              : rl.words.map((word, wi) => (
+                                  <span
+                                    class={`sm-lyrics-word${wi <= rl.activeUpTo ? ' sm-lyrics-word-done' : ''}`}
+                                  >{word}{' '}</span>
+                                ))
+                            }
+                          </span>
+                        )
+                      }}
+                    </For>
+                  </div>
+                </Show>
               </Show>
               <Show when={!lyricsLoading() && lyricsSource() === 'none'}>
                 <LyricsUploader
@@ -2179,6 +2406,147 @@ export const StemMixerStyles: string = `
 
 .sm-lyrics-line-active .sm-lyrics-word-done {
   color: var(--accent, #58a6ff);
+}
+
+/* ── Edit mode ──────────────────────────────────────────── */
+
+.sm-lyrics-edit-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.2rem;
+  height: 1.15rem;
+  padding: 0;
+  background: transparent;
+  border: 1px solid var(--border, #30363d);
+  border-radius: 0.2rem;
+  color: var(--fg-tertiary, #484f58);
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+  margin-left: 0.15rem;
+}
+
+.sm-lyrics-edit-btn:hover {
+  color: var(--accent, #58a6ff);
+  border-color: var(--accent, #58a6ff);
+  background: rgba(88, 166, 255, 0.08);
+}
+
+.sm-lyrics-edit-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.4rem;
+  border-bottom: 1px solid var(--border, #30363d);
+}
+
+.sm-lyrics-save-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.5rem;
+  height: 1.2rem;
+  font-size: 0.55rem;
+  font-weight: 600;
+  font-family: inherit;
+  background: var(--accent, #58a6ff);
+  color: var(--bg-primary, #0d1117);
+  border: none;
+  border-radius: 0.2rem;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.sm-lyrics-save-btn:hover {
+  opacity: 0.85;
+}
+
+.sm-lyrics-cancel-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.5rem;
+  height: 1.2rem;
+  font-size: 0.55rem;
+  font-weight: 500;
+  font-family: inherit;
+  background: transparent;
+  color: var(--fg-tertiary, #484f58);
+  border: 1px solid var(--border, #30363d);
+  border-radius: 0.2rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.sm-lyrics-cancel-btn:hover {
+  color: var(--fg-primary, #c9d1d9);
+  border-color: var(--fg-tertiary, #484f58);
+}
+
+.sm-lyrics-lines-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.sm-lyrics-line-edit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.2rem 0.3rem;
+  border-bottom: 1px solid var(--border, #30363d);
+}
+
+.sm-lyrics-time-input {
+  width: 3rem;
+  height: 1.25rem;
+  font-size: 0.55rem;
+  font-family: monospace;
+  background: var(--bg-tertiary, #21262d);
+  color: var(--accent, #58a6ff);
+  border: 1px solid var(--border, #30363d);
+  border-radius: 0.2rem;
+  padding: 0 0.2rem;
+  margin-right: 0.35rem;
+  text-align: center;
+}
+
+.sm-lyrics-time-input:focus {
+  outline: none;
+  border-color: var(--accent, #58a6ff);
+}
+
+.sm-lyrics-word-edit {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+
+.sm-lyrics-word-text {
+  font-size: inherit;
+  line-height: 1.3;
+}
+
+.sm-lyrics-word-time-input {
+  width: 2.5rem;
+  height: 0.9rem;
+  font-size: 0.45rem;
+  font-family: monospace;
+  background: var(--bg-tertiary, #21262d);
+  color: var(--fg-tertiary, #484f58);
+  border: 1px solid var(--border, #30363d);
+  border-radius: 0.15rem;
+  padding: 0 0.15rem;
+  text-align: center;
+}
+
+.sm-lyrics-word-time-input:focus {
+  outline: none;
+  border-color: var(--accent, #58a6ff);
+  color: var(--fg-primary, #c9d1d9);
 }
 
 /* Let uploader fill remaining panel height so dropzone is fully visible */
