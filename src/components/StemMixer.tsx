@@ -76,14 +76,17 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     id: 'overview' | 'live' | 'pitch' | 'controls' | 'lyrics'
     label: string
     order: number
+    height: number | null  // null = auto (fit-content)
   }
 
+  const [workspaceColumns, setWorkspaceColumns] = createSignal<1 | 2>(2)
+
   const [panels, setPanels] = createSignal<WorkspacePanel[]>([
-    { id: 'overview', label: 'Waveform Overview', order: 0 },
-    { id: 'live', label: 'Live Waveform', order: 1 },
-    { id: 'pitch', label: 'Vocal Pitch', order: 2 },
-    { id: 'controls', label: 'Stem Controls', order: 3 },
-    { id: 'lyrics', label: 'Lyrics', order: 4 },
+    { id: 'overview', label: 'Waveform Overview', order: 0, height: 180 },
+    { id: 'live', label: 'Live Waveform', order: 1, height: 180 },
+    { id: 'pitch', label: 'Vocal Pitch', order: 2, height: 200 },
+    { id: 'controls', label: 'Stem Controls', order: 3, height: null },
+    { id: 'lyrics', label: 'Lyrics', order: 4, height: 160 },
   ])
 
   const reorderPanels = (fromId: string, toOrder: number) => {
@@ -104,6 +107,11 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   let dragOffsetX = 0
   let dragOffsetY = 0
 
+  // ── Resize drag state ──────────────────────────────────────────
+  let resizePanelId: string | null = null
+  let resizeStartY = 0
+  let resizeStartHeight = 0
+
   // ── Refs ─────────────────────────────────────────────────────
   let audioCtx: AudioContext | null = null
   let mainGain: GainNode | null = null
@@ -117,6 +125,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   let pitchCanvasRef: HTMLCanvasElement | undefined
   let liveWaveCanvasRef: HTMLCanvasElement | undefined
   let progressBarRef: HTMLDivElement | undefined
+  let workspaceRef: HTMLDivElement | undefined
 
   // Cached canvas dimensions — updated only on resize, not every frame
   let overviewRect = { w: 0, h: 0 }
@@ -861,6 +870,14 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }
     window.addEventListener('keydown', handleKeyDown)
     ;(window as any).__smKeydown = handleKeyDown
+
+    // Resize document-level listeners
+    const handleResizeDocMove = (e: PointerEvent) => { handleResizeMove(e) }
+    const handleResizeDocEnd = (e: PointerEvent) => { handleResizeEnd(e) }
+    document.addEventListener('pointermove', handleResizeDocMove)
+    document.addEventListener('pointerup', handleResizeDocEnd)
+    ;(window as any).__smResizeMove = handleResizeDocMove
+    ;(window as any).__smResizeEnd = handleResizeDocEnd
   })
 
   createEffect(() => {
@@ -882,6 +899,14 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       window.removeEventListener('keydown', (window as any).__smKeydown)
       delete (window as any).__smKeydown
     }
+    if ((window as any).__smResizeMove) {
+      document.removeEventListener('pointermove', (window as any).__smResizeMove)
+      delete (window as any).__smResizeMove
+    }
+    if ((window as any).__smResizeEnd) {
+      document.removeEventListener('pointerup', (window as any).__smResizeEnd)
+      delete (window as any).__smResizeEnd
+    }
     if (audioCtx) {
       audioCtx.close().catch(() => { /* */ })
     }
@@ -892,6 +917,15 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     const m = Math.floor(secs / 60)
     const s = Math.floor(secs % 60)
     return `${m}:${s.toString().padStart(2, '0')}`
+  }
+
+  const getPanel = (id: string) => panels().find(p => p.id === id)!
+  const panelStyle = (id: string) => {
+    const p = getPanel(id)
+    return {
+      order: p.order,
+      ...(p.height !== null ? { height: `${p.height}px` } : {}),
+    }
   }
 
   // ── Drag-to-reorder ──────────────────────────────────────────
@@ -942,6 +976,48 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     dragTargetOrder = -1
   }
 
+  // ── Resize handlers ──────────────────────────────────────────
+  const handleResizeStart = (panelId: string, e: PointerEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const panel = panels().find(p => p.id === panelId)
+    if (!panel) return
+
+    const panelEl = document.querySelector(`[data-panel-id="${panelId}"]`) as HTMLElement | null
+    resizePanelId = panelId
+    resizeStartY = e.clientY
+    resizeStartHeight = panel.height ?? (panelEl?.getBoundingClientRect().height ?? 200)
+
+    // Prevent canvas from capturing pointer during resize
+    const canvas = panelEl?.querySelector('canvas') as HTMLElement | null
+    if (canvas) canvas.style.pointerEvents = 'none'
+
+    ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
+  }
+
+  const handleResizeMove = (e: PointerEvent) => {
+    if (!resizePanelId || !workspaceRef) return
+    e.preventDefault()
+    const delta = e.clientY - resizeStartY
+    const maxH = workspaceRef.clientHeight - 60
+    const newHeight = Math.max(40, Math.min(maxH, resizeStartHeight + delta))
+    setPanels(prev => prev.map(p =>
+      p.id === resizePanelId ? { ...p, height: newHeight } : p
+    ))
+  }
+
+  const handleResizeEnd = (_e: PointerEvent) => {
+    if (!resizePanelId) return
+    const panelEl = document.querySelector(`[data-panel-id="${resizePanelId}"]`)
+    const canvas = panelEl?.querySelector('canvas') as HTMLElement | null
+    if (canvas) canvas.style.pointerEvents = ''
+    resizePanelId = null
+    syncCanvasSizes()
+    drawWaveformOverview()
+    drawLiveWaveform()
+    drawPitchCanvas()
+  }
+
   // ── Render ───────────────────────────────────────────────────
   return (
     <div class="stem-mixer">
@@ -990,6 +1066,23 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                 {playing() ? <Pause /> : <Play />}
               </button>
 
+              <div class="sm-col-toggle">
+                <button
+                  class={`sm-col-btn${workspaceColumns() === 1 ? ' sm-col-active' : ''}`}
+                  onClick={() => setWorkspaceColumns(1)}
+                  title="Single column"
+                >
+                  <svg viewBox="0 0 24 24" width="12" height="12"><rect x="4" y="4" width="16" height="16" rx="1" fill="currentColor"/></svg>
+                </button>
+                <button
+                  class={`sm-col-btn${workspaceColumns() === 2 ? ' sm-col-active' : ''}`}
+                  onClick={() => setWorkspaceColumns(2)}
+                  title="Two columns"
+                >
+                  <svg viewBox="0 0 24 24" width="12" height="12"><rect x="3" y="4" width="8" height="16" rx="1" fill="currentColor"/><rect x="13" y="4" width="8" height="16" rx="1" fill="currentColor"/></svg>
+                </button>
+              </div>
+
               <div class="sm-zoom-control">
                 <button class="sm-zoom-btn" onClick={() => setWindowDuration(prev => Math.max(20, prev - 5))} title="Zoom in (shorter window)">−</button>
                 <span class="sm-zoom-value">{windowDuration()}s</span>
@@ -1016,16 +1109,21 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
           </div>
 
-          <div class="sm-workspace" onWheel={(e) => { e.preventDefault(); setWindowDuration(prev => Math.min(60, Math.max(20, prev + (e.deltaY > 0 ? 5 : -5)))) }}>
+          <div
+            ref={workspaceRef}
+            class="sm-workspace"
+            style={{ 'grid-template-columns': workspaceColumns() === 1 ? '1fr' : '1fr 1fr' }}
+            onWheel={(e) => { e.preventDefault(); setWindowDuration(prev => Math.min(60, Math.max(20, prev + (e.deltaY > 0 ? 5 : -5)))) }}
+          >
             {/* Panel: Waveform Overview */}
             <div
               class="sm-workspace-panel"
-              style={{ order: panels().find(p => p.id === 'overview')!.order }}
+              style={panelStyle('overview')}
               data-panel-id="overview"
             >
               <div
                 class="sm-panel-header"
-                onPointerDown={(e) => handlePanelDragStart('overview', panels().find(p => p.id === 'overview')!.order, e)}
+                onPointerDown={(e) => handlePanelDragStart('overview', getPanel('overview').order, e)}
                 onPointerMove={handlePanelDragMove}
                 onPointerUp={handlePanelDragEnd}
                 onPointerCancel={handlePanelDragEnd}
@@ -1034,17 +1132,21 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                 Waveform Overview
               </div>
               <canvas ref={waveformCanvasRef} class="sm-canvas sm-canvas-overview" />
+              <div
+                class="sm-resize-handle"
+                onPointerDown={(e) => handleResizeStart('overview', e)}
+              />
             </div>
 
             {/* Panel: Live Waveform */}
             <div
               class="sm-workspace-panel"
-              style={{ order: panels().find(p => p.id === 'live')!.order }}
+              style={panelStyle('live')}
               data-panel-id="live"
             >
               <div
                 class="sm-panel-header"
-                onPointerDown={(e) => handlePanelDragStart('live', panels().find(p => p.id === 'live')!.order, e)}
+                onPointerDown={(e) => handlePanelDragStart('live', getPanel('live').order, e)}
                 onPointerMove={handlePanelDragMove}
                 onPointerUp={handlePanelDragEnd}
                 onPointerCancel={handlePanelDragEnd}
@@ -1053,17 +1155,21 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                 Live Waveform
               </div>
               <canvas ref={liveWaveCanvasRef} class="sm-canvas sm-canvas-live" />
+              <div
+                class="sm-resize-handle"
+                onPointerDown={(e) => handleResizeStart('live', e)}
+              />
             </div>
 
             {/* Panel: Vocal Pitch */}
             <div
               class="sm-workspace-panel"
-              style={{ order: panels().find(p => p.id === 'pitch')!.order }}
+              style={panelStyle('pitch')}
               data-panel-id="pitch"
             >
               <div
                 class="sm-panel-header"
-                onPointerDown={(e) => handlePanelDragStart('pitch', panels().find(p => p.id === 'pitch')!.order, e)}
+                onPointerDown={(e) => handlePanelDragStart('pitch', getPanel('pitch').order, e)}
                 onPointerMove={handlePanelDragMove}
                 onPointerUp={handlePanelDragEnd}
                 onPointerCancel={handlePanelDragEnd}
@@ -1072,17 +1178,21 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                 Vocal Pitch
               </div>
               <canvas ref={pitchCanvasRef} class="sm-canvas sm-canvas-pitch" />
+              <div
+                class="sm-resize-handle"
+                onPointerDown={(e) => handleResizeStart('pitch', e)}
+              />
             </div>
 
             {/* Panel: Stem Controls */}
             <div
               class="sm-workspace-panel"
-              style={{ order: panels().find(p => p.id === 'controls')!.order }}
+              style={panelStyle('controls')}
               data-panel-id="controls"
             >
               <div
                 class="sm-panel-header"
-                onPointerDown={(e) => handlePanelDragStart('controls', panels().find(p => p.id === 'controls')!.order, e)}
+                onPointerDown={(e) => handlePanelDragStart('controls', getPanel('controls').order, e)}
                 onPointerMove={handlePanelDragMove}
                 onPointerUp={handlePanelDragEnd}
                 onPointerCancel={handlePanelDragEnd}
@@ -1210,17 +1320,21 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                   </div>
                 )}
               </div>
+              <div
+                class="sm-resize-handle"
+                onPointerDown={(e) => handleResizeStart('controls', e)}
+              />
             </div>
 
             {/* Panel: Lyrics */}
             <div
               class="sm-workspace-panel"
-              style={{ order: panels().find(p => p.id === 'lyrics')!.order }}
+              style={panelStyle('lyrics')}
               data-panel-id="lyrics"
             >
               <div
                 class="sm-panel-header"
-                onPointerDown={(e) => handlePanelDragStart('lyrics', panels().find(p => p.id === 'lyrics')!.order, e)}
+                onPointerDown={(e) => handlePanelDragStart('lyrics', getPanel('lyrics').order, e)}
                 onPointerMove={handlePanelDragMove}
                 onPointerUp={handlePanelDragEnd}
                 onPointerCancel={handlePanelDragEnd}
@@ -1271,6 +1385,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                   suggestion={props.songTitle}
                 />
               </Show>
+              <div
+                class="sm-resize-handle"
+                onPointerDown={(e) => handleResizeStart('lyrics', e)}
+              />
             </div>
           </div>
         </Show>
@@ -1404,8 +1522,8 @@ export const StemMixerStyles: string = `
 /* Workspace grid */
 .sm-workspace {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-auto-rows: minmax(120px, auto);
+  grid-auto-rows: auto;
+  align-content: start;
   gap: 0.5rem;
   flex: 1;
   overflow: hidden;
@@ -1455,9 +1573,20 @@ export const StemMixerStyles: string = `
 }
 
 .sm-canvas {
-  flex: 1;
+  height: 100%;
   width: 100%;
   min-height: 0;
+}
+
+.sm-resize-handle {
+  height: 4px;
+  cursor: ns-resize;
+  background: transparent;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.sm-resize-handle:hover {
+  background: var(--accent, #58a6ff);
 }
 
 /* Controls content */
@@ -1631,31 +1760,6 @@ export const StemMixerStyles: string = `
     width: 0.6rem;
     height: 0.6rem;
   }
-/* Lyrics Panel */
-.sm-lyrics-panel {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
-  background: var(--bg-primary, #0d1117);
-  border-radius: 0.5rem;
-  overflow: hidden;
-  border: 1px solid var(--border, #30363d);
-}
-
-.sm-lyrics-header {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.35rem 0.6rem;
-  background: var(--bg-tertiary, #21262d);
-  font-size: 0.65rem;
-  color: var(--fg-tertiary, #484f58);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  flex-shrink: 0;
-}
-
 .sm-lyrics-source {
   font-size: 0.55rem;
   padding: 0.05rem 0.3rem;
@@ -1706,6 +1810,40 @@ export const StemMixerStyles: string = `
   color: var(--accent, #58a6ff);
   background: rgba(88, 166, 255, 0.1);
   font-weight: 500;
+}
+
+/* Column toggle */
+.sm-col-toggle {
+  display: flex;
+  gap: 2px;
+  background: var(--bg-tertiary, #21262d);
+  border-radius: 0.3rem;
+  padding: 2px;
+  margin: 0 0.5rem;
+}
+.sm-col-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.25rem;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0.2rem;
+  color: var(--fg-tertiary, #484f58);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.sm-col-btn:hover {
+  color: var(--fg-secondary, #8b949e);
+}
+.sm-col-active {
+  background: var(--accent, #58a6ff);
+  color: var(--bg-primary, #0d1117);
+}
+.sm-col-active:hover {
+  color: var(--bg-primary, #0d1117);
 }
 
 /* Transport */
