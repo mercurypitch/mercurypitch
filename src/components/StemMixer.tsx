@@ -7,7 +7,7 @@ import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show }
 import { PitchDetector, type DetectedPitch } from '@/lib/pitch-detector'
 import { freqToNote } from '@/lib/scale-data'
 import { ChevronLeft, Download, Ear, Midi, Pause, Play, SkipBack, Volume2, VolumeX } from './icons'
-import { extractTitle, getCurrentLineIndex, getCurrentLrcIndex, parseLrcFile, parseTextLyrics, searchLyrics, type LrcLine } from '@/lib/lyrics-service'
+import { extractTitle, getCurrentLineIndex, getCurrentLrcIndex, parseLrcFile, parseTextLyrics, searchLyrics, type LrcLine, type LyricsSearchResult } from '@/lib/lyrics-service'
 import { LyricsUploader, type LyricsUploadResult } from './LyricsUploader'
 
 // ── Types ──────────────────────────────────────────────────────
@@ -334,9 +334,16 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
     setLyricsLoading(true)
     try {
-      const text = await searchLyrics(title)
-      if (text) {
-        setLyricsLines(parseTextLyrics(text))
+      const result = await searchLyrics(title)
+      if (result) {
+        if (result.format === 'lrc') {
+          setLrcLines(parseLrcFile(result.text))
+          setLyricsLines([])
+        } else {
+          setLyricsLines(parseTextLyrics(result.text))
+          setLrcLines([])
+        }
+        persistLyrics(result.text, result.format, `${title}.${result.format}`)
         setLyricsSource('api')
       } else {
         setLyricsSource('none')

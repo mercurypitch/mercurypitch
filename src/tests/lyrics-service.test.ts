@@ -10,8 +10,9 @@ import {
   parseLrcFile,
   getCurrentLineIndex,
   getCurrentLrcIndex,
+  searchLyrics,
 } from '@/lib/lyrics-service'
-import type { LrcLine } from '@/lib/lyrics-service'
+import type { LrcLine, LyricsSearchResult } from '@/lib/lyrics-service'
 
 // ── REQ-UV-029: LRC Parsing ──────────────────────────────────
 
@@ -245,5 +246,88 @@ describe('Line Syncing (REQ-UV-032, REQ-UV-033)', () => {
   it('getCurrentLrcIndex returns exact boundary', () => {
     const lines: LrcLine[] = [{ time: 10, text: 'Exact' }]
     expect(getCurrentLrcIndex(lines, 10)).toBe(0)
+  })
+})
+
+// ── REQ-UV-005, REQ-UV-006: Lyrics API Fetching ─────────────
+
+describe('searchLyrics', () => {
+  it('returns LRC format when LRCLIB returns synced lyrics', async () => {
+    vi.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({
+        syncedLyrics: '[00:10.00]First line\n[00:20.00]Second line\n[00:30.00]Third\n',
+        plainLyrics: 'First line\nSecond line\nThird\n',
+      }),
+    } as Response)
+
+    const result = await searchLyrics('Test Artist - Test Song')
+    expect(result).not.toBeNull()
+    expect(result!.format).toBe('lrc')
+    expect(result!.text).toContain('[00:10.00]')
+    expect(result!.text).toContain('First line')
+  })
+
+  it('falls back to plain text when no synced lyrics available', async () => {
+    vi.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({
+        plainLyrics: 'Just plain lyrics\ntwo lines\n',
+      }),
+    } as Response)
+
+    const result = await searchLyrics('Test Song')
+    expect(result).not.toBeNull()
+    expect(result!.format).toBe('txt')
+    expect(result!.text).toBe('Just plain lyrics\ntwo lines\n')
+  })
+
+  it('falls back to lyrics.ovh when LRCLIB returns nothing', async () => {
+    let callCount = 0
+    vi.spyOn(global, 'fetch').mockImplementation((input) => {
+      const url = String(input)
+      callCount++
+      if (url.includes('lrclib.net')) {
+        // LRCLIB returns 404
+        return Promise.resolve({ ok: false, status: 404, json: () => Promise.resolve({}) } as Response)
+      }
+      // lyrics.ovh returns lyrics
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ lyrics: 'Ovh lyrics here\nmore lyrics\n' }),
+      } as Response)
+    })
+
+    const result = await searchLyrics('Some Artist - Some Song')
+    expect(result).not.toBeNull()
+    expect(result!.format).toBe('txt')
+    expect(result!.text).toContain('Ovh lyrics here')
+    // Should have tried both LRCLIB and ovh
+    expect(callCount).toBeGreaterThanOrEqual(2)
+  })
+
+  it('returns null when all APIs fail', async () => {
+    vi.spyOn(global, 'fetch').mockResolvedValue({
+      ok: false,
+      status: 404,
+      json: () => Promise.resolve({}),
+    } as Response)
+
+    const result = await searchLyrics('Nonexistent Artist - Nonexistent Song')
+    expect(result).toBeNull()
+  })
+
+  it('returns null when lyrics text is too short', async () => {
+    vi.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({ plainLyrics: 'short' }),
+    } as Response)
+
+    const result = await searchLyrics('Test')
+    expect(result).toBeNull()
   })
 })

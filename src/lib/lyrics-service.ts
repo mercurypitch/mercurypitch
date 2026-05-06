@@ -61,47 +61,87 @@ export function parseArtistTitle(input: string): { artist: string; title: string
 
 // ── Lyrics API Fetching ──────────────────────────────────────
 
-export async function searchLyrics(rawInput: string): Promise<string | null> {
+export interface LyricsSearchResult {
+  text: string
+  format: 'txt' | 'lrc'
+}
+
+function createTimeoutSignal(ms: number): { signal: AbortSignal; clear: () => void } {
+  const ctrl = new AbortController()
+  const id = setTimeout(() => ctrl.abort(), ms)
+  return { signal: ctrl.signal, clear: () => clearTimeout(id) }
+}
+
+export async function searchLyrics(rawInput: string): Promise<LyricsSearchResult | null> {
   const { artist, title } = parseArtistTitle(rawInput)
 
-  // Build candidate queries ordered by likely success
   const queries: { artist: string; title: string }[] = []
 
   if (artist && title) {
     queries.push({ artist, title })
-    queries.push({ artist, title: title.replace(/\s*\(.*?\)\s*/g, '').trim() }) // strip parens
+    queries.push({ artist, title: title.replace(/\s*\(.*?\)\s*/g, '').trim() })
   }
   queries.push({ artist: '', title })
   queries.push({ artist: '', title: title.replace(/\s*\(.*?\)\s*/g, '').trim() })
 
-  // Try Lyrics.ovh first
+  // 1. LRCLIB — best source, returns synced LRC + plain text
+  for (const q of queries.slice(0, 3)) {
+    try {
+      const result = await fetchLyricsLrclib(q.artist, q.title)
+      if (result) return result
+    } catch { /* continue */ }
+  }
+
+  // 2. Lyrics.ovh — reliable plain text
   for (const q of queries) {
     try {
       const lyrics = await fetchLyricsOvh(q.artist, q.title)
-      if (lyrics) return lyrics
-    } catch {
-      // continue
-    }
+      if (lyrics) return { text: lyrics, format: 'txt' }
+    } catch { /* continue */ }
   }
 
-  // Fallback: try lyrics.astrid.sh (also free, no auth)
+  // 3. Astrid.sh — fallback plain text
   for (const q of queries.slice(0, 2)) {
     try {
       const lyrics = await fetchLyricsAstrid(q.artist, q.title)
-      if (lyrics) return lyrics
-    } catch {
-      // continue
-    }
+      if (lyrics) return { text: lyrics, format: 'txt' }
+    } catch { /* continue */ }
   }
 
   return null
 }
 
-async function fetchLyricsOvh(artist: string, title: string): Promise<string | null> {
-  const artistParam = artist ? `${encodeURIComponent(artist)}/` : ''
-  const url = `https://api.lyrics.ovh/v1/${artistParam}${encodeURIComponent(title)}`
+async function fetchLyricsLrclib(artist: string, title: string): Promise<LyricsSearchResult | null> {
+  const params = new URLSearchParams()
+  params.set('track_name', title)
+  if (artist) params.set('artist_name', artist)
 
-  const resp = await fetch(url, { signal: AbortSignal.timeout(5000) })
+  const { signal, clear } = createTimeoutSignal(7000)
+  const resp = await fetch(`https://lrclib.net/api/get?${params.toString()}`, { signal })
+  clear()
+  if (!resp.ok) return null
+
+  const data = await resp.json()
+
+  // Prefer synced LRC lyrics
+  if (data?.syncedLyrics && typeof data.syncedLyrics === 'string' && data.syncedLyrics.length > 20) {
+    return { text: data.syncedLyrics, format: 'lrc' }
+  }
+  // Fall back to plain lyrics
+  if (data?.plainLyrics && typeof data.plainLyrics === 'string' && data.plainLyrics.length > 10) {
+    return { text: data.plainLyrics, format: 'txt' }
+  }
+  return null
+}
+
+async function fetchLyricsOvh(artist: string, title: string): Promise<string | null> {
+  if (!artist) return null // lyrics.ovh requires artist
+
+  const url = `https://api.lyrics.ovh/v1/${encodeURIComponent(artist)}/${encodeURIComponent(title)}`
+
+  const { signal, clear } = createTimeoutSignal(6000)
+  const resp = await fetch(url, { signal })
+  clear()
   if (!resp.ok) return null
 
   const data = await resp.json()
@@ -116,8 +156,9 @@ async function fetchLyricsAstrid(artist: string, title: string): Promise<string 
   if (artist) params.set('artist', artist)
   params.set('title', title)
 
-  const url = `https://lyrics.astrid.sh/api/lyrics?${params.toString()}`
-  const resp = await fetch(url, { signal: AbortSignal.timeout(5000) })
+  const { signal, clear } = createTimeoutSignal(6000)
+  const resp = await fetch(`https://lyrics.astrid.sh/api/lyrics?${params.toString()}`, { signal })
+  clear()
   if (!resp.ok) return null
 
   const data = await resp.json()
