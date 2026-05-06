@@ -6,7 +6,7 @@ import type { Component } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, onMount, Show } from 'solid-js'
 import { PitchDetector, type DetectedPitch } from '@/lib/pitch-detector'
 import { freqToNote } from '@/lib/scale-data'
-import { ChevronLeft, Download, Ear, Midi, Pause, Play, RotateCcw, SkipBack, SkipForward, Volume2, VolumeX } from './icons'
+import { ChevronLeft, Download, Ear, Midi, Pause, Play, SkipBack, Volume2, VolumeX } from './icons'
 import { extractTitle, getCurrentLineIndex, getCurrentLrcIndex, parseLrcFile, parseTextLyrics, searchLyrics, type LrcLine } from '@/lib/lyrics-service'
 import { LyricsUploader, type LyricsUploadResult } from './LyricsUploader'
 
@@ -69,6 +69,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   const [lyricsSource, setLyricsSource] = createSignal<'api' | 'upload' | 'none'>('none')
   const [lyricsLoading, setLyricsLoading] = createSignal(false)
   const [sidebarCollapsed, setSidebarCollapsed] = createSignal(false)
+  const [windowDuration, setWindowDuration] = createSignal(30) // seconds, range 20-60
+  const [windowStart, setWindowStart] = createSignal(0)
 
   // ── Refs ─────────────────────────────────────────────────────
   let audioCtx: AudioContext | null = null
@@ -335,10 +337,28 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     setElapsed(0)
     setCurrentPitch(null)
     pitchHistory = []
+    setWindowStart(0)
     cancelAnimationFrame(rafId)
     drawWaveformOverview()
     drawPitchCanvas()
     drawLiveWaveform()
+  }
+
+  const handleRestart = () => {
+    pauseOffset = 0
+    disconnectSources()
+    setPlaying(false)
+    setElapsed(0)
+    setCurrentPitch(null)
+    pitchHistory = []
+    pitchDetector?.resetHistory()
+    setWindowStart(0)
+    cancelAnimationFrame(rafId)
+    drawWaveformOverview()
+    drawPitchCanvas()
+    drawLiveWaveform()
+    // Start playing from beginning
+    handlePlay()
   }
 
   const handleSeek = (e: MouseEvent) => {
@@ -460,6 +480,15 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         }
       }
 
+      // Auto-scroll time window: slide forward when playhead passes 40%
+      const winDur = windowDuration()
+      const winStart = windowStart()
+      const playheadInWindow = elapsedTime - winStart
+      if (playheadInWindow > winDur * 0.4) {
+        const newStart = elapsedTime - winDur * 0.3
+        setWindowStart(Math.max(0, newStart))
+      }
+
       drawWaveformOverview()
       drawPitchCanvas()
       drawLiveWaveform()
@@ -484,7 +513,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     canvas.width = rect.width * dpr
     canvas.height = rect.height * dpr
     const ctx = canvas.getContext('2d')!
-    ctx.scale(dpr, dpr)
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     const w = rect.width
     const h = rect.height
 
@@ -494,12 +523,21 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     if (activeTracks.length === 0) return
 
     const trackHeight = h / activeTracks.length
+    const totalDur = duration() || 1
+    const winStart = windowStart()
+    const winEnd = winStart + windowDuration()
 
     for (let ti = 0; ti < activeTracks.length; ti++) {
       const track = activeTracks[ti]
       const buffer = track.buffer!
       const data = buffer.getChannelData(0)
-      const step = Math.floor(data.length / w / WAVEFORM_RESOLUTION)
+      const totalSamples = data.length
+
+      // Only iterate samples within the visible window
+      const visibleStart = Math.floor((winStart / totalDur) * totalSamples)
+      const visibleEnd = Math.min(totalSamples, Math.floor((winEnd / totalDur) * totalSamples))
+      const visibleSamples = visibleEnd - visibleStart
+      const step = Math.max(1, Math.floor(visibleSamples / w / WAVEFORM_RESOLUTION))
       const yOff = ti * trackHeight
 
       // Center line
@@ -516,9 +554,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       ctx.lineWidth = 1
       ctx.beginPath()
       for (let x = 0; x < w; x++) {
-        const start = Math.floor(x * step * WAVEFORM_RESOLUTION)
+        const start = visibleStart + Math.floor(x * step * WAVEFORM_RESOLUTION)
         let min = 1, max = -1
-        for (let s = start; s < Math.min(start + step, data.length); s++) {
+        const end = Math.min(start + step, visibleEnd)
+        for (let s = start; s < end; s++) {
           const v = data[s]
           if (v < min) min = v
           if (v > max) max = v
@@ -530,8 +569,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       ctx.stroke()
 
       // Playhead
-      if (duration() > 0) {
-        const px = (elapsed() / duration()) * w
+      if (elapsed() >= winStart && elapsed() <= winEnd) {
+        const px = ((elapsed() - winStart) / windowDuration()) * w
         ctx.strokeStyle = 'rgba(255,255,255,0.5)'
         ctx.lineWidth = 1
         ctx.beginPath()
@@ -555,7 +594,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     canvas.width = rect.width * dpr
     canvas.height = rect.height * dpr
     const ctx = canvas.getContext('2d')!
-    ctx.scale(dpr, dpr)
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     const w = rect.width
     const h = rect.height
 
@@ -604,7 +643,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     canvas.width = rect.width * dpr
     canvas.height = rect.height * dpr
     const ctx = canvas.getContext('2d')!
-    ctx.scale(dpr, dpr)
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     const w = rect.width
     const h = rect.height
 
@@ -645,7 +684,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }
 
     // Pitch history — consolidated into Melodyne-style pills
-    const totalDur = duration() || 1
+    const winStart = windowStart()
+    const winEnd = winStart + windowDuration()
+    const winDur = windowDuration()
     if (pitchHistory.length > 0) {
       const pillGroups: { noteIdx: number; startTime: number; endTime: number }[] = []
       let cur = {
@@ -666,8 +707,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       if (cur.noteIdx >= 0) pillGroups.push({ ...cur })
 
       for (const g of pillGroups) {
-        const x1 = (g.startTime / totalDur) * w
-        const x2 = (g.endTime / totalDur) * w
+        if (g.endTime < winStart || g.startTime > winEnd) continue
+        const x1 = Math.max(0, ((g.startTime - winStart) / winDur) * w)
+        const x2 = Math.min(w, ((g.endTime - winStart) / winDur) * w)
         const pillW = Math.max(x2 - x1, 3)
         const y = (11 - g.noteIdx) * rowH + rowH * 0.16
         const pillH = rowH * 0.68
@@ -691,10 +733,11 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
     // Current pitch highlight
     const cp = currentPitch()
-    if (cp && cp.frequency > 0 && duration() > 0) {
+    if (cp && cp.frequency > 0) {
+      const elapsedTime = elapsed()
       const noteIdx = notes.indexOf(cp.noteName.replace(/\d/g, ''))
-      if (noteIdx >= 0) {
-        const x = (elapsed() / duration()) * w
+      if (noteIdx >= 0 && elapsedTime >= winStart && elapsedTime <= winEnd) {
+        const x = ((elapsedTime - winStart) / winDur) * w
         const y = (11 - noteIdx) * rowH + rowH * 0.5
 
         // Glow
@@ -714,8 +757,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }
 
     // Playhead
-    if (duration() > 0) {
-      const px = (elapsed() / duration()) * w
+    const elapsedTime = elapsed()
+    if (elapsedTime >= winStart && elapsedTime <= winEnd) {
+      const px = ((elapsedTime - winStart) / winDur) * w
       ctx.strokeStyle = 'rgba(255,255,255,0.6)'
       ctx.lineWidth = 1
       ctx.setLineDash([4, 4])
@@ -834,10 +878,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           {/* Transport Bar — top */}
           <div class="sm-transport">
             <div class="sm-transport-controls">
-              <button class="sm-transport-btn" onClick={handleStop} title="Stop (Space)">
-                <RotateCcw />
+              <button class="sm-transport-btn" onClick={handleStop} title="Stop">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
               </button>
-              <button class="sm-transport-btn" onClick={handleStop} title="Restart">
+              <button class="sm-transport-btn" onClick={handleRestart} title="Restart (play from beginning)">
                 <SkipBack />
               </button>
               <button
@@ -846,9 +890,12 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
               >
                 {playing() ? <Pause /> : <Play />}
               </button>
-              <button class="sm-transport-btn" disabled title="Skip">
-                <SkipForward />
-              </button>
+
+              <div class="sm-zoom-control">
+                <button class="sm-zoom-btn" onClick={() => setWindowDuration(prev => Math.max(20, prev - 5))} title="Zoom in (shorter window)">−</button>
+                <span class="sm-zoom-value">{windowDuration()}s</span>
+                <button class="sm-zoom-btn" onClick={() => setWindowDuration(prev => Math.min(60, prev + 5))} title="Zoom out (longer window)">+</button>
+              </div>
             </div>
 
             <div class="sm-progress-area">
@@ -879,7 +926,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
           <div class="sm-body">
             {/* Left — Visualizations */}
-            <div class="sm-viz">
+            <div class="sm-viz" onWheel={(e) => { e.preventDefault(); setWindowDuration(prev => Math.min(60, Math.max(20, prev + (e.deltaY > 0 ? 5 : -5)))) }}>
               <div class="sm-viz-section sm-viz-overview">
                 <span class="sm-viz-label">Waveform Overview</span>
                 <canvas ref={waveformCanvasRef} class="sm-canvas sm-canvas-overview" />
@@ -1225,9 +1272,9 @@ export const StemMixerStyles: string = `
   min-height: 0;
 }
 
-.sm-viz-overview { flex: 0 2 auto; height: 130px; min-height: 70px; max-height: 180px; }
-.sm-viz-live { flex: 0 1 auto; height: 90px; min-height: 50px; max-height: 120px; }
-.sm-viz-pitch { flex: 1 2 auto; min-height: 100px; max-height: 240px; }
+.sm-viz-overview { flex: 2; min-height: 70px; }
+.sm-viz-live { flex: 0 0 auto; height: 90px; min-height: 50px; }
+.sm-viz-pitch { flex: 3; min-height: 100px; }
 
 .sm-viz-label {
   font-size: 0.65rem;
@@ -1564,6 +1611,43 @@ export const StemMixerStyles: string = `
 .sm-transport-play:hover:not(:disabled) {
   opacity: 0.85;
   color: var(--bg-primary, #0d1117);
+}
+
+.sm-zoom-control {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  margin: 0 0.5rem;
+}
+
+.sm-zoom-btn {
+  width: 1.35rem;
+  height: 1.35rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-tertiary, #21262d);
+  border: 1px solid var(--border-primary, #30363d);
+  color: var(--fg-secondary, #8b949e);
+  border-radius: 0.25rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1;
+  padding: 0;
+}
+
+.sm-zoom-btn:hover {
+  background: var(--bg-secondary, #161b22);
+  color: var(--fg-primary, #c9d1d9);
+}
+
+.sm-zoom-value {
+  font-size: 0.65rem;
+  color: var(--fg-tertiary, #484f58);
+  font-family: monospace;
+  min-width: 28px;
+  text-align: center;
 }
 
 .sm-progress-area {

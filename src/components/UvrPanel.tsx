@@ -316,10 +316,6 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     }, 500)
   }
 
-  const closePanel = () => {
-    if (props.onClose) props.onClose()
-  }
-
   return (
     <div class="uvr-panel">
       {/* Header */}
@@ -358,13 +354,6 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
             title="History"
           >
             <History />
-          </button>
-          <button
-            class="header-btn header-btn-close"
-            onClick={closePanel}
-            title="Close"
-          >
-            <X />
           </button>
         </div>
       </div>

@@ -43,6 +43,10 @@ interface AppSidebarProps {
   class?: string
   /** Called when the mobile close button is clicked */
   onClose?: () => void
+  /** Whether the sidebar is collapsed (desktop) */
+  collapsed?: boolean
+  /** Called when the collapse toggle is clicked */
+  onToggleCollapse?: () => void
 }
 
 export const AppSidebar: Component<AppSidebarProps> = (props) => {
@@ -83,8 +87,19 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
 
   return (
     <aside
-      class={`app-sidebar${props.class !== undefined && props.class !== '' ? ` ${props.class}` : ''}`}
+      class={`app-sidebar${props.class !== undefined && props.class !== '' ? ` ${props.class}` : ''}${props.collapsed ? ' collapsed' : ''}`}
     >
+      {/* Desktop collapse toggle */}
+      <button
+        class="sidebar-collapse-btn"
+        onClick={() => props.onToggleCollapse?.()}
+        title={props.collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+      >
+        <svg viewBox="0 0 24 24" width="16" height="16" style={{ transform: props.collapsed ? 'rotate(180deg)' : '' }}>
+          <path fill="currentColor" d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+        </svg>
+      </button>
+
       {/* Mobile close button */}
       <button
         class="sidebar-close-btn"

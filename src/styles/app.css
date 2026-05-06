@@ -558,6 +558,37 @@ header h1 {
   opacity: 1;
 }
 
+/* Sidebar collapse toggle — desktop */
+.sidebar-collapse-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  opacity: 0.6;
+  transition: opacity 0.15s;
+  align-self: flex-end;
+  flex-shrink: 0;
+}
+.sidebar-collapse-btn:hover {
+  opacity: 1;
+}
+
+/* Collapsed sidebar (desktop) */
+.app-sidebar.collapsed {
+  width: 40px;
+  min-width: 40px;
+  padding: 8px 4px;
+  align-items: center;
+}
+.app-sidebar.collapsed > *:not(.sidebar-collapse-btn) {
+  display: none;
+}
+
 /* Sidebar toggle FAB — hidden on desktop by default */
 .sidebar-toggle-btn {
   display: none;

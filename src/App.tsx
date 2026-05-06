@@ -142,6 +142,7 @@ const AppShell: Component<AppProps> = (props) => {
   const [sidebarOpen, setSidebarOpen] = createSignal(false)
   const toggleSidebar = () => setSidebarOpen(sidebarOpen() === false)
   const closeSidebar = () => setSidebarOpen(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = createSignal(false)
 
   const [showScaleBuilder, setShowScaleBuilder] = createSignal(false)
   const [savedVol, setSavedVol] = createSignal<number>(80)
@@ -872,6 +873,8 @@ const AppShell: Component<AppProps> = (props) => {
             pitch={currentPitch}
             targetNoteName={targetNoteName}
             onClose={closeSidebar}
+            collapsed={sidebarCollapsed()}
+            onToggleCollapse={() => setSidebarCollapsed(prev => !prev)}
           />
 
           {/* Tab content */}
