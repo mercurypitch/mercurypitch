@@ -74,6 +74,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   const [wordTimings, setWordTimings] = createSignal<WordTimingsMap>({})
   // Unsaved edit buffer — merged into wordTimings on save
   const [editBuffer, setEditBuffer] = createSignal<WordTimingsMap>({})
+  const [editPopover, setEditPopover] = createSignal<{ lineIdx: number; wordIdx: number; word: string } | null>(null)
   // LRC generator mode — real-time word/line timing via playback
   const [lrcGenMode, setLrcGenMode] = createSignal(false)
   const [lrcGenLineIdx, setLrcGenLineIdx] = createSignal(0)
@@ -458,29 +459,46 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
   // ── Edit mode helpers ─────────────────────────────────────────
 
+  /** Parse "MM:SS" → total seconds. Returns null if invalid. */
   const parseTimeInput = (input: string): number | null => {
     const trimmed = input.trim()
-    const match = trimmed.match(/^(\d{1,3}):(\d{1,2}(?:\.\d+)?)$/)
-    if (match) {
-      const mins = parseInt(match[1], 10)
-      const secs = parseFloat(match[2])
-      if (secs < 60) return mins * 60 + secs
-    }
-    const num = parseFloat(trimmed)
-    if (!isNaN(num) && num >= 0) return Math.round(num * 1000) / 1000
-    return null
+    const match = trimmed.match(/^(\d{1,2}):(\d{2})$/)
+    if (!match) return null
+    const mins = parseInt(match[1], 10)
+    const secs = parseInt(match[2], 10)
+    if (secs >= 60) return null
+    return mins * 60 + secs
   }
 
+  /** Format seconds → "MM:SS" (minutes capped at 99, seconds 0-59) */
   const formatTimeMs = (secs: number): string => {
-    const m = Math.floor(secs / 60)
-    const s = (secs % 60).toFixed(1)
-    return `${m}:${s.padStart(4, '0')}`
+    const m = Math.min(99, Math.floor(secs / 60))
+    const s = Math.min(59, Math.round(secs % 60))
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
   }
 
   const formatTimeLrcWord = (secs: number): string => {
     const m = Math.floor(secs / 60).toString().padStart(2, '0')
     const s = (secs % 60).toFixed(2).padStart(5, '0')
     return `${m}:${s}`
+  }
+
+  // Popover handlers
+  const openWordPopover = (lineIdx: number, wordIdx: number, word: string, e: MouseEvent) => {
+    e.stopPropagation()
+    setEditPopover({ lineIdx, wordIdx, word })
+  }
+
+  const closeWordPopover = () => setEditPopover(null)
+
+  const commitPopoverValue = (value: string) => {
+    const pop = editPopover()
+    if (!pop) return
+    const parsed = parseTimeInput(value)
+    if (parsed !== null) {
+      handleWordTimeEdit(pop.lineIdx, pop.wordIdx, value)
+    }
+    setEditPopover(null)
   }
 
   const estimateWordTimings = (): WordTimingsMap => {
@@ -1993,18 +2011,16 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                               class="sm-lyrics-time-input"
                               type="text"
                               value={formatTimeMs(getEditLineTime(idx))}
-                              onInput={(e) => handleLineTimeEdit(idx, e.currentTarget.value)}
+                              onChange={(e) => handleLineTimeEdit(idx, e.currentTarget.value)}
                             />
                             <For each={rl.words}>
                               {(word, wi) => (
                                 <span class="sm-lyrics-word-edit">
                                   <span class="sm-lyrics-word-text">{word}</span>
-                                  <input
-                                    class="sm-lyrics-word-time-input"
-                                    type="text"
-                                    value={formatTimeMs(getEditWordTime(idx, wi()))}
-                                    onInput={(e) => handleWordTimeEdit(idx, wi(), e.currentTarget.value)}
-                                  />
+                                  <span
+                                    class="sm-lyrics-word-time-label"
+                                    onClick={(e) => openWordPopover(idx, wi(), word, e)}
+                                  >{formatTimeMs(getEditWordTime(idx, wi()))}</span>
                                 </span>
                               )}
                             </For>
@@ -2013,6 +2029,29 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                       }}
                     </For>
                   </div>
+
+                  {/* ── Word time edit popover ──────────────── */}
+                  <Show when={editPopover() !== null}>
+                    <div class="sm-lyrics-popover-backdrop" onClick={closeWordPopover}>
+                      <div class="sm-lyrics-popover-card" onClick={(e) => e.stopPropagation()}>
+                        <div class="sm-lyrics-popover-word">{editPopover()!.word}</div>
+                        <input
+                          class="sm-lyrics-popover-input"
+                          type="text"
+                          value={editPopover() ? formatTimeMs(getEditWordTime(editPopover()!.lineIdx, editPopover()!.wordIdx)) : ''}
+                          onChange={(e) => commitPopoverValue(e.currentTarget.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Escape') closeWordPopover()
+                            if (e.key === 'Enter') commitPopoverValue(e.currentTarget.value)
+                          }}
+                          ref={(el) => {
+                            setTimeout(() => (el as HTMLInputElement)?.select(), 10)
+                          }}
+                        />
+                        <div class="sm-lyrics-popover-hint">Enter time (MM:SS) – press Enter or click outside to save</div>
+                      </div>
+                    </div>
+                  </Show>
                 </Show>
 
                 {/* ── Normal view ──────────────────────────────── */}
@@ -2753,23 +2792,80 @@ export const StemMixerStyles: string = `
   line-height: 1.3;
 }
 
-.sm-lyrics-word-time-input {
-  width: 2.5rem;
-  height: 0.9rem;
+.sm-lyrics-word-time-label {
   font-size: 0.45rem;
   font-family: monospace;
-  background: var(--bg-tertiary, #21262d);
   color: var(--fg-tertiary, #484f58);
-  border: 1px solid var(--border, #30363d);
+  background: var(--bg-tertiary, #21262d);
+  border: 1px solid transparent;
   border-radius: 0.15rem;
-  padding: 0 0.15rem;
-  text-align: center;
+  padding: 0 0.2rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  user-select: none;
 }
 
-.sm-lyrics-word-time-input:focus {
-  outline: none;
+.sm-lyrics-word-time-label:hover {
+  color: var(--accent, #58a6ff);
   border-color: var(--accent, #58a6ff);
+  background: rgba(88, 166, 255, 0.08);
+}
+
+/* ── Edit popover ──────────────────────────────────────── */
+
+.sm-lyrics-popover-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+.sm-lyrics-popover-card {
+  background: var(--bg-primary, #0d1117);
+  border: 1px solid var(--border, #30363d);
+  border-radius: 0.5rem;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.sm-lyrics-popover-word {
+  font-size: 1.1rem;
+  font-weight: 600;
   color: var(--fg-primary, #c9d1d9);
+  letter-spacing: 0.02em;
+}
+
+.sm-lyrics-popover-input {
+  width: 8rem;
+  height: 2.4rem;
+  font-size: 1.6rem;
+  font-family: monospace;
+  font-weight: 600;
+  text-align: center;
+  letter-spacing: 0.15em;
+  background: var(--bg-tertiary, #21262d);
+  color: var(--accent, #58a6ff);
+  border: 2px solid var(--accent, #58a6ff);
+  border-radius: 0.35rem;
+  padding: 0 0.5rem;
+  outline: none;
+}
+
+.sm-lyrics-popover-input:focus {
+  border-color: var(--accent, #58a6ff);
+  box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.2);
+}
+
+.sm-lyrics-popover-hint {
+  font-size: 0.55rem;
+  color: var(--fg-tertiary, #484f58);
 }
 
 /* ── LRC Generator mode ─────────────────────────────────── */
