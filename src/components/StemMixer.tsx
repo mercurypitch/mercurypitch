@@ -1582,28 +1582,29 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                     }
                   }}
                 >
-                  {lyricsRenderData().map((rl) => (
-                    <span
-                      class={`sm-lyrics-line${rl.isActive ? ' sm-lyrics-line-active' : ''}`}
-                      onClick={() => handleLyricLineClick(
-                        lrcLines().length > 0
-                          ? lrcLines().findIndex(l => l.time === rl.time)
-                          : lyricsLines().findIndex((_, i) => i === parseInt(rl.key.replace('txt-', '')))
-                      )}
-                    >
-                      <span class="sm-lyrics-time">{formatTime(rl.time)}</span>
-                      {rl.words.length === 0
-                        ? (lrcLines().length > 0
-                            ? lrcLines().find(l => l.time === rl.time)?.text || ''
-                            : lyricsLines()[parseInt(rl.key.replace('txt-', ''))] || '')
-                        : rl.words.map((word, wi) => (
-                            <span
-                              class={`sm-lyrics-word${wi <= rl.activeUpTo ? ' sm-lyrics-word-done' : ''}`}
-                            >{word}{' '}</span>
-                          ))
-                      }
-                    </span>
-                  ))}
+                  <For each={lyricsRenderData()}>
+                    {(rl) => {
+                      const idx = parseInt(rl.key.split('-')[1])
+                      return (
+                        <span
+                          class={`sm-lyrics-line${rl.isActive ? ' sm-lyrics-line-active' : ''}`}
+                          onClick={() => handleLyricLineClick(idx)}
+                        >
+                          <span class="sm-lyrics-time">{formatTime(rl.time)}</span>
+                          {rl.words.length === 0
+                            ? (rl.key.startsWith('lrc-')
+                                ? lrcLines()[idx]?.text || ''
+                                : lyricsLines()[idx] || '')
+                            : rl.words.map((word, wi) => (
+                                <span
+                                  class={`sm-lyrics-word${wi <= rl.activeUpTo ? ' sm-lyrics-word-done' : ''}`}
+                                >{word}{' '}</span>
+                              ))
+                          }
+                        </span>
+                      )
+                    }}
+                  </For>
                 </div>
               </Show>
               <Show when={!lyricsLoading() && lyricsSource() === 'none'}>
