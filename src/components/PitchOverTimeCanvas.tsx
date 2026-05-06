@@ -3,13 +3,15 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { onCleanup, onMount } from 'solid-js'
+import { createSignal, onCleanup, onMount } from 'solid-js'
 import type { TimeStampedPitchSample } from '@/types/pitch-algorithms'
 
 interface PitchOverTimeCanvasProps {
   samples: () => TimeStampedPitchSample[]
   isDetecting: () => boolean
   visibleWindowSeconds?: number
+  zoomLevel?: () => number
+  onZoomChange?: (level: number) => void
 }
 
 const Y_AXIS_NOTES = [
@@ -32,6 +34,8 @@ const MARGIN = 32
 const DOT_RADIUS = 3
 const GLOW_RADIUS = 12
 
+const ZOOM_STEPS = [1, 2, 3, 5, 8]
+
 export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
   props,
 ) => {
@@ -40,11 +44,32 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
   let animFrameId: number | null = null
   let resizeObserver: ResizeObserver | null = null
 
+  const [internalZoomLevel, setInternalZoomLevel] = createSignal(1)
+
+  const currentZoom = () => props.zoomLevel?.() ?? internalZoomLevel()
+
   const visibleWindow = () => props.visibleWindowSeconds ?? 10
+
+  const setZoom = (level: number) => {
+    setInternalZoomLevel(level)
+    props.onZoomChange?.(level)
+  }
+
+  const handleWheel = (e: WheelEvent) => {
+    e.preventDefault()
+    const current = currentZoom()
+    const idx = ZOOM_STEPS.indexOf(current)
+    if (e.deltaY < 0 && idx < ZOOM_STEPS.length - 1) {
+      setZoom(ZOOM_STEPS[idx + 1]!)
+    } else if (e.deltaY > 0 && idx > 0) {
+      setZoom(ZOOM_STEPS[idx - 1]!)
+    }
+  }
 
   onMount(() => {
     if (!canvasRef) return
     ctx = canvasRef.getContext('2d')
+    canvasRef.addEventListener('wheel', handleWheel, { passive: false })
     resizeCanvas()
     startDrawLoop()
 
@@ -54,6 +79,7 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
     onCleanup(() => {
       resizeObserver?.disconnect()
       if (animFrameId !== null) cancelAnimationFrame(animFrameId)
+      canvasRef?.removeEventListener('wheel', handleWheel)
     })
   })
 
@@ -69,9 +95,14 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
   }
 
-  const freqToY = (freq: number, h: number): number => {
+  const freqToY = (
+    freq: number,
+    h: number,
+    logMin: number,
+    logRange: number,
+  ): number => {
     if (!Number.isFinite(freq) || freq <= 0) return h / 2
-    const pct = (Math.log2(freq) - LOG_MIN) / LOG_RANGE
+    const pct = (Math.log2(freq) - logMin) / logRange
     const y = h - MARGIN - pct * (h - MARGIN * 2)
     return Number.isFinite(y) ? y : h / 2
   }
@@ -90,25 +121,54 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
       const w = canvasRef.clientWidth
       const h = canvasRef.clientHeight
 
+      // Compute dynamic log range for zoom
+      const zoom = currentZoom()
+      let effLogMin = LOG_MIN
+      let effLogMax = LOG_MAX
+      if (zoom > 1) {
+        const samples = props.samples()
+        let centerFreq = 440
+        for (let i = samples.length - 1; i >= 0; i--) {
+          const f = samples[i]!.freq
+          if (f !== null && f > 0) {
+            centerFreq = f
+            break
+          }
+        }
+        const centerLog = Math.log2(centerFreq)
+        const halfRange = LOG_RANGE / (2 * zoom)
+        effLogMin = Math.max(LOG_MIN, centerLog - halfRange)
+        effLogMax = Math.min(LOG_MAX, centerLog + halfRange)
+      }
+      const effLogRange = effLogMax - effLogMin
+
       ctx.clearRect(0, 0, w, h)
       ctx.fillStyle = '#0d1117'
       ctx.fillRect(0, 0, w, h)
 
-      drawYAxisLabels(w, h)
+      drawYAxisLabels(w, h, effLogMin, effLogRange)
       drawTimeLabels(w, h)
-      drawSamples(w, h)
+      drawSamples(w, h, effLogMin, effLogRange)
 
       animFrameId = requestAnimationFrame(draw)
     }
     animFrameId = requestAnimationFrame(draw)
   }
 
-  const drawYAxisLabels = (w: number, h: number) => {
+  const drawYAxisLabels = (
+    w: number,
+    h: number,
+    logMin: number,
+    logRange: number,
+  ) => {
     if (!ctx) return
 
     const rightX = w - 8
     for (const note of Y_AXIS_NOTES) {
-      const y = freqToY(note.freq, h)
+      const y = freqToY(note.freq, h, logMin, logRange)
+
+      // Only draw labels within the visible area
+      if (y < 4 || y > h - 4) continue
 
       // Grid line
       ctx.strokeStyle = 'rgba(48,54,61,0.7)'
@@ -167,7 +227,12 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
     }
   }
 
-  const drawSamples = (w: number, h: number) => {
+  const drawSamples = (
+    w: number,
+    h: number,
+    logMin: number,
+    logRange: number,
+  ) => {
     if (!ctx) return
 
     const samples = props.samples()
@@ -187,7 +252,11 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
 
       const freq = s.freq
       if (freq !== null && freq > 0) {
-        const y = freqToY(freq, h)
+        const y = freqToY(freq, h, logMin, logRange)
+
+        // Clip dots to visible Y range
+        if (y < -10 || y > h + 10) continue
+
         validPoints.push({ x, y })
 
         // Opacity from clarity
@@ -219,7 +288,7 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
       ctx.stroke()
     }
 
-    // Glow on latest valid point
+    // Glow on latest valid point + note name pill
     const isActive = props.isDetecting()
     if (isActive && validPoints.length > 0) {
       const latest = validPoints[validPoints.length - 1]!
@@ -243,6 +312,51 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
       ctx.beginPath()
       ctx.arc(latest.x, latest.y, DOT_RADIUS + 1, 0, Math.PI * 2)
       ctx.fill()
+
+      // Note name pill near latest dot
+      const latestSample = samples[samples.length - 1]
+      const noteName = latestSample?.noteName
+      if (noteName) {
+        const nearRight = latest.x > w - 70
+        const labelX = nearRight ? latest.x - 14 : latest.x + 14
+        const labelY = latest.y - 10
+
+        ctx.font = 'bold 11px sans-serif'
+        const textWidth = ctx.measureText(noteName).width
+        const pillW = textWidth + 10
+        const pillH = 18
+
+        // Background pill
+        ctx.fillStyle = 'rgba(13,17,23,0.8)'
+        ctx.beginPath()
+        ctx.roundRect(
+          nearRight ? labelX - textWidth - 6 : labelX - 4,
+          labelY - pillH / 2,
+          pillW,
+          pillH,
+          4,
+        )
+        ctx.fill()
+
+        // Pill border
+        ctx.strokeStyle = 'rgba(88,166,255,0.35)'
+        ctx.lineWidth = 1
+        ctx.beginPath()
+        ctx.roundRect(
+          nearRight ? labelX - textWidth - 6 : labelX - 4,
+          labelY - pillH / 2,
+          pillW,
+          pillH,
+          4,
+        )
+        ctx.stroke()
+
+        // Text
+        ctx.fillStyle = '#e6edf3'
+        ctx.textAlign = nearRight ? 'right' : 'left'
+        ctx.textBaseline = 'middle'
+        ctx.fillText(noteName, labelX, labelY)
+      }
     }
   }
 

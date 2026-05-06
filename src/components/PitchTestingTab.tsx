@@ -113,10 +113,57 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
 
   // UI state
   const [isRunningTest, setIsRunningTest] = createSignal(false)
+  const [zoomLevel, setZoomLevel] = createSignal(1)
 
   let detectionTimerId: number | null = null
   let detectionStartTime = 0
   let streamStopTimeout: number | null = null
+
+  // Resize state
+  let waveformHeight = 280
+  let isResizing = false
+  let resizeStartY = 0
+  let resizeStartHeight = 0
+
+  const onResizeMouseDown = (e: MouseEvent) => {
+    isResizing = true
+    resizeStartY = e.clientY
+    resizeStartHeight = waveformHeight
+    document.addEventListener('mousemove', onResizeMouseMove)
+    document.addEventListener('mouseup', onResizeMouseUp)
+    document.body.style.cursor = 'ns-resize'
+    document.body.style.userSelect = 'none'
+  }
+
+  const onResizeMouseMove = (e: MouseEvent) => {
+    if (!isResizing) return
+    const delta = e.clientY - resizeStartY
+    waveformHeight = Math.max(150, Math.min(600, resizeStartHeight + delta))
+    const el = document.querySelector('.waveform-canvas') as HTMLElement | null
+    if (el) el.style.height = `${waveformHeight}px`
+  }
+
+  const onResizeMouseUp = () => {
+    isResizing = false
+    document.removeEventListener('mousemove', onResizeMouseMove)
+    document.removeEventListener('mouseup', onResizeMouseUp)
+    document.body.style.cursor = ''
+    document.body.style.userSelect = ''
+  }
+
+  const zoomIn = () => {
+    const steps = [1, 2, 3, 5, 8]
+    const current = zoomLevel()
+    const idx = steps.indexOf(current)
+    if (idx < steps.length - 1) setZoomLevel(steps[idx + 1]!)
+  }
+
+  const zoomOut = () => {
+    const steps = [1, 2, 3, 5, 8]
+    const current = zoomLevel()
+    const idx = steps.indexOf(current)
+    if (idx > 0) setZoomLevel(steps[idx - 1]!)
+  }
 
   // Load audio file
   const handleFileUpload = (event: Event) => {
@@ -644,13 +691,45 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
 
               {/* Waveform and Frequency Over Time */}
               <div class="waveform-display">
-                <h4>Detection Over Time</h4>
-                <div class="waveform-canvas">
-                  <PitchOverTimeCanvas
-                    samples={pitchSamples}
-                    isDetecting={isDetecting}
-                    visibleWindowSeconds={10}
-                  />
+                <div class="waveform-display-header">
+                  <h4>Detection Over Time</h4>
+                  <div class="zoom-controls">
+                    <button
+                      class="zoom-btn"
+                      onclick={zoomOut}
+                      disabled={zoomLevel() <= 1}
+                      title="Zoom out"
+                    >
+                      −
+                    </button>
+                    <span class="zoom-value">{zoomLevel()}x</span>
+                    <button
+                      class="zoom-btn"
+                      onclick={zoomIn}
+                      disabled={zoomLevel() >= 8}
+                      title="Zoom in"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+                <div class="waveform-canvas" style={{ height: `${waveformHeight}px` }}>
+                  <div class="waveform-canvas-inner">
+                    <PitchOverTimeCanvas
+                      samples={pitchSamples}
+                      isDetecting={isDetecting}
+                      visibleWindowSeconds={10}
+                      zoomLevel={zoomLevel}
+                      onZoomChange={setZoomLevel}
+                    />
+                  </div>
+                  <div class="resize-handle" onMouseDown={onResizeMouseDown}>
+                    <div class="resize-grip">
+                      <span class="grip-dash" />
+                      <span class="grip-dash" />
+                      <span class="grip-dash" />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
