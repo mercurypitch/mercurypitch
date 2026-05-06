@@ -414,7 +414,11 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     if (!progressBarRef || !duration()) return
     const rect = progressBarRef.getBoundingClientRect()
     const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
-    pauseOffset = ratio * duration()
+    seekTo(ratio * duration())
+  }
+
+  const seekTo = (time: number) => {
+    pauseOffset = Math.min(time, duration())
     setElapsed(pauseOffset)
     if (playing()) {
       disconnectSources()
@@ -423,6 +427,15 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       pitchHistory = []
       pitchDetector?.resetHistory()
     }
+  }
+
+  const handleWaveformClick = (e: MouseEvent) => {
+    const canvas = waveformCanvasRef
+    if (!canvas || !duration()) return
+    const rect = canvas.getBoundingClientRect()
+    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
+    const winStart = windowStart()
+    seekTo(winStart + ratio * windowDuration())
   }
 
   // ── Volume / Mute / Solo ─────────────────────────────────────
@@ -1147,7 +1160,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                 <svg viewBox="0 0 24 24" width="10" height="10" class="sm-drag-icon"><path fill="currentColor" d="M20 9H4v2h16V9zM4 15h16v-2H4v2z"/></svg>
                 Waveform Overview
               </div>
-              <canvas ref={waveformCanvasRef} class="sm-canvas sm-canvas-overview" />
+              <canvas ref={waveformCanvasRef} class="sm-canvas sm-canvas-overview" onClick={handleWaveformClick} />
               <div
                 class="sm-resize-handle"
                 onPointerDown={(e) => handleResizeStart('overview', e)}
@@ -1550,6 +1563,7 @@ export const StemMixerStyles: string = `
 .sm-workspace-panel {
   display: flex;
   flex-direction: column;
+  position: relative;
   background: var(--bg-primary, #0d1117);
   border-radius: 0.5rem;
   overflow: hidden;
@@ -1595,10 +1609,14 @@ export const StemMixerStyles: string = `
 }
 
 .sm-resize-handle {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
   height: 4px;
   cursor: ns-resize;
   background: transparent;
-  flex-shrink: 0;
+  z-index: 5;
   transition: background 0.15s;
 }
 .sm-resize-handle:hover {
