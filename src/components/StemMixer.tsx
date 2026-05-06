@@ -125,6 +125,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   let liveWaveCanvasRef: HTMLCanvasElement | undefined
   let progressBarRef: HTMLDivElement | undefined
   let workspaceRef: HTMLDivElement | undefined
+  let lyricsFileInputRef: HTMLInputElement | undefined
 
   // Cached canvas dimensions — updated only on resize, not every frame
   let overviewRect = { w: 0, h: 0 }
@@ -241,7 +242,43 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   }
 
   // ── Lyrics Loading ────────────────────────────────────────────
+  const LYRICS_STORE_KEY = () => `lyrics_v1_${props.sessionId}`
+
+  const persistLyrics = (text: string, format: 'txt' | 'lrc', filename: string) => {
+    try {
+      localStorage.setItem(LYRICS_STORE_KEY(), JSON.stringify({
+        text, format, filename, timestamp: Date.now(),
+      }))
+    } catch { /* storage full or unavailable */ }
+  }
+
+  const loadPersistedLyrics = (): LyricsUploadResult | null => {
+    try {
+      const raw = localStorage.getItem(LYRICS_STORE_KEY())
+      if (!raw) return null
+      const data = JSON.parse(raw)
+      if (data.text && (data.format === 'txt' || data.format === 'lrc')) {
+        return { text: data.text, format: data.format, filename: data.filename || 'saved.txt' }
+      }
+    } catch { /* corrupted data */ }
+    return null
+  }
+
   const loadLyrics = async () => {
+    // Check persisted lyrics first — no need for API call if user already uploaded
+    const persisted = loadPersistedLyrics()
+    if (persisted) {
+      if (persisted.format === 'lrc') {
+        setLrcLines(parseLrcFile(persisted.text))
+        setLyricsLines([])
+      } else {
+        setLyricsLines(parseTextLyrics(persisted.text))
+        setLrcLines([])
+      }
+      setLyricsSource('upload')
+      return
+    }
+
     const rawInput = props.songTitle || props.sessionId || ''
     const title = extractTitle(rawInput)
     if (!title || title === 'Unknown') {
@@ -266,6 +303,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   }
 
   const handleLyricsUpload = (result: LyricsUploadResult) => {
+    persistLyrics(result.text, result.format, result.filename)
     if (result.format === 'lrc') {
       setLrcLines(parseLrcFile(result.text))
       setLyricsLines([])
@@ -274,6 +312,21 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       setLrcLines([])
     }
     setLyricsSource('upload')
+  }
+
+  const handleLyricsChange = (e: Event) => {
+    const input = e.currentTarget as HTMLInputElement
+    const file = input.files?.[0]
+    if (!file) return
+    const ext = file.name.split('.').pop()?.toLowerCase()
+    if (ext !== 'txt' && ext !== 'lrc') return
+    const reader = new FileReader()
+    reader.onload = () => {
+      const text = reader.result as string
+      if (!text.trim()) return
+      handleLyricsUpload({ text, format: ext as 'txt' | 'lrc', filename: file.name })
+    }
+    reader.readAsText(file)
   }
 
   const updateCurrentLine = () => {
@@ -1378,13 +1431,30 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                 </Show>
                 <Show when={lyricsSource() === 'upload'}>
                   <span class="sm-lyrics-source sm-lyrics-source-upload">uploaded</span>
+                  <button
+                    class="sm-lyrics-change-btn"
+                    onClick={(e) => { e.stopPropagation(); lyricsFileInputRef?.click() }}
+                    title="Change lyrics file"
+                  >
+                    <svg viewBox="0 0 24 24" width="11" height="11"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                  </button>
+                  <input
+                    type="file"
+                    accept=".txt,.lrc"
+                    ref={lyricsFileInputRef}
+                    hidden
+                    onChange={handleLyricsChange}
+                  />
                 </Show>
               </div>
               <Show when={lyricsLoading()}>
                 <div class="sm-lyrics-loading">Searching...</div>
               </Show>
               <Show when={!lyricsLoading() && lyricsSource() !== 'none'}>
-                <div class="sm-lyrics-lines">
+                <div
+                  class="sm-lyrics-lines"
+                  onWheel={(e) => { e.stopPropagation() }}
+                >
                   <Show when={lrcLines().length > 0}>
                     <For each={lrcLines()}>
                       {(line, idx) => (
@@ -1392,6 +1462,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                           class={`sm-lyrics-line${idx() === currentLineIdx() ? ' sm-lyrics-line-active' : ''}`}
                           onClick={() => handleLyricLineClick(idx())}
                         >
+                          <span class="sm-lyrics-time">
+                            {formatTime(line.time)}
+                          </span>
                           {line.text}
                         </span>
                       )}
@@ -1404,6 +1477,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                           class={`sm-lyrics-line${idx() === currentLineIdx() ? ' sm-lyrics-line-active' : ''}`}
                           onClick={() => handleLyricLineClick(idx())}
                         >
+                          <span class="sm-lyrics-time">
+                            {formatTime((idx() / Math.max(1, lyricsLines().length)) * duration())}
+                          </span>
                           {line}
                         </span>
                       )}
@@ -1847,6 +1923,48 @@ export const StemMixerStyles: string = `
   color: var(--accent, #58a6ff);
   background: rgba(88, 166, 255, 0.1);
   font-weight: 500;
+}
+
+.sm-lyrics-time {
+  display: inline-block;
+  font-size: 0.55rem;
+  font-family: monospace;
+  color: var(--fg-tertiary, #484f58);
+  background: var(--bg-tertiary, #21262d);
+  padding: 0.05rem 0.3rem;
+  border-radius: 0.2rem;
+  margin-right: 0.35rem;
+  vertical-align: middle;
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+}
+
+.sm-lyrics-line-active .sm-lyrics-time {
+  color: var(--accent, #58a6ff);
+  background: rgba(88, 166, 255, 0.15);
+}
+
+.sm-lyrics-change-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  padding: 0;
+  background: transparent;
+  border: 1px solid var(--border, #30363d);
+  border-radius: 0.2rem;
+  color: var(--fg-tertiary, #484f58);
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+  margin-left: 0.15rem;
+}
+
+.sm-lyrics-change-btn:hover {
+  color: var(--accent, #58a6ff);
+  border-color: var(--accent, #58a6ff);
+  background: rgba(88, 166, 255, 0.08);
 }
 
 /* Let uploader fill remaining panel height so dropzone is fully visible */
