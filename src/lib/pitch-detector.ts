@@ -367,22 +367,59 @@ export class PitchDetector {
     }
 
     // Step 3: Absolute threshold — find first tau below threshold
+    const threshold = this.adjustedThreshold()
     let tauEstimate = -1
     for (let tau = 2; tau < halfSize; tau++) {
-      if (this.yinBuffer[tau] < this.adjustedThreshold()) {
+      if (this.yinBuffer[tau] < threshold) {
+        // Descend into the valley to find the local minimum
         while (
           tau + 1 < halfSize &&
           this.yinBuffer[tau + 1] < this.yinBuffer[tau]
         ) {
           tau++
         }
-        tauEstimate = tau
-        break
+        // Also skip past any flat bottom
+        while (
+          tau + 1 < halfSize &&
+          this.yinBuffer[tau + 1] === this.yinBuffer[tau]
+        ) {
+          tau++
+        }
+        // Verify local minimum: neighbors should be >= current value
+        const isMinimum =
+          (tau <= 2 || this.yinBuffer[tau - 1] >= this.yinBuffer[tau]) &&
+          (tau + 1 >= halfSize ||
+            this.yinBuffer[tau + 1] >= this.yinBuffer[tau])
+        if (isMinimum) {
+          tauEstimate = tau
+          break
+        }
+        // Not a true minimum — keep scanning
       }
     }
 
     if (tauEstimate === -1) {
       return { frequency: 0, confidence: 0 }
+    }
+
+    // Octave error correction: check if tau/2 (one octave up) is also a
+    // valid period candidate. If the higher-octave dip is below threshold
+    // and comparable in depth, prefer it — this avoids sub-harmonic errors
+    // where YIN locks onto 2× the actual period.
+    const octaveTau = Math.round(tauEstimate / 2)
+    if (
+      octaveTau >= 2 &&
+      this.yinBuffer[octaveTau] < threshold * 1.5 &&
+      this.yinBuffer[octaveTau] < this.yinBuffer[tauEstimate] * 1.8
+    ) {
+      // Verify it's a local minimum
+      const isOctaveMin =
+        this.yinBuffer[octaveTau - 1] >= this.yinBuffer[octaveTau] &&
+        (octaveTau + 1 >= halfSize ||
+          this.yinBuffer[octaveTau + 1] >= this.yinBuffer[octaveTau])
+      if (isOctaveMin) {
+        tauEstimate = octaveTau
+      }
     }
 
     // Step 4: Parabolic interpolation for sub-sample accuracy
@@ -396,6 +433,9 @@ export class PitchDetector {
 
     // Step 5: Multi-stage stability check
     const stableFreq = this.applyStabilityFilter(frequency)
+    // Confidence: depth of the dip at the winning tau. A value near 0
+    // means a very deep dip (high confidence); near 1 means barely below
+    // threshold (low confidence).
     const confidence = 1 - this.yinBuffer[tauEstimate]
 
     return { frequency: stableFreq, confidence }
