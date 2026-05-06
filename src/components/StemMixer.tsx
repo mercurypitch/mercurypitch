@@ -74,6 +74,12 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   const [wordTimings, setWordTimings] = createSignal<WordTimingsMap>({})
   // Unsaved edit buffer — merged into wordTimings on save
   const [editBuffer, setEditBuffer] = createSignal<WordTimingsMap>({})
+  // LRC generator mode — real-time word/line timing via playback
+  const [lrcGenMode, setLrcGenMode] = createSignal(false)
+  const [lrcGenLineIdx, setLrcGenLineIdx] = createSignal(0)
+  const [lrcGenWordIdx, setLrcGenWordIdx] = createSignal(0)
+  const [lrcGenLineTimes, setLrcGenLineTimes] = createSignal<number[]>([])
+  const [lrcGenWordTimings, setLrcGenWordTimings] = createSignal<WordTimingsMap>({})
   const [windowDuration, setWindowDuration] = createSignal(30) // seconds, range 10-150
   const [windowStart, setWindowStart] = createSignal(0)
 
@@ -586,6 +592,138 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     setLyricsLines([])
     setEditMode(false)
     setEditBuffer({})
+  }
+
+  // ── LRC Generator mode ──────────────────────────────────────────
+  const getGenLines = (): string[] => {
+    if (lrcLines().length > 0) return lrcLines().map(l => l.text)
+    return lyricsLines()
+  }
+
+  const startLrcGen = () => {
+    const lines = getGenLines()
+    if (lines.length === 0) return
+    // If entering from edit mode, carry over the edit buffer as starting timings
+    const eb = editBuffer()
+    if (Object.keys(eb).length > 0) {
+      setLrcGenLineTimes(Object.keys(eb).map(k => eb[+k][0] ?? 0).slice(0, lines.length))
+      setLrcGenWordTimings(structuredClone(eb))
+    } else if (Object.keys(wordTimings()).length > 0) {
+      const wt = wordTimings()
+      setLrcGenLineTimes(Object.keys(wt).map(k => wt[+k][0] ?? 0).slice(0, lines.length))
+      setLrcGenWordTimings(structuredClone(wt))
+    } else {
+      setLrcGenLineTimes([])
+      setLrcGenWordTimings({})
+    }
+    setLrcGenLineIdx(0)
+    setLrcGenWordIdx(0)
+    setEditMode(false)
+    setLrcGenMode(true)
+  }
+
+  const handleNextLine = () => {
+    const t = Math.round(elapsed() * 1000) / 1000
+    const lines = getGenLines()
+    const idx = lrcGenLineIdx()
+    if (idx >= lines.length) return
+
+    // Record line start time
+    setLrcGenLineTimes(prev => {
+      const next = [...prev]
+      next[idx] = t
+      return next
+    })
+
+    // Auto-fill remaining words in current line if any word-level timings exist
+    const currentLine = lines[idx]
+    const words = currentLine.split(/\s+/).filter(w => w.length > 0)
+    if (words.length > 0 && lrcGenWordIdx() > 0) {
+      // Fill remaining words with estimated times based on last word time
+      const lastWordTime = lrcGenWordTimings()[idx]?.[lrcGenWordIdx() - 1] ?? t
+      const remain = words.length - lrcGenWordIdx()
+      if (remain > 0) {
+        setLrcGenWordTimings(prev => {
+          const next = { ...prev }
+          next[idx] = [...(next[idx] || [])]
+          for (let w = lrcGenWordIdx(); w < words.length; w++) {
+            next[idx][w] = Math.round((lastWordTime + (w - lrcGenWordIdx() + 1) * 0.25) * 1000) / 1000
+          }
+          return next
+        })
+      }
+    }
+
+    // Advance to next line
+    setLrcGenLineIdx(idx + 1)
+    setLrcGenWordIdx(0)
+  }
+
+  const handleNextWord = () => {
+    const t = Math.round(elapsed() * 1000) / 1000
+    const lines = getGenLines()
+    const lineIdx = lrcGenLineIdx()
+    if (lineIdx >= lines.length) return
+
+    const words = lines[lineIdx].split(/\s+/).filter(w => w.length > 0)
+    const wordIdx = lrcGenWordIdx()
+
+    // If this is the first word of the line, also record the line start time
+    if (wordIdx === 0) {
+      setLrcGenLineTimes(prev => {
+        const next = [...prev]
+        next[lineIdx] = t
+        return next
+      })
+    }
+
+    // Record word start time
+    setLrcGenWordTimings(prev => {
+      const next: WordTimingsMap = {}
+      for (const k of Object.keys(prev)) next[+k] = [...prev[+k]]
+      if (!next[lineIdx]) next[lineIdx] = []
+      const arr = [...next[lineIdx]]
+      arr[wordIdx] = t
+      next[lineIdx] = arr
+      return next
+    })
+
+    // Advance word cursor; auto-advance line if at end of words
+    if (wordIdx + 1 >= words.length) {
+      setLrcGenLineIdx(lineIdx + 1)
+      setLrcGenWordIdx(0)
+    } else {
+      setLrcGenWordIdx(wordIdx + 1)
+    }
+  }
+
+  const handleLrcGenFinish = () => {
+    const lines = getGenLines()
+    const lineTimes = lrcGenLineTimes()
+    const wordTimes = lrcGenWordTimings()
+
+    // Build clean LRC text
+    const lrcText = lines.map((line, i) => {
+      if (!line.trim()) return ''
+      const lt = lineTimes[i]
+      if (lt === undefined) return line // untimed line
+      return `[${formatTimeLrcWord(lt)}] ${line}`
+    }).join('\n')
+
+    const filename = loadPersistedLyrics()?.filename || 'generated.lrc'
+    persistLyrics(lrcText, 'lrc', filename, wordTimes)
+    const parsed = parseLrcFile(lrcText)
+    setLrcLines(parsed)
+    setLyricsLines([])
+    setWordTimings(wordTimes)
+    setLrcGenMode(false)
+  }
+
+  const handleLrcGenReset = () => {
+    setLrcGenLineIdx(0)
+    setLrcGenWordIdx(0)
+    setLrcGenLineTimes([])
+    setLrcGenWordTimings({})
   }
 
   // ── Create Source Nodes ──────────────────────────────────────
@@ -1689,6 +1827,18 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                     <svg viewBox="0 0 24 24" width="11" height="11"><path fill="currentColor" d="M16.474 5.408l2.118 2.117-10.8 10.8-2.544.426.426-2.544 10.8-10.8zM13.296 2.38l1.414 1.414-1.908 1.908-1.414-1.414L13.296 2.38zM3.5 20.5h3l9.9-9.9-3-3L3.5 17.5v3z"/></svg>
                   </button>
                 </Show>
+                <Show when={lyricsSource() !== 'none' && !editMode() && !lrcGenMode()}>
+                  <button
+                    class="sm-lyrics-gen-btn"
+                    onClick={(e) => { e.stopPropagation(); startLrcGen() }}
+                    title="Generate LRC timings with playback"
+                  >
+                    <svg viewBox="0 0 24 24" width="11" height="11"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                  </button>
+                </Show>
+                <Show when={lrcGenMode()}>
+                  <span class="sm-lyrics-gen-label">LRC Gen</span>
+                </Show>
                 <div class="sm-lyrics-toolbar">
                   <div class="sm-lyrics-zoom">
                     <button
@@ -1726,6 +1876,89 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                 <div class="sm-lyrics-loading">Searching...</div>
               </Show>
               <Show when={!lyricsLoading() && lyricsSource() !== 'none'}>
+                {/* ── LRC Generator toolbar ─────────────────────── */}
+                <Show when={lrcGenMode()}>
+                  <div class="sm-lyrics-gen-toolbar">
+                    <Show when={!playing()}>
+                      <button class="sm-lyrics-gen-play-btn" onClick={handlePlay} title="Play">
+                        <svg viewBox="0 0 24 24" width="12" height="12"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>
+                      </button>
+                    </Show>
+                    <Show when={playing()}>
+                      <button class="sm-lyrics-gen-pause-btn" onClick={handlePause} title="Pause">
+                        <svg viewBox="0 0 24 24" width="12" height="12"><path fill="currentColor" d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                      </button>
+                    </Show>
+                    <span class="sm-lyrics-gen-progress">
+                      {lrcGenLineIdx()}/{getGenLines().length}
+                      {getGenLines()[lrcGenLineIdx()] && <> w{lrcGenWordIdx()}/{getGenLines()[lrcGenLineIdx()].split(/\s+/).filter(w => w.length > 0).length}</>}
+                    </span>
+                    <button class="sm-lyrics-gen-nextword-btn" onClick={handleNextWord} title="Mark next word time [W]">
+                      Next Word
+                    </button>
+                    <button class="sm-lyrics-gen-nextline-btn" onClick={handleNextLine} title="Mark next line time [L]">
+                      Next Line
+                    </button>
+                    <button class="sm-lyrics-gen-finish-btn" onClick={handleLrcGenFinish} title="Save LRC">Finish</button>
+                    <button class="sm-lyrics-gen-reset-btn" onClick={handleLrcGenReset} title="Reset all timings">Reset</button>
+                  </div>
+                </Show>
+
+                {/* ── LRC Generator view ────────────────────────── */}
+                <Show when={lrcGenMode()}>
+                  <div class="sm-lyrics-lines sm-lyrics-gen-lines"
+                    style={{ 'font-size': `${lyricsFontSize()}rem` }}
+                    onWheel={(e) => {
+                      e.stopPropagation()
+                      if (e.ctrlKey || e.metaKey) {
+                        e.preventDefault()
+                        setLyricsFontSize(prev =>
+                          Math.min(1.5, Math.max(0.45, +(prev - e.deltaY * 0.001).toFixed(2)))
+                        )
+                      }
+                    }}
+                  >
+                    <For each={getGenLines()}>
+                      {(line, lineIdx) => {
+                        const li = lineIdx()
+                        const words = line.split(/\s+/).filter(w => w.length > 0)
+                        const genLine = lrcGenLineIdx()
+                        const genWord = lrcGenWordIdx()
+                        const lineTime = lrcGenLineTimes()[li]
+                        const wordTimes = lrcGenWordTimings()[li]
+                        return (
+                          <div
+                            class={`sm-lyrics-gen-line${li === genLine ? ' sm-lyrics-gen-line-current' : ''}${li < genLine ? ' sm-lyrics-gen-line-done' : ''}${li > genLine ? ' sm-lyrics-gen-line-future' : ''}`}
+                          >
+                            <span class="sm-lyrics-gen-line-time">
+                              {lineTime !== undefined ? formatTimeMs(lineTime) : '--:--.-'}
+                            </span>
+                            <span class="sm-lyrics-gen-line-text">
+                              {words.length === 0
+                                ? line
+                                : words.map((word, wi) => (
+                                    <span
+                                      class={`sm-lyrics-gen-word${
+                                        li === genLine && wi === genWord ? ' sm-lyrics-gen-word-current' : ''
+                                      }${
+                                        li === genLine && wi < genWord ? ' sm-lyrics-gen-word-done' : ''
+                                      }`}
+                                    >
+                                      <span class="sm-lyrics-gen-word-time">
+                                        {wordTimes?.[wi] !== undefined ? formatTimeMs(wordTimes[wi]) : ''}
+                                      </span>
+                                      <span class="sm-lyrics-gen-word-text">{word}</span>
+                                    </span>
+                                  ))
+                              }
+                            </span>
+                          </div>
+                        )
+                      }}
+                    </For>
+                  </div>
+                </Show>
+
                 {/* ── Edit mode toolbar ────────────────────────── */}
                 <Show when={editMode()}>
                   <div class="sm-lyrics-edit-toolbar">
@@ -1783,7 +2016,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                 </Show>
 
                 {/* ── Normal view ──────────────────────────────── */}
-                <Show when={!editMode()}>
+                <Show when={!editMode() && !lrcGenMode()}>
                   <div
                     class="sm-lyrics-lines"
                     classList={{ 'sm-lyrics-columns-2': lyricsColumns() === 2 }}
@@ -2537,6 +2770,256 @@ export const StemMixerStyles: string = `
   outline: none;
   border-color: var(--accent, #58a6ff);
   color: var(--fg-primary, #c9d1d9);
+}
+
+/* ── LRC Generator mode ─────────────────────────────────── */
+
+.sm-lyrics-gen-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.2rem;
+  height: 1.15rem;
+  padding: 0;
+  background: transparent;
+  border: 1px solid var(--border, #30363d);
+  border-radius: 0.2rem;
+  color: var(--fg-tertiary, #484f58);
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+  margin-left: 0.15rem;
+}
+
+.sm-lyrics-gen-btn:hover {
+  color: var(--ok-green, #3fb950);
+  border-color: var(--ok-green, #3fb950);
+  background: rgba(63, 185, 80, 0.08);
+}
+
+.sm-lyrics-gen-label {
+  font-size: 0.5rem;
+  font-weight: 600;
+  color: var(--ok-green, #3fb950);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-left: 0.35rem;
+}
+
+.sm-lyrics-gen-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.4rem;
+  border-bottom: 1px solid var(--border, #30363d);
+  flex-wrap: wrap;
+}
+
+.sm-lyrics-gen-play-btn,
+.sm-lyrics-gen-pause-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.3rem;
+  padding: 0;
+  background: var(--accent, #58a6ff);
+  color: var(--bg-primary, #0d1117);
+  border: none;
+  border-radius: 0.2rem;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  flex-shrink: 0;
+}
+
+.sm-lyrics-gen-play-btn:hover,
+.sm-lyrics-gen-pause-btn:hover {
+  opacity: 0.85;
+}
+
+.sm-lyrics-gen-progress {
+  font-size: 0.55rem;
+  font-family: monospace;
+  color: var(--fg-secondary, #8b949e);
+  margin: 0 0.2rem;
+  flex-shrink: 0;
+}
+
+.sm-lyrics-gen-nextword-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.4rem;
+  height: 1.25rem;
+  font-size: 0.52rem;
+  font-weight: 600;
+  font-family: inherit;
+  background: var(--accent, #58a6ff);
+  color: var(--bg-primary, #0d1117);
+  border: none;
+  border-radius: 0.2rem;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.sm-lyrics-gen-nextword-btn:hover {
+  opacity: 0.85;
+}
+
+.sm-lyrics-gen-nextline-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.4rem;
+  height: 1.25rem;
+  font-size: 0.52rem;
+  font-weight: 600;
+  font-family: inherit;
+  background: var(--bg-tertiary, #21262d);
+  color: var(--fg-secondary, #8b949e);
+  border: 1px solid var(--border, #30363d);
+  border-radius: 0.2rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.sm-lyrics-gen-nextline-btn:hover {
+  color: var(--fg-primary, #c9d1d9);
+  border-color: var(--fg-tertiary, #484f58);
+}
+
+.sm-lyrics-gen-finish-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.4rem;
+  height: 1.25rem;
+  font-size: 0.52rem;
+  font-weight: 600;
+  font-family: inherit;
+  background: var(--ok-green, #3fb950);
+  color: var(--bg-primary, #0d1117);
+  border: none;
+  border-radius: 0.2rem;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  margin-left: auto;
+}
+
+.sm-lyrics-gen-finish-btn:hover {
+  opacity: 0.85;
+}
+
+.sm-lyrics-gen-reset-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.4rem;
+  height: 1.25rem;
+  font-size: 0.52rem;
+  font-weight: 500;
+  font-family: inherit;
+  background: transparent;
+  color: var(--fg-tertiary, #484f58);
+  border: 1px solid var(--border, #30363d);
+  border-radius: 0.2rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.sm-lyrics-gen-reset-btn:hover {
+  color: var(--error-red, #f85149);
+  border-color: var(--error-red, #f85149);
+}
+
+.sm-lyrics-gen-lines {
+  display: flex;
+  flex-direction: column;
+}
+
+.sm-lyrics-gen-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.3rem;
+  padding: 0.15rem 0.3rem;
+  border-bottom: 1px solid transparent;
+  transition: background 0.2s;
+}
+
+.sm-lyrics-gen-line-done {
+  color: var(--fg-secondary, #8b949e);
+}
+
+.sm-lyrics-gen-line-current {
+  background: rgba(63, 185, 80, 0.12);
+  border-bottom-color: var(--ok-green, #3fb950);
+  color: var(--fg-primary, #c9d1d9);
+}
+
+.sm-lyrics-gen-line-future {
+  color: var(--fg-tertiary, #484f58);
+}
+
+.sm-lyrics-gen-line-time {
+  display: inline-block;
+  font-size: 0.5rem;
+  font-family: monospace;
+  color: var(--fg-tertiary, #484f58);
+  background: var(--bg-tertiary, #21262d);
+  padding: 0.05rem 0.25rem;
+  border-radius: 0.15rem;
+  flex-shrink: 0;
+  min-width: 2.8rem;
+  text-align: center;
+}
+
+.sm-lyrics-gen-line-current .sm-lyrics-gen-line-time {
+  color: var(--ok-green, #3fb950);
+  background: rgba(63, 185, 80, 0.12);
+}
+
+.sm-lyrics-gen-line-text {
+  line-height: 1.4;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 0.3rem;
+}
+
+.sm-lyrics-gen-word {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+
+.sm-lyrics-gen-word-time {
+  font-size: 0.4rem;
+  font-family: monospace;
+  color: var(--fg-tertiary, #484f58);
+  min-height: 0.6rem;
+}
+
+.sm-lyrics-gen-word-done .sm-lyrics-gen-word-time {
+  color: var(--accent, #58a6ff);
+}
+
+.sm-lyrics-gen-word-current .sm-lyrics-gen-word-time {
+  color: var(--ok-green, #3fb950);
+}
+
+.sm-lyrics-gen-word-text {
+  font-size: inherit;
+}
+
+.sm-lyrics-gen-word-current .sm-lyrics-gen-word-text {
+  color: var(--ok-green, #3fb950);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.sm-lyrics-gen-word-done .sm-lyrics-gen-word-text {
+  color: var(--fg-secondary, #8b949e);
 }
 
 /* Let uploader fill remaining panel height so dropzone is fully visible */
