@@ -125,6 +125,14 @@ export class FFTDetector implements IPitchDetector {
     return this.metrics.lastResult?.computationTime ?? 0
   }
 
+  setSensitivity(_value: number): void {
+    // FFT has no sensitivity concept; no-op
+  }
+
+  setMinConfidence(value: number): void {
+    this.settings.minConfidence = Math.max(0, Math.min(1, value))
+  }
+
   // Naive FFT implementation for demonstration
   // In production, use Web Audio API's AnalyserNode
   private computeFFT(input: Float32Array, output: Float32Array): void {

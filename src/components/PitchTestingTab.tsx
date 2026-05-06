@@ -16,47 +16,43 @@ interface PitchTestingTabProps {
 
 type DetectionMode = 'mic' | 'file' | 'generate'
 
-// Helper function to compute error items - create outside component to avoid reactivity
-function computeErrorItems(errors: number[]) {
-  const testFreqs = [
-    65.41, 73.42, 82.41, 87.31, 98.0, 110.0, 130.81, 146.83, 164.81, 196.0,
-    220.0, 261.63, 293.66, 329.63, 392.0, 440.0, 523.25, 587.33, 659.25, 783.99,
-    880.0, 1046.5,
-  ]
-  const noteNames = [
-    'C3',
-    'C#3',
-    'D3',
-    'D#3',
-    'E3',
-    'F3',
-    'F#3',
-    'G3',
-    'G#3',
-    'A3',
-    'A#3',
-    'B3',
-    'C4',
-    'C#4',
-    'D4',
-    'D#4',
-    'E4',
-    'F4',
-    'F#4',
-    'G4',
-    'G#4',
-    'A4',
-    'A#4',
-  ]
+interface TestNoteResult {
+  noteName: string
+  targetFreq: number
+  passed: boolean
+  detectedFreq: number | null
+}
 
-  const items: { idx: number; freq: number; noteName: string }[] = []
-  for (let i = 0; i < errors.length && i < 20; i++) {
-    const idx = errors[i]
-    const freq = testFreqs[idx] ?? 440
-    const noteName = noteNames[idx] ?? 'Unknown'
-    items.push({ idx, freq, noteName })
-  }
-  return items
+const TEST_FREQUENCIES = [
+  65.41, 73.42, 82.41, 87.31, 98.0, 110.0, 130.81, 146.83, 164.81, 196.0,
+  220.0, 261.63, 293.66, 329.63, 392.0, 440.0, 523.25, 587.33, 659.25,
+  783.99, 880.0, 1046.5,
+]
+
+const TEST_NOTE_NAMES = [
+  'C2', 'D2', 'E2', 'F2', 'G2', 'A2',
+  'C3', 'D3', 'E3', 'G3', 'A3',
+  'C4', 'D4', 'E4', 'G4', 'A4',
+  'C5', 'D5', 'E5', 'G5', 'A5', 'C6',
+]
+
+// Log-scale frequency slider helpers
+const FREQ_SLIDER_MIN = 65
+const FREQ_SLIDER_MAX = 2100
+const FREQ_LOG_RATIO = Math.log2(FREQ_SLIDER_MAX / FREQ_SLIDER_MIN)
+const FREQ_SLIDER_STEPS = 1000
+
+function freqToSliderVal(freq: number): number {
+  return Math.round(
+    (Math.log2(freq / FREQ_SLIDER_MIN) / FREQ_LOG_RATIO) * FREQ_SLIDER_STEPS,
+  )
+}
+
+function sliderValToFreq(val: number): number {
+  return Math.round(
+    FREQ_SLIDER_MIN *
+      Math.pow(2, (val / FREQ_SLIDER_STEPS) * FREQ_LOG_RATIO),
+  )
 }
 
 export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
@@ -110,11 +106,14 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
     passed: number
     failed: number
     errors: number[]
-  }>({ passed: 0, failed: 0, errors: [] })
+    noteResults: TestNoteResult[]
+  }>({ passed: 0, failed: 0, errors: [], noteResults: [] })
 
   // UI state
   const [isRunningTest, setIsRunningTest] = createSignal(false)
   const [zoomLevel, setZoomLevel] = createSignal(1)
+  const [sensitivity, setSensitivity] = createSignal(7)
+  const [minConfidence, setMinConfidence] = createSignal(0.3)
 
   let detectionTimerId: number | null = null
   let detectionStartTime = 0
@@ -387,18 +386,11 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
   // Run automated test
   const runTest = () => {
     setIsRunningTest(true)
-    setTestResults({ passed: 0, failed: 0, errors: [] })
+    setTestResults({ passed: 0, failed: 0, errors: [], noteResults: [] })
 
     // Stop any ongoing detection modes (mic, file, generate)
     stopLiveDetection()
     setIsMicStartedByUser(false)
-
-    // Test frequencies from MIDI 40-100 (C3-A6)
-    const testFrequencies = [
-      65.41, 73.42, 82.41, 87.31, 98.0, 110.0, 130.81, 146.83, 164.81, 196.0,
-      220.0, 261.63, 293.66, 329.63, 392.0, 440.0, 523.25, 587.33, 659.25,
-      783.99, 880.0, 1046.5,
-    ]
 
     const detector = detectors().find(
       (d) => d.algorithm === selectedAlgorithm(),
@@ -410,11 +402,11 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
 
     const errors: number[] = []
     let passed = 0
+    const noteResults: TestNoteResult[] = []
 
-    testFrequencies.forEach((freq, index) => {
-      // Small delay between tests
+    TEST_FREQUENCIES.forEach((freq, index) => {
       setTimeout(() => {
-        const wave = new Float32Array(44100 * 0.5) // Generate same duration for all
+        const wave = new Float32Array(44100 * 0.5)
         for (let i = 0; i < wave.length; i++) {
           const t = i / 44100
           const amplitude = t < 0.01 ? t / 0.01 : 1
@@ -423,21 +415,34 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
 
         const result = detector.detect(wave)
 
-        if (
+        const detectedFreq = result?.frequency ?? null
+        const isPass =
           result !== null &&
           result !== undefined &&
           Math.abs(result.frequency - freq) < 5
-        ) {
+
+        if (isPass) {
           passed++
         } else {
           errors.push(index)
         }
 
-        const totalPassed = passed + errors.length
-        const newFailed = errors.length
-        setTestResults({ passed: totalPassed, failed: newFailed, errors })
+        noteResults.push({
+          noteName: TEST_NOTE_NAMES[index] ?? '?',
+          targetFreq: freq,
+          passed: isPass,
+          detectedFreq,
+        })
 
-        if (errors.length === testFrequencies.length) {
+        const newFailed = errors.length
+        setTestResults({
+          passed,
+          failed: newFailed,
+          errors,
+          noteResults: [...noteResults],
+        })
+
+        if (passed + newFailed === TEST_FREQUENCIES.length) {
           setIsRunningTest(false)
         }
       }, index * 100)
@@ -450,7 +455,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
     detectors().forEach((d) => d.reset())
     setLiveResults([])
     setPitchSamples([])
-    setTestResults({ passed: 0, failed: 0, errors: [] })
+    setTestResults({ passed: 0, failed: 0, errors: [], noteResults: [] })
     setTotalDetections(0)
     setAvgClarity(0)
     setAvgErrorHz(0)
@@ -514,6 +519,57 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
               <option value="autocorr">Autocorrelation</option>
               <option value="fft">FFT Max Bin</option>
             </select>
+          </div>
+
+          <div class="control-group">
+            <label>
+              Sensitivity <span class="slider-value-badge">{sensitivity()}</span>
+            </label>
+            <input
+              type="range"
+              class="sensitivity-slider"
+              min="1"
+              max="10"
+              step="1"
+              value={sensitivity()}
+              disabled={isRunningTest()}
+              onInput={(e) => {
+                const val = Number(e.currentTarget.value)
+                setSensitivity(val)
+                const d = detectorForAlgorithm()
+                if (d) d.setSensitivity(val)
+              }}
+            />
+            <div class="slider-range-labels">
+              <span>1</span>
+              <span>10</span>
+            </div>
+          </div>
+
+          <div class="control-group">
+            <label>
+              Min Confidence{' '}
+              <span class="slider-value-badge">{minConfidence().toFixed(1)}</span>
+            </label>
+            <input
+              type="range"
+              class="confidence-slider"
+              min="0.3"
+              max="0.9"
+              step="0.1"
+              value={minConfidence()}
+              disabled={isRunningTest()}
+              onInput={(e) => {
+                const val = Number(e.currentTarget.value)
+                setMinConfidence(val)
+                const d = detectorForAlgorithm()
+                if (d) d.setMinConfidence(val)
+              }}
+            />
+            <div class="slider-range-labels">
+              <span>0.3</span>
+              <span>0.9</span>
+            </div>
           </div>
 
           <div class="control-group">
@@ -607,6 +663,17 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
               value={frequency()}
               onChange={(e) => setFrequency(Number(e.currentTarget.value))}
               step="0.01"
+            />
+            <input
+              type="range"
+              class="freq-slider"
+              min="0"
+              max={FREQ_SLIDER_STEPS}
+              value={freqToSliderVal(frequency())}
+              disabled={isRunningTest()}
+              onInput={(e) => {
+                setFrequency(sliderValToFreq(Number(e.currentTarget.value)))
+              }}
             />
             <span class="control-hint">{frequency()} Hz</span>
           </div>
@@ -738,67 +805,99 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
           </Show>
 
           {/* Test Results Display */}
-          {testResults().errors.length === 0 || isRunningTest() ? (
+          <Show when={testResults().noteResults.length > 0 || isRunningTest()}>
             <div class="results-panel">
               <h3>Test Results</h3>
-              <div class="test-metrics">
-                <div class="metric-row">
-                  <span>Total Tests</span>
-                  <span>{testResults().passed + testResults().failed}</span>
+
+              <Show when={isRunningTest()}>
+                <p class="test-running-hint">
+                  Running benchmark on {TEST_FREQUENCIES.length} notes with{' '}
+                  {currentDetector()?.getName() ?? selectedAlgorithm()}...
+                </p>
+              </Show>
+
+              <Show when={!isRunningTest() && testResults().noteResults.length > 0}>
+                <p class="test-description">
+                  {TEST_FREQUENCIES.length} pentatonic notes from C2 (65.41 Hz)
+                  to C6 (1046.5 Hz), tested with{' '}
+                  {currentDetector()?.getName() ?? selectedAlgorithm()}. Pass =
+                  detected within &plusmn;5 Hz of target.
+                </p>
+              </Show>
+
+              <div class="test-summary-bar">
+                <div class="test-summary-item">
+                  <span class="test-summary-label">Total</span>
+                  <span class="test-summary-value">
+                    {testResults().passed + testResults().failed}
+                  </span>
                 </div>
-                <div class="metric-row passed">
-                  <span>Passed</span>
-                  <span>{testResults().passed}</span>
+                <div class="test-summary-item passed">
+                  <span class="test-summary-label">Passed</span>
+                  <span class="test-summary-value">{testResults().passed}</span>
                 </div>
-                <div class="metric-row failed">
-                  <span>Failed</span>
-                  <span>{testResults().failed}</span>
+                <div class="test-summary-item failed">
+                  <span class="test-summary-label">Failed</span>
+                  <span class="test-summary-value">{testResults().failed}</span>
                 </div>
-                {testResults().passed > 0 && (
-                  <div class="metric-row result">
-                    <span>Success Rate</span>
-                    <span>
+                <Show when={testResults().passed + testResults().failed > 0}>
+                  <div class="test-summary-item rate">
+                    <span class="test-summary-label">Rate</span>
+                    <span class="test-summary-value">
                       {(
                         (testResults().passed /
                           (testResults().passed + testResults().failed)) *
                         100
-                      ).toFixed(1)}
-                      %
+                      ).toFixed(1)}%
                     </span>
                   </div>
-                )}
+                </Show>
               </div>
-            </div>
-          ) : (
-            <div class="results-panel">
-              <h3>Test Results</h3>
-              <div class="error-list">
-                <p>Failed at test indexes:</p>
-                <div class="error-grid">
-                  <Show
-                    when={computeErrorItems(testResults().errors).length > 0}
-                  >
-                    <For each={computeErrorItems(testResults().errors)}>
-                      {(item: {
-                        idx: number
-                        freq: number
-                        noteName: string
-                      }) => (
-                        <div class="error-item">
-                          {item.noteName} ({item.freq.toFixed(2)} Hz)
-                        </div>
-                      )}
-                    </For>
-                  </Show>
-                  {testResults().errors.length > 20 && (
-                    <div class="error-item">
-                      ... and {testResults().errors.length - 20} more
-                    </div>
-                  )}
+
+              <Show when={testResults().noteResults.length > 0}>
+                <div class="test-table-scroll">
+                  <table class="test-results-table">
+                    <thead>
+                      <tr>
+                        <th>Note</th>
+                        <th>Target (Hz)</th>
+                        <th>Result</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <For each={testResults().noteResults}>
+                        {(nr) => (
+                          <tr
+                            classList={{
+                              'row-pass': nr.passed,
+                              'row-fail': !nr.passed,
+                            }}
+                          >
+                            <td class="test-note-name">{nr.noteName}</td>
+                            <td class="test-note-freq">
+                              {nr.targetFreq.toFixed(2)}
+                            </td>
+                            <td class="test-note-result">
+                              <Show when={nr.passed}>
+                                <span class="result-badge pass">Pass</span>
+                              </Show>
+                              <Show when={!nr.passed}>
+                                <span class="result-badge fail">
+                                  {nr.detectedFreq !== null
+                                    ? `${nr.detectedFreq.toFixed(1)} Hz`
+                                    : 'No detection'}
+                                </span>
+                              </Show>
+                            </td>
+                          </tr>
+                        )}
+                      </For>
+                    </tbody>
+                  </table>
                 </div>
-              </div>
+              </Show>
             </div>
-          )}
+          </Show>
 
           {/* Algorithm Info */}
           {currentDetector() !== undefined && (

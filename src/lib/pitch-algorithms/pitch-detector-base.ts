@@ -31,6 +31,12 @@ export interface IPitchDetector {
 
   /** Get computation time of last detection (ms) */
   getLastComputationTime(): number
+
+  /** Set sensitivity (1-10). Higher = more sensitive. Only YIN uses this meaningfully. */
+  setSensitivity(value: number): void
+
+  /** Set minimum confidence threshold (0-1). Detections below this are rejected. */
+  setMinConfidence(value: number): void
 }
 
 export interface DetectorSettings {

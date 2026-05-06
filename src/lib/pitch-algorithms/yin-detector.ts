@@ -114,6 +114,14 @@ export class YINDetector implements IPitchDetector {
     return this.metrics.lastResult?.computationTime ?? 0
   }
 
+  setSensitivity(value: number): void {
+    this.yinDetector.setSensitivity(value)
+  }
+
+  setMinConfidence(value: number): void {
+    this.yinDetector.setMinConfidence(value)
+  }
+
   private normalizeSettings(
     options: DetectorSettings,
   ): Required<PitchDetectorOptions> {

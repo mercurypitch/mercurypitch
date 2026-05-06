@@ -101,6 +101,14 @@ export class AutocorrelatorDetector implements IPitchDetector {
     return this.metrics.lastResult?.computationTime ?? 0
   }
 
+  setSensitivity(_value: number): void {
+    // Autocorrelation has no sensitivity concept; no-op
+  }
+
+  setMinConfidence(value: number): void {
+    this.settings.minConfidence = Math.max(0, Math.min(1, value))
+  }
+
   private detectWithAutocorrelation(data: Float32Array): {
     frequency: number
     clarity: number

@@ -10762,3 +10762,218 @@ input:checked + .settings-slider:before {
 .close-btn:hover {
   color: var(--text-primary);
 }
+
+/* ── Pitch Test: Sensitivity & Confidence Sliders ── */
+
+.pitch-testing-controls input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--bg-tertiary);
+  outline: none;
+  margin: 4px 0;
+}
+
+.pitch-testing-controls input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  border: 2px solid var(--bg-card);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  transition: transform 0.1s ease;
+}
+
+.pitch-testing-controls input[type='range']::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+
+.pitch-testing-controls input[type='range']:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pitch-testing-controls input[type='range']:disabled::-webkit-slider-thumb {
+  cursor: not-allowed;
+}
+
+.slider-value-badge {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: white;
+  vertical-align: middle;
+}
+
+.slider-range-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  margin-top: -2px;
+}
+
+/* ── Pitch Test: Frequency Slider ── */
+
+.pitch-testing-controls .freq-slider {
+  margin-top: 6px;
+}
+
+/* ── Pitch Test: Results Table ── */
+
+.test-running-hint {
+  font-size: 0.72rem;
+  color: var(--accent);
+  margin: 0 0 10px 0;
+  font-style: italic;
+}
+
+.test-description {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  margin: 0 0 10px 0;
+  line-height: 1.4;
+}
+
+.test-summary-bar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.test-summary-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 14px;
+  border-radius: 6px;
+  background: var(--bg-tertiary);
+  min-width: 56px;
+}
+
+.test-summary-item.passed {
+  background: var(--green-dim);
+}
+
+.test-summary-item.failed {
+  background: var(--red-dim);
+}
+
+.test-summary-item.rate {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+}
+
+.test-summary-label {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  margin-bottom: 1px;
+}
+
+.test-summary-value {
+  font-size: 0.9rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+.test-summary-item.passed .test-summary-value {
+  color: var(--green);
+}
+
+.test-summary-item.failed .test-summary-value {
+  color: var(--red);
+}
+
+.test-table-scroll {
+  max-height: 360px;
+  overflow-y: auto;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+
+.test-results-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.72rem;
+}
+
+.test-results-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.test-results-table th {
+  padding: 7px 10px;
+  text-align: left;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border);
+}
+
+.test-results-table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.test-results-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.test-results-table .row-pass {
+  background: transparent;
+}
+
+.test-results-table .row-fail {
+  background: rgba(248, 81, 73, 0.06);
+}
+
+.test-note-name {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+.test-note-freq {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+.test-note-result {
+  text-align: right;
+}
+
+.result-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.result-badge.pass {
+  background: var(--green-dim);
+  color: var(--green);
+}
+
+.result-badge.fail {
+  background: var(--red-dim);
+  color: var(--red);
+}
