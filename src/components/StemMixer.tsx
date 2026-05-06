@@ -86,6 +86,11 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   let liveWaveCanvasRef: HTMLCanvasElement | undefined
   let progressBarRef: HTMLDivElement | undefined
 
+  // Cached canvas dimensions — updated only on resize, not every frame
+  let overviewRect = { w: 0, h: 0 }
+  let liveRect = { w: 0, h: 0 }
+  let pitchRect = { w: 0, h: 0 }
+
   const vocalTrack = (): StemTrack => ({
     label: 'Vocal',
     url: props.stems.vocal || '',
@@ -504,18 +509,34 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     rafId = requestAnimationFrame(tick)
   }
 
+  // ── Canvas Sizing ───────────────────────────────────────────
+  // Only set canvas dimensions when they actually change — avoids per-frame
+  // reflow that caused vertical squishing in the flex layout during playback.
+  const syncCanvasSizes = () => {
+    const dpr = window.devicePixelRatio || 1
+    for (const ref of [waveformCanvasRef, pitchCanvasRef, liveWaveCanvasRef]) {
+      if (!ref) continue
+      const rect = ref.getBoundingClientRect()
+      const w = Math.round(rect.width * dpr)
+      const h = Math.round(rect.height * dpr)
+      if (ref.width !== w || ref.height !== h) {
+        ref.width = w
+        ref.height = h
+      }
+    }
+  }
+
   // ── Canvas Drawing ───────────────────────────────────────────
   const drawWaveformOverview = () => {
     const canvas = waveformCanvasRef
     if (!canvas) return
     const dpr = window.devicePixelRatio || 1
-    const rect = canvas.getBoundingClientRect()
-    canvas.width = rect.width * dpr
-    canvas.height = rect.height * dpr
+    const w = canvas.clientWidth
+    const h = canvas.clientHeight
+    if (h <= 0) { overviewRect = { w, h }; return }
+    overviewRect = { w, h }
     const ctx = canvas.getContext('2d')!
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-    const w = rect.width
-    const h = rect.height
 
     ctx.clearRect(0, 0, w, h)
 
@@ -590,13 +611,12 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     const canvas = liveWaveCanvasRef
     if (!canvas) return
     const dpr = window.devicePixelRatio || 1
-    const rect = canvas.getBoundingClientRect()
-    canvas.width = rect.width * dpr
-    canvas.height = rect.height * dpr
+    const w = canvas.clientWidth
+    const h = canvas.clientHeight
+    if (h <= 0) { liveRect = { w, h }; return }
+    liveRect = { w, h }
     const ctx = canvas.getContext('2d')!
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-    const w = rect.width
-    const h = rect.height
 
     ctx.clearRect(0, 0, w, h)
 
@@ -639,13 +659,12 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     const canvas = pitchCanvasRef
     if (!canvas) return
     const dpr = window.devicePixelRatio || 1
-    const rect = canvas.getBoundingClientRect()
-    canvas.width = rect.width * dpr
-    canvas.height = rect.height * dpr
+    const w = canvas.clientWidth
+    const h = canvas.clientHeight
+    if (h <= 0) { pitchRect = { w, h }; return }
+    pitchRect = { w, h }
     const ctx = canvas.getContext('2d')!
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-    const w = rect.width
-    const h = rect.height
 
     ctx.clearRect(0, 0, w, h)
 
@@ -779,6 +798,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     loadLyrics()
 
     resizeObserver = new ResizeObserver(() => {
+      syncCanvasSizes()
       drawWaveformOverview()
       drawLiveWaveform()
       drawPitchCanvas()
@@ -790,6 +810,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
     // Initial canvas draws after a frame
     requestAnimationFrame(() => {
+      syncCanvasSizes()
       drawWaveformOverview()
       drawLiveWaveform()
       drawPitchCanvas()
@@ -816,6 +837,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   createEffect(() => {
     if (!loading()) {
       requestAnimationFrame(() => {
+        syncCanvasSizes()
         drawWaveformOverview()
         drawLiveWaveform()
         drawPitchCanvas()
