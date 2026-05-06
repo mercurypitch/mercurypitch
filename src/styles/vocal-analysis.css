@@ -3109,6 +3109,38 @@
   font-weight: 600;
 }
 
+/* Keyboard Shortcuts */
+.shortcuts-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.shortcut-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.shortcut-item kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 22px;
+  padding: 0 6px;
+  background: var(--bg-tertiary, #21262d);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-family: var(--font-mono, 'SF Mono', 'Fira Code', monospace);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  box-shadow: 0 1px 0 rgba(0,0,0,0.3);
+}
+
 /* Settings Panel UVR Integration */
 .settings-panel .uvr-settings-wrapper {
   padding: 12px;

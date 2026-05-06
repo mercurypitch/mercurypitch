@@ -93,6 +93,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   const [prevView, setPrevView] = createSignal<UvrView>('upload')
   const [mixerStems, setMixerStems] = createSignal<{
     vocal?: string
+    vocalMidi?: string
     instrumental?: string
   }>({})
   const [mixerSessionId, setMixerSessionId] = createSignal('')
@@ -220,6 +221,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     setMixerStems({
       vocal: s.outputs.vocal,
       instrumental: s.outputs.instrumental,
+      vocalMidi: s.outputs.vocalMidi,
     })
     setMixerSessionId(s.sessionId)
     setCurrentView('mixer')
@@ -242,6 +244,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     setMixerStems({
       vocal: filter.vocal !== false ? s.outputs.vocal : undefined,
       instrumental: filter.instrumental !== false ? s.outputs.instrumental : undefined,
+      vocalMidi: s.outputs.vocalMidi,
     })
     setMixerSessionId(s.sessionId)
     setCurrentView('mixer')

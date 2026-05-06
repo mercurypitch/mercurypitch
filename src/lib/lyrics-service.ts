@@ -29,21 +29,68 @@ export function extractTitle(filename: string): string {
   return title || 'Unknown'
 }
 
+/**
+ * Parse "Artist - Title" from a cleaned filename string.
+ * Returns { artist, title } with best-guess extraction.
+ */
+export function parseArtistTitle(input: string): { artist: string; title: string } {
+  const cleaned = extractTitle(input)
+
+  // Try "Artist - Title" pattern
+  const dashMatch = cleaned.match(/^(.+?)\s*[-–—]\s*(.+)$/)
+  if (dashMatch) {
+    return {
+      artist: dashMatch[1].trim(),
+      title: dashMatch[2].trim(),
+    }
+  }
+
+  // Try "Artist – Title" (en dash) or "Artist — Title" (em dash) — already covered above
+  // Try "Title by Artist"
+  const byMatch = cleaned.match(/^(.+?)\s+by\s+(.+)$/i)
+  if (byMatch) {
+    return {
+      artist: byMatch[2].trim(),
+      title: byMatch[1].trim(),
+    }
+  }
+
+  // No separator — assume the whole thing is the title
+  return { artist: '', title: cleaned }
+}
+
 // ── Lyrics API Fetching ──────────────────────────────────────
 
-export async function searchLyrics(title: string): Promise<string | null> {
-  // Try Lyrics.ovh — free, no auth
-  const queries = [
-    { artist: '', title },
-    { artist: 'Various', title },
-  ]
+export async function searchLyrics(rawInput: string): Promise<string | null> {
+  const { artist, title } = parseArtistTitle(rawInput)
 
+  // Build candidate queries ordered by likely success
+  const queries: { artist: string; title: string }[] = []
+
+  if (artist && title) {
+    queries.push({ artist, title })
+    queries.push({ artist, title: title.replace(/\s*\(.*?\)\s*/g, '').trim() }) // strip parens
+  }
+  queries.push({ artist: '', title })
+  queries.push({ artist: '', title: title.replace(/\s*\(.*?\)\s*/g, '').trim() })
+
+  // Try Lyrics.ovh first
   for (const q of queries) {
     try {
       const lyrics = await fetchLyricsOvh(q.artist, q.title)
       if (lyrics) return lyrics
     } catch {
-      // continue to next
+      // continue
+    }
+  }
+
+  // Fallback: try lyrics.astrid.sh (also free, no auth)
+  for (const q of queries.slice(0, 2)) {
+    try {
+      const lyrics = await fetchLyricsAstrid(q.artist, q.title)
+      if (lyrics) return lyrics
+    } catch {
+      // continue
     }
   }
 
@@ -51,10 +98,25 @@ export async function searchLyrics(title: string): Promise<string | null> {
 }
 
 async function fetchLyricsOvh(artist: string, title: string): Promise<string | null> {
-  const encoded = encodeURIComponent(title)
   const artistParam = artist ? `${encodeURIComponent(artist)}/` : ''
-  const url = `https://api.lyrics.ovh/v1/${artistParam}${encoded}`
+  const url = `https://api.lyrics.ovh/v1/${artistParam}${encodeURIComponent(title)}`
 
+  const resp = await fetch(url, { signal: AbortSignal.timeout(5000) })
+  if (!resp.ok) return null
+
+  const data = await resp.json()
+  if (data?.lyrics && typeof data.lyrics === 'string' && data.lyrics.length > 10) {
+    return data.lyrics
+  }
+  return null
+}
+
+async function fetchLyricsAstrid(artist: string, title: string): Promise<string | null> {
+  const params = new URLSearchParams()
+  if (artist) params.set('artist', artist)
+  params.set('title', title)
+
+  const url = `https://lyrics.astrid.sh/api/lyrics?${params.toString()}`
   const resp = await fetch(url, { signal: AbortSignal.timeout(5000) })
   if (!resp.ok) return null
 
@@ -90,7 +152,6 @@ export function parseLrcFile(content: string): LrcLine[] {
     let ms = 0
     if (match[3]) {
       ms = parseInt(match[3], 10)
-      // If 2 digits, it's centiseconds; if 3, milliseconds
       if (match[3].length === 2) ms *= 10
     }
 

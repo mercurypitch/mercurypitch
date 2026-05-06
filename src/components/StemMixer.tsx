@@ -6,7 +6,7 @@ import type { Component } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, onMount, Show } from 'solid-js'
 import { PitchDetector, type DetectedPitch } from '@/lib/pitch-detector'
 import { freqToNote } from '@/lib/scale-data'
-import { ChevronLeft, Download, Ear, Pause, Play, RotateCcw, SkipBack, SkipForward, Volume2, VolumeX } from './icons'
+import { ChevronLeft, Download, Ear, Midi, Pause, Play, RotateCcw, SkipBack, SkipForward, Volume2, VolumeX } from './icons'
 import { extractTitle, getCurrentLineIndex, getCurrentLrcIndex, parseLrcFile, parseTextLyrics, searchLyrics, type LrcLine } from '@/lib/lyrics-service'
 import { LyricsUploader, type LyricsUploadResult } from './LyricsUploader'
 
@@ -16,6 +16,7 @@ interface StemMixerProps {
   stems: {
     vocal?: string
     instrumental?: string
+    vocalMidi?: string
   }
   sessionId: string
   songTitle?: string
@@ -67,6 +68,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   const [currentLineIdx, setCurrentLineIdx] = createSignal(-1)
   const [lyricsSource, setLyricsSource] = createSignal<'api' | 'upload' | 'none'>('none')
   const [lyricsLoading, setLyricsLoading] = createSignal(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = createSignal(false)
 
   // ── Refs ─────────────────────────────────────────────────────
   let audioCtx: AudioContext | null = null
@@ -193,7 +195,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
   // ── Lyrics Loading ────────────────────────────────────────────
   const loadLyrics = async () => {
-    const title = props.songTitle || extractTitle(props.sessionId || '')
+    const rawInput = props.songTitle || props.sessionId || ''
+    const title = extractTitle(rawInput)
     if (!title || title === 'Unknown') {
       setLyricsSource('none')
       return
@@ -412,12 +415,23 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }
   }
 
-  const handleDownload = (track: StemTrack) => {
+  const handleDownload = async (track: StemTrack) => {
     if (!track.url) return
-    const a = document.createElement('a')
-    a.href = track.url
-    a.download = `${track.label.toLowerCase()}_stem.wav`
-    a.click()
+    try {
+      const resp = await fetch(track.url)
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
+      const blob = await resp.blob()
+      const blobUrl = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = blobUrl
+      a.download = `${track.label.toLowerCase()}_stem.wav`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000)
+    } catch (err) {
+      console.error('Download failed:', err)
+    }
   }
 
   // ── RAF Loop ─────────────────────────────────────────────────
@@ -630,19 +644,49 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       ctx.fillText(note, 3, i * rowH + rowH * 0.65 + rowH)
     }
 
-    // Pitch history notes
+    // Pitch history — consolidated into Melodyne-style pills
     const totalDur = duration() || 1
-    for (const pn of pitchHistory) {
-      const noteIdx = notes.indexOf(pn.noteName.replace(/\d/g, ''))
-      if (noteIdx < 0) continue
-      const x = (pn.time / totalDur) * w
-      const y = (11 - noteIdx) * rowH + rowH * 0.5
-      const alpha = 0.8
+    if (pitchHistory.length > 0) {
+      const pillGroups: { noteIdx: number; startTime: number; endTime: number }[] = []
+      let cur = {
+        noteIdx: notes.indexOf(pitchHistory[0].noteName.replace(/\d/g, '')),
+        startTime: pitchHistory[0].time,
+        endTime: pitchHistory[0].time,
+      }
+      for (let i = 1; i < pitchHistory.length; i++) {
+        const pn = pitchHistory[i]
+        const noteIdx = notes.indexOf(pn.noteName.replace(/\d/g, ''))
+        if (noteIdx === cur.noteIdx) {
+          cur.endTime = pn.time
+        } else {
+          if (cur.noteIdx >= 0) pillGroups.push({ ...cur })
+          cur = { noteIdx, startTime: pn.time, endTime: pn.time }
+        }
+      }
+      if (cur.noteIdx >= 0) pillGroups.push({ ...cur })
 
-      ctx.fillStyle = `rgba(245, 158, 11, ${alpha})`
-      ctx.beginPath()
-      ctx.arc(x, y, 4, 0, Math.PI * 2)
-      ctx.fill()
+      for (const g of pillGroups) {
+        const x1 = (g.startTime / totalDur) * w
+        const x2 = (g.endTime / totalDur) * w
+        const pillW = Math.max(x2 - x1, 3)
+        const y = (11 - g.noteIdx) * rowH + rowH * 0.16
+        const pillH = rowH * 0.68
+        const r = Math.min(pillH / 2, 3)
+
+        ctx.fillStyle = 'rgba(245, 158, 11, 0.5)'
+        ctx.beginPath()
+        ctx.moveTo(x1 + r, y)
+        ctx.lineTo(x1 + pillW - r, y)
+        ctx.arcTo(x1 + pillW, y, x1 + pillW, y + r, r)
+        ctx.lineTo(x1 + pillW, y + pillH - r)
+        ctx.arcTo(x1 + pillW, y + pillH, x1 + pillW - r, y + pillH, r)
+        ctx.lineTo(x1 + r, y + pillH)
+        ctx.arcTo(x1, y + pillH, x1, y + pillH - r, r)
+        ctx.lineTo(x1, y + r)
+        ctx.arcTo(x1, y, x1 + r, y, r)
+        ctx.closePath()
+        ctx.fill()
+      }
     }
 
     // Current pitch highlight
@@ -706,6 +750,23 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       drawLiveWaveform()
       drawPitchCanvas()
     })
+
+    // Keyboard shortcuts
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore when typing in inputs
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
+
+      if (e.code === 'Space') {
+        e.preventDefault()
+        if (loading() || loadError()) return
+        playing() ? handlePause() : handlePlay()
+      } else if (e.key === 'h' && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault()
+        setSidebarCollapsed(prev => !prev)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    ;(window as any).__smKeydown = handleKeyDown
   })
 
   createEffect(() => {
@@ -722,6 +783,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     disconnectSources()
     cancelAnimationFrame(rafId)
     resizeObserver?.disconnect()
+    if ((window as any).__smKeydown) {
+      window.removeEventListener('keydown', (window as any).__smKeydown)
+      delete (window as any).__smKeydown
+    }
     if (audioCtx) {
       audioCtx.close().catch(() => { /* */ })
     }
@@ -766,25 +831,71 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         </Show>
 
         <Show when={!loading() && !loadError()}>
+          {/* Transport Bar — top */}
+          <div class="sm-transport">
+            <div class="sm-transport-controls">
+              <button class="sm-transport-btn" onClick={handleStop} title="Stop (Space)">
+                <RotateCcw />
+              </button>
+              <button class="sm-transport-btn" onClick={handleStop} title="Restart">
+                <SkipBack />
+              </button>
+              <button
+                class="sm-transport-btn sm-transport-play"
+                onClick={playing() ? handlePause : handlePlay}
+              >
+                {playing() ? <Pause /> : <Play />}
+              </button>
+              <button class="sm-transport-btn" disabled title="Skip">
+                <SkipForward />
+              </button>
+            </div>
+
+            <div class="sm-progress-area">
+              <span class="sm-time">{formatTime(elapsed())}</span>
+              <div
+                ref={progressBarRef}
+                class="sm-progress-bar"
+                onClick={handleSeek}
+              >
+                <div
+                  class="sm-progress-fill"
+                  style={{
+                    width: `${duration() > 0 ? (elapsed() / duration()) * 100 : 0}%`,
+                  }}
+                />
+              </div>
+              <span class="sm-time">{formatTime(duration())}</span>
+            </div>
+
+            <button
+              class="sm-sidebar-toggle"
+              onClick={() => setSidebarCollapsed(prev => !prev)}
+              title={sidebarCollapsed() ? 'Show sidebar (h)' : 'Hide sidebar (h)'}
+            >
+              <span style={{ transform: sidebarCollapsed() ? 'rotate(180deg)' : '', display: 'inline-flex' }}><ChevronLeft /></span>
+            </button>
+          </div>
+
           <div class="sm-body">
             {/* Left — Visualizations */}
             <div class="sm-viz">
-              <div class="sm-viz-section">
+              <div class="sm-viz-section sm-viz-overview">
                 <span class="sm-viz-label">Waveform Overview</span>
                 <canvas ref={waveformCanvasRef} class="sm-canvas sm-canvas-overview" />
               </div>
-              <div class="sm-viz-section">
+              <div class="sm-viz-section sm-viz-live">
                 <span class="sm-viz-label">Live Waveform</span>
                 <canvas ref={liveWaveCanvasRef} class="sm-canvas sm-canvas-live" />
               </div>
-              <div class="sm-viz-section">
+              <div class="sm-viz-section sm-viz-pitch">
                 <span class="sm-viz-label">Vocal Pitch</span>
                 <canvas ref={pitchCanvasRef} class="sm-canvas sm-canvas-pitch" />
               </div>
             </div>
 
             {/* Right — Controls */}
-            <div class="sm-controls">
+            <div class={`sm-controls${sidebarCollapsed() ? ' sm-controls-collapsed' : ''}`}>
               {/* Stem strips row */}
               <div class="sm-strips-row">
                 {vocal().url && (
@@ -833,6 +944,27 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                         setTrackVolume('Vocal', parseInt(e.currentTarget.value) / 100)
                       }
                     />
+                  </div>
+                )}
+
+                {props.stems.vocalMidi && (
+                  <div class="sm-midi-substem">
+                    <span class="sm-midi-icon"><Midi /></span>
+                    <span class="sm-midi-label">MIDI</span>
+                    <button
+                      class="sm-midi-dl-btn"
+                      onClick={() => {
+                        const a = document.createElement("a");
+                        a.href = props.stems.vocalMidi!;
+                        a.download = "vocal_midi.mid";
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                      }}
+                      title="Download MIDI"
+                    >
+                      <Download />
+                    </button>
                   </div>
                 )}
 
@@ -935,44 +1067,6 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                   />
                 </Show>
               </div>
-            </div>
-          </div>
-
-          {/* Transport Bar */}
-          <div class="sm-transport">
-            <div class="sm-transport-controls">
-              <button class="sm-transport-btn" onClick={handleStop} title="Stop">
-                <RotateCcw />
-              </button>
-              <button class="sm-transport-btn" onClick={handleStop} title="Restart">
-                <SkipBack />
-              </button>
-              <button
-                class="sm-transport-btn sm-transport-play"
-                onClick={playing() ? handlePause : handlePlay}
-              >
-                {playing() ? <Pause /> : <Play />}
-              </button>
-              <button class="sm-transport-btn" disabled title="Skip">
-                <SkipForward />
-              </button>
-            </div>
-
-            <div class="sm-progress-area">
-              <span class="sm-time">{formatTime(elapsed())}</span>
-              <div
-                ref={progressBarRef}
-                class="sm-progress-bar"
-                onClick={handleSeek}
-              >
-                <div
-                  class="sm-progress-fill"
-                  style={{
-                    width: `${duration() > 0 ? (elapsed() / duration()) * 100 : 0}%`,
-                  }}
-                />
-              </div>
-              <span class="sm-time">{formatTime(duration())}</span>
             </div>
           </div>
         </Show>
@@ -1119,17 +1213,21 @@ export const StemMixerStyles: string = `
   gap: 0.35rem;
   padding: 0.75rem;
   overflow: hidden;
+  min-height: 0;
 }
 
 .sm-viz-section {
   display: flex;
   flex-direction: column;
-  flex: 1;
   background: var(--bg-primary, #0d1117);
   border-radius: 0.5rem;
   overflow: hidden;
   min-height: 0;
 }
+
+.sm-viz-overview { flex: 2; min-height: 70px; }
+.sm-viz-live { flex: 1; min-height: 50px; max-height: 140px; }
+.sm-viz-pitch { flex: 2; min-height: 100px; }
 
 .sm-viz-label {
   font-size: 0.65rem;
@@ -1138,6 +1236,7 @@ export const StemMixerStyles: string = `
   background: var(--bg-tertiary, #21262d);
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  flex-shrink: 0;
 }
 
 .sm-canvas {
@@ -1145,10 +1244,6 @@ export const StemMixerStyles: string = `
   width: 100%;
   min-height: 0;
 }
-
-.sm-canvas-overview { min-height: 60px; }
-.sm-canvas-live { min-height: 50px; }
-.sm-canvas-pitch { min-height: 100px; }
 
 /* Controls panel */
 .sm-controls {
@@ -1273,6 +1368,64 @@ export const StemMixerStyles: string = `
   border: 2px solid var(--bg-primary, #0d1117);
 }
 
+
+  /* MIDI sub-stem */
+  .sm-midi-substem {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.3rem 0.5rem;
+    margin: -0.25rem 0.25rem 0.25rem 1rem;
+    background: rgba(245, 158, 11, 0.06);
+    border: 1px solid rgba(245, 158, 11, 0.15);
+    border-radius: 0.35rem;
+    font-size: 0.65rem;
+  }
+
+  .sm-midi-icon {
+    display: flex;
+    align-items: center;
+    color: rgba(245, 158, 11, 0.7);
+  }
+
+  .sm-midi-icon svg {
+    width: 0.75rem;
+    height: 0.75rem;
+  }
+
+  .sm-midi-label {
+    color: rgba(245, 158, 11, 0.8);
+    font-weight: 500;
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .sm-midi-dl-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.2rem;
+    height: 1.2rem;
+    padding: 0;
+    margin-left: auto;
+    background: transparent;
+    border: 1px solid rgba(245, 158, 11, 0.2);
+    border-radius: 0.25rem;
+    color: rgba(245, 158, 11, 0.6);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .sm-midi-dl-btn:hover {
+    background: rgba(245, 158, 11, 0.15);
+    color: rgba(245, 158, 11, 0.9);
+  }
+
+  .sm-midi-dl-btn svg {
+    width: 0.6rem;
+    height: 0.6rem;
+  }
 /* Lyrics Panel */
 .sm-lyrics-panel {
   display: flex;
@@ -1354,6 +1507,7 @@ export const StemMixerStyles: string = `
 .sm-transport {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 1rem;
   padding: 0.75rem 1.25rem;
   background: var(--bg-primary, #0d1117);
@@ -1450,5 +1604,44 @@ export const StemMixerStyles: string = `
   background: var(--accent, #58a6ff);
   border-radius: 0.2rem;
   transition: width 0.1s linear;
+}
+
+
+/* Sidebar toggle */
+.sm-sidebar-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  padding: 0;
+  background: var(--bg-tertiary, #21262d);
+  border: 1px solid var(--border, #30363d);
+  border-radius: 0.35rem;
+  color: var(--fg-secondary, #8b949e);
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.sm-sidebar-toggle:hover {
+  background: var(--bg-hover, #30363d);
+  color: var(--fg-primary, #c9d1d9);
+}
+
+.sm-sidebar-toggle svg {
+  width: 0.8rem;
+  height: 0.8rem;
+  transition: transform 0.2s ease;
+}
+
+/* Collapsed sidebar */
+.sm-controls-collapsed {
+  width: 0 !important;
+  min-width: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  opacity: 0;
+  transition: width 0.25s ease, opacity 0.2s ease, padding 0.25s ease;
 }
 `

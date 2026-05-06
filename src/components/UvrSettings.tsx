@@ -258,6 +258,29 @@ export const UvrSettings: Component = () => {
           </li>
         </ul>
       </div>
+
+      {/* Keyboard Shortcuts */}
+      <div class="uvr-info uvr-shortcuts">
+        <div class="info-header">
+          <span class="info-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="4" width="20" height="16" rx="2" />
+              <path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M6 12h.01M18 12h.01M6 16h.01M10 16h.01M14 16h.01" />
+            </svg>
+          </span>
+          <span>Stem Mixer Shortcuts</span>
+        </div>
+        <div class="shortcuts-grid">
+          <div class="shortcut-item">
+            <kbd>Space</kbd>
+            <span>Play / Pause</span>
+          </div>
+          <div class="shortcut-item">
+            <kbd>H</kbd>
+            <span>Toggle sidebar</span>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
