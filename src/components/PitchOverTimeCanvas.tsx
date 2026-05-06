@@ -112,8 +112,7 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
   const sampleToX = (sampleTime: number, nowTime: number, w: number): number => {
     const window = visibleWindow()
     const windowStart = nowTime <= window ? 0 : nowTime - window
-    const windowDuration = Math.max(nowTime, window)
-    const x = ((sampleTime - windowStart) / windowDuration) * w
+    const x = ((sampleTime - windowStart) / window) * w
     return Number.isFinite(x) ? x : 0
   }
 
@@ -237,11 +236,10 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
     const nowTime = samples[samples.length - 1]!.time
     const window = visibleWindow()
     const windowStart = nowTime <= window ? 0 : nowTime - window
-    const windowDuration = Math.max(nowTime, window)
 
     // Draw tick marks at 1s intervals
     const startSec = Math.floor(windowStart)
-    const endSec = Math.ceil(windowStart + windowDuration)
+    const endSec = Math.ceil(windowStart + window)
 
     ctx.fillStyle = '#484f58'
     ctx.font = '10px sans-serif'
@@ -250,7 +248,7 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
 
     const tickY = h - MARGIN + 8
     for (let sec = startSec; sec <= endSec; sec++) {
-      const x = ((sec - windowStart) / windowDuration) * w
+      const x = ((sec - windowStart) / window) * w
       if (x < MARGIN || x > w - MARGIN) continue
 
       // Tick line

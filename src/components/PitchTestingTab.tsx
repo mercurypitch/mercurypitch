@@ -308,7 +308,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
     }
     setPitchSamples((prev) => {
       const next = [...prev, sample]
-      return next.length > 200 ? next.slice(-200) : next
+      return next.length > 1200 ? next.slice(-1200) : next
     })
   }
 
