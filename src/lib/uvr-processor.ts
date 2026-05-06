@@ -35,12 +35,11 @@ export class UvrProcessor {
   private isInitialized = false
 
   constructor() {
-    this.init()
+    // audio init is deferred to initAudio()
   }
 
   private init(): void {
-    if (this.isInitialized) return
-    this.isInitialized = true
+    // reset state only — does not mark audio as initialized
   }
 
   setSettings(settings: Partial<UvrSettings>): void {

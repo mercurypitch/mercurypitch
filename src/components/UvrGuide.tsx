@@ -4,7 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createSignal } from 'solid-js'
-import { Voice, Headphones, MusicBoard, Music, ChevronDown } from './icons'
+import { Voice, Headphones, MusicBoard, Music } from './icons'
 
 interface UvrGuideProps {
   onClose?: () => void

@@ -30,8 +30,6 @@ interface ProcessControlProps {
 }
 
 export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
-  const _isRunning = createSignal(false)
-
   const formatTime = (ms: number): string => {
     const seconds = Math.floor(ms / 1000)
     const mins = Math.floor(seconds / 60)
@@ -149,7 +147,7 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
           >
             {(stage) => (
               <div class={`stage-item ${stage.active ? 'active' : ''}`}>
-                <span class="stage-icon">{(stage.icon as any)()}</span>
+                <span class="stage-icon">{stage.icon({})}</span>
                 <span class="stage-label">{stage.label}</span>
               </div>
             )}
@@ -364,11 +362,11 @@ export const UvrProcessControlStyles: string = `
   color: var(--bg-primary);
 }
 
-.action-btn-primary:hover:not(:disabled) {
+.process-btn-primary:hover:not(:disabled) {
   opacity: 0.85;
 }
 
-.action-btn-primary:disabled {
+.process-btn-primary:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
@@ -376,10 +374,10 @@ export const UvrProcessControlStyles: string = `
 .process-btn-danger {
   background: var(--bg-primary);
   color: var(--error);
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  border: 1px solid rgba(239, 68, 68, 0.1);
 }
 
-.action-btn-danger:hover:not(:disabled) {
+.process-btn-danger:hover:not(:disabled) {
   background: rgba(239, 68, 68, 0.1);
 }
 

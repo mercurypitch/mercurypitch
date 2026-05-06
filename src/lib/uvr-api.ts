@@ -249,58 +249,6 @@ export async function pollForCompletion(
   })
 }
 
-// /**
-//  * Poll for processing completion
-//  */
-// export async function pollForCompletion(
-//   sessionId: string,
-//   onProgress: (progress: number) => void,
-//   onComplete: (files: OutputFile[]) => void,
-//   onError: (error: string) => void,
-//   intervalMs: number = 1000,
-// ): Promise<void> {
-//   const startTime = Date.now()
-//   const maxTimeMs = 10 * 60 * 1000 // 10 minutes max
-//
-//   return new Promise((resolve, reject) => {
-//     const poll = async () => {
-//       try {
-//         const status = await getProcessStatus(sessionId)
-//
-//         if (status.status === 'completed') {
-//           onComplete(status.files)
-//           resolve()
-//           return
-//         }
-//
-//         if (status.status === 'error') {
-//           onError(status.error || 'Processing failed')
-//           reject(new Error(status.error || 'Processing failed'))
-//           return
-//         }
-//
-//         // Calculate progress based on time
-//         const elapsed = Date.now() - startTime
-//         const progress = Math.min(95, (elapsed / maxTimeMs) * 100)
-//
-//         if (status.progress !== undefined) {
-//           onProgress(status.progress)
-//         } else {
-//           onProgress(progress)
-//         }
-//
-//         // Continue polling
-//         setTimeout(poll, intervalMs)
-//       } catch (error) {
-//         onError(error instanceof Error ? error.message : 'Unknown error')
-//         reject(error)
-//       }
-//     }
-//
-//     poll()
-//   })
-// }
-
 /**
  * Convert file size to human readable
  */

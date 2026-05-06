@@ -293,29 +293,6 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     }
   })
 
-  // Simulate UVR processing (Phase 2 will replace this with real UVR CLI calls)
-  function simulateProcessing(sessionId: string) {
-    let progress = 0
-    const interval = setInterval(() => {
-      progress += Math.random() * 15 + 5
-      if (progress >= 100) {
-        progress = 100
-        clearInterval(interval)
-
-        // Complete session
-        setTimeout(() => {
-          completeUvrSession(sessionId, {
-            vocal: `/stems/${sessionId}/vocal.wav`,
-            instrumental: `/stems/${sessionId}/instrumental.wav`,
-            vocalMidi: `/midi/${sessionId}/vocal.mid`,
-          })
-        }, 500)
-      }
-
-      updateUvrSessionProgress(sessionId, progress)
-    }, 500)
-  }
-
   return (
     <div class="uvr-panel">
       {/* Header */}

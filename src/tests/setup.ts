@@ -7,26 +7,17 @@ class MockAudioContext {
   state: 'suspended' | 'running' | 'closed' = 'running'
   currentTime = 0
 
-  createGain() {
-    return new MockGainNode()
-  }
-  createOscillator() {
-    return new MockOscillator()
-  }
-  createAnalyser() {
-    return new MockAnalyser()
-  }
-  createMediaStreamSource() {
-    return new MockMediaStreamAudioSourceNode()
-  }
+  createGain() { return new MockGainNode() }
+  createOscillator() { return new MockOscillator() }
+  createAnalyser() { return new MockAnalyser() }
+  createMediaStreamSource() { return new MockMediaStreamAudioSourceNode() }
+  createBiquadFilter() { return new MockBiquadFilterNode() }
+  createChannelSplitter(_channels?: number) { return new MockChannelSplitterNode() }
+  createMediaElementSource() { return new MockMediaElementAudioSourceNode() }
   destination = {}
 
-  resume() {
-    return Promise.resolve()
-  }
-  close() {
-    return Promise.resolve()
-  }
+  resume() { return Promise.resolve() }
+  close() { return Promise.resolve() }
 }
 
 class MockGainNode {
@@ -65,13 +56,41 @@ class MockAnalyser {
   getFloatFrequencyData(data: Float32Array) {
     data.fill(-100)
   }
+  getByteFrequencyData(data: Uint8Array) {
+    data.fill(0)
+  }
   getFloatTimeDomainData(data: Float32Array) {
     data.fill(0)
+  }
+  getByteTimeDomainData(data: Uint8Array) {
+    data.fill(128)
   }
 }
 
 // eslint-disable-next-line @typescript-eslint/no-extraneous-class
-class MockMediaStreamAudioSourceNode {}
+class MockMediaStreamAudioSourceNode {
+  connect() {}
+  disconnect() {}
+}
+
+class MockMediaElementAudioSourceNode {
+  connect() {}
+  disconnect() {}
+}
+
+class MockBiquadFilterNode {
+  type: BiquadFilterType = 'lowpass'
+  frequency = { value: 440, setValueAtTime: () => {}, setTargetAtTime: () => {}, exponentialRampToValueAtTime: () => {}, linearRampToValueAtTime: () => {} }
+  Q = { value: 1 }
+  gain = { value: 0 }
+  connect() {}
+  disconnect() {}
+}
+
+class MockChannelSplitterNode {
+  connect(_dest: unknown, _output?: number, _input?: number) {}
+  disconnect() {}
+}
 
 global.AudioContext = MockAudioContext as unknown as typeof global.AudioContext
 ;(
