@@ -339,19 +339,47 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }
   }
 
-  // ── Word-level timing for per-word highlighting ──────────────
+  // ── Word-level timing + render data ─────────────────────────
+  // Single memo that pre-computes ALL active states so the template
+  // re-renders reliably when elapsed / currentLineIdx change.
+  // Using .map() instead of <For> because <For> skips re-renders
+  // when the source array identity hasn't changed (which it doesn't
+  // during playback — lrcLines/textLines stay the same).
 
-  // Split each line into words with estimated start/end times
-  const wordLines = createMemo(() => {
+  interface LyricRenderLine {
+    key: string
+    time: number
+    words: string[]
+    isActive: boolean
+    activeUpTo: number  // -1 = no words active, N = words 0..N are "done"
+  }
+
+  const lyricsRenderData = createMemo<LyricRenderLine[]>(() => {
     const dur = duration()
     const lrc = lrcLines()
     const txt = lyricsLines()
+    const curIdx = currentLineIdx()
+    const elapsedTime = elapsed()
+
+    const computeActiveWord = (words: string[], startTime: number, endTime: number): number => {
+      if (words.length === 0) return -1
+      const progress = (elapsedTime - startTime) / Math.max(0.05, endTime - startTime)
+      if (progress < 0) return -1
+      return Math.min(Math.floor(progress * words.length), words.length - 1)
+    }
 
     if (lrc.length > 0) {
       return lrc.map((line, i) => {
         const words = line.text.split(/\s+/).filter(w => w.length > 0)
         const endTime = i + 1 < lrc.length ? lrc[i + 1].time : dur
-        return { words, startTime: line.time, endTime }
+        const isActive = i === curIdx
+        return {
+          key: `lrc-${i}`,
+          time: line.time,
+          words,
+          isActive,
+          activeUpTo: isActive ? computeActiveWord(words, line.time, endTime) : -1,
+        }
       })
     }
     if (txt.length > 0 && dur > 0) {
@@ -359,24 +387,17 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         const words = text.split(/\s+/).filter(w => w.length > 0)
         const startTime = (i / txt.length) * dur
         const endTime = ((i + 1) / txt.length) * dur
-        return { words, startTime, endTime }
+        const isActive = i === curIdx
+        return {
+          key: `txt-${i}`,
+          time: startTime,
+          words,
+          isActive,
+          activeUpTo: isActive ? computeActiveWord(words, startTime, endTime) : -1,
+        }
       })
     }
     return []
-  })
-
-  // Which word in the current line should be highlighted
-  const activeWordIdx = createMemo(() => {
-    const wl = wordLines()
-    const lineIdx = currentLineIdx()
-    if (lineIdx < 0 || lineIdx >= wl.length) return -1
-    const line = wl[lineIdx]
-    if (line.words.length === 0) return -1
-    const elapsedTime = elapsed()
-    // Add a tiny grace period so the first word highlights immediately
-    const progress = (elapsedTime - line.startTime) / Math.max(0.05, line.endTime - line.startTime)
-    if (progress < 0) return -1
-    return Math.min(Math.floor(progress * line.words.length), line.words.length - 1)
   })
 
   // Detect blank-line-separated sections for optional multi-column layout
@@ -1550,52 +1571,39 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                   class="sm-lyrics-lines"
                   classList={{ 'sm-lyrics-columns-2': lyricsColumns() === 2 }}
                   style={{ 'font-size': `${lyricsFontSize()}rem` }}
-                  onWheel={(e) => { e.stopPropagation() }}
+                  onWheel={(e) => {
+                    e.stopPropagation()
+                    // Ctrl/Cmd+scroll = zoom; plain scroll = pass through for native scroll
+                    if (e.ctrlKey || e.metaKey) {
+                      e.preventDefault()
+                      setLyricsFontSize(prev =>
+                        Math.min(1.5, Math.max(0.45, +(prev - e.deltaY * 0.001).toFixed(2)))
+                      )
+                    }
+                  }}
                 >
-                  <Show when={lrcLines().length > 0}>
-                    <For each={lrcLines()}>
-                      {(line, idx) => {
-                        const words = line.text.split(/\s+/).filter(w => w.length > 0)
-                        const isActive = idx() === currentLineIdx()
-                        const aIdx = isActive ? activeWordIdx() : -1
-                        return (
-                          <span
-                            class={`sm-lyrics-line${isActive ? ' sm-lyrics-line-active' : ''}`}
-                            onClick={() => handleLyricLineClick(idx())}
-                          >
-                            <span class="sm-lyrics-time">{formatTime(line.time)}</span>
-                            {words.length === 0 ? line.text : words.map((word, wi) => (
-                              <span
-                                class={`sm-lyrics-word${wi <= aIdx ? ' sm-lyrics-word-done' : ''}`}
-                              >{word}{' '}</span>
-                            ))}
-                          </span>
-                        )
-                      }}
-                    </For>
-                  </Show>
-                  <Show when={lrcLines().length === 0 && lyricsLines().length > 0}>
-                    <For each={lyricsLines()}>
-                      {(line, idx) => {
-                        const words = line.split(/\s+/).filter(w => w.length > 0)
-                        const isActive = idx() === currentLineIdx()
-                        const aIdx = isActive ? activeWordIdx() : -1
-                        return (
-                          <span
-                            class={`sm-lyrics-line${isActive ? ' sm-lyrics-line-active' : ''}`}
-                            onClick={() => handleLyricLineClick(idx())}
-                          >
-                            <span class="sm-lyrics-time">{formatTime((idx() / Math.max(1, lyricsLines().length)) * duration())}</span>
-                            {words.length === 0 ? line : words.map((word, wi) => (
-                              <span
-                                class={`sm-lyrics-word${wi <= aIdx ? ' sm-lyrics-word-done' : ''}`}
-                              >{word}{' '}</span>
-                            ))}
-                          </span>
-                        )
-                      }}
-                    </For>
-                  </Show>
+                  {lyricsRenderData().map((rl) => (
+                    <span
+                      class={`sm-lyrics-line${rl.isActive ? ' sm-lyrics-line-active' : ''}`}
+                      onClick={() => handleLyricLineClick(
+                        lrcLines().length > 0
+                          ? lrcLines().findIndex(l => l.time === rl.time)
+                          : lyricsLines().findIndex((_, i) => i === parseInt(rl.key.replace('txt-', '')))
+                      )}
+                    >
+                      <span class="sm-lyrics-time">{formatTime(rl.time)}</span>
+                      {rl.words.length === 0
+                        ? (lrcLines().length > 0
+                            ? lrcLines().find(l => l.time === rl.time)?.text || ''
+                            : lyricsLines()[parseInt(rl.key.replace('txt-', ''))] || '')
+                        : rl.words.map((word, wi) => (
+                            <span
+                              class={`sm-lyrics-word${wi <= rl.activeUpTo ? ' sm-lyrics-word-done' : ''}`}
+                            >{word}{' '}</span>
+                          ))
+                      }
+                    </span>
+                  ))}
                 </div>
               </Show>
               <Show when={!lyricsLoading() && lyricsSource() === 'none'}>
