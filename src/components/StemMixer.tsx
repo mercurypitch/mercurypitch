@@ -68,9 +68,41 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   const [currentLineIdx, setCurrentLineIdx] = createSignal(-1)
   const [lyricsSource, setLyricsSource] = createSignal<'api' | 'upload' | 'none'>('none')
   const [lyricsLoading, setLyricsLoading] = createSignal(false)
-  const [sidebarCollapsed, setSidebarCollapsed] = createSignal(false)
   const [windowDuration, setWindowDuration] = createSignal(30) // seconds, range 20-60
   const [windowStart, setWindowStart] = createSignal(0)
+
+  // ── Workspace panel state ─────────────────────────────────────
+  interface WorkspacePanel {
+    id: 'overview' | 'live' | 'pitch' | 'controls' | 'lyrics'
+    label: string
+    order: number
+  }
+
+  const [panels, setPanels] = createSignal<WorkspacePanel[]>([
+    { id: 'overview', label: 'Waveform Overview', order: 0 },
+    { id: 'live', label: 'Live Waveform', order: 1 },
+    { id: 'pitch', label: 'Vocal Pitch', order: 2 },
+    { id: 'controls', label: 'Stem Controls', order: 3 },
+    { id: 'lyrics', label: 'Lyrics', order: 4 },
+  ])
+
+  const reorderPanels = (fromId: string, toOrder: number) => {
+    setPanels(prev => {
+      const next = prev.map(p => ({ ...p }))
+      const fromIdx = next.findIndex(p => p.id === fromId)
+      if (fromIdx === -1) return prev
+      const [moved] = next.splice(fromIdx, 1)
+      next.splice(toOrder, 0, moved)
+      return next.map((p, i) => ({ ...p, order: i }))
+    })
+  }
+
+  // ── Drag state (module-level lets — no signals to avoid re-renders) ──
+  let dragPanelId: string | null = null
+  let dragStartOrder = -1
+  let dragTargetOrder = -1
+  let dragOffsetX = 0
+  let dragOffsetY = 0
 
   // ── Refs ─────────────────────────────────────────────────────
   let audioCtx: AudioContext | null = null
@@ -825,9 +857,6 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         e.preventDefault()
         if (loading() || loadError()) return
         playing() ? handlePause() : handlePlay()
-      } else if (e.key === 'h' && !e.ctrlKey && !e.metaKey) {
-        e.preventDefault()
-        setSidebarCollapsed(prev => !prev)
       }
     }
     window.addEventListener('keydown', handleKeyDown)
@@ -863,6 +892,54 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     const m = Math.floor(secs / 60)
     const s = Math.floor(secs % 60)
     return `${m}:${s.toString().padStart(2, '0')}`
+  }
+
+  // ── Drag-to-reorder ──────────────────────────────────────────
+  const handlePanelDragStart = (panelId: string, panelOrder: number, e: PointerEvent) => {
+    if (!(e.target instanceof HTMLElement)) return
+    const header = e.target.closest('.sm-panel-header') as HTMLElement | null
+    if (!header) return
+
+    e.preventDefault()
+    header.setPointerCapture(e.pointerId)
+
+    dragPanelId = panelId
+    dragStartOrder = panelOrder
+    dragTargetOrder = panelOrder
+    dragOffsetX = e.clientX
+    dragOffsetY = e.clientY
+  }
+
+  const handlePanelDragMove = (e: PointerEvent) => {
+    if (!dragPanelId) return
+    e.preventDefault()
+
+    // Find the panel under the pointer
+    const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null
+    if (!el) return
+    const panel = el.closest('.sm-workspace-panel') as HTMLElement | null
+    if (!panel) return
+
+    const targetId = panel.dataset.panelId
+    if (!targetId || targetId === dragPanelId) return
+
+    const targetOrder = panels().find(p => p.id === targetId)?.order
+    if (targetOrder !== undefined && targetOrder !== dragTargetOrder) {
+      dragTargetOrder = targetOrder
+    }
+  }
+
+  const handlePanelDragEnd = (e: PointerEvent) => {
+    if (!dragPanelId) return
+    e.preventDefault()
+
+    if (dragTargetOrder !== dragStartOrder) {
+      reorderPanels(dragPanelId, dragTargetOrder)
+    }
+
+    dragPanelId = null
+    dragStartOrder = -1
+    dragTargetOrder = -1
   }
 
   // ── Render ───────────────────────────────────────────────────
@@ -937,35 +1014,82 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
               <span class="sm-time">{formatTime(duration())}</span>
             </div>
 
-            <button
-              class="sm-sidebar-toggle"
-              onClick={() => setSidebarCollapsed(prev => !prev)}
-              title={sidebarCollapsed() ? 'Show sidebar (h)' : 'Hide sidebar (h)'}
-            >
-              <span style={{ transform: sidebarCollapsed() ? 'rotate(180deg)' : '', display: 'inline-flex' }}><ChevronLeft /></span>
-            </button>
           </div>
 
-          <div class="sm-body">
-            {/* Left — Visualizations */}
-            <div class="sm-viz" onWheel={(e) => { e.preventDefault(); setWindowDuration(prev => Math.min(60, Math.max(20, prev + (e.deltaY > 0 ? 5 : -5)))) }}>
-              <div class="sm-viz-section sm-viz-overview">
-                <span class="sm-viz-label">Waveform Overview</span>
-                <canvas ref={waveformCanvasRef} class="sm-canvas sm-canvas-overview" />
+          <div class="sm-workspace" onWheel={(e) => { e.preventDefault(); setWindowDuration(prev => Math.min(60, Math.max(20, prev + (e.deltaY > 0 ? 5 : -5)))) }}>
+            {/* Panel: Waveform Overview */}
+            <div
+              class="sm-workspace-panel"
+              style={{ order: panels().find(p => p.id === 'overview')!.order }}
+              data-panel-id="overview"
+            >
+              <div
+                class="sm-panel-header"
+                onPointerDown={(e) => handlePanelDragStart('overview', panels().find(p => p.id === 'overview')!.order, e)}
+                onPointerMove={handlePanelDragMove}
+                onPointerUp={handlePanelDragEnd}
+                onPointerCancel={handlePanelDragEnd}
+              >
+                <svg viewBox="0 0 24 24" width="10" height="10" class="sm-drag-icon"><path fill="currentColor" d="M20 9H4v2h16V9zM4 15h16v-2H4v2z"/></svg>
+                Waveform Overview
               </div>
-              <div class="sm-viz-section sm-viz-live">
-                <span class="sm-viz-label">Live Waveform</span>
-                <canvas ref={liveWaveCanvasRef} class="sm-canvas sm-canvas-live" />
-              </div>
-              <div class="sm-viz-section sm-viz-pitch">
-                <span class="sm-viz-label">Vocal Pitch</span>
-                <canvas ref={pitchCanvasRef} class="sm-canvas sm-canvas-pitch" />
-              </div>
+              <canvas ref={waveformCanvasRef} class="sm-canvas sm-canvas-overview" />
             </div>
 
-            {/* Right — Controls */}
-            <div class={`sm-controls${sidebarCollapsed() ? ' sm-controls-collapsed' : ''}`}>
-              {/* Stem strips row */}
+            {/* Panel: Live Waveform */}
+            <div
+              class="sm-workspace-panel"
+              style={{ order: panels().find(p => p.id === 'live')!.order }}
+              data-panel-id="live"
+            >
+              <div
+                class="sm-panel-header"
+                onPointerDown={(e) => handlePanelDragStart('live', panels().find(p => p.id === 'live')!.order, e)}
+                onPointerMove={handlePanelDragMove}
+                onPointerUp={handlePanelDragEnd}
+                onPointerCancel={handlePanelDragEnd}
+              >
+                <svg viewBox="0 0 24 24" width="10" height="10" class="sm-drag-icon"><path fill="currentColor" d="M20 9H4v2h16V9zM4 15h16v-2H4v2z"/></svg>
+                Live Waveform
+              </div>
+              <canvas ref={liveWaveCanvasRef} class="sm-canvas sm-canvas-live" />
+            </div>
+
+            {/* Panel: Vocal Pitch */}
+            <div
+              class="sm-workspace-panel"
+              style={{ order: panels().find(p => p.id === 'pitch')!.order }}
+              data-panel-id="pitch"
+            >
+              <div
+                class="sm-panel-header"
+                onPointerDown={(e) => handlePanelDragStart('pitch', panels().find(p => p.id === 'pitch')!.order, e)}
+                onPointerMove={handlePanelDragMove}
+                onPointerUp={handlePanelDragEnd}
+                onPointerCancel={handlePanelDragEnd}
+              >
+                <svg viewBox="0 0 24 24" width="10" height="10" class="sm-drag-icon"><path fill="currentColor" d="M20 9H4v2h16V9zM4 15h16v-2H4v2z"/></svg>
+                Vocal Pitch
+              </div>
+              <canvas ref={pitchCanvasRef} class="sm-canvas sm-canvas-pitch" />
+            </div>
+
+            {/* Panel: Stem Controls */}
+            <div
+              class="sm-workspace-panel"
+              style={{ order: panels().find(p => p.id === 'controls')!.order }}
+              data-panel-id="controls"
+            >
+              <div
+                class="sm-panel-header"
+                onPointerDown={(e) => handlePanelDragStart('controls', panels().find(p => p.id === 'controls')!.order, e)}
+                onPointerMove={handlePanelDragMove}
+                onPointerUp={handlePanelDragEnd}
+                onPointerCancel={handlePanelDragEnd}
+              >
+                <svg viewBox="0 0 24 24" width="10" height="10" class="sm-drag-icon"><path fill="currentColor" d="M20 9H4v2h16V9zM4 15h16v-2H4v2z"/></svg>
+                Stem Controls
+              </div>
               <div class="sm-strips-row">
                 {vocal().url && (
                   <div class="sm-stem-strip">
@@ -1086,56 +1210,67 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                   </div>
                 )}
               </div>
+            </div>
 
-              {/* Lyrics Panel */}
-              <div class="sm-lyrics-panel">
-                <div class="sm-lyrics-header">
-                  <span>Lyrics</span>
-                  <Show when={lyricsSource() === 'api'}>
-                    <span class="sm-lyrics-source">found</span>
-                  </Show>
-                  <Show when={lyricsSource() === 'upload'}>
-                    <span class="sm-lyrics-source sm-lyrics-source-upload">uploaded</span>
-                  </Show>
-                </div>
-                <Show when={lyricsLoading()}>
-                  <div class="sm-lyrics-loading">Searching...</div>
+            {/* Panel: Lyrics */}
+            <div
+              class="sm-workspace-panel"
+              style={{ order: panels().find(p => p.id === 'lyrics')!.order }}
+              data-panel-id="lyrics"
+            >
+              <div
+                class="sm-panel-header"
+                onPointerDown={(e) => handlePanelDragStart('lyrics', panels().find(p => p.id === 'lyrics')!.order, e)}
+                onPointerMove={handlePanelDragMove}
+                onPointerUp={handlePanelDragEnd}
+                onPointerCancel={handlePanelDragEnd}
+              >
+                <svg viewBox="0 0 24 24" width="10" height="10" class="sm-drag-icon"><path fill="currentColor" d="M20 9H4v2h16V9zM4 15h16v-2H4v2z"/></svg>
+                Lyrics
+                <Show when={lyricsSource() === 'api'}>
+                  <span class="sm-lyrics-source">found</span>
                 </Show>
-                <Show when={!lyricsLoading() && lyricsSource() !== 'none'}>
-                  <div class="sm-lyrics-lines">
-                    <Show when={lrcLines().length > 0}>
-                      <For each={lrcLines()}>
-                        {(line, idx) => (
-                          <span
-                            class={`sm-lyrics-line${idx() === currentLineIdx() ? ' sm-lyrics-line-active' : ''}`}
-                            onClick={() => handleLyricLineClick(idx())}
-                          >
-                            {line.text}
-                          </span>
-                        )}
-                      </For>
-                    </Show>
-                    <Show when={lrcLines().length === 0 && lyricsLines().length > 0}>
-                      <For each={lyricsLines()}>
-                        {(line, idx) => (
-                          <span
-                            class={`sm-lyrics-line${idx() === currentLineIdx() ? ' sm-lyrics-line-active' : ''}`}
-                            onClick={() => handleLyricLineClick(idx())}
-                          >
-                            {line}
-                          </span>
-                        )}
-                      </For>
-                    </Show>
-                  </div>
-                </Show>
-                <Show when={!lyricsLoading() && lyricsSource() === 'none'}>
-                  <LyricsUploader
-                    onUpload={handleLyricsUpload}
-                    suggestion={props.songTitle}
-                  />
+                <Show when={lyricsSource() === 'upload'}>
+                  <span class="sm-lyrics-source sm-lyrics-source-upload">uploaded</span>
                 </Show>
               </div>
+              <Show when={lyricsLoading()}>
+                <div class="sm-lyrics-loading">Searching...</div>
+              </Show>
+              <Show when={!lyricsLoading() && lyricsSource() !== 'none'}>
+                <div class="sm-lyrics-lines">
+                  <Show when={lrcLines().length > 0}>
+                    <For each={lrcLines()}>
+                      {(line, idx) => (
+                        <span
+                          class={`sm-lyrics-line${idx() === currentLineIdx() ? ' sm-lyrics-line-active' : ''}`}
+                          onClick={() => handleLyricLineClick(idx())}
+                        >
+                          {line.text}
+                        </span>
+                      )}
+                    </For>
+                  </Show>
+                  <Show when={lrcLines().length === 0 && lyricsLines().length > 0}>
+                    <For each={lyricsLines()}>
+                      {(line, idx) => (
+                        <span
+                          class={`sm-lyrics-line${idx() === currentLineIdx() ? ' sm-lyrics-line-active' : ''}`}
+                          onClick={() => handleLyricLineClick(idx())}
+                        >
+                          {line}
+                        </span>
+                      )}
+                    </For>
+                  </Show>
+                </div>
+              </Show>
+              <Show when={!lyricsLoading() && lyricsSource() === 'none'}>
+                <LyricsUploader
+                  onUpload={handleLyricsUpload}
+                  suggestion={props.songTitle}
+                />
+              </Show>
             </div>
           </div>
         </Show>
@@ -1266,39 +1401,38 @@ export const StemMixerStyles: string = `
   opacity: 0.85;
 }
 
-/* Body */
-.sm-body {
-  display: flex;
+/* Workspace grid */
+.sm-workspace {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-auto-rows: minmax(120px, auto);
+  gap: 0.5rem;
   flex: 1;
   overflow: hidden;
-  gap: 0;
-}
-
-/* Viz panel */
-.sm-viz {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  padding: 0.75rem;
-  overflow: hidden;
+  padding: 0.5rem;
   min-height: 0;
 }
 
-.sm-viz-section {
+.sm-workspace-panel {
   display: flex;
   flex-direction: column;
   background: var(--bg-primary, #0d1117);
   border-radius: 0.5rem;
   overflow: hidden;
   min-height: 0;
+  transition: box-shadow 0.15s ease;
 }
 
-.sm-viz-overview { flex: 2; min-height: 70px; }
-.sm-viz-live { flex: 0 0 auto; height: 90px; min-height: 50px; }
-.sm-viz-pitch { flex: 3; min-height: 100px; }
+.sm-workspace-panel.dragging {
+  opacity: 0.5;
+  box-shadow: 0 0 0 2px var(--accent, #58a6ff);
+}
 
-.sm-viz-label {
+/* Drag handle header */
+.sm-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
   font-size: 0.65rem;
   color: var(--fg-tertiary, #484f58);
   padding: 0.3rem 0.6rem;
@@ -1306,6 +1440,18 @@ export const StemMixerStyles: string = `
   text-transform: uppercase;
   letter-spacing: 0.05em;
   flex-shrink: 0;
+  cursor: grab;
+  user-select: none;
+}
+
+.sm-panel-header:active {
+  cursor: grabbing;
+}
+
+.sm-drag-icon {
+  flex-shrink: 0;
+  opacity: 0.5;
+  color: var(--fg-tertiary, #484f58);
 }
 
 .sm-canvas {
@@ -1314,17 +1460,7 @@ export const StemMixerStyles: string = `
   min-height: 0;
 }
 
-/* Controls panel */
-.sm-controls {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  padding: 0.75rem 0.75rem 0.75rem 0;
-  width: 220px;
-  flex-shrink: 0;
-  overflow: hidden;
-}
-
+/* Controls content */
 .sm-strips-row {
   display: flex;
   gap: 0.5rem;
@@ -1712,42 +1848,4 @@ export const StemMixerStyles: string = `
   transition: width 0.1s linear;
 }
 
-
-/* Sidebar toggle */
-.sm-sidebar-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.6rem;
-  height: 1.6rem;
-  padding: 0;
-  background: var(--bg-tertiary, #21262d);
-  border: 1px solid var(--border, #30363d);
-  border-radius: 0.35rem;
-  color: var(--fg-secondary, #8b949e);
-  cursor: pointer;
-  transition: all 0.15s;
-  flex-shrink: 0;
-}
-
-.sm-sidebar-toggle:hover {
-  background: var(--bg-hover, #30363d);
-  color: var(--fg-primary, #c9d1d9);
-}
-
-.sm-sidebar-toggle svg {
-  width: 0.8rem;
-  height: 0.8rem;
-  transition: transform 0.2s ease;
-}
-
-/* Collapsed sidebar */
-.sm-controls-collapsed {
-  width: 0 !important;
-  min-width: 0 !important;
-  padding: 0 !important;
-  overflow: hidden !important;
-  opacity: 0;
-  transition: width 0.25s ease, opacity 0.2s ease, padding 0.25s ease;
-}
 `
