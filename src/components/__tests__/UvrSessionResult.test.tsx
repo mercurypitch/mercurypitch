@@ -18,6 +18,10 @@ vi.mock('../icons', () => ({
   FileText: () => <span data-testid="filetext-icon">FileText</span>,
   Play: () => <span data-testid="play-icon">Play</span>,
   Trash2: () => <span data-testid="trash-icon">Trash2</span>,
+  Voice: () => <span data-testid="voice-icon">Voice</span>,
+  Headphones: () => <span data-testid="headphones-icon">Headphones</span>,
+  Midi: () => <span data-testid="midi-icon">Midi</span>,
+  SlidersHorizontal: () => <span data-testid="sliders-icon">SlidersHorizontal</span>,
 }))
 
 // Helper to seed a session into localStorage so getUvrSession can find it
@@ -230,10 +234,10 @@ describe('UvrSessionResult Component', () => {
 
       render(() => <UvrSessionResult {...defaultProps} />)
 
-      expect(screen.getByText('Generated Outputs')).toBeInTheDocument()
+      expect(screen.getByText('Available Stems')).toBeInTheDocument()
     })
 
-    it('renders vocal stem file item', () => {
+    it('renders vocal stem pill', () => {
       seedSession({
         sessionId: 'session-123',
         status: 'completed',
@@ -248,11 +252,10 @@ describe('UvrSessionResult Component', () => {
 
       render(() => <UvrSessionResult {...defaultProps} />)
 
-      expect(screen.getByText('Vocal Stem')).toBeInTheDocument()
-      expect(screen.getAllByText('WAV').length).toBeGreaterThan(0)
+      expect(screen.getByText('Vocal')).toBeInTheDocument()
     })
 
-    it('renders instrumental stem when available', () => {
+    it('renders instrumental stem pill when available', () => {
       seedSession({
         sessionId: 'session-123',
         status: 'completed',
@@ -267,11 +270,10 @@ describe('UvrSessionResult Component', () => {
 
       render(() => <UvrSessionResult {...defaultProps} />)
 
-      expect(screen.getByText('Instrumental')).toBeInTheDocument()
-      expect(screen.getAllByText('WAV').length).toBeGreaterThan(0)
+      expect(screen.getByText('Inst')).toBeInTheDocument()
     })
 
-    it('renders vocal MIDI when available', () => {
+    it('renders vocal MIDI pill when available', () => {
       seedSession({
         sessionId: 'session-123',
         status: 'completed',
@@ -286,11 +288,10 @@ describe('UvrSessionResult Component', () => {
 
       render(() => <UvrSessionResult {...defaultProps} />)
 
-      expect(screen.getByText('Vocal MIDI')).toBeInTheDocument()
       expect(screen.getByText('MIDI')).toBeInTheDocument()
     })
 
-    it('calls export with vocal type when download clicked', () => {
+    it('toggles stem selection on click', () => {
       seedSession({
         sessionId: 'session-123',
         status: 'completed',
@@ -305,46 +306,11 @@ describe('UvrSessionResult Component', () => {
 
       render(() => <UvrSessionResult {...defaultProps} />)
 
-      const fileActionButtons = Array.from(
-        document.querySelectorAll('button.file-action'),
-      )
-      const vocalDownloadBtn = fileActionButtons[0]
-      if (vocalDownloadBtn) {
-        fireEvent.click(vocalDownloadBtn)
-      }
-
-      expect(defaultProps.onExport).toHaveBeenCalledWith('session-123', 'vocal')
-    })
-
-    it('calls export with instrumental type for instrumental download', async () => {
-      seedSession({
-        sessionId: 'session-123',
-        status: 'completed',
-        progress: 100,
-        outputs: {
-          vocal: '/stems/vocal.wav',
-          instrumental: '/stems/instrumental.wav',
-          vocalMidi: '/midi/vocal.mid',
-        },
-        createdAt: Date.now() - 3600000,
-      })
-
-      render(() => <UvrSessionResult {...defaultProps} />)
-
-      await new Promise((resolve) => setTimeout(resolve, 0))
-
-      const fileActionButtons = Array.from(
-        document.querySelectorAll('button.file-action'),
-      )
-      const instrumentalDownloadBtn = fileActionButtons[1]
-      if (instrumentalDownloadBtn) {
-        fireEvent.click(instrumentalDownloadBtn)
-      }
-
-      expect(defaultProps.onExport).toHaveBeenCalledWith(
-        'session-123',
-        'instrumental',
-      )
+      const vocalPill = screen.getByText('Vocal')
+      fireEvent.click(vocalPill)
+      // Vocal pill should now have the selected class
+      const button = vocalPill.closest('button')
+      expect(button?.classList.contains('stem-pill-selected')).toBe(true)
     })
 
     it('renders view results button for completed sessions', () => {
