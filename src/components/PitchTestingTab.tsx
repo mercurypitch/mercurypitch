@@ -6,6 +6,8 @@ import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, Show, } from 'solid-js'
 import type { PitchDetectionResult } from '@/lib/pitch-algorithms'
 import { AutocorrelatorDetector, FFTDetector, YINDetector, } from '@/lib/pitch-algorithms'
+import type { TimeStampedPitchSample } from '@/types/pitch-algorithms'
+import { PitchOverTimeCanvas } from '@/components/PitchOverTimeCanvas'
 
 interface PitchTestingTabProps {
   onClose?: () => void
@@ -92,6 +94,9 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
   const [liveResults, setLiveResults] = createSignal<
     (PitchDetectionResult | null)[]
   >([])
+  const [pitchSamples, setPitchSamples] = createSignal<
+    TimeStampedPitchSample[]
+  >([])
   const [isDetecting, setIsDetecting] = createSignal(false)
 
   // Metrics display
@@ -109,8 +114,8 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
   // UI state
   const [isRunningTest, setIsRunningTest] = createSignal(false)
 
-  let animationFrameId: number | null = null
-  const testAnimationFrameId: number | null = null
+  let detectionTimerId: number | null = null
+  let detectionStartTime = 0
   let streamStopTimeout: number | null = null
 
   // Load audio file
@@ -205,21 +210,58 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
     // Don't call stopLiveDetection here to avoid circular calls
   }
 
-  const updateMicDetection = () => {
-    if (!isDetecting() || !isMicStartedByUser()) return
-    const analyserVal = analyser()
-    if (!analyserVal) return
+  // Unified detection tick — called on a throttled setInterval (10 Hz)
+  const detectionTick = () => {
+    if (!isDetecting()) {
+      if (detectionTimerId !== null) {
+        clearInterval(detectionTimerId)
+        detectionTimerId = null
+      }
+      return
+    }
 
     const detector = detectorForAlgorithm()
     if (detector === undefined) return
 
-    const dataArray = new Float32Array(analyserVal.fftSize)
-    analyserVal.getFloatTimeDomainData(dataArray)
+    const mode = detectionMode()
+    let dataArray: Float32Array
+
+    if (mode === 'mic') {
+      if (!isMicStartedByUser()) return
+      const analyserVal = analyser()
+      if (!analyserVal) return
+      dataArray = new Float32Array(analyserVal.fftSize)
+      analyserVal.getFloatTimeDomainData(dataArray)
+    } else if (mode === 'generate') {
+      const wave = generatedWaveform()
+      if (!wave) return
+      dataArray = wave
+    } else if (mode === 'file') {
+      const wave = fileWaveform()
+      if (!wave) {
+        stopLiveDetection()
+        return
+      }
+      dataArray = wave
+    } else {
+      return
+    }
 
     const result = detector.detect(dataArray)
     setLiveResults((prev) => [...prev.slice(-100), result])
 
-    animationFrameId = requestAnimationFrame(updateMicDetection)
+    const now = performance.now()
+    const elapsed = detectionStartTime > 0 ? (now - detectionStartTime) / 1000 : 0
+    const sample: TimeStampedPitchSample = {
+      time: elapsed,
+      freq: result?.frequency ?? null,
+      noteName: result?.noteName ?? null,
+      clarity: result?.clarity ?? 0,
+    }
+    setPitchSamples((prev) => {
+      const next = [...prev, sample]
+      return next.length > 200 ? next.slice(-200) : next
+    })
   }
 
   // Load generated waveform
@@ -262,96 +304,31 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
     generateWaveform()
   })
 
-  // Reactive effect: when mic becomes ready while detection is active, start the loop
-  createEffect(() => {
-    if (isDetecting() && detectionMode() === 'mic' && isMicStartedByUser()) {
-      updateMicDetection()
-    }
-  })
-
   // Start live detection
   const startLiveDetection = () => {
     setIsDetecting(true)
     setLiveResults([])
+    setPitchSamples([])
+    detectionStartTime = performance.now()
 
-    if (detectionMode() === 'mic') {
-      if (!isMicStartedByUser()) {
-        void startMicrophoneInput()
-        // The createEffect above will start detection when mic is ready
-      } else {
-        updateMicDetection()
-      }
-      return
+    // For mic mode, start mic if needed — detectionTick will pick up when ready
+    if (detectionMode() === 'mic' && !isMicStartedByUser()) {
+      void startMicrophoneInput()
     }
 
-    if (detectionMode() === 'file' && fileWaveform()) {
-      updateFileDetection()
-      return
+    // Stop any existing timer before starting a new one
+    if (detectionTimerId !== null) {
+      clearInterval(detectionTimerId)
     }
-
-    if (detectionMode() === 'generate' && generatedWaveform()) {
-      updateGenerateDetection()
-      return
-    }
-
-    stopLiveDetection()
-  }
-
-  // Update detection from generated waveform
-  const updateGenerateDetection = () => {
-    const updateLoop = () => {
-      if (!isDetecting()) return
-
-      const detector = detectorForAlgorithm()
-      if (detector === undefined) return
-
-      const wave = generatedWaveform()
-      if (!wave) {
-        animationFrameId = requestAnimationFrame(updateLoop)
-        return
-      }
-
-      const result = detector.detect(wave)
-      setLiveResults((prev) => [...prev.slice(-100), result])
-
-      animationFrameId = requestAnimationFrame(updateLoop)
-    }
-
-    animationFrameId = requestAnimationFrame(updateLoop)
-  }
-
-  // Update detection from uploaded file
-  const updateFileDetection = () => {
-    const wave = fileWaveform()
-    if (!wave) {
-      stopLiveDetection()
-      return
-    }
-
-    const detector = detectorForAlgorithm()
-    if (detector === undefined) {
-      stopLiveDetection()
-      return
-    }
-
-    const updateLoop = () => {
-      if (!isDetecting()) return
-
-      const result = detector.detect(wave)
-      setLiveResults((prev) => [...prev.slice(-100), result])
-
-      animationFrameId = requestAnimationFrame(updateLoop)
-    }
-
-    animationFrameId = requestAnimationFrame(updateLoop)
+    detectionTimerId = setInterval(detectionTick, 100)
   }
 
   // Stop live detection
   const stopLiveDetection = () => {
     setIsDetecting(false)
-    if (animationFrameId !== null) {
-      cancelAnimationFrame(animationFrameId)
-      animationFrameId = null
+    if (detectionTimerId !== null) {
+      clearInterval(detectionTimerId)
+      detectionTimerId = null
     }
     if (streamStopTimeout !== null) {
       clearTimeout(streamStopTimeout)
@@ -424,6 +401,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
     stopLiveDetection()
     detectors().forEach((d) => d.reset())
     setLiveResults([])
+    setPitchSamples([])
     setTestResults({ passed: 0, failed: 0, errors: [] })
     setTotalDetections(0)
     setAvgClarity(0)
@@ -433,9 +411,6 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
 
   onCleanup(() => {
     stopLiveDetection()
-    if (testAnimationFrameId !== null) {
-      cancelAnimationFrame(testAnimationFrameId)
-    }
   })
 
   // Memoized detector lookup to avoid reactivity loops
@@ -671,28 +646,11 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
               <div class="waveform-display">
                 <h4>Detection Over Time</h4>
                 <div class="waveform-canvas">
-                  <For each={liveResults()}>
-                    {(result, index) => {
-                      const displayFreq = result?.frequency ?? 0
-                      const total = liveResults().length
-                      const x = total > 1 ? (index() / (total - 1)) * 100 : 50
-                      const y = displayFreq > 0
-                        ? (1 - (displayFreq - 65) / (2100 - 65)) * 100
-                        : 50
-
-                      return (
-                        <div
-                          class="waveform-dot"
-                          classList={{ signal: displayFreq > 0 }}
-                          style={{
-                            left: `${x}%`,
-                            top: `${y}%`,
-                          }}
-                          title={`${result?.noteName ?? 'No signal'} (${displayFreq.toFixed(2)} Hz)`}
-                        />
-                      )
-                    }}
-                  </For>
+                  <PitchOverTimeCanvas
+                    samples={pitchSamples}
+                    isDetecting={isDetecting}
+                    visibleWindowSeconds={10}
+                  />
                 </div>
               </div>
             </div>

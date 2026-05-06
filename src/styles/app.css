@@ -10584,20 +10584,17 @@ input:checked + .settings-slider:before {
 }
 
 .pitch-testing-visualization .waveform-canvas {
-  height: 100px;
+  height: 280px;
   border-radius: 6px;
   background: var(--bg-tertiary);
   overflow: hidden;
   position: relative;
 }
 
-.pitch-testing-visualization .waveform-dot {
-  position: absolute;
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--accent);
-  transform: translate(-50%, -50%);
+.pitch-testing-visualization .waveform-canvas canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .pitch-testing-visualization .info-panel {
