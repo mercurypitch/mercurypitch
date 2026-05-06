@@ -50,8 +50,23 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
     props.onStartPractice?.(mode)
   }
 
-  const handleExport = (type: 'vocal' | 'instrumental' | 'vocal-midi' | 'instrumental-midi') => {
-    props.onExport?.(type)
+  const handleDownload = async (url: string | undefined, filename: string) => {
+    if (!url) return
+    try {
+      const resp = await fetch(url)
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
+      const blob = await resp.blob()
+      const blobUrl = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = blobUrl
+      a.download = filename
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000)
+    } catch (err) {
+      console.error('Download failed:', err)
+    }
   }
 
   const handleShare = async () => {
@@ -187,7 +202,7 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
                 </button>
                 <button
                   class="rv-stem-btn rv-stem-btn-download"
-                  onClick={() => handleExport(stem.exportType)}
+                  onClick={() => handleDownload(stem.url, `${stem.label.toLowerCase()}_stem.${stem.format.toLowerCase()}`)}
                 >
                   <Download />
                 </button>

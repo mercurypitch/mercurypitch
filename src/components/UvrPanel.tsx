@@ -187,12 +187,36 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     }
   }
 
-  const handleExport = (
+  const handleExport = async (
     type: 'vocal' | 'instrumental' | 'vocal-midi' | 'instrumental-midi',
   ) => {
-    if (props.onExport) {
-      props.onExport(type)
+    const s = session()
+    if (!s?.outputs) return
+
+    const url = type === 'vocal' ? s.outputs.vocal
+      : type === 'instrumental' ? s.outputs.instrumental
+      : type === 'vocal-midi' ? s.outputs.vocalMidi
+      : s.outputs.instrumentalMidi
+
+    if (!url) return
+
+    try {
+      const resp = await fetch(url)
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
+      const blob = await resp.blob()
+      const blobUrl = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = blobUrl
+      const ext = type.includes('midi') ? '.mid' : '.wav'
+      a.download = `${type.replace('-', '_')}${ext}`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000)
+    } catch (err) {
+      console.error('Download failed:', err)
     }
+    props.onExport?.(type)
   }
 
   const handleSessionView = (sessionId: string) => {
@@ -250,12 +274,35 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     setCurrentView('mixer')
   }
 
-  const handleExportSession = (
+  const handleExportSession = async (
     sessionId: string,
     type: 'vocal' | 'instrumental' | 'vocal-midi',
   ) => {
-    // Session export logic
-    console.log('Exporting:', sessionId, type)
+    const s = getUvrSession(sessionId)
+    if (!s?.outputs) return
+
+    const url = type === 'vocal' ? s.outputs.vocal
+      : type === 'instrumental' ? s.outputs.instrumental
+      : s.outputs.vocalMidi
+
+    if (!url) return
+
+    try {
+      const resp = await fetch(url)
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
+      const blob = await resp.blob()
+      const blobUrl = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = blobUrl
+      const ext = type === 'vocal-midi' ? '.mid' : '.wav'
+      a.download = `${type.replace('-', '_')}${ext}`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000)
+    } catch (err) {
+      console.error('Download failed:', err)
+    }
   }
 
   const handleDeleteAll = () => {
