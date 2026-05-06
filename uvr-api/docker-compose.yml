@@ -5,7 +5,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - /tmp/uvr:/tmp/uvr
+      - ./models:/tmp/audio-separator-models
       - ./output:/app/output
       - ./api.py:/app/api.py
       - .:/app

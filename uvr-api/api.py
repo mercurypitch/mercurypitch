@@ -72,12 +72,10 @@ ort.InferenceSession = rocm_inference_session
 # Configure paths
 OUTPUT_DIR = "/app/output"
 UPLOAD_DIR = "/app/uploads"
-SESSION_DIR = "/tmp/uvr"
 
 # Create directories
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 os.makedirs(UPLOAD_DIR, exist_ok=True)
-os.makedirs(SESSION_DIR, exist_ok=True)
 
 # ── Progress tracking ──────────────────────────────────────────
 

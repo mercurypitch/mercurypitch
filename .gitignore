@@ -49,4 +49,5 @@ public/assets/
 # docker - server uvr-api 
 uvr-api/output/
 uvr-api/uploads/
+uvr-api/models/
 uvr-api/__pycache__/

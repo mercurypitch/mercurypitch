@@ -11,7 +11,7 @@ ENV PYTHONUNBUFFERED=1 \
     PATH=/app/.local/bin:$PATH
 
 # Tell Linux to look inside PyTorch for missing AMD GPU libraries
-#ENV LD_LIBRARY_PATH="/usr/local/lib/python3.11/site-packages/torch/lib:$LD_LIBRARY_PATH"
+ENV LD_LIBRARY_PATH="/usr/local/lib/python3.11/site-packages/torch/lib:$LD_LIBRARY_PATH"
 # Trying with ROCM 7.2
 # Force ROCm 6.2 to treat the RDNA 4 GPU as an RDNA 3 (RX 7000 series) GPU
 #ENV HSA_OVERRIDE_GFX_VERSION=11.0.0
@@ -40,12 +40,12 @@ RUN pip install torch torchvision torchaudio --index-url https://download.pytorc
     && find /usr/local/lib/python3.11/site-packages/onnxruntime -name "*.so" -exec execstack -c {} \;
 
 # Create symlinks for ONNX Runtime to find the PyTorch AMD libraries
-#RUN ln -s /usr/local/lib/python3.11/site-packages/torch/lib/libhipblas.so /usr/local/lib/python3.11/site-packages/torch/lib/libhipblas.so.2 \
-#    && ln -s /usr/local/lib/python3.11/site-packages/torch/lib/librocm_smi64.so /usr/local/lib/python3.11/site-packages/torch/lib/librocm_smi64.so.7 \
-#    && ln -s /usr/local/lib/python3.11/site-packages/torch/lib/libamdhip64.so /usr/local/lib/python3.11/site-packages/torch/lib/libamdhip64.so.6
+RUN ln -sf /usr/local/lib/python3.11/site-packages/torch/lib/libhipblas.so /usr/local/lib/python3.11/site-packages/torch/lib/libhipblas.so.2 \
+    && ln -sf /usr/local/lib/python3.11/site-packages/torch/lib/librocm_smi64.so /usr/local/lib/python3.11/site-packages/torch/lib/librocm_smi64.so.7 \
+    && ln -sf /usr/local/lib/python3.11/site-packages/torch/lib/libamdhip64.so /usr/local/lib/python3.11/site-packages/torch/lib/libamdhip64.so.6
 
 # Create output directories
-RUN mkdir -p /app/output /app/uploads /tmp/uvr
+RUN mkdir -p /app/output /app/uploads
 
 # Copy API server
 COPY api.py .
