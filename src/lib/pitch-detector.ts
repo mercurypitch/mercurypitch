@@ -348,17 +348,14 @@ export class PitchDetector {
     confidence: number
   } {
     const halfSize = Math.floor(this.bufferSize / 2)
-    let runningSum = 0
 
-    // Step 1: Difference function
+    // Step 1: Difference function (raw, no normalization)
     for (let tau = 0; tau < halfSize; tau++) {
       this.yinBuffer[tau] = 0
       for (let i = 0; i < halfSize; i++) {
         const delta = buffer[i] - buffer[i + tau]
         this.yinBuffer[tau] += delta * delta
       }
-      runningSum += this.yinBuffer[tau]
-      this.yinBuffer[tau] *= tau / runningSum
     }
 
     // Step 2: Cumulative mean normalized difference

@@ -10504,6 +10504,121 @@ input:checked + .settings-slider:before {
   color: var(--accent);
 }
 
+/* Algorithm header row — label + ensemble toggle */
+.pitch-testing-controls .algorithm-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pitch-testing-controls .ensemble-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+.pitch-testing-controls .ensemble-toggle-label input[type='checkbox'] {
+  margin: 0;
+  accent-color: var(--accent);
+  width: 12px;
+  height: 12px;
+}
+
+.pitch-testing-controls .ensemble-toggle-text {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+}
+
+/* Ensemble algorithm pills */
+.pitch-testing-controls .ensemble-pills {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.pitch-testing-controls .ensemble-pill {
+  padding: 4px 10px;
+  font-size: 0.7rem;
+  border-radius: 14px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.pitch-testing-controls .ensemble-pill:hover:not(:disabled) {
+  border-color: var(--accent-glow);
+  color: var(--text-primary);
+}
+
+.pitch-testing-controls .ensemble-pill.selected {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.pitch-testing-controls .ensemble-pill:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Ensemble vote bar in live metrics */
+.pitch-testing-visualization .ensemble-vote-bar {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.ensemble-vote-chip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 10px;
+  font-size: 0.68rem;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-tertiary);
+}
+
+.ensemble-vote-chip.detected {
+  border-color: var(--green-dim);
+  background: rgba(63, 185, 80, 0.08);
+}
+
+.ensemble-vote-chip.no-detect {
+  border-color: var(--red-dim);
+  background: rgba(248, 81, 73, 0.06);
+}
+
+.ensemble-vote-chip .vote-chip-algo {
+  color: var(--text-muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  font-size: 0.6rem;
+}
+
+.ensemble-vote-chip .vote-chip-note {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.ensemble-vote-chip.detected .vote-chip-note {
+  color: var(--green-bright);
+}
+
+.ensemble-vote-chip.no-detect .vote-chip-note {
+  color: var(--text-muted);
+}
+
 .pitch-testing-visualization {
   flex: 1;
   padding: 12px 16px;

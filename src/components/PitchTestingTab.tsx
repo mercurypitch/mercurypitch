@@ -15,12 +15,26 @@ interface PitchTestingTabProps {
 }
 
 type DetectionMode = 'mic' | 'file' | 'generate'
+type AlgorithmId = 'yin' | 'fft' | 'autocorr'
 
 interface TestNoteResult {
   noteName: string
   targetFreq: number
   passed: boolean
   detectedFreq: number | null
+}
+
+interface EnsembleTickResult {
+  algorithm: AlgorithmId
+  result: PitchDetectionResult | null
+}
+
+interface EnsembleTestNoteResult {
+  noteName: string
+  targetFreq: number
+  ensemblePassed: boolean
+  ensembleFreq: number | null
+  perAlgorithm: Record<string, { passed: boolean; detectedFreq: number | null }>
 }
 
 const TEST_FREQUENCIES = [
@@ -65,6 +79,13 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
   const [selectedAlgorithm, setSelectedAlgorithm] = createSignal<
     'yin' | 'fft' | 'autocorr'
   >('yin')
+  const [ensembleMode, setEnsembleMode] = createSignal(false)
+  const [ensembleAlgorithms, setEnsembleAlgorithms] = createSignal<
+    Set<AlgorithmId>
+  >(new Set(['yin', 'fft']))
+  const [ensembleTickResults, setEnsembleTickResults] = createSignal<
+    EnsembleTickResult[]
+  >([])
   const [detectionMode, setDetectionMode] =
     createSignal<DetectionMode>('mic')
   const [frequency, setFrequency] = createSignal(440)
@@ -267,8 +288,12 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
       return
     }
 
-    const detector = detectorForAlgorithm()
-    if (detector === undefined) return
+    const isEnsemble = ensembleMode()
+
+    if (!isEnsemble) {
+      const detector = detectorForAlgorithm()
+      if (detector === undefined) return
+    }
 
     const mode = detectionMode()
     let dataArray: Float32Array
@@ -294,7 +319,19 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
       return
     }
 
-    const result = detector.detect(dataArray)
+    let result: PitchDetectionResult | null
+    let tickPerAlgorithm: EnsembleTickResult[] = []
+
+    if (isEnsemble) {
+      const ensembleOutput = ensembleDetect(dataArray)
+      result = ensembleOutput.result
+      tickPerAlgorithm = ensembleOutput.perAlgorithm
+      setEnsembleTickResults(tickPerAlgorithm)
+    } else {
+      const detector = detectorForAlgorithm()!
+      result = detector.detect(dataArray)
+    }
+
     setLiveResults((prev) => [...prev.slice(-100), result])
 
     const now = performance.now()
@@ -392,12 +429,16 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
     stopLiveDetection()
     setIsMicStartedByUser(false)
 
-    const detector = detectors().find(
-      (d) => d.algorithm === selectedAlgorithm(),
-    )
-    if (detector === null || detector === undefined) {
-      setIsRunningTest(false)
-      return
+    const isEnsemble = ensembleMode()
+
+    if (!isEnsemble) {
+      const detector = detectors().find(
+        (d) => d.algorithm === selectedAlgorithm(),
+      )
+      if (detector === null || detector === undefined) {
+        setIsRunningTest(false)
+        return
+      }
     }
 
     const errors: number[] = []
@@ -413,13 +454,26 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
           wave[i] = Math.sin(2 * Math.PI * freq * t) * amplitude
         }
 
-        const result = detector.detect(wave)
+        let detectedFreq: number | null
+        let isPass: boolean
 
-        const detectedFreq = result?.frequency ?? null
-        const isPass =
-          result !== null &&
-          result !== undefined &&
-          Math.abs(result.frequency - freq) < 5
+        if (isEnsemble) {
+          const ensembleOutput = ensembleDetect(wave)
+          detectedFreq = ensembleOutput.result?.frequency ?? null
+          isPass =
+            ensembleOutput.result !== null &&
+            Math.abs(ensembleOutput.result.frequency - freq) < 5
+        } else {
+          const detector = detectors().find(
+            (d) => d.algorithm === selectedAlgorithm(),
+          )
+          const result = detector!.detect(wave)
+          detectedFreq = result?.frequency ?? null
+          isPass =
+            result !== null &&
+            result !== undefined &&
+            Math.abs(result.frequency - freq) < 5
+        }
 
         if (isPass) {
           passed++
@@ -456,6 +510,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
     setLiveResults([])
     setPitchSamples([])
     setTestResults({ passed: 0, failed: 0, errors: [], noteResults: [] })
+    setEnsembleTickResults([])
     setTotalDetections(0)
     setAvgClarity(0)
     setAvgErrorHz(0)
@@ -481,6 +536,101 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
     return detectors().find((d) => d.algorithm === alg)
   })
 
+  const toggleEnsembleAlgorithm = (algo: AlgorithmId) => {
+    const current = new Set(ensembleAlgorithms())
+    if (current.has(algo)) {
+      if (current.size <= 2) return // minimum 2 for ensemble
+      current.delete(algo)
+    } else {
+      current.add(algo)
+    }
+    setEnsembleAlgorithms(current)
+  }
+
+  // Ensemble voting: run all selected algorithms on the same data,
+  // vote on note name, pick majority winner with confidence tiebreaker.
+  const ensembleDetect = (
+    dataArray: Float32Array,
+  ): {
+    result: PitchDetectionResult | null
+    perAlgorithm: EnsembleTickResult[]
+    votes: Record<string, { count: number; algos: string[]; avgFreq: number }>
+  } => {
+    const activeDetectors = detectors().filter((d) =>
+      ensembleAlgorithms().has(d.algorithm as AlgorithmId),
+    )
+    const perAlgorithm: EnsembleTickResult[] = []
+
+    for (const det of activeDetectors) {
+      const r = det.detect(dataArray)
+      perAlgorithm.push({ algorithm: det.algorithm as AlgorithmId, result: r })
+    }
+
+    // Vote by note name
+    const votes: Record<
+      string,
+      { count: number; algos: string[]; freqs: number[]; clarities: number[] }
+    > = {}
+    for (const item of perAlgorithm) {
+      if (!item.result?.noteName) continue
+      const note = item.result.noteName
+      if (!votes[note]) votes[note] = { count: 0, algos: [], freqs: [], clarities: [] }
+      votes[note].count++
+      votes[note].algos.push(item.algorithm)
+      votes[note].freqs.push(item.result.frequency)
+      votes[note].clarities.push(item.result.clarity)
+    }
+
+    const entries = Object.entries(votes)
+    if (entries.length === 0) {
+      return { result: null, perAlgorithm, votes: {} }
+    }
+
+    // Sort by votes (desc), then avg clarity (desc) as tiebreaker
+    entries.sort((a, b) => {
+      if (b[1].count !== a[1].count) return b[1].count - a[1].count
+      const avgA = a[1].clarities.reduce((s, v) => s + v, 0) / a[1].clarities.length
+      const avgB = b[1].clarities.reduce((s, v) => s + v, 0) / b[1].clarities.length
+      return avgB - avgA
+    })
+
+    const [winningNote, winningData] = entries[0]!
+    const avgFreq =
+      winningData.freqs.reduce((s, v) => s + v, 0) / winningData.freqs.length
+    const agreement = winningData.count / perAlgorithm.length
+
+    // Build simplified votes for display
+    const displayVotes: Record<
+      string,
+      { count: number; algos: string[]; avgFreq: number }
+    > = {}
+    for (const [note, data] of entries) {
+      displayVotes[note] = {
+        count: data.count,
+        algos: data.algos,
+        avgFreq: data.freqs.reduce((s, v) => s + v, 0) / data.freqs.length,
+      }
+    }
+
+    // Build ensemble result
+    const midi = 69 + 12 * Math.log2(avgFreq / 440)
+    const result: PitchDetectionResult = {
+      frequency: avgFreq,
+      clarity: agreement,
+      noteName: winningNote,
+      octave: Math.floor(midi / 12) - 1,
+      cents: (midi - Math.round(midi)) * 100,
+      midi: Math.round(midi),
+      timestamp: performance.now(),
+      computationTime: perAlgorithm.reduce(
+        (s, p) => s + (p.result?.computationTime ?? 0),
+        0,
+      ),
+    }
+
+    return { result, perAlgorithm, votes: displayVotes }
+  }
+
   // Latest valid result from liveResults (for reactive metrics panel)
   const latestResult = createMemo(() => {
     const results = liveResults()
@@ -505,20 +655,56 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
         {/* Left Panel - Controls */}
         <div class="pitch-testing-controls">
           <div class="control-group">
-            <label>Algorithm</label>
-            <select
-              disabled={isDetecting() || isRunningTest()}
-              value={selectedAlgorithm()}
-              onChange={(e) =>
-                setSelectedAlgorithm(
-                  e.currentTarget.value as 'yin' | 'fft' | 'autocorr',
-                )
+            <div class="algorithm-header-row">
+              <label>Algorithm</label>
+              <label class="ensemble-toggle-label">
+                <input
+                  type="checkbox"
+                  checked={ensembleMode()}
+                  disabled={isDetecting() || isRunningTest()}
+                  onChange={(e) => setEnsembleMode(e.currentTarget.checked)}
+                />
+                <span class="ensemble-toggle-text">Ensemble</span>
+              </label>
+            </div>
+            <Show
+              when={ensembleMode()}
+              fallback={
+                <select
+                  disabled={isDetecting() || isRunningTest()}
+                  value={selectedAlgorithm()}
+                  onChange={(e) =>
+                    setSelectedAlgorithm(
+                      e.currentTarget.value as AlgorithmId,
+                    )
+                  }
+                >
+                  <option value="yin">YIN Algorithm</option>
+                  <option value="autocorr">Autocorrelation</option>
+                  <option value="fft">FFT Max Bin</option>
+                </select>
               }
             >
-              <option value="yin">YIN Algorithm</option>
-              <option value="autocorr">Autocorrelation</option>
-              <option value="fft">FFT Max Bin</option>
-            </select>
+              <div class="ensemble-pills">
+                <For each={detectors()}>
+                  {(d) => {
+                    const algo = d.algorithm as AlgorithmId
+                    return (
+                      <button
+                        classList={{
+                          'ensemble-pill': true,
+                          selected: ensembleAlgorithms().has(algo),
+                        }}
+                        disabled={isDetecting() || isRunningTest()}
+                        onClick={() => toggleEnsembleAlgorithm(algo)}
+                      >
+                        {d.getName()}
+                      </button>
+                    )
+                  }}
+                </For>
+              </div>
+            </Show>
           </div>
 
           <div class="control-group">
@@ -536,8 +722,11 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
               onInput={(e) => {
                 const val = Number(e.currentTarget.value)
                 setSensitivity(val)
-                const d = detectorForAlgorithm()
-                if (d) d.setSensitivity(val)
+                if (ensembleMode()) {
+                  detectors().forEach((d) => d.setSensitivity(val))
+                } else {
+                  detectorForAlgorithm()?.setSensitivity(val)
+                }
               }}
             />
             <div class="slider-range-labels">
@@ -562,8 +751,11 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
               onInput={(e) => {
                 const val = Number(e.currentTarget.value)
                 setMinConfidence(val)
-                const d = detectorForAlgorithm()
-                if (d) d.setMinConfidence(val)
+                if (ensembleMode()) {
+                  detectors().forEach((d) => d.setMinConfidence(val))
+                } else {
+                  detectorForAlgorithm()?.setMinConfidence(val)
+                }
               }}
             />
             <div class="slider-range-labels">
@@ -714,6 +906,27 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
             <div class="detection-panel">
               <h3>Live Detection</h3>
 
+              <Show when={ensembleMode() && ensembleTickResults().length > 0}>
+                <div class="ensemble-vote-bar">
+                  <For each={ensembleTickResults()}>
+                    {(item) => (
+                      <div
+                        classList={{
+                          'ensemble-vote-chip': true,
+                          detected: item.result !== null,
+                          'no-detect': item.result === null,
+                        }}
+                      >
+                        <span class="vote-chip-algo">{item.algorithm}</span>
+                        <span class="vote-chip-note">
+                          {item.result?.noteName ?? '—'}
+                        </span>
+                      </div>
+                    )}
+                  </For>
+                </div>
+              </Show>
+
               <div class="metrics-grid">
                 <div class="metric-item">
                   <span class="metric-label">Status</span>
@@ -746,7 +959,9 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                   </span>
                 </div>
                 <div class="metric-item">
-                  <span class="metric-label">Clarity</span>
+                  <span class="metric-label">
+                    {ensembleMode() ? 'Agreement' : 'Clarity'}
+                  </span>
                   <span class="metric-value">
                     {latestResult()?.clarity.toFixed(2) ?? '—'}
                   </span>
@@ -812,7 +1027,10 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
               <Show when={isRunningTest()}>
                 <p class="test-running-hint">
                   Running benchmark on {TEST_FREQUENCIES.length} notes with{' '}
-                  {currentDetector()?.getName() ?? selectedAlgorithm()}...
+                  {ensembleMode()
+                    ? `${[...ensembleAlgorithms()].join(' + ')} ensemble`
+                    : currentDetector()?.getName() ?? selectedAlgorithm()}
+                  ...
                 </p>
               </Show>
 
@@ -820,8 +1038,10 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                 <p class="test-description">
                   {TEST_FREQUENCIES.length} pentatonic notes from C2 (65.41 Hz)
                   to C6 (1046.5 Hz), tested with{' '}
-                  {currentDetector()?.getName() ?? selectedAlgorithm()}. Pass =
-                  detected within &plusmn;5 Hz of target.
+                  {ensembleMode()
+                    ? `${[...ensembleAlgorithms()].join(' + ')} ensemble (majority vote)`
+                    : currentDetector()?.getName() ?? selectedAlgorithm()}
+                  . Pass = detected within &plusmn;5 Hz of target.
                 </p>
               </Show>
 
@@ -900,7 +1120,43 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
           </Show>
 
           {/* Algorithm Info */}
-          {currentDetector() !== undefined && (
+          <Show
+            when={!ensembleMode() && currentDetector() !== undefined}
+            fallback={
+              <Show when={ensembleMode()}>
+                <div class="info-panel">
+                  <h3>Ensemble Mode</h3>
+                  <p>
+                    {[...ensembleAlgorithms()]
+                      .map((a) => {
+                        const d = detectors().find((dd) => dd.algorithm === a)
+                        return d?.getName() ?? a
+                      })
+                      .join(' + ')}{' '}
+                    — majority vote on detected note name. Highest agreement
+                    wins; clarity breaks ties.
+                  </p>
+                  <Show when={ensembleTickResults().length > 0}>
+                    <div class="last-result">
+                      <h4>Last Tick Per-Algorithm</h4>
+                      <div class="result-details">
+                        <For each={ensembleTickResults()}>
+                          {(item) => (
+                            <div>
+                              <strong>{item.algorithm}:</strong>{' '}
+                              {item.result
+                                ? `${item.result.frequency.toFixed(1)} Hz (${item.result.noteName}, clarity ${item.result.clarity.toFixed(2)})`
+                                : 'no detection'}
+                            </div>
+                          )}
+                        </For>
+                      </div>
+                    </div>
+                  </Show>
+                </div>
+              </Show>
+            }
+          >
             <div class="info-panel">
               <h3>{currentDetector()?.getName()}</h3>
               <p>{currentDetector()?.getDescription()}</p>
@@ -942,7 +1198,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                 </div>
               )}
             </div>
-          )}
+          </Show>
         </div>
       </div>
     </div>
