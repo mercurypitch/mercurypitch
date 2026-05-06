@@ -172,6 +172,16 @@ export class AutocorrelatorDetector implements IPitchDetector {
       result[lag] = sum / (n - lag)
     }
 
+    // Normalize by zero-lag coefficient so values are in [0, 1] range
+    // Hanning window reduces raw correlation magnitudes significantly,
+    // making the hard threshold unreachable without normalization
+    const r0 = result[0]
+    if (r0 !== undefined && r0 > 1e-10) {
+      for (let i = 0; i < n; i++) {
+        result[i] = result[i]! / r0
+      }
+    }
+
     return result
   }
 

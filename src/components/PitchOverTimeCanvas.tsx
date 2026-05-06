@@ -5,6 +5,7 @@
 import type { Component } from 'solid-js'
 import { createSignal, onCleanup, onMount } from 'solid-js'
 import type { TimeStampedPitchSample } from '@/types/pitch-algorithms'
+import type { ScaleDegree } from '@/types'
 
 interface PitchOverTimeCanvasProps {
   samples: () => TimeStampedPitchSample[]
@@ -12,6 +13,7 @@ interface PitchOverTimeCanvasProps {
   visibleWindowSeconds?: number
   zoomLevel?: () => number
   onZoomChange?: (level: number) => void
+  scaleNotes?: () => ScaleDegree[]
 }
 
 const Y_AXIS_NOTES = [
@@ -147,6 +149,7 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
       ctx.fillRect(0, 0, w, h)
 
       drawYAxisLabels(w, h, effLogMin, effLogRange)
+      drawScaleGridLines(w, h, effLogMin, effLogRange)
       drawTimeLabels(w, h)
       drawSamples(w, h, effLogMin, effLogRange)
 
@@ -187,6 +190,33 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
       ctx.textBaseline = 'middle'
       ctx.fillText(note.label, rightX, y)
     }
+  }
+
+  const drawScaleGridLines = (
+    w: number,
+    h: number,
+    logMin: number,
+    logRange: number,
+  ) => {
+    if (!ctx) return
+    const notes = props.scaleNotes?.()
+    if (!notes || notes.length === 0) return
+
+    ctx.strokeStyle = 'rgba(88,166,255,0.12)'
+    ctx.lineWidth = 0.5
+    ctx.setLineDash([2, 8])
+
+    for (const note of notes) {
+      const y = freqToY(note.freq, h, logMin, logRange)
+      if (y < 4 || y > h - 4) continue
+
+      ctx.beginPath()
+      ctx.moveTo(MARGIN, y)
+      ctx.lineTo(w - MARGIN, y)
+      ctx.stroke()
+    }
+
+    ctx.setLineDash([])
   }
 
   const drawTimeLabels = (w: number, h: number) => {

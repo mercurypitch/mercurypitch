@@ -332,8 +332,14 @@ export async function benchmarkAlgorithmAsync(
     }
   } = {},
 ): Promise<AlgorithmResult> {
-  const sampleRate = options.sampleRate ?? 44100
   const bufferSize = options.bufferSize ?? 2048
+
+  // SwiftF0 requires 16000 Hz — use it as the default for this algorithm,
+  // otherwise the frequency bin spacing won't match what the model expects
+  const sampleRate =
+    algorithm === 'swift'
+      ? 16000
+      : options.sampleRate ?? 44100
 
   // Create SwiftF0 detector
   const detector = new SwiftF0Detector({

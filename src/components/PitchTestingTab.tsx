@@ -8,6 +8,7 @@ import type { PitchDetectionResult } from '@/lib/pitch-algorithms'
 import { AutocorrelatorDetector, FFTDetector, YINDetector, } from '@/lib/pitch-algorithms'
 import type { TimeStampedPitchSample } from '@/types/pitch-algorithms'
 import { PitchOverTimeCanvas } from '@/components/PitchOverTimeCanvas'
+import { currentScale } from '@/stores/melody-store'
 
 interface PitchTestingTabProps {
   onClose?: () => void
@@ -69,7 +70,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
     'yin' | 'fft' | 'autocorr'
   >('yin')
   const [detectionMode, setDetectionMode] =
-    createSignal<DetectionMode>('generate')
+    createSignal<DetectionMode>('mic')
   const [frequency, setFrequency] = createSignal(440)
   const [generatedWaveform, setGeneratedWaveform] =
     createSignal<Float32Array | null>(null)
@@ -721,6 +722,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                       visibleWindowSeconds={10}
                       zoomLevel={zoomLevel}
                       onZoomChange={setZoomLevel}
+                      scaleNotes={currentScale}
                     />
                   </div>
                   <div class="resize-handle" onMouseDown={onResizeMouseDown}>
