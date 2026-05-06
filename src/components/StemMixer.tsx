@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createEffect, createSignal, For, onCleanup, onMount, Show } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show } from 'solid-js'
 import { PitchDetector, type DetectedPitch } from '@/lib/pitch-detector'
 import { freqToNote } from '@/lib/scale-data'
 import { ChevronLeft, Download, Ear, Midi, Pause, Play, SkipBack, Volume2, VolumeX } from './icons'
@@ -67,6 +67,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   const [currentLineIdx, setCurrentLineIdx] = createSignal(-1)
   const [lyricsSource, setLyricsSource] = createSignal<'api' | 'upload' | 'none'>('none')
   const [lyricsLoading, setLyricsLoading] = createSignal(false)
+  const [lyricsFontSize, setLyricsFontSize] = createSignal(0.65)    // rem
+  const [lyricsColumns, setLyricsColumns] = createSignal<1 | 2>(1)
   const [windowDuration, setWindowDuration] = createSignal(30) // seconds, range 10-150
   const [windowStart, setWindowStart] = createSignal(0)
 
@@ -337,6 +339,67 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }
   }
 
+  // ── Word-level timing for per-word highlighting ──────────────
+
+  // Split each line into words with estimated start/end times
+  const wordLines = createMemo(() => {
+    const dur = duration()
+    const lrc = lrcLines()
+    const txt = lyricsLines()
+
+    if (lrc.length > 0) {
+      return lrc.map((line, i) => {
+        const words = line.text.split(/\s+/).filter(w => w.length > 0)
+        const endTime = i + 1 < lrc.length ? lrc[i + 1].time : dur
+        return { words, startTime: line.time, endTime }
+      })
+    }
+    if (txt.length > 0 && dur > 0) {
+      return txt.map((text, i) => {
+        const words = text.split(/\s+/).filter(w => w.length > 0)
+        const startTime = (i / txt.length) * dur
+        const endTime = ((i + 1) / txt.length) * dur
+        return { words, startTime, endTime }
+      })
+    }
+    return []
+  })
+
+  // Which word in the current line should be highlighted
+  const activeWordIdx = createMemo(() => {
+    const wl = wordLines()
+    const lineIdx = currentLineIdx()
+    if (lineIdx < 0 || lineIdx >= wl.length) return -1
+    const line = wl[lineIdx]
+    if (line.words.length === 0) return -1
+    const elapsedTime = elapsed()
+    // Add a tiny grace period so the first word highlights immediately
+    const progress = (elapsedTime - line.startTime) / Math.max(0.05, line.endTime - line.startTime)
+    if (progress < 0) return -1
+    return Math.min(Math.floor(progress * line.words.length), line.words.length - 1)
+  })
+
+  // Detect blank-line-separated sections for optional multi-column layout
+  const lyricsSections = createMemo(() => {
+    const lines = lrcLines().length > 0
+      ? lrcLines().map(l => l.text)
+      : lyricsLines()
+    const sections: number[][] = []
+    let current: number[] = []
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[i].trim() === '') {
+        if (current.length > 0) { sections.push(current); current = [] }
+      } else {
+        current.push(i)
+      }
+    }
+    if (current.length > 0) sections.push(current)
+    return sections
+  })
+
+  const hasMultipleSections = () => lyricsSections().length >= 2
+
+  // ── Lyric line click ────────────────────────────────────────
   const handleLyricLineClick = (idx: number) => {
     if (lrcLines().length > 0 && idx < lrcLines().length) {
       const time = lrcLines()[idx].time
@@ -1446,6 +1509,38 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                     onChange={handleLyricsChange}
                   />
                 </Show>
+                <div class="sm-lyrics-toolbar">
+                  <div class="sm-lyrics-zoom">
+                    <button
+                      class="sm-lyrics-zoom-btn"
+                      onClick={() => setLyricsFontSize(prev => Math.max(0.45, +(prev - 0.1).toFixed(2)))}
+                      title="Smaller text"
+                    >A−</button>
+                    <button
+                      class="sm-lyrics-zoom-btn"
+                      onClick={() => setLyricsFontSize(prev => Math.min(1.5, +(prev + 0.1).toFixed(2)))}
+                      title="Larger text"
+                    >A+</button>
+                  </div>
+                  <Show when={hasMultipleSections()}>
+                    <div class="sm-lyrics-col-toggle">
+                      <button
+                        class={`sm-lyrics-col-btn${lyricsColumns() === 1 ? ' sm-lyrics-col-active' : ''}`}
+                        onClick={() => setLyricsColumns(1)}
+                        title="Single column"
+                      >
+                        <svg viewBox="0 0 24 24" width="10" height="10"><rect x="4" y="4" width="16" height="16" rx="1" fill="currentColor"/></svg>
+                      </button>
+                      <button
+                        class={`sm-lyrics-col-btn${lyricsColumns() === 2 ? ' sm-lyrics-col-active' : ''}`}
+                        onClick={() => setLyricsColumns(2)}
+                        title="Two columns"
+                      >
+                        <svg viewBox="0 0 24 24" width="10" height="10"><rect x="3" y="4" width="8" height="16" rx="1" fill="currentColor"/><rect x="13" y="4" width="8" height="16" rx="1" fill="currentColor"/></svg>
+                      </button>
+                    </div>
+                  </Show>
+                </div>
               </div>
               <Show when={lyricsLoading()}>
                 <div class="sm-lyrics-loading">Searching...</div>
@@ -1453,36 +1548,52 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
               <Show when={!lyricsLoading() && lyricsSource() !== 'none'}>
                 <div
                   class="sm-lyrics-lines"
+                  classList={{ 'sm-lyrics-columns-2': lyricsColumns() === 2 }}
+                  style={{ 'font-size': `${lyricsFontSize()}rem` }}
                   onWheel={(e) => { e.stopPropagation() }}
                 >
                   <Show when={lrcLines().length > 0}>
                     <For each={lrcLines()}>
-                      {(line, idx) => (
-                        <span
-                          class={`sm-lyrics-line${idx() === currentLineIdx() ? ' sm-lyrics-line-active' : ''}`}
-                          onClick={() => handleLyricLineClick(idx())}
-                        >
-                          <span class="sm-lyrics-time">
-                            {formatTime(line.time)}
+                      {(line, idx) => {
+                        const words = line.text.split(/\s+/).filter(w => w.length > 0)
+                        const isActive = idx() === currentLineIdx()
+                        const aIdx = isActive ? activeWordIdx() : -1
+                        return (
+                          <span
+                            class={`sm-lyrics-line${isActive ? ' sm-lyrics-line-active' : ''}`}
+                            onClick={() => handleLyricLineClick(idx())}
+                          >
+                            <span class="sm-lyrics-time">{formatTime(line.time)}</span>
+                            {words.length === 0 ? line.text : words.map((word, wi) => (
+                              <span
+                                class={`sm-lyrics-word${wi <= aIdx ? ' sm-lyrics-word-done' : ''}`}
+                              >{word}{' '}</span>
+                            ))}
                           </span>
-                          {line.text}
-                        </span>
-                      )}
+                        )
+                      }}
                     </For>
                   </Show>
                   <Show when={lrcLines().length === 0 && lyricsLines().length > 0}>
                     <For each={lyricsLines()}>
-                      {(line, idx) => (
-                        <span
-                          class={`sm-lyrics-line${idx() === currentLineIdx() ? ' sm-lyrics-line-active' : ''}`}
-                          onClick={() => handleLyricLineClick(idx())}
-                        >
-                          <span class="sm-lyrics-time">
-                            {formatTime((idx() / Math.max(1, lyricsLines().length)) * duration())}
+                      {(line, idx) => {
+                        const words = line.split(/\s+/).filter(w => w.length > 0)
+                        const isActive = idx() === currentLineIdx()
+                        const aIdx = isActive ? activeWordIdx() : -1
+                        return (
+                          <span
+                            class={`sm-lyrics-line${isActive ? ' sm-lyrics-line-active' : ''}`}
+                            onClick={() => handleLyricLineClick(idx())}
+                          >
+                            <span class="sm-lyrics-time">{formatTime((idx() / Math.max(1, lyricsLines().length)) * duration())}</span>
+                            {words.length === 0 ? line : words.map((word, wi) => (
+                              <span
+                                class={`sm-lyrics-word${wi <= aIdx ? ' sm-lyrics-word-done' : ''}`}
+                              >{word}{' '}</span>
+                            ))}
                           </span>
-                          {line}
-                        </span>
-                      )}
+                        )
+                      }}
                     </For>
                   </Show>
                 </div>
@@ -1905,7 +2016,6 @@ export const StemMixerStyles: string = `
 }
 
 .sm-lyrics-line {
-  font-size: 0.65rem;
   color: var(--fg-tertiary, #484f58);
   padding: 0.12rem 0.3rem;
   border-radius: 0.2rem;
@@ -1965,6 +2075,101 @@ export const StemMixerStyles: string = `
   color: var(--accent, #58a6ff);
   border-color: var(--accent, #58a6ff);
   background: rgba(88, 166, 255, 0.08);
+}
+
+/* Lyrics toolbar (zoom + column toggle) */
+.sm-lyrics-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-left: auto;
+}
+
+.sm-lyrics-zoom {
+  display: flex;
+  gap: 1px;
+  background: var(--bg-tertiary, #21262d);
+  border-radius: 0.25rem;
+  padding: 1px;
+}
+
+.sm-lyrics-zoom-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.2rem;
+  height: 1rem;
+  padding: 0 0.2rem;
+  background: transparent;
+  border: none;
+  border-radius: 0.2rem;
+  color: var(--fg-tertiary, #484f58);
+  cursor: pointer;
+  font-size: 0.5rem;
+  font-weight: 600;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+
+.sm-lyrics-zoom-btn:hover {
+  color: var(--fg-secondary, #8b949e);
+  background: var(--bg-hover, #30363d);
+}
+
+.sm-lyrics-col-toggle {
+  display: flex;
+  gap: 1px;
+  background: var(--bg-tertiary, #21262d);
+  border-radius: 0.25rem;
+  padding: 1px;
+}
+
+.sm-lyrics-col-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.15rem;
+  height: 1rem;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0.2rem;
+  color: var(--fg-tertiary, #484f58);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.sm-lyrics-col-btn:hover {
+  color: var(--fg-secondary, #8b949e);
+}
+
+.sm-lyrics-col-active {
+  background: var(--accent, #58a6ff);
+  color: var(--bg-primary, #0d1117);
+}
+
+.sm-lyrics-col-active:hover {
+  color: var(--bg-primary, #0d1117);
+}
+
+/* Two-column lyrics layout with section-aware breaks */
+.sm-lyrics-columns-2 {
+  column-count: 2;
+  column-gap: 1rem;
+  display: block;
+}
+
+/* Per-word highlighting */
+.sm-lyrics-word {
+  transition: color 0.2s ease;
+}
+
+.sm-lyrics-line-active .sm-lyrics-word {
+  color: var(--fg-secondary, #8b949e);
+}
+
+.sm-lyrics-line-active .sm-lyrics-word-done {
+  color: var(--accent, #58a6ff);
 }
 
 /* Let uploader fill remaining panel height so dropzone is fully visible */
