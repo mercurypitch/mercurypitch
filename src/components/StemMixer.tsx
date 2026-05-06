@@ -373,7 +373,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     disconnectSources()
     setPlaying(false)
     cancelAnimationFrame(rafId)
+    syncCanvasSizes()
     drawWaveformOverview()
+    drawPitchCanvas()
+    drawLiveWaveform()
   }
 
   const handleStop = () => {
@@ -535,6 +538,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         setWindowStart(Math.max(0, newStart))
       }
 
+      syncCanvasSizes()
       drawWaveformOverview()
       drawPitchCanvas()
       drawLiveWaveform()
