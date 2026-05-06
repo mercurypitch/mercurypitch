@@ -593,9 +593,11 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     // Build clean LRC text (no word tags) + persist wordTimings as metadata
     let text: string
     if (hasLrc) {
-      text = lrcLines().map((l) =>
-        `[${formatTimeLrcWord(l.time)}] ${l.text}`
-      ).join('\n')
+      text = lrcLines().map((l, i) => {
+        // Use edited line start time from merged word timings, falling back to original
+        const lineTime = merged[i]?.[0] ?? l.time
+        return `[${formatTimeLrcWord(lineTime)}] ${l.text}`
+      }).join('\n')
     } else {
       text = lyricsLines().map((line, i) => {
         if (!line.trim()) return ''
@@ -617,6 +619,27 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     if (lrcLines().length > 0) return lrcLines().map(l => l.text)
     return lyricsLines()
   }
+
+  const genViewData = createMemo(() => {
+    const lines = getGenLines()
+    const curLine = lrcGenLineIdx()
+    const curWord = lrcGenWordIdx()
+    const lineTimes = lrcGenLineTimes()
+    const wordTimes = lrcGenWordTimings()
+    return lines.map((line, i) => {
+      const words = line.split(/\s+/).filter(w => w.length > 0)
+      return {
+        line,
+        words,
+        isCurrent: i === curLine,
+        isDone: i < curLine,
+        isFuture: i > curLine,
+        lineTime: lineTimes[i],
+        wordTimes: wordTimes[i],
+        activeWordIdx: i === curLine ? curWord : -1,
+      }
+    })
+  })
 
   const startLrcGen = () => {
     const lines = getGenLines()
@@ -1821,20 +1844,6 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                 </Show>
                 <Show when={lyricsSource() === 'upload'}>
                   <span class="sm-lyrics-source sm-lyrics-source-upload">uploaded</span>
-                  <button
-                    class="sm-lyrics-change-btn"
-                    onClick={(e) => { e.stopPropagation(); lyricsFileInputRef?.click() }}
-                    title="Change lyrics file"
-                  >
-                    <svg viewBox="0 0 24 24" width="11" height="11"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
-                  </button>
-                  <input
-                    type="file"
-                    accept=".txt,.lrc"
-                    ref={lyricsFileInputRef}
-                    hidden
-                    onChange={handleLyricsChange}
-                  />
                 </Show>
                 <Show when={lyricsSource() === 'upload' && !editMode() || lyricsSource() === 'api' && !editMode()}>
                   <button
@@ -1857,6 +1866,22 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                 <Show when={lrcGenMode()}>
                   <span class="sm-lyrics-gen-label">LRC Gen</span>
                 </Show>
+                <Show when={lyricsSource() === 'upload' && !editMode()}>
+                  <button
+                    class="sm-lyrics-change-btn"
+                    onClick={(e) => { e.stopPropagation(); lyricsFileInputRef?.click() }}
+                    title="Change lyrics file"
+                  >
+                    <svg viewBox="0 0 24 24" width="11" height="11"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                  </button>
+                </Show>
+                <input
+                  type="file"
+                  accept=".txt,.lrc"
+                  ref={lyricsFileInputRef}
+                  hidden
+                  onChange={handleLyricsChange}
+                />
                 <div class="sm-lyrics-toolbar">
                   <div class="sm-lyrics-zoom">
                     <button
@@ -1936,43 +1961,35 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                       }
                     }}
                   >
-                    <For each={getGenLines()}>
-                      {(line, lineIdx) => {
-                        const li = lineIdx()
-                        const words = line.split(/\s+/).filter(w => w.length > 0)
-                        const genLine = lrcGenLineIdx()
-                        const genWord = lrcGenWordIdx()
-                        const lineTime = lrcGenLineTimes()[li]
-                        const wordTimes = lrcGenWordTimings()[li]
-                        return (
-                          <div
-                            class={`sm-lyrics-gen-line${li === genLine ? ' sm-lyrics-gen-line-current' : ''}${li < genLine ? ' sm-lyrics-gen-line-done' : ''}${li > genLine ? ' sm-lyrics-gen-line-future' : ''}`}
-                          >
-                            <span class="sm-lyrics-gen-line-time">
-                              {lineTime !== undefined ? formatTimeMs(lineTime) : '--:--.-'}
-                            </span>
-                            <span class="sm-lyrics-gen-line-text">
-                              {words.length === 0
-                                ? line
-                                : words.map((word, wi) => (
-                                    <span
-                                      class={`sm-lyrics-gen-word${
-                                        li === genLine && wi === genWord ? ' sm-lyrics-gen-word-current' : ''
-                                      }${
-                                        li === genLine && wi < genWord ? ' sm-lyrics-gen-word-done' : ''
-                                      }`}
-                                    >
-                                      <span class="sm-lyrics-gen-word-time">
-                                        {wordTimes?.[wi] !== undefined ? formatTimeMs(wordTimes[wi]) : ''}
-                                      </span>
-                                      <span class="sm-lyrics-gen-word-text">{word}</span>
+                    <For each={genViewData()}>
+                      {(item) => (
+                        <div
+                          class={`sm-lyrics-gen-line${item.isCurrent ? ' sm-lyrics-gen-line-current' : ''}${item.isDone ? ' sm-lyrics-gen-line-done' : ''}${item.isFuture ? ' sm-lyrics-gen-line-future' : ''}`}
+                        >
+                          <span class="sm-lyrics-gen-line-time">
+                            {item.lineTime !== undefined ? formatTimeMs(item.lineTime) : '--:--'}
+                          </span>
+                          <span class="sm-lyrics-gen-line-text">
+                            {item.words.length === 0
+                              ? item.line
+                              : item.words.map((word, wi) => (
+                                  <span
+                                    class={`sm-lyrics-gen-word${
+                                      item.activeWordIdx === wi ? ' sm-lyrics-gen-word-current' : ''
+                                    }${
+                                      item.activeWordIdx >= 0 && wi < item.activeWordIdx ? ' sm-lyrics-gen-word-done' : ''
+                                    }`}
+                                  >
+                                    <span class="sm-lyrics-gen-word-time">
+                                      {item.wordTimes?.[wi] !== undefined ? formatTimeMs(item.wordTimes[wi]) : ''}
                                     </span>
-                                  ))
-                              }
-                            </span>
-                          </div>
-                        )
-                      }}
+                                    <span class="sm-lyrics-gen-word-text">{word}</span>
+                                  </span>
+                                ))
+                            }
+                          </span>
+                        </div>
+                      )}
                     </For>
                   </div>
                 </Show>
@@ -2269,9 +2286,9 @@ export const StemMixerStyles: string = `
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  font-size: 0.65rem;
+  font-size: 0.7rem;
   color: var(--fg-tertiary, #484f58);
-  padding: 0.3rem 0.6rem;
+  padding: 0.4rem 0.65rem;
   background: var(--bg-tertiary, #21262d);
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -2816,7 +2833,7 @@ export const StemMixerStyles: string = `
 .sm-lyrics-popover-backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.55);
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2826,35 +2843,35 @@ export const StemMixerStyles: string = `
 .sm-lyrics-popover-card {
   background: var(--bg-primary, #0d1117);
   border: 1px solid var(--border, #30363d);
-  border-radius: 0.5rem;
-  padding: 1.25rem 1.5rem;
+  border-radius: 0.4rem;
+  padding: 0.75rem 1rem;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.6rem;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  gap: 0.4rem;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+  min-width: 10rem;
 }
 
 .sm-lyrics-popover-word {
-  font-size: 1.1rem;
+  font-size: 0.85rem;
   font-weight: 600;
   color: var(--fg-primary, #c9d1d9);
-  letter-spacing: 0.02em;
 }
 
 .sm-lyrics-popover-input {
-  width: 8rem;
-  height: 2.4rem;
-  font-size: 1.6rem;
+  width: 6rem;
+  height: 1.8rem;
+  font-size: 1.2rem;
   font-family: monospace;
   font-weight: 600;
   text-align: center;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.1em;
   background: var(--bg-tertiary, #21262d);
   color: var(--accent, #58a6ff);
   border: 2px solid var(--accent, #58a6ff);
-  border-radius: 0.35rem;
-  padding: 0 0.5rem;
+  border-radius: 0.3rem;
+  padding: 0 0.35rem;
   outline: none;
 }
 
@@ -2864,7 +2881,7 @@ export const StemMixerStyles: string = `
 }
 
 .sm-lyrics-popover-hint {
-  font-size: 0.55rem;
+  font-size: 0.5rem;
   color: var(--fg-tertiary, #484f58);
 }
 
