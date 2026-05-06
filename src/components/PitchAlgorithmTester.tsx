@@ -16,12 +16,9 @@ interface PitchAlgorithmTesterProps {
 export const PitchAlgorithmTester: Component<
   PitchAlgorithmTesterProps
 > = () => {
-  // State
   const [selectedAlgorithms, setSelectedAlgorithms] =
     createSignal<PitchAlgorithm[]>(DEFAULT_ALGORITHMS)
-  const [selectedSample, setSelectedSample] = createSignal<TestSample | null>(
-    null,
-  )
+  const [selectedSamples, setSelectedSamples] = createSignal<TestSample[]>([])
   const [running, setRunning] = createSignal(false)
   const [showResults, setShowResults] = createSignal(false)
   const [results, setResults] = createSignal<AlgorithmResult[]>([])
@@ -31,12 +28,8 @@ export const PitchAlgorithmTester: Component<
   const algorithms = REGISTERED_ALGORITHMS
   const samples = TEST_SAMPLES
 
-  // Cleanup function for when component unmounts
-  onCleanup(() => {
-    // Any pending cleanup code would go here
-  })
+  onCleanup(() => {})
 
-  // Stable function for checkbox change handler
   const toggleAlgorithm = (algo: PitchAlgorithm) => {
     const selected = selectedAlgorithms()
     setSelectedAlgorithms(
@@ -46,61 +39,60 @@ export const PitchAlgorithmTester: Component<
     )
   }
 
-  const playSample = async () => {
-    const sample = selectedSample()
-    if (!sample || running()) return
+  const toggleSample = (sample: TestSample) => {
+    const selected = selectedSamples()
+    setSelectedSamples(
+      selected.find((s) => s.id === sample.id)
+        ? selected.filter((s) => s.id !== sample.id)
+        : [...selected, sample],
+    )
+  }
+
+  const runAll = () => {
+    setSelectedSamples([...samples])
+    setSelectedAlgorithms([...DEFAULT_ALGORITHMS])
+    void runBenchmarks(samples, DEFAULT_ALGORITHMS)
+  }
+
+  const runSelected = () => {
+    void runBenchmarks(selectedSamples(), selectedAlgorithms())
+  }
+
+  const runBenchmarks = async (
+    samplesToRun: TestSample[],
+    algosToRun: PitchAlgorithm[],
+  ) => {
+    if (samplesToRun.length === 0 || algosToRun.length === 0 || running()) return
 
     setRunning(true)
     setShowResults(false)
     setProgress(0)
     setProgressText('Running tests...')
 
-    // Run real benchmarking for selected algorithms
-    const results: AlgorithmResult[] = []
-    const totalAlgos = selectedAlgorithms().length
+    const allResults: AlgorithmResult[] = []
+    const totalOps = samplesToRun.length * algosToRun.length
+    let completed = 0
 
-    // Batch algorithms into smaller groups to avoid blocking
-    const batchedAlgos = []
-    const batchSize = 2
-    for (let i = 0; i < selectedAlgorithms().length; i += batchSize) {
-      batchedAlgos.push(selectedAlgorithms().slice(i, i + batchSize))
-    }
-
-    let completedAlgos = 0
-
-    for (let batchIndex = 0; batchIndex < batchedAlgos.length; batchIndex++) {
-      const batch = batchedAlgos[batchIndex]
-      setProgress(Math.round((batchIndex / batchedAlgos.length) * 100))
-      setProgressText(
-        `Running batch ${batchIndex + 1}/${batchedAlgos.length}...`,
-      )
-
-      const batchPromises = batch.map((algo) =>
-        benchmarkAlgorithmAsync(algo, sample, {
+    for (const sample of samplesToRun) {
+      for (const algo of algosToRun) {
+        setProgressText(
+          `Testing ${algo} on ${sample.name}...`,
+        )
+        const result = await benchmarkAlgorithmAsync(algo, sample, {
           sampleRate: 44100,
           bufferSize: 2048,
           minConfidence: 0.3,
         }).catch((err) => {
           console.error(`Error benchmarking ${algo}:`, err)
           return null
-        }),
-      )
-
-      const batchResults = await Promise.all(batchPromises)
-      results.push(
-        ...batchResults.filter(
-          (r: AlgorithmResult | null): r is AlgorithmResult => r !== null,
-        ),
-      )
-
-      completedAlgos += batch.length
-      setProgress(Math.round((completedAlgos / totalAlgos) * 100))
-      setProgressText(
-        `Running tests... ${completedAlgos}/${totalAlgos} algorithms`,
-      )
+        })
+        if (result) allResults.push(result)
+        completed++
+        setProgress(Math.round((completed / totalOps) * 100))
+      }
     }
 
-    setResults(results)
+    setResults(allResults)
     setShowResults(true)
     setProgress(100)
     setProgressText('Complete!')
@@ -112,98 +104,129 @@ export const PitchAlgorithmTester: Component<
     setRunning(false)
   }
 
+  // Group results by sample for section dividers
+  const resultsBySample = () => {
+    const map = new Map<string, AlgorithmResult[]>()
+    for (const r of results()) {
+      const key = r.sampleId
+      if (!map.has(key)) map.set(key, [])
+      map.get(key)!.push(r)
+    }
+    return map
+  }
+
   return (
     <div class="pitch-algorithm-tester">
       <div class="tester-header">
         <h2>Pitch Algorithm Tester</h2>
       </div>
 
-      <div class="tester-content" classList={{ busy: running() }}>
-        {/* Algorithm Selection */}
-        <div class="section">
-          <h3>Algorithms to Test</h3>
-          <div class="algorithm-list">
-            <For each={algorithms}>
-              {(algo: {
-                id: PitchAlgorithm
-                name: string
-                description: string
-              }) => (
-                <label
-                  classList={{
-                    'algorithm-item': true,
-                    selected: selectedAlgorithms().includes(algo.id),
-                  }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={selectedAlgorithms().includes(algo.id)}
-                    onChange={() => toggleAlgorithm(algo.id)}
-                  />
-                  <div class="algo-info">
-                    <span class="algo-name">{algo.name}</span>
-                    <span class="algo-desc">
-                      {algo.description.slice(0, 50)}...
-                    </span>
-                  </div>
-                </label>
-              )}
-            </For>
-          </div>
-        </div>
-
-        {/* Sample Selection */}
-        <div class="section">
-          <h3>Test Samples</h3>
-          <div class="sample-list">
-            <For each={samples}>
-              {(sample: TestSample) => (
-                <button
-                  classList={{
-                    'sample-btn': true,
-                    selected: selectedSample()?.id === sample.id,
-                  }}
-                  onClick={() => setSelectedSample(sample)}
-                >
-                  {sample.name}
-                </button>
-              )}
-            </For>
-          </div>
-        </div>
-
-        {/* Play Button */}
-        <button
-          class="play-btn"
-          onClick={() => void playSample()}
-          disabled={
-            running() || !selectedSample() || selectedAlgorithms().length === 0
-          }
-        >
-          {running() ? 'Running...' : 'Run Tests'}
-        </button>
-
-        {/* Progress Bar */}
-        <Show when={running()}>
-          <div class="progress-container">
-            <div class="progress-bar">
-              <div
-                class="progress-fill"
-                style={{
-                  width: `${progress()}%`,
-                }}
-              />
+      <div class="tester-layout" classList={{ busy: running() }}>
+        {/* Left Column: Controls */}
+        <div class="tester-controls">
+          {/* Algorithm Selection */}
+          <div class="section">
+            <h3>Algorithms</h3>
+            <div class="algorithm-list">
+              <For each={algorithms}>
+                {(algo: {
+                  id: PitchAlgorithm
+                  name: string
+                  description: string
+                }) => (
+                  <label
+                    classList={{
+                      'algorithm-item': true,
+                      selected: selectedAlgorithms().includes(algo.id),
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedAlgorithms().includes(algo.id)}
+                      onChange={() => toggleAlgorithm(algo.id)}
+                    />
+                    <div class="algo-info">
+                      <span class="algo-name">{algo.name}</span>
+                      <span class="algo-desc">{algo.description}</span>
+                    </div>
+                  </label>
+                )}
+              </For>
             </div>
-            <span class="progress-text">{progressText()}</span>
           </div>
-        </Show>
 
-        {/* Results */}
-        <Show when={showResults()}>
-          <div class="results-section">
-            <h3>Results — {selectedSample()?.name}</h3>
+          {/* Sample Selection */}
+          <div class="section">
+            <h3>Test Samples</h3>
+            <div class="sample-pill-list">
+              <For each={samples}>
+                {(sample: TestSample) => (
+                  <button
+                    classList={{
+                      'sample-pill': true,
+                      selected: selectedSamples().find(
+                        (s) => s.id === sample.id,
+                      ) !== undefined,
+                    }}
+                    onClick={() => toggleSample(sample)}
+                  >
+                    {sample.name}
+                  </button>
+                )}
+              </For>
+            </div>
+          </div>
 
-            {/* Summary Cards — compact horizontal grid */}
+          {/* Buttons */}
+          <div class="tester-buttons">
+            <button
+              class="play-btn"
+              onClick={runSelected}
+              disabled={
+                running() ||
+                selectedSamples().length === 0 ||
+                selectedAlgorithms().length === 0
+              }
+            >
+              {running() ? 'Running...' : 'Run Selected'}
+            </button>
+            <button
+              class="run-all-btn"
+              onClick={runAll}
+              disabled={running()}
+            >
+              Run All
+            </button>
+          </div>
+
+          {/* Progress Bar */}
+          <Show when={running()}>
+            <div class="progress-container">
+              <div class="progress-bar">
+                <div
+                  class="progress-fill"
+                  style={{ width: `${progress()}%` }}
+                />
+              </div>
+              <span class="progress-text">{progressText()}</span>
+            </div>
+          </Show>
+
+          {/* Legend */}
+          <Show when={showResults()}>
+            <div class="results-legend">
+              <span class="legend-item"><span class="legend-dot good" /> 10 perfect</span>
+              <span class="legend-item"><span class="legend-dot ok" /> 25 good</span>
+              <span class="legend-item"><span class="legend-dot bad" /> 50 okay</span>
+              <span class="legend-item"><span class="legend-dot miss" /> no det</span>
+            </div>
+          </Show>
+        </div>
+
+        {/* Right Column: Results */}
+        <div class="tester-results">
+          <Show when={showResults()}>
+            {/* Summary Cards */}
             <div class="overall-score">
               <For each={results()}>
                 {(result: AlgorithmResult) => {
@@ -237,7 +260,7 @@ export const PitchAlgorithmTester: Component<
                             bad: result.avgOffsetCents > 10,
                           }}
                         >
-                          {result.avgOffsetCents.toFixed(1)}¢ off
+                          {result.avgOffsetCents.toFixed(1)} off
                         </span>
                       </div>
                     </div>
@@ -246,86 +269,96 @@ export const PitchAlgorithmTester: Component<
               </For>
             </div>
 
-            {/* Legend */}
-            <div class="results-legend">
-              <span class="legend-item"><span class="legend-dot good" /> ≤10¢ perfect</span>
-              <span class="legend-item"><span class="legend-dot ok" /> ≤25¢ good</span>
-              <span class="legend-item"><span class="legend-dot bad" /> ≤50¢ okay</span>
-              <span class="legend-item"><span class="legend-dot miss" /> no detection</span>
-            </div>
+            {/* Per-Sample Detailed Results */}
+            <For each={[...resultsBySample().entries()]}>
+              {([sampleId, sampleResults]) => {
+                const sampleName = sampleResults[0]?.sampleName ?? sampleId
+                // Build combined notes list from first result that has them
+                const sampleObj = samples.find((s) => s.id === sampleId)
 
-            {/* Detailed Results Table */}
-            <div class="detailed-results">
-              <Show when={selectedSample()}>
-                {(sample) => (
-                  <>
-                    {/* Header Row */}
-                    <div
-                      class="note-row note-header"
-                      style={{
-                        'grid-template-columns': `60px 70px repeat(${results().length}, minmax(50px, 1fr))`,
-                      }}
-                    >
-                      <span class="note-name">Note</span>
-                      <span class="note-freq">Frequency</span>
-                      <For each={results()}>
-                        {(r) => <span class="note-offset-hdr">{r.algorithm}</span>}
-                      </For>
-                    </div>
-                    {/* Data Rows */}
-                    <For each={sample().notes}>
-                      {(note: { name: string; frequency: number }) => (
-                        <div
-                          class="note-row"
-                          style={{
-                            'grid-template-columns': `60px 70px repeat(${results().length}, minmax(50px, 1fr))`,
-                          }}
-                        >
-                          <span class="note-name">{note.name}</span>
-                          <span class="note-freq">
-                            {note.frequency.toFixed(1)} Hz
-                          </span>
-                          <For each={results()}>
-                            {(result: AlgorithmResult) => {
-                              const matchingResult = result.results.find(
-                                (rr) => rr.targetFreq === note.frequency,
-                              )
-                              const band = matchingResult?.accuracyBand
-                              const color = band !== undefined
-                                ? (ACCURACY_BAND_COLORS[
-                                    band as keyof typeof ACCURACY_BAND_COLORS
-                                  ] || 'var(--text-muted)')
-                                : 'var(--text-muted)'
-                              const offsetCents =
-                                matchingResult?.offsetCents
-
-                              return (
-                                <span
-                                  classList={{
-                                    'note-offset': true,
-                                    good: band !== undefined && band >= 90,
-                                    ok: band === 75,
-                                    bad: band !== undefined && band <= 50,
-                                    miss: band === undefined,
+                return (
+                  <div class="sample-section">
+                    <div class="sample-section-header">{sampleName}</div>
+                    <div class="detailed-results">
+                      <Show when={sampleObj}>
+                        {(s) => (
+                          <>
+                            {/* Header Row */}
+                            <div
+                              class="note-row note-header"
+                              style={{
+                                'grid-template-columns': `60px 70px repeat(${sampleResults.length}, minmax(50px, 1fr))`,
+                              }}
+                            >
+                              <span class="note-name">Note</span>
+                              <span class="note-freq">Freq</span>
+                              <For each={sampleResults}>
+                                {(r) => (
+                                  <span class="note-offset-hdr">{r.algorithm}</span>
+                                )}
+                              </For>
+                            </div>
+                            {/* Data Rows */}
+                            <For each={s().notes}>
+                              {(note: { name: string; frequency: number }) => (
+                                <div
+                                  class="note-row"
+                                  style={{
+                                    'grid-template-columns': `60px 70px repeat(${sampleResults.length}, minmax(50px, 1fr))`,
                                   }}
-                                  style={{ color }}
                                 >
-                                  {matchingResult
-                                    ? `${offsetCents!.toFixed(0)}¢`
-                                    : '—'}
-                                </span>
-                              )
-                            }}
-                          </For>
-                        </div>
-                      )}
-                    </For>
-                  </>
-                )}
-              </Show>
-            </div>
-          </div>
-        </Show>
+                                  <span class="note-name">{note.name}</span>
+                                  <span class="note-freq">
+                                    {note.frequency.toFixed(0)} Hz
+                                  </span>
+                                  <For each={sampleResults}>
+                                    {(result: AlgorithmResult) => {
+                                      const matchingResult = result.results.find(
+                                        (rr) => rr.targetFreq === note.frequency,
+                                      )
+                                      const band = matchingResult?.accuracyBand
+                                      const color =
+                                        band !== undefined
+                                          ? (ACCURACY_BAND_COLORS[
+                                              band as keyof typeof ACCURACY_BAND_COLORS
+                                            ] || 'var(--text-muted)')
+                                          : 'var(--text-muted)'
+                                      const offsetCents =
+                                        matchingResult?.offsetCents
+
+                                      return (
+                                        <span
+                                          classList={{
+                                            'note-offset': true,
+                                            good:
+                                              band !== undefined && band >= 90,
+                                            ok: band === 75,
+                                            bad:
+                                              band !== undefined && band <= 50,
+                                            miss: band === undefined,
+                                          }}
+                                          style={{ color }}
+                                        >
+                                          {matchingResult
+                                            ? `${offsetCents!.toFixed(0)}`
+                                            : ''}
+                                        </span>
+                                      )
+                                    }}
+                                  </For>
+                                </div>
+                              )}
+                            </For>
+                          </>
+                        )}
+                      </Show>
+                    </div>
+                  </div>
+                )
+              }}
+            </For>
+          </Show>
+        </div>
       </div>
     </div>
   )

@@ -346,35 +346,33 @@ export async function benchmarkAlgorithmAsync(
     detector.init(options.onnxModule).catch(() => {})
   }
 
+  // Create YIN/MPM detector for non-swift algorithms
+  const timeDomainDetector = algorithm !== 'swift'
+    ? new PitchDetector({ algorithm, sampleRate, bufferSize })
+    : null
+
   const results: PitchResultForNote[] = []
   let totalOffset = 0
 
   // Generate sine wave for each note
   for (const note of sample.notes) {
-    // For SwiftF0, we need frequency domain input
     const waveform = generateSineWave(note.frequency, 0.5, sampleRate)
-    const freqData = fftToFrequencyData(waveform, sampleRate, bufferSize)
 
     const startTime = performance.now()
     let detectedFrequency: number | null = null
 
-    if (algorithm === 'swift' && detector.isInitialized()) {
-      const swiftResult = await detector.detectFromFreqData(freqData)
-      if (swiftResult.pitch > 0) {
-        detectedFrequency = swiftResult.pitch
-      }
-    } else {
-      // Fallback to simple peak detection
-      let maxVal = -Infinity
-      let maxIdx = 0
-      for (let i = 0; i < freqData.length; i++) {
-        if (freqData[i] > maxVal) {
-          maxVal = freqData[i]
-          maxIdx = i
+    if (algorithm === 'swift') {
+      if (detector.isInitialized()) {
+        const freqData = fftToFrequencyData(waveform, sampleRate, bufferSize)
+        const swiftResult = await detector.detectFromFreqData(freqData)
+        if (swiftResult.pitch > 0) {
+          detectedFrequency = swiftResult.pitch
         }
       }
-      if (maxIdx > 0) {
-        detectedFrequency = (maxIdx * sampleRate) / bufferSize
+    } else if (timeDomainDetector) {
+      const result = timeDomainDetector.detect(waveform)
+      if (result && result.frequency > 0) {
+        detectedFrequency = result.frequency
       }
     }
 

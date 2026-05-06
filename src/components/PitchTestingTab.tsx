@@ -165,6 +165,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
     try {
       const ctx = new AudioContext({ sampleRate: 44100 })
       setAudioContext(ctx)
+      await ctx.resume()
 
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       setMediaStream(stream)
@@ -174,7 +175,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
 
       const analyserNode = ctx.createAnalyser()
       analyserNode.fftSize = 2048
-      analyserNode.smoothingTimeConstant = 0.8
+      analyserNode.smoothingTimeConstant = 0.1
       setAnalyser(analyserNode)
 
       source.connect(analyserNode)
@@ -212,7 +213,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
     const detector = detectorForAlgorithm()
     if (detector === undefined) return
 
-    const dataArray = new Float32Array(analyserVal.frequencyBinCount)
+    const dataArray = new Float32Array(analyserVal.fftSize)
     analyserVal.getFloatTimeDomainData(dataArray)
 
     const result = detector.detect(dataArray)
