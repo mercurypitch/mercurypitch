@@ -1152,6 +1152,43 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     clearLrcGenProgress()
   }
 
+  const handleDownloadLrc = () => {
+    let lrcText = ''
+    const filename = loadPersistedLyrics()?.filename || 'lyrics.lrc'
+
+    if (lrcLines().length > 0) {
+      // Export existing LRC with timestamps
+      lrcText = lrcLines().map(l => `[${formatTimeLrcWord(l.time)}] ${l.text}`).join('\n')
+    } else if (lyricsLines().length > 0) {
+      // Export plain text — build LRC from wordTimings if available
+      const wt = wordTimings()
+      const hasTimings = Object.keys(wt).length > 0
+      const lineTimes = hasTimings
+        ? lyricsLines().map((_, i) => {
+            const words = wt[i]
+            return words && words.length > 0 ? words[0] : undefined
+          })
+        : lyricsLines().map(() => undefined)
+      lrcText = lyricsLines().map((line, i) => {
+        if (!line.trim()) return ''
+        const lt = lineTimes[i]
+        return lt !== undefined ? `[${formatTimeLrcWord(lt)}] ${line}` : line
+      }).join('\n')
+    }
+
+    if (!lrcText.trim()) return
+
+    const blob = new Blob([lrcText], { type: 'text/plain;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename.endsWith('.lrc') ? filename : filename.replace(/\.[^.]+$/, '') + '.lrc'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+
   // ── Create Source Nodes ──────────────────────────────────────
   const createSources = (offset: number) => {
     const ctx = audioCtx!
@@ -2258,6 +2295,15 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                     title={blockMarkMode() ? 'Exit mark mode' : 'Mark repeat blocks'}
                   >
                     <svg viewBox="0 0 24 24" width="11" height="11"><path fill="currentColor" d="M3 3h18v4H3V3zm0 7h12v4H3v-4zm0 7h18v4H3v-4z"/></svg>
+                  </button>
+                </Show>
+                <Show when={lyricsSource() !== 'none' && !editMode()}>
+                  <button
+                    class="sm-lyrics-download-btn"
+                    onClick={(e) => { e.stopPropagation(); handleDownloadLrc() }}
+                    title="Download LRC file"
+                  >
+                    <svg viewBox="0 0 24 24" width="11" height="11"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
                   </button>
                 </Show>
                 <Show when={lyricsSource() === 'upload' && !editMode()}>
@@ -3577,6 +3623,29 @@ export const StemMixerStyles: string = `
 .sm-lyrics-markmode-btn--active:hover {
   background: var(--accent-hover, #79b8ff);
   color: var(--bg-primary, #0d1117);
+}
+
+.sm-lyrics-download-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.2rem;
+  height: 1.15rem;
+  padding: 0;
+  background: transparent;
+  border: 1px solid var(--border, #30363d);
+  border-radius: 0.2rem;
+  color: var(--fg-tertiary, #484f58);
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+  margin-left: 0.15rem;
+}
+
+.sm-lyrics-download-btn:hover {
+  color: var(--accent, #58a6ff);
+  border-color: var(--accent, #58a6ff);
+  background: rgba(88, 166, 255, 0.08);
 }
 
 .sm-lyrics-line-markable {
