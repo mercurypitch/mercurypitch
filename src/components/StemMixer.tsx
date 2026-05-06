@@ -85,7 +85,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     { id: 'live', label: 'Live Waveform', order: 1, height: 180 },
     { id: 'pitch', label: 'Vocal Pitch', order: 2, height: 200 },
     { id: 'controls', label: 'Stem Controls', order: 3, height: null },
-    { id: 'lyrics', label: 'Lyrics', order: 4, height: 160 },
+    { id: 'lyrics', label: 'Lyrics', order: 4, height: 220 },
   ])
 
   const reorderPanels = (fromId: string, toOrder: number) => {
@@ -1847,6 +1847,12 @@ export const StemMixerStyles: string = `
   color: var(--accent, #58a6ff);
   background: rgba(88, 166, 255, 0.1);
   font-weight: 500;
+}
+
+/* Let uploader fill remaining panel height so dropzone is fully visible */
+.sm-workspace-panel > .lu-root {
+  flex: 1;
+  min-height: 0;
 }
 
 /* Column toggle */
