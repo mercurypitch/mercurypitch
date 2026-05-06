@@ -357,7 +357,6 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
       clearTimeout(streamStopTimeout)
       streamStopTimeout = null
     }
-    cleanupMicrophoneResources()
   }
 
   // Run automated test
@@ -452,6 +451,15 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
   const detectorForAlgorithm = createMemo(() => {
     const alg = selectedAlgorithm()
     return detectors().find((d) => d.algorithm === alg)
+  })
+
+  // Latest valid result from liveResults (for reactive metrics panel)
+  const latestResult = createMemo(() => {
+    const results = liveResults()
+    for (let i = results.length - 1; i >= 0; i--) {
+      if (results[i]) return results[i]
+    }
+    return null
   })
 
   return (
@@ -616,83 +624,69 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
             <div class="detection-panel">
               <h3>Live Detection</h3>
 
-              <Show when={currentDetector() !== undefined}>
-                <div class="metrics-grid">
-                  <div class="metric-item">
-                    <span class="metric-label">Status</span>
-                    <span class="metric-value">
-                      {currentDetector()?.getMetrics().status}
-                    </span>
-                  </div>
-                  <div class="metric-item">
-                    <span class="metric-label">Frequency</span>
-                    <span class="metric-value">
-                      {currentDetector()
-                        ?.getMetrics()
-                        .lastResult?.frequency.toFixed(2) ?? '—'}{' '}
-                      Hz
-                    </span>
-                  </div>
-                  <div class="metric-item">
-                    <span class="metric-label">Note</span>
-                    <span class="metric-value">
-                      {currentDetector()?.getMetrics().lastResult?.noteName ??
-                        '—'}
-                    </span>
-                  </div>
-                  <div class="metric-item">
-                    <span class="metric-label">Midi</span>
-                    <span class="metric-value">
-                      {currentDetector()
-                        ?.getMetrics()
-                        .lastResult?.midi.toFixed(0) ?? '—'}
-                    </span>
-                  </div>
-                  <div class="metric-item">
-                    <span class="metric-label">Cents</span>
-                    <span class="metric-value">
-                      {currentDetector()
-                        ?.getMetrics()
-                        .lastResult?.cents.toFixed(1) ?? '—'}
-                    </span>
-                  </div>
-                  <div class="metric-item">
-                    <span class="metric-label">Clarity</span>
-                    <span class="metric-value">
-                      {currentDetector()
-                        ?.getMetrics()
-                        .lastResult?.clarity.toFixed(2) ?? '—'}
-                    </span>
-                  </div>
-                  <div class="metric-item">
-                    <span class="metric-label">Computation</span>
-                    <span class="metric-value">
-                      {currentDetector()?.getLastComputationTime().toFixed(3)}{' '}
-                      ms
-                    </span>
-                  </div>
+              <div class="metrics-grid">
+                <div class="metric-item">
+                  <span class="metric-label">Status</span>
+                  <span class="metric-value">
+                    {latestResult() ? 'detected' : 'listening...'}
+                  </span>
                 </div>
-              </Show>
+                <div class="metric-item">
+                  <span class="metric-label">Frequency</span>
+                  <span class="metric-value">
+                    {latestResult()?.frequency.toFixed(2) ?? '—'} Hz
+                  </span>
+                </div>
+                <div class="metric-item">
+                  <span class="metric-label">Note</span>
+                  <span class="metric-value">
+                    {latestResult()?.noteName ?? '—'}
+                  </span>
+                </div>
+                <div class="metric-item">
+                  <span class="metric-label">Midi</span>
+                  <span class="metric-value">
+                    {latestResult()?.midi.toFixed(0) ?? '—'}
+                  </span>
+                </div>
+                <div class="metric-item">
+                  <span class="metric-label">Cents</span>
+                  <span class="metric-value">
+                    {latestResult()?.cents.toFixed(1) ?? '—'}
+                  </span>
+                </div>
+                <div class="metric-item">
+                  <span class="metric-label">Clarity</span>
+                  <span class="metric-value">
+                    {latestResult()?.clarity.toFixed(2) ?? '—'}
+                  </span>
+                </div>
+                <div class="metric-item">
+                  <span class="metric-label">Detections</span>
+                  <span class="metric-value">{liveResults().filter(Boolean).length}</span>
+                </div>
+              </div>
 
               {/* Waveform and Frequency Over Time */}
               <div class="waveform-display">
                 <h4>Detection Over Time</h4>
                 <div class="waveform-canvas">
                   <For each={liveResults()}>
-                    {(result) => {
-                      // Pre-compute display values outside render
+                    {(result, index) => {
                       const displayFreq = result?.frequency ?? 0
-                      const isTarget = displayFreq > 0
-                      const position = isTarget
-                        ? `${((440 - displayFreq) / 440) * 100}%`
-                        : '50%'
+                      const total = liveResults().length
+                      const x = total > 1 ? (index() / (total - 1)) * 100 : 50
+                      const y = displayFreq > 0
+                        ? (1 - (displayFreq - 65) / (2100 - 65)) * 100
+                        : 50
 
                       return (
                         <div
                           class="waveform-dot"
+                          classList={{ signal: displayFreq > 0 }}
                           style={{
-                            '--y': position,
-                            '--freq': displayFreq.toString(),
+                            left: `${x}%`,
+                            top: `${y}%`,
                           }}
                           title={`${result?.noteName ?? 'No signal'} (${displayFreq.toFixed(2)} Hz)`}
                         />
