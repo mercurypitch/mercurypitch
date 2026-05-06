@@ -50,8 +50,7 @@ export const PitchAlgorithmTester: Component<
 
   const runAll = () => {
     setSelectedSamples([...samples])
-    setSelectedAlgorithms([...DEFAULT_ALGORITHMS])
-    void runBenchmarks(samples, DEFAULT_ALGORITHMS)
+    void runBenchmarks(samples, selectedAlgorithms())
   }
 
   const runSelected = () => {

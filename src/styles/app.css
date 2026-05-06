@@ -9851,8 +9851,8 @@ input:checked + .settings-slider:before {
   overflow: hidden;
 }
 
-.tester-layout.busy {
-  filter: blur(2px) opacity(0.7);
+.tester-layout.busy .tester-results {
+  opacity: 0.45;
 }
 
 .tester-controls {
@@ -9996,7 +9996,7 @@ input:checked + .settings-slider:before {
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--bg-secondary);
-  color: var(--text-muted);
+  color: var(--text-primary);
   font-size: 0.78rem;
   font-weight: 500;
   cursor: pointer;

@@ -202,7 +202,8 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
     const notes = props.scaleNotes?.()
     if (!notes || notes.length === 0) return
 
-    const rightX = w - 8
+    // Blue scale note labels sit left of the octave labels (C2–C7)
+    const scaleLabelX = w - 30
 
     for (const note of notes) {
       const y = freqToY(note.freq, h, logMin, logRange)
@@ -218,12 +219,12 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
       ctx.stroke()
       ctx.setLineDash([])
 
-      // Note label on the right
+      // Note label — padded left so octave labels sit rightmost
       ctx.fillStyle = 'rgba(88,166,255,0.45)'
       ctx.font = '9px sans-serif'
       ctx.textAlign = 'right'
       ctx.textBaseline = 'middle'
-      ctx.fillText(note.name, rightX, y)
+      ctx.fillText(note.name, scaleLabelX, y)
     }
   }
 
