@@ -84,6 +84,22 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   const [windowDuration, setWindowDuration] = createSignal(30) // seconds, range 10-150
   const [windowStart, setWindowStart] = createSignal(0)
 
+  // ── Repeat blocks state ─────────────────────────────────────────
+  interface LyricsBlock {
+    id: string             // unique ID: "chorus-1", "verse-2"
+    label: string          // user label: "Chorus", "Verse 1"
+    lineIndices: number[]  // line indices of the template instance
+    repeatCount: number    // how many times this block repeats (default 1)
+  }
+  type BlockInstancesMap = Record<string, number[][]>  // block ID → array of [start, endExclusive]
+  const [blocks, setBlocks] = createSignal<LyricsBlock[]>([])
+  const [blockInstances, setBlockInstances] = createSignal<BlockInstancesMap>({})
+  const [blockMarkMode, setBlockMarkMode] = createSignal(false)
+  const [markStartLine, setMarkStartLine] = createSignal<number | null>(null)
+  const [markEndLine, setMarkEndLine] = createSignal<number | null>(null)
+  const [showBlockForm, setShowBlockForm] = createSignal(false)
+  const [blockEditTarget, setBlockEditTarget] = createSignal<string | null>(null)  // block ID being edited
+
   // ── Workspace panel state ─────────────────────────────────────
   interface WorkspacePanel {
     id: 'overview' | 'live' | 'pitch' | 'controls' | 'lyrics'
@@ -262,6 +278,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     try {
       const payload: Record<string, unknown> = { text, format, filename, timestamp: Date.now() }
       if (wt && Object.keys(wt).length > 0) payload.wordTimings = wt
+      const bl = blocks()
+      if (bl.length > 0) payload.blocks = bl
+      const bi = blockInstances()
+      if (Object.keys(bi).length > 0) payload.blockInstances = bi
       localStorage.setItem(LYRICS_STORE_KEY(), JSON.stringify(payload))
     } catch { /* storage full or unavailable */ }
   }
@@ -277,6 +297,11 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         }
         if (data.wordTimings && typeof data.wordTimings === 'object') {
           result.wordTimings = data.wordTimings as WordTimingsMap
+        }
+        // Restore blocks
+        if (Array.isArray(data.blocks)) setBlocks(data.blocks as LyricsBlock[])
+        if (data.blockInstances && typeof data.blockInstances === 'object') {
+          setBlockInstances(data.blockInstances as BlockInstancesMap)
         }
         return result
       }
@@ -324,6 +349,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   }
 
   const handleLyricsUpload = (result: LyricsUploadResult) => {
+    setBlocks([])
+    setBlockInstances({})
     persistLyrics(result.text, result.format, result.filename)
     if (result.format === 'lrc') {
       setLrcLines(parseLrcFile(result.text))
@@ -620,6 +647,262 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     return lyricsLines()
   }
 
+  // ── Repeat blocks helpers ────────────────────────────────────────
+
+  const BLOCK_COLORS = ['#f0a060', '#60a0f0', '#60d080', '#d080e0', '#e0c050', '#f06080']
+
+  const getBlockColor = (blockId: string): string => {
+    let hash = 0
+    for (let i = 0; i < blockId.length; i++) hash = ((hash << 5) - hash) + blockId.charCodeAt(i)
+    return BLOCK_COLORS[Math.abs(hash) % BLOCK_COLORS.length]
+  }
+
+  /** Which block does a given line index belong to? Returns block ID + instance index, or null. */
+  const getBlockForLine = (lineIdx: number): { blockId: string; instanceIdx: number; isTemplate: boolean } | null => {
+    const bi = blockInstances()
+    for (const [blockId, instances] of Object.entries(bi)) {
+      for (let i = 0; i < instances.length; i++) {
+        const [start, end] = instances[i]
+        if (lineIdx >= start && lineIdx < end) {
+          return { blockId, instanceIdx: i, isTemplate: i === 0 }
+        }
+      }
+    }
+    return null
+  }
+
+  /** Get the block definition by ID. */
+  const getBlockById = (blockId: string): LyricsBlock | undefined => {
+    return blocks().find(b => b.id === blockId)
+  }
+
+  /** Auto-detect identical text sequences in remaining lines. */
+  const detectBlockInstances = (
+    textLines: string[],
+    templateIndices: number[],
+    existingInstances: BlockInstancesMap,
+  ): number[][] => {
+    const templateText = templateIndices.map(i => textLines[i].trim())
+    if (templateText.every(t => !t)) return [templateIndices]
+
+    const instances: number[][] = [templateIndices]
+
+    // Collect already-taken line indices
+    const taken = new Set<number>()
+    for (const insts of Object.values(existingInstances)) {
+      for (const inst of insts) {
+        for (let i = inst[0]; i < inst[1]; i++) taken.add(i)
+      }
+    }
+
+    for (let i = 0; i < textLines.length; i++) {
+      if (taken.has(i)) continue
+      // Skip if this range overlaps the template itself
+      if (i >= templateIndices[0] && i <= templateIndices[templateIndices.length - 1]) continue
+
+      let match = true
+      for (let j = 0; j < templateText.length; j++) {
+        const checkLine = textLines[i + j]?.trim()
+        if (checkLine !== templateText[j]) { match = false; break }
+      }
+      if (match) {
+        const instStart = i
+        const instEnd = i + templateText.length
+        instances.push([instStart, instEnd])
+        // Mark these lines as taken
+        for (let k = instStart; k < instEnd; k++) taken.add(k)
+        i += templateText.length - 1
+      }
+    }
+    return instances
+  }
+
+  /** Save just the blocks/instances to localStorage without touching lyrics text. */
+  const persistBlocks = () => {
+    try {
+      const key = LYRICS_STORE_KEY()
+      const raw = localStorage.getItem(key)
+      if (!raw) return
+      const data = JSON.parse(raw)
+      data.blocks = blocks()
+      data.blockInstances = blockInstances()
+      localStorage.setItem(key, JSON.stringify(data))
+    } catch { /* ignore */ }
+  }
+
+  /** Which block ID does a line's instance belong to? */
+  const getBlockIdForLine = (lineIdx: number): string | null => {
+    return getBlockForLine(lineIdx)?.blockId ?? null
+  }
+
+  /** Is this line the first line of a block instance? */
+  const isBlockInstanceStart = (lineIdx: number): boolean => {
+    const bi = blockInstances()
+    for (const instances of Object.values(bi)) {
+      for (const inst of instances) {
+        if (inst[0] === lineIdx) return true
+      }
+    }
+    return false
+  }
+
+  /** Get all lines that belong to any block (for checking overlaps in mark mode). */
+  const getBlockedLineSet = (): Set<number> => {
+    const s = new Set<number>()
+    for (const instances of Object.values(blockInstances())) {
+      for (const [start, end] of instances) {
+        for (let i = start; i < end; i++) s.add(i)
+      }
+    }
+    return s
+  }
+
+  // ── Block-aware LRC gen helpers ───────────────────────────────────
+
+  /** Check if a block's template has been fully mapped in the LRC gen session. */
+  const isTemplateMappedInGen = (blockId: string): boolean => {
+    const block = getBlockById(blockId)
+    if (!block) return false
+    const lineTimes = lrcGenLineTimes()
+    return block.lineIndices.every(i => lineTimes[i] !== undefined)
+  }
+
+  /** Get template block start time from lrcGenLineTimes. */
+  const getTemplateStartTime = (blockId: string): number | undefined => {
+    const block = getBlockById(blockId)
+    if (!block) return undefined
+    return lrcGenLineTimes()[block.lineIndices[0]]
+  }
+
+  /** Auto-fill a block instance's line times and word timings using template relative offsets. */
+  const autoFillBlockInstance = (blockId: string, instanceIdx: number, instanceStartTime: number) => {
+    const block = getBlockById(blockId)
+    if (!block) return
+
+    const instances = blockInstances()[blockId]
+    if (!instances || instanceIdx >= instances.length) return
+
+    const [tplStart, tplEnd] = instances[0]
+    const [instStart] = instances[instanceIdx]
+    const tplBlockStart = lrcGenLineTimes()[tplStart]
+    if (tplBlockStart === undefined) return
+
+    const tplLineCount = tplEnd - tplStart
+    const templateWordTimes = lrcGenWordTimings()
+
+    setLrcGenLineTimes(prev => {
+      const next = [...prev]
+      for (let j = 0; j < tplLineCount; j++) {
+        const tplTime = prev[tplStart + j]
+        if (tplTime !== undefined) {
+          next[instStart + j] = Math.round((instanceStartTime + tplTime - tplBlockStart) * 1000) / 1000
+        }
+      }
+      return next
+    })
+
+    setLrcGenWordTimings(prev => {
+      const next: WordTimingsMap = {}
+      for (const k of Object.keys(prev)) next[+k] = [...prev[+k]]
+      for (let j = 0; j < tplLineCount; j++) {
+        const tplWordTimes = templateWordTimes[tplStart + j]
+        if (tplWordTimes && tplWordTimes.length > 0) {
+          next[instStart + j] = tplWordTimes.map(tt =>
+            Math.round((instanceStartTime + tt - tplBlockStart) * 1000) / 1000,
+          )
+        }
+      }
+      return next
+    })
+  }
+
+  /** Expand all block instances into lineTimes/wordTimings before finishing LRC gen. */
+  const expandAllBlockInstances = () => {
+    const lineTimes = lrcGenLineTimes()
+    for (const block of blocks()) {
+      if (!isTemplateMappedInGen(block.id)) continue
+      const instances = blockInstances()[block.id]
+      if (!instances || instances.length <= 1) continue
+      const tplBlockStart = lineTimes[instances[0][0]]
+      if (tplBlockStart === undefined) continue
+      for (let i = 1; i < instances.length; i++) {
+        const instStartTime = lineTimes[instances[i][0]]
+        if (instStartTime === undefined) continue
+        autoFillBlockInstance(block.id, i, instStartTime)
+      }
+    }
+  }
+
+  // ── Block mark / unmark / delete handlers ────────────────────────
+
+  const handleMarkBlock = (label: string, repeatCount: number) => {
+    const start = markStartLine()
+    const end = markEndLine()
+    if (start === null || end === null || start >= end) return
+
+    const lines = getGenLines()
+    const templateIndices: number[] = []
+    for (let i = start; i < end; i++) templateIndices.push(i)
+
+    const blockId = `${label.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`
+
+    // Auto-detect instances
+    const instances = detectBlockInstances(lines, templateIndices, blockInstances())
+
+    // Create block
+    const block: LyricsBlock = {
+      id: blockId,
+      label,
+      lineIndices: templateIndices,
+      repeatCount: Math.max(1, repeatCount),
+    }
+    setBlocks(prev => [...prev, block])
+    setBlockInstances(prev => ({ ...prev, [blockId]: instances }))
+
+    // Clear mark state
+    setMarkStartLine(null)
+    setMarkEndLine(null)
+    setBlockMarkMode(false)
+    setShowBlockForm(false)
+    persistBlocks()
+  }
+
+  const handleUnlinkInstance = (blockId: string, instanceIdx: number) => {
+    if (instanceIdx === 0) {
+      // Unlinking the template — delete the whole block
+      handleDeleteBlock(blockId)
+      return
+    }
+    setBlockInstances(prev => {
+      const next = { ...prev }
+      next[blockId] = prev[blockId].filter((_, i) => i !== instanceIdx)
+      if (next[blockId].length <= 1) {
+        // Only template left — remove the block entirely
+        delete next[blockId]
+        setBlocks(prev => prev.filter(b => b.id !== blockId))
+      }
+      return next
+    })
+    persistBlocks()
+  }
+
+  const handleDeleteBlock = (blockId: string) => {
+    setBlocks(prev => prev.filter(b => b.id !== blockId))
+    setBlockInstances(prev => {
+      const next = { ...prev }
+      delete next[blockId]
+      return next
+    })
+    setBlockEditTarget(null)
+    persistBlocks()
+  }
+
+  const handleEditBlock = (blockId: string, label: string, repeatCount: number) => {
+    setBlocks(prev => prev.map(b => b.id === blockId ? { ...b, label, repeatCount: Math.max(1, repeatCount) } : b))
+    setBlockEditTarget(null)
+    persistBlocks()
+  }
+
   const genViewData = createMemo(() => {
     const lines = getGenLines()
     const curLine = lrcGenLineIdx()
@@ -628,6 +911,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     const wordTimes = lrcGenWordTimings()
     return lines.map((line, i) => {
       const words = line.split(/\s+/).filter(w => w.length > 0)
+      const blockForLine = getBlockForLine(i)
+      const isPlaceholder = blockForLine !== null && !blockForLine.isTemplate && isTemplateMappedInGen(blockForLine.blockId)
+      const block = blockForLine ? getBlockById(blockForLine.blockId) : undefined
       return {
         line,
         words,
@@ -637,6 +923,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         lineTime: lineTimes[i],
         wordTimes: wordTimes[i],
         activeWordIdx: i === curLine ? curWord : -1,
+        blockInfo: blockForLine,
+        blockLabel: block?.label,
+        isPlaceholder,
+        isPlaceholderStart: isPlaceholder && i === (blockInstances()[blockForLine!.blockId]?.[blockForLine!.instanceIdx]?.[0] ?? -1),
       }
     })
   })
@@ -717,6 +1007,23 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       return next
     })
 
+    // Check if current line is the first line of a linked block instance whose template is mapped
+    const blockInfo = getBlockForLine(idx)
+    if (blockInfo && !blockInfo.isTemplate && isTemplateMappedInGen(blockInfo.blockId)) {
+      autoFillBlockInstance(blockInfo.blockId, blockInfo.instanceIdx, t)
+      const instanceEnd = blockInstances()[blockInfo.blockId]?.[blockInfo.instanceIdx]?.[1] ?? idx + 1
+      if (instanceEnd >= lines.length) {
+        setLrcGenLineIdx(lines.length)
+        setLrcGenWordIdx(0)
+        handleLrcGenFinish()
+        return
+      }
+      setLrcGenLineIdx(instanceEnd)
+      setLrcGenWordIdx(0)
+      saveLrcGenProgress()
+      return
+    }
+
     // Auto-fill remaining words in current line if any word-level timings exist
     const currentLine = lines[idx]
     const words = currentLine.split(/\s+/).filter(w => w.length > 0)
@@ -764,6 +1071,23 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         next[lineIdx] = t
         return next
       })
+
+      // If this line is the start of a linked block instance with mapped template, auto-fill
+      const blockInfo = getBlockForLine(lineIdx)
+      if (blockInfo && !blockInfo.isTemplate && isTemplateMappedInGen(blockInfo.blockId)) {
+        autoFillBlockInstance(blockInfo.blockId, blockInfo.instanceIdx, t)
+        const instanceEnd = blockInstances()[blockInfo.blockId]?.[blockInfo.instanceIdx]?.[1] ?? lineIdx + 1
+        if (instanceEnd >= lines.length) {
+          setLrcGenLineIdx(lines.length)
+          setLrcGenWordIdx(0)
+          handleLrcGenFinish()
+          return
+        }
+        setLrcGenLineIdx(instanceEnd)
+        setLrcGenWordIdx(0)
+        saveLrcGenProgress()
+        return
+      }
     }
 
     // Record word start time
@@ -795,6 +1119,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   }
 
   const handleLrcGenFinish = () => {
+    // Expand any remaining block instances that haven't been auto-filled yet
+    expandAllBlockInstances()
+
     const lines = getGenLines()
     const lineTimes = lrcGenLineTimes()
     const wordTimes = lrcGenWordTimings()
@@ -1924,6 +2251,15 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                 <Show when={lrcGenMode()}>
                   <span class="sm-lyrics-gen-label">LRC Gen</span>
                 </Show>
+                <Show when={lyricsSource() !== 'none' && !editMode() && !lrcGenMode()}>
+                  <button
+                    class={`sm-lyrics-markmode-btn${blockMarkMode() ? ' sm-lyrics-markmode-btn--active' : ''}`}
+                    onClick={(e) => { e.stopPropagation(); setBlockMarkMode(prev => !prev); setMarkStartLine(null); setMarkEndLine(null) }}
+                    title={blockMarkMode() ? 'Exit mark mode' : 'Mark repeat blocks'}
+                  >
+                    <svg viewBox="0 0 24 24" width="11" height="11"><path fill="currentColor" d="M3 3h18v4H3V3zm0 7h12v4H3v-4zm0 7h18v4H3v-4z"/></svg>
+                  </button>
+                </Show>
                 <Show when={lyricsSource() === 'upload' && !editMode()}>
                   <button
                     class="sm-lyrics-change-btn"
@@ -2002,6 +2338,25 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                         return null
                       })()}
                     </span>
+                    {(() => {
+                      const idx = lrcGenLineIdx()
+                      const lines = getGenLines()
+                      if (idx < lines.length) {
+                        const bi = getBlockForLine(idx)
+                        if (bi) {
+                          const block = getBlockById(bi.blockId)
+                          const total = blockInstances()[bi.blockId]?.length ?? 1
+                          if (block) {
+                            return (
+                              <span class="sm-lyrics-gen-instance-badge">
+                                {block.label} ({bi.instanceIdx + 1}/{total})
+                              </span>
+                            )
+                          }
+                        }
+                      }
+                      return null
+                    })()}
                     <button class="sm-lyrics-gen-nextword-btn" onClick={handleNextWord} title="Mark next word time [W]">
                       Next Word
                     </button>
@@ -2027,36 +2382,71 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                       }
                     }}
                   >
-                    <For each={genViewData()}>
-                      {(item) => (
-                        <div
-                          class={`sm-lyrics-gen-line${item.isCurrent ? ' sm-lyrics-gen-line-current' : ''}${item.isDone ? ' sm-lyrics-gen-line-done' : ''}${item.isFuture ? ' sm-lyrics-gen-line-future' : ''}`}
-                        >
-                          <span class="sm-lyrics-gen-line-time">
-                            {item.lineTime !== undefined ? formatTimeMs(item.lineTime) : '--:--'}
-                          </span>
-                          <span class="sm-lyrics-gen-line-text">
-                            {item.words.length === 0
-                              ? item.line
-                              : item.words.map((word, wi) => (
-                                  <span
-                                    class={`sm-lyrics-gen-word${
-                                      item.activeWordIdx === wi ? ' sm-lyrics-gen-word-current' : ''
-                                    }${
-                                      item.activeWordIdx >= 0 && wi < item.activeWordIdx ? ' sm-lyrics-gen-word-done' : ''
-                                    }`}
-                                  >
-                                    <span class="sm-lyrics-gen-word-time">
-                                      {item.wordTimes?.[wi] !== undefined ? formatTimeMs(item.wordTimes[wi]) : ''}
+                    {(() => {
+                      const items = genViewData()
+                      const result: any[] = []
+                      let skipUntil = -1
+                      for (let i = 0; i < items.length; i++) {
+                        if (i < skipUntil) continue
+                        const item = items[i]
+
+                        // If this is a placeholder line, show a collapsed placeholder row
+                        if (item.isPlaceholder) {
+                          if (item.isPlaceholderStart) {
+                            const bi = item.blockInfo!
+                            const block = getBlockById(bi.blockId)
+                            const total = blockInstances()[bi.blockId]?.length ?? 1
+                            const instance = blockInstances()[bi.blockId]?.[bi.instanceIdx]
+                            skipUntil = instance?.[1] ?? i + 1
+                            result.push(
+                              <div
+                                class="sm-lyrics-gen-line sm-lyrics-gen-line-placeholder"
+                                style={{ '--block-color': getBlockColor(bi.blockId) }}
+                              >
+                                <span class="sm-lyrics-gen-line-time">
+                                  {item.lineTime !== undefined ? formatTimeMs(item.lineTime) : '--:--'}
+                                </span>
+                                <span class="sm-lyrics-gen-placeholder-text">
+                                  {block?.label || 'Block'} (repeat {bi.instanceIdx + 1}/{total}) — timings copied from template
+                                </span>
+                              </div>,
+                            )
+                          }
+                          continue
+                        }
+
+                        result.push(
+                          <div
+                            class={`sm-lyrics-gen-line${item.isCurrent ? ' sm-lyrics-gen-line-current' : ''}${item.isDone ? ' sm-lyrics-gen-line-done' : ''}${item.isFuture ? ' sm-lyrics-gen-line-future' : ''}${item.blockInfo?.isTemplate ? ' sm-lyrics-gen-line-template' : ''}`}
+                            style={item.blockInfo?.isTemplate ? { '--block-color': getBlockColor(item.blockInfo.blockId) } : {}}
+                          >
+                            <span class="sm-lyrics-gen-line-time">
+                              {item.lineTime !== undefined ? formatTimeMs(item.lineTime) : '--:--'}
+                            </span>
+                            <span class="sm-lyrics-gen-line-text">
+                              {item.words.length === 0
+                                ? item.line
+                                : item.words.map((word, wi) => (
+                                    <span
+                                      class={`sm-lyrics-gen-word${
+                                        item.activeWordIdx === wi ? ' sm-lyrics-gen-word-current' : ''
+                                      }${
+                                        item.activeWordIdx >= 0 && wi < item.activeWordIdx ? ' sm-lyrics-gen-word-done' : ''
+                                      }`}
+                                    >
+                                      <span class="sm-lyrics-gen-word-time">
+                                        {item.wordTimes?.[wi] !== undefined ? formatTimeMs(item.wordTimes[wi]) : ''}
+                                      </span>
+                                      <span class="sm-lyrics-gen-word-text">{word}</span>
                                     </span>
-                                    <span class="sm-lyrics-gen-word-text">{word}</span>
-                                  </span>
-                                ))
-                            }
-                          </span>
-                        </div>
-                      )}
-                    </For>
+                                  ))
+                              }
+                            </span>
+                          </div>,
+                        )
+                      }
+                      return result
+                    })()}
                   </div>
                 </Show>
 
@@ -2139,6 +2529,87 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
                 {/* ── Normal view ──────────────────────────────── */}
                 <Show when={!editMode() && !lrcGenMode()}>
+                  {/* ── Block form popover ─────────────────────── */}
+                  <Show when={blockMarkMode() && markStartLine() !== null && markEndLine() !== null}>
+                    <div class="sm-lyrics-block-form">
+                      <input
+                        type="text"
+                        class="sm-lyrics-block-form-label"
+                        placeholder="Chorus, Verse 1..."
+                        id="block-label-input"
+                      />
+                      <input
+                        type="number"
+                        class="sm-lyrics-block-form-repeat"
+                        value="1"
+                        min="1"
+                        max="20"
+                        id="block-repeat-input"
+                        title="Repeat count"
+                      />
+                      <button
+                        class="sm-lyrics-block-form-btn"
+                        onClick={() => {
+                          const label = (document.getElementById('block-label-input') as HTMLInputElement)?.value?.trim() || 'Block'
+                          const repeat = parseInt((document.getElementById('block-repeat-input') as HTMLInputElement)?.value || '1', 10)
+                          handleMarkBlock(label, repeat)
+                        }}
+                      >Mark</button>
+                      <button
+                        class="sm-lyrics-block-form-cancel"
+                        onClick={() => { setMarkStartLine(null); setMarkEndLine(null); setBlockMarkMode(false) }}
+                      >Cancel</button>
+                    </div>
+                  </Show>
+
+                  {/* ── Block edit popover ─────────────────────── */}
+                  <Show when={blockEditTarget() !== null}>
+                    <div class="sm-lyrics-block-edit-popover">
+                      {(() => {
+                        const b = getBlockById(blockEditTarget()!)
+                        if (!b) return null
+                        return (
+                          <>
+                            <input
+                              type="text"
+                              class="sm-lyrics-block-form-label"
+                              value={b.label}
+                              id="block-edit-label-input"
+                            />
+                            <input
+                              type="number"
+                              class="sm-lyrics-block-form-repeat"
+                              value={b.repeatCount}
+                              min="1"
+                              max="20"
+                              id="block-edit-repeat-input"
+                              title="Repeat count"
+                            />
+                            <button
+                              class="sm-lyrics-block-form-btn"
+                              onClick={() => {
+                                const label = (document.getElementById('block-edit-label-input') as HTMLInputElement)?.value?.trim() || b.label
+                                const repeat = parseInt((document.getElementById('block-edit-repeat-input') as HTMLInputElement)?.value || '1', 10)
+                                handleEditBlock(b.id, label, repeat)
+                              }}
+                            >Save</button>
+                            <button
+                              class="sm-lyrics-block-form-cancel"
+                              onClick={() => setBlockEditTarget(null)}
+                            >Cancel</button>
+                            <button
+                              class="sm-lyrics-block-delete-btn"
+                              onClick={() => handleDeleteBlock(b.id)}
+                              title="Delete block"
+                            >
+                              <svg viewBox="0 0 24 24" width="10" height="10"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                            </button>
+                          </>
+                        )
+                      })()}
+                    </div>
+                  </Show>
+
                   <div
                     class="sm-lyrics-lines"
                     classList={{ 'sm-lyrics-columns-2': lyricsColumns() === 2 }}
@@ -2153,29 +2624,116 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                       }
                     }}
                   >
-                    <For each={lyricsRenderData()}>
-                      {(rl) => {
-                        const idx = parseInt(rl.key.split('-')[1])
+                    {/* ── Block instance badge + line group rendering ── */}
+                    {(() => {
+                      const rl = lyricsRenderData()
+                      const renderedFirstLines = new Set<number>()
+
+                      // Map line index → block info for badge placement
+                      const blockStarts = new Map<number, { blockId: string; label: string; instanceIdx: number; isTemplate: boolean; repeatCount: number; color: string; startLine: number; endLine: number }>()
+                      for (const [blockId, instances] of Object.entries(blockInstances())) {
+                        const block = getBlockById(blockId)
+                        if (!block) continue
+                        const color = getBlockColor(blockId)
+                        for (let i = 0; i < instances.length; i++) {
+                          const [s, e] = instances[i]
+                          blockStarts.set(s, { blockId, label: block.label, instanceIdx: i, isTemplate: i === 0, repeatCount: block.repeatCount, color, startLine: s, endLine: e })
+                        }
+                      }
+
+                      return rl.map((rlItem) => {
+                        const idx = parseInt(rlItem.key.split('-')[1])
+                        const blockInfo = blockStarts.get(idx)
+                        const blockForLine = getBlockForLine(idx)
+                        const blockColor = blockForLine ? getBlockColor(blockForLine.blockId) : undefined
+                        const block = blockForLine ? getBlockById(blockForLine.blockId) : undefined
+                        const isMarkSelected = blockMarkMode() && markStartLine() !== null && markEndLine() !== null &&
+                          idx >= markStartLine()! && idx < markEndLine()!
+
                         return (
-                          <span
-                            class={`sm-lyrics-line${rl.isActive ? ' sm-lyrics-line-active' : ''}`}
-                            onClick={() => handleLyricLineClick(idx)}
-                          >
-                            <span class="sm-lyrics-time">{formatTime(rl.time)}</span>
-                            {rl.words.length === 0
-                              ? (rl.key.startsWith('lrc-')
-                                  ? lrcLines()[idx]?.text || ''
-                                  : lyricsLines()[idx] || '')
-                              : rl.words.map((word, wi) => (
+                          <>
+                            {/* Badge at start of block instance */}
+                            {blockInfo && (
+                              <div
+                                class={`sm-lyrics-block-badge ${blockInfo.isTemplate ? 'sm-lyrics-block-badge--template' : 'sm-lyrics-block-badge--instance'}`}
+                                style={{ '--block-color': blockInfo.color, 'margin-top': '0.4rem' }}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  if (!blockMarkMode()) {
+                                    setBlockEditTarget(blockInfo.blockId)
+                                  }
+                                }}
+                              >
+                                {blockInfo.label}
+                                {blockInfo.isTemplate && blockInfo.repeatCount > 1 && (
+                                  <span class="sm-lyrics-block-repeat">x{blockInfo.repeatCount}</span>
+                                )}
+                                {!blockInfo.isTemplate && (
                                   <span
-                                    class={`sm-lyrics-word${wi <= rl.activeUpTo ? ' sm-lyrics-word-done' : ''}`}
-                                  >{word}{' '}</span>
-                                ))
-                            }
-                          </span>
+                                    class="sm-lyrics-block-unlink"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      handleUnlinkInstance(blockInfo.blockId, blockInfo.instanceIdx)
+                                    }}
+                                    title="Unlink this instance"
+                                  >x</span>
+                                )}
+                              </div>
+                            )}
+                            <span
+                              class={`sm-lyrics-line${rlItem.isActive ? ' sm-lyrics-line-active' : ''}${blockForLine ? ' sm-lyrics-line--blocked' : ''}${blockForLine && !blockForLine.isTemplate ? ' sm-lyrics-line--block-instance' : ''}${blockMarkMode() ? ' sm-lyrics-line-markable' : ''}${isMarkSelected ? ' sm-lyrics-line-mark-selected' : ''}`}
+                              style={blockColor ? { '--block-color': blockColor } : {}}
+                              onClick={() => {
+                                if (blockMarkMode()) {
+                                  const start = markStartLine()
+                                  if (start === null) {
+                                    setMarkStartLine(idx)
+                                    setMarkEndLine(null)
+                                  } else if (markEndLine() !== null) {
+                                    // Reset and start new selection
+                                    setMarkStartLine(idx)
+                                    setMarkEndLine(null)
+                                  } else {
+                                    // Second click — set end
+                                    if (idx > start) {
+                                      setMarkEndLine(idx + 1)  // end is exclusive
+                                    } else if (idx < start) {
+                                      setMarkStartLine(idx)
+                                      setMarkEndLine(start + 1)
+                                    }
+                                  }
+                                } else {
+                                  handleLyricLineClick(idx)
+                                }
+                              }}
+                            >
+                              {/* Show unlink button on hover for non-template blocked lines */}
+                              {blockForLine && !blockForLine.isTemplate && (
+                                <span
+                                  class="sm-lyrics-block-unlink"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleUnlinkInstance(blockForLine.blockId, blockForLine.instanceIdx)
+                                  }}
+                                  title="Unlink this instance"
+                                >x</span>
+                              )}
+                              <span class="sm-lyrics-time">{formatTime(rlItem.time)}</span>
+                              {rlItem.words.length === 0
+                                ? (rlItem.key.startsWith('lrc-')
+                                    ? lrcLines()[idx]?.text || ''
+                                    : lyricsLines()[idx] || '')
+                                : rlItem.words.map((word, wi) => (
+                                    <span
+                                      class={`sm-lyrics-word${wi <= rlItem.activeUpTo ? ' sm-lyrics-word-done' : ''}`}
+                                    >{word}{' '}</span>
+                                  ))
+                              }
+                            </span>
+                          </>
                         )
-                      }}
-                    </For>
+                      })
+                    })()}
                   </div>
                 </Show>
               </Show>
@@ -2985,6 +3543,256 @@ export const StemMixerStyles: string = `
   margin-left: 0.35rem;
 }
 
+/* ── Mark Blocks mode ─────────────────────────────────────── */
+
+.sm-lyrics-markmode-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.2rem;
+  height: 1.15rem;
+  padding: 0;
+  background: transparent;
+  border: 1px solid var(--border, #30363d);
+  border-radius: 0.2rem;
+  color: var(--fg-tertiary, #484f58);
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+  margin-left: 0.15rem;
+}
+
+.sm-lyrics-markmode-btn:hover {
+  color: var(--accent, #58a6ff);
+  border-color: var(--accent, #58a6ff);
+  background: rgba(88, 166, 255, 0.08);
+}
+
+.sm-lyrics-markmode-btn--active {
+  background: var(--accent, #58a6ff);
+  color: var(--bg-primary, #0d1117);
+  border-color: var(--accent, #58a6ff);
+}
+
+.sm-lyrics-markmode-btn--active:hover {
+  background: var(--accent-hover, #79b8ff);
+  color: var(--bg-primary, #0d1117);
+}
+
+.sm-lyrics-line-markable {
+  cursor: pointer;
+  border-radius: 0.2rem;
+  transition: background 0.12s;
+}
+
+.sm-lyrics-line-markable:hover {
+  background: var(--bg-tertiary);
+}
+
+.sm-lyrics-line-mark-selected {
+  background: rgba(88, 166, 255, 0.1);
+  outline: 1px solid rgba(88, 166, 255, 0.3);
+}
+
+/* ── Block badges ──────────────────────────────────────────── */
+
+.sm-lyrics-block-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.42rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.05rem 0.4rem;
+  border-radius: 0.18rem;
+  color: var(--block-color, var(--accent));
+  cursor: pointer;
+  user-select: none;
+  line-height: 1.4;
+}
+
+.sm-lyrics-block-badge--template {
+  background: color-mix(in srgb, var(--block-color, #58a6ff) 16%, transparent);
+  border: 1px solid var(--block-color, var(--accent));
+  opacity: 0.9;
+}
+
+.sm-lyrics-block-badge--instance {
+  background: transparent;
+  border: 1px dashed var(--block-color, var(--accent));
+  opacity: 0.65;
+}
+
+.sm-lyrics-block-repeat {
+  font-size: 0.38rem;
+  opacity: 0.7;
+}
+
+.sm-lyrics-block-badge:hover {
+  opacity: 1;
+}
+
+/* ── Block line styling ────────────────────────────────────── */
+
+.sm-lyrics-line--blocked {
+  border-left: 3px solid var(--block-color, var(--accent));
+  padding-left: 0.35rem;
+}
+
+.sm-lyrics-line--block-instance {
+  border-left-style: dashed;
+}
+
+/* ── Block unlink ──────────────────────────────────────────── */
+
+.sm-lyrics-block-unlink {
+  opacity: 0;
+  cursor: pointer;
+  font-size: 0.48rem;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0 0.15rem;
+  color: var(--fg-tertiary, #484f58);
+  transition: all 0.12s;
+  user-select: none;
+}
+
+.sm-lyrics-line:hover .sm-lyrics-block-unlink,
+.sm-lyrics-block-badge:hover .sm-lyrics-block-unlink {
+  opacity: 0.5;
+}
+
+.sm-lyrics-block-unlink:hover {
+  opacity: 1 !important;
+  color: var(--danger, #f85149);
+}
+
+/* ── Block form ────────────────────────────────────────────── */
+
+.sm-lyrics-block-form {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.4rem;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border, #30363d);
+  border-radius: 0.25rem;
+  margin-bottom: 0.3rem;
+}
+
+.sm-lyrics-block-form-label {
+  height: 1.2rem;
+  width: 5rem;
+  font-size: 0.55rem;
+  background: var(--bg-primary, #0d1117);
+  border: 1px solid var(--border, #30363d);
+  border-radius: 0.18rem;
+  color: var(--fg-primary);
+  padding: 0 0.3rem;
+}
+
+.sm-lyrics-block-form-label:focus {
+  outline: none;
+  border-color: var(--accent, #58a6ff);
+}
+
+.sm-lyrics-block-form-repeat {
+  height: 1.2rem;
+  width: 2.5rem;
+  font-size: 0.55rem;
+  background: var(--bg-primary, #0d1117);
+  border: 1px solid var(--border, #30363d);
+  border-radius: 0.18rem;
+  color: var(--fg-primary);
+  padding: 0 0.2rem;
+  text-align: center;
+}
+
+.sm-lyrics-block-form-repeat:focus {
+  outline: none;
+  border-color: var(--accent, #58a6ff);
+}
+
+.sm-lyrics-block-form-btn {
+  height: 1.2rem;
+  font-size: 0.55rem;
+  font-weight: 600;
+  background: var(--accent, #58a6ff);
+  color: var(--bg-primary, #0d1117);
+  border: none;
+  border-radius: 0.18rem;
+  cursor: pointer;
+  padding: 0 0.5rem;
+  transition: opacity 0.12s;
+}
+
+.sm-lyrics-block-form-btn:hover {
+  opacity: 0.85;
+}
+
+.sm-lyrics-block-form-cancel {
+  height: 1.2rem;
+  font-size: 0.5rem;
+  background: transparent;
+  color: var(--fg-tertiary, #484f58);
+  border: 1px solid var(--border, #30363d);
+  border-radius: 0.18rem;
+  cursor: pointer;
+  padding: 0 0.4rem;
+  transition: color 0.12s;
+}
+
+.sm-lyrics-block-form-cancel:hover {
+  color: var(--fg-primary);
+}
+
+.sm-lyrics-block-delete-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 1.2rem;
+  width: 1.2rem;
+  background: transparent;
+  color: var(--fg-tertiary, #484f58);
+  border: 1px solid var(--border, #30363d);
+  border-radius: 0.18rem;
+  cursor: pointer;
+  padding: 0;
+  margin-left: auto;
+  transition: all 0.12s;
+}
+
+.sm-lyrics-block-delete-btn:hover {
+  color: var(--danger, #f85149);
+  border-color: var(--danger, #f85149);
+}
+
+/* ── Block edit popover ────────────────────────────────────── */
+
+.sm-lyrics-block-edit-popover {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.4rem;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--accent, #58a6ff);
+  border-radius: 0.25rem;
+  margin-bottom: 0.3rem;
+}
+
+/* ── LRC gen block instance indicator ──────────────────────── */
+
+.sm-lyrics-gen-instance-badge {
+  font-size: 0.5rem;
+  color: var(--fg-tertiary, #484f58);
+  margin: 0 0.2rem;
+  padding: 0.08rem 0.3rem;
+  background: var(--bg-tertiary);
+  border-radius: 0.15rem;
+  white-space: nowrap;
+}
+
 .sm-lyrics-gen-toolbar {
   display: flex;
   align-items: center;
@@ -3199,6 +4007,38 @@ export const StemMixerStyles: string = `
 
 .sm-lyrics-gen-word-done .sm-lyrics-gen-word-text {
   color: var(--fg-secondary, #8b949e);
+}
+
+/* Block placeholders in gen view */
+.sm-lyrics-gen-line-placeholder {
+  border-left: 3px solid var(--block-color, #58a6ff);
+  background: color-mix(in srgb, var(--block-color, #58a6ff) 8%, transparent);
+  opacity: 0.75;
+  font-style: italic;
+}
+
+.sm-lyrics-gen-line-placeholder .sm-lyrics-gen-line-time {
+  color: var(--block-color, #58a6ff);
+}
+
+.sm-lyrics-gen-placeholder-text {
+  font-size: 0.55rem;
+  color: var(--fg-tertiary, #8b949e);
+}
+
+/* Template line indicator in gen view */
+.sm-lyrics-gen-line-template {
+  border-left: 2px solid var(--block-color, #58a6ff);
+}
+
+/* Block instance badge in gen toolbar */
+.sm-lyrics-gen-instance-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.5rem;
+  color: var(--fg-tertiary, #8b949e);
+  margin: 0 0.3rem;
+  white-space: nowrap;
 }
 
 /* Let uploader fill remaining panel height so dropzone is fully visible */
