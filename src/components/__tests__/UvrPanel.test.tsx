@@ -95,7 +95,7 @@ describe('UvrPanel Component', () => {
       render(() => <UvrPanel {...defaultProps} />)
       expect(screen.getByTitle('View Guide')).toBeInTheDocument()
       expect(screen.getByTitle('History')).toBeInTheDocument()
-      expect(screen.getByTitle('Close')).toBeInTheDocument()
+      expect(screen.getByTitle('UVR Settings')).toBeInTheDocument()
     })
 
     it('renders specified default view', () => {

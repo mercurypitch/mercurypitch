@@ -21,241 +21,189 @@ describe('UvrResultViewer Component', () => {
     vocalMidi: '/midi/vocal.mid',
   }
 
-  const mockProcessingTime = 45000
-
   const defaultProps = {
     outputs: mockOutputs,
-    processingTime: mockProcessingTime,
+    processingTime: 45000,
     onStartPractice: vi.fn(),
-    onExport: vi.fn(),
     onClose: vi.fn(),
   }
 
-  const getTextWithinSection = (
-    sectionText: string | RegExp,
-    searchText: string,
-  ): HTMLElement | null => {
-    const sections = screen.getAllByRole('heading', { level: 4 })
-    const targetSection = sections.find((h) => {
-      const text = h.textContent || ''
-      return typeof sectionText === 'string'
-        ? text.includes(sectionText)
-        : sectionText.test(text)
-    })
-    if (!targetSection) return null
-
-    return targetSection.parentElement
-      ? targetSection.parentElement.querySelector(searchText)
-      : null
-  }
-
   describe('Header Rendering', () => {
-    it('renders header with title and close button', () => {
+    it('renders stems header with processing time', () => {
       render(() => <UvrResultViewer {...defaultProps} />)
 
-      expect(screen.getByText('Processing Results')).toBeInTheDocument()
+      expect(screen.getByText('Stems')).toBeInTheDocument()
+      expect(screen.getByText(/processed in 45s/)).toBeInTheDocument()
+    })
+
+    it('renders share button', () => {
+      render(() => <UvrResultViewer {...defaultProps} />)
+
+      expect(screen.getByText('Share')).toBeInTheDocument()
+    })
+
+    it('renders close button when onClose provided', () => {
+      render(() => <UvrResultViewer {...defaultProps} />)
+
       expect(screen.getByLabelText('Close')).toBeInTheDocument()
     })
 
-    it('shows processing time when provided', () => {
-      render(() => <UvrResultViewer {...defaultProps} />)
+    it('does not render close button when onClose not provided', () => {
+      const { onClose } = defaultProps
+      render(() => <UvrResultViewer outputs={mockOutputs} />)
 
-      expect(screen.getByText(/45s/i)).toBeInTheDocument()
-    })
-
-    it('shows not available when no processing time', () => {
-      const noTimeProps = { ...defaultProps, processingTime: undefined }
-
-      render(() => <UvrResultViewer {...noTimeProps} />)
-
-      expect(screen.getByText(/Not available/i)).toBeInTheDocument()
+      expect(screen.queryByLabelText('Close')).not.toBeInTheDocument()
     })
   })
 
-  describe('Vocal Stem Section', () => {
-    it('renders vocal stem section with WAV tag', () => {
+  describe('Stem Cards', () => {
+    it('renders Vocal stem card', () => {
       render(() => <UvrResultViewer {...defaultProps} />)
 
-      expect(screen.getByText('Vocal Stem')).toBeInTheDocument()
-      const vocalWav = getTextWithinSection('Vocal Stem', '.section-tag')
-      expect(vocalWav).toBeInTheDocument()
-      expect(vocalWav?.textContent).toBe('WAV')
+      expect(screen.getByText('Vocal')).toBeInTheDocument()
+      expect(screen.getAllByText('WAV').length).toBeGreaterThanOrEqual(1)
     })
 
-    it('shows practice with vocal button', () => {
+    it('renders Instrumental stem card', () => {
       render(() => <UvrResultViewer {...defaultProps} />)
 
-      const practiceButton = screen.getByText(/Practice with Vocal/i)
-      expect(practiceButton).toBeInTheDocument()
-      expect(practiceButton).not.toBeDisabled()
+      expect(screen.getByText('Instrumental')).toBeInTheDocument()
     })
 
-    it('shows download button', () => {
+    it('renders Vocal MIDI stem card', () => {
       render(() => <UvrResultViewer {...defaultProps} />)
 
-      const downloadButtons = screen.getAllByText('Download')
-      expect(downloadButtons.length).toBeGreaterThan(0)
+      expect(screen.getByText('Vocal MIDI')).toBeInTheDocument()
+      expect(screen.getByText('MID')).toBeInTheDocument()
     })
 
-    it('calls onStartPractice with vocal mode', () => {
+    it('does not render Vocal card when no vocal output', () => {
+      render(() => (
+        <UvrResultViewer
+          outputs={{ instrumental: '/stems/inst.wav' }}
+          onStartPractice={vi.fn()}
+        />
+      ))
+
+      expect(screen.queryByText('Vocal')).not.toBeInTheDocument()
+    })
+
+    it('does not render Instrumental card when no instrumental output', () => {
+      render(() => (
+        <UvrResultViewer
+          outputs={{ vocal: '/stems/vocal.wav' }}
+          onStartPractice={vi.fn()}
+        />
+      ))
+
+      expect(screen.queryByText('Instrumental')).not.toBeInTheDocument()
+    })
+
+    it('does not render MIDI card when no vocalMidi output', () => {
+      render(() => (
+        <UvrResultViewer
+          outputs={{ vocal: '/stems/vocal.wav', instrumental: '/stems/inst.wav' }}
+          onStartPractice={vi.fn()}
+        />
+      ))
+
+      expect(screen.queryByText('Vocal MIDI')).not.toBeInTheDocument()
+    })
+
+    it('shows duration and size metadata when provided', () => {
+      render(() => (
+        <UvrResultViewer
+          outputs={mockOutputs}
+          stemMeta={{
+            vocal: { duration: 125, size: 1024 * 1024 * 5 },
+          }}
+          onStartPractice={vi.fn()}
+        />
+      ))
+
+      expect(screen.getByText('2:05')).toBeInTheDocument()
+      expect(screen.getByText('5.0 MB')).toBeInTheDocument()
+    })
+  })
+
+  describe('Stem Card Actions', () => {
+    it('Play button calls onStartPractice with vocal mode', () => {
       render(() => <UvrResultViewer {...defaultProps} />)
 
-      const practiceButton = screen.getByText(/Practice with Vocal/i)
-      fireEvent.click(practiceButton)
+      const playButtons = screen.getAllByText('Play')
+      fireEvent.click(playButtons[0])
 
       expect(defaultProps.onStartPractice).toHaveBeenCalledWith('vocal')
     })
 
-    it('calls onExport with vocal type', () => {
+    it('Play button calls onStartPractice with midi mode for MIDI stem', () => {
       render(() => <UvrResultViewer {...defaultProps} />)
 
-      const downloadButtons = screen.getAllByText('Download')
-      expect(downloadButtons.length).toBeGreaterThan(0)
-      fireEvent.click(downloadButtons[0])
-
-      expect(defaultProps.onExport).toHaveBeenCalledWith('vocal')
-    })
-  })
-
-  describe('Instrumental Stem Section', () => {
-    it('renders instrumental section with WAV tag', () => {
-      render(() => <UvrResultViewer {...defaultProps} />)
-
-      expect(screen.getByText('Instrumental')).toBeInTheDocument()
-      const instrumentalWav = getTextWithinSection(
-        'Instrumental',
-        '.section-tag',
-      )
-      expect(instrumentalWav).toBeInTheDocument()
-      expect(instrumentalWav?.textContent).toBe('WAV')
-    })
-
-    it('shows practice instrumental button', () => {
-      render(() => <UvrResultViewer {...defaultProps} />)
-
-      const practiceButton = screen.getByText(/Practice Instrumental/i)
-      expect(practiceButton).toBeInTheDocument()
-      expect(practiceButton).not.toBeDisabled()
-    })
-
-    it('calls onStartPractice with instrumental mode', () => {
-      render(() => <UvrResultViewer {...defaultProps} />)
-
-      const practiceButton = screen.getByText(/Practice Instrumental/i)
-      fireEvent.click(practiceButton)
-
-      expect(defaultProps.onStartPractice).toHaveBeenCalledWith('instrumental')
-    })
-
-    it('calls onExport with instrumental type', () => {
-      render(() => <UvrResultViewer {...defaultProps} />)
-
-      const downloadButtons = screen.getAllByText('Download')
-      expect(downloadButtons.length).toBeGreaterThan(1)
-      const sections = screen.getAllByRole('heading', { level: 4 })
-      const instrumentalSection = sections.find((h) =>
-        h.textContent?.includes('Instrumental'),
-      )
-      if (instrumentalSection?.parentElement) {
-        const buttons =
-          instrumentalSection.parentElement?.querySelectorAll('button')
-        const downloadBtn = buttons?.[1] as HTMLButtonElement | undefined
-        if (downloadBtn) {
-          fireEvent.click(downloadBtn)
-          expect(defaultProps.onExport).toHaveBeenCalledWith('instrumental')
-        }
-      }
-    })
-  })
-
-  describe('Vocal MIDI Section', () => {
-    it('renders MIDI section with MIDI tag', () => {
-      render(() => <UvrResultViewer {...defaultProps} />)
-
-      expect(screen.getByText('Vocal MIDI')).toBeInTheDocument()
-      const vocalMidi = getTextWithinSection('Vocal MIDI', '.section-tag')
-      expect(vocalMidi).toBeInTheDocument()
-      expect(vocalMidi?.textContent).toBe('MIDI')
-    })
-
-    it('shows practice MIDI button', () => {
-      render(() => <UvrResultViewer {...defaultProps} />)
-
-      const practiceButton = screen.getByText(/Practice MIDI/i)
-      expect(practiceButton).toBeInTheDocument()
-      expect(practiceButton).not.toBeDisabled()
-    })
-
-    it('calls onStartPractice with midi mode', () => {
-      render(() => <UvrResultViewer {...defaultProps} />)
-
-      const practiceButton = screen.getByText(/Practice MIDI/i)
-      fireEvent.click(practiceButton)
+      const playButtons = screen.getAllByText('Play')
+      // Vocal MIDI card should be third
+      fireEvent.click(playButtons[2])
 
       expect(defaultProps.onStartPractice).toHaveBeenCalledWith('midi')
     })
 
-    it('calls onExport with vocal-midi type', () => {
+    it('renders Play and Mix buttons for each stem', () => {
       render(() => <UvrResultViewer {...defaultProps} />)
 
-      const sections = screen.getAllByRole('heading', { level: 4 })
-      const vocalMidiSection = sections.find((h) =>
-        h.textContent?.includes('Vocal MIDI'),
-      )
-      if (vocalMidiSection?.parentElement) {
-        const buttons =
-          vocalMidiSection.parentElement?.querySelectorAll('button')
-        const downloadBtn = buttons?.[1] as HTMLButtonElement | undefined
-        if (downloadBtn) {
-          fireEvent.click(downloadBtn)
-          expect(defaultProps.onExport).toHaveBeenCalledWith('vocal-midi')
-        }
-      }
+      // Play buttons: vocal, instrumental, vocal midi, full mix = 4
+      const playButtons = screen.getAllByText('Play')
+      expect(playButtons.length).toBe(4)
+      // Mix button on full mix card
+      expect(screen.getByText('Mix')).toBeInTheDocument()
+    })
+
+    it('does not call onStartPractice when not provided', () => {
+      render(() => <UvrResultViewer outputs={mockOutputs} />)
+
+      // Should not throw
+      const playButtons = screen.getAllByText('Play')
+      fireEvent.click(playButtons[0])
     })
   })
 
-  describe('Full Mix Section', () => {
-    it('renders full mix section with both stems tag', () => {
+  describe('Full Mix Card', () => {
+    it('renders Full Mix card when both vocal and instrumental exist', () => {
       render(() => <UvrResultViewer {...defaultProps} />)
 
-      expect(screen.getByText(/Full Mix.*Karaoke/i)).toBeInTheDocument()
-      const bothStems = getTextWithinSection(
-        /Full Mix.*Karaoke/i,
-        '.section-tag',
-      )
-      expect(bothStems).toBeInTheDocument()
-      expect(bothStems?.textContent).toBe('Both Stems')
+      expect(screen.getByText('Full Mix')).toBeInTheDocument()
+      expect(screen.getByText('Vocal + Instrumental')).toBeInTheDocument()
     })
 
-    it('shows practice full mix button', () => {
-      render(() => <UvrResultViewer {...defaultProps} />)
+    it('does not render Full Mix card when missing vocal', () => {
+      render(() => (
+        <UvrResultViewer
+          outputs={{ instrumental: '/stems/inst.wav' }}
+          onStartPractice={vi.fn()}
+        />
+      ))
 
-      const practiceButton = screen.getByText(/Practice Full Mix/i)
-      expect(practiceButton).toBeInTheDocument()
-      expect(practiceButton).not.toBeDisabled()
+      expect(screen.queryByText('Full Mix')).not.toBeInTheDocument()
     })
 
-    it('calls onStartPractice with full mode', () => {
+    it('does not render Full Mix card when missing instrumental', () => {
+      render(() => (
+        <UvrResultViewer
+          outputs={{ vocal: '/stems/vocal.wav' }}
+          onStartPractice={vi.fn()}
+        />
+      ))
+
+      expect(screen.queryByText('Full Mix')).not.toBeInTheDocument()
+    })
+
+    it('Full Mix Play button calls onStartPractice with full mode', () => {
       render(() => <UvrResultViewer {...defaultProps} />)
 
-      const practiceButton = screen.getByText(/Practice Full Mix/i)
-      fireEvent.click(practiceButton)
+      const playButtons = screen.getAllByText('Play')
+      // Last Play button is Full Mix card
+      const fullMixPlay = playButtons[playButtons.length - 1]
+      fireEvent.click(fullMixPlay)
 
       expect(defaultProps.onStartPractice).toHaveBeenCalledWith('full')
-    })
-
-    it('does not show download button for full mix', () => {
-      render(() => <UvrResultViewer {...defaultProps} />)
-
-      const sections = screen.getAllByRole('heading', { level: 4 })
-      const fullMixSection = sections.find((h) => {
-        const text = h.textContent || ''
-        return /Full Mix.*Karaoke/i.test(text)
-      })
-      if (fullMixSection?.parentElement) {
-        const buttons = fullMixSection.parentElement?.querySelectorAll('button')
-        expect(buttons.length).toBeLessThanOrEqual(1)
-      }
     })
   })
 
@@ -270,81 +218,30 @@ describe('UvrResultViewer Component', () => {
     })
   })
 
-  describe('Export Handler', () => {
-    it('does not call handler when onExport not provided', () => {
-      const { onExport } = defaultProps
+  describe('Share', () => {
+    it('copies share link to clipboard on click', async () => {
+      const writeText = vi.fn().mockResolvedValue(undefined)
+      Object.assign(navigator, { clipboard: { writeText } })
+
       render(() => (
-        <UvrResultViewer
-          outputs={mockOutputs}
-          processingTime={10000}
-          onStartPractice={vi.fn()}
-        />
+        <UvrResultViewer {...defaultProps} sessionId="session-456" />
       ))
 
-      const downloadButtons = screen.getAllByText('Download')
-      if (downloadButtons.length > 0) {
-        fireEvent.click(downloadButtons[0])
-      }
+      fireEvent.click(screen.getByText('Share'))
 
-      expect(onExport).not.toHaveBeenCalled()
+      expect(writeText).toHaveBeenCalledWith(
+        expect.stringContaining('/uvr/session/session-456'),
+      )
     })
   })
 
-  describe('Practice Handler', () => {
-    it('does not call handler when onStartPractice not provided', () => {
-      const { onStartPractice } = defaultProps
-      render(() => (
-        <UvrResultViewer
-          outputs={mockOutputs}
-          processingTime={10000}
-          onExport={vi.fn()}
-        />
-      ))
+  describe('Empty State', () => {
+    it('renders no stem cards when outputs is empty', () => {
+      render(() => <UvrResultViewer outputs={{}} />)
 
-      const practiceButton = screen.getByText(/Practice with Vocal/i)
-      fireEvent.click(practiceButton)
-
-      expect(onStartPractice).not.toHaveBeenCalled()
-    })
-  })
-
-  describe('Icon Variants', () => {
-    it('has different icons for each section', () => {
-      render(() => <UvrResultViewer {...defaultProps} />)
-
-      const sections = screen.getAllByRole('heading', { level: 4 })
-      // Now 4 sections: Vocal Stem, Instrumental, Vocal MIDI, Full Mix (Karaoke)
-      expect(sections).toHaveLength(4)
-      const sectionNames = sections.map((el) => el.textContent)
-      expect(sectionNames).toContain('Vocal Stem')
-      expect(sectionNames).toContain('Instrumental')
-      expect(sectionNames).toContain('Vocal MIDI')
-      expect(sectionNames.some((n) => n?.includes('Full Mix'))).toBe(true)
-    })
-  })
-
-  describe('Practice Modes', () => {
-    it('verifies all practice modes are available', () => {
-      render(() => <UvrResultViewer {...defaultProps} />)
-
-      const modes = [
-        'Practice with Vocal',
-        'Practice Instrumental',
-        'Practice MIDI',
-        'Practice Full Mix',
-      ]
-      modes.forEach((mode) => {
-        expect(screen.getByText(mode)).toBeInTheDocument()
-      })
-    })
-  })
-
-  describe('Download Types', () => {
-    it('verifies all export types work', () => {
-      render(() => <UvrResultViewer {...defaultProps} />)
-
-      const buttons = screen.getAllByRole('button')
-      expect(buttons.length).toBeGreaterThan(0)
+      expect(screen.getByText('Stems')).toBeInTheDocument()
+      expect(screen.queryByText('Vocal')).not.toBeInTheDocument()
+      expect(screen.queryByText('Full Mix')).not.toBeInTheDocument()
     })
   })
 })
