@@ -68,7 +68,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   const [currentLineIdx, setCurrentLineIdx] = createSignal(-1)
   const [lyricsSource, setLyricsSource] = createSignal<'api' | 'upload' | 'none'>('none')
   const [lyricsLoading, setLyricsLoading] = createSignal(false)
-  const [windowDuration, setWindowDuration] = createSignal(30) // seconds, range 20-60
+  const [windowDuration, setWindowDuration] = createSignal(30) // seconds, range 10-150
   const [windowStart, setWindowStart] = createSignal(0)
 
   // ── Workspace panel state ─────────────────────────────────────
@@ -575,6 +575,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       if (ref.width !== w || ref.height !== h) {
         ref.width = w
         ref.height = h
+        // Lock CSS size to match internal buffer so DPR-scaled draws
+        // fill every physical pixel — prevents stripe artifacts.
+        ref.style.width = `${Math.round(rect.width)}px`
+        ref.style.height = `${Math.round(rect.height)}px`
       }
     }
   }
@@ -584,8 +588,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     const canvas = waveformCanvasRef
     if (!canvas) return
     const dpr = window.devicePixelRatio || 1
-    const w = canvas.clientWidth
-    const h = canvas.clientHeight
+    const rect = canvas.getBoundingClientRect()
+    const w = Math.round(rect.width)
+    const h = Math.round(rect.height)
     if (h <= 0) { overviewRect = { w, h }; return }
     overviewRect = { w, h }
     const ctx = canvas.getContext('2d')!
@@ -664,8 +669,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     const canvas = liveWaveCanvasRef
     if (!canvas) return
     const dpr = window.devicePixelRatio || 1
-    const w = canvas.clientWidth
-    const h = canvas.clientHeight
+    const rect = canvas.getBoundingClientRect()
+    const w = Math.round(rect.width)
+    const h = Math.round(rect.height)
     if (h <= 0) { liveRect = { w, h }; return }
     liveRect = { w, h }
     const ctx = canvas.getContext('2d')!
@@ -712,8 +718,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     const canvas = pitchCanvasRef
     if (!canvas) return
     const dpr = window.devicePixelRatio || 1
-    const w = canvas.clientWidth
-    const h = canvas.clientHeight
+    const rect = canvas.getBoundingClientRect()
+    const w = Math.round(rect.width)
+    const h = Math.round(rect.height)
     if (h <= 0) { pitchRect = { w, h }; return }
     pitchRect = { w, h }
     const ctx = canvas.getContext('2d')!
@@ -1113,9 +1120,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
               </div>
 
               <div class="sm-zoom-control">
-                <button class="sm-zoom-btn" onClick={() => setWindowDuration(prev => Math.max(20, prev - 5))} title="Zoom in (shorter window)">−</button>
+                <button class="sm-zoom-btn" onClick={() => setWindowDuration(prev => Math.max(10, prev - 5))} title="Zoom in (shorter window)">−</button>
                 <span class="sm-zoom-value">{windowDuration()}s</span>
-                <button class="sm-zoom-btn" onClick={() => setWindowDuration(prev => Math.min(60, prev + 5))} title="Zoom out (longer window)">+</button>
+                <button class="sm-zoom-btn" onClick={() => setWindowDuration(prev => Math.min(150, prev + 5))} title="Zoom out (longer window)">+</button>
               </div>
             </div>
 
@@ -1142,7 +1149,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             ref={workspaceRef}
             class="sm-workspace"
             style={{ 'grid-template-columns': workspaceColumns() === 1 ? '1fr' : '1fr 1fr' }}
-            onWheel={(e) => { e.preventDefault(); setWindowDuration(prev => Math.min(60, Math.max(20, prev + (e.deltaY > 0 ? 5 : -5)))) }}
+            onWheel={(e) => { e.preventDefault(); setWindowDuration(prev => Math.min(150, Math.max(10, prev + (e.deltaY > 0 ? 5 : -5)))) }}
           >
             {/* Panel: Waveform Overview */}
             <div
