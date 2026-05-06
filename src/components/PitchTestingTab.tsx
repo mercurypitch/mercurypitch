@@ -261,6 +261,13 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
     generateWaveform()
   })
 
+  // Reactive effect: when mic becomes ready while detection is active, start the loop
+  createEffect(() => {
+    if (isDetecting() && detectionMode() === 'mic' && isMicStartedByUser()) {
+      updateMicDetection()
+    }
+  })
+
   // Start live detection
   const startLiveDetection = () => {
     setIsDetecting(true)
@@ -269,14 +276,8 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
     if (detectionMode() === 'mic') {
       if (!isMicStartedByUser()) {
         void startMicrophoneInput()
-        // Wait a moment for mic to initialize, then start detection
-        setTimeout(() => {
-          if (isDetecting() && isMicStartedByUser()) {
-            updateMicDetection()
-          }
-        }, 100)
+        // The createEffect above will start detection when mic is ready
       } else {
-        // Mic already enabled, start detection loop
         updateMicDetection()
       }
       return

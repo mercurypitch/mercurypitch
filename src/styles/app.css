@@ -10018,49 +10018,79 @@ input:checked + .settings-slider:before {
 }
 
 .results-section h3 {
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: 600;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
+/* Summary Cards — compact grid */
 .overall-score {
   display: grid;
-  gap: 12px;
-  margin-bottom: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
 }
 
 .result-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   background: var(--bg-secondary);
   border: 1px solid var(--border);
   border-radius: 6px;
-  padding: 16px;
+  padding: 10px 14px;
 }
 
-.result-header {
+.result-card-left {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
 }
 
 .result-algo-name {
   font-weight: 600;
+  font-size: 0.85rem;
   color: var(--text-primary);
 }
 
-.result-score {
-  font-size: 1.2rem;
-  font-weight: 700;
-  padding: 4px 10px;
-  border-radius: 20px;
-  background: var(--bg-tertiary);
+.result-card-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  flex-shrink: 0;
 }
 
-.perf-metrics {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 12px;
-  flex-wrap: wrap;
+.result-score {
+  font-size: 1.3rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.score-max {
+  font-size: 0.7rem;
+  font-weight: 400;
+  opacity: 0.6;
+}
+
+.result-time {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.result-offset {
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.result-offset.good {
+  color: var(--green);
+}
+
+.result-offset.bad {
+  color: var(--red);
 }
 
 .perf-badge {
@@ -10091,66 +10121,64 @@ input:checked + .settings-slider:before {
   color: var(--text-muted);
 }
 
-.offset-metrics {
+/* Results Legend */
+.results-legend {
   display: flex;
-  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-bottom: 16px;
+  padding: 8px 12px;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.legend-item {
+  display: flex;
   align-items: center;
-  margin-bottom: 8px;
+  gap: 5px;
 }
 
-.offset-label {
-  font-size: 0.85rem;
-  color: var(--text-secondary);
+.legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
-.offset-val {
-  font-weight: 600;
-  font-size: 0.9rem;
-}
-
-.offset-val.good {
-  color: var(--green);
-}
-
-.offset-val.bad {
-  color: var(--red);
-}
-
-.offset-bar {
-  height: 6px;
-  background: var(--bg-tertiary);
-  border-radius: 3px;
-  overflow: hidden;
-}
-
-.offset-fill {
-  height: 100%;
-  border-radius: 3px;
-  transition: width 0.3s ease;
-}
+.legend-dot.good { background: var(--green); }
+.legend-dot.ok { background: var(--yellow); }
+.legend-dot.bad { background: var(--red); }
+.legend-dot.miss { background: var(--text-muted); }
 
 .detailed-results {
-  margin-top: 20px;
+  margin-top: 0;
   border-top: 1px solid var(--border);
-  padding-top: 16px;
-}
-
-.detailed-results h4 {
-  font-size: 0.85rem;
-  margin-bottom: 12px;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  padding-top: 10px;
 }
 
 .note-row {
   display: grid;
-  grid-template-columns: 80px 80px repeat(4, minmax(60px, 1fr));
-  gap: 8px;
-  padding: 8px 0;
+  gap: 6px;
+  padding: 5px 0;
   border-bottom: 1px solid var(--border);
   align-items: center;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
+}
+
+.note-row.note-header {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  font-weight: 600;
+  border-bottom: 2px solid var(--border);
+  padding: 6px 0;
+  position: sticky;
+  top: 0;
+  background: var(--bg-primary);
+  z-index: 1;
 }
 
 .note-row:last-child {
@@ -10164,28 +10192,37 @@ input:checked + .settings-slider:before {
 
 .note-freq {
   color: var(--text-muted);
-  font-size: 0.8rem;
+  font-size: 0.72rem;
+}
+
+.note-offset-hdr {
+  text-align: center;
+  font-weight: 600;
 }
 
 .note-offset {
   text-align: center;
-  padding: 4px;
-  border-radius: 4px;
+  padding: 2px 4px;
+  border-radius: 3px;
   font-variant-numeric: tabular-nums;
-}
-
-.note-offset.missing {
-  color: var(--text-muted);
+  font-weight: 500;
+  font-size: 0.75rem;
 }
 
 .note-offset.good {
   color: var(--green);
-  font-weight: 600;
+}
+
+.note-offset.ok {
+  color: var(--yellow);
 }
 
 .note-offset.bad {
   color: var(--red);
-  font-weight: 600;
+}
+
+.note-offset.miss {
+  color: var(--text-muted);
 }
 
 /* ── Pitch Testing Tab ────────────────────────────────────── */

@@ -201,9 +201,9 @@ export const PitchAlgorithmTester: Component<
         {/* Results */}
         <Show when={showResults()}>
           <div class="results-section">
-            <h3>Results</h3>
+            <h3>Results — {selectedSample()?.name}</h3>
 
-            {/* Overall Score */}
+            {/* Summary Cards — compact horizontal grid */}
             <div class="overall-score">
               <For each={results()}>
                 {(result: AlgorithmResult) => {
@@ -214,51 +214,31 @@ export const PitchAlgorithmTester: Component<
                     ACCURACY_BAND_COLORS[
                       result.totalScore as keyof typeof ACCURACY_BAND_COLORS
                     ] || '#666'
-                  const offsetColor =
-                    result.avgOffsetCents <= 10
-                      ? ACCURACY_BAND_COLORS[
-                          100 as keyof typeof ACCURACY_BAND_COLORS
-                        ]
-                      : ACCURACY_BAND_COLORS[
-                          50 as keyof typeof ACCURACY_BAND_COLORS
-                        ]
 
                   return (
                     <div class="result-card">
-                      <div class="result-header">
+                      <div class="result-card-left">
                         <span class="result-algo-name">{result.algorithm}</span>
-                        <span class="result-score" style={{ color }}>
-                          {result.totalScore}/100
-                        </span>
-                      </div>
-                      <div class="perf-metrics">
                         <span class={`perf-badge ${perf.color}`}>
                           {perf.label}
                         </span>
-                        <span class="perf-time">
-                          ⚡ {result.avgComputationTime.toFixed(1)}ms avg
-                        </span>
                       </div>
-                      <div class="offset-metrics">
-                        <span class="offset-label">Avg Offset:</span>
+                      <div class="result-card-right">
+                        <span class="result-score" style={{ color }}>
+                          {result.totalScore}<span class="score-max">/100</span>
+                        </span>
+                        <span class="result-time">
+                          {result.avgComputationTime.toFixed(1)}ms
+                        </span>
                         <span
                           classList={{
-                            'offset-val': true,
+                            'result-offset': true,
                             good: result.avgOffsetCents <= 10,
                             bad: result.avgOffsetCents > 10,
                           }}
                         >
-                          {result.avgOffsetCents.toFixed(1)}¢
+                          {result.avgOffsetCents.toFixed(1)}¢ off
                         </span>
-                      </div>
-                      <div class="offset-bar">
-                        <div
-                          class="offset-fill"
-                          style={{
-                            width: `${Math.min(100, result.avgOffsetCents)}%`,
-                            background: offsetColor,
-                          }}
-                        />
                       </div>
                     </div>
                   )
@@ -266,48 +246,81 @@ export const PitchAlgorithmTester: Component<
               </For>
             </div>
 
+            {/* Legend */}
+            <div class="results-legend">
+              <span class="legend-item"><span class="legend-dot good" /> ≤10¢ perfect</span>
+              <span class="legend-item"><span class="legend-dot ok" /> ≤25¢ good</span>
+              <span class="legend-item"><span class="legend-dot bad" /> ≤50¢ okay</span>
+              <span class="legend-item"><span class="legend-dot miss" /> no detection</span>
+            </div>
+
             {/* Detailed Results Table */}
             <div class="detailed-results">
               <Show when={selectedSample()}>
                 {(sample) => (
-                  <For each={sample().notes}>
-                    {(note: { name: string; frequency: number }) => {
-                      const algorithmResults = results().filter((r) =>
-                        r.results.some(
-                          (rr) => rr.targetFreq === note.frequency,
-                        ),
-                      )
-
-                      return (
-                        <div class="note-row">
+                  <>
+                    {/* Header Row */}
+                    <div
+                      class="note-row note-header"
+                      style={{
+                        'grid-template-columns': `60px 70px repeat(${results().length}, minmax(50px, 1fr))`,
+                      }}
+                    >
+                      <span class="note-name">Note</span>
+                      <span class="note-freq">Frequency</span>
+                      <For each={results()}>
+                        {(r) => <span class="note-offset-hdr">{r.algorithm}</span>}
+                      </For>
+                    </div>
+                    {/* Data Rows */}
+                    <For each={sample().notes}>
+                      {(note: { name: string; frequency: number }) => (
+                        <div
+                          class="note-row"
+                          style={{
+                            'grid-template-columns': `60px 70px repeat(${results().length}, minmax(50px, 1fr))`,
+                          }}
+                        >
                           <span class="note-name">{note.name}</span>
                           <span class="note-freq">
-                            {note.frequency.toFixed(2)} Hz
+                            {note.frequency.toFixed(1)} Hz
                           </span>
-                          <For each={algorithmResults}>
+                          <For each={results()}>
                             {(result: AlgorithmResult) => {
-                              // Pre-compute the result for this frequency to avoid reactivity issues
                               const matchingResult = result.results.find(
                                 (rr) => rr.targetFreq === note.frequency,
                               )
-                              const color =
-                                ACCURACY_BAND_COLORS[
-                                  matchingResult?.accuracyBand as keyof typeof ACCURACY_BAND_COLORS
-                                ] || '#666'
+                              const band = matchingResult?.accuracyBand
+                              const color = band !== undefined
+                                ? (ACCURACY_BAND_COLORS[
+                                    band as keyof typeof ACCURACY_BAND_COLORS
+                                  ] || 'var(--text-muted)')
+                                : 'var(--text-muted)'
                               const offsetCents =
-                                matchingResult?.offsetCents ?? 0
+                                matchingResult?.offsetCents
 
                               return (
-                                <span class="note-offset" style={{ color }}>
-                                  {offsetCents.toFixed(0)}¢
+                                <span
+                                  classList={{
+                                    'note-offset': true,
+                                    good: band !== undefined && band >= 90,
+                                    ok: band === 75,
+                                    bad: band !== undefined && band <= 50,
+                                    miss: band === undefined,
+                                  }}
+                                  style={{ color }}
+                                >
+                                  {matchingResult
+                                    ? `${offsetCents!.toFixed(0)}¢`
+                                    : '—'}
                                 </span>
                               )
                             }}
                           </For>
                         </div>
-                      )
-                    }}
-                  </For>
+                      )}
+                    </For>
+                  </>
                 )}
               </Show>
             </div>
