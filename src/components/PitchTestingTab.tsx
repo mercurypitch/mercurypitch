@@ -429,7 +429,13 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
     stopLiveDetection()
     setIsMicStartedByUser(false)
 
+    // Reset all detectors to clear pitch history — accumulated mic
+    // detections would otherwise contaminate the stability filter and
+    // cause new test frequencies to be rejected as outliers.
+    detectors().forEach((d) => d.reset())
+
     const isEnsemble = ensembleMode()
+    const testSampleRate = 44100
 
     if (!isEnsemble) {
       const detector = detectors().find(
@@ -447,11 +453,10 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
 
     TEST_FREQUENCIES.forEach((freq, index) => {
       setTimeout(() => {
-        const wave = new Float32Array(44100 * 0.5)
+        const wave = new Float32Array(testSampleRate * 0.5)
         for (let i = 0; i < wave.length; i++) {
-          const t = i / 44100
-          const amplitude = t < 0.01 ? t / 0.01 : 1
-          wave[i] = Math.sin(2 * Math.PI * freq * t) * amplitude
+          const t = i / testSampleRate
+          wave[i] = Math.sin(2 * Math.PI * freq * t)
         }
 
         let detectedFreq: number | null
