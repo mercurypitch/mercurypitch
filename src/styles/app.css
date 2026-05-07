@@ -9733,5 +9733,7 @@ input:checked + .settings-slider:before {
 }
 
 .vocal-challenges-panel {
+  justify-content: flex-start;
+  align-items: stretch;
   padding: 1.5rem;
 }
