@@ -3,8 +3,8 @@
 // ============================================================
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import type { UvrSettings } from '@/lib/uvr-processor'
 import { UvrProcessor } from '@/lib/uvr-processor'
-import type { UvrSettings, UvrAnalysis } from '@/lib/uvr-processor'
 
 describe('UvrProcessor', () => {
   let processor: UvrProcessor

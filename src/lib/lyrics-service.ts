@@ -96,7 +96,7 @@ export async function searchLyrics(rawInput: string): Promise<LyricsSearchResult
   for (const q of queries) {
     try {
       const lyrics = await fetchLyricsOvh(q.artist, q.title)
-      if (lyrics) return { text: lyrics, format: 'txt' }
+      if (lyrics !== null) return { text: lyrics, format: 'txt' }
     } catch { /* continue */ }
   }
 
@@ -104,7 +104,7 @@ export async function searchLyrics(rawInput: string): Promise<LyricsSearchResult
   for (const q of queries.slice(0, 2)) {
     try {
       const lyrics = await fetchLyricsAstrid(q.artist, q.title)
-      if (lyrics) return { text: lyrics, format: 'txt' }
+      if (lyrics !== null) return { text: lyrics, format: 'txt' }
     } catch { /* continue */ }
   }
 
@@ -124,11 +124,11 @@ async function fetchLyricsLrclib(artist: string, title: string): Promise<LyricsS
   const data = await resp.json()
 
   // Prefer synced LRC lyrics
-  if (data?.syncedLyrics && typeof data.syncedLyrics === 'string' && data.syncedLyrics.length > 20) {
+  if (typeof data?.syncedLyrics === 'string' && data.syncedLyrics.length > 20) {
     return { text: data.syncedLyrics, format: 'lrc' }
   }
   // Fall back to plain lyrics
-  if (data?.plainLyrics && typeof data.plainLyrics === 'string' && data.plainLyrics.length > 10) {
+  if (typeof data?.plainLyrics === 'string' && data.plainLyrics.length > 10) {
     return { text: data.plainLyrics, format: 'txt' }
   }
   return null
@@ -145,7 +145,7 @@ async function fetchLyricsOvh(artist: string, title: string): Promise<string | n
   if (!resp.ok) return null
 
   const data = await resp.json()
-  if (data?.lyrics && typeof data.lyrics === 'string' && data.lyrics.length > 10) {
+  if (typeof data?.lyrics === 'string' && data.lyrics.length > 10) {
     return data.lyrics
   }
   return null
@@ -162,7 +162,7 @@ async function fetchLyricsAstrid(artist: string, title: string): Promise<string 
   if (!resp.ok) return null
 
   const data = await resp.json()
-  if (data?.lyrics && typeof data.lyrics === 'string' && data.lyrics.length > 10) {
+  if (typeof data?.lyrics === 'string' && data.lyrics.length > 10) {
     return data.lyrics
   }
   return null
@@ -216,10 +216,10 @@ export async function fetchLyricsById(id: number): Promise<LyricsSearchResult | 
 
   const data = await resp.json()
 
-  if (data?.syncedLyrics && typeof data.syncedLyrics === 'string' && data.syncedLyrics.length > 20) {
+  if (typeof data?.syncedLyrics === 'string' && data.syncedLyrics.length > 20) {
     return { text: data.syncedLyrics, format: 'lrc' }
   }
-  if (data?.plainLyrics && typeof data.plainLyrics === 'string' && data.plainLyrics.length > 10) {
+  if (typeof data?.plainLyrics === 'string' && data.plainLyrics.length > 10) {
     return { text: data.plainLyrics, format: 'txt' }
   }
   return null
@@ -239,7 +239,7 @@ async function fetchSearchLrclib(artist: string, title: string): Promise<LyricsS
   if (!Array.isArray(data)) return []
 
   return data
-    .filter((item: Record<string, unknown>) => item && typeof item.id === 'number')
+    .filter((item: Record<string, unknown>) => typeof item.id === 'number')
     .map((item: Record<string, unknown>) => ({
       id: item.id as number,
       artist: typeof item.artistName === 'string' ? item.artistName : (typeof item.artist === 'string' ? item.artist : 'Unknown'),

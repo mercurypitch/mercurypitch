@@ -67,7 +67,7 @@ class MockAnalyser {
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-extraneous-class
+ 
 class MockMediaStreamAudioSourceNode {
   connect() {}
   disconnect() {}

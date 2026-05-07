@@ -109,7 +109,7 @@ export function EngineProvider(props: { children: JSX.Element }) {
 
   // Sync Practice Engine settings
   createEffect(() => {
-    const algo = settingsStore.pitchAlgorithm()
+    const _algo = settingsStore.pitchAlgorithm()
     const bufSize = settingsStore.pitchBufferSize()
     // Keep the AudioEngine's AnalyserNode fftSize in sync with the
     // PitchDetector's expected buffer size. Without this the detector

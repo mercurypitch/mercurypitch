@@ -602,7 +602,7 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
                     {index() >= 3 && `#${user.rank}`}
                   </div>
                   <div class="podium-avatar">
-                    {user.avatar ? renderIcon(user.avatar) : null}
+                    {user.avatar != null ? renderIcon(user.avatar) : null}
                   </div>
                   <div class="podium-info">
                     <div class="podium-name">{user.displayName}</div>
@@ -651,7 +651,7 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
                       <td class="user-td">
                         <div class="user-cell">
                           <div class="user-avatar">
-                            {user.avatar ? renderIcon(user.avatar) : null}
+                            {user.avatar != null ? renderIcon(user.avatar) : null}
                           </div>
                           <div class="user-details">
                             <div class="user-name">{user.displayName}</div>
@@ -712,7 +712,7 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
             <div class="profile-header">
               {(() => {
                 const user = selectedUser()
-                return user?.avatar ? renderIcon(user.avatar) : null
+                return (user?.avatar != null) ? renderIcon(user.avatar) : null
               })()}
               <div class="profile-header-info">
                 <div class="profile-rank-badge">
@@ -799,7 +799,7 @@ interface LeaderboardProps {
 
 function getPodiumData(): LeaderboardUser[] {
   return [
-    mockLeaderboardUsers[0] || {
+    mockLeaderboardUsers[0] ?? {
       userId: '',
       displayName: '—',
       avatar: '',
@@ -811,7 +811,7 @@ function getPodiumData(): LeaderboardUser[] {
       accuracy: 0,
       joinDate: 0,
     },
-    mockLeaderboardUsers[1] || {
+    mockLeaderboardUsers[1] ?? {
       userId: '',
       displayName: '—',
       avatar: '',
@@ -823,7 +823,7 @@ function getPodiumData(): LeaderboardUser[] {
       accuracy: 0,
       joinDate: 0,
     },
-    mockLeaderboardUsers[2] || {
+    mockLeaderboardUsers[2] ?? {
       userId: '',
       displayName: '—',
       avatar: '',

@@ -34,10 +34,6 @@ export class UvrProcessor {
   private smoothing = 0.3
   private isInitialized = false
 
-  constructor() {
-    // audio init is deferred to initAudio()
-  }
-
   private init(): void {
     // reset state only — does not mark audio as initialized
   }

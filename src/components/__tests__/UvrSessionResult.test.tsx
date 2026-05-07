@@ -344,9 +344,7 @@ describe('UvrSessionResult Component', () => {
       render(() => <UvrSessionResult {...defaultProps} />)
 
       const viewButton = screen.getByText('View Results')
-      if (viewButton) {
-        fireEvent.click(viewButton)
-      }
+      fireEvent.click(viewButton)
 
       expect(defaultProps.onView).toHaveBeenCalledWith('session-123')
     })

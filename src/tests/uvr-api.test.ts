@@ -2,26 +2,14 @@
 // UVR API Client Tests — EARS REQ-UV-005, REQ-UV-006, REQ-UV-007, REQ-UV-008, REQ-UV-009, REQ-UV-010, REQ-UV-063
 // ============================================================
 
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { ProcessStatusResponse } from '@/lib/uvr-api'
 import {
+  DEFAULT_PROCESS_REQUEST,
+  formatFileSize,
   getProcessStatus,
   pollForCompletion,
-  formatFileSize,
-  DEFAULT_PROCESS_REQUEST,
 } from '@/lib/uvr-api'
-import type { OutputFile, ProcessResponse, ProcessStatusResponse } from '@/lib/uvr-api'
-
-// ── Helper ───────────────────────────────────────────────────
-
-function mockFetch(status: number, data: unknown) {
-  return vi.fn().mockResolvedValue({
-    ok: status >= 200 && status < 300,
-    status,
-    statusText: status === 200 ? 'OK' : 'Error',
-    json: () => Promise.resolve(data),
-    text: () => Promise.resolve(JSON.stringify(data)),
-  })
-}
 
 beforeEach(() => {
   vi.restoreAllMocks()
@@ -175,7 +163,7 @@ describe('pollForCompletion (REQ-UV-006, REQ-UV-009)', () => {
     // when fetch returns processing forever (we trust the timeout code).
 
     // The timeout is 10min — not practical to test. Verify structure instead.
-    const promise = pollForCompletion(
+    const _promise = pollForCompletion(
       'test-session',
       vi.fn(),
       vi.fn(),

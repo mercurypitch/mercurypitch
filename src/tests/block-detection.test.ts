@@ -52,6 +52,7 @@ function detectBlockInstances(
 
 // Deterministic color assignment (replicated from StemMixer.tsx)
 const BLOCK_COLORS = ['#f0a060', '#60a0f0', '#60d080', '#d080e0', '#e0c050', '#f06080']
+
 function getBlockColor(blockId: string): string {
   let hash = 0
   for (let i = 0; i < blockId.length; i++)
@@ -179,8 +180,8 @@ describe('Block Color Assignment (REQ-UV-050)', () => {
 
   it('may differ for different IDs', () => {
     // Not strictly required but good to verify distribution
-    const c1 = getBlockColor('chorus-1')
-    const c2 = getBlockColor('verse-2')
+    const _c1 = getBlockColor('chorus-1')
+    const _c2 = getBlockColor('verse-2')
     // Different IDs should often map to different colors (not guaranteed but highly likely)
     // No assertion needed — just verifying determinism above
   })

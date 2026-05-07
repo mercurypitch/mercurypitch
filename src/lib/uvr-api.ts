@@ -2,13 +2,6 @@
 // UVR API Client - Frontend Integration
 // ============================================================
 
-// Use global File type for browser compatibility
-declare global {
-  interface Window {
-    File: any
-  }
-}
-
 const API_BASE = '/api/uvr'
 
 /**
@@ -104,7 +97,7 @@ export async function listModels(): Promise<string[]> {
     throw new Error(`Failed to list models: ${response.statusText}`)
   }
   const data = await response.json()
-  return data.models || []
+  return Array.isArray(data.models) ? data.models : []
 }
 
 /**
@@ -117,10 +110,10 @@ export async function processAudio(
   const formData = new FormData()
   formData.append('file', file)
 
-  if (options.model) {
+  if (options.model !== undefined) {
     formData.append('model', options.model)
   }
-  if (options.output_format) {
+  if (options.output_format !== undefined) {
     formData.append('output_format', options.output_format)
   }
   if (options.stems) {
@@ -211,7 +204,7 @@ export async function pollForCompletion(
 
   return new Promise((resolve, reject) => {
     const poll = async () => {
-      if (signal?.aborted) {
+      if ((signal?.aborted) ?? false) {
         reject(new DOMException('Polling aborted', 'AbortError'))
         return
       }
@@ -234,8 +227,8 @@ export async function pollForCompletion(
         }
 
         if (status.status === 'error') {
-          onError(status.error || 'Processing failed')
-          reject(new Error(status.error || 'Processing failed'))
+          onError(status.error ?? 'Processing failed')
+          reject(new Error(status.error ?? 'Processing failed'))
           return
         }
 
@@ -244,7 +237,7 @@ export async function pollForCompletion(
           onProgress(status.progress, estimateExceeded)
         } else {
           // Fallback: estimate from server's estimated_total_secs or default
-          const estimatedSecs = status.estimated_total_secs || 120
+          const estimatedSecs = status.estimated_total_secs ?? 120
           const estimatedMs = Math.max(estimatedSecs * 1000, 10000)
           const pct = (elapsed / estimatedMs) * 100
 
@@ -258,7 +251,7 @@ export async function pollForCompletion(
           }
         }
 
-        setTimeout(poll, intervalMs)
+        setTimeout(() => { void poll() }, intervalMs)
       } catch (error) {
         onError(error instanceof Error ? error.message : 'Unknown error')
         reject(error)

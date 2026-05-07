@@ -2,17 +2,17 @@
 // Lyrics Service Tests — EARS REQ-UV-028 through REQ-UV-033
 // ============================================================
 
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+import type { LrcLine } from '@/lib/lyrics-service'
 import {
   extractTitle,
-  parseArtistTitle,
-  parseTextLyrics,
-  parseLrcFile,
   getCurrentLineIndex,
   getCurrentLrcIndex,
+  parseArtistTitle,
+  parseLrcFile,
+  parseTextLyrics,
   searchLyrics,
 } from '@/lib/lyrics-service'
-import type { LrcLine, LyricsSearchResult } from '@/lib/lyrics-service'
 
 // ── REQ-UV-029: LRC Parsing ──────────────────────────────────
 

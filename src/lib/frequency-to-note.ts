@@ -24,8 +24,6 @@ export function frequenciesToNoteName(frequency: number): string {
 
   const A4 = 440
   const A4Note = 69
-  const semitoneRatio = 2 ** (1 / 12)
-
   // Calculate MIDI note number
   const midiNote = Math.round(12 * Math.log2(frequency / A4) + A4Note)
 

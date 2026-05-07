@@ -19,7 +19,7 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
   const [isDragging, setIsDragging] = createSignal(false)
   const [selectedFile, setSelectedFile] = createSignal<File | null>(null)
 
-  const maxSize = () => props.maxSize || 100 * 1024 * 1024 // 100MB default
+  const maxSize = () => props.maxSize ?? 100 * 1024 * 1024 // 100MB default
   const allowedTypes = () =>
     props.allowedTypes || [
       'audio/mpeg',
@@ -37,7 +37,7 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
     return `${Math.round((bytes / Math.pow(k, i)) * 100) / 100} ${sizes[i]}`
   }
 
-  const formatDuration = (seconds: number): string => {
+  const _formatDuration = (seconds: number): string => {
     const mins = Math.floor(seconds / 60)
     const secs = Math.floor(seconds % 60)
     return `${mins}:${secs.toString().padStart(2, '0')}`
@@ -52,7 +52,7 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
 
     // Validate file type
     const mimeType = file.type.toLowerCase()
-    const extension = `.${file.name.split('.').pop()?.toLowerCase()}` || ''
+    const extension = `.${file.name.split('.').pop()?.toLowerCase() ?? ''}`
 
     if (
       !allowedTypes().includes(mimeType) &&
@@ -155,10 +155,10 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
             <div class="file-preview">
               <div class="file-icon">🎵</div>
               <div class="file-details">
-                <p class="file-name">{selectedFile()?.name || 'Unknown'}</p>
+                <p class="file-name">{selectedFile()?.name ?? 'Unknown'}</p>
                 <p class="file-meta">
-                  {formatFileSize(selectedFile()?.size || 0)} •
-                  {selectedFile()?.type || 'Unknown type'}
+                  {formatFileSize(selectedFile()?.size ?? 0)} •
+                  {selectedFile()?.type ?? 'Unknown type'}
                 </p>
               </div>
             </div>
@@ -170,7 +170,7 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
               </div>
             </Show>
 
-            <Show when={!props.processing}>
+            <Show when={!(props.processing ?? false)}>
               <div class="upload-actions">
                 <button
                   class="upload-btn upload-btn-secondary"

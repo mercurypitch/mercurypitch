@@ -72,7 +72,7 @@ export const LyricsUploader: Component<LyricsUploaderProps> = (props) => {
       <div class="lu-message">
         <FileText />
         <span class="lu-title">
-          No lyrics found{props.suggestion ? ` for "${props.suggestion}"` : ''}
+          No lyrics found{(props.suggestion ?? '') !== '' ? ` for "${props.suggestion}"` : ''}
         </span>
         <span class="lu-hint">Upload a .txt or .lrc file to sync lyrics with playback</span>
       </div>

@@ -165,7 +165,7 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
 
       {/* Stem Cards Grid */}
       <div class="rv-stems-grid">
-        {stems().map((stem) => {
+        <For each={stems()}>{(stem) => {
           const meta = props.stemMeta?.[stem.key]
           return (
             <div
@@ -209,7 +209,7 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
               </div>
             </div>
           )
-        })}
+        }}</For>
       </div>
 
       {/* Full Mix Card */}

@@ -120,6 +120,7 @@ export const [currentUvrSession, setCurrentUvrSession] =
 
 /** Reactive version counter — bumped on every session mutation */
 const [sessionsVersion, setSessionsVersion] = createSignal(0)
+
 function bumpSessions() {
   setSessionsVersion((v) => v + 1)
 }

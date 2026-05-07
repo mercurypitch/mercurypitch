@@ -4,11 +4,14 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show } from 'solid-js'
-import { PitchDetector, type DetectedPitch } from '@/lib/pitch-detector'
+import type {LrcLine, LyricsSearchMatch, LyricsSearchResult} from '@/lib/lyrics-service';
+import { extractTitle, fetchLyricsById, getCurrentLineIndex, getCurrentLrcIndex,   parseLrcFile, parseTextLyrics, searchLyrics, searchLyricsMulti } from '@/lib/lyrics-service'
+import type {DetectedPitch} from '@/lib/pitch-detector';
+import { PitchDetector } from '@/lib/pitch-detector'
 import { freqToNote } from '@/lib/scale-data'
 import { ChevronLeft, Download, Ear, Mic, Midi, Pause, Play, SkipBack, SlidersHorizontal, Volume2, VolumeX } from './icons'
-import { extractTitle, fetchLyricsById, getCurrentLineIndex, getCurrentLrcIndex, parseLrcFile, parseTextLyrics, searchLyrics, searchLyricsMulti, type LrcLine, type LyricsSearchMatch, type LyricsSearchResult } from '@/lib/lyrics-service'
-import { LyricsUploader, type LyricsUploadResult } from './LyricsUploader'
+import type {LyricsUploadResult} from './LyricsUploader';
+import { LyricsUploader  } from './LyricsUploader'
 
 // ── Types ──────────────────────────────────────────────────────
 
@@ -80,14 +83,14 @@ const SongPicker = (p: SongPickerProps) => {
         <button class="sm-song-picker-search-btn sm-btn sm-btn-secondary" onClick={p.onRefine} title="Search">Search</button>
       </div>
       <div class="sm-song-picker-list">
-        {p.matches.map((m) => (
+        <For each={p.matches}>{(m) => (
           <button class="sm-song-picker-row" onClick={() => p.onPick(m)}>
             <span class="sm-song-picker-artist">{m.artist}</span>
             <span class="sm-song-picker-sep"> - </span>
             <span class="sm-song-picker-title">{m.title}</span>
             {m.syncedLyrics && <span class="sm-song-picker-badge">LRC</span>}
           </button>
-        ))}
+        )}</For>
       </div>
       <div class="sm-song-picker-footer">
         <button class="sm-song-picker-upload-link" onClick={p.onUpload}>
@@ -1512,7 +1515,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = filename.endsWith('.lrc') ? filename : filename.replace(/\.[^.]+$/, '') + '.lrc'
+    a.download = filename.endsWith('.lrc') ? filename : `${filename.replace(/\.[^.]+$/, '')  }.lrc`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
@@ -1968,7 +1971,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
       // Center line
       const midY = yOff + trackHeight / 2
-      ctx.strokeStyle = track.color + '40'
+      ctx.strokeStyle = `${track.color  }40`
       ctx.lineWidth = 0.5
       ctx.beginPath()
       ctx.moveTo(0, midY)
@@ -2054,7 +2057,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       ctx.stroke()
 
       // Track label
-      ctx.fillStyle = track.color + '80'
+      ctx.fillStyle = `${track.color  }80`
       ctx.font = '9px monospace'
       ctx.fillText(track.label, 4, yOff + 12)
     }
@@ -3270,7 +3273,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                               }}
                             >
                               <option value="">Add to existing block...</option>
-                              {blocks().map(b => <option value={b.id}>{b.label}</option>)}
+                              <For each={blocks()}>{b => <option value={b.id}>{b.label}</option>}</For>
                             </select>
                           </Show>
                         </div>
@@ -3735,7 +3738,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                                 <Show when={blocks().length > 0}>
                                   <select class="sm-lyrics-mark-add-select" onChange={(e) => { const val = e.currentTarget.value; if (val) handleAddInstance(val, markStartLine()!, markEndLine()!) }}>
                                     <option value="">Add to existing block...</option>
-                                    {blocks().map(b => <option value={b.id}>{b.label}</option>)}
+                                    <For each={blocks()}>{b => <option value={b.id}>{b.label}</option>}</For>
                                   </select>
                                 </Show>
                               </div>

@@ -49,7 +49,6 @@ describe('UvrResultViewer Component', () => {
     })
 
     it('does not render close button when onClose not provided', () => {
-      const { onClose } = defaultProps
       render(() => <UvrResultViewer outputs={mockOutputs} />)
 
       expect(screen.queryByLabelText('Close')).not.toBeInTheDocument()

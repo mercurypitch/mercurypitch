@@ -24,7 +24,8 @@ import { SessionPlayer } from '@/components/SessionPlayer'
 import { SettingsPanel } from '@/components/SettingsPanel'
 import type { PracticeSubMode } from '@/components/shared/SharedControlToolbar'
 import { SharedControlToolbar } from '@/components/shared/SharedControlToolbar'
-import { UvrPanel, type UvrView } from '@/components/UvrPanel'
+import type {UvrView} from '@/components/UvrPanel';
+import { UvrPanel  } from '@/components/UvrPanel'
 import { EngineProvider, useEngines } from '@/contexts/EngineContext'
 import { useEditorController } from '@/features/editor/useEditorController'
 import { usePianoRollEvents } from '@/features/events/usePianoRollEvents'
@@ -37,7 +38,8 @@ import type { InstrumentType } from '@/lib/audio-engine'
 import { audioRegistry } from '@/lib/audio-registry'
 import { debounce } from '@/lib/debounce'
 import { registerE2EBridge } from '@/lib/e2e-bridge'
-import { buildHash, parseHash, replaceHash, type HashRoute } from '@/lib/hash-router'
+import type {HashRoute} from '@/lib/hash-router';
+import { buildHash, parseHash, replaceHash } from '@/lib/hash-router'
 import { melodyIndexAtBeat, melodyTotalBeats } from '@/lib/scale-data'
 import { buildScaleMelody, buildSessionPlaybackMelody, } from '@/lib/session-builder'
 import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
@@ -48,12 +50,12 @@ import { getSession, templateToSession } from '@/stores/session-store'
 import { selectedCharacter } from '@/stores/settings-store'
 import type { ActiveTab, MelodyItem, PlaybackMode, SpacedRestMode, } from '@/types'
 import { Walkthrough, WalkthroughControl } from './components'
+import { LyricsUploaderStyles, StemMixerStyles, UvrPanelStyles, UvrProcessControlStyles, UvrResultViewerStyles, UvrSessionResultStyles,UvrUploadControlStyles,  } from './components'
 import { AppErrorBoundary } from './components/AppErrorBoundary'
 import { CrashModal } from './components/CrashModal'
 import { GuideSelection } from './components/GuideSelection'
-import { WelcomeScreen } from './components/WelcomeScreen'
 import { _UvrGuideStyles } from './components/UvrGuide'
-import { LyricsUploaderStyles, StemMixerStyles, UvrPanelStyles, UvrUploadControlStyles, UvrProcessControlStyles, UvrResultViewerStyles, UvrSessionResultStyles, } from './components'
+import { WelcomeScreen } from './components/WelcomeScreen'
 
 // ============================================================
 // Tab type
@@ -738,9 +740,9 @@ const AppShell: Component<AppProps> = (props) => {
     const view = activeUvrView()
     const sessionId = activeUvrSessionId()
     let route: HashRoute
-    if (view === 'results' && sessionId) {
+    if (view === 'results' && sessionId != null) {
       route = { type: 'uvr-session', sessionId }
-    } else if (view === 'mixer' && sessionId) {
+    } else if (view === 'mixer' && sessionId != null) {
       route = { type: 'uvr-session-mixer', sessionId }
     } else if (view === 'history') {
       route = { type: 'uvr-history' }

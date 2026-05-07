@@ -81,7 +81,7 @@ function bezierQuadratic(
 /**
  * Linear interpolation between two values
  */
-function lerp(a: number, b: number, t: number): number {
+function _lerp(a: number, b: number, t: number): number {
   return a + (b - a) * t
 }
 
@@ -98,7 +98,8 @@ export function getBallPhysics(
   state: BallPhysicsState,
   config: BallPhysicsConfig,
 ): { x: number; y: number; note: NoteBounds | null; progress: number } {
-  let { x, y, vy, vx, gravity, bounce, lastNote, lastEndBeat } = state
+  let { x, y, vy, vx, lastEndBeat } = state
+  const { gravity, bounce, lastNote } = state
   const { notes, rowHeight, radius, padding, bpm } = config
   let note = null
   let progress = 0
@@ -126,8 +127,8 @@ export function getBallPhysics(
     const controlPoint = { x: midX, y: midY }
 
     // Distance to travel
-    const distanceX = endX - startX
-    const distanceY = endY - startY
+    const _distanceX = endX - startX
+    const _distanceY = endY - startY
 
     // Check if we need to jump
     const remainingX = nextNoteEndBeat - x
@@ -215,7 +216,7 @@ export function getBallPhysics(
     lastEndBeat = x
   }
 
-  const isJumping = progress > 0 && progress < 1
+  const _isJumping = progress > 0 && progress < 1
 
   return {
     x,
@@ -267,7 +268,7 @@ export function createBallPhysics(
     bounce = 0.8,
     radius = 8,
     padding = { top: 5, bottom: 5, left: 0, right: 0 },
-    arcHeight = 120,
+    _arcHeight = 120,
     timeScale = 1.0,
   } = options
 

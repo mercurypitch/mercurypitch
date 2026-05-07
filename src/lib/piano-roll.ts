@@ -2,7 +2,7 @@
 // Piano Roll Editor — Canvas-based note editor
 // ============================================================
 
-import type { BallPhysicsState, NoteBounds, } from '@/features/playback/yousician-ball-physics'
+import type { BallPhysicsConfig, BallPhysicsState, NoteBounds, } from '@/features/playback/yousician-ball-physics'
 import { createBallPhysics, getBallPhysics, } from '@/features/playback/yousician-ball-physics'
 import type { AudioEngine, InstrumentType } from '@/lib/audio-engine'
 import { PitchDetector } from '@/lib/pitch-detector'
@@ -2461,13 +2461,14 @@ export class PianoRollEditor {
       if (this.useBallPhysics && this.ballState && this.ballCtx) {
         const ballCtx = this.ballCtx!
         const ballCanvas = this.ballCanvas!
-        const playheadX = currentBeat * this.beatWidth
+        const _playheadX = currentBeat * this.beatWidth
 
-        const ballConfig: any = {
+        const ballConfig: BallPhysicsConfig = {
           notes: this.ballNotes,
           rowHeight: this.rowHeight,
           radius: this.ballRadius,
           padding: this.ballPadding,
+          bpm: this.bpm,
         }
 
         const result = getBallPhysics(this.ballState, ballConfig)
@@ -2526,13 +2527,14 @@ export class PianoRollEditor {
     if (this.useBallPhysics && this.ballState && this.ballCtx) {
       const ballCtx = this.ballCtx
       const ballCanvas = this.ballCanvas
-      const playheadX = beat * this.beatWidth
+      const _playheadX = beat * this.beatWidth
 
-      const ballConfig: any = {
+      const ballConfig: BallPhysicsConfig = {
         notes: this.ballNotes,
         rowHeight: this.rowHeight,
         radius: this.ballRadius,
         padding: this.ballPadding,
+        bpm: this.bpm,
       }
 
       const result = getBallPhysics(this.ballState, ballConfig)

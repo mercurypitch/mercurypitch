@@ -4,9 +4,10 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, Show } from 'solid-js'
+import type {OutputFile} from '@/lib/uvr-api';
+import { DEFAULT_PROCESS_REQUEST,getProcessStatus,  pollForCompletion, processAudio  } from '@/lib/uvr-api'
 import type { UvrSession } from '@/stores/app-store'
 import { cancelUvrSession, completeUvrSession, currentUvrSession, deleteAllUvrSessions, getAllUvrSessions, getAllUvrSessionsReactive, getUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrSessionApiId, startUvrSession, updateUvrSessionOutputs, updateUvrSessionProgress, } from '@/stores/app-store'
-import { getProcessStatus, processAudio, pollForCompletion, type OutputFile, DEFAULT_PROCESS_REQUEST, } from '@/lib/uvr-api'
 import { StemMixer, UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrSettings, UvrUploadControl, } from '.'
 import { CheckCircle, History, Music, Settings, Trash2, X } from './icons'
 
