@@ -139,6 +139,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
   let detectionTimerId: number | null = null
   let detectionStartTime = 0
   let streamStopTimeout: number | null = null
+  let cancelTest = false
 
   // Resize state
   let waveformHeight = 280
@@ -423,6 +424,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
   // Run automated test
   const runTest = () => {
     setIsRunningTest(true)
+    cancelTest = false
     setTestResults({ passed: 0, failed: 0, errors: [], noteResults: [] })
 
     // Stop any ongoing detection modes (mic, file, generate)
@@ -453,6 +455,10 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
 
     TEST_FREQUENCIES.forEach((freq, index) => {
       setTimeout(() => {
+        if (cancelTest) {
+          if (index === 0) setIsRunningTest(false)
+          return
+        }
         const wave = new Float32Array(testSampleRate * 0.5)
         for (let i = 0; i < wave.length; i++) {
           const t = i / testSampleRate
@@ -512,8 +518,15 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
     })
   }
 
+  // Stop everything — detection and/or running test
+  const stopAll = () => {
+    cancelTest = true
+    stopLiveDetection()
+  }
+
   // Reset everything
   const resetAll = () => {
+    cancelTest = true
     stopLiveDetection()
     detectors().forEach((d) => d.reset())
     setLiveResults([])
@@ -889,8 +902,8 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
 
           <button
             class="btn btn-secondary"
-            onclick={stopLiveDetection}
-            disabled={!isDetecting() || isRunningTest()}
+            onclick={stopAll}
+            disabled={!isDetecting() && !isRunningTest()}
           >
             Stop
           </button>

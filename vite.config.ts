@@ -28,6 +28,10 @@ export default defineConfig({
     'process.env': {},
   },
   css: {
+    transformer: 'lightningcss',
+    lightningcss: {
+      drafts: { nesting: true },
+    },
     modules: {
       localsConvention: 'camelCaseOnly',
     },

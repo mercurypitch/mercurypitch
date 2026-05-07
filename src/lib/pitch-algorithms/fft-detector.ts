@@ -1,6 +1,6 @@
 // ============================================================
 // FFT Detector - Frequency Domain Detection
-// Simple max-amplitude frequency bin approach
+// Uses real Cooley-Tukey radix-2 FFT with parabolic interpolation
 // ============================================================
 
 import type { DetectorMetrics, DetectorSettings, IPitchDetector, PitchAlgorithm, PitchDetectionResult, } from '@/types/pitch-algorithms'
@@ -11,6 +11,9 @@ export class FFTDetector implements IPitchDetector {
   private settings: Required<DetectorSettings>
   private metrics: DetectorMetrics
   private history: PitchDetectionResult[] = []
+  private cosTable: Float64Array | null = null
+  private sinTable: Float64Array | null = null
+  private tableBits = 0
 
   constructor(options: DetectorSettings = {}) {
     this.settings = this.normalizeSettings(options)
@@ -41,12 +44,8 @@ export class FFTDetector implements IPitchDetector {
 
     const startTime = performance.now()
 
-    // Convert to frequency domain
-    const freqData = new Float32Array(this.settings.bufferSize / 2)
-    this.computeFFT(timeData, freqData)
-
-    // Find maximum amplitude frequency in valid range
-    const result = this.findPeakFrequency(freqData)
+    const bufSize = this.settings.bufferSize
+    const result = this.detectPitch(timeData, bufSize)
 
     const computationTime = performance.now() - startTime
 
@@ -60,7 +59,6 @@ export class FFTDetector implements IPitchDetector {
     this.metrics.lastResult = result
     this.metrics.status = 'ready'
 
-    // Keep last 50 results for averaging
     this.history.push(result)
     if (this.history.length > 50) this.history.shift()
 
@@ -102,7 +100,7 @@ export class FFTDetector implements IPitchDetector {
   }
 
   getDescription(): string {
-    return 'Simple frequency domain detection that finds the bin with maximum amplitude. Limited by frequency resolution of the FFT. Better for sustained tones than transients.'
+    return 'Frequency domain detection using Cooley-Tukey FFT with parabolic interpolation. Good for sustained tones. Resolution: ~0.1 Hz with interpolation.'
   }
 
   reset(): void {
@@ -133,65 +131,194 @@ export class FFTDetector implements IPitchDetector {
     this.settings.minConfidence = Math.max(0, Math.min(1, value))
   }
 
-  // Naive FFT implementation for demonstration
-  // In production, use Web Audio API's AnalyserNode
-  private computeFFT(input: Float32Array, output: Float32Array): void {
-    const N = Math.floor(input.length / 2)
-    const _sampleRate = this.settings.sampleRate || 44100
+  private detectPitch(
+    input: Float32Array,
+    fftSize: number,
+  ): PitchDetectionResult | null {
+    const sampleRate = this.settings.sampleRate || 44100
 
-    // Simple frequency bin calculation
-    for (let i = 0; i < N; i++) {
-      let real = 0
-      let imag = 0
+    // Take fftSize samples from the input, applying Hann window
+    const windowed = new Float64Array(fftSize)
+    for (let i = 0; i < fftSize && i < input.length; i++) {
+      const hann = 0.5 * (1 - Math.cos((2 * Math.PI * i) / (fftSize - 1)))
+      windowed[i] = input[i] * hann
+    }
 
-      for (let j = 0; j < input.length; j += 2) {
-        const angle = (2 * Math.PI * i * j) / this.settings.bufferSize
-        real += input[j] * Math.cos(angle)
-        imag -= input[j] * Math.sin(angle)
+    // Compute real FFT → magnitude spectrum
+    const real = new Float64Array(fftSize)
+    const imag = new Float64Array(fftSize)
+    this.realFFT(windowed, real, imag)
+
+    // Build magnitude spectrum (first N/2+1 bins)
+    const halfSize = fftSize / 2
+    const magnitudes = new Float32Array(halfSize + 1)
+    for (let i = 0; i <= halfSize; i++) {
+      const re = real[i]
+      const im = imag[i]
+      magnitudes[i] = Math.sqrt(re * re + im * im) / fftSize
+    }
+
+    return this.findPeakFrequency(magnitudes)
+  }
+
+  /**
+   * Real FFT via complex FFT with conjugate-symmetric packing.
+   * Places real parts in even indices, imaginary in odd indices.
+   */
+  /**
+   * In-place Cooley-Tukey radix-2 FFT on complex interleaved data.
+   * data.length = 2 * n (real, imag pairs).
+   */
+  private complexFFT(data: Float64Array, n: number, inverse: boolean): void {
+    // Bit-reversal permutation
+    const bits = Math.log2(n)
+    for (let i = 0; i < n; i++) {
+      let rev = 0
+      let val = i
+      for (let b = 0; b < bits; b++) {
+        rev = (rev << 1) | (val & 1)
+        val >>= 1
       }
+      if (rev > i) {
+        const ri = i * 2
+        const rr = rev * 2
+        let tmp = data[ri]
+        data[ri] = data[rr]
+        data[rr] = tmp
+        tmp = data[ri + 1]
+        data[ri + 1] = data[rr + 1]
+        data[rr + 1] = tmp
+      }
+    }
 
-      // Single-sided spectrum (only positive frequencies)
-      if (i === 0) {
-        output[i] = real / this.settings.bufferSize
-      } else if (i === Math.floor(this.settings.bufferSize / 2)) {
-        // Nyquist frequency (only real part)
-        output[i] = real / this.settings.bufferSize
-      } else {
-        output[i] =
-          Math.sqrt(real * real + imag * imag) / this.settings.bufferSize
+    // Cooley-Tukey butterflies
+    const sign = inverse ? 1 : -1
+    for (let step = 2; step <= n; step <<= 1) {
+      const halfStep = step / 2
+      const angle = (sign * Math.PI) / halfStep
+      const wRe = Math.cos(angle)
+      const wIm = Math.sin(angle)
+
+      for (let block = 0; block < n; block += step) {
+        let twRe = 1
+        let twIm = 0
+
+        for (let k = 0; k < halfStep; k++) {
+          const evenR = data[(block + k) * 2]
+          const evenI = data[(block + k) * 2 + 1]
+          const oddR = data[(block + k + halfStep) * 2]
+          const oddI = data[(block + k + halfStep) * 2 + 1]
+
+          const tRe = oddR * twRe - oddI * twIm
+          const tIm = oddR * twIm + oddI * twRe
+
+          data[(block + k) * 2] = evenR + tRe
+          data[(block + k) * 2 + 1] = evenI + tIm
+          data[(block + k + halfStep) * 2] = evenR - tRe
+          data[(block + k + halfStep) * 2 + 1] = evenI - tIm
+
+          // Next twiddle factor
+          const nextTwRe = twRe * wRe - twIm * wIm
+          const nextTwIm = twRe * wIm + twIm * wRe
+          twRe = nextTwRe
+          twIm = nextTwIm
+        }
       }
     }
   }
 
-  private findPeakFrequency(freqData: Float32Array): {
-    frequency: number
-    clarity: number
-    noteName: string
-    octave: number
-    cents: number
-    midi: number
-    timestamp: number
-    computationTime: number
-  } | null {
-    const _sampleRate = this.settings.sampleRate || 44100
-    const bufferSize = this.settings.bufferSize
-    const _nyquist = _sampleRate / 2
+  /**
+   * Real FFT: packs N real samples into N/2 complex, runs complex FFT,
+   * then unpacks to get the full spectrum.
+   */
+  private realFFT(
+    real: Float64Array,
+    outReal: Float64Array,
+    outImag: Float64Array,
+  ): void {
+    const n = real.length
+    const halfN = n / 2
+
+    // Pack real data into complex array (interleaved real, imag)
+    const data = new Float64Array(n)
+    for (let i = 0; i < halfN; i++) {
+      data[i * 2] = real[i * 2]
+      data[i * 2 + 1] = real[i * 2 + 1]
+    }
+
+    // Run complex FFT on half-size
+    this.complexFFT(data, halfN, false)
+
+    // Unpack using conjugate symmetry
+    outReal[0] = data[0] + data[1]
+    outImag[0] = 0
+    outReal[halfN] = data[0] - data[1]
+    outImag[halfN] = 0
+
+    for (let k = 1; k < halfN; k++) {
+      const nk = halfN - k
+      const reEven = (data[k * 2] + data[nk * 2]) * 0.5
+      const imEven = (data[k * 2 + 1] - data[nk * 2 + 1]) * 0.5
+
+      const angle = (Math.PI * k) / halfN
+      const cosVal = Math.cos(angle)
+      const sinVal = Math.sin(angle)
+
+      const reOdd = (data[k * 2 + 1] + data[nk * 2 + 1]) * 0.5
+      const imOdd = (data[nk * 2] - data[k * 2]) * 0.5
+
+      const twRe = reOdd * cosVal - imOdd * sinVal
+      const twIm = reOdd * sinVal + imOdd * cosVal
+
+      outReal[k] = reEven + twRe
+      outImag[k] = imEven + twIm
+      outReal[n - k] = reEven - twRe
+      outImag[n - k] = -imEven + twIm
+    }
+  }
+
+  private findPeakFrequency(magnitudes: Float32Array): PitchDetectionResult | null {
+    const sampleRate = this.settings.sampleRate || 44100
+    const fftSize = (magnitudes.length - 1) * 2
+    const binWidth = sampleRate / fftSize
+
+    const minBin = Math.floor(this.settings.minFrequency / binWidth)
+    const maxBin = Math.min(
+      magnitudes.length - 2,
+      Math.ceil(this.settings.maxFrequency / binWidth),
+    )
 
     let maxVal = -Infinity
-    let maxIdx = 0
+    let maxIdx = minBin
 
-    for (let i = 0; i < freqData.length; i++) {
-      if (freqData[i] > maxVal) {
-        maxVal = freqData[i]
+    for (let i = minBin; i <= maxBin; i++) {
+      if (magnitudes[i] > maxVal) {
+        maxVal = magnitudes[i]
         maxIdx = i
       }
     }
 
+    // Amplitude threshold check
     if (maxVal < this.settings.minAmplitude * 2) {
       return null
     }
 
-    const frequency = (maxIdx * _sampleRate) / bufferSize
+    // Parabolic interpolation for sub-bin accuracy
+    let frequency: number
+    if (maxIdx > minBin && maxIdx < maxBin) {
+      const alpha = magnitudes[maxIdx - 1]
+      const beta = magnitudes[maxIdx]
+      const gamma = magnitudes[maxIdx + 1]
+      const denom = alpha - 2 * beta + gamma
+      if (Math.abs(denom) > 1e-12) {
+        const delta = (alpha - gamma) / (2 * denom)
+        frequency = (maxIdx + delta) * binWidth
+      } else {
+        frequency = maxIdx * binWidth
+      }
+    } else {
+      frequency = maxIdx * binWidth
+    }
 
     // Validate frequency range
     if (
@@ -201,16 +328,17 @@ export class FFTDetector implements IPitchDetector {
       return null
     }
 
-    // Map to musical note
     const { note, octave, cents } = this.freqToNote(frequency)
+    const midi = this.frequencyToMidi(frequency)
+    const noteName = note + String(octave)
 
     return {
       frequency,
       clarity: maxVal,
-      noteName: note,
+      noteName,
       octave,
       cents,
-      midi: this.frequencyToMidi(frequency),
+      midi: Math.round(midi),
       timestamp: Date.now(),
       computationTime: 0,
     }
@@ -252,7 +380,7 @@ export class FFTDetector implements IPitchDetector {
     const a4Freq = 440.0
     const midi = 12 * Math.log2(freq / a4Freq) + 69
     const midiInt = Math.round(midi)
-    const noteIndex = midiInt % 12
+    const noteIndex = ((midiInt % 12) + 12) % 12
     const octave = Math.floor(midiInt / 12) - 1
     const cents = 1200 * Math.log2(freq / this.midiToFreq(midiInt))
 

@@ -1,5 +1,6 @@
 // ============================================================
 // Autocorrelator Detector - Time Domain Autocorrelation Detection
+// Uses parabolic interpolation for sub-sample lag accuracy.
 // ============================================================
 
 import type { DetectorMetrics, DetectorSettings, IPitchDetector, PitchAlgorithm, PitchDetectionResult, } from '@/types/pitch-algorithms'
@@ -78,7 +79,7 @@ export class AutocorrelatorDetector implements IPitchDetector {
   }
 
   getDescription(): string {
-    return 'Time-domain autocorrelation method. Robust against noise and works well with inharmonic signals. Uses parabolic interpolation for frequency refinement.'
+    return 'Time-domain autocorrelation method with parabolic interpolation. Robust against noise and works well with inharmonic signals.'
   }
 
   reset(): void {
@@ -109,123 +110,104 @@ export class AutocorrelatorDetector implements IPitchDetector {
     this.settings.minConfidence = Math.max(0, Math.min(1, value))
   }
 
-  private detectWithAutocorrelation(data: Float32Array): {
-    frequency: number
-    clarity: number
-    noteName: string
-    octave: number
-    cents: number
-    midi: number
-    timestamp: number
-    computationTime: number
-  } | null {
+  private detectWithAutocorrelation(data: Float32Array): PitchDetectionResult | null {
     const sampleRate = this.settings.sampleRate || 44100
+    const n = data.length
 
     // Apply Hanning window to reduce spectral leakage
-    const windowedData = this.applyHanningWindow(data)
+    const windowed = new Float64Array(n)
+    for (let i = 0; i < n; i++) {
+      windowed[i] =
+        data[i] * 0.5 * (1 - Math.cos((2 * Math.PI * i) / (n - 1)))
+    }
 
-    // Compute autocorrelation
-    const autocorr = this.computeAutocorrelation(windowedData)
+    // Compute zero-lag energy for normalization
+    let r0 = 0
+    for (let i = 0; i < n; i++) {
+      r0 += windowed[i] * windowed[i]
+    }
+    r0 /= n
 
-    // Find fundamental frequency using first peak (excluding zero lag)
-    const fundamentalFreq = this.findFundamentalFrequency(autocorr, sampleRate)
+    if (r0 < 1e-12) return null
 
-    if (
-      !fundamentalFreq ||
-      fundamentalFreq.clarity < this.settings.minConfidence
-    ) {
+    // Only compute lags in the search range (not all 22049 lags)
+    const minLag = Math.max(1, Math.floor(sampleRate / this.settings.maxFrequency))
+    const maxLag = Math.min(n - 1, Math.floor(sampleRate / this.settings.minFrequency))
+
+    // Evaluate each candidate lag directly without storing the full array
+    let bestLag = 0
+    let bestCorr = -Infinity
+
+    for (let lag = minLag; lag <= maxLag; lag++) {
+      let sum = 0
+      for (let i = 0; i < n - lag; i++) {
+        sum += windowed[i] * windowed[i + lag]
+      }
+      const corr = sum / ((n - lag) * r0)
+
+      if (corr > bestCorr) {
+        bestCorr = corr
+        bestLag = lag
+      }
+    }
+
+    if (bestLag === 0 || bestCorr < this.settings.minConfidence) {
       return null
     }
+
+    // Parabolic interpolation for sub-sample lag accuracy.
+    // This fixes the integer-lag resolution problem where high-frequency
+    // notes (small lags) have coarse frequency steps (~24 Hz per lag).
+    let refinedLag = bestLag
+    if (bestLag > minLag && bestLag < maxLag) {
+      const cPrev = this.lagCorrelation(windowed, bestLag - 1, r0, n)
+      const cPeak = bestCorr
+      const cNext = this.lagCorrelation(windowed, bestLag + 1, r0, n)
+
+      const denom = 2 * (cPrev - 2 * cPeak + cNext)
+      if (Math.abs(denom) > 1e-12) {
+        refinedLag = bestLag + (cPrev - cNext) / denom
+      }
+    }
+
+    const frequency = sampleRate / refinedLag
 
     // Validate frequency range
     if (
-      fundamentalFreq.frequency < this.settings.minFrequency ||
-      fundamentalFreq.frequency > this.settings.maxFrequency
+      frequency < this.settings.minFrequency ||
+      frequency > this.settings.maxFrequency
     ) {
       return null
     }
 
-    const { note, octave, cents } = this.freqToNote(fundamentalFreq.frequency)
+    const { note, octave, cents } = this.freqToNote(frequency)
+    const midi = this.frequencyToMidi(frequency)
+    const noteName = note + String(octave)
 
     return {
-      frequency: fundamentalFreq.frequency,
-      clarity: fundamentalFreq.clarity,
-      noteName: note,
+      frequency,
+      clarity: bestCorr,
+      noteName,
       octave,
       cents,
-      midi: this.frequencyToMidi(fundamentalFreq.frequency),
+      midi: Math.round(midi),
       timestamp: Date.now(),
       computationTime: 0,
     }
   }
 
-  private applyHanningWindow(data: Float32Array): Float32Array {
-    const windowed = new Float32Array(data.length)
-    const n = data.length
-    for (let i = 0; i < n; i++) {
-      windowed[i] = data[i] * 0.5 * (1 - Math.cos((2 * Math.PI * i) / (n - 1)))
+  /** Compute normalized correlation at a single lag value. */
+  private lagCorrelation(
+    windowed: Float64Array,
+    lag: number,
+    r0: number,
+    n: number,
+  ): number {
+    let sum = 0
+    for (let i = 0; i < n - lag; i++) {
+      sum += windowed[i] * windowed[i + lag]
     }
-    return windowed
-  }
-
-  private computeAutocorrelation(data: Float32Array): number[] {
-    const n = data.length
-    const result = new Array(n).fill(0)
-
-    for (let lag = 0; lag < n; lag++) {
-      let sum = 0
-      for (let i = 0; i < n - lag; i++) {
-        sum += data[i] * data[i + lag]
-      }
-      result[lag] = sum / (n - lag)
-    }
-
-    // Normalize by zero-lag coefficient so values are in [0, 1] range
-    // Hanning window reduces raw correlation magnitudes significantly,
-    // making the hard threshold unreachable without normalization
-    const r0 = result[0]
-    if (r0 !== undefined && r0 > 1e-10) {
-      for (let i = 0; i < n; i++) {
-        result[i] = result[i]! / r0
-      }
-    }
-
-    return result
-  }
-
-  private findFundamentalFrequency(
-    autocorr: number[],
-    sampleRate: number,
-  ): { frequency: number; clarity: number } | null {
-    const n = autocorr.length
-    const maxLag = Math.floor(sampleRate / this.settings.minFrequency)
-    const minLag = Math.floor(sampleRate / this.settings.maxFrequency)
-
-    // Ignore the zero-lag correlation (always 1.0 or high)
-    let maxCorr = -1
-    let maxLagIndex = 0
-
-    for (let lag = minLag; lag < maxLag && lag < n; lag++) {
-      const value = autocorr[lag]
-
-      // Skip negative correlations (lack of periodicity)
-      if (value < 0) continue
-
-      // Track the first major peak (fundamental)
-      if (value > maxCorr) {
-        maxCorr = value
-        maxLagIndex = lag
-      }
-    }
-
-    if (maxLagIndex === 0 || maxCorr < this.settings.minConfidence) {
-      return null
-    }
-
-    const frequency = sampleRate / maxLagIndex
-    const clarity = maxCorr
-
-    return { frequency, clarity }
+    return sum / ((n - lag) * r0)
   }
 
   private normalizeSettings(
@@ -264,7 +246,7 @@ export class AutocorrelatorDetector implements IPitchDetector {
     const a4Freq = 440.0
     const midi = 12 * Math.log2(freq / a4Freq) + 69
     const midiInt = Math.round(midi)
-    const noteIndex = midiInt % 12
+    const noteIndex = ((midiInt % 12) + 12) % 12
     const octave = Math.floor(midiInt / 12) - 1
     const cents = 1200 * Math.log2(freq / this.midiToFreq(midiInt))
 
