@@ -46,6 +46,7 @@ import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPr
 import { melodyStore } from '@/stores/melody-store'
 import { getSession, templateToSession } from '@/stores/session-store'
 import { selectedCharacter } from '@/stores/settings-store'
+import { DEFAULT_TAB, PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_KARAOKE, TAB_LEADERBOARD, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
 import type { ActiveTab, MelodyItem, PlaybackMode, SpacedRestMode, } from '@/types'
 import { Walkthrough, WalkthroughControl } from './components'
 import { AppErrorBoundary } from './components/AppErrorBoundary'
@@ -150,7 +151,7 @@ const AppShell: Component<AppProps> = (props) => {
   const [metronomeEnabled, setMetronomeEnabled] = createSignal(false)
 
   // ── Play mode ───────────────────────────────────────────────
-  const [playMode, setPlayMode] = createSignal<PlaybackMode>('once')
+  const [playMode, setPlayMode] = createSignal<PlaybackMode>(PLAYBACK_MODE_ONCE)
   const [repeatCycles, setRepeatCycles] = createSignal<number>(5)
   const [currentRepeat, setCurrentRepeat] = createSignal<number>(1)
   const [practiceSubMode, setPracticeSubMode] =
@@ -205,7 +206,7 @@ const AppShell: Component<AppProps> = (props) => {
     setLiveScore: ((v: unknown) => practice.setLiveScore(v as never)) as never,
     closeSidebar,
     filterMelodyForPractice: (melody, subMode) =>
-      playMode() === 'once'
+      playMode() === PLAYBACK_MODE_ONCE
         ? applySpacedRests(melody, spacedRestMode())
         : filterMelodyForPractice(melody, subMode),
     buildSessionPlaybackMelody,
@@ -353,7 +354,7 @@ const AppShell: Component<AppProps> = (props) => {
   // ── Tab change handler with audio cleanup ──────────────────
   const handleTabChange = async (newTab: ActiveTab) => {
     const currentTab = activeTab()
-    if (currentTab === 'practice' || currentTab === 'editor') {
+    if (currentTab === TAB_SINGING || currentTab === TAB_COMPOSE) {
       await resetPlaybackState()
     }
     setActiveTab(newTab)
@@ -462,13 +463,13 @@ const AppShell: Component<AppProps> = (props) => {
       setCurrentRepeat(1)
     }
 
-    // handlePlay() correctly branches internally based on playMode() === 'practice'.
+    // handlePlay() correctly branches internally based on playMode() === PLAYBACK_MODE_SESSION.
     handlePlay()
   }
 
   const handlePracticeModeChange = (mode: PlaybackMode) => {
     setPlayMode(mode)
-    if (mode === 'repeat') {
+    if (mode === PLAYBACK_MODE_REPEAT) {
       setCurrentRepeat(1)
     }
   }
@@ -496,7 +497,7 @@ const AppShell: Component<AppProps> = (props) => {
 
       if (!isRestItem) {
         setTargetPitch(item.note.freq)
-        if (activeTab() === 'practice') {
+        if (activeTab() === TAB_SINGING) {
           practiceEngine.onNoteStart(item.note, index)
         }
       } else {
@@ -565,12 +566,12 @@ const AppShell: Component<AppProps> = (props) => {
       }
 
       const sessionModeValue = sessionMode()
-      if (sessionModeValue === true && mode === 'practice') {
+      if (sessionModeValue === true && mode === PLAYBACK_MODE_SESSION) {
         handleSessionItemComplete()
         return
       }
 
-      if (mode === 'repeat') {
+      if (mode === PLAYBACK_MODE_REPEAT) {
         handleRepeatModeComplete()
         return
       }
@@ -594,7 +595,7 @@ const AppShell: Component<AppProps> = (props) => {
     if (initialRoute.type === 'tab') {
       setActiveTab(initialRoute.tab)
     } else if (initialRoute.type === 'uvr-session') {
-      setActiveTab('uvr')
+      setActiveTab(TAB_KARAOKE)
       setInitialUvrSessionId(initialRoute.sessionId)
     }
 
@@ -605,7 +606,7 @@ const AppShell: Component<AppProps> = (props) => {
       if (route.type === 'tab') {
         setActiveTab(route.tab)
       } else if (route.type === 'uvr-session') {
-        setActiveTab('uvr')
+        setActiveTab(TAB_KARAOKE)
         setInitialUvrSessionId(route.sessionId)
       }
       hashSyncing = false
@@ -754,7 +755,7 @@ const AppShell: Component<AppProps> = (props) => {
             <button
               id="app-title"
               class="logo-btn"
-              onClick={() => void handleTabChange('practice')}
+              onClick={() => void handleTabChange(TAB_SINGING)}
               title="Go to Practice"
             >
               <h1 class="app-title">PitchPerfect</h1>
@@ -766,7 +767,7 @@ const AppShell: Component<AppProps> = (props) => {
             <Show when={melodyStore.getCurrentMelody()}>
               <button
                 class="melody-indicator-pill"
-                onClick={() => void handleTabChange('practice')}
+                onClick={() => void handleTabChange(TAB_SINGING)}
                 title={`Now loaded: ${melodyStore.getCurrentMelody()?.name ?? 'Untitled'}`}
               >
                 <svg
@@ -802,16 +803,16 @@ const AppShell: Component<AppProps> = (props) => {
           </div>
           <nav id="app-tabs">
             <button
-              id="tab-practice"
-              class={`app-tab ${activeTab() === 'practice' ? 'active' : ''}`}
-              onClick={() => void handleTabChange('practice')}
+              id="tab-singing"
+              class={`app-tab ${activeTab() === TAB_SINGING ? 'active' : ''}`}
+              onClick={() => void handleTabChange(TAB_SINGING)}
             >
               Practice
             </button>
             <button
-              id="tab-editor"
-              class={`app-tab ${activeTab() === 'editor' ? 'active' : ''}`}
-              onClick={() => void handleTabChange('editor')}
+              id="tab-compose"
+              class={`app-tab ${activeTab() === TAB_COMPOSE ? 'active' : ''}`}
+              onClick={() => void handleTabChange(TAB_COMPOSE)}
             >
               Editor
               <Show when={melodyStore.items().length > 0}>
@@ -819,9 +820,9 @@ const AppShell: Component<AppProps> = (props) => {
               </Show>
             </button>
             <button
-              id="tab-vocal-analysis"
-              class={`app-tab ${activeTab() === 'vocal-analysis' ? 'active' : ''}`}
-              onClick={() => void handleTabChange('vocal-analysis')}
+              id="tab-analysis"
+              class={`app-tab ${activeTab() === TAB_ANALYSIS ? 'active' : ''}`}
+              onClick={() => void handleTabChange(TAB_ANALYSIS)}
             >
               <svg viewBox="0 0 24 24" width="18" height="18">
                 <path
@@ -833,8 +834,8 @@ const AppShell: Component<AppProps> = (props) => {
             </button>
             <button
               id="tab-community"
-              class={`app-tab ${activeTab() === 'community' ? 'active' : ''}`}
-              onClick={() => void handleTabChange('community')}
+              class={`app-tab ${activeTab() === TAB_COMMUNITY ? 'active' : ''}`}
+              onClick={() => void handleTabChange(TAB_COMMUNITY)}
             >
               <svg viewBox="0 0 24 24" width="18" height="18">
                 <path
@@ -846,8 +847,8 @@ const AppShell: Component<AppProps> = (props) => {
             </button>
             <button
               id="tab-leaderboard"
-              class={`app-tab ${activeTab() === 'leaderboard' ? 'active' : ''}`}
-              onClick={() => void handleTabChange('leaderboard')}
+              class={`app-tab ${activeTab() === TAB_LEADERBOARD ? 'active' : ''}`}
+              onClick={() => void handleTabChange(TAB_LEADERBOARD)}
             >
               <svg viewBox="0 0 24 24" width="18" height="18">
                 <path
@@ -858,9 +859,9 @@ const AppShell: Component<AppProps> = (props) => {
               Leaderboard
             </button>
             <button
-              id="tab-vocal-challenges"
-              class={`app-tab ${activeTab() === 'vocal-challenges' ? 'active' : ''}`}
-              onClick={() => void handleTabChange('vocal-challenges')}
+              id="tab-challenges"
+              class={`app-tab ${activeTab() === TAB_CHALLENGES ? 'active' : ''}`}
+              onClick={() => void handleTabChange(TAB_CHALLENGES)}
             >
               <svg viewBox="0 0 24 24" width="18" height="18">
                 <path
@@ -871,9 +872,9 @@ const AppShell: Component<AppProps> = (props) => {
               Challenges
             </button>
             <button
-              id="tab-uvr"
-              class={`app-tab ${activeTab() === 'uvr' ? 'active' : ''}`}
-              onClick={() => void handleTabChange('uvr')}
+              id="tab-karaoke"
+              class={`app-tab ${activeTab() === TAB_KARAOKE ? 'active' : ''}`}
+              onClick={() => void handleTabChange(TAB_KARAOKE)}
             >
               <svg viewBox="0 0 24 24" width="18" height="18">
                 <path fill="currentColor" d="M9 18V5l12-2v13" />
@@ -884,8 +885,8 @@ const AppShell: Component<AppProps> = (props) => {
             </button>
             <button
               id="tab-settings"
-              class={`app-tab ${activeTab() === 'settings' ? 'active' : ''}`}
-              onClick={() => void handleTabChange('settings')}
+              class={`app-tab ${activeTab() === TAB_SETTINGS ? 'active' : ''}`}
+              onClick={() => void handleTabChange(TAB_SETTINGS)}
             >
               Settings
             </button>
@@ -917,14 +918,14 @@ const AppShell: Component<AppProps> = (props) => {
 
           {/* Tab content */}
           <div class="main-content">
-            <Show when={activeTab() === 'practice'}>
+            <Show when={activeTab() === TAB_SINGING}>
               {/* Practice panel */}
               <div id="practice-panel">
                 {/* Shared control toolbar with practice-specific options */}
                 <SharedControlToolbar
                   activeTab={activeTab}
-                  practiceTab={() => activeTab() === 'practice'}
-                  editorTab={() => activeTab() === 'editor'}
+                  singingTab={() => activeTab() === TAB_SINGING}
+                  editorTab={() => activeTab() === TAB_COMPOSE}
                   isPlaying={isPlaying}
                   isPaused={isPaused}
                   onPlay={handlePracticePlay}
@@ -1005,10 +1006,10 @@ const AppShell: Component<AppProps> = (props) => {
               </div>
             </Show>
 
-            <Show when={activeTab() === 'editor'}>
+            <Show when={activeTab() === TAB_COMPOSE}>
               <SharedControlToolbar
                 activeTab={activeTab}
-                editorTab={() => activeTab() === 'editor'}
+                editorTab={() => activeTab() === TAB_COMPOSE}
                 isPlaying={editorIsPlaying}
                 isPaused={editorIsPaused}
                 onPlay={() => void handleEditorPlay()}
@@ -1026,7 +1027,7 @@ const AppShell: Component<AppProps> = (props) => {
                 onMetronomeToggle={() =>
                   setMetronomeEnabled(metronomeEnabled() === false)
                 }
-                playMode={() => 'once'}
+                playMode={() => PLAYBACK_MODE_ONCE}
                 playModeChange={() => {}}
                 practiceCycles={() => 1}
                 onCyclesChange={() => {}}
@@ -1113,37 +1114,37 @@ const AppShell: Component<AppProps> = (props) => {
               </Show>
             </Show>
 
-            <Show when={activeTab() === 'vocal-analysis'}>
+            <Show when={activeTab() === TAB_ANALYSIS}>
               <div class="vocal-analysis-panel">
                 <VocalAnalysis />
               </div>
             </Show>
 
-            <Show when={activeTab() === 'community'}>
+            <Show when={activeTab() === TAB_COMMUNITY}>
               <div class="community-panel">
                 <CommunityShare />
               </div>
             </Show>
 
-            <Show when={activeTab() === 'leaderboard'}>
+            <Show when={activeTab() === TAB_LEADERBOARD}>
               <div class="leaderboard-panel">
                 <CommunityLeaderboard />
               </div>
             </Show>
 
-            <Show when={activeTab() === 'vocal-challenges'}>
+            <Show when={activeTab() === TAB_CHALLENGES}>
               <div class="vocal-challenges-panel">
                 <VocalChallenges />
               </div>
             </Show>
 
-            <Show when={activeTab() === 'settings'}>
+            <Show when={activeTab() === TAB_SETTINGS}>
               <div id="settings-panel">
                 <SettingsPanel />
               </div>
             </Show>
 
-            <Show when={activeTab() === 'uvr'}>
+            <Show when={activeTab() === TAB_KARAOKE}>
               <div id="uvr-panel">
                 <UvrPanel
                   defaultView="upload"

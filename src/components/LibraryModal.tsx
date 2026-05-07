@@ -4,6 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
+import { TAB_COMPOSE } from '@/features/tabs/constants'
 import { setEditorView } from '@/stores'
 // Note: setActiveTab is aliased to setAppActiveTab to avoid collision
 // with the local LibraryModal-internal tab signal (Tab = 'melodies' | 'playlists').
@@ -263,7 +264,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
 
   const handleEdit = (melody: MelodyData) => {
     melodyStore.loadMelody(melody.id)
-    setAppActiveTab('editor')
+    setAppActiveTab(TAB_COMPOSE)
     setEditorView('piano-roll')
     props.close()
   }
@@ -346,7 +347,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
     setCreateTags('')
     setCreateNotes('')
     setSelectedMelodyKey(newMelody.id)
-    setAppActiveTab('editor')
+    setAppActiveTab(TAB_COMPOSE)
     setEditorView('piano-roll')
     showNotification(`Melody "${name}" created`, 'success')
   }

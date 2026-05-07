@@ -2,6 +2,7 @@
 // Practice Engine — Mic, pitch detection, accuracy scoring
 // ============================================================
 
+import { PLAYBACK_MODE_SESSION } from '@/features/tabs/constants'
 import type { AccuracyRating, MelodyNote, NoteResult, PitchResult, PitchSample, PlaybackMode, PracticeResult, } from '@/types'
 import type { AudioEngine } from './audio-engine'
 import { PitchDetector } from './pitch-detector'
@@ -408,7 +409,7 @@ export class PracticeEngine {
   calculatePracticeResult(
     results: NoteResult[],
     name = 'Session',
-    mode = 'practice' as PlaybackMode,
+    mode: PlaybackMode = PLAYBACK_MODE_SESSION,
   ): PracticeResult {
     return {
       score: this.calculateScore(results),

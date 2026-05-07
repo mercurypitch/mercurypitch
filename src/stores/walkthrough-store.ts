@@ -3,8 +3,17 @@
 // ============================================================
 
 import { createSignal } from 'solid-js'
+import { TAB_SINGING, TAB_COMPOSE, TAB_SETTINGS, WALKTHROUGH_TAB_STUDY, } from '@/features/tabs/constants'
 import type { WalkthroughProgress, WalkthroughTab } from '@/types/walkthrough'
 import { WALKTHROUGHS } from '@/types/walkthrough'
+
+/** All walkthrough tab keys as a const array for iteration */
+const WALKTHROUGH_TABS = [
+  TAB_SINGING,
+  TAB_COMPOSE,
+  TAB_SETTINGS,
+  WALKTHROUGH_TAB_STUDY,
+] as const
 
 /** Export WalkthroughTab type for use in components */
 export type { WalkthroughTab }
@@ -13,7 +22,7 @@ const STORAGE_KEY = 'pitchperfect_walkthroughs'
 
 /** Get all available walkthroughs for a given tab */
 export function getWalkthroughsForTab(
-  tab: 'practice' | 'editor' | 'settings' | 'study',
+  tab: WalkthroughTab,
 ) {
   const walkthroughs = WALKTHROUGHS[tab]
   return walkthroughs !== null && walkthroughs !== undefined ? walkthroughs : []
@@ -21,9 +30,9 @@ export function getWalkthroughsForTab(
 
 /** Get a specific walkthrough by ID */
 export function getWalkthrough(id: string) {
-  for (const tab of ['practice', 'editor', 'settings', 'study'] as const) {
-    const walkthroughs = WALKTHROUGHS[tab]
-    const found = walkthroughs.find((w) => w.id === id)
+  for (const tab of WALKTHROUGH_TABS) {
+    const walkthroughs = WALKTHROUGHS[tab] ?? []
+    const found = walkthroughs.find((w: { id: string }) => w.id === id)
     if (found) return found
   }
   return undefined
@@ -70,8 +79,8 @@ export function getRemainingWalkthroughs(): Array<{
   const progress = walkthroughsProgress()
   const remaining: Array<{ tab: string; id: string; title: string }> = []
 
-  for (const tab of ['practice', 'editor', 'settings', 'study'] as const) {
-    for (const walkthrough of WALKTHROUGHS[tab]) {
+  for (const tab of WALKTHROUGH_TABS) {
+    for (const walkthrough of WALKTHROUGHS[tab] ?? []) {
       const val = progress[walkthrough.id]
       if (val === undefined || val === 0 || val < 0) {
         remaining.push({
@@ -95,8 +104,8 @@ export function getCompletedWalkthroughs(): Array<{
   const progress = walkthroughsProgress()
   const completedList: Array<{ tab: string; id: string; title: string }> = []
 
-  for (const tab of ['practice', 'editor', 'settings', 'study'] as const) {
-    for (const walkthrough of WALKTHROUGHS[tab]) {
+  for (const tab of WALKTHROUGH_TABS) {
+    for (const walkthrough of WALKTHROUGHS[tab] ?? []) {
       if (progress[walkthrough.id] > 0) {
         completedList.push({
           tab,
@@ -113,8 +122,8 @@ export function getCompletedWalkthroughs(): Array<{
 /** Get total count of walkthroughs */
 export function getTotalWalkthroughCount(): number {
   let count = 0
-  for (const tab of ['practice', 'editor', 'settings', 'study'] as const) {
-    count += WALKTHROUGHS[tab].length
+  for (const tab of WALKTHROUGH_TABS) {
+    count += (WALKTHROUGHS[tab] ?? []).length
   }
   return count
 }

@@ -4,6 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
+import { TAB_SINGING, TAB_COMPOSE } from '@/features/tabs/constants'
 import { appStore, melodyStore, setActiveTab, setEditorView } from '@/stores'
 import { setActiveUserSession, showNotification } from '@/stores'
 import { createSession, saveSession } from '@/stores/session-store'
@@ -52,8 +53,8 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
    * consistent behavior regardless of which UI they came from):
    *   1. Make `session` the active user-session (so userSession() returns
    *      it inside the playback controller).
-   *   2. Switch to the Practice tab + Practice playMode (the per-item
-   *      runner only triggers when playMode === 'practice').
+   *   2. Switch to the Singing tab + Session playMode (the per-item
+   *      runner only triggers when playMode === PLAYBACK_MODE_SESSION).
    *   3. Close the modal so the practice canvas is visible.
    *   4. Trigger window.__pp.playSessionSequence(...) which the bridge
    *      maps to useSessionSequencer.playSessionSequence — same code path
@@ -69,8 +70,8 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
     // that Play-All relies on (it's called indirectly via the bridge).
     // Calling it here keeps the two routes identical.
     appStore.loadSession(session)
-    setActiveTab('practice')
-    // playMode is forced to 'practice' inside usePlaybackController's
+    setActiveTab(TAB_SINGING)
+    // playMode is forced to PLAYBACK_MODE_SESSION inside usePlaybackController's
     // playSessionSequence() handler, so we don't need to set it here —
     // and there's no store-level setPlayMode export (it's an App-local
     // signal). Setting the active tab + closing the modal + invoking
@@ -103,7 +104,7 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
     if (firstMelodyItem?.melodyId !== undefined) {
       melodyStore.loadMelody(firstMelodyItem.melodyId)
     }
-    setActiveTab('editor')
+    setActiveTab(TAB_COMPOSE)
     setEditorView('session-editor')
   }
 
@@ -190,7 +191,7 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
                 setActiveUserSession(newSession)
                 showNotification('New session created', 'success')
                 // Navigate to Editor for editing
-                setActiveTab('editor')
+                setActiveTab(TAB_COMPOSE)
                 setEditorView('session-editor')
                 console.info(
                   '[SessionLibraryModal] New session:',
