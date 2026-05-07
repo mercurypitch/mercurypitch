@@ -364,7 +364,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     } catch { /* storage full or unavailable */ }
   }
 
-  const loadPersistedLyrics = (): (LyricsUploadResult & { wordTimings?: WordTimingsMap }) | null => {
+  const loadPersistedLyrics = (): (LyricsUploadResult & { wordTimings?: WordTimingsMap; rawText?: string }) | null => {
     try {
       const raw = localStorage.getItem(LYRICS_STORE_KEY())
       if (!raw) return null
@@ -521,7 +521,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
     if (lrc.length > 0) {
       return lrc.map((line, i) => {
-        const words = line.text.split(/\s+/).filter(w => w.length > 0)
+        const words = line.text.split(/\s+/).filter((w: string) => w.length > 0)
         const endTime = i + 1 < lrc.length ? lrc[i + 1].time : dur
         const isActive = i === curIdx
         const { activeUpTo, charProgress } = isActive ? computeActiveWord(words, line.time, endTime) : { activeUpTo: -1, charProgress: 0 }
@@ -537,7 +537,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }
     if (txt.length > 0 && dur > 0) {
       return txt.map((text, i) => {
-        const words = text.split(/\s+/).filter(w => w.length > 0)
+        const words = text.split(/\s+/).filter((w: string) => w.length > 0)
         const startTime = (i / txt.length) * dur
         const endTime = ((i + 1) / txt.length) * dur
         const isActive = i === curIdx
@@ -680,7 +680,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
     const timings: WordTimingsMap = {}
     for (let i = 0; i < lines.length; i++) {
-      const words = lines[i].split(/\s+/).filter(w => w.length > 0)
+      const words = lines[i].split(/\s+/).filter((w: string) => w.length > 0)
       if (words.length === 0) continue
       const lineDur = Math.max(0.1, lineEndTimes[i] - lineTimes[i])
       const charTotal = words.reduce((sum, w) => sum + w.length, 0) || 1
@@ -716,7 +716,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     if (parsed === null) return
     const prev = editBuffer()
     const lineData = (lrcLines().length > 0 ? lrcLines()[lineIdx]?.text : lyricsLines()[lineIdx]) || ''
-    const wordList = lineData.split(/\s+/).filter(w => w.length > 0)
+    const wordList = lineData.split(/\s+/).filter((w: string) => w.length > 0)
     const oldStart = prev[lineIdx]?.[0] ?? 0
     const delta = parsed - oldStart
     const next: WordTimingsMap = {}
@@ -1061,8 +1061,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     const curWord = lrcGenWordIdx()
     const lineTimes = lrcGenLineTimes()
     const wordTimes = lrcGenWordTimings()
-    return lines.map((line, i) => {
-      const words = line.split(/\s+/).filter(w => w.length > 0)
+    return lines.map((line: string, i: number) => {
+      const words = line.split(/\s+/).filter((w: string) => w.length > 0)
       const blockForLine = getBlockForLine(i)
       const isPlaceholder = blockForLine !== null && !blockForLine.isTemplate && isTemplateMappedInGen(blockForLine.blockId)
       const block = blockForLine ? getBlockById(blockForLine.blockId) : undefined
@@ -1198,7 +1198,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
     // Auto-fill remaining words in current line if any word-level timings exist
     const currentLine = lines[idx]
-    const words = currentLine.split(/\s+/).filter(w => w.length > 0)
+    const words = currentLine.split(/\s+/).filter((w: string) => w.length > 0)
     if (words.length > 0 && lrcGenWordIdx() > 0) {
       // Fill remaining words with estimated times based on last word time
       const lastWordTime = lrcGenWordTimings()[idx]?.[lrcGenWordIdx() - 1] ?? t
@@ -1239,7 +1239,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }
 
     const t = Math.round(elapsed() * 1000) / 1000
-    const words = lines[lineIdx].split(/\s+/).filter(w => w.length > 0)
+    const words = lines[lineIdx].split(/\s+/).filter((w: string) => w.length > 0)
     const wordIdx = lrcGenWordIdx()
 
     // If this is the first word of the line, also record the line start time
@@ -1325,7 +1325,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }
 
     // Build clean LRC text — blank lines become ~Rest~ markers
-    const lrcText = lines.map((line, i) => {
+    const lrcText = lines.map((line: string, i: number) => {
       const lt = finalTimes[i]
       if (!line.trim()) {
         if (lt === undefined) return ''
@@ -1357,11 +1357,32 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     let lrcText = ''
     const filename = loadPersistedLyrics()?.filename || 'lyrics.lrc'
 
-    if (lrcLines().length > 0) {
-      // Export existing LRC with timestamps
+    // Try to build word-level LRC from persisted raw text + word timings
+    const persisted = loadPersistedLyrics()
+    const savedWt = persisted?.wordTimings
+    const hasWordTimings = savedWt && Object.keys(savedWt).length > 0
+    const rawText = persisted?.rawText
+
+    if (hasWordTimings && rawText) {
+      // Word-level LRC export: [time] word [time] word ...
+      const lines = rawText.split('\n')
+      lrcText = lines.map((line: string, i: number) => {
+        if (!line.trim()) return '' // blank line — skip in exported LRC
+        const wordList = line.split(/\s+/).filter((w: string) => w.length > 0)
+        const lineWt = savedWt[i]
+        if (!lineWt || lineWt.length === 0 || wordList.length === 0) {
+          return `[00:00.00] ${line}`
+        }
+        return wordList.map((w: string, wi: number) => {
+          const t = lineWt[wi]
+          return t !== undefined ? `[${formatTimeLrcWord(t)}] ${w}` : w
+        }).join(' ')
+      }).filter((l: string) => l !== '').join('\n')
+    } else if (lrcLines().length > 0) {
+      // Line-level fallback — regenerate from parsed LRC data
       lrcText = lrcLines().map(l => `[${formatTimeLrcWord(l.time)}] ${l.text}`).join('\n')
     } else if (lyricsLines().length > 0) {
-      // Export plain text — build LRC from wordTimings if available
+      // Plain text fallback
       const wt = wordTimings()
       const hasTimings = Object.keys(wt).length > 0
       const lineTimes = hasTimings
@@ -2927,7 +2948,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                         const lines = getGenLines()
                         const idx = lrcGenLineIdx()
                         if (idx < lines.length) {
-                          const wc = lines[idx].split(/\s+/).filter(w => w.length > 0).length
+                          const wc = lines[idx].split(/\s+/).filter((w: string) => w.length > 0).length
                           return <> w{Math.min(lrcGenWordIdx(), wc)}/{wc}</>
                         }
                         return null
@@ -3498,7 +3519,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                               const lines = getGenLines()
                               const idx = lrcGenLineIdx()
                               if (idx < lines.length) {
-                                const wc = lines[idx].split(/\s+/).filter(w => w.length > 0).length
+                                const wc = lines[idx].split(/\s+/).filter((w: string) => w.length > 0).length
                                 return <> w{Math.min(lrcGenWordIdx(), wc)}/{wc}</>
                               }
                               return null
