@@ -597,7 +597,10 @@ export class PitchDetector {
     return tau + shift
   }
 
-  /** Apply weighted median filter with outlier rejection */
+  /** Apply weighted median filter with outlier rejection.
+   *  Detects real note changes by looking for consecutive consistent
+   *  readings at a new frequency — this avoids rejecting legitimate
+   *  note transitions (e.g., P5 = 50% jump) as outliers. */
   private applyStabilityFilter(frequency: number): number {
     this.pitchHistory.push(frequency)
     if (this.pitchHistory.length > this.maxHistory) {
@@ -608,7 +611,26 @@ export class PitchDetector {
       return frequency
     }
 
-    // Weighted median — weight by recency
+    // Note-change detection: if the last two readings are consistent
+    // with each other (< 5% apart) but far from the older history
+    // (> 15% from its median), treat it as a confirmed note change.
+    const len = this.pitchHistory.length
+    const secondNewest = this.pitchHistory[len - 2]!
+    const newest = this.pitchHistory[len - 1]!
+    const lastTwoConsistent =
+      Math.abs(newest - secondNewest) / Math.min(newest, secondNewest) < 0.05
+
+    if (lastTwoConsistent && len >= 4) {
+      const oldValues = this.pitchHistory.slice(0, -2)
+      const oldSorted = [...oldValues].sort((a, b) => a - b)
+      const oldMedian = oldSorted[Math.floor(oldSorted.length / 2)]!
+      if (Math.abs(newest - oldMedian) / oldMedian > 0.15) {
+        // Confirmed note change — flush history to new frequency
+        this.pitchHistory = [newest, secondNewest]
+        return frequency
+      }
+    }
+
     const sorted = [...this.pitchHistory].sort((a, b) => a - b)
     const median = sorted[Math.floor(sorted.length / 2)]
 

@@ -463,6 +463,9 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
         let isPass: boolean
 
         if (isEnsemble) {
+          // Reset all detectors before each note to prevent stability-filter
+          // cross-contamination — note jumps >15% get rejected as outliers.
+          detectors().forEach((d) => d.reset())
           const ensembleOutput = ensembleDetect(wave)
           detectedFreq = ensembleOutput.result?.frequency ?? null
           isPass =
@@ -472,6 +475,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
           const detector = detectors().find(
             (d) => d.algorithm === selectedAlgorithm(),
           )
+          detector?.reset()
           const result = detector!.detect(wave)
           detectedFreq = result?.frequency ?? null
           isPass =
