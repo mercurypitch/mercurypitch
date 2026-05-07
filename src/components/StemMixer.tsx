@@ -1566,12 +1566,12 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     if (label === 'Vocal') {
       setVocal(prev => {
         if (prev.gainNode) prev.gainNode.gain.value = volume
-        return { ...prev, volume }
+        return { ...prev, volume, muted: false }
       })
     } else {
       setInstrumental(prev => {
         if (prev.gainNode) prev.gainNode.gain.value = volume
-        return { ...prev, volume }
+        return { ...prev, volume, muted: false }
       })
     }
   }

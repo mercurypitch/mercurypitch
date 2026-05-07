@@ -17,6 +17,7 @@ interface ProcessControlProps {
     | 'error'
     | 'cancelled'
   progress: number
+  indeterminate?: boolean
   processingTime?: number
   error?: string
   outputs?: {
@@ -109,14 +110,15 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
           <div class="progress-bar-container">
             <div
               class="progress-bar-fill"
+              classList={{ 'progress-bar-indeterminate': props.indeterminate }}
               style={{
-                width: formatPercentage(props.progress),
+                width: props.indeterminate ? '100%' : formatPercentage(props.progress),
                 '--progress-color': currentStage.color,
               }}
             />
           </div>
           <div class="progress-text">
-            {formatPercentage(props.progress)} •{' '}
+            {props.indeterminate ? 'Estimating...' : formatPercentage(props.progress)} •{' '}
             {formatTime(props.processingTime || 0)}
           </div>
         </div>
@@ -268,6 +270,25 @@ export const UvrProcessControlStyles: string = `
   background: var(--progress-color, var(--accent));
   transition: width 0.3s ease;
   border-radius: 4px;
+}
+
+.progress-bar-indeterminate {
+  width: 100% !important;
+  background: linear-gradient(
+    90deg,
+    var(--progress-color, var(--accent)) 0%,
+    var(--progress-color, var(--accent)) 30%,
+    rgba(255,255,255,0.3) 40%,
+    var(--progress-color, var(--accent)) 50%,
+    var(--progress-color, var(--accent)) 100%
+  );
+  background-size: 200% 100%;
+  animation: indeterminate-slide 1.5s ease-in-out infinite;
+}
+
+@keyframes indeterminate-slide {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 .progress-bar-container::after {

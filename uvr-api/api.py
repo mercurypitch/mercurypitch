@@ -94,7 +94,7 @@ def get_audio_duration(file_path: str) -> float:
 
 def write_progress(session_dir: str, progress: float, status: str,
                    duration: float = 0.0, started_at: float = 0.0,
-                   estimated_total: float = 0.0):
+                   estimated_total: float = 0.0, cpu_profile: str = 'high'):
     """Write progress data to session directory."""
     progress_file = os.path.join(session_dir, "progress.json")
     data = {
@@ -103,25 +103,33 @@ def write_progress(session_dir: str, progress: float, status: str,
         "duration_secs": duration,
         "started_at": started_at,
         "estimated_total_secs": estimated_total,
+        "cpu_profile": cpu_profile,
         "updated_at": time.time(),
     }
     with open(progress_file, 'w') as f:
         json.dump(data, f)
 
 
-def estimate_processing_time(duration_secs: float, file_size_bytes: int) -> float:
-    """Estimate total processing time based on audio duration and file size.
+# CPU profile speed ratios (multiplier applied to audio duration)
+CPU_PROFILES = {
+    'high': 0.8,   # Fast GPU / high-end CPU — sub-realtime
+    'mid':  3.0,   # Mid-range — ~3x realtime
+    'low':  10.0,  # Slow CPU — ~10x realtime
+}
 
-    GPU-accelerated processing typically runs at 0.5-2x realtime.
-    CPU fallback is slower at 6-12x realtime.
-    We use a 3x multiplier as a middle-ground starting estimate,
-    then adjust based on file size.
+def estimate_processing_time(duration_secs: float, file_size_bytes: int,
+                             cpu_profile: str = 'high') -> float:
+    """Estimate total processing time based on audio duration, file size, and CPU profile.
+
+    Profiles:
+      high — fast GPU / high-end CPU (0.8x realtime base)
+      mid  — mid-range (3x realtime base)
+      low  — slow CPU (10x realtime base)
     """
     if duration_secs <= 0:
         return 120.0  # 2 minute fallback
 
-    # Base estimate: 3x realtime (reasonable for both GPU and CPU)
-    base_ratio = 3.0
+    base_ratio = CPU_PROFILES.get(cpu_profile, CPU_PROFILES['high'])
 
     # Adjust for file size: larger files = higher bitrate = more processing
     size_mb = file_size_bytes / (1024 * 1024)
@@ -228,7 +236,8 @@ async def process_audio(
     file: UploadFile,
     model: str = 'UVR-MDX-NET-Inst_HQ_3',
     output_format: str = "WAV",
-    stems: List[str] = ["vocal", "instrumental"]
+    stems: List[str] = ["vocal", "instrumental"],
+    cpu_profile: str = 'high'
 ):
     """
     Process an uploaded audio file to separate vocals and instrumental
@@ -272,7 +281,7 @@ async def process_audio(
             # Get audio duration and file size for progress estimation
             file_size = os.path.getsize(input_path)
             duration = get_audio_duration(input_path)
-            estimated = estimate_processing_time(duration, file_size)
+            estimated = estimate_processing_time(duration, file_size, cpu_profile)
             logger.info(
                 f"Session {session_id}: duration={duration:.1f}s, "
                 f"size={file_size/1024/1024:.1f}MB, "
@@ -282,7 +291,7 @@ async def process_audio(
             # Write initial progress
             started_at = time.time()
             write_progress(session_output_dir, 0.0, "processing",
-                           duration, started_at, estimated)
+                           duration, started_at, estimated, cpu_profile)
 
             # Initialize separator
             separator = Separator(
@@ -317,7 +326,7 @@ async def process_audio(
                 if estimated > 0:
                     pct = min(95, (elapsed / estimated) * 100)
                     write_progress(session_output_dir, pct, "processing",
-                                   duration, started_at, estimated)
+                                   duration, started_at, estimated, cpu_profile)
 
             # Check for separation errors
             if separation_error[0]:
@@ -327,7 +336,7 @@ async def process_audio(
 
             # Write completion markers
             write_progress(session_output_dir, 100.0, "completed",
-                           duration, started_at, estimated)
+                           duration, started_at, estimated, cpu_profile)
             open(os.path.join(session_output_dir, "done.txt"), 'w').close()
 
         except Exception as e:

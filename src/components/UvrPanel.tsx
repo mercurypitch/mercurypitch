@@ -40,9 +40,9 @@ async function startRealProcessing(
     // Poll for completion, passing elapsed time with progress updates
     await pollForCompletion(
       response.session_id,
-      (progress) => {
+      (progress, indeterminate) => {
         const elapsed = Date.now() - processingStartTime
-        updateUvrSessionProgress(sessionId, progress, elapsed)
+        updateUvrSessionProgress(sessionId, progress, elapsed, indeterminate)
         onProgress(progress)
       },
       (files) => onComplete(files),
@@ -478,6 +478,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 apiSessionId={session()!.apiSessionId}
                 status={session()!.status}
                 progress={session()!.progress}
+                indeterminate={session()!.indeterminate}
                 processingTime={session()!.processingTime}
                 error={session()!.error}
                 onCancel={() => {

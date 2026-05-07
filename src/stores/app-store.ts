@@ -96,6 +96,7 @@ export interface UvrSession {
   apiSessionId?: string
   status: UvrStatus
   progress: number
+  indeterminate?: boolean
   processingTime?: number
   error?: string
   originalFile?: {
@@ -185,11 +186,13 @@ export function updateUvrSessionProgress(
   sessionId: string,
   progress: number,
   processingTime?: number,
+  indeterminate?: boolean,
 ): void {
   const sessions = getAllUvrSessions()
   const session = sessions.find((s) => s.sessionId === sessionId)
   if (session) {
     session.progress = progress
+    session.indeterminate = indeterminate || false
     if (processingTime) {
       session.processingTime = processingTime
     }

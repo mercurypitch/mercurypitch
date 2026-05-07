@@ -18,6 +18,7 @@ export interface ProcessRequest {
   model?: string
   output_format?: string
   stems?: string[]
+  cpu_profile?: 'high' | 'mid' | 'low'
 }
 
 // Default processing options
@@ -25,6 +26,7 @@ export const DEFAULT_PROCESS_REQUEST: ProcessRequest = {
   model: 'UVR-MDX-NET-Inst_HQ_3',
   output_format: 'WAV',
   stems: ['vocal', 'instrumental'],
+  cpu_profile: 'high',
 }
 
 /**
@@ -45,6 +47,8 @@ export interface ProcessStatusResponse {
   session_id: string
   status: 'processing' | 'completed' | 'not_started' | 'error'
   progress?: number
+  estimated_total_secs?: number
+  cpu_profile?: string
   message?: string
   files: OutputFile[]
   error?: string
@@ -122,6 +126,9 @@ export async function processAudio(
   if (options.stems) {
     formData.append('stems', JSON.stringify(options.stems))
   }
+  if (options.cpu_profile) {
+    formData.append('cpu_profile', options.cpu_profile)
+  }
 
   const response = await fetch(`${API_BASE}/process`, {
     method: 'POST',
@@ -192,27 +199,26 @@ export async function healthCheck(): Promise<{
  */
 export async function pollForCompletion(
   sessionId: string,
-  onProgress: (progress: number) => void,
+  onProgress: (progress: number, indeterminate?: boolean) => void,
   onComplete: (files: OutputFile[]) => void,
   onError: (error: string) => void,
   intervalMs: number = 1000,
-  signal?: AbortSignal, // <-- ADDED ABORT SIGNAL
+  signal?: AbortSignal,
 ): Promise<void> {
   const startTime = Date.now()
-  const maxTimeMs = 10 * 60 * 1000 // 10 minutes max
+  const maxTimeMs = 30 * 60 * 1000 // 30 minutes absolute max
+  let estimateExceeded = false
 
   return new Promise((resolve, reject) => {
     const poll = async () => {
-      // 1. Check if the user navigated away
       if (signal?.aborted) {
         reject(new DOMException('Polling aborted', 'AbortError'))
         return
       }
 
-      // 2. Check for absolute timeout
       const elapsed = Date.now() - startTime
       if (elapsed > maxTimeMs) {
-        const timeoutErr = 'Processing timed out after 10 minutes'
+        const timeoutErr = 'Processing timed out after 30 minutes'
         onError(timeoutErr)
         reject(new Error(timeoutErr))
         return
@@ -233,11 +239,25 @@ export async function pollForCompletion(
           return
         }
 
-        // Calculate progress
-        const progress = Math.min(95, (elapsed / maxTimeMs) * 100)
-        onProgress(status.progress !== undefined ? status.progress : progress)
+        // Use server progress if available
+        if (status.progress !== undefined) {
+          onProgress(status.progress, estimateExceeded)
+        } else {
+          // Fallback: estimate from server's estimated_total_secs or default
+          const estimatedSecs = status.estimated_total_secs || 120
+          const estimatedMs = Math.max(estimatedSecs * 1000, 10000)
+          const pct = (elapsed / estimatedMs) * 100
 
-        // Continue polling
+          if (pct >= 95 && !estimateExceeded) {
+            estimateExceeded = true
+            onProgress(95, true)
+          } else if (estimateExceeded) {
+            onProgress(95, true)
+          } else {
+            onProgress(Math.min(95, pct), false)
+          }
+        }
+
         setTimeout(poll, intervalMs)
       } catch (error) {
         onError(error instanceof Error ? error.message : 'Unknown error')
