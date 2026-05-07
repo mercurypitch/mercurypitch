@@ -2192,6 +2192,22 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     ;(window as any).__smResizeEnd = handleResizeDocEnd
   })
 
+  // Reconnect ResizeObserver when layout toggles between grid and fixed-2col
+  // (SolidJS swaps canvas elements, so the old observers become disconnected)
+  createEffect(() => {
+    workspaceLayout() // track this signal
+    if (!resizeObserver) return
+    resizeObserver.disconnect()
+    if (waveformCanvasRef) resizeObserver.observe(waveformCanvasRef)
+    if (liveWaveCanvasRef) resizeObserver.observe(liveWaveCanvasRef)
+    if (pitchCanvasRef) resizeObserver.observe(pitchCanvasRef)
+    // Sync and redraw synchronously — effect runs after DOM update, before paint
+    syncCanvasSizes()
+    drawWaveformOverview()
+    drawLiveWaveform()
+    drawPitchCanvas()
+  })
+
   createEffect(() => {
     if (!loading()) {
       requestAnimationFrame(() => {
