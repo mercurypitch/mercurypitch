@@ -2569,35 +2569,6 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
           </div>
 
-          {/* Score card — shown when playback stops and mic was active */}
-          <Show when={showScore() && score()}>
-            <div class="sm-mic-score-card">
-              <div class="sm-mic-score-card-inner">
-                <button
-                  class="sm-mic-score-close"
-                  onClick={() => setShowScore(false)}
-                  aria-label="Close score"
-                >
-                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
-                </button>
-                <div class="sm-mic-score-grade-row">
-                  <span class={`sm-mic-grade sm-mic-grade--${score()!.grade.toLowerCase()}`}>{score()!.grade}</span>
-                  <div class="sm-mic-score-stats">
-                    <span class="sm-mic-score-accuracy">{score()!.accuracyPct}% accuracy</span>
-                    <span class="sm-mic-score-detail">
-                      {score()!.matchedNotes}/{score()!.totalNotes} notes in tolerance
-                    </span>
-                    <span class="sm-mic-score-detail">
-                      ±{score()!.avgCentsOff}¢ avg deviation
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </Show>
-
           <Show when={workspaceLayout() !== 'fixed-2col'}>
           <div
             ref={workspaceRef}
@@ -3803,6 +3774,37 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             </div>
           </Show>
         </Show>
+
+        {/* Score modal overlay — shown when playback stops and mic was active */}
+        <Show when={showScore() && score()}>
+          <div class="sm-mic-score-overlay" onClick={() => setShowScore(false)}>
+            <div class="sm-mic-score-card" onClick={(e) => e.stopPropagation()}>
+              <div class="sm-mic-score-card-inner">
+                <button
+                  class="sm-mic-score-close"
+                  onClick={() => setShowScore(false)}
+                  aria-label="Close score"
+                >
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+                <div class="sm-mic-score-grade-row">
+                  <span class={`sm-mic-grade sm-mic-grade--${score()!.grade.toLowerCase()}`}>{score()!.grade}</span>
+                  <div class="sm-mic-score-stats">
+                    <span class="sm-mic-score-accuracy">{score()!.accuracyPct}% accuracy</span>
+                    <span class="sm-mic-score-detail">
+                      {score()!.matchedNotes}/{score()!.totalNotes} notes in tolerance
+                    </span>
+                    <span class="sm-mic-score-detail">
+                      ±{score()!.avgCentsOff}¢ avg deviation
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Show>
     </div>
   )
 }
@@ -3813,6 +3815,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
 export const StemMixerStyles: string = `
 .stem-mixer {
+  position: relative;
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -5460,20 +5463,34 @@ export const StemMixerStyles: string = `
   50% { box-shadow: 0 0 0 4px rgba(88, 166, 255, 0); }
 }
 
-/* Score card */
+/* Score modal overlay */
+.sm-mic-score-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+  animation: sm-score-overlay-in 0.25s ease-out;
+}
+@keyframes sm-score-overlay-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
 .sm-mic-score-card {
-  position: relative;
-  z-index: 10;
   background: var(--bg-secondary, #161b22);
   border: 1px solid var(--border, #30363d);
-  border-radius: 0.5rem;
-  margin: 0 1rem 0.5rem;
-  padding: 1rem 1.25rem;
+  border-radius: 0.75rem;
+  padding: 1.25rem 1.5rem;
+  min-width: 280px;
+  max-width: 360px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
   animation: sm-score-in 0.3s ease-out;
 }
 @keyframes sm-score-in {
-  from { opacity: 0; transform: translateY(-0.5rem); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(-0.75rem) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 .sm-mic-score-card-inner {
   display: flex;
