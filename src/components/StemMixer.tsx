@@ -350,10 +350,11 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   // ── Lyrics Loading ────────────────────────────────────────────
   const LYRICS_STORE_KEY = () => `lyrics_v1_${props.sessionId}`
 
-  const persistLyrics = (text: string, format: 'txt' | 'lrc', filename: string, wt?: WordTimingsMap) => {
+  const persistLyrics = (text: string, format: 'txt' | 'lrc', filename: string, wt?: WordTimingsMap, rawText?: string) => {
     try {
       const payload: Record<string, unknown> = { text, format, filename, timestamp: Date.now() }
       if (wt && Object.keys(wt).length > 0) payload.wordTimings = wt
+      if (rawText) payload.rawText = rawText
       const bl = blocks()
       if (bl.length > 0) payload.blocks = bl
       const bi = blockInstances()
@@ -369,8 +370,11 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       if (!raw) return null
       const data = JSON.parse(raw)
       if (data.text && (data.format === 'txt' || data.format === 'lrc')) {
-        const result: LyricsUploadResult & { wordTimings?: WordTimingsMap } = {
+        const result: LyricsUploadResult & { wordTimings?: WordTimingsMap; rawText?: string } = {
           text: data.text, format: data.format, filename: data.filename || 'saved.txt',
+        }
+        if (data.rawText && typeof data.rawText === 'string') {
+          result.rawText = data.rawText
         }
         if (data.wordTimings && typeof data.wordTimings === 'object') {
           result.wordTimings = data.wordTimings as WordTimingsMap
@@ -555,6 +559,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   interface DisplayLine {
     text: string
     isBlank: boolean
+    isRest: boolean
     lyricsIndex: number  // index into lyricsLines(), -1 if blank
   }
 
@@ -564,8 +569,13 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     const lrc = lrcLines()
 
     if (lrc.length > 0) {
-      // LRC — no blank lines to preserve
-      return lrc.map((l, i) => ({ text: l.text, isBlank: false, lyricsIndex: i }))
+      // LRC — show rest markers for blank lines
+      return lrc.map((l, i) => ({
+        text: l.text,
+        isBlank: false,
+        isRest: l.text === '~Rest~',
+        lyricsIndex: i,
+      }))
     }
     if (!raw || ll.length === 0) return []
 
@@ -574,11 +584,11 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     return rawLines.map((rawLine) => {
       const trimmed = rawLine.trim()
       if (trimmed === '') {
-        return { text: '', isBlank: true, lyricsIndex: -1 }
+        return { text: '', isBlank: true, isRest: false, lyricsIndex: -1 }
       }
       const idx = lyricIdx
       lyricIdx++
-      return { text: trimmed, isBlank: false, lyricsIndex: idx }
+      return { text: trimmed, isBlank: false, isRest: false, lyricsIndex: idx }
     })
   })
 
@@ -1136,11 +1146,31 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     setLrcGenMode(true)
   }
 
+  const advancePastBlankLine = (fromIdx: number, lines: string[]) => {
+    let next = fromIdx + 1
+    while (next < lines.length && !lines[next].trim()) next++
+    if (next >= lines.length) {
+      setLrcGenLineIdx(lines.length)
+      setLrcGenWordIdx(0)
+      handleLrcGenFinish()
+      return
+    }
+    setLrcGenLineIdx(next)
+    setLrcGenWordIdx(0)
+    saveLrcGenProgress()
+  }
+
   const handleNextLine = () => {
     const t = Math.round(elapsed() * 1000) / 1000
     const lines = getGenLines()
     const idx = lrcGenLineIdx()
     if (idx >= lines.length) return
+
+    // Auto-skip blank lines — no meaningful word mapping to do
+    if (!lines[idx].trim()) {
+      advancePastBlankLine(idx, lines)
+      return
+    }
 
     // Record line start time
     setLrcGenLineTimes(prev => {
@@ -1198,11 +1228,17 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   }
 
   const handleNextWord = () => {
-    const t = Math.round(elapsed() * 1000) / 1000
     const lines = getGenLines()
     const lineIdx = lrcGenLineIdx()
     if (lineIdx >= lines.length) return
 
+    // Blank line — auto-skip, no words to map
+    if (!lines[lineIdx].trim()) {
+      advancePastBlankLine(lineIdx, lines)
+      return
+    }
+
+    const t = Math.round(elapsed() * 1000) / 1000
     const words = lines[lineIdx].split(/\s+/).filter(w => w.length > 0)
     const wordIdx = lrcGenWordIdx()
 
@@ -1267,38 +1303,40 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     const lines = getGenLines()
     const lineTimes = lrcGenLineTimes()
     const wordTimes = lrcGenWordTimings()
+    const rawText = lines.join('\n')
 
-    // Estimate timestamps for unmapped lines so parseLrcFile keeps them.
-    // Find last mapped line and time, distribute remaining lines through song end.
-    const nonBlankIndices = lines.reduce<number[]>((acc, line, i) => {
-      if (line.trim()) acc.push(i)
-      return acc
-    }, [])
+    // Estimate timestamps for all unmapped lines (including blanks) so parseLrcFile keeps them.
     const lastMappedIdx = lineTimes.length > 0
       ? lineTimes.reduce((best, _t, i) => (lineTimes[i] !== undefined ? i : best), -1)
       : -1
     const lastMappedTime = lastMappedIdx >= 0 ? lineTimes[lastMappedIdx] : 0
-    const unmappedAfter = nonBlankIndices.filter(i => i > lastMappedIdx && lineTimes[i] === undefined)
-    const songEnd = duration() || (lastMappedTime + unmappedAfter.length * 4)
+    const allUnmapped = lines.reduce<number[]>((acc, _line, i) => {
+      if (i > lastMappedIdx && lineTimes[i] === undefined) acc.push(i)
+      return acc
+    }, [])
+    const songEnd = duration() || (lastMappedTime + allUnmapped.length * 4)
 
-    // Build clean LRC text with estimated timestamps for unmapped lines
     const finalTimes: (number | undefined)[] = lineTimes.slice()
-    if (unmappedAfter.length > 0) {
+    if (allUnmapped.length > 0) {
       const gap = songEnd - lastMappedTime
-      unmappedAfter.forEach((lineIdx, pos) => {
-        finalTimes[lineIdx] = Math.round((lastMappedTime + gap * ((pos + 1) / (unmappedAfter.length + 1))) * 1000) / 1000
+      allUnmapped.forEach((lineIdx, pos) => {
+        finalTimes[lineIdx] = Math.round((lastMappedTime + gap * ((pos + 1) / (allUnmapped.length + 1))) * 1000) / 1000
       })
     }
 
+    // Build clean LRC text — blank lines become ~Rest~ markers
     const lrcText = lines.map((line, i) => {
-      if (!line.trim()) return ''
       const lt = finalTimes[i]
+      if (!line.trim()) {
+        if (lt === undefined) return ''
+        return `[${formatTimeLrcWord(lt)}] ~Rest~`
+      }
       if (lt === undefined) return `[00:00.00] ${line}`
       return `[${formatTimeLrcWord(lt)}] ${line}`
     }).join('\n')
 
     const filename = loadPersistedLyrics()?.filename || 'generated.lrc'
-    persistLyrics(lrcText, 'lrc', filename, wordTimes)
+    persistLyrics(lrcText, 'lrc', filename, wordTimes, rawText)
     const parsed = parseLrcFile(lrcText)
     setLrcLines(parsed)
     setLyricsLines([])
@@ -2313,10 +2351,12 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     setPanels(prev => prev.map(p =>
       p.id === resizePanelId ? { ...p, height: newHeight } : p
     ))
-    syncCanvasSizes()
-    drawWaveformOverview()
-    drawLiveWaveform()
-    drawPitchCanvas()
+    requestAnimationFrame(() => {
+      syncCanvasSizes()
+      drawWaveformOverview()
+      drawLiveWaveform()
+      drawPitchCanvas()
+    })
   }
 
   const handleResizeEnd = (_e: PointerEvent) => {
@@ -2325,10 +2365,12 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     const canvas = panelEl?.querySelector('canvas') as HTMLElement | null
     if (canvas) canvas.style.pointerEvents = ''
     resizePanelId = null
-    syncCanvasSizes()
-    drawWaveformOverview()
-    drawLiveWaveform()
-    drawPitchCanvas()
+    requestAnimationFrame(() => {
+      syncCanvasSizes()
+      drawWaveformOverview()
+      drawLiveWaveform()
+      drawPitchCanvas()
+    })
   }
 
   // ── Fixed-2col resize handlers ────────────────────────────────
@@ -2351,10 +2393,12 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     const delta = e.clientY - fixedResizeStartY
     const newHeight = Math.max(40, fixedResizeStartHeight + delta)
     setFixedPanelHeights(prev => ({ ...prev, [fixedResizePanelId!]: newHeight }))
-    syncCanvasSizes()
-    drawWaveformOverview()
-    drawLiveWaveform()
-    drawPitchCanvas()
+    requestAnimationFrame(() => {
+      syncCanvasSizes()
+      drawWaveformOverview()
+      drawLiveWaveform()
+      drawPitchCanvas()
+    })
   }
 
   const handleFixedResizeEnd = (_e: PointerEvent) => {
@@ -2363,10 +2407,12 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     const canvas = panelEl?.querySelector('canvas') as HTMLElement | null
     if (canvas) canvas.style.pointerEvents = ''
     fixedResizePanelId = null
-    syncCanvasSizes()
-    drawWaveformOverview()
-    drawLiveWaveform()
-    drawPitchCanvas()
+    requestAnimationFrame(() => {
+      syncCanvasSizes()
+      drawWaveformOverview()
+      drawLiveWaveform()
+      drawPitchCanvas()
+    })
   }
 
   // ── Render ───────────────────────────────────────────────────
@@ -3211,6 +3257,15 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                           )
                         }
 
+                        if (dl.isRest) {
+                          return (
+                            <div class="sm-lyrics-rest" style={{ 'font-size': `${lyricsFontSize()}rem` }}>
+                              <span class="sm-lyrics-rest-pulse" />
+                              <span class="sm-lyrics-rest-label">~Rest~</span>
+                            </div>
+                          )
+                        }
+
                         const idx = dl.lyricsIndex
                         const rlItem = rlByLyricIdx.get(idx)
                         if (!rlItem) return null
@@ -3599,6 +3654,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                             }
                             return displayLines().map((dl) => {
                               if (dl.isBlank) return <div class="sm-lyrics-line-spacer" style={{ height: `${lyricsFontSize() * 0.5}rem` }} />
+                              if (dl.isRest) return <div class="sm-lyrics-rest" style={{ 'font-size': `${lyricsFontSize()}rem` }}><span class="sm-lyrics-rest-pulse" /><span class="sm-lyrics-rest-label">~Rest~</span></div>
                               const idx = dl.lyricsIndex
                               const rlItem = rlByLyricIdx.get(idx)
                               if (!rlItem) return null
@@ -4137,6 +4193,34 @@ export const StemMixerStyles: string = `
 .sm-lyrics-line-spacer {
   width: 100%;
   min-height: 0.3rem;
+}
+
+.sm-lyrics-rest {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+  opacity: 0.5;
+  user-select: none;
+}
+
+.sm-lyrics-rest-pulse {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--fg-tertiary);
+  animation: sm-rest-pulse 2s ease-in-out infinite;
+}
+
+.sm-lyrics-rest-label {
+  font-style: italic;
+  color: var(--fg-tertiary);
+  font-size: 0.75em;
+}
+
+@keyframes sm-rest-pulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
 }
 
 .sm-lyrics-time {
