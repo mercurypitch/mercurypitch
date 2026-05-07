@@ -88,7 +88,7 @@ export class SwiftF0Detector {
         )
       }
 
-      if (!this.ortModule) {
+      if (this.ortModule === null) {
         throw new Error('ortModule is null')
       }
 
@@ -129,14 +129,14 @@ export class SwiftF0Detector {
    * Returns a single pitch value aggregated from per-frame outputs.
    */
   async detect(timeData: Float32Array): Promise<SwiftPitchResult> {
-    if (!this.initialized || !this.onnxSession) {
+    if (!this.initialized || this.onnxSession === null) {
       await this.init()
-      if (!this.onnxSession) {
+      if (this.onnxSession === null) {
         return { pitch: this.settings.fallbackFreq, probability: 0 }
       }
     }
 
-    if (!this.onnxSession) {
+    if (this.onnxSession === null) {
       return { pitch: this.settings.fallbackFreq, probability: 0 }
     }
 
@@ -153,7 +153,11 @@ export class SwiftF0Detector {
       const pitchHz = result.pitch_hz?.data
       const confidence = result.confidence?.data
 
-      if (!pitchHz || !confidence || pitchHz.length === 0) {
+      if (
+        pitchHz === undefined ||
+        confidence === undefined ||
+        pitchHz.length === 0
+      ) {
         return { pitch: this.settings.fallbackFreq, probability: 0 }
       }
 

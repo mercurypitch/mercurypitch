@@ -65,7 +65,7 @@ export class PitchDetector {
   private minAmplitude: number
   private algorithm: PitchAlgorithm
   private readonly yinBuffer: Float32Array
-  private readonly pitchHistory: number[] = []
+  private pitchHistory: number[] = []
   private readonly maxHistory = 5
   private detectStartTime: number = 0
   private swiftDetector: SwiftF0Detector | null = null

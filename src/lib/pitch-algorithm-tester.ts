@@ -377,7 +377,7 @@ export async function benchmarkAlgorithmAsync(
       }
     } else if (timeDomainDetector) {
       const result = timeDomainDetector.detect(waveform)
-      if (result && result.frequency > 0) {
+      if (result !== null && result.frequency > 0) {
         detectedFrequency = result.frequency
       }
     }
@@ -433,7 +433,7 @@ export async function benchmarkAlgorithmAsync(
 }
 
 /** Convert time-domain to frequency-domain using FFT approximation */
-function fftToFrequencyData(
+function _fftToFrequencyData(
   timeData: Float32Array,
   sampleRate: number,
   fftSize: number,

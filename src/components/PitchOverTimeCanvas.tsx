@@ -368,7 +368,7 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
       // Note name pill near latest dot
       const latestSample = samples[samples.length - 1]
       const noteName = latestSample?.noteName
-      if (noteName) {
+      if (typeof noteName === 'string') {
         const nearRight = latest.x > w - 70
         const labelX = nearRight ? latest.x - 14 : latest.x + 14
         const labelY = latest.y - 10

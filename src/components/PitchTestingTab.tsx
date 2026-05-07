@@ -29,14 +29,6 @@ interface EnsembleTickResult {
   result: PitchDetectionResult | null
 }
 
-interface EnsembleTestNoteResult {
-  noteName: string
-  targetFreq: number
-  ensemblePassed: boolean
-  ensembleFreq: number | null
-  perAlgorithm: Record<string, { passed: boolean; detectedFreq: number | null }>
-}
-
 const TEST_FREQUENCIES = [
   65.41, 73.42, 82.41, 87.31, 98.0, 110.0, 130.81, 146.83, 164.81, 196.0, 220.0,
   261.63, 293.66, 329.63, 392.0, 440.0, 523.25, 587.33, 659.25, 783.99, 880.0,
@@ -320,7 +312,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
       const analyserVal = analyser()
       if (!analyserVal) return
       dataArray = new Float32Array(analyserVal.fftSize)
-      analyserVal.getFloatTimeDomainData(dataArray)
+      analyserVal.getFloatTimeDomainData(dataArray as Float32Array<ArrayBuffer>)
     } else if (mode === 'generate') {
       const wave = generatedWaveform()
       if (!wave) return
@@ -422,7 +414,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
     if (detectionTimerId !== null) {
       clearInterval(detectionTimerId)
     }
-    detectionTimerId = setInterval(detectionTick, 100)
+    detectionTimerId = window.setInterval(detectionTick, 100)
   }
 
   // Stop live detection
@@ -612,9 +604,9 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
       { count: number; algos: string[]; freqs: number[]; clarities: number[] }
     > = {}
     for (const item of perAlgorithm) {
-      if (!item.result?.noteName) continue
+      if (typeof item.result?.noteName !== 'string') continue
       const note = item.result.noteName
-      if (!votes[note])
+      if (!(note in votes))
         votes[note] = { count: 0, algos: [], freqs: [], clarities: [] }
       votes[note].count++
       votes[note].algos.push(item.algorithm)

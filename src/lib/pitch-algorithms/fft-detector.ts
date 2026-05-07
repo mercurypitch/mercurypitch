@@ -135,8 +135,6 @@ export class FFTDetector implements IPitchDetector {
     input: Float32Array,
     fftSize: number,
   ): PitchDetectionResult | null {
-    const sampleRate = this.settings.sampleRate || 44100
-
     // Take fftSize samples from the input, applying Hann window
     const windowed = new Float64Array(fftSize)
     for (let i = 0; i < fftSize && i < input.length; i++) {
