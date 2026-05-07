@@ -1,5 +1,5 @@
 import ssl from '@vitejs/plugin-basic-ssl'
-import { dirname,resolve } from 'node:path'
+import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vite'
 import solidPlugin from 'vite-plugin-solid'
@@ -28,6 +28,11 @@ export default defineConfig({
     'process.env': {},
   },
   css: {
+    transformer: 'lightningcss',
+    lightningcss: {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      drafts: { nesting: true } as Record<string, unknown>,
+    },
     modules: {
       localsConvention: 'camelCaseOnly',
     },
