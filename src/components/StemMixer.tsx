@@ -106,6 +106,26 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   const [micPitch, setMicPitch] = createSignal<DetectedPitch | null>(null)
   const [micError, setMicError] = createSignal('')
 
+  // ── Scoring state ───────────────────────────────────────────
+  interface ComparisonPoint {
+    time: number
+    vocalNote: string
+    micNote: string
+    centsOff: number       // positive = mic is sharp
+    inTolerance: boolean
+  }
+  interface MicScore {
+    totalNotes: number
+    matchedNotes: number
+    accuracyPct: number
+    avgCentsOff: number
+    grade: 'S' | 'A' | 'B' | 'C' | 'D'
+  }
+  const [comparisonData, setComparisonData] = createSignal<ComparisonPoint[]>([])
+  const [toleranceCents, setToleranceCents] = createSignal(50)
+  const [score, setScore] = createSignal<MicScore | null>(null)
+  const [showScore, setShowScore] = createSignal(false)
+
   // ── Workspace panel state ─────────────────────────────────────
   interface WorkspacePanel {
     id: 'overview' | 'live' | 'pitch' | 'controls' | 'lyrics'
@@ -1288,6 +1308,12 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   }
 
   const handleStop = () => {
+    // Compute score if mic was active during playback
+    if (micActive() && comparisonData().length > 0) {
+      const s = computeScore()
+      setScore(s)
+      setShowScore(true)
+    }
     pauseOffset = 0
     disconnectSources()
     setPlaying(false)
@@ -1302,6 +1328,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   }
 
   const handleRestart = () => {
+    resetScore()
     pauseOffset = 0
     disconnectSources()
     setPlaying(false)
@@ -1468,6 +1495,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
         micStream = stream
         micPitchHistory = []
+        setComparisonData([])
+        setScore(null)
+        setShowScore(false)
         setMicActive(true)
         setMicEnabled(true)
         setMicPitch(null)
@@ -1480,6 +1510,32 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         setMicEnabled(false)
       }
     }
+  }
+
+  // ── Scoring ─────────────────────────────────────────────────
+  const computeScore = (): MicScore => {
+    const data = comparisonData()
+    if (data.length === 0) {
+      return { totalNotes: 0, matchedNotes: 0, accuracyPct: 0, avgCentsOff: 0, grade: 'D' }
+    }
+    const total = data.length
+    const matched = data.filter(d => d.inTolerance).length
+    const sumCents = data.reduce((s, d) => s + Math.abs(d.centsOff), 0)
+    const accuracy = (matched / total) * 100
+    const grade = accuracy >= 95 ? 'S' : accuracy >= 85 ? 'A' : accuracy >= 70 ? 'B' : accuracy >= 50 ? 'C' : 'D'
+    return {
+      totalNotes: total,
+      matchedNotes: matched,
+      accuracyPct: Math.round(accuracy),
+      avgCentsOff: Math.round(sumCents / total),
+      grade,
+    }
+  }
+
+  const resetScore = () => {
+    setComparisonData([])
+    setScore(null)
+    setShowScore(false)
   }
 
   // ── RAF Loop ─────────────────────────────────────────────────
@@ -1521,6 +1577,19 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             frequency: mp.frequency,
             octave: mp.octave,
           })
+        }
+        // Collect comparison data for scoring
+        const vocalPitch = currentPitch()
+        if (mp.frequency > 0 && vocalPitch && vocalPitch.frequency > 0) {
+          const centsOff = 1200 * Math.log2(mp.frequency / vocalPitch.frequency)
+          const tol = toleranceCents()
+          setComparisonData(prev => [...prev.slice(-12000), {
+            time: elapsedTime,
+            vocalNote: vocalPitch.noteName,
+            micNote: mp.noteName,
+            centsOff,
+            inTolerance: Math.abs(centsOff) <= tol,
+          }])
         }
       }
 
@@ -2204,6 +2273,35 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             </div>
 
           </div>
+
+          {/* Score card — shown when playback stops and mic was active */}
+          <Show when={showScore() && score()}>
+            <div class="sm-mic-score-card">
+              <div class="sm-mic-score-card-inner">
+                <button
+                  class="sm-mic-score-close"
+                  onClick={() => setShowScore(false)}
+                  aria-label="Close score"
+                >
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+                <div class="sm-mic-score-grade-row">
+                  <span class={`sm-mic-grade sm-mic-grade--${score()!.grade.toLowerCase()}`}>{score()!.grade}</span>
+                  <div class="sm-mic-score-stats">
+                    <span class="sm-mic-score-accuracy">{score()!.accuracyPct}% accuracy</span>
+                    <span class="sm-mic-score-detail">
+                      {score()!.matchedNotes}/{score()!.totalNotes} notes in tolerance
+                    </span>
+                    <span class="sm-mic-score-detail">
+                      ±{score()!.avgCentsOff}¢ avg deviation
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Show>
 
           <div
             ref={workspaceRef}
@@ -4519,6 +4617,83 @@ export const StemMixerStyles: string = `
 @keyframes sm-mic-pulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(88, 166, 255, 0.4); }
   50% { box-shadow: 0 0 0 4px rgba(88, 166, 255, 0); }
+}
+
+/* Score card */
+.sm-mic-score-card {
+  position: relative;
+  z-index: 10;
+  background: var(--bg-secondary, #161b22);
+  border: 1px solid var(--border, #30363d);
+  border-radius: 0.5rem;
+  margin: 0 1rem 0.5rem;
+  padding: 1rem 1.25rem;
+  animation: sm-score-in 0.3s ease-out;
+}
+@keyframes sm-score-in {
+  from { opacity: 0; transform: translateY(-0.5rem); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.sm-mic-score-card-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.sm-mic-score-close {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.4rem;
+  height: 1.4rem;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 0.25rem;
+  color: var(--fg-tertiary, #8b949e);
+  cursor: pointer;
+}
+.sm-mic-score-close:hover {
+  color: var(--fg-primary, #e6edf3);
+  background: var(--bg-tertiary, #21262d);
+}
+.sm-mic-score-grade-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.sm-mic-grade {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 50%;
+  font-size: 1.8rem;
+  font-weight: 800;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.sm-mic-grade--s { background: #238636; color: #fff; }
+.sm-mic-grade--a { background: #1a7f37; color: #fff; }
+.sm-mic-grade--b { background: #9e6a03; color: #fff; }
+.sm-mic-grade--c { background: #d29922; color: #0d1117; }
+.sm-mic-grade--d { background: #da3633; color: #fff; }
+.sm-mic-score-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.sm-mic-score-accuracy {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--fg-primary, #e6edf3);
+}
+.sm-mic-score-detail {
+  font-size: 0.6rem;
+  color: var(--fg-tertiary, #8b949e);
 }
 
 `
