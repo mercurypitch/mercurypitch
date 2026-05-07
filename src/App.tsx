@@ -12,7 +12,9 @@ import { HistoryCanvas } from '@/components/HistoryCanvas'
 import { LibraryModal } from '@/components/LibraryModal'
 import { Notifications } from '@/components/Notifications'
 import { PianoRollCanvas } from '@/components/PianoRollCanvas'
+import { PitchAlgorithmTester } from '@/components/PitchAlgorithmTester'
 import { PitchCanvas } from '@/components/PitchCanvas'
+import { PitchTestingTab } from '@/components/PitchTestingTab'
 import { ScaleBuilder } from '@/components/ScaleBuilder'
 import { SessionBrowser } from '@/components/SessionBrowser'
 import { SessionEditor } from '@/components/SessionEditor'
@@ -32,6 +34,7 @@ import { useSessionSequencer } from '@/features/session/useSessionSequencer'
 import type { InstrumentType } from '@/lib/audio-engine'
 import { audioRegistry } from '@/lib/audio-registry'
 import { debounce } from '@/lib/debounce'
+import { IS_DEV } from '@/lib/defaults'
 import { registerE2EBridge } from '@/lib/e2e-bridge'
 import { melodyIndexAtBeat, melodyTotalBeats } from '@/lib/scale-data'
 import { buildScaleMelody, buildSessionPlaybackMelody, } from '@/lib/session-builder'
@@ -53,7 +56,12 @@ import { WelcomeScreen } from './components/WelcomeScreen'
 // ============================================================
 
 export type EditorView = 'piano-roll' | 'session-editor'
-export type ActiveTab = 'practice' | 'editor' | 'settings'
+export type ActiveTab =
+  | 'practice'
+  | 'editor'
+  | 'settings'
+  | 'pitch-test'
+  | 'pitch-algo'
 
 interface AppProps {
   onMounted?: () => void
@@ -762,6 +770,22 @@ const AppShell: Component<AppProps> = (props) => {
             >
               Settings
             </button>
+            <Show when={IS_DEV}>
+              <button
+                id="tab-pitch-test"
+                class={`app-tab ${activeTab() === 'pitch-test' ? 'active' : ''}`}
+                onClick={() => void handleTabChange('pitch-test')}
+              >
+                Pitch Test
+              </button>
+              <button
+                id="tab-pitch-algo"
+                class={`app-tab ${activeTab() === 'pitch-algo' ? 'active' : ''}`}
+                onClick={() => void handleTabChange('pitch-algo')}
+              >
+                Algo Tester
+              </button>
+            </Show>
           </nav>
         </header>
 
@@ -793,7 +817,7 @@ const AppShell: Component<AppProps> = (props) => {
               <div id="practice-panel">
                 {/* Shared control toolbar with practice-specific options */}
                 <SharedControlToolbar
-                  activeTab={activeTab}
+                  activeTab={() => activeTab() === 'practice'}
                   practiceTab={() => activeTab() === 'practice'}
                   editorTab={() => activeTab() === 'editor'}
                   isPlaying={isPlaying}
@@ -878,7 +902,7 @@ const AppShell: Component<AppProps> = (props) => {
 
             <Show when={activeTab() === 'editor'}>
               <SharedControlToolbar
-                activeTab={activeTab}
+                activeTab={() => activeTab() === 'editor'}
                 editorTab={() => activeTab() === 'editor'}
                 isPlaying={editorIsPlaying}
                 isPaused={editorIsPaused}
@@ -988,6 +1012,16 @@ const AppShell: Component<AppProps> = (props) => {
               <div id="settings-panel">
                 <SettingsPanel />
               </div>
+            </Show>
+            <Show when={IS_DEV}>
+              <Show when={activeTab() === 'pitch-test'}>
+                <PitchTestingTab onClose={() => setActiveTab('practice')} />
+              </Show>
+              <Show when={activeTab() === 'pitch-algo'}>
+                <PitchAlgorithmTester
+                  onClose={() => setActiveTab('practice')}
+                />
+              </Show>
             </Show>
           </div>
         </div>

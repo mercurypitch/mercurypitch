@@ -5,7 +5,12 @@ import { exposeForE2E } from '@/lib/test-utils'
 
 // ── Active tab ───────────────────────────────────────────────
 
-export type ActiveTab = 'practice' | 'editor' | 'settings'
+export type ActiveTab =
+  | 'practice'
+  | 'editor'
+  | 'settings'
+  | 'pitch-test'
+  | 'pitch-algo'
 export const [activeTab, setActiveTab] = createSignal<ActiveTab>('practice')
 
 // Editor view within the Editor tab

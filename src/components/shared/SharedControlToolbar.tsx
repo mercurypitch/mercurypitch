@@ -50,11 +50,14 @@ export const SCALE_TYPES = [
 ] as const
 
 export type PracticeSubMode = 'all' | 'random' | 'focus' | 'reverse'
+export type LocalActiveTab = 'practice' | 'editor' | 'settings'
+
+// Re-export for use in tests
 export type ActiveTab = 'practice' | 'editor' | 'settings'
 
 interface SharedControlToolbarProps {
-  // Tab identification
-  activeTab: () => ActiveTab
+  // Tab identification - matching App's ActiveTab
+  activeTab: () => boolean
   practiceTab?: () => boolean
   editorTab?: () => boolean
 
@@ -113,9 +116,8 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
   props,
 ) => {
   const isPracticeTab = () =>
-    props.practiceTab?.() ?? props.activeTab() === 'practice'
-  const isEditorTab = () =>
-    props.editorTab?.() ?? props.activeTab() === 'editor'
+    props.activeTab?.() ?? props.practiceTab?.() ?? false
+  const isEditorTab = () => props.activeTab?.() ?? props.editorTab?.() ?? false
 
   const isActive = () => props.isPlaying() || props.isPaused()
   const isStopped = () => !props.isPlaying() && !props.isPaused()
