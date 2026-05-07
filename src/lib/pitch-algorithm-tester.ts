@@ -337,9 +337,7 @@ export async function benchmarkAlgorithmAsync(
   // SwiftF0 requires 16000 Hz — use it as the default for this algorithm,
   // otherwise the frequency bin spacing won't match what the model expects
   const sampleRate =
-    algorithm === 'swift'
-      ? 16000
-      : options.sampleRate ?? 44100
+    algorithm === 'swift' ? 16000 : (options.sampleRate ?? 44100)
 
   // Create SwiftF0 detector
   const detector = new SwiftF0Detector({
@@ -353,9 +351,10 @@ export async function benchmarkAlgorithmAsync(
   }
 
   // Create YIN/MPM detector for non-swift algorithms
-  const timeDomainDetector = algorithm !== 'swift'
-    ? new PitchDetector({ algorithm, sampleRate, bufferSize })
-    : null
+  const timeDomainDetector =
+    algorithm !== 'swift'
+      ? new PitchDetector({ algorithm, sampleRate, bufferSize })
+      : null
 
   const results: PitchResultForNote[] = []
   let totalOffset = 0

@@ -10222,10 +10222,18 @@ input:checked + .settings-slider:before {
   flex-shrink: 0;
 }
 
-.legend-dot.good { background: var(--green); }
-.legend-dot.ok { background: var(--yellow); }
-.legend-dot.bad { background: var(--red); }
-.legend-dot.miss { background: var(--text-muted); }
+.legend-dot.good {
+  background: var(--green);
+}
+.legend-dot.ok {
+  background: var(--yellow);
+}
+.legend-dot.bad {
+  background: var(--red);
+}
+.legend-dot.miss {
+  background: var(--text-muted);
+}
 
 .detailed-results {
   margin-top: 0;

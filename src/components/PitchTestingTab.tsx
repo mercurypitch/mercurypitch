@@ -4,11 +4,11 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, Show, } from 'solid-js'
+import { PitchOverTimeCanvas } from '@/components/PitchOverTimeCanvas'
 import type { PitchDetectionResult } from '@/lib/pitch-algorithms'
 import { AutocorrelatorDetector, FFTDetector, YINDetector, } from '@/lib/pitch-algorithms'
-import type { TimeStampedPitchSample } from '@/types/pitch-algorithms'
-import { PitchOverTimeCanvas } from '@/components/PitchOverTimeCanvas'
 import { currentScale } from '@/stores/melody-store'
+import type { TimeStampedPitchSample } from '@/types/pitch-algorithms'
 
 interface PitchTestingTabProps {
   onClose?: () => void
@@ -38,16 +38,34 @@ interface EnsembleTestNoteResult {
 }
 
 const TEST_FREQUENCIES = [
-  65.41, 73.42, 82.41, 87.31, 98.0, 110.0, 130.81, 146.83, 164.81, 196.0,
-  220.0, 261.63, 293.66, 329.63, 392.0, 440.0, 523.25, 587.33, 659.25,
-  783.99, 880.0, 1046.5,
+  65.41, 73.42, 82.41, 87.31, 98.0, 110.0, 130.81, 146.83, 164.81, 196.0, 220.0,
+  261.63, 293.66, 329.63, 392.0, 440.0, 523.25, 587.33, 659.25, 783.99, 880.0,
+  1046.5,
 ]
 
 const TEST_NOTE_NAMES = [
-  'C2', 'D2', 'E2', 'F2', 'G2', 'A2',
-  'C3', 'D3', 'E3', 'G3', 'A3',
-  'C4', 'D4', 'E4', 'G4', 'A4',
-  'C5', 'D5', 'E5', 'G5', 'A5', 'C6',
+  'C2',
+  'D2',
+  'E2',
+  'F2',
+  'G2',
+  'A2',
+  'C3',
+  'D3',
+  'E3',
+  'G3',
+  'A3',
+  'C4',
+  'D4',
+  'E4',
+  'G4',
+  'A4',
+  'C5',
+  'D5',
+  'E5',
+  'G5',
+  'A5',
+  'C6',
 ]
 
 // Log-scale frequency slider helpers
@@ -64,8 +82,7 @@ function freqToSliderVal(freq: number): number {
 
 function sliderValToFreq(val: number): number {
   return Math.round(
-    FREQ_SLIDER_MIN *
-      Math.pow(2, (val / FREQ_SLIDER_STEPS) * FREQ_LOG_RATIO),
+    FREQ_SLIDER_MIN * Math.pow(2, (val / FREQ_SLIDER_STEPS) * FREQ_LOG_RATIO),
   )
 }
 
@@ -86,8 +103,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
   const [ensembleTickResults, setEnsembleTickResults] = createSignal<
     EnsembleTickResult[]
   >([])
-  const [detectionMode, setDetectionMode] =
-    createSignal<DetectionMode>('mic')
+  const [detectionMode, setDetectionMode] = createSignal<DetectionMode>('mic')
   const [frequency, setFrequency] = createSignal(440)
   const [generatedWaveform, setGeneratedWaveform] =
     createSignal<Float32Array | null>(null)
@@ -336,7 +352,8 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
     setLiveResults((prev) => [...prev.slice(-100), result])
 
     const now = performance.now()
-    const elapsed = detectionStartTime > 0 ? (now - detectionStartTime) / 1000 : 0
+    const elapsed =
+      detectionStartTime > 0 ? (now - detectionStartTime) / 1000 : 0
     const sample: TimeStampedPitchSample = {
       time: elapsed,
       freq: result?.frequency ?? null,
@@ -597,7 +614,8 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
     for (const item of perAlgorithm) {
       if (!item.result?.noteName) continue
       const note = item.result.noteName
-      if (!votes[note]) votes[note] = { count: 0, algos: [], freqs: [], clarities: [] }
+      if (!votes[note])
+        votes[note] = { count: 0, algos: [], freqs: [], clarities: [] }
       votes[note].count++
       votes[note].algos.push(item.algorithm)
       votes[note].freqs.push(item.result.frequency)
@@ -612,8 +630,10 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
     // Sort by votes (desc), then avg clarity (desc) as tiebreaker
     entries.sort((a, b) => {
       if (b[1].count !== a[1].count) return b[1].count - a[1].count
-      const avgA = a[1].clarities.reduce((s, v) => s + v, 0) / a[1].clarities.length
-      const avgB = b[1].clarities.reduce((s, v) => s + v, 0) / b[1].clarities.length
+      const avgA =
+        a[1].clarities.reduce((s, v) => s + v, 0) / a[1].clarities.length
+      const avgB =
+        b[1].clarities.reduce((s, v) => s + v, 0) / b[1].clarities.length
       return avgB - avgA
     })
 
@@ -697,9 +717,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                   disabled={isDetecting() || isRunningTest()}
                   value={selectedAlgorithm()}
                   onChange={(e) =>
-                    setSelectedAlgorithm(
-                      e.currentTarget.value as AlgorithmId,
-                    )
+                    setSelectedAlgorithm(e.currentTarget.value as AlgorithmId)
                   }
                 >
                   <option value="yin">YIN Algorithm</option>
@@ -732,7 +750,8 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
 
           <div class="control-group">
             <label>
-              Sensitivity <span class="slider-value-badge">{sensitivity()}</span>
+              Sensitivity{' '}
+              <span class="slider-value-badge">{sensitivity()}</span>
             </label>
             <input
               type="range"
@@ -761,7 +780,9 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
           <div class="control-group">
             <label>
               Min Confidence{' '}
-              <span class="slider-value-badge">{minConfidence().toFixed(1)}</span>
+              <span class="slider-value-badge">
+                {minConfidence().toFixed(1)}
+              </span>
             </label>
             <input
               type="range"
@@ -991,7 +1012,9 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                 </div>
                 <div class="metric-item">
                   <span class="metric-label">Detections</span>
-                  <span class="metric-value">{liveResults().filter(Boolean).length}</span>
+                  <span class="metric-value">
+                    {liveResults().filter(Boolean).length}
+                  </span>
                 </div>
               </div>
 
@@ -1019,7 +1042,10 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                     </button>
                   </div>
                 </div>
-                <div class="waveform-canvas" style={{ height: `${waveformHeight}px` }}>
+                <div
+                  class="waveform-canvas"
+                  style={{ height: `${waveformHeight}px` }}
+                >
                   <div class="waveform-canvas-inner">
                     <PitchOverTimeCanvas
                       samples={pitchSamples}
@@ -1052,18 +1078,20 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                   Running benchmark on {TEST_FREQUENCIES.length} notes with{' '}
                   {ensembleMode()
                     ? `${[...ensembleAlgorithms()].join(' + ')} ensemble`
-                    : currentDetector()?.getName() ?? selectedAlgorithm()}
+                    : (currentDetector()?.getName() ?? selectedAlgorithm())}
                   ...
                 </p>
               </Show>
 
-              <Show when={!isRunningTest() && testResults().noteResults.length > 0}>
+              <Show
+                when={!isRunningTest() && testResults().noteResults.length > 0}
+              >
                 <p class="test-description">
                   {TEST_FREQUENCIES.length} pentatonic notes from C2 (65.41 Hz)
                   to C6 (1046.5 Hz), tested with{' '}
                   {ensembleMode()
                     ? `${[...ensembleAlgorithms()].join(' + ')} ensemble (majority vote)`
-                    : currentDetector()?.getName() ?? selectedAlgorithm()}
+                    : (currentDetector()?.getName() ?? selectedAlgorithm())}
                   . Pass = detected within &plusmn;5 Hz of target.
                 </p>
               </Show>
@@ -1091,7 +1119,8 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                         (testResults().passed /
                           (testResults().passed + testResults().failed)) *
                         100
-                      ).toFixed(1)}%
+                      ).toFixed(1)}
+                      %
                     </span>
                   </div>
                 </Show>

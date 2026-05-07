@@ -4,8 +4,8 @@
 
 import type { Component } from 'solid-js'
 import { createSignal, onCleanup, onMount } from 'solid-js'
-import type { TimeStampedPitchSample } from '@/types/pitch-algorithms'
 import type { ScaleDegree } from '@/types'
+import type { TimeStampedPitchSample } from '@/types/pitch-algorithms'
 
 interface PitchOverTimeCanvasProps {
   samples: () => TimeStampedPitchSample[]
@@ -25,8 +25,8 @@ const Y_AXIS_NOTES = [
   { label: 'C7', freq: 2093.0 },
 ]
 
-const MIN_FREQ = 55      // A1
-const MAX_FREQ = 2093    // C7
+const MIN_FREQ = 55 // A1
+const MAX_FREQ = 2093 // C7
 const LOG_MIN = Math.log2(MIN_FREQ)
 const LOG_MAX = Math.log2(MAX_FREQ)
 const LOG_RANGE = LOG_MAX - LOG_MIN
@@ -109,7 +109,11 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
     return Number.isFinite(y) ? y : h / 2
   }
 
-  const sampleToX = (sampleTime: number, nowTime: number, w: number): number => {
+  const sampleToX = (
+    sampleTime: number,
+    nowTime: number,
+    w: number,
+  ): number => {
     const window = visibleWindow()
     const windowStart = nowTime - window
     // Pin the latest sample at 45% of canvas width so the timeline

@@ -277,7 +277,9 @@ export class FFTDetector implements IPitchDetector {
     }
   }
 
-  private findPeakFrequency(magnitudes: Float32Array): PitchDetectionResult | null {
+  private findPeakFrequency(
+    magnitudes: Float32Array,
+  ): PitchDetectionResult | null {
     const sampleRate = this.settings.sampleRate || 44100
     const fftSize = (magnitudes.length - 1) * 2
     const binWidth = sampleRate / fftSize

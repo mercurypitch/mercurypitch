@@ -110,15 +110,16 @@ export class AutocorrelatorDetector implements IPitchDetector {
     this.settings.minConfidence = Math.max(0, Math.min(1, value))
   }
 
-  private detectWithAutocorrelation(data: Float32Array): PitchDetectionResult | null {
+  private detectWithAutocorrelation(
+    data: Float32Array,
+  ): PitchDetectionResult | null {
     const sampleRate = this.settings.sampleRate || 44100
     const n = data.length
 
     // Apply Hanning window to reduce spectral leakage
     const windowed = new Float64Array(n)
     for (let i = 0; i < n; i++) {
-      windowed[i] =
-        data[i] * 0.5 * (1 - Math.cos((2 * Math.PI * i) / (n - 1)))
+      windowed[i] = data[i] * 0.5 * (1 - Math.cos((2 * Math.PI * i) / (n - 1)))
     }
 
     // Compute zero-lag energy for normalization
@@ -130,8 +131,14 @@ export class AutocorrelatorDetector implements IPitchDetector {
     if (r0 < 1e-12) return null
 
     // Only compute lags in the search range (not all 22049 lags)
-    const minLag = Math.max(1, Math.floor(sampleRate / this.settings.maxFrequency))
-    const maxLag = Math.min(n - 1, Math.floor(sampleRate / this.settings.minFrequency))
+    const minLag = Math.max(
+      1,
+      Math.floor(sampleRate / this.settings.maxFrequency),
+    )
+    const maxLag = Math.min(
+      n - 1,
+      Math.floor(sampleRate / this.settings.minFrequency),
+    )
 
     // Evaluate each candidate lag directly without storing the full array
     let bestLag = 0

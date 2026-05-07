@@ -200,10 +200,7 @@ export class PitchDetector {
     // Initialize Swift detector if needed
     await this.initializeSwiftDetector()
 
-    if (
-      this.algorithm === 'swift' &&
-      this.swiftDetector !== null
-    ) {
+    if (this.algorithm === 'swift' && this.swiftDetector !== null) {
       // SwiftF0 model expects raw audio — use timeData if provided
       const input = timeData ?? freqData
       const swiftResult = await this.swiftDetector.detect(input)
@@ -315,10 +312,7 @@ export class PitchDetector {
   private async detectSwift(timeData: Float32Array): Promise<DetectedPitch> {
     await this.initializeSwiftDetector()
 
-    if (
-      this.swiftDetector !== null &&
-      this.swiftDetector.isInitialized()
-    ) {
+    if (this.swiftDetector !== null && this.swiftDetector.isInitialized()) {
       const swiftResult = await this.swiftDetector.detect(timeData)
 
       if (

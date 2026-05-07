@@ -61,7 +61,8 @@ export const PitchAlgorithmTester: Component<
     samplesToRun: TestSample[],
     algosToRun: PitchAlgorithm[],
   ) => {
-    if (samplesToRun.length === 0 || algosToRun.length === 0 || running()) return
+    if (samplesToRun.length === 0 || algosToRun.length === 0 || running())
+      return
 
     setRunning(true)
     setShowResults(false)
@@ -74,9 +75,7 @@ export const PitchAlgorithmTester: Component<
 
     for (const sample of samplesToRun) {
       for (const algo of algosToRun) {
-        setProgressText(
-          `Testing ${algo} on ${sample.name}...`,
-        )
+        setProgressText(`Testing ${algo} on ${sample.name}...`)
         const result = await benchmarkAlgorithmAsync(algo, sample, {
           sampleRate: 44100,
           bufferSize: 2048,
@@ -167,9 +166,9 @@ export const PitchAlgorithmTester: Component<
                   <button
                     classList={{
                       'sample-pill': true,
-                      selected: selectedSamples().find(
-                        (s) => s.id === sample.id,
-                      ) !== undefined,
+                      selected:
+                        selectedSamples().find((s) => s.id === sample.id) !==
+                        undefined,
                     }}
                     onClick={() => toggleSample(sample)}
                   >
@@ -193,11 +192,7 @@ export const PitchAlgorithmTester: Component<
             >
               {running() ? 'Running...' : 'Run Selected'}
             </button>
-            <button
-              class="run-all-btn"
-              onClick={runAll}
-              disabled={running()}
-            >
+            <button class="run-all-btn" onClick={runAll} disabled={running()}>
               Run All
             </button>
           </div>
@@ -218,10 +213,18 @@ export const PitchAlgorithmTester: Component<
           {/* Legend */}
           <Show when={showResults()}>
             <div class="results-legend">
-              <span class="legend-item"><span class="legend-dot good" /> 10 perfect</span>
-              <span class="legend-item"><span class="legend-dot ok" /> 25 good</span>
-              <span class="legend-item"><span class="legend-dot bad" /> 50 okay</span>
-              <span class="legend-item"><span class="legend-dot miss" /> no det</span>
+              <span class="legend-item">
+                <span class="legend-dot good" /> 10 perfect
+              </span>
+              <span class="legend-item">
+                <span class="legend-dot ok" /> 25 good
+              </span>
+              <span class="legend-item">
+                <span class="legend-dot bad" /> 50 okay
+              </span>
+              <span class="legend-item">
+                <span class="legend-dot miss" /> no det
+              </span>
             </div>
           </Show>
         </div>
@@ -251,7 +254,8 @@ export const PitchAlgorithmTester: Component<
                       </div>
                       <div class="result-card-right">
                         <span class="result-score" style={{ color }}>
-                          {result.totalScore}<span class="score-max">/100</span>
+                          {result.totalScore}
+                          <span class="score-max">/100</span>
                         </span>
                         <span class="result-time">
                           {result.avgComputationTime.toFixed(1)}ms
@@ -297,7 +301,9 @@ export const PitchAlgorithmTester: Component<
                               <span class="note-freq">Freq</span>
                               <For each={sampleResults}>
                                 {(r) => (
-                                  <span class="note-offset-hdr">{r.algorithm}</span>
+                                  <span class="note-offset-hdr">
+                                    {r.algorithm}
+                                  </span>
                                 )}
                               </For>
                             </div>
@@ -316,15 +322,17 @@ export const PitchAlgorithmTester: Component<
                                   </span>
                                   <For each={sampleResults}>
                                     {(result: AlgorithmResult) => {
-                                      const matchingResult = result.results.find(
-                                        (rr) => rr.targetFreq === note.frequency,
-                                      )
+                                      const matchingResult =
+                                        result.results.find(
+                                          (rr) =>
+                                            rr.targetFreq === note.frequency,
+                                        )
                                       const band = matchingResult?.accuracyBand
                                       const color =
                                         band !== undefined
-                                          ? (ACCURACY_BAND_COLORS[
+                                          ? ACCURACY_BAND_COLORS[
                                               band as keyof typeof ACCURACY_BAND_COLORS
-                                            ] || 'var(--text-muted)')
+                                            ] || 'var(--text-muted)'
                                           : 'var(--text-muted)'
                                       const offsetCents =
                                         matchingResult?.offsetCents
