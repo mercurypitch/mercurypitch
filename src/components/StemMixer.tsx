@@ -64,10 +64,11 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   // ── Lyrics state ──────────────────────────────────────────────
   const [lyricsLines, setLyricsLines] = createSignal<string[]>([])
   const [lrcLines, setLrcLines] = createSignal<LrcLine[]>([])
+  const [rawLyricsText, setRawLyricsText] = createSignal('')  // unfiltered original text
   const [currentLineIdx, setCurrentLineIdx] = createSignal(-1)
   const [lyricsSource, setLyricsSource] = createSignal<'api' | 'upload' | 'none'>('none')
   const [lyricsLoading, setLyricsLoading] = createSignal(false)
-  const [lyricsFontSize, setLyricsFontSize] = createSignal(0.65)    // rem
+  const [lyricsFontSize, setLyricsFontSize] = createSignal(0.85)    // rem
   const [lyricsColumns, setLyricsColumns] = createSignal<1 | 2>(1)
   const [editMode, setEditMode] = createSignal(false)
   type WordTimingsMap = Record<number, number[]>  // line idx → word start times (seconds)
@@ -316,6 +317,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       if (bl.length > 0) payload.blocks = bl
       const bi = blockInstances()
       if (Object.keys(bi).length > 0) payload.blockInstances = bi
+      payload.fontSize = lyricsFontSize()
       localStorage.setItem(LYRICS_STORE_KEY(), JSON.stringify(payload))
     } catch { /* storage full or unavailable */ }
   }
@@ -332,6 +334,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         if (data.wordTimings && typeof data.wordTimings === 'object') {
           result.wordTimings = data.wordTimings as WordTimingsMap
         }
+        // Restore font size
+        if (typeof data.fontSize === 'number') setLyricsFontSize(data.fontSize)
         // Restore blocks
         if (Array.isArray(data.blocks)) setBlocks(data.blocks as LyricsBlock[])
         if (data.blockInstances && typeof data.blockInstances === 'object') {
@@ -347,6 +351,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     // Check persisted lyrics first — no need for API call if user already uploaded
     const persisted = loadPersistedLyrics()
     if (persisted) {
+      setRawLyricsText(persisted.text)
       if (persisted.format === 'lrc') {
         setLrcLines(parseLrcFile(persisted.text))
         setLyricsLines([])
@@ -370,6 +375,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     try {
       const result = await searchLyrics(title)
       if (result) {
+        setRawLyricsText(result.text)
         if (result.format === 'lrc') {
           setLrcLines(parseLrcFile(result.text))
           setLyricsLines([])
@@ -392,6 +398,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   const handleLyricsUpload = (result: LyricsUploadResult) => {
     setBlocks([])
     setBlockInstances({})
+    setRawLyricsText(result.text)
     persistLyrics(result.text, result.format, result.filename)
     if (result.format === 'lrc') {
       setLrcLines(parseLrcFile(result.text))
@@ -439,6 +446,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     words: string[]
     isActive: boolean
     activeUpTo: number  // -1 = no words active, N = words 0..N are "done"
+    activeCharProgress: number  // 0..word.length, chars "done" in the word at activeUpTo+1
   }
 
   const lyricsRenderData = createMemo<LyricRenderLine[]>(() => {
@@ -448,11 +456,22 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     const curIdx = currentLineIdx()
     const elapsedTime = elapsed()
 
-    const computeActiveWord = (words: string[], startTime: number, endTime: number): number => {
-      if (words.length === 0) return -1
-      const progress = (elapsedTime - startTime) / Math.max(0.05, endTime - startTime)
-      if (progress < 0) return -1
-      return Math.min(Math.floor(progress * words.length), words.length - 1)
+    const computeActiveWord = (words: string[], startTime: number, endTime: number): { activeUpTo: number; charProgress: number } => {
+      if (words.length === 0) return { activeUpTo: -1, charProgress: 0 }
+      const lineDuration = Math.max(0.05, endTime - startTime)
+      const progress = (elapsedTime - startTime) / lineDuration
+      if (progress < 0) return { activeUpTo: -1, charProgress: 0 }
+      if (progress >= 1) return { activeUpTo: words.length - 1, charProgress: words[words.length - 1]?.length || 0 }
+
+      const wordDuration = lineDuration / words.length
+      const currentWordIdx = Math.floor(progress * words.length)
+      const activeUpTo = currentWordIdx - 1
+
+      const elapsedInWord = elapsedTime - startTime - (currentWordIdx * wordDuration)
+      const currentWord = words[currentWordIdx]
+      const charProgress = Math.min(Math.floor((elapsedInWord / wordDuration) * currentWord.length), currentWord.length)
+
+      return { activeUpTo, charProgress }
     }
 
     if (lrc.length > 0) {
@@ -460,12 +479,14 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         const words = line.text.split(/\s+/).filter(w => w.length > 0)
         const endTime = i + 1 < lrc.length ? lrc[i + 1].time : dur
         const isActive = i === curIdx
+        const { activeUpTo, charProgress } = isActive ? computeActiveWord(words, line.time, endTime) : { activeUpTo: -1, charProgress: 0 }
         return {
           key: `lrc-${i}`,
           time: line.time,
           words,
           isActive,
-          activeUpTo: isActive ? computeActiveWord(words, line.time, endTime) : -1,
+          activeUpTo,
+          activeCharProgress: charProgress,
         }
       })
     }
@@ -475,16 +496,49 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         const startTime = (i / txt.length) * dur
         const endTime = ((i + 1) / txt.length) * dur
         const isActive = i === curIdx
+        const { activeUpTo, charProgress } = isActive ? computeActiveWord(words, startTime, endTime) : { activeUpTo: -1, charProgress: 0 }
         return {
           key: `txt-${i}`,
           time: startTime,
           words,
           isActive,
-          activeUpTo: isActive ? computeActiveWord(words, startTime, endTime) : -1,
+          activeUpTo,
+          activeCharProgress: charProgress,
         }
       })
     }
     return []
+  })
+
+  // Display lines — preserves blank lines from raw text for visual spacing
+  interface DisplayLine {
+    text: string
+    isBlank: boolean
+    lyricsIndex: number  // index into lyricsLines(), -1 if blank
+  }
+
+  const displayLines = createMemo<DisplayLine[]>(() => {
+    const raw = rawLyricsText()
+    const ll = lyricsLines()
+    const lrc = lrcLines()
+
+    if (lrc.length > 0) {
+      // LRC — no blank lines to preserve
+      return lrc.map((l, i) => ({ text: l.text, isBlank: false, lyricsIndex: i }))
+    }
+    if (!raw || ll.length === 0) return []
+
+    const rawLines = raw.split('\n')
+    let lyricIdx = 0
+    return rawLines.map((rawLine) => {
+      const trimmed = rawLine.trim()
+      if (trimmed === '') {
+        return { text: '', isBlank: true, lyricsIndex: -1 }
+      }
+      const idx = lyricIdx
+      lyricIdx++
+      return { text: trimmed, isBlank: false, lyricsIndex: idx }
+    })
   })
 
   // Detect blank-line-separated sections for optional multi-column layout
@@ -887,8 +941,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
     const blockId = `${label.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`
 
-    // Auto-detect instances
-    const instances = detectBlockInstances(lines, templateIndices, blockInstances())
+    // Auto-detect instances (skip for single-line templates)
+    const instances = templateIndices.length >= 2
+      ? detectBlockInstances(lines, templateIndices, blockInstances())
+      : [templateIndices]
 
     // Create block
     const block: LyricsBlock = {
@@ -935,6 +991,19 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       return next
     })
     setBlockEditTarget(null)
+    persistBlocks()
+  }
+
+  const handleAddInstance = (blockId: string, startIdx: number, endIdx: number) => {
+    const block = getBlockById(blockId)
+    if (!block) return
+    setBlockInstances(prev => {
+      const next = { ...prev }
+      next[blockId] = [...(prev[blockId] || []), [startIdx, endIdx]]
+      return next
+    })
+    setMarkStartLine(null)
+    setMarkEndLine(null)
     persistBlocks()
   }
 
@@ -2849,34 +2918,58 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
                 {/* ── Normal view ──────────────────────────────── */}
                 <Show when={!editMode() && !lrcGenMode()}>
-                  {/* ── Block form popover ─────────────────────── */}
-                  <Show when={blockMarkMode() && markStartLine() !== null && markEndLine() !== null}>
-                    <div class="sm-lyrics-block-form">
-                      <input
-                        type="text"
-                        class="sm-lyrics-block-form-label"
-                        placeholder="Chorus, Verse 1..."
-                        id="block-label-input"
-                      />
-                      <input
-                        type="number"
-                        class="sm-lyrics-block-form-repeat"
-                        value="1"
-                        min="1"
-                        max="20"
-                        id="block-repeat-input"
-                        title="Repeat count"
-                      />
+                  {/* ── Mark mode toolbar ─────────────────────── */}
+                  <Show when={blockMarkMode()}>
+                    <div class="sm-lyrics-mark-toolbar">
+                      <span class="sm-lyrics-mark-status">
+                        {markStartLine() === null
+                          ? 'Select a range of lines'
+                          : markEndLine() === null
+                            ? `Line ${markStartLine()! + 1} — click end line`
+                            : `${markEndLine()! - markStartLine()!} line${markEndLine()! - markStartLine()! !== 1 ? 's' : ''} selected`
+                        }
+                      </span>
+                      <Show when={markStartLine() !== null && markEndLine() !== null}>
+                        <div class="sm-lyrics-mark-actions">
+                          <input
+                            type="text"
+                            class="sm-lyrics-block-form-label"
+                            placeholder="Chorus, Verse 1..."
+                            id="block-label-input"
+                          />
+                          <input
+                            type="number"
+                            class="sm-lyrics-block-form-repeat"
+                            value="1"
+                            min="1"
+                            max="20"
+                            id="block-repeat-input"
+                            title="Repeat count"
+                          />
+                          <button
+                            class="sm-lyrics-block-form-btn"
+                            onClick={() => {
+                              const label = (document.getElementById('block-label-input') as HTMLInputElement)?.value?.trim() || 'Block'
+                              const repeat = parseInt((document.getElementById('block-repeat-input') as HTMLInputElement)?.value || '1', 10)
+                              handleMarkBlock(label, repeat)
+                            }}
+                          >Mark as New Block</button>
+                          <Show when={blocks().length > 0}>
+                            <select
+                              class="sm-lyrics-mark-add-select"
+                              onChange={(e) => {
+                                const val = e.currentTarget.value
+                                if (val) handleAddInstance(val, markStartLine()!, markEndLine()!)
+                              }}
+                            >
+                              <option value="">Add to existing block...</option>
+                              {blocks().map(b => <option value={b.id}>{b.label}</option>)}
+                            </select>
+                          </Show>
+                        </div>
+                      </Show>
                       <button
-                        class="sm-lyrics-block-form-btn"
-                        onClick={() => {
-                          const label = (document.getElementById('block-label-input') as HTMLInputElement)?.value?.trim() || 'Block'
-                          const repeat = parseInt((document.getElementById('block-repeat-input') as HTMLInputElement)?.value || '1', 10)
-                          handleMarkBlock(label, repeat)
-                        }}
-                      >Mark</button>
-                      <button
-                        class="sm-lyrics-block-form-cancel"
+                        class="sm-lyrics-mark-toolbar-cancel"
                         onClick={() => { setMarkStartLine(null); setMarkEndLine(null); setBlockMarkMode(false) }}
                       >Cancel</button>
                     </div>
@@ -2932,7 +3025,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
                   <div
                     class="sm-lyrics-lines"
-                    classList={{ 'sm-lyrics-columns-2': lyricsColumns() === 2 }}
+                    classList={{ 'sm-lyrics-columns-2': lyricsColumns() === 2, 'sm-lyrics-lines--marking': blockMarkMode() }}
                     style={{ 'font-size': `${lyricsFontSize()}rem` }}
                     onWheel={(e) => {
                       e.stopPropagation()
@@ -2947,7 +3040,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                     {/* ── Block instance badge + line group rendering ── */}
                     {(() => {
                       const rl = lyricsRenderData()
-                      const renderedFirstLines = new Set<number>()
+                      const rlByLyricIdx = new Map<number, LyricRenderLine>()
+                      for (const item of rl) {
+                        rlByLyricIdx.set(parseInt(item.key.split('-')[1]), item)
+                      }
 
                       // Map line index → block info for badge placement
                       const blockStarts = new Map<number, { blockId: string; label: string; instanceIdx: number; isTemplate: boolean; repeatCount: number; color: string; startLine: number; endLine: number }>()
@@ -2961,8 +3057,20 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                         }
                       }
 
-                      return rl.map((rlItem) => {
-                        const idx = parseInt(rlItem.key.split('-')[1])
+                      return displayLines().map((dl) => {
+                        if (dl.isBlank) {
+                          return (
+                            <div
+                              class="sm-lyrics-line-spacer"
+                              style={{ height: `${lyricsFontSize() * 0.5}rem` }}
+                            />
+                          )
+                        }
+
+                        const idx = dl.lyricsIndex
+                        const rlItem = rlByLyricIdx.get(idx)
+                        if (!rlItem) return null
+
                         const blockInfo = blockStarts.get(idx)
                         const blockForLine = getBlockForLine(idx)
                         const blockColor = blockForLine ? getBlockColor(blockForLine.blockId) : undefined
@@ -3020,6 +3128,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                                     } else if (idx < start) {
                                       setMarkStartLine(idx)
                                       setMarkEndLine(start + 1)
+                                    } else {
+                                      // Same line clicked — select single line
+                                      setMarkEndLine(start + 1)
                                     }
                                   }
                                 } else {
@@ -3043,11 +3154,21 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                                 ? (rlItem.key.startsWith('lrc-')
                                     ? lrcLines()[idx]?.text || ''
                                     : lyricsLines()[idx] || '')
-                                : rlItem.words.map((word, wi) => (
-                                    <span
-                                      class={`sm-lyrics-word${wi <= rlItem.activeUpTo ? ' sm-lyrics-word-done' : ''}`}
-                                    >{word}{' '}</span>
-                                  ))
+                                : rlItem.words.map((word, wi) => {
+                                    if (wi <= rlItem.activeUpTo) {
+                                      return <span class="sm-lyrics-word sm-lyrics-word-done">{word}{' '}</span>
+                                    }
+                                    if (wi === rlItem.activeUpTo + 1 && rlItem.activeCharProgress > 0) {
+                                      return (
+                                        <span class="sm-lyrics-word sm-lyrics-word-current">
+                                          <span class="sm-lyrics-char-done">{word.slice(0, rlItem.activeCharProgress)}</span>
+                                          <span class="sm-lyrics-char-remaining">{word.slice(rlItem.activeCharProgress)}</span>
+                                          {' '}
+                                        </span>
+                                      )
+                                    }
+                                    return <span class="sm-lyrics-word">{word}{' '}</span>
+                                  })
                               }
                             </span>
                           </>
@@ -3494,6 +3615,11 @@ export const StemMixerStyles: string = `
   font-weight: 500;
 }
 
+.sm-lyrics-line-spacer {
+  width: 100%;
+  min-height: 0.3rem;
+}
+
 .sm-lyrics-time {
   display: inline-block;
   font-size: 0.55rem;
@@ -3629,6 +3755,18 @@ export const StemMixerStyles: string = `
 
 .sm-lyrics-line-active .sm-lyrics-word-done {
   color: var(--accent, #58a6ff);
+}
+
+.sm-lyrics-line-active .sm-lyrics-word-current {
+  /* container for the in-progress word */
+}
+
+.sm-lyrics-char-done {
+  color: var(--accent-lighter, #79c0ff);
+}
+
+.sm-lyrics-char-remaining {
+  color: var(--fg-secondary, #8b949e);
 }
 
 /* ── Edit mode ──────────────────────────────────────────── */
@@ -3935,6 +4073,69 @@ export const StemMixerStyles: string = `
 .sm-lyrics-line-mark-selected {
   background: rgba(88, 166, 255, 0.1);
   outline: 1px solid rgba(88, 166, 255, 0.3);
+}
+
+/* ── Mark mode toolbar ─────────────────────────────────────── */
+
+.sm-lyrics-lines--marking {
+  border: 1px solid var(--accent, #58a6ff);
+  border-radius: 0.35rem;
+  padding: 0.35rem;
+}
+
+.sm-lyrics-mark-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.5rem;
+  background: rgba(88, 166, 255, 0.06);
+  border: 1px solid rgba(88, 166, 255, 0.2);
+  border-radius: 0.3rem;
+  margin-bottom: 0.35rem;
+  font-size: 0.7rem;
+  flex-wrap: wrap;
+}
+
+.sm-lyrics-mark-status {
+  color: var(--accent, #58a6ff);
+  font-weight: 500;
+  font-size: 0.68rem;
+  white-space: nowrap;
+}
+
+.sm-lyrics-mark-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.sm-lyrics-mark-add-select {
+  padding: 0.2rem 0.35rem;
+  background: var(--bg-primary, #0d1117);
+  border: 1px solid var(--border, #30363d);
+  border-radius: 0.2rem;
+  color: var(--fg-primary, #c9d1d9);
+  font-size: 0.65rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.sm-lyrics-mark-toolbar-cancel {
+  padding: 0.2rem 0.6rem;
+  background: var(--bg-tertiary, #21262d);
+  color: var(--fg-secondary, #8b949e);
+  border: 1px solid var(--border, #30363d);
+  border-radius: 0.2rem;
+  font-size: 0.65rem;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.sm-lyrics-mark-toolbar-cancel:hover {
+  color: var(--fg-primary, #c9d1d9);
+  background: var(--bg-hover, #30363d);
 }
 
 /* ── Block badges ──────────────────────────────────────────── */
