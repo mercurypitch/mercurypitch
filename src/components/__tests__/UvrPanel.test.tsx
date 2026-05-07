@@ -70,7 +70,7 @@ vi.mock('@/stores', () => ({
 
 describe('UvrPanel Component', () => {
   const defaultProps = {
-    defaultView: 'upload' as const,
+    initialView: 'upload' as const,
     onPracticeStart: vi.fn(),
     onExport: vi.fn(),
     onSessionView: vi.fn(),
@@ -99,25 +99,25 @@ describe('UvrPanel Component', () => {
     })
 
     it('renders specified default view', () => {
-      render(() => <UvrPanel {...defaultProps} defaultView="history" />)
+      render(() => <UvrPanel {...defaultProps} initialView="history" />)
 
       expect(screen.getByText('Processing History')).toBeInTheDocument()
     })
 
-    it('defaults to upload when defaultView is not set', () => {
+    it('defaults to upload when initialView is not set', () => {
       render(() => <UvrPanel {...defaultProps} />)
 
       expect(screen.getByText('Upload Audio')).toBeInTheDocument()
     })
 
-    it('renders results view when defaultView is results', () => {
-      render(() => <UvrPanel {...defaultProps} defaultView="results" />)
+    it('renders results view when initialView is results', () => {
+      render(() => <UvrPanel {...defaultProps} initialView="results" />)
 
       expect(screen.getByText('Processing Results')).toBeInTheDocument()
     })
 
     it('shows no history message when no sessions', () => {
-      render(() => <UvrPanel {...defaultProps} defaultView="history" />)
+      render(() => <UvrPanel {...defaultProps} initialView="history" />)
 
       expect(screen.getByText('No processing history yet')).toBeInTheDocument()
       expect(screen.getByText('Start First Session')).toBeInTheDocument()

@@ -56,15 +56,17 @@ async function startRealProcessing(
   }
 }
 
-type UvrView = 'upload' | 'processing' | 'results' | 'history' | 'mixer'
+export type UvrView = 'upload' | 'processing' | 'results' | 'history' | 'mixer'
 
 interface UvrPanelProps {
-  /** Currently active view */
-  defaultView?: UvrView
+  /** Initial view from hash route — only used on first mount */
+  initialView?: UvrView
   /** Initial session ID from hash route — loads session and navigates to results on mount */
   initialSessionId?: string
   /** Called when the active UVR session changes — used to sync URL hash */
   onSessionChange?: (sessionId: string | null) => void
+  /** Called when the current view changes — used to sync URL hash */
+  onViewChange?: (view: UvrView) => void
   /** Callback when practice is started */
   onPracticeStart?: (mode: 'vocal' | 'instrumental' | 'midi' | 'full') => void
   /** Callback when a session is exported */
@@ -79,7 +81,7 @@ interface UvrPanelProps {
 
 export const UvrPanel: Component<UvrPanelProps> = (props) => {
   const [currentView, setCurrentView] = createSignal<UvrView>(
-    props.defaultView || 'upload',
+    props.initialView || 'upload',
   )
   const [onError, setOnError] = createSignal('')
 
@@ -106,16 +108,20 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   const session = () => currentUvrSession()
   const allSessions = () => getAllUvrSessionsReactive()
 
-  // Load initial view
+  // React to initialView prop changes (from hash navigation)
+  let lastInitialView: UvrView | null = null
   createEffect(() => {
-    if (props.defaultView) {
-      setCurrentView(props.defaultView)
+    const v = props.initialView
+    if (v && v !== lastInitialView) {
+      lastInitialView = v
+      setCurrentView(v)
     }
   })
 
-  // Sync active session to parent (for URL hash)
+  // Sync active session and view to parent (for URL hash)
   createEffect(() => {
     const view = currentView()
+    props.onViewChange?.(view)
     if (view === 'results' || view === 'mixer') {
       const s = currentUvrSession()
       if (s?.sessionId) {

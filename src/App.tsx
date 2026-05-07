@@ -24,7 +24,7 @@ import { SessionPlayer } from '@/components/SessionPlayer'
 import { SettingsPanel } from '@/components/SettingsPanel'
 import type { PracticeSubMode } from '@/components/shared/SharedControlToolbar'
 import { SharedControlToolbar } from '@/components/shared/SharedControlToolbar'
-import { UvrPanel } from '@/components/UvrPanel'
+import { UvrPanel, type UvrView } from '@/components/UvrPanel'
 import { EngineProvider, useEngines } from '@/contexts/EngineContext'
 import { useEditorController } from '@/features/editor/useEditorController'
 import { usePianoRollEvents } from '@/features/events/usePianoRollEvents'
@@ -37,7 +37,7 @@ import type { InstrumentType } from '@/lib/audio-engine'
 import { audioRegistry } from '@/lib/audio-registry'
 import { debounce } from '@/lib/debounce'
 import { registerE2EBridge } from '@/lib/e2e-bridge'
-import { buildHash, parseHash, replaceHash } from '@/lib/hash-router'
+import { buildHash, parseHash, replaceHash, type HashRoute } from '@/lib/hash-router'
 import { melodyIndexAtBeat, melodyTotalBeats } from '@/lib/scale-data'
 import { buildScaleMelody, buildSessionPlaybackMelody, } from '@/lib/session-builder'
 import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
@@ -161,7 +161,9 @@ const AppShell: Component<AppProps> = (props) => {
   // Hash routing — prevents effect loop when hash is being updated from code
   let hashSyncing = false
   const [initialUvrSessionId, setInitialUvrSessionId] = createSignal<string | null>(null)
+  const [initialUvrView, setInitialUvrView] = createSignal<'upload' | 'history' | 'results' | 'mixer' | null>(null)
   const [activeUvrSessionId, setActiveUvrSessionId] = createSignal<string | null>(null)
+  const [activeUvrView, setActiveUvrView] = createSignal<UvrView>('upload')
 
   // ── Guide Selection dialog ──────────────────────────────────
   const [showGuideSelection, setShowGuideSelection] = createSignal(false)
@@ -594,9 +596,20 @@ const AppShell: Component<AppProps> = (props) => {
     const initialRoute = parseHash(window.location.hash)
     if (initialRoute.type === 'tab') {
       setActiveTab(initialRoute.tab)
+    } else if (initialRoute.type === 'uvr-upload') {
+      setActiveTab('uvr')
+      setInitialUvrView('upload')
+    } else if (initialRoute.type === 'uvr-history') {
+      setActiveTab('uvr')
+      setInitialUvrView('history')
     } else if (initialRoute.type === 'uvr-session') {
       setActiveTab('uvr')
       setInitialUvrSessionId(initialRoute.sessionId)
+      setInitialUvrView('results')
+    } else if (initialRoute.type === 'uvr-session-mixer') {
+      setActiveTab('uvr')
+      setInitialUvrSessionId(initialRoute.sessionId)
+      setInitialUvrView('mixer')
     }
 
     // ── Hash routing: back/forward navigation ───────────────
@@ -606,9 +619,23 @@ const AppShell: Component<AppProps> = (props) => {
       if (route.type === 'tab') {
         setActiveTab(route.tab)
         setActiveUvrSessionId(null)
+      } else if (route.type === 'uvr-upload') {
+        setActiveTab('uvr')
+        setInitialUvrView('upload')
+        setActiveUvrSessionId(null)
+      } else if (route.type === 'uvr-history') {
+        setActiveTab('uvr')
+        setInitialUvrView('history')
+        setActiveUvrSessionId(null)
       } else if (route.type === 'uvr-session') {
         setActiveTab('uvr')
         setInitialUvrSessionId(route.sessionId)
+        setInitialUvrView('results')
+        setActiveUvrSessionId(route.sessionId)
+      } else if (route.type === 'uvr-session-mixer') {
+        setActiveTab('uvr')
+        setInitialUvrSessionId(route.sessionId)
+        setInitialUvrView('mixer')
         setActiveUvrSessionId(route.sessionId)
       }
       hashSyncing = false
@@ -701,16 +728,28 @@ const AppShell: Component<AppProps> = (props) => {
   createEffect(() => {
     if (hashSyncing) return
     const tab = activeTab()
+    if (tab !== 'uvr') {
+      const expectedHash = `#/${tab}`
+      if (window.location.hash !== expectedHash) {
+        replaceHash({ type: 'tab', tab })
+      }
+      return
+    }
+    const view = activeUvrView()
     const sessionId = activeUvrSessionId()
-    const expectedHash = tab === 'uvr' && sessionId
-      ? `#/uvr/session/${sessionId}`
-      : `#/${tab}`
+    let route: HashRoute
+    if (view === 'results' && sessionId) {
+      route = { type: 'uvr-session', sessionId }
+    } else if (view === 'mixer' && sessionId) {
+      route = { type: 'uvr-session-mixer', sessionId }
+    } else if (view === 'history') {
+      route = { type: 'uvr-history' }
+    } else {
+      route = { type: 'uvr-upload' }
+    }
+    const expectedHash = `#${buildHash(route)}`
     if (window.location.hash !== expectedHash) {
-      replaceHash(
-        tab === 'uvr' && sessionId
-          ? { type: 'uvr-session', sessionId }
-          : { type: 'tab', tab },
-      )
+      replaceHash(route)
     }
   })
 
@@ -1156,9 +1195,10 @@ const AppShell: Component<AppProps> = (props) => {
             <Show when={activeTab() === 'uvr'}>
               <div id="uvr-panel">
                 <UvrPanel
-                  defaultView="upload"
+                  initialView={initialUvrView() ?? 'upload'}
                   initialSessionId={initialUvrSessionId() ?? undefined}
                   onSessionChange={(sessionId) => setActiveUvrSessionId(sessionId)}
+                  onViewChange={(view) => setActiveUvrView(view)}
                   onPracticeStart={(mode) => {
                     // For now, this could load a session from UVR
                     console.log('Starting practice with mode:', mode)

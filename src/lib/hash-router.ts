@@ -6,7 +6,10 @@ import type { ActiveTab } from '@/stores'
 
 export type HashRoute =
   | { type: 'tab'; tab: ActiveTab }
+  | { type: 'uvr-upload' }
+  | { type: 'uvr-history' }
   | { type: 'uvr-session'; sessionId: string }
+  | { type: 'uvr-session-mixer'; sessionId: string }
   | { type: 'share'; shareType: string; shareId: string }
   | { type: 'unknown' }
 
@@ -42,10 +45,26 @@ export function parseHash(rawHash: string): HashRoute {
     return { type: 'unknown' }
   }
 
+  // Match: /uvr/session/:sessionId/mixer
+  const uvrMixerMatch = hash.match(/^\/uvr\/session\/(.+)\/mixer$/)
+  if (uvrMixerMatch) {
+    return { type: 'uvr-session-mixer', sessionId: uvrMixerMatch[1] }
+  }
+
   // Match: /uvr/session/:sessionId
   const uvrMatch = hash.match(/^\/uvr\/session\/(.+)$/)
   if (uvrMatch) {
     return { type: 'uvr-session', sessionId: uvrMatch[1] }
+  }
+
+  // Match: /uvr/history
+  if (hash === '/uvr/history') {
+    return { type: 'uvr-history' }
+  }
+
+  // Match: /uvr/upload or bare /uvr
+  if (hash === '/uvr/upload' || hash === '/uvr') {
+    return { type: 'uvr-upload' }
   }
 
   // Match: /share?type=...&id=...
@@ -70,8 +89,14 @@ export function buildHash(route: HashRoute): string {
   switch (route.type) {
     case 'tab':
       return `/${route.tab}`
+    case 'uvr-upload':
+      return '/uvr'
+    case 'uvr-history':
+      return '/uvr/history'
     case 'uvr-session':
       return `/uvr/session/${route.sessionId}`
+    case 'uvr-session-mixer':
+      return `/uvr/session/${route.sessionId}/mixer`
     case 'share':
       return `/share?type=${route.shareType}&id=${route.shareId}`
     case 'unknown':
