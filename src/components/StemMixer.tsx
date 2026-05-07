@@ -1268,11 +1268,32 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     const lineTimes = lrcGenLineTimes()
     const wordTimes = lrcGenWordTimings()
 
-    // Build clean LRC text
+    // Estimate timestamps for unmapped lines so parseLrcFile keeps them.
+    // Find last mapped line and time, distribute remaining lines through song end.
+    const nonBlankIndices = lines.reduce<number[]>((acc, line, i) => {
+      if (line.trim()) acc.push(i)
+      return acc
+    }, [])
+    const lastMappedIdx = lineTimes.length > 0
+      ? lineTimes.reduce((best, _t, i) => (lineTimes[i] !== undefined ? i : best), -1)
+      : -1
+    const lastMappedTime = lastMappedIdx >= 0 ? lineTimes[lastMappedIdx] : 0
+    const unmappedAfter = nonBlankIndices.filter(i => i > lastMappedIdx && lineTimes[i] === undefined)
+    const songEnd = duration() || (lastMappedTime + unmappedAfter.length * 4)
+
+    // Build clean LRC text with estimated timestamps for unmapped lines
+    const finalTimes: (number | undefined)[] = lineTimes.slice()
+    if (unmappedAfter.length > 0) {
+      const gap = songEnd - lastMappedTime
+      unmappedAfter.forEach((lineIdx, pos) => {
+        finalTimes[lineIdx] = Math.round((lastMappedTime + gap * ((pos + 1) / (unmappedAfter.length + 1))) * 1000) / 1000
+      })
+    }
+
     const lrcText = lines.map((line, i) => {
       if (!line.trim()) return ''
-      const lt = lineTimes[i]
-      if (lt === undefined) return line // untimed line
+      const lt = finalTimes[i]
+      if (lt === undefined) return `[00:00.00] ${line}`
       return `[${formatTimeLrcWord(lt)}] ${line}`
     }).join('\n')
 
