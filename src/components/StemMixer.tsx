@@ -6,7 +6,7 @@ import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show } from 'solid-js'
 import { PitchDetector, type DetectedPitch } from '@/lib/pitch-detector'
 import { freqToNote } from '@/lib/scale-data'
-import { ChevronLeft, Download, Ear, Mic, Midi, Pause, Play, SkipBack, Volume2, VolumeX } from './icons'
+import { ChevronLeft, Download, Ear, Mic, Midi, Pause, Play, SkipBack, SlidersHorizontal, Volume2, VolumeX } from './icons'
 import { extractTitle, getCurrentLineIndex, getCurrentLrcIndex, parseLrcFile, parseTextLyrics, searchLyrics, type LrcLine, type LyricsSearchResult } from '@/lib/lyrics-service'
 import { LyricsUploader, type LyricsUploadResult } from './LyricsUploader'
 
@@ -68,7 +68,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   const [currentLineIdx, setCurrentLineIdx] = createSignal(-1)
   const [lyricsSource, setLyricsSource] = createSignal<'api' | 'upload' | 'none'>('none')
   const [lyricsLoading, setLyricsLoading] = createSignal(false)
-  const [lyricsFontSize, setLyricsFontSize] = createSignal(1.0)    // rem
+  const [lyricsFontSize, setLyricsFontSize] = createSignal(1.3)    // rem
   const [lyricsColumns, setLyricsColumns] = createSignal<1 | 2>(1)
   const [editMode, setEditMode] = createSignal(false)
   type WordTimingsMap = Record<number, number[]>  // line idx → word start times (seconds)
@@ -135,14 +135,16 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     height: number | null  // null = auto (fit-content)
   }
 
-  const [workspaceColumns, setWorkspaceColumns] = createSignal<1 | 2>(2)
+  type WorkspaceLayout = 'auto-1col' | 'auto-2col' | 'fixed-2col'
+  const [workspaceLayout, setWorkspaceLayout] = createSignal<WorkspaceLayout>('auto-2col')
+  const [sidebarHidden, setSidebarHidden] = createSignal(false)
 
   const [panels, setPanels] = createSignal<WorkspacePanel[]>([
     { id: 'overview', label: 'Waveform Overview', order: 0, height: 180 },
     { id: 'live', label: 'Live Waveform', order: 1, height: 180 },
     { id: 'pitch', label: 'Vocal Pitch', order: 2, height: 200 },
     { id: 'controls', label: 'Stem Controls', order: 3, height: null },
-    { id: 'lyrics', label: 'Lyrics', order: 4, height: 360 },
+    { id: 'lyrics', label: 'Lyrics', order: 4, height: null },
   ])
 
   const reorderPanels = (fromId: string, toOrder: number) => {
@@ -2304,18 +2306,25 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
               <div class="sm-col-toggle">
                 <button
-                  class={`sm-col-btn${workspaceColumns() === 1 ? ' sm-col-active' : ''}`}
-                  onClick={() => { setWorkspaceColumns(1); queueCanvasRedraw() }}
+                  class={`sm-col-btn${workspaceLayout() === 'auto-1col' ? ' sm-col-active' : ''}`}
+                  onClick={() => { setWorkspaceLayout('auto-1col'); queueCanvasRedraw() }}
                   title="Single column"
                 >
                   <svg viewBox="0 0 24 24" width="12" height="12"><rect x="4" y="4" width="16" height="16" rx="1" fill="currentColor"/></svg>
                 </button>
                 <button
-                  class={`sm-col-btn${workspaceColumns() === 2 ? ' sm-col-active' : ''}`}
-                  onClick={() => { setWorkspaceColumns(2); queueCanvasRedraw() }}
-                  title="Two columns"
+                  class={`sm-col-btn${workspaceLayout() === 'auto-2col' ? ' sm-col-active' : ''}`}
+                  onClick={() => { setWorkspaceLayout('auto-2col'); queueCanvasRedraw() }}
+                  title="Two columns auto"
                 >
                   <svg viewBox="0 0 24 24" width="12" height="12"><rect x="3" y="4" width="8" height="16" rx="1" fill="currentColor"/><rect x="13" y="4" width="8" height="16" rx="1" fill="currentColor"/></svg>
+                </button>
+                <button
+                  class={`sm-col-btn${workspaceLayout() === 'fixed-2col' ? ' sm-col-active' : ''}`}
+                  onClick={() => { setWorkspaceLayout('fixed-2col'); queueCanvasRedraw() }}
+                  title="Two columns fixed"
+                >
+                  <svg viewBox="0 0 24 24" width="12" height="12"><rect x="2" y="3" width="8" height="18" rx="1" fill="currentColor"/><rect x="12" y="3" width="10" height="18" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
                 </button>
               </div>
 
@@ -2333,6 +2342,16 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                 <span class="sm-zoom-value">{windowDuration()}s</span>
                 <button class="sm-zoom-btn" onClick={() => setWindowDuration(prev => Math.min(150, prev + 5))} title="Zoom out (longer window)">+</button>
               </div>
+
+              <Show when={workspaceLayout() === 'fixed-2col'}>
+                <button
+                  class="sm-sidebar-toggle"
+                  onClick={() => setSidebarHidden(prev => !prev)}
+                  title={sidebarHidden() ? 'Show mixer sidebar' : 'Hide mixer sidebar'}
+                >
+                  <SlidersHorizontal />
+                </button>
+              </Show>
             </div>
 
             <div class="sm-progress-area">
@@ -2383,10 +2402,11 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             </div>
           </Show>
 
+          <Show when={workspaceLayout() !== 'fixed-2col'}>
           <div
             ref={workspaceRef}
             class="sm-workspace"
-            style={{ 'grid-template-columns': workspaceColumns() === 1 ? '1fr' : '1fr 1fr' }}
+            style={{ 'grid-template-columns': workspaceLayout() === 'auto-1col' ? '1fr' : '1fr 1fr' }}
             onWheel={(e) => { e.preventDefault(); setWindowDuration(prev => Math.min(150, Math.max(10, prev + (e.deltaY > 0 ? 5 : -5)))) }}
           >
             {/* Panel: Waveform Overview */}
@@ -3201,6 +3221,369 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
               />
             </div>
           </div>
+          </Show>
+
+          {/* Fixed 2-Column Layout */}
+          <Show when={workspaceLayout() === 'fixed-2col'}>
+            <div class="sm-fixed-layout">
+              <div class="sm-fixed-main">
+                {/* Left Column: Waveform Overview + Lyrics */}
+                <div class="sm-fixed-col sm-fixed-col-left">
+                  <div class="sm-workspace-panel" style={{ height: '180px' }}>
+                    <div class="sm-panel-header">Waveform Overview</div>
+                    <canvas ref={waveformCanvasRef} class="sm-canvas sm-canvas-overview" onClick={handleWaveformClick} />
+                  </div>
+                  <div class="sm-workspace-panel" style={{ flex: '1', 'min-height': '120px' }}>
+                    <div class="sm-panel-header">
+                      Lyrics
+                      <Show when={lyricsSource() === 'api'}>
+                        <span class="sm-lyrics-source">found</span>
+                      </Show>
+                      <Show when={lyricsSource() === 'upload'}>
+                        <span class="sm-lyrics-source sm-lyrics-source-upload">uploaded</span>
+                      </Show>
+                      <Show when={lyricsSource() === 'upload' && !editMode() || lyricsSource() === 'api' && !editMode()}>
+                        <button class="sm-lyrics-edit-btn" onClick={(e) => { e.stopPropagation(); toggleEditMode() }} title="Edit word timings">
+                          <svg viewBox="0 0 24 24" width="11" height="11"><path fill="currentColor" d="M16.474 5.408l2.118 2.117-10.8 10.8-2.544.426.426-2.544 10.8-10.8zM13.296 2.38l1.414 1.414-1.908 1.908-1.414-1.414L13.296 2.38zM3.5 20.5h3l9.9-9.9-3-3L3.5 17.5v3z"/></svg>
+                        </button>
+                      </Show>
+                      <Show when={lyricsSource() !== 'none' && !editMode() && !lrcGenMode()}>
+                        <button class="sm-lyrics-gen-btn" onClick={(e) => { e.stopPropagation(); startLrcGen() }} title="Generate LRC timings with playback">
+                          <svg viewBox="0 0 24 24" width="11" height="11"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                        </button>
+                      </Show>
+                      <Show when={lrcGenMode()}>
+                        <span class="sm-lyrics-gen-label">LRC Gen</span>
+                      </Show>
+                      <Show when={lyricsSource() !== 'none' && !editMode() && !lrcGenMode()}>
+                        <button class={`sm-lyrics-markmode-btn${blockMarkMode() ? ' sm-lyrics-markmode-btn--active' : ''}`} onClick={(e) => { e.stopPropagation(); setBlockMarkMode(prev => !prev); setMarkStartLine(null); setMarkEndLine(null) }} title={blockMarkMode() ? 'Exit mark mode' : 'Mark repeat blocks'}>
+                          <svg viewBox="0 0 24 24" width="11" height="11"><path fill="currentColor" d="M3 3h18v4H3V3zm0 7h12v4H3v-4zm0 7h18v4H3v-4z"/></svg>
+                        </button>
+                      </Show>
+                      <Show when={lyricsSource() !== 'none' && !editMode()}>
+                        <button class="sm-lyrics-download-btn" onClick={(e) => { e.stopPropagation(); handleDownloadLrc() }} title="Download LRC file">
+                          <svg viewBox="0 0 24 24" width="11" height="11"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                        </button>
+                      </Show>
+                      <Show when={lyricsSource() === 'upload' && !editMode()}>
+                        <button class="sm-lyrics-change-btn" onClick={(e) => { e.stopPropagation(); lyricsFileInputRef?.click() }} title="Change lyrics file">
+                          <svg viewBox="0 0 24 24" width="11" height="11"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                        </button>
+                      </Show>
+                      <input type="file" accept=".txt,.lrc" ref={lyricsFileInputRef} hidden onChange={handleLyricsChange} />
+                      <div class="sm-lyrics-toolbar">
+                        <div class="sm-lyrics-zoom">
+                          <button class="sm-lyrics-zoom-btn" onClick={() => setLyricsFontSize(prev => Math.max(0.45, +(prev - 0.1).toFixed(2)))} title="Smaller text">A−</button>
+                          <button class="sm-lyrics-zoom-btn" onClick={() => setLyricsFontSize(prev => Math.min(1.5, +(prev + 0.1).toFixed(2)))} title="Larger text">A+</button>
+                        </div>
+                        <Show when={hasMultipleSections()}>
+                          <div class="sm-lyrics-col-toggle">
+                            <button class={`sm-lyrics-col-btn${lyricsColumns() === 1 ? ' sm-lyrics-col-active' : ''}`} onClick={() => setLyricsColumns(1)} title="Single column">
+                              <svg viewBox="0 0 24 24" width="10" height="10"><rect x="4" y="4" width="16" height="16" rx="1" fill="currentColor"/></svg>
+                            </button>
+                            <button class={`sm-lyrics-col-btn${lyricsColumns() === 2 ? ' sm-lyrics-col-active' : ''}`} onClick={() => setLyricsColumns(2)} title="Two columns">
+                              <svg viewBox="0 0 24 24" width="10" height="10"><rect x="3" y="4" width="8" height="16" rx="1" fill="currentColor"/><rect x="13" y="4" width="8" height="16" rx="1" fill="currentColor"/></svg>
+                            </button>
+                          </div>
+                        </Show>
+                      </div>
+                    </div>
+                    <Show when={lyricsLoading()}>
+                      <div class="sm-lyrics-loading">Searching...</div>
+                    </Show>
+                    <Show when={!lyricsLoading() && lyricsSource() !== 'none'}>
+                      <Show when={lrcGenMode()}>
+                        <div class="sm-lyrics-gen-toolbar">
+                          <Show when={!playing()}>
+                            <button class="sm-lyrics-gen-play-btn" onClick={handlePlay} title="Play">
+                              <svg viewBox="0 0 24 24" width="12" height="12"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>
+                            </button>
+                          </Show>
+                          <Show when={playing()}>
+                            <button class="sm-lyrics-gen-pause-btn" onClick={handlePause} title="Pause">
+                              <svg viewBox="0 0 24 24" width="12" height="12"><path fill="currentColor" d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                            </button>
+                          </Show>
+                          <span class="sm-lyrics-gen-progress">
+                            {Math.min(lrcGenLineIdx(), getGenLines().length)}/{getGenLines().length}
+                            {(() => {
+                              const lines = getGenLines()
+                              const idx = lrcGenLineIdx()
+                              if (idx < lines.length) {
+                                const wc = lines[idx].split(/\s+/).filter(w => w.length > 0).length
+                                return <> w{Math.min(lrcGenWordIdx(), wc)}/{wc}</>
+                              }
+                              return null
+                            })()}
+                          </span>
+                          {(() => {
+                            const idx = lrcGenLineIdx()
+                            const lines = getGenLines()
+                            if (idx < lines.length) {
+                              const bi = getBlockForLine(idx)
+                              if (bi) {
+                                const block = getBlockById(bi.blockId)
+                                const total = blockInstances()[bi.blockId]?.length ?? 1
+                                if (block) {
+                                  return (
+                                    <span class="sm-lyrics-gen-instance-badge">
+                                      {block.label} ({bi.instanceIdx + 1}/{total})
+                                    </span>
+                                  )
+                                }
+                              }
+                            }
+                            return null
+                          })()}
+                          <button class="sm-lyrics-gen-nextword-btn" onClick={handleNextWord} title="Mark next word time [W]">Next Word</button>
+                          <button class="sm-lyrics-gen-nextline-btn" onClick={handleNextLine} title="Mark next line time [L]">Next Line</button>
+                          <button class="sm-lyrics-gen-finish-btn" onClick={handleLrcGenFinish} title="Save LRC">Finish</button>
+                          <button class="sm-lyrics-gen-reset-btn" onClick={handleLrcGenReset} title="Reset all timings">Reset</button>
+                        </div>
+                      </Show>
+                      <Show when={lrcGenMode()}>
+                        <div class="sm-lyrics-lines sm-lyrics-gen-lines" style={{ 'font-size': `${lyricsFontSize()}rem` }} onWheel={(e) => { e.stopPropagation(); if (e.ctrlKey || e.metaKey) { e.preventDefault(); setLyricsFontSize(prev => Math.min(1.5, Math.max(0.45, +(prev - e.deltaY * 0.001).toFixed(2)))) } }}>
+                          {(() => {
+                            const items = genViewData()
+                            const result: any[] = []
+                            let skipUntil = -1
+                            for (let i = 0; i < items.length; i++) {
+                              if (i < skipUntil) continue
+                              const item = items[i]
+                              if (item.isPlaceholder) {
+                                if (item.isPlaceholderStart) {
+                                  const bi = item.blockInfo!
+                                  const block = getBlockById(bi.blockId)
+                                  const total = blockInstances()[bi.blockId]?.length ?? 1
+                                  const instance = blockInstances()[bi.blockId]?.[bi.instanceIdx]
+                                  skipUntil = instance?.[1] ?? i + 1
+                                  result.push(
+                                    <div class="sm-lyrics-gen-line sm-lyrics-gen-line-placeholder" style={{ '--block-color': getBlockColor(bi.blockId) }}>
+                                      <span class="sm-lyrics-gen-line-time">{item.lineTime !== undefined ? formatTimeMs(item.lineTime) : '--:--'}</span>
+                                      <span class="sm-lyrics-gen-placeholder-text">{block?.label || 'Block'} (repeat {bi.instanceIdx + 1}/{total}) — timings copied from template</span>
+                                    </div>
+                                  )
+                                }
+                                continue
+                              }
+                              result.push(
+                                <div class={`sm-lyrics-gen-line${item.isCurrent ? ' sm-lyrics-gen-line-current' : ''}${item.isDone ? ' sm-lyrics-gen-line-done' : ''}${item.isFuture ? ' sm-lyrics-gen-line-future' : ''}${item.blockInfo?.isTemplate ? ' sm-lyrics-gen-line-template' : ''}`} style={item.blockInfo?.isTemplate ? { '--block-color': getBlockColor(item.blockInfo.blockId) } : {}}>
+                                  <span class="sm-lyrics-gen-line-time">{item.lineTime !== undefined ? formatTimeMs(item.lineTime) : '--:--'}</span>
+                                  <span class="sm-lyrics-gen-line-text">
+                                    {item.words.length === 0
+                                      ? item.line
+                                      : item.words.map((word, wi) => (
+                                          <span class={`sm-lyrics-gen-word${item.activeWordIdx === wi ? ' sm-lyrics-gen-word-current' : ''}${item.activeWordIdx >= 0 && wi < item.activeWordIdx ? ' sm-lyrics-gen-word-done' : ''}`}>
+                                            <span class="sm-lyrics-gen-word-time">{item.wordTimes?.[wi] !== undefined ? formatTimeMs(item.wordTimes[wi]) : ''}</span>
+                                            <span class="sm-lyrics-gen-word-text">{word}</span>
+                                          </span>
+                                        ))
+                                    }
+                                  </span>
+                                </div>
+                              )
+                            }
+                            return result
+                          })()}
+                        </div>
+                      </Show>
+                      <Show when={editMode()}>
+                        <div class="sm-lyrics-edit-toolbar">
+                          <button class="sm-lyrics-save-btn" onClick={handleSaveEdits}>Save</button>
+                          <button class="sm-lyrics-cancel-btn" onClick={() => { setEditBuffer({}); setEditMode(false) }}>Cancel</button>
+                        </div>
+                      </Show>
+                      <Show when={editMode()}>
+                        <div class="sm-lyrics-lines sm-lyrics-lines-edit" style={{ 'font-size': `${lyricsFontSize()}rem` }} onWheel={(e) => { e.stopPropagation(); if (e.ctrlKey || e.metaKey) { e.preventDefault(); setLyricsFontSize(prev => Math.min(1.5, Math.max(0.45, +(prev - e.deltaY * 0.001).toFixed(2)))) } }}>
+                          <For each={lyricsRenderData()}>
+                            {(rl) => {
+                              const idx = parseInt(rl.key.split('-')[1])
+                              return (
+                                <div class="sm-lyrics-line-edit">
+                                  <input class="sm-lyrics-time-input" type="text" value={formatTimeMs(getEditLineTime(idx))} onChange={(e) => handleLineTimeEdit(idx, e.currentTarget.value)} />
+                                  <For each={rl.words}>
+                                    {(word, wi) => (
+                                      <span class="sm-lyrics-word-edit">
+                                        <span class="sm-lyrics-word-text">{word}</span>
+                                        <span class="sm-lyrics-word-time-label" onClick={(e) => openWordPopover(idx, wi(), word, e)}>{formatTimeMs(getEditWordTime(idx, wi()))}</span>
+                                      </span>
+                                    )}
+                                  </For>
+                                </div>
+                              )
+                            }}
+                          </For>
+                        </div>
+                        <Show when={editPopover() !== null}>
+                          <div class="sm-lyrics-popover-backdrop" onClick={closeWordPopover}>
+                            <div class="sm-lyrics-popover-card" onClick={(e) => e.stopPropagation()}>
+                              <div class="sm-lyrics-popover-word">{editPopover()!.word}</div>
+                              <input class="sm-lyrics-popover-input" type="text" value={editPopover() ? formatTimeMs(getEditWordTime(editPopover()!.lineIdx, editPopover()!.wordIdx)) : ''} onChange={(e) => commitPopoverValue(e.currentTarget.value)} onKeyDown={(e) => { if (e.key === 'Escape') closeWordPopover(); if (e.key === 'Enter') commitPopoverValue(e.currentTarget.value) }} ref={(el) => { setTimeout(() => (el as HTMLInputElement)?.select(), 10) }} />
+                              <div class="sm-lyrics-popover-hint">Enter time (MM:SS) – press Enter or click outside to save</div>
+                            </div>
+                          </div>
+                        </Show>
+                      </Show>
+                      <Show when={!editMode() && !lrcGenMode()}>
+                        <Show when={blockMarkMode()}>
+                          <div class="sm-lyrics-mark-toolbar">
+                            <span class="sm-lyrics-mark-status">
+                              {markStartLine() === null ? 'Select a range of lines' : markEndLine() === null ? `Line ${markStartLine()! + 1} — click end line` : `${markEndLine()! - markStartLine()!} line${markEndLine()! - markStartLine()! !== 1 ? 's' : ''} selected`}
+                            </span>
+                            <Show when={markStartLine() !== null && markEndLine() !== null}>
+                              <div class="sm-lyrics-mark-actions">
+                                <input type="text" class="sm-lyrics-block-form-label" placeholder="Chorus, Verse 1..." id="block-label-input-fixed" />
+                                <input type="number" class="sm-lyrics-block-form-repeat" value="1" min="1" max="20" id="block-repeat-input-fixed" title="Repeat count" />
+                                <button class="sm-lyrics-block-form-btn" onClick={() => { const label = (document.getElementById('block-label-input-fixed') as HTMLInputElement)?.value?.trim() || 'Block'; const repeat = parseInt((document.getElementById('block-repeat-input-fixed') as HTMLInputElement)?.value || '1', 10); handleMarkBlock(label, repeat) }}>Mark as New Block</button>
+                                <Show when={blocks().length > 0}>
+                                  <select class="sm-lyrics-mark-add-select" onChange={(e) => { const val = e.currentTarget.value; if (val) handleAddInstance(val, markStartLine()!, markEndLine()!) }}>
+                                    <option value="">Add to existing block...</option>
+                                    {blocks().map(b => <option value={b.id}>{b.label}</option>)}
+                                  </select>
+                                </Show>
+                              </div>
+                            </Show>
+                            <button class="sm-lyrics-mark-toolbar-cancel" onClick={() => { setMarkStartLine(null); setMarkEndLine(null); setBlockMarkMode(false) }}>Cancel</button>
+                          </div>
+                        </Show>
+                        <Show when={blockEditTarget() !== null}>
+                          <div class="sm-lyrics-block-edit-popover">
+                            {(() => {
+                              const b = getBlockById(blockEditTarget()!)
+                              if (!b) return null
+                              return (
+                                <>
+                                  <input type="text" class="sm-lyrics-block-form-label" value={b.label} id="block-edit-label-input-fixed" />
+                                  <input type="number" class="sm-lyrics-block-form-repeat" value={b.repeatCount} min="1" max="20" id="block-edit-repeat-input-fixed" title="Repeat count" />
+                                  <button class="sm-lyrics-block-form-btn" onClick={() => { const label = (document.getElementById('block-edit-label-input-fixed') as HTMLInputElement)?.value?.trim() || b.label; const repeat = parseInt((document.getElementById('block-edit-repeat-input-fixed') as HTMLInputElement)?.value || '1', 10); handleEditBlock(b.id, label, repeat) }}>Save</button>
+                                  <button class="sm-lyrics-block-form-cancel" onClick={() => setBlockEditTarget(null)}>Cancel</button>
+                                  <button class="sm-lyrics-block-delete-btn" onClick={() => handleDeleteBlock(b.id)} title="Delete block">
+                                    <svg viewBox="0 0 24 24" width="10" height="10"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                                  </button>
+                                </>
+                              )
+                            })()}
+                          </div>
+                        </Show>
+                        <div class="sm-lyrics-lines" classList={{ 'sm-lyrics-columns-2': lyricsColumns() === 2, 'sm-lyrics-lines--marking': blockMarkMode() }} style={{ 'font-size': `${lyricsFontSize()}rem` }} onWheel={(e) => { e.stopPropagation(); if (e.ctrlKey || e.metaKey) { e.preventDefault(); setLyricsFontSize(prev => Math.min(1.5, Math.max(0.45, +(prev - e.deltaY * 0.001).toFixed(2)))) } }}>
+                          {(() => {
+                            const rl = lyricsRenderData()
+                            const rlByLyricIdx = new Map<number, LyricRenderLine>()
+                            for (const item of rl) rlByLyricIdx.set(parseInt(item.key.split('-')[1]), item)
+                            const blockStarts = new Map<number, { blockId: string; label: string; instanceIdx: number; isTemplate: boolean; repeatCount: number; color: string; startLine: number; endLine: number }>()
+                            for (const [blockId, instances] of Object.entries(blockInstances())) {
+                              const block = getBlockById(blockId)
+                              if (!block) continue
+                              const color = getBlockColor(blockId)
+                              for (let i = 0; i < instances.length; i++) {
+                                const [s, e] = instances[i]
+                                blockStarts.set(s, { blockId, label: block.label, instanceIdx: i, isTemplate: i === 0, repeatCount: block.repeatCount, color, startLine: s, endLine: e })
+                              }
+                            }
+                            return displayLines().map((dl) => {
+                              if (dl.isBlank) return <div class="sm-lyrics-line-spacer" style={{ height: `${lyricsFontSize() * 0.5}rem` }} />
+                              const idx = dl.lyricsIndex
+                              const rlItem = rlByLyricIdx.get(idx)
+                              if (!rlItem) return null
+                              const blockInfo = blockStarts.get(idx)
+                              const blockForLine = getBlockForLine(idx)
+                              const blockColor = blockForLine ? getBlockColor(blockForLine.blockId) : undefined
+                              const block = blockForLine ? getBlockById(blockForLine.blockId) : undefined
+                              const isMarkSelected = blockMarkMode() && markStartLine() !== null && markEndLine() !== null && idx >= markStartLine()! && idx < markEndLine()!
+                              return (
+                                <>
+                                  {blockInfo && (
+                                    <div class={`sm-lyrics-block-badge ${blockInfo.isTemplate ? 'sm-lyrics-block-badge--template' : 'sm-lyrics-block-badge--instance'}`} style={{ '--block-color': blockInfo.color, 'margin-top': '0.4rem' }} onClick={(e) => { e.stopPropagation(); if (!blockMarkMode()) setBlockEditTarget(blockInfo.blockId) }}>
+                                      {blockInfo.label}
+                                      {blockInfo.isTemplate && blockInfo.repeatCount > 1 && <span class="sm-lyrics-block-repeat">x{blockInfo.repeatCount}</span>}
+                                      {!blockInfo.isTemplate && <span class="sm-lyrics-block-unlink" onClick={(e) => { e.stopPropagation(); handleUnlinkInstance(blockInfo.blockId, blockInfo.instanceIdx) }} title="Unlink this instance">x</span>}
+                                    </div>
+                                  )}
+                                  <span class={`sm-lyrics-line${rlItem.isActive ? ' sm-lyrics-line-active' : ''}${blockForLine ? ' sm-lyrics-line--blocked' : ''}${blockForLine && !blockForLine.isTemplate ? ' sm-lyrics-line--block-instance' : ''}${blockMarkMode() ? ' sm-lyrics-line-markable' : ''}${isMarkSelected ? ' sm-lyrics-line-mark-selected' : ''}`} style={blockColor ? { '--block-color': blockColor } : {}} onClick={() => { if (blockMarkMode()) { const start = markStartLine(); if (start === null) { setMarkStartLine(idx); setMarkEndLine(null) } else if (markEndLine() !== null) { setMarkStartLine(idx); setMarkEndLine(null) } else { if (idx > start) { setMarkEndLine(idx + 1) } else if (idx < start) { setMarkStartLine(idx); setMarkEndLine(start + 1) } else { setMarkEndLine(start + 1) } } } else { handleLyricLineClick(idx) } }}>
+                                    {blockForLine && !blockForLine.isTemplate && <span class="sm-lyrics-block-unlink" onClick={(e) => { e.stopPropagation(); handleUnlinkInstance(blockForLine.blockId, blockForLine.instanceIdx) }} title="Unlink this instance">x</span>}
+                                    <span class="sm-lyrics-time">{formatTime(rlItem.time)}</span>
+                                    {rlItem.words.length === 0
+                                      ? (rlItem.key.startsWith('lrc-') ? lrcLines()[idx]?.text || '' : lyricsLines()[idx] || '')
+                                      : rlItem.words.map((word, wi) => {
+                                          if (wi <= rlItem.activeUpTo) return <span class="sm-lyrics-word sm-lyrics-word-done">{word}{' '}</span>
+                                          if (wi === rlItem.activeUpTo + 1 && rlItem.activeCharProgress > 0) return <span class="sm-lyrics-word sm-lyrics-word-current"><span class="sm-lyrics-char-done">{word.slice(0, rlItem.activeCharProgress)}</span><span class="sm-lyrics-char-remaining">{word.slice(rlItem.activeCharProgress)}</span>{' '}</span>
+                                          return <span class="sm-lyrics-word">{word}{' '}</span>
+                                        })
+                                    }
+                                  </span>
+                                </>
+                              )
+                            })
+                          })()}
+                        </div>
+                      </Show>
+                    </Show>
+                    <Show when={!lyricsLoading() && lyricsSource() === 'none'}>
+                      <LyricsUploader onUpload={handleLyricsUpload} suggestion={props.songTitle} />
+                    </Show>
+                  </div>
+                </div>
+
+                {/* Right Column: Live Waveform + Vocal Pitch */}
+                <div class="sm-fixed-col sm-fixed-col-right">
+                  <div class="sm-workspace-panel" style={{ height: '180px' }}>
+                    <div class="sm-panel-header">Live Waveform</div>
+                    <canvas ref={liveWaveCanvasRef} class="sm-canvas sm-canvas-live" />
+                  </div>
+                  <div class="sm-workspace-panel" style={{ height: '200px' }}>
+                    <div class="sm-panel-header">Vocal Pitch</div>
+                    <canvas ref={pitchCanvasRef} class="sm-canvas sm-canvas-pitch" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Sidebar: Stem Controls */}
+              <aside class="sm-sidebar" classList={{ 'sm-sidebar-hidden': sidebarHidden() }}>
+                <div class="sm-workspace-panel" style={{ flex: '1', display: 'flex', 'flex-direction': 'column' }}>
+                  <div class="sm-panel-header">Stem Controls</div>
+                  <div class="sm-strips-row" style={{ 'flex-direction': 'column', 'align-items': 'stretch' }}>
+                    {vocal().url && (
+                      <div class="sm-stem-strip">
+                        <div class="sm-stem-header">
+                          <span class="sm-stem-dot" style={{ background: vocal().color }} />
+                          <span class="sm-stem-label">{vocal().label}</span>
+                          <span class="sm-stem-vol-pct">{Math.round((vocal().muted || (anySoloed() && !vocal().soloed)) ? 0 : vocal().volume * 100)}%</span>
+                        </div>
+                        <div class="sm-stem-actions">
+                          <button class={`sm-action-btn ${vocal().soloed ? 'sm-active' : ''}`} onClick={() => toggleSolo('Vocal')} title="Solo" style={{ color: vocal().soloed ? vocal().color : '' }}><Ear /></button>
+                          <button class={`sm-action-btn ${vocal().muted ? 'sm-muted' : ''}`} onClick={() => toggleMute('Vocal')} title="Mute">{vocal().muted ? <VolumeX /> : <Volume2 />}</button>
+                          <button class="sm-action-btn" onClick={() => handleDownload(vocal())} title="Download"><Download /></button>
+                        </div>
+                        <input type="range" class="sm-volume-slider" min="0" max="100" value={Math.round(vocal().volume * 100)} onInput={(e) => setTrackVolume('Vocal', parseInt(e.currentTarget.value) / 100)} />
+                      </div>
+                    )}
+                    {props.stems.vocalMidi && (
+                      <div class="sm-midi-substem">
+                        <span class="sm-midi-icon"><Midi /></span>
+                        <span class="sm-midi-label">MIDI</span>
+                        <button class="sm-midi-dl-btn" onClick={() => { const a = document.createElement("a"); a.href = props.stems.vocalMidi!; a.download = "vocal_midi.mid"; document.body.appendChild(a); a.click(); document.body.removeChild(a) }} title="Download MIDI"><Download /></button>
+                      </div>
+                    )}
+                    {instrumental().url && (
+                      <div class="sm-stem-strip">
+                        <div class="sm-stem-header">
+                          <span class="sm-stem-dot" style={{ background: instrumental().color }} />
+                          <span class="sm-stem-label">{instrumental().label}</span>
+                          <span class="sm-stem-vol-pct">{Math.round((instrumental().muted || (anySoloed() && !instrumental().soloed)) ? 0 : instrumental().volume * 100)}%</span>
+                        </div>
+                        <div class="sm-stem-actions">
+                          <button class={`sm-action-btn ${instrumental().soloed ? 'sm-active' : ''}`} onClick={() => toggleSolo('Instrumental')} title="Solo" style={{ color: instrumental().soloed ? instrumental().color : '' }}><Ear /></button>
+                          <button class={`sm-action-btn ${instrumental().muted ? 'sm-muted' : ''}`} onClick={() => toggleMute('Instrumental')} title="Mute">{instrumental().muted ? <VolumeX /> : <Volume2 />}</button>
+                          <button class="sm-action-btn" onClick={() => handleDownload(instrumental())} title="Download"><Download /></button>
+                        </div>
+                        <input type="range" class="sm-volume-slider" min="0" max="100" value={Math.round(instrumental().volume * 100)} onInput={(e) => setTrackVolume('Instrumental', parseInt(e.currentTarget.value) / 100)} />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </aside>
+            </div>
+          </Show>
         </Show>
     </div>
   )
@@ -3333,7 +3716,7 @@ export const StemMixerStyles: string = `
 .sm-workspace {
   display: grid;
   grid-auto-rows: auto;
-  align-content: start;
+  align-content: stretch;
   gap: 0.5rem;
   flex: 1;
   overflow: hidden;
@@ -3348,7 +3731,7 @@ export const StemMixerStyles: string = `
   background: var(--bg-primary, #0d1117);
   border-radius: 0.5rem;
   overflow: hidden;
-  min-height: 0;
+  min-height: 120px;
   transition: box-shadow 0.15s ease;
 }
 
@@ -4906,6 +5289,78 @@ export const StemMixerStyles: string = `
 .sm-mic-score-detail {
   font-size: 0.6rem;
   color: var(--fg-tertiary, #8b949e);
+}
+
+/* Fixed 2-Column Layout */
+.sm-fixed-layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.sm-fixed-main {
+  display: flex;
+  flex: 1;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.sm-fixed-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-height: 0;
+}
+
+/* Right Sidebar */
+.sm-sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.5rem 0.5rem 0.5rem 0;
+  overflow-y: auto;
+  transition: width 0.25s ease, opacity 0.2s ease, padding 0.25s ease;
+}
+
+.sm-sidebar-hidden {
+  width: 0 !important;
+  min-width: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  opacity: 0;
+}
+
+/* Sidebar toggle button */
+.sm-sidebar-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  background: var(--bg-tertiary, #21262d);
+  border: 1px solid var(--border, #30363d);
+  border-radius: 0.4rem;
+  color: var(--fg-secondary, #8b949e);
+  cursor: pointer;
+  transition: all 0.15s;
+  margin: 0 0.5rem;
+}
+
+.sm-sidebar-toggle svg {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.sm-sidebar-toggle:hover {
+  background: var(--bg-hover, #30363d);
+  color: var(--fg-primary, #c9d1d9);
 }
 
 `
