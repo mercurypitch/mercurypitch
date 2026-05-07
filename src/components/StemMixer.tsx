@@ -1745,47 +1745,119 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     const winStart = windowStart()
     const winEnd = winStart + windowDuration()
     const winDur = windowDuration()
-    if (pitchHistory.length > 0) {
-      const pillGroups: { noteIdx: number; startTime: number; endTime: number }[] = []
-      let cur = {
-        noteIdx: notes.indexOf(pitchHistory[0].noteName.replace(/\d/g, '')),
-        startTime: pitchHistory[0].time,
-        endTime: pitchHistory[0].time,
+
+    type PillGroup = { noteIdx: number; startTime: number; endTime: number }
+    const buildPillGroups = (history: PitchNote[]): PillGroup[] => {
+      if (history.length === 0) return []
+      const groups: PillGroup[] = []
+      let cur: PillGroup = {
+        noteIdx: notes.indexOf(history[0].noteName.replace(/\d/g, '')),
+        startTime: history[0].time,
+        endTime: history[0].time,
       }
-      for (let i = 1; i < pitchHistory.length; i++) {
-        const pn = pitchHistory[i]
+      for (let i = 1; i < history.length; i++) {
+        const pn = history[i]
         const noteIdx = notes.indexOf(pn.noteName.replace(/\d/g, ''))
         if (noteIdx === cur.noteIdx) {
           cur.endTime = pn.time
         } else {
-          if (cur.noteIdx >= 0) pillGroups.push({ ...cur })
+          if (cur.noteIdx >= 0) groups.push({ ...cur })
           cur = { noteIdx, startTime: pn.time, endTime: pn.time }
         }
       }
-      if (cur.noteIdx >= 0) pillGroups.push({ ...cur })
+      if (cur.noteIdx >= 0) groups.push({ ...cur })
+      return groups
+    }
 
-      for (const g of pillGroups) {
+    const drawPill = (x1: number, x2: number, y: number, pillH: number, r: number) => {
+      const pillW = Math.max(x2 - x1, 3)
+      ctx.beginPath()
+      ctx.moveTo(x1 + r, y)
+      ctx.lineTo(x1 + pillW - r, y)
+      ctx.arcTo(x1 + pillW, y, x1 + pillW, y + r, r)
+      ctx.lineTo(x1 + pillW, y + pillH - r)
+      ctx.arcTo(x1 + pillW, y + pillH, x1 + pillW - r, y + pillH, r)
+      ctx.lineTo(x1 + r, y + pillH)
+      ctx.arcTo(x1, y + pillH, x1, y + pillH - r, r)
+      ctx.lineTo(x1, y + r)
+      ctx.arcTo(x1, y, x1 + r, y, r)
+      ctx.closePath()
+    }
+
+    const vocalPills = buildPillGroups(pitchHistory)
+
+    // Draw vocal pitch pills (filled amber)
+    for (const g of vocalPills) {
+      if (g.endTime < winStart || g.startTime > winEnd) continue
+      const x1 = Math.max(0, ((g.startTime - winStart) / winDur) * w)
+      const x2 = Math.min(w, ((g.endTime - winStart) / winDur) * w)
+      const y = (11 - g.noteIdx) * rowH + rowH * 0.16
+      const pillH = rowH * 0.68
+      const r = Math.min(pillH / 2, 3)
+      drawPill(x1, x2, y, pillH, r)
+      ctx.fillStyle = 'rgba(245, 158, 11, 0.5)'
+      ctx.fill()
+    }
+
+    // Mic pitch overlay — thin dashed stroke, no fill
+    if (micActive() && micPitchHistory.length > 0) {
+      const micPills = buildPillGroups(micPitchHistory)
+      for (const g of micPills) {
         if (g.endTime < winStart || g.startTime > winEnd) continue
         const x1 = Math.max(0, ((g.startTime - winStart) / winDur) * w)
         const x2 = Math.min(w, ((g.endTime - winStart) / winDur) * w)
-        const pillW = Math.max(x2 - x1, 3)
         const y = (11 - g.noteIdx) * rowH + rowH * 0.16
         const pillH = rowH * 0.68
         const r = Math.min(pillH / 2, 3)
+        drawPill(x1, x2, y, pillH, r)
+        ctx.strokeStyle = '#ff6b8a'
+        ctx.lineWidth = 1.5
+        ctx.setLineDash([3, 3])
+        ctx.stroke()
+        ctx.setLineDash([])
+      }
+    }
 
-        ctx.fillStyle = 'rgba(245, 158, 11, 0.5)'
-        ctx.beginPath()
-        ctx.moveTo(x1 + r, y)
-        ctx.lineTo(x1 + pillW - r, y)
-        ctx.arcTo(x1 + pillW, y, x1 + pillW, y + r, r)
-        ctx.lineTo(x1 + pillW, y + pillH - r)
-        ctx.arcTo(x1 + pillW, y + pillH, x1 + pillW - r, y + pillH, r)
-        ctx.lineTo(x1 + r, y + pillH)
-        ctx.arcTo(x1, y + pillH, x1, y + pillH - r, r)
-        ctx.lineTo(x1, y + r)
-        ctx.arcTo(x1, y, x1 + r, y, r)
-        ctx.closePath()
-        ctx.fill()
+    // Diff bars — connect vocal and mic pitch at time-aligned points
+    const TOLERANCE_CENTS = 50
+    if (micActive() && pitchHistory.length > 0 && micPitchHistory.length > 0) {
+      let vi = 0
+      let mi = 0
+      let lastDiffX = -999
+      while (vi < pitchHistory.length && mi < micPitchHistory.length) {
+        const vt = pitchHistory[vi].time
+        const mt = micPitchHistory[mi].time
+
+        if (Math.abs(vt - mt) < 0.06) {
+          const vocalNoteIdx = notes.indexOf(pitchHistory[vi].noteName.replace(/\d/g, ''))
+          const micNoteIdx = notes.indexOf(micPitchHistory[mi].noteName.replace(/\d/g, ''))
+          if (vocalNoteIdx >= 0 && micNoteIdx >= 0 && vt >= winStart && vt <= winEnd) {
+            const x = ((vt - winStart) / winDur) * w
+            if (x - lastDiffX > 3) {
+              lastDiffX = x
+              const vocalY = (11 - vocalNoteIdx) * rowH + rowH * 0.5
+              const micY = (11 - micNoteIdx) * rowH + rowH * 0.5
+              const centsOff = 1200 * Math.log2(micPitchHistory[mi].frequency / pitchHistory[vi].frequency)
+              const absOff = Math.abs(centsOff)
+
+              ctx.strokeStyle = absOff <= TOLERANCE_CENTS
+                ? 'rgba(96, 208, 128, 0.55)'
+                : absOff <= TOLERANCE_CENTS * 2
+                  ? 'rgba(224, 192, 80, 0.5)'
+                  : 'rgba(248, 81, 73, 0.45)'
+              ctx.lineWidth = 1.2
+              ctx.beginPath()
+              ctx.moveTo(x, Math.min(vocalY, micY))
+              ctx.lineTo(x, Math.max(vocalY, micY))
+              ctx.stroke()
+            }
+          }
+          vi++; mi++
+        } else if (vt < mt) {
+          vi++
+        } else {
+          mi++
+        }
       }
     }
 
