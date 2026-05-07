@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createEffect, createSignal, For, onCleanup, onMount, Show } from 'solid-js'
+import { createEffect, createSignal, For, onCleanup, Show } from 'solid-js'
 import type { UvrSession } from '@/stores/app-store'
 import { cancelUvrSession, completeUvrSession, currentUvrSession, deleteAllUvrSessions, getAllUvrSessions, getAllUvrSessionsReactive, getUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrSessionApiId, startUvrSession, updateUvrSessionOutputs, updateUvrSessionProgress, } from '@/stores/app-store'
 import { getProcessStatus, processAudio, pollForCompletion, type OutputFile, DEFAULT_PROCESS_REQUEST, } from '@/lib/uvr-api'
@@ -63,6 +63,8 @@ interface UvrPanelProps {
   defaultView?: UvrView
   /** Initial session ID from hash route — loads session and navigates to results on mount */
   initialSessionId?: string
+  /** Called when the active UVR session changes — used to sync URL hash */
+  onSessionChange?: (sessionId: string | null) => void
   /** Callback when practice is started */
   onPracticeStart?: (mode: 'vocal' | 'instrumental' | 'midi' | 'full') => void
   /** Callback when a session is exported */
@@ -111,10 +113,26 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     }
   })
 
-  // Deep-link: navigate to session from hash route
-  onMount(() => {
-    if (props.initialSessionId) {
-      handleSessionView(props.initialSessionId)
+  // Sync active session to parent (for URL hash)
+  createEffect(() => {
+    const view = currentView()
+    if (view === 'results' || view === 'mixer') {
+      const s = currentUvrSession()
+      if (s?.sessionId) {
+        props.onSessionChange?.(s.sessionId)
+        return
+      }
+    }
+    props.onSessionChange?.(null)
+  })
+
+  // Deep-link: navigate to session from hash route (reactive to URL changes)
+  let lastLoadedSessionId: string | null = null
+  createEffect(() => {
+    const sid = props.initialSessionId
+    if (sid && sid !== lastLoadedSessionId) {
+      lastLoadedSessionId = sid
+      handleSessionView(sid)
     }
   })
 

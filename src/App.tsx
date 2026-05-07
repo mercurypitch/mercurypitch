@@ -161,6 +161,7 @@ const AppShell: Component<AppProps> = (props) => {
   // Hash routing — prevents effect loop when hash is being updated from code
   let hashSyncing = false
   const [initialUvrSessionId, setInitialUvrSessionId] = createSignal<string | null>(null)
+  const [activeUvrSessionId, setActiveUvrSessionId] = createSignal<string | null>(null)
 
   // ── Guide Selection dialog ──────────────────────────────────
   const [showGuideSelection, setShowGuideSelection] = createSignal(false)
@@ -604,9 +605,11 @@ const AppShell: Component<AppProps> = (props) => {
       hashSyncing = true
       if (route.type === 'tab') {
         setActiveTab(route.tab)
+        setActiveUvrSessionId(null)
       } else if (route.type === 'uvr-session') {
         setActiveTab('uvr')
         setInitialUvrSessionId(route.sessionId)
+        setActiveUvrSessionId(route.sessionId)
       }
       hashSyncing = false
     })
@@ -698,9 +701,16 @@ const AppShell: Component<AppProps> = (props) => {
   createEffect(() => {
     if (hashSyncing) return
     const tab = activeTab()
-    const expectedHash = `#/${tab}`
+    const sessionId = activeUvrSessionId()
+    const expectedHash = tab === 'uvr' && sessionId
+      ? `#/uvr/session/${sessionId}`
+      : `#/${tab}`
     if (window.location.hash !== expectedHash) {
-      replaceHash({ type: 'tab', tab })
+      replaceHash(
+        tab === 'uvr' && sessionId
+          ? { type: 'uvr-session', sessionId }
+          : { type: 'tab', tab },
+      )
     }
   })
 
@@ -1148,6 +1158,7 @@ const AppShell: Component<AppProps> = (props) => {
                 <UvrPanel
                   defaultView="upload"
                   initialSessionId={initialUvrSessionId() ?? undefined}
+                  onSessionChange={(sessionId) => setActiveUvrSessionId(sessionId)}
                   onPracticeStart={(mode) => {
                     // For now, this could load a session from UVR
                     console.log('Starting practice with mode:', mode)
