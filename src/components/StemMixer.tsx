@@ -7,7 +7,7 @@ import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show }
 import { PitchDetector, type DetectedPitch } from '@/lib/pitch-detector'
 import { freqToNote } from '@/lib/scale-data'
 import { ChevronLeft, Download, Ear, Mic, Midi, Pause, Play, SkipBack, SlidersHorizontal, Volume2, VolumeX } from './icons'
-import { extractTitle, getCurrentLineIndex, getCurrentLrcIndex, parseLrcFile, parseTextLyrics, searchLyrics, type LrcLine, type LyricsSearchResult } from '@/lib/lyrics-service'
+import { extractTitle, fetchLyricsById, getCurrentLineIndex, getCurrentLrcIndex, parseLrcFile, parseTextLyrics, searchLyrics, searchLyricsMulti, type LrcLine, type LyricsSearchMatch, type LyricsSearchResult } from '@/lib/lyrics-service'
 import { LyricsUploader, type LyricsUploadResult } from './LyricsUploader'
 
 // ── Types ──────────────────────────────────────────────────────
@@ -48,6 +48,56 @@ interface PitchNote {
 const FFT_SIZE = 256
 const PITCH_FFT_SIZE = 2048
 
+// ── Song Picker ───────────────────────────────────────────────
+
+interface SongPickerProps {
+  matches: LyricsSearchMatch[]
+  query: string
+  onQueryChange: (v: string) => void
+  onPick: (match: LyricsSearchMatch) => void
+  onRefine: () => void
+  onUpload: () => void
+}
+
+const SongPicker = (p: SongPickerProps) => {
+  let inputRef: HTMLInputElement | undefined
+
+  return (
+    <div class="sm-song-picker">
+      <div class="sm-song-picker-header">
+        Found {p.matches.length} matching songs
+      </div>
+      <div class="sm-song-picker-search">
+        <input
+          ref={inputRef}
+          type="text"
+          class="sm-song-picker-input"
+          value={p.query}
+          onInput={(e) => p.onQueryChange(e.currentTarget.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') p.onRefine() }}
+          placeholder="Artist - Title"
+        />
+        <button class="sm-song-picker-search-btn sm-btn sm-btn-secondary" onClick={p.onRefine} title="Search">Search</button>
+      </div>
+      <div class="sm-song-picker-list">
+        {p.matches.map((m) => (
+          <button class="sm-song-picker-row" onClick={() => p.onPick(m)}>
+            <span class="sm-song-picker-artist">{m.artist}</span>
+            <span class="sm-song-picker-sep"> - </span>
+            <span class="sm-song-picker-title">{m.title}</span>
+            {m.syncedLyrics && <span class="sm-song-picker-badge">LRC</span>}
+          </button>
+        ))}
+      </div>
+      <div class="sm-song-picker-footer">
+        <button class="sm-song-picker-upload-link" onClick={p.onUpload}>
+          Or upload a .lrc/.txt file
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ── Component ──────────────────────────────────────────────────
 
 export const StemMixer: Component<StemMixerProps> = (props) => {
@@ -68,6 +118,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   const [currentLineIdx, setCurrentLineIdx] = createSignal(-1)
   const [lyricsSource, setLyricsSource] = createSignal<'api' | 'upload' | 'none'>('none')
   const [lyricsLoading, setLyricsLoading] = createSignal(false)
+  const [songMatches, setSongMatches] = createSignal<LyricsSearchMatch[]>([])
+  const [showSongPicker, setShowSongPicker] = createSignal(false)
+  const [songPickerQuery, setSongPickerQuery] = createSignal('')
   const [lyricsFontSize, setLyricsFontSize] = createSignal(1.3)    // rem
   const [lyricsColumns, setLyricsColumns] = createSignal<1 | 2>(1)
   const [editMode, setEditMode] = createSignal(false)
@@ -392,6 +445,50 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     return null
   }
 
+  const applyLyricsResult = (result: LyricsSearchResult, title: string) => {
+    setRawLyricsText(result.text)
+    if (result.format === 'lrc') {
+      setLrcLines(parseLrcFile(result.text))
+      setLyricsLines([])
+    } else {
+      setLyricsLines(parseTextLyrics(result.text))
+      setLrcLines([])
+    }
+    persistLyrics(result.text, result.format, `${title}.${result.format}`)
+    setLyricsSource('api')
+  }
+
+  const handleSongPick = async (match: LyricsSearchMatch) => {
+    setShowSongPicker(false)
+    setSongMatches([])
+    setLyricsLoading(true)
+    try {
+      const lyrics = await fetchLyricsById(match.id)
+      if (lyrics) {
+        applyLyricsResult(lyrics, `${match.artist} - ${match.title}`)
+      } else {
+        setLyricsSource('none')
+      }
+    } catch {
+      setLyricsSource('none')
+    } finally {
+      setLyricsLoading(false)
+    }
+  }
+
+  const handleSongPickerRefine = async () => {
+    const q = songPickerQuery().trim()
+    if (!q) return
+    setLyricsLoading(true)
+    try {
+      const results = await searchLyricsMulti(q)
+      setSongMatches(results)
+    } catch { /* keep existing results */ }
+    finally {
+      setLyricsLoading(false)
+    }
+  }
+
   const loadLyrics = async () => {
     // Check persisted lyrics first — no need for API call if user already uploaded
     const persisted = loadPersistedLyrics()
@@ -418,17 +515,28 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
     setLyricsLoading(true)
     try {
+      // Try multi-search first — show picker if multiple results
+      const multiResults = await searchLyricsMulti(title)
+      if (multiResults.length === 1) {
+        const match = multiResults[0]
+        const lyrics = await fetchLyricsById(match.id)
+        if (lyrics) {
+          applyLyricsResult(lyrics, title)
+          setLyricsLoading(false)
+          return
+        }
+      } else if (multiResults.length > 1) {
+        setSongMatches(multiResults)
+        setSongPickerQuery(title)
+        setShowSongPicker(true)
+        setLyricsLoading(false)
+        return
+      }
+
+      // Fall back to single-result cascade
       const result = await searchLyrics(title)
       if (result) {
-        setRawLyricsText(result.text)
-        if (result.format === 'lrc') {
-          setLrcLines(parseLrcFile(result.text))
-          setLyricsLines([])
-        } else {
-          setLyricsLines(parseTextLyrics(result.text))
-          setLrcLines([])
-        }
-        persistLyrics(result.text, result.format, `${title}.${result.format}`)
+        applyLyricsResult(result, title)
         setLyricsSource('api')
       } else {
         setLyricsSource('none')
@@ -1503,6 +1611,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     pitchHistory = []
     setWindowStart(0)
     cancelAnimationFrame(rafId)
+    syncCanvasSizes()
     drawWaveformOverview()
     drawPitchCanvas()
     drawLiveWaveform()
@@ -3386,10 +3495,18 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                 </Show>
               </Show>
               <Show when={!lyricsLoading() && lyricsSource() === 'none'}>
-                <LyricsUploader
-                  onUpload={handleLyricsUpload}
-                  suggestion={props.songTitle}
-                />
+                <Show when={showSongPicker()} fallback={
+                  <LyricsUploader onUpload={handleLyricsUpload} suggestion={props.songTitle} />
+                }>
+                  <SongPicker
+                    matches={songMatches()}
+                    query={songPickerQuery()}
+                    onQueryChange={setSongPickerQuery}
+                    onPick={handleSongPick}
+                    onRefine={handleSongPickerRefine}
+                    onUpload={() => setShowSongPicker(false)}
+                  />
+                </Show>
               </Show>
               <div
                 class="sm-resize-handle"
@@ -3700,7 +3817,18 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                       </Show>
                     </Show>
                     <Show when={!lyricsLoading() && lyricsSource() === 'none'}>
-                      <LyricsUploader onUpload={handleLyricsUpload} suggestion={props.songTitle} />
+                      <Show when={showSongPicker()} fallback={
+                        <LyricsUploader onUpload={handleLyricsUpload} suggestion={props.songTitle} />
+                      }>
+                        <SongPicker
+                          matches={songMatches()}
+                          query={songPickerQuery()}
+                          onQueryChange={setSongPickerQuery}
+                          onPick={handleSongPick}
+                          onRefine={handleSongPickerRefine}
+                          onUpload={() => setShowSongPicker(false)}
+                        />
+                      </Show>
                     </Show>
                   </div>
                 </div>
@@ -5625,6 +5753,120 @@ export const StemMixerStyles: string = `
 .sm-sidebar-toggle:hover {
   background: var(--bg-hover, #30363d);
   color: var(--fg-primary, #c9d1d9);
+}
+
+.sm-song-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  height: 100%;
+  overflow: hidden;
+}
+
+.sm-song-picker-header {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--fg-primary, #c9d1d9);
+}
+
+.sm-song-picker-search {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.sm-song-picker-input {
+  flex: 1;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--border, #30363d);
+  border-radius: 0.375rem;
+  background: var(--bg-primary, #0d1117);
+  color: var(--fg-primary, #c9d1d9);
+  font-size: 0.85rem;
+  outline: none;
+}
+
+.sm-song-picker-input:focus {
+  border-color: var(--accent, #58a6ff);
+}
+
+.sm-song-picker-list {
+  flex: 1;
+  overflow-y: auto;
+  border: 1px solid var(--border, #30363d);
+  border-radius: 0.375rem;
+  background: var(--bg-primary, #0d1117);
+}
+
+.sm-song-picker-row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 0.45rem 0.75rem;
+  border: none;
+  background: transparent;
+  color: var(--fg-primary, #c9d1d9);
+  font-size: 0.825rem;
+  cursor: pointer;
+  text-align: left;
+  gap: 0.15rem;
+  border-bottom: 1px solid var(--border, #30363d);
+  transition: background 0.1s;
+}
+
+.sm-song-picker-row:last-child {
+  border-bottom: none;
+}
+
+.sm-song-picker-row:hover {
+  background: var(--bg-hover, #1c2128);
+}
+
+.sm-song-picker-artist {
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sm-song-picker-sep {
+  color: var(--fg-muted, #8b949e);
+  flex-shrink: 0;
+}
+
+.sm-song-picker-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sm-song-picker-badge {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.1rem 0.35rem;
+  border-radius: 0.25rem;
+  background: var(--accent, #58a6ff);
+  color: #fff;
+}
+
+.sm-song-picker-footer {
+  flex-shrink: 0;
+}
+
+.sm-song-picker-upload-link {
+  background: none;
+  border: none;
+  color: var(--fg-muted, #8b949e);
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.sm-song-picker-upload-link:hover {
+  color: var(--accent, #58a6ff);
 }
 
 `
