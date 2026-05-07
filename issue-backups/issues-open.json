@@ -1,0 +1,565 @@
+[
+  {
+    "author": "Komediruzecki",
+    "body": "Can you create a plan, under docs/plans - how could we pack audio-separator (https://github.com/nomadkaraoke/python-audio-separator) aka the uvr (ultimate vocal remover tool), into client side for client side / browser execution. Such that users can utilize their own GPU or CPU to separate a mp3/wav track into stems (vocal only, instrumental only). \n\nPerhaps WASM or some other implementation? How feasiable is this? What are main drawback. Do we need to provide huge binaries then to users, can this be cached somehow? How portable would it be, how to support CPU/GPU but also CUDA/AMD etc.\n\nPlan the plan on how could this be one thing by one thing investigated, then investigate each issue and try to find one or more solutions. Write the summary, difficulty and how much effort it would all take. Thanks! \n\nNo need to scan the codebase, but you can see I already integrated a docker image uvr-api etc. for all of this, but currently the server would run docker and the user (client) would only call APIs to process the song. \n\nNow I want to also have an option to have it client side only!",
+    "closedAt": null,
+    "createdAt": "2026-05-05T21:33:45Z",
+    "labels": [],
+    "number": 256,
+    "state": "OPEN",
+    "title": "Client Side Vocal Separation",
+    "url": "https://github.com/Komediruzecki/pitch-perfect/issues/256",
+    "comments": [
+      {
+        "author": "Komediruzecki",
+        "body": "## Client-Side Vocal Separation — Investigation Plan\n\nHere’s the plan, broken into phases to investigate one piece at a time.\n\n---\n\n### 1. Technology Landscape\n\nThree viable paths for browser-based source separation:\n\n| Path | Engine | GPU | CPU Fallback | Maturity |\n|------|--------|-----|--------------|----------|\n| **A: ONNX Runtime Web** | `onnxruntime-web` + WebGPU | Yes (WebGPU) | Yes (WASM) | Production-ready (v1.20+, 2025) |\n| **B: TensorFlow.js** | `@tensorflow/tfjs` + WebGL | Yes (WebGL) | Yes (WASM) | Mature, Spleeter ports exist |\n| **C: Custom WASM** | Compiled C inference + handwritten DSP | No | Yes | High effort, fragile |\n\n**Recommendation: Path A — ONNX Runtime Web + WebGPU.** It has the best GPU acceleration story, supports the models UVR already uses (via ONNX export), and has a WASM CPU fallback. WebGPU is shipping in Chrome/Edge (2023+), Firefox (2025), with Safari behind a flag.\n\n---\n\n### 2. Investigation Phases\n\n#### Phase 1 — Model Conversion (1-2 days)\n- Export a single UVR model (e.g. MDX-Net or Demucs 2-stem) from PyTorch → ONNX\n- Test ONNX model correctness with `onnxruntime` (Python) to validate the export pipeline\n- Measure exported model size (expect 50–200MB depending on model)\n- **Deliverable**: working ONNX model + export script\n\n#### Phase 2 — Browser Inference Prototype (3-5 days)\n- Set up `onnxruntime-web` with WebGPU execution provider\n- Implement STFT/ISTFT in JavaScript (or use ONNX ops for the full pipeline)\n- Build a minimal page: load ONNX model → feed audio → get separated stems\n- Measure: inference time, memory usage, browser compatibility\n- **Deliverable**: proof-of-concept running a 2-stem separation on a 30s clip\n\n#### Phase 3 — Model Caching & Delivery (1-2 days)\n- Implement IndexedDB caching: download ONNX model once, store as `ArrayBuffer`, load from cache on subsequent visits\n- Investigate model sharding (split large models into chunks for progressive download)\n- Handle versioning: ETag checks so cached models update when new versions ship\n- **Deliverable**: model downloads once, cached indefinitely, updates transparently\n\n#### Phase 4 — Full Song Processing (1-2 days)\n- Audio decoding in browser (Web Audio API `decodeAudioData` for MP3/WAV)\n- Chunked processing: split audio into overlapping segments, process on GPU, crossfade-stitch results\n- Memory management: release GPU buffers between chunks to stay within WebGPU limits\n- **Deliverable**: end-to-end processing of a 4-minute song without OOM\n\n#### Phase 5 — Worker Architecture & UI (1-2 days)\n- Move inference to a Web Worker to keep the main thread responsive\n- Progress reporting: percent complete, estimated time remaining\n- Abort/cancel support\n- **Deliverable**: non-blocking UX with progress bar\n\n#### Phase 6 — Fallback & Portability (1 day)\n- Detect WebGPU support → use it; if not → fall back to ONNX Runtime WASM (CPU)\n- Detect model availability: if no cached model, show \"Download model (X MB)\" prompt\n- Test across Chrome, Edge, Firefox, Safari\n- **Deliverable**: works on any modern browser, gracefully degrades\n\n---\n\n### 3. Key Questions & Answers\n\n**How feasible is this?**\nFeasible but non-trivial. ONNX Runtime Web already supports the core ML ops. The main unknowns are: whether specific UVR model architectures export cleanly to ONNX, and whether WebGPU buffer limits handle the model sizes in practice.\n\n**What are the main drawbacks vs server-side?**\n- 3-10x slower than native CUDA (WebGPU is less optimized; browser GPU has tighter memory limits)\n- Limited to smaller models (50-200MB range — larger models may hit browser GPU buffer caps at 128-256MB)\n- No multi-GPU, no CUDA-specific optimizations (mixed precision, tensor cores)\n- First visit requires downloading the model (50-200MB), which is a UX hurdle\n\n**How big are the binaries?**\n- `onnxruntime-web` WASM: ~10MB (gzipped ~3MB)\n- ONNX model: 50-200MB per model (2-stem vocal/instrumental is typically ~80MB)\n- Your app JS/CSS: already ~500KB\n- Total first-visit payload: 60-210MB depending on model choice\n- Subsequent visits: only ~3MB (WASM from cache) + model from IndexedDB (zero network)\n\n**How to support CPU/GPU?**\n- **GPU**: WebGPU → ONNX Runtime WebGPU EP. Works on integrated/discrete GPUs from NVIDIA, AMD, Intel, Apple Silicon. The browser abstracts the GPU vendor — no CUDA/ROCm/Metal code needed.\n- **CPU**: ONNX Runtime WASM EP with multi-threading. ~3-10x slower than GPU but always available.\n- Detection: `navigator.gpu` → if available, use WebGPU; otherwise fall back to WASM.\n\n**Can models be cached?**\nYes. IndexedDB can store files up to ~60% of disk space (Chromium), 1-2GB per origin. A Service Worker + Cache API is an alternative for smaller models. The ONNX Runtime `InferenceSession.create()` accepts raw `ArrayBuffer`, so plugging in IndexedDB is straightforward.\n\n---\n\n### 4. Summary\n\n| Aspect | Assessment |\n|--------|-----------|\n| **Feasibility** | Feasible — ONNX Runtime Web is production-ready |\n| **Difficulty** | Medium-Hard (6/10) — model export is the riskiest step |\n| **Effort** | 8-14 days for MVP (2-stem separation) |\n| **Main risk** | UVR model architecture may not export cleanly to ONNX |\n| **Best-case outcome** | Client-side 2-stem separation, ~30-60s per song on GPU, ~3-10min on CPU |\n| **Worst-case outcome** | Model export fails for key architectures → fall back to server-side only |\n\n---\n\n### 5. Next Step\n\nI’ll write the detailed investigation doc to `docs/plans/client-side-vocal-separation.md` covering the architecture, model conversion pipeline, caching strategy, and fallback matrix. Then we tackle Phase 1 (model export) as the first concrete action.\n\nWant me to go ahead and write that doc?",
+        "createdAt": "2026-05-06T00:35:45Z"
+      },
+      {
+        "author": "Komediruzecki",
+        "body": "Swift branch: new pitch test ideas:\nIn pitch test, when I have yin selected, it mentions some settings for yin aka sensitivity, when I run a detection test, it would be good to be able to adjust it dynamcically, and then while the SINE or mic input is given, the yin detects and shows the realtime feedback. \n\nAlso, would it be nice to have some sort of vertical slider for Hz of the frequency generator sine or whatever, so I can in runtime when deteciton is runnign change the frequency and check how good Yin (selected algorithm) detects that note? PLease add something like that.\n\nALso still unsure what tests are we running when some fail, some pass etc. Can you please add some sort of listing of what tests are done in that benchmark mode (a new component beneath the current timeline etc.) that lists tests or their idea etc. so one can see what failed, what passed etc.",
+        "createdAt": "2026-05-06T22:20:17Z"
+      },
+      {
+        "author": "Komediruzecki",
+        "body": "The YIn is failing almost all benchmarks but 2, can you check whether implementation is good of YIN algorithm or why would it not pas so many common notes? The target seeems way off, do we have all YIN improvements from latest papers (please research) as we need to handle higher octaves etc. and similar stuff better.\n\nAdditional task, add a kind of ensemble mode, where I can select 2 or more algorithms available and run them to make a vote on the note, and then the highest note votes wins, something like that. This probably not gonna be realtime best as it will be too slow? but maybe the accuracy can be at least improved when we are doign it offline or on fast hardware for testing?",
+        "createdAt": "2026-05-06T23:07:08Z"
+      }
+    ]
+  },
+  {
+    "author": "Komediruzecki",
+    "body": "The refactor would touch 15+ source files and many e2e test files. The main complication is that 'practice' has two distinct meanings in the codebase:\n  - Tab ID (ActiveTab = 'practice') — what we'd rename to 'singing'\n  - Playback mode (PlaybackMode = 'practice') — a completely separate concept, must NOT be renamed\n\n  These two uses are often in the same files, so a simple find-and-replace is dangerous. The affected source files include:\n\n  ┌──────────────────────────┬─────────────────────────────────────────────────────────┐\n  │           File           │                     Changes needed                      │\n  ├──────────────────────────┼─────────────────────────────────────────────────────────┤\n  │ ui-store.ts              │ Type + default signal                                   │\n  ├──────────────────────────┼─────────────────────────────────────────────────────────┤\n  │ App.tsx                  │ ~10 locations (type, comparisons, JSX)                  │\n  ├──────────────────────────┼─────────────────────────────────────────────────────────┤\n  │ SharedControlToolbar.tsx │ Props: practiceTab→singingTab, fallingNotesTab→pianoTab │\n  ├──────────────────────────┼─────────────────────────────────────────────────────────┤\n  │ useSessionSequencer.ts   │ setActiveTab('practice')                                │\n  ├──────────────────────────┼─────────────────────────────────────────────────────────┤\n  │ usePlaybackController.ts │ setActiveTab('practice')                                │\n  ├──────────────────────────┼─────────────────────────────────────────────────────────┤\n  │ SessionLibraryModal.tsx  │ setActiveTab('practice')                                │\n  ├──────────────────────────┼─────────────────────────────────────────────────────────┤\n  │ AppSidebar.tsx           │ Tab array includes                                      │\n  ├──────────────────────────┼─────────────────────────────────────────────────────────┤\n  │ walkthrough-store.ts     │ Tab values                                              │\n  ├──────────────────────────┼─────────────────────────────────────────────────────────┤\n  │ app-store.ts             │ section and requiredTab fields                          │\n  ├──────────────────────────┼─────────────────────────────────────────────────────────┤\n  │ walkthrough.ts           │ WalkthroughTab type                                     │\n  ├──────────────────────────┼─────────────────────────────────────────────────────────┤\n  │ + 10+ e2e test files     │ Tab references                                          │\n  └──────────────────────────┴─────────────────────────────────────────────────────────┘\n\n\nMake sure the new names are more enum like, we should never actually use raw strings, to avoid typos etc, we should never compare to 'practice' we should have a PRACTICE_TAB_NAME const variable that is used, so renaming it afterwards will not break any logic or cause additional refactor effort!",
+    "closedAt": null,
+    "createdAt": "2026-05-05T20:57:46Z",
+    "labels": [],
+    "number": 255,
+    "state": "OPEN",
+    "title": "Rename tabs across codebase",
+    "url": "https://github.com/Komediruzecki/pitch-perfect/issues/255",
+    "comments": []
+  },
+  {
+    "author": "Komediruzecki",
+    "body": "## Feature: Synthesia-Style Falling Notes Piano Practice\n\nAdd a new \"Piano Practice\" tab where users play their piano into the microphone and see Synthesia-style falling notes they must play in time.\n\n### How It Works\n- **Vertical falling notes**: Notes fall from top toward a horizontal judgment line above a virtual piano keyboard at the bottom\n- **Mic input**: Reuses existing `PitchDetector` to identify which note the user played on their piano\n- **Hit detection**: When a falling note crosses the judgment line, check if the user played the correct note within timing windows\n- **Scoring**: Dual-axis scoring — timing accuracy (perfect/great/good/miss) × pitch accuracy (perfect/excellent/good/okay/off)\n- **Virtual keyboard**: Shows the piano keyboard at the bottom, highlighting expected keys\n- **Song selection**: Load any melody from the library, or import MIDI files\n\n### Architecture\n- **New tab**: `'falling-notes'` added to `ActiveTab` union type in `ui-store.ts`\n- **New canvas**: `FallingNotesCanvas.tsx` — HTML Canvas 2D, same DPR/ResizeObserver/RAF pattern as `PitchCanvas.tsx`\n- **Pitch detection**: Reuses `PitchDetector` + `AudioEngine` directly (lightweight `FallingNotesEngine` wrapper)\n- **Song data**: Reuses `MelodyData` format — songs are loaded from the melody library via `melodyStore.loadMelody()`\n- **MIDI import**: Reuses `importMelodyFromMIDI()` from `piano-roll.ts`\n- **Scoring**: Reuses `centsToRating()`, `ratingToScore()`, `scoreGrade()` from `practice-engine.ts`\n\n### New Files\n- `src/stores/falling-notes-store.ts` — Game state signals\n- `src/lib/falling-notes-engine.ts` — Mic + pitch adapter\n- `src/components/FallingNotesCanvas.tsx` — Main canvas\n- `src/features/falling-notes/useFallingNotesController.ts` — Game logic\n- `src/components/FallingNotesSongPicker.tsx` — Song selector\n- `src/styles/falling-notes.css` — Layout styles\n\n### Modified Files\n- `src/stores/ui-store.ts` — Add tab type\n- `src/App.tsx` — Tab button + content block + controller wiring\n- Barrel exports in `stores/index.ts`, `components/index.ts`, `lib/index.ts`\n\n### Implementation Phases\n1. Foundation: store, engine, tab type\n2. Canvas: falling notes rendering, keyboard, judgment line\n3. Game logic: RAF loop, hit detection, scoring\n4. Song picker: library browser + MIDI import\n5. Integration: wire into App.tsx\n6. Polish: particles, animations, score overlay\n\n### Design Decisions\n- Vertical scroll (Synthesia-style) — keyboard is horizontal, notes approach the keyboard\n- Direct PitchDetector reuse — no full PracticeEngine lifecycle needed\n- Separate store — different state needs than practice sessions\n- MelodyData as song format — no new data format needed\n\nSee plan file for full implementation details.",
+    "closedAt": null,
+    "createdAt": "2026-05-05T16:21:34Z",
+    "labels": [
+      "enhancement"
+    ],
+    "number": 253,
+    "state": "OPEN",
+    "title": "Falling Notes Piano Practice Feature",
+    "url": "https://github.com/Komediruzecki/pitch-perfect/issues/253",
+    "comments": [
+      {
+        "author": "Komediruzecki",
+        "body": "Okay for an initial version, can we auto load song on selection?\nAlso, the mic seems to be a bit weird to turn on/off, can you check?\n\nAfter finishing, the song unloads, can we keep it loaded, the play again doesn't start it again. \nAlso the feedback panel needs an 'close' button to not play again.\n\nAlso the piano roll where notes are falling is too big, please reduce it a bit, also make it properly scale if the midi has more scales (probably partiallly this works).\n\nAlso we can have a dumbed down SharedToolbar on top, that will show few playback options, like Play/Pause, Stop, Mic on/off, \nVolume, tempo etc. That should also control the loaded song playback. \n\nSpeaking of volume, the notes are not played, please make them actually play and then the volume of that will be able to be changed via slider from SharedToolbar above. This way user can see/hear as well the notes, and if the user turns it down then the mic will of course pick it up.\n\nThe buttons Start/Pause/Stop and Mic are ugly, they do not follow our style guidlines and app current styles, but those shoould be moved to a top Toolbar anyway. \n\nTry to fix this one by one, then commit and let me know of any issues. \n\n",
+        "createdAt": "2026-05-05T17:03:15Z"
+      },
+      {
+        "author": "Komediruzecki",
+        "body": "Few issues I noticed::\n\nThere is precount counting down or something when I click play in Piano Practice tab, if precount is something we want to have ,please add an actual precount button and wire it up properly for piano practice. \nSecond: The sound is weird, some pops but no actual note sound when notes hit the piano ?\nThird: the notes pop/dissapear too soon, if the duration of the note is 2 bars or 1 bar it should play for that amount of time, aka. visually from start of the rectangle to finish, not dissapear mid note. Aka the BPM and duration of each song note from melody should be taken into account. Given that, please also do SHOW BPM in the Shared Toolbar render above.\nFourth: please make sure first song/melody from the list is loaded automatically. We don't want user to always have to load it manually. Thanks! \nFifth: the mic seems not wired? Can you check that mic input recognizes pitches/notes from piano? Just check if it is working I need to figure out how to make it recognize, do we have some indication where the pitch currently is, aka what is being heard by the mic, so that its easier to check whether user hit the right note? What is that horizontal line with dot? maybe that's it, but it doesn't seem to recognize/move when I say something on the mic?",
+        "createdAt": "2026-05-05T19:16:46Z"
+      },
+      {
+        "author": "Komediruzecki",
+        "body": "Now its better, but The UI is still lagging compared to sound? The note sound is played and ends but I still see the note in view, please ensure sound and visuals are synced, there must be a bug, but its better now.\n\nWrite some regular tests for this and EARS spec requirements for our whole piano practice.\n\nAdditionally BPM is only rendered in toolbar  I cannot change it? maybe that's by design? Not sure. anyway, the speed control though does work. Maybe the speed and bpm is what makes the audio not following visualls 100%.\n\nMake a task for few new features:\n\n1. Instead of having 1 Practice tab, and 1 Piano Practice tab.\n  Please make a plan how to organize tabs into small nice pills/badges/groups, and group Practice and Piano practice together, such that one is Singing ('title'), and the other is Piano (we probably don't need the word 'practice'), or 'Practice' can be a group name/header in that group. \nObviously make it according to our current APP design standards, high quality, similar styles. Also make some nice icons for each group, such that they ultimately don't need much description. thanks.\n\n2. Please make a task for improving piano practice such that we allow MIDI keyboards (example, MPK261) to output the MIDI into the app, we decode the midi notes etc. and then in that 'mode' for Piano Practice (when we ignore mic and use midi as input) we compare whether the note was played and how long (duration) and score the user baseed on that. Since microphone input is always kind of lagging etc. Plan and find a way to implement this, add a task and GH issue if needed for this plan and then execute it as well.",
+        "createdAt": "2026-05-05T20:11:33Z"
+      },
+      {
+        "author": "Komediruzecki",
+        "body": "❯ Hm it seems squished still, my phone is iphone pro 13, can you check again? Also can you propose \n  improvements on mobile small screens? The tabs cannot be scrolled thats bad, the hamburger button\n   is occluding the app name, can we make the hamburger button top left but then instead of having \n  left right for PitchPerfect app title and Scale pill horizontally, on mobile put them vertically \n  stacked and move them to the right section so the hamburger is not occluding anything? Also plan \n  other improvements for mobile view to make it nicer and easier to use important features. Then \n  write the plan under docs/plans and execute thanks",
+        "createdAt": "2026-05-05T22:54:57Z"
+      }
+    ]
+  },
+  {
+    "author": "Komediruzecki",
+    "body": "\nLets continue with todo.md, do we have any features planned? If not, can you plan next amazing features for the app?\nI would like to add some kind of page/tab for piano practice, so user can just play their piano sound, the mic picks it up, and they practice some songs, with a nice falling notes implementation (see image).\n\nCan you make a plan, and Github issue for that planning of this feature for piano practice, and then lets discuss challenges, and how we can implement it!",
+    "closedAt": null,
+    "createdAt": "2026-05-05T16:07:55Z",
+    "labels": [],
+    "number": 252,
+    "state": "OPEN",
+    "title": "Piano Practice Implementation",
+    "url": "https://github.com/Komediruzecki/pitch-perfect/issues/252",
+    "comments": []
+  },
+  {
+    "author": "Komediruzecki",
+    "body": "Open a new branch from dev branch, and inspect our todo.md file, and codebase ,see if you can find any bugs, improvements ideas and feature ideas, document a plan how to improve the UI/UX/Tests etc. in a docs/plans/improvements.md file and update todo.md from repo root as needed.\n\nThen commit to this new branch. Thanks!",
+    "closedAt": null,
+    "createdAt": "2026-05-05T15:25:49Z",
+    "labels": [],
+    "number": 251,
+    "state": "OPEN",
+    "title": "Continuous Improvements",
+    "url": "https://github.com/Komediruzecki/pitch-perfect/issues/251",
+    "comments": []
+  },
+  {
+    "author": "Komediruzecki",
+    "body": "We will fix those later, can you focus on CSS in modal dialog that opens a guide for UVR how to use? The css is not existing, can you please ensure it is properly loaded and exists? \n\nsecond thing, did you address the procesing of uploaded audio not working? Nothing happens?\nWhat else do I need to click to actually separate stems?\n\nAlso, the guide I cannot use because of above css issue.\n\nAnd the last change to CSS of the Dropzone has corrupted it, that is now that css is bad even though the actual clicking and browsing do work? please fix css to how it was before in that tab, but keep the fix for clicking the browse button/",
+    "closedAt": null,
+    "createdAt": "2026-05-03T22:33:28Z",
+    "labels": [],
+    "number": 246,
+    "state": "OPEN",
+    "title": "UVR issues",
+    "url": "https://github.com/Komediruzecki/pitch-perfect/issues/246",
+    "comments": [
+      {
+        "author": "Komediruzecki",
+        "body": "I just uploaded a file to \"/pasted-1777978021716.png\".  Great, the changelog task is done, lets focus on UVR, pull latest UVR work from \n  special/uvr-step-backup branch, I've setup docker and everything in a nice manner, but need you to check uvr-lib component and see if you find \n  any issues and improvements, some css styling is not up to par with rest of application, mainly:\n\n  See uploaded image ending with 21716.png, the guide on how to use UVR has ugly padding/margins on the modal, its also too color shooting at eyes,\n   please tone it done, make it up to app styles similar to what learning and modal guides modals are. THanks\n\n  On the last page of learning the UVR process, offer a user to click 'Close', do not disable the completed button, maybe just close modal when \n  user clicks it.\n\n  The 'cancel' button when the UVR processing is ongoing does not fit its background, the text overflows, see any other similar issues and this one\n   and fix it.\n\n  If the API backend for /api/uvr is throwing an error, the processing never completes - please investigate in detail and make sure we catch any \n  errors, either thrown by the frontend logic or from backend timing out or similar.\n\n  Write tests for this, basic ones (no need for e2e for now as backend is not available for you either.)\n\n  Please address each of this issue as a separate task, execute, explain, fix and then commit fixes one per task on the branch. Thanks!",
+        "createdAt": "2026-05-05T10:52:10Z"
+      },
+      {
+        "author": "Komediruzecki",
+        "body": "I just uploaded a file to \"/pasted-1777997156147.png\".  I just uploaded a file to \"/pasted-1777996999828.png\".  another issue to resolve after your current one:\nThe generated items list or whatever don't have anything? please add some nice badge/pill items for user to see what was generated.\n\nThen also, how do I use the stems? do we have a audio player to actually play and configure the how much volume for one stem and how to load it in playback so we can practice and see the notes (similar to melodyne notes shown from the vocal stem)\n\nPlease plan and implement this playback features. \n\nAlso sending a second image for karaoke style similar website how they have the timeline and audio loudness implemented\n\nPlease make all UIs and UX as we have in our app, high standard, amazingly beautiful. Thanks!",
+        "createdAt": "2026-05-05T16:06:52Z"
+      },
+      {
+        "author": "Komediruzecki",
+        "body": "I just uploaded a file to \"/pasted-1778013706647.png\".  So few more issues:\n\n1. Time is still not counting, when uploading progress is nicely going, its alwasy 0:00 on time clock? please fix.\n\n2. Critical issue, I've pushed some changes, the api should be /api/uvr/output/ ...but its never called. The Frontend never queries the outputs on the server ,and it should, if user reloads the file, the outputs should be queries when user is looking at the history/sessions list or on the view results page.\n\n3. The image shows how the output from a session look like:\n\nPlease understand that we have 2 session ids, one is session from our local storage, that we generate and save, and the outer is the one that we query for status and that we should query for output stems. Format is like:  62bf18d5-6158-487a-adca-296b4d6f4323, please add this session ID as session identifier pill/badge as this is what I can use in development to check what is going on. Not sure why we have 2 session IDs in the first place, but please check.\n\nAlso, double check the api.py, as currently with modifications you did it is returning empty list of files, to the frontend, in the ProcessStatusResponse (as Ive checked, maybe at that point when its completed the files are still missing on the file system, unsure, but maybe we should be more careful about timing)\n\nThe filenames that the audio-separator generates for stems is in this format for me locally and currently:  input_(Instrumental)_UVR_MDXNET_KARA_2.wav,\n input_(Vocals)_UVR_MDXNET_KARA_2.wav\n\nSo please also see if this is matched okay, I use this KARA model, hopefully this is what frontend expects, maybe I made a mistake when sending the details of model to the processor. PLease check all this issues and fix.\n\nYou can git pull --rebase also the branch as I've pushed, thanks!\n\n",
+        "createdAt": "2026-05-05T20:46:58Z"
+      },
+      {
+        "author": "Komediruzecki",
+        "body": "Great, amazing, it works!!!\n\nGreat work, lets add some metadata to stems, can you make it beautiful inside the badge the time how long is each stem?\nAlso the Mix button in session history for a item goes to mixer ,but would be nice if the pills/badges could be selected (multiselect) and then button to go to mixer would load those selected into mixer? e.g., full mix if all selected, only vocal if just vocal, only music if just music? Can we do that.\n\nAlso, the session history page is soo good now, but the View Results page is not up to par with the rest of app, can you redesign it, improve it? The icons are great, the share button doesn't work. So fix at least those issuse then the stem list is a bit too wide all together, not much data but it takes a lot of space, can we make all items (stems) smaller with nicer design and metadata somehow nicely put? thanks. Plan and execute this.",
+        "createdAt": "2026-05-05T21:16:59Z"
+      },
+      {
+        "author": "Komediruzecki",
+        "body": "Okay looks great, few things I would fix, address each separately and fix:\n\nThe download / export button for Stems do not work? It writes in console its exporting but I don't get a nice download in the browser to actually download it?\n\nThe lyrics fetcher failed: Cannot GET /v1/Bruce%20Dickinson%20-%20Arc%20of%20Space%20(Official%20Audio).mp3 (can you check if we are calling the api correctly, and maybe try some combinations, if possible if api supports Artist Name + Song name or similar and a way to get 'similar wording' so we have higher success at fetching lyrics. Also try to use 2 services if not already? \n\nCritical: The StemMixer is not fully shown, the waveform is too big and there is no scroll available so I cannot see the bottom controls! This happens when my resolution/window is full screen aka the width is big aka > 1700 px. So the scaling needs to be a bit different, make sure that on all resolutions (big or small) the playback buttons are seeen as well as all components. Currently the main total waveforms are stretching and pushing the below elements out of page visible few - there must be a bug, layout issue.\n\nAlso, can we make the playback control on top, maybe it would be more similar to other playback engines, as we have everything in SharedToolbar, keep the same NICE/NEAT style just move it on top so its easier to control.\n\nCan you also make the sidebar collapsible on bigger screen, just add a nice '<' left arrow icon svg or something in top right side of sidebar that collapses it.\n\nAlso add playback control via keyboard for StemMixer (aka Space is Play/Pause), etc.\nAlso add a keyboard shortcut to settings listing, and add keyboard shortcut to close, that is toggle sidebar (maybe Ctrl+some key or just a letter like 'h' to hide sidebar. See what's best on web. \n\nAlso additional thing the MIDI stem is missing, was it not created, on the stem listing? We would like to have a MIDI representation of  the Vocal Stem, can you visually make it a substem of the Vocal stem, so that user knows what the midi is for.\n\nOne final thing, the Pitch tracker for vocal stem in stem mixer is GREAT, but it fetches the notes a bit too fast, so the final graph has notes all over the place, can we somehow sample the notes with lower frequency so we connect the dots aka similar to melodyne to have similar notes joined and not scattered like a scatter plot? see if we can improve it, thanks. This is a hard problem, but we can play with parameters probably. Aka if the note 'F' is detected for a bit longer, combine all the sampling dots into a rectangle or similar style pill that says 'F' on it, something like we have for Practice melody notes. Let me know what are constraints.",
+        "createdAt": "2026-05-06T08:51:39Z"
+      },
+      {
+        "author": "Komediruzecki",
+        "body": "great, lets do few more things:\n\nTHe lyrics uploaded are great, please after 'uploaded' pill add a change button in a nice stylish manner, so user can change the lyrics. \nAlso, please persist lyrics file in that session, might be a lot of data for local storage, as we need to transition anyway to indexeddb, but lets persist at least the latest lyrics file. Then we will handle data storage issue later.\n\nSecond thing: Lets add a vocal input from mic tracker alongside the PitchDislay, aka in the same pitch display, we will also show pitch tracker from mic input. Plan this nicely, aka we need a button to enable mic here as well. Then the mic input is also rendered on Pitchdisplay. Let me know what you think (later we will also make a score/aka how good the mic input matched the vocal stem, thanks!)",
+        "createdAt": "2026-05-06T15:05:49Z"
+      },
+      {
+        "author": "Komediruzecki",
+        "body": "\nAmazing ,one last lyrcis feature, make the component zoom in/out able, aka the font should change, for people who can't see such tiny letters. \n\nAnd see if we could have some sort of stacked order, so user can select between how many columns to put text in (if the text has clear separations e.g., chapters, chorus etc) othewise single column is default.\n\nFor the Lyrics component also, please make the per word estimate how the lyrics go (even if no data) so the word after word is highlighted depending on the current vocal line placing. See if we can do this good, and implement please. Thanks. (e.g., the font should be similar style as not active for words not yet played/sang, and then as timeline goes the words get blue highlighted as the current whole line is. thanks)",
+        "createdAt": "2026-05-06T15:26:39Z"
+      },
+      {
+        "author": "Komediruzecki",
+        "body": "Few more fixes and one new big feature.\n\n1. The flicker happens when the lyrics component mouse over hits the text line and makes it 'gray backgorund' aka visualizes hover effect. Please find a way to fix flicker or something\n2. Not sure if we should not use For solidJS component can you google a bit and learn about reactivity in SolidJS? we have some docs about patterns to use in repo I think\n3. The Click on hovered by mouse Lyric line/text is not leading anymore to that time in song, please fix or see why would it not work? We don't have to go to exact word (as we might not know it) but clicking worked before and it lead a bit before that line.\n4. You fixed the stripes on waveform, nice!! There is still small tiny tiny bit of flicker when it runs, but its almost not noticable! So yeah good enough for now.\n\nNew Feature:\n\nAdd another little button next to 'change' lyric file, to be 'edit' mode.\n(nice svg icon you create please)\n\nThe Edit mode allows user change each word time, and then it gets saved to 'localstorage' to that LRC file or converted to lrc file if it was only text from before.\n\nLater we might add a feature to copy paste raw text, and then per line or per word user can add markings in a similar way a LRC generator would do. \n\nE.g., user clicks 'lrc generate' mode, then clicks 'play' and have two buttons:\n1. Next line\n2. Next word\n\nSo if user clicks on next word, we add the start/end times for that word accordingly.\nSo if user clicks on next line, we add the start/end times for that line accordingly and also ofc indicate which line the user is at and similar.\n\nIF that's not too difficult, plan this whole feature, or lets go into this two phases.\n\nPhase 1 = The lyrics start/end time edit mode, where each line and each word have a time edit, and user easily clicks and mouse drag or similar changes time that is assigned to that WORD or LINE.\nPhase 2 = Full LRC generator with next word/line buttons and playback that matches start/end times of each word/line.\n\nPlease resolve these issues and phases one by one, separate commits.\n",
+        "createdAt": "2026-05-06T17:17:56Z"
+      },
+      {
+        "author": "Komediruzecki",
+        "body": "Amazing work on LRc, please make sure that the LINE timing is also savedd when editing lyrics in edit mode. \nNOw I change the line start at 00:20 but its still persisting at 00:27. Actually not just render/refresh bug.\n\nThe new Phase 2 LRC generator is great, but when I click next word or next line, it updates the small renderings of which word/line we are at, but it doesn't move the highlighted word/line to next one in the Lyrics text, please rerender aka make it SolidJS reactive when I click those two buttons. \n\nAlso the Top tab of the Lyrics panel and its SVG buttons, please make the 'change' file/upload new one the last button, and make the panel tab a bit bigger (maybe on all panels) so the icons are more clearly seen (not too big just a bit more)\n\nAnother thing, the click to edit modal that opens for time is great!! But keep it at least a bit smaller, now it takes on half of screen how its big, just tone it down a bit. Thanks!!",
+        "createdAt": "2026-05-06T18:40:34Z"
+      },
+      {
+        "author": "Komediruzecki",
+        "body": "yeah, good summary, keep working on this, mostly lrc parts and lyrics fetcher API is top prio. The rest is probably done, cloudflare is fixed o nanother branch also so no need. SolidJS research into good pattterns is always a plus! \n\nAbout task 128, is this to actually allow mic input to be tracked during stem mixer playback? yeah this is top prio also, plan this feature under docs/plans, and then we will discuss. But what we want is to be able to allow mic input when the stem mixer is playing so that the vocal stem notes are compared to mic input and at the end a score is given, and during runtime some kind of vertical or similar line diffs are calculated realtime so that visually we see the discrepencies as well (feature should be togglable via some svg icon button since it might be a bit cluttering the view in some sense)",
+        "createdAt": "2026-05-06T22:32:23Z"
+      },
+      {
+        "author": "Komediruzecki",
+        "body": "Please fix the follwing:\n\nLRC - Lyric generator should:\n\nPersist font setting across page reloads, please save with along session info.\nMake the default font size bigger, the text is too small initially.\n\nThe LRC Mark blocks is not working as it should? I cannot select a single line and mark it as repeat block, only some clicks go through and then N lines in lyric is selected for marking.\nPlease make the Mark mode a bit more obvious, when in mark mode, always show 'mark' control buttons and show how many lines of text were selected somewhere.\n\nThe use case story would be:\n\nI click on Mark blocks\nThe UI changes to mark line selectors (some kind of state change or indication when hovering over lines that I can select them)\nThe UI for how many blocks are selected and how to name a block etc. are showed\nWhen I click on a line of text, the UI updates (active marked line state of that line - change background or subtle border increase or color change)\nThe UI updates the number of marked blocks \nI can then go to repeat input and type 2\nThat block should then repeat twice in runtime with similar inner offsets for words\nWhen I only selected one line for a repeat block, the auto marking of exact same words/lines is not necessary, I can manually go and select and mark the others if I want to.\n\nThe user story two:\n\nI Click mark blocks:\nTHe UI changes as in story one\nI select a whole chorus of 4 lines\nThe UI auto selects and marks those 4 lines and exact matches elsewhere\nI put the repeat counts and perhaps the name\nI mark the block\n\nBlocks are visually shown (their name, span) even in normal and runtime mode. To indicate repeatition (x2 for example) etc.\n\nCurrently auto selector of same blocks is wrong, since it allows only bigger identical lines blocks to be selected. Please allow more granularity.\nBut keep the auto marking of bigger than 1 line blocks so its  faster and easier.\n\nAlso, if the raw text uplaoaded for lyrics has extra newlines, keep them, to separate blocks in the viewer. The LRC should of course skip those strings (empty lines) but the LRC viewer should show the newlines to be easier to read.\n\n\nAdditional task for improving lyric runtime coloring: Instead of static word by word highlighting, please also do inner word highlighting that is make some sort of overlay that continuously color the letter by letter as time progresses (see how other karaoke system do this and remember those old markers from high school where we marked certain words in text, similar effect I want), so we have nice coloring letter by letter, word by word and line by line ofc (depending on markings). The letter by letter is just an estimate from the duration of the word itself, but its a good start for now.",
+        "createdAt": "2026-05-07T07:39:07Z"
+      },
+      {
+        "author": "Komediruzecki",
+        "body": "Did you fix: resizing height bottom button, that is when I drag it to increase height or decreaes to rerender? It still doesn't work.\n\nAlso make the Lyric panel in the Stem mixer please stretch a bit more, aka let it stretch until end of page/visible area if its the last component in grid configuration. \nThe font could also be initially a bit bigger as well!\n\nAlso separate task, can we have a #page-name, in the URL? So that when user does Ctrl+R aka page reload, we still go to that same Active tab and active subpage/tab as well.\nPlease plan if this is a big routing task. And add a plan under docs/plans then we will execute it when we finish current work. thanks",
+        "createdAt": "2026-05-07T09:19:19Z"
+      },
+      {
+        "author": "Komediruzecki",
+        "body": "Make the default font 1.3 rem perhaps.\nAlso for initial lyrics panel height, how are we controling the css grid heights anyway?  Are they fixed or something? \nPlease investigate how CSS grid works and how we can make that grid layout more natural, components should stretch to fill all space but also have a max height so they are stacked naturally. \nInvestigate options for children stretching and auto sizing, in css grid layouts, then make a summary and propose implementation.\n\nAlso regarding layouts, can we have a third toggle for a  fixed two column layout defaults to this organization:\n\nLeft Column (column 1)\nWaveform\nLyrics\n\nRight Column (column 2)\nLive Waveform\nVocal Pitch\n\nThen the Stem Contorls panel we need to put somewhere, can you find a good on top overlay place similar to old style like a right sidebar perhaps, so togglable right sidebar and \nuser can then show the mixer and play with it? \nPlease see what would be best UX and put the stem controls there. Maybe bottom of column 1 is also fine? BUt the mixer should not feel too stretched it must be compat in size (perhaps css grid has a on option for that, please check)\n\nThanks!",
+        "createdAt": "2026-05-07T09:42:23Z"
+      }
+    ]
+  },
+  {
+    "author": "Komediruzecki",
+    "body": "Do a detailed research planning into what type of database would be suitable for:\n\n- Great UX for handling database, logs, user data backups etc.\n- Investigate how strict we need to be when collecting user data, because of GDPR etc. can we avoid cookie banners etc. in app if we don't collect any user info, etc. only for the purposes of 'character names', that is profiles etc.\n- Investigate which type of database would be suitable for:\n - Storing general data (name, streak, challenge scores, general session scores, badges aquired etc)\n - Storing musical data (what melodies/midis are created by user and shared by user\n - Database performance on such data, when there are 1000s of users (< 10k initial planning)\n - How to ensure database migrations are safe and do not break application or its state (e.g., similar as valibot is in frontend, how easy it is to setup migration)\n - What type nosql, or sql database should be used\n - What kind of security we need, on top of general database passwords etc.\n\n- Investigate what type of server can we use for initial circa 1000 users:\n-  how much would it cost, yearly/monthly\n- what are best server providers currently?\n- How much would it cost to use DenoDeploy or CloudFlare as we already have deployment ready there (client side only)\n",
+    "closedAt": null,
+    "createdAt": "2026-05-03T11:13:43Z",
+    "labels": [],
+    "number": 243,
+    "state": "OPEN",
+    "title": "Research database implementation",
+    "url": "https://github.com/Komediruzecki/pitch-perfect/issues/243",
+    "comments": []
+  },
+  {
+    "author": "Komediruzecki",
+    "body": "Please add a logging component available when dev build is enabled\nPlease add a settings switch next to already existing developer switches/tools (for triggering app crash)\nAnd put a kind of console log that (textarea component, nicely styled according to app styles) fetches all / intercepts all cosnsole warnings errors etc. that are written to console, and put tham into that log\n\nThe developer can then see all issues (if no crash is happening) even on mobile devices. Thanks!\n\nThe console log should be shown in App CrashModal dialog (togglable, so it doesn't interfiere) and in Settings on the bottom, before the About section. ",
+    "closedAt": null,
+    "createdAt": "2026-05-03T10:28:09Z",
+    "labels": [],
+    "number": 242,
+    "state": "OPEN",
+    "title": "Create a way to debug the app on mobile devices that don't have console",
+    "url": "https://github.com/Komediruzecki/pitch-perfect/issues/242",
+    "comments": []
+  },
+  {
+    "author": "Komediruzecki",
+    "body": "# Feature: Real-Time Pitch Tracking Engine (DSP + ML)\n\n## Objective\nImplement a robust, real-time pitch detection module for our web application. The system must support two tiers of tracking:\n1. **Low-Latency DSP:** YIN / Autocorrelation for instant, zero-dependency tracking.\n2. **High-Accuracy ML:** SwiftF0 (via `onnxruntime-web`) for resilient tracking in noisy environments.\n\n## Implementation Steps\n\n### 1. Dependency & Asset Setup\n*   Install ONNX Runtime Web: `npm install onnxruntime-web`.\n*   Obtain the pre-trained `swiftf0.onnx` model and place it in the public assets directory (e.g., `/public/models/swiftf0.onnx`).\n\n### 2. Core Audio Pipeline (Web Audio API)\n*   Initialize an `AudioContext` forced to a `16000` sample rate (required by SwiftF0).\n*   Request microphone permissions via `navigator.mediaDevices.getUserMedia`.\n*   Route the stream into an `AnalyserNode` with an `fftSize` of 1024.\n\n### 3. Implement the Pitch Detection Algorithms\n*   Create a unified interface or manager that allows switching between DSP and ML modes on the fly.\n*   Implement the DSP mathematical algorithms on standard `Float32Array` buffers.\n*   Implement the WASM ONNX session handler, ensuring we slice only bins 3 through 134 from the frequency data before feeding the tensor.\n\n## Code Reference: Unified Architecture\n\nPlease use the following TypeScript structure as the foundation for the implementation.\n```typescript\nimport * as ort from 'onnxruntime-web';\n\nexport interface PitchResult {\n  pitch: number;\n  probability: number;\n}\n\nexport type TrackingMode = 'dsp-yin' | 'dsp-auto' | 'ml-swift';\n\nexport class PitchTracker {\n  private audioCtx: AudioContext | null = null;\n  private analyser: AnalyserNode | null = null;\n  private onnxSession: ort.InferenceSession | null = null;\n  private mode: TrackingMode = 'dsp-yin';\n  private trackingInterval: number | null = null;\n\n  // --- 1. INITIALIZATION ---\n\n  async init(mode: TrackingMode = 'dsp-yin', modelPath = '/models/swiftf0.onnx') {\n    this.mode = mode;\n    \n    // Init Audio Pipeline\n    this.audioCtx = new AudioContext({ sampleRate: 16000 });\n    this.analyser = this.audioCtx.createAnalyser();\n    this.analyser.fftSize = 1024;\n\n    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });\n    const source = this.audioCtx.createMediaStreamSource(stream);\n    source.connect(this.analyser);\n\n    // Init ML Model if requested\n    if (this.mode === 'ml-swift') {\n      this.onnxSession = await ort.InferenceSession.create(modelPath, {\n        executionProviders: ['wasm']\n      });\n    }\n  }\n\n  // --- 2. TRACKING LOOP ---\n\n  startTracking(onPitchDetected: (result: PitchResult) => void) {\n    if (!this.analyser) throw new Error(\"Tracker not initialized\");\n\n    const timeData = new Float32Array(this.analyser.fftSize);\n    const freqData = new Float32Array(this.analyser.frequencyBinCount);\n\n    this.trackingInterval = window.setInterval(async () => {\n      if (this.mode === 'ml-swift') {\n        this.analyser!.getFloatFrequencyData(freqData);\n        const pitch = await this.detectSwiftF0(freqData);\n        onPitchDetected({ pitch, probability: pitch > 0 ? 1 : 0 });\n      } else {\n        this.analyser!.getFloatTimeDomainData(timeData);\n        const result = this.mode === 'dsp-yin' \n          ? this.detectYIN(timeData) \n          : this.detectAutocorrelation(timeData);\n        onPitchDetected(result);\n      }\n    }, 16); // ~16ms interval\n  }\n\n  stopTracking() {\n    if (this.trackingInterval) window.clearInterval(this.trackingInterval);\n  }\n\n  // --- 3. ALGORITHMS ---\n\n  private async detectSwiftF0(freqData: Float32Array): Promise<number> {\n    if (!this.onnxSession) return -1;\n    \n    // SwiftF0 requires specific bins (3 to 134)\n    const swiftInput = freqData.slice(3, 134);\n    const tensor = new ort.Tensor('float32', swiftInput, [1, 1, 1, 132]);\n    \n    const results = await this.onnxSession.run({ input: tensor });\n    const logits = results.output.data as Float32Array;\n    \n    let maxVal = -Infinity, bestBin = -1;\n    for (let b = 0; b < 200; b++) {\n      if (logits[b] > maxVal) { maxVal = logits[b]; bestBin = b; }\n    }\n    \n    return bestBin > 0 ? 46.875 * Math.pow(2, bestBin * (Math.log2(2093.75 / 46.875) / 199)) : -1;\n  }\n\n  private detectYIN(buffer: Float32Array): PitchResult {\n    // Agent: Inject the standard YIN cumulative mean normalized difference function here.\n    // Return format: { pitch: number, probability: number }\n    return { pitch: 440, probability: 0.9 }; // Placeholder\n  }\n\n  private detectAutocorrelation(buffer: Float32Array): PitchResult {\n    // Agent: Inject the standard Autocorrelation/NSDF function here.\n    // Return format: { pitch: number, probability: number }\n    return { pitch: 440, probability: 0.9 }; // Placeholder\n  }\n}",
+    "closedAt": null,
+    "createdAt": "2026-05-03T00:31:40Z",
+    "labels": [],
+    "number": 234,
+    "state": "OPEN",
+    "title": "Implement SwiftF0 as a test for the algorithm tester",
+    "url": "https://github.com/Komediruzecki/pitch-perfect/issues/234",
+    "comments": []
+  },
+  {
+    "author": "Komediruzecki",
+    "body": "## Summary\n\nNeed to implement a complete UVR (Ultimate Vocal Remover) workflow in PitchPerfect:\n\n1. **Import MP3/WAV** - Allow users to upload audio files\n2. **UVR Processing** - Send audio to UVR for stem separation (vocals/instrumental)\n3. **Stem Output** - Provide separated vocal and instrumental stems\n4. **MIDI Generation** - Run pitch detection on vocal stem and create MIDI melody\n5. **Practice Modes** - Practice with:\n   - MIDI melody only\n   - Backing track only\n   - Full mix (karaoke-style)\n\n## Current State\n\nThe app has a `UvrSettings` UI component with sliders, but these are not connected to any backend logic. The settings save to localStorage but don't actually process audio.\n\n## Requirements\n\n### 1. File Upload UI\n- Support MP3 and WAV formats\n- Preview audio before processing\n- Show file info (duration, size)\n\n### 2. UVR Integration\n- Use the UVR CLI from `Anjok07/ultimatevocalremovergui`\n- Options: VR Architecture (Model_AHB), model selection (UVR_MDXNET_model_config)\n- Output: stems as WAV files\n\n### 3. Stem Processing\n- After UVR processing, have:\n  - `vocal-stem.wav` - cleaned vocals\n  - `instrumental-stem.wav` - background music\n\n### 4. Pitch Detection & MIDI\n- Process `vocal-stem.wav` with pitch detector\n- Create MIDI melody from detected notes\n- Support tempo detection and note quantization\n\n### 5. Practice Integration\n- Practice session uses generated MIDI or stems\n- Allow user to select practice mode (MIDI only, backings only, full mix)\n\n## Technical Approach\n\n**Option 1: Server-side Processing** (Recommended)\n- Upload MP3 to server\n- Server calls UVR CLI\n- Return stems + MIDI as response\n- Fast, reliable, no client resource limits\n\n**Option 2: Client-side WASM**\n- Build UVR CLI to WASM\n- Process locally\n- More complex, larger bundle\n\n## Questions\n\n1. Should the UVR processing be server-side or client-side?\n2. What's the expected workflow for users?\n3. Should multiple stem configurations be available?\n4. How to handle large audio files?\n\n## Related\n\n- UVR GitHub: https://github.com/Anjok07/ultimatevocalremovergui",
+    "closedAt": null,
+    "createdAt": "2026-05-03T00:26:29Z",
+    "labels": [],
+    "number": 233,
+    "state": "OPEN",
+    "title": "[Feature] Full UVR Workflow - Import, Split Stems, Generate MIDI",
+    "url": "https://github.com/Komediruzecki/pitch-perfect/issues/233",
+    "comments": [
+      {
+        "author": "Komediruzecki",
+        "body": "To enable real vocal separation:\n  The backend API server needs to be deployed. On the server:\n  cd /var/www/pitchperfect.clodhost.com/pitch-perfect-repo/uvr-api\n  docker build -t uvr-api .\n  docker run -d --name uvr-api -p 8000:8000 uvr-api\n",
+        "createdAt": "2026-05-04T09:28:39Z"
+      }
+    ]
+  },
+  {
+    "author": "Komediruzecki",
+    "body": "Devise a way to estimate accuracy of pitch detection algorithm:\n\nList all issues with each algorithm\nCreate a sample dataset which will be tested on each algorithm\nMeasure offsets from ground truth and give each one a score\nSummarize results and provide final list of best to worst algorithms\nMake sure to also consider computation cost, performance, realtime use\nMake a framework for easily testing  / pluggin in new pitch detection algorithm\n(dedicated developer feature/tab page which provides debug information about pitches detected, allows for loading a sample and running an algorithm through matching it with a waveform/or mic input etc.)",
+    "closedAt": null,
+    "createdAt": "2026-05-02T23:58:41Z",
+    "labels": [],
+    "number": 232,
+    "state": "OPEN",
+    "title": "Pitch Detection Algorithms",
+    "url": "https://github.com/Komediruzecki/pitch-perfect/issues/232",
+    "comments": [
+      {
+        "author": "Komediruzecki",
+        "body": "## Proposed Implementation Plan\n\n### Architecture Overview\nImplement a pluggable framework for comparing pitch detection algorithms with accuracy scoring, performance metrics, and a dedicated debug/testing UI.\n\n---\n\n### Tasks\n\n1. **Algorithm Data Structure**\n   - Extend `PitchAlgorithm` type with algorithm metadata\n   - Define default algorithm list (YIN, AutoCorrelate, etc.)\n   - Each algorithm tracks: name, description, computation time, accuracy\n\n2. **Sample Test Dataset**\n   - Create synthetic dataset with known frequencies (+/- cents variations)\n   - Include octave ranges, perfect intervals, and in-tune notes\n   - Save for programmatic reuse\n\n3. **Accuracy Scoring Engine**\n   - For each algorithm, calculate offset from ground truth\n   - Score out of 100% based on within +/- 10 cents, +/- 25 cents\n   - Measure per-sample computation time\n\n4. **Test Runner UI Component**\n   - dedicated panel for algorithm comparison\n   - Load sample → Run all algorithms side-by-side\n   - Display results table with scores and timing\n\n5. **Pluggable Framework**\n   - Clear interface for adding new algorithms\n   - Runtime algorithm selection/registration\n\n6. **Performance Metrics**\n   - Track CPU, memory, frame time for each algorithm\n   - Evaluate realtime viability (60fps target)\n\n---\n\n### Proposed File Structure\n- `src/lib/pitch-algorithm-tester.ts` - Core testing engine\n- `src/lib/pitch-algorithms.ts` - Algorithm registry and metadata\n- `src/components/PitchAlgorithmTester.tsx` - UI component\n- `src/data/pitch-test-samples.ts` - Test dataset",
+        "createdAt": "2026-05-03T00:20:26Z"
+      },
+      {
+        "author": "Komediruzecki",
+        "body": "## Implementation Plan\n\nI've created a plan for implementing the pitch detection algorithms framework. See [gh232-pitch-algorithms.md](/root/pitch-perfect-v2/App/docs/plans/gh232-pitch-algorithms.md) for full details.\n\n### Overview\n\nThis will provide a framework for:\n1. Comparing multiple pitch detection algorithms (YIN, FFT, Autocorrelation)\n2. Benchmarking accuracy against known test cases\n3. Measuring performance (computation time, accuracy, false positives)\n4. A developer debug tab for real-time testing\n\n### Implementation Phases\n\n**Phase 1:** Algorithm framework + benchmarking utilities + test dataset\n**Phase 2:** Additional algorithm implementations (FFT, Autocorrelation)\n**Phase 3:** Debugging/Developer UI tab\n**Phase 4:** Documentation + final comparison report\n\n### Core Features\n\n- Base `IPitchDetector` interface for pluggable algorithms\n- Benchmarking framework that measures MAE (Hz), MAE (cents), accuracy thresholds\n- Computation time tracking for all algorithms\n- PitchTestingTab component for real-time testing and comparison\n- Test dataset covering MIDI 48-84 (C3-C6) with known ground truth\n\nLet me know if you'd like me to proceed with the implementation!",
+        "createdAt": "2026-05-03T00:22:02Z"
+      }
+    ]
+  },
+  {
+    "author": "Komediruzecki",
+    "body": "When in playback practice tab, clicking on a note plays it, when the playback is paused or stopped\n\nIf user presses it three times in a row quickly, play the note 5 times with rest between each note play of about 1 bar",
+    "closedAt": null,
+    "createdAt": "2026-05-02T21:47:24Z",
+    "labels": [],
+    "number": 230,
+    "state": "OPEN",
+    "title": "Play note on press",
+    "url": "https://github.com/Komediruzecki/pitch-perfect/issues/230",
+    "comments": []
+  },
+  {
+    "author": "Komediruzecki",
+    "body": "Safari/ios crashes with script error, sometimes\n\nThe skip on session mode jo longer works, goes from beginning only",
+    "closedAt": null,
+    "createdAt": "2026-05-02T21:36:33Z",
+    "labels": [],
+    "number": 229,
+    "state": "OPEN",
+    "title": "New issues on release",
+    "url": "https://github.com/Komediruzecki/pitch-perfect/issues/229",
+    "comments": []
+  },
+  {
+    "author": "Komediruzecki",
+    "body": "In settings add nice changelog button to show a modal with app versions and changes\n\nThe changelog will be versioned in git under changelog.md\n\nUse keepachangelog style: https://keepachangelog.com/en/1.1.0/\n\nEnsure the changelog is concise, and that versioning is used from the defaults.ts aka from package.json. \n\nAdd a way to give Hints/Area for users to explore new stuff, like a button to Learn What's new etc. (a separate guide perhaps that guides on NEW only features/Major feature)",
+    "closedAt": null,
+    "createdAt": "2026-05-02T19:49:25Z",
+    "labels": [],
+    "number": 228,
+    "state": "OPEN",
+    "title": "Add changelog feature",
+    "url": "https://github.com/Komediruzecki/pitch-perfect/issues/228",
+    "comments": []
+  },
+  {
+    "author": "Komediruzecki",
+    "body": "<img width=\"1846\" height=\"1049\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/50b32481-7ce2-4419-a7a1-7ea42b90f637\" />\n\n\nImplementation details:\n\nThe Ball should jump through notes, from first to last, use any physics library open source (MIT) if easier.\n\nOr implement an algorithm that uses real physics to have a jumping ball like on a platformer. But the platforms are basically our notes. The ball jumps on top of notes like in image(s) above.\n\nThanks. Style the 'glowing-dot' better, or similar to above white ball image...thanks\n\n<img width=\"1634\" height=\"1041\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/597c86c0-9545-4eb6-a91a-9aba23bf96ab\" />",
+    "closedAt": null,
+    "createdAt": "2026-05-01T15:22:36Z",
+    "labels": [],
+    "number": 222,
+    "state": "OPEN",
+    "title": "Create Yousician alike jumping ball physics instead of weird up/down physics",
+    "url": "https://github.com/Komediruzecki/pitch-perfect/issues/222",
+    "comments": [
+      {
+        "author": "Komediruzecki",
+        "body": "The ball is still in the middle of the note rendering on canvas, instead of above it. start the ball some px above the first note, and use some curved physics to create an arc from the start x position of note, and y + 100px for y, and then make a curved fall from the start position to end position (end position is top right corner of the note)\n\nThen from that point, top right point on first note rectangle, we need to jump back up in the air, so at least y + 100px, and then again from that jump draw somewhat of an curvature arc towards second note top right corner and direct it towards that ...etc.\n\n\nCan you plan this algorithm or check online resources what algorithm is suitable for such nice, physics tracking? Thakns!",
+        "createdAt": "2026-05-01T17:17:10Z"
+      },
+      {
+        "author": "Komediruzecki",
+        "body": "<img width=\"1658\" height=\"737\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/cce88fc2-16a9-4c72-b9f1-c888038f3827\" />\n\nThe ball should naturally jump even to first note top right corner, aka the initial ball state is a bit higher on canvas than where the note is, then when playback starts, it starts a bezier curve to the top right corner of the note, depending on playback speed and note length/width. To go  \n  directly there, when it gets to top right corner of first note, it needs to have a bouncy effect aka jump from that point in the air, and target the top right corner of the next note, depending on how high or low the next note is, it should jump that much in the air + some difference so it  \n  again nicely according to speed has time to descent onto top right corner of that next note? All clear? I can draw a image if you need for how it should jump!     ",
+        "createdAt": "2026-05-04T11:44:10Z"
+      },
+      {
+        "author": "Komediruzecki",
+        "body": "Something isn't alright, the ball is speeding too much? And it droped on first note (but it should start lets say 100ish px above first note and do a curve to first note top right corner.\nThen second thing, it jumped from first note to third note? That's not alright.\n\nThen later it begin jumping to previous notes, because it missed them.\n\nthe ball movement was also waaay faster than the playback head and general time. \n\nPlease make a nice algorithm, if we are at some point at first note top right corner, we need to calculate how much to jump in the air, then how to descened to next note top right corner.\n\nSo essentially there are 2 arc involved, the first target point is somewhere in the air above the next note, the second is at top right corner of the next note.\n\nWe could have 1 arc, but that would mean we need to adjust the arc height bounce, to always bounce somewhere on top of next note.. see whats easiest and implement that. \n\nMake sure you understand how the ball should behave.",
+        "createdAt": "2026-05-04T12:04:37Z"
+      },
+      {
+        "author": "Komediruzecki",
+        "body": "Much improved, the initial drop of the ball from above first note is targeting wrong note corner? it goes to lower right corner instead of top right corner of the first note rectangle?\n\nAlso, the animation is soo smooth between notes ,amazing!\n\nOne thing I am not sure if its right, when the playhead hits the start beat of the note, the ball is already in front of the playhead and hitting the top right corner? \n\nCan we make the ball follow the playhead more closely, the ball should jump from note to note, if there are rest in between its more tricky, but when the playhead hits the start of note (startbeat) the ball should be somewhere at that 'x' position, aka start beat in the air, and it should then do the arc curve from that air position to the top right corner of the end baat of the note, and it should last exactly how much it needs for the playhead to TOUCH the end beat of the note. \n\nThen we bounce again in the air and continue in the same manner for the next note.\n\nNote: If there is rest between notes, we want to follow playhead, now the ball is, as I said, a bit ahead the playhead. It should not be, it must follow in the air the playhead and then we touch the start beat of note together, then the ball arcs towards the end beat as the playhead is playing the note.\n\n\nPlease check if this is the case ,and have a tests cases with rests between notes, and with notes completely continuos, and with one note, and with 5+ notes etc. to ensure all tests pass. ",
+        "createdAt": "2026-05-04T13:10:17Z"
+      }
+    ]
+  },
+  {
+    "author": "Komediruzecki",
+    "body": "Plan UVR integration (CLI access, through WASM or easier if possible), such that we can run on client side or server side, analysis of imported music and return the split tracks\nThe UVR once integrated should return vocal only track, and we need to adjust it into melody/notes, for users to practice vocal (similar as melodyne)",
+    "closedAt": null,
+    "createdAt": "2026-05-01T15:15:31Z",
+    "labels": [],
+    "number": 221,
+    "state": "OPEN",
+    "title": "UVR integration",
+    "url": "https://github.com/Komediruzecki/pitch-perfect/issues/221",
+    "comments": [
+      {
+        "author": "Komediruzecki",
+        "body": "## Implementation Plan: UVR Integration\n\n### Overview\nIntegrate Ultravox AI (UVR5) for music source separation to extract vocals from imported music tracks, then map those vocals to melody notes for pitch practice.\n\n### Technical Options\n\n**Option A: Node.js CLI (easiest for quick integration)**\n- Deploy UVR5 as a Docker container or install locally\n- Use the Node.js CLI via `child_process` for track separation\n- Pros: Simple API, no WASM learning curve\n- Cons: Requires separate process, slower than WASM, needs container orchestration\n\n**Option B: WASM Build**\n- Compile UVR to WebAssembly (if available)\n- Load UVR Wasm files from CDN\n- Pros: Faster, no external process, fully client-side\n- Cons: Complex setup, learning curve, bundle size\n\n### Recommended Approach\n\nStart with **Option A (Node.js CLI)** for the MVP, with a clear path to WASM:\n\n**Phase 1: Backend Service**\n1. Create  endpoint\n2. Containerize UVR5 with Docker\n3. Accept uploaded audio files → send to UVR → return vocal-only track\n4. Use Flask/FastAPI wrapper (lightweight) for this\n\n**Phase 2: Melody Mapping**\n1. Convert extracted vocal track to MIDI using our existing `.processToMelody()` \n2. Parse MIDI to melody notes (same logic as built-in melodies)\n3. Return both raw audio + mapped melody for practice\n\n**Phase 3: Cleanup & Optimization** (Future)\n- Explore WASM version for client-side-only workflow\n- Optimize for performance with progress streaming\n\n### API Design\n\n```typescript\ninterface VocalSeparationRequest {\n  audioFile: File | Buffer\n  model: 'VRArch' | 'MDX-Net' | 'ConvTasNet'\n  returnMelody?: boolean  // Return also processed melody\n}\n\ninterface VocalSeparationResponse {\n  vocalTrack: Buffer  // Processed vocal-only audio\n  melody?: MelodyData  // Optional mapped melody\n  duration: number\n  sampleRate: number\n}\n```\n\n### Implementation Details\n\n1. **Storage**: Store temporary uploaded files in `/tmp/pp-uploads/` with cleanup cron\n2. **Queue**: Use Bull/Redis or in-memory queue for processing (UVR is CPU intensive)\n3. **Progress**: SSE (Server-Sent Events) for long-running jobs\n4. **Models**: Pre-install popular models on container: VRArch, MDX-Net\n\n### Next Steps\n1. Containerize UVR5 and test separation quality\n2. Implement the Node.js CLI wrapper\n3. Build the API endpoint\n4. Integrate with VocalAnalysis tab for \"Separate Vocal from Music\" workflow",
+        "createdAt": "2026-05-01T15:48:34Z"
+      },
+      {
+        "author": "Komediruzecki",
+        "body": "Not only settings but also how to use UVR, uvr stands for ultimate vocal remover, so we need a way for user to import a song, ideally wav or mp3 format, then split the song into vocal and rest, then the vocal part/stem, run pitch detector and create a midi melody from it? You implemented all of this? I wanted to use a tool called UVR on Github: github.com/Anjok07/ultimatevocalremovergui, they should have CLI also, so if they don't have NPM package, I wanted to have a wasm or similar sttyle build of the CLI of the tool. Send the mp3 track to them for analysis, then user waits and he gets that midi, then he can practice with the midi only or via separated stem, aka backing track and vocal, like karaoke system. IF this is not implemented open another issue on GH and start with plannign it, then execute the plan without asking (new branch, branched from current uvr branch) thanks!",
+        "createdAt": "2026-05-03T00:26:29Z"
+      }
+    ]
+  },
+  {
+    "author": "Komediruzecki",
+    "body": " Can you plesae inspect the main branch for bugs, create feat/fix-initial-bugs branch from main and test this things:\n\n- The app session sequence in 'Practice' mode in Practice tab has a problem continuing the sequence when 'rest' item is encountered, after that item is played / waited out, the next melody or thing is always REST, it never recovers to next item in session sequence\n- The grading logic is corrupted, how are we grading the user, can we make an investigation into current state and how to make the user score better in terms of how much percentage of note he did right and how much he didn't (this could be written on the note itself as percentage for that note) and color coded ofc as it already is in terms of how much did the user hit that pitch or around it. \n- The UI on tablet/mobile/small screens is bad, can you make a plan how to improve usage on smaller screens, in terms of scroll behavior, things not seeable in some cases and in general \n- e.g., the left sidebar has a scroll but it doesn't reach bottom on a tablet view in some cases when modal is opened and closed etc.",
+    "closedAt": null,
+    "createdAt": "2026-04-30T19:12:38Z",
+    "labels": [],
+    "number": 216,
+    "state": "OPEN",
+    "title": "App improvements v0.1.1",
+    "url": "https://github.com/Komediruzecki/pitch-perfect/issues/216",
+    "comments": [
+      {
+        "author": "Komediruzecki",
+        "body": "Can you please implement a critical feature: If the whole app throws an erorr, catch it and show a app crashed nice modal dialgo in the middle. With app version, github link to report bug(s) etc. And offer the user to 'reload' as well as 'delete local storage/indexed db' so we as developer can test and also users can migrate easily to new versions or resolve incompatiblities (this is usefeul on mobile devices where access to website localstorage etc. isn't really supported!)",
+        "createdAt": "2026-04-30T19:33:58Z"
+      },
+      {
+        "author": "Komediruzecki",
+        "body": "> Can you please implement a critical feature: If the whole app throws an erorr, catch it and show a app crashed nice modal dialgo in the middle. With app version, github link to report bug(s) etc. And offer the user to 'reload' as well as 'delete local storage/indexed db' so we as developer can test and also users can migrate easily to new versions or resolve incompatiblities (this is usefeul on mobile devices where access to website localstorage etc. isn't really supported!)\n\nFixed!",
+        "createdAt": "2026-05-03T11:17:53Z"
+      }
+    ]
+  },
+  {
+    "author": "Komediruzecki",
+    "body": "The 'professional' the 'beginner' the 'average' presets. Aka striving to be perfect vs starting out match.\nThree tiers:\n\"Learning\", \"Singer\", \"Professional\"\nAnd for each presets the offsets scores as what is perfect pitch, ok, bad off etc. is adjusted. \n\nThe 'Professional' Has the max settings with Perfect pitch being 0 off, and so on as current default settings are! \n\nPlease add same style dropdown in settings to select this. And put some way of\nWelcomeScreen adjustement to quickly set one of three options (select above action buttons)",
+    "closedAt": null,
+    "createdAt": "2026-04-30T15:36:54Z",
+    "labels": [],
+    "number": 214,
+    "state": "OPEN",
+    "title": "Add presets for perfect pitch deviance",
+    "url": "https://github.com/Komediruzecki/pitch-perfect/issues/214",
+    "comments": [
+      {
+        "author": "Komediruzecki",
+        "body": "Also consider to add a Q&A at the beginning, so the actual preset is applied depending on answers",
+        "createdAt": "2026-04-30T15:37:26Z"
+      }
+    ]
+  },
+  {
+    "author": "Komediruzecki",
+    "body": "Application feedback\n - Make sure the feedback form is sent for all participants (survey)\n - Make gpt a task to create a survey, easy online or a custom q&a\n\n1. Plan UVR integration (CLI access, through WASM or easier if possible), such that we can run on client side or server side, analysis of imported music and return the split tracks\n2. The UVR once integrated should return vocal only track, and we need to adjust it into melody/notes, for users to practice vocal (similar as melodyne)\n3. Vocal analysis toolset (new tab Vocal Analysis)\n  - Should contain nice heatmap of practice sessions/routines\n  - Nice history of progress for users (progress charts, goals)\n  - Should contain analysis of vocal runs from mic, how they look, spectrum analysis etc.\n  - Add basic exercises such as Belting, Falsetto, Crescendo/Decrescendo and vocal analysis shows if we are doing it right!\n  \n5. Community share \n  - Melodies, Links to sessions/playlist, results/charts, streaks\n  - Community leaderboard\n  - Create some challenges for people to try, check how good are they (high notes, low notes, speed etc)\n6. Add feedback form, mail etc. contact info (company wise)\n7. Create amazing set of character(s) and their moods, similary as on claude, to connect with vocal runs and/or streak/goals",
+    "closedAt": null,
+    "createdAt": "2026-04-29T18:20:07Z",
+    "labels": [],
+    "number": 208,
+    "state": "OPEN",
+    "title": "Next Steps (todo)",
+    "url": "https://github.com/Komediruzecki/pitch-perfect/issues/208",
+    "comments": []
+  },
+  {
+    "author": "Komediruzecki",
+    "body": "Instead of text put Play, put pause (two vertical lines) and for stop a square, basically created nice svgs and use instead of text to save space",
+    "closedAt": null,
+    "createdAt": "2026-04-25T08:34:07Z",
+    "labels": [],
+    "number": 203,
+    "state": "OPEN",
+    "title": "Reimagine play/stop pause buttons",
+    "url": "https://github.com/Komediruzecki/pitch-perfect/issues/203",
+    "comments": []
+  },
+  {
+    "author": "Komediruzecki",
+    "body": "Also after this sessioneditor, please go through codebase and try to simplify, refactor things, find any todos or similar issues, write documentation with assumptions how things should work and create a spec file, in EARS convention format, this we will use to form future code and tests. You should focus more greatly on Practice tab playback, because now it has bunch of play modes like once, repeat and session play. Once should play the melody only, repeat should repeat melody N times as specified by user. And session mode is a button callled Practice, perhaps rename this button to Session mode and then logic will make sense. Please do this and then resolve as many issues you find through the simplifications and EARS spec. Put the ears spec into repo under docs folder. Thanks!",
+    "closedAt": null,
+    "createdAt": "2026-04-25T08:33:04Z",
+    "labels": [],
+    "number": 202,
+    "state": "OPEN",
+    "title": "Improve codebase, write ears spec requirements",
+    "url": "https://github.com/Komediruzecki/pitch-perfect/issues/202",
+    "comments": []
+  },
+  {
+    "author": "Komediruzecki",
+    "body": "## Problem\nQuick Start recursion in handleSessionSkip() can cause performance issues with large session durations (many rest items or long rest durations).\n\n## Context\nWhen a session contains rest items with long durations, the recursive setTimeout pattern can lead to excessive delays:\n\n```typescript\nconst handleSessionSkip = () => {\n  // ... skip current item ...\n  setTimeout(handleSessionSkip, duration)\n}\n```\n\nFor sessions with 10+ rest items or rest durations >30 seconds, this causes:\n- Cumulative delays approaching server timeout limits\n- Poor user experience during practice\n- Risk of hitting React render limits\n\n## Current Implementation\nFound in `src/components/SessionPlayer.tsx`:\n- Recursively calls `handleSessionSkip` via setTimeout for each rest item\n- No timeout cap or cancellation mechanism\n\n## Suggested Fix Options\n1. **Replace recursion with proper lifecycle management** using SolidJS `createEffect` or `requestAnimationFrame`\n2. **Add timeout ceiling** (e.g., max 60-90s per rest)\n3. **Use async/await with delay generator** instead of recursion\n4. **Batch processing** for long sequences\n\n## Requirements\n- Maintain existing session playback behavior\n- Handle sessions with 20+ rest items smoothly\n- Prevent timeout issues during practice\n- Respect user's cancel/stop session actions",
+    "closedAt": null,
+    "createdAt": "2026-04-25T07:45:30Z",
+    "labels": [
+      "bug"
+    ],
+    "number": 201,
+    "state": "OPEN",
+    "title": "Fix: Quick Start recursion with rest items causing timeouts",
+    "url": "https://github.com/Komediruzecki/pitch-perfect/issues/201",
+    "comments": []
+  },
+  {
+    "author": "Komediruzecki",
+    "body": "Add standard OG tags implementation, use title, favicon, description, PNG image of a nice overview of singing/pitch tracking\n\nServer side part will be implemented later.\n\nWhen user shares a melody in some form, like <url>?melody=<...>, the OG tags should be available \n\nGET /og?melody=<encoded_melody>\nGET /og?melody=<encoded_melody>&width=<px>&height=<px>\n\nGET /og/meta?melody=<encoded_melody>\n\nCreate a suiting spec.",
+    "closedAt": null,
+    "createdAt": "2026-04-24T06:33:35Z",
+    "labels": [],
+    "number": 194,
+    "state": "OPEN",
+    "title": "Add OG tags implementation",
+    "url": "https://github.com/Komediruzecki/pitch-perfect/issues/194",
+    "comments": []
+  },
+  {
+    "author": "Komediruzecki",
+    "body": "I have this project as monorepo with one project:\n\ngithub.com/Komediruzecki/chaos-master/tree/main\n\nPlease inspect all: packages/app/ sources and learn the structure of this project, its setup, CSS modularity, component modularity, usage of stores, context and signals in SolidJS.\n\nThen create a conventions doc, in docs/conventions.md and docs/skills.md which contain all learned patterns and conventions / configs picked from this repo.\n\nOnce you have that, scan our repository and see if anything needs improving accoriding to this newly created docs/conventions.md and skills.md. \n\nCreate a new PR for this and push all this research info and any fixes.\n\nBefore opening PR always lint code, typecheck code, run tests and make sure there are no application runtime errors (console.log errors when app is running) ",
+    "closedAt": null,
+    "createdAt": "2026-04-21T23:11:23Z",
+    "labels": [],
+    "number": 186,
+    "state": "OPEN",
+    "title": "Learn SolidJS",
+    "url": "https://github.com/Komediruzecki/pitch-perfect/issues/186",
+    "comments": []
+  },
+  {
+    "author": "Komediruzecki",
+    "body": "Go through eslint/lint/typescript configs, and add as many code checks, static and runtime checks.\n\nScanvage the web for best typescript/web free to use (lightweight) code analyzers, css/html issue finders as well as typescript and solidJS and try integrating them into the frontend architecture.\n\nThen run the scanners and make a report (docs/reports/report.md) or similar HTML reports if available from the tools.\nThen try to fix the correctly reported bugs and code/style issues.\n\nAlso create a final playwright test to analyzer bundled website (actual website running on localhost)\n  - report any console issues\n  - report any browser issues\n\nIf there are decisions to be done, make a plan on this ticket as commnent and wait for green light (approval)\n",
+    "closedAt": null,
+    "createdAt": "2026-04-21T14:35:41Z",
+    "labels": [],
+    "number": 179,
+    "state": "OPEN",
+    "title": "Find some tool enhancers",
+    "url": "https://github.com/Komediruzecki/pitch-perfect/issues/179",
+    "comments": [
+      {
+        "author": "Komediruzecki",
+        "body": "## Static Analysis Results - Tool Enhancers (Issue #179)\n\n### ✅ Phase 1 Complete (Quick Wins)\n\n**Fixed 3 TypeScript errors** in `src/components/Walkthrough.tsx`:\n- Added null check before accessing `tooltipRef` properties\n- Verified with `npm run typecheck` - PASS\n\n### 📊 Current Code Quality Status\n\n| Tool | Result |\n|------|--------|\n| TypeScript | ✅ Strict mode - PASS (0 errors) |\n| ESLint | ✅ 20+ rules configured - PASS (0 errors) |\n| Prettier | ✅ Formatting - PASS (after fix) |\n| Vitest | ✅ 260 unit tests - PASS |\n| Playwright | ✅ 84 E2E tests - PASS |\n\n### 📋 Implementation Plan\n\n**Phase 1: Quick Wins** ✅ COMPLETE\n- [x] Fix 3 TypeScript errors in Walkthrough.tsx\n- [ ] Add aria-labels to essential icon buttons (play, pause, stop, mic, settings)\n\n**Phase 2: Testing Enhancement** (Recommended)\n- [ ] Add localStorage persistence E2E test\n- [ ] Add theme switching persistence E2E test\n- [ ] Add session history integrity E2E test\n\n**Phase 3: Analysis Tools**\n- [ ] Add Husky pre-commit hook for ESLint + Prettier\n- [ ] Add GitHub Actions workflow for automated analysis\n\n**Phase 4: Documentation**\n- [ ] Add JSDoc comments to exported library functions\n- [ ] Update README with analysis tool links\n\n### 🎯 Security Review\n- **XSS**: No critical vulnerabilities (no `innerHTML` with user input)\n- **Eval**: Not used\n- **Code execution**: No vectors detected\n\n### 📈 Codebase Metrics\n- 66 TS/TSX files\n- ~19,000 lines of code\n- 4,564 lines of CSS\n- 140+ exports (components, stores, types, lib functions)\n- 122 try/catch blocks for error handling\n- 100% event listener cleanup rate\n- 100% timer cleanup rate\n\n**Full detailed report**: `/docs/reports/analysis-report.md`\n\nAwaiting approval to proceed with Phase 2-4 implementation.\n\n---\n\nGenerated by: Claude Code (feat/analysis-improvements branch)",
+        "createdAt": "2026-04-21T15:47:38Z"
+      }
+    ]
+  },
+  {
+    "author": "Komediruzecki",
+    "body": "You are a senior frontend engineer performing a SAFE, CONSISTENT naming refactor across a TypeScript + SolidJS codebase.\n\nYou have full access to the project and can modify files.\n\nThe prompt should be chain executed together with: https://github.com/Komediruzecki/pitch-perfect/issues/177,\n“Use your findings from previous analysis to drive the renaming strategy.”\n\n---\n\n## 🎯 GOAL\n\nImprove naming across the entire codebase to be:\n- consistent\n- descriptive\n- domain-aligned\n- idiomatic for SolidJS + TypeScript\n\nWITHOUT breaking functionality.\n\n---\n\n## 📏 NAMING RULES (ENFORCE STRICTLY)\n\n### General\n- Use camelCase for variables and functions\n- Use PascalCase for components\n- Use UPPER_CASE for constants\n- Avoid abbreviations unless standard (id, url)\n\n---\n\n### SolidJS-specific\n- Signals:\n  const [count, setCount]\n  NOT:\n  const [value, setValue]\n\n- Derived values:\n  use clear names:\n  totalBalance (NOT calc1)\n\n- Event handlers:\n  handleClick, handleSubmit\n\n---\n\n### Domain Naming\n- Use full semantic names:\n  txn → transaction\n  acc → account\n  bal → balance\n\n---\n\n## 🔍 PROCESS\n\n### 1. Identify rename candidates\n- unclear variables\n- inconsistent naming\n- duplicates with different names\n\n---\n\n### 2. Build rename map\n\nExample:\n{\n  \"bal\": \"balance\",\n  \"txnList\": \"transactions\",\n  \"val\": \"value\" (or better replacement)\n}\n\n---\n\n### 3. Apply refactor SAFELY\n\nYou MUST:\n- Update all references (including imports/exports)\n- Respect scope\n- Avoid renaming public APIs unless consistent across project\n- Avoid breaking type definitions\n\n---\n\n### 4. SolidJS Reactivity Safety\n\nEnsure:\n- Signals still work correctly\n- No destructuring that breaks reactivity\n- No stale references\n\n---\n\n### 5. File Naming (if needed)\n- Rename files to match components\n- Ensure imports updated\n\n---\n\n## 🧪 VALIDATION (MANDATORY)\n\nAfter refactor, run:\n\n- type check (tsc)\n- lint\n- tests\n\nFix any issues introduced.\n\n---\n\n## 📦 OUTPUT\n\n### ✅ Summary\n- What was renamed\n- Why\n\n### 🔁 Rename Map (full)\n\n### ⚠️ Edge Cases\n- Anything uncertain or risky\n\n---\n\n## 🚫 DO NOT\n\n- Change logic\n- Refactor structure (only naming)\n- Introduce new patterns\n\n---\n\n## 🎯 END GOAL\n\nA clean, consistent naming system across the entire codebase with zero broken functionality.",
+    "closedAt": null,
+    "createdAt": "2026-04-21T10:09:34Z",
+    "labels": [],
+    "number": 178,
+    "state": "OPEN",
+    "title": "Project overview chain and refactor",
+    "url": "https://github.com/Komediruzecki/pitch-perfect/issues/178",
+    "comments": []
+  },
+  {
+    "author": "Komediruzecki",
+    "body": "You are a senior frontend architect and codebase analyst.\n\nYour task is to analyze a TypeScript + SolidJS + Vite project and produce a VISUAL and STRUCTURAL overview of the entire codebase, with a strong focus on naming, scope, and architecture clarity.\n\nYou can execute commands, read files, and traverse the project.\n\n---\n\n## 🎯 GOALS\n\n1. Build a mental model of the entire project\n2. Visualize structure (files, modules, components, dependencies)\n3. Analyze naming conventions and consistency\n4. Classify variables by scope and purpose\n5. Identify confusing, misleading, or inconsistent naming\n\n---\n\n## 🗺️ PROJECT STRUCTURE MAPPING\n\nProduce a clear structural overview:\n\n### 1. File Tree (cleaned)\n- Collapse irrelevant folders (node_modules, dist, etc.)\n- Highlight:\n  - components/\n  - pages/\n  - stores/\n  - utils/\n  - styles/\n\n### 2. Dependency Graph (HIGH LEVEL)\nShow relationships:\n- Which components import which\n- Shared utilities\n- State/store usage\n\nUse a readable format like:\nComponentA\n  ├── uses: utilX, storeY\n  └── renders: ComponentB\n\n---\n\n## 🧠 NAMING ANALYSIS\n\n### 3. Naming Convention Detection\nIdentify patterns used:\n- camelCase\n- kebab-case (CSS)\n- PascalCase (components)\n- inconsistencies\n\n---\n\n### 4. Variable Classification\n\nFor each significant file, classify variables:\n\n#### 🟢 Local variables\n- inside functions/components\n\n#### 🔵 Component state\n- signals (`createSignal`)\n- memos (`createMemo`)\n\n#### 🟣 Derived/computed values\n\n#### 🟠 Global/shared\n- stores\n- module-level variables\n\n#### 🔴 Imports\n- external libs\n- internal modules\n\n---\n\n### 5. Naming Quality Audit\n\nDetect and list:\n\n#### 🚨 Problems\n- unclear names (`data`, `value`, `temp`, `x`)\n- misleading names\n- inconsistent abbreviations\n- same concept named differently across files\n- overly long or overly short names\n\n#### 🧩 Collisions\n- same name used for different meanings\n- different names used for same meaning\n\n---\n\n### 6. Semantic Grouping\n\nGroup variables by domain concepts:\n(e.g. finance app)\n- transactions\n- balances\n- charts\n- filters\n\nCheck if naming reflects domain properly.\n\n---\n\n## 🎨 VISUALIZATION OUTPUT\n\nProvide:\n\n### 🗂 Project Overview (Tree)\n\n### 🔗 Dependency Graph (text-based)\n\n### 🧠 Naming Map\n\nExample:\n\nbalance:\n\nbalance\ntotalBalance\naccountBalance\nbal (❌ inconsistent)\n\n---\n\n### 📊 Consistency Score\nRate:\n- Naming consistency (0–100)\n- Structure clarity (0–100)\n\n---\n\n### 🚨 Critical Issues\nTop naming/structure problems\n\n---\n\n### 🧭 Refactor Strategy (HIGH LEVEL ONLY)\nDO NOT rename yet.\n\nInstead:\n- Define naming rules\n- Define conventions\n- Suggest patterns to standardize\n\n---\n\n## ⚠️ RULES\n\n- Be precise, not generic\n- Prefer concrete examples from code\n- Do not modify code in this step\n- Focus on clarity, not verbosity\n\n---\n\n## 🎯 END GOAL\n\nProduce a clear, visual mental model of the project and expose all naming inconsistencies before refactoring begins.",
+    "closedAt": null,
+    "createdAt": "2026-04-21T10:08:19Z",
+    "labels": [],
+    "number": 177,
+    "state": "OPEN",
+    "title": "Project overview map",
+    "url": "https://github.com/Komediruzecki/pitch-perfect/issues/177",
+    "comments": []
+  },
+  {
+    "author": "Komediruzecki",
+    "body": "You are a senior frontend engineer specializing in migrations to SolidJS. \nYour task is to audit a codebase that is being migrated from plain HTML/CSS/JavaScript to SolidJS.\n\nYour goal is to deeply analyze the current state of the migration and identify:\n- What is correctly migrated\n- What is partially migrated or inconsistent\n- What is broken, risky, or incorrectly implemented\n- What is still legacy (plain JS/DOM manipulation) and should be refactored\n\nYou must act systematically and verify the project like a CI pipeline + code reviewer combined.\n\n---\n\n## 🧭 CONTEXT\n\nThe project is a frontend web application (finance-related UI) originally built using:\n- Plain HTML\n- CSS\n- Vanilla JavaScript (DOM manipulation, event listeners, imperative logic)\n\nIt is being migrated to:\n- SolidJS\n- TypeScript (if present)\n- Modern tooling (Vite, ESLint, Prettier, testing frameworks)\n\n---\n\n## 🧪 YOUR TASKS\n\n### 1. Project Structure & Tooling Audit\n- Detect build system (Vite, Webpack, etc.)\n- Verify SolidJS setup correctness\n- Check tsconfig (if TypeScript is used)\n- Validate ESLint + Prettier configuration\n- Ensure scripts exist and work:\n  - `dev`\n  - `build`\n  - `lint`\n  - `format`\n  - `test`\n\nFlag:\n- Missing scripts\n- Misconfigured paths\n- Incorrect plugin usage\n- Broken imports or aliases\n\n---\n\n### 2. Lint / Format / Type Check Execution\nRuu:\n- ESLint\n- Prettier\n- TypeScript (tsc)\n- fmt \n- etc...\n\nReport:\n- Errors\n- Warnings\n- Inconsistencies\n- Files ignored unintentionally\n\n---\n\n### 3. SolidJS Migration Quality Check\n\n#### 🚨 Detect anti-patterns:\n- Direct DOM manipulation (`document.querySelector`, etc.)\n- Manual event listeners instead of JSX handlers\n- State managed outside Solid primitives\n- Global mutable state without reactivity\n\n#### ✅ Verify correct Solid usage:\n- `createSignal`, `createEffect`, `createMemo`\n- Component structure\n- Props handling\n- JSX usage instead of string templates\n- Proper reactivity (no stale closures, no unnecessary recomputation)\n\n---\n\n### 4. Reactivity & State Integrity\nCheck for:\n- Missing signals where state should be reactive\n- Overuse of signals where not needed\n- Incorrect destructuring breaking reactivity\n- Derived values not using `createMemo`\n\n---\n\n### 5. CSS & Styling Migration\n- Detect legacy global CSS issues\n- Check for:\n  - CSS modules usage\n  - Naming inconsistencies (kebab-case vs camelCase)\n- Identify unused styles\n- Ensure styles match new component structure\n\n---\n\n### 6. Componentization Audit\n- Identify large monolithic files that should be components\n- Detect duplicated UI logic\n- Suggest component boundaries\n\n---\n\n### 7. Testing Coverage\n- Detect testing framework (Vitest, Jest, etc.)\n- Check:\n  - Are tests present?\n  - Are they passing?\n  - Are components tested or only utilities?\n\nFlag:\n- Missing tests for critical UI logic\n- Broken or outdated tests\n\n---\n\n### 8. Performance & UX Risks\n- Detect unnecessary re-renders\n- Identify inefficient computations\n- Spot synchronous heavy operations in UI\n\n---\n\n### 9. Migration Completeness Report\n\nClassify files into:\n- ✅ Fully migrated\n- ⚠️ Partially migrated\n- ❌ Not migrated (still legacy)\n\n---\n\n### 10. Output Format\n\nProduce:\n\n#### 🔍 Summary\n- Overall migration completeness (% estimate)\n- Major risks\n- Readiness for production (Yes/No + why)\n\n#### 📂 Detailed Findings\nGrouped by:\n- Tooling\n- Code quality\n- SolidJS usage\n- Styling\n- Tests\n\n#### 🧨 Critical Issues (must fix first)\nBullet list with severity\n\n#### 🛠 Suggested Fixes\nConcrete actionable steps (not vague advice)\n\n#### 🧱 Refactor Suggestions\n- Component splits\n- State restructuring\n- File organization\n\n---\n\n## ⚠️ IMPORTANT RULES\n\n- Do NOT assume things work — verify logically\n- Be critical, not polite\n- Prefer concrete examples over general advice\n- Point to exact patterns or code smells\n- If unsure, mark as \"needs verification\"\n\n---\n\n## 🎯 END GOAL\n\nGive a brutally honest, technically precise evaluation of the migration state and a clear path to a clean, idiomatic SolidJS codebase.",
+    "closedAt": null,
+    "createdAt": "2026-04-21T10:00:39Z",
+    "labels": [],
+    "number": 176,
+    "state": "OPEN",
+    "title": "Check refactor made by porting all js/css/html to vite solidJS frontend",
+    "url": "https://github.com/Komediruzecki/pitch-perfect/issues/176",
+    "comments": []
+  },
+  {
+    "author": "Komediruzecki",
+    "body": "## Problem\n\nThe Editor and Practice tabs have duplicated control toolbar code with overlapping functionality:\n- Both use Play/Pause/Continue/Stop buttons  \n- Both have volume, speed, and metronome controls\n- Editor toolbar doesn't actually control audio playback (broken)\n\n## Current State\n\n**PracticeTabHeader.tsx**: Contains practice-specific controls (modes, cycles, count-in, sensitivity, sessions button)\n\n**EditorTabHeader.tsx**: Contains editor-specific controls (record to piano roll, volume, speed, metronome)\n\nBoth have the same core controls but implemented separately.\n\n## Proposed Solution\n\nCreate a shared `SharedControlToolbar` component that:\n1. Provides all core controls (play, pause, stop, mic, wave, volume, speed, metronome)\n2. Uses conditional rendering for tab-specific controls\n3. Properly connects to PlaybackRuntime for actual audio playback\n\n## Expected Outcome\n\n- Single source of truth for control toolbar UI\n- Editor toolbar will properly control playback audio\n- Easier to maintain and extend controls\n- Reduces code duplication\n\nSee `EDITOR-PLAYBACK-BUGS.md` in the repo for detailed investigation of the playback issues.",
+    "closedAt": null,
+    "createdAt": "2026-04-21T09:20:32Z",
+    "labels": [],
+    "number": 174,
+    "state": "OPEN",
+    "title": "Refactor: Create shared control toolbar for Editor and Practice tabs",
+    "url": "https://github.com/Komediruzecki/pitch-perfect/issues/174",
+    "comments": []
+  },
+  {
+    "author": "Komediruzecki",
+    "body": "## Branches Safe to Delete\n\nThese branches are merged to main or have no divergence and can be safely deleted.\n\n### Chore Branches\n- `chore/add-deploy-script`\n- `chore/auto-cleanup-branches`\n- `chore/deploy-script-and-server-security`\n- `chore/fix-test-workflow`\n- `chore/port-remaining-features`\n\n### Feature Branches\n- `custom-practice-modes`\n- `feat/frontend-v2-solidjs`\n- `feat/improvements-ux-audio-engine`\n- `feat/issue-45-merge-transport-buttons`\n- `feat/issue-81-fix-port`\n- `feat/issues-42-43-canvas-stretch-playhead`\n- `feat/piano-roll-improvements`\n- `feat/piano-roll-multi-select` (ahead 1, behind 1)\n- `feat/pitch-accuracy-improvements`\n- `feat/pitch-track-canvas`\n- `feat/playhead-resume-and-effects`\n- `feat/scale-modes-in-practice-tab`\n- `feat/speed-control-heatmap`\n- `feat/typescript-solidjs-migration`\n- `feat/typescript-solidjs-migration-v2`\n- `feature/deploy-solidjs-live`\n- `fix/audio-playhead-settings`\n- `fix/solidjs-deploy-v2`\n\n---\n\n## Branches NOT Safe to Delete\n\n### Has Significant Divergence (Need Manual Review)\n- `feat/piano-roll-improvements-v2` — 133 commits behind main (DIVERGED)\n- `feature/solidjs-port` — 138 commits behind main (DIVERGED)\n\n### Already Deleted (No Action Needed)\n- `feat/extend-bpm-range-readme`\n- `feat/issue-10-gitignore`\n- `feat/issue-12-pitchperfect-image`\n- `feat/issue-13-close-dialog`\n- `feat/issue-16-preset-bpm`\n- `feat/issue-18-sidebar-canvas`\n- `feat/issue-20-volume-controls`\n- `feat/issue-21-title-click-nav`\n- `feat/issue-22-pitch-line-fix`\n- `feat/issue-23-multi-octave-piano-roll`\n- `feat/issue-35-ci-workflow`\n- `feat/issue-37-tabs-left`\n- `feat/issue-39-repo-structure`\n- `feat/issue-3-octave-shift-default`\n- `feat/issue-5-fix-var-declarations`\n- `feat/issue-8-fix-buildscale-order`\n- `feat/todo-feature-list`\n- `fix/audio-editor-playhead-settings`\n- `fix/issue-30-volume-auto-update`",
+    "closedAt": null,
+    "createdAt": "2026-04-20T06:41:57Z",
+    "labels": [],
+    "number": 164,
+    "state": "OPEN",
+    "title": "Deleteable Branches - Review for Cleanup",
+    "url": "https://github.com/Komediruzecki/pitch-perfect/issues/164",
+    "comments": []
+  },
+  {
+    "author": "Komediruzecki",
+    "body": "Also the hamburger menu is occluding the logo, maybe do something about it",
+    "closedAt": null,
+    "createdAt": "2026-04-19T15:32:34Z",
+    "labels": [],
+    "number": 162,
+    "state": "OPEN",
+    "title": "Adjust tour walkthrough for small mobile screens",
+    "url": "https://github.com/Komediruzecki/pitch-perfect/issues/162",
+    "comments": []
+  },
+  {
+    "author": "Komediruzecki",
+    "body": "The button should be disabled initially and always when the playback is in Stopped state.\nThat is, when user did not start playback, and when it is not paused, the Stop button is disabled state (cannot be clicked)\nWhen user Starts the playback, or pauses it, then the stop should be able to be clicked (active state)\n",
+    "closedAt": null,
+    "createdAt": "2026-04-19T13:42:12Z",
+    "labels": [],
+    "number": 161,
+    "state": "OPEN",
+    "title": "The Stop Control Practice button should be in disabled state",
+    "url": "https://github.com/Komediruzecki/pitch-perfect/issues/161",
+    "comments": []
+  }
+]

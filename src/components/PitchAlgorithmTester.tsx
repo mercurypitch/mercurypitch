@@ -183,7 +183,7 @@ export const PitchAlgorithmTester: Component<
           {/* Buttons */}
           <div class="tester-buttons">
             <button
-              class="play-btn"
+              class="tester-play-btn"
               onClick={runSelected}
               disabled={
                 running() ||

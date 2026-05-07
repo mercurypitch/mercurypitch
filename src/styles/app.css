@@ -9979,7 +9979,7 @@ input:checked + .settings-slider:before {
   margin-top: 4px;
 }
 
-.play-btn {
+.tester-play-btn {
   flex: 1;
   padding: 10px 12px;
   border: none;
@@ -10011,16 +10011,16 @@ input:checked + .settings-slider:before {
   color: var(--accent);
 }
 
-.play-btn:hover:not(:disabled) {
+.tester-play-btn:hover:not(:disabled) {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px var(--accent-glow);
 }
 
-.play-btn:active:not(:disabled) {
+.tester-play-btn:active:not(:disabled) {
   transform: translateY(1px);
 }
 
-.play-btn:disabled,
+.tester-play-btn:disabled,
 .run-all-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
