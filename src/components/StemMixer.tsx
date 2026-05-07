@@ -605,26 +605,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   // ── Lyric line click ────────────────────────────────────────
   const handleLyricLineClick = (idx: number) => {
     if (lrcLines().length > 0 && idx < lrcLines().length) {
-      const time = lrcLines()[idx].time
-      pauseOffset = Math.min(time, duration())
+      seekTo(lrcLines()[idx].time)
     } else if (lyricsLines().length > 0 && duration() > 0) {
-      pauseOffset = (idx / lyricsLines().length) * duration()
-    }
-    setElapsed(pauseOffset)
-    if (playing()) {
-      disconnectSources()
-      createSources(pauseOffset)
-      startTime = audioCtx!.currentTime - pauseOffset
-      pitchHistory = []
-      pitchDetector?.resetHistory()
-    } else if (duration() > 0) {
-      ensureAudioCtx()
-      disconnectSources()
-      createSources(pauseOffset)
-      syncCanvasSizes()
-      drawWaveformOverview()
-      drawLiveWaveform()
-      drawPitchCanvas()
+      seekTo((idx / lyricsLines().length) * duration())
     }
   }
 
