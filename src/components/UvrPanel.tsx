@@ -735,6 +735,7 @@ export const UvrPanelStyles: string = `
   height: 100%;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .section-header {

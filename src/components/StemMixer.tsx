@@ -192,6 +192,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   let liveWaveCanvasRef: HTMLCanvasElement | undefined
   let progressBarRef: HTMLDivElement | undefined
   let workspaceRef: HTMLDivElement | undefined
+  let lyricsScrollRef: HTMLDivElement | undefined
   let lyricsFileInputRef: HTMLInputElement | undefined
 
   // Cached canvas dimensions — updated only on resize, not every frame
@@ -2108,6 +2109,24 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }
   })
 
+  createEffect(() => {
+    const idx = currentLineIdx()
+    if (!playing() || idx < 0) return
+    const container = lyricsScrollRef
+    if (!container) return
+    const lines = container.querySelectorAll('.sm-lyrics-line')
+    if (idx < lines.length) {
+      const activeLine = lines[idx] as HTMLElement
+      const containerRect = container.getBoundingClientRect()
+      const lineRect = activeLine.getBoundingClientRect()
+      const halfVisible = containerRect.top + containerRect.height / 2
+      if (lineRect.bottom > halfVisible) {
+        const scrollTarget = container.scrollTop + (lineRect.top - containerRect.top) - containerRect.height * 0.3
+        container.scrollTo({ top: scrollTarget, behavior: 'smooth' })
+      }
+    }
+  })
+
   onCleanup(() => {
     disconnectSources()
     cancelAnimationFrame(rafId)
@@ -3056,6 +3075,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
                   <div
                     class="sm-lyrics-lines"
+                    ref={lyricsScrollRef}
                     classList={{ 'sm-lyrics-columns-2': lyricsColumns() === 2, 'sm-lyrics-lines--marking': blockMarkMode() }}
                     style={{ 'font-size': `${lyricsFontSize()}rem` }}
                     onWheel={(e) => {
@@ -3465,7 +3485,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                             })()}
                           </div>
                         </Show>
-                        <div class="sm-lyrics-lines" classList={{ 'sm-lyrics-columns-2': lyricsColumns() === 2, 'sm-lyrics-lines--marking': blockMarkMode() }} style={{ 'font-size': `${lyricsFontSize()}rem` }} onWheel={(e) => { e.stopPropagation(); if (e.ctrlKey || e.metaKey) { e.preventDefault(); setLyricsFontSize(prev => Math.min(1.5, Math.max(0.45, +(prev - e.deltaY * 0.001).toFixed(2)))) } }}>
+                        <div class="sm-lyrics-lines" ref={lyricsScrollRef} classList={{ 'sm-lyrics-columns-2': lyricsColumns() === 2, 'sm-lyrics-lines--marking': blockMarkMode() }} style={{ 'font-size': `${lyricsFontSize()}rem` }} onWheel={(e) => { e.stopPropagation(); if (e.ctrlKey || e.metaKey) { e.preventDefault(); setLyricsFontSize(prev => Math.min(1.5, Math.max(0.45, +(prev - e.deltaY * 0.001).toFixed(2)))) } }}>
                           {(() => {
                             const rl = lyricsRenderData()
                             const rlByLyricIdx = new Map<number, LyricRenderLine>()
@@ -5314,6 +5334,7 @@ export const StemMixerStyles: string = `
   flex-direction: column;
   gap: 0.5rem;
   min-height: 0;
+  overflow: hidden;
 }
 
 /* Right Sidebar */
