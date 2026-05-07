@@ -1431,6 +1431,13 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       pitchHistory = []
       pitchDetector?.resetHistory()
     }
+    // Always redraw canvases so playhead moves immediately
+    requestAnimationFrame(() => {
+      syncCanvasSizes()
+      drawWaveformOverview()
+      drawLiveWaveform()
+      drawPitchCanvas()
+    })
   }
 
   const handleWaveformClick = (e: MouseEvent) => {
@@ -2229,6 +2236,13 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     setPanels(prev => prev.map(p =>
       p.id === resizePanelId ? { ...p, height: newHeight } : p
     ))
+    // Redraw canvases on next frame so they match the new panel size during drag
+    requestAnimationFrame(() => {
+      syncCanvasSizes()
+      drawWaveformOverview()
+      drawLiveWaveform()
+      drawPitchCanvas()
+    })
   }
 
   const handleResizeEnd = (_e: PointerEvent) => {
