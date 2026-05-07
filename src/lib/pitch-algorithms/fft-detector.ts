@@ -305,7 +305,7 @@ export class FFTDetector implements IPitchDetector {
 
     // Parabolic interpolation for sub-bin accuracy
     let frequency: number
-    if (maxIdx > minBin && maxIdx < maxBin) {
+    if (maxIdx > 0 && maxIdx < maxBin) {
       const alpha = magnitudes[maxIdx - 1]
       const beta = magnitudes[maxIdx]
       const gamma = magnitudes[maxIdx + 1]

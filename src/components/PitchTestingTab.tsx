@@ -521,6 +521,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
   // Stop everything — detection and/or running test
   const stopAll = () => {
     cancelTest = true
+    setIsRunningTest(false)
     stopLiveDetection()
   }
 

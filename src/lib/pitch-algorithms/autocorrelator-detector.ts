@@ -126,7 +126,6 @@ export class AutocorrelatorDetector implements IPitchDetector {
     for (let i = 0; i < n; i++) {
       r0 += windowed[i] * windowed[i]
     }
-    r0 /= n
 
     if (r0 < 1e-12) return null
 
@@ -143,7 +142,7 @@ export class AutocorrelatorDetector implements IPitchDetector {
       for (let i = 0; i < n - lag; i++) {
         sum += windowed[i] * windowed[i + lag]
       }
-      const corr = sum / ((n - lag) * r0)
+      const corr = sum / r0
 
       if (corr > bestCorr) {
         bestCorr = corr
@@ -207,7 +206,7 @@ export class AutocorrelatorDetector implements IPitchDetector {
     for (let i = 0; i < n - lag; i++) {
       sum += windowed[i] * windowed[i + lag]
     }
-    return sum / ((n - lag) * r0)
+    return sum / r0
   }
 
   private normalizeSettings(
