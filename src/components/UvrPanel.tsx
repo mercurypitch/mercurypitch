@@ -885,13 +885,13 @@ export const UvrPanelStyles: string = `
 /* History Section */
 .history-section {
   padding: 1.5rem;
-  max-width: 85%;
+  max-width: min(85%, 1200px);
   margin: 0 auto;
 }
 
 .history-list {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.5rem;
   overflow-y: auto;
   max-height: calc(100vh - 200px);
