@@ -230,7 +230,7 @@ describe('UvrResultViewer Component', () => {
       fireEvent.click(screen.getByText('Share'))
 
       expect(writeText).toHaveBeenCalledWith(
-        expect.stringContaining('/uvr/session/session-456'),
+        expect.stringContaining('#/uvr/session/session-456'),
       )
     })
   })

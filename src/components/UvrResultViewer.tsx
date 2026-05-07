@@ -70,7 +70,7 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
   }
 
   const handleShare = async () => {
-    const url = `${window.location.origin}/uvr/session/${props.sessionId || ''}`
+    const url = `${window.location.origin}/#/uvr/session/${props.sessionId || ''}`
     try {
       await navigator.clipboard.writeText(url)
       setShareToast('Link copied to clipboard!')

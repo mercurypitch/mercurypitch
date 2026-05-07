@@ -549,7 +549,7 @@ export const CommunityShare: Component = () => {
   // Copy shareable link to clipboard
   const copyShareLink = (type: 'melody' | 'session', id: string) => {
     const baseUrl = window.location.origin
-    const link = `${baseUrl}/share?type=${type}&id=${id}`
+    const link = `${baseUrl}/#/share?type=${type}&id=${id}`
     navigator.clipboard.writeText(link)
     alert('Share link copied to clipboard!')
   }
@@ -557,7 +557,7 @@ export const CommunityShare: Component = () => {
   // Generate shareable URL for content
   const generateShareUrl = (type: ShareableContent, id: string) => {
     const baseUrl = window.location.origin
-    return `${baseUrl}/share?type=${type}&id=${id}`
+    return `${baseUrl}/#/share?type=${type}&id=${id}`
   }
 
   // Tabs

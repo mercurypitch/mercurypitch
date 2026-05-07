@@ -6,7 +6,7 @@ import type { Component } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
 import { deleteUvrSession, getUvrSession } from '@/stores/app-store'
 import type { UvrSession, UvrStatus } from '@/types/uvr'
-import { Box, Calendar, CheckCircle, Headphones, Loader2, Midi, Music, Play, SlidersHorizontal, Trash2, Voice, XCircle, } from './icons'
+import { Box, Calendar, CheckCircle, Headphones, Loader2, Midi, Music, Play, Share, SlidersHorizontal, Trash2, Voice, XCircle, } from './icons'
 
 interface SessionResultProps {
   sessionId: string
@@ -46,6 +46,24 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
     const m = Math.floor(secs / 60)
     const s = Math.floor(secs % 60)
     return `${m}:${s.toString().padStart(2, '0')}`
+  }
+
+  const handleCopyLink = async (e: Event) => {
+    e.stopPropagation()
+    const url = `${window.location.origin}/#/uvr/session/${props.sessionId}`
+    try {
+      await navigator.clipboard.writeText(url)
+      setToastMessage('Link copied to clipboard!')
+    } catch {
+      const input = document.createElement('input')
+      input.value = url
+      document.body.appendChild(input)
+      input.select()
+      document.execCommand('copy')
+      document.body.removeChild(input)
+      setToastMessage('Link copied!')
+    }
+    setTimeout(() => setToastMessage(''), 2500)
   }
 
   const handleDelete = (e: Event) => {
@@ -274,6 +292,13 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
               <SlidersHorizontal /> Mix Selected
             </button>
           </Show>
+          <button
+            class="session-result-btn session-result-btn-copy"
+            onClick={handleCopyLink}
+            title="Copy share link"
+          >
+            <Share />
+          </button>
         </div>
       </Show>
 
@@ -660,6 +685,25 @@ export const UvrSessionResultStyles: string = `
 .session-result-btn-mixer:hover {
   background: rgba(139, 92, 246, 0.1);
   border-color: rgba(139, 92, 246, 0.5);
+}
+
+.session-result-btn-copy {
+  flex: 0;
+  padding: 0.5rem;
+  background: var(--bg-tertiary);
+  color: var(--fg-secondary);
+  border: 1px solid var(--border);
+}
+
+.session-result-btn-copy:hover {
+  background: var(--bg-hover);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.session-result-btn-copy svg {
+  width: 0.85rem;
+  height: 0.85rem;
 }
 
 .session-result-btn-danger {

@@ -5,7 +5,7 @@
 
 import type { Component } from 'solid-js'
 import { For } from 'solid-js'
-import { createMemo, createSignal, onMount, Show } from 'solid-js'
+import { createEffect, createMemo, createSignal, onMount, Show } from 'solid-js'
 import { VocalAnalysis, VocalChallenges } from '@/components'
 import { AppSidebar } from '@/components/AppSidebar'
 import { CommunityLeaderboard } from '@/components/CommunityLeaderboard'
@@ -37,6 +37,7 @@ import type { InstrumentType } from '@/lib/audio-engine'
 import { audioRegistry } from '@/lib/audio-registry'
 import { debounce } from '@/lib/debounce'
 import { registerE2EBridge } from '@/lib/e2e-bridge'
+import { buildHash, parseHash, replaceHash } from '@/lib/hash-router'
 import { melodyIndexAtBeat, melodyTotalBeats } from '@/lib/scale-data'
 import { buildScaleMelody, buildSessionPlaybackMelody, } from '@/lib/session-builder'
 import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
@@ -156,6 +157,10 @@ const AppShell: Component<AppProps> = (props) => {
     createSignal<PracticeSubMode>('all')
   const [spacedRestMode, setSpacedRestMode] =
     createSignal<SpacedRestMode>('none')
+
+  // Hash routing — prevents effect loop when hash is being updated from code
+  let hashSyncing = false
+  const [initialUvrSessionId, setInitialUvrSessionId] = createSignal<string | null>(null)
 
   // ── Guide Selection dialog ──────────────────────────────────
   const [showGuideSelection, setShowGuideSelection] = createSignal(false)
@@ -584,6 +589,28 @@ const AppShell: Component<AppProps> = (props) => {
     initSettings()
     initReverb()
 
+    // ── Hash routing: initial load ──────────────────────────
+    const initialRoute = parseHash(window.location.hash)
+    if (initialRoute.type === 'tab') {
+      setActiveTab(initialRoute.tab)
+    } else if (initialRoute.type === 'uvr-session') {
+      setActiveTab('uvr')
+      setInitialUvrSessionId(initialRoute.sessionId)
+    }
+
+    // ── Hash routing: back/forward navigation ───────────────
+    window.addEventListener('hashchange', () => {
+      const route = parseHash(window.location.hash)
+      hashSyncing = true
+      if (route.type === 'tab') {
+        setActiveTab(route.tab)
+      } else if (route.type === 'uvr-session') {
+        setActiveTab('uvr')
+        setInitialUvrSessionId(route.sessionId)
+      }
+      hashSyncing = false
+    })
+
     // Inject UVR component styles
     const styleElements = [
       LyricsUploaderStyles,
@@ -665,6 +692,16 @@ const AppShell: Component<AppProps> = (props) => {
     setupRuntimeEvents()
 
     props.onMounted?.()
+  })
+
+  // ── Hash routing: sync activeTab → URL hash ───────────────
+  createEffect(() => {
+    if (hashSyncing) return
+    const tab = activeTab()
+    const expectedHash = `#/${tab}`
+    if (window.location.hash !== expectedHash) {
+      replaceHash({ type: 'tab', tab })
+    }
   })
 
   // ============================================================
@@ -1110,6 +1147,7 @@ const AppShell: Component<AppProps> = (props) => {
               <div id="uvr-panel">
                 <UvrPanel
                   defaultView="upload"
+                  initialSessionId={initialUvrSessionId() ?? undefined}
                   onPracticeStart={(mode) => {
                     // For now, this could load a session from UVR
                     console.log('Starting practice with mode:', mode)

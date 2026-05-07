@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createEffect, createSignal, For, onCleanup, Show } from 'solid-js'
+import { createEffect, createSignal, For, onCleanup, onMount, Show } from 'solid-js'
 import type { UvrSession } from '@/stores/app-store'
 import { cancelUvrSession, completeUvrSession, currentUvrSession, deleteAllUvrSessions, getAllUvrSessions, getAllUvrSessionsReactive, getUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrSessionApiId, startUvrSession, updateUvrSessionOutputs, updateUvrSessionProgress, } from '@/stores/app-store'
 import { getProcessStatus, processAudio, pollForCompletion, type OutputFile, DEFAULT_PROCESS_REQUEST, } from '@/lib/uvr-api'
@@ -61,6 +61,8 @@ type UvrView = 'upload' | 'processing' | 'results' | 'history' | 'mixer'
 interface UvrPanelProps {
   /** Currently active view */
   defaultView?: UvrView
+  /** Initial session ID from hash route — loads session and navigates to results on mount */
+  initialSessionId?: string
   /** Callback when practice is started */
   onPracticeStart?: (mode: 'vocal' | 'instrumental' | 'midi' | 'full') => void
   /** Callback when a session is exported */
@@ -106,6 +108,13 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   createEffect(() => {
     if (props.defaultView) {
       setCurrentView(props.defaultView)
+    }
+  })
+
+  // Deep-link: navigate to session from hash route
+  onMount(() => {
+    if (props.initialSessionId) {
+      handleSessionView(props.initialSessionId)
     }
   })
 
