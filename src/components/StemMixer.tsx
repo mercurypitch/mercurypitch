@@ -136,8 +136,42 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   }
 
   type WorkspaceLayout = 'auto-1col' | 'auto-2col' | 'fixed-2col'
-  const [workspaceLayout, setWorkspaceLayout] = createSignal<WorkspaceLayout>('auto-2col')
-  const [sidebarHidden, setSidebarHidden] = createSignal(false)
+
+  const WORKSPACE_STORE_KEY = 'pitchperfect_workspace_prefs'
+
+  const savedPrefs = (() => {
+    try {
+      const raw = localStorage.getItem(WORKSPACE_STORE_KEY)
+      if (raw) return JSON.parse(raw)
+    } catch {}
+    return null
+  })()
+
+  const [workspaceLayout, setWorkspaceLayout] = createSignal<WorkspaceLayout>(
+    (savedPrefs?.layout as WorkspaceLayout) ?? 'auto-2col',
+  )
+  const [sidebarHidden, setSidebarHidden] = createSignal(
+    savedPrefs?.sidebarHidden ?? false,
+  )
+  const [fixedPanelHeights, setFixedPanelHeights] = createSignal({
+    overview: savedPrefs?.heights?.overview ?? 180,
+    live: savedPrefs?.heights?.live ?? 180,
+    pitch: savedPrefs?.heights?.pitch ?? 260,
+  })
+
+  // Persist workspace prefs whenever they change
+  createEffect(() => {
+    const layout = workspaceLayout()
+    const hidden = sidebarHidden()
+    const heights = fixedPanelHeights()
+    try {
+      localStorage.setItem(WORKSPACE_STORE_KEY, JSON.stringify({
+        layout,
+        sidebarHidden: hidden,
+        heights,
+      }))
+    } catch { /* storage full */ }
+  })
 
   const [panels, setPanels] = createSignal<WorkspacePanel[]>([
     { id: 'overview', label: 'Waveform Overview', order: 0, height: 180 },
@@ -170,6 +204,11 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   let resizeStartY = 0
   let resizeStartHeight = 0
 
+  // Fixed-2col resize state
+  let fixedResizePanelId: string | null = null
+  let fixedResizeStartY = 0
+  let fixedResizeStartHeight = 0
+
   // ── Refs ─────────────────────────────────────────────────────
   let audioCtx: AudioContext | null = null
   let mainGain: GainNode | null = null
@@ -192,7 +231,6 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   let liveWaveCanvasRef: HTMLCanvasElement | undefined
   let progressBarRef: HTMLDivElement | undefined
   let workspaceRef: HTMLDivElement | undefined
-  let lyricsScrollRef: HTMLDivElement | undefined
   let lyricsFileInputRef: HTMLInputElement | undefined
 
   // Cached canvas dimensions — updated only on resize, not every frame
@@ -579,6 +617,14 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       startTime = audioCtx!.currentTime - pauseOffset
       pitchHistory = []
       pitchDetector?.resetHistory()
+    } else if (duration() > 0) {
+      ensureAudioCtx()
+      disconnectSources()
+      createSources(pauseOffset)
+      syncCanvasSizes()
+      drawWaveformOverview()
+      drawLiveWaveform()
+      drawPitchCanvas()
     }
   }
 
@@ -2085,13 +2131,19 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         if (loading() || loadError()) return
         playing() ? handlePause() : handlePlay()
       }
+
+      if (e.key === 'm' || e.key === 'M') {
+        if (workspaceLayout() === 'fixed-2col') {
+          setSidebarHidden(prev => !prev)
+        }
+      }
     }
     window.addEventListener('keydown', handleKeyDown)
     ;(window as any).__smKeydown = handleKeyDown
 
-    // Resize document-level listeners
-    const handleResizeDocMove = (e: PointerEvent) => { handleResizeMove(e) }
-    const handleResizeDocEnd = (e: PointerEvent) => { handleResizeEnd(e) }
+    // Resize document-level listeners (grid + fixed)
+    const handleResizeDocMove = (e: PointerEvent) => { handleResizeMove(e); handleFixedResizeMove(e) }
+    const handleResizeDocEnd = (e: PointerEvent) => { handleResizeEnd(e); handleFixedResizeEnd(e) }
     document.addEventListener('pointermove', handleResizeDocMove)
     document.addEventListener('pointerup', handleResizeDocEnd)
     ;(window as any).__smResizeMove = handleResizeDocMove
@@ -2112,7 +2164,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   createEffect(() => {
     const idx = currentLineIdx()
     if (!playing() || idx < 0) return
-    const container = lyricsScrollRef
+    const container = document.querySelector('.sm-lyrics-lines:not(.sm-lyrics-gen-lines):not(.sm-lyrics-lines-edit)') as HTMLElement | null
     if (!container) return
     const lines = container.querySelectorAll('.sm-lyrics-line')
     if (idx < lines.length) {
@@ -2269,6 +2321,44 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     const canvas = panelEl?.querySelector('canvas') as HTMLElement | null
     if (canvas) canvas.style.pointerEvents = ''
     resizePanelId = null
+    syncCanvasSizes()
+    drawWaveformOverview()
+    drawLiveWaveform()
+    drawPitchCanvas()
+  }
+
+  // ── Fixed-2col resize handlers ────────────────────────────────
+  const handleFixedResizeStart = (panelId: string, e: PointerEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const panelEl = document.querySelector(`[data-fixed-panel="${panelId}"]`) as HTMLElement | null
+    fixedResizePanelId = panelId
+    fixedResizeStartY = e.clientY
+    const cur = fixedPanelHeights()
+    fixedResizeStartHeight = (cur as Record<string, number>)[panelId] ?? (panelEl?.getBoundingClientRect().height ?? 200)
+    const canvas = panelEl?.querySelector('canvas') as HTMLElement | null
+    if (canvas) canvas.style.pointerEvents = 'none'
+    ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
+  }
+
+  const handleFixedResizeMove = (e: PointerEvent) => {
+    if (!fixedResizePanelId) return
+    e.preventDefault()
+    const delta = e.clientY - fixedResizeStartY
+    const newHeight = Math.max(40, fixedResizeStartHeight + delta)
+    setFixedPanelHeights(prev => ({ ...prev, [fixedResizePanelId!]: newHeight }))
+    syncCanvasSizes()
+    drawWaveformOverview()
+    drawLiveWaveform()
+    drawPitchCanvas()
+  }
+
+  const handleFixedResizeEnd = (_e: PointerEvent) => {
+    if (!fixedResizePanelId) return
+    const panelEl = document.querySelector(`[data-fixed-panel="${fixedResizePanelId}"]`)
+    const canvas = panelEl?.querySelector('canvas') as HTMLElement | null
+    if (canvas) canvas.style.pointerEvents = ''
+    fixedResizePanelId = null
     syncCanvasSizes()
     drawWaveformOverview()
     drawLiveWaveform()
@@ -3075,7 +3165,6 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
                   <div
                     class="sm-lyrics-lines"
-                    ref={lyricsScrollRef}
                     classList={{ 'sm-lyrics-columns-2': lyricsColumns() === 2, 'sm-lyrics-lines--marking': blockMarkMode() }}
                     style={{ 'font-size': `${lyricsFontSize()}rem` }}
                     onWheel={(e) => {
@@ -3249,9 +3338,13 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
               <div class="sm-fixed-main">
                 {/* Left Column: Waveform Overview + Lyrics */}
                 <div class="sm-fixed-col sm-fixed-col-left">
-                  <div class="sm-workspace-panel" style={{ height: '180px' }}>
+                  <div class="sm-workspace-panel" style={{ height: `${fixedPanelHeights().overview}px` }} data-fixed-panel="overview">
                     <div class="sm-panel-header">Waveform Overview</div>
                     <canvas ref={waveformCanvasRef} class="sm-canvas sm-canvas-overview" onClick={handleWaveformClick} />
+                    <div
+                      class="sm-resize-handle"
+                      onPointerDown={(e) => handleFixedResizeStart('overview', e)}
+                    />
                   </div>
                   <div class="sm-workspace-panel" style={{ flex: '1', 'min-height': '120px' }}>
                     <div class="sm-panel-header">
@@ -3485,7 +3578,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                             })()}
                           </div>
                         </Show>
-                        <div class="sm-lyrics-lines" ref={lyricsScrollRef} classList={{ 'sm-lyrics-columns-2': lyricsColumns() === 2, 'sm-lyrics-lines--marking': blockMarkMode() }} style={{ 'font-size': `${lyricsFontSize()}rem` }} onWheel={(e) => { e.stopPropagation(); if (e.ctrlKey || e.metaKey) { e.preventDefault(); setLyricsFontSize(prev => Math.min(1.5, Math.max(0.45, +(prev - e.deltaY * 0.001).toFixed(2)))) } }}>
+                        <div class="sm-lyrics-lines" classList={{ 'sm-lyrics-columns-2': lyricsColumns() === 2, 'sm-lyrics-lines--marking': blockMarkMode() }} style={{ 'font-size': `${lyricsFontSize()}rem` }} onWheel={(e) => { e.stopPropagation(); if (e.ctrlKey || e.metaKey) { e.preventDefault(); setLyricsFontSize(prev => Math.min(1.5, Math.max(0.45, +(prev - e.deltaY * 0.001).toFixed(2)))) } }}>
                           {(() => {
                             const rl = lyricsRenderData()
                             const rlByLyricIdx = new Map<number, LyricRenderLine>()
@@ -3546,13 +3639,21 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
                 {/* Right Column: Live Waveform + Vocal Pitch */}
                 <div class="sm-fixed-col sm-fixed-col-right">
-                  <div class="sm-workspace-panel" style={{ height: '180px' }}>
+                  <div class="sm-workspace-panel" style={{ height: `${fixedPanelHeights().live}px` }} data-fixed-panel="live">
                     <div class="sm-panel-header">Live Waveform</div>
                     <canvas ref={liveWaveCanvasRef} class="sm-canvas sm-canvas-live" />
+                    <div
+                      class="sm-resize-handle"
+                      onPointerDown={(e) => handleFixedResizeStart('live', e)}
+                    />
                   </div>
-                  <div class="sm-workspace-panel" style={{ height: '200px' }}>
+                  <div class="sm-workspace-panel" style={{ height: `${fixedPanelHeights().pitch}px` }} data-fixed-panel="pitch">
                     <div class="sm-panel-header">Vocal Pitch</div>
                     <canvas ref={pitchCanvasRef} class="sm-canvas sm-canvas-pitch" />
+                    <div
+                      class="sm-resize-handle"
+                      onPointerDown={(e) => handleFixedResizeStart('pitch', e)}
+                    />
                   </div>
                 </div>
               </div>
@@ -5315,7 +5416,7 @@ export const StemMixerStyles: string = `
 .sm-fixed-layout {
   display: flex;
   flex: 1;
-  overflow: hidden;
+  overflow: auto;
   min-height: 0;
 }
 
@@ -5325,7 +5426,7 @@ export const StemMixerStyles: string = `
   gap: 0.5rem;
   padding: 0.5rem;
   overflow: hidden;
-  min-height: 0;
+  min-height: 550px;
 }
 
 .sm-fixed-col {
