@@ -68,7 +68,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   const [currentLineIdx, setCurrentLineIdx] = createSignal(-1)
   const [lyricsSource, setLyricsSource] = createSignal<'api' | 'upload' | 'none'>('none')
   const [lyricsLoading, setLyricsLoading] = createSignal(false)
-  const [lyricsFontSize, setLyricsFontSize] = createSignal(0.85)    // rem
+  const [lyricsFontSize, setLyricsFontSize] = createSignal(1.0)    // rem
   const [lyricsColumns, setLyricsColumns] = createSignal<1 | 2>(1)
   const [editMode, setEditMode] = createSignal(false)
   type WordTimingsMap = Record<number, number[]>  // line idx → word start times (seconds)
@@ -142,7 +142,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     { id: 'live', label: 'Live Waveform', order: 1, height: 180 },
     { id: 'pitch', label: 'Vocal Pitch', order: 2, height: 200 },
     { id: 'controls', label: 'Stem Controls', order: 3, height: null },
-    { id: 'lyrics', label: 'Lyrics', order: 4, height: 220 },
+    { id: 'lyrics', label: 'Lyrics', order: 4, height: 360 },
   ])
 
   const reorderPanels = (fromId: string, toOrder: number) => {
@@ -2236,13 +2236,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     setPanels(prev => prev.map(p =>
       p.id === resizePanelId ? { ...p, height: newHeight } : p
     ))
-    // Redraw canvases on next frame so they match the new panel size during drag
-    requestAnimationFrame(() => {
-      syncCanvasSizes()
-      drawWaveformOverview()
-      drawLiveWaveform()
-      drawPitchCanvas()
-    })
+    syncCanvasSizes()
+    drawWaveformOverview()
+    drawLiveWaveform()
+    drawPitchCanvas()
   }
 
   const handleResizeEnd = (_e: PointerEvent) => {
@@ -3397,7 +3394,7 @@ export const StemMixerStyles: string = `
   bottom: 0;
   left: 0;
   right: 0;
-  height: 4px;
+  height: 6px;
   cursor: ns-resize;
   background: transparent;
   z-index: 5;
