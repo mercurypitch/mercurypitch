@@ -4838,7 +4838,9 @@ input:checked + .settings-slider:before {
   border-radius: 6px;
   padding: 5px 14px;
   cursor: pointer;
-  transition: background 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    background 0.2s ease,
+    box-shadow 0.2s ease;
 }
 .whats-new-btn:hover {
   background: var(--accent);
@@ -11165,11 +11167,24 @@ input:checked + .settings-slider:before {
   border-bottom: 1px solid var(--border);
 }
 
-.test-results-table th:nth-child(1) { width: 13%; }
-.test-results-table th:nth-child(2) { width: 19%; }
-.test-results-table th:nth-child(3) { width: 19%; text-align: right; }
-.test-results-table th:nth-child(4) { width: 15%; text-align: right; }
-.test-results-table th:nth-child(5) { width: 14%; text-align: center; }
+.test-results-table th:nth-child(1) {
+  width: 13%;
+}
+.test-results-table th:nth-child(2) {
+  width: 19%;
+}
+.test-results-table th:nth-child(3) {
+  width: 19%;
+  text-align: right;
+}
+.test-results-table th:nth-child(4) {
+  width: 15%;
+  text-align: right;
+}
+.test-results-table th:nth-child(5) {
+  width: 14%;
+  text-align: center;
+}
 
 .test-results-table td {
   padding: 6px 10px;

@@ -6,12 +6,7 @@
 
 import { beforeEach, describe, expect, it } from 'vitest'
 import { PitchDetector } from './pitch-detector'
-import {
-  adjustedThreshold,
-  mpmPickThreshold,
-  parabolicInterpolation,
-  parabolicInterpolationMax,
-} from './pitch-detector-internals'
+import { adjustedThreshold, mpmPickThreshold, parabolicInterpolation, parabolicInterpolationMax, } from './pitch-detector-internals'
 
 function createSineBuffer(
   sampleRate: number,
@@ -808,9 +803,7 @@ describe('PitchDetector — MPM zero-crossing peak detection', () => {
     for (let i = 0; i < buffer.length; i++) {
       const angle = (2 * Math.PI * 440 * i) / 44100
       buffer[i] =
-        Math.sin(angle) +
-        0.5 * Math.sin(2 * angle) +
-        0.25 * Math.sin(3 * angle)
+        Math.sin(angle) + 0.5 * Math.sin(2 * angle) + 0.25 * Math.sin(3 * angle)
     }
     const result = d.detect(buffer)
 

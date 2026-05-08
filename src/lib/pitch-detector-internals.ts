@@ -20,10 +20,7 @@ export function mpmPickThreshold(sensitivity: number): number {
  *  of the true minimum.
  *
  *  Formula: shift = (s2 - s0) / (2 * (2*s1 - s2 - s0)) */
-export function parabolicInterpolation(
-  tau: number,
-  buf: Float32Array,
-): number {
+export function parabolicInterpolation(tau: number, buf: Float32Array): number {
   if (tau <= 0 || tau >= buf.length - 1) return tau
 
   const s0 = buf[tau - 1]

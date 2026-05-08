@@ -3,12 +3,7 @@
 // ============================================================
 
 import type { DetectorMetrics, DetectorSettings, PitchDetectionResult, } from '@/types/pitch-algorithms'
-import {
-  adjustedThreshold,
-  mpmPickThreshold,
-  parabolicInterpolation,
-  parabolicInterpolationMax,
-} from './pitch-detector-internals'
+import { adjustedThreshold, mpmPickThreshold, parabolicInterpolation, parabolicInterpolationMax, } from './pitch-detector-internals'
 import { freqToNote } from './scale-data'
 import type { SwiftF0Detector } from './swift-f0-detector'
 
@@ -561,7 +556,6 @@ export class PitchDetector {
     return { frequency: stableFreq, confidence }
   }
 
-
   /** Apply weighted median filter with outlier rejection.
    *  Detects real note changes by looking for consecutive consistent
    *  readings at a new frequency — this avoids rejecting legitimate
@@ -606,7 +600,6 @@ export class PitchDetector {
 
     return frequency
   }
-
 
   /** Get the current sample rate */
   getSampleRate(): number {

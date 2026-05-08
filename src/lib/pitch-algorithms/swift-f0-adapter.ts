@@ -3,13 +3,7 @@
 // to the IPitchDetector interface used by PitchTestingTab
 // ============================================================
 
-import type {
-  DetectorMetrics,
-  DetectorSettings,
-  IPitchDetector,
-  PitchAlgorithm,
-  PitchDetectionResult,
-} from '@/types/pitch-algorithms'
+import type { DetectorMetrics, DetectorSettings, IPitchDetector, PitchAlgorithm, PitchDetectionResult, } from '@/types/pitch-algorithms'
 import { freqToNote } from '../scale-data'
 import type { SwiftPitchResult } from '../swift-f0-detector'
 import { SwiftF0Detector } from '../swift-f0-detector'
@@ -20,13 +14,16 @@ function hashBuffer(buf: Float32Array): string {
   let h = 0
   const n = Math.min(buf.length, 64)
   for (let i = 0; i < n; i++) {
-    h = ((h << 5) - h + (buf[i]! * 1000) | 0) >>> 0
+    h = (((h << 5) - h + buf[i]! * 1000) | 0) >>> 0
   }
   return String(h)
 }
 
 /** Linear resample to 16kHz for SwiftF0 model compatibility */
-function resampleTo16k(data: Float32Array, inputSampleRate: number): Float32Array {
+function resampleTo16k(
+  data: Float32Array,
+  inputSampleRate: number,
+): Float32Array {
   if (inputSampleRate === SWIFTF0_SAMPLE_RATE) return data
   const ratio = inputSampleRate / SWIFTF0_SAMPLE_RATE
   const outLen = Math.floor(data.length / ratio)
@@ -61,7 +58,8 @@ export class SwiftF0Adapter implements IPitchDetector {
   private lastComputationTime = 0
 
   constructor(detector?: SwiftF0Detector) {
-    this.detector = detector ?? new SwiftF0Detector({ sampleRate: SWIFTF0_SAMPLE_RATE })
+    this.detector =
+      detector ?? new SwiftF0Detector({ sampleRate: SWIFTF0_SAMPLE_RATE })
     this.detector.init().then((ok) => {
       if (!ok) console.warn('[SwiftF0Adapter] Failed to initialize ONNX model')
     })
@@ -91,7 +89,10 @@ export class SwiftF0Adapter implements IPitchDetector {
     this.pendingDetect = this.detector.detect(input)
     this.pendingDetect.then((swiftResult) => {
       this.lastComputationTime = performance.now() - startTime
-      if (swiftResult.pitch > 0 && swiftResult.probability >= (this.settings.minConfidence ?? 0.1)) {
+      if (
+        swiftResult.pitch > 0 &&
+        swiftResult.probability >= (this.settings.minConfidence ?? 0.1)
+      ) {
         const noteInfo = freqToNote(swiftResult.pitch)
         const result: PitchDetectionResult = {
           frequency: swiftResult.pitch,
@@ -107,7 +108,10 @@ export class SwiftF0Adapter implements IPitchDetector {
         this.cache.set(key, result)
         this.totalDetections++
         this.consecutiveFailures = 0
-        this.averageClarity = (this.averageClarity * (this.totalDetections - 1) + swiftResult.probability) / this.totalDetections
+        this.averageClarity =
+          (this.averageClarity * (this.totalDetections - 1) +
+            swiftResult.probability) /
+          this.totalDetections
       } else {
         this.consecutiveFailures++
       }
@@ -117,7 +121,9 @@ export class SwiftF0Adapter implements IPitchDetector {
   }
 
   /** Async detect — awaits fresh SwiftF0 ONNX inference */
-  async detectAsync(timeData: Float32Array): Promise<PitchDetectionResult | null> {
+  async detectAsync(
+    timeData: Float32Array,
+  ): Promise<PitchDetectionResult | null> {
     const key = hashBuffer(timeData)
     const cached = this.cache.get(key)
     if (cached) return cached
@@ -127,7 +133,10 @@ export class SwiftF0Adapter implements IPitchDetector {
     const swiftResult = await this.detector.detect(input)
     this.lastComputationTime = performance.now() - startTime
 
-    if (swiftResult.pitch > 0 && swiftResult.probability >= (this.settings.minConfidence ?? 0.1)) {
+    if (
+      swiftResult.pitch > 0 &&
+      swiftResult.probability >= (this.settings.minConfidence ?? 0.1)
+    ) {
       const noteInfo = freqToNote(swiftResult.pitch)
       const result: PitchDetectionResult = {
         frequency: swiftResult.pitch,
@@ -143,7 +152,10 @@ export class SwiftF0Adapter implements IPitchDetector {
       this.cache.set(key, result)
       this.totalDetections++
       this.consecutiveFailures = 0
-      this.averageClarity = (this.averageClarity * (this.totalDetections - 1) + swiftResult.probability) / this.totalDetections
+      this.averageClarity =
+        (this.averageClarity * (this.totalDetections - 1) +
+          swiftResult.probability) /
+        this.totalDetections
       return result
     }
 
@@ -151,7 +163,9 @@ export class SwiftF0Adapter implements IPitchDetector {
     return null
   }
 
-  detectFromFrequencyData(_freqData: Float32Array): PitchDetectionResult | null {
+  detectFromFrequencyData(
+    _freqData: Float32Array,
+  ): PitchDetectionResult | null {
     return this.lastResult
   }
 
@@ -164,13 +178,13 @@ export class SwiftF0Adapter implements IPitchDetector {
   }
 
   reset(): void {
-  this.detector.reset()
-  this.lastResult = null
-  this.pendingDetect = null
-  this.cache.clear()
-  this.totalDetections = 0
-  this.consecutiveFailures = 0
-  this.averageClarity = 0
+    this.detector.reset()
+    this.lastResult = null
+    this.pendingDetect = null
+    this.cache.clear()
+    this.totalDetections = 0
+    this.consecutiveFailures = 0
+    this.averageClarity = 0
   }
 
   getMetrics(): DetectorMetrics {

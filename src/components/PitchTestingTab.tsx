@@ -93,9 +93,8 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
     new SwiftF0Adapter(),
   ])
 
-  const [selectedAlgorithm, setSelectedAlgorithm] = createSignal<
-    AlgorithmId
-  >('yin')
+  const [selectedAlgorithm, setSelectedAlgorithm] =
+    createSignal<AlgorithmId>('yin')
   const [ensembleMode, setEnsembleMode] = createSignal(false)
   const [ensembleAlgorithms, setEnsembleAlgorithms] = createSignal<
     Set<AlgorithmId>
@@ -494,7 +493,11 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
           )
           detector?.reset()
           let result: PitchDetectionResult | null
-          const asyncDetector = detector as { detectAsync?: (data: Float32Array) => Promise<PitchDetectionResult | null> }
+          const asyncDetector = detector as {
+            detectAsync?: (
+              data: Float32Array,
+            ) => Promise<PitchDetectionResult | null>
+          }
           if (asyncDetector.detectAsync) {
             result = await asyncDetector.detectAsync(wave)
           } else {
@@ -503,8 +506,10 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
           detectedFreq = result?.frequency ?? null
         }
 
-        const errorHz = detectedFreq !== null ? Math.abs(detectedFreq - freq) : null
-        const errorCents = detectedFreq !== null ? centsError(detectedFreq, freq) : null
+        const errorHz =
+          detectedFreq !== null ? Math.abs(detectedFreq - freq) : null
+        const errorCents =
+          detectedFreq !== null ? centsError(detectedFreq, freq) : null
         const isPass = errorCents !== null && errorCents <= centsThreshold()
 
         if (isPass) {
@@ -816,9 +821,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
           <div class="control-group">
             <label>
               Cents Threshold{' '}
-              <span class="slider-value-badge">
-                {centsThreshold()}¢
-              </span>
+              <span class="slider-value-badge">{centsThreshold()}¢</span>
             </label>
             <div class="preset-buttons">
               <button
@@ -1146,7 +1149,8 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                   {ensembleMode()
                     ? `${[...ensembleAlgorithms()].join(' + ')} ensemble (majority vote)`
                     : (currentDetector()?.getName() ?? selectedAlgorithm())}
-                  . Pass = detected within &plusmn;{centsThreshold()}¢ of target.
+                  . Pass = detected within &plusmn;{centsThreshold()}¢ of
+                  target.
                 </p>
               </Show>
 
