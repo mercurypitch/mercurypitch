@@ -11,7 +11,7 @@ import { buildMidiFile, DEFAULT_BPM, detectNotes, mergeConsecutiveNotes, MIDI_NO
 import type { DetectedPitch } from '@/lib/pitch-detector'
 import { PitchDetector } from '@/lib/pitch-detector'
 import { freqToMidi, midiToNote } from '@/lib/scale-data'
-import { ChevronLeft, Download, Ear, Mic, Pause, Play, SkipBack, SlidersHorizontal, Volume2, VolumeX, } from './icons'
+import { ChevronLeft, Download, Ear, Mic, Pause, Play, Share, SkipBack, SlidersHorizontal, Volume2, VolumeX, } from './icons'
 import type { LyricsUploadResult } from './LyricsUploader'
 import { LyricsUploader } from './LyricsUploader'
 
@@ -3353,9 +3353,26 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
               <ChevronLeft />
             </button>
           </Show>
-          <h2>Stem Mixer</h2>
-          <span class="sm-session-id">{props.sessionId.slice(0, 8)}</span>
+          <h2>Karaoke Session</h2>
+          <span class="sm-session-id">{props.sessionId}</span>
         </div>
+        <button
+          class="sm-share-btn"
+          onClick={() => {
+            const url = `${window.location.origin}/#/uvr/session/${props.sessionId}`
+            void navigator.clipboard.writeText(url).then(() => {
+              // brief visual feedback
+              const btn = document.querySelector('.sm-share-btn')
+              if (btn) {
+                btn.classList.add('sm-share-btn--copied')
+                setTimeout(() => btn.classList.remove('sm-share-btn--copied'), 1500)
+              }
+            })
+          }}
+          title="Copy share link"
+        >
+          <Share /> Share
+        </button>
       </div>
 
       {/* Loading / Error */}
@@ -6341,6 +6358,39 @@ export const StemMixerStyles: string = `
 .sm-back-btn svg {
   width: 0.9rem;
   height: 0.9rem;
+}
+
+.sm-share-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--accent, #8b5cf6);
+  background: var(--bg-tertiary, #21262d);
+  border: 1px solid var(--border, #30363d);
+  border-radius: 0.4rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.sm-share-btn:hover {
+  background: var(--bg-hover, #30363d);
+  border-color: var(--accent, #8b5cf6);
+}
+
+.sm-share-btn svg {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.sm-share-btn--copied {
+  color: var(--success, #3fb950);
+  border-color: var(--success, #3fb950);
+  background: rgba(63, 185, 80, 0.1);
 }
 
 /* Loading */

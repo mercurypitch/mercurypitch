@@ -10,7 +10,7 @@ import { DEFAULT_PROCESS_REQUEST, getProcessStatus, pollForCompletion, processAu
 import type { UvrSession } from '@/stores/app-store'
 import { cancelUvrSession, completeUvrSession, currentUvrSession, deleteAllUvrSessions, getAllUvrSessions, getAllUvrSessionsReactive, getUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrSessionApiId, startUvrSession, updateUvrSessionOutputs, updateUvrSessionProgress, } from '@/stores/app-store'
 import { StemMixer, UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrSettings, UvrUploadControl, } from '.'
-import { CheckCircle, History, Music, Settings, Trash2, X } from './icons'
+import { CheckCircle, FileUpload, History, Music, Settings, Trash2, X } from './icons'
 
 /**
  * Progress callback type for processing
@@ -664,7 +664,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
             <div class="section-header">
               <h4>Processing Results</h4>
               <button class="back-btn" onClick={() => setCurrentView('upload')}>
-                <Settings /> Back to Upload
+                <FileUpload /> Back to Upload
               </button>
             </div>
             {session() && (
@@ -700,7 +700,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                   class="back-btn"
                   onClick={() => setCurrentView('upload')}
                 >
-                  <Settings /> New Upload
+                  <FileUpload /> New Upload
                 </button>
               </div>
             </div>
