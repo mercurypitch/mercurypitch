@@ -3354,8 +3354,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
               <ChevronLeft />
             </button>
           </Show>
-          <h2>Karaoke Session</h2>
-          <span class="sm-session-id">{props.sessionId}</span>
+          <h2>{props.songTitle?.replace(/\.[^.]+$/, '') ?? 'Unknown'} (session)</h2>
+          <span class="sm-session-id">karaoke-session-{props.sessionId.replace(/^.*-session-/, '')}</span>
         </div>
         <button
           class="sm-share-btn"
