@@ -52,6 +52,12 @@ export class AutocorrelatorDetector implements IPitchDetector {
 
     this.metrics.consecutiveFailures = 0
     this.metrics.totalDetections++
+    const n = this.metrics.totalDetections
+    const clarity = result.clarity ?? 0
+    this.metrics.averageClarity =
+      (this.metrics.averageClarity * (n - 1) + clarity) / n
+    this.metrics.averageFrequency =
+      (this.metrics.averageFrequency * (n - 1) + result.frequency) / n
     this.metrics.lastResult = result
     this.metrics.status = 'ready'
 

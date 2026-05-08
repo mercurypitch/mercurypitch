@@ -5,6 +5,7 @@
 export { YINDetector } from './yin-detector'
 export { FFTDetector } from './fft-detector'
 export { AutocorrelatorDetector } from './autocorrelator-detector'
+export { SwiftF0Adapter } from './swift-f0-adapter'
 export type {
   PitchDetectionResult,
   DetectorSettings,

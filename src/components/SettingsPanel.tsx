@@ -4,8 +4,8 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
-import { ChangelogModal } from '@/components/ChangelogModal'
 import { PitchAlgorithmTester } from '@/components'
+import { ChangelogModal } from '@/components/ChangelogModal'
 import { TierSelector } from '@/components/TierSelector'
 import { APP_VERSION } from '@/lib/defaults'
 import { IS_DEV } from '@/lib/defaults'

@@ -142,11 +142,11 @@ interface ChangelogModalProps {
 export const ChangelogModal: Component<ChangelogModalProps> = (props) => {
   return (
     <Show when={props.open}>
-      <div class="modal-overlay" onClick={props.onClose}>
+      <div class="modal-overlay" onClick={() => props.onClose()}>
         <div class="modal-content" onClick={(e) => e.stopPropagation()}>
           <div class="modal-header">
             <h2>What's New</h2>
-            <button class="modal-close" onClick={props.onClose}>
+            <button class="modal-close" onClick={() => props.onClose()}>
               &times;
             </button>
           </div>
@@ -157,7 +157,9 @@ export const ChangelogModal: Component<ChangelogModalProps> = (props) => {
                   {i() > 0 && <div class="changelog-divider" />}
                   <div class="changelog-version">
                     <div class="changelog-version-header">
-                      <span class="changelog-version-tag">v{entry.version}</span>
+                      <span class="changelog-version-tag">
+                        v{entry.version}
+                      </span>
                       <span class="changelog-date">{entry.date}</span>
                     </div>
                     <For each={entry.sections}>
@@ -168,7 +170,9 @@ export const ChangelogModal: Component<ChangelogModalProps> = (props) => {
                           </span>
                           <ul class="changelog-entries">
                             <For each={section.items}>
-                              {(item) => <li class="changelog-entry">{item}</li>}
+                              {(item) => (
+                                <li class="changelog-entry">{item}</li>
+                              )}
                             </For>
                           </ul>
                         </div>
