@@ -26,11 +26,6 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
   const sessions = (): PlaybackSession[] => {
     const sessions = melodyStore.getSessions()
     return sessions
-    // FIXME: fiasco with user vs non user (default) session, probs just remove below code
-    // const defaultSession = melodyStore.getDefaultSession()
-    // return defaultSession === null
-    //   ? userSessions
-    //   : [defaultSession, ...userSessions]
   }
 
   // BUGFIX: read the active session through the REACTIVE `userSession`
