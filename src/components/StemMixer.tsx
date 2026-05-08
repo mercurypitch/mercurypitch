@@ -1521,14 +1521,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             typeof data.wordTimings === 'object' &&
             data.wordTimings !== null
           ) {
-            setLrcGenWordTimings(
-              data.wordTimings as Record<number, number[]>,
-            )
+            setLrcGenWordTimings(data.wordTimings as Record<number, number[]>)
           }
-          resumeLineIdx = Math.min(
-            (data.lineIdx as number) ?? 0,
-            lines.length,
-          )
+          resumeLineIdx = Math.min((data.lineIdx as number) ?? 0, lines.length)
           resumeWordIdx = (data.wordIdx as number) ?? 0
         }
       }
@@ -3354,8 +3349,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
               <ChevronLeft />
             </button>
           </Show>
-          <h2>{props.songTitle?.replace(/\.[^.]+$/, '') ?? 'Unknown'} (session)</h2>
-          <span class="sm-session-id">karaoke-session-{props.sessionId.replace(/^.*-session-/, '')}</span>
+          <h2>{props.songTitle?.replace(/\.[^.]+$/, '') ?? 'Unknown'}</h2>
+          <span class="sm-session-id">
+            karaoke-session-{props.sessionId.replace(/^.*-session-/, '')}
+          </span>
         </div>
         <button
           class="sm-share-btn"
