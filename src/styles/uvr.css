@@ -240,10 +240,10 @@
   padding-right: 0.25rem;
 }
 
-.history-list-inline {
+.history-list.history-list-inline {
   flex: 6 1 auto;
   min-height: 0;
-  max-height: min(400px, 60vh);
+  max-height: 360px;
   overflow-y: auto;
   margin-bottom: 0.75rem;
   border-bottom: 1px solid var(--border);
@@ -1015,7 +1015,6 @@
   transition:
     border-color 0.2s,
     box-shadow 0.2s;
-  overflow-y: auto;
 }
 
 .uvr-session-result:hover {
