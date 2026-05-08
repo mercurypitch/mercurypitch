@@ -799,10 +799,16 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
   // ── Lyric line click ────────────────────────────────────────
   const handleLyricLineClick = (idx: number) => {
+    let targetTime: number | null = null
     if (lrcLines().length > 0 && idx < lrcLines().length) {
-      seekTo(lrcLines()[idx].time)
+      targetTime = lrcLines()[idx].time
     } else if (lyricsLines().length > 0 && duration() > 0) {
-      seekTo((idx / lyricsLines().length) * duration())
+      targetTime = (idx / lyricsLines().length) * duration()
+    }
+    if (targetTime === null) return
+    seekTo(targetTime)
+    if (!playing()) {
+      setWindowStart(Math.max(0, targetTime - windowDuration() * 0.3))
     }
   }
 
@@ -1724,7 +1730,11 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     if (!progressBarRef || !duration()) return
     const rect = progressBarRef.getBoundingClientRect()
     const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
-    seekTo(ratio * duration())
+    const target = ratio * duration()
+    seekTo(target)
+    if (!playing()) {
+      setWindowStart(Math.max(0, target - windowDuration() * 0.3))
+    }
   }
 
   const seekTo = (time: number) => {
