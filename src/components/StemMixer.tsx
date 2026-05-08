@@ -296,9 +296,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   let lyricsFileInputRef: HTMLInputElement | undefined
 
   // Cached canvas dimensions — updated only on resize, not every frame
-  const _overviewRect = { w: 0, h: 0 }
-  const _liveRect = { w: 0, h: 0 }
-  const _pitchRect = { w: 0, h: 0 }
+  let overviewRect = { w: 0, h: 0 }
+  let liveRect = { w: 0, h: 0 }
+  let pitchRect = { w: 0, h: 0 }
 
   const vocalTrack = (): StemTrack => ({
     label: 'Vocal',

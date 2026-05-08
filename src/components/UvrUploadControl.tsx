@@ -212,8 +212,9 @@ export const UvrUploadControlStyles: string = `
 .uvr-upload-control {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 0.75rem;
   width: 100%;
+  min-height: 0;
 }
 
 .upload-header {
@@ -224,28 +225,28 @@ export const UvrUploadControlStyles: string = `
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 3.5rem;
-  height: 3.5rem;
-  margin: 0 auto 0.75rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  margin: 0 auto 0.5rem;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border-radius: 50%;
   color: white;
 }
 
 .upload-icon-wrapper svg {
-  width: 1.75rem;
-  height: 1.75rem;
+  width: 1.25rem;
+  height: 1.25rem;
 }
 
 .upload-header h3 {
-  font-size: 1.25rem;
+  font-size: 1.05rem;
   color: var(--fg-primary);
   margin-bottom: 0.25rem;
 }
 
 .upload-subtitle {
   color: var(--fg-secondary);
-  font-size: 0.9rem;
+  font-size: 0.8rem;
 }
 
 .upload-zone {
@@ -280,8 +281,8 @@ export const UvrUploadControlStyles: string = `
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 2rem 1.5rem;
-  gap: 0.75rem;
+  padding: 1rem;
+  gap: 0.5rem;
 }
 
 .upload-icon {
@@ -289,13 +290,13 @@ export const UvrUploadControlStyles: string = `
 }
 
 .upload-icon svg {
-  width: 3rem;
-  height: 3rem;
+  width: 2rem;
+  height: 2rem;
 }
 
 .upload-text {
   color: var(--fg-primary);
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: 500;
 }
 
@@ -306,7 +307,7 @@ export const UvrUploadControlStyles: string = `
 
 .upload-hint {
   color: var(--fg-secondary);
-  font-size: 0.85rem;
+  font-size: 0.78rem;
 }
 
 .file-info {
@@ -418,15 +419,15 @@ export const UvrUploadControlStyles: string = `
 }
 
 .supported-formats {
-  padding: 1rem;
+  padding: 0.6rem 0.75rem;
   background: var(--bg-secondary);
   border-radius: 0.5rem;
 }
 
 .formats-label {
   color: var(--fg-secondary);
-  font-size: 0.85rem;
-  margin-bottom: 0.5rem;
+  font-size: 0.8rem;
+  margin-bottom: 0.35rem;
 }
 
 .formats-list {

@@ -897,6 +897,9 @@ export const UvrPanelStyles: string = `
 /* Upload Section */
 .upload-section {
   padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .quick-tips {
@@ -950,10 +953,13 @@ export const UvrPanelStyles: string = `
 }
 
 .history-list-inline {
-  max-height: 180px;
+  min-height: 280px;
+  max-height: 340px;
+  overflow-y: auto;
   margin-bottom: 0.75rem;
   border-bottom: 1px solid var(--border);
   padding-bottom: 0.75rem;
+  flex-shrink: 0;
 }
 
 .upload-divider {
@@ -975,6 +981,25 @@ export const UvrPanelStyles: string = `
   text-transform: uppercase;
   letter-spacing: 0.05em;
   white-space: nowrap;
+}
+
+.upload-section .section-header {
+  flex-shrink: 0;
+}
+
+.upload-section .upload-divider {
+  flex-shrink: 0;
+}
+
+.upload-section .uvr-upload-control {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.upload-section .quick-tips {
+  flex-shrink: 0;
+  margin-top: auto;
 }
 
 .history-empty {
