@@ -946,20 +946,18 @@ export const UvrPanelStyles: string = `
 .history-list {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.5rem;
+  gap: 0.4rem;
   overflow-y: auto;
   max-height: calc(100vh - 200px);
   padding-right: 0.25rem;
 }
 
 .history-list-inline {
-  min-height: 280px;
-  max-height: 340px;
+  flex: 6 0 0;
   overflow-y: auto;
   margin-bottom: 0.75rem;
   border-bottom: 1px solid var(--border);
   padding-bottom: 0.75rem;
-  flex-shrink: 0;
 }
 
 .upload-divider {
@@ -992,14 +990,14 @@ export const UvrPanelStyles: string = `
 }
 
 .upload-section .uvr-upload-control {
-  flex: 1;
+  flex: 4 1 0;
   min-height: 0;
   overflow-y: auto;
+  margin-bottom: 0.5rem;
 }
 
 .upload-section .quick-tips {
   flex-shrink: 0;
-  margin-top: auto;
 }
 
 .history-empty {

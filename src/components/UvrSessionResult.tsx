@@ -353,13 +353,12 @@ export const UvrSessionResultStyles: string = `
 .uvr-session-result {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
   padding: 0.6rem;
   background: var(--bg-secondary);
   border: 1px solid var(--border);
   border-radius: 0.75rem;
   transition: border-color 0.2s, box-shadow 0.2s;
-  overflow: hidden;
+  overflow-y: auto;
 }
 
 .uvr-session-result:hover {
