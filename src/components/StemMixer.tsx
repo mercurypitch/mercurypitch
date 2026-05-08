@@ -807,9 +807,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }
     if (targetTime === null) return
     seekTo(targetTime)
-    if (!playing()) {
-      setWindowStart(Math.max(0, targetTime - windowDuration() * 0.3))
-    }
+    setWindowStart(Math.max(0, targetTime - windowDuration() * 0.3))
   }
 
   // ── Edit mode helpers ─────────────────────────────────────────
@@ -1732,9 +1730,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
     const target = ratio * duration()
     seekTo(target)
-    if (!playing()) {
-      setWindowStart(Math.max(0, target - windowDuration() * 0.3))
-    }
+    setWindowStart(Math.max(0, target - windowDuration() * 0.3))
   }
 
   const seekTo = (time: number) => {
@@ -1765,9 +1761,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     const winStart = windowStart()
     const newTime = winStart + ratio * windowDuration()
     seekTo(newTime)
-    if (!playing()) {
-      setWindowStart(Math.max(0, newTime - windowDuration() * 0.3))
-    }
+    setWindowStart(Math.max(0, newTime - windowDuration() * 0.3))
   }
 
   const handleCanvasWheel = (e: WheelEvent) => {
