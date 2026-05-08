@@ -53,7 +53,7 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
 
   const handleCopyLink = async (e: Event) => {
     e.stopPropagation()
-    const url = `${window.location.origin}/#/uvr/session/${props.sessionId}`
+    const url = `${window.location.origin}/#/uvr/session/${props.sessionId}/mixer`
     try {
       await navigator.clipboard.writeText(url)
       setToastMessage('Link copied to clipboard!')
@@ -173,6 +173,15 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
           aria-label="Delete session"
         >
           <Trash2 />
+        </button>
+        <button
+          class="session-share-btn"
+          onClick={(e) => {
+            void handleCopyLink(e)
+          }}
+          title="Copy share link"
+        >
+          <Share />
         </button>
       </div>
 
@@ -322,15 +331,6 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
               <SlidersHorizontal /> Mix Selected
             </button>
           </Show>
-          <button
-            class="session-result-btn session-result-btn-copy"
-            onClick={(e) => {
-              void handleCopyLink(e)
-            }}
-            title="Copy share link"
-          >
-            <Share />
-          </button>
         </div>
       </Show>
 

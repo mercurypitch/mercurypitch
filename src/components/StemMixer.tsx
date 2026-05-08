@@ -177,6 +177,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     null,
   )
   const [anySoloed, setAnySoloed] = createSignal(false)
+  const [shareToast, setShareToast] = createSignal('')
 
   // ── MIDI state ────────────────────────────────────────────────
   const [midiNotes, setMidiNotes] = createSignal<MidiNoteEvent[]>([])
@@ -3358,20 +3359,17 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         </div>
         <button
           class="sm-share-btn"
+          classList={{ 'sm-share-btn--copied': shareToast() !== '' }}
           onClick={() => {
-            const url = `${window.location.origin}/#/uvr/session/${props.sessionId}`
+            const url = `${window.location.origin}/#/uvr/session/${props.sessionId}/mixer`
             void navigator.clipboard.writeText(url).then(() => {
-              // brief visual feedback
-              const btn = document.querySelector('.sm-share-btn')
-              if (btn) {
-                btn.classList.add('sm-share-btn--copied')
-                setTimeout(() => btn.classList.remove('sm-share-btn--copied'), 1500)
-              }
+              setShareToast('Link copied to clipboard!')
+              setTimeout(() => setShareToast(''), 2500)
             })
           }}
           title="Copy share link"
         >
-          <Share /> Share
+          <Share /> {shareToast() || 'Share'}
         </button>
       </div>
 
