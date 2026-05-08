@@ -97,6 +97,8 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   const [showSettings, setShowSettings] = createSignal(false)
   const [showDeleteAllConfirm, setShowDeleteAllConfirm] = createSignal(false)
   const [deleteAllToast, setDeleteAllToast] = createSignal('')
+  const [midiExporting, setMidiExporting] = createSignal(false)
+  const [midiExportProgress, setMidiExportProgress] = createSignal(0)
   const [selectedFile, setSelectedFile] = createSignal<File | null>(null)
   const [prevView, setPrevView] = createSignal<UvrView>('upload')
   const [mixerStems, setMixerStems] = createSignal<{
@@ -105,6 +107,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     instrumental?: string
   }>({})
   const [mixerSessionId, setMixerSessionId] = createSignal('')
+  const [mixerPracticeMode, setMixerPracticeMode] = createSignal<'vocal' | 'instrumental' | 'full' | 'midi'>('full')
 
   // Computed session state
   const session = () => currentUvrSession()
@@ -245,7 +248,10 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
 
       if (type === 'vocal-midi' && (url === '' || url === undefined) && s.outputs.vocal) {
         // Generate MIDI on-the-fly from vocal stem
-        const midiBlob = await generateVocalMidi(s.outputs.vocal)
+        setMidiExporting(true)
+        setMidiExportProgress(0)
+        const midiBlob = await generateVocalMidi(s.outputs.vocal, (pct) => setMidiExportProgress(pct))
+        setMidiExporting(false)
         if (!midiBlob) {
           console.error('MIDI generation produced no notes')
           return
@@ -260,12 +266,14 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       const blobUrl = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = blobUrl
-      a.download = `${type.replace('-', '_')}${ext}`
+      const base = (s.originalFile?.name ?? 'audio').replace(/\.[^.]+$/, '').replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_-]/g, '')
+      a.download = `${base}_${type.replace('-', '_')}${ext}`
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
       setTimeout(() => URL.revokeObjectURL(blobUrl), 1000)
     } catch (err) {
+      setMidiExporting(false)
       console.error('Download failed:', err)
     }
     props.onExport?.(type)
@@ -297,6 +305,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     if (!s?.outputs) return
 
     setPrevView(currentView())
+    setMixerPracticeMode(mode)
     setMixerStems({
       vocal: s.outputs.vocal,
       instrumental: s.outputs.instrumental,
@@ -319,6 +328,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     setCurrentUvrSession(s)
 
     setPrevView(currentView())
+    setMixerPracticeMode('full')
     const filter = stems || {}
     setMixerStems({
       vocal: filter.vocal !== false ? s.outputs.vocal : undefined,
@@ -351,7 +361,10 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       const ext = type === 'vocal-midi' ? '.mid' : '.wav'
 
       if (type === 'vocal-midi' && (url === '' || url === undefined) && s.outputs.vocal) {
-        const midiBlob = await generateVocalMidi(s.outputs.vocal)
+        setMidiExporting(true)
+        setMidiExportProgress(0)
+        const midiBlob = await generateVocalMidi(s.outputs.vocal, (pct) => setMidiExportProgress(pct))
+        setMidiExporting(false)
         if (!midiBlob) {
           console.error('MIDI generation produced no notes')
           return
@@ -365,13 +378,15 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
 
       const blobUrl = URL.createObjectURL(blob)
       const a = document.createElement('a')
+      const base = (s.originalFile?.name ?? 'audio').replace(/\.[^.]+$/, '').replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_-]/g, '')
       a.href = blobUrl
-      a.download = `${type.replace('-', '_')}${ext}`
+      a.download = `${base}_${type.replace('-', '_')}${ext}`
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
       setTimeout(() => URL.revokeObjectURL(blobUrl), 1000)
     } catch (err) {
+      setMidiExporting(false)
       console.error('Download failed:', err)
     }
   }
@@ -600,6 +615,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 stemMeta={session()!.stemMeta}
                 processingTime={session()!.processingTime}
                 sessionId={session()!.sessionId}
+                originalFileName={session()?.originalFile?.name}
                 onStartPractice={handlePracticeStart}
                 onExport={(type) => {
                   void handleExport(type)
@@ -703,6 +719,21 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
         </div>
       </Show>
 
+      {/* MIDI Export Progress Toast */}
+      <Show when={midiExporting()}>
+        <div class="history-toast">
+          <span class="history-toast-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" fill="none" stroke="var(--border, #30363d)" stroke-width="2" />
+              <circle cx="12" cy="12" r="10" fill="none" stroke="var(--accent, #8b5cf6)" stroke-width="2"
+                stroke-dasharray={String(2 * Math.PI * 10)} stroke-dashoffset={String(2 * Math.PI * 10 * (1 - midiExportProgress() / 100))}
+                stroke-linecap="round" transform="rotate(-90 12 12)" />
+            </svg>
+          </span>
+          Generating MIDI... {midiExportProgress()}%
+        </div>
+      </Show>
+
       {/* Stem Mixer Inline */}
       <Show when={currentView() === 'mixer'}>
         <div class="view-section mixer-section">
@@ -710,6 +741,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
             stems={mixerStems()}
             sessionId={mixerSessionId()}
             songTitle={currentUvrSession()?.originalFile?.name ?? 'Unknown'}
+            practiceMode={mixerPracticeMode()}
             onBack={() => setCurrentView(prevView())}
           />
         </div>

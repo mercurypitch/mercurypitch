@@ -3,16 +3,16 @@
 // ============================================================
 
 import { PitchDetector } from './pitch-detector'
-import { freqToMidi } from './scale-data'
+import { freqToMidi, midiToFreq } from './scale-data'
 
-interface MidiNoteEvent {
+export interface MidiNoteEvent {
   midi: number
   tickOn: number
   tickOff: number
 }
 
-const TICKS_PER_BEAT = 480
-const DEFAULT_BPM = 120
+export const TICKS_PER_BEAT = 480
+export const DEFAULT_BPM = 120
 const WINDOW_SAMPLES = 1024
 const WINDOW_STEP_SEC = 0.10
 const MIN_NOTE_DURATION_SEC = 0.08
@@ -34,7 +34,7 @@ function secondsToTicks(sec: number, bpm: number): number {
 }
 
 /** Generate a Standard MIDI File from an array of detected MIDI note events */
-function buildMidiFile(notes: MidiNoteEvent[], bpm: number): Uint8Array | null {
+export function buildMidiFile(notes: MidiNoteEvent[], bpm: number): Uint8Array | null {
   if (notes.length === 0) return null
 
   // Sort by tick
@@ -121,10 +121,50 @@ function buildMidiFile(notes: MidiNoteEvent[], bpm: number): Uint8Array | null {
   return midiData
 }
 
+/** Synthesize MIDI note events into an AudioBuffer using sine-wave oscillators */
+export async function synthesizeMidiBuffer(
+  notes: MidiNoteEvent[],
+  bpm: number,
+  sampleRate: number,
+  totalDurationSec: number,
+): Promise<AudioBuffer> {
+  const ctx = new OfflineAudioContext(2, Math.ceil(sampleRate * totalDurationSec), sampleRate)
+  const beatsPerSec = bpm / 60
+  const ticksPerSec = TICKS_PER_BEAT * beatsPerSec
+
+  for (const note of notes) {
+    const startSec = note.tickOn / ticksPerSec
+    const endSec = note.tickOff / ticksPerSec
+    const duration = endSec - startSec
+    if (duration <= 0) continue
+
+    const freq = midiToFreq(note.midi)
+
+    const osc = ctx.createOscillator()
+    osc.type = 'sine'
+    osc.frequency.value = freq
+
+    const gain = ctx.createGain()
+    const fadeIn = Math.min(0.008, duration / 4)
+    const fadeOut = Math.min(0.015, duration / 4)
+    gain.gain.setValueAtTime(0, startSec)
+    gain.gain.linearRampToValueAtTime(0.35, startSec + fadeIn)
+    gain.gain.setValueAtTime(0.35, endSec - fadeOut)
+    gain.gain.linearRampToValueAtTime(0, endSec)
+
+    osc.connect(gain)
+    gain.connect(ctx.destination)
+    osc.start(startSec)
+    osc.stop(endSec)
+  }
+
+  return ctx.startRendering()
+}
+
 const YIELD_BATCH_SIZE = 80
 
 /** Pitch-detect a Float32Array and return an array of MIDI note events */
-async function detectNotes(
+export async function detectNotes(
   audioData: Float32Array,
   sampleRate: number,
   onProgress?: (pct: number) => void,

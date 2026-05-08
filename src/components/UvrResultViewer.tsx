@@ -22,6 +22,7 @@ interface ResultViewerProps {
   stemMeta?: Record<string, StemMeta>
   processingTime?: number
   sessionId?: string
+  originalFileName?: string
   onStartPractice?: (mode: 'vocal' | 'instrumental' | 'full' | 'midi') => void
   onOpenMixer?: (sessionId: string) => void
   onExport?: (
@@ -32,6 +33,8 @@ interface ResultViewerProps {
 
 export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
   const [shareToast, setShareToast] = createSignal('')
+  const [midiDownloading, setMidiDownloading] = createSignal(false)
+  const [midiDownloadProgress, setMidiDownloadProgress] = createSignal(0)
 
   const formatDuration = (secs?: number): string => {
     if (secs === undefined || secs <= 0) return ''
@@ -55,11 +58,15 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
     // Handle MIDI stems — generate on-the-fly from vocal audio
     if ((url === undefined || url === '') && stemKey === 'vocalMidi' && props.outputs?.vocal) {
       try {
-        const midiBlob = await generateVocalMidi(props.outputs.vocal)
+        setMidiDownloading(true)
+        setMidiDownloadProgress(0)
+        const midiBlob = await generateVocalMidi(props.outputs.vocal, (pct) => setMidiDownloadProgress(pct))
+        setMidiDownloading(false)
         if (midiBlob) {
           url = URL.createObjectURL(midiBlob)
         }
       } catch (err) {
+        setMidiDownloading(false)
         console.error('MIDI generation failed:', err)
         return
       }
@@ -72,7 +79,8 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
       const blobUrl = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = blobUrl
-      a.download = filename
+      const base = (props.originalFileName ?? 'audio').replace(/\.[^.]+$/, '').replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_-]/g, '')
+      a.download = stemKey === 'vocalMidi' ? `${base}_vocal_midi.mid` : `${base}_${stemKey ?? 'stem'}.${filename.split('.').pop() ?? 'wav'}`
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
@@ -216,8 +224,18 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
                 <button
                   class="rv-stem-btn rv-stem-btn-download"
                   onClick={() => { void handleDownload(stem.url, `${stem.label.toLowerCase()}_stem.${stem.format.toLowerCase()}`, stem.key) }}
+                  disabled={midiDownloading() && stem.key === 'vocalMidi'}
                 >
-                  <Download />
+                  {midiDownloading() && stem.key === 'vocalMidi' ? (
+                    <svg width="16" height="16" viewBox="0 0 24 24" class="rv-circular-progress">
+                      <circle cx="12" cy="12" r="10" fill="none" stroke="var(--border, #30363d)" stroke-width="2" />
+                      <circle cx="12" cy="12" r="10" fill="none" stroke="var(--accent, #8b5cf6)" stroke-width="2"
+                        stroke-dasharray={String(2 * Math.PI * 10)} stroke-dashoffset={String(2 * Math.PI * 10 * (1 - midiDownloadProgress() / 100))}
+                        stroke-linecap="round" transform="rotate(-90 12 12)" />
+                    </svg>
+                  ) : (
+                    <Download />
+                  )}
                 </button>
               </div>
             </div>

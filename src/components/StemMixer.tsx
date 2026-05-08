@@ -8,8 +8,9 @@ import type {LrcLine, LyricsSearchMatch, LyricsSearchResult} from '@/lib/lyrics-
 import { extractTitle, fetchLyricsById, getCurrentLineIndex, getCurrentLrcIndex,   parseLrcFile, parseTextLyrics, searchLyrics, searchLyricsMulti } from '@/lib/lyrics-service'
 import type {DetectedPitch} from '@/lib/pitch-detector';
 import { PitchDetector } from '@/lib/pitch-detector'
-import { generateVocalMidi } from '@/lib/midi-generator'
-import { freqToNote as _freqToNote } from '@/lib/scale-data'
+import { buildMidiFile, detectNotes, generateVocalMidi, synthesizeMidiBuffer, DEFAULT_BPM, TICKS_PER_BEAT } from '@/lib/midi-generator'
+import type { MidiNoteEvent } from '@/lib/midi-generator'
+import { midiToNote } from '@/lib/scale-data'
 import { ChevronLeft, Download, Ear, Mic, Midi, Pause, Play, SkipBack, SlidersHorizontal, Volume2, VolumeX } from './icons'
 import type {LyricsUploadResult} from './LyricsUploader';
 import { LyricsUploader  } from './LyricsUploader'
@@ -24,6 +25,7 @@ interface StemMixerProps {
   }
   sessionId: string
   songTitle?: string
+  practiceMode?: 'vocal' | 'instrumental' | 'full' | 'midi'
   onBack?: () => void
 }
 
@@ -108,6 +110,23 @@ const SongPicker = (p: SongPickerProps) => {
   )
 }
 
+// ── Circular Progress ──────────────────────────────────────────
+
+const CircularProgress = (props: { pct: number; size?: number }) => {
+  const s = props.size ?? 24
+  const r = (s - 4) / 2
+  const circ = 2 * Math.PI * r
+  const offset = circ * (1 - props.pct / 100)
+  return (
+    <svg width={s} height={s} viewBox={`0 0 ${s} ${s}`} class="circular-progress">
+      <circle cx={s/2} cy={s/2} r={r} fill="none" stroke="var(--border, #30363d)" stroke-width="2" />
+      <circle cx={s/2} cy={s/2} r={r} fill="none" stroke="var(--accent, #8b5cf6)" stroke-width="2"
+        stroke-dasharray={String(circ)} stroke-dashoffset={String(offset)}
+        stroke-linecap="round" transform={`rotate(-90 ${s/2} ${s/2})`} />
+    </svg>
+  )
+}
+
 // ── Component ──────────────────────────────────────────────────
 
 export const StemMixer: Component<StemMixerProps> = (props) => {
@@ -120,6 +139,11 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   const [elapsed, setElapsed] = createSignal(0)
   const [currentPitch, setCurrentPitch] = createSignal<DetectedPitch | null>(null)
   const [anySoloed, setAnySoloed] = createSignal(false)
+
+  // ── MIDI state ────────────────────────────────────────────────
+  const [midiNotes, setMidiNotes] = createSignal<MidiNoteEvent[]>([])
+  const [midiGenerating, setMidiGenerating] = createSignal(false)
+  const [midiProgress, setMidiProgress] = createSignal(0)
 
   // ── Lyrics state ──────────────────────────────────────────────
   const [lyricsLines, setLyricsLines] = createSignal<string[]>([])
@@ -192,7 +216,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
   // ── Workspace panel state ─────────────────────────────────────
   interface WorkspacePanel {
-    id: 'overview' | 'live' | 'pitch' | 'controls' | 'lyrics'
+    id: 'overview' | 'live' | 'pitch' | 'midi' | 'controls' | 'lyrics'
     label: string
     order: number
     height: number | null  // null = auto (fit-content)
@@ -220,6 +244,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     overview: savedPrefs?.heights?.overview ?? 180,
     live: savedPrefs?.heights?.live ?? 180,
     pitch: savedPrefs?.heights?.pitch ?? 260,
+    midi: savedPrefs?.heights?.midi ?? 200,
   })
 
   // Persist workspace prefs whenever they change
@@ -240,8 +265,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     { id: 'overview', label: 'Waveform Overview', order: 0, height: 180 },
     { id: 'live', label: 'Live Waveform', order: 1, height: 180 },
     { id: 'pitch', label: 'Vocal Pitch', order: 2, height: 200 },
-    { id: 'controls', label: 'Stem Controls', order: 3, height: null },
-    { id: 'lyrics', label: 'Lyrics', order: 4, height: null },
+    { id: 'midi', label: 'MIDI Melody', order: 3, height: 200 },
+    { id: 'controls', label: 'Stem Controls', order: 4, height: null },
+    { id: 'lyrics', label: 'Lyrics', order: 5, height: null },
   ])
 
   const reorderPanels = (fromId: string, toOrder: number) => {
@@ -291,6 +317,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
   let waveformCanvasRef: HTMLCanvasElement | undefined
   let pitchCanvasRef: HTMLCanvasElement | undefined
+  let midiCanvasRef: HTMLCanvasElement | undefined
   let liveWaveCanvasRef: HTMLCanvasElement | undefined
   let progressBarRef: HTMLDivElement | undefined
   let workspaceRef: HTMLDivElement | undefined
@@ -300,6 +327,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   let overviewRect = { w: 0, h: 0 }
   let liveRect = { w: 0, h: 0 }
   let pitchRect = { w: 0, h: 0 }
+  let midiRect = { w: 0, h: 0 }
 
   const vocalTrack = (): StemTrack => ({
     label: 'Vocal',
@@ -330,7 +358,25 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   const [vocal, setVocal] = createSignal<StemTrack>(vocalTrack())
   const [instrumental, setInstrumental] = createSignal<StemTrack>(instTrack())
 
-  const tracks = () => [vocal(), instrumental()].filter(t => t.url)
+  const midiTrack = (): StemTrack => ({
+    label: 'MIDI',
+    url: '',
+    color: '#8b5cf6',
+    buffer: null,
+    gainNode: null,
+    analyserNode: null,
+    sourceNode: null,
+    muted: false,
+    soloed: false,
+    volume: 0.8,
+  })
+  const [midi, setMidi] = createSignal<StemTrack>(midiTrack())
+
+  const tracks = () => {
+    const t = [vocal(), instrumental()]
+    if (props.practiceMode === 'midi' && midi().buffer) t.push(midi())
+    return t.filter(tr => tr.url || tr.buffer)
+  }
 
   // ── Audio Context ────────────────────────────────────────────
   const ensureAudioCtx = () => {
@@ -402,6 +448,27 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
       if (total > 0 && loaded === 0) {
         setLoadError('Failed to load any stems')
+      }
+
+      // MIDI processing — detect notes & synthesize audio when practiceMode is 'midi'
+      if (props.practiceMode === 'midi' && vocal().buffer) {
+        setMidiGenerating(true)
+        setMidiProgress(0)
+        try {
+          const vocalBuf = vocal().buffer!
+          const sampleRate = vocalBuf.sampleRate
+          const monoData = vocalBuf.getChannelData(0)
+          const notes = await detectNotes(monoData, sampleRate, (pct) => setMidiProgress(pct))
+          setMidiNotes(notes)
+          if (notes.length > 0) {
+            const midiBuf = await synthesizeMidiBuffer(notes, DEFAULT_BPM, sampleRate, vocalBuf.duration)
+            setMidi(prev => ({ ...prev, buffer: midiBuf }))
+          }
+        } catch (e) {
+          console.error('MIDI generation failed:', e)
+        } finally {
+          setMidiGenerating(false)
+        }
       }
     } catch (e) {
       setLoadError(e instanceof Error ? e.message : 'Failed to load stems')
@@ -1566,8 +1633,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
       if (track.label === 'Vocal') {
         setVocal(prev => ({ ...prev, sourceNode: src, gainNode: gain, analyserNode: analyser }))
-      } else {
+      } else if (track.label === 'Instrumental') {
         setInstrumental(prev => ({ ...prev, sourceNode: src, gainNode: gain, analyserNode: analyser }))
+      } else {
+        setMidi(prev => ({ ...prev, sourceNode: src, gainNode: gain, analyserNode: analyser }))
       }
     }
   }
@@ -1581,6 +1650,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }
     setVocal(prev => ({ ...prev, sourceNode: null, gainNode: null, analyserNode: null }))
     setInstrumental(prev => ({ ...prev, sourceNode: null, gainNode: null, analyserNode: null }))
+    setMidi(prev => ({ ...prev, sourceNode: null, gainNode: null, analyserNode: null }))
   }
 
   // ── Transport ────────────────────────────────────────────────
@@ -1603,6 +1673,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     syncCanvasSizes()
     drawWaveformOverview()
     drawPitchCanvas()
+    drawMidiCanvas()
     drawLiveWaveform()
   }
 
@@ -1624,6 +1695,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     syncCanvasSizes()
     drawWaveformOverview()
     drawPitchCanvas()
+    drawMidiCanvas()
     drawLiveWaveform()
   }
 
@@ -1640,6 +1712,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     cancelAnimationFrame(rafId)
     drawWaveformOverview()
     drawPitchCanvas()
+    drawMidiCanvas()
     drawLiveWaveform()
     // Start playing from beginning
     handlePlay()
@@ -1668,6 +1741,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       drawWaveformOverview()
       drawLiveWaveform()
       drawPitchCanvas()
+      drawMidiCanvas()
     })
   }
 
@@ -1682,73 +1756,73 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
   // ── Volume / Mute / Solo ─────────────────────────────────────
   const setTrackVolume = (label: string, volume: number) => {
-    if (label === 'Vocal') {
-      setVocal(prev => {
-        if (prev.gainNode) prev.gainNode.gain.value = volume
-        return { ...prev, volume, muted: false }
-      })
-    } else {
-      setInstrumental(prev => {
-        if (prev.gainNode) prev.gainNode.gain.value = volume
-        return { ...prev, volume, muted: false }
-      })
-    }
+    const setter = label === 'Vocal' ? setVocal : label === 'Instrumental' ? setInstrumental : setMidi
+    setter(prev => {
+      if (prev.gainNode) prev.gainNode.gain.value = volume
+      return { ...prev, volume, muted: false }
+    })
   }
 
   const toggleMute = (label: string) => {
-    if (label === 'Vocal') {
-      setVocal(prev => {
-        const muted = !prev.muted
-        const isAudible = prev.soloed || (!muted && !anySoloed())
-        if (prev.gainNode) prev.gainNode.gain.value = isAudible ? prev.volume : 0
-        return { ...prev, muted }
-      })
-    } else {
-      setInstrumental(prev => {
-        const muted = !prev.muted
-        const isAudible = prev.soloed || (!muted && !anySoloed())
-        if (prev.gainNode) prev.gainNode.gain.value = isAudible ? prev.volume : 0
-        return { ...prev, muted }
-      })
-    }
+    const setter = label === 'Vocal' ? setVocal : label === 'Instrumental' ? setInstrumental : setMidi
+    setter(prev => {
+      const muted = !prev.muted
+      const isAudible = prev.soloed || (!muted && !anySoloed())
+      if (prev.gainNode) prev.gainNode.gain.value = isAudible ? prev.volume : 0
+      return { ...prev, muted }
+    })
   }
 
   const toggleSolo = (label: string) => {
-    if (label === 'Vocal') {
-      setVocal(prev => {
-        const soloed = !prev.soloed
-        const newAnySoloed = soloed || instrumental().soloed
-        setAnySoloed(newAnySoloed)
+    const setter = label === 'Vocal' ? setVocal : label === 'Instrumental' ? setInstrumental : setMidi
+    const otherTracks = tracks().filter(t => t.label !== label)
 
-        if (prev.gainNode) prev.gainNode.gain.value = soloed ? prev.volume : (prev.muted || newAnySoloed ? 0 : prev.volume)
-        const inst = instrumental()
-        if (inst.gainNode) inst.gainNode.gain.value = (inst.soloed || (!inst.muted && !soloed)) ? inst.volume : 0
-        return { ...prev, soloed }
-      })
-    } else {
-      setInstrumental(prev => {
-        const soloed = !prev.soloed
-        const newAnySoloed = soloed || vocal().soloed
-        setAnySoloed(newAnySoloed)
+    setter(prev => {
+      const soloed = !prev.soloed
+      const newAnySoloed = soloed || otherTracks.some(t => t.soloed)
+      setAnySoloed(newAnySoloed)
 
-        if (prev.gainNode) prev.gainNode.gain.value = soloed ? prev.volume : (prev.muted || newAnySoloed ? 0 : prev.volume)
-        const voc = vocal()
-        if (voc.gainNode) voc.gainNode.gain.value = (voc.soloed || (!voc.muted && !soloed)) ? voc.volume : 0
-        return { ...prev, soloed }
-      })
-    }
+      if (prev.gainNode) prev.gainNode.gain.value = soloed ? prev.volume : (prev.muted || newAnySoloed ? 0 : prev.volume)
+
+      for (const ot of otherTracks) {
+        const otherSetter = ot.label === 'Vocal' ? setVocal : ot.label === 'Instrumental' ? setInstrumental : setMidi
+        otherSetter(oPrev => {
+          if (oPrev.gainNode) oPrev.gainNode.gain.value = (oPrev.soloed || (!oPrev.muted && !soloed)) ? oPrev.volume : 0
+          return oPrev
+        })
+      }
+      return { ...prev, soloed }
+    })
   }
 
   const handleDownload = async (track: StemTrack) => {
-    if (!track.url) return
+    if (!track.url && track.label !== 'MIDI') return
     try {
-      const resp = await fetch(track.url)
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
-      const blob = await resp.blob()
+      let blob: Blob
+      let ext: string
+
+      if (track.label === 'MIDI') {
+        // Generate MIDI file from detected notes
+        const notes = midiNotes()
+        if (notes.length === 0) return
+        // Build MIDI file inline
+        const midiData = buildMidiFile(notes, DEFAULT_BPM)
+        if (!midiData) return
+        blob = new Blob([midiData.buffer as ArrayBuffer], { type: 'audio/midi' })
+        ext = '.mid'
+      } else {
+        if (!track.url) return
+        const resp = await fetch(track.url)
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
+        blob = await resp.blob()
+        ext = '.wav'
+      }
+
       const blobUrl = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = blobUrl
-      a.download = `${track.label.toLowerCase()}_stem.wav`
+      const base = (props.songTitle ?? 'audio').replace(/\.[^.]+$/, '').replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_-]/g, '')
+      a.download = track.label === 'MIDI' ? `${base}_vocal_midi${ext}` : `${base}_${track.label.toLowerCase()}_stem${ext}`
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
@@ -1908,6 +1982,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       syncCanvasSizes()
       drawWaveformOverview()
       drawPitchCanvas()
+      drawMidiCanvas()
       drawLiveWaveform()
       updateCurrentLine()
 
@@ -1926,7 +2001,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   // exact integers — ensures canvas.width = cssW * dpr with no rounding gap.
   const syncCanvasSizes = () => {
     const dpr = window.devicePixelRatio || 1
-    for (const ref of [waveformCanvasRef, pitchCanvasRef, liveWaveCanvasRef]) {
+    for (const ref of [waveformCanvasRef, pitchCanvasRef, liveWaveCanvasRef, midiCanvasRef]) {
       if (!ref) continue
       const rect = ref.getBoundingClientRect()
       const cssW = Math.round(rect.width)
@@ -2278,6 +2353,144 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }
   }
 
+  // ── MIDI Pitch Canvas ──────────────────────────────────────────
+  const drawMidiCanvas = () => {
+    const canvas = midiCanvasRef
+    if (!canvas) return
+    const dpr = window.devicePixelRatio || 1
+    const w = canvas.width / dpr
+    const h = canvas.height / dpr
+    if (h <= 0) { midiRect = { w, h }; return }
+    midiRect = { w, h }
+    const ctx = canvas.getContext('2d')!
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+
+    ctx.clearRect(0, 0, w, h)
+
+    // Background
+    ctx.fillStyle = '#0d1117'
+    ctx.fillRect(0, 0, w, h)
+
+    const notes = midiNotes()
+    if (notes.length === 0) {
+      ctx.fillStyle = '#484f58'
+      ctx.font = '12px monospace'
+      ctx.textAlign = 'center'
+      ctx.fillText('MIDI notes will appear here', w / 2, h / 2)
+      ctx.textAlign = 'start'
+      return
+    }
+
+    // Grid lines
+    const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+    const rowH = h / 13
+    ctx.strokeStyle = '#21262d'
+    ctx.lineWidth = 0.5
+    for (let i = 0; i <= 13; i++) {
+      const y = i * rowH
+      ctx.beginPath()
+      ctx.moveTo(0, y)
+      ctx.lineTo(w, y)
+      ctx.stroke()
+    }
+
+    // Note labels
+    ctx.fillStyle = '#484f58'
+    ctx.font = '9px monospace'
+    for (let i = 0; i < 12; i++) {
+      const note = noteNames[11 - i]
+      ctx.fillText(note, 3, i * rowH + rowH * 0.65 + rowH)
+    }
+
+    // MIDI note range: MIDI 38 (D2) to 96 (C7) — map to rows
+    const midiMin = 38
+    const midiMax = 96
+    const midiRange = midiMax - midiMin
+
+    // Map MIDI note to y position (top = higher pitch = lower y)
+    const midiToY = (midi: number): number => {
+      const t = (midi - midiMin) / midiRange
+      return (1 - t) * (h - rowH) + rowH * 0.5
+    }
+
+    // Time range
+    const dur = duration()
+    if (dur <= 0) return
+
+    const winStart = windowStart()
+    const winEnd = winStart + windowDuration()
+    const winDur = windowDuration()
+
+    // Group consecutive same-pitch notes for pill rendering
+    type Pill = { midi: number; startSec: number; endSec: number }
+    const pills: Pill[] = []
+    if (notes.length > 0) {
+      const ticksPerSec = TICKS_PER_BEAT * (DEFAULT_BPM / 60)
+      let cur: Pill = { midi: notes[0].midi, startSec: notes[0].tickOn / ticksPerSec, endSec: notes[0].tickOff / ticksPerSec }
+      for (let i = 1; i < notes.length; i++) {
+        const s = notes[i].tickOn / ticksPerSec
+        const e = notes[i].tickOff / ticksPerSec
+        if (notes[i].midi === cur.midi && s - cur.endSec < 0.02) {
+          cur.endSec = e
+        } else {
+          pills.push({ ...cur })
+          cur = { midi: notes[i].midi, startSec: s, endSec: e }
+        }
+      }
+      pills.push({ ...cur })
+    }
+
+    // Draw MIDI note pills (violet rounded rectangles)
+    for (const p of pills) {
+      if (p.endSec < winStart || p.startSec > winEnd) continue
+      const x1 = Math.max(0, ((p.startSec - winStart) / winDur) * w)
+      const x2 = Math.min(w, ((p.endSec - winStart) / winDur) * w)
+      const pillW = Math.max(x2 - x1, 3)
+      const y = midiToY(p.midi) - rowH * 0.34
+      const pillH = rowH * 0.68
+      const r = Math.min(pillH / 2, 3)
+
+      ctx.beginPath()
+      ctx.moveTo(x1 + r, y)
+      ctx.lineTo(x1 + pillW - r, y)
+      ctx.arcTo(x1 + pillW, y, x1 + pillW, y + r, r)
+      ctx.lineTo(x1 + pillW, y + pillH - r)
+      ctx.arcTo(x1 + pillW, y + pillH, x1 + pillW - r, y + pillH, r)
+      ctx.lineTo(x1 + r, y + pillH)
+      ctx.arcTo(x1, y + pillH, x1, y + pillH - r, r)
+      ctx.lineTo(x1, y + r)
+      ctx.arcTo(x1, y, x1 + r, y, r)
+      ctx.closePath()
+      ctx.fillStyle = 'rgba(139, 92, 246, 0.55)'
+      ctx.fill()
+
+      // Note name label inside pill (if wide enough)
+      if (pillW > 24) {
+        const noteInfo = midiToNote(p.midi)
+        ctx.fillStyle = '#fff'
+        ctx.font = 'bold 9px monospace'
+        ctx.textAlign = 'center'
+        const label = `${noteInfo.name}${noteInfo.octave}`
+        ctx.fillText(label, x1 + pillW / 2, y + pillH / 2 + 3)
+        ctx.textAlign = 'start'
+      }
+    }
+
+    // Playhead
+    const elapsedTime = elapsed()
+    if (elapsedTime >= winStart && elapsedTime <= winEnd) {
+      const px = ((elapsedTime - winStart) / winDur) * w
+      ctx.strokeStyle = 'rgba(255,255,255,0.6)'
+      ctx.lineWidth = 1
+      ctx.setLineDash([4, 4])
+      ctx.beginPath()
+      ctx.moveTo(px, 0)
+      ctx.lineTo(px, h)
+      ctx.stroke()
+      ctx.setLineDash([])
+    }
+  }
+
   // ── Resize handling ──────────────────────────────────────────
   let resizeObserver: ResizeObserver | null = null
 
@@ -2290,11 +2503,13 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       drawWaveformOverview()
       drawLiveWaveform()
       drawPitchCanvas()
+      drawMidiCanvas()
     })
 
     if (waveformCanvasRef) resizeObserver.observe(waveformCanvasRef)
     if (liveWaveCanvasRef) resizeObserver.observe(liveWaveCanvasRef)
     if (pitchCanvasRef) resizeObserver.observe(pitchCanvasRef)
+    if (midiCanvasRef) resizeObserver.observe(midiCanvasRef)
 
     // Initial canvas draws after a frame
     requestAnimationFrame(() => {
@@ -2302,6 +2517,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       drawWaveformOverview()
       drawLiveWaveform()
       drawPitchCanvas()
+      drawMidiCanvas()
     })
 
     // Keyboard shortcuts
@@ -2342,11 +2558,13 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     if (waveformCanvasRef) resizeObserver.observe(waveformCanvasRef)
     if (liveWaveCanvasRef) resizeObserver.observe(liveWaveCanvasRef)
     if (pitchCanvasRef) resizeObserver.observe(pitchCanvasRef)
+    if (midiCanvasRef) resizeObserver.observe(midiCanvasRef)
     // Sync and redraw synchronously — effect runs after DOM update, before paint
     syncCanvasSizes()
     drawWaveformOverview()
     drawLiveWaveform()
     drawPitchCanvas()
+    drawMidiCanvas()
   })
 
   createEffect(() => {
@@ -2356,6 +2574,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         drawWaveformOverview()
         drawLiveWaveform()
         drawPitchCanvas()
+        drawMidiCanvas()
       })
     }
   })
@@ -2463,6 +2682,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         drawWaveformOverview()
         drawLiveWaveform()
         drawPitchCanvas()
+        drawMidiCanvas()
       })
     }
 
@@ -2478,6 +2698,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       drawWaveformOverview()
       drawLiveWaveform()
       drawPitchCanvas()
+      drawMidiCanvas()
     })
   }
 
@@ -2514,6 +2735,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       drawWaveformOverview()
       drawLiveWaveform()
       drawPitchCanvas()
+      drawMidiCanvas()
     })
   }
 
@@ -2528,6 +2750,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       drawWaveformOverview()
       drawLiveWaveform()
       drawPitchCanvas()
+      drawMidiCanvas()
     })
   }
 
@@ -2556,6 +2779,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       drawWaveformOverview()
       drawLiveWaveform()
       drawPitchCanvas()
+      drawMidiCanvas()
     })
   }
 
@@ -2570,6 +2794,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       drawWaveformOverview()
       drawLiveWaveform()
       drawPitchCanvas()
+      drawMidiCanvas()
     })
   }
 
@@ -2590,10 +2815,12 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       </div>
 
         {/* Loading / Error */}
-        <Show when={loading()}>
+        <Show when={loading() || midiGenerating()}>
           <div class="sm-loading">
-            <div class="sm-loading-spinner" />
-            <span>Loading stems... {loadProgress()}%</span>
+            <Show when={midiGenerating()} fallback={<div class="sm-loading-spinner" />}>
+              <CircularProgress pct={midiProgress()} size={40} />
+            </Show>
+            <span>{midiGenerating() ? `Generating MIDI melody... ${midiProgress()}%` : `Loading stems... ${loadProgress()}%`}</span>
           </div>
         </Show>
 
@@ -2766,6 +2993,31 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
               />
             </div>
 
+            {/* Panel: MIDI Pitch */}
+            <Show when={props.practiceMode === 'midi'}>
+              <div
+                class="sm-workspace-panel"
+                style={panelStyle('midi')}
+                data-panel-id="midi"
+              >
+                <div
+                  class="sm-panel-header"
+                  onPointerDown={(e) => handlePanelDragStart('midi', getPanel('midi').order, e)}
+                  onPointerMove={handlePanelDragMove}
+                  onPointerUp={handlePanelDragEnd}
+                  onPointerCancel={handlePanelDragEnd}
+                >
+                  <svg viewBox="0 0 24 24" width="10" height="10" class="sm-drag-icon"><path fill="currentColor" d="M20 9H4v2h16V9zM4 15h16v-2H4v2z"/></svg>
+                  MIDI Melody
+                </div>
+                <canvas ref={midiCanvasRef} class="sm-canvas sm-canvas-midi" />
+                <div
+                  class="sm-resize-handle"
+                  onPointerDown={(e) => handleResizeStart('midi', e)}
+                />
+              </div>
+            </Show>
+
             {/* Panel: Stem Controls */}
             <div
               class="sm-workspace-panel"
@@ -2832,35 +3084,19 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                   </div>
                 )}
 
-                {props.stems.vocalMidi !== undefined && (
-                  <div class="sm-midi-substem">
-                    <span class="sm-midi-icon"><Midi /></span>
-                    <span class="sm-midi-label">MIDI</span>
-                    <button
-                      class="sm-midi-dl-btn"
-                      onClick={() => {
-                        void (async () => {
-                          let midiUrl = props.stems.vocalMidi
-                          if ((!midiUrl || midiUrl === '') && props.stems.vocal) {
-                            try {
-                              const blob = await generateVocalMidi(props.stems.vocal)
-                              if (blob) midiUrl = URL.createObjectURL(blob)
-                            } catch (e) { console.error('MIDI generation failed:', e) }
-                          }
-                          if (midiUrl) {
-                            const a = document.createElement("a");
-                            a.href = midiUrl;
-                            a.download = "vocal_midi.mid";
-                            document.body.appendChild(a);
-                            a.click();
-                            document.body.removeChild(a);
-                          }
-                        })()
-                      }}
-                      title="Download MIDI"
-                    >
-                      <Download />
-                    </button>
+                {midi().buffer && props.practiceMode === 'midi' && (
+                  <div class="sm-stem-strip">
+                    <div class="sm-stem-header">
+                      <span class="sm-stem-dot" style={{ background: midi().color }} />
+                      <span class="sm-stem-label">{midi().label}</span>
+                      <span class="sm-stem-vol-pct">{Math.round((midi().muted || (anySoloed() && !midi().soloed)) ? 0 : midi().volume * 100)}%</span>
+                    </div>
+                    <div class="sm-stem-actions">
+                      <button class={`sm-action-btn ${midi().soloed ? 'sm-active' : ''}`} onClick={() => toggleSolo('MIDI')} title="Solo" style={{ color: midi().soloed ? midi().color : '' }}><Ear /></button>
+                      <button class={`sm-action-btn ${midi().muted ? 'sm-muted' : ''}`} onClick={() => toggleMute('MIDI')} title="Mute">{midi().muted ? <VolumeX /> : <Volume2 />}</button>
+                      <button class="sm-action-btn" onClick={() => { void handleDownload(midi()) }} title="Download MIDI"><Download /></button>
+                    </div>
+                    <input type="range" class="sm-volume-slider" min="0" max="100" value={Math.round(midi().volume * 100)} onInput={(e) => setTrackVolume('MIDI', parseInt(e.currentTarget.value) / 100)} />
                   </div>
                 )}
 
@@ -3874,6 +4110,16 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                       onPointerDown={(e) => handleFixedResizeStart('pitch', e)}
                     />
                   </div>
+                  <Show when={props.practiceMode === 'midi'}>
+                    <div class="sm-workspace-panel" style={{ height: `${fixedPanelHeights().midi}px` }} data-fixed-panel="midi">
+                      <div class="sm-panel-header">MIDI Melody</div>
+                      <canvas ref={midiCanvasRef} class="sm-canvas sm-canvas-midi" />
+                      <div
+                        class="sm-resize-handle"
+                        onPointerDown={(e) => handleFixedResizeStart('midi', e)}
+                      />
+                    </div>
+                  </Show>
                 </div>
               </div>
 
@@ -3897,11 +4143,19 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                         <input type="range" class="sm-volume-slider" min="0" max="100" value={Math.round(vocal().volume * 100)} onInput={(e) => setTrackVolume('Vocal', parseInt(e.currentTarget.value) / 100)} />
                       </div>
                     )}
-                    {props.stems.vocalMidi !== undefined && (
-                      <div class="sm-midi-substem">
-                        <span class="sm-midi-icon"><Midi /></span>
-                        <span class="sm-midi-label">MIDI</span>
-                        <button class="sm-midi-dl-btn" onClick={() => { void (async () => { let midiUrl = props.stems.vocalMidi; if ((!midiUrl || midiUrl === '') && props.stems.vocal) { try { const blob = await generateVocalMidi(props.stems.vocal); if (blob) midiUrl = URL.createObjectURL(blob) } catch(e){console.error(e)} } if (midiUrl) { const a = document.createElement("a"); a.href = midiUrl; a.download = "vocal_midi.mid"; document.body.appendChild(a); a.click(); document.body.removeChild(a) } })() }} title="Download MIDI"><Download /></button>
+                    {midi().buffer && props.practiceMode === 'midi' && (
+                      <div class="sm-stem-strip">
+                        <div class="sm-stem-header">
+                          <span class="sm-stem-dot" style={{ background: midi().color }} />
+                          <span class="sm-stem-label">{midi().label}</span>
+                          <span class="sm-stem-vol-pct">{Math.round((midi().muted || (anySoloed() && !midi().soloed)) ? 0 : midi().volume * 100)}%</span>
+                        </div>
+                        <div class="sm-stem-actions">
+                          <button class={`sm-action-btn ${midi().soloed ? 'sm-active' : ''}`} onClick={() => toggleSolo('MIDI')} title="Solo" style={{ color: midi().soloed ? midi().color : '' }}><Ear /></button>
+                          <button class={`sm-action-btn ${midi().muted ? 'sm-muted' : ''}`} onClick={() => toggleMute('MIDI')} title="Mute">{midi().muted ? <VolumeX /> : <Volume2 />}</button>
+                          <button class="sm-action-btn" onClick={() => { void handleDownload(midi()) }} title="Download MIDI"><Download /></button>
+                        </div>
+                        <input type="range" class="sm-volume-slider" min="0" max="100" value={Math.round(midi().volume * 100)} onInput={(e) => setTrackVolume('MIDI', parseInt(e.currentTarget.value) / 100)} />
                       </div>
                     )}
                     {instrumental().url && (
