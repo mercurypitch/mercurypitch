@@ -23,6 +23,7 @@ interface TestNoteResult {
   passed: boolean
   detectedFreq: number | null
   errorCents: number | null
+  errorHz: number | null
 }
 
 interface EnsembleTickResult {
@@ -482,8 +483,6 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
         }
 
         let detectedFreq: number | null
-        let errorCents: number | null
-        let isPass: boolean
 
         if (isEnsemble) {
           detectors().forEach((d) => d.reset())
@@ -504,8 +503,9 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
           detectedFreq = result?.frequency ?? null
         }
 
-        errorCents = detectedFreq !== null ? centsError(detectedFreq, freq) : null
-        isPass = errorCents !== null && errorCents <= centsThreshold()
+        const errorHz = detectedFreq !== null ? Math.abs(detectedFreq - freq) : null
+        const errorCents = detectedFreq !== null ? centsError(detectedFreq, freq) : null
+        const isPass = errorCents !== null && errorCents <= centsThreshold()
 
         if (isPass) {
           passed++
@@ -519,6 +519,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
           passed: isPass,
           detectedFreq,
           errorCents,
+          errorHz,
         })
 
         setTestResults({
@@ -940,7 +941,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                 Regenerate Waveform
               </button>
               <span class="waveform-info">
-                Generated: {frequency()} Hz • 0.5s
+                Generated: {frequency()} Hz • 0.5 s
               </span>
             </div>
           </Show>
@@ -1187,7 +1188,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                         <th>Note</th>
                         <th>Target (Hz)</th>
                         <th>Result (Hz)</th>
-                        <th>Error (¢)</th>
+                        <th>Error</th>
                         <th>Status</th>
                       </tr>
                     </thead>
@@ -1211,9 +1212,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                             </td>
                             <td class="test-note-error">
                               {nr.errorCents !== null
-                                ? nr.errorCents < 0.05
-                                  ? '0.0'
-                                  : nr.errorCents.toFixed(1)
+                                ? `${nr.errorCents < 0.05 ? '0.0' : nr.errorCents.toFixed(1)}¢ / ${nr.errorHz!.toFixed(1)} Hz`
                                 : '—'}
                             </td>
                             <td class="test-note-status">
