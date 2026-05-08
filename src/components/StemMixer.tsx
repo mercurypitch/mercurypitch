@@ -1661,6 +1661,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     startTime = audioCtx!.currentTime - pauseOffset
     setPlaying(true)
     pitchHistory = []
+    micPitchHistory = []
     pitchDetector?.resetHistory()
     startRafLoop()
   }
@@ -1690,6 +1691,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     setElapsed(0)
     setCurrentPitch(null)
     pitchHistory = []
+    micPitchHistory = []
     setWindowStart(0)
     cancelAnimationFrame(rafId)
     syncCanvasSizes()
@@ -2760,6 +2762,13 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       drawPitchCanvas()
       drawMidiCanvas()
     })
+    setTimeout(() => {
+      syncCanvasSizes()
+      drawWaveformOverview()
+      drawLiveWaveform()
+      drawPitchCanvas()
+      drawMidiCanvas()
+    }, 50)
   }
 
   const handleResizeEnd = (_e: PointerEvent) => {
@@ -2804,6 +2813,13 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       drawPitchCanvas()
       drawMidiCanvas()
     })
+    setTimeout(() => {
+      syncCanvasSizes()
+      drawWaveformOverview()
+      drawLiveWaveform()
+      drawPitchCanvas()
+      drawMidiCanvas()
+    }, 50)
   }
 
   const handleFixedResizeEnd = (_e: PointerEvent) => {
@@ -4229,6 +4245,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                     </span>
                   </div>
                 </div>
+                <button class="sm-mic-score-ok-btn" onClick={() => setShowScore(false)}>
+                  OK
+                </button>
               </div>
             </div>
           </div>
@@ -4416,9 +4435,10 @@ export const StemMixerStyles: string = `
 }
 
 .sm-canvas {
-  height: 100%;
-  width: 100%;
+  flex: 1;
   min-height: 0;
+  min-width: 0;
+  width: 100%;
 }
 
 .sm-resize-handle {
@@ -5980,6 +6000,22 @@ export const StemMixerStyles: string = `
 .sm-mic-score-detail {
   font-size: 0.6rem;
   color: var(--fg-tertiary, #8b949e);
+}
+.sm-mic-score-ok-btn {
+  margin-top: 0.5rem;
+  padding: 0.5rem 1.5rem;
+  background: var(--accent, #58a6ff);
+  color: #fff;
+  border: none;
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  align-self: center;
+  transition: background 0.15s;
+}
+.sm-mic-score-ok-btn:hover {
+  background: var(--accent-hover, #79c0ff);
 }
 
 /* Fixed 2-Column Layout */
