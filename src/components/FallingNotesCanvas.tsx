@@ -427,7 +427,7 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
       const endBeat = note.startBeat + note.duration
       const y = beatToY(endBeat)
       const noteH = Math.max(note.duration * bps, 8)
-      if (y + noteH < 0 || y > jLineY) continue // off-screen or past piano
+      if (y + noteH < 0 || y > kbTop) continue // off-screen or past piano
 
       const col = midiToWhiteIndex(note.midi)
       const x = (col - displayMinWhite) * colWidth

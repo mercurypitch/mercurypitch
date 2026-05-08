@@ -85,16 +85,21 @@ export const FallingNotesSongPicker: Component<FallingNotesSongPickerProps> = (
       <div class="fn-picker-row">
         <select
           class="fn-song-select"
+          value={selectedId() ?? ''}
           onChange={(e) => {
-            const id = e.currentTarget.value || null
+            const id = e.currentTarget.value
+            if (!id) {
+              setSelectedId(null)
+              return
+            }
             setSelectedId(id)
-            if (id !== null && id !== '') handleLoadWithId(id)
+            handleLoadWithId(id)
           }}
         >
           <option value="">-- Select a song --</option>
           <For each={melodies()}>
             {(m: MelodyData) => (
-              <option value={m.id} selected={m.id === selectedId()}>
+              <option value={m.id}>
                 {m.name} ({m.items.length} notes, {m.bpm} BPM, {m.key})
               </option>
             )}
