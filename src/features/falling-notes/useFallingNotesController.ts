@@ -15,6 +15,7 @@ import { countIn } from '@/stores'
 import type { FallingNote, NoteJudgment } from '@/stores/falling-notes-store'
 import {
   beatsPerSecond,
+  clickPianoEnabled,
   combo,
   gameState,
   hitResults,
@@ -24,6 +25,7 @@ import {
   notesMissed,
   playheadBeat,
   score,
+  setClickPianoEnabled,
   setCombo,
   setCurrentSongBpm,
   setGameState,
@@ -268,6 +270,7 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
       if (micOn()) stopMic()
       setInputMode('midi')
       setMidiConnected(true)
+      setClickPianoEnabled(false)
     }
     return ok
   }
@@ -277,6 +280,26 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
     setCurrentPitch(null)
     setInputMode('mic')
     setMidiConnected(false)
+    setClickPianoEnabled(true)
+  }
+
+  const clickPianoNoteOn = (midi: number) => {
+    if (!clickPianoEnabled()) return
+    const { name, octave } = midiToNote(midi)
+    setCurrentPitch({
+      frequency: midiToFreq(midi),
+      noteName: name,
+      octave,
+      cents: 0,
+    })
+  }
+
+  const clickPianoNoteOff = () => {
+    setCurrentPitch(null)
+  }
+
+  const toggleClickPiano = () => {
+    setClickPianoEnabled((v) => !v)
   }
 
   const startGame = () => {
@@ -435,6 +458,10 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
     midiConnect,
     midiDisconnect,
     midiHeldNotes,
+    clickPianoEnabled,
+    clickPianoNoteOn,
+    clickPianoNoteOff,
+    toggleClickPiano,
     inputMode,
     midiConnected,
     startGame,

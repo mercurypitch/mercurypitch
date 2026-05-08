@@ -46,6 +46,7 @@ export type InputMode = 'mic' | 'midi'
 export const [inputMode, setInputMode] = createSignal<InputMode>('mic')
 export const [midiConnected, setMidiConnected] = createSignal(false)
 export const [showNoteLabels, setShowNoteLabels] = createSignal(true)
+export const [clickPianoEnabled, setClickPianoEnabled] = createSignal(true)
 
 // ── Actions ─────────────────────────────────────────────────
 

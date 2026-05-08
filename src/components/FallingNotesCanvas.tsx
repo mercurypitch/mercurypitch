@@ -21,6 +21,9 @@ interface FallingNotesCanvasProps {
   inputMode?: () => 'mic' | 'midi'
   visibleBeatWindow?: () => number
   midiHeldNotes?: () => { midi: number; velocity: number }[]
+  onClickPianoOn?: (midi: number) => void
+  onClickPianoOff?: () => void
+  clickPianoEnabled?: () => boolean
 }
 
 interface Particle {
@@ -95,6 +98,59 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
   const particles: Particle[] = []
 
   let lastHitCount = 0
+  let clickedKey: number | null = null
+
+  // Hit-test: convert mouse/touch coordinates to MIDI note number
+  const hitTestKeyboard = (clientX: number, clientY: number): number | null => {
+    if (!canvasRef) return null
+    const rect = canvasRef.getBoundingClientRect()
+    const x = clientX - rect.left
+    const y = clientY - rect.top
+    const w = canvasRef.clientWidth
+    const h = canvasRef.clientHeight
+
+    const kbTop = h * KEYBOARD_START_RATIO
+    if (y < kbTop) return null
+
+    const kbHeightVal = h - kbTop
+    const notes = props.songNotes()
+    if (notes.length === 0) return null
+
+    const minMidi = Math.min(...notes.map((n) => n.midi))
+    const maxMidi = Math.max(...notes.map((n) => n.midi))
+    const minWhiteLocal = midiToWhiteIndex(minMidi)
+    const maxWhiteLocal = midiToWhiteIndex(maxMidi)
+    const rangeWhiteLocal = maxWhiteLocal - minWhiteLocal + 1
+    const displayRangeLocal = Math.max(rangeWhiteLocal, MIN_WHITE_KEYS_VISIBLE)
+    const paddingLocal = Math.floor((displayRangeLocal - rangeWhiteLocal) / 2)
+    const displayMinWhiteLocal = minWhiteLocal - paddingLocal
+    const colWidthLocal = w / displayRangeLocal
+
+    // Check black keys first (they sit on top of white keys)
+    const blackKeyH = kbHeightVal * BLACK_KEY_HEIGHT_RATIO
+    if (y < kbTop + blackKeyH) {
+      for (let wi = 0; wi < displayRangeLocal; wi++) {
+        const midi = whiteIndexToMidi(displayMinWhiteLocal + wi)
+        const nextMidi = midi + 1
+        if (nextMidi % 12 !== 0 && nextMidi % 12 !== 5) {
+          if (IS_BLACK_KEY[nextMidi % 12]) {
+            const bw = colWidthLocal * BLACK_KEY_WIDTH_RATIO
+            const bx = wi * colWidthLocal + colWidthLocal * 0.7 - bw / 2
+            if (x >= bx && x <= bx + bw) {
+              return nextMidi
+            }
+          }
+        }
+      }
+    }
+
+    // White key hit-test
+    const wi = Math.floor(x / colWidthLocal)
+    if (wi >= 0 && wi < displayRangeLocal) {
+      return whiteIndexToMidi(displayMinWhiteLocal + wi)
+    }
+    return null
+  }
 
   onMount(() => {
     if (!canvasRef) return
@@ -118,11 +174,54 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
       }
     }
 
-    // Touch pinch-to-zoom
+    // ── Piano key click/touch handlers ─────────────────────────
+
+    const onPointerDown = (e: PointerEvent) => {
+      if (!props.clickPianoEnabled?.()) return
+      const midi = hitTestKeyboard(e.clientX, e.clientY)
+      if (midi !== null) {
+        clickedKey = midi
+        props.onClickPianoOn?.(midi)
+        canvasRef?.setPointerCapture(e.pointerId)
+      }
+    }
+
+    const onPointerUp = () => {
+      if (clickedKey !== null) {
+        clickedKey = null
+        props.onClickPianoOff?.()
+      }
+    }
+
+    const onPointerMove = (e: PointerEvent) => {
+      if (clickedKey === null) return
+      const midi = hitTestKeyboard(e.clientX, e.clientY)
+      if (midi !== clickedKey) {
+        // Moved to a different key — switch
+        clickedKey = midi
+        if (midi !== null) {
+          props.onClickPianoOn?.(midi)
+        } else {
+          props.onClickPianoOff?.()
+        }
+      }
+    }
+
+    canvasRef.addEventListener('pointerdown', onPointerDown)
+    canvasRef.addEventListener('pointerup', onPointerUp)
+    canvasRef.addEventListener('pointermove', onPointerMove)
+    window.addEventListener('pointerup', onPointerUp) // catch releases outside canvas
+
+    // Touch pinch-to-zoom (only for multi-touch; single-finger is piano click)
     let pinchStartDist = 0
     let pinchStartWindow = 0
     const onTouchStart = (e: TouchEvent) => {
       if (e.touches.length === 2) {
+        // Cancel any active piano click on multi-touch
+        if (clickedKey !== null) {
+          clickedKey = null
+          props.onClickPianoOff?.()
+        }
         pinchStartDist = Math.hypot(
           e.touches[0].clientX - e.touches[1].clientX,
           e.touches[0].clientY - e.touches[1].clientY,
@@ -153,6 +252,10 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
     onCleanup(() => {
       ro.disconnect()
       canvasRef?.removeEventListener('wheel', onWheel)
+      canvasRef?.removeEventListener('pointerdown', onPointerDown)
+      canvasRef?.removeEventListener('pointerup', onPointerUp)
+      canvasRef?.removeEventListener('pointermove', onPointerMove)
+      window.removeEventListener('pointerup', onPointerUp)
       canvasRef?.removeEventListener('touchstart', onTouchStart)
       canvasRef?.removeEventListener('touchmove', onTouchMove)
       canvasRef?.removeEventListener('touchend', onTouchEnd)
@@ -676,6 +779,27 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
         ctx.stroke()
       }
     }
+
+    // Highlight key being clicked/touched on piano
+    if (clickedKey !== null) {
+      const col = midiToWhiteIndex(clickedKey)
+      const wi = col - minWhite
+      if (wi >= 0 && wi < rangeWhite) {
+        const x = wi * colWidth
+        const clickGrad = ctx.createLinearGradient(x, kbTop, x, kbTop + kbHeight)
+        clickGrad.addColorStop(0, 'rgba(255,180,60,0.55)')
+        clickGrad.addColorStop(1, 'rgba(255,140,30,0.35)')
+        ctx.fillStyle = clickGrad
+        ctx.fillRect(x + 1, kbTop + 1, colWidth - 2, kbHeight - 2)
+
+        ctx.strokeStyle = 'rgba(255,200,80,0.9)'
+        ctx.lineWidth = 2
+        ctx.beginPath()
+        ctx.moveTo(x + 1, kbTop + 1)
+        ctx.lineTo(x + colWidth - 1, kbTop + 1)
+        ctx.stroke()
+      }
+    }
   }
 
   // ── Pitch Indicator ───────────────────────────────────────────
@@ -698,7 +822,8 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
     if (!ctx) return
     const pitch = props.currentPitch()
     const isMidi = props.inputMode?.() === 'midi'
-    if (!pitch || (!props.isMicActive() && !isMidi)) return
+    const hasInput = props.isMicActive() || isMidi || clickedKey !== null
+    if (!pitch || !hasInput) return
 
     const midi = noteNameToMidi(pitch.noteName, pitch.octave)
     const col = midiToWhiteIndex(midi)
