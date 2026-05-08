@@ -4,6 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
+import { ChangelogModal } from '@/components/ChangelogModal'
 import { PitchAlgorithmTester } from '@/components'
 import { TierSelector } from '@/components/TierSelector'
 import { APP_VERSION } from '@/lib/defaults'
@@ -19,6 +20,7 @@ import { PITCH_BUFFER_DESCRIPTIONS, PITCH_BUFFER_LABELS, PITCH_BUFFER_SIZES, pit
 export const SettingsPanel: Component = () => {
   const s = () => settings()
   const [showResetConfirm, setShowResetConfirm] = createSignal(false)
+  const [showChangelog, setShowChangelog] = createSignal(false)
   const [showAlgoTester, setShowAlgoTester] = createSignal(false)
 
   const bandValues = createMemo(() => {
@@ -913,6 +915,18 @@ export const SettingsPanel: Component = () => {
             </div>
             <p class="about-name">PitchPerfect</p>
             <p class="about-version">Version {APP_VERSION}</p>
+            <button
+              class="whats-new-btn"
+              onClick={() => setShowChangelog(true)}
+            >
+              <svg viewBox="0 0 24 24" width="14" height="14">
+                <path
+                  fill="currentColor"
+                  d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"
+                />
+              </svg>
+              What's New
+            </button>
             <p class="about-desc">
               A web-based vocal pitch practice tool. Sing into your microphone
               and see your accuracy on the pitch canvas. Use the piano roll
@@ -976,6 +990,10 @@ export const SettingsPanel: Component = () => {
                 Reverb effects
               </span>
             </div>
+            <ChangelogModal
+              open={showChangelog()}
+              onClose={() => setShowChangelog(false)}
+            />
             <p class="about-credits">Vocal Pitch Practice — Redefined.</p>
             <div class="about-links">
               <a
