@@ -6,7 +6,6 @@
 .uvr-upload-control {
   max-width: 600px;
   margin: 0 auto;
-  padding: 1.5rem;
   background: var(--bg-secondary);
   border-radius: 1rem;
 }

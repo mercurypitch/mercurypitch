@@ -4,8 +4,8 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, Show } from 'solid-js'
-import type {OutputFile} from '@/lib/uvr-api';
-import { DEFAULT_PROCESS_REQUEST,getProcessStatus,  pollForCompletion, processAudio  } from '@/lib/uvr-api'
+import type { OutputFile } from '@/lib/uvr-api'
+import { DEFAULT_PROCESS_REQUEST, getProcessStatus, pollForCompletion, processAudio, } from '@/lib/uvr-api'
 import type { UvrSession } from '@/stores/app-store'
 import { cancelUvrSession, completeUvrSession, currentUvrSession, deleteAllUvrSessions, getAllUvrSessions, getAllUvrSessionsReactive, getUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrSessionApiId, startUvrSession, updateUvrSessionOutputs, updateUvrSessionProgress, } from '@/stores/app-store'
 import { StemMixer, UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrSettings, UvrUploadControl, } from '.'
@@ -227,10 +227,14 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     const s = session()
     if (!s?.outputs) return
 
-    const url = type === 'vocal' ? s.outputs.vocal
-      : type === 'instrumental' ? s.outputs.instrumental
-      : type === 'vocal-midi' ? s.outputs.vocalMidi
-      : s.outputs.instrumentalMidi
+    const url =
+      type === 'vocal'
+        ? s.outputs.vocal
+        : type === 'instrumental'
+          ? s.outputs.instrumental
+          : type === 'vocal-midi'
+            ? s.outputs.vocalMidi
+            : s.outputs.instrumentalMidi
 
     if (url === undefined) return
 
@@ -262,7 +266,10 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     if (session) {
       setCurrentUvrSession(session)
       // Refresh outputs from API if we have an API session ID
-      if (session.apiSessionId !== undefined && session.status === 'completed') {
+      if (
+        session.apiSessionId !== undefined &&
+        session.status === 'completed'
+      ) {
         refreshSessionOutputs(session)
       }
     }
@@ -301,7 +308,8 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     const filter = stems || {}
     setMixerStems({
       vocal: filter.vocal !== false ? s.outputs.vocal : undefined,
-      instrumental: filter.instrumental !== false ? s.outputs.instrumental : undefined,
+      instrumental:
+        filter.instrumental !== false ? s.outputs.instrumental : undefined,
       vocalMidi: s.outputs.vocalMidi,
     })
     setMixerSessionId(s.sessionId)
@@ -315,9 +323,12 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     const s = getUvrSession(sessionId)
     if (!s?.outputs) return
 
-    const url = type === 'vocal' ? s.outputs.vocal
-      : type === 'instrumental' ? s.outputs.instrumental
-      : s.outputs.vocalMidi
+    const url =
+      type === 'vocal'
+        ? s.outputs.vocal
+        : type === 'instrumental'
+          ? s.outputs.instrumental
+          : s.outputs.vocalMidi
 
     if (url === undefined) return
 
@@ -455,7 +466,10 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
             <Show when={allSessions().length > 0}>
               <div class="section-header">
                 <h4>Recent Sessions</h4>
-                <button class="back-btn" onClick={() => setCurrentView('history')}>
+                <button
+                  class="back-btn"
+                  onClick={() => setCurrentView('history')}
+                >
                   View All ({allSessions().length})
                 </button>
               </div>
@@ -503,7 +517,9 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
             <UvrUploadControl
               onFileSelect={handleFileSelect}
               onFileReady={setSelectedFile}
-              onProcessStart={(file) => { void handleProcessStart(file) }}
+              onProcessStart={(file) => {
+                void handleProcessStart(file)
+              }}
               processing={session()?.status === 'processing'}
             />
             <div class="quick-tips">
@@ -559,7 +575,9 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 processingTime={session()!.processingTime}
                 sessionId={session()!.sessionId}
                 onStartPractice={handlePracticeStart}
-                onExport={(type) => { void handleExport(type) }}
+                onExport={(type) => {
+                  void handleExport(type)
+                }}
               />
             )}
           </div>
@@ -953,7 +971,7 @@ export const UvrPanelStyles: string = `
 }
 
 .history-list-inline {
-  flex: 6 0 0;
+  flex: 6 0 auto;
   overflow-y: auto;
   margin-bottom: 0.75rem;
   border-bottom: 1px solid var(--border);
@@ -990,8 +1008,9 @@ export const UvrPanelStyles: string = `
 }
 
 .upload-section .uvr-upload-control {
-  flex: 4 1 0;
+  flex: 4 1 auto;
   min-height: 0;
+  height: 100%;
   overflow-y: auto;
   margin-bottom: 0.5rem;
 }
