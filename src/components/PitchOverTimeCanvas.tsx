@@ -210,16 +210,37 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
     const notes = props.scaleNotes?.()
     if (!notes || notes.length === 0) return
 
-    // Blue scale note labels sit left of the octave labels (C2–C7)
+    // Build a set of semitone offsets and their names from the scale
+    const semitoneMap = new Map<number, string>()
+    for (const note of notes) {
+      if (!semitoneMap.has(note.semitone)) {
+        semitoneMap.set(note.semitone, note.name)
+      }
+    }
     const scaleLabelX = w - 30
 
-    for (const note of notes) {
-      const y = freqToY(note.freq, h, logMin, logRange)
+    // Replicate scale pattern across all octaves in the visible range
+    const logMax = logMin + logRange
+    const minFreq = 2 ** logMin
+    const maxFreq = 2 ** logMax
+    const minMidi = Math.floor(12 * Math.log2(minFreq / 440) + 69)
+    const maxMidi = Math.ceil(12 * Math.log2(maxFreq / 440) + 69)
+
+    ctx.strokeStyle = 'rgba(88,166,255,0.22)'
+    ctx.lineWidth = 1.0
+    ctx.fillStyle = 'rgba(88,166,255,0.45)'
+    ctx.font = '9px sans-serif'
+    ctx.textAlign = 'right'
+    ctx.textBaseline = 'middle'
+
+    for (let midi = minMidi; midi <= maxMidi; midi++) {
+      const semitone = ((midi % 12) + 12) % 12
+      if (!semitoneMap.has(semitone)) continue
+
+      const freq = 440 * 2 ** ((midi - 69) / 12)
+      const y = freqToY(freq, h, logMin, logRange)
       if (y < 4 || y > h - 4) continue
 
-      // Grid line
-      ctx.strokeStyle = 'rgba(88,166,255,0.22)'
-      ctx.lineWidth = 1.0
       ctx.setLineDash([3, 6])
       ctx.beginPath()
       ctx.moveTo(MARGIN, y)
@@ -227,12 +248,7 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
       ctx.stroke()
       ctx.setLineDash([])
 
-      // Note label — padded left so octave labels sit rightmost
-      ctx.fillStyle = 'rgba(88,166,255,0.45)'
-      ctx.font = '9px sans-serif'
-      ctx.textAlign = 'right'
-      ctx.textBaseline = 'middle'
-      ctx.fillText(note.name, scaleLabelX, y)
+      ctx.fillText(semitoneMap.get(semitone)!, scaleLabelX, y)
     }
   }
 
