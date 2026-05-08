@@ -34,9 +34,11 @@ import {
   setPlayheadBeat,
   setScore,
   setSelectedSongName,
+  setShowNoteLabels,
   setSongNotes,
   setTotalNotes,
   setVisibleBeatWindow,
+  showNoteLabels,
   songNotes,
   totalNotes,
   visibleBeatWindow,
@@ -399,6 +401,10 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
     return Math.round((8 / visibleBeatWindow()) * 100)
   }
 
+  const toggleNoteLabels = () => {
+    setShowNoteLabels((v) => !v)
+  }
+
   return {
     // Signals
     gameState,
@@ -436,6 +442,8 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
     zoomIn,
     zoomOut,
     zoomPercent,
+    showNoteLabels,
+    toggleNoteLabels,
     setBpm: setCurrentSongBpm,
 
     // Engine (for waveform display)

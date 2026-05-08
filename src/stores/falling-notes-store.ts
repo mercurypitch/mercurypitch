@@ -45,6 +45,7 @@ export const [visibleBeatWindow, setVisibleBeatWindow] = createSignal(8)
 export type InputMode = 'mic' | 'midi'
 export const [inputMode, setInputMode] = createSignal<InputMode>('mic')
 export const [midiConnected, setMidiConnected] = createSignal(false)
+export const [showNoteLabels, setShowNoteLabels] = createSignal(true)
 
 // ── Actions ─────────────────────────────────────────────────
 

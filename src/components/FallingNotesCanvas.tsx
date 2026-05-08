@@ -5,7 +5,7 @@
 import type { Component } from 'solid-js'
 import { onCleanup, onMount } from 'solid-js'
 import type { FallingNote, NoteJudgment } from '@/stores/falling-notes-store'
-import { setVisibleBeatWindow } from '@/stores/falling-notes-store'
+import { setVisibleBeatWindow, showNoteLabels } from '@/stores/falling-notes-store'
 
 interface FallingNotesCanvasProps {
   songNotes: () => FallingNote[]
@@ -39,8 +39,8 @@ const KEYBOARD_START_RATIO = 0.85
 const BLACK_KEY_HEIGHT_RATIO = 0.6
 const BLACK_KEY_WIDTH_RATIO = 0.58
 const MIN_WHITE_KEYS_VISIBLE = 15
-const NOTE_BORDER_RADIUS = 6
-const PARTICLE_BURST_COUNT = 12
+const NOTE_BORDER_RADIUS = 8
+const PARTICLE_BURST_COUNT = 24
 
 const WHITE_KEY_OFFSETS = [0, 0, 1, 1, 2, 3, 3, 4, 4, 5, 5, 6]
 const IS_BLACK_KEY = [false, true, false, true, false, false, true, false, true, false, true, false]
@@ -78,6 +78,13 @@ function darkenColor(hex: string, factor: number): string {
   const g = parseInt(hex.slice(3, 5), 16)
   const b = parseInt(hex.slice(5, 7), 16)
   return `rgb(${Math.floor(r * factor)},${Math.floor(g * factor)},${Math.floor(b * factor)})`
+}
+
+function lightenColor(hex: string, amount: number): string {
+  const r = Math.min(255, parseInt(hex.slice(1, 3), 16) + Math.floor(amount * 255))
+  const g = Math.min(255, parseInt(hex.slice(3, 5), 16) + Math.floor(amount * 255))
+  const b = Math.min(255, parseInt(hex.slice(5, 7), 16) + Math.floor(amount * 255))
+  return `rgb(${r},${g},${b})`
 }
 
 export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) => {
@@ -201,20 +208,24 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
       const pColWidth = w / pDisplay
       const x = (col - pDisplayMin) * pColWidth + pColWidth / 2
 
-      const color = r.timing === 'miss' ? '#f85149' : '#3fb950'
-      for (let p = 0; p < PARTICLE_BURST_COUNT; p++) {
+      const isMiss = r.timing === 'miss'
+      const isPerfect = r.timing === 'perfect'
+      const color = isMiss ? '#f85149' : isPerfect ? '#ffd700' : '#3fb950'
+      const burstCount = isPerfect ? PARTICLE_BURST_COUNT + 6 : PARTICLE_BURST_COUNT
+
+      for (let p = 0; p < burstCount; p++) {
         const angle = Math.random() * Math.PI * 2
-        const speed = 80 + Math.random() * 180
+        const speed = 60 + Math.random() * 200
         particles.push({
           x,
           y: jLineY,
           vx: Math.cos(angle) * speed,
-          vy: Math.sin(angle) * speed - 60,
+          vy: Math.sin(angle) * speed - 80,
           alpha: 1,
           color,
-          size: 2 + Math.random() * 3,
+          size: 1.5 + Math.random() * 3,
           life: 0,
-          maxLife: 0.4 + Math.random() * 0.4,
+          maxLife: 0.35 + Math.random() * 0.5,
         })
       }
     }
@@ -227,7 +238,7 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
       const p = particles[i]
       p.x += p.vx * dt
       p.y += p.vy * dt
-      p.vy += 120 * dt
+      p.vy += 140 * dt
       p.life += dt
       p.alpha = Math.max(0, 1 - p.life / p.maxLife)
       if (p.alpha <= 0) particles.splice(i, 1)
@@ -237,6 +248,16 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
   const drawParticles = () => {
     if (!ctx) return
     for (const p of particles) {
+      ctx.globalAlpha = p.alpha
+      // Trail effect — draw smaller fading dot behind
+      if (p.alpha > 0.3) {
+        const trailAlpha = p.alpha * 0.4
+        ctx.globalAlpha = trailAlpha
+        ctx.fillStyle = p.color
+        ctx.beginPath()
+        ctx.arc(p.x - p.vx * 0.015, p.y - p.vy * 0.015, p.size * 0.6, 0, Math.PI * 2)
+        ctx.fill()
+      }
       ctx.globalAlpha = p.alpha
       ctx.fillStyle = p.color
       ctx.beginPath()
@@ -319,8 +340,9 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
       const wasMiss = judgment?.timing === 'miss'
       const wasHit = isJudged && !wasMiss
 
-      // Color
+      // Color and gradient
       let fillColor: string
+      let useGradient = false
       if (wasMiss) {
         fillColor = '#f8514966'
       } else if (wasHit) {
@@ -329,7 +351,8 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
         fillColor = '#f0f6fc'
       } else {
         const base = noteColor(note.midi)
-        fillColor = darkenColor(base, 0.75)
+        fillColor = base
+        useGradient = true
       }
 
       // Border
@@ -339,10 +362,27 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
       else if (note.startBeat <= currentBeat && currentBeat <= endBeat)
         strokeColor = '#ffffff'
 
-      // Draw note rectangle
-      ctx.fillStyle = fillColor
+      // Shadow beneath note
+      if (useGradient)
+      ctx.save()
+      ctx.shadowColor = 'rgba(0,0,0,0.4)'
+      ctx.shadowBlur = 4
+      ctx.shadowOffsetY = 2
+
+      // Draw note rectangle with gradient or flat fill
+      if (useGradient) {
+        const grad = ctx.createLinearGradient(x + xOffset, y, x + xOffset, y + noteH)
+        grad.addColorStop(0, lightenColor(fillColor, 0.35))
+        grad.addColorStop(0.3, fillColor)
+        grad.addColorStop(0.7, darkenColor(fillColor, 0.85))
+        grad.addColorStop(1, darkenColor(fillColor, 0.65))
+        ctx.fillStyle = grad
+      } else {
+        ctx.fillStyle = fillColor
+      }
+
       ctx.strokeStyle = strokeColor
-      ctx.lineWidth = 2
+      ctx.lineWidth = strokeColor !== 'transparent' ? 2.5 : 0
       ctx.beginPath()
       const r = Math.min(NOTE_BORDER_RADIUS, noteH / 2)
       ctx.moveTo(x + xOffset + r, y)
@@ -358,12 +398,15 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
       ctx.fill()
       if (strokeColor !== 'transparent') ctx.stroke()
 
-      // Note name label
-      if (noteH > 14) {
+      if (useGradient) ctx.restore()
+
+      // Note name label — always visible when showNoteLabels is on
+      if (showNoteLabels()) {
         const noteName = midiToNoteName(note.midi)
         const octave = Math.floor(note.midi / 12) - 1
-        ctx.fillStyle = wasMiss ? '#f85149' : wasHit ? '#3fb950' : isJudged ? '#8b949e' : '#f0f6fc'
-        ctx.font = `${Math.max(9, Math.min(noteH * 0.55, 14))}px sans-serif`
+        const labelFontSize = Math.max(9, Math.min(noteH * 0.5, 13))
+        ctx.fillStyle = wasMiss ? '#f85149' : wasHit ? '#3fb950' : isJudged ? '#8b949e' : '#ffffff'
+        ctx.font = `bold ${labelFontSize}px sans-serif`
         ctx.textAlign = 'center'
         ctx.textBaseline = 'middle'
         ctx.fillText(`${noteName}${octave}`, x + xOffset + wNote / 2, y + noteH / 2)
@@ -392,29 +435,34 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
 
   const drawJudgmentLine = (w: number, y: number, _beat: number) => {
     if (!ctx) return
-    // Glow
-    const glow = ctx.createLinearGradient(0, y - 8, 0, y + 8)
-    glow.addColorStop(0, 'rgba(120,180,255,0)')
-    glow.addColorStop(0.5, 'rgba(120,180,255,0.35)')
-    glow.addColorStop(1, 'rgba(120,180,255,0)')
+    // Animated shimmer
+    const shimmerAlpha = 0.3 + 0.15 * Math.sin(performance.now() / 600)
+    // Wide glow
+    const glow = ctx.createLinearGradient(0, y - 14, 0, y + 14)
+    glow.addColorStop(0, 'rgba(120,200,255,0)')
+    glow.addColorStop(0.3, `rgba(120,200,255,${shimmerAlpha * 0.5})`)
+    glow.addColorStop(0.5, `rgba(120,200,255,${shimmerAlpha})`)
+    glow.addColorStop(0.7, `rgba(120,200,255,${shimmerAlpha * 0.5})`)
+    glow.addColorStop(1, 'rgba(120,200,255,0)')
     ctx.fillStyle = glow
-    ctx.fillRect(0, y - 8, w, 16)
+    ctx.fillRect(0, y - 14, w, 28)
 
     // Line
-    ctx.strokeStyle = 'rgba(120,180,255,0.7)'
-    ctx.lineWidth = 2
+    ctx.strokeStyle = `rgba(120,200,255,${0.6 + shimmerAlpha * 0.3})`
+    ctx.lineWidth = 2.5
     ctx.beginPath()
     ctx.moveTo(0, y)
     ctx.lineTo(w, y)
     ctx.stroke()
 
-    // Center diamond
-    ctx.fillStyle = 'rgba(120,180,255,0.9)'
+    // Larger center diamond
+    const dSize = 8
+    ctx.fillStyle = `rgba(120,200,255,${0.8 + shimmerAlpha * 0.2})`
     ctx.beginPath()
-    ctx.moveTo(w / 2, y - 6)
-    ctx.lineTo(w / 2 + 6, y)
-    ctx.lineTo(w / 2, y + 6)
-    ctx.lineTo(w / 2 - 6, y)
+    ctx.moveTo(w / 2, y - dSize)
+    ctx.lineTo(w / 2 + dSize, y)
+    ctx.lineTo(w / 2, y + dSize)
+    ctx.lineTo(w / 2 - dSize, y)
     ctx.closePath()
     ctx.fill()
   }
@@ -433,7 +481,7 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
     const startBeat = currentBeat
     const endBeat = currentBeat + visibleBeats
 
-    ctx.strokeStyle = 'rgba(48,54,61,0.4)'
+    ctx.strokeStyle = 'rgba(60,66,76,0.3)'
     ctx.lineWidth = 0.5
 
     for (let b = Math.floor(startBeat); b <= Math.ceil(endBeat); b++) {
@@ -442,11 +490,13 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
 
       const isBar = b % 4 === 0
       if (isBar) {
-        ctx.strokeStyle = 'rgba(72,79,88,0.35)'
+        ctx.strokeStyle = 'rgba(80,86,96,0.28)'
         ctx.lineWidth = 1
+        ctx.setLineDash([4, 4])
       } else {
-        ctx.strokeStyle = 'rgba(48,54,61,0.25)'
+        ctx.strokeStyle = 'rgba(60,66,76,0.18)'
         ctx.lineWidth = 0.5
+        ctx.setLineDash([])
       }
 
       ctx.beginPath()
@@ -462,6 +512,7 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
         ctx.fillText(`Bar ${barNum}`, 6, y - 4)
       }
     }
+    ctx.setLineDash([])
   }
 
   // ── Virtual Keyboard ─────────────────────────────────────────
@@ -479,32 +530,57 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
   ) => {
     if (!ctx) return
 
-    // Background
-    ctx.fillStyle = '#161b22'
+    // Keyboard background with subtle gradient
+    const bgGrad = ctx.createLinearGradient(0, kbTop, 0, kbTop + kbHeight)
+    bgGrad.addColorStop(0, '#1a1f2b')
+    bgGrad.addColorStop(1, '#0f131a')
+    ctx.fillStyle = bgGrad
     ctx.fillRect(0, kbTop, w, kbHeight)
 
     // Top border
-    ctx.strokeStyle = '#30363d'
-    ctx.lineWidth = 1
+    ctx.strokeStyle = '#3a4050'
+    ctx.lineWidth = 1.5
     ctx.beginPath()
     ctx.moveTo(0, kbTop)
     ctx.lineTo(w, kbTop)
     ctx.stroke()
 
     const blackKeyH = kbHeight * BLACK_KEY_HEIGHT_RATIO
+    const keyRadius = Math.min(colWidth * 0.12, 4)
 
-    // Draw white keys first
+    // Draw white keys first with 3D ivory gradient
     for (let wi = 0; wi < rangeWhite; wi++) {
       const x = wi * colWidth
       const midi = whiteIndexToMidi(minWhite + wi)
-      const isHighlighted = false // will set below if note near judgment
 
-      ctx.fillStyle = isHighlighted ? '#388bfd' : '#21262d'
-      ctx.fillRect(x + 1, kbTop, colWidth - 2, kbHeight - 1)
+      // 3D ivory gradient
+      const wGrad = ctx.createLinearGradient(x, kbTop, x, kbTop + kbHeight)
+      wGrad.addColorStop(0, '#fafbfc')
+      wGrad.addColorStop(0.15, '#e8ecf0')
+      wGrad.addColorStop(0.5, '#d4d8de')
+      wGrad.addColorStop(0.85, '#c4c9d1')
+      wGrad.addColorStop(1, '#b0b5bd')
+      ctx.fillStyle = wGrad
+
+      // Rounded bottom corners
+      ctx.beginPath()
+      ctx.moveTo(x + 1, kbTop + 1)
+      ctx.lineTo(x + colWidth - 1, kbTop + 1)
+      ctx.lineTo(x + colWidth - 1, kbTop + kbHeight - keyRadius)
+      ctx.arcTo(x + colWidth - 1, kbTop + kbHeight - 1, x + colWidth - keyRadius, kbTop + kbHeight - 1, keyRadius)
+      ctx.lineTo(x + 1 + keyRadius, kbTop + kbHeight - 1)
+      ctx.arcTo(x + 1, kbTop + kbHeight - 1, x + 1, kbTop + kbHeight - keyRadius, keyRadius)
+      ctx.closePath()
+      ctx.fill()
+
+      // Subtle inner shadow edge at key bottom
+      ctx.strokeStyle = '#9da3ad'
+      ctx.lineWidth = 0.5
+      ctx.stroke()
 
       // Key separator
       ctx.strokeStyle = '#0d1117'
-      ctx.lineWidth = 1
+      ctx.lineWidth = 1.5
       ctx.beginPath()
       ctx.moveTo(x, kbTop)
       ctx.lineTo(x, kbTop + kbHeight)
@@ -513,41 +589,51 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
       // Note label
       const noteName = midiToNoteName(midi)
       const octave = Math.floor(midi / 12) - 1
-      ctx.fillStyle = '#8b949e'
-      ctx.font = `${Math.max(8, Math.min(colWidth * 0.7, 12))}px sans-serif`
+      ctx.fillStyle = '#1a1f2b'
+      ctx.font = `${Math.max(8, Math.min(colWidth * 0.65, 11))}px sans-serif`
       ctx.textAlign = 'center'
       ctx.textBaseline = 'bottom'
-      ctx.fillText(`${noteName}${octave}`, x + colWidth / 2, kbTop + kbHeight - 4)
+      ctx.fillText(`${noteName}${octave}`, x + colWidth / 2, kbTop + kbHeight - 5)
     }
 
-    // Draw black keys
+    // Draw black keys with 3D dark gradient
     for (let wi = 0; wi < rangeWhite; wi++) {
-      const absoluteWhite = minWhite + wi
-      // Map white index back to MIDI to find if next semitone is black
-      const midi = whiteIndexToMidi(absoluteWhite)
-      // Check the next semitone (midi+1) — if it's black but the key after this white, draw it
-      // Black keys appear between white keys C-D, D-E, F-G, G-A, A-B
+      const midi = whiteIndexToMidi(minWhite + wi)
       const nextMidi = midi + 1
       if (nextMidi % 12 !== 0 && nextMidi % 12 !== 5) {
-        // Not at E→F or B→C boundary; next is a white key, so no black key between
-        // Actually, we check if midi+1 is a black key
         const nextIsBlack = IS_BLACK_KEY[nextMidi % 12]
         if (nextIsBlack) {
-          // Draw black key between this white key and the next one
           const bw = colWidth * BLACK_KEY_WIDTH_RATIO
           const bx = (wi * colWidth + colWidth * 0.7) - bw / 2
 
-          ctx.fillStyle = '#0d1117'
-          ctx.fillRect(bx, kbTop, bw, blackKeyH)
+          // 3D dark gradient
+          const bGrad = ctx.createLinearGradient(bx, kbTop, bx + bw, kbTop + blackKeyH)
+          bGrad.addColorStop(0, '#3a3e45')
+          bGrad.addColorStop(0.3, '#1a1c22')
+          bGrad.addColorStop(0.7, '#0d0e14')
+          bGrad.addColorStop(1, '#1f2128')
+          ctx.fillStyle = bGrad
 
-          ctx.strokeStyle = '#000'
+          const bRadius = Math.min(bw * 0.15, 3)
+          ctx.beginPath()
+          ctx.moveTo(bx, kbTop + 1)
+          ctx.lineTo(bx + bw, kbTop + 1)
+          ctx.lineTo(bx + bw, kbTop + blackKeyH - bRadius)
+          ctx.arcTo(bx + bw, kbTop + blackKeyH, bx + bw - bRadius, kbTop + blackKeyH, bRadius)
+          ctx.lineTo(bx + bRadius, kbTop + blackKeyH)
+          ctx.arcTo(bx, kbTop + blackKeyH, bx, kbTop + blackKeyH - bRadius, bRadius)
+          ctx.closePath()
+          ctx.fill()
+
+          // Subtle highlight on black key top
+          ctx.strokeStyle = 'rgba(255,255,255,0.08)'
           ctx.lineWidth = 1
-          ctx.strokeRect(bx, kbTop, bw, blackKeyH)
+          ctx.stroke()
         }
       }
     }
 
-    // Highlight keys for notes currently playing
+    // Highlight keys for notes at judgment line
     for (const note of _notes) {
       const endBeat = note.startBeat + note.duration
       const atLine = note.startBeat <= _currentBeat && _currentBeat <= endBeat
@@ -558,8 +644,11 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
       if (wi < 0 || wi >= rangeWhite) continue
       const x = wi * colWidth
 
-      ctx.fillStyle = 'rgba(56,139,253,0.5)'
-      ctx.fillRect(x + 1, kbTop, colWidth - 2, kbHeight - 1)
+      const hlGrad = ctx.createLinearGradient(x, kbTop, x, kbTop + kbHeight)
+      hlGrad.addColorStop(0, 'rgba(56,139,253,0.45)')
+      hlGrad.addColorStop(1, 'rgba(56,139,253,0.25)')
+      ctx.fillStyle = hlGrad
+      ctx.fillRect(x + 1, kbTop + 1, colWidth - 2, kbHeight - 2)
     }
   }
 
@@ -643,30 +732,53 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
     const t = props.totalNotes()
     const m = props.notesMissed()
 
-    ctx.fillStyle = 'rgba(0,0,0,0.5)'
-    ctx.fillRect(0, 0, w, 44)
+    // Glass-morphism overlay
+    const glassGrad = ctx.createLinearGradient(0, 0, 0, 48)
+    glassGrad.addColorStop(0, 'rgba(13,17,23,0.85)')
+    glassGrad.addColorStop(0.6, 'rgba(13,17,23,0.75)')
+    glassGrad.addColorStop(1, 'rgba(13,17,23,0.45)')
+    ctx.fillStyle = glassGrad
+    ctx.fillRect(0, 0, w, 48)
 
+    // Subtle bottom border
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)'
+    ctx.lineWidth = 1
+    ctx.beginPath()
+    ctx.moveTo(0, 48)
+    ctx.lineTo(w, 48)
+    ctx.stroke()
+
+    // Score — left
     ctx.fillStyle = '#f0f6fc'
-    ctx.font = 'bold 18px sans-serif'
+    ctx.font = 'bold 20px sans-serif'
     ctx.textAlign = 'left'
-    ctx.fillText(`Score: ${s}`, 12, 30)
+    ctx.fillText(`Score: ${s}`, 14, 30)
 
+    // Combo — center
     ctx.textAlign = 'center'
     if (c > 1) {
       ctx.fillStyle = '#3fb950'
+      ctx.font = 'bold 20px sans-serif'
       ctx.fillText(`${c}x Combo!`, w / 2, 30)
     }
 
+    // Hit/miss — right
     ctx.fillStyle = '#8b949e'
     ctx.textAlign = 'right'
-    ctx.font = '14px sans-serif'
+    ctx.font = '13px sans-serif'
     const hit = t - m
-    ctx.fillText(`${hit}/${t}  Miss: ${m}`, w - 12, 22)
-    ctx.fillText(
-      gs === 'countdown' ? 'Get Ready...' : gs === 'paused' ? 'Paused' : '',
-      w - 12,
-      38,
-    )
+    ctx.fillText(`${hit}/${t}  Miss: ${m}`, w - 14, 18)
+
+    // State text
+    if (gs === 'countdown' || gs === 'paused') {
+      ctx.fillStyle = gs === 'countdown' ? '#f1c40f' : '#8b949e'
+      ctx.font = 'bold 14px sans-serif'
+      ctx.fillText(
+        gs === 'countdown' ? 'Get Ready...' : 'Paused',
+        w - 14,
+        36,
+      )
+    }
   }
 
   // ── Empty State ──────────────────────────────────────────────

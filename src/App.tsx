@@ -1078,6 +1078,8 @@ const AppShell: Component<AppProps> = (props) => {
                   zoomLevel={fallingNotes.zoomPercent}
                   onZoomIn={fallingNotes.zoomIn}
                   onZoomOut={fallingNotes.zoomOut}
+                  showNoteLabels={fallingNotes.showNoteLabels}
+                  onToggleNoteLabels={fallingNotes.toggleNoteLabels}
                 />
                 <FallingNotesSongPicker onSongLoaded={fallingNotes.loadSong} />
                 <div id="falling-notes-canvas-container">

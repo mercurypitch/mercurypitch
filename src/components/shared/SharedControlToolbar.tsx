@@ -106,6 +106,10 @@ interface SharedControlToolbarProps {
   onZoomIn?: () => void
   onZoomOut?: () => void
 
+  // Labels toggle (falling-notes tab only)
+  showNoteLabels?: () => boolean
+  onToggleNoteLabels?: () => void
+
   // MIDI (falling-notes tab only)
   inputMode?: () => 'mic' | 'midi'
   midiConnected?: () => boolean
@@ -672,6 +676,22 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
               aria-label="Zoom in"
               onClick={() => props.onZoomIn?.()}
             >+</button>
+          </div>
+          </Show>
+
+          {/* Note label toggle — falling notes tab only */}
+          <Show when={isFallingNotesTab() && props.showNoteLabels && props.onToggleNoteLabels}>
+          <div class="label-toggle-group inline-control" title="Toggle note labels">
+            <button
+              class={`label-toggle-btn ${props.showNoteLabels?.() ? 'active' : ''}`}
+              aria-label="Toggle note labels"
+              onClick={() => props.onToggleNoteLabels?.()}
+            >
+              <svg viewBox="0 0 24 24" width="14" height="14">
+                <path fill="currentColor" d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+              </svg>
+              <span class="label-toggle-text">Labels</span>
+            </button>
           </div>
           </Show>
         </div>
