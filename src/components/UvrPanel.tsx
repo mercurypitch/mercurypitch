@@ -773,11 +773,12 @@ export const UvrPanelStyles: string = `
   flex: 1;
   overflow-y: auto;
   position: relative;
+  padding-bottom: 1.5rem;
 }
 
 .view-section {
   padding: 1.5rem;
-  min-height: 400px;
+  min-height: 0;
 }
 
 .mixer-section {
@@ -793,7 +794,7 @@ export const UvrPanelStyles: string = `
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.75rem;
 }
 
 .section-header h4 {
@@ -895,18 +896,18 @@ export const UvrPanelStyles: string = `
 
 /* Upload Section */
 .upload-section {
-  padding: 1.5rem;
+  padding: 1rem;
 }
 
 .quick-tips {
-  margin-top: 1.5rem;
-  padding: 1rem;
+  margin-top: 1rem;
+  padding: 0.75rem;
   background: var(--bg-primary);
   border-radius: 0.5rem;
 }
 
 .quick-tips h5 {
-  margin: 0 0 0.75rem;
+  margin: 0 0 0.5rem;
   font-size: 0.85rem;
   color: var(--fg-primary);
 }
@@ -920,7 +921,7 @@ export const UvrPanelStyles: string = `
 .quick-tips li {
   font-size: 0.85rem;
   color: var(--fg-secondary);
-  padding: 0.25rem 0;
+  padding: 0.2rem 0;
   padding-left: 1rem;
   position: relative;
 }
@@ -934,7 +935,7 @@ export const UvrPanelStyles: string = `
 
 /* History Section */
 .history-section {
-  padding: 1.5rem;
+  padding: 1rem;
   max-width: min(85%, 1200px);
   margin: 0 auto;
 }
@@ -949,16 +950,16 @@ export const UvrPanelStyles: string = `
 }
 
 .history-list-inline {
-  max-height: 360px;
-  margin-bottom: 1.5rem;
+  max-height: 180px;
+  margin-bottom: 0.75rem;
   border-bottom: 1px solid var(--border);
-  padding-bottom: 1rem;
+  padding-bottom: 0.75rem;
 }
 
 .upload-divider {
   display: flex;
   align-items: center;
-  margin: 0 0 1.5rem;
+  margin: 0 0 0.75rem;
 }
 
 .upload-divider::before {

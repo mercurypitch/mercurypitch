@@ -353,8 +353,8 @@ export const UvrSessionResultStyles: string = `
 .uvr-session-result {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  padding: 0.875rem;
+  gap: 0.4rem;
+  padding: 0.6rem;
   background: var(--bg-secondary);
   border: 1px solid var(--border);
   border-radius: 0.75rem;
@@ -370,15 +370,15 @@ export const UvrSessionResultStyles: string = `
 .session-header {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
+  gap: 0.4rem;
 }
 
 .session-icon-wrapper {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 2.25rem;
-  height: 2.25rem;
+  width: 1.75rem;
+  height: 1.75rem;
   background: var(--bg-primary);
   border-radius: 50%;
   color: var(--fg-primary);
@@ -386,8 +386,8 @@ export const UvrSessionResultStyles: string = `
 }
 
 .session-icon-wrapper svg {
-  width: 1.1rem;
-  height: 1.1rem;
+  width: 0.9rem;
+  height: 0.9rem;
 }
 
 .session-title-area {
@@ -397,13 +397,13 @@ export const UvrSessionResultStyles: string = `
 
 .session-title-area h3 {
   margin: 0;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: var(--fg-primary);
 }
 
 .session-filename {
-  margin: 0.15rem 0 0;
-  font-size: 0.75rem;
+  margin: 0.1rem 0 0;
+  font-size: 0.7rem;
   color: var(--fg-secondary);
   white-space: nowrap;
   overflow: hidden;
@@ -412,7 +412,7 @@ export const UvrSessionResultStyles: string = `
 
 .session-id-pill {
   display: inline-block;
-  margin: 0.2rem 0 0;
+  margin: 0.1rem 0 0;
   padding: 0.1rem 0.35rem;
   font-size: 0.6rem;
   font-family: monospace;
@@ -428,8 +428,8 @@ export const UvrSessionResultStyles: string = `
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 1.75rem;
-  height: 1.75rem;
+  width: 1.5rem;
+  height: 1.5rem;
   padding: 0;
   background: transparent;
   border: none;
@@ -451,15 +451,15 @@ export const UvrSessionResultStyles: string = `
 }
 
 .session-delete-btn svg {
-  width: 1rem;
-  height: 1rem;
+  width: 0.85rem;
+  height: 0.85rem;
 }
 
 .status-bar {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.4rem 0.6rem;
+  gap: 0.3rem;
+  padding: 0.3rem 0.5rem;
   background: var(--bg-primary);
   border-radius: 0.4rem;
   border-left: 3px solid var(--status-color, var(--fg-tertiary));
@@ -503,13 +503,13 @@ export const UvrSessionResultStyles: string = `
 .info-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.5rem;
+  gap: 0.3rem;
 }
 
 .info-item {
   display: flex;
-  gap: 0.4rem;
-  padding: 0.4rem;
+  gap: 0.3rem;
+  padding: 0.3rem;
   background: var(--bg-primary);
   border-radius: 0.4rem;
 }
@@ -546,28 +546,28 @@ export const UvrSessionResultStyles: string = `
 }
 
 .outputs-section {
-  padding: 0.6rem;
+  padding: 0.4rem;
   background: var(--bg-primary);
   border-radius: 0.4rem;
 }
 
 .outputs-section h4 {
-  margin: 0 0 0.5rem;
+  margin: 0 0 0.3rem;
   font-size: 0.78rem;
   color: var(--fg-primary);
 }
 
 .stem-pills {
   display: flex;
-  gap: 0.4rem;
+  gap: 0.3rem;
   flex-wrap: wrap;
 }
 
 .stem-pill {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  padding: 0.35rem 0.65rem;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
   border: 1px solid var(--border);
   border-radius: 999px;
   font-size: 0.72rem;
@@ -578,8 +578,8 @@ export const UvrSessionResultStyles: string = `
 }
 
 .stem-pill svg {
-  width: 0.75rem;
-  height: 0.75rem;
+  width: 0.7rem;
+  height: 0.7rem;
 }
 
 .stem-pill-vocal {
@@ -642,7 +642,7 @@ export const UvrSessionResultStyles: string = `
 
 .session-result-actions {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.35rem;
   margin-top: auto;
 }
 
@@ -651,11 +651,11 @@ export const UvrSessionResultStyles: string = `
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.4rem;
-  padding: 0.5rem 0.75rem;
+  gap: 0.35rem;
+  padding: 0.4rem 0.6rem;
   border: none;
   border-radius: 0.4rem;
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
@@ -663,8 +663,8 @@ export const UvrSessionResultStyles: string = `
 }
 
 .session-result-btn svg {
-  width: 0.85rem;
-  height: 0.85rem;
+  width: 0.75rem;
+  height: 0.75rem;
 }
 
 .session-result-btn-primary {
