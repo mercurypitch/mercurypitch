@@ -3,9 +3,6 @@
 // to the IPitchDetector interface used by PitchTestingTab
 // ============================================================
 
-import { freqToNote } from '../scale-data'
-import { SwiftF0Detector } from '../swift-f0-detector'
-import type { SwiftPitchResult } from '../swift-f0-detector'
 import type {
   DetectorMetrics,
   DetectorSettings,
@@ -13,6 +10,9 @@ import type {
   PitchAlgorithm,
   PitchDetectionResult,
 } from '@/types/pitch-algorithms'
+import { freqToNote } from '../scale-data'
+import type { SwiftPitchResult } from '../swift-f0-detector'
+import { SwiftF0Detector } from '../swift-f0-detector'
 
 const SWIFTF0_SAMPLE_RATE = 16000
 

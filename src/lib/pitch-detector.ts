@@ -3,6 +3,12 @@
 // ============================================================
 
 import type { DetectorMetrics, DetectorSettings, PitchDetectionResult, } from '@/types/pitch-algorithms'
+import {
+  adjustedThreshold,
+  mpmPickThreshold,
+  parabolicInterpolation,
+  parabolicInterpolationMax,
+} from './pitch-detector-internals'
 import { freqToNote } from './scale-data'
 import type { SwiftF0Detector } from './swift-f0-detector'
 
@@ -163,13 +169,13 @@ export class PitchDetector {
         ? this.analyzeMPM(timeDomainBuffer)
         : this.analyzeYIN(timeDomainBuffer)
 
-    // Confidence gate — YIN uses adjustedThreshold() as a minimum;
+    // Confidence gate — YIN uses adjustedThreshold(sensitivity) as a minimum;
     // MPM confidence is the NSDF peak value (0–1) so only minConfidence
     // applies.
     const confFloor =
       this.algorithm === 'mpm'
         ? this.minConfidence
-        : Math.max(this.adjustedThreshold(), this.minConfidence)
+        : Math.max(adjustedThreshold(this.sensitivity), this.minConfidence)
 
     if (result.confidence < confFloor) {
       return {
@@ -361,7 +367,7 @@ export class PitchDetector {
     }
 
     // Step 3: Absolute threshold — find first tau below threshold
-    const threshold = this.adjustedThreshold()
+    const threshold = adjustedThreshold(this.sensitivity)
     let tauEstimate = -1
     for (let tau = 2; tau < halfSize; tau++) {
       if (this.yinBuffer[tau] < threshold) {
@@ -417,7 +423,7 @@ export class PitchDetector {
     }
 
     // Step 4: Parabolic interpolation for sub-sample accuracy
-    const betterTau = this.parabolicInterpolation(tauEstimate)
+    const betterTau = parabolicInterpolation(tauEstimate, this.yinBuffer)
     const frequency = this.sampleRate / betterTau
 
     // Reject frequencies outside the valid range
@@ -525,7 +531,7 @@ export class PitchDetector {
     // Step 3: Pick the first peak that is above a proportion of the
     // global maximum. This selects the fundamental, not a harmonic.
     const globalMax = Math.max(...maxValues)
-    const pickThreshold = globalMax * this.mpmPickThreshold()
+    const pickThreshold = globalMax * mpmPickThreshold(this.sensitivity)
 
     let bestTau = maxPositions[0]
     let bestVal = maxValues[0]
@@ -538,7 +544,7 @@ export class PitchDetector {
     }
 
     // Step 4: Parabolic interpolation around the chosen peak
-    const betterTau = this.parabolicInterpolationMax(bestTau, nsdf)
+    const betterTau = parabolicInterpolationMax(bestTau, nsdf)
     const frequency = this.sampleRate / betterTau
 
     // Reject frequencies outside the valid range
@@ -555,41 +561,6 @@ export class PitchDetector {
     return { frequency: stableFreq, confidence }
   }
 
-  /** Parabolic interpolation around a MAXIMUM (for MPM/NSDF peaks) */
-  private parabolicInterpolationMax(tau: number, buf: Float32Array): number {
-    if (tau <= 0 || tau >= buf.length - 1) return tau
-
-    const s0 = buf[tau - 1]
-    const s1 = buf[tau]
-    const s2 = buf[tau + 1]
-    const denom = 2 * (2 * s1 - s2 - s0)
-    if (Math.abs(denom) < 1e-10) return tau
-    const shift = (s0 - s2) / denom
-
-    return tau + shift
-  }
-
-  /** MPM pick threshold — maps sensitivity to how aggressively we
-   *  pick the first peak vs waiting for a stronger one.
-   *  Higher sensitivity → lower threshold → picks earlier (more
-   *  responsive). Range: 0.5 (strict) to 0.9 (relaxed). */
-  private mpmPickThreshold(): number {
-    return 0.9 - (this.sensitivity - 1) * 0.04
-  }
-
-  // ── Shared utilities ──────────────────────────────────────────
-
-  /** Parabolic interpolation around a MINIMUM (for YIN) */
-  private parabolicInterpolation(tau: number): number {
-    if (tau <= 0 || tau >= this.yinBuffer.length - 1) return tau
-
-    const s0 = this.yinBuffer[tau - 1]
-    const s1 = this.yinBuffer[tau]
-    const s2 = this.yinBuffer[tau + 1]
-    const shift = (s2 - s0) / (2 * (2 * s1 - s2 - s0))
-
-    return tau + shift
-  }
 
   /** Apply weighted median filter with outlier rejection.
    *  Detects real note changes by looking for consecutive consistent
@@ -636,11 +607,6 @@ export class PitchDetector {
     return frequency
   }
 
-  /** Adjust threshold based on sensitivity (1-12) */
-  private adjustedThreshold(): number {
-    // sensitivity 1 → threshold 0.30 (very strict), sensitivity 12 → threshold 0.01 (very relaxed)
-    return 0.3 - (this.sensitivity - 1) * 0.025
-  }
 
   /** Get the current sample rate */
   getSampleRate(): number {

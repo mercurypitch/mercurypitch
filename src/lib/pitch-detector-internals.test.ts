@@ -6,6 +6,12 @@
 
 import { beforeEach, describe, expect, it } from 'vitest'
 import { PitchDetector } from './pitch-detector'
+import {
+  adjustedThreshold,
+  mpmPickThreshold,
+  parabolicInterpolation,
+  parabolicInterpolationMax,
+} from './pitch-detector-internals'
 
 function createSineBuffer(
   sampleRate: number,
@@ -38,55 +44,42 @@ function detectRepeatedly(
 
 describe('PitchDetector — adjustedThreshold', () => {
   it('returns strict threshold at sensitivity 1', () => {
-    const d = new PitchDetector({ sensitivity: 1 })
-    // adjustedThreshold() = 0.3 - 0 * 0.025 = 0.3
-    const freq = (d as any).adjustedThreshold()
-    expect(freq).toBeCloseTo(0.3, 5)
+    expect(adjustedThreshold(1)).toBeCloseTo(0.3, 5)
   })
 
   it('returns relaxed threshold at sensitivity 12', () => {
-    const d = new PitchDetector({ sensitivity: 12 })
-    // adjustedThreshold() = 0.3 - 11 * 0.025 = 0.025
-    const freq = (d as any).adjustedThreshold()
-    expect(freq).toBeCloseTo(0.025, 5)
+    expect(adjustedThreshold(12)).toBeCloseTo(0.025, 5)
   })
 
   it('returns intermediate threshold at sensitivity 7', () => {
-    const d = new PitchDetector({ sensitivity: 7 })
-    // adjustedThreshold() = 0.3 - 6 * 0.025 = 0.15
-    const freq = (d as any).adjustedThreshold()
-    expect(freq).toBeCloseTo(0.15, 5)
+    expect(adjustedThreshold(7)).toBeCloseTo(0.15, 5)
   })
 
-  it('updates when sensitivity changes', () => {
-    const d = new PitchDetector({ sensitivity: 5 })
-    expect((d as any).adjustedThreshold()).toBeCloseTo(0.2, 5)
-    d.setSensitivity(10)
-    expect((d as any).adjustedThreshold()).toBeCloseTo(0.075, 5)
+  it('monotonically decreases with sensitivity', () => {
+    const thresholds: number[] = []
+    for (let s = 1; s <= 12; s++) {
+      thresholds.push(adjustedThreshold(s))
+    }
+    for (let i = 1; i < thresholds.length; i++) {
+      expect(thresholds[i]!).toBeLessThan(thresholds[i - 1]!)
+    }
   })
 })
 
 describe('PitchDetector — mpmPickThreshold', () => {
   it('returns high threshold at sensitivity 1 (strict)', () => {
-    const d = new PitchDetector({ sensitivity: 1, algorithm: 'mpm' })
-    // = 0.9 - 0 * 0.04 = 0.9
-    expect((d as any).mpmPickThreshold()).toBeCloseTo(0.9, 5)
+    expect(mpmPickThreshold(1)).toBeCloseTo(0.9, 5)
   })
 
   it('returns lower threshold at sensitivity 10 (responsive)', () => {
-    const d = new PitchDetector({ sensitivity: 10, algorithm: 'mpm' })
-    // = 0.9 - 9 * 0.04 = 0.54
-    expect((d as any).mpmPickThreshold()).toBeCloseTo(0.54, 5)
+    expect(mpmPickThreshold(10)).toBeCloseTo(0.54, 5)
   })
 
   it('monotonically decreases with sensitivity', () => {
-    const d = new PitchDetector({ algorithm: 'mpm' })
     const thresholds: number[] = []
     for (let s = 1; s <= 10; s++) {
-      d.setSensitivity(s)
-      thresholds.push((d as any).mpmPickThreshold())
+      thresholds.push(mpmPickThreshold(s))
     }
-    // Should be strictly decreasing
     for (let i = 1; i < thresholds.length; i++) {
       expect(thresholds[i]!).toBeLessThan(thresholds[i - 1]!)
     }
@@ -95,110 +88,84 @@ describe('PitchDetector — mpmPickThreshold', () => {
 
 describe('PitchDetector — parabolic interpolation (YIN minimum form)', () => {
   it('returns tau unchanged when at boundaries', () => {
-    const d = new PitchDetector({ algorithm: 'yin', bufferSize: 2048 })
-    const buf = (d as any).yinBuffer
-
-    // Boundary: tau = 0
-    expect((d as any).parabolicInterpolation(0)).toBe(0)
-    // Boundary: tau = buf.length - 1
-    expect((d as any).parabolicInterpolation(buf.length - 1)).toBe(buf.length - 1)
+    const buf = new Float32Array(2048)
+    expect(parabolicInterpolation(0, buf)).toBe(0)
+    expect(parabolicInterpolation(buf.length - 1, buf)).toBe(buf.length - 1)
   })
 
   it('interpolates a symmetric parabola correctly', () => {
-    const d = new PitchDetector({ algorithm: 'yin', bufferSize: 2048 })
-    const buf = (d as any).yinBuffer as Float32Array
-
+    const buf = new Float32Array(2048)
     // Set up a perfect parabola centered at tau=100: y = (x-100)²
-    // s0 at tau=99, s1 at tau=100, s2 at tau=101
-    buf[99] = 1 // (99-100)² = 1
-    buf[100] = 0 // (100-100)² = 0
-    buf[101] = 1 // (101-100)² = 1
+    buf[99] = 1
+    buf[100] = 0
+    buf[101] = 1
 
     // shift = (s2 - s0) / (2 * (2*s1 - s2 - s0))
     //       = (1 - 1) / (2 * (2*0 - 1 - 1)) = 0 / (2 * -2) = 0
-    const result = (d as any).parabolicInterpolation(100)
+    const result = parabolicInterpolation(100, buf)
     expect(result).toBeCloseTo(100, 5)
   })
 
   it('interpolates an asymmetric parabola (true minimum left of tau)', () => {
-    const d = new PitchDetector({ algorithm: 'yin', bufferSize: 2048 })
-    const buf = (d as any).yinBuffer as Float32Array
-
+    const buf = new Float32Array(2048)
     // s0=0.1, s1=0, s2=0.3 — minimum should be left of tau
     buf[99] = 0.1
     buf[100] = 0
     buf[101] = 0.3
 
     // shift = (0.3 - 0.1) / (2 * (2*0 - 0.3 - 0.1)) = 0.2 / -0.8 = -0.25
-    const result = (d as any).parabolicInterpolation(100)
+    const result = parabolicInterpolation(100, buf)
     expect(result).toBeCloseTo(99.75, 4)
   })
 
   it('interpolates an asymmetric parabola (true minimum right of tau)', () => {
-    const d = new PitchDetector({ algorithm: 'yin', bufferSize: 2048 })
-    const buf = (d as any).yinBuffer as Float32Array
-
+    const buf = new Float32Array(2048)
     buf[199] = 0.3
     buf[200] = 0
     buf[201] = 0.1
 
     // shift = (0.1 - 0.3) / (2 * (2*0 - 0.1 - 0.3)) = -0.2 / -0.8 = 0.25
-    const result = (d as any).parabolicInterpolation(200)
+    const result = parabolicInterpolation(200, buf)
     expect(result).toBeCloseTo(200.25, 4)
   })
 })
 
 describe('PitchDetector — parabolic interpolation (MPM maximum form)', () => {
   it('returns tau unchanged at boundaries', () => {
-    const d = new PitchDetector({ algorithm: 'mpm', bufferSize: 2048 })
-    const buf = (d as any).yinBuffer
-
-    expect((d as any).parabolicInterpolationMax(0, buf)).toBe(0)
-    expect((d as any).parabolicInterpolationMax(buf.length - 1, buf)).toBe(buf.length - 1)
+    const buf = new Float32Array(2048)
+    expect(parabolicInterpolationMax(0, buf)).toBe(0)
+    expect(parabolicInterpolationMax(buf.length - 1, buf)).toBe(buf.length - 1)
   })
 
   it('interpolates a symmetric peak correctly', () => {
-    const d = new PitchDetector({ algorithm: 'mpm', bufferSize: 2048 })
     const buf = new Float32Array(2048)
-
     // Peak at tau=150: s0=0.5, s1=1.0, s2=0.5
     buf[149] = 0.5
     buf[150] = 1.0
     buf[151] = 0.5
 
-    // shift = (s0 - s2) / (2 * (2*s1 - s2 - s0))
-    //       = (0.5 - 0.5) / (2 * (2 - 0.5 - 0.5)) = 0 / 2 = 0
-    const result = (d as any).parabolicInterpolationMax(150, buf)
+    const result = parabolicInterpolationMax(150, buf)
     expect(result).toBeCloseTo(150, 5)
   })
 
   it('interpolates an off-center peak (true peak left of tau)', () => {
-    const d = new PitchDetector({ algorithm: 'mpm', bufferSize: 2048 })
     const buf = new Float32Array(2048)
-
     buf[99] = 0.7
     buf[100] = 1.0
     buf[101] = 0.6
 
-    // shift = (0.7 - 0.6) / (2 * (2*1 - 0.6 - 0.7)) = 0.1 / (2 * 0.7) ≈ 0.0714
-    // Wait, this is for the maximum form.
-    // shift = (s0 - s2) / (2 * (2*s1 - s2 - s0)) = (0.7 - 0.6) / (2 * (2 - 0.6 - 0.7))
-    //       = 0.1 / (2 * 0.7) = 0.1 / 1.4 ≈ 0.0714
-    const result = (d as any).parabolicInterpolationMax(100, buf)
+    const result = parabolicInterpolationMax(100, buf)
     expect(result).toBeCloseTo(100.0714, 3)
   })
 
   it('handles near-zero denominator gracefully', () => {
-    const d = new PitchDetector({ algorithm: 'mpm', bufferSize: 2048 })
     const buf = new Float32Array(2048)
-
     // Flat top — all values equal
     buf[49] = 0.5
     buf[50] = 0.5
     buf[51] = 0.5
 
-    // Denominator = 2 * (2*0.5 - 0.5 - 0.5) = 0 → fall back to tau
-    const result = (d as any).parabolicInterpolationMax(50, buf)
+    const result = parabolicInterpolationMax(50, buf)
     expect(result).toBe(50)
   })
 })
@@ -293,12 +260,12 @@ describe('PitchDetector — YIN difference function and CMN', () => {
   })
 
   it('difference function is zero at tau=0 for any input', () => {
-    const d = new PitchDetector({ algorithm: 'yin', bufferSize: 1024 })
-    const buf = (d as any).yinBuffer as Float32Array
+    const bufferSize = 1024
+    const buf = new Float32Array(bufferSize)
     const input = createSineBuffer(44100, 440, 0.05)
 
     // Manually run difference function step
-    const halfSize = Math.floor(1024 / 2)
+    const halfSize = Math.floor(bufferSize / 2)
     for (let tau = 0; tau < halfSize; tau++) {
       buf[tau] = 0
       for (let i = 0; i < halfSize; i++) {
@@ -314,17 +281,13 @@ describe('PitchDetector — YIN difference function and CMN', () => {
   })
 
   it('difference function has local minima at period multiples', () => {
-    const d = new PitchDetector({
-      algorithm: 'yin',
-      bufferSize: 2048,
-      sampleRate: 44100,
-    })
-    const buf = (d as any).yinBuffer as Float32Array
+    const bufferSize = 2048
+    const buf = new Float32Array(bufferSize)
     // 440 Hz → period ≈ 100.2 samples at 44100 Hz
     const period = 44100 / 440
     const input = createSineBuffer(44100, 440, 0.1)
 
-    const halfSize = Math.floor(2048 / 2)
+    const halfSize = Math.floor(bufferSize / 2)
     for (let tau = 0; tau < halfSize; tau++) {
       buf[tau] = 0
       for (let i = 0; i < halfSize; i++) {
@@ -344,15 +307,11 @@ describe('PitchDetector — YIN difference function and CMN', () => {
   })
 
   it('CMN normalizes difference function correctly', () => {
-    const d = new PitchDetector({
-      algorithm: 'yin',
-      bufferSize: 2048,
-      sampleRate: 44100,
-    })
-    const buf = (d as any).yinBuffer as Float32Array
+    const bufferSize = 2048
+    const buf = new Float32Array(bufferSize)
 
     // Fill difference function with known values: d[tau] = 1 for all tau
-    const halfSize = Math.floor(2048 / 2)
+    const halfSize = Math.floor(bufferSize / 2)
     for (let tau = 0; tau < halfSize; tau++) {
       buf[tau] = 1
     }
@@ -392,16 +351,12 @@ describe('PitchDetector — YIN difference function and CMN', () => {
 
 describe('PitchDetector — MPM NSDF computation', () => {
   it('NSDF is 1.0 at tau=0 for any non-zero signal', () => {
-    const d = new PitchDetector({
-      algorithm: 'mpm',
-      bufferSize: 2048,
-      sampleRate: 44100,
-    })
-    const buf = (d as any).yinBuffer as Float32Array
+    const bufferSize = 2048
+    const buf = new Float32Array(bufferSize)
     const input = createSineBuffer(44100, 440, 0.1)
 
     const N = input.length
-    const halfSize = Math.floor(2048 / 2)
+    const halfSize = Math.floor(bufferSize / 2)
     for (let tau = 0; tau < halfSize; tau++) {
       let acf = 0
       let m = 0
@@ -419,16 +374,12 @@ describe('PitchDetector — MPM NSDF computation', () => {
   })
 
   it('NSDF has a peak near the fundamental period', () => {
-    const d = new PitchDetector({
-      algorithm: 'mpm',
-      bufferSize: 2048,
-      sampleRate: 44100,
-    })
-    const buf = (d as any).yinBuffer as Float32Array
+    const bufferSize = 2048
+    const buf = new Float32Array(bufferSize)
     const input = createSineBuffer(44100, 440, 0.1)
 
     const N = input.length
-    const halfSize = Math.floor(2048 / 2)
+    const halfSize = Math.floor(bufferSize / 2)
     for (let tau = 0; tau < halfSize; tau++) {
       let acf = 0
       let m = 0
@@ -461,16 +412,12 @@ describe('PitchDetector — MPM NSDF computation', () => {
   })
 
   it('NSDF is bounded [-1, 1] for sine input', () => {
-    const d = new PitchDetector({
-      algorithm: 'mpm',
-      bufferSize: 2048,
-      sampleRate: 44100,
-    })
-    const buf = (d as any).yinBuffer as Float32Array
+    const bufferSize = 2048
+    const buf = new Float32Array(bufferSize)
     const input = createSineBuffer(44100, 440, 0.1)
 
     const N = input.length
-    const halfSize = Math.floor(2048 / 2)
+    const halfSize = Math.floor(bufferSize / 2)
     for (let tau = 0; tau < halfSize; tau++) {
       let acf = 0
       let m = 0
@@ -490,16 +437,12 @@ describe('PitchDetector — MPM NSDF computation', () => {
   })
 
   it('NSDF is zero for zero signal', () => {
-    const d = new PitchDetector({
-      algorithm: 'mpm',
-      bufferSize: 2048,
-      sampleRate: 44100,
-    })
-    const buf = (d as any).yinBuffer as Float32Array
+    const bufferSize = 2048
+    const buf = new Float32Array(bufferSize)
     const input = new Float32Array(2048)
 
     const N = input.length
-    const halfSize = Math.floor(2048 / 2)
+    const halfSize = Math.floor(bufferSize / 2)
     for (let tau = 0; tau < halfSize; tau++) {
       let acf = 0
       let m = 0
