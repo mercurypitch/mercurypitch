@@ -37,12 +37,6 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
     return `${Math.round((bytes / Math.pow(k, i)) * 100) / 100} ${sizes[i]}`
   }
 
-  const _formatDuration = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60)
-    const secs = Math.floor(seconds % 60)
-    return `${mins}:${secs.toString().padStart(2, '0')}`
-  }
-
   const handleFileSelect = (file: File) => {
     // Validate file size
     if (file.size > maxSize()) {

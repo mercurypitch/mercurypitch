@@ -3,7 +3,7 @@
 // ============================================================
 
 import { PitchDetector } from './pitch-detector'
-import { freqToMidi, midiToFreq } from './scale-data'
+import { freqToMidi, midiToFreq, midiToNote } from './scale-data'
 
 export interface MidiNoteEvent {
   midi: number
@@ -13,9 +13,77 @@ export interface MidiNoteEvent {
 
 export const TICKS_PER_BEAT = 480
 export const DEFAULT_BPM = 120
-const WINDOW_SAMPLES = 1024
-const WINDOW_STEP_SEC = 0.10
-const MIN_NOTE_DURATION_SEC = 0.08
+export const WINDOW_STEP_SEC = 0.10
+export const MIN_NOTE_DURATION_SEC = 0.08
+
+/** Shared PitchDetector constructor defaults used by both MIDI generation and realtime */
+export const PITCH_DETECTOR_DEFAULTS = {
+  bufferSize: 1024,
+  minAmplitude: 0.02,
+  minConfidence: 0.3,
+  threshold: 0.15,
+  sensitivity: 7,
+  minFrequency: 65,
+  maxFrequency: 2100,
+} as const
+
+/** MIDI note range filter shared by both paths */
+export const MIDI_NOTE_RANGE = { min: 38, max: 96 } as const  // D2–C7
+
+/** A single pitch detection at a point in time */
+export interface PitchDetection {
+  midi: number
+  noteName: string
+  timeSec: number
+}
+
+/** A sustained note formed by merging consecutive same-pitch detections */
+export interface MergedNote {
+  midi: number
+  noteName: string
+  startSec: number
+  endSec: number
+}
+
+/** Merge consecutive same-pitch detections into sustained notes.
+ *  Adjacent detections within `maxGapSec` of each other are merged.
+ *  Notes shorter than `minDurationSec` are dropped. */
+export function mergeConsecutiveNotes(
+  detections: PitchDetection[],
+  maxGapSec: number = WINDOW_STEP_SEC + 0.02,
+  minDurationSec: number = MIN_NOTE_DURATION_SEC,
+): MergedNote[] {
+  if (detections.length === 0) return []
+
+  const notes: MergedNote[] = []
+  let noteStartSec = detections[0].timeSec
+  let currentMidi = detections[0].midi
+  let currentName = detections[0].noteName
+
+  for (let i = 1; i < detections.length; i++) {
+    const gap = detections[i].timeSec - detections[i - 1].timeSec
+    if (detections[i].midi === currentMidi && gap < maxGapSec) {
+      continue
+    }
+    const noteEndSec = detections[i - 1].timeSec + WINDOW_STEP_SEC
+    const duration = noteEndSec - noteStartSec
+    if (duration >= minDurationSec) {
+      notes.push({ midi: currentMidi, noteName: currentName, startSec: noteStartSec, endSec: noteEndSec })
+    }
+    noteStartSec = detections[i].timeSec
+    currentMidi = detections[i].midi
+    currentName = detections[i].noteName
+  }
+
+  // Final note
+  const lastTime = detections[detections.length - 1].timeSec + WINDOW_STEP_SEC
+  const lastDuration = lastTime - noteStartSec
+  if (lastDuration >= minDurationSec) {
+    notes.push({ midi: currentMidi, noteName: currentName, startSec: noteStartSec, endSec: lastTime })
+  }
+
+  return notes
+}
 
 function writeVarLen(value: number): number[] {
   const bytes: number[] = []
@@ -169,26 +237,27 @@ export async function detectNotes(
   sampleRate: number,
   onProgress?: (pct: number) => void,
 ): Promise<MidiNoteEvent[]> {
-  const detector = new PitchDetector({ sampleRate, bufferSize: WINDOW_SAMPLES, minAmplitude: 0.02, minConfidence: 0.3 })
+  const detector = new PitchDetector({ sampleRate, ...PITCH_DETECTOR_DEFAULTS })
 
   const windowStepSamples = Math.floor(WINDOW_STEP_SEC * sampleRate)
-  const totalFrames = Math.floor((audioData.length - WINDOW_SAMPLES) / windowStepSamples) + 1
+  const totalFrames = Math.floor((audioData.length - PITCH_DETECTOR_DEFAULTS.bufferSize) / windowStepSamples) + 1
 
   if (totalFrames <= 0) return []
 
-  const detections: { midi: number; timeSec: number }[] = []
+  const detections: PitchDetection[] = []
 
   for (let i = 0; i < totalFrames; i++) {
     const offset = i * windowStepSamples
-    const chunk = audioData.slice(offset, offset + WINDOW_SAMPLES)
+    const chunk = audioData.slice(offset, offset + PITCH_DETECTOR_DEFAULTS.bufferSize)
     const pitch = detector.detect(chunk)
 
-    if (pitch.frequency > 0 && pitch.clarity > 0.3) {
+    if (pitch.frequency > 0) {
       const midi = freqToMidi(pitch.frequency)
-      if (midi >= 38 && midi <= 96) {
+      if (midi >= MIDI_NOTE_RANGE.min && midi <= MIDI_NOTE_RANGE.max) {
         detections.push({
           midi,
-          timeSec: (offset / sampleRate) + (WINDOW_SAMPLES / sampleRate / 2),
+          noteName: pitch.noteName,
+          timeSec: (offset / sampleRate) + (PITCH_DETECTOR_DEFAULTS.bufferSize / sampleRate / 2),
         })
       }
     }
@@ -204,41 +273,14 @@ export async function detectNotes(
 
   if (detections.length === 0) return []
 
-  // Merge consecutive same-pitch detections into sustained notes
-  const notes: MidiNoteEvent[] = []
-  let noteStartSec = detections[0].timeSec
-  let currentMidi = detections[0].midi
+  const merged = mergeConsecutiveNotes(detections)
+  if (merged.length === 0) return []
 
-  for (let i = 1; i < detections.length; i++) {
-    const gap = detections[i].timeSec - detections[i - 1].timeSec
-    if (detections[i].midi === currentMidi && gap < WINDOW_STEP_SEC + 0.02) {
-      continue
-    }
-    const noteEndSec = detections[i - 1].timeSec + WINDOW_STEP_SEC
-    const duration = noteEndSec - noteStartSec
-    if (duration >= MIN_NOTE_DURATION_SEC) {
-      notes.push({
-        midi: currentMidi,
-        tickOn: secondsToTicks(noteStartSec, DEFAULT_BPM),
-        tickOff: secondsToTicks(noteEndSec, DEFAULT_BPM),
-      })
-    }
-    noteStartSec = detections[i].timeSec
-    currentMidi = detections[i].midi
-  }
-
-  // Final note
-  const lastTime = detections[detections.length - 1].timeSec + WINDOW_STEP_SEC
-  const lastDuration = lastTime - noteStartSec
-  if (lastDuration >= MIN_NOTE_DURATION_SEC) {
-    notes.push({
-      midi: currentMidi,
-      tickOn: secondsToTicks(noteStartSec, DEFAULT_BPM),
-      tickOff: secondsToTicks(lastTime, DEFAULT_BPM),
-    })
-  }
-
-  return notes
+  return merged.map(n => ({
+    midi: n.midi,
+    tickOn: secondsToTicks(n.startSec, DEFAULT_BPM),
+    tickOff: secondsToTicks(n.endSec, DEFAULT_BPM),
+  }))
 }
 
 /**

@@ -8,9 +8,9 @@ import type {LrcLine, LyricsSearchMatch, LyricsSearchResult} from '@/lib/lyrics-
 import { extractTitle, fetchLyricsById, getCurrentLineIndex, getCurrentLrcIndex,   parseLrcFile, parseTextLyrics, searchLyrics, searchLyricsMulti } from '@/lib/lyrics-service'
 import type {DetectedPitch} from '@/lib/pitch-detector';
 import { PitchDetector } from '@/lib/pitch-detector'
-import { buildMidiFile, detectNotes, generateVocalMidi, synthesizeMidiBuffer, DEFAULT_BPM, TICKS_PER_BEAT } from '@/lib/midi-generator'
-import type { MidiNoteEvent } from '@/lib/midi-generator'
-import { midiToNote } from '@/lib/scale-data'
+import { buildMidiFile, detectNotes, generateVocalMidi, mergeConsecutiveNotes, synthesizeMidiBuffer, DEFAULT_BPM, PITCH_DETECTOR_DEFAULTS, MIDI_NOTE_RANGE, TICKS_PER_BEAT, WINDOW_STEP_SEC } from '@/lib/midi-generator'
+import type { MidiNoteEvent, MergedNote, PitchDetection } from '@/lib/midi-generator'
+import { freqToMidi, midiToNote } from '@/lib/scale-data'
 import { ChevronLeft, Download, Ear, Mic, Midi, Pause, Play, SkipBack, SlidersHorizontal, Volume2, VolumeX } from './icons'
 import type {LyricsUploadResult} from './LyricsUploader';
 import { LyricsUploader  } from './LyricsUploader'
@@ -52,7 +52,7 @@ interface PitchNote {
 // ── Constants ──────────────────────────────────────────────────
 
 const FFT_SIZE = 256
-const PITCH_FFT_SIZE = 2048
+const PITCH_FFT_SIZE = 1024  // synced with PITCH_DETECT_CONFIG.bufferSize
 
 // ── Song Picker ───────────────────────────────────────────────
 
@@ -390,9 +390,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       vocalAnalyser.smoothingTimeConstant = 0.3
       pitchDetector = new PitchDetector({
         sampleRate: audioCtx.sampleRate,
-        bufferSize: PITCH_FFT_SIZE,
-        minConfidence: 0.4,
-        minAmplitude: 0.02,
+        ...PITCH_DETECTOR_DEFAULTS,
       })
     }
     if (audioCtx.state === 'suspended') {
@@ -1966,12 +1964,15 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         setCurrentPitch(pitch.frequency > 0 ? pitch : null)
 
         if (pitch.frequency > 0) {
-          pitchHistory.push({
-            time: elapsedTime,
-            noteName: pitch.noteName,
-            frequency: pitch.frequency,
-            octave: pitch.octave,
-          })
+          const midi = freqToMidi(pitch.frequency)
+          if (midi >= MIDI_NOTE_RANGE.min && midi <= MIDI_NOTE_RANGE.max) {
+            pitchHistory.push({
+              time: elapsedTime,
+              noteName: pitch.noteName,
+              frequency: pitch.frequency,
+              octave: pitch.octave,
+            })
+          }
         }
       }
 
@@ -1982,12 +1983,15 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         const mp = micPitchDetector!.detect(micData)
         setMicPitch(mp.frequency > 0 ? mp : null)
         if (mp.frequency > 0) {
-          micPitchHistory.push({
-            time: elapsedTime,
-            noteName: mp.noteName,
-            frequency: mp.frequency,
-            octave: mp.octave,
-          })
+          const midi = freqToMidi(mp.frequency)
+          if (midi >= MIDI_NOTE_RANGE.min && midi <= MIDI_NOTE_RANGE.max) {
+            micPitchHistory.push({
+              time: elapsedTime,
+              noteName: mp.noteName,
+              frequency: mp.frequency,
+              octave: mp.octave,
+            })
+          }
         }
         // Collect comparison data for scoring
         const vocalPitch = currentPitch()
@@ -2227,28 +2231,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     const winEnd = winStart + windowDuration()
     const winDur = windowDuration()
 
-    type PillGroup = { noteIdx: number; startTime: number; endTime: number }
-    const buildPillGroups = (history: PitchNote[]): PillGroup[] => {
-      if (history.length === 0) return []
-      const groups: PillGroup[] = []
-      let cur: PillGroup = {
-        noteIdx: notes.indexOf(history[0].noteName.replace(/\d/g, '')),
-        startTime: history[0].time,
-        endTime: history[0].time,
-      }
-      for (let i = 1; i < history.length; i++) {
-        const pn = history[i]
-        const noteIdx = notes.indexOf(pn.noteName.replace(/\d/g, ''))
-        if (noteIdx === cur.noteIdx) {
-          cur.endTime = pn.time
-        } else {
-          if (cur.noteIdx >= 0) groups.push({ ...cur })
-          cur = { noteIdx, startTime: pn.time, endTime: pn.time }
-        }
-      }
-      if (cur.noteIdx >= 0) groups.push({ ...cur })
-      return groups
-    }
+    const toDetections = (history: PitchNote[]): PitchDetection[] =>
+      history.map(p => ({ midi: freqToMidi(p.frequency), noteName: p.noteName, timeSec: p.time }))
 
     const drawPill = (x1: number, x2: number, y: number, pillH: number, r: number) => {
       const pillW = Math.max(x2 - x1, 3)
@@ -2265,38 +2249,35 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       ctx.closePath()
     }
 
-    const vocalPills = buildPillGroups(pitchHistory)
-
-    // Draw vocal pitch pills (filled amber)
-    for (const g of vocalPills) {
-      if (g.endTime < winStart || g.startTime > winEnd) continue
-      const x1 = Math.max(0, ((g.startTime - winStart) / winDur) * w)
-      const x2 = Math.min(w, ((g.endTime - winStart) / winDur) * w)
-      const y = (11 - g.noteIdx) * rowH + rowH * 0.16
-      const pillH = rowH * 0.68
-      const r = Math.min(pillH / 2, 3)
-      drawPill(x1, x2, y, pillH, r)
-      ctx.fillStyle = 'rgba(245, 158, 11, 0.5)'
-      ctx.fill()
-    }
-
-    // Mic pitch overlay — thin dashed stroke, no fill
-    if (micActive() && micPitchHistory.length > 0) {
-      const micPills = buildPillGroups(micPitchHistory)
-      for (const g of micPills) {
-        if (g.endTime < winStart || g.startTime > winEnd) continue
-        const x1 = Math.max(0, ((g.startTime - winStart) / winDur) * w)
-        const x2 = Math.min(w, ((g.endTime - winStart) / winDur) * w)
-        const y = (11 - g.noteIdx) * rowH + rowH * 0.16
+    const drawMergedNotes = (merged: MergedNote[], fillStyle: string, strokeStyle?: string) => {
+      for (const n of merged) {
+        if (n.endSec < winStart || n.startSec > winEnd) continue
+        const noteIdx = notes.indexOf(n.noteName.replace(/\d/g, ''))
+        if (noteIdx < 0) continue
+        const x1 = Math.max(0, ((n.startSec - winStart) / winDur) * w)
+        const x2 = Math.min(w, ((n.endSec - winStart) / winDur) * w)
+        const y = (11 - noteIdx) * rowH + rowH * 0.16
         const pillH = rowH * 0.68
         const r = Math.min(pillH / 2, 3)
         drawPill(x1, x2, y, pillH, r)
-        ctx.strokeStyle = '#ff6b8a'
-        ctx.lineWidth = 1.5
-        ctx.setLineDash([3, 3])
-        ctx.stroke()
-        ctx.setLineDash([])
+        ctx.fillStyle = fillStyle
+        ctx.fill()
+        if (strokeStyle) {
+          ctx.strokeStyle = strokeStyle
+          ctx.lineWidth = 1.5
+          ctx.setLineDash([3, 3])
+          ctx.stroke()
+          ctx.setLineDash([])
+        }
       }
+    }
+
+    const vocalPills = mergeConsecutiveNotes(toDetections(pitchHistory))
+    drawMergedNotes(vocalPills, 'rgba(245, 158, 11, 0.5)')
+
+    if (micActive() && micPitchHistory.length > 0) {
+      const micPills = mergeConsecutiveNotes(toDetections(micPitchHistory))
+      drawMergedNotes(micPills, 'transparent', '#ff6b8a')
     }
 
     // Diff bars — connect vocal and mic pitch at time-aligned points
