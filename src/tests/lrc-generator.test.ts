@@ -3,12 +3,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import {
-  buildLrcText,
-  buildWordLevelLrc,
-  estimateUnmappedTimes,
-  formatTimeLrc,
-} from '@/lib/lrc-generator'
+import { buildLrcText, buildWordLevelLrc, estimateUnmappedTimes, formatTimeLrc, } from '@/lib/lrc-generator'
 
 // ── REQ-UV-043: LRC Gen Finish — formatTimeLrc ──────────────────
 
@@ -130,7 +125,9 @@ describe('buildLrcText (REQ-UV-043)', () => {
       wordTimings: {},
       duration: 12,
     })
-    expect(result).toBe('[00:02.00] First line\n[00:06.00] ~Rest~\n[00:10.00] Third line')
+    expect(result).toBe(
+      '[00:02.00] First line\n[00:06.00] ~Rest~\n[00:10.00] Third line',
+    )
   })
 
   it('estimates times for unmapped blank lines and produces Rest markers', () => {
@@ -166,34 +163,22 @@ describe('buildLrcText (REQ-UV-043)', () => {
 
 describe('buildWordLevelLrc', () => {
   it('builds word-level LRC with per-word timestamps', () => {
-    const result = buildWordLevelLrc(
-      ['Hello world'],
-      { 0: [1.5, 2.5] },
-    )
+    const result = buildWordLevelLrc(['Hello world'], { 0: [1.5, 2.5] })
     expect(result).toBe('[00:01.50] Hello [00:02.50] world')
   })
 
   it('falls back to [00:00.00] for lines without word timings', () => {
-    const result = buildWordLevelLrc(
-      ['Hello world'],
-      {},
-    )
+    const result = buildWordLevelLrc(['Hello world'], {})
     expect(result).toBe('[00:00.00] Hello world')
   })
 
   it('omits blank lines from output', () => {
-    const result = buildWordLevelLrc(
-      ['First', '', 'Third'],
-      { 0: [1], 2: [3] },
-    )
+    const result = buildWordLevelLrc(['First', '', 'Third'], { 0: [1], 2: [3] })
     expect(result).toBe('[00:01.00] First\n[00:03.00] Third')
   })
 
   it('handles undefined word times by omitting timestamp for that word', () => {
-    const result = buildWordLevelLrc(
-      ['Hello world'],
-      { 0: [1.0, undefined] },
-    )
+    const result = buildWordLevelLrc(['Hello world'], { 0: [1.0, undefined] })
     expect(result).toBe('[00:01.00] Hello world')
   })
 })

@@ -3,8 +3,8 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { computeScore } from '@/lib/mic-scoring'
 import type { ComparisonPoint } from '@/lib/mic-scoring'
+import { computeScore } from '@/lib/mic-scoring'
 
 // ── REQ-UV-056: computeScore ──────────────────────────────────
 
@@ -22,8 +22,20 @@ describe('computeScore (REQ-UV-056)', () => {
 
   it('scores 100% accuracy as S grade', () => {
     const data: ComparisonPoint[] = [
-      { time: 0, vocalNote: 'C4', micNote: 'C4', centsOff: 3, inTolerance: true },
-      { time: 1, vocalNote: 'D4', micNote: 'D4', centsOff: 5, inTolerance: true },
+      {
+        time: 0,
+        vocalNote: 'C4',
+        micNote: 'C4',
+        centsOff: 3,
+        inTolerance: true,
+      },
+      {
+        time: 1,
+        vocalNote: 'D4',
+        micNote: 'D4',
+        centsOff: 5,
+        inTolerance: true,
+      },
     ]
     const result = computeScore(data)
     expect(result.totalNotes).toBe(2)
@@ -35,8 +47,20 @@ describe('computeScore (REQ-UV-056)', () => {
 
   it('scores 50% accuracy as C grade', () => {
     const data: ComparisonPoint[] = [
-      { time: 0, vocalNote: 'C4', micNote: 'C4', centsOff: 10, inTolerance: true },
-      { time: 1, vocalNote: 'D4', micNote: 'F#4', centsOff: 300, inTolerance: false },
+      {
+        time: 0,
+        vocalNote: 'C4',
+        micNote: 'C4',
+        centsOff: 10,
+        inTolerance: true,
+      },
+      {
+        time: 1,
+        vocalNote: 'D4',
+        micNote: 'F#4',
+        centsOff: 300,
+        inTolerance: false,
+      },
     ]
     const result = computeScore(data)
     expect(result.accuracyPct).toBe(50)
@@ -114,9 +138,27 @@ describe('computeScore (REQ-UV-056)', () => {
 
   it('computes correct average cents off', () => {
     const data: ComparisonPoint[] = [
-      { time: 0, vocalNote: 'A4', micNote: 'A4', centsOff: 0, inTolerance: true },
-      { time: 1, vocalNote: 'A4', micNote: 'A4', centsOff: -15, inTolerance: true },
-      { time: 2, vocalNote: 'A4', micNote: 'A4', centsOff: 25, inTolerance: true },
+      {
+        time: 0,
+        vocalNote: 'A4',
+        micNote: 'A4',
+        centsOff: 0,
+        inTolerance: true,
+      },
+      {
+        time: 1,
+        vocalNote: 'A4',
+        micNote: 'A4',
+        centsOff: -15,
+        inTolerance: true,
+      },
+      {
+        time: 2,
+        vocalNote: 'A4',
+        micNote: 'A4',
+        centsOff: 25,
+        inTolerance: true,
+      },
     ]
     const result = computeScore(data)
     // Math.abs: 0 + 15 + 25 = 40, round(40/3) = 13
@@ -125,7 +167,13 @@ describe('computeScore (REQ-UV-056)', () => {
 
   it('handles single comparison point', () => {
     const data: ComparisonPoint[] = [
-      { time: 0, vocalNote: 'E4', micNote: 'E4', centsOff: -10, inTolerance: true },
+      {
+        time: 0,
+        vocalNote: 'E4',
+        micNote: 'E4',
+        centsOff: -10,
+        inTolerance: true,
+      },
     ]
     const result = computeScore(data)
     expect(result.totalNotes).toBe(1)

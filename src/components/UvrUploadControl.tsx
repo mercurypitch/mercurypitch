@@ -185,11 +185,11 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
           <span class="format-tag">MP3</span>
           <span class="format-tag">WAV</span>
           <span class="format-tag">FLAC</span>
-          <span class="format-tag format-tag-size">{formatFileSize(maxSize())}</span>
+          <span class="format-tag format-tag-size">
+            {formatFileSize(maxSize())}
+          </span>
         </div>
       </div>
     </div>
   )
 }
-
-

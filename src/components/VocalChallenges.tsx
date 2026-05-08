@@ -724,7 +724,9 @@ export const VocalChallenges: Component = () => {
       if (stored !== null) {
         setUserProgress(JSON.parse(stored))
       }
-    } catch { /* localStorage not available */ }
+    } catch {
+      /* localStorage not available */
+    }
   })
 
   // Save user progress to localStorage

@@ -15,7 +15,10 @@ interface SessionResultProps {
     sessionId: string,
     type: 'vocal' | 'instrumental' | 'vocal-midi',
   ) => void
-  onOpenMixer?: (sessionId: string, stems?: { vocal?: boolean; instrumental?: boolean; midi?: boolean }) => void
+  onOpenMixer?: (
+    sessionId: string,
+    stems?: { vocal?: boolean; instrumental?: boolean; midi?: boolean },
+  ) => void
   onClose?: () => void
 }
 
@@ -86,7 +89,7 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
   }
 
   const toggleStemSelection = (stem: string) => {
-    setSelectedStems(prev => {
+    setSelectedStems((prev) => {
       const next = new Set(prev)
       if (next.has(stem)) next.delete(stem)
       else next.add(stem)
@@ -142,14 +145,20 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
         <div class="session-title-area">
           <h3>UVR Session</h3>
           <p class="session-filename">
-            {(session()?.originalFile?.name) ?? 'Unknown'}
+            {session()?.originalFile?.name ?? 'Unknown'}
           </p>
           <p
             class="session-id-pill"
-            title={(session()?.apiSessionId as string | undefined) ?? (session()?.sessionId) ?? ''}
+            title={
+              (session()?.apiSessionId as string | undefined) ??
+              session()?.sessionId ??
+              ''
+            }
           >
             {(() => {
-              const id = (session()?.apiSessionId as string | undefined) ?? (session()?.sessionId)
+              const id =
+                (session()?.apiSessionId as string | undefined) ??
+                session()?.sessionId
               return id !== undefined
                 ? id.length > 16
                   ? id.slice(-8)
@@ -171,20 +180,20 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
       <div
         class="status-bar"
         style={{
-          '--status-color': getStatusColor((session()?.status) ?? 'idle'),
+          '--status-color': getStatusColor(session()?.status ?? 'idle'),
         }}
       >
         <span class="status-icon">
-          {getStatusIcon((session()?.status) ?? 'idle')}
+          {getStatusIcon(session()?.status ?? 'idle')}
         </span>
         <span class="status-text">
           {session()?.status === 'error'
-            ? (session()?.error) ?? 'Processing failed'
+            ? (session()?.error ?? 'Processing failed')
             : session()?.status === 'completed'
               ? 'Completed'
               : session()?.status === 'processing'
                 ? 'Processing...'
-                : (session()?.status) ?? 'Idle'}
+                : (session()?.status ?? 'Idle')}
         </span>
         <span class="status-time">
           {(() => {
@@ -208,7 +217,7 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
           <div class="info-content">
             <span class="info-label">Created</span>
             <span class="info-value">
-              {formatDate((session()?.createdAt) ?? 0)}
+              {formatDate(session()?.createdAt ?? 0)}
             </span>
           </div>
         </div>
@@ -236,11 +245,17 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
               <button
                 class={`stem-pill stem-pill-vocal ${selectedStems().has('vocal') ? 'stem-pill-selected' : ''}`}
                 onClick={() => toggleStemSelection('vocal')}
-                title={selectedStems().has('vocal') ? 'Deselect Vocal' : 'Select Vocal for Mix'}
+                title={
+                  selectedStems().has('vocal')
+                    ? 'Deselect Vocal'
+                    : 'Select Vocal for Mix'
+                }
               >
                 <Voice />
                 <span>Vocal</span>
-                <Show when={formatDuration(session()?.stemMeta?.vocal?.duration)}>
+                <Show
+                  when={formatDuration(session()?.stemMeta?.vocal?.duration)}
+                >
                   <span class="stem-pill-duration">
                     {formatDuration(session()?.stemMeta?.vocal?.duration)}
                   </span>
@@ -251,13 +266,23 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
               <button
                 class={`stem-pill stem-pill-instrumental ${selectedStems().has('instrumental') ? 'stem-pill-selected' : ''}`}
                 onClick={() => toggleStemSelection('instrumental')}
-                title={selectedStems().has('instrumental') ? 'Deselect Instrumental' : 'Select Instrumental for Mix'}
+                title={
+                  selectedStems().has('instrumental')
+                    ? 'Deselect Instrumental'
+                    : 'Select Instrumental for Mix'
+                }
               >
                 <Headphones />
                 <span>Inst</span>
-                <Show when={formatDuration(session()?.stemMeta?.instrumental?.duration)}>
+                <Show
+                  when={formatDuration(
+                    session()?.stemMeta?.instrumental?.duration,
+                  )}
+                >
                   <span class="stem-pill-duration">
-                    {formatDuration(session()?.stemMeta?.instrumental?.duration)}
+                    {formatDuration(
+                      session()?.stemMeta?.instrumental?.duration,
+                    )}
                   </span>
                 </Show>
               </button>
@@ -266,7 +291,11 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
               <button
                 class={`stem-pill stem-pill-midi ${selectedStems().has('vocal-midi') ? 'stem-pill-selected' : ''}`}
                 onClick={() => toggleStemSelection('vocal-midi')}
-                title={selectedStems().has('vocal-midi') ? 'Deselect MIDI' : 'Select MIDI for Mix'}
+                title={
+                  selectedStems().has('vocal-midi')
+                    ? 'Deselect MIDI'
+                    : 'Select MIDI for Mix'
+                }
               >
                 <Midi />
                 <span>MIDI</span>
@@ -295,7 +324,9 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
           </Show>
           <button
             class="session-result-btn session-result-btn-copy"
-            onClick={(e) => { void handleCopyLink(e) }}
+            onClick={(e) => {
+              void handleCopyLink(e)
+            }}
             title="Copy share link"
           >
             <Share />
@@ -345,6 +376,3 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
     </div>
   )
 }
-
-
-

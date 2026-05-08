@@ -327,8 +327,12 @@
 }
 
 @keyframes overlay-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .delete-all-dialog {
@@ -343,8 +347,14 @@
 }
 
 @keyframes dialog-in {
-  from { transform: scale(0.95); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .delete-all-dialog h4 {
@@ -422,17 +432,29 @@
   font-size: 0.85rem;
   color: var(--fg-primary);
   z-index: 1001;
-  animation: toast-in 0.25s ease, toast-out 0.25s ease 2s forwards;
+  animation:
+    toast-in 0.25s ease,
+    toast-out 0.25s ease 2s forwards;
 }
 
 @keyframes toast-in {
-  from { transform: translateX(-50%) translateY(1rem); opacity: 0; }
-  to { transform: translateX(-50%) translateY(0); opacity: 1; }
+  from {
+    transform: translateX(-50%) translateY(1rem);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
 }
 
 @keyframes toast-out {
-  from { opacity: 1; }
-  to { opacity: 0; }
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
 }
 
 .history-toast-icon {
@@ -476,9 +498,6 @@
   margin-bottom: 0.5rem;
 }
 
-
-
-
 /* Upload divider — gradient accent line with centered label */
 .upload-divider {
   display: flex;
@@ -496,11 +515,21 @@
 }
 
 .upload-divider::before {
-  background: linear-gradient(90deg, var(--border) 0%, var(--border) 50%, var(--accent) 100%);
+  background: linear-gradient(
+    90deg,
+    var(--border) 0%,
+    var(--border) 50%,
+    var(--accent) 100%
+  );
 }
 
 .upload-divider::after {
-  background: linear-gradient(90deg, var(--accent) 0%, var(--border) 50%, var(--border) 100%);
+  background: linear-gradient(
+    90deg,
+    var(--accent) 0%,
+    var(--border) 50%,
+    var(--border) 100%
+  );
 }
 
 .upload-divider-text {
@@ -509,9 +538,6 @@
   white-space: nowrap;
   font-weight: 500;
 }
-
-
-
 
 /* ============================================================
 // Upload Control (UvrUploadControl)
@@ -679,7 +705,9 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .upload-actions {
@@ -838,7 +866,7 @@
     90deg,
     var(--progress-color, var(--accent)) 0%,
     var(--progress-color, var(--accent)) 30%,
-    rgba(255,255,255,0.3) 40%,
+    rgba(255, 255, 255, 0.3) 40%,
     var(--progress-color, var(--accent)) 50%,
     var(--progress-color, var(--accent)) 100%
   );
@@ -847,8 +875,12 @@
 }
 
 @keyframes indeterminate-slide {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 .progress-bar-container::after {
@@ -865,8 +897,12 @@
 }
 
 @keyframes shimmer {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
 }
 
 .progress-text {
@@ -974,7 +1010,9 @@
   background: var(--bg-secondary);
   border: 1px solid var(--border);
   border-radius: 0.75rem;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
   overflow-y: auto;
 }
 
@@ -1353,8 +1391,12 @@
 }
 
 @keyframes confirm-overlay-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .delete-confirm-dialog {
@@ -1369,8 +1411,14 @@
 }
 
 @keyframes confirm-dialog-in {
-  from { transform: scale(0.95); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .delete-confirm-dialog h4 {
@@ -1448,17 +1496,29 @@
   font-size: 0.85rem;
   color: var(--fg-primary);
   z-index: 1001;
-  animation: session-toast-in 0.25s ease, session-toast-out 0.25s ease 2s forwards;
+  animation:
+    session-toast-in 0.25s ease,
+    session-toast-out 0.25s ease 2s forwards;
 }
 
 @keyframes session-toast-in {
-  from { transform: translateX(-50%) translateY(1rem); opacity: 0; }
-  to { transform: translateX(-50%) translateY(0); opacity: 1; }
+  from {
+    transform: translateX(-50%) translateY(1rem);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
 }
 
 @keyframes session-toast-out {
-  from { opacity: 1; }
-  to { opacity: 0; }
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
 }
 
 .session-toast-icon {
@@ -1581,7 +1641,9 @@
   border: 1px solid var(--border);
   border-radius: 0.6rem;
   border-left: 3px solid var(--stem-color, var(--border));
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 
 .rv-stem-card:hover {
@@ -1714,7 +1776,11 @@
   align-items: center;
   justify-content: space-between;
   padding: 0.75rem 0.85rem;
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(139, 92, 246, 0.08));
+  background: linear-gradient(
+    135deg,
+    rgba(16, 185, 129, 0.08),
+    rgba(139, 92, 246, 0.08)
+  );
   border: 1px solid rgba(16, 185, 129, 0.25);
   border-radius: 0.6rem;
 }
@@ -1745,17 +1811,29 @@
   font-size: 0.85rem;
   color: var(--fg-primary);
   z-index: 1001;
-  animation: rv-toast-in 0.25s ease, rv-toast-out 0.25s ease 2s forwards;
+  animation:
+    rv-toast-in 0.25s ease,
+    rv-toast-out 0.25s ease 2s forwards;
 }
 
 @keyframes rv-toast-in {
-  from { transform: translateX(-50%) translateY(1rem); opacity: 0; }
-  to { transform: translateX(-50%) translateY(0); opacity: 1; }
+  from {
+    transform: translateX(-50%) translateY(1rem);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
 }
 
 @keyframes rv-toast-out {
-  from { opacity: 1; }
-  to { opacity: 0; }
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
 }
 
 /* ============================================================

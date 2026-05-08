@@ -2949,7 +2949,9 @@
   cursor: pointer;
   border: 2px solid var(--bg-primary);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .intensity-slider::-webkit-slider-thumb:hover {
@@ -3019,7 +3021,9 @@
   cursor: pointer;
   border: 2px solid var(--bg-primary);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .smoothing-slider::-webkit-slider-thumb:hover {
@@ -3138,7 +3142,7 @@
   font-size: 0.7rem;
   font-weight: 600;
   color: var(--text-primary);
-  box-shadow: 0 1px 0 rgba(0,0,0,0.3);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.3);
 }
 
 /* Settings Panel UVR Integration */

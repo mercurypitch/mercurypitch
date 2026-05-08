@@ -3,7 +3,7 @@
 // ============================================================
 
 export interface LrcLine {
-  time: number       // seconds
+  time: number // seconds
   text: string
 }
 
@@ -22,7 +22,10 @@ export function extractTitle(filename: string): string {
     .replace(/\s*\(official\s*(music\s+)?video\)\s*$/i, '')
     .replace(/\s*\(official\s*audio\)\s*$/i, '')
     .replace(/\s*\(lyrics?\)\s*$/i, '')
-    .replace(/\s*\(.*?(instrumental|acoustic|remix|live|cover|karoake).*?\)\s*$/i, '')
+    .replace(
+      /\s*\(.*?(instrumental|acoustic|remix|live|cover|karoake).*?\)\s*$/i,
+      '',
+    )
     .replace(/\s*[-–—]\s*(instrumental|acoustic|remix|live|cover)\s*$/i, '')
     .trim()
 
@@ -33,7 +36,10 @@ export function extractTitle(filename: string): string {
  * Parse "Artist - Title" from a cleaned filename string.
  * Returns { artist, title } with best-guess extraction.
  */
-export function parseArtistTitle(input: string): { artist: string; title: string } {
+export function parseArtistTitle(input: string): {
+  artist: string
+  title: string
+} {
   const cleaned = extractTitle(input)
 
   // Try "Artist - Title" pattern
@@ -66,13 +72,18 @@ export interface LyricsSearchResult {
   format: 'txt' | 'lrc'
 }
 
-function createTimeoutSignal(ms: number): { signal: AbortSignal; clear: () => void } {
+function createTimeoutSignal(ms: number): {
+  signal: AbortSignal
+  clear: () => void
+} {
   const ctrl = new AbortController()
   const id = setTimeout(() => ctrl.abort(), ms)
   return { signal: ctrl.signal, clear: () => clearTimeout(id) }
 }
 
-export async function searchLyrics(rawInput: string): Promise<LyricsSearchResult | null> {
+export async function searchLyrics(
+  rawInput: string,
+): Promise<LyricsSearchResult | null> {
   const { artist, title } = parseArtistTitle(rawInput)
 
   const queries: { artist: string; title: string }[] = []
@@ -82,14 +93,19 @@ export async function searchLyrics(rawInput: string): Promise<LyricsSearchResult
     queries.push({ artist, title: title.replace(/\s*\(.*?\)\s*/g, '').trim() })
   }
   queries.push({ artist: '', title })
-  queries.push({ artist: '', title: title.replace(/\s*\(.*?\)\s*/g, '').trim() })
+  queries.push({
+    artist: '',
+    title: title.replace(/\s*\(.*?\)\s*/g, '').trim(),
+  })
 
   // 1. LRCLIB — best source, returns synced LRC + plain text
   for (const q of queries.slice(0, 3)) {
     try {
       const result = await fetchLyricsLrclib(q.artist, q.title)
       if (result) return result
-    } catch { /* continue */ }
+    } catch {
+      /* continue */
+    }
   }
 
   // 2. Lyrics.ovh — reliable plain text
@@ -97,7 +113,9 @@ export async function searchLyrics(rawInput: string): Promise<LyricsSearchResult
     try {
       const lyrics = await fetchLyricsOvh(q.artist, q.title)
       if (lyrics !== null) return { text: lyrics, format: 'txt' }
-    } catch { /* continue */ }
+    } catch {
+      /* continue */
+    }
   }
 
   // 3. Astrid.sh — fallback plain text
@@ -105,19 +123,26 @@ export async function searchLyrics(rawInput: string): Promise<LyricsSearchResult
     try {
       const lyrics = await fetchLyricsAstrid(q.artist, q.title)
       if (lyrics !== null) return { text: lyrics, format: 'txt' }
-    } catch { /* continue */ }
+    } catch {
+      /* continue */
+    }
   }
 
   return null
 }
 
-async function fetchLyricsLrclib(artist: string, title: string): Promise<LyricsSearchResult | null> {
+async function fetchLyricsLrclib(
+  artist: string,
+  title: string,
+): Promise<LyricsSearchResult | null> {
   const params = new URLSearchParams()
   params.set('track_name', title)
   if (artist) params.set('artist_name', artist)
 
   const { signal, clear } = createTimeoutSignal(7000)
-  const resp = await fetch(`https://lrclib.net/api/get?${params.toString()}`, { signal })
+  const resp = await fetch(`https://lrclib.net/api/get?${params.toString()}`, {
+    signal,
+  })
   clear()
   if (!resp.ok) return null
 
@@ -134,7 +159,10 @@ async function fetchLyricsLrclib(artist: string, title: string): Promise<LyricsS
   return null
 }
 
-async function fetchLyricsOvh(artist: string, title: string): Promise<string | null> {
+async function fetchLyricsOvh(
+  artist: string,
+  title: string,
+): Promise<string | null> {
   if (!artist) return null // lyrics.ovh requires artist
 
   const url = `https://api.lyrics.ovh/v1/${encodeURIComponent(artist)}/${encodeURIComponent(title)}`
@@ -151,13 +179,19 @@ async function fetchLyricsOvh(artist: string, title: string): Promise<string | n
   return null
 }
 
-async function fetchLyricsAstrid(artist: string, title: string): Promise<string | null> {
+async function fetchLyricsAstrid(
+  artist: string,
+  title: string,
+): Promise<string | null> {
   const params = new URLSearchParams()
   if (artist) params.set('artist', artist)
   params.set('title', title)
 
   const { signal, clear } = createTimeoutSignal(6000)
-  const resp = await fetch(`https://lyrics.astrid.sh/api/lyrics?${params.toString()}`, { signal })
+  const resp = await fetch(
+    `https://lyrics.astrid.sh/api/lyrics?${params.toString()}`,
+    { signal },
+  )
   clear()
   if (!resp.ok) return null
 
@@ -178,7 +212,9 @@ export interface LyricsSearchMatch {
   id: number
 }
 
-export async function searchLyricsMulti(rawInput: string): Promise<LyricsSearchMatch[]> {
+export async function searchLyricsMulti(
+  rawInput: string,
+): Promise<LyricsSearchMatch[]> {
   const { artist, title } = parseArtistTitle(rawInput)
 
   const queries: { artist: string; title: string }[] = []
@@ -187,7 +223,10 @@ export async function searchLyricsMulti(rawInput: string): Promise<LyricsSearchM
     queries.push({ artist, title: title.replace(/\s*\(.*?\)\s*/g, '').trim() })
   }
   queries.push({ artist: '', title })
-  queries.push({ artist: '', title: title.replace(/\s*\(.*?\)\s*/g, '').trim() })
+  queries.push({
+    artist: '',
+    title: title.replace(/\s*\(.*?\)\s*/g, '').trim(),
+  })
 
   const seen = new Set<number>()
   const results: LyricsSearchMatch[] = []
@@ -203,13 +242,17 @@ export async function searchLyricsMulti(rawInput: string): Promise<LyricsSearchM
           results.push(match)
         }
       }
-    } catch { /* continue */ }
+    } catch {
+      /* continue */
+    }
   }
 
   return results
 }
 
-export async function fetchLyricsById(id: number): Promise<LyricsSearchResult | null> {
+export async function fetchLyricsById(
+  id: number,
+): Promise<LyricsSearchResult | null> {
   try {
     const { signal, clear } = createTimeoutSignal(7000)
     const resp = await fetch(`https://lrclib.net/api/get/${id}`, { signal })
@@ -218,7 +261,10 @@ export async function fetchLyricsById(id: number): Promise<LyricsSearchResult | 
 
     const data = await resp.json()
 
-    if (typeof data?.syncedLyrics === 'string' && data.syncedLyrics.length > 20) {
+    if (
+      typeof data?.syncedLyrics === 'string' &&
+      data.syncedLyrics.length > 20
+    ) {
       return { text: data.syncedLyrics, format: 'lrc' }
     }
     if (typeof data?.plainLyrics === 'string' && data.plainLyrics.length > 10) {
@@ -230,13 +276,19 @@ export async function fetchLyricsById(id: number): Promise<LyricsSearchResult | 
   }
 }
 
-async function fetchSearchLrclib(artist: string, title: string): Promise<LyricsSearchMatch[]> {
+async function fetchSearchLrclib(
+  artist: string,
+  title: string,
+): Promise<LyricsSearchMatch[]> {
   const params = new URLSearchParams()
   params.set('track_name', title)
   if (artist) params.set('artist_name', artist)
 
   const { signal, clear } = createTimeoutSignal(7000)
-  const resp = await fetch(`https://lrclib.net/api/search?${params.toString()}`, { signal })
+  const resp = await fetch(
+    `https://lrclib.net/api/search?${params.toString()}`,
+    { signal },
+  )
   clear()
   if (!resp.ok) return []
 
@@ -247,10 +299,22 @@ async function fetchSearchLrclib(artist: string, title: string): Promise<LyricsS
     .filter((item: Record<string, unknown>) => typeof item.id === 'number')
     .map((item: Record<string, unknown>) => ({
       id: item.id as number,
-      artist: typeof item.artistName === 'string' ? item.artistName : (typeof item.artist === 'string' ? item.artist : 'Unknown'),
-      title: typeof item.trackName === 'string' ? item.trackName : (typeof item.name === 'string' ? item.name : 'Unknown'),
-      plainLyrics: typeof item.plainLyrics === 'string' ? item.plainLyrics : undefined,
-      syncedLyrics: typeof item.syncedLyrics === 'string' ? item.syncedLyrics : undefined,
+      artist:
+        typeof item.artistName === 'string'
+          ? item.artistName
+          : typeof item.artist === 'string'
+            ? item.artist
+            : 'Unknown',
+      title:
+        typeof item.trackName === 'string'
+          ? item.trackName
+          : typeof item.name === 'string'
+            ? item.name
+            : 'Unknown',
+      plainLyrics:
+        typeof item.plainLyrics === 'string' ? item.plainLyrics : undefined,
+      syncedLyrics:
+        typeof item.syncedLyrics === 'string' ? item.syncedLyrics : undefined,
     }))
 }
 
@@ -259,8 +323,8 @@ async function fetchSearchLrclib(artist: string, title: string): Promise<LyricsS
 export function parseTextLyrics(text: string): string[] {
   return text
     .split('\n')
-    .map(line => line.trim())
-    .filter(line => line.length > 0)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
 }
 
 // ── LRC Parsing ──────────────────────────────────────────────
@@ -304,10 +368,7 @@ export function getCurrentLineIndex(
   return Math.min(Math.floor(progress * totalLines), totalLines - 1)
 }
 
-export function getCurrentLrcIndex(
-  lines: LrcLine[],
-  elapsed: number,
-): number {
+export function getCurrentLrcIndex(lines: LrcLine[], elapsed: number): number {
   let idx = -1
   for (let i = 0; i < lines.length; i++) {
     if (lines[i].time <= elapsed) idx = i

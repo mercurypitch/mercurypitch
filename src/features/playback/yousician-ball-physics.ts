@@ -268,7 +268,6 @@ export function createBallPhysics(
     bounce = 0.8,
     radius = 8,
     padding = { top: 5, bottom: 5, left: 0, right: 0 },
-    _arcHeight = 120,
     timeScale = 1.0,
   } = options
 

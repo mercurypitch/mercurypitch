@@ -29,7 +29,11 @@ function detectBlockInstances(
 
   for (let i = 0; i < textLines.length; i++) {
     if (taken.has(i)) continue
-    if (i >= templateIndices[0] && i <= templateIndices[templateIndices.length - 1]) continue
+    if (
+      i >= templateIndices[0] &&
+      i <= templateIndices[templateIndices.length - 1]
+    )
+      continue
 
     let match = true
     for (let j = 0; j < templateText.length; j++) {
@@ -51,12 +55,19 @@ function detectBlockInstances(
 }
 
 // Deterministic color assignment (replicated from StemMixer.tsx)
-const BLOCK_COLORS = ['#f0a060', '#60a0f0', '#60d080', '#d080e0', '#e0c050', '#f06080']
+const BLOCK_COLORS = [
+  '#f0a060',
+  '#60a0f0',
+  '#60d080',
+  '#d080e0',
+  '#e0c050',
+  '#f06080',
+]
 
 function getBlockColor(blockId: string): string {
   let hash = 0
   for (let i = 0; i < blockId.length; i++)
-    hash = ((hash << 5) - hash) + blockId.charCodeAt(i)
+    hash = (hash << 5) - hash + blockId.charCodeAt(i)
   return BLOCK_COLORS[Math.abs(hash) % BLOCK_COLORS.length]
 }
 
@@ -108,19 +119,18 @@ describe('detectBlockInstances (REQ-UV-049)', () => {
     const existingInstances: BlockInstancesMap = {
       'existing-block': [[0, 2]], // already owns lines 0-1
     }
-    const result = detectBlockInstances(lines, templateIndices, existingInstances)
+    const result = detectBlockInstances(
+      lines,
+      templateIndices,
+      existingInstances,
+    )
     expect(result).toEqual([
       [2, 3], // only the template (individual indices), lines 0-1 are taken
     ])
   })
 
   it('skips template overlap range', () => {
-    const lines = [
-      'Line A',
-      'Line B',
-      'Line C',
-      'Line D',
-    ]
+    const lines = ['Line A', 'Line B', 'Line C', 'Line D']
     // Template is indices [1,2] — "Line B", "Line C"
     // Should not detect itself if the same text appears within its own range
     const result = detectBlockInstances(lines, [1, 2], {})
@@ -137,11 +147,14 @@ describe('detectBlockInstances (REQ-UV-049)', () => {
   it('detects multiple repeats of the same block', () => {
     const lines = [
       'Intro',
-      'Chorus A', 'Chorus B', // first chorus
+      'Chorus A',
+      'Chorus B', // first chorus
       'Verse A',
-      'Chorus A', 'Chorus B', // second chorus
+      'Chorus A',
+      'Chorus B', // second chorus
       'Solo',
-      'Chorus A', 'Chorus B', // third chorus
+      'Chorus A',
+      'Chorus B', // third chorus
       'Outro',
     ]
     const result = detectBlockInstances(lines, [1, 2], {})
@@ -153,10 +166,16 @@ describe('detectBlockInstances (REQ-UV-049)', () => {
 
   it('does not match partial overlaps', () => {
     const lines = [
-      'Chorus A', 'Chorus B', 'Chorus C',
-      'Verse X', 'Verse Y',
-      'Chorus A', 'Chorus X', // only first line matches — partial overlap
-      'Chorus A', 'Chorus B', 'Chorus C', // full match
+      'Chorus A',
+      'Chorus B',
+      'Chorus C',
+      'Verse X',
+      'Verse Y',
+      'Chorus A',
+      'Chorus X', // only first line matches — partial overlap
+      'Chorus A',
+      'Chorus B',
+      'Chorus C', // full match
     ]
     const result = detectBlockInstances(lines, [0, 1, 2], {})
     // Should match template [0,1,2] and detected [7,10] but NOT [5,8] (middle line differs)

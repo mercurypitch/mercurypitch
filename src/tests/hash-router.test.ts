@@ -3,7 +3,7 @@
 // ============================================================
 
 import { describe, expect, it, vi } from 'vitest'
-import { buildHash, navigateTo, parseHash, replaceHash } from '@/lib/hash-router'
+import { buildHash, navigateTo, parseHash, replaceHash, } from '@/lib/hash-router'
 
 // ── parseHash ─────────────────────────────────────────────────
 
@@ -13,10 +13,19 @@ describe('parseHash', () => {
     expect(parseHash('#/practice')).toEqual({ type: 'tab', tab: 'practice' })
     expect(parseHash('#/editor')).toEqual({ type: 'tab', tab: 'editor' })
     expect(parseHash('#/settings')).toEqual({ type: 'tab', tab: 'settings' })
-    expect(parseHash('#/vocal-analysis')).toEqual({ type: 'tab', tab: 'vocal-analysis' })
+    expect(parseHash('#/vocal-analysis')).toEqual({
+      type: 'tab',
+      tab: 'vocal-analysis',
+    })
     expect(parseHash('#/community')).toEqual({ type: 'tab', tab: 'community' })
-    expect(parseHash('#/leaderboard')).toEqual({ type: 'tab', tab: 'leaderboard' })
-    expect(parseHash('#/vocal-challenges')).toEqual({ type: 'tab', tab: 'vocal-challenges' })
+    expect(parseHash('#/leaderboard')).toEqual({
+      type: 'tab',
+      tab: 'leaderboard',
+    })
+    expect(parseHash('#/vocal-challenges')).toEqual({
+      type: 'tab',
+      tab: 'vocal-challenges',
+    })
     // #/uvr is treated as uvr-upload by the router, not tab:uvr
     // Test separately in UVR routes below
   })
@@ -129,12 +138,20 @@ describe('parseHash', () => {
   // REQ-RT-003: Share routes
   it('parses share route with type and id', () => {
     const result = parseHash('#/share?type=melody&id=abc123')
-    expect(result).toEqual({ type: 'share', shareType: 'melody', shareId: 'abc123' })
+    expect(result).toEqual({
+      type: 'share',
+      shareType: 'melody',
+      shareId: 'abc123',
+    })
   })
 
   it('parses share route with different types', () => {
     const result = parseHash('#/share?type=session&id=session-456')
-    expect(result).toEqual({ type: 'share', shareType: 'session', shareId: 'session-456' })
+    expect(result).toEqual({
+      type: 'share',
+      shareType: 'session',
+      shareId: 'session-456',
+    })
   })
 
   // REQ-RT-004: Unknown / empty routes
@@ -161,7 +178,10 @@ describe('parseHash', () => {
 
   it('handles hash with session ID containing special chars', () => {
     const validChars = parseHash('#/uvr/session/abc-123_def.456')
-    expect(validChars).toEqual({ type: 'uvr-session', sessionId: 'abc-123_def.456' })
+    expect(validChars).toEqual({
+      type: 'uvr-session',
+      sessionId: 'abc-123_def.456',
+    })
   })
 
   it('returns unknown for malformed UVR session route missing ID', () => {
@@ -203,18 +223,21 @@ describe('buildHash', () => {
   })
 
   it('builds UVR session hash', () => {
-    expect(buildHash({ type: 'uvr-session', sessionId: 'abc123' }))
-      .toBe('/uvr/session/abc123')
+    expect(buildHash({ type: 'uvr-session', sessionId: 'abc123' })).toBe(
+      '/uvr/session/abc123',
+    )
   })
 
   it('builds UVR session mixer hash', () => {
-    expect(buildHash({ type: 'uvr-session-mixer', sessionId: 'xyz' }))
-      .toBe('/uvr/session/xyz/mixer')
+    expect(buildHash({ type: 'uvr-session-mixer', sessionId: 'xyz' })).toBe(
+      '/uvr/session/xyz/mixer',
+    )
   })
 
   it('builds share hash', () => {
-    expect(buildHash({ type: 'share', shareType: 'melody', shareId: 'id1' }))
-      .toBe('/share?type=melody&id=id1')
+    expect(
+      buildHash({ type: 'share', shareType: 'melody', shareId: 'id1' }),
+    ).toBe('/share?type=melody&id=id1')
   })
 
   it('builds unknown as root slash', () => {
@@ -226,8 +249,9 @@ describe('buildHash', () => {
   })
 
   it('builds learn-chapter hash', () => {
-    expect(buildHash({ type: 'learn-chapter', chapterId: 'practice-toolbar' }))
-      .toBe('/learn/practice-toolbar')
+    expect(
+      buildHash({ type: 'learn-chapter', chapterId: 'practice-toolbar' }),
+    ).toBe('/learn/practice-toolbar')
   })
 
   it('builds guide hash', () => {
@@ -235,7 +259,9 @@ describe('buildHash', () => {
   })
 
   it('builds guide-start all hash', () => {
-    expect(buildHash({ type: 'guide-start', sectionId: 'all' })).toBe('/guide/all')
+    expect(buildHash({ type: 'guide-start', sectionId: 'all' })).toBe(
+      '/guide/all',
+    )
   })
 
   it('builds guide-start section hash', () => {
@@ -289,7 +315,9 @@ describe('navigateTo', () => {
     const locationMock = {} as Location
     Object.defineProperty(locationMock, 'hash', {
       get: () => '#/practice',
-      set: () => { setCount++ },
+      set: () => {
+        setCount++
+      },
       configurable: true,
     })
     vi.stubGlobal('location', locationMock)

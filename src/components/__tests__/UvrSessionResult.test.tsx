@@ -21,7 +21,9 @@ vi.mock('../icons', () => ({
   Voice: () => <span data-testid="voice-icon">Voice</span>,
   Headphones: () => <span data-testid="headphones-icon">Headphones</span>,
   Midi: () => <span data-testid="midi-icon">Midi</span>,
-  SlidersHorizontal: () => <span data-testid="sliders-icon">SlidersHorizontal</span>,
+  SlidersHorizontal: () => (
+    <span data-testid="sliders-icon">SlidersHorizontal</span>
+  ),
   Share: () => <span data-testid="share-icon">Share</span>,
 }))
 

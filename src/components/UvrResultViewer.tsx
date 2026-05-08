@@ -4,8 +4,8 @@
 
 import type { Component } from 'solid-js'
 import { createSignal, For, Show } from 'solid-js'
-import { Download, Headphones, Midi, MusicBoard, Play, Share, SlidersHorizontal, Voice, X, } from './icons'
 import { generateVocalMidi } from '@/lib/midi-generator'
+import { Download, Headphones, Midi, MusicBoard, Play, Share, SlidersHorizontal, Voice, X, } from './icons'
 
 interface StemMeta {
   duration?: number
@@ -50,17 +50,29 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
   }
 
-  const handleStartPractice = (mode: 'vocal' | 'instrumental' | 'full' | 'midi') => {
+  const handleStartPractice = (
+    mode: 'vocal' | 'instrumental' | 'full' | 'midi',
+  ) => {
     props.onStartPractice?.(mode)
   }
 
-  const handleDownload = async (url: string | undefined, filename: string, stemKey?: string) => {
+  const handleDownload = async (
+    url: string | undefined,
+    filename: string,
+    stemKey?: string,
+  ) => {
     // Handle MIDI stems — generate on-the-fly from vocal audio
-    if ((url === undefined || url === '') && stemKey === 'vocalMidi' && props.outputs?.vocal) {
+    if (
+      (url === undefined || url === '') &&
+      stemKey === 'vocalMidi' &&
+      props.outputs?.vocal !== undefined
+    ) {
       try {
         setMidiDownloading(true)
         setMidiDownloadProgress(0)
-        const midiBlob = await generateVocalMidi(props.outputs.vocal, (pct) => setMidiDownloadProgress(pct))
+        const midiBlob = await generateVocalMidi(props.outputs.vocal, (pct) =>
+          setMidiDownloadProgress(pct),
+        )
         setMidiDownloading(false)
         if (midiBlob) {
           url = URL.createObjectURL(midiBlob)
@@ -79,8 +91,14 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
       const blobUrl = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = blobUrl
-      const base = (props.originalFileName ?? 'audio').replace(/\.[^.]+$/, '').replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_-]/g, '')
-      a.download = stemKey === 'vocalMidi' ? `${base}_vocal_midi.mid` : `${base}_${stemKey ?? 'stem'}.${filename.split('.').pop() ?? 'wav'}`
+      const base = (props.originalFileName ?? 'audio')
+        .replace(/\.[^.]+$/, '')
+        .replace(/\s+/g, '_')
+        .replace(/[^a-zA-Z0-9_-]/g, '')
+      a.download =
+        stemKey === 'vocalMidi'
+          ? `${base}_vocal_midi.mid`
+          : `${base}_${stemKey ?? 'stem'}.${filename.split('.').pop() ?? 'wav'}`
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
@@ -173,11 +191,21 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
           </Show>
         </div>
         <div class="rv-header-right">
-          <button class="rv-share-btn" onClick={() => { void handleShare() }} title="Copy share link">
+          <button
+            class="rv-share-btn"
+            onClick={() => {
+              void handleShare()
+            }}
+            title="Copy share link"
+          >
             <Share /> Share
           </button>
           <Show when={props.onClose}>
-            <button class="rv-close-btn" onClick={() => props.onClose?.()} aria-label="Close">
+            <button
+              class="rv-close-btn"
+              onClick={() => props.onClose?.()}
+              aria-label="Close"
+            >
               <X />
             </button>
           </Show>
@@ -186,65 +214,101 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
 
       {/* Stem Cards Grid */}
       <div class="rv-stems-grid">
-        <For each={stems()}>{(stem) => {
-          const meta = props.stemMeta?.[stem.key]
-          return (
-            <div
-              class="rv-stem-card"
-              style={{ '--stem-color': stem.color }}
-            >
-              <div class="rv-stem-card-top">
-                <div class="rv-stem-icon" style={{ color: stem.color }}>
-                  {<stem.icon />}
-                </div>
-                <div class="rv-stem-info">
-                  <span class="rv-stem-name">{stem.label}</span>
-                  <div class="rv-stem-meta">
-                    <span class="rv-stem-format">{stem.format}</span>
-                    <Show when={formatDuration(meta?.duration)}>
-                      <span class="rv-stem-duration">
-                        {formatDuration(meta?.duration)}
-                      </span>
-                    </Show>
-                    <Show when={formatFileSize(meta?.size)}>
-                      <span class="rv-stem-size">
-                        {formatFileSize(meta?.size)}
-                      </span>
-                    </Show>
+        <For each={stems()}>
+          {(stem) => {
+            const meta = props.stemMeta?.[stem.key]
+            return (
+              <div class="rv-stem-card" style={{ '--stem-color': stem.color }}>
+                <div class="rv-stem-card-top">
+                  <div class="rv-stem-icon" style={{ color: stem.color }}>
+                    {<stem.icon />}
+                  </div>
+                  <div class="rv-stem-info">
+                    <span class="rv-stem-name">{stem.label}</span>
+                    <div class="rv-stem-meta">
+                      <span class="rv-stem-format">{stem.format}</span>
+                      <Show when={formatDuration(meta?.duration)}>
+                        <span class="rv-stem-duration">
+                          {formatDuration(meta?.duration)}
+                        </span>
+                      </Show>
+                      <Show when={formatFileSize(meta?.size)}>
+                        <span class="rv-stem-size">
+                          {formatFileSize(meta?.size)}
+                        </span>
+                      </Show>
+                    </div>
                   </div>
                 </div>
+                <div class="rv-stem-card-actions">
+                  <button
+                    class="rv-stem-btn rv-stem-btn-play"
+                    onClick={() => handleStartPractice(stem.practiceMode)}
+                  >
+                    <Play /> Play
+                  </button>
+                  <button
+                    class="rv-stem-btn rv-stem-btn-download"
+                    onClick={() => {
+                      void handleDownload(
+                        stem.url,
+                        `${stem.label.toLowerCase()}_stem.${stem.format.toLowerCase()}`,
+                        stem.key,
+                      )
+                    }}
+                    disabled={midiDownloading() && stem.key === 'vocalMidi'}
+                  >
+                    {midiDownloading() && stem.key === 'vocalMidi' ? (
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        class="rv-circular-progress"
+                      >
+                        <circle
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          fill="none"
+                          stroke="var(--border, #30363d)"
+                          stroke-width="2"
+                        />
+                        <circle
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          fill="none"
+                          stroke="var(--accent, #8b5cf6)"
+                          stroke-width="2"
+                          stroke-dasharray={String(2 * Math.PI * 10)}
+                          stroke-dashoffset={String(
+                            2 *
+                              Math.PI *
+                              10 *
+                              (1 - midiDownloadProgress() / 100),
+                          )}
+                          stroke-linecap="round"
+                          transform="rotate(-90 12 12)"
+                        />
+                      </svg>
+                    ) : (
+                      <Download />
+                    )}
+                  </button>
+                </div>
               </div>
-              <div class="rv-stem-card-actions">
-                <button
-                  class="rv-stem-btn rv-stem-btn-play"
-                  onClick={() => handleStartPractice(stem.practiceMode)}
-                >
-                  <Play /> Play
-                </button>
-                <button
-                  class="rv-stem-btn rv-stem-btn-download"
-                  onClick={() => { void handleDownload(stem.url, `${stem.label.toLowerCase()}_stem.${stem.format.toLowerCase()}`, stem.key) }}
-                  disabled={midiDownloading() && stem.key === 'vocalMidi'}
-                >
-                  {midiDownloading() && stem.key === 'vocalMidi' ? (
-                    <svg width="16" height="16" viewBox="0 0 24 24" class="rv-circular-progress">
-                      <circle cx="12" cy="12" r="10" fill="none" stroke="var(--border, #30363d)" stroke-width="2" />
-                      <circle cx="12" cy="12" r="10" fill="none" stroke="var(--accent, #8b5cf6)" stroke-width="2"
-                        stroke-dasharray={String(2 * Math.PI * 10)} stroke-dashoffset={String(2 * Math.PI * 10 * (1 - midiDownloadProgress() / 100))}
-                        stroke-linecap="round" transform="rotate(-90 12 12)" />
-                    </svg>
-                  ) : (
-                    <Download />
-                  )}
-                </button>
-              </div>
-            </div>
-          )
-        }}</For>
+            )
+          }}
+        </For>
       </div>
 
       {/* Full Mix Card */}
-      <Show when={props.outputs?.vocal !== undefined && props.outputs?.instrumental !== undefined}>
+      <Show
+        when={
+          props.outputs?.vocal !== undefined &&
+          props.outputs?.instrumental !== undefined
+        }
+      >
         <div class="rv-full-mix-card">
           <div class="rv-full-mix-left">
             <div class="rv-stem-icon" style={{ color: '#10b981' }}>
@@ -285,5 +349,3 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
 }
 
 // ============================================================
-
-

@@ -573,7 +573,7 @@ export class AudioEngine {
     // Apply UVR processing if enabled
     const processedNodes = this._applyUvrProcessing(gain)
     processedNodes.forEach((node) =>
-      node.connect(this.uvrMainGain ?? this.mainGain),
+      node.connect(this.uvrMainGain ?? this.mainGain!),
     )
 
     osc.start(this.audioCtx.currentTime)
@@ -753,7 +753,7 @@ export class AudioEngine {
     // Apply UVR processing if enabled
     const processedNodes = this._applyUvrProcessing(userGain)
     processedNodes.forEach((node) =>
-      node.connect(this.uvrMainGain ?? this.mainGain),
+      node.connect(this.uvrMainGain ?? this.mainGain!),
     )
 
     // Start every oscillator (and any LFO modulators).

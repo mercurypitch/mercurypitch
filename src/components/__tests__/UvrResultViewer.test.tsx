@@ -101,7 +101,10 @@ describe('UvrResultViewer Component', () => {
     it('does not render MIDI card when no vocalMidi output', () => {
       render(() => (
         <UvrResultViewer
-          outputs={{ vocal: '/stems/vocal.wav', instrumental: '/stems/inst.wav' }}
+          outputs={{
+            vocal: '/stems/vocal.wav',
+            instrumental: '/stems/inst.wav',
+          }}
           onStartPractice={vi.fn()}
         />
       ))

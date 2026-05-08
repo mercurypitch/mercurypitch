@@ -101,7 +101,11 @@ describe('UvrProcessor', () => {
   describe('processSegment', () => {
     it('returns source node when not initialized', () => {
       const source = ctx.createGain()
-      const result = processor.processSegment(source as unknown as AudioNode, 0, ctx)
+      const result = processor.processSegment(
+        source as unknown as AudioNode,
+        0,
+        ctx,
+      )
       expect(result).toHaveLength(1)
       expect(result[0]).toBe(source)
     })
@@ -110,7 +114,11 @@ describe('UvrProcessor', () => {
       await processor.initAudio(ctx)
       processor.setMode('separate')
       const source = ctx.createGain()
-      const result = processor.processSegment(source as unknown as AudioNode, 0, ctx)
+      const result = processor.processSegment(
+        source as unknown as AudioNode,
+        0,
+        ctx,
+      )
       expect(result).toHaveLength(2) // vocal + instrumental
     })
 
@@ -118,7 +126,11 @@ describe('UvrProcessor', () => {
       await processor.initAudio(ctx)
       processor.setMode('instrumental')
       const source = ctx.createGain()
-      const result = processor.processSegment(source as unknown as AudioNode, 0, ctx)
+      const result = processor.processSegment(
+        source as unknown as AudioNode,
+        0,
+        ctx,
+      )
       expect(result).toHaveLength(1)
     })
 
@@ -126,7 +138,11 @@ describe('UvrProcessor', () => {
       await processor.initAudio(ctx)
       processor.setMode('vocal')
       const source = ctx.createGain()
-      const result = processor.processSegment(source as unknown as AudioNode, 0, ctx)
+      const result = processor.processSegment(
+        source as unknown as AudioNode,
+        0,
+        ctx,
+      )
       expect(result).toHaveLength(1)
     })
 
@@ -134,7 +150,11 @@ describe('UvrProcessor', () => {
       await processor.initAudio(ctx)
       processor.setMode('duo')
       const source = ctx.createGain()
-      const result = processor.processSegment(source as unknown as AudioNode, 0, ctx)
+      const result = processor.processSegment(
+        source as unknown as AudioNode,
+        0,
+        ctx,
+      )
       expect(result).toHaveLength(2)
     })
   })
@@ -156,8 +176,9 @@ describe('UvrProcessor', () => {
       const buffer = new Float32Array(2048)
       for (let i = 0; i < buffer.length; i++) {
         // Mix 400 Hz (low) + 4000 Hz (high) to ensure isMusic is detected
-        buffer[i] = Math.sin((2 * Math.PI * 400 * i) / 44100) * 0.3
-          + Math.sin((2 * Math.PI * 4000 * i) / 44100) * 0.2
+        buffer[i] =
+          Math.sin((2 * Math.PI * 400 * i) / 44100) * 0.3 +
+          Math.sin((2 * Math.PI * 4000 * i) / 44100) * 0.2
       }
 
       const result = processor.analyzeBuffer(buffer, 44100)

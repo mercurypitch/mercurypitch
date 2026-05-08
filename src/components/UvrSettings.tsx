@@ -45,7 +45,14 @@ const IconWaveform = () => (
 )
 
 const IconInfo = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
     <circle cx="12" cy="12" r="10" />
     <line x1="12" y1="16" x2="12" y2="12" />
     <line x1="12" y1="8" x2="12.01" y2="8" />
@@ -226,7 +233,9 @@ export const UvrSettings: Component = () => {
       {/* Info Box */}
       <div class="uvr-info">
         <div class="info-header">
-          <span class="info-icon"><IconInfo /></span>
+          <span class="info-icon">
+            <IconInfo />
+          </span>
           <span>Pro Tips</span>
         </div>
         <ul class="info-list">
@@ -253,7 +262,14 @@ export const UvrSettings: Component = () => {
       <div class="uvr-info uvr-shortcuts">
         <div class="info-header">
           <span class="info-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
               <rect x="2" y="4" width="20" height="16" rx="2" />
               <path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M6 12h.01M18 12h.01M6 16h.01M10 16h.01M14 16h.01" />
             </svg>

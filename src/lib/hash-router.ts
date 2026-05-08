@@ -144,7 +144,9 @@ export function buildHash(route: HashRoute): string {
     case 'guide':
       return '/guide'
     case 'guide-start':
-      return route.sectionId === 'all' ? '/guide/all' : `/guide/${route.sectionId}`
+      return route.sectionId === 'all'
+        ? '/guide/all'
+        : `/guide/${route.sectionId}`
     case 'unknown':
       return '/'
   }

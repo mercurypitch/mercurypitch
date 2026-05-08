@@ -4,11 +4,11 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, Show } from 'solid-js'
+import { generateVocalMidi } from '@/lib/midi-generator'
 import type { OutputFile } from '@/lib/uvr-api'
 import { DEFAULT_PROCESS_REQUEST, getProcessStatus, pollForCompletion, processAudio, } from '@/lib/uvr-api'
 import type { UvrSession } from '@/stores/app-store'
 import { cancelUvrSession, completeUvrSession, currentUvrSession, deleteAllUvrSessions, getAllUvrSessions, getAllUvrSessionsReactive, getUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrSessionApiId, startUvrSession, updateUvrSessionOutputs, updateUvrSessionProgress, } from '@/stores/app-store'
-import { generateVocalMidi } from '@/lib/midi-generator'
 import { StemMixer, UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrSettings, UvrUploadControl, } from '.'
 import { CheckCircle, History, Music, Settings, Trash2, X } from './icons'
 
@@ -107,7 +107,9 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     instrumental?: string
   }>({})
   const [mixerSessionId, setMixerSessionId] = createSignal('')
-  const [mixerPracticeMode, setMixerPracticeMode] = createSignal<'vocal' | 'instrumental' | 'full' | 'midi'>('full')
+  const [mixerPracticeMode, setMixerPracticeMode] = createSignal<
+    'vocal' | 'instrumental' | 'full' | 'midi'
+  >('full')
 
   // Computed session state
   const session = () => currentUvrSession()
@@ -246,11 +248,17 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       let blob: Blob
       const ext = type.includes('midi') ? '.mid' : '.wav'
 
-      if (type === 'vocal-midi' && (url === '' || url === undefined) && s.outputs.vocal) {
+      if (
+        type === 'vocal-midi' &&
+        (url === '' || url === undefined) &&
+        s.outputs.vocal !== undefined
+      ) {
         // Generate MIDI on-the-fly from vocal stem
         setMidiExporting(true)
         setMidiExportProgress(0)
-        const midiBlob = await generateVocalMidi(s.outputs.vocal, (pct) => setMidiExportProgress(pct))
+        const midiBlob = await generateVocalMidi(s.outputs.vocal, (pct) =>
+          setMidiExportProgress(pct),
+        )
         setMidiExporting(false)
         if (!midiBlob) {
           console.error('MIDI generation produced no notes')
@@ -266,7 +274,10 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       const blobUrl = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = blobUrl
-      const base = (s.originalFile?.name ?? 'audio').replace(/\.[^.]+$/, '').replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_-]/g, '')
+      const base = (s.originalFile?.name ?? 'audio')
+        .replace(/\.[^.]+$/, '')
+        .replace(/\s+/g, '_')
+        .replace(/[^a-zA-Z0-9_-]/g, '')
       a.download = `${base}_${type.replace('-', '_')}${ext}`
       document.body.appendChild(a)
       a.click()
@@ -361,10 +372,16 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       let blob: Blob
       const ext = type === 'vocal-midi' ? '.mid' : '.wav'
 
-      if (type === 'vocal-midi' && (url === '' || url === undefined) && s.outputs.vocal) {
+      if (
+        type === 'vocal-midi' &&
+        (url === '' || url === undefined) &&
+        s.outputs.vocal !== undefined
+      ) {
         setMidiExporting(true)
         setMidiExportProgress(0)
-        const midiBlob = await generateVocalMidi(s.outputs.vocal, (pct) => setMidiExportProgress(pct))
+        const midiBlob = await generateVocalMidi(s.outputs.vocal, (pct) =>
+          setMidiExportProgress(pct),
+        )
         setMidiExporting(false)
         if (!midiBlob) {
           console.error('MIDI generation produced no notes')
@@ -379,7 +396,10 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
 
       const blobUrl = URL.createObjectURL(blob)
       const a = document.createElement('a')
-      const base = (s.originalFile?.name ?? 'audio').replace(/\.[^.]+$/, '').replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_-]/g, '')
+      const base = (s.originalFile?.name ?? 'audio')
+        .replace(/\.[^.]+$/, '')
+        .replace(/\s+/g, '_')
+        .replace(/[^a-zA-Z0-9_-]/g, '')
       a.href = blobUrl
       a.download = `${base}_${type.replace('-', '_')}${ext}`
       document.body.appendChild(a)
@@ -564,8 +584,6 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
               }}
               processing={session()?.status === 'processing'}
             />
-
-
           </div>
         </Show>
 
@@ -719,10 +737,28 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
         <div class="history-toast">
           <span class="history-toast-icon">
             <svg width="18" height="18" viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="10" fill="none" stroke="var(--border, #30363d)" stroke-width="2" />
-              <circle cx="12" cy="12" r="10" fill="none" stroke="var(--accent, #8b5cf6)" stroke-width="2"
-                stroke-dasharray={String(2 * Math.PI * 10)} stroke-dashoffset={String(2 * Math.PI * 10 * (1 - midiExportProgress() / 100))}
-                stroke-linecap="round" transform="rotate(-90 12 12)" />
+              <circle
+                cx="12"
+                cy="12"
+                r="10"
+                fill="none"
+                stroke="var(--border, #30363d)"
+                stroke-width="2"
+              />
+              <circle
+                cx="12"
+                cy="12"
+                r="10"
+                fill="none"
+                stroke="var(--accent, #8b5cf6)"
+                stroke-width="2"
+                stroke-dasharray={String(2 * Math.PI * 10)}
+                stroke-dashoffset={String(
+                  2 * Math.PI * 10 * (1 - midiExportProgress() / 100),
+                )}
+                stroke-linecap="round"
+                transform="rotate(-90 12 12)"
+              />
             </svg>
           </span>
           Generating MIDI... {midiExportProgress()}%
@@ -744,6 +780,3 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     </div>
   )
 }
-
-
-

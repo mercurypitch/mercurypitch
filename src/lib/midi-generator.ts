@@ -3,7 +3,7 @@
 // ============================================================
 
 import { PitchDetector } from './pitch-detector'
-import { freqToMidi, midiToFreq, midiToNote } from './scale-data'
+import { freqToMidi, midiToFreq } from './scale-data'
 
 export interface MidiNoteEvent {
   midi: number
@@ -13,7 +13,7 @@ export interface MidiNoteEvent {
 
 export const TICKS_PER_BEAT = 480
 export const DEFAULT_BPM = 120
-export const WINDOW_STEP_SEC = 0.10
+export const WINDOW_STEP_SEC = 0.1
 export const MIN_NOTE_DURATION_SEC = 0.08
 
 /** Shared PitchDetector constructor defaults used by both MIDI generation and realtime */
@@ -28,7 +28,7 @@ export const PITCH_DETECTOR_DEFAULTS = {
 } as const
 
 /** MIDI note range filter shared by both paths */
-export const MIDI_NOTE_RANGE = { min: 38, max: 96 } as const  // D2–C7
+export const MIDI_NOTE_RANGE = { min: 38, max: 96 } as const // D2–C7
 
 /** A single pitch detection at a point in time */
 export interface PitchDetection {
@@ -68,7 +68,12 @@ export function mergeConsecutiveNotes(
     const noteEndSec = detections[i - 1].timeSec + WINDOW_STEP_SEC
     const duration = noteEndSec - noteStartSec
     if (duration >= minDurationSec) {
-      notes.push({ midi: currentMidi, noteName: currentName, startSec: noteStartSec, endSec: noteEndSec })
+      notes.push({
+        midi: currentMidi,
+        noteName: currentName,
+        startSec: noteStartSec,
+        endSec: noteEndSec,
+      })
     }
     noteStartSec = detections[i].timeSec
     currentMidi = detections[i].midi
@@ -79,7 +84,12 @@ export function mergeConsecutiveNotes(
   const lastTime = detections[detections.length - 1].timeSec + WINDOW_STEP_SEC
   const lastDuration = lastTime - noteStartSec
   if (lastDuration >= minDurationSec) {
-    notes.push({ midi: currentMidi, noteName: currentName, startSec: noteStartSec, endSec: lastTime })
+    notes.push({
+      midi: currentMidi,
+      noteName: currentName,
+      startSec: noteStartSec,
+      endSec: lastTime,
+    })
   }
 
   return notes
@@ -102,7 +112,10 @@ function secondsToTicks(sec: number, bpm: number): number {
 }
 
 /** Generate a Standard MIDI File from an array of detected MIDI note events */
-export function buildMidiFile(notes: MidiNoteEvent[], bpm: number): Uint8Array | null {
+export function buildMidiFile(
+  notes: MidiNoteEvent[],
+  bpm: number,
+): Uint8Array | null {
   if (notes.length === 0) return null
 
   // Sort by tick
@@ -121,27 +134,52 @@ export function buildMidiFile(notes: MidiNoteEvent[], bpm: number): Uint8Array |
   // Tempo
   const microsecondsPerBeat = Math.round(60000000 / bpm)
   absEvents.push({
-    tick: 0, delta: 0, type: 0xff, subtype: 0x51,
-    data: [(microsecondsPerBeat >> 16) & 0xff, (microsecondsPerBeat >> 8) & 0xff, microsecondsPerBeat & 0xff],
+    tick: 0,
+    delta: 0,
+    type: 0xff,
+    subtype: 0x51,
+    data: [
+      (microsecondsPerBeat >> 16) & 0xff,
+      (microsecondsPerBeat >> 8) & 0xff,
+      microsecondsPerBeat & 0xff,
+    ],
   })
 
   // Time signature 4/4
   absEvents.push({
-    tick: 0, delta: 0, type: 0xff, subtype: 0x58,
+    tick: 0,
+    delta: 0,
+    type: 0xff,
+    subtype: 0x58,
     data: [0x04, 0x02, 0x18, 0x08],
   })
 
   // Track name
   const nameBytes = [...new TextEncoder().encode('Vocal Melody')]
   absEvents.push({
-    tick: 0, delta: 0, type: 0xff, subtype: 0x03,
+    tick: 0,
+    delta: 0,
+    type: 0xff,
+    subtype: 0x03,
     data: nameBytes,
   })
 
   // Note on/off events
   for (const n of notes) {
-    absEvents.push({ tick: n.tickOn, delta: 0, type: 0x90, note: n.midi, velocity: 80 })
-    absEvents.push({ tick: n.tickOff, delta: 0, type: 0x80, note: n.midi, velocity: 0 })
+    absEvents.push({
+      tick: n.tickOn,
+      delta: 0,
+      type: 0x90,
+      note: n.midi,
+      velocity: 80,
+    })
+    absEvents.push({
+      tick: n.tickOff,
+      delta: 0,
+      type: 0x80,
+      note: n.midi,
+      velocity: 0,
+    })
   }
 
   absEvents.sort((a, b) => a.tick - b.tick)
@@ -172,14 +210,32 @@ export function buildMidiFile(notes: MidiNoteEvent[], bpm: number): Uint8Array |
 
   // Header
   const header = [
-    0x4d, 0x54, 0x68, 0x64, 0x00, 0x00, 0x00, 0x06,
-    0x00, 0x01, 0x00, 0x01, (TICKS_PER_BEAT >> 8) & 0xff, TICKS_PER_BEAT & 0xff,
+    0x4d,
+    0x54,
+    0x68,
+    0x64,
+    0x00,
+    0x00,
+    0x00,
+    0x06,
+    0x00,
+    0x01,
+    0x00,
+    0x01,
+    (TICKS_PER_BEAT >> 8) & 0xff,
+    TICKS_PER_BEAT & 0xff,
   ]
 
   const trackLen = trackData.length
   const track = [
-    0x4d, 0x54, 0x72, 0x6b,
-    (trackLen >> 24) & 0xff, (trackLen >> 16) & 0xff, (trackLen >> 8) & 0xff, trackLen & 0xff,
+    0x4d,
+    0x54,
+    0x72,
+    0x6b,
+    (trackLen >> 24) & 0xff,
+    (trackLen >> 16) & 0xff,
+    (trackLen >> 8) & 0xff,
+    trackLen & 0xff,
     ...trackData,
   ]
 
@@ -196,7 +252,11 @@ export async function synthesizeMidiBuffer(
   sampleRate: number,
   totalDurationSec: number,
 ): Promise<AudioBuffer> {
-  const ctx = new OfflineAudioContext(2, Math.ceil(sampleRate * totalDurationSec), sampleRate)
+  const ctx = new OfflineAudioContext(
+    2,
+    Math.ceil(sampleRate * totalDurationSec),
+    sampleRate,
+  )
   const beatsPerSec = bpm / 60
   const ticksPerSec = TICKS_PER_BEAT * beatsPerSec
 
@@ -240,7 +300,11 @@ export async function detectNotes(
   const detector = new PitchDetector({ sampleRate, ...PITCH_DETECTOR_DEFAULTS })
 
   const windowStepSamples = Math.floor(WINDOW_STEP_SEC * sampleRate)
-  const totalFrames = Math.floor((audioData.length - PITCH_DETECTOR_DEFAULTS.bufferSize) / windowStepSamples) + 1
+  const totalFrames =
+    Math.floor(
+      (audioData.length - PITCH_DETECTOR_DEFAULTS.bufferSize) /
+        windowStepSamples,
+    ) + 1
 
   if (totalFrames <= 0) return []
 
@@ -248,7 +312,10 @@ export async function detectNotes(
 
   for (let i = 0; i < totalFrames; i++) {
     const offset = i * windowStepSamples
-    const chunk = audioData.slice(offset, offset + PITCH_DETECTOR_DEFAULTS.bufferSize)
+    const chunk = audioData.slice(
+      offset,
+      offset + PITCH_DETECTOR_DEFAULTS.bufferSize,
+    )
     const pitch = detector.detect(chunk)
 
     if (pitch.frequency > 0) {
@@ -257,7 +324,9 @@ export async function detectNotes(
         detections.push({
           midi,
           noteName: pitch.noteName,
-          timeSec: (offset / sampleRate) + (PITCH_DETECTOR_DEFAULTS.bufferSize / sampleRate / 2),
+          timeSec:
+            offset / sampleRate +
+            PITCH_DETECTOR_DEFAULTS.bufferSize / sampleRate / 2,
         })
       }
     }
@@ -265,7 +334,7 @@ export async function detectNotes(
     // Yield to browser every batch to avoid freezing the main thread
     if (i % YIELD_BATCH_SIZE === 0 && i > 0) {
       onProgress?.(Math.round((i / totalFrames) * 100))
-      await new Promise(r => setTimeout(r, 0))
+      await new Promise((r) => setTimeout(r, 0))
     }
   }
 
@@ -276,7 +345,7 @@ export async function detectNotes(
   const merged = mergeConsecutiveNotes(detections)
   if (merged.length === 0) return []
 
-  return merged.map(n => ({
+  return merged.map((n) => ({
     midi: n.midi,
     tickOn: secondsToTicks(n.startSec, DEFAULT_BPM),
     tickOff: secondsToTicks(n.endSec, DEFAULT_BPM),

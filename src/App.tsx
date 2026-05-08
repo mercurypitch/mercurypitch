@@ -24,8 +24,8 @@ import { SessionPlayer } from '@/components/SessionPlayer'
 import { SettingsPanel } from '@/components/SettingsPanel'
 import type { PracticeSubMode } from '@/components/shared/SharedControlToolbar'
 import { SharedControlToolbar } from '@/components/shared/SharedControlToolbar'
-import type {UvrView} from '@/components/UvrPanel';
-import { UvrPanel  } from '@/components/UvrPanel'
+import type { UvrView } from '@/components/UvrPanel'
+import { UvrPanel } from '@/components/UvrPanel'
 import { EngineProvider, useEngines } from '@/contexts/EngineContext'
 import { useEditorController } from '@/features/editor/useEditorController'
 import { usePianoRollEvents } from '@/features/events/usePianoRollEvents'
@@ -38,7 +38,7 @@ import type { InstrumentType } from '@/lib/audio-engine'
 import { audioRegistry } from '@/lib/audio-registry'
 import { debounce } from '@/lib/debounce'
 import { registerE2EBridge } from '@/lib/e2e-bridge'
-import type {HashRoute} from '@/lib/hash-router';
+import type { HashRoute } from '@/lib/hash-router'
 import { buildHash, parseHash, replaceHash } from '@/lib/hash-router'
 import { melodyIndexAtBeat, melodyTotalBeats } from '@/lib/scale-data'
 import { buildScaleMelody, buildSessionPlaybackMelody, } from '@/lib/session-builder'
@@ -162,9 +162,15 @@ const AppShell: Component<AppProps> = (props) => {
 
   // Hash routing — prevents effect loop when hash is being updated from code
   let hashSyncing = false
-  const [initialUvrSessionId, setInitialUvrSessionId] = createSignal<string | null>(null)
-  const [initialUvrView, setInitialUvrView] = createSignal<'upload' | 'history' | 'results' | 'mixer' | null>(null)
-  const [activeUvrSessionId, setActiveUvrSessionId] = createSignal<string | null>(null)
+  const [initialUvrSessionId, setInitialUvrSessionId] = createSignal<
+    string | null
+  >(null)
+  const [initialUvrView, setInitialUvrView] = createSignal<
+    'upload' | 'history' | 'results' | 'mixer' | null
+  >(null)
+  const [activeUvrSessionId, setActiveUvrSessionId] = createSignal<
+    string | null
+  >(null)
   const [activeUvrView, setActiveUvrView] = createSignal<UvrView>('upload')
 
   // ── Guide Selection dialog ──────────────────────────────────
@@ -620,9 +626,7 @@ const AppShell: Component<AppProps> = (props) => {
       setShowGuideSelection(true)
     } else if (initialRoute.type === 'guide-start') {
       const sectionIds =
-        initialRoute.sectionId === 'all'
-          ? undefined
-          : [initialRoute.sectionId]
+        initialRoute.sectionId === 'all' ? undefined : [initialRoute.sectionId]
       startWalkthrough(sectionIds)
     }
 
@@ -659,9 +663,7 @@ const AppShell: Component<AppProps> = (props) => {
         setShowGuideSelection(true)
       } else if (route.type === 'guide-start') {
         const sectionIds =
-          route.sectionId === 'all'
-            ? undefined
-            : [route.sectionId]
+          route.sectionId === 'all' ? undefined : [route.sectionId]
         startWalkthrough(sectionIds)
       }
       hashSyncing = false
@@ -749,7 +751,8 @@ const AppShell: Component<AppProps> = (props) => {
   createEffect(() => {
     if (hashSyncing) return
     // Don't clobber walkthrough/guide hashes while those UIs are open
-    if (showSelection() || walkthroughModalOpen() || showGuideSelection()) return
+    if (showSelection() || walkthroughModalOpen() || showGuideSelection())
+      return
     const tab = activeTab()
     if (tab !== 'uvr') {
       const expectedHash = `#/${tab}`
@@ -779,7 +782,7 @@ const AppShell: Component<AppProps> = (props) => {
   // ── Hash routing: sync walkthrough/guide state → URL hash ──
   createEffect(() => {
     if (hashSyncing) return
-    if (walkthroughModalOpen() && selectedWalkthrough()) {
+    if (walkthroughModalOpen() && selectedWalkthrough() !== null) {
       const id = selectedWalkthrough()!
       const expectedHash = `#/learn/${id}`
       if (window.location.hash !== expectedHash) {
@@ -1006,7 +1009,7 @@ const AppShell: Component<AppProps> = (props) => {
             targetNoteName={targetNoteName}
             onClose={closeSidebar}
             collapsed={sidebarCollapsed()}
-            onToggleCollapse={() => setSidebarCollapsed(prev => !prev)}
+            onToggleCollapse={() => setSidebarCollapsed((prev) => !prev)}
           />
 
           {/* Tab content */}
@@ -1242,7 +1245,9 @@ const AppShell: Component<AppProps> = (props) => {
                 <UvrPanel
                   initialView={initialUvrView() ?? 'upload'}
                   initialSessionId={initialUvrSessionId() ?? undefined}
-                  onSessionChange={(sessionId) => setActiveUvrSessionId(sessionId)}
+                  onSessionChange={(sessionId) =>
+                    setActiveUvrSessionId(sessionId)
+                  }
                   onViewChange={(view) => setActiveUvrView(view)}
                   onPracticeStart={(mode) => {
                     // For now, this could load a session from UVR

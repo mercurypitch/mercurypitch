@@ -72,23 +72,24 @@ export const LyricsUploader: Component<LyricsUploaderProps> = (props) => {
       <div class="lu-message">
         <FileText />
         <span class="lu-title">
-          No lyrics found{(props.suggestion ?? '') !== '' ? ` for "${props.suggestion}"` : ''}
+          No lyrics found
+          {(props.suggestion ?? '') !== '' ? ` for "${props.suggestion}"` : ''}
         </span>
-        <span class="lu-hint">Upload a .txt or .lrc file to sync lyrics with playback</span>
+        <span class="lu-hint">
+          Upload a .txt or .lrc file to sync lyrics with playback
+        </span>
       </div>
 
       <label
         class={`lu-dropzone${dragOver() ? ' lu-dropzone-over' : ''}`}
-        onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
+        onDragOver={(e) => {
+          e.preventDefault()
+          setDragOver(true)
+        }}
         onDragLeave={() => setDragOver(false)}
         onDrop={handleDrop}
       >
-        <input
-          type="file"
-          accept=".txt,.lrc"
-          onChange={handleChange}
-          hidden
-        />
+        <input type="file" accept=".txt,.lrc" onChange={handleChange} hidden />
         <Show
           when={!loading()}
           fallback={<span class="lu-loading">Reading file...</span>}

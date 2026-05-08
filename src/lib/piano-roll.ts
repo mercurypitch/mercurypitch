@@ -2527,7 +2527,7 @@ export class PianoRollEditor {
     if (this.useBallPhysics && this.ballState && this.ballCtx) {
       const ballCtx = this.ballCtx
       const ballCanvas = this.ballCanvas
-      const _playheadX = beat * this.beatWidth
+      const playheadX = beat * this.beatWidth
 
       const ballConfig: BallPhysicsConfig = {
         notes: this.ballNotes,

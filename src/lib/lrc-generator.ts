@@ -23,7 +23,9 @@ export interface LrcGenParams extends LrcGenTimings {
  * Format seconds as LRC timestamp [mm:ss.xx].
  */
 export function formatTimeLrc(secs: number): string {
-  const m = Math.floor(secs / 60).toString().padStart(2, '0')
+  const m = Math.floor(secs / 60)
+    .toString()
+    .padStart(2, '0')
   const s = (secs % 60).toFixed(2).padStart(5, '0')
   return `${m}:${s}`
 }
@@ -40,7 +42,7 @@ export function estimateUnmappedTimes(
   const lastMappedIdx = lineTimes.reduce(
     (best, t, i) => (t !== undefined ? i : best),
     -1,
-  )
+  ) as number
   const lastMappedTime = lastMappedIdx >= 0 ? lineTimes[lastMappedIdx]! : 0
 
   const unmapped: number[] = []
@@ -108,11 +110,7 @@ export function buildWordLevelLrc(
       if (!line.trim()) return ''
       const words = line.split(/\s+/).filter((w) => w.length > 0)
       const lineWt = wordTimings[i]
-      if (
-        lineWt === undefined ||
-        lineWt.length === 0 ||
-        words.length === 0
-      ) {
+      if (lineWt === undefined || lineWt.length === 0 || words.length === 0) {
         return `[00:00.00] ${line}`
       }
       return words

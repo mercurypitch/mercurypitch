@@ -2,18 +2,18 @@
 // StemMixer — Play separated stems with volume control & pitch viz
 // ============================================================
 
-import type { Component } from 'solid-js'
-import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show } from 'solid-js'
-import type {LrcLine, LyricsSearchMatch, LyricsSearchResult} from '@/lib/lyrics-service';
-import { extractTitle, fetchLyricsById, getCurrentLineIndex, getCurrentLrcIndex,   parseLrcFile, parseTextLyrics, searchLyrics, searchLyricsMulti } from '@/lib/lyrics-service'
-import type {DetectedPitch} from '@/lib/pitch-detector';
+import type { Component, JSX } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
+import type { LrcLine, LyricsSearchMatch, LyricsSearchResult, } from '@/lib/lyrics-service'
+import { extractTitle, fetchLyricsById, getCurrentLineIndex, getCurrentLrcIndex, parseLrcFile, parseTextLyrics, searchLyrics, searchLyricsMulti, } from '@/lib/lyrics-service'
+import type { MergedNote, MidiNoteEvent, PitchDetection, } from '@/lib/midi-generator'
+import { buildMidiFile, DEFAULT_BPM, detectNotes, mergeConsecutiveNotes, MIDI_NOTE_RANGE, PITCH_DETECTOR_DEFAULTS, synthesizeMidiBuffer, TICKS_PER_BEAT, } from '@/lib/midi-generator'
+import type { DetectedPitch } from '@/lib/pitch-detector'
 import { PitchDetector } from '@/lib/pitch-detector'
-import { buildMidiFile, detectNotes, generateVocalMidi, mergeConsecutiveNotes, synthesizeMidiBuffer, DEFAULT_BPM, PITCH_DETECTOR_DEFAULTS, MIDI_NOTE_RANGE, TICKS_PER_BEAT, WINDOW_STEP_SEC } from '@/lib/midi-generator'
-import type { MidiNoteEvent, MergedNote, PitchDetection } from '@/lib/midi-generator'
 import { freqToMidi, midiToNote } from '@/lib/scale-data'
-import { ChevronLeft, Download, Ear, Mic, Midi, Pause, Play, SkipBack, SlidersHorizontal, Volume2, VolumeX } from './icons'
-import type {LyricsUploadResult} from './LyricsUploader';
-import { LyricsUploader  } from './LyricsUploader'
+import { ChevronLeft, Download, Ear, Mic, Pause, Play, SkipBack, SlidersHorizontal, Volume2, VolumeX, } from './icons'
+import type { LyricsUploadResult } from './LyricsUploader'
+import { LyricsUploader } from './LyricsUploader'
 
 // ── Types ──────────────────────────────────────────────────────
 
@@ -52,7 +52,7 @@ interface PitchNote {
 // ── Constants ──────────────────────────────────────────────────
 
 const FFT_SIZE = 256
-const PITCH_FFT_SIZE = 1024  // synced with PITCH_DETECT_CONFIG.bufferSize
+const PITCH_FFT_SIZE = 1024 // synced with PITCH_DETECT_CONFIG.bufferSize
 
 // ── Song Picker ───────────────────────────────────────────────
 
@@ -86,20 +86,32 @@ const SongPicker = (p: SongPickerProps) => {
           class="sm-song-picker-input"
           value={p.query}
           onInput={(e) => p.onQueryChange(e.currentTarget.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') p.onRefine() }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') p.onRefine()
+          }}
           placeholder="Artist - Title"
         />
-        <button class="sm-song-picker-search-btn sm-btn sm-btn-secondary" onClick={p.onRefine} title="Search">Search</button>
+        <button
+          class="sm-song-picker-search-btn sm-btn sm-btn-secondary"
+          onClick={p.onRefine}
+          title="Search"
+        >
+          Search
+        </button>
       </div>
       <div class="sm-song-picker-list">
-        <For each={p.matches}>{(m) => (
-          <button class="sm-song-picker-row" onClick={() => p.onPick(m)}>
-            <span class="sm-song-picker-artist">{m.artist}</span>
-            <span class="sm-song-picker-sep"> - </span>
-            <span class="sm-song-picker-title">{m.title}</span>
-            {m.syncedLyrics !== undefined && <span class="sm-song-picker-badge">LRC</span>}
-          </button>
-        )}</For>
+        <For each={p.matches}>
+          {(m) => (
+            <button class="sm-song-picker-row" onClick={() => p.onPick(m)}>
+              <span class="sm-song-picker-artist">{m.artist}</span>
+              <span class="sm-song-picker-sep"> - </span>
+              <span class="sm-song-picker-title">{m.title}</span>
+              {m.syncedLyrics !== undefined && (
+                <span class="sm-song-picker-badge">LRC</span>
+              )}
+            </button>
+          )}
+        </For>
       </div>
       <div class="sm-song-picker-footer">
         <button class="sm-song-picker-upload-link" onClick={p.onUpload}>
@@ -118,11 +130,32 @@ const CircularProgress = (props: { pct: number; size?: number }) => {
   const circ = 2 * Math.PI * r
   const offset = circ * (1 - props.pct / 100)
   return (
-    <svg width={s} height={s} viewBox={`0 0 ${s} ${s}`} class="circular-progress">
-      <circle cx={s/2} cy={s/2} r={r} fill="none" stroke="var(--border, #30363d)" stroke-width="2" />
-      <circle cx={s/2} cy={s/2} r={r} fill="none" stroke="var(--accent, #8b5cf6)" stroke-width="2"
-        stroke-dasharray={String(circ)} stroke-dashoffset={String(offset)}
-        stroke-linecap="round" transform={`rotate(-90 ${s/2} ${s/2})`} />
+    <svg
+      width={s}
+      height={s}
+      viewBox={`0 0 ${s} ${s}`}
+      class="circular-progress"
+    >
+      <circle
+        cx={s / 2}
+        cy={s / 2}
+        r={r}
+        fill="none"
+        stroke="var(--border, #30363d)"
+        stroke-width="2"
+      />
+      <circle
+        cx={s / 2}
+        cy={s / 2}
+        r={r}
+        fill="none"
+        stroke="var(--accent, #8b5cf6)"
+        stroke-width="2"
+        stroke-dasharray={String(circ)}
+        stroke-dashoffset={String(offset)}
+        stroke-linecap="round"
+        transform={`rotate(-90 ${s / 2} ${s / 2})`}
+      />
     </svg>
   )
 }
@@ -137,7 +170,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   const [playing, setPlaying] = createSignal(false)
   const [duration, setDuration] = createSignal(0)
   const [elapsed, setElapsed] = createSignal(0)
-  const [currentPitch, setCurrentPitch] = createSignal<DetectedPitch | null>(null)
+  const [currentPitch, setCurrentPitch] = createSignal<DetectedPitch | null>(
+    null,
+  )
   const [anySoloed, setAnySoloed] = createSignal(false)
 
   // ── MIDI state ────────────────────────────────────────────────
@@ -148,45 +183,56 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   // ── Lyrics state ──────────────────────────────────────────────
   const [lyricsLines, setLyricsLines] = createSignal<string[]>([])
   const [lrcLines, setLrcLines] = createSignal<LrcLine[]>([])
-  const [rawLyricsText, setRawLyricsText] = createSignal('')  // unfiltered original text
+  const [rawLyricsText, setRawLyricsText] = createSignal('') // unfiltered original text
   const [currentLineIdx, setCurrentLineIdx] = createSignal(-1)
-  const [lyricsSource, setLyricsSource] = createSignal<'api' | 'upload' | 'none'>('none')
+  const [lyricsSource, setLyricsSource] = createSignal<
+    'api' | 'upload' | 'none'
+  >('none')
   const [lyricsLoading, setLyricsLoading] = createSignal(false)
   const [songMatches, setSongMatches] = createSignal<LyricsSearchMatch[]>([])
   const [showSongPicker, setShowSongPicker] = createSignal(false)
   const [songPickerQuery, setSongPickerQuery] = createSignal('')
-  const [lyricsFontSize, setLyricsFontSize] = createSignal(1.3)    // rem
+  const [lyricsFontSize, setLyricsFontSize] = createSignal(1.3) // rem
   const [lyricsColumns, setLyricsColumns] = createSignal<1 | 2>(1)
   const [editMode, setEditMode] = createSignal(false)
-  type WordTimingsMap = Record<number, number[]>  // line idx → word start times (seconds)
+  type WordTimingsMap = Record<number, number[]> // line idx → word start times (seconds)
   const [wordTimings, setWordTimings] = createSignal<WordTimingsMap>({})
   // Unsaved edit buffer — merged into wordTimings on save
   const [editBuffer, setEditBuffer] = createSignal<WordTimingsMap>({})
-  const [editPopover, setEditPopover] = createSignal<{ lineIdx: number; wordIdx: number; word: string } | null>(null)
+  const [editPopover, setEditPopover] = createSignal<{
+    lineIdx: number
+    wordIdx: number
+    word: string
+  } | null>(null)
   // LRC generator mode — real-time word/line timing via playback
   const [lrcGenMode, setLrcGenMode] = createSignal(false)
   const [lrcGenLineIdx, setLrcGenLineIdx] = createSignal(0)
   const [lrcGenWordIdx, setLrcGenWordIdx] = createSignal(0)
   const [lrcGenLineTimes, setLrcGenLineTimes] = createSignal<number[]>([])
-  const [lrcGenWordTimings, setLrcGenWordTimings] = createSignal<WordTimingsMap>({})
+  const [lrcGenWordTimings, setLrcGenWordTimings] =
+    createSignal<WordTimingsMap>({})
   const [windowDuration, setWindowDuration] = createSignal(30) // seconds, range 10-150
   const [windowStart, setWindowStart] = createSignal(0)
 
   // ── Repeat blocks state ─────────────────────────────────────────
   interface LyricsBlock {
-    id: string             // unique ID: "chorus-1", "verse-2"
-    label: string          // user label: "Chorus", "Verse 1"
-    lineIndices: number[]  // line indices of the template instance
-    repeatCount: number    // how many times this block repeats (default 1)
+    id: string // unique ID: "chorus-1", "verse-2"
+    label: string // user label: "Chorus", "Verse 1"
+    lineIndices: number[] // line indices of the template instance
+    repeatCount: number // how many times this block repeats (default 1)
   }
-  type BlockInstancesMap = Record<string, number[][]>  // block ID → array of [start, endExclusive]
+  type BlockInstancesMap = Record<string, number[][]> // block ID → array of [start, endExclusive]
   const [blocks, setBlocks] = createSignal<LyricsBlock[]>([])
-  const [blockInstances, setBlockInstances] = createSignal<BlockInstancesMap>({})
+  const [blockInstances, setBlockInstances] = createSignal<BlockInstancesMap>(
+    {},
+  )
   const [blockMarkMode, setBlockMarkMode] = createSignal(false)
   const [markStartLine, setMarkStartLine] = createSignal<number | null>(null)
   const [markEndLine, setMarkEndLine] = createSignal<number | null>(null)
   const [_showBlockForm, setShowBlockForm] = createSignal(false)
-  const [blockEditTarget, setBlockEditTarget] = createSignal<string | null>(null)  // block ID being edited
+  const [blockEditTarget, setBlockEditTarget] = createSignal<string | null>(
+    null,
+  ) // block ID being edited
 
   // ── Mic pitch comparison state ────────────────────────────────
   const [_micEnabled, setMicEnabled] = createSignal(false)
@@ -199,7 +245,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     time: number
     vocalNote: string
     micNote: string
-    centsOff: number       // positive = mic is sharp
+    centsOff: number // positive = mic is sharp
     inTolerance: boolean
   }
   interface MicScore {
@@ -209,7 +255,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     avgCentsOff: number
     grade: 'S' | 'A' | 'B' | 'C' | 'D'
   }
-  const [comparisonData, setComparisonData] = createSignal<ComparisonPoint[]>([])
+  const [comparisonData, setComparisonData] = createSignal<ComparisonPoint[]>(
+    [],
+  )
   const [toleranceCents, _setToleranceCents] = createSignal(50)
   const [score, setScore] = createSignal<MicScore | null>(null)
   const [showScore, setShowScore] = createSignal(false)
@@ -219,7 +267,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     id: 'overview' | 'live' | 'pitch' | 'midi' | 'controls' | 'lyrics'
     label: string
     order: number
-    height: number | null  // null = auto (fit-content)
+    height: number | null // null = auto (fit-content)
   }
 
   type WorkspaceLayout = 'auto-1col' | 'auto-2col' | 'fixed-2col'
@@ -230,7 +278,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     try {
       const raw = localStorage.getItem(WORKSPACE_STORE_KEY)
       if (raw !== null) return JSON.parse(raw)
-    } catch { /* localStorage not available */ }
+    } catch {
+      /* localStorage not available */
+    }
     return null
   })()
 
@@ -253,12 +303,17 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     const hidden = sidebarHidden()
     const heights = fixedPanelHeights()
     try {
-      localStorage.setItem(WORKSPACE_STORE_KEY, JSON.stringify({
-        layout,
-        sidebarHidden: hidden,
-        heights,
-      }))
-    } catch { /* storage full */ }
+      localStorage.setItem(
+        WORKSPACE_STORE_KEY,
+        JSON.stringify({
+          layout,
+          sidebarHidden: hidden,
+          heights,
+        }),
+      )
+    } catch {
+      /* storage full */
+    }
   })
 
   const [panels, setPanels] = createSignal<WorkspacePanel[]>([
@@ -271,9 +326,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   ])
 
   const reorderPanels = (fromId: string, toOrder: number) => {
-    setPanels(prev => {
-      const next = prev.map(p => ({ ...p }))
-      const fromIdx = next.findIndex(p => p.id === fromId)
+    setPanels((prev) => {
+      const next = prev.map((p) => ({ ...p }))
+      const fromIdx = next.findIndex((p) => p.id === fromId)
       if (fromIdx === -1) return prev
       const [moved] = next.splice(fromIdx, 1)
       next.splice(toOrder, 0, moved)
@@ -285,8 +340,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   let dragPanelId: string | null = null
   let dragStartOrder = -1
   let dragTargetOrder = -1
-  const _dragOffsetX = 0
-  const _dragOffsetY = 0
+  let _dragOffsetX = 0
+  let _dragOffsetY = 0
 
   // ── Resize drag state ──────────────────────────────────────────
   let resizePanelId: string | null = null
@@ -324,10 +379,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   let lyricsFileInputRef: HTMLInputElement | undefined
 
   // Cached canvas dimensions — updated only on resize, not every frame
-  let overviewRect = { w: 0, h: 0 }
-  let liveRect = { w: 0, h: 0 }
-  let pitchRect = { w: 0, h: 0 }
-  let midiRect = { w: 0, h: 0 }
+  let _overviewRect = { w: 0, h: 0 }
+  let _liveRect = { w: 0, h: 0 }
+  let _pitchRect = { w: 0, h: 0 }
+  let _midiRect = { w: 0, h: 0 }
 
   const vocalTrack = (): StemTrack => ({
     label: 'Vocal',
@@ -375,7 +430,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   const tracks = () => {
     const t = [vocal(), instrumental()]
     if (props.practiceMode === 'midi' && midi().buffer) t.push(midi())
-    return t.filter(tr => tr.url || tr.buffer)
+    return t.filter((tr) => !!(tr.url || tr.buffer))
   }
 
   // ── Audio Context ────────────────────────────────────────────
@@ -406,7 +461,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     setLoadProgress(0)
 
     const ctx = ensureAudioCtx()
-    const urls = [props.stems.vocal, props.stems.instrumental].filter(Boolean) as string[]
+    const urls = [props.stems.vocal, props.stems.instrumental].filter(
+      Boolean,
+    ) as string[]
     const total = urls.length
     let loaded = 0
 
@@ -422,14 +479,18 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
     try {
       const results = await Promise.allSettled([
-        props.stems.vocal !== undefined ? loadOne(props.stems.vocal) : Promise.reject('no vocal'),
-        props.stems.instrumental !== undefined ? loadOne(props.stems.instrumental) : Promise.reject('no inst'),
+        props.stems.vocal !== undefined
+          ? loadOne(props.stems.vocal)
+          : Promise.reject('no vocal'),
+        props.stems.instrumental !== undefined
+          ? loadOne(props.stems.instrumental)
+          : Promise.reject('no inst'),
       ])
 
       const [vocalResult, instResult] = results
 
       if (vocalResult.status === 'fulfilled') {
-        setVocal(prev => ({ ...prev, buffer: vocalResult.value }))
+        setVocal((prev) => ({ ...prev, buffer: vocalResult.value }))
         const d = vocalResult.value.duration
         if (d > duration()) setDuration(d)
       } else if (props.stems.vocal !== undefined) {
@@ -437,7 +498,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       }
 
       if (instResult.status === 'fulfilled') {
-        setInstrumental(prev => ({ ...prev, buffer: instResult.value }))
+        setInstrumental((prev) => ({ ...prev, buffer: instResult.value }))
         const d = instResult.value.duration
         if (d > duration()) setDuration(d)
       } else if (props.stems.instrumental !== undefined) {
@@ -456,11 +517,18 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           const vocalBuf = vocal().buffer!
           const sampleRate = vocalBuf.sampleRate
           const monoData = vocalBuf.getChannelData(0)
-          const notes = await detectNotes(monoData, sampleRate, (pct) => setMidiProgress(pct))
+          const notes = await detectNotes(monoData, sampleRate, (pct) =>
+            setMidiProgress(pct),
+          )
           setMidiNotes(notes)
           if (notes.length > 0) {
-            const midiBuf = await synthesizeMidiBuffer(notes, DEFAULT_BPM, sampleRate, vocalBuf.duration)
-            setMidi(prev => ({ ...prev, buffer: midiBuf }))
+            const midiBuf = await synthesizeMidiBuffer(
+              notes,
+              DEFAULT_BPM,
+              sampleRate,
+              vocalBuf.duration,
+            )
+            setMidi((prev) => ({ ...prev, buffer: midiBuf }))
           }
         } catch (e) {
           console.error('MIDI generation failed:', e)
@@ -478,9 +546,20 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   // ── Lyrics Loading ────────────────────────────────────────────
   const LYRICS_STORE_KEY = () => `lyrics_v1_${props.sessionId}`
 
-  const persistLyrics = (text: string, format: 'txt' | 'lrc', filename: string, wt?: WordTimingsMap, rawText?: string) => {
+  const persistLyrics = (
+    text: string,
+    format: 'txt' | 'lrc',
+    filename: string,
+    wt?: WordTimingsMap,
+    rawText?: string,
+  ) => {
     try {
-      const payload: Record<string, unknown> = { text, format, filename, timestamp: Date.now() }
+      const payload: Record<string, unknown> = {
+        text,
+        format,
+        filename,
+        timestamp: Date.now(),
+      }
       if (wt && Object.keys(wt).length > 0) payload.wordTimings = wt
       if (rawText !== undefined) payload.rawText = rawText
       const bl = blocks()
@@ -489,17 +568,30 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       if (Object.keys(bi).length > 0) payload.blockInstances = bi
       payload.fontSize = lyricsFontSize()
       localStorage.setItem(LYRICS_STORE_KEY(), JSON.stringify(payload))
-    } catch { /* storage full or unavailable */ }
+    } catch {
+      /* storage full or unavailable */
+    }
   }
 
-  const loadPersistedLyrics = (): (LyricsUploadResult & { wordTimings?: WordTimingsMap; rawText?: string }) | null => {
+  const loadPersistedLyrics = ():
+    | (LyricsUploadResult & { wordTimings?: WordTimingsMap; rawText?: string })
+    | null => {
     try {
       const raw = localStorage.getItem(LYRICS_STORE_KEY())
       if (raw === null) return null
       const data: Record<string, unknown> = JSON.parse(raw)
-      if (typeof data.text === 'string' && (data.format === 'txt' || data.format === 'lrc')) {
-        const result: LyricsUploadResult & { wordTimings?: WordTimingsMap; rawText?: string } = {
-          text: data.text, format: data.format, filename: typeof data.filename === 'string' ? data.filename : 'saved.txt',
+      if (
+        typeof data.text === 'string' &&
+        (data.format === 'txt' || data.format === 'lrc')
+      ) {
+        const result: LyricsUploadResult & {
+          wordTimings?: WordTimingsMap
+          rawText?: string
+        } = {
+          text: data.text,
+          format: data.format,
+          filename:
+            typeof data.filename === 'string' ? data.filename : 'saved.txt',
         }
         if (typeof data.rawText === 'string') {
           result.rawText = data.rawText
@@ -516,7 +608,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         }
         return result
       }
-    } catch { /* corrupted data */ }
+    } catch {
+      /* corrupted data */
+    }
     return null
   }
 
@@ -558,8 +652,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     try {
       const results = await searchLyricsMulti(q)
       setSongMatches(results)
-    } catch { /* keep existing results */ }
-    finally {
+    } catch {
+      /* keep existing results */
+    } finally {
       setLyricsLoading(false)
     }
   }
@@ -648,7 +743,11 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     reader.onload = () => {
       const text = reader.result as string
       if (!text.trim()) return
-      handleLyricsUpload({ text, format: ext as 'txt' | 'lrc', filename: file.name })
+      handleLyricsUpload({
+        text,
+        format: ext as 'txt' | 'lrc',
+        filename: file.name,
+      })
     }
     reader.readAsText(file)
   }
@@ -657,7 +756,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     if (lrcLines().length > 0) {
       setCurrentLineIdx(getCurrentLrcIndex(lrcLines(), elapsed()))
     } else if (lyricsLines().length > 0 && duration() > 0) {
-      setCurrentLineIdx(getCurrentLineIndex(lyricsLines().length, elapsed(), duration()))
+      setCurrentLineIdx(
+        getCurrentLineIndex(lyricsLines().length, elapsed(), duration()),
+      )
     }
   }
 
@@ -673,8 +774,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     time: number
     words: string[]
     isActive: boolean
-    activeUpTo: number  // -1 = no words active, N = words 0..N are "done"
-    activeCharProgress: number  // 0..word.length, chars "done" in the word at activeUpTo+1
+    activeUpTo: number // -1 = no words active, N = words 0..N are "done"
+    activeCharProgress: number // 0..word.length, chars "done" in the word at activeUpTo+1
   }
 
   const lyricsRenderData = createMemo<LyricRenderLine[]>(() => {
@@ -684,20 +785,32 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     const curIdx = currentLineIdx()
     const elapsedTime = elapsed()
 
-    const computeActiveWord = (words: string[], startTime: number, endTime: number): { activeUpTo: number; charProgress: number } => {
+    const computeActiveWord = (
+      words: string[],
+      startTime: number,
+      endTime: number,
+    ): { activeUpTo: number; charProgress: number } => {
       if (words.length === 0) return { activeUpTo: -1, charProgress: 0 }
       const lineDuration = Math.max(0.05, endTime - startTime)
       const progress = (elapsedTime - startTime) / lineDuration
       if (progress < 0) return { activeUpTo: -1, charProgress: 0 }
-      if (progress >= 1) return { activeUpTo: words.length - 1, charProgress: words[words.length - 1]?.length || 0 }
+      if (progress >= 1)
+        return {
+          activeUpTo: words.length - 1,
+          charProgress: words[words.length - 1]?.length || 0,
+        }
 
       const wordDuration = lineDuration / words.length
       const currentWordIdx = Math.floor(progress * words.length)
       const activeUpTo = currentWordIdx - 1
 
-      const elapsedInWord = elapsedTime - startTime - (currentWordIdx * wordDuration)
+      const elapsedInWord =
+        elapsedTime - startTime - currentWordIdx * wordDuration
       const currentWord = words[currentWordIdx]
-      const charProgress = Math.min(Math.floor((elapsedInWord / wordDuration) * currentWord.length), currentWord.length)
+      const charProgress = Math.min(
+        Math.floor((elapsedInWord / wordDuration) * currentWord.length),
+        currentWord.length,
+      )
 
       return { activeUpTo, charProgress }
     }
@@ -707,7 +820,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         const words = line.text.split(/\s+/).filter((w: string) => w.length > 0)
         const endTime = i + 1 < lrc.length ? lrc[i + 1].time : dur
         const isActive = i === curIdx
-        const { activeUpTo, charProgress } = isActive ? computeActiveWord(words, line.time, endTime) : { activeUpTo: -1, charProgress: 0 }
+        const { activeUpTo, charProgress } = isActive
+          ? computeActiveWord(words, line.time, endTime)
+          : { activeUpTo: -1, charProgress: 0 }
         return {
           key: `lrc-${i}`,
           time: line.time,
@@ -724,7 +839,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         const startTime = (i / txt.length) * dur
         const endTime = ((i + 1) / txt.length) * dur
         const isActive = i === curIdx
-        const { activeUpTo, charProgress } = isActive ? computeActiveWord(words, startTime, endTime) : { activeUpTo: -1, charProgress: 0 }
+        const { activeUpTo, charProgress } = isActive
+          ? computeActiveWord(words, startTime, endTime)
+          : { activeUpTo: -1, charProgress: 0 }
         return {
           key: `txt-${i}`,
           time: startTime,
@@ -743,7 +860,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     text: string
     isBlank: boolean
     isRest: boolean
-    lyricsIndex: number  // index into lyricsLines(), -1 if blank
+    lyricsIndex: number // index into lyricsLines(), -1 if blank
   }
 
   const displayLines = createMemo<DisplayLine[]>(() => {
@@ -777,14 +894,16 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
   // Detect blank-line-separated sections for optional multi-column layout
   const lyricsSections = createMemo(() => {
-    const lines = lrcLines().length > 0
-      ? lrcLines().map(l => l.text)
-      : lyricsLines()
+    const lines =
+      lrcLines().length > 0 ? lrcLines().map((l) => l.text) : lyricsLines()
     const sections: number[][] = []
     let current: number[] = []
     for (let i = 0; i < lines.length; i++) {
       if (lines[i].trim() === '') {
-        if (current.length > 0) { sections.push(current); current = [] }
+        if (current.length > 0) {
+          sections.push(current)
+          current = []
+        }
       } else {
         current.push(i)
       }
@@ -829,13 +948,20 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   }
 
   const formatTimeLrcWord = (secs: number): string => {
-    const m = Math.floor(secs / 60).toString().padStart(2, '0')
+    const m = Math.floor(secs / 60)
+      .toString()
+      .padStart(2, '0')
     const s = (secs % 60).toFixed(2).padStart(5, '0')
     return `${m}:${s}`
   }
 
   // Popover handlers
-  const openWordPopover = (lineIdx: number, wordIdx: number, word: string, e: MouseEvent) => {
+  const openWordPopover = (
+    lineIdx: number,
+    wordIdx: number,
+    word: string,
+    e: MouseEvent,
+  ) => {
     e.stopPropagation()
     setEditPopover({ lineIdx, wordIdx, word })
   }
@@ -856,14 +982,18 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     const dur = duration()
     const hasLrc = lrcLines().length > 0
     const lines: string[] = hasLrc
-      ? lrcLines().map(l => l.text)
+      ? lrcLines().map((l) => l.text)
       : lyricsLines()
     const lineTimes: number[] = hasLrc
-      ? lrcLines().map(l => l.time)
-      : lines.map((_, i) => dur > 0 ? (i / lines.length) * dur : i * 3)
+      ? lrcLines().map((l) => l.time)
+      : lines.map((_, i) => (dur > 0 ? (i / lines.length) * dur : i * 3))
     const lineEndTimes: number[] = hasLrc
-      ? lrcLines().map((l, i) => i + 1 < lrcLines().length ? lrcLines()[i + 1].time : l.time + 3)
-      : lines.map((_, i) => dur > 0 ? ((i + 1) / lines.length) * dur : (i + 1) * 3)
+      ? lrcLines().map((l, i) =>
+          i + 1 < lrcLines().length ? lrcLines()[i + 1].time : l.time + 3,
+        )
+      : lines.map((_, i) =>
+          dur > 0 ? ((i + 1) / lines.length) * dur : (i + 1) * 3,
+        )
 
     const timings: WordTimingsMap = {}
     for (let i = 0; i < lines.length; i++) {
@@ -872,7 +1002,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       const lineDur = Math.max(0.1, lineEndTimes[i] - lineTimes[i])
       const charTotal = words.reduce((sum, w) => sum + w.length, 0) || 1
       let charPos = 0
-      timings[i] = words.map(w => {
+      timings[i] = words.map((w) => {
         const start = lineTimes[i] + (charPos / charTotal) * lineDur
         charPos += w.length
         return Math.round(start * 1000) / 1000
@@ -902,23 +1032,33 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     const parsed = parseTimeInput(value)
     if (parsed === null) return
     const prev = editBuffer()
-    const lineData = (lrcLines().length > 0 ? lrcLines()[lineIdx]?.text : lyricsLines()[lineIdx]) || ''
+    const lineData =
+      (lrcLines().length > 0
+        ? lrcLines()[lineIdx]?.text
+        : lyricsLines()[lineIdx]) || ''
     const _wordList = lineData.split(/\s+/).filter((w: string) => w.length > 0)
     const oldStart = prev[lineIdx]?.[0] ?? 0
     const delta = parsed - oldStart
     const next: WordTimingsMap = {}
     for (const key of Object.keys(prev)) next[+key] = [...prev[+key]]
     if (prev[lineIdx] !== undefined) {
-      next[lineIdx] = prev[lineIdx].map(t => Math.max(0, Math.round((t + delta) * 1000) / 1000))
+      next[lineIdx] = prev[lineIdx].map((t) =>
+        Math.max(0, Math.round((t + delta) * 1000) / 1000),
+      )
     }
     setEditBuffer(next)
   }
 
-  const handleWordTimeEdit = (lineIdx: number, wordIdx: number, value: string) => {
+  const handleWordTimeEdit = (
+    lineIdx: number,
+    wordIdx: number,
+    value: string,
+  ) => {
     const parsed = parseTimeInput(value)
     if (parsed === null) return
     const next: WordTimingsMap = {}
-    for (const key of Object.keys(editBuffer())) next[+key] = [...editBuffer()[+key]]
+    for (const key of Object.keys(editBuffer()))
+      next[+key] = [...editBuffer()[+key]]
     if (next[lineIdx] === undefined) next[lineIdx] = []
     const line = [...next[lineIdx]]
     line[wordIdx] = parsed
@@ -944,17 +1084,23 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     // Build clean LRC text (no word tags) + persist wordTimings as metadata
     let text: string
     if (hasLrc) {
-      text = lrcLines().map((l, i) => {
-        // Use edited line start time from merged word timings, falling back to original
-        const lineTime = merged[i]?.[0] ?? l.time
-        return `[${formatTimeLrcWord(lineTime)}] ${l.text}`
-      }).join('\n')
+      text = lrcLines()
+        .map((l, i) => {
+          // Use edited line start time from merged word timings, falling back to original
+          const lineTime = merged[i]?.[0] ?? l.time
+          return `[${formatTimeLrcWord(lineTime)}] ${l.text}`
+        })
+        .join('\n')
     } else {
-      text = lyricsLines().map((line, i) => {
-        if (!line.trim()) return ''
-        const baseTime = merged[i]?.[0] ?? (duration() > 0 ? (i / lyricsLines().length) * duration() : i * 3)
-        return `[${formatTimeLrcWord(baseTime)}] ${line}`
-      }).join('\n')
+      text = lyricsLines()
+        .map((line, i) => {
+          if (!line.trim()) return ''
+          const baseTime =
+            merged[i]?.[0] ??
+            (duration() > 0 ? (i / lyricsLines().length) * duration() : i * 3)
+          return `[${formatTimeLrcWord(baseTime)}] ${line}`
+        })
+        .join('\n')
     }
 
     persistLyrics(text, 'lrc', filename, merged)
@@ -967,22 +1113,32 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
   // ── LRC Generator mode ──────────────────────────────────────────
   const getGenLines = (): string[] => {
-    if (lrcLines().length > 0) return lrcLines().map(l => l.text)
+    if (lrcLines().length > 0) return lrcLines().map((l) => l.text)
     return lyricsLines()
   }
 
   // ── Repeat blocks helpers ────────────────────────────────────────
 
-  const BLOCK_COLORS = ['#f0a060', '#60a0f0', '#60d080', '#d080e0', '#e0c050', '#f06080']
+  const BLOCK_COLORS = [
+    '#f0a060',
+    '#60a0f0',
+    '#60d080',
+    '#d080e0',
+    '#e0c050',
+    '#f06080',
+  ]
 
   const getBlockColor = (blockId: string): string => {
     let hash = 0
-    for (let i = 0; i < blockId.length; i++) hash = ((hash << 5) - hash) + blockId.charCodeAt(i)
+    for (let i = 0; i < blockId.length; i++)
+      hash = (hash << 5) - hash + blockId.charCodeAt(i)
     return BLOCK_COLORS[Math.abs(hash) % BLOCK_COLORS.length]
   }
 
   /** Which block does a given line index belong to? Returns block ID + instance index, or null. */
-  const getBlockForLine = (lineIdx: number): { blockId: string; instanceIdx: number; isTemplate: boolean } | null => {
+  const getBlockForLine = (
+    lineIdx: number,
+  ): { blockId: string; instanceIdx: number; isTemplate: boolean } | null => {
     const bi = blockInstances()
     for (const [blockId, instances] of Object.entries(bi)) {
       for (let i = 0; i < instances.length; i++) {
@@ -997,7 +1153,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
   /** Get the block definition by ID. */
   const getBlockById = (blockId: string): LyricsBlock | undefined => {
-    return blocks().find(b => b.id === blockId)
+    return blocks().find((b) => b.id === blockId)
   }
 
   /** Auto-detect identical text sequences in remaining lines. */
@@ -1006,8 +1162,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     templateIndices: number[],
     existingInstances: BlockInstancesMap,
   ): number[][] => {
-    const templateText = templateIndices.map(i => textLines[i].trim())
-    if (templateText.every(t => !t)) return [templateIndices]
+    const templateText = templateIndices.map((i) => textLines[i].trim())
+    if (templateText.every((t) => !t)) return [templateIndices]
 
     const instances: number[][] = [templateIndices]
 
@@ -1022,12 +1178,19 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     for (let i = 0; i < textLines.length; i++) {
       if (taken.has(i)) continue
       // Skip if this range overlaps the template itself
-      if (i >= templateIndices[0] && i <= templateIndices[templateIndices.length - 1]) continue
+      if (
+        i >= templateIndices[0] &&
+        i <= templateIndices[templateIndices.length - 1]
+      )
+        continue
 
       let match = true
       for (let j = 0; j < templateText.length; j++) {
         const checkLine = textLines[i + j]?.trim()
-        if (checkLine !== templateText[j]) { match = false; break }
+        if (checkLine !== templateText[j]) {
+          match = false
+          break
+        }
       }
       if (match) {
         const instStart = i
@@ -1051,7 +1214,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       data.blocks = blocks()
       data.blockInstances = blockInstances()
       localStorage.setItem(key, JSON.stringify(data))
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }
 
   /** Which block ID does a line's instance belong to? */
@@ -1088,7 +1253,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     const block = getBlockById(blockId)
     if (!block) return false
     const lineTimes = lrcGenLineTimes()
-    return block.lineIndices.every(i => lineTimes[i] !== undefined)
+    return block.lineIndices.every((i) => lineTimes[i] !== undefined)
   }
 
   /** Get template block start time from lrcGenLineTimes. */
@@ -1099,7 +1264,11 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   }
 
   /** Auto-fill a block instance's line times and word timings using template relative offsets. */
-  const autoFillBlockInstance = (blockId: string, instanceIdx: number, instanceStartTime: number) => {
+  const autoFillBlockInstance = (
+    blockId: string,
+    instanceIdx: number,
+    instanceStartTime: number,
+  ) => {
     const block = getBlockById(blockId)
     if (!block) return
 
@@ -1114,25 +1283,29 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     const tplLineCount = tplEnd - tplStart
     const templateWordTimes = lrcGenWordTimings()
 
-    setLrcGenLineTimes(prev => {
+    setLrcGenLineTimes((prev) => {
       const next = [...prev]
       for (let j = 0; j < tplLineCount; j++) {
         const tplTime = prev[tplStart + j]
         if (tplTime !== undefined) {
-          next[instStart + j] = Math.round((instanceStartTime + tplTime - tplBlockStart) * 1000) / 1000
+          next[instStart + j] =
+            Math.round((instanceStartTime + tplTime - tplBlockStart) * 1000) /
+            1000
         }
       }
       return next
     })
 
-    setLrcGenWordTimings(prev => {
+    setLrcGenWordTimings((prev) => {
       const next: WordTimingsMap = {}
       for (const k of Object.keys(prev)) next[+k] = [...prev[+k]]
       for (let j = 0; j < tplLineCount; j++) {
         const tplWordTimes = templateWordTimes[tplStart + j]
         if (tplWordTimes !== undefined && tplWordTimes.length > 0) {
-          next[instStart + j] = tplWordTimes.map(tt =>
-            Math.round((instanceStartTime + tt - tplBlockStart) * 1000) / 1000,
+          next[instStart + j] = tplWordTimes.map(
+            (tt) =>
+              Math.round((instanceStartTime + tt - tplBlockStart) * 1000) /
+              1000,
           )
         }
       }
@@ -1171,9 +1344,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     const blockId = `${label.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`
 
     // Auto-detect instances (skip for single-line templates)
-    const instances = templateIndices.length >= 2
-      ? detectBlockInstances(lines, templateIndices, blockInstances())
-      : [templateIndices]
+    const instances =
+      templateIndices.length >= 2
+        ? detectBlockInstances(lines, templateIndices, blockInstances())
+        : [templateIndices]
 
     // Create block
     const block: LyricsBlock = {
@@ -1182,8 +1356,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       lineIndices: templateIndices,
       repeatCount: Math.max(1, repeatCount),
     }
-    setBlocks(prev => [...prev, block])
-    setBlockInstances(prev => ({ ...prev, [blockId]: instances }))
+    setBlocks((prev) => [...prev, block])
+    setBlockInstances((prev) => ({ ...prev, [blockId]: instances }))
 
     // Clear mark state
     setMarkStartLine(null)
@@ -1199,13 +1373,13 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       handleDeleteBlock(blockId)
       return
     }
-    setBlockInstances(prev => {
+    setBlockInstances((prev) => {
       const next = { ...prev }
       next[blockId] = prev[blockId].filter((_, i) => i !== instanceIdx)
       if (next[blockId].length <= 1) {
         // Only template left — remove the block entirely
         delete next[blockId]
-        setBlocks(prev => prev.filter(b => b.id !== blockId))
+        setBlocks((prev) => prev.filter((b) => b.id !== blockId))
       }
       return next
     })
@@ -1213,8 +1387,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   }
 
   const handleDeleteBlock = (blockId: string) => {
-    setBlocks(prev => prev.filter(b => b.id !== blockId))
-    setBlockInstances(prev => {
+    setBlocks((prev) => prev.filter((b) => b.id !== blockId))
+    setBlockInstances((prev) => {
       const next = { ...prev }
       delete next[blockId]
       return next
@@ -1223,10 +1397,14 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     persistBlocks()
   }
 
-  const handleAddInstance = (blockId: string, startIdx: number, endIdx: number) => {
+  const handleAddInstance = (
+    blockId: string,
+    startIdx: number,
+    endIdx: number,
+  ) => {
     const block = getBlockById(blockId)
     if (!block) return
-    setBlockInstances(prev => {
+    setBlockInstances((prev) => {
       const next = { ...prev }
       next[blockId] = [...(prev[blockId] ?? []), [startIdx, endIdx]]
       return next
@@ -1236,8 +1414,18 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     persistBlocks()
   }
 
-  const handleEditBlock = (blockId: string, label: string, repeatCount: number) => {
-    setBlocks(prev => prev.map(b => b.id === blockId ? { ...b, label, repeatCount: Math.max(1, repeatCount) } : b))
+  const handleEditBlock = (
+    blockId: string,
+    label: string,
+    repeatCount: number,
+  ) => {
+    setBlocks((prev) =>
+      prev.map((b) =>
+        b.id === blockId
+          ? { ...b, label, repeatCount: Math.max(1, repeatCount) }
+          : b,
+      ),
+    )
     setBlockEditTarget(null)
     persistBlocks()
   }
@@ -1251,8 +1439,13 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     return lines.map((line: string, i: number) => {
       const words = line.split(/\s+/).filter((w: string) => w.length > 0)
       const blockForLine = getBlockForLine(i)
-      const isPlaceholder = blockForLine !== null && !blockForLine.isTemplate && isTemplateMappedInGen(blockForLine.blockId)
-      const block = blockForLine ? getBlockById(blockForLine.blockId) : undefined
+      const isPlaceholder =
+        blockForLine !== null &&
+        !blockForLine.isTemplate &&
+        isTemplateMappedInGen(blockForLine.blockId)
+      const block = blockForLine
+        ? getBlockById(blockForLine.blockId)
+        : undefined
       return {
         line,
         words,
@@ -1265,7 +1458,12 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         blockInfo: blockForLine,
         blockLabel: block?.label,
         isPlaceholder,
-        isPlaceholderStart: isPlaceholder && i === (blockInstances()[blockForLine!.blockId]?.[blockForLine!.instanceIdx]?.[0] ?? -1),
+        isPlaceholderStart:
+          isPlaceholder &&
+          i ===
+            (blockInstances()[blockForLine!.blockId]?.[
+              blockForLine!.instanceIdx
+            ]?.[0] ?? -1),
       }
     })
   })
@@ -1282,11 +1480,17 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         timestamp: Date.now(),
       }
       localStorage.setItem(LRC_GEN_KEY(), JSON.stringify(payload))
-    } catch { /* storage full */ }
+    } catch {
+      /* storage full */
+    }
   }
 
   const clearLrcGenProgress = () => {
-    try { localStorage.removeItem(LRC_GEN_KEY()) } catch { /* ignore */ }
+    try {
+      localStorage.removeItem(LRC_GEN_KEY())
+    } catch {
+      /* ignore */
+    }
   }
 
   const startLrcGen = () => {
@@ -1302,24 +1506,42 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         const data: Record<string, unknown> = JSON.parse(saved)
         if (Array.isArray(data.lineTimes) && data.lineTimes.length > 0) {
           setLrcGenLineTimes(data.lineTimes)
-          if (typeof data.wordTimings === 'object' && data.wordTimings !== null) {
-            setLrcGenWordTimings(data.wordTimings)
+          if (
+            typeof data.wordTimings === 'object' &&
+            data.wordTimings !== null
+          ) {
+            setLrcGenWordTimings(
+              data.wordTimings as Record<number, number[]>,
+            )
           }
-          resumeLineIdx = Math.min(data.lineIdx ?? 0, lines.length)
-          resumeWordIdx = data.wordIdx ?? 0
+          resumeLineIdx = Math.min(
+            (data.lineIdx as number) ?? 0,
+            lines.length,
+          )
+          resumeWordIdx = (data.wordIdx as number) ?? 0
         }
       }
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
 
     // Only load edit buffer if not resuming from saved progress
     if (resumeLineIdx === 0 && resumeWordIdx === 0) {
       const eb = editBuffer()
       if (Object.keys(eb).length > 0) {
-        setLrcGenLineTimes(Object.keys(eb).map(k => eb[+k][0] ?? 0).slice(0, lines.length))
+        setLrcGenLineTimes(
+          Object.keys(eb)
+            .map((k) => eb[+k][0] ?? 0)
+            .slice(0, lines.length),
+        )
         setLrcGenWordTimings(structuredClone(eb))
       } else if (Object.keys(wordTimings()).length > 0) {
         const wt = wordTimings()
-        setLrcGenLineTimes(Object.keys(wt).map(k => wt[+k][0] ?? 0).slice(0, lines.length))
+        setLrcGenLineTimes(
+          Object.keys(wt)
+            .map((k) => wt[+k][0] ?? 0)
+            .slice(0, lines.length),
+        )
         setLrcGenWordTimings(structuredClone(wt))
       } else {
         setLrcGenLineTimes([])
@@ -1360,7 +1582,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }
 
     // Record line start time
-    setLrcGenLineTimes(prev => {
+    setLrcGenLineTimes((prev) => {
       const next = [...prev]
       next[idx] = t
       return next
@@ -1368,9 +1590,15 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
     // Check if current line is the first line of a linked block instance whose template is mapped
     const blockInfo = getBlockForLine(idx)
-    if (blockInfo && !blockInfo.isTemplate && isTemplateMappedInGen(blockInfo.blockId)) {
+    if (
+      blockInfo &&
+      !blockInfo.isTemplate &&
+      isTemplateMappedInGen(blockInfo.blockId)
+    ) {
       autoFillBlockInstance(blockInfo.blockId, blockInfo.instanceIdx, t)
-      const instanceEnd = blockInstances()[blockInfo.blockId]?.[blockInfo.instanceIdx]?.[1] ?? idx + 1
+      const instanceEnd =
+        blockInstances()[blockInfo.blockId]?.[blockInfo.instanceIdx]?.[1] ??
+        idx + 1
       if (instanceEnd >= lines.length) {
         setLrcGenLineIdx(lines.length)
         setLrcGenWordIdx(0)
@@ -1391,11 +1619,14 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       const lastWordTime = lrcGenWordTimings()[idx]?.[lrcGenWordIdx() - 1] ?? t
       const remain = words.length - lrcGenWordIdx()
       if (remain > 0) {
-        setLrcGenWordTimings(prev => {
+        setLrcGenWordTimings((prev) => {
           const next = { ...prev }
           next[idx] = [...(next[idx] ?? [])]
           for (let w = lrcGenWordIdx(); w < words.length; w++) {
-            next[idx][w] = Math.round((lastWordTime + (w - lrcGenWordIdx() + 1) * 0.25) * 1000) / 1000
+            next[idx][w] =
+              Math.round(
+                (lastWordTime + (w - lrcGenWordIdx() + 1) * 0.25) * 1000,
+              ) / 1000
           }
           return next
         })
@@ -1426,12 +1657,14 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }
 
     const t = Math.round(elapsed() * 1000) / 1000
-    const words = lines[lineIdx].split(/\s+/).filter((w: string) => w.length > 0)
+    const words = lines[lineIdx]
+      .split(/\s+/)
+      .filter((w: string) => w.length > 0)
     const wordIdx = lrcGenWordIdx()
 
     // If this is the first word of the line, also record the line start time
     if (wordIdx === 0) {
-      setLrcGenLineTimes(prev => {
+      setLrcGenLineTimes((prev) => {
         const next = [...prev]
         next[lineIdx] = t
         return next
@@ -1439,9 +1672,15 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
       // If this line is the start of a linked block instance with mapped template, auto-fill
       const blockInfo = getBlockForLine(lineIdx)
-      if (blockInfo && !blockInfo.isTemplate && isTemplateMappedInGen(blockInfo.blockId)) {
+      if (
+        blockInfo &&
+        !blockInfo.isTemplate &&
+        isTemplateMappedInGen(blockInfo.blockId)
+      ) {
         autoFillBlockInstance(blockInfo.blockId, blockInfo.instanceIdx, t)
-        const instanceEnd = blockInstances()[blockInfo.blockId]?.[blockInfo.instanceIdx]?.[1] ?? lineIdx + 1
+        const instanceEnd =
+          blockInstances()[blockInfo.blockId]?.[blockInfo.instanceIdx]?.[1] ??
+          lineIdx + 1
         if (instanceEnd >= lines.length) {
           setLrcGenLineIdx(lines.length)
           setLrcGenWordIdx(0)
@@ -1456,7 +1695,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }
 
     // Record word start time
-    setLrcGenWordTimings(prev => {
+    setLrcGenWordTimings((prev) => {
       const next: WordTimingsMap = {}
       for (const k of Object.keys(prev)) next[+k] = [...prev[+k]]
       if (next[lineIdx] === undefined) next[lineIdx] = []
@@ -1493,34 +1732,44 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     const rawText = lines.join('\n')
 
     // Estimate timestamps for all unmapped lines (including blanks) so parseLrcFile keeps them.
-    const lastMappedIdx = lineTimes.length > 0
-      ? lineTimes.reduce((best, _t, i) => (lineTimes[i] !== undefined ? i : best), -1)
-      : -1
+    const lastMappedIdx =
+      lineTimes.length > 0
+        ? lineTimes.reduce(
+            (best, _t, i) => (lineTimes[i] !== undefined ? i : best),
+            -1,
+          )
+        : -1
     const lastMappedTime = lastMappedIdx >= 0 ? lineTimes[lastMappedIdx] : 0
     const allUnmapped = lines.reduce<number[]>((acc, _line, i) => {
       if (i > lastMappedIdx && lineTimes[i] === undefined) acc.push(i)
       return acc
     }, [])
-    const songEnd = duration() || (lastMappedTime + allUnmapped.length * 4)
+    const songEnd = duration() || lastMappedTime + allUnmapped.length * 4
 
     const finalTimes: (number | undefined)[] = lineTimes.slice()
     if (allUnmapped.length > 0) {
       const gap = songEnd - lastMappedTime
       allUnmapped.forEach((lineIdx, pos) => {
-        finalTimes[lineIdx] = Math.round((lastMappedTime + gap * ((pos + 1) / (allUnmapped.length + 1))) * 1000) / 1000
+        finalTimes[lineIdx] =
+          Math.round(
+            (lastMappedTime + gap * ((pos + 1) / (allUnmapped.length + 1))) *
+              1000,
+          ) / 1000
       })
     }
 
     // Build clean LRC text — blank lines become ~Rest~ markers
-    const lrcText = lines.map((line: string, i: number) => {
-      const lt = finalTimes[i]
-      if (!line.trim()) {
-        if (lt === undefined) return ''
-        return `[${formatTimeLrcWord(lt)}] ~Rest~`
-      }
-      if (lt === undefined) return `[00:00.00] ${line}`
-      return `[${formatTimeLrcWord(lt)}] ${line}`
-    }).join('\n')
+    const lrcText = lines
+      .map((line: string, i: number) => {
+        const lt = finalTimes[i]
+        if (!line.trim()) {
+          if (lt === undefined) return ''
+          return `[${formatTimeLrcWord(lt)}] ~Rest~`
+        }
+        if (lt === undefined) return `[00:00.00] ${line}`
+        return `[${formatTimeLrcWord(lt)}] ${line}`
+      })
+      .join('\n')
 
     const filename = loadPersistedLyrics()?.filename ?? 'generated.lrc'
     persistLyrics(lrcText, 'lrc', filename, wordTimes, rawText)
@@ -1553,21 +1802,32 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     if (hasWordTimings === true && rawText !== undefined) {
       // Word-level LRC export: [time] word [time] word ...
       const lines = rawText.split('\n')
-      lrcText = lines.map((line: string, i: number) => {
-        if (!line.trim()) return '' // blank line — skip in exported LRC
-        const wordList = line.split(/\s+/).filter((w: string) => w.length > 0)
-        const lineWt = savedWt[i]
-        if (lineWt === undefined || lineWt.length === 0 || wordList.length === 0) {
-          return `[00:00.00] ${line}`
-        }
-        return wordList.map((w: string, wi: number) => {
-          const t = lineWt[wi]
-          return t !== undefined ? `[${formatTimeLrcWord(t)}] ${w}` : w
-        }).join(' ')
-      }).filter((l: string) => l !== '').join('\n')
+      lrcText = lines
+        .map((line: string, i: number) => {
+          if (!line.trim()) return '' // blank line — skip in exported LRC
+          const wordList = line.split(/\s+/).filter((w: string) => w.length > 0)
+          const lineWt = savedWt[i]
+          if (
+            lineWt === undefined ||
+            lineWt.length === 0 ||
+            wordList.length === 0
+          ) {
+            return `[00:00.00] ${line}`
+          }
+          return wordList
+            .map((w: string, wi: number) => {
+              const t = lineWt[wi]
+              return t !== undefined ? `[${formatTimeLrcWord(t)}] ${w}` : w
+            })
+            .join(' ')
+        })
+        .filter((l: string) => l !== '')
+        .join('\n')
     } else if (lrcLines().length > 0) {
       // Line-level fallback — regenerate from parsed LRC data
-      lrcText = lrcLines().map(l => `[${formatTimeLrcWord(l.time)}] ${l.text}`).join('\n')
+      lrcText = lrcLines()
+        .map((l) => `[${formatTimeLrcWord(l.time)}] ${l.text}`)
+        .join('\n')
     } else if (lyricsLines().length > 0) {
       // Plain text fallback
       const wt = wordTimings()
@@ -1575,14 +1835,18 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       const lineTimes = hasTimings
         ? lyricsLines().map((_, i) => {
             const words = wt[i]
-            return words !== undefined && words.length > 0 ? words[0] : undefined
+            return words !== undefined && words.length > 0
+              ? words[0]
+              : undefined
           })
         : lyricsLines().map(() => undefined)
-      lrcText = lyricsLines().map((line, i) => {
-        if (!line.trim()) return ''
-        const lt = lineTimes[i]
-        return lt !== undefined ? `[${formatTimeLrcWord(lt)}] ${line}` : line
-      }).join('\n')
+      lrcText = lyricsLines()
+        .map((line, i) => {
+          if (!line.trim()) return ''
+          const lt = lineTimes[i]
+          return lt !== undefined ? `[${formatTimeLrcWord(lt)}] ${line}` : line
+        })
+        .join('\n')
     }
 
     if (!lrcText.trim()) return
@@ -1591,7 +1855,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = filename.endsWith('.lrc') ? filename : `${filename.replace(/\.[^.]+$/, '')  }.lrc`
+    a.download = filename.endsWith('.lrc')
+      ? filename
+      : `${filename.replace(/\.[^.]+$/, '')}.lrc`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
@@ -1630,29 +1896,81 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
       src.start(now, offset)
       src.onended = () => {
-        try { src.disconnect(); gain.disconnect(); analyser.disconnect() } catch (_) { /* already disconnected */ }
+        try {
+          src.disconnect()
+          gain.disconnect()
+          analyser.disconnect()
+        } catch (_) {
+          /* already disconnected */
+        }
       }
 
       if (track.label === 'Vocal') {
-        setVocal(prev => ({ ...prev, sourceNode: src, gainNode: gain, analyserNode: analyser }))
+        setVocal((prev) => ({
+          ...prev,
+          sourceNode: src,
+          gainNode: gain,
+          analyserNode: analyser,
+        }))
       } else if (track.label === 'Instrumental') {
-        setInstrumental(prev => ({ ...prev, sourceNode: src, gainNode: gain, analyserNode: analyser }))
+        setInstrumental((prev) => ({
+          ...prev,
+          sourceNode: src,
+          gainNode: gain,
+          analyserNode: analyser,
+        }))
       } else {
-        setMidi(prev => ({ ...prev, sourceNode: src, gainNode: gain, analyserNode: analyser }))
+        setMidi((prev) => ({
+          ...prev,
+          sourceNode: src,
+          gainNode: gain,
+          analyserNode: analyser,
+        }))
       }
     }
   }
 
   const disconnectSources = () => {
     for (const track of tracks()) {
-      try { track.sourceNode?.stop() } catch (_) { /* already stopped */ }
-      try { track.sourceNode?.disconnect() } catch (_) { /* */ }
-      try { track.gainNode?.disconnect() } catch (_) { /* */ }
-      try { track.analyserNode?.disconnect() } catch (_) { /* */ }
+      try {
+        track.sourceNode?.stop()
+      } catch (_) {
+        /* already stopped */
+      }
+      try {
+        track.sourceNode?.disconnect()
+      } catch (_) {
+        /* */
+      }
+      try {
+        track.gainNode?.disconnect()
+      } catch (_) {
+        /* */
+      }
+      try {
+        track.analyserNode?.disconnect()
+      } catch (_) {
+        /* */
+      }
     }
-    setVocal(prev => ({ ...prev, sourceNode: null, gainNode: null, analyserNode: null }))
-    setInstrumental(prev => ({ ...prev, sourceNode: null, gainNode: null, analyserNode: null }))
-    setMidi(prev => ({ ...prev, sourceNode: null, gainNode: null, analyserNode: null }))
+    setVocal((prev) => ({
+      ...prev,
+      sourceNode: null,
+      gainNode: null,
+      analyserNode: null,
+    }))
+    setInstrumental((prev) => ({
+      ...prev,
+      sourceNode: null,
+      gainNode: null,
+      analyserNode: null,
+    }))
+    setMidi((prev) => ({
+      ...prev,
+      sourceNode: null,
+      gainNode: null,
+      analyserNode: null,
+    }))
   }
 
   // ── Transport ────────────────────────────────────────────────
@@ -1766,7 +2084,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     e.preventDefault()
     const canvas = e.currentTarget as HTMLCanvasElement
     const rect = canvas.getBoundingClientRect()
-    const mouseX = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
+    const mouseX = Math.max(
+      0,
+      Math.min(1, (e.clientX - rect.left) / rect.width),
+    )
     const mouseTime = windowStart() + mouseX * windowDuration()
     const delta = e.deltaY > 0 ? 5 : -5
     const newDuration = Math.max(10, Math.min(150, windowDuration() + delta))
@@ -1783,16 +2104,26 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
   // ── Volume / Mute / Solo ─────────────────────────────────────
   const setTrackVolume = (label: string, volume: number) => {
-    const setter = label === 'Vocal' ? setVocal : label === 'Instrumental' ? setInstrumental : setMidi
-    setter(prev => {
+    const setter =
+      label === 'Vocal'
+        ? setVocal
+        : label === 'Instrumental'
+          ? setInstrumental
+          : setMidi
+    setter((prev) => {
       if (prev.gainNode) prev.gainNode.gain.value = volume
       return { ...prev, volume, muted: false }
     })
   }
 
   const toggleMute = (label: string) => {
-    const setter = label === 'Vocal' ? setVocal : label === 'Instrumental' ? setInstrumental : setMidi
-    setter(prev => {
+    const setter =
+      label === 'Vocal'
+        ? setVocal
+        : label === 'Instrumental'
+          ? setInstrumental
+          : setMidi
+    setter((prev) => {
       const muted = !prev.muted
       const isAudible = prev.soloed || (!muted && !anySoloed())
       if (prev.gainNode) prev.gainNode.gain.value = isAudible ? prev.volume : 0
@@ -1801,20 +2132,37 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   }
 
   const toggleSolo = (label: string) => {
-    const setter = label === 'Vocal' ? setVocal : label === 'Instrumental' ? setInstrumental : setMidi
-    const otherTracks = tracks().filter(t => t.label !== label)
+    const setter =
+      label === 'Vocal'
+        ? setVocal
+        : label === 'Instrumental'
+          ? setInstrumental
+          : setMidi
+    const otherTracks = tracks().filter((t) => t.label !== label)
 
-    setter(prev => {
+    setter((prev) => {
       const soloed = !prev.soloed
-      const newAnySoloed = soloed || otherTracks.some(t => t.soloed)
+      const newAnySoloed = soloed || otherTracks.some((t) => t.soloed)
       setAnySoloed(newAnySoloed)
 
-      if (prev.gainNode) prev.gainNode.gain.value = soloed ? prev.volume : (prev.muted || newAnySoloed ? 0 : prev.volume)
+      if (prev.gainNode)
+        prev.gainNode.gain.value = soloed
+          ? prev.volume
+          : prev.muted || newAnySoloed
+            ? 0
+            : prev.volume
 
       for (const ot of otherTracks) {
-        const otherSetter = ot.label === 'Vocal' ? setVocal : ot.label === 'Instrumental' ? setInstrumental : setMidi
-        otherSetter(oPrev => {
-          if (oPrev.gainNode) oPrev.gainNode.gain.value = (oPrev.soloed || (!oPrev.muted && !soloed)) ? oPrev.volume : 0
+        const otherSetter =
+          ot.label === 'Vocal'
+            ? setVocal
+            : ot.label === 'Instrumental'
+              ? setInstrumental
+              : setMidi
+        otherSetter((oPrev) => {
+          if (oPrev.gainNode)
+            oPrev.gainNode.gain.value =
+              oPrev.soloed || (!oPrev.muted && !soloed) ? oPrev.volume : 0
           return oPrev
         })
       }
@@ -1835,7 +2183,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         // Build MIDI file inline
         const midiData = buildMidiFile(notes, DEFAULT_BPM)
         if (!midiData) return
-        blob = new Blob([midiData.buffer as ArrayBuffer], { type: 'audio/midi' })
+        blob = new Blob([midiData.buffer as ArrayBuffer], {
+          type: 'audio/midi',
+        })
         ext = '.mid'
       } else {
         if (!track.url) return
@@ -1848,8 +2198,14 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       const blobUrl = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = blobUrl
-      const base = (props.songTitle ?? 'audio').replace(/\.[^.]+$/, '').replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_-]/g, '')
-      a.download = track.label === 'MIDI' ? `${base}_vocal_midi${ext}` : `${base}_${track.label.toLowerCase()}_stem${ext}`
+      const base = (props.songTitle ?? 'audio')
+        .replace(/\.[^.]+$/, '')
+        .replace(/\s+/g, '_')
+        .replace(/[^a-zA-Z0-9_-]/g, '')
+      a.download =
+        track.label === 'MIDI'
+          ? `${base}_vocal_midi${ext}`
+          : `${base}_${track.label.toLowerCase()}_stem${ext}`
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
@@ -1863,7 +2219,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   const toggleMic = async () => {
     if (micActive()) {
       // Stop mic
-      micStream?.getTracks().forEach(t => t.stop())
+      micStream?.getTracks().forEach((t) => t.stop())
       micGainNode?.disconnect()
       micAnalyserNode?.disconnect()
       micStream = null
@@ -1880,10 +2236,15 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       try {
         if (!audioCtx) {
           await ensureAudioCtx()
-          if (audioCtx === null) throw new Error('Failed to create AudioContext')
+          if (audioCtx === null)
+            throw new Error('Failed to create AudioContext')
         }
         const stream = await navigator.mediaDevices.getUserMedia({
-          audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
+          audio: {
+            echoCancellation: false,
+            noiseSuppression: false,
+            autoGainControl: false,
+          },
         })
         const source = audioCtx.createMediaStreamSource(stream)
         micGainNode = audioCtx.createGain()
@@ -1912,9 +2273,14 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         setMicError('')
       } catch (err: unknown) {
         const e = err as DOMException | Error | undefined
-        const msg = e?.name === 'NotAllowedError' || e?.name === 'PermissionDeniedError'
-          ? 'Microphone access denied'
-          : e !== undefined && 'message' in e && typeof (e as Error).message === 'string' ? (e as Error).message : 'Microphone unavailable'
+        const msg =
+          e?.name === 'NotAllowedError' || e?.name === 'PermissionDeniedError'
+            ? 'Microphone access denied'
+            : e !== undefined &&
+                'message' in e &&
+                typeof (e as Error).message === 'string'
+              ? (e as Error).message
+              : 'Microphone unavailable'
         setMicError(msg)
         setMicEnabled(false)
       }
@@ -1925,13 +2291,28 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   const computeScore = (): MicScore => {
     const data = comparisonData()
     if (data.length === 0) {
-      return { totalNotes: 0, matchedNotes: 0, accuracyPct: 0, avgCentsOff: 0, grade: 'D' }
+      return {
+        totalNotes: 0,
+        matchedNotes: 0,
+        accuracyPct: 0,
+        avgCentsOff: 0,
+        grade: 'D',
+      }
     }
     const total = data.length
-    const matched = data.filter(d => d.inTolerance).length
+    const matched = data.filter((d) => d.inTolerance).length
     const sumCents = data.reduce((s, d) => s + Math.abs(d.centsOff), 0)
     const accuracy = (matched / total) * 100
-    const grade = accuracy >= 95 ? 'S' : accuracy >= 85 ? 'A' : accuracy >= 70 ? 'B' : accuracy >= 50 ? 'C' : 'D'
+    const grade =
+      accuracy >= 95
+        ? 'S'
+        : accuracy >= 85
+          ? 'A'
+          : accuracy >= 70
+            ? 'B'
+            : accuracy >= 50
+              ? 'C'
+              : 'D'
     return {
       totalNotes: total,
       matchedNotes: matched,
@@ -1998,13 +2379,16 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         if (mp.frequency > 0 && vocalPitch && vocalPitch.frequency > 0) {
           const centsOff = 1200 * Math.log2(mp.frequency / vocalPitch.frequency)
           const tol = toleranceCents()
-          setComparisonData(prev => [...prev.slice(-12000), {
-            time: elapsedTime,
-            vocalNote: vocalPitch.noteName,
-            micNote: mp.noteName,
-            centsOff,
-            inTolerance: Math.abs(centsOff) <= tol,
-          }])
+          setComparisonData((prev) => [
+            ...prev.slice(-12000),
+            {
+              time: elapsedTime,
+              vocalNote: vocalPitch.noteName,
+              micNote: mp.noteName,
+              centsOff,
+              inTolerance: Math.abs(centsOff) <= tol,
+            },
+          ])
         }
       }
 
@@ -2034,7 +2418,12 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   // exact integers — ensures canvas.width = cssW * dpr with no rounding gap.
   const syncCanvasSizes = () => {
     const dpr = window.devicePixelRatio || 1
-    for (const ref of [waveformCanvasRef, pitchCanvasRef, liveWaveCanvasRef, midiCanvasRef]) {
+    for (const ref of [
+      waveformCanvasRef,
+      pitchCanvasRef,
+      liveWaveCanvasRef,
+      midiCanvasRef,
+    ]) {
       if (!ref) continue
       const rect = ref.getBoundingClientRect()
       const cssW = Math.round(rect.width)
@@ -2057,14 +2446,17 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     const dpr = window.devicePixelRatio || 1
     const w = canvas.width / dpr
     const h = canvas.height / dpr
-    if (h <= 0) { overviewRect = { w, h }; return }
-    overviewRect = { w, h }
+    if (h <= 0) {
+      _overviewRect = { w, h }
+      return
+    }
+    _overviewRect = { w, h }
     const ctx = canvas.getContext('2d')!
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
     ctx.clearRect(0, 0, w, h)
 
-    const activeTracks = tracks().filter(t => t.buffer)
+    const activeTracks = tracks().filter((t) => t.buffer)
     if (activeTracks.length === 0) return
 
     const trackHeight = h / activeTracks.length
@@ -2080,14 +2472,17 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
       // Only iterate samples within the visible window
       const visibleStart = Math.floor((winStart / totalDur) * totalSamples)
-      const visibleEnd = Math.min(totalSamples, Math.floor((winEnd / totalDur) * totalSamples))
+      const visibleEnd = Math.min(
+        totalSamples,
+        Math.floor((winEnd / totalDur) * totalSamples),
+      )
       const visibleSamples = visibleEnd - visibleStart
       const step = Math.max(1, Math.floor(visibleSamples / w))
       const yOff = ti * trackHeight
 
       // Center line
       const midY = yOff + trackHeight / 2
-      ctx.strokeStyle = `${track.color  }40`
+      ctx.strokeStyle = `${track.color}40`
       ctx.lineWidth = 0.5
       ctx.beginPath()
       ctx.moveTo(0, midY)
@@ -2100,7 +2495,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       ctx.beginPath()
       for (let x = 0; x < w; x++) {
         const start = visibleStart + Math.floor(x * step)
-        let min = 1, max = -1
+        let min = 1,
+          max = -1
         const end = Math.min(Math.floor(start + step), visibleEnd)
         for (let s = start; s < end; s++) {
           const v = data[s]
@@ -2137,8 +2533,11 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     const dpr = window.devicePixelRatio || 1
     const w = canvas.width / dpr
     const h = canvas.height / dpr
-    if (h <= 0) { liveRect = { w, h }; return }
-    liveRect = { w, h }
+    if (h <= 0) {
+      _liveRect = { w, h }
+      return
+    }
+    _liveRect = { w, h }
     const ctx = canvas.getContext('2d')!
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
@@ -2148,7 +2547,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     ctx.fillStyle = '#0d1117'
     ctx.fillRect(0, 0, w, h)
 
-    const activeTracks = tracks().filter(t => t.analyserNode)
+    const activeTracks = tracks().filter((t) => t.analyserNode)
     if (activeTracks.length === 0) return
 
     const trackHeight = h / activeTracks.length
@@ -2166,14 +2565,14 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       ctx.beginPath()
       for (let i = 0; i < data.length; i++) {
         const x = (i / data.length) * w
-        const y = midY + ((data[i] / 128) - 1) * (trackHeight * 0.4)
+        const y = midY + (data[i] / 128 - 1) * (trackHeight * 0.4)
         if (i === 0) ctx.moveTo(x, y)
         else ctx.lineTo(x, y)
       }
       ctx.stroke()
 
       // Track label
-      ctx.fillStyle = `${track.color  }80`
+      ctx.fillStyle = `${track.color}80`
       ctx.font = '9px monospace'
       ctx.fillText(track.label, 4, yOff + 12)
     }
@@ -2185,8 +2584,11 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     const dpr = window.devicePixelRatio || 1
     const w = canvas.width / dpr
     const h = canvas.height / dpr
-    if (h <= 0) { pitchRect = { w, h }; return }
-    pitchRect = { w, h }
+    if (h <= 0) {
+      _pitchRect = { w, h }
+      return
+    }
+    _pitchRect = { w, h }
     const ctx = canvas.getContext('2d')!
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
@@ -2206,7 +2608,20 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }
 
     // Grid lines for note rows (C through B)
-    const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+    const notes = [
+      'C',
+      'C#',
+      'D',
+      'D#',
+      'E',
+      'F',
+      'F#',
+      'G',
+      'G#',
+      'A',
+      'A#',
+      'B',
+    ]
     const rowH = h / 13
     ctx.strokeStyle = '#21262d'
     ctx.lineWidth = 0.5
@@ -2232,9 +2647,19 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     const winDur = windowDuration()
 
     const toDetections = (history: PitchNote[]): PitchDetection[] =>
-      history.map(p => ({ midi: freqToMidi(p.frequency), noteName: p.noteName, timeSec: p.time }))
+      history.map((p) => ({
+        midi: freqToMidi(p.frequency),
+        noteName: p.noteName,
+        timeSec: p.time,
+      }))
 
-    const drawPill = (x1: number, x2: number, y: number, pillH: number, r: number) => {
+    const drawPill = (
+      x1: number,
+      x2: number,
+      y: number,
+      pillH: number,
+      r: number,
+    ) => {
       const pillW = Math.max(x2 - x1, 3)
       ctx.beginPath()
       ctx.moveTo(x1 + r, y)
@@ -2249,7 +2674,11 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       ctx.closePath()
     }
 
-    const drawMergedNotes = (merged: MergedNote[], fillStyle: string, strokeStyle?: string) => {
+    const drawMergedNotes = (
+      merged: MergedNote[],
+      fillStyle: string,
+      strokeStyle?: string,
+    ) => {
       for (const n of merged) {
         if (n.endSec < winStart || n.startSec > winEnd) continue
         const noteIdx = notes.indexOf(n.noteName.replace(/\d/g, ''))
@@ -2262,7 +2691,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         drawPill(x1, x2, y, pillH, r)
         ctx.fillStyle = fillStyle
         ctx.fill()
-        if (strokeStyle) {
+        if (strokeStyle !== undefined) {
           ctx.strokeStyle = strokeStyle
           ctx.lineWidth = 1.5
           ctx.setLineDash([3, 3])
@@ -2291,22 +2720,36 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         const mt = micPitchHistory[mi].time
 
         if (Math.abs(vt - mt) < 0.06) {
-          const vocalNoteIdx = notes.indexOf(pitchHistory[vi].noteName.replace(/\d/g, ''))
-          const micNoteIdx = notes.indexOf(micPitchHistory[mi].noteName.replace(/\d/g, ''))
-          if (vocalNoteIdx >= 0 && micNoteIdx >= 0 && vt >= winStart && vt <= winEnd) {
+          const vocalNoteIdx = notes.indexOf(
+            pitchHistory[vi].noteName.replace(/\d/g, ''),
+          )
+          const micNoteIdx = notes.indexOf(
+            micPitchHistory[mi].noteName.replace(/\d/g, ''),
+          )
+          if (
+            vocalNoteIdx >= 0 &&
+            micNoteIdx >= 0 &&
+            vt >= winStart &&
+            vt <= winEnd
+          ) {
             const x = ((vt - winStart) / winDur) * w
             if (x - lastDiffX > 3) {
               lastDiffX = x
               const vocalY = (11 - vocalNoteIdx) * rowH + rowH * 0.5
               const micY = (11 - micNoteIdx) * rowH + rowH * 0.5
-              const centsOff = 1200 * Math.log2(micPitchHistory[mi].frequency / pitchHistory[vi].frequency)
+              const centsOff =
+                1200 *
+                Math.log2(
+                  micPitchHistory[mi].frequency / pitchHistory[vi].frequency,
+                )
               const absOff = Math.abs(centsOff)
 
-              ctx.strokeStyle = absOff <= TOLERANCE_CENTS
-                ? 'rgba(96, 208, 128, 0.55)'
-                : absOff <= TOLERANCE_CENTS * 2
-                  ? 'rgba(224, 192, 80, 0.5)'
-                  : 'rgba(248, 81, 73, 0.45)'
+              ctx.strokeStyle =
+                absOff <= TOLERANCE_CENTS
+                  ? 'rgba(96, 208, 128, 0.55)'
+                  : absOff <= TOLERANCE_CENTS * 2
+                    ? 'rgba(224, 192, 80, 0.5)'
+                    : 'rgba(248, 81, 73, 0.45)'
               ctx.lineWidth = 1.2
               ctx.beginPath()
               ctx.moveTo(x, Math.min(vocalY, micY))
@@ -2314,7 +2757,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
               ctx.stroke()
             }
           }
-          vi++; mi++
+          vi++
+          mi++
         } else if (vt < mt) {
           vi++
         } else {
@@ -2344,7 +2788,11 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         // Note label
         ctx.fillStyle = '#fff'
         ctx.font = 'bold 11px monospace'
-        ctx.fillText(`${cp.noteName}${cp.octave}`, Math.min(x + 10, w - 40), y + 4)
+        ctx.fillText(
+          `${cp.noteName}${cp.octave}`,
+          Math.min(x + 10, w - 40),
+          y + 4,
+        )
       }
     }
 
@@ -2370,8 +2818,11 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     const dpr = window.devicePixelRatio || 1
     const w = canvas.width / dpr
     const h = canvas.height / dpr
-    if (h <= 0) { midiRect = { w, h }; return }
-    midiRect = { w, h }
+    if (h <= 0) {
+      _midiRect = { w, h }
+      return
+    }
+    _midiRect = { w, h }
     const ctx = canvas.getContext('2d')!
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
@@ -2392,7 +2843,20 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }
 
     // Grid lines
-    const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+    const noteNames = [
+      'C',
+      'C#',
+      'D',
+      'D#',
+      'E',
+      'F',
+      'F#',
+      'G',
+      'G#',
+      'A',
+      'A#',
+      'B',
+    ]
     const rowH = h / 13
     ctx.strokeStyle = '#21262d'
     ctx.lineWidth = 0.5
@@ -2436,7 +2900,11 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     const pills: Pill[] = []
     if (notes.length > 0) {
       const ticksPerSec = TICKS_PER_BEAT * (DEFAULT_BPM / 60)
-      let cur: Pill = { midi: notes[0].midi, startSec: notes[0].tickOn / ticksPerSec, endSec: notes[0].tickOff / ticksPerSec }
+      let cur: Pill = {
+        midi: notes[0].midi,
+        startSec: notes[0].tickOn / ticksPerSec,
+        endSec: notes[0].tickOff / ticksPerSec,
+      }
       for (let i = 1; i < notes.length; i++) {
         const s = notes[i].tickOn / ticksPerSec
         const e = notes[i].tickOff / ticksPerSec
@@ -2533,17 +3001,25 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     // Keyboard shortcuts
     const handleKeyDown = (e: KeyboardEvent) => {
       // Ignore when typing in inputs
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement
+      )
+        return
 
       if (e.code === 'Space') {
         e.preventDefault()
         if (loading() || loadError()) return
-        if (playing()) { handlePause() } else { handlePlay() }
+        if (playing()) {
+          handlePause()
+        } else {
+          handlePlay()
+        }
       }
 
       if (e.key === 'm' || e.key === 'M') {
         if (workspaceLayout() === 'fixed-2col') {
-          setSidebarHidden(prev => !prev)
+          setSidebarHidden((prev) => !prev)
         }
       }
     }
@@ -2551,8 +3027,14 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     ;(window as unknown as SmWindow).__smKeydown = handleKeyDown
 
     // Resize document-level listeners (grid + fixed)
-    const handleResizeDocMove = (e: PointerEvent) => { handleResizeMove(e); handleFixedResizeMove(e) }
-    const handleResizeDocEnd = (e: PointerEvent) => { handleResizeEnd(e); handleFixedResizeEnd(e) }
+    const handleResizeDocMove = (e: PointerEvent) => {
+      handleResizeMove(e)
+      handleFixedResizeMove(e)
+    }
+    const handleResizeDocEnd = (e: PointerEvent) => {
+      handleResizeEnd(e)
+      handleFixedResizeEnd(e)
+    }
     document.addEventListener('pointermove', handleResizeDocMove)
     document.addEventListener('pointerup', handleResizeDocEnd)
     ;(window as unknown as SmWindow).__smResizeMove = handleResizeDocMove
@@ -2592,7 +3074,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   createEffect(() => {
     const idx = currentLineIdx()
     if (!playing() || idx < 0) return
-    const container = document.querySelector('.sm-lyrics-lines:not(.sm-lyrics-gen-lines):not(.sm-lyrics-lines-edit)') as HTMLElement | null
+    const container = document.querySelector(
+      '.sm-lyrics-lines:not(.sm-lyrics-gen-lines):not(.sm-lyrics-lines-edit)',
+    ) as HTMLElement | null
     if (!container) return
     const lines = container.querySelectorAll('.sm-lyrics-line')
     if (idx < lines.length) {
@@ -2601,7 +3085,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       const lineRect = activeLine.getBoundingClientRect()
       const halfVisible = containerRect.top + containerRect.height / 2
       if (lineRect.bottom > halfVisible) {
-        const scrollTarget = container.scrollTop + (lineRect.top - containerRect.top) - containerRect.height * 0.3
+        const scrollTarget =
+          container.scrollTop +
+          (lineRect.top - containerRect.top) -
+          containerRect.height * 0.3
         container.scrollTo({ top: scrollTarget, behavior: 'smooth' })
       }
     }
@@ -2625,7 +3112,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       delete smWin.__smResizeEnd
     }
     if (audioCtx) {
-      audioCtx.close().catch(() => { /* */ })
+      audioCtx.close().catch(() => {
+        /* */
+      })
     }
   })
 
@@ -2636,7 +3125,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     return `${m}:${s.toString().padStart(2, '0')}`
   }
 
-  const getPanel = (id: string) => panels().find(p => p.id === id)!
+  const getPanel = (id: string) => panels().find((p) => p.id === id)!
   const panelStyle = (id: string) => {
     const p = getPanel(id)
     return {
@@ -2646,7 +3135,11 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   }
 
   // ── Drag-to-reorder ──────────────────────────────────────────
-  const handlePanelDragStart = (panelId: string, panelOrder: number, e: PointerEvent) => {
+  const handlePanelDragStart = (
+    panelId: string,
+    panelOrder: number,
+    e: PointerEvent,
+  ) => {
     if (!(e.target instanceof HTMLElement)) return
     const header = e.target.closest('.sm-panel-header') as HTMLElement | null
     if (!header) return
@@ -2657,8 +3150,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     dragPanelId = panelId
     dragStartOrder = panelOrder
     dragTargetOrder = panelOrder
-    dragOffsetX = e.clientX
-    dragOffsetY = e.clientY
+    _dragOffsetX = e.clientX
+    _dragOffsetY = e.clientY
   }
 
   const handlePanelDragMove = (e: PointerEvent) => {
@@ -2666,7 +3159,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     e.preventDefault()
 
     // Find the panel under the pointer
-    const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null
+    const el = document.elementFromPoint(
+      e.clientX,
+      e.clientY,
+    ) as HTMLElement | null
     if (el === null) return
     const panel = el.closest('.sm-workspace-panel') as HTMLElement | null
     if (panel === null) return
@@ -2674,7 +3170,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     const targetId = panel.dataset.panelId
     if (targetId === undefined || targetId === dragPanelId) return
 
-    const targetOrder = panels().find(p => p.id === targetId)?.order
+    const targetOrder = panels().find((p) => p.id === targetId)?.order
     if (targetOrder !== undefined && targetOrder !== dragTargetOrder) {
       dragTargetOrder = targetOrder
     }
@@ -2716,30 +3212,34 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   const handleResizeStart = (panelId: string, e: PointerEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    const panel = panels().find(p => p.id === panelId)
-    if (panel === null) return
+    const panel = panels().find((p) => p.id === panelId)
+    if (!panel) return
 
-    const panelEl = document.querySelector(`[data-panel-id="${panelId}"]`) as HTMLElement | null
+    const panelEl = document.querySelector(
+      `[data-panel-id="${panelId}"]`,
+    ) as HTMLElement | null
     resizePanelId = panelId
     resizeStartY = e.clientY
-    resizeStartHeight = panel.height ?? (panelEl?.getBoundingClientRect().height ?? 200)
+    resizeStartHeight =
+      panel.height ?? panelEl?.getBoundingClientRect().height ?? 200
 
     // Prevent canvas from capturing pointer during resize
     const canvas = panelEl?.querySelector('canvas') as HTMLElement | null
     if (canvas) canvas.style.pointerEvents = 'none'
-
     ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
   }
 
   const handleResizeMove = (e: PointerEvent) => {
-    if (resizePanelId === null || workspaceRef === null) return
+    if (resizePanelId === null || !workspaceRef) return
     e.preventDefault()
     const delta = e.clientY - resizeStartY
     const maxH = workspaceRef.clientHeight - 60
     const newHeight = Math.max(40, Math.min(maxH, resizeStartHeight + delta))
-    setPanels(prev => prev.map(p =>
-      p.id === resizePanelId ? { ...p, height: newHeight } : p
-    ))
+    setPanels((prev) =>
+      prev.map((p) =>
+        p.id === resizePanelId ? { ...p, height: newHeight } : p,
+      ),
+    )
     requestAnimationFrame(() => {
       syncCanvasSizes()
       drawWaveformOverview()
@@ -2775,11 +3275,16 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   const handleFixedResizeStart = (panelId: string, e: PointerEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    const panelEl = document.querySelector(`[data-fixed-panel="${panelId}"]`) as HTMLElement | null
+    const panelEl = document.querySelector(
+      `[data-fixed-panel="${panelId}"]`,
+    ) as HTMLElement | null
     fixedResizePanelId = panelId
     fixedResizeStartY = e.clientY
     const cur = fixedPanelHeights()
-    fixedResizeStartHeight = (cur as Record<string, number>)[panelId] ?? (panelEl?.getBoundingClientRect().height ?? 200)
+    fixedResizeStartHeight =
+      (cur as Record<string, number>)[panelId] ??
+      panelEl?.getBoundingClientRect().height ??
+      200
     const canvas = panelEl?.querySelector('canvas') as HTMLElement | null
     if (canvas) canvas.style.pointerEvents = 'none'
     ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
@@ -2790,7 +3295,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     e.preventDefault()
     const delta = e.clientY - fixedResizeStartY
     const newHeight = Math.max(40, fixedResizeStartHeight + delta)
-    setFixedPanelHeights(prev => ({ ...prev, [fixedResizePanelId!]: newHeight }))
+    setFixedPanelHeights((prev) => ({
+      ...prev,
+      [fixedResizePanelId!]: newHeight,
+    }))
     requestAnimationFrame(() => {
       syncCanvasSizes()
       drawWaveformOverview()
@@ -2809,7 +3317,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
   const handleFixedResizeEnd = (_e: PointerEvent) => {
     if (fixedResizePanelId === null) return
-    const panelEl = document.querySelector(`[data-fixed-panel="${fixedResizePanelId}"]`)
+    const panelEl = document.querySelector(
+      `[data-fixed-panel="${fixedResizePanelId}"]`,
+    )
     const canvas = panelEl?.querySelector('canvas') as HTMLElement | null
     if (canvas) canvas.style.pointerEvents = ''
     fixedResizePanelId = null
@@ -2838,115 +3348,227 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         </div>
       </div>
 
-        {/* Loading / Error */}
-        <Show when={loading() || midiGenerating()}>
-          <div class="sm-loading">
-            <Show when={midiGenerating()} fallback={<div class="sm-loading-spinner" />}>
-              <CircularProgress pct={midiProgress()} size={40} />
+      {/* Loading / Error */}
+      <Show when={loading() || midiGenerating()}>
+        <div class="sm-loading">
+          <Show
+            when={midiGenerating()}
+            fallback={<div class="sm-loading-spinner" />}
+          >
+            <CircularProgress pct={midiProgress()} size={40} />
+          </Show>
+          <span>
+            {midiGenerating()
+              ? `Generating MIDI melody... ${midiProgress()}%`
+              : `Loading stems... ${loadProgress()}%`}
+          </span>
+        </div>
+      </Show>
+
+      <Show when={loadError()}>
+        <div class="sm-error">
+          <span>{loadError()}</span>
+          <button
+            class="sm-error-retry"
+            onClick={() => {
+              void loadStems()
+            }}
+          >
+            Retry
+          </button>
+        </div>
+      </Show>
+
+      <Show when={!loading() && !loadError()}>
+        {/* Transport Bar — top */}
+        <div class="sm-transport">
+          <div class="sm-transport-controls">
+            <button class="sm-transport-btn" onClick={handleStop} title="Stop">
+              <svg
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                width="14"
+                height="14"
+              >
+                <rect x="4" y="4" width="16" height="16" rx="2" />
+              </svg>
+            </button>
+            <button
+              class="sm-transport-btn"
+              onClick={handleRestart}
+              title="Restart (play from beginning)"
+            >
+              <SkipBack />
+            </button>
+            <button
+              class="sm-transport-btn sm-transport-play"
+              onClick={playing() ? handlePause : handlePlay}
+            >
+              {playing() ? <Pause /> : <Play />}
+            </button>
+
+            <div class="sm-col-toggle">
+              <button
+                class={`sm-col-btn${workspaceLayout() === 'auto-1col' ? ' sm-col-active' : ''}`}
+                onClick={() => {
+                  setWorkspaceLayout('auto-1col')
+                  queueCanvasRedraw()
+                }}
+                title="Single column"
+              >
+                <svg viewBox="0 0 24 24" width="12" height="12">
+                  <rect
+                    x="4"
+                    y="4"
+                    width="16"
+                    height="16"
+                    rx="1"
+                    fill="currentColor"
+                  />
+                </svg>
+              </button>
+              <button
+                class={`sm-col-btn${workspaceLayout() === 'auto-2col' ? ' sm-col-active' : ''}`}
+                onClick={() => {
+                  setWorkspaceLayout('auto-2col')
+                  queueCanvasRedraw()
+                }}
+                title="Two columns auto"
+              >
+                <svg viewBox="0 0 24 24" width="12" height="12">
+                  <rect
+                    x="3"
+                    y="4"
+                    width="8"
+                    height="16"
+                    rx="1"
+                    fill="currentColor"
+                  />
+                  <rect
+                    x="13"
+                    y="4"
+                    width="8"
+                    height="16"
+                    rx="1"
+                    fill="currentColor"
+                  />
+                </svg>
+              </button>
+              <button
+                class={`sm-col-btn${workspaceLayout() === 'fixed-2col' ? ' sm-col-active' : ''}`}
+                onClick={() => {
+                  setWorkspaceLayout('fixed-2col')
+                  queueCanvasRedraw()
+                }}
+                title="Two columns fixed"
+              >
+                <svg viewBox="0 0 24 24" width="12" height="12">
+                  <rect
+                    x="2"
+                    y="3"
+                    width="8"
+                    height="18"
+                    rx="1"
+                    fill="currentColor"
+                  />
+                  <rect
+                    x="12"
+                    y="3"
+                    width="10"
+                    height="18"
+                    rx="1"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            <button
+              class={`sm-mic-toggle-btn${micActive() ? ' sm-mic-toggle-btn--active' : ''}${micError() ? ' sm-mic-toggle-btn--error' : ''}`}
+              onClick={() => {
+                void toggleMic()
+              }}
+              title={
+                micError()
+                  ? micError()
+                  : micActive()
+                    ? 'Disable microphone'
+                    : 'Enable microphone pitch comparison'
+              }
+              disabled={!!micError()}
+            >
+              <Mic />
+            </button>
+
+            <div class="sm-zoom-control">
+              <button
+                class="sm-zoom-btn"
+                onClick={() =>
+                  setWindowDuration((prev) => Math.max(10, prev - 5))
+                }
+                title="Zoom in (shorter window)"
+              >
+                −
+              </button>
+              <span class="sm-zoom-value">{windowDuration()}s</span>
+              <button
+                class="sm-zoom-btn"
+                onClick={() =>
+                  setWindowDuration((prev) => Math.min(150, prev + 5))
+                }
+                title="Zoom out (longer window)"
+              >
+                +
+              </button>
+            </div>
+
+            <Show when={workspaceLayout() === 'fixed-2col'}>
+              <button
+                class="sm-sidebar-toggle"
+                onClick={() => setSidebarHidden((prev) => !prev)}
+                title={
+                  sidebarHidden() ? 'Show mixer sidebar' : 'Hide mixer sidebar'
+                }
+              >
+                <SlidersHorizontal />
+              </button>
             </Show>
-            <span>{midiGenerating() ? `Generating MIDI melody... ${midiProgress()}%` : `Loading stems... ${loadProgress()}%`}</span>
           </div>
-        </Show>
 
-        <Show when={loadError()}>
-          <div class="sm-error">
-            <span>{loadError()}</span>
-            <button class="sm-error-retry" onClick={() => { void loadStems() }}>Retry</button>
-          </div>
-        </Show>
-
-        <Show when={!loading() && !loadError()}>
-          {/* Transport Bar — top */}
-          <div class="sm-transport">
-            <div class="sm-transport-controls">
-              <button class="sm-transport-btn" onClick={handleStop} title="Stop">
-                <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
-              </button>
-              <button class="sm-transport-btn" onClick={handleRestart} title="Restart (play from beginning)">
-                <SkipBack />
-              </button>
-              <button
-                class="sm-transport-btn sm-transport-play"
-                onClick={playing() ? handlePause : handlePlay}
-              >
-                {playing() ? <Pause /> : <Play />}
-              </button>
-
-              <div class="sm-col-toggle">
-                <button
-                  class={`sm-col-btn${workspaceLayout() === 'auto-1col' ? ' sm-col-active' : ''}`}
-                  onClick={() => { setWorkspaceLayout('auto-1col'); queueCanvasRedraw() }}
-                  title="Single column"
-                >
-                  <svg viewBox="0 0 24 24" width="12" height="12"><rect x="4" y="4" width="16" height="16" rx="1" fill="currentColor"/></svg>
-                </button>
-                <button
-                  class={`sm-col-btn${workspaceLayout() === 'auto-2col' ? ' sm-col-active' : ''}`}
-                  onClick={() => { setWorkspaceLayout('auto-2col'); queueCanvasRedraw() }}
-                  title="Two columns auto"
-                >
-                  <svg viewBox="0 0 24 24" width="12" height="12"><rect x="3" y="4" width="8" height="16" rx="1" fill="currentColor"/><rect x="13" y="4" width="8" height="16" rx="1" fill="currentColor"/></svg>
-                </button>
-                <button
-                  class={`sm-col-btn${workspaceLayout() === 'fixed-2col' ? ' sm-col-active' : ''}`}
-                  onClick={() => { setWorkspaceLayout('fixed-2col'); queueCanvasRedraw() }}
-                  title="Two columns fixed"
-                >
-                  <svg viewBox="0 0 24 24" width="12" height="12"><rect x="2" y="3" width="8" height="18" rx="1" fill="currentColor"/><rect x="12" y="3" width="10" height="18" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
-                </button>
-              </div>
-
-              <button
-                class={`sm-mic-toggle-btn${micActive() ? ' sm-mic-toggle-btn--active' : ''}${micError() ? ' sm-mic-toggle-btn--error' : ''}`}
-                onClick={() => { void toggleMic() }}
-                title={micError() ? micError() : micActive() ? 'Disable microphone' : 'Enable microphone pitch comparison'}
-                disabled={!!micError()}
-              >
-                <Mic />
-              </button>
-
-              <div class="sm-zoom-control">
-                <button class="sm-zoom-btn" onClick={() => setWindowDuration(prev => Math.max(10, prev - 5))} title="Zoom in (shorter window)">−</button>
-                <span class="sm-zoom-value">{windowDuration()}s</span>
-                <button class="sm-zoom-btn" onClick={() => setWindowDuration(prev => Math.min(150, prev + 5))} title="Zoom out (longer window)">+</button>
-              </div>
-
-              <Show when={workspaceLayout() === 'fixed-2col'}>
-                <button
-                  class="sm-sidebar-toggle"
-                  onClick={() => setSidebarHidden(prev => !prev)}
-                  title={sidebarHidden() ? 'Show mixer sidebar' : 'Hide mixer sidebar'}
-                >
-                  <SlidersHorizontal />
-                </button>
-              </Show>
-            </div>
-
-            <div class="sm-progress-area">
-              <span class="sm-time">{formatTime(elapsed())}</span>
+          <div class="sm-progress-area">
+            <span class="sm-time">{formatTime(elapsed())}</span>
+            <div
+              ref={progressBarRef}
+              class="sm-progress-bar"
+              onClick={handleSeek}
+            >
               <div
-                ref={progressBarRef}
-                class="sm-progress-bar"
-                onClick={handleSeek}
-              >
-                <div
-                  class="sm-progress-fill"
-                  style={{
-                    width: `${duration() > 0 ? (elapsed() / duration()) * 100 : 0}%`,
-                  }}
-                />
-              </div>
-              <span class="sm-time">{formatTime(duration())}</span>
+                class="sm-progress-fill"
+                style={{
+                  width: `${duration() > 0 ? (elapsed() / duration()) * 100 : 0}%`,
+                }}
+              />
             </div>
-
+            <span class="sm-time">{formatTime(duration())}</span>
           </div>
+        </div>
 
-          <Show when={workspaceLayout() !== 'fixed-2col'}>
+        <Show when={workspaceLayout() !== 'fixed-2col'}>
           <div
             ref={workspaceRef}
             class="sm-workspace"
-            style={{ 'grid-template-columns': workspaceLayout() === 'auto-1col' ? '1fr' : '1fr 1fr' }}
-            onWheel={(e) => { e.preventDefault(); setWindowDuration(prev => Math.min(150, Math.max(10, prev + (e.deltaY > 0 ? 5 : -5)))) }}
+            style={{
+              'grid-template-columns':
+                workspaceLayout() === 'auto-1col' ? '1fr' : '1fr 1fr',
+            }}
+            onWheel={(e) => {
+              e.preventDefault()
+              setWindowDuration((prev) =>
+                Math.min(150, Math.max(10, prev + (e.deltaY > 0 ? 5 : -5))),
+              )
+            }}
           >
             {/* Panel: Waveform Overview */}
             <div
@@ -2956,15 +3578,36 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             >
               <div
                 class="sm-panel-header"
-                onPointerDown={(e) => handlePanelDragStart('overview', getPanel('overview').order, e)}
+                onPointerDown={(e) =>
+                  handlePanelDragStart(
+                    'overview',
+                    getPanel('overview').order,
+                    e,
+                  )
+                }
                 onPointerMove={handlePanelDragMove}
                 onPointerUp={handlePanelDragEnd}
                 onPointerCancel={handlePanelDragEnd}
               >
-                <svg viewBox="0 0 24 24" width="10" height="10" class="sm-drag-icon"><path fill="currentColor" d="M20 9H4v2h16V9zM4 15h16v-2H4v2z"/></svg>
+                <svg
+                  viewBox="0 0 24 24"
+                  width="10"
+                  height="10"
+                  class="sm-drag-icon"
+                >
+                  <path
+                    fill="currentColor"
+                    d="M20 9H4v2h16V9zM4 15h16v-2H4v2z"
+                  />
+                </svg>
                 Waveform Overview
               </div>
-              <canvas ref={waveformCanvasRef} class="sm-canvas sm-canvas-overview" onClick={handleWaveformClick} onWheel={handleCanvasWheel} />
+              <canvas
+                ref={waveformCanvasRef}
+                class="sm-canvas sm-canvas-overview"
+                onClick={handleWaveformClick}
+                onWheel={handleCanvasWheel}
+              />
               <div
                 class="sm-resize-handle"
                 onPointerDown={(e) => handleResizeStart('overview', e)}
@@ -2979,15 +3622,31 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             >
               <div
                 class="sm-panel-header"
-                onPointerDown={(e) => handlePanelDragStart('live', getPanel('live').order, e)}
+                onPointerDown={(e) =>
+                  handlePanelDragStart('live', getPanel('live').order, e)
+                }
                 onPointerMove={handlePanelDragMove}
                 onPointerUp={handlePanelDragEnd}
                 onPointerCancel={handlePanelDragEnd}
               >
-                <svg viewBox="0 0 24 24" width="10" height="10" class="sm-drag-icon"><path fill="currentColor" d="M20 9H4v2h16V9zM4 15h16v-2H4v2z"/></svg>
+                <svg
+                  viewBox="0 0 24 24"
+                  width="10"
+                  height="10"
+                  class="sm-drag-icon"
+                >
+                  <path
+                    fill="currentColor"
+                    d="M20 9H4v2h16V9zM4 15h16v-2H4v2z"
+                  />
+                </svg>
                 Live Waveform
               </div>
-              <canvas ref={liveWaveCanvasRef} class="sm-canvas sm-canvas-live" onWheel={handleCanvasWheel} />
+              <canvas
+                ref={liveWaveCanvasRef}
+                class="sm-canvas sm-canvas-live"
+                onWheel={handleCanvasWheel}
+              />
               <div
                 class="sm-resize-handle"
                 onPointerDown={(e) => handleResizeStart('live', e)}
@@ -3002,15 +3661,31 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             >
               <div
                 class="sm-panel-header"
-                onPointerDown={(e) => handlePanelDragStart('pitch', getPanel('pitch').order, e)}
+                onPointerDown={(e) =>
+                  handlePanelDragStart('pitch', getPanel('pitch').order, e)
+                }
                 onPointerMove={handlePanelDragMove}
                 onPointerUp={handlePanelDragEnd}
                 onPointerCancel={handlePanelDragEnd}
               >
-                <svg viewBox="0 0 24 24" width="10" height="10" class="sm-drag-icon"><path fill="currentColor" d="M20 9H4v2h16V9zM4 15h16v-2H4v2z"/></svg>
+                <svg
+                  viewBox="0 0 24 24"
+                  width="10"
+                  height="10"
+                  class="sm-drag-icon"
+                >
+                  <path
+                    fill="currentColor"
+                    d="M20 9H4v2h16V9zM4 15h16v-2H4v2z"
+                  />
+                </svg>
                 Vocal Pitch
               </div>
-              <canvas ref={pitchCanvasRef} class="sm-canvas sm-canvas-pitch" onWheel={handleCanvasWheel} />
+              <canvas
+                ref={pitchCanvasRef}
+                class="sm-canvas sm-canvas-pitch"
+                onWheel={handleCanvasWheel}
+              />
               <div
                 class="sm-resize-handle"
                 onPointerDown={(e) => handleResizeStart('pitch', e)}
@@ -3026,15 +3701,31 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
               >
                 <div
                   class="sm-panel-header"
-                  onPointerDown={(e) => handlePanelDragStart('midi', getPanel('midi').order, e)}
+                  onPointerDown={(e) =>
+                    handlePanelDragStart('midi', getPanel('midi').order, e)
+                  }
                   onPointerMove={handlePanelDragMove}
                   onPointerUp={handlePanelDragEnd}
                   onPointerCancel={handlePanelDragEnd}
                 >
-                  <svg viewBox="0 0 24 24" width="10" height="10" class="sm-drag-icon"><path fill="currentColor" d="M20 9H4v2h16V9zM4 15h16v-2H4v2z"/></svg>
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="10"
+                    height="10"
+                    class="sm-drag-icon"
+                  >
+                    <path
+                      fill="currentColor"
+                      d="M20 9H4v2h16V9zM4 15h16v-2H4v2z"
+                    />
+                  </svg>
                   MIDI Melody
                 </div>
-                <canvas ref={midiCanvasRef} class="sm-canvas sm-canvas-midi" onWheel={handleCanvasWheel} />
+                <canvas
+                  ref={midiCanvasRef}
+                  class="sm-canvas sm-canvas-midi"
+                  onWheel={handleCanvasWheel}
+                />
                 <div
                   class="sm-resize-handle"
                   onPointerDown={(e) => handleResizeStart('midi', e)}
@@ -3050,12 +3741,28 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             >
               <div
                 class="sm-panel-header"
-                onPointerDown={(e) => handlePanelDragStart('controls', getPanel('controls').order, e)}
+                onPointerDown={(e) =>
+                  handlePanelDragStart(
+                    'controls',
+                    getPanel('controls').order,
+                    e,
+                  )
+                }
                 onPointerMove={handlePanelDragMove}
                 onPointerUp={handlePanelDragEnd}
                 onPointerCancel={handlePanelDragEnd}
               >
-                <svg viewBox="0 0 24 24" width="10" height="10" class="sm-drag-icon"><path fill="currentColor" d="M20 9H4v2h16V9zM4 15h16v-2H4v2z"/></svg>
+                <svg
+                  viewBox="0 0 24 24"
+                  width="10"
+                  height="10"
+                  class="sm-drag-icon"
+                >
+                  <path
+                    fill="currentColor"
+                    d="M20 9H4v2h16V9zM4 15h16v-2H4v2z"
+                  />
+                </svg>
                 Stem Controls
               </div>
               <div class="sm-strips-row">
@@ -3068,7 +3775,12 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                       />
                       <span class="sm-stem-label">{vocal().label}</span>
                       <span class="sm-stem-vol-pct">
-                        {Math.round((vocal().muted || (anySoloed() && !vocal().soloed)) ? 0 : vocal().volume * 100)}%
+                        {Math.round(
+                          vocal().muted || (anySoloed() && !vocal().soloed)
+                            ? 0
+                            : vocal().volume * 100,
+                        )}
+                        %
                       </span>
                     </div>
                     <div class="sm-stem-actions">
@@ -3089,7 +3801,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                       </button>
                       <button
                         class="sm-action-btn"
-                        onClick={() => { void handleDownload(vocal()) }}
+                        onClick={() => {
+                          void handleDownload(vocal())
+                        }}
                         title="Download"
                       >
                         <Download />
@@ -3102,7 +3816,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                       max="100"
                       value={Math.round(vocal().volume * 100)}
                       onInput={(e) =>
-                        setTrackVolume('Vocal', parseInt(e.currentTarget.value) / 100)
+                        setTrackVolume(
+                          'Vocal',
+                          parseInt(e.currentTarget.value) / 100,
+                        )
                       }
                     />
                   </div>
@@ -3111,16 +3828,59 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                 {midi().buffer && props.practiceMode === 'midi' && (
                   <div class="sm-stem-strip">
                     <div class="sm-stem-header">
-                      <span class="sm-stem-dot" style={{ background: midi().color }} />
+                      <span
+                        class="sm-stem-dot"
+                        style={{ background: midi().color }}
+                      />
                       <span class="sm-stem-label">{midi().label}</span>
-                      <span class="sm-stem-vol-pct">{Math.round((midi().muted || (anySoloed() && !midi().soloed)) ? 0 : midi().volume * 100)}%</span>
+                      <span class="sm-stem-vol-pct">
+                        {Math.round(
+                          midi().muted || (anySoloed() && !midi().soloed)
+                            ? 0
+                            : midi().volume * 100,
+                        )}
+                        %
+                      </span>
                     </div>
                     <div class="sm-stem-actions">
-                      <button class={`sm-action-btn ${midi().soloed ? 'sm-active' : ''}`} onClick={() => toggleSolo('MIDI')} title="Solo" style={{ color: midi().soloed ? midi().color : '' }}><Ear /></button>
-                      <button class={`sm-action-btn ${midi().muted ? 'sm-muted' : ''}`} onClick={() => toggleMute('MIDI')} title="Mute">{midi().muted ? <VolumeX /> : <Volume2 />}</button>
-                      <button class="sm-action-btn" onClick={() => { void handleDownload(midi()) }} title="Download MIDI"><Download /></button>
+                      <button
+                        class={`sm-action-btn ${midi().soloed ? 'sm-active' : ''}`}
+                        onClick={() => toggleSolo('MIDI')}
+                        title="Solo"
+                        style={{ color: midi().soloed ? midi().color : '' }}
+                      >
+                        <Ear />
+                      </button>
+                      <button
+                        class={`sm-action-btn ${midi().muted ? 'sm-muted' : ''}`}
+                        onClick={() => toggleMute('MIDI')}
+                        title="Mute"
+                      >
+                        {midi().muted ? <VolumeX /> : <Volume2 />}
+                      </button>
+                      <button
+                        class="sm-action-btn"
+                        onClick={() => {
+                          void handleDownload(midi())
+                        }}
+                        title="Download MIDI"
+                      >
+                        <Download />
+                      </button>
                     </div>
-                    <input type="range" class="sm-volume-slider" min="0" max="100" value={Math.round(midi().volume * 100)} onInput={(e) => setTrackVolume('MIDI', parseInt(e.currentTarget.value) / 100)} />
+                    <input
+                      type="range"
+                      class="sm-volume-slider"
+                      min="0"
+                      max="100"
+                      value={Math.round(midi().volume * 100)}
+                      onInput={(e) =>
+                        setTrackVolume(
+                          'MIDI',
+                          parseInt(e.currentTarget.value) / 100,
+                        )
+                      }
+                    />
                   </div>
                 )}
 
@@ -3133,7 +3893,13 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                       />
                       <span class="sm-stem-label">{instrumental().label}</span>
                       <span class="sm-stem-vol-pct">
-                        {Math.round((instrumental().muted || (anySoloed() && !instrumental().soloed)) ? 0 : instrumental().volume * 100)}%
+                        {Math.round(
+                          instrumental().muted ||
+                            (anySoloed() && !instrumental().soloed)
+                            ? 0
+                            : instrumental().volume * 100,
+                        )}
+                        %
                       </span>
                     </div>
                     <div class="sm-stem-actions">
@@ -3141,7 +3907,11 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                         class={`sm-action-btn ${instrumental().soloed ? 'sm-active' : ''}`}
                         onClick={() => toggleSolo('Instrumental')}
                         title="Solo"
-                        style={{ color: instrumental().soloed ? instrumental().color : '' }}
+                        style={{
+                          color: instrumental().soloed
+                            ? instrumental().color
+                            : '',
+                        }}
                       >
                         <Ear />
                       </button>
@@ -3154,7 +3924,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                       </button>
                       <button
                         class="sm-action-btn"
-                        onClick={() => { void handleDownload(instrumental()) }}
+                        onClick={() => {
+                          void handleDownload(instrumental())
+                        }}
                         title="Download"
                       >
                         <Download />
@@ -3167,7 +3939,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                       max="100"
                       value={Math.round(instrumental().volume * 100)}
                       onInput={(e) =>
-                        setTrackVolume('Instrumental', parseInt(e.currentTarget.value) / 100)
+                        setTrackVolume(
+                          'Instrumental',
+                          parseInt(e.currentTarget.value) / 100,
+                        )
                       }
                     />
                   </div>
@@ -3187,65 +3962,136 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             >
               <div
                 class="sm-panel-header"
-                onPointerDown={(e) => handlePanelDragStart('lyrics', getPanel('lyrics').order, e)}
+                onPointerDown={(e) =>
+                  handlePanelDragStart('lyrics', getPanel('lyrics').order, e)
+                }
                 onPointerMove={handlePanelDragMove}
                 onPointerUp={handlePanelDragEnd}
                 onPointerCancel={handlePanelDragEnd}
               >
-                <svg viewBox="0 0 24 24" width="10" height="10" class="sm-drag-icon"><path fill="currentColor" d="M20 9H4v2h16V9zM4 15h16v-2H4v2z"/></svg>
+                <svg
+                  viewBox="0 0 24 24"
+                  width="10"
+                  height="10"
+                  class="sm-drag-icon"
+                >
+                  <path
+                    fill="currentColor"
+                    d="M20 9H4v2h16V9zM4 15h16v-2H4v2z"
+                  />
+                </svg>
                 Lyrics
                 <Show when={lyricsSource() === 'api'}>
                   <span class="sm-lyrics-source">found</span>
                 </Show>
                 <Show when={lyricsSource() === 'upload'}>
-                  <span class="sm-lyrics-source sm-lyrics-source-upload">uploaded</span>
+                  <span class="sm-lyrics-source sm-lyrics-source-upload">
+                    uploaded
+                  </span>
                 </Show>
-                <Show when={lyricsSource() === 'upload' && !editMode() || lyricsSource() === 'api' && !editMode()}>
+                <Show
+                  when={
+                    (lyricsSource() === 'upload' && !editMode()) ||
+                    (lyricsSource() === 'api' && !editMode())
+                  }
+                >
                   <button
                     class="sm-lyrics-edit-btn"
-                    onClick={(e) => { e.stopPropagation(); toggleEditMode() }}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      toggleEditMode()
+                    }}
                     title="Edit word timings"
                   >
-                    <svg viewBox="0 0 24 24" width="11" height="11"><path fill="currentColor" d="M16.474 5.408l2.118 2.117-10.8 10.8-2.544.426.426-2.544 10.8-10.8zM13.296 2.38l1.414 1.414-1.908 1.908-1.414-1.414L13.296 2.38zM3.5 20.5h3l9.9-9.9-3-3L3.5 17.5v3z"/></svg>
+                    <svg viewBox="0 0 24 24" width="11" height="11">
+                      <path
+                        fill="currentColor"
+                        d="M16.474 5.408l2.118 2.117-10.8 10.8-2.544.426.426-2.544 10.8-10.8zM13.296 2.38l1.414 1.414-1.908 1.908-1.414-1.414L13.296 2.38zM3.5 20.5h3l9.9-9.9-3-3L3.5 17.5v3z"
+                      />
+                    </svg>
                   </button>
                 </Show>
-                <Show when={lyricsSource() !== 'none' && !editMode() && !lrcGenMode()}>
+                <Show
+                  when={
+                    lyricsSource() !== 'none' && !editMode() && !lrcGenMode()
+                  }
+                >
                   <button
                     class="sm-lyrics-gen-btn"
-                    onClick={(e) => { e.stopPropagation(); startLrcGen() }}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      startLrcGen()
+                    }}
                     title="Generate LRC timings with playback"
                   >
-                    <svg viewBox="0 0 24 24" width="11" height="11"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                    <svg viewBox="0 0 24 24" width="11" height="11">
+                      <path
+                        fill="currentColor"
+                        d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"
+                      />
+                    </svg>
                   </button>
                 </Show>
                 <Show when={lrcGenMode()}>
                   <span class="sm-lyrics-gen-label">LRC Gen</span>
                 </Show>
-                <Show when={lyricsSource() !== 'none' && !editMode() && !lrcGenMode()}>
+                <Show
+                  when={
+                    lyricsSource() !== 'none' && !editMode() && !lrcGenMode()
+                  }
+                >
                   <button
                     class={`sm-lyrics-markmode-btn${blockMarkMode() ? ' sm-lyrics-markmode-btn--active' : ''}`}
-                    onClick={(e) => { e.stopPropagation(); setBlockMarkMode(prev => !prev); setMarkStartLine(null); setMarkEndLine(null) }}
-                    title={blockMarkMode() ? 'Exit mark mode' : 'Mark repeat blocks'}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setBlockMarkMode((prev) => !prev)
+                      setMarkStartLine(null)
+                      setMarkEndLine(null)
+                    }}
+                    title={
+                      blockMarkMode() ? 'Exit mark mode' : 'Mark repeat blocks'
+                    }
                   >
-                    <svg viewBox="0 0 24 24" width="11" height="11"><path fill="currentColor" d="M3 3h18v4H3V3zm0 7h12v4H3v-4zm0 7h18v4H3v-4z"/></svg>
+                    <svg viewBox="0 0 24 24" width="11" height="11">
+                      <path
+                        fill="currentColor"
+                        d="M3 3h18v4H3V3zm0 7h12v4H3v-4zm0 7h18v4H3v-4z"
+                      />
+                    </svg>
                   </button>
                 </Show>
                 <Show when={lyricsSource() !== 'none' && !editMode()}>
                   <button
                     class="sm-lyrics-download-btn"
-                    onClick={(e) => { e.stopPropagation(); handleDownloadLrc() }}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleDownloadLrc()
+                    }}
                     title="Download LRC file"
                   >
-                    <svg viewBox="0 0 24 24" width="11" height="11"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                    <svg viewBox="0 0 24 24" width="11" height="11">
+                      <path
+                        fill="currentColor"
+                        d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"
+                      />
+                    </svg>
                   </button>
                 </Show>
                 <Show when={lyricsSource() === 'upload' && !editMode()}>
                   <button
                     class="sm-lyrics-change-btn"
-                    onClick={(e) => { e.stopPropagation(); lyricsFileInputRef?.click() }}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      lyricsFileInputRef?.click()
+                    }}
                     title="Change lyrics file"
                   >
-                    <svg viewBox="0 0 24 24" width="11" height="11"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                    <svg viewBox="0 0 24 24" width="11" height="11">
+                      <path
+                        fill="currentColor"
+                        d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"
+                      />
+                    </svg>
                   </button>
                 </Show>
                 <input
@@ -3259,14 +4105,26 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                   <div class="sm-lyrics-zoom">
                     <button
                       class="sm-lyrics-zoom-btn"
-                      onClick={() => setLyricsFontSize(prev => Math.max(0.45, +(prev - 0.1).toFixed(2)))}
+                      onClick={() =>
+                        setLyricsFontSize((prev) =>
+                          Math.max(0.45, +(prev - 0.1).toFixed(2)),
+                        )
+                      }
                       title="Smaller text"
-                    >A−</button>
+                    >
+                      A−
+                    </button>
                     <button
                       class="sm-lyrics-zoom-btn"
-                      onClick={() => setLyricsFontSize(prev => Math.min(1.5, +(prev + 0.1).toFixed(2)))}
+                      onClick={() =>
+                        setLyricsFontSize((prev) =>
+                          Math.min(1.5, +(prev + 0.1).toFixed(2)),
+                        )
+                      }
                       title="Larger text"
-                    >A+</button>
+                    >
+                      A+
+                    </button>
                   </div>
                   <Show when={hasMultipleSections()}>
                     <div class="sm-lyrics-col-toggle">
@@ -3275,14 +4133,40 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                         onClick={() => setLyricsColumns(1)}
                         title="Single column"
                       >
-                        <svg viewBox="0 0 24 24" width="10" height="10"><rect x="4" y="4" width="16" height="16" rx="1" fill="currentColor"/></svg>
+                        <svg viewBox="0 0 24 24" width="10" height="10">
+                          <rect
+                            x="4"
+                            y="4"
+                            width="16"
+                            height="16"
+                            rx="1"
+                            fill="currentColor"
+                          />
+                        </svg>
                       </button>
                       <button
                         class={`sm-lyrics-col-btn${lyricsColumns() === 2 ? ' sm-lyrics-col-active' : ''}`}
                         onClick={() => setLyricsColumns(2)}
                         title="Two columns"
                       >
-                        <svg viewBox="0 0 24 24" width="10" height="10"><rect x="3" y="4" width="8" height="16" rx="1" fill="currentColor"/><rect x="13" y="4" width="8" height="16" rx="1" fill="currentColor"/></svg>
+                        <svg viewBox="0 0 24 24" width="10" height="10">
+                          <rect
+                            x="3"
+                            y="4"
+                            width="8"
+                            height="16"
+                            rx="1"
+                            fill="currentColor"
+                          />
+                          <rect
+                            x="13"
+                            y="4"
+                            width="8"
+                            height="16"
+                            rx="1"
+                            fill="currentColor"
+                          />
+                        </svg>
                       </button>
                     </div>
                   </Show>
@@ -3296,23 +4180,46 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                 <Show when={lrcGenMode()}>
                   <div class="sm-lyrics-gen-toolbar">
                     <Show when={!playing()}>
-                      <button class="sm-lyrics-gen-play-btn" onClick={handlePlay} title="Play">
-                        <svg viewBox="0 0 24 24" width="12" height="12"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>
+                      <button
+                        class="sm-lyrics-gen-play-btn"
+                        onClick={handlePlay}
+                        title="Play"
+                      >
+                        <svg viewBox="0 0 24 24" width="12" height="12">
+                          <path fill="currentColor" d="M8 5v14l11-7z" />
+                        </svg>
                       </button>
                     </Show>
                     <Show when={playing()}>
-                      <button class="sm-lyrics-gen-pause-btn" onClick={handlePause} title="Pause">
-                        <svg viewBox="0 0 24 24" width="12" height="12"><path fill="currentColor" d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                      <button
+                        class="sm-lyrics-gen-pause-btn"
+                        onClick={handlePause}
+                        title="Pause"
+                      >
+                        <svg viewBox="0 0 24 24" width="12" height="12">
+                          <path
+                            fill="currentColor"
+                            d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"
+                          />
+                        </svg>
                       </button>
                     </Show>
                     <span class="sm-lyrics-gen-progress">
-                      {Math.min(lrcGenLineIdx(), getGenLines().length)}/{getGenLines().length}
+                      {Math.min(lrcGenLineIdx(), getGenLines().length)}/
+                      {getGenLines().length}
                       {(() => {
                         const lines = getGenLines()
                         const idx = lrcGenLineIdx()
                         if (idx < lines.length) {
-                          const wc = lines[idx].split(/\s+/).filter((w: string) => w.length > 0).length
-                          return <> w{Math.min(lrcGenWordIdx(), wc)}/{wc}</>
+                          const wc = lines[idx]
+                            .split(/\s+/)
+                            .filter((w: string) => w.length > 0).length
+                          return (
+                            <>
+                              {' '}
+                              w{Math.min(lrcGenWordIdx(), wc)}/{wc}
+                            </>
+                          )
                         }
                         return null
                       })()}
@@ -3324,7 +4231,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                         const bi = getBlockForLine(idx)
                         if (bi) {
                           const block = getBlockById(bi.blockId)
-                          const total = blockInstances()[bi.blockId]?.length ?? 1
+                          const total =
+                            blockInstances()[bi.blockId]?.length ?? 1
                           if (block) {
                             return (
                               <span class="sm-lyrics-gen-instance-badge">
@@ -3336,27 +4244,54 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                       }
                       return null
                     })()}
-                    <button class="sm-lyrics-gen-nextword-btn" onClick={handleNextWord} title="Mark next word time [W]">
+                    <button
+                      class="sm-lyrics-gen-nextword-btn"
+                      onClick={handleNextWord}
+                      title="Mark next word time [W]"
+                    >
                       Next Word
                     </button>
-                    <button class="sm-lyrics-gen-nextline-btn" onClick={handleNextLine} title="Mark next line time [L]">
+                    <button
+                      class="sm-lyrics-gen-nextline-btn"
+                      onClick={handleNextLine}
+                      title="Mark next line time [L]"
+                    >
                       Next Line
                     </button>
-                    <button class="sm-lyrics-gen-finish-btn" onClick={handleLrcGenFinish} title="Save LRC">Finish</button>
-                    <button class="sm-lyrics-gen-reset-btn" onClick={handleLrcGenReset} title="Reset all timings">Reset</button>
+                    <button
+                      class="sm-lyrics-gen-finish-btn"
+                      onClick={handleLrcGenFinish}
+                      title="Save LRC"
+                    >
+                      Finish
+                    </button>
+                    <button
+                      class="sm-lyrics-gen-reset-btn"
+                      onClick={handleLrcGenReset}
+                      title="Reset all timings"
+                    >
+                      Reset
+                    </button>
                   </div>
                 </Show>
 
                 {/* ── LRC Generator view ────────────────────────── */}
                 <Show when={lrcGenMode()}>
-                  <div class="sm-lyrics-lines sm-lyrics-gen-lines"
+                  <div
+                    class="sm-lyrics-lines sm-lyrics-gen-lines"
                     style={{ 'font-size': `${lyricsFontSize()}rem` }}
                     onWheel={(e) => {
                       e.stopPropagation()
                       if (e.ctrlKey || e.metaKey) {
                         e.preventDefault()
-                        setLyricsFontSize(prev =>
-                          Math.min(1.5, Math.max(0.45, +(prev - e.deltaY * 0.001).toFixed(2)))
+                        setLyricsFontSize((prev) =>
+                          Math.min(
+                            1.5,
+                            Math.max(
+                              0.45,
+                              +(prev - e.deltaY * 0.001).toFixed(2),
+                            ),
+                          ),
                         )
                       }
                     }}
@@ -3374,19 +4309,27 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                           if (item.isPlaceholderStart) {
                             const bi = item.blockInfo!
                             const block = getBlockById(bi.blockId)
-                            const total = blockInstances()[bi.blockId]?.length ?? 1
-                            const instance = blockInstances()[bi.blockId]?.[bi.instanceIdx]
+                            const total =
+                              blockInstances()[bi.blockId]?.length ?? 1
+                            const instance =
+                              blockInstances()[bi.blockId]?.[bi.instanceIdx]
                             skipUntil = instance?.[1] ?? i + 1
                             result.push(
                               <div
                                 class="sm-lyrics-gen-line sm-lyrics-gen-line-placeholder"
-                                style={{ '--block-color': getBlockColor(bi.blockId) }}
+                                style={{
+                                  '--block-color': getBlockColor(bi.blockId),
+                                }}
                               >
                                 <span class="sm-lyrics-gen-line-time">
-                                  {item.lineTime !== undefined ? formatTimeMs(item.lineTime) : '--:--'}
+                                  {item.lineTime !== undefined
+                                    ? formatTimeMs(item.lineTime)
+                                    : '--:--'}
                                 </span>
                                 <span class="sm-lyrics-gen-placeholder-text">
-                                  {block?.label ?? 'Block'} (repeat {bi.instanceIdx + 1}/{total}) — timings copied from template
+                                  {block?.label ?? 'Block'} (repeat{' '}
+                                  {bi.instanceIdx + 1}/{total}) — timings copied
+                                  from template
                                 </span>
                               </div>,
                             )
@@ -3397,10 +4340,20 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                         result.push(
                           <div
                             class={`sm-lyrics-gen-line${item.isCurrent ? ' sm-lyrics-gen-line-current' : ''}${item.isDone ? ' sm-lyrics-gen-line-done' : ''}${item.isFuture ? ' sm-lyrics-gen-line-future' : ''}${item.blockInfo?.isTemplate === true ? ' sm-lyrics-gen-line-template' : ''}`}
-                            style={item.blockInfo?.isTemplate === true ? { '--block-color': getBlockColor(item.blockInfo.blockId) } : {}}
+                            style={
+                              item.blockInfo?.isTemplate === true
+                                ? {
+                                    '--block-color': getBlockColor(
+                                      item.blockInfo.blockId,
+                                    ),
+                                  }
+                                : {}
+                            }
                           >
                             <span class="sm-lyrics-gen-line-time">
-                              {item.lineTime !== undefined ? formatTimeMs(item.lineTime) : '--:--'}
+                              {item.lineTime !== undefined
+                                ? formatTimeMs(item.lineTime)
+                                : '--:--'}
                             </span>
                             <span class="sm-lyrics-gen-line-text">
                               {item.words.length === 0
@@ -3408,18 +4361,26 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                                 : item.words.map((word, wi) => (
                                     <span
                                       class={`sm-lyrics-gen-word${
-                                        item.activeWordIdx === wi ? ' sm-lyrics-gen-word-current' : ''
+                                        item.activeWordIdx === wi
+                                          ? ' sm-lyrics-gen-word-current'
+                                          : ''
                                       }${
-                                        item.activeWordIdx >= 0 && wi < item.activeWordIdx ? ' sm-lyrics-gen-word-done' : ''
+                                        item.activeWordIdx >= 0 &&
+                                        wi < item.activeWordIdx
+                                          ? ' sm-lyrics-gen-word-done'
+                                          : ''
                                       }`}
                                     >
                                       <span class="sm-lyrics-gen-word-time">
-                                        {item.wordTimes?.[wi] !== undefined ? formatTimeMs(item.wordTimes[wi]) : ''}
+                                        {item.wordTimes?.[wi] !== undefined
+                                          ? formatTimeMs(item.wordTimes[wi])
+                                          : ''}
                                       </span>
-                                      <span class="sm-lyrics-gen-word-text">{word}</span>
+                                      <span class="sm-lyrics-gen-word-text">
+                                        {word}
+                                      </span>
                                     </span>
-                                  ))
-                              }
+                                  ))}
                             </span>
                           </div>,
                         )
@@ -3432,24 +4393,41 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                 {/* ── Edit mode toolbar ────────────────────────── */}
                 <Show when={editMode()}>
                   <div class="sm-lyrics-edit-toolbar">
-                    <button class="sm-lyrics-save-btn" onClick={handleSaveEdits}>Save</button>
+                    <button
+                      class="sm-lyrics-save-btn"
+                      onClick={handleSaveEdits}
+                    >
+                      Save
+                    </button>
                     <button
                       class="sm-lyrics-cancel-btn"
-                      onClick={() => { setEditBuffer({}); setEditMode(false) }}
-                    >Cancel</button>
+                      onClick={() => {
+                        setEditBuffer({})
+                        setEditMode(false)
+                      }}
+                    >
+                      Cancel
+                    </button>
                   </div>
                 </Show>
 
                 {/* ── Edit mode view ───────────────────────────── */}
                 <Show when={editMode()}>
-                  <div class="sm-lyrics-lines sm-lyrics-lines-edit"
+                  <div
+                    class="sm-lyrics-lines sm-lyrics-lines-edit"
                     style={{ 'font-size': `${lyricsFontSize()}rem` }}
                     onWheel={(e) => {
                       e.stopPropagation()
                       if (e.ctrlKey || e.metaKey) {
                         e.preventDefault()
-                        setLyricsFontSize(prev =>
-                          Math.min(1.5, Math.max(0.45, +(prev - e.deltaY * 0.001).toFixed(2)))
+                        setLyricsFontSize((prev) =>
+                          Math.min(
+                            1.5,
+                            Math.max(
+                              0.45,
+                              +(prev - e.deltaY * 0.001).toFixed(2),
+                            ),
+                          ),
                         )
                       }
                     }}
@@ -3463,16 +4441,24 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                               class="sm-lyrics-time-input"
                               type="text"
                               value={formatTimeMs(getEditLineTime(idx))}
-                              onChange={(e) => handleLineTimeEdit(idx, e.currentTarget.value)}
+                              onChange={(e) =>
+                                handleLineTimeEdit(idx, e.currentTarget.value)
+                              }
                             />
                             <For each={rl.words}>
                               {(word, wi) => (
                                 <span class="sm-lyrics-word-edit">
-                                  <span class="sm-lyrics-word-text">{word}</span>
+                                  <span class="sm-lyrics-word-text">
+                                    {word}
+                                  </span>
                                   <span
                                     class="sm-lyrics-word-time-label"
-                                    onClick={(e) => openWordPopover(idx, wi(), word, e)}
-                                  >{formatTimeMs(getEditWordTime(idx, wi()))}</span>
+                                    onClick={(e) =>
+                                      openWordPopover(idx, wi(), word, e)
+                                    }
+                                  >
+                                    {formatTimeMs(getEditWordTime(idx, wi()))}
+                                  </span>
                                 </span>
                               )}
                             </For>
@@ -3484,23 +4470,49 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
                   {/* ── Word time edit popover ──────────────── */}
                   <Show when={editPopover() !== null}>
-                    <div class="sm-lyrics-popover-backdrop" onClick={closeWordPopover}>
-                      <div class="sm-lyrics-popover-card" onClick={(e) => e.stopPropagation()}>
-                        <div class="sm-lyrics-popover-word">{editPopover()!.word}</div>
+                    <div
+                      class="sm-lyrics-popover-backdrop"
+                      onClick={closeWordPopover}
+                    >
+                      <div
+                        class="sm-lyrics-popover-card"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div class="sm-lyrics-popover-word">
+                          {editPopover()!.word}
+                        </div>
                         <input
                           class="sm-lyrics-popover-input"
                           type="text"
-                          value={editPopover() ? formatTimeMs(getEditWordTime(editPopover()!.lineIdx, editPopover()!.wordIdx)) : ''}
-                          onChange={(e) => commitPopoverValue(e.currentTarget.value)}
+                          value={
+                            editPopover()
+                              ? formatTimeMs(
+                                  getEditWordTime(
+                                    editPopover()!.lineIdx,
+                                    editPopover()!.wordIdx,
+                                  ),
+                                )
+                              : ''
+                          }
+                          onChange={(e) =>
+                            commitPopoverValue(e.currentTarget.value)
+                          }
                           onKeyDown={(e) => {
                             if (e.key === 'Escape') closeWordPopover()
-                            if (e.key === 'Enter') commitPopoverValue(e.currentTarget.value)
+                            if (e.key === 'Enter')
+                              commitPopoverValue(e.currentTarget.value)
                           }}
                           ref={(el) => {
-                            setTimeout(() => (el as HTMLInputElement)?.select(), 10)
+                            setTimeout(
+                              () => (el as HTMLInputElement)?.select(),
+                              10,
+                            )
                           }}
                         />
-                        <div class="sm-lyrics-popover-hint">Enter time (MM:SS) – press Enter or click outside to save</div>
+                        <div class="sm-lyrics-popover-hint">
+                          Enter time (MM:SS) – press Enter or click outside to
+                          save
+                        </div>
                       </div>
                     </div>
                   </Show>
@@ -3516,10 +4528,13 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                           ? 'Select a range of lines'
                           : markEndLine() === null
                             ? `Line ${markStartLine()! + 1} — click end line`
-                            : `${markEndLine()! - markStartLine()!} line${markEndLine()! - markStartLine()! !== 1 ? 's' : ''} selected`
-                        }
+                            : `${markEndLine()! - markStartLine()!} line${markEndLine()! - markStartLine()! !== 1 ? 's' : ''} selected`}
                       </span>
-                      <Show when={markStartLine() !== null && markEndLine() !== null}>
+                      <Show
+                        when={
+                          markStartLine() !== null && markEndLine() !== null
+                        }
+                      >
                         <div class="sm-lyrics-mark-actions">
                           <input
                             type="text"
@@ -3539,29 +4554,56 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                           <button
                             class="sm-lyrics-block-form-btn"
                             onClick={() => {
-                              const label = (document.getElementById('block-label-input') as HTMLInputElement)?.value?.trim() || 'Block'
-                              const repeat = parseInt((document.getElementById('block-repeat-input') as HTMLInputElement)?.value || '1', 10)
+                              const label =
+                                (
+                                  document.getElementById(
+                                    'block-label-input',
+                                  ) as HTMLInputElement
+                                )?.value?.trim() || 'Block'
+                              const repeat = parseInt(
+                                (
+                                  document.getElementById(
+                                    'block-repeat-input',
+                                  ) as HTMLInputElement
+                                )?.value || '1',
+                                10,
+                              )
                               handleMarkBlock(label, repeat)
                             }}
-                          >Mark as New Block</button>
+                          >
+                            Mark as New Block
+                          </button>
                           <Show when={blocks().length > 0}>
                             <select
                               class="sm-lyrics-mark-add-select"
                               onChange={(e) => {
                                 const val = e.currentTarget.value
-                                if (val) handleAddInstance(val, markStartLine()!, markEndLine()!)
+                                if (val)
+                                  handleAddInstance(
+                                    val,
+                                    markStartLine()!,
+                                    markEndLine()!,
+                                  )
                               }}
                             >
                               <option value="">Add to existing block...</option>
-                              <For each={blocks()}>{b => <option value={b.id}>{b.label}</option>}</For>
+                              <For each={blocks()}>
+                                {(b) => <option value={b.id}>{b.label}</option>}
+                              </For>
                             </select>
                           </Show>
                         </div>
                       </Show>
                       <button
                         class="sm-lyrics-mark-toolbar-cancel"
-                        onClick={() => { setMarkStartLine(null); setMarkEndLine(null); setBlockMarkMode(false) }}
-                      >Cancel</button>
+                        onClick={() => {
+                          setMarkStartLine(null)
+                          setMarkEndLine(null)
+                          setBlockMarkMode(false)
+                        }}
+                      >
+                        Cancel
+                      </button>
                     </div>
                   </Show>
 
@@ -3591,21 +4633,42 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                             <button
                               class="sm-lyrics-block-form-btn"
                               onClick={() => {
-                                const label = (document.getElementById('block-edit-label-input') as HTMLInputElement)?.value?.trim() || b.label
-                                const repeat = parseInt((document.getElementById('block-edit-repeat-input') as HTMLInputElement)?.value || '1', 10)
+                                const label =
+                                  (
+                                    document.getElementById(
+                                      'block-edit-label-input',
+                                    ) as HTMLInputElement
+                                  )?.value?.trim() || b.label
+                                const repeat = parseInt(
+                                  (
+                                    document.getElementById(
+                                      'block-edit-repeat-input',
+                                    ) as HTMLInputElement
+                                  )?.value || '1',
+                                  10,
+                                )
                                 handleEditBlock(b.id, label, repeat)
                               }}
-                            >Save</button>
+                            >
+                              Save
+                            </button>
                             <button
                               class="sm-lyrics-block-form-cancel"
                               onClick={() => setBlockEditTarget(null)}
-                            >Cancel</button>
+                            >
+                              Cancel
+                            </button>
                             <button
                               class="sm-lyrics-block-delete-btn"
                               onClick={() => handleDeleteBlock(b.id)}
                               title="Delete block"
                             >
-                              <svg viewBox="0 0 24 24" width="10" height="10"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                              <svg viewBox="0 0 24 24" width="10" height="10">
+                                <path
+                                  fill="currentColor"
+                                  d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"
+                                />
+                              </svg>
                             </button>
                           </>
                         )
@@ -3615,14 +4678,23 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
                   <div
                     class="sm-lyrics-lines"
-                    classList={{ 'sm-lyrics-columns-2': lyricsColumns() === 2, 'sm-lyrics-lines--marking': blockMarkMode() }}
+                    classList={{
+                      'sm-lyrics-columns-2': lyricsColumns() === 2,
+                      'sm-lyrics-lines--marking': blockMarkMode(),
+                    }}
                     style={{ 'font-size': `${lyricsFontSize()}rem` }}
                     onWheel={(e) => {
                       e.stopPropagation()
                       if (e.ctrlKey || e.metaKey) {
                         e.preventDefault()
-                        setLyricsFontSize(prev =>
-                          Math.min(1.5, Math.max(0.45, +(prev - e.deltaY * 0.001).toFixed(2)))
+                        setLyricsFontSize((prev) =>
+                          Math.min(
+                            1.5,
+                            Math.max(
+                              0.45,
+                              +(prev - e.deltaY * 0.001).toFixed(2),
+                            ),
+                          ),
                         )
                       }
                     }}
@@ -3636,14 +4708,37 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                       }
 
                       // Map line index → block info for badge placement
-                      const blockStarts = new Map<number, { blockId: string; label: string; instanceIdx: number; isTemplate: boolean; repeatCount: number; color: string; startLine: number; endLine: number }>()
-                      for (const [blockId, instances] of Object.entries(blockInstances())) {
+                      const blockStarts = new Map<
+                        number,
+                        {
+                          blockId: string
+                          label: string
+                          instanceIdx: number
+                          isTemplate: boolean
+                          repeatCount: number
+                          color: string
+                          startLine: number
+                          endLine: number
+                        }
+                      >()
+                      for (const [blockId, instances] of Object.entries(
+                        blockInstances(),
+                      )) {
                         const block = getBlockById(blockId)
                         if (!block) continue
                         const color = getBlockColor(blockId)
                         for (let i = 0; i < instances.length; i++) {
                           const [s, e] = instances[i]
-                          blockStarts.set(s, { blockId, label: block.label, instanceIdx: i, isTemplate: i === 0, repeatCount: block.repeatCount, color, startLine: s, endLine: e })
+                          blockStarts.set(s, {
+                            blockId,
+                            label: block.label,
+                            instanceIdx: i,
+                            isTemplate: i === 0,
+                            repeatCount: block.repeatCount,
+                            color,
+                            startLine: s,
+                            endLine: e,
+                          })
                         }
                       }
 
@@ -3659,7 +4754,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
                         if (dl.isRest) {
                           return (
-                            <div class="sm-lyrics-rest" style={{ 'font-size': `${lyricsFontSize()}rem` }}>
+                            <div
+                              class="sm-lyrics-rest"
+                              style={{ 'font-size': `${lyricsFontSize()}rem` }}
+                            >
                               <span class="sm-lyrics-rest-pulse" />
                               <span class="sm-lyrics-rest-label">~Rest~</span>
                             </div>
@@ -3672,10 +4770,18 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
                         const blockInfo = blockStarts.get(idx)
                         const blockForLine = getBlockForLine(idx)
-                        const blockColor = blockForLine ? getBlockColor(blockForLine.blockId) : undefined
-                        const _block = blockForLine ? getBlockById(blockForLine.blockId) : undefined
-                        const isMarkSelected = blockMarkMode() && markStartLine() !== null && markEndLine() !== null &&
-                          idx >= markStartLine()! && idx < markEndLine()!
+                        const blockColor = blockForLine
+                          ? getBlockColor(blockForLine.blockId)
+                          : undefined
+                        const _block = blockForLine
+                          ? getBlockById(blockForLine.blockId)
+                          : undefined
+                        const isMarkSelected =
+                          blockMarkMode() &&
+                          markStartLine() !== null &&
+                          markEndLine() !== null &&
+                          idx >= markStartLine()! &&
+                          idx < markEndLine()!
 
                         return (
                           <>
@@ -3683,7 +4789,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                             {blockInfo && (
                               <div
                                 class={`sm-lyrics-block-badge ${blockInfo.isTemplate ? 'sm-lyrics-block-badge--template' : 'sm-lyrics-block-badge--instance'}`}
-                                style={{ '--block-color': blockInfo.color, 'margin-top': '0.4rem' }}
+                                style={{
+                                  '--block-color': blockInfo.color,
+                                  'margin-top': '0.4rem',
+                                }}
                                 onClick={(e) => {
                                   e.stopPropagation()
                                   if (!blockMarkMode()) {
@@ -3692,24 +4801,36 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                                 }}
                               >
                                 {blockInfo.label}
-                                {blockInfo.isTemplate && blockInfo.repeatCount > 1 && (
-                                  <span class="sm-lyrics-block-repeat">x{blockInfo.repeatCount}</span>
-                                )}
+                                {blockInfo.isTemplate &&
+                                  blockInfo.repeatCount > 1 && (
+                                    <span class="sm-lyrics-block-repeat">
+                                      x{blockInfo.repeatCount}
+                                    </span>
+                                  )}
                                 {!blockInfo.isTemplate && (
                                   <span
                                     class="sm-lyrics-block-unlink"
                                     onClick={(e) => {
                                       e.stopPropagation()
-                                      handleUnlinkInstance(blockInfo.blockId, blockInfo.instanceIdx)
+                                      handleUnlinkInstance(
+                                        blockInfo.blockId,
+                                        blockInfo.instanceIdx,
+                                      )
                                     }}
                                     title="Unlink this instance"
-                                  >x</span>
+                                  >
+                                    x
+                                  </span>
                                 )}
                               </div>
                             )}
                             <span
                               class={`sm-lyrics-line${rlItem.isActive ? ' sm-lyrics-line-active' : ''}${blockForLine ? ' sm-lyrics-line--blocked' : ''}${blockForLine && !blockForLine.isTemplate ? ' sm-lyrics-line--block-instance' : ''}${blockMarkMode() ? ' sm-lyrics-line-markable' : ''}${isMarkSelected ? ' sm-lyrics-line-mark-selected' : ''}`}
-                              style={blockColor !== undefined ? { '--block-color': blockColor } : {}}
+                              style={
+                                blockColor !== undefined
+                                  ? { '--block-color': blockColor }
+                                  : {}
+                              }
                               onClick={() => {
                                 if (blockMarkMode()) {
                                   const start = markStartLine()
@@ -3723,7 +4844,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                                   } else {
                                     // Second click — set end
                                     if (idx > start) {
-                                      setMarkEndLine(idx + 1)  // end is exclusive
+                                      setMarkEndLine(idx + 1) // end is exclusive
                                     } else if (idx < start) {
                                       setMarkStartLine(idx)
                                       setMarkEndLine(start + 1)
@@ -3743,32 +4864,57 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                                   class="sm-lyrics-block-unlink"
                                   onClick={(e) => {
                                     e.stopPropagation()
-                                    handleUnlinkInstance(blockForLine.blockId, blockForLine.instanceIdx)
+                                    handleUnlinkInstance(
+                                      blockForLine.blockId,
+                                      blockForLine.instanceIdx,
+                                    )
                                   }}
                                   title="Unlink this instance"
-                                >x</span>
+                                >
+                                  x
+                                </span>
                               )}
-                              <span class="sm-lyrics-time">{formatTime(rlItem.time)}</span>
+                              <span class="sm-lyrics-time">
+                                {formatTime(rlItem.time)}
+                              </span>
                               {rlItem.words.length === 0
-                                ? (rlItem.key.startsWith('lrc-')
-                                    ? lrcLines()[idx]?.text || ''
-                                    : lyricsLines()[idx] || '')
+                                ? rlItem.key.startsWith('lrc-')
+                                  ? lrcLines()[idx]?.text || ''
+                                  : lyricsLines()[idx] || ''
                                 : rlItem.words.map((word, wi) => {
                                     if (wi <= rlItem.activeUpTo) {
-                                      return <span class="sm-lyrics-word sm-lyrics-word-done">{word}{' '}</span>
-                                    }
-                                    if (wi === rlItem.activeUpTo + 1 && rlItem.activeCharProgress > 0) {
                                       return (
-                                        <span class="sm-lyrics-word sm-lyrics-word-current">
-                                          <span class="sm-lyrics-char-done">{word.slice(0, rlItem.activeCharProgress)}</span>
-                                          <span class="sm-lyrics-char-remaining">{word.slice(rlItem.activeCharProgress)}</span>
-                                          {' '}
+                                        <span class="sm-lyrics-word sm-lyrics-word-done">
+                                          {word}{' '}
                                         </span>
                                       )
                                     }
-                                    return <span class="sm-lyrics-word">{word}{' '}</span>
-                                  })
-                              }
+                                    if (
+                                      wi === rlItem.activeUpTo + 1 &&
+                                      rlItem.activeCharProgress > 0
+                                    ) {
+                                      return (
+                                        <span class="sm-lyrics-word sm-lyrics-word-current">
+                                          <span class="sm-lyrics-char-done">
+                                            {word.slice(
+                                              0,
+                                              rlItem.activeCharProgress,
+                                            )}
+                                          </span>
+                                          <span class="sm-lyrics-char-remaining">
+                                            {word.slice(
+                                              rlItem.activeCharProgress,
+                                            )}
+                                          </span>{' '}
+                                        </span>
+                                      )
+                                    }
+                                    return (
+                                      <span class="sm-lyrics-word">
+                                        {word}{' '}
+                                      </span>
+                                    )
+                                  })}
                             </span>
                           </>
                         )
@@ -3778,15 +4924,25 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                 </Show>
               </Show>
               <Show when={!lyricsLoading() && lyricsSource() === 'none'}>
-                <Show when={showSongPicker()} fallback={
-                  <LyricsUploader onUpload={handleLyricsUpload} suggestion={props.songTitle} />
-                }>
+                <Show
+                  when={showSongPicker()}
+                  fallback={
+                    <LyricsUploader
+                      onUpload={handleLyricsUpload}
+                      suggestion={props.songTitle}
+                    />
+                  }
+                >
                   <SongPicker
                     matches={songMatches()}
                     query={songPickerQuery()}
                     onQueryChange={setSongPickerQuery}
-                    onPick={(m) => { void handleSongPick(m) }}
-                    onRefine={() => { void handleSongPickerRefine() }}
+                    onPick={(m) => {
+                      void handleSongPick(m)
+                    }}
+                    onRefine={() => {
+                      void handleSongPickerRefine()
+                    }}
                     onUpload={() => setShowSongPicker(false)}
                   />
                 </Show>
@@ -3797,446 +4953,1310 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
               />
             </div>
           </div>
-          </Show>
+        </Show>
 
-          {/* Fixed 2-Column Layout */}
-          <Show when={workspaceLayout() === 'fixed-2col'}>
-            <div class="sm-fixed-layout">
-              <div class="sm-fixed-main">
-                {/* Left Column: Waveform Overview + Lyrics */}
-                <div class="sm-fixed-col sm-fixed-col-left">
-                  <div class="sm-workspace-panel" style={{ height: `${fixedPanelHeights().overview}px` }} data-fixed-panel="overview">
-                    <div class="sm-panel-header">Waveform Overview</div>
-                    <canvas ref={waveformCanvasRef} class="sm-canvas sm-canvas-overview" onClick={handleWaveformClick} onWheel={handleCanvasWheel} />
-                    <div
-                      class="sm-resize-handle"
-                      onPointerDown={(e) => handleFixedResizeStart('overview', e)}
-                    />
-                  </div>
-                  <div class="sm-workspace-panel" style={{ flex: '1', 'min-height': '120px' }}>
-                    <div class="sm-panel-header">
-                      Lyrics
-                      <Show when={lyricsSource() === 'api'}>
-                        <span class="sm-lyrics-source">found</span>
-                      </Show>
-                      <Show when={lyricsSource() === 'upload'}>
-                        <span class="sm-lyrics-source sm-lyrics-source-upload">uploaded</span>
-                      </Show>
-                      <Show when={lyricsSource() === 'upload' && !editMode() || lyricsSource() === 'api' && !editMode()}>
-                        <button class="sm-lyrics-edit-btn" onClick={(e) => { e.stopPropagation(); toggleEditMode() }} title="Edit word timings">
-                          <svg viewBox="0 0 24 24" width="11" height="11"><path fill="currentColor" d="M16.474 5.408l2.118 2.117-10.8 10.8-2.544.426.426-2.544 10.8-10.8zM13.296 2.38l1.414 1.414-1.908 1.908-1.414-1.414L13.296 2.38zM3.5 20.5h3l9.9-9.9-3-3L3.5 17.5v3z"/></svg>
-                        </button>
-                      </Show>
-                      <Show when={lyricsSource() !== 'none' && !editMode() && !lrcGenMode()}>
-                        <button class="sm-lyrics-gen-btn" onClick={(e) => { e.stopPropagation(); startLrcGen() }} title="Generate LRC timings with playback">
-                          <svg viewBox="0 0 24 24" width="11" height="11"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
-                        </button>
-                      </Show>
-                      <Show when={lrcGenMode()}>
-                        <span class="sm-lyrics-gen-label">LRC Gen</span>
-                      </Show>
-                      <Show when={lyricsSource() !== 'none' && !editMode() && !lrcGenMode()}>
-                        <button class={`sm-lyrics-markmode-btn${blockMarkMode() ? ' sm-lyrics-markmode-btn--active' : ''}`} onClick={(e) => { e.stopPropagation(); setBlockMarkMode(prev => !prev); setMarkStartLine(null); setMarkEndLine(null) }} title={blockMarkMode() ? 'Exit mark mode' : 'Mark repeat blocks'}>
-                          <svg viewBox="0 0 24 24" width="11" height="11"><path fill="currentColor" d="M3 3h18v4H3V3zm0 7h12v4H3v-4zm0 7h18v4H3v-4z"/></svg>
-                        </button>
-                      </Show>
-                      <Show when={lyricsSource() !== 'none' && !editMode()}>
-                        <button class="sm-lyrics-download-btn" onClick={(e) => { e.stopPropagation(); handleDownloadLrc() }} title="Download LRC file">
-                          <svg viewBox="0 0 24 24" width="11" height="11"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
-                        </button>
-                      </Show>
-                      <Show when={lyricsSource() === 'upload' && !editMode()}>
-                        <button class="sm-lyrics-change-btn" onClick={(e) => { e.stopPropagation(); lyricsFileInputRef?.click() }} title="Change lyrics file">
-                          <svg viewBox="0 0 24 24" width="11" height="11"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
-                        </button>
-                      </Show>
-                      <input type="file" accept=".txt,.lrc" ref={lyricsFileInputRef} hidden onChange={handleLyricsChange} />
-                      <div class="sm-lyrics-toolbar">
-                        <div class="sm-lyrics-zoom">
-                          <button class="sm-lyrics-zoom-btn" onClick={() => setLyricsFontSize(prev => Math.max(0.45, +(prev - 0.1).toFixed(2)))} title="Smaller text">A−</button>
-                          <button class="sm-lyrics-zoom-btn" onClick={() => setLyricsFontSize(prev => Math.min(1.5, +(prev + 0.1).toFixed(2)))} title="Larger text">A+</button>
-                        </div>
-                        <Show when={hasMultipleSections()}>
-                          <div class="sm-lyrics-col-toggle">
-                            <button class={`sm-lyrics-col-btn${lyricsColumns() === 1 ? ' sm-lyrics-col-active' : ''}`} onClick={() => setLyricsColumns(1)} title="Single column">
-                              <svg viewBox="0 0 24 24" width="10" height="10"><rect x="4" y="4" width="16" height="16" rx="1" fill="currentColor"/></svg>
-                            </button>
-                            <button class={`sm-lyrics-col-btn${lyricsColumns() === 2 ? ' sm-lyrics-col-active' : ''}`} onClick={() => setLyricsColumns(2)} title="Two columns">
-                              <svg viewBox="0 0 24 24" width="10" height="10"><rect x="3" y="4" width="8" height="16" rx="1" fill="currentColor"/><rect x="13" y="4" width="8" height="16" rx="1" fill="currentColor"/></svg>
-                            </button>
-                          </div>
-                        </Show>
-                      </div>
-                    </div>
-                    <Show when={lyricsLoading()}>
-                      <div class="sm-lyrics-loading">Searching...</div>
+        {/* Fixed 2-Column Layout */}
+        <Show when={workspaceLayout() === 'fixed-2col'}>
+          <div class="sm-fixed-layout">
+            <div class="sm-fixed-main">
+              {/* Left Column: Waveform Overview + Lyrics */}
+              <div class="sm-fixed-col sm-fixed-col-left">
+                <div
+                  class="sm-workspace-panel"
+                  style={{ height: `${fixedPanelHeights().overview}px` }}
+                  data-fixed-panel="overview"
+                >
+                  <div class="sm-panel-header">Waveform Overview</div>
+                  <canvas
+                    ref={waveformCanvasRef}
+                    class="sm-canvas sm-canvas-overview"
+                    onClick={handleWaveformClick}
+                    onWheel={handleCanvasWheel}
+                  />
+                  <div
+                    class="sm-resize-handle"
+                    onPointerDown={(e) => handleFixedResizeStart('overview', e)}
+                  />
+                </div>
+                <div
+                  class="sm-workspace-panel"
+                  style={{ flex: '1', 'min-height': '120px' }}
+                >
+                  <div class="sm-panel-header">
+                    Lyrics
+                    <Show when={lyricsSource() === 'api'}>
+                      <span class="sm-lyrics-source">found</span>
                     </Show>
-                    <Show when={!lyricsLoading() && lyricsSource() !== 'none'}>
-                      <Show when={lrcGenMode()}>
-                        <div class="sm-lyrics-gen-toolbar">
-                          <Show when={!playing()}>
-                            <button class="sm-lyrics-gen-play-btn" onClick={handlePlay} title="Play">
-                              <svg viewBox="0 0 24 24" width="12" height="12"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>
-                            </button>
-                          </Show>
-                          <Show when={playing()}>
-                            <button class="sm-lyrics-gen-pause-btn" onClick={handlePause} title="Pause">
-                              <svg viewBox="0 0 24 24" width="12" height="12"><path fill="currentColor" d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-                            </button>
-                          </Show>
-                          <span class="sm-lyrics-gen-progress">
-                            {Math.min(lrcGenLineIdx(), getGenLines().length)}/{getGenLines().length}
-                            {(() => {
-                              const lines = getGenLines()
-                              const idx = lrcGenLineIdx()
-                              if (idx < lines.length) {
-                                const wc = lines[idx].split(/\s+/).filter((w: string) => w.length > 0).length
-                                return <> w{Math.min(lrcGenWordIdx(), wc)}/{wc}</>
-                              }
-                              return null
-                            })()}
-                          </span>
+                    <Show when={lyricsSource() === 'upload'}>
+                      <span class="sm-lyrics-source sm-lyrics-source-upload">
+                        uploaded
+                      </span>
+                    </Show>
+                    <Show
+                      when={
+                        (lyricsSource() === 'upload' && !editMode()) ||
+                        (lyricsSource() === 'api' && !editMode())
+                      }
+                    >
+                      <button
+                        class="sm-lyrics-edit-btn"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          toggleEditMode()
+                        }}
+                        title="Edit word timings"
+                      >
+                        <svg viewBox="0 0 24 24" width="11" height="11">
+                          <path
+                            fill="currentColor"
+                            d="M16.474 5.408l2.118 2.117-10.8 10.8-2.544.426.426-2.544 10.8-10.8zM13.296 2.38l1.414 1.414-1.908 1.908-1.414-1.414L13.296 2.38zM3.5 20.5h3l9.9-9.9-3-3L3.5 17.5v3z"
+                          />
+                        </svg>
+                      </button>
+                    </Show>
+                    <Show
+                      when={
+                        lyricsSource() !== 'none' &&
+                        !editMode() &&
+                        !lrcGenMode()
+                      }
+                    >
+                      <button
+                        class="sm-lyrics-gen-btn"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          startLrcGen()
+                        }}
+                        title="Generate LRC timings with playback"
+                      >
+                        <svg viewBox="0 0 24 24" width="11" height="11">
+                          <path
+                            fill="currentColor"
+                            d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"
+                          />
+                        </svg>
+                      </button>
+                    </Show>
+                    <Show when={lrcGenMode()}>
+                      <span class="sm-lyrics-gen-label">LRC Gen</span>
+                    </Show>
+                    <Show
+                      when={
+                        lyricsSource() !== 'none' &&
+                        !editMode() &&
+                        !lrcGenMode()
+                      }
+                    >
+                      <button
+                        class={`sm-lyrics-markmode-btn${blockMarkMode() ? ' sm-lyrics-markmode-btn--active' : ''}`}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setBlockMarkMode((prev) => !prev)
+                          setMarkStartLine(null)
+                          setMarkEndLine(null)
+                        }}
+                        title={
+                          blockMarkMode()
+                            ? 'Exit mark mode'
+                            : 'Mark repeat blocks'
+                        }
+                      >
+                        <svg viewBox="0 0 24 24" width="11" height="11">
+                          <path
+                            fill="currentColor"
+                            d="M3 3h18v4H3V3zm0 7h12v4H3v-4zm0 7h18v4H3v-4z"
+                          />
+                        </svg>
+                      </button>
+                    </Show>
+                    <Show when={lyricsSource() !== 'none' && !editMode()}>
+                      <button
+                        class="sm-lyrics-download-btn"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDownloadLrc()
+                        }}
+                        title="Download LRC file"
+                      >
+                        <svg viewBox="0 0 24 24" width="11" height="11">
+                          <path
+                            fill="currentColor"
+                            d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"
+                          />
+                        </svg>
+                      </button>
+                    </Show>
+                    <Show when={lyricsSource() === 'upload' && !editMode()}>
+                      <button
+                        class="sm-lyrics-change-btn"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          lyricsFileInputRef?.click()
+                        }}
+                        title="Change lyrics file"
+                      >
+                        <svg viewBox="0 0 24 24" width="11" height="11">
+                          <path
+                            fill="currentColor"
+                            d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"
+                          />
+                        </svg>
+                      </button>
+                    </Show>
+                    <input
+                      type="file"
+                      accept=".txt,.lrc"
+                      ref={lyricsFileInputRef}
+                      hidden
+                      onChange={handleLyricsChange}
+                    />
+                    <div class="sm-lyrics-toolbar">
+                      <div class="sm-lyrics-zoom">
+                        <button
+                          class="sm-lyrics-zoom-btn"
+                          onClick={() =>
+                            setLyricsFontSize((prev) =>
+                              Math.max(0.45, +(prev - 0.1).toFixed(2)),
+                            )
+                          }
+                          title="Smaller text"
+                        >
+                          A−
+                        </button>
+                        <button
+                          class="sm-lyrics-zoom-btn"
+                          onClick={() =>
+                            setLyricsFontSize((prev) =>
+                              Math.min(1.5, +(prev + 0.1).toFixed(2)),
+                            )
+                          }
+                          title="Larger text"
+                        >
+                          A+
+                        </button>
+                      </div>
+                      <Show when={hasMultipleSections()}>
+                        <div class="sm-lyrics-col-toggle">
+                          <button
+                            class={`sm-lyrics-col-btn${lyricsColumns() === 1 ? ' sm-lyrics-col-active' : ''}`}
+                            onClick={() => setLyricsColumns(1)}
+                            title="Single column"
+                          >
+                            <svg viewBox="0 0 24 24" width="10" height="10">
+                              <rect
+                                x="4"
+                                y="4"
+                                width="16"
+                                height="16"
+                                rx="1"
+                                fill="currentColor"
+                              />
+                            </svg>
+                          </button>
+                          <button
+                            class={`sm-lyrics-col-btn${lyricsColumns() === 2 ? ' sm-lyrics-col-active' : ''}`}
+                            onClick={() => setLyricsColumns(2)}
+                            title="Two columns"
+                          >
+                            <svg viewBox="0 0 24 24" width="10" height="10">
+                              <rect
+                                x="3"
+                                y="4"
+                                width="8"
+                                height="16"
+                                rx="1"
+                                fill="currentColor"
+                              />
+                              <rect
+                                x="13"
+                                y="4"
+                                width="8"
+                                height="16"
+                                rx="1"
+                                fill="currentColor"
+                              />
+                            </svg>
+                          </button>
+                        </div>
+                      </Show>
+                    </div>
+                  </div>
+                  <Show when={lyricsLoading()}>
+                    <div class="sm-lyrics-loading">Searching...</div>
+                  </Show>
+                  <Show when={!lyricsLoading() && lyricsSource() !== 'none'}>
+                    <Show when={lrcGenMode()}>
+                      <div class="sm-lyrics-gen-toolbar">
+                        <Show when={!playing()}>
+                          <button
+                            class="sm-lyrics-gen-play-btn"
+                            onClick={handlePlay}
+                            title="Play"
+                          >
+                            <svg viewBox="0 0 24 24" width="12" height="12">
+                              <path fill="currentColor" d="M8 5v14l11-7z" />
+                            </svg>
+                          </button>
+                        </Show>
+                        <Show when={playing()}>
+                          <button
+                            class="sm-lyrics-gen-pause-btn"
+                            onClick={handlePause}
+                            title="Pause"
+                          >
+                            <svg viewBox="0 0 24 24" width="12" height="12">
+                              <path
+                                fill="currentColor"
+                                d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"
+                              />
+                            </svg>
+                          </button>
+                        </Show>
+                        <span class="sm-lyrics-gen-progress">
+                          {Math.min(lrcGenLineIdx(), getGenLines().length)}/
+                          {getGenLines().length}
                           {(() => {
-                            const idx = lrcGenLineIdx()
                             const lines = getGenLines()
+                            const idx = lrcGenLineIdx()
                             if (idx < lines.length) {
-                              const bi = getBlockForLine(idx)
-                              if (bi) {
-                                const block = getBlockById(bi.blockId)
-                                const total = blockInstances()[bi.blockId]?.length ?? 1
-                                if (block) {
-                                  return (
-                                    <span class="sm-lyrics-gen-instance-badge">
-                                      {block.label} ({bi.instanceIdx + 1}/{total})
-                                    </span>
-                                  )
-                                }
-                              }
+                              const wc = lines[idx]
+                                .split(/\s+/)
+                                .filter((w: string) => w.length > 0).length
+                              return (
+                                <>
+                                  {' '}
+                                  w{Math.min(lrcGenWordIdx(), wc)}/{wc}
+                                </>
+                              )
                             }
                             return null
                           })()}
-                          <button class="sm-lyrics-gen-nextword-btn" onClick={handleNextWord} title="Mark next word time [W]">Next Word</button>
-                          <button class="sm-lyrics-gen-nextline-btn" onClick={handleNextLine} title="Mark next line time [L]">Next Line</button>
-                          <button class="sm-lyrics-gen-finish-btn" onClick={handleLrcGenFinish} title="Save LRC">Finish</button>
-                          <button class="sm-lyrics-gen-reset-btn" onClick={handleLrcGenReset} title="Reset all timings">Reset</button>
-                        </div>
-                      </Show>
-                      <Show when={lrcGenMode()}>
-                        <div class="sm-lyrics-lines sm-lyrics-gen-lines" style={{ 'font-size': `${lyricsFontSize()}rem` }} onWheel={(e) => { e.stopPropagation(); if (e.ctrlKey || e.metaKey) { e.preventDefault(); setLyricsFontSize(prev => Math.min(1.5, Math.max(0.45, +(prev - e.deltaY * 0.001).toFixed(2)))) } }}>
-                          {(() => {
-                            const items = genViewData()
-                            const result: JSX.Element[] = []
-                            let skipUntil = -1
-                            for (let i = 0; i < items.length; i++) {
-                              if (i < skipUntil) continue
-                              const item = items[i]
-                              if (item.isPlaceholder) {
-                                if (item.isPlaceholderStart) {
-                                  const bi = item.blockInfo!
-                                  const block = getBlockById(bi.blockId)
-                                  const total = blockInstances()[bi.blockId]?.length ?? 1
-                                  const instance = blockInstances()[bi.blockId]?.[bi.instanceIdx]
-                                  skipUntil = instance?.[1] ?? i + 1
-                                  result.push(
-                                    <div class="sm-lyrics-gen-line sm-lyrics-gen-line-placeholder" style={{ '--block-color': getBlockColor(bi.blockId) }}>
-                                      <span class="sm-lyrics-gen-line-time">{item.lineTime !== undefined ? formatTimeMs(item.lineTime) : '--:--'}</span>
-                                      <span class="sm-lyrics-gen-placeholder-text">{block?.label ?? 'Block'} (repeat {bi.instanceIdx + 1}/{total}) — timings copied from template</span>
-                                    </div>
-                                  )
-                                }
-                                continue
-                              }
-                              result.push(
-                                <div class={`sm-lyrics-gen-line${item.isCurrent ? ' sm-lyrics-gen-line-current' : ''}${item.isDone ? ' sm-lyrics-gen-line-done' : ''}${item.isFuture ? ' sm-lyrics-gen-line-future' : ''}${item.blockInfo?.isTemplate === true ? ' sm-lyrics-gen-line-template' : ''}`} style={item.blockInfo?.isTemplate === true ? { '--block-color': getBlockColor(item.blockInfo.blockId) } : {}}>
-                                  <span class="sm-lyrics-gen-line-time">{item.lineTime !== undefined ? formatTimeMs(item.lineTime) : '--:--'}</span>
-                                  <span class="sm-lyrics-gen-line-text">
-                                    {item.words.length === 0
-                                      ? item.line
-                                      : item.words.map((word, wi) => (
-                                          <span class={`sm-lyrics-gen-word${item.activeWordIdx === wi ? ' sm-lyrics-gen-word-current' : ''}${item.activeWordIdx >= 0 && wi < item.activeWordIdx ? ' sm-lyrics-gen-word-done' : ''}`}>
-                                            <span class="sm-lyrics-gen-word-time">{item.wordTimes?.[wi] !== undefined ? formatTimeMs(item.wordTimes[wi]) : ''}</span>
-                                            <span class="sm-lyrics-gen-word-text">{word}</span>
-                                          </span>
-                                        ))
-                                    }
+                        </span>
+                        {(() => {
+                          const idx = lrcGenLineIdx()
+                          const lines = getGenLines()
+                          if (idx < lines.length) {
+                            const bi = getBlockForLine(idx)
+                            if (bi) {
+                              const block = getBlockById(bi.blockId)
+                              const total =
+                                blockInstances()[bi.blockId]?.length ?? 1
+                              if (block) {
+                                return (
+                                  <span class="sm-lyrics-gen-instance-badge">
+                                    {block.label} ({bi.instanceIdx + 1}/{total})
                                   </span>
-                                </div>
-                              )
+                                )
+                              }
                             }
-                            return result
-                          })()}
-                        </div>
-                      </Show>
-                      <Show when={editMode()}>
-                        <div class="sm-lyrics-edit-toolbar">
-                          <button class="sm-lyrics-save-btn" onClick={handleSaveEdits}>Save</button>
-                          <button class="sm-lyrics-cancel-btn" onClick={() => { setEditBuffer({}); setEditMode(false) }}>Cancel</button>
-                        </div>
-                      </Show>
-                      <Show when={editMode()}>
-                        <div class="sm-lyrics-lines sm-lyrics-lines-edit" style={{ 'font-size': `${lyricsFontSize()}rem` }} onWheel={(e) => { e.stopPropagation(); if (e.ctrlKey || e.metaKey) { e.preventDefault(); setLyricsFontSize(prev => Math.min(1.5, Math.max(0.45, +(prev - e.deltaY * 0.001).toFixed(2)))) } }}>
-                          <For each={lyricsRenderData()}>
-                            {(rl) => {
-                              const idx = parseInt(rl.key.split('-')[1])
-                              return (
-                                <div class="sm-lyrics-line-edit">
-                                  <input class="sm-lyrics-time-input" type="text" value={formatTimeMs(getEditLineTime(idx))} onChange={(e) => handleLineTimeEdit(idx, e.currentTarget.value)} />
-                                  <For each={rl.words}>
-                                    {(word, wi) => (
-                                      <span class="sm-lyrics-word-edit">
-                                        <span class="sm-lyrics-word-text">{word}</span>
-                                        <span class="sm-lyrics-word-time-label" onClick={(e) => openWordPopover(idx, wi(), word, e)}>{formatTimeMs(getEditWordTime(idx, wi()))}</span>
+                          }
+                          return null
+                        })()}
+                        <button
+                          class="sm-lyrics-gen-nextword-btn"
+                          onClick={handleNextWord}
+                          title="Mark next word time [W]"
+                        >
+                          Next Word
+                        </button>
+                        <button
+                          class="sm-lyrics-gen-nextline-btn"
+                          onClick={handleNextLine}
+                          title="Mark next line time [L]"
+                        >
+                          Next Line
+                        </button>
+                        <button
+                          class="sm-lyrics-gen-finish-btn"
+                          onClick={handleLrcGenFinish}
+                          title="Save LRC"
+                        >
+                          Finish
+                        </button>
+                        <button
+                          class="sm-lyrics-gen-reset-btn"
+                          onClick={handleLrcGenReset}
+                          title="Reset all timings"
+                        >
+                          Reset
+                        </button>
+                      </div>
+                    </Show>
+                    <Show when={lrcGenMode()}>
+                      <div
+                        class="sm-lyrics-lines sm-lyrics-gen-lines"
+                        style={{ 'font-size': `${lyricsFontSize()}rem` }}
+                        onWheel={(e) => {
+                          e.stopPropagation()
+                          if (e.ctrlKey || e.metaKey) {
+                            e.preventDefault()
+                            setLyricsFontSize((prev) =>
+                              Math.min(
+                                1.5,
+                                Math.max(
+                                  0.45,
+                                  +(prev - e.deltaY * 0.001).toFixed(2),
+                                ),
+                              ),
+                            )
+                          }
+                        }}
+                      >
+                        {(() => {
+                          const items = genViewData()
+                          const result: JSX.Element[] = []
+                          let skipUntil = -1
+                          for (let i = 0; i < items.length; i++) {
+                            if (i < skipUntil) continue
+                            const item = items[i]
+                            if (item.isPlaceholder) {
+                              if (item.isPlaceholderStart) {
+                                const bi = item.blockInfo!
+                                const block = getBlockById(bi.blockId)
+                                const total =
+                                  blockInstances()[bi.blockId]?.length ?? 1
+                                const instance =
+                                  blockInstances()[bi.blockId]?.[bi.instanceIdx]
+                                skipUntil = instance?.[1] ?? i + 1
+                                result.push(
+                                  <div
+                                    class="sm-lyrics-gen-line sm-lyrics-gen-line-placeholder"
+                                    style={{
+                                      '--block-color': getBlockColor(
+                                        bi.blockId,
+                                      ),
+                                    }}
+                                  >
+                                    <span class="sm-lyrics-gen-line-time">
+                                      {item.lineTime !== undefined
+                                        ? formatTimeMs(item.lineTime)
+                                        : '--:--'}
+                                    </span>
+                                    <span class="sm-lyrics-gen-placeholder-text">
+                                      {block?.label ?? 'Block'} (repeat{' '}
+                                      {bi.instanceIdx + 1}/{total}) — timings
+                                      copied from template
+                                    </span>
+                                  </div>,
+                                )
+                              }
+                              continue
+                            }
+                            result.push(
+                              <div
+                                class={`sm-lyrics-gen-line${item.isCurrent ? ' sm-lyrics-gen-line-current' : ''}${item.isDone ? ' sm-lyrics-gen-line-done' : ''}${item.isFuture ? ' sm-lyrics-gen-line-future' : ''}${item.blockInfo?.isTemplate === true ? ' sm-lyrics-gen-line-template' : ''}`}
+                                style={
+                                  item.blockInfo?.isTemplate === true
+                                    ? {
+                                        '--block-color': getBlockColor(
+                                          item.blockInfo.blockId,
+                                        ),
+                                      }
+                                    : {}
+                                }
+                              >
+                                <span class="sm-lyrics-gen-line-time">
+                                  {item.lineTime !== undefined
+                                    ? formatTimeMs(item.lineTime)
+                                    : '--:--'}
+                                </span>
+                                <span class="sm-lyrics-gen-line-text">
+                                  {item.words.length === 0
+                                    ? item.line
+                                    : item.words.map((word, wi) => (
+                                        <span
+                                          class={`sm-lyrics-gen-word${item.activeWordIdx === wi ? ' sm-lyrics-gen-word-current' : ''}${item.activeWordIdx >= 0 && wi < item.activeWordIdx ? ' sm-lyrics-gen-word-done' : ''}`}
+                                        >
+                                          <span class="sm-lyrics-gen-word-time">
+                                            {item.wordTimes?.[wi] !== undefined
+                                              ? formatTimeMs(item.wordTimes[wi])
+                                              : ''}
+                                          </span>
+                                          <span class="sm-lyrics-gen-word-text">
+                                            {word}
+                                          </span>
+                                        </span>
+                                      ))}
+                                </span>
+                              </div>,
+                            )
+                          }
+                          return result
+                        })()}
+                      </div>
+                    </Show>
+                    <Show when={editMode()}>
+                      <div class="sm-lyrics-edit-toolbar">
+                        <button
+                          class="sm-lyrics-save-btn"
+                          onClick={handleSaveEdits}
+                        >
+                          Save
+                        </button>
+                        <button
+                          class="sm-lyrics-cancel-btn"
+                          onClick={() => {
+                            setEditBuffer({})
+                            setEditMode(false)
+                          }}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </Show>
+                    <Show when={editMode()}>
+                      <div
+                        class="sm-lyrics-lines sm-lyrics-lines-edit"
+                        style={{ 'font-size': `${lyricsFontSize()}rem` }}
+                        onWheel={(e) => {
+                          e.stopPropagation()
+                          if (e.ctrlKey || e.metaKey) {
+                            e.preventDefault()
+                            setLyricsFontSize((prev) =>
+                              Math.min(
+                                1.5,
+                                Math.max(
+                                  0.45,
+                                  +(prev - e.deltaY * 0.001).toFixed(2),
+                                ),
+                              ),
+                            )
+                          }
+                        }}
+                      >
+                        <For each={lyricsRenderData()}>
+                          {(rl) => {
+                            const idx = parseInt(rl.key.split('-')[1])
+                            return (
+                              <div class="sm-lyrics-line-edit">
+                                <input
+                                  class="sm-lyrics-time-input"
+                                  type="text"
+                                  value={formatTimeMs(getEditLineTime(idx))}
+                                  onChange={(e) =>
+                                    handleLineTimeEdit(
+                                      idx,
+                                      e.currentTarget.value,
+                                    )
+                                  }
+                                />
+                                <For each={rl.words}>
+                                  {(word, wi) => (
+                                    <span class="sm-lyrics-word-edit">
+                                      <span class="sm-lyrics-word-text">
+                                        {word}
                                       </span>
-                                    )}
-                                  </For>
-                                </div>
-                              )
-                            }}
-                          </For>
-                        </div>
-                        <Show when={editPopover() !== null}>
-                          <div class="sm-lyrics-popover-backdrop" onClick={closeWordPopover}>
-                            <div class="sm-lyrics-popover-card" onClick={(e) => e.stopPropagation()}>
-                              <div class="sm-lyrics-popover-word">{editPopover()!.word}</div>
-                              <input class="sm-lyrics-popover-input" type="text" value={editPopover() ? formatTimeMs(getEditWordTime(editPopover()!.lineIdx, editPopover()!.wordIdx)) : ''} onChange={(e) => commitPopoverValue(e.currentTarget.value)} onKeyDown={(e) => { if (e.key === 'Escape') closeWordPopover(); if (e.key === 'Enter') commitPopoverValue(e.currentTarget.value) }} ref={(el) => { setTimeout(() => (el as HTMLInputElement)?.select(), 10) }} />
-                              <div class="sm-lyrics-popover-hint">Enter time (MM:SS) – press Enter or click outside to save</div>
+                                      <span
+                                        class="sm-lyrics-word-time-label"
+                                        onClick={(e) =>
+                                          openWordPopover(idx, wi(), word, e)
+                                        }
+                                      >
+                                        {formatTimeMs(
+                                          getEditWordTime(idx, wi()),
+                                        )}
+                                      </span>
+                                    </span>
+                                  )}
+                                </For>
+                              </div>
+                            )
+                          }}
+                        </For>
+                      </div>
+                      <Show when={editPopover() !== null}>
+                        <div
+                          class="sm-lyrics-popover-backdrop"
+                          onClick={closeWordPopover}
+                        >
+                          <div
+                            class="sm-lyrics-popover-card"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <div class="sm-lyrics-popover-word">
+                              {editPopover()!.word}
+                            </div>
+                            <input
+                              class="sm-lyrics-popover-input"
+                              type="text"
+                              value={
+                                editPopover()
+                                  ? formatTimeMs(
+                                      getEditWordTime(
+                                        editPopover()!.lineIdx,
+                                        editPopover()!.wordIdx,
+                                      ),
+                                    )
+                                  : ''
+                              }
+                              onChange={(e) =>
+                                commitPopoverValue(e.currentTarget.value)
+                              }
+                              onKeyDown={(e) => {
+                                if (e.key === 'Escape') closeWordPopover()
+                                if (e.key === 'Enter')
+                                  commitPopoverValue(e.currentTarget.value)
+                              }}
+                              ref={(el) => {
+                                setTimeout(
+                                  () => (el as HTMLInputElement)?.select(),
+                                  10,
+                                )
+                              }}
+                            />
+                            <div class="sm-lyrics-popover-hint">
+                              Enter time (MM:SS) – press Enter or click outside
+                              to save
                             </div>
                           </div>
-                        </Show>
-                      </Show>
-                      <Show when={!editMode() && !lrcGenMode()}>
-                        <Show when={blockMarkMode()}>
-                          <div class="sm-lyrics-mark-toolbar">
-                            <span class="sm-lyrics-mark-status">
-                              {markStartLine() === null ? 'Select a range of lines' : markEndLine() === null ? `Line ${markStartLine()! + 1} — click end line` : `${markEndLine()! - markStartLine()!} line${markEndLine()! - markStartLine()! !== 1 ? 's' : ''} selected`}
-                            </span>
-                            <Show when={markStartLine() !== null && markEndLine() !== null}>
-                              <div class="sm-lyrics-mark-actions">
-                                <input type="text" class="sm-lyrics-block-form-label" placeholder="Chorus, Verse 1..." id="block-label-input-fixed" />
-                                <input type="number" class="sm-lyrics-block-form-repeat" value="1" min="1" max="20" id="block-repeat-input-fixed" title="Repeat count" />
-                                <button class="sm-lyrics-block-form-btn" onClick={() => { const label = (document.getElementById('block-label-input-fixed') as HTMLInputElement)?.value?.trim() || 'Block'; const repeat = parseInt((document.getElementById('block-repeat-input-fixed') as HTMLInputElement)?.value || '1', 10); handleMarkBlock(label, repeat) }}>Mark as New Block</button>
-                                <Show when={blocks().length > 0}>
-                                  <select class="sm-lyrics-mark-add-select" onChange={(e) => { const val = e.currentTarget.value; if (val) handleAddInstance(val, markStartLine()!, markEndLine()!) }}>
-                                    <option value="">Add to existing block...</option>
-                                    <For each={blocks()}>{b => <option value={b.id}>{b.label}</option>}</For>
-                                  </select>
-                                </Show>
-                              </div>
-                            </Show>
-                            <button class="sm-lyrics-mark-toolbar-cancel" onClick={() => { setMarkStartLine(null); setMarkEndLine(null); setBlockMarkMode(false) }}>Cancel</button>
-                          </div>
-                        </Show>
-                        <Show when={blockEditTarget() !== null}>
-                          <div class="sm-lyrics-block-edit-popover">
-                            {(() => {
-                              const b = getBlockById(blockEditTarget()!)
-                              if (!b) return null
-                              return (
-                                <>
-                                  <input type="text" class="sm-lyrics-block-form-label" value={b.label} id="block-edit-label-input-fixed" />
-                                  <input type="number" class="sm-lyrics-block-form-repeat" value={b.repeatCount} min="1" max="20" id="block-edit-repeat-input-fixed" title="Repeat count" />
-                                  <button class="sm-lyrics-block-form-btn" onClick={() => { const label = (document.getElementById('block-edit-label-input-fixed') as HTMLInputElement)?.value?.trim() || b.label; const repeat = parseInt((document.getElementById('block-edit-repeat-input-fixed') as HTMLInputElement)?.value || '1', 10); handleEditBlock(b.id, label, repeat) }}>Save</button>
-                                  <button class="sm-lyrics-block-form-cancel" onClick={() => setBlockEditTarget(null)}>Cancel</button>
-                                  <button class="sm-lyrics-block-delete-btn" onClick={() => handleDeleteBlock(b.id)} title="Delete block">
-                                    <svg viewBox="0 0 24 24" width="10" height="10"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
-                                  </button>
-                                </>
-                              )
-                            })()}
-                          </div>
-                        </Show>
-                        <div class="sm-lyrics-lines" classList={{ 'sm-lyrics-columns-2': lyricsColumns() === 2, 'sm-lyrics-lines--marking': blockMarkMode() }} style={{ 'font-size': `${lyricsFontSize()}rem` }} onWheel={(e) => { e.stopPropagation(); if (e.ctrlKey || e.metaKey) { e.preventDefault(); setLyricsFontSize(prev => Math.min(1.5, Math.max(0.45, +(prev - e.deltaY * 0.001).toFixed(2)))) } }}>
-                          {(() => {
-                            const rl = lyricsRenderData()
-                            const rlByLyricIdx = new Map<number, LyricRenderLine>()
-                            for (const item of rl) rlByLyricIdx.set(parseInt(item.key.split('-')[1]), item)
-                            const blockStarts = new Map<number, { blockId: string; label: string; instanceIdx: number; isTemplate: boolean; repeatCount: number; color: string; startLine: number; endLine: number }>()
-                            for (const [blockId, instances] of Object.entries(blockInstances())) {
-                              const block = getBlockById(blockId)
-                              if (!block) continue
-                              const color = getBlockColor(blockId)
-                              for (let i = 0; i < instances.length; i++) {
-                                const [s, e] = instances[i]
-                                blockStarts.set(s, { blockId, label: block.label, instanceIdx: i, isTemplate: i === 0, repeatCount: block.repeatCount, color, startLine: s, endLine: e })
-                              }
-                            }
-                            return displayLines().map((dl) => {
-                              if (dl.isBlank) return <div class="sm-lyrics-line-spacer" style={{ height: `${lyricsFontSize() * 0.5}rem` }} />
-                              if (dl.isRest) return <div class="sm-lyrics-rest" style={{ 'font-size': `${lyricsFontSize()}rem` }}><span class="sm-lyrics-rest-pulse" /><span class="sm-lyrics-rest-label">~Rest~</span></div>
-                              const idx = dl.lyricsIndex
-                              const rlItem = rlByLyricIdx.get(idx)
-                              if (!rlItem) return null
-                              const blockInfo = blockStarts.get(idx)
-                              const blockForLine = getBlockForLine(idx)
-                              const blockColor = blockForLine ? getBlockColor(blockForLine.blockId) : undefined
-                              const _block = blockForLine ? getBlockById(blockForLine.blockId) : undefined
-                              const isMarkSelected = blockMarkMode() && markStartLine() !== null && markEndLine() !== null && idx >= markStartLine()! && idx < markEndLine()!
-                              return (
-                                <>
-                                  {blockInfo && (
-                                    <div class={`sm-lyrics-block-badge ${blockInfo.isTemplate ? 'sm-lyrics-block-badge--template' : 'sm-lyrics-block-badge--instance'}`} style={{ '--block-color': blockInfo.color, 'margin-top': '0.4rem' }} onClick={(e) => { e.stopPropagation(); if (!blockMarkMode()) setBlockEditTarget(blockInfo.blockId) }}>
-                                      {blockInfo.label}
-                                      {blockInfo.isTemplate && blockInfo.repeatCount > 1 && <span class="sm-lyrics-block-repeat">x{blockInfo.repeatCount}</span>}
-                                      {!blockInfo.isTemplate && <span class="sm-lyrics-block-unlink" onClick={(e) => { e.stopPropagation(); handleUnlinkInstance(blockInfo.blockId, blockInfo.instanceIdx) }} title="Unlink this instance">x</span>}
-                                    </div>
-                                  )}
-                                  <span class={`sm-lyrics-line${rlItem.isActive ? ' sm-lyrics-line-active' : ''}${blockForLine ? ' sm-lyrics-line--blocked' : ''}${blockForLine && !blockForLine.isTemplate ? ' sm-lyrics-line--block-instance' : ''}${blockMarkMode() ? ' sm-lyrics-line-markable' : ''}${isMarkSelected ? ' sm-lyrics-line-mark-selected' : ''}`} style={blockColor !== undefined ? { '--block-color': blockColor } : {}} onClick={() => { if (blockMarkMode()) { const start = markStartLine(); if (start === null) { setMarkStartLine(idx); setMarkEndLine(null) } else if (markEndLine() !== null) { setMarkStartLine(idx); setMarkEndLine(null) } else { if (idx > start) { setMarkEndLine(idx + 1) } else if (idx < start) { setMarkStartLine(idx); setMarkEndLine(start + 1) } else { setMarkEndLine(start + 1) } } } else { handleLyricLineClick(idx) } }}>
-                                    {blockForLine && !blockForLine.isTemplate && <span class="sm-lyrics-block-unlink" onClick={(e) => { e.stopPropagation(); handleUnlinkInstance(blockForLine.blockId, blockForLine.instanceIdx) }} title="Unlink this instance">x</span>}
-                                    <span class="sm-lyrics-time">{formatTime(rlItem.time)}</span>
-                                    {rlItem.words.length === 0
-                                      ? (rlItem.key.startsWith('lrc-') ? lrcLines()[idx]?.text || '' : lyricsLines()[idx] || '')
-                                      : rlItem.words.map((word, wi) => {
-                                          if (wi <= rlItem.activeUpTo) return <span class="sm-lyrics-word sm-lyrics-word-done">{word}{' '}</span>
-                                          if (wi === rlItem.activeUpTo + 1 && rlItem.activeCharProgress > 0) return <span class="sm-lyrics-word sm-lyrics-word-current"><span class="sm-lyrics-char-done">{word.slice(0, rlItem.activeCharProgress)}</span><span class="sm-lyrics-char-remaining">{word.slice(rlItem.activeCharProgress)}</span>{' '}</span>
-                                          return <span class="sm-lyrics-word">{word}{' '}</span>
-                                        })
-                                    }
-                                  </span>
-                                </>
-                              )
-                            })
-                          })()}
                         </div>
                       </Show>
                     </Show>
-                    <Show when={!lyricsLoading() && lyricsSource() === 'none'}>
-                      <Show when={showSongPicker()} fallback={
-                        <LyricsUploader onUpload={handleLyricsUpload} suggestion={props.songTitle} />
-                      }>
-                        <SongPicker
-                          matches={songMatches()}
-                          query={songPickerQuery()}
-                          onQueryChange={setSongPickerQuery}
-                          onPick={(m) => { void handleSongPick(m) }}
-                          onRefine={() => { void handleSongPickerRefine() }}
-                          onUpload={() => setShowSongPicker(false)}
-                        />
+                    <Show when={!editMode() && !lrcGenMode()}>
+                      <Show when={blockMarkMode()}>
+                        <div class="sm-lyrics-mark-toolbar">
+                          <span class="sm-lyrics-mark-status">
+                            {markStartLine() === null
+                              ? 'Select a range of lines'
+                              : markEndLine() === null
+                                ? `Line ${markStartLine()! + 1} — click end line`
+                                : `${markEndLine()! - markStartLine()!} line${markEndLine()! - markStartLine()! !== 1 ? 's' : ''} selected`}
+                          </span>
+                          <Show
+                            when={
+                              markStartLine() !== null && markEndLine() !== null
+                            }
+                          >
+                            <div class="sm-lyrics-mark-actions">
+                              <input
+                                type="text"
+                                class="sm-lyrics-block-form-label"
+                                placeholder="Chorus, Verse 1..."
+                                id="block-label-input-fixed"
+                              />
+                              <input
+                                type="number"
+                                class="sm-lyrics-block-form-repeat"
+                                value="1"
+                                min="1"
+                                max="20"
+                                id="block-repeat-input-fixed"
+                                title="Repeat count"
+                              />
+                              <button
+                                class="sm-lyrics-block-form-btn"
+                                onClick={() => {
+                                  const label =
+                                    (
+                                      document.getElementById(
+                                        'block-label-input-fixed',
+                                      ) as HTMLInputElement
+                                    )?.value?.trim() || 'Block'
+                                  const repeat = parseInt(
+                                    (
+                                      document.getElementById(
+                                        'block-repeat-input-fixed',
+                                      ) as HTMLInputElement
+                                    )?.value || '1',
+                                    10,
+                                  )
+                                  handleMarkBlock(label, repeat)
+                                }}
+                              >
+                                Mark as New Block
+                              </button>
+                              <Show when={blocks().length > 0}>
+                                <select
+                                  class="sm-lyrics-mark-add-select"
+                                  onChange={(e) => {
+                                    const val = e.currentTarget.value
+                                    if (val)
+                                      handleAddInstance(
+                                        val,
+                                        markStartLine()!,
+                                        markEndLine()!,
+                                      )
+                                  }}
+                                >
+                                  <option value="">
+                                    Add to existing block...
+                                  </option>
+                                  <For each={blocks()}>
+                                    {(b) => (
+                                      <option value={b.id}>{b.label}</option>
+                                    )}
+                                  </For>
+                                </select>
+                              </Show>
+                            </div>
+                          </Show>
+                          <button
+                            class="sm-lyrics-mark-toolbar-cancel"
+                            onClick={() => {
+                              setMarkStartLine(null)
+                              setMarkEndLine(null)
+                              setBlockMarkMode(false)
+                            }}
+                          >
+                            Cancel
+                          </button>
+                        </div>
                       </Show>
-                    </Show>
-                  </div>
-                </div>
-
-                {/* Right Column: Live Waveform + Vocal Pitch */}
-                <div class="sm-fixed-col sm-fixed-col-right">
-                  <div class="sm-workspace-panel" style={{ height: `${fixedPanelHeights().live}px` }} data-fixed-panel="live">
-                    <div class="sm-panel-header">Live Waveform</div>
-                    <canvas ref={liveWaveCanvasRef} class="sm-canvas sm-canvas-live" onWheel={handleCanvasWheel} />
-                    <div
-                      class="sm-resize-handle"
-                      onPointerDown={(e) => handleFixedResizeStart('live', e)}
-                    />
-                  </div>
-                  <div class="sm-workspace-panel" style={{ height: `${fixedPanelHeights().pitch}px` }} data-fixed-panel="pitch">
-                    <div class="sm-panel-header">Vocal Pitch</div>
-                    <canvas ref={pitchCanvasRef} class="sm-canvas sm-canvas-pitch" onWheel={handleCanvasWheel} />
-                    <div
-                      class="sm-resize-handle"
-                      onPointerDown={(e) => handleFixedResizeStart('pitch', e)}
-                    />
-                  </div>
-                  <Show when={props.practiceMode === 'midi'}>
-                    <div class="sm-workspace-panel" style={{ height: `${fixedPanelHeights().midi}px` }} data-fixed-panel="midi">
-                      <div class="sm-panel-header">MIDI Melody</div>
-                      <canvas ref={midiCanvasRef} class="sm-canvas sm-canvas-midi" onWheel={handleCanvasWheel} />
+                      <Show when={blockEditTarget() !== null}>
+                        <div class="sm-lyrics-block-edit-popover">
+                          {(() => {
+                            const b = getBlockById(blockEditTarget()!)
+                            if (!b) return null
+                            return (
+                              <>
+                                <input
+                                  type="text"
+                                  class="sm-lyrics-block-form-label"
+                                  value={b.label}
+                                  id="block-edit-label-input-fixed"
+                                />
+                                <input
+                                  type="number"
+                                  class="sm-lyrics-block-form-repeat"
+                                  value={b.repeatCount}
+                                  min="1"
+                                  max="20"
+                                  id="block-edit-repeat-input-fixed"
+                                  title="Repeat count"
+                                />
+                                <button
+                                  class="sm-lyrics-block-form-btn"
+                                  onClick={() => {
+                                    const label =
+                                      (
+                                        document.getElementById(
+                                          'block-edit-label-input-fixed',
+                                        ) as HTMLInputElement
+                                      )?.value?.trim() || b.label
+                                    const repeat = parseInt(
+                                      (
+                                        document.getElementById(
+                                          'block-edit-repeat-input-fixed',
+                                        ) as HTMLInputElement
+                                      )?.value || '1',
+                                      10,
+                                    )
+                                    handleEditBlock(b.id, label, repeat)
+                                  }}
+                                >
+                                  Save
+                                </button>
+                                <button
+                                  class="sm-lyrics-block-form-cancel"
+                                  onClick={() => setBlockEditTarget(null)}
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  class="sm-lyrics-block-delete-btn"
+                                  onClick={() => handleDeleteBlock(b.id)}
+                                  title="Delete block"
+                                >
+                                  <svg
+                                    viewBox="0 0 24 24"
+                                    width="10"
+                                    height="10"
+                                  >
+                                    <path
+                                      fill="currentColor"
+                                      d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"
+                                    />
+                                  </svg>
+                                </button>
+                              </>
+                            )
+                          })()}
+                        </div>
+                      </Show>
                       <div
-                        class="sm-resize-handle"
-                        onPointerDown={(e) => handleFixedResizeStart('midi', e)}
+                        class="sm-lyrics-lines"
+                        classList={{
+                          'sm-lyrics-columns-2': lyricsColumns() === 2,
+                          'sm-lyrics-lines--marking': blockMarkMode(),
+                        }}
+                        style={{ 'font-size': `${lyricsFontSize()}rem` }}
+                        onWheel={(e) => {
+                          e.stopPropagation()
+                          if (e.ctrlKey || e.metaKey) {
+                            e.preventDefault()
+                            setLyricsFontSize((prev) =>
+                              Math.min(
+                                1.5,
+                                Math.max(
+                                  0.45,
+                                  +(prev - e.deltaY * 0.001).toFixed(2),
+                                ),
+                              ),
+                            )
+                          }
+                        }}
+                      >
+                        {(() => {
+                          const rl = lyricsRenderData()
+                          const rlByLyricIdx = new Map<
+                            number,
+                            LyricRenderLine
+                          >()
+                          for (const item of rl)
+                            rlByLyricIdx.set(
+                              parseInt(item.key.split('-')[1]),
+                              item,
+                            )
+                          const blockStarts = new Map<
+                            number,
+                            {
+                              blockId: string
+                              label: string
+                              instanceIdx: number
+                              isTemplate: boolean
+                              repeatCount: number
+                              color: string
+                              startLine: number
+                              endLine: number
+                            }
+                          >()
+                          for (const [blockId, instances] of Object.entries(
+                            blockInstances(),
+                          )) {
+                            const block = getBlockById(blockId)
+                            if (!block) continue
+                            const color = getBlockColor(blockId)
+                            for (let i = 0; i < instances.length; i++) {
+                              const [s, e] = instances[i]
+                              blockStarts.set(s, {
+                                blockId,
+                                label: block.label,
+                                instanceIdx: i,
+                                isTemplate: i === 0,
+                                repeatCount: block.repeatCount,
+                                color,
+                                startLine: s,
+                                endLine: e,
+                              })
+                            }
+                          }
+                          return displayLines().map((dl) => {
+                            if (dl.isBlank)
+                              return (
+                                <div
+                                  class="sm-lyrics-line-spacer"
+                                  style={{
+                                    height: `${lyricsFontSize() * 0.5}rem`,
+                                  }}
+                                />
+                              )
+                            if (dl.isRest)
+                              return (
+                                <div
+                                  class="sm-lyrics-rest"
+                                  style={{
+                                    'font-size': `${lyricsFontSize()}rem`,
+                                  }}
+                                >
+                                  <span class="sm-lyrics-rest-pulse" />
+                                  <span class="sm-lyrics-rest-label">
+                                    ~Rest~
+                                  </span>
+                                </div>
+                              )
+                            const idx = dl.lyricsIndex
+                            const rlItem = rlByLyricIdx.get(idx)
+                            if (!rlItem) return null
+                            const blockInfo = blockStarts.get(idx)
+                            const blockForLine = getBlockForLine(idx)
+                            const blockColor = blockForLine
+                              ? getBlockColor(blockForLine.blockId)
+                              : undefined
+                            const _block = blockForLine
+                              ? getBlockById(blockForLine.blockId)
+                              : undefined
+                            const isMarkSelected =
+                              blockMarkMode() &&
+                              markStartLine() !== null &&
+                              markEndLine() !== null &&
+                              idx >= markStartLine()! &&
+                              idx < markEndLine()!
+                            return (
+                              <>
+                                {blockInfo && (
+                                  <div
+                                    class={`sm-lyrics-block-badge ${blockInfo.isTemplate ? 'sm-lyrics-block-badge--template' : 'sm-lyrics-block-badge--instance'}`}
+                                    style={{
+                                      '--block-color': blockInfo.color,
+                                      'margin-top': '0.4rem',
+                                    }}
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      if (!blockMarkMode())
+                                        setBlockEditTarget(blockInfo.blockId)
+                                    }}
+                                  >
+                                    {blockInfo.label}
+                                    {blockInfo.isTemplate &&
+                                      blockInfo.repeatCount > 1 && (
+                                        <span class="sm-lyrics-block-repeat">
+                                          x{blockInfo.repeatCount}
+                                        </span>
+                                      )}
+                                    {!blockInfo.isTemplate && (
+                                      <span
+                                        class="sm-lyrics-block-unlink"
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          handleUnlinkInstance(
+                                            blockInfo.blockId,
+                                            blockInfo.instanceIdx,
+                                          )
+                                        }}
+                                        title="Unlink this instance"
+                                      >
+                                        x
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+                                <span
+                                  class={`sm-lyrics-line${rlItem.isActive ? ' sm-lyrics-line-active' : ''}${blockForLine ? ' sm-lyrics-line--blocked' : ''}${blockForLine && !blockForLine.isTemplate ? ' sm-lyrics-line--block-instance' : ''}${blockMarkMode() ? ' sm-lyrics-line-markable' : ''}${isMarkSelected ? ' sm-lyrics-line-mark-selected' : ''}`}
+                                  style={
+                                    blockColor !== undefined
+                                      ? { '--block-color': blockColor }
+                                      : {}
+                                  }
+                                  onClick={() => {
+                                    if (blockMarkMode()) {
+                                      const start = markStartLine()
+                                      if (start === null) {
+                                        setMarkStartLine(idx)
+                                        setMarkEndLine(null)
+                                      } else if (markEndLine() !== null) {
+                                        setMarkStartLine(idx)
+                                        setMarkEndLine(null)
+                                      } else {
+                                        if (idx > start) {
+                                          setMarkEndLine(idx + 1)
+                                        } else if (idx < start) {
+                                          setMarkStartLine(idx)
+                                          setMarkEndLine(start + 1)
+                                        } else {
+                                          setMarkEndLine(start + 1)
+                                        }
+                                      }
+                                    } else {
+                                      handleLyricLineClick(idx)
+                                    }
+                                  }}
+                                >
+                                  {blockForLine && !blockForLine.isTemplate && (
+                                    <span
+                                      class="sm-lyrics-block-unlink"
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        handleUnlinkInstance(
+                                          blockForLine.blockId,
+                                          blockForLine.instanceIdx,
+                                        )
+                                      }}
+                                      title="Unlink this instance"
+                                    >
+                                      x
+                                    </span>
+                                  )}
+                                  <span class="sm-lyrics-time">
+                                    {formatTime(rlItem.time)}
+                                  </span>
+                                  {rlItem.words.length === 0
+                                    ? rlItem.key.startsWith('lrc-')
+                                      ? lrcLines()[idx]?.text || ''
+                                      : lyricsLines()[idx] || ''
+                                    : rlItem.words.map((word, wi) => {
+                                        if (wi <= rlItem.activeUpTo)
+                                          return (
+                                            <span class="sm-lyrics-word sm-lyrics-word-done">
+                                              {word}{' '}
+                                            </span>
+                                          )
+                                        if (
+                                          wi === rlItem.activeUpTo + 1 &&
+                                          rlItem.activeCharProgress > 0
+                                        )
+                                          return (
+                                            <span class="sm-lyrics-word sm-lyrics-word-current">
+                                              <span class="sm-lyrics-char-done">
+                                                {word.slice(
+                                                  0,
+                                                  rlItem.activeCharProgress,
+                                                )}
+                                              </span>
+                                              <span class="sm-lyrics-char-remaining">
+                                                {word.slice(
+                                                  rlItem.activeCharProgress,
+                                                )}
+                                              </span>{' '}
+                                            </span>
+                                          )
+                                        return (
+                                          <span class="sm-lyrics-word">
+                                            {word}{' '}
+                                          </span>
+                                        )
+                                      })}
+                                </span>
+                              </>
+                            )
+                          })
+                        })()}
+                      </div>
+                    </Show>
+                  </Show>
+                  <Show when={!lyricsLoading() && lyricsSource() === 'none'}>
+                    <Show
+                      when={showSongPicker()}
+                      fallback={
+                        <LyricsUploader
+                          onUpload={handleLyricsUpload}
+                          suggestion={props.songTitle}
+                        />
+                      }
+                    >
+                      <SongPicker
+                        matches={songMatches()}
+                        query={songPickerQuery()}
+                        onQueryChange={setSongPickerQuery}
+                        onPick={(m) => {
+                          void handleSongPick(m)
+                        }}
+                        onRefine={() => {
+                          void handleSongPickerRefine()
+                        }}
+                        onUpload={() => setShowSongPicker(false)}
                       />
-                    </div>
+                    </Show>
                   </Show>
                 </div>
               </div>
 
-              {/* Right Sidebar: Stem Controls */}
-              <aside class="sm-sidebar" classList={{ 'sm-sidebar-hidden': sidebarHidden() }}>
-                <div class="sm-workspace-panel" style={{ flex: '1', display: 'flex', 'flex-direction': 'column' }}>
-                  <div class="sm-panel-header">Stem Controls</div>
-                  <div class="sm-strips-row" style={{ 'flex-direction': 'column', 'align-items': 'stretch' }}>
-                    {vocal().url && (
-                      <div class="sm-stem-strip">
-                        <div class="sm-stem-header">
-                          <span class="sm-stem-dot" style={{ background: vocal().color }} />
-                          <span class="sm-stem-label">{vocal().label}</span>
-                          <span class="sm-stem-vol-pct">{Math.round((vocal().muted || (anySoloed() && !vocal().soloed)) ? 0 : vocal().volume * 100)}%</span>
-                        </div>
-                        <div class="sm-stem-actions">
-                          <button class={`sm-action-btn ${vocal().soloed ? 'sm-active' : ''}`} onClick={() => toggleSolo('Vocal')} title="Solo" style={{ color: vocal().soloed ? vocal().color : '' }}><Ear /></button>
-                          <button class={`sm-action-btn ${vocal().muted ? 'sm-muted' : ''}`} onClick={() => toggleMute('Vocal')} title="Mute">{vocal().muted ? <VolumeX /> : <Volume2 />}</button>
-                          <button class="sm-action-btn" onClick={() => { void handleDownload(vocal()) }} title="Download"><Download /></button>
-                        </div>
-                        <input type="range" class="sm-volume-slider" min="0" max="100" value={Math.round(vocal().volume * 100)} onInput={(e) => setTrackVolume('Vocal', parseInt(e.currentTarget.value) / 100)} />
-                      </div>
-                    )}
-                    {midi().buffer && props.practiceMode === 'midi' && (
-                      <div class="sm-stem-strip">
-                        <div class="sm-stem-header">
-                          <span class="sm-stem-dot" style={{ background: midi().color }} />
-                          <span class="sm-stem-label">{midi().label}</span>
-                          <span class="sm-stem-vol-pct">{Math.round((midi().muted || (anySoloed() && !midi().soloed)) ? 0 : midi().volume * 100)}%</span>
-                        </div>
-                        <div class="sm-stem-actions">
-                          <button class={`sm-action-btn ${midi().soloed ? 'sm-active' : ''}`} onClick={() => toggleSolo('MIDI')} title="Solo" style={{ color: midi().soloed ? midi().color : '' }}><Ear /></button>
-                          <button class={`sm-action-btn ${midi().muted ? 'sm-muted' : ''}`} onClick={() => toggleMute('MIDI')} title="Mute">{midi().muted ? <VolumeX /> : <Volume2 />}</button>
-                          <button class="sm-action-btn" onClick={() => { void handleDownload(midi()) }} title="Download MIDI"><Download /></button>
-                        </div>
-                        <input type="range" class="sm-volume-slider" min="0" max="100" value={Math.round(midi().volume * 100)} onInput={(e) => setTrackVolume('MIDI', parseInt(e.currentTarget.value) / 100)} />
-                      </div>
-                    )}
-                    {instrumental().url && (
-                      <div class="sm-stem-strip">
-                        <div class="sm-stem-header">
-                          <span class="sm-stem-dot" style={{ background: instrumental().color }} />
-                          <span class="sm-stem-label">{instrumental().label}</span>
-                          <span class="sm-stem-vol-pct">{Math.round((instrumental().muted || (anySoloed() && !instrumental().soloed)) ? 0 : instrumental().volume * 100)}%</span>
-                        </div>
-                        <div class="sm-stem-actions">
-                          <button class={`sm-action-btn ${instrumental().soloed ? 'sm-active' : ''}`} onClick={() => toggleSolo('Instrumental')} title="Solo" style={{ color: instrumental().soloed ? instrumental().color : '' }}><Ear /></button>
-                          <button class={`sm-action-btn ${instrumental().muted ? 'sm-muted' : ''}`} onClick={() => toggleMute('Instrumental')} title="Mute">{instrumental().muted ? <VolumeX /> : <Volume2 />}</button>
-                          <button class="sm-action-btn" onClick={() => { void handleDownload(instrumental()) }} title="Download"><Download /></button>
-                        </div>
-                        <input type="range" class="sm-volume-slider" min="0" max="100" value={Math.round(instrumental().volume * 100)} onInput={(e) => setTrackVolume('Instrumental', parseInt(e.currentTarget.value) / 100)} />
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </aside>
-            </div>
-          </Show>
-        </Show>
-
-        {/* Score modal overlay — shown when playback stops and mic was active */}
-        <Show when={showScore() && score()}>
-          <div class="sm-mic-score-overlay" onClick={() => setShowScore(false)}>
-            <div class="sm-mic-score-card" onClick={(e) => e.stopPropagation()}>
-              <div class="sm-mic-score-card-inner">
-                <button
-                  class="sm-mic-score-close"
-                  onClick={() => setShowScore(false)}
-                  aria-label="Close score"
+              {/* Right Column: Live Waveform + Vocal Pitch */}
+              <div class="sm-fixed-col sm-fixed-col-right">
+                <div
+                  class="sm-workspace-panel"
+                  style={{ height: `${fixedPanelHeights().live}px` }}
+                  data-fixed-panel="live"
                 >
-                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
-                </button>
-                <div class="sm-mic-score-grade-row">
-                  <span class={`sm-mic-grade sm-mic-grade--${score()!.grade.toLowerCase()}`}>{score()!.grade}</span>
-                  <div class="sm-mic-score-stats">
-                    <span class="sm-mic-score-accuracy">{score()!.accuracyPct}% accuracy</span>
-                    <span class="sm-mic-score-detail">
-                      {score()!.matchedNotes}/{score()!.totalNotes} notes in tolerance
-                    </span>
-                    <span class="sm-mic-score-detail">
-                      ±{score()!.avgCentsOff}¢ avg deviation
-                    </span>
-                  </div>
+                  <div class="sm-panel-header">Live Waveform</div>
+                  <canvas
+                    ref={liveWaveCanvasRef}
+                    class="sm-canvas sm-canvas-live"
+                    onWheel={handleCanvasWheel}
+                  />
+                  <div
+                    class="sm-resize-handle"
+                    onPointerDown={(e) => handleFixedResizeStart('live', e)}
+                  />
                 </div>
-                <button class="sm-mic-score-ok-btn" onClick={() => setShowScore(false)}>
-                  OK
-                </button>
+                <div
+                  class="sm-workspace-panel"
+                  style={{ height: `${fixedPanelHeights().pitch}px` }}
+                  data-fixed-panel="pitch"
+                >
+                  <div class="sm-panel-header">Vocal Pitch</div>
+                  <canvas
+                    ref={pitchCanvasRef}
+                    class="sm-canvas sm-canvas-pitch"
+                    onWheel={handleCanvasWheel}
+                  />
+                  <div
+                    class="sm-resize-handle"
+                    onPointerDown={(e) => handleFixedResizeStart('pitch', e)}
+                  />
+                </div>
+                <Show when={props.practiceMode === 'midi'}>
+                  <div
+                    class="sm-workspace-panel"
+                    style={{ height: `${fixedPanelHeights().midi}px` }}
+                    data-fixed-panel="midi"
+                  >
+                    <div class="sm-panel-header">MIDI Melody</div>
+                    <canvas
+                      ref={midiCanvasRef}
+                      class="sm-canvas sm-canvas-midi"
+                      onWheel={handleCanvasWheel}
+                    />
+                    <div
+                      class="sm-resize-handle"
+                      onPointerDown={(e) => handleFixedResizeStart('midi', e)}
+                    />
+                  </div>
+                </Show>
               </div>
             </div>
+
+            {/* Right Sidebar: Stem Controls */}
+            <aside
+              class="sm-sidebar"
+              classList={{ 'sm-sidebar-hidden': sidebarHidden() }}
+            >
+              <div
+                class="sm-workspace-panel"
+                style={{
+                  flex: '1',
+                  display: 'flex',
+                  'flex-direction': 'column',
+                }}
+              >
+                <div class="sm-panel-header">Stem Controls</div>
+                <div
+                  class="sm-strips-row"
+                  style={{
+                    'flex-direction': 'column',
+                    'align-items': 'stretch',
+                  }}
+                >
+                  {vocal().url && (
+                    <div class="sm-stem-strip">
+                      <div class="sm-stem-header">
+                        <span
+                          class="sm-stem-dot"
+                          style={{ background: vocal().color }}
+                        />
+                        <span class="sm-stem-label">{vocal().label}</span>
+                        <span class="sm-stem-vol-pct">
+                          {Math.round(
+                            vocal().muted || (anySoloed() && !vocal().soloed)
+                              ? 0
+                              : vocal().volume * 100,
+                          )}
+                          %
+                        </span>
+                      </div>
+                      <div class="sm-stem-actions">
+                        <button
+                          class={`sm-action-btn ${vocal().soloed ? 'sm-active' : ''}`}
+                          onClick={() => toggleSolo('Vocal')}
+                          title="Solo"
+                          style={{ color: vocal().soloed ? vocal().color : '' }}
+                        >
+                          <Ear />
+                        </button>
+                        <button
+                          class={`sm-action-btn ${vocal().muted ? 'sm-muted' : ''}`}
+                          onClick={() => toggleMute('Vocal')}
+                          title="Mute"
+                        >
+                          {vocal().muted ? <VolumeX /> : <Volume2 />}
+                        </button>
+                        <button
+                          class="sm-action-btn"
+                          onClick={() => {
+                            void handleDownload(vocal())
+                          }}
+                          title="Download"
+                        >
+                          <Download />
+                        </button>
+                      </div>
+                      <input
+                        type="range"
+                        class="sm-volume-slider"
+                        min="0"
+                        max="100"
+                        value={Math.round(vocal().volume * 100)}
+                        onInput={(e) =>
+                          setTrackVolume(
+                            'Vocal',
+                            parseInt(e.currentTarget.value) / 100,
+                          )
+                        }
+                      />
+                    </div>
+                  )}
+                  {midi().buffer && props.practiceMode === 'midi' && (
+                    <div class="sm-stem-strip">
+                      <div class="sm-stem-header">
+                        <span
+                          class="sm-stem-dot"
+                          style={{ background: midi().color }}
+                        />
+                        <span class="sm-stem-label">{midi().label}</span>
+                        <span class="sm-stem-vol-pct">
+                          {Math.round(
+                            midi().muted || (anySoloed() && !midi().soloed)
+                              ? 0
+                              : midi().volume * 100,
+                          )}
+                          %
+                        </span>
+                      </div>
+                      <div class="sm-stem-actions">
+                        <button
+                          class={`sm-action-btn ${midi().soloed ? 'sm-active' : ''}`}
+                          onClick={() => toggleSolo('MIDI')}
+                          title="Solo"
+                          style={{ color: midi().soloed ? midi().color : '' }}
+                        >
+                          <Ear />
+                        </button>
+                        <button
+                          class={`sm-action-btn ${midi().muted ? 'sm-muted' : ''}`}
+                          onClick={() => toggleMute('MIDI')}
+                          title="Mute"
+                        >
+                          {midi().muted ? <VolumeX /> : <Volume2 />}
+                        </button>
+                        <button
+                          class="sm-action-btn"
+                          onClick={() => {
+                            void handleDownload(midi())
+                          }}
+                          title="Download MIDI"
+                        >
+                          <Download />
+                        </button>
+                      </div>
+                      <input
+                        type="range"
+                        class="sm-volume-slider"
+                        min="0"
+                        max="100"
+                        value={Math.round(midi().volume * 100)}
+                        onInput={(e) =>
+                          setTrackVolume(
+                            'MIDI',
+                            parseInt(e.currentTarget.value) / 100,
+                          )
+                        }
+                      />
+                    </div>
+                  )}
+                  {instrumental().url && (
+                    <div class="sm-stem-strip">
+                      <div class="sm-stem-header">
+                        <span
+                          class="sm-stem-dot"
+                          style={{ background: instrumental().color }}
+                        />
+                        <span class="sm-stem-label">
+                          {instrumental().label}
+                        </span>
+                        <span class="sm-stem-vol-pct">
+                          {Math.round(
+                            instrumental().muted ||
+                              (anySoloed() && !instrumental().soloed)
+                              ? 0
+                              : instrumental().volume * 100,
+                          )}
+                          %
+                        </span>
+                      </div>
+                      <div class="sm-stem-actions">
+                        <button
+                          class={`sm-action-btn ${instrumental().soloed ? 'sm-active' : ''}`}
+                          onClick={() => toggleSolo('Instrumental')}
+                          title="Solo"
+                          style={{
+                            color: instrumental().soloed
+                              ? instrumental().color
+                              : '',
+                          }}
+                        >
+                          <Ear />
+                        </button>
+                        <button
+                          class={`sm-action-btn ${instrumental().muted ? 'sm-muted' : ''}`}
+                          onClick={() => toggleMute('Instrumental')}
+                          title="Mute"
+                        >
+                          {instrumental().muted ? <VolumeX /> : <Volume2 />}
+                        </button>
+                        <button
+                          class="sm-action-btn"
+                          onClick={() => {
+                            void handleDownload(instrumental())
+                          }}
+                          title="Download"
+                        >
+                          <Download />
+                        </button>
+                      </div>
+                      <input
+                        type="range"
+                        class="sm-volume-slider"
+                        min="0"
+                        max="100"
+                        value={Math.round(instrumental().volume * 100)}
+                        onInput={(e) =>
+                          setTrackVolume(
+                            'Instrumental',
+                            parseInt(e.currentTarget.value) / 100,
+                          )
+                        }
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </aside>
           </div>
         </Show>
+      </Show>
+
+      {/* Score modal overlay — shown when playback stops and mic was active */}
+      <Show when={showScore() && score()}>
+        <div class="sm-mic-score-overlay" onClick={() => setShowScore(false)}>
+          <div class="sm-mic-score-card" onClick={(e) => e.stopPropagation()}>
+            <div class="sm-mic-score-card-inner">
+              <button
+                class="sm-mic-score-close"
+                onClick={() => setShowScore(false)}
+                aria-label="Close score"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  width="14"
+                  height="14"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+              <div class="sm-mic-score-grade-row">
+                <span
+                  class={`sm-mic-grade sm-mic-grade--${score()!.grade.toLowerCase()}`}
+                >
+                  {score()!.grade}
+                </span>
+                <div class="sm-mic-score-stats">
+                  <span class="sm-mic-score-accuracy">
+                    {score()!.accuracyPct}% accuracy
+                  </span>
+                  <span class="sm-mic-score-detail">
+                    {score()!.matchedNotes}/{score()!.totalNotes} notes in
+                    tolerance
+                  </span>
+                  <span class="sm-mic-score-detail">
+                    ±{score()!.avgCentsOff}¢ avg deviation
+                  </span>
+                </div>
+              </div>
+              <button
+                class="sm-mic-score-ok-btn"
+                onClick={() => setShowScore(false)}
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      </Show>
     </div>
   )
 }

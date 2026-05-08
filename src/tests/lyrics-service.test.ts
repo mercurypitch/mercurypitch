@@ -5,17 +5,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { LrcLine } from '@/lib/lyrics-service'
 import type { LyricsSearchMatch } from '@/lib/lyrics-service'
-import {
-  extractTitle,
-  fetchLyricsById,
-  getCurrentLineIndex,
-  getCurrentLrcIndex,
-  parseArtistTitle,
-  parseLrcFile,
-  parseTextLyrics,
-  searchLyrics,
-  searchLyricsMulti,
-} from '@/lib/lyrics-service'
+import { extractTitle, fetchLyricsById, getCurrentLineIndex, getCurrentLrcIndex, parseArtistTitle, parseLrcFile, parseTextLyrics, searchLyrics, searchLyricsMulti, } from '@/lib/lyrics-service'
 
 // ── REQ-UV-029: LRC Parsing ──────────────────────────────────
 
@@ -259,10 +249,12 @@ describe('searchLyrics', () => {
     vi.spyOn(global, 'fetch').mockResolvedValue({
       ok: true,
       status: 200,
-      json: () => Promise.resolve({
-        syncedLyrics: '[00:10.00]First line\n[00:20.00]Second line\n[00:30.00]Third\n',
-        plainLyrics: 'First line\nSecond line\nThird\n',
-      }),
+      json: () =>
+        Promise.resolve({
+          syncedLyrics:
+            '[00:10.00]First line\n[00:20.00]Second line\n[00:30.00]Third\n',
+          plainLyrics: 'First line\nSecond line\nThird\n',
+        }),
     } as Response)
 
     const result = await searchLyrics('Test Artist - Test Song')
@@ -276,9 +268,10 @@ describe('searchLyrics', () => {
     vi.spyOn(global, 'fetch').mockResolvedValue({
       ok: true,
       status: 200,
-      json: () => Promise.resolve({
-        plainLyrics: 'Just plain lyrics\ntwo lines\n',
-      }),
+      json: () =>
+        Promise.resolve({
+          plainLyrics: 'Just plain lyrics\ntwo lines\n',
+        }),
     } as Response)
 
     const result = await searchLyrics('Test Song')
@@ -294,13 +287,18 @@ describe('searchLyrics', () => {
       callCount++
       if (url.includes('lrclib.net')) {
         // LRCLIB returns 404
-        return Promise.resolve({ ok: false, status: 404, json: () => Promise.resolve({}) } as Response)
+        return Promise.resolve({
+          ok: false,
+          status: 404,
+          json: () => Promise.resolve({}),
+        } as Response)
       }
       // lyrics.ovh returns lyrics
       return Promise.resolve({
         ok: true,
         status: 200,
-        json: () => Promise.resolve({ lyrics: 'Ovh lyrics here\nmore lyrics\n' }),
+        json: () =>
+          Promise.resolve({ lyrics: 'Ovh lyrics here\nmore lyrics\n' }),
       } as Response)
     })
 
@@ -338,7 +336,9 @@ describe('searchLyrics', () => {
 // ── searchLyricsMulti ──────────────────────────────────────────
 
 describe('searchLyricsMulti', () => {
-  const makeMatch = (overrides: Partial<LyricsSearchMatch> = {}): LyricsSearchMatch => ({
+  const _makeMatch = (
+    overrides: Partial<LyricsSearchMatch> = {},
+  ): LyricsSearchMatch => ({
     id: 1,
     artist: 'Test Artist',
     title: 'Test Song',
@@ -349,10 +349,21 @@ describe('searchLyricsMulti', () => {
     vi.spyOn(global, 'fetch').mockResolvedValue({
       ok: true,
       status: 200,
-      json: () => Promise.resolve([
-        { id: 1, artistName: 'Artist A', trackName: 'Song A', syncedLyrics: '[00:05.00]Line 1' },
-        { id: 2, artistName: 'Artist B', trackName: 'Song B', plainLyrics: 'Plain text' },
-      ]),
+      json: () =>
+        Promise.resolve([
+          {
+            id: 1,
+            artistName: 'Artist A',
+            trackName: 'Song A',
+            syncedLyrics: '[00:05.00]Line 1',
+          },
+          {
+            id: 2,
+            artistName: 'Artist B',
+            trackName: 'Song B',
+            plainLyrics: 'Plain text',
+          },
+        ]),
     } as Response)
 
     const results = await searchLyricsMulti('Artist A - Song A')
@@ -370,9 +381,8 @@ describe('searchLyricsMulti', () => {
     vi.spyOn(global, 'fetch').mockResolvedValue({
       ok: true,
       status: 200,
-      json: () => Promise.resolve([
-        { id: 1, artistName: 'Artist', trackName: 'Song' },
-      ]),
+      json: () =>
+        Promise.resolve([{ id: 1, artistName: 'Artist', trackName: 'Song' }]),
     } as Response)
 
     const results = await searchLyricsMulti('Artist - Song')
@@ -431,9 +441,15 @@ describe('searchLyricsMulti', () => {
     vi.spyOn(global, 'fetch').mockResolvedValue({
       ok: true,
       status: 200,
-      json: () => Promise.resolve([
-        { id: 42, artistName: 'The Beatles', trackName: 'Yesterday', syncedLyrics: '[00:10.00]Yesterday' },
-      ]),
+      json: () =>
+        Promise.resolve([
+          {
+            id: 42,
+            artistName: 'The Beatles',
+            trackName: 'Yesterday',
+            syncedLyrics: '[00:10.00]Yesterday',
+          },
+        ]),
     } as Response)
 
     const results = await searchLyricsMulti('The Beatles - Yesterday')
@@ -447,11 +463,12 @@ describe('searchLyricsMulti', () => {
     vi.spyOn(global, 'fetch').mockResolvedValue({
       ok: true,
       status: 200,
-      json: () => Promise.resolve([
-        { artistName: 'No ID', trackName: 'Bad' },
-        { id: 1, artistName: 'Has ID', trackName: 'Good' },
-        { id: 'string-id', artistName: 'String ID', trackName: 'Bad' },
-      ]),
+      json: () =>
+        Promise.resolve([
+          { artistName: 'No ID', trackName: 'Bad' },
+          { id: 1, artistName: 'Has ID', trackName: 'Good' },
+          { id: 'string-id', artistName: 'String ID', trackName: 'Bad' },
+        ]),
     } as Response)
 
     const results = await searchLyricsMulti('Test')
@@ -483,11 +500,13 @@ describe('fetchLyricsById', () => {
     vi.spyOn(global, 'fetch').mockResolvedValue({
       ok: true,
       status: 200,
-      json: () => Promise.resolve({
-        id: 123,
-        syncedLyrics: '[00:05.00]Line one\n[00:10.00]Line two\n[00:15.00]Line three\n',
-        plainLyrics: 'Line one\nLine two\nLine three\n',
-      }),
+      json: () =>
+        Promise.resolve({
+          id: 123,
+          syncedLyrics:
+            '[00:05.00]Line one\n[00:10.00]Line two\n[00:15.00]Line three\n',
+          plainLyrics: 'Line one\nLine two\nLine three\n',
+        }),
     } as Response)
 
     const result = await fetchLyricsById(123)
@@ -500,10 +519,11 @@ describe('fetchLyricsById', () => {
     vi.spyOn(global, 'fetch').mockResolvedValue({
       ok: true,
       status: 200,
-      json: () => Promise.resolve({
-        id: 456,
-        plainLyrics: 'Plain lyrics content here\nmore than 10 chars',
-      }),
+      json: () =>
+        Promise.resolve({
+          id: 456,
+          plainLyrics: 'Plain lyrics content here\nmore than 10 chars',
+        }),
     } as Response)
 
     const result = await fetchLyricsById(456)
@@ -545,9 +565,10 @@ describe('fetchLyricsById', () => {
     const fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValue({
       ok: true,
       status: 200,
-      json: () => Promise.resolve({
-        syncedLyrics: '[00:10.00]Test lyric line here\n',
-      }),
+      json: () =>
+        Promise.resolve({
+          syncedLyrics: '[00:10.00]Test lyric line here\n',
+        }),
     } as Response)
 
     await fetchLyricsById(789)

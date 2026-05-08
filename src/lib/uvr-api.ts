@@ -204,7 +204,7 @@ export async function pollForCompletion(
 
   return new Promise((resolve, reject) => {
     const poll = async () => {
-      if ((signal?.aborted) ?? false) {
+      if (signal?.aborted ?? false) {
         reject(new DOMException('Polling aborted', 'AbortError'))
         return
       }
@@ -251,7 +251,9 @@ export async function pollForCompletion(
           }
         }
 
-        setTimeout(() => { void poll() }, intervalMs)
+        setTimeout(() => {
+          void poll()
+        }, intervalMs)
       } catch (error) {
         onError(error instanceof Error ? error.message : 'Unknown error')
         reject(error)

@@ -4,12 +4,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ProcessStatusResponse } from '@/lib/uvr-api'
-import {
-  DEFAULT_PROCESS_REQUEST,
-  formatFileSize,
-  getProcessStatus,
-  pollForCompletion,
-} from '@/lib/uvr-api'
+import { DEFAULT_PROCESS_REQUEST, formatFileSize, getProcessStatus, pollForCompletion, } from '@/lib/uvr-api'
 
 beforeEach(() => {
   vi.restoreAllMocks()

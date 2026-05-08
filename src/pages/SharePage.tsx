@@ -9,7 +9,9 @@ import type { MelodyItem } from '@/types'
 
 export const SharePage: Component = () => {
   const [contentType, setContentType] = createSignal<string>('')
-  const [content, setContent] = createSignal<SharedMelody | SharedSession | null>(null)
+  const [content, setContent] = createSignal<
+    SharedMelody | SharedSession | null
+  >(null)
   const [error, setError] = createSignal<string>('')
 
   onMount(() => {
@@ -77,11 +79,17 @@ export const SharePage: Component = () => {
         </Show>
 
         <Show when={contentType() === 'melody' && content()}>
-          <MelodyShareContent content={content()} onShare={shareContent} />
+          <MelodyShareContent
+            content={content() as SharedMelody}
+            onShare={shareContent}
+          />
         </Show>
 
         <Show when={contentType() === 'session' && content()}>
-          <SessionShareContent content={content()} onShare={shareContent} />
+          <SessionShareContent
+            content={content() as SharedSession}
+            onShare={shareContent}
+          />
         </Show>
 
         <Show when={error() === '' && content() === null}>
@@ -108,7 +116,9 @@ const MelodyShareContent: Component<MelodyShareProps> = (props) => {
   const { content, onShare } = props
 
   const notes = content.items
-    .filter((item: MelodyItem) => item.isRest !== true && item.note !== undefined)
+    .filter(
+      (item: MelodyItem) => item.isRest !== true && item.note !== undefined,
+    )
     .map((item: MelodyItem) => {
       const note = item.note
       return {
@@ -138,7 +148,11 @@ const MelodyShareContent: Component<MelodyShareProps> = (props) => {
             <div class="info-item">
               <span class="info-label">Duration</span>
               <span class="info-value">
-                {notes.reduce((a: number, b: { duration: number }) => a + b.duration, 0)} beats
+                {notes.reduce(
+                  (a: number, b: { duration: number }) => a + b.duration,
+                  0,
+                )}{' '}
+                beats
               </span>
             </div>
             <div class="info-item">
@@ -174,7 +188,16 @@ const MelodyShareContent: Component<MelodyShareProps> = (props) => {
               <span class="note-column">Frequency (Hz)</span>
             </div>
             <For each={notes}>
-              {(n: { midi: number; noteName: string; octave: number; freq: number; duration: number }, _i) => (
+              {(
+                n: {
+                  midi: number
+                  noteName: string
+                  octave: number
+                  freq: number
+                  duration: number
+                },
+                _i,
+              ) => (
                 <div class="note-row">
                   <span class="note-column">
                     {n.noteName}
@@ -280,17 +303,6 @@ const SessionShareContent: Component<SessionShareProps> = (props) => {
             </div>
           </div>
         </div>
-
-        <Show when={content.tags !== undefined && content.tags.length > 0}>
-          <div class="tags-section">
-            <h3>Tags</h3>
-            <div class="tags-container">
-              <For each={content.tags}>
-                {(tag: string) => <span class="tag">{tag}</span>}
-              </For>
-            </div>
-          </div>
-        </Show>
       </div>
 
       <div class="share-footer">

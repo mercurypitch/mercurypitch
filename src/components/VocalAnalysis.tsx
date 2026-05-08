@@ -6,7 +6,7 @@ import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, onCleanup, Show } from 'solid-js'
 import { frequenciesToNoteName } from '@/lib/frequency-to-note'
 import { getSessionHistory } from '@/stores'
-import type { NoteResult, PitchResult, SessionResult } from '@/types'
+import type { PitchResult, PracticeResult, SessionResult } from '@/types'
 
 // ============================================================
 // SVG Icons
@@ -389,9 +389,7 @@ export const VocalAnalysis: Component = () => {
       const allData = getSessionHistory()
       if (allData.length > 0) {
         // Convert SessionResult[] to PitchResult[] by flattening practiceItemResult
-        const practiceResults = allData.flatMap(
-          (s) => s.practiceItemResult,
-        )
+        const practiceResults = allData.flatMap((s) => s.practiceItemResult)
         setVocalRunData(
           practiceResults
             .flatMap((p) => p.noteResult)
@@ -406,9 +404,9 @@ export const VocalAnalysis: Component = () => {
         // Build spectral approximation
         const spectral: SpectrumData[] = practiceResults
           .slice(-30)
-          .map((r: NoteResult, i: number) => ({
-            frequency: r.pitchFreq,
-            amplitude: r.avgCents * 3,
+          .map((r: PracticeResult, i: number) => ({
+            frequency: r.score * 20,
+            amplitude: Math.abs(r.avgCents) * 3,
             phase: (i / 30) * Math.PI * 2,
           }))
         setSpectralData(spectral)
@@ -588,7 +586,8 @@ export const VocalAnalysis: Component = () => {
             <Show when={activeExercise()}>
               <div class="exercise-result">
                 <h4>
-                  {(exercises.find((e) => e.type === activeExercise())?.name) ?? 'Analysis'}
+                  {exercises.find((e) => e.type === activeExercise())?.name ??
+                    'Analysis'}
                 </h4>
                 <Show when={isAnalyzing()}>
                   <div class="analyzing-overlay">
@@ -753,7 +752,12 @@ export const VocalAnalysis: Component = () => {
     return checkFn.feedback
   }
 
-  function metrics(): { noteCount: number; minFreq: number; maxFreq: number; avgVolume: number } {
+  function metrics(): {
+    noteCount: number
+    minFreq: number
+    maxFreq: number
+    avgVolume: number
+  } {
     if (isAnalyzing())
       return { noteCount: 0, minFreq: 0, maxFreq: 0, avgVolume: 0 }
     if (vocalRunData().length === 0)

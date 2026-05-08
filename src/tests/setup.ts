@@ -7,17 +7,35 @@ class MockAudioContext {
   state: 'suspended' | 'running' | 'closed' = 'running'
   currentTime = 0
 
-  createGain() { return new MockGainNode() }
-  createOscillator() { return new MockOscillator() }
-  createAnalyser() { return new MockAnalyser() }
-  createMediaStreamSource() { return new MockMediaStreamAudioSourceNode() }
-  createBiquadFilter() { return new MockBiquadFilterNode() }
-  createChannelSplitter(_channels?: number) { return new MockChannelSplitterNode() }
-  createMediaElementSource() { return new MockMediaElementAudioSourceNode() }
+  createGain() {
+    return new MockGainNode()
+  }
+  createOscillator() {
+    return new MockOscillator()
+  }
+  createAnalyser() {
+    return new MockAnalyser()
+  }
+  createMediaStreamSource() {
+    return new MockMediaStreamAudioSourceNode()
+  }
+  createBiquadFilter() {
+    return new MockBiquadFilterNode()
+  }
+  createChannelSplitter(_channels?: number) {
+    return new MockChannelSplitterNode()
+  }
+  createMediaElementSource() {
+    return new MockMediaElementAudioSourceNode()
+  }
   destination = {}
 
-  resume() { return Promise.resolve() }
-  close() { return Promise.resolve() }
+  resume() {
+    return Promise.resolve()
+  }
+  close() {
+    return Promise.resolve()
+  }
 }
 
 class MockGainNode {
@@ -67,7 +85,6 @@ class MockAnalyser {
   }
 }
 
- 
 class MockMediaStreamAudioSourceNode {
   connect() {}
   disconnect() {}
@@ -80,7 +97,13 @@ class MockMediaElementAudioSourceNode {
 
 class MockBiquadFilterNode {
   type: BiquadFilterType = 'lowpass'
-  frequency = { value: 440, setValueAtTime: () => {}, setTargetAtTime: () => {}, exponentialRampToValueAtTime: () => {}, linearRampToValueAtTime: () => {} }
+  frequency = {
+    value: 440,
+    setValueAtTime: () => {},
+    setTargetAtTime: () => {},
+    exponentialRampToValueAtTime: () => {},
+    linearRampToValueAtTime: () => {},
+  }
   Q = { value: 1 }
   gain = { value: 0 }
   connect() {}

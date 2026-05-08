@@ -4,7 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createSignal } from 'solid-js'
-import { Headphones, Music,MusicBoard, Voice } from './icons'
+import { Headphones, Music, MusicBoard, Voice } from './icons'
 
 interface UvrGuideProps {
   onClose?: () => void
@@ -302,7 +302,9 @@ export const UvrGuide: Component<UvrGuideProps> = (props) => {
         </div>
         <button
           class="guide-step-arrow"
-          onClick={() => setActiveStep((s) => Math.min(steps.length - 1, s + 1))}
+          onClick={() =>
+            setActiveStep((s) => Math.min(steps.length - 1, s + 1))
+          }
           disabled={activeStep() === steps.length - 1}
           aria-label="Next step"
         >
@@ -330,9 +332,7 @@ export const UvrGuide: Component<UvrGuideProps> = (props) => {
       </div>
 
       {/* Content Area */}
-      <div class="guide-content">
-        {steps[activeStep()].content}
-      </div>
+      <div class="guide-content">{steps[activeStep()].content}</div>
 
       {/* Navigation Buttons */}
       <div class="guide-nav-buttons">

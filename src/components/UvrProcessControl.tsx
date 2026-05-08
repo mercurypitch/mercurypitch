@@ -94,13 +94,8 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
         <div class="process-info">
           <h3>{currentStage.title}</h3>
           <p>{currentStage.description}</p>
-          <p
-            class="process-session-id"
-            title={displayId}
-          >
-            {displayId.length > 16
-              ? displayId.slice(-8)
-              : displayId}
+          <p class="process-session-id" title={displayId}>
+            {displayId.length > 16 ? displayId.slice(-8) : displayId}
           </p>
         </div>
       </div>
@@ -111,16 +106,23 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
           <div class="progress-bar-container">
             <div
               class="progress-bar-fill"
-              classList={{ 'progress-bar-indeterminate': props.indeterminate ?? false }}
+              classList={{
+                'progress-bar-indeterminate': props.indeterminate ?? false,
+              }}
               style={{
-                width: (props.indeterminate ?? false) ? '100%' : formatPercentage(props.progress),
+                width:
+                  (props.indeterminate ?? false)
+                    ? '100%'
+                    : formatPercentage(props.progress),
                 '--progress-color': currentStage.color,
               }}
             />
           </div>
           <div class="progress-text">
-            {(props.indeterminate ?? false) ? 'Estimating...' : formatPercentage(props.progress)} •{' '}
-            {formatTime(props.processingTime ?? 0)}
+            {(props.indeterminate ?? false)
+              ? 'Estimating...'
+              : formatPercentage(props.progress)}{' '}
+            • {formatTime(props.processingTime ?? 0)}
           </div>
         </div>
       </Show>
@@ -192,6 +194,3 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
     </div>
   )
 }
-
-
-

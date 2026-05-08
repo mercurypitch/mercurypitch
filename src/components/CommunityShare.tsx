@@ -400,7 +400,9 @@ export const CommunityShare: Component = () => {
   const [activeTab, setActiveTab] = createSignal<
     'melodies' | 'sessions' | 'profile'
   >('melodies')
-  const [userProfile, _setUserProfile] = createSignal<SharedProfile | null>(null)
+  const [userProfile, _setUserProfile] = createSignal<SharedProfile | null>(
+    null,
+  )
   const [searchQuery, setSearchQuery] = createSignal('')
   const [sortBy, setSortBy] = createSignal<'recent' | 'popular' | 'highest'>(
     'recent',
@@ -415,7 +417,9 @@ export const CommunityShare: Component = () => {
       if (stored !== null) {
         return JSON.parse(stored) as SharedMelody[]
       }
-    } catch { /* localStorage not available */ }
+    } catch {
+      /* localStorage not available */
+    }
     return []
   })
 
@@ -425,7 +429,9 @@ export const CommunityShare: Component = () => {
       if (stored !== null) {
         return JSON.parse(stored) as SharedSession[]
       }
-    } catch { /* localStorage not available */ }
+    } catch {
+      /* localStorage not available */
+    }
     return []
   })
 
@@ -616,7 +622,11 @@ export const CommunityShare: Component = () => {
         <div class="sort-select">
           <select
             value={sortBy()}
-            onChange={(e) => setSortBy(e.currentTarget.value as 'recent' | 'popular' | 'highest')}
+            onChange={(e) =>
+              setSortBy(
+                e.currentTarget.value as 'recent' | 'popular' | 'highest',
+              )
+            }
           >
             <option value="recent">Most Recent</option>
             <option value="popular">Most Popular</option>
