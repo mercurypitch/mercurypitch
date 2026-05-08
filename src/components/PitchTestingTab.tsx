@@ -22,6 +22,7 @@ interface TestNoteResult {
   targetFreq: number
   passed: boolean
   detectedFreq: number | null
+  errorCents: number | null
 }
 
 interface EnsembleTickResult {
@@ -144,6 +145,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
   const [zoomLevel, setZoomLevel] = createSignal(1)
   const [sensitivity, setSensitivity] = createSignal(7)
   const [minConfidence, setMinConfidence] = createSignal(0.1)
+  const [centsThreshold, setCentsThreshold] = createSignal(5)
 
   let detectionTimerId: number | null = null
   let detectionStartTime = 0
@@ -476,15 +478,17 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
         }
 
         let detectedFreq: number | null
+        let errorCents: number | null
         let isPass: boolean
 
         if (isEnsemble) {
           detectors().forEach((d) => d.reset())
           const ensembleOutput = ensembleDetect(wave)
           detectedFreq = ensembleOutput.result?.frequency ?? null
-          isPass =
-            ensembleOutput.result !== null &&
-            Math.abs(ensembleOutput.result.frequency - freq) < 5
+          errorCents = detectedFreq !== null
+            ? Math.abs(1200 * Math.log2(detectedFreq / freq))
+            : null
+          isPass = errorCents !== null && errorCents <= centsThreshold()
         } else {
           const detector = detectors().find(
             (d) => d.algorithm === selectedAlgorithm(),
@@ -499,10 +503,10 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
             result = detector!.detect(wave)
           }
           detectedFreq = result?.frequency ?? null
-          isPass =
-            result !== null &&
-            result !== undefined &&
-            Math.abs(result.frequency - freq) < 5
+          errorCents = detectedFreq !== null
+            ? Math.abs(1200 * Math.log2(detectedFreq / freq))
+            : null
+          isPass = errorCents !== null && errorCents <= centsThreshold()
         }
 
         if (isPass) {
@@ -516,6 +520,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
           targetFreq: freq,
           passed: isPass,
           detectedFreq,
+          errorCents,
         })
 
         const newFailed = errors.length
@@ -810,6 +815,55 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
           </Show>
 
           <div class="control-group">
+            <label>
+              Cents Threshold{' '}
+              <span class="slider-value-badge">
+                {centsThreshold()}¢
+              </span>
+            </label>
+            <div class="preset-buttons">
+              <button
+                class="btn btn-preset"
+                classList={{ active: centsThreshold() === 0 }}
+                disabled={isRunningTest()}
+                onClick={() => setCentsThreshold(0)}
+              >
+                Perfect (0¢)
+              </button>
+              <button
+                class="btn btn-preset"
+                classList={{ active: centsThreshold() === 5 }}
+                disabled={isRunningTest()}
+                onClick={() => setCentsThreshold(5)}
+              >
+                Great (±5¢)
+              </button>
+              <button
+                class="btn btn-preset"
+                classList={{ active: centsThreshold() === 10 }}
+                disabled={isRunningTest()}
+                onClick={() => setCentsThreshold(10)}
+              >
+                Okay (±10¢)
+              </button>
+            </div>
+            <input
+              type="range"
+              class="cents-threshold-slider"
+              min="0"
+              max="20"
+              step="1"
+              value={centsThreshold()}
+              disabled={isRunningTest()}
+              onInput={(e) => setCentsThreshold(Number(e.currentTarget.value))}
+            />
+            <div class="slider-range-labels">
+              <span>0¢</span>
+              <span>20¢</span>
+            </div>
+          </div>
+
+          <div class="control-group">
             <label>Detection Mode</label>
             <select
               disabled={isDetecting() || isRunningTest()}
@@ -1093,7 +1147,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                   {ensembleMode()
                     ? `${[...ensembleAlgorithms()].join(' + ')} ensemble (majority vote)`
                     : (currentDetector()?.getName() ?? selectedAlgorithm())}
-                  . Pass = detected within &plusmn;5 Hz of target.
+                  . Pass = detected within &plusmn;{centsThreshold()}¢ of target.
                 </p>
               </Show>
 
@@ -1134,7 +1188,9 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                       <tr>
                         <th>Note</th>
                         <th>Target (Hz)</th>
-                        <th>Result</th>
+                        <th>Result (Hz)</th>
+                        <th>Error (¢)</th>
+                        <th>Status</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1151,15 +1207,23 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                               {nr.targetFreq.toFixed(2)}
                             </td>
                             <td class="test-note-result">
+                              {nr.detectedFreq !== null
+                                ? `${nr.detectedFreq.toFixed(1)}`
+                                : '—'}
+                            </td>
+                            <td class="test-note-error">
+                              {nr.errorCents !== null
+                                ? nr.errorCents < 0.05
+                                  ? '0.0'
+                                  : nr.errorCents.toFixed(1)
+                                : '—'}
+                            </td>
+                            <td class="test-note-status">
                               <Show when={nr.passed}>
                                 <span class="result-badge pass">Pass</span>
                               </Show>
                               <Show when={!nr.passed}>
-                                <span class="result-badge fail">
-                                  {nr.detectedFreq !== null
-                                    ? `${nr.detectedFreq.toFixed(1)} Hz`
-                                    : 'No detection'}
-                                </span>
+                                <span class="result-badge fail">Fail</span>
                               </Show>
                             </td>
                           </tr>
