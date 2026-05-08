@@ -185,13 +185,13 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   const [blockMarkMode, setBlockMarkMode] = createSignal(false)
   const [markStartLine, setMarkStartLine] = createSignal<number | null>(null)
   const [markEndLine, setMarkEndLine] = createSignal<number | null>(null)
-  const [_showBlockForm, _setShowBlockForm] = createSignal(false)
+  const [_showBlockForm, setShowBlockForm] = createSignal(false)
   const [blockEditTarget, setBlockEditTarget] = createSignal<string | null>(null)  // block ID being edited
 
   // ── Mic pitch comparison state ────────────────────────────────
-  const [_micEnabled, _setMicEnabled] = createSignal(false)
+  const [_micEnabled, setMicEnabled] = createSignal(false)
   const [micActive, setMicActive] = createSignal(false)
-  const [_micPitch, _setMicPitch] = createSignal<DetectedPitch | null>(null)
+  const [_micPitch, setMicPitch] = createSignal<DetectedPitch | null>(null)
   const [micError, setMicError] = createSignal('')
 
   // ── Scoring state ───────────────────────────────────────────

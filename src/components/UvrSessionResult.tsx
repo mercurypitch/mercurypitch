@@ -15,7 +15,7 @@ interface SessionResultProps {
     sessionId: string,
     type: 'vocal' | 'instrumental' | 'vocal-midi',
   ) => void
-  onOpenMixer?: (sessionId: string, stems?: { vocal?: boolean; instrumental?: boolean }) => void
+  onOpenMixer?: (sessionId: string, stems?: { vocal?: boolean; instrumental?: boolean; midi?: boolean }) => void
   onClose?: () => void
 }
 
@@ -100,6 +100,7 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
     props.onOpenMixer?.(props.sessionId, {
       vocal: sel.has('vocal'),
       instrumental: sel.has('instrumental'),
+      midi: sel.has('vocal-midi'),
     })
   }
 

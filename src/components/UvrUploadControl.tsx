@@ -113,9 +113,6 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
           <MusicNote />
         </div>
         <h3>Import Audio File</h3>
-        <p class="upload-subtitle">
-          Upload MP3 or WAV files to separate vocals and create MIDI
-        </p>
       </div>
 
       {/* Upload Zone */}
@@ -143,9 +140,6 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
             <p class="upload-text">
               Drag & drop your file here or{' '}
               <span class="upload-text-highlight">browse</span>
-            </p>
-            <p class="upload-hint">
-              Supports MP3, WAV files up to {formatFileSize(maxSize())}
             </p>
           </div>
         </Show>
@@ -193,11 +187,11 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
 
       {/* Supported Formats */}
       <div class="supported-formats">
-        <p class="formats-label">Supported formats:</p>
         <div class="formats-list">
           <span class="format-tag">MP3</span>
           <span class="format-tag">WAV</span>
           <span class="format-tag">FLAC</span>
+          <span class="format-tag format-tag-size">{formatFileSize(maxSize())}</span>
         </div>
       </div>
     </div>

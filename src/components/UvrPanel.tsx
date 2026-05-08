@@ -321,15 +321,16 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
 
   const handleOpenMixerFromHistory = (
     sessionId: string,
-    stems?: { vocal?: boolean; instrumental?: boolean },
+    stems?: { vocal?: boolean; instrumental?: boolean; midi?: boolean },
   ) => {
     const s = getUvrSession(sessionId)
     if (!s?.outputs) return
     setCurrentUvrSession(s)
 
     setPrevView(currentView())
-    setMixerPracticeMode('full')
     const filter = stems || {}
+    const hasMidi = filter.midi === true
+    setMixerPracticeMode(hasMidi ? 'midi' : 'full')
     setMixerStems({
       vocal: filter.vocal !== false ? s.outputs.vocal : undefined,
       instrumental:
@@ -563,14 +564,8 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
               }}
               processing={session()?.status === 'processing'}
             />
-            <div class="quick-tips">
-              <h5>Quick Tips</h5>
-              <ul>
-                <li>Supports MP3 and WAV files up to 100MB</li>
-                <li>Processing typically takes 30-120 seconds</li>
-                <li>Generated files are saved for later use</li>
-              </ul>
-            </div>
+
+
           </div>
         </Show>
 

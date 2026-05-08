@@ -455,6 +455,9 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
+  max-width: min(80%, 800px);
+  margin: 0 auto;
+  width: 100%;
 }
 
 .upload-section .section-header {
@@ -473,10 +476,8 @@
   margin-bottom: 0.5rem;
 }
 
-.upload-section .quick-tips {
-  flex-shrink: 0;
-  margin-bottom: 0.75rem;
-}
+
+
 
 /* Upload divider — gradient accent line with centered label */
 .upload-divider {
@@ -509,39 +510,8 @@
   font-weight: 500;
 }
 
-.quick-tips {
-  margin-top: 1rem;
-  padding: 0.75rem;
-  background: var(--bg-primary);
-  border-radius: 0.5rem;
-}
 
-.quick-tips h5 {
-  margin: 0 0 0.5rem;
-  font-size: 0.85rem;
-  color: var(--fg-primary);
-}
 
-.quick-tips ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.quick-tips li {
-  font-size: 0.85rem;
-  color: var(--fg-secondary);
-  padding: 0.2rem 0;
-  padding-left: 1rem;
-  position: relative;
-}
-
-.quick-tips li::before {
-  content: '•';
-  position: absolute;
-  left: 0;
-  color: var(--accent);
-}
 
 /* ============================================================
 // Upload Control (UvrUploadControl)
@@ -757,30 +727,30 @@
 }
 
 .supported-formats {
-  padding: 0.6rem 0.75rem;
-  background: var(--bg-secondary);
-  border-radius: 0.5rem;
-}
-
-.formats-label {
-  color: var(--fg-secondary);
-  font-size: 0.8rem;
-  margin-bottom: 0.35rem;
+  padding: 0.5rem 0 0;
 }
 
 .formats-list {
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
+  justify-content: center;
 }
 
 .format-tag {
-  padding: 0.25rem 0.5rem;
+  padding: 0.3rem 0.65rem;
   background: var(--bg-primary);
   border: 1px solid var(--border);
-  border-radius: 0.25rem;
-  font-size: 0.75rem;
+  border-radius: 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 500;
   color: var(--fg-secondary);
+}
+
+.format-tag-size {
+  color: var(--accent);
+  border-color: rgba(102, 126, 234, 0.25);
+  background: rgba(102, 126, 234, 0.08);
 }
 
 /* ============================================================
@@ -999,6 +969,7 @@
 .uvr-session-result {
   display: flex;
   flex-direction: column;
+  gap: 0.8rem;
   padding: 0.6rem;
   background: var(--bg-secondary);
   border: 1px solid var(--border);
@@ -1209,8 +1180,9 @@
 
 .stem-pills {
   display: flex;
-  gap: 0.3rem;
+  gap: 0.8rem;
   flex-wrap: wrap;
+  padding: 0.3rem;
 }
 
 .stem-pill {
