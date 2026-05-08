@@ -8,6 +8,7 @@ import type {LrcLine, LyricsSearchMatch, LyricsSearchResult} from '@/lib/lyrics-
 import { extractTitle, fetchLyricsById, getCurrentLineIndex, getCurrentLrcIndex,   parseLrcFile, parseTextLyrics, searchLyrics, searchLyricsMulti } from '@/lib/lyrics-service'
 import type {DetectedPitch} from '@/lib/pitch-detector';
 import { PitchDetector } from '@/lib/pitch-detector'
+import { generateVocalMidi } from '@/lib/midi-generator'
 import { freqToNote as _freqToNote } from '@/lib/scale-data'
 import { ChevronLeft, Download, Ear, Mic, Midi, Pause, Play, SkipBack, SlidersHorizontal, Volume2, VolumeX } from './icons'
 import type {LyricsUploadResult} from './LyricsUploader';
@@ -2838,12 +2839,23 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                     <button
                       class="sm-midi-dl-btn"
                       onClick={() => {
-                        const a = document.createElement("a");
-                        a.href = props.stems.vocalMidi!;
-                        a.download = "vocal_midi.mid";
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
+                        void (async () => {
+                          let midiUrl = props.stems.vocalMidi
+                          if ((!midiUrl || midiUrl === '') && props.stems.vocal) {
+                            try {
+                              const blob = await generateVocalMidi(props.stems.vocal)
+                              if (blob) midiUrl = URL.createObjectURL(blob)
+                            } catch (e) { console.error('MIDI generation failed:', e) }
+                          }
+                          if (midiUrl) {
+                            const a = document.createElement("a");
+                            a.href = midiUrl;
+                            a.download = "vocal_midi.mid";
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                          }
+                        })()
                       }}
                       title="Download MIDI"
                     >
@@ -3889,7 +3901,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                       <div class="sm-midi-substem">
                         <span class="sm-midi-icon"><Midi /></span>
                         <span class="sm-midi-label">MIDI</span>
-                        <button class="sm-midi-dl-btn" onClick={() => { const a = document.createElement("a"); a.href = props.stems.vocalMidi!; a.download = "vocal_midi.mid"; document.body.appendChild(a); a.click(); document.body.removeChild(a) }} title="Download MIDI"><Download /></button>
+                        <button class="sm-midi-dl-btn" onClick={() => { void (async () => { let midiUrl = props.stems.vocalMidi; if ((!midiUrl || midiUrl === '') && props.stems.vocal) { try { const blob = await generateVocalMidi(props.stems.vocal); if (blob) midiUrl = URL.createObjectURL(blob) } catch(e){console.error(e)} } if (midiUrl) { const a = document.createElement("a"); a.href = midiUrl; a.download = "vocal_midi.mid"; document.body.appendChild(a); a.click(); document.body.removeChild(a) } })() }} title="Download MIDI"><Download /></button>
                       </div>
                     )}
                     {instrumental().url && (

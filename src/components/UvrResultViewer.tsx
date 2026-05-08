@@ -5,6 +5,7 @@
 import type { Component } from 'solid-js'
 import { createSignal, For, Show } from 'solid-js'
 import { Download, Headphones, Midi, MusicBoard, Play, Share, SlidersHorizontal, Voice, X, } from './icons'
+import { generateVocalMidi } from '@/lib/midi-generator'
 
 interface StemMeta {
   duration?: number
@@ -50,7 +51,19 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
     props.onStartPractice?.(mode)
   }
 
-  const handleDownload = async (url: string | undefined, filename: string) => {
+  const handleDownload = async (url: string | undefined, filename: string, stemKey?: string) => {
+    // Handle MIDI stems — generate on-the-fly from vocal audio
+    if ((url === undefined || url === '') && stemKey === 'vocalMidi' && props.outputs?.vocal) {
+      try {
+        const midiBlob = await generateVocalMidi(props.outputs.vocal)
+        if (midiBlob) {
+          url = URL.createObjectURL(midiBlob)
+        }
+      } catch (err) {
+        console.error('MIDI generation failed:', err)
+        return
+      }
+    }
     if (url === undefined || url === '') return
     try {
       const resp = await fetch(url)
@@ -202,7 +215,7 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
                 </button>
                 <button
                   class="rv-stem-btn rv-stem-btn-download"
-                  onClick={() => { void handleDownload(stem.url, `${stem.label.toLowerCase()}_stem.${stem.format.toLowerCase()}`) }}
+                  onClick={() => { void handleDownload(stem.url, `${stem.label.toLowerCase()}_stem.${stem.format.toLowerCase()}`, stem.key) }}
                 >
                   <Download />
                 </button>

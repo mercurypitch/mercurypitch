@@ -8,6 +8,7 @@ import type { OutputFile } from '@/lib/uvr-api'
 import { DEFAULT_PROCESS_REQUEST, getProcessStatus, pollForCompletion, processAudio, } from '@/lib/uvr-api'
 import type { UvrSession } from '@/stores/app-store'
 import { cancelUvrSession, completeUvrSession, currentUvrSession, deleteAllUvrSessions, getAllUvrSessions, getAllUvrSessionsReactive, getUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrSessionApiId, startUvrSession, updateUvrSessionOutputs, updateUvrSessionProgress, } from '@/stores/app-store'
+import { generateVocalMidi } from '@/lib/midi-generator'
 import { StemMixer, UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrSettings, UvrUploadControl, } from '.'
 import { CheckCircle, History, Music, Settings, Trash2, X } from './icons'
 
@@ -239,13 +240,26 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     if (url === undefined) return
 
     try {
-      const resp = await fetch(url)
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
-      const blob = await resp.blob()
+      let blob: Blob
+      const ext = type.includes('midi') ? '.mid' : '.wav'
+
+      if (type === 'vocal-midi' && (url === '' || url === undefined) && s.outputs.vocal) {
+        // Generate MIDI on-the-fly from vocal stem
+        const midiBlob = await generateVocalMidi(s.outputs.vocal)
+        if (!midiBlob) {
+          console.error('MIDI generation produced no notes')
+          return
+        }
+        blob = midiBlob
+      } else {
+        const resp = await fetch(url)
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
+        blob = await resp.blob()
+      }
+
       const blobUrl = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = blobUrl
-      const ext = type.includes('midi') ? '.mid' : '.wav'
       a.download = `${type.replace('-', '_')}${ext}`
       document.body.appendChild(a)
       a.click()
@@ -333,13 +347,25 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     if (url === undefined) return
 
     try {
-      const resp = await fetch(url)
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
-      const blob = await resp.blob()
+      let blob: Blob
+      const ext = type === 'vocal-midi' ? '.mid' : '.wav'
+
+      if (type === 'vocal-midi' && (url === '' || url === undefined) && s.outputs.vocal) {
+        const midiBlob = await generateVocalMidi(s.outputs.vocal)
+        if (!midiBlob) {
+          console.error('MIDI generation produced no notes')
+          return
+        }
+        blob = midiBlob
+      } else {
+        const resp = await fetch(url)
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
+        blob = await resp.blob()
+      }
+
       const blobUrl = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = blobUrl
-      const ext = type === 'vocal-midi' ? '.mid' : '.wav'
       a.download = `${type.replace('-', '_')}${ext}`
       document.body.appendChild(a)
       a.click()
