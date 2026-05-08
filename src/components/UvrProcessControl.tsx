@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createSignal, For, Show } from 'solid-js'
+import { For, Show } from 'solid-js'
 import { CheckCircle, Loader2, Music, Pause, Play, Settings, XCircle, } from './icons'
 
 interface ProcessControlProps {
@@ -63,7 +63,7 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
           icon: <XCircle />,
           title: 'Processing Failed',
           description:
-            props.error && props.error.length > 0
+            (props.error ?? '').length > 0
               ? props.error
               : 'Unknown error occurred',
           color: 'var(--error)',
@@ -79,6 +79,7 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
   }
 
   const currentStage = getProcessStage()
+  const displayId = props.apiSessionId ?? props.sessionId
 
   return (
     <div class="uvr-process-control">
@@ -95,11 +96,11 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
           <p>{currentStage.description}</p>
           <p
             class="process-session-id"
-            title={props.apiSessionId || props.sessionId}
+            title={displayId}
           >
-            {(props.apiSessionId || props.sessionId).length > 16
-              ? (props.apiSessionId || props.sessionId).slice(-8)
-              : (props.apiSessionId || props.sessionId)}
+            {displayId.length > 16
+              ? displayId.slice(-8)
+              : displayId}
           </p>
         </div>
       </div>
@@ -110,16 +111,16 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
           <div class="progress-bar-container">
             <div
               class="progress-bar-fill"
-              classList={{ 'progress-bar-indeterminate': props.indeterminate }}
+              classList={{ 'progress-bar-indeterminate': props.indeterminate ?? false }}
               style={{
-                width: props.indeterminate ? '100%' : formatPercentage(props.progress),
+                width: (props.indeterminate ?? false) ? '100%' : formatPercentage(props.progress),
                 '--progress-color': currentStage.color,
               }}
             />
           </div>
           <div class="progress-text">
-            {props.indeterminate ? 'Estimating...' : formatPercentage(props.progress)} •{' '}
-            {formatTime(props.processingTime || 0)}
+            {(props.indeterminate ?? false) ? 'Estimating...' : formatPercentage(props.progress)} •{' '}
+            {formatTime(props.processingTime ?? 0)}
           </div>
         </div>
       </Show>
@@ -133,17 +134,17 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
               {
                 label: 'Vocal Stem',
                 icon: Music,
-                active: !!props.outputs?.vocal,
+                active: props.outputs?.vocal !== undefined,
               },
               {
                 label: 'Instrumental',
                 icon: Settings,
-                active: !!props.outputs?.instrumental,
+                active: props.outputs?.instrumental !== undefined,
               },
               {
                 label: 'Vocal MIDI',
                 icon: Settings,
-                active: !!props.outputs?.vocalMidi,
+                active: props.outputs?.vocalMidi !== undefined,
               },
             ]}
           >

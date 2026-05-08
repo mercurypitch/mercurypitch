@@ -33,14 +33,14 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
   const [shareToast, setShareToast] = createSignal('')
 
   const formatDuration = (secs?: number): string => {
-    if (!secs || secs <= 0) return ''
+    if (secs === undefined || secs <= 0) return ''
     const m = Math.floor(secs / 60)
     const s = Math.floor(secs % 60)
     return `${m}:${s.toString().padStart(2, '0')}`
   }
 
   const formatFileSize = (bytes?: number): string => {
-    if (!bytes || bytes === 0) return ''
+    if (bytes === undefined || bytes === 0) return ''
     if (bytes < 1024) return `${bytes} B`
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
@@ -51,7 +51,7 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
   }
 
   const handleDownload = async (url: string | undefined, filename: string) => {
-    if (!url) return
+    if (url === undefined || url === '') return
     try {
       const resp = await fetch(url)
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
@@ -70,7 +70,7 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
   }
 
   const handleShare = async () => {
-    const url = `${window.location.origin}/#/uvr/session/${props.sessionId || ''}`
+    const url = `${window.location.origin}/#/uvr/session/${props.sessionId ?? ''}`
     try {
       await navigator.clipboard.writeText(url)
       setShareToast('Link copied to clipboard!')
@@ -99,7 +99,7 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
       exportType: 'vocal' | 'instrumental' | 'vocal-midi'
     }[] = []
 
-    if (props.outputs?.vocal) {
+    if (props.outputs?.vocal !== undefined) {
       list.push({
         key: 'vocal',
         label: 'Vocal',
@@ -111,7 +111,7 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
         exportType: 'vocal',
       })
     }
-    if (props.outputs?.instrumental) {
+    if (props.outputs?.instrumental !== undefined) {
       list.push({
         key: 'instrumental',
         label: 'Instrumental',
@@ -123,7 +123,7 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
         exportType: 'instrumental',
       })
     }
-    if (props.outputs?.vocalMidi) {
+    if (props.outputs?.vocalMidi !== undefined) {
       list.push({
         key: 'vocalMidi',
         label: 'Vocal MIDI',
@@ -152,11 +152,11 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
           </Show>
         </div>
         <div class="rv-header-right">
-          <button class="rv-share-btn" onClick={handleShare} title="Copy share link">
+          <button class="rv-share-btn" onClick={() => { void handleShare() }} title="Copy share link">
             <Share /> Share
           </button>
           <Show when={props.onClose}>
-            <button class="rv-close-btn" onClick={props.onClose} aria-label="Close">
+            <button class="rv-close-btn" onClick={() => props.onClose?.()} aria-label="Close">
               <X />
             </button>
           </Show>
@@ -202,7 +202,7 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
                 </button>
                 <button
                   class="rv-stem-btn rv-stem-btn-download"
-                  onClick={() => handleDownload(stem.url, `${stem.label.toLowerCase()}_stem.${stem.format.toLowerCase()}`)}
+                  onClick={() => { void handleDownload(stem.url, `${stem.label.toLowerCase()}_stem.${stem.format.toLowerCase()}`) }}
                 >
                   <Download />
                 </button>
@@ -213,7 +213,7 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
       </div>
 
       {/* Full Mix Card */}
-      <Show when={props.outputs?.vocal && props.outputs?.instrumental}>
+      <Show when={props.outputs?.vocal !== undefined && props.outputs?.instrumental !== undefined}>
         <div class="rv-full-mix-card">
           <div class="rv-full-mix-left">
             <div class="rv-stem-icon" style={{ color: '#10b981' }}>
@@ -234,7 +234,7 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
             <button
               class="rv-stem-btn rv-stem-btn-mixer"
               onClick={() => {
-                if (props.sessionId) {
+                if (props.sessionId !== undefined) {
                   handleStartPractice('full')
                 }
               }}

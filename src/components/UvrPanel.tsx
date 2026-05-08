@@ -84,14 +84,14 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   const [currentView, setCurrentView] = createSignal<UvrView>(
     props.initialView || 'upload',
   )
-  const [onError, setOnError] = createSignal('')
+  const [_onError, setOnError] = createSignal('')
 
   // Error handling
   const showError = (message: string) => {
     console.error(message)
     setOnError(message)
   }
-  const clearError = () => setOnError('')
+  const _clearError = () => setOnError('')
   const [showGuide, setShowGuide] = createSignal(false)
   const [showSettings, setShowSettings] = createSignal(false)
   const [showDeleteAllConfirm, setShowDeleteAllConfirm] = createSignal(false)
@@ -125,7 +125,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     props.onViewChange?.(view)
     if (view === 'results' || view === 'mixer') {
       const s = currentUvrSession()
-      if (s?.sessionId) {
+      if (s?.sessionId !== undefined) {
         props.onSessionChange?.(s.sessionId)
         return
       }
@@ -137,7 +137,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   let lastLoadedSessionId: string | null = null
   createEffect(() => {
     const sid = props.initialSessionId
-    if (sid && sid !== lastLoadedSessionId) {
+    if (sid !== undefined && sid !== lastLoadedSessionId) {
       lastLoadedSessionId = sid
       handleSessionView(sid)
     }
@@ -232,7 +232,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       : type === 'vocal-midi' ? s.outputs.vocalMidi
       : s.outputs.instrumentalMidi
 
-    if (!url) return
+    if (url === undefined) return
 
     try {
       const resp = await fetch(url)
@@ -262,7 +262,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     if (session) {
       setCurrentUvrSession(session)
       // Refresh outputs from API if we have an API session ID
-      if (session.apiSessionId && session.status === 'completed') {
+      if (session.apiSessionId !== undefined && session.status === 'completed') {
         refreshSessionOutputs(session)
       }
     }
@@ -319,7 +319,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       : type === 'instrumental' ? s.outputs.instrumental
       : s.outputs.vocalMidi
 
-    if (!url) return
+    if (url === undefined) return
 
     try {
       const resp = await fetch(url)
@@ -351,11 +351,11 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     const sessions = sessionToRefresh
       ? [sessionToRefresh]
       : getAllUvrSessions().filter(
-          (s) => s.apiSessionId && s.status === 'completed',
+          (s) => s.apiSessionId !== undefined && s.status === 'completed',
         )
 
     for (const s of sessions) {
-      if (!s.apiSessionId) continue
+      if (s.apiSessionId === undefined || s.apiSessionId === '') continue
       try {
         const status = await getProcessStatus(s.apiSessionId)
         if (status.status === 'completed' && status.files.length > 0) {
@@ -460,7 +460,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
             <UvrUploadControl
               onFileSelect={handleFileSelect}
               onFileReady={setSelectedFile}
-              onProcessStart={handleProcessStart}
+              onProcessStart={(file) => { void handleProcessStart(file) }}
               processing={session()?.status === 'processing'}
             />
             <div class="quick-tips">
@@ -516,7 +516,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 processingTime={session()!.processingTime}
                 sessionId={session()!.sessionId}
                 onStartPractice={handlePracticeStart}
-                onExport={handleExport}
+                onExport={(type) => { void handleExport(type) }}
               />
             )}
           </div>
@@ -560,12 +560,12 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                     <UvrSessionResult
                       sessionId={s.sessionId}
                       onView={() => handleSessionView(s.sessionId)}
-                      onExport={(type) =>
-                        handleExportSession(
+                      onExport={(type) => {
+                        void handleExportSession(
                           s.sessionId,
                           type as 'vocal' | 'instrumental' | 'vocal-midi',
                         )
-                      }
+                      }}
                       onOpenMixer={(sessionId, stems) =>
                         handleOpenMixerFromHistory(sessionId, stems)
                       }

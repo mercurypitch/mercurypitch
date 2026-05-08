@@ -42,7 +42,7 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
   }
 
   const formatDuration = (secs?: number): string => {
-    if (!secs || secs <= 0) return ''
+    if (secs === undefined || secs <= 0) return ''
     const m = Math.floor(secs / 60)
     const s = Math.floor(secs % 60)
     return `${m}:${s.toString().padStart(2, '0')}`
@@ -79,7 +79,7 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
     setTimeout(() => setToastMessage(''), 2500)
   }
 
-  const handleExport = (type: 'vocal' | 'instrumental' | 'vocal-midi') => {
+  const _handleExport = (type: 'vocal' | 'instrumental' | 'vocal-midi') => {
     if (props.onExport) {
       props.onExport(props.sessionId, type)
     }
@@ -141,15 +141,15 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
         <div class="session-title-area">
           <h3>UVR Session</h3>
           <p class="session-filename">
-            {session()?.originalFile?.name || 'Unknown'}
+            {(session()?.originalFile?.name) ?? 'Unknown'}
           </p>
           <p
             class="session-id-pill"
-            title={session()?.apiSessionId || session()?.sessionId || ''}
+            title={(session()?.apiSessionId as string | undefined) ?? (session()?.sessionId) ?? ''}
           >
             {(() => {
-              const id = session()?.apiSessionId || session()?.sessionId
-              return id
+              const id = (session()?.apiSessionId as string | undefined) ?? (session()?.sessionId)
+              return id !== undefined
                 ? id.length > 16
                   ? id.slice(-8)
                   : id
@@ -170,25 +170,25 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
       <div
         class="status-bar"
         style={{
-          '--status-color': getStatusColor(session()?.status || 'idle'),
+          '--status-color': getStatusColor((session()?.status) ?? 'idle'),
         }}
       >
         <span class="status-icon">
-          {getStatusIcon(session()?.status || 'idle')}
+          {getStatusIcon((session()?.status) ?? 'idle')}
         </span>
         <span class="status-text">
           {session()?.status === 'error'
-            ? session()?.error || 'Processing failed'
+            ? (session()?.error) ?? 'Processing failed'
             : session()?.status === 'completed'
               ? 'Completed'
               : session()?.status === 'processing'
                 ? 'Processing...'
-                : session()?.status || 'Idle'}
+                : (session()?.status) ?? 'Idle'}
         </span>
         <span class="status-time">
           {(() => {
             const s = session() as UvrSession | null
-            return s?.processingTime
+            return s?.processingTime !== undefined
               ? `${Math.round(s.processingTime / 1000)}s`
               : ''
           })()}
@@ -207,7 +207,7 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
           <div class="info-content">
             <span class="info-label">Created</span>
             <span class="info-value">
-              {formatDate(session()?.createdAt || 0)}
+              {formatDate((session()?.createdAt) ?? 0)}
             </span>
           </div>
         </div>
@@ -294,7 +294,7 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
           </Show>
           <button
             class="session-result-btn session-result-btn-copy"
-            onClick={handleCopyLink}
+            onClick={(e) => { void handleCopyLink(e) }}
             title="Copy share link"
           >
             <Share />

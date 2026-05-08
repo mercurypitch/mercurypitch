@@ -8,7 +8,7 @@ import type {LrcLine, LyricsSearchMatch, LyricsSearchResult} from '@/lib/lyrics-
 import { extractTitle, fetchLyricsById, getCurrentLineIndex, getCurrentLrcIndex,   parseLrcFile, parseTextLyrics, searchLyrics, searchLyricsMulti } from '@/lib/lyrics-service'
 import type {DetectedPitch} from '@/lib/pitch-detector';
 import { PitchDetector } from '@/lib/pitch-detector'
-import { freqToNote } from '@/lib/scale-data'
+import { freqToNote as _freqToNote } from '@/lib/scale-data'
 import { ChevronLeft, Download, Ear, Mic, Midi, Pause, Play, SkipBack, SlidersHorizontal, Volume2, VolumeX } from './icons'
 import type {LyricsUploadResult} from './LyricsUploader';
 import { LyricsUploader  } from './LyricsUploader'
@@ -62,6 +62,12 @@ interface SongPickerProps {
   onUpload: () => void
 }
 
+interface SmWindow {
+  __smKeydown?: (e: KeyboardEvent) => void
+  __smResizeMove?: (e: PointerEvent) => void
+  __smResizeEnd?: (e: PointerEvent) => void
+}
+
 const SongPicker = (p: SongPickerProps) => {
   let inputRef: HTMLInputElement | undefined
 
@@ -88,7 +94,7 @@ const SongPicker = (p: SongPickerProps) => {
             <span class="sm-song-picker-artist">{m.artist}</span>
             <span class="sm-song-picker-sep"> - </span>
             <span class="sm-song-picker-title">{m.title}</span>
-            {m.syncedLyrics && <span class="sm-song-picker-badge">LRC</span>}
+            {m.syncedLyrics !== undefined && <span class="sm-song-picker-badge">LRC</span>}
           </button>
         )}</For>
       </div>
@@ -154,13 +160,13 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   const [blockMarkMode, setBlockMarkMode] = createSignal(false)
   const [markStartLine, setMarkStartLine] = createSignal<number | null>(null)
   const [markEndLine, setMarkEndLine] = createSignal<number | null>(null)
-  const [showBlockForm, setShowBlockForm] = createSignal(false)
+  const [_showBlockForm, _setShowBlockForm] = createSignal(false)
   const [blockEditTarget, setBlockEditTarget] = createSignal<string | null>(null)  // block ID being edited
 
   // ── Mic pitch comparison state ────────────────────────────────
-  const [micEnabled, setMicEnabled] = createSignal(false)
+  const [_micEnabled, _setMicEnabled] = createSignal(false)
   const [micActive, setMicActive] = createSignal(false)
-  const [micPitch, setMicPitch] = createSignal<DetectedPitch | null>(null)
+  const [_micPitch, _setMicPitch] = createSignal<DetectedPitch | null>(null)
   const [micError, setMicError] = createSignal('')
 
   // ── Scoring state ───────────────────────────────────────────
@@ -179,7 +185,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     grade: 'S' | 'A' | 'B' | 'C' | 'D'
   }
   const [comparisonData, setComparisonData] = createSignal<ComparisonPoint[]>([])
-  const [toleranceCents, setToleranceCents] = createSignal(50)
+  const [toleranceCents, _setToleranceCents] = createSignal(50)
   const [score, setScore] = createSignal<MicScore | null>(null)
   const [showScore, setShowScore] = createSignal(false)
 
@@ -198,16 +204,16 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   const savedPrefs = (() => {
     try {
       const raw = localStorage.getItem(WORKSPACE_STORE_KEY)
-      if (raw) return JSON.parse(raw)
-    } catch {}
+      if (raw !== null) return JSON.parse(raw)
+    } catch { /* localStorage not available */ }
     return null
   })()
 
   const [workspaceLayout, setWorkspaceLayout] = createSignal<WorkspaceLayout>(
     (savedPrefs?.layout as WorkspaceLayout) ?? 'auto-2col',
   )
-  const [sidebarHidden, setSidebarHidden] = createSignal(
-    savedPrefs?.sidebarHidden ?? false,
+  const [sidebarHidden, setSidebarHidden] = createSignal<boolean>(
+    (savedPrefs?.sidebarHidden as boolean | undefined) ?? false,
   )
   const [fixedPanelHeights, setFixedPanelHeights] = createSignal({
     overview: savedPrefs?.heights?.overview ?? 180,
@@ -252,8 +258,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   let dragPanelId: string | null = null
   let dragStartOrder = -1
   let dragTargetOrder = -1
-  let dragOffsetX = 0
-  let dragOffsetY = 0
+  const _dragOffsetX = 0
+  const _dragOffsetY = 0
 
   // ── Resize drag state ──────────────────────────────────────────
   let resizePanelId: string | null = null
@@ -290,13 +296,13 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   let lyricsFileInputRef: HTMLInputElement | undefined
 
   // Cached canvas dimensions — updated only on resize, not every frame
-  let overviewRect = { w: 0, h: 0 }
-  let liveRect = { w: 0, h: 0 }
-  let pitchRect = { w: 0, h: 0 }
+  const _overviewRect = { w: 0, h: 0 }
+  const _liveRect = { w: 0, h: 0 }
+  const _pitchRect = { w: 0, h: 0 }
 
   const vocalTrack = (): StemTrack => ({
     label: 'Vocal',
-    url: props.stems.vocal || '',
+    url: props.stems.vocal ?? '',
     color: '#f59e0b',
     buffer: null,
     gainNode: null,
@@ -309,7 +315,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
   const instTrack = (): StemTrack => ({
     label: 'Instrumental',
-    url: props.stems.instrumental || '',
+    url: props.stems.instrumental ?? '',
     color: '#3b82f6',
     buffer: null,
     gainNode: null,
@@ -371,8 +377,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
     try {
       const results = await Promise.allSettled([
-        props.stems.vocal ? loadOne(props.stems.vocal) : Promise.reject('no vocal'),
-        props.stems.instrumental ? loadOne(props.stems.instrumental) : Promise.reject('no inst'),
+        props.stems.vocal !== undefined ? loadOne(props.stems.vocal) : Promise.reject('no vocal'),
+        props.stems.instrumental !== undefined ? loadOne(props.stems.instrumental) : Promise.reject('no inst'),
       ])
 
       const [vocalResult, instResult] = results
@@ -381,7 +387,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         setVocal(prev => ({ ...prev, buffer: vocalResult.value }))
         const d = vocalResult.value.duration
         if (d > duration()) setDuration(d)
-      } else if (props.stems.vocal) {
+      } else if (props.stems.vocal !== undefined) {
         console.warn('Failed to load vocal stem:', vocalResult.reason)
       }
 
@@ -389,7 +395,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         setInstrumental(prev => ({ ...prev, buffer: instResult.value }))
         const d = instResult.value.duration
         if (d > duration()) setDuration(d)
-      } else if (props.stems.instrumental) {
+      } else if (props.stems.instrumental !== undefined) {
         console.warn('Failed to load instrumental stem:', instResult.reason)
       }
 
@@ -410,7 +416,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     try {
       const payload: Record<string, unknown> = { text, format, filename, timestamp: Date.now() }
       if (wt && Object.keys(wt).length > 0) payload.wordTimings = wt
-      if (rawText) payload.rawText = rawText
+      if (rawText !== undefined) payload.rawText = rawText
       const bl = blocks()
       if (bl.length > 0) payload.blocks = bl
       const bi = blockInstances()
@@ -423,23 +429,23 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   const loadPersistedLyrics = (): (LyricsUploadResult & { wordTimings?: WordTimingsMap; rawText?: string }) | null => {
     try {
       const raw = localStorage.getItem(LYRICS_STORE_KEY())
-      if (!raw) return null
-      const data = JSON.parse(raw)
-      if (data.text && (data.format === 'txt' || data.format === 'lrc')) {
+      if (raw === null) return null
+      const data: Record<string, unknown> = JSON.parse(raw)
+      if (typeof data.text === 'string' && (data.format === 'txt' || data.format === 'lrc')) {
         const result: LyricsUploadResult & { wordTimings?: WordTimingsMap; rawText?: string } = {
-          text: data.text, format: data.format, filename: data.filename || 'saved.txt',
+          text: data.text, format: data.format, filename: typeof data.filename === 'string' ? data.filename : 'saved.txt',
         }
-        if (data.rawText && typeof data.rawText === 'string') {
+        if (typeof data.rawText === 'string') {
           result.rawText = data.rawText
         }
-        if (data.wordTimings && typeof data.wordTimings === 'object') {
+        if (typeof data.wordTimings === 'object') {
           result.wordTimings = data.wordTimings as WordTimingsMap
         }
         // Restore font size
         if (typeof data.fontSize === 'number') setLyricsFontSize(data.fontSize)
         // Restore blocks
         if (Array.isArray(data.blocks)) setBlocks(data.blocks as LyricsBlock[])
-        if (data.blockInstances && typeof data.blockInstances === 'object') {
+        if (typeof data.blockInstances === 'object') {
           setBlockInstances(data.blockInstances as BlockInstancesMap)
         }
         return result
@@ -509,7 +515,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       return
     }
 
-    const rawInput = props.songTitle || props.sessionId || ''
+    const rawInput = props.songTitle ?? props.sessionId ?? ''
     const title = extractTitle(rawInput)
     if (!title || title === 'Unknown') {
       setLyricsSource('none')
@@ -827,12 +833,12 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     if (parsed === null) return
     const prev = editBuffer()
     const lineData = (lrcLines().length > 0 ? lrcLines()[lineIdx]?.text : lyricsLines()[lineIdx]) || ''
-    const wordList = lineData.split(/\s+/).filter((w: string) => w.length > 0)
+    const _wordList = lineData.split(/\s+/).filter((w: string) => w.length > 0)
     const oldStart = prev[lineIdx]?.[0] ?? 0
     const delta = parsed - oldStart
     const next: WordTimingsMap = {}
     for (const key of Object.keys(prev)) next[+key] = [...prev[+key]]
-    if (prev[lineIdx]) {
+    if (prev[lineIdx] !== undefined) {
       next[lineIdx] = prev[lineIdx].map(t => Math.max(0, Math.round((t + delta) * 1000) / 1000))
     }
     setEditBuffer(next)
@@ -843,7 +849,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     if (parsed === null) return
     const next: WordTimingsMap = {}
     for (const key of Object.keys(editBuffer())) next[+key] = [...editBuffer()[+key]]
-    if (!next[lineIdx]) next[lineIdx] = []
+    if (next[lineIdx] === undefined) next[lineIdx] = []
     const line = [...next[lineIdx]]
     line[wordIdx] = parsed
     next[lineIdx] = line
@@ -862,7 +868,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     const merged = { ...wordTimings(), ...editBuffer() }
     setWordTimings(merged)
 
-    const filename = loadPersistedLyrics()?.filename || 'edited.lrc'
+    const filename = loadPersistedLyrics()?.filename ?? 'edited.lrc'
     const hasLrc = lrcLines().length > 0
 
     // Build clean LRC text (no word tags) + persist wordTimings as metadata
@@ -970,7 +976,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     try {
       const key = LYRICS_STORE_KEY()
       const raw = localStorage.getItem(key)
-      if (!raw) return
+      if (raw === null) return
       const data = JSON.parse(raw)
       data.blocks = blocks()
       data.blockInstances = blockInstances()
@@ -979,12 +985,12 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   }
 
   /** Which block ID does a line's instance belong to? */
-  const getBlockIdForLine = (lineIdx: number): string | null => {
+  const _getBlockIdForLine = (lineIdx: number): string | null => {
     return getBlockForLine(lineIdx)?.blockId ?? null
   }
 
   /** Is this line the first line of a block instance? */
-  const isBlockInstanceStart = (lineIdx: number): boolean => {
+  const _isBlockInstanceStart = (lineIdx: number): boolean => {
     const bi = blockInstances()
     for (const instances of Object.values(bi)) {
       for (const inst of instances) {
@@ -995,7 +1001,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   }
 
   /** Get all lines that belong to any block (for checking overlaps in mark mode). */
-  const getBlockedLineSet = (): Set<number> => {
+  const _getBlockedLineSet = (): Set<number> => {
     const s = new Set<number>()
     for (const instances of Object.values(blockInstances())) {
       for (const [start, end] of instances) {
@@ -1016,7 +1022,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   }
 
   /** Get template block start time from lrcGenLineTimes. */
-  const getTemplateStartTime = (blockId: string): number | undefined => {
+  const _getTemplateStartTime = (blockId: string): number | undefined => {
     const block = getBlockById(blockId)
     if (!block) return undefined
     return lrcGenLineTimes()[block.lineIndices[0]]
@@ -1028,7 +1034,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     if (!block) return
 
     const instances = blockInstances()[blockId]
-    if (!instances || instanceIdx >= instances.length) return
+    if (instances === undefined || instanceIdx >= instances.length) return
 
     const [tplStart, tplEnd] = instances[0]
     const [instStart] = instances[instanceIdx]
@@ -1054,7 +1060,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       for (const k of Object.keys(prev)) next[+k] = [...prev[+k]]
       for (let j = 0; j < tplLineCount; j++) {
         const tplWordTimes = templateWordTimes[tplStart + j]
-        if (tplWordTimes && tplWordTimes.length > 0) {
+        if (tplWordTimes !== undefined && tplWordTimes.length > 0) {
           next[instStart + j] = tplWordTimes.map(tt =>
             Math.round((instanceStartTime + tt - tplBlockStart) * 1000) / 1000,
           )
@@ -1070,7 +1076,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     for (const block of blocks()) {
       if (!isTemplateMappedInGen(block.id)) continue
       const instances = blockInstances()[block.id]
-      if (!instances || instances.length <= 1) continue
+      if (instances === undefined || instances.length <= 1) continue
       const tplBlockStart = lineTimes[instances[0][0]]
       if (tplBlockStart === undefined) continue
       for (let i = 1; i < instances.length; i++) {
@@ -1152,7 +1158,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     if (!block) return
     setBlockInstances(prev => {
       const next = { ...prev }
-      next[blockId] = [...(prev[blockId] || []), [startIdx, endIdx]]
+      next[blockId] = [...(prev[blockId] ?? []), [startIdx, endIdx]]
       return next
     })
     setMarkStartLine(null)
@@ -1222,11 +1228,11 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     let resumeWordIdx = 0
     try {
       const saved = localStorage.getItem(LRC_GEN_KEY())
-      if (saved) {
-        const data = JSON.parse(saved)
-        if (data.lineTimes && Array.isArray(data.lineTimes) && data.lineTimes.length > 0) {
+      if (saved !== null) {
+        const data: Record<string, unknown> = JSON.parse(saved)
+        if (Array.isArray(data.lineTimes) && data.lineTimes.length > 0) {
           setLrcGenLineTimes(data.lineTimes)
-          if (data.wordTimings && typeof data.wordTimings === 'object') {
+          if (typeof data.wordTimings === 'object' && data.wordTimings !== null) {
             setLrcGenWordTimings(data.wordTimings)
           }
           resumeLineIdx = Math.min(data.lineIdx ?? 0, lines.length)
@@ -1317,7 +1323,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       if (remain > 0) {
         setLrcGenWordTimings(prev => {
           const next = { ...prev }
-          next[idx] = [...(next[idx] || [])]
+          next[idx] = [...(next[idx] ?? [])]
           for (let w = lrcGenWordIdx(); w < words.length; w++) {
             next[idx][w] = Math.round((lastWordTime + (w - lrcGenWordIdx() + 1) * 0.25) * 1000) / 1000
           }
@@ -1383,7 +1389,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     setLrcGenWordTimings(prev => {
       const next: WordTimingsMap = {}
       for (const k of Object.keys(prev)) next[+k] = [...prev[+k]]
-      if (!next[lineIdx]) next[lineIdx] = []
+      if (next[lineIdx] === undefined) next[lineIdx] = []
       const arr = [...next[lineIdx]]
       arr[wordIdx] = t
       next[lineIdx] = arr
@@ -1446,7 +1452,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       return `[${formatTimeLrcWord(lt)}] ${line}`
     }).join('\n')
 
-    const filename = loadPersistedLyrics()?.filename || 'generated.lrc'
+    const filename = loadPersistedLyrics()?.filename ?? 'generated.lrc'
     persistLyrics(lrcText, 'lrc', filename, wordTimes, rawText)
     const parsed = parseLrcFile(lrcText)
     setLrcLines(parsed)
@@ -1466,7 +1472,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
   const handleDownloadLrc = () => {
     let lrcText = ''
-    const filename = loadPersistedLyrics()?.filename || 'lyrics.lrc'
+    const filename = loadPersistedLyrics()?.filename ?? 'lyrics.lrc'
 
     // Try to build word-level LRC from persisted raw text + word timings
     const persisted = loadPersistedLyrics()
@@ -1474,14 +1480,14 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     const hasWordTimings = savedWt && Object.keys(savedWt).length > 0
     const rawText = persisted?.rawText
 
-    if (hasWordTimings && rawText) {
+    if (hasWordTimings === true && rawText !== undefined) {
       // Word-level LRC export: [time] word [time] word ...
       const lines = rawText.split('\n')
       lrcText = lines.map((line: string, i: number) => {
         if (!line.trim()) return '' // blank line — skip in exported LRC
         const wordList = line.split(/\s+/).filter((w: string) => w.length > 0)
         const lineWt = savedWt[i]
-        if (!lineWt || lineWt.length === 0 || wordList.length === 0) {
+        if (lineWt === undefined || lineWt.length === 0 || wordList.length === 0) {
           return `[00:00.00] ${line}`
         }
         return wordList.map((w: string, wi: number) => {
@@ -1499,7 +1505,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       const lineTimes = hasTimings
         ? lyricsLines().map((_, i) => {
             const words = wt[i]
-            return words && words.length > 0 ? words[0] : undefined
+            return words !== undefined && words.length > 0 ? words[0] : undefined
           })
         : lyricsLines().map(() => undefined)
       lrcText = lyricsLines().map((line, i) => {
@@ -1772,7 +1778,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       try {
         if (!audioCtx) {
           await ensureAudioCtx()
-          if (!audioCtx) throw new Error('Failed to create AudioContext')
+          if (audioCtx === null) throw new Error('Failed to create AudioContext')
         }
         const stream = await navigator.mediaDevices.getUserMedia({
           audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
@@ -1802,10 +1808,11 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         setMicEnabled(true)
         setMicPitch(null)
         setMicError('')
-      } catch (err: any) {
-        const msg = err?.name === 'NotAllowedError' || err?.name === 'PermissionDeniedError'
+      } catch (err: unknown) {
+        const e = err as DOMException | Error | undefined
+        const msg = e?.name === 'NotAllowedError' || e?.name === 'PermissionDeniedError'
           ? 'Microphone access denied'
-          : err?.message || 'Microphone unavailable'
+          : e !== undefined && 'message' in e && typeof (e as Error).message === 'string' ? (e as Error).message : 'Microphone unavailable'
         setMicError(msg)
         setMicEnabled(false)
       }
@@ -2304,7 +2311,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       if (e.code === 'Space') {
         e.preventDefault()
         if (loading() || loadError()) return
-        playing() ? handlePause() : handlePlay()
+        if (playing()) { handlePause() } else { handlePlay() }
       }
 
       if (e.key === 'm' || e.key === 'M') {
@@ -2314,15 +2321,15 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       }
     }
     window.addEventListener('keydown', handleKeyDown)
-    ;(window as any).__smKeydown = handleKeyDown
+    ;(window as unknown as SmWindow).__smKeydown = handleKeyDown
 
     // Resize document-level listeners (grid + fixed)
     const handleResizeDocMove = (e: PointerEvent) => { handleResizeMove(e); handleFixedResizeMove(e) }
     const handleResizeDocEnd = (e: PointerEvent) => { handleResizeEnd(e); handleFixedResizeEnd(e) }
     document.addEventListener('pointermove', handleResizeDocMove)
     document.addEventListener('pointerup', handleResizeDocEnd)
-    ;(window as any).__smResizeMove = handleResizeDocMove
-    ;(window as any).__smResizeEnd = handleResizeDocEnd
+    ;(window as unknown as SmWindow).__smResizeMove = handleResizeDocMove
+    ;(window as unknown as SmWindow).__smResizeEnd = handleResizeDocEnd
   })
 
   // Reconnect ResizeObserver when layout toggles between grid and fixed-2col
@@ -2374,17 +2381,18 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     disconnectSources()
     cancelAnimationFrame(rafId)
     resizeObserver?.disconnect()
-    if ((window as any).__smKeydown) {
-      window.removeEventListener('keydown', (window as any).__smKeydown)
-      delete (window as any).__smKeydown
+    const smWin = window as unknown as SmWindow
+    if (smWin.__smKeydown !== undefined) {
+      window.removeEventListener('keydown', smWin.__smKeydown)
+      delete smWin.__smKeydown
     }
-    if ((window as any).__smResizeMove) {
-      document.removeEventListener('pointermove', (window as any).__smResizeMove)
-      delete (window as any).__smResizeMove
+    if (smWin.__smResizeMove !== undefined) {
+      document.removeEventListener('pointermove', smWin.__smResizeMove)
+      delete smWin.__smResizeMove
     }
-    if ((window as any).__smResizeEnd) {
-      document.removeEventListener('pointerup', (window as any).__smResizeEnd)
-      delete (window as any).__smResizeEnd
+    if (smWin.__smResizeEnd !== undefined) {
+      document.removeEventListener('pointerup', smWin.__smResizeEnd)
+      delete smWin.__smResizeEnd
     }
     if (audioCtx) {
       audioCtx.close().catch(() => { /* */ })
@@ -2424,17 +2432,17 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   }
 
   const handlePanelDragMove = (e: PointerEvent) => {
-    if (!dragPanelId) return
+    if (dragPanelId === null) return
     e.preventDefault()
 
     // Find the panel under the pointer
     const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null
-    if (!el) return
+    if (el === null) return
     const panel = el.closest('.sm-workspace-panel') as HTMLElement | null
-    if (!panel) return
+    if (panel === null) return
 
     const targetId = panel.dataset.panelId
-    if (!targetId || targetId === dragPanelId) return
+    if (targetId === undefined || targetId === dragPanelId) return
 
     const targetOrder = panels().find(p => p.id === targetId)?.order
     if (targetOrder !== undefined && targetOrder !== dragTargetOrder) {
@@ -2443,7 +2451,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   }
 
   const handlePanelDragEnd = (e: PointerEvent) => {
-    if (!dragPanelId) return
+    if (dragPanelId === null) return
     e.preventDefault()
 
     if (dragTargetOrder !== dragStartOrder) {
@@ -2477,7 +2485,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     e.preventDefault()
     e.stopPropagation()
     const panel = panels().find(p => p.id === panelId)
-    if (!panel) return
+    if (panel === null) return
 
     const panelEl = document.querySelector(`[data-panel-id="${panelId}"]`) as HTMLElement | null
     resizePanelId = panelId
@@ -2492,7 +2500,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   }
 
   const handleResizeMove = (e: PointerEvent) => {
-    if (!resizePanelId || !workspaceRef) return
+    if (resizePanelId === null || workspaceRef === null) return
     e.preventDefault()
     const delta = e.clientY - resizeStartY
     const maxH = workspaceRef.clientHeight - 60
@@ -2509,7 +2517,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   }
 
   const handleResizeEnd = (_e: PointerEvent) => {
-    if (!resizePanelId) return
+    if (resizePanelId === null) return
     const panelEl = document.querySelector(`[data-panel-id="${resizePanelId}"]`)
     const canvas = panelEl?.querySelector('canvas') as HTMLElement | null
     if (canvas) canvas.style.pointerEvents = ''
@@ -2537,7 +2545,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   }
 
   const handleFixedResizeMove = (e: PointerEvent) => {
-    if (!fixedResizePanelId) return
+    if (fixedResizePanelId === null) return
     e.preventDefault()
     const delta = e.clientY - fixedResizeStartY
     const newHeight = Math.max(40, fixedResizeStartHeight + delta)
@@ -2551,7 +2559,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   }
 
   const handleFixedResizeEnd = (_e: PointerEvent) => {
-    if (!fixedResizePanelId) return
+    if (fixedResizePanelId === null) return
     const panelEl = document.querySelector(`[data-fixed-panel="${fixedResizePanelId}"]`)
     const canvas = panelEl?.querySelector('canvas') as HTMLElement | null
     if (canvas) canvas.style.pointerEvents = ''
@@ -2591,7 +2599,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         <Show when={loadError()}>
           <div class="sm-error">
             <span>{loadError()}</span>
-            <button class="sm-error-retry" onClick={loadStems}>Retry</button>
+            <button class="sm-error-retry" onClick={() => { void loadStems() }}>Retry</button>
           </div>
         </Show>
 
@@ -2638,7 +2646,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
               <button
                 class={`sm-mic-toggle-btn${micActive() ? ' sm-mic-toggle-btn--active' : ''}${micError() ? ' sm-mic-toggle-btn--error' : ''}`}
-                onClick={toggleMic}
+                onClick={() => { void toggleMic() }}
                 title={micError() ? micError() : micActive() ? 'Disable microphone' : 'Enable microphone pitch comparison'}
                 disabled={!!micError()}
               >
@@ -2804,7 +2812,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                       </button>
                       <button
                         class="sm-action-btn"
-                        onClick={() => handleDownload(vocal())}
+                        onClick={() => { void handleDownload(vocal()) }}
                         title="Download"
                       >
                         <Download />
@@ -2823,7 +2831,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                   </div>
                 )}
 
-                {props.stems.vocalMidi && (
+                {props.stems.vocalMidi !== undefined && (
                   <div class="sm-midi-substem">
                     <span class="sm-midi-icon"><Midi /></span>
                     <span class="sm-midi-label">MIDI</span>
@@ -2874,7 +2882,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                       </button>
                       <button
                         class="sm-action-btn"
-                        onClick={() => handleDownload(instrumental())}
+                        onClick={() => { void handleDownload(instrumental()) }}
                         title="Download"
                       >
                         <Download />
@@ -3083,7 +3091,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                   >
                     {(() => {
                       const items = genViewData()
-                      const result: any[] = []
+                      const result: JSX.Element[] = []
                       let skipUntil = -1
                       for (let i = 0; i < items.length; i++) {
                         if (i < skipUntil) continue
@@ -3106,7 +3114,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                                   {item.lineTime !== undefined ? formatTimeMs(item.lineTime) : '--:--'}
                                 </span>
                                 <span class="sm-lyrics-gen-placeholder-text">
-                                  {block?.label || 'Block'} (repeat {bi.instanceIdx + 1}/{total}) — timings copied from template
+                                  {block?.label ?? 'Block'} (repeat {bi.instanceIdx + 1}/{total}) — timings copied from template
                                 </span>
                               </div>,
                             )
@@ -3116,8 +3124,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
                         result.push(
                           <div
-                            class={`sm-lyrics-gen-line${item.isCurrent ? ' sm-lyrics-gen-line-current' : ''}${item.isDone ? ' sm-lyrics-gen-line-done' : ''}${item.isFuture ? ' sm-lyrics-gen-line-future' : ''}${item.blockInfo?.isTemplate ? ' sm-lyrics-gen-line-template' : ''}`}
-                            style={item.blockInfo?.isTemplate ? { '--block-color': getBlockColor(item.blockInfo.blockId) } : {}}
+                            class={`sm-lyrics-gen-line${item.isCurrent ? ' sm-lyrics-gen-line-current' : ''}${item.isDone ? ' sm-lyrics-gen-line-done' : ''}${item.isFuture ? ' sm-lyrics-gen-line-future' : ''}${item.blockInfo?.isTemplate === true ? ' sm-lyrics-gen-line-template' : ''}`}
+                            style={item.blockInfo?.isTemplate === true ? { '--block-color': getBlockColor(item.blockInfo.blockId) } : {}}
                           >
                             <span class="sm-lyrics-gen-line-time">
                               {item.lineTime !== undefined ? formatTimeMs(item.lineTime) : '--:--'}
@@ -3393,7 +3401,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                         const blockInfo = blockStarts.get(idx)
                         const blockForLine = getBlockForLine(idx)
                         const blockColor = blockForLine ? getBlockColor(blockForLine.blockId) : undefined
-                        const block = blockForLine ? getBlockById(blockForLine.blockId) : undefined
+                        const _block = blockForLine ? getBlockById(blockForLine.blockId) : undefined
                         const isMarkSelected = blockMarkMode() && markStartLine() !== null && markEndLine() !== null &&
                           idx >= markStartLine()! && idx < markEndLine()!
 
@@ -3429,7 +3437,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                             )}
                             <span
                               class={`sm-lyrics-line${rlItem.isActive ? ' sm-lyrics-line-active' : ''}${blockForLine ? ' sm-lyrics-line--blocked' : ''}${blockForLine && !blockForLine.isTemplate ? ' sm-lyrics-line--block-instance' : ''}${blockMarkMode() ? ' sm-lyrics-line-markable' : ''}${isMarkSelected ? ' sm-lyrics-line-mark-selected' : ''}`}
-                              style={blockColor ? { '--block-color': blockColor } : {}}
+                              style={blockColor !== undefined ? { '--block-color': blockColor } : {}}
                               onClick={() => {
                                 if (blockMarkMode()) {
                                   const start = markStartLine()
@@ -3505,8 +3513,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                     matches={songMatches()}
                     query={songPickerQuery()}
                     onQueryChange={setSongPickerQuery}
-                    onPick={handleSongPick}
-                    onRefine={handleSongPickerRefine}
+                    onPick={(m) => { void handleSongPick(m) }}
+                    onRefine={() => { void handleSongPickerRefine() }}
                     onUpload={() => setShowSongPicker(false)}
                   />
                 </Show>
@@ -3645,7 +3653,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                         <div class="sm-lyrics-lines sm-lyrics-gen-lines" style={{ 'font-size': `${lyricsFontSize()}rem` }} onWheel={(e) => { e.stopPropagation(); if (e.ctrlKey || e.metaKey) { e.preventDefault(); setLyricsFontSize(prev => Math.min(1.5, Math.max(0.45, +(prev - e.deltaY * 0.001).toFixed(2)))) } }}>
                           {(() => {
                             const items = genViewData()
-                            const result: any[] = []
+                            const result: JSX.Element[] = []
                             let skipUntil = -1
                             for (let i = 0; i < items.length; i++) {
                               if (i < skipUntil) continue
@@ -3660,14 +3668,14 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                                   result.push(
                                     <div class="sm-lyrics-gen-line sm-lyrics-gen-line-placeholder" style={{ '--block-color': getBlockColor(bi.blockId) }}>
                                       <span class="sm-lyrics-gen-line-time">{item.lineTime !== undefined ? formatTimeMs(item.lineTime) : '--:--'}</span>
-                                      <span class="sm-lyrics-gen-placeholder-text">{block?.label || 'Block'} (repeat {bi.instanceIdx + 1}/{total}) — timings copied from template</span>
+                                      <span class="sm-lyrics-gen-placeholder-text">{block?.label ?? 'Block'} (repeat {bi.instanceIdx + 1}/{total}) — timings copied from template</span>
                                     </div>
                                   )
                                 }
                                 continue
                               }
                               result.push(
-                                <div class={`sm-lyrics-gen-line${item.isCurrent ? ' sm-lyrics-gen-line-current' : ''}${item.isDone ? ' sm-lyrics-gen-line-done' : ''}${item.isFuture ? ' sm-lyrics-gen-line-future' : ''}${item.blockInfo?.isTemplate ? ' sm-lyrics-gen-line-template' : ''}`} style={item.blockInfo?.isTemplate ? { '--block-color': getBlockColor(item.blockInfo.blockId) } : {}}>
+                                <div class={`sm-lyrics-gen-line${item.isCurrent ? ' sm-lyrics-gen-line-current' : ''}${item.isDone ? ' sm-lyrics-gen-line-done' : ''}${item.isFuture ? ' sm-lyrics-gen-line-future' : ''}${item.blockInfo?.isTemplate === true ? ' sm-lyrics-gen-line-template' : ''}`} style={item.blockInfo?.isTemplate === true ? { '--block-color': getBlockColor(item.blockInfo.blockId) } : {}}>
                                   <span class="sm-lyrics-gen-line-time">{item.lineTime !== undefined ? formatTimeMs(item.lineTime) : '--:--'}</span>
                                   <span class="sm-lyrics-gen-line-text">
                                     {item.words.length === 0
@@ -3789,7 +3797,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                               const blockInfo = blockStarts.get(idx)
                               const blockForLine = getBlockForLine(idx)
                               const blockColor = blockForLine ? getBlockColor(blockForLine.blockId) : undefined
-                              const block = blockForLine ? getBlockById(blockForLine.blockId) : undefined
+                              const _block = blockForLine ? getBlockById(blockForLine.blockId) : undefined
                               const isMarkSelected = blockMarkMode() && markStartLine() !== null && markEndLine() !== null && idx >= markStartLine()! && idx < markEndLine()!
                               return (
                                 <>
@@ -3800,7 +3808,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                                       {!blockInfo.isTemplate && <span class="sm-lyrics-block-unlink" onClick={(e) => { e.stopPropagation(); handleUnlinkInstance(blockInfo.blockId, blockInfo.instanceIdx) }} title="Unlink this instance">x</span>}
                                     </div>
                                   )}
-                                  <span class={`sm-lyrics-line${rlItem.isActive ? ' sm-lyrics-line-active' : ''}${blockForLine ? ' sm-lyrics-line--blocked' : ''}${blockForLine && !blockForLine.isTemplate ? ' sm-lyrics-line--block-instance' : ''}${blockMarkMode() ? ' sm-lyrics-line-markable' : ''}${isMarkSelected ? ' sm-lyrics-line-mark-selected' : ''}`} style={blockColor ? { '--block-color': blockColor } : {}} onClick={() => { if (blockMarkMode()) { const start = markStartLine(); if (start === null) { setMarkStartLine(idx); setMarkEndLine(null) } else if (markEndLine() !== null) { setMarkStartLine(idx); setMarkEndLine(null) } else { if (idx > start) { setMarkEndLine(idx + 1) } else if (idx < start) { setMarkStartLine(idx); setMarkEndLine(start + 1) } else { setMarkEndLine(start + 1) } } } else { handleLyricLineClick(idx) } }}>
+                                  <span class={`sm-lyrics-line${rlItem.isActive ? ' sm-lyrics-line-active' : ''}${blockForLine ? ' sm-lyrics-line--blocked' : ''}${blockForLine && !blockForLine.isTemplate ? ' sm-lyrics-line--block-instance' : ''}${blockMarkMode() ? ' sm-lyrics-line-markable' : ''}${isMarkSelected ? ' sm-lyrics-line-mark-selected' : ''}`} style={blockColor !== undefined ? { '--block-color': blockColor } : {}} onClick={() => { if (blockMarkMode()) { const start = markStartLine(); if (start === null) { setMarkStartLine(idx); setMarkEndLine(null) } else if (markEndLine() !== null) { setMarkStartLine(idx); setMarkEndLine(null) } else { if (idx > start) { setMarkEndLine(idx + 1) } else if (idx < start) { setMarkStartLine(idx); setMarkEndLine(start + 1) } else { setMarkEndLine(start + 1) } } } else { handleLyricLineClick(idx) } }}>
                                     {blockForLine && !blockForLine.isTemplate && <span class="sm-lyrics-block-unlink" onClick={(e) => { e.stopPropagation(); handleUnlinkInstance(blockForLine.blockId, blockForLine.instanceIdx) }} title="Unlink this instance">x</span>}
                                     <span class="sm-lyrics-time">{formatTime(rlItem.time)}</span>
                                     {rlItem.words.length === 0
@@ -3827,8 +3835,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                           matches={songMatches()}
                           query={songPickerQuery()}
                           onQueryChange={setSongPickerQuery}
-                          onPick={handleSongPick}
-                          onRefine={handleSongPickerRefine}
+                          onPick={(m) => { void handleSongPick(m) }}
+                          onRefine={() => { void handleSongPickerRefine() }}
                           onUpload={() => setShowSongPicker(false)}
                         />
                       </Show>
@@ -3872,12 +3880,12 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                         <div class="sm-stem-actions">
                           <button class={`sm-action-btn ${vocal().soloed ? 'sm-active' : ''}`} onClick={() => toggleSolo('Vocal')} title="Solo" style={{ color: vocal().soloed ? vocal().color : '' }}><Ear /></button>
                           <button class={`sm-action-btn ${vocal().muted ? 'sm-muted' : ''}`} onClick={() => toggleMute('Vocal')} title="Mute">{vocal().muted ? <VolumeX /> : <Volume2 />}</button>
-                          <button class="sm-action-btn" onClick={() => handleDownload(vocal())} title="Download"><Download /></button>
+                          <button class="sm-action-btn" onClick={() => { void handleDownload(vocal()) }} title="Download"><Download /></button>
                         </div>
                         <input type="range" class="sm-volume-slider" min="0" max="100" value={Math.round(vocal().volume * 100)} onInput={(e) => setTrackVolume('Vocal', parseInt(e.currentTarget.value) / 100)} />
                       </div>
                     )}
-                    {props.stems.vocalMidi && (
+                    {props.stems.vocalMidi !== undefined && (
                       <div class="sm-midi-substem">
                         <span class="sm-midi-icon"><Midi /></span>
                         <span class="sm-midi-label">MIDI</span>
@@ -3894,7 +3902,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                         <div class="sm-stem-actions">
                           <button class={`sm-action-btn ${instrumental().soloed ? 'sm-active' : ''}`} onClick={() => toggleSolo('Instrumental')} title="Solo" style={{ color: instrumental().soloed ? instrumental().color : '' }}><Ear /></button>
                           <button class={`sm-action-btn ${instrumental().muted ? 'sm-muted' : ''}`} onClick={() => toggleMute('Instrumental')} title="Mute">{instrumental().muted ? <VolumeX /> : <Volume2 />}</button>
-                          <button class="sm-action-btn" onClick={() => handleDownload(instrumental())} title="Download"><Download /></button>
+                          <button class="sm-action-btn" onClick={() => { void handleDownload(instrumental()) }} title="Download"><Download /></button>
                         </div>
                         <input type="range" class="sm-volume-slider" min="0" max="100" value={Math.round(instrumental().volume * 100)} onInput={(e) => setTrackVolume('Instrumental', parseInt(e.currentTarget.value) / 100)} />
                       </div>

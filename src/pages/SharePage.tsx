@@ -5,12 +5,11 @@
 import type { Component } from 'solid-js'
 import { createSignal, For, onMount, Show } from 'solid-js'
 import type { SharedMelody, SharedSession } from '@/components/CommunityShare'
-import { appStore } from '@/stores'
+import type { MelodyItem } from '@/types'
 
 export const SharePage: Component = () => {
   const [contentType, setContentType] = createSignal<string>('')
-  const [contentId, setContentId] = createSignal<string>('')
-  const [content, setContent] = createSignal<any>(null)
+  const [content, setContent] = createSignal<SharedMelody | SharedSession | null>(null)
   const [error, setError] = createSignal<string>('')
 
   onMount(() => {
@@ -18,13 +17,12 @@ export const SharePage: Component = () => {
     const type = params.get('type')
     const id = params.get('id')
 
-    if (!type || !id) {
+    if (type === null || id === null) {
       setError('Invalid share link. Please use a valid link.')
       return
     }
 
     setContentType(type)
-    setContentId(id)
     loadSharedContent(type, id)
   })
 
@@ -32,7 +30,7 @@ export const SharePage: Component = () => {
     try {
       const storedKey = `pp_shared_${type === 'melody' ? 'melodies' : 'sessions'}`
       const stored = localStorage.getItem(storedKey)
-      if (!stored) {
+      if (stored === null) {
         setError(
           `Content not found. It may have been removed or never existed.`,
         )
@@ -40,9 +38,9 @@ export const SharePage: Component = () => {
       }
 
       const allContent = JSON.parse(stored)
-      const found = allContent.find((item: any) => item.id === id)
+      const found = allContent.find((item: { id: string }) => item.id === id)
 
-      if (!found) {
+      if (found === undefined) {
         setError(`Content not found. ID: ${id}`)
         return
       }
@@ -86,7 +84,7 @@ export const SharePage: Component = () => {
           <SessionShareContent content={content()} onShare={shareContent} />
         </Show>
 
-        <Show when={!error() && !content()}>
+        <Show when={error() === '' && content() === null}>
           <div class="loading-state">
             <div class="spinner" />
             <p>Loading content...</p>
@@ -101,15 +99,17 @@ export const SharePage: Component = () => {
 // Melody Share Content Component
 // ============================================================
 
-const MelodyShareContent: Component<{
-  content: any
+interface MelodyShareProps {
+  content: SharedMelody
   onShare: (type: 'melody' | 'session', id: string) => void
-}> = (props) => {
+}
+
+const MelodyShareContent: Component<MelodyShareProps> = (props) => {
   const { content, onShare } = props
 
   const notes = content.items
-    .filter((item: any) => !item.isRest && item.note)
-    .map((item: any) => {
+    .filter((item: MelodyItem) => item.isRest !== true && item.note !== undefined)
+    .map((item: MelodyItem) => {
       const note = item.note
       return {
         midi: note.midi,
@@ -138,7 +138,7 @@ const MelodyShareContent: Component<{
             <div class="info-item">
               <span class="info-label">Duration</span>
               <span class="info-value">
-                {notes.reduce((a: number, b: any) => a + b.duration, 0)} beats
+                {notes.reduce((a: number, b: { duration: number }) => a + b.duration, 0)} beats
               </span>
             </div>
             <div class="info-item">
@@ -154,7 +154,7 @@ const MelodyShareContent: Component<{
           </div>
         </div>
 
-        <Show when={content.tags && content.tags.length > 0}>
+        <Show when={content.tags !== undefined && content.tags.length > 0}>
           <div class="tags-section">
             <h3>Tags</h3>
             <div class="tags-container">
@@ -174,7 +174,7 @@ const MelodyShareContent: Component<{
               <span class="note-column">Frequency (Hz)</span>
             </div>
             <For each={notes}>
-              {(n: any, i) => (
+              {(n: { midi: number; noteName: string; octave: number; freq: number; duration: number }, _i) => (
                 <div class="note-row">
                   <span class="note-column">
                     {n.noteName}
@@ -210,10 +210,12 @@ const MelodyShareContent: Component<{
 // Session Share Content Component
 // ============================================================
 
-const SessionShareContent: Component<{
-  content: any
+interface SessionShareProps {
+  content: SharedSession
   onShare: (type: 'melody' | 'session', id: string) => void
-}> = (props) => {
+}
+
+const SessionShareContent: Component<SessionShareProps> = (props) => {
   const { content, onShare } = props
 
   return (
@@ -279,7 +281,7 @@ const SessionShareContent: Component<{
           </div>
         </div>
 
-        <Show when={content.tags && content.tags.length > 0}>
+        <Show when={content.tags !== undefined && content.tags.length > 0}>
           <div class="tags-section">
             <h3>Tags</h3>
             <div class="tags-container">

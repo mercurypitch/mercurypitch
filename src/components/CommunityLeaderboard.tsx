@@ -602,7 +602,7 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
                     {index() >= 3 && `#${user.rank}`}
                   </div>
                   <div class="podium-avatar">
-                    {user.avatar != null ? renderIcon(user.avatar) : null}
+                    {user.avatar !== undefined ? renderIcon(user.avatar) : null}
                   </div>
                   <div class="podium-info">
                     <div class="podium-name">{user.displayName}</div>
@@ -651,7 +651,7 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
                       <td class="user-td">
                         <div class="user-cell">
                           <div class="user-avatar">
-                            {user.avatar != null ? renderIcon(user.avatar) : null}
+                            {user.avatar !== undefined ? renderIcon(user.avatar) : null}
                           </div>
                           <div class="user-details">
                             <div class="user-name">{user.displayName}</div>
@@ -712,7 +712,7 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
             <div class="profile-header">
               {(() => {
                 const user = selectedUser()
-                return (user?.avatar != null) ? renderIcon(user.avatar) : null
+                return (user !== null && user.avatar !== undefined) ? renderIcon(user.avatar) : null
               })()}
               <div class="profile-header-info">
                 <div class="profile-rank-badge">

@@ -8,8 +8,8 @@ import { getSessionHistory } from '@/stores'
 
 // Alternative: directly render icon with casting
 const renderIcon = (icon: Component | string) => {
-  if (typeof icon === 'string') return icon as any
-  return (icon as () => any)()
+  if (typeof icon === 'string') return icon
+  return icon({})
 }
 
 // ============================================================
@@ -385,7 +385,7 @@ const IconClose = () => (
   </svg>
 )
 
-const IconCheckCircle = () => (
+const _IconCheckCircle = () => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -402,7 +402,7 @@ const IconCheckCircle = () => (
   </svg>
 )
 
-const IconWarning = () => (
+const _IconWarning = () => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -452,7 +452,7 @@ const IconLock = () => (
   </svg>
 )
 
-const IconClipboard = () => (
+const _IconClipboard = () => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -469,7 +469,7 @@ const IconClipboard = () => (
   </svg>
 )
 
-const IconList = () => (
+const _IconList = () => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
@@ -590,9 +590,9 @@ export const VocalChallenges: Component = () => {
     score: number,
     completed: boolean,
   ) {
-    const progress = userProgress() || ({} as any)
+    const progress: UserChallengeProgress = userProgress() ?? {}
     const progressKey = `ch-${challengeId}`
-    const saved = (progress[progressKey] as ChallengeProgress) || {
+    const saved = progress[progressKey] ?? {
       id: challengeId,
       type: challengeId.substring(0, challengeId.indexOf('-')) as ChallengeType,
       name: challengeId,
@@ -614,12 +614,12 @@ export const VocalChallenges: Component = () => {
     if (completed) {
       saved.status = 'completed'
       saved.completedDate = Date.now()
-      if (!saved.unlockedDate) {
+      if (saved.unlockedDate === undefined) {
         saved.unlockedDate = Date.now()
       }
     } else if (score >= 80) {
       saved.status = 'in-progress'
-      if (!saved.unlockedDate) {
+      if (saved.unlockedDate === undefined) {
         saved.unlockedDate = Date.now()
       }
     } else if (score >= 50) {
@@ -635,9 +635,9 @@ export const VocalChallenges: Component = () => {
     const sessions = getSessionHistory()
 
     if (challenge.status === 'completed') {
-      const completedScore = challenge.actualScores?.[0] || 0
+      const completedScore = challenge.actualScores?.[0] ?? 0
       alert(
-        `"${challenge.name}" completed!\nYour score: ${completedScore}%\n${challenge.actualScores?.length || 1} session(s) played`,
+        `"${challenge.name}" completed!\nYour score: ${completedScore}%\n${challenge.actualScores?.length ?? 1} session(s) played`,
       )
       return
     }
@@ -649,7 +649,7 @@ export const VocalChallenges: Component = () => {
           ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
           : 0
       alert(
-        `Continue "${challenge.name}"!\nCurrent progress: ${avgScore}%\n(${challenge.actualScores?.length || 0} session(s))`,
+        `Continue "${challenge.name}"!\nCurrent progress: ${avgScore}%\n(${challenge.actualScores?.length ?? 0} session(s))`,
       )
       return
     }
@@ -696,7 +696,7 @@ export const VocalChallenges: Component = () => {
     return calculateStreak(scores.map((s) => s.completedAt || 0))
   })
 
-  const weeklyScores = createMemo(() => {
+  const _weeklyScores = createMemo(() => {
     const sessions = sessionHistory()
     const scores = [0, 0, 0, 0, 0, 0, 0] // Mon-Sun
     const counts = [0, 0, 0, 0, 0, 0, 0]
@@ -721,10 +721,10 @@ export const VocalChallenges: Component = () => {
   onMount(() => {
     try {
       const stored = localStorage.getItem('pp_challenge_progress')
-      if (stored) {
+      if (stored !== null) {
         setUserProgress(JSON.parse(stored))
       }
-    } catch {}
+    } catch { /* localStorage not available */ }
   })
 
   // Save user progress to localStorage
@@ -743,7 +743,7 @@ export const VocalChallenges: Component = () => {
 
     const sorted = [...dates].sort((a, b) => b - a)
     const today = new Date().setHours(0, 0, 0, 0)
-    const yesterday = today - 24 * 60 * 60 * 1000
+    const _yesterday = today - 24 * 60 * 60 * 1000
     const oneDay = 24 * 60 * 60 * 1000
 
     let streak = 0
@@ -789,7 +789,7 @@ export const VocalChallenges: Component = () => {
     return challenges.map((c) => {
       const challengeKey = `ch-${c.id}`
       const storedProgress = (userProgress() || {})[challengeKey]
-      if (storedProgress) {
+      if (storedProgress !== undefined) {
         return storedProgress
       }
       return c
@@ -883,9 +883,9 @@ export const VocalChallenges: Component = () => {
     // Track high note completions
     let highNoteCount = 0
     sessions.forEach((session) => {
-      if (session.practiceItemResult) {
+      if (session.practiceItemResult !== undefined) {
         session.practiceItemResult.forEach((item) => {
-          if (item.noteResult) {
+          if (item.noteResult !== undefined) {
             item.noteResult.forEach((note) => {
               if (note.pitchFreq > 880 && note.rating === 'perfect') {
                 highNoteCount++
@@ -951,7 +951,7 @@ export const VocalChallenges: Component = () => {
     return false
   }
 
-  const totalCompletedChallenges = createMemo(() => {
+  const _totalCompletedChallenges = createMemo(() => {
     return challenges().filter((c) => c.status === 'completed').length
   })
 
@@ -1180,7 +1180,7 @@ interface ChallengeModalProps {
 
 const ChallengeModal: Component<ChallengeModalProps> = (props) => {
   const [isPracticing, setIsPracticing] = createSignal(false)
-  const [sessionScore, setSessionScore] = createSignal(0)
+  const [_sessionScore, _setSessionScore] = createSignal(0)
 
   const handleComplete = () => {
     const sessions = getSessionHistory()
@@ -1247,7 +1247,7 @@ const ChallengeModal: Component<ChallengeModalProps> = (props) => {
               <div class="stat-card">
                 <span class="stat-label">Sessions</span>
                 <span class="stat-value">
-                  {props.challenge.actualScores?.length || 0}
+                  {props.challenge.actualScores?.length ?? 0}
                 </span>
               </div>
             </div>
@@ -1619,19 +1619,19 @@ const mockAchievements: UserAchievement[] = [
   },
 ]
 
-function generateMockChallenges(): ChallengeProgress[] {
+function _generateMockChallenges(): ChallengeProgress[] {
   return mockChallenges
 }
 
-function generateMockBadges(): UserBadge[] {
+function _generateMockBadges(): UserBadge[] {
   return mockBadges
 }
 
-function generateMockAchievements(): UserAchievement[] {
+function _generateMockAchievements(): UserAchievement[] {
   return mockAchievements
 }
 
-function generateMockProgress(): ChallengeProgress[] {
+function _generateMockProgress(): ChallengeProgress[] {
   return mockChallenges
 }
 

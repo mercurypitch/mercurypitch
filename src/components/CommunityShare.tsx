@@ -400,44 +400,44 @@ export const CommunityShare: Component = () => {
   const [activeTab, setActiveTab] = createSignal<
     'melodies' | 'sessions' | 'profile'
   >('melodies')
-  const [userProfile, setUserProfile] = createSignal<SharedProfile | null>(null)
+  const [userProfile, _setUserProfile] = createSignal<SharedProfile | null>(null)
   const [searchQuery, setSearchQuery] = createSignal('')
   const [sortBy, setSortBy] = createSignal<'recent' | 'popular' | 'highest'>(
     'recent',
   )
-  const [selectedShare, setSelectedShare] =
+  const [_selectedShare, _setSelectedShare] =
     createSignal<ShareableContent | null>(null)
 
   // Load shared data from localStorage
   const sharedMelodies = createMemo(() => {
     try {
       const stored = localStorage.getItem('pp_shared_melodies')
-      if (stored) {
+      if (stored !== null) {
         return JSON.parse(stored) as SharedMelody[]
       }
-    } catch {}
+    } catch { /* localStorage not available */ }
     return []
   })
 
   const sharedSessions = createMemo(() => {
     try {
       const stored = localStorage.getItem('pp_shared_sessions')
-      if (stored) {
+      if (stored !== null) {
         return JSON.parse(stored) as SharedSession[]
       }
-    } catch {}
+    } catch { /* localStorage not available */ }
     return []
   })
 
   // Current user profile (in-memory for demo)
   const currentProfile = createMemo(() => {
-    const userId = localStorage.getItem('pp_user_id') || `user_${Date.now()}`
+    const userId = localStorage.getItem('pp_user_id') ?? `user_${Date.now()}`
     localStorage.setItem('pp_user_id', userId)
 
     const sessions = getSessionHistory()
     const totalScore = sessions.reduce((sum, s) => sum + (s.score || 0), 0)
     const avgScore = sessions.length > 0 ? totalScore / sessions.length : 0
-    const maxStreak = 5
+    const _maxStreak = 5
     const currentStreak = 2
 
     return {
@@ -465,7 +465,7 @@ export const CommunityShare: Component = () => {
       result = result.filter(
         (m) =>
           m.name.toLowerCase().includes(query) ||
-          m.tags?.some((t) => t.toLowerCase().includes(query)),
+          (m.tags?.some((t) => t.toLowerCase().includes(query)) ?? false),
       )
     }
 
@@ -555,7 +555,7 @@ export const CommunityShare: Component = () => {
   }
 
   // Generate shareable URL for content
-  const generateShareUrl = (type: ShareableContent, id: string) => {
+  const _generateShareUrl = (type: ShareableContent, id: string) => {
     const baseUrl = window.location.origin
     return `${baseUrl}/#/share?type=${type}&id=${id}`
   }
@@ -616,7 +616,7 @@ export const CommunityShare: Component = () => {
         <div class="sort-select">
           <select
             value={sortBy()}
-            onChange={(e) => setSortBy(e.currentTarget.value as any)}
+            onChange={(e) => setSortBy(e.currentTarget.value as 'recent' | 'popular' | 'highest')}
           >
             <option value="recent">Most Recent</option>
             <option value="popular">Most Popular</option>
@@ -716,7 +716,7 @@ export const CommunityShare: Component = () => {
                   <div class="session-header">
                     <h3 class="session-name">{session.name}</h3>
                     <div class="session-scores">
-                      {session.results.map((score, i) => (
+                      {session.results.map((score, _i) => (
                         <span
                           class="session-score-badge"
                           style={{ '--score': score }}
@@ -791,7 +791,7 @@ export const CommunityShare: Component = () => {
             {/* Profile Header */}
             <div class="profile-header">
               <div class="profile-avatar">
-                {userProfile()?.avatar || IconUser()}
+                {userProfile()?.avatar ?? IconUser()}
               </div>
               <div class="profile-info">
                 <h2 class="profile-name">{currentProfile()?.displayName}</h2>
@@ -830,7 +830,7 @@ export const CommunityShare: Component = () => {
               <div class="chart-card">
                 <h3>Weekly Progress</h3>
                 <div class="mini-chart">
-                  {[65, 78, 72, 85, 90, 82, 75].map((score, i) => (
+                  {[65, 78, 72, 85, 90, 82, 75].map((score, _i) => (
                     <div class="mini-bar-wrapper">
                       <div
                         class="mini-bar"
@@ -846,7 +846,7 @@ export const CommunityShare: Component = () => {
               <div class="chart-card">
                 <h3>Accuracy Over Time</h3>
                 <div class="mini-chart">
-                  {[70, 72, 71, 75, 78, 80, 82].map((score, i) => (
+                  {[70, 72, 71, 75, 78, 80, 82].map((score, _i) => (
                     <div class="mini-bar-wrapper">
                       <div
                         class="mini-bar line-chart"

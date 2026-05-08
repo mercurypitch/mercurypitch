@@ -6,7 +6,7 @@ import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, onCleanup, Show } from 'solid-js'
 import { frequenciesToNoteName } from '@/lib/frequency-to-note'
 import { getSessionHistory } from '@/stores'
-import type { PitchResult, SessionResult } from '@/types'
+import type { NoteResult, PitchResult, SessionResult } from '@/types'
 
 // ============================================================
 // SVG Icons
@@ -159,7 +159,7 @@ export const VocalAnalysis: Component = () => {
   const [vocalRunData, setVocalRunData] = createSignal<PitchResult[]>([])
   const [isAnalyzing, setIsAnalyzing] = createSignal(false)
   const [history] = createSignal<SessionResult[]>(getSessionHistory())
-  const [selectedDate, setSelectedDate] = createSignal<string>('all')
+  const [_selectedDate, _setSelectedDate] = createSignal<string>('all')
 
   // Get recent session scores
   const recentSessions = createMemo(() => {
@@ -168,7 +168,7 @@ export const VocalAnalysis: Component = () => {
   })
 
   // Calculate practice heatmap data (by day and hour)
-  const heatmapData = createMemo(() => {
+  const _heatmapData = createMemo(() => {
     const heatmap = new Map<string, { sessions: number; totalScore: number }>()
     const sessions = history()
 
@@ -384,18 +384,17 @@ export const VocalAnalysis: Component = () => {
     // Simulate real analysis (would connect to real mic data in production)
     let analysisComplete = false
     const maxNotes = 100
-    const midFreq = 440 // A4 frequency for mid-range reference
 
     const interval = setInterval(() => {
       const allData = getSessionHistory()
       if (allData.length > 0) {
         // Convert SessionResult[] to PitchResult[] by flattening practiceItemResult
         const practiceResults = allData.flatMap(
-          (s) => s.practiceItemResult || [],
+          (s) => s.practiceItemResult,
         )
         setVocalRunData(
           practiceResults
-            .flatMap((p) => p.noteResult || [])
+            .flatMap((p) => p.noteResult)
             .map((r) => ({
               freq: r.pitchFreq || 0,
               midi: r.item.note.midi,
@@ -407,9 +406,9 @@ export const VocalAnalysis: Component = () => {
         // Build spectral approximation
         const spectral: SpectrumData[] = practiceResults
           .slice(-30)
-          .map((r: any, i: number) => ({
-            frequency: r.pitchFreq || 0,
-            amplitude: (r.avgCents || 0) * 3,
+          .map((r: NoteResult, i: number) => ({
+            frequency: r.pitchFreq,
+            amplitude: r.avgCents * 3,
             phase: (i / 30) * Math.PI * 2,
           }))
         setSpectralData(spectral)
@@ -589,8 +588,7 @@ export const VocalAnalysis: Component = () => {
             <Show when={activeExercise()}>
               <div class="exercise-result">
                 <h4>
-                  {exercises.find((e) => e.type === activeExercise())?.name ||
-                    'Analysis'}
+                  {(exercises.find((e) => e.type === activeExercise())?.name) ?? 'Analysis'}
                 </h4>
                 <Show when={isAnalyzing()}>
                   <div class="analyzing-overlay">
@@ -755,7 +753,7 @@ export const VocalAnalysis: Component = () => {
     return checkFn.feedback
   }
 
-  function metrics(): any {
+  function metrics(): { noteCount: number; minFreq: number; maxFreq: number; avgVolume: number } {
     if (isAnalyzing())
       return { noteCount: 0, minFreq: 0, maxFreq: 0, avgVolume: 0 }
     if (vocalRunData().length === 0)

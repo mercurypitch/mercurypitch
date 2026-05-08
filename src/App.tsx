@@ -740,9 +740,9 @@ const AppShell: Component<AppProps> = (props) => {
     const view = activeUvrView()
     const sessionId = activeUvrSessionId()
     let route: HashRoute
-    if (view === 'results' && sessionId != null) {
+    if (view === 'results' && sessionId !== null) {
       route = { type: 'uvr-session', sessionId }
-    } else if (view === 'mixer' && sessionId != null) {
+    } else if (view === 'mixer' && sessionId !== null) {
       route = { type: 'uvr-session-mixer', sessionId }
     } else if (view === 'history') {
       route = { type: 'uvr-history' }

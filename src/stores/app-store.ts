@@ -31,7 +31,7 @@ const DEFAULT_UVR_SETTINGS: UvrSettings = {
 
 export function getUvrSettings(): UvrSettings {
   const saved = localStorage.getItem('pitchperfect_uvr-settings')
-  if (saved) {
+  if (saved !== null) {
     try {
       return { ...DEFAULT_UVR_SETTINGS, ...JSON.parse(saved) }
     } catch {
@@ -140,7 +140,7 @@ export function getUvrSession(sessionId: string): UvrSession | undefined {
 /** Get all sessions */
 export function getAllUvrSessions(): UvrSession[] {
   const saved = localStorage.getItem('pitchperfect_uvr_sessions')
-  if (saved) {
+  if (saved !== null) {
     try {
       return JSON.parse(saved)
     } catch {
@@ -160,7 +160,7 @@ export function startUvrSession(
   fileName: string,
   fileSize: number,
   mimeType: string,
-  mode: UvrMode = 'separate',
+  _mode: UvrMode = 'separate',
 ): string {
   const sessionId = `uvr-session-${Date.now()}`
   const now = Date.now()
@@ -193,8 +193,8 @@ export function updateUvrSessionProgress(
   const session = sessions.find((s) => s.sessionId === sessionId)
   if (session) {
     session.progress = progress
-    session.indeterminate = indeterminate || false
-    if (processingTime) {
+    session.indeterminate = indeterminate ?? false
+    if (processingTime !== undefined) {
       session.processingTime = processingTime
     }
     saveAllUvrSessions(sessions)
@@ -293,8 +293,8 @@ export function getUvrSessionStats(): {
     completedSessions: sessions.filter((s) => s.status === 'completed').length,
     failedSessions: sessions.filter((s) => s.status === 'error').length,
     totalProcessingTime: sessions
-      .filter((s) => s.processingTime)
-      .reduce((sum, s) => sum + (s.processingTime || 0), 0),
+      .filter((s) => s.processingTime !== undefined)
+      .reduce((sum, s) => sum + (s.processingTime ?? 0), 0),
   }
 }
 
@@ -308,9 +308,9 @@ export function updateUvrSessionOutputs(
   if (!session) return
 
   const outputs: UvrSession['outputs'] = {
-    vocal: session.outputs?.vocal || '',
-    instrumental: session.outputs?.instrumental || '',
-    vocalMidi: session.outputs?.vocalMidi || '',
+    vocal: session.outputs?.vocal ?? '',
+    instrumental: session.outputs?.instrumental ?? '',
+    vocalMidi: session.outputs?.vocalMidi ?? '',
   }
   const meta: Record<string, { duration?: number; size?: number }> = {}
 
@@ -335,11 +335,9 @@ export function updateUvrSessionOutputs(
 
 // ── Audio Engine (single instance) ─────────────────────────────
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let _audioEngineInstance: any = null
+let _audioEngineInstance: AudioEngine | null = null
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function initAudioEngine(): Promise<any> {
+export async function initAudioEngine(): Promise<AudioEngine> {
   if (_audioEngineInstance !== null && _audioEngineInstance !== undefined) {
     return _audioEngineInstance
   }
