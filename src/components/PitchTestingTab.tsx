@@ -6,7 +6,7 @@ import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, Show, } from 'solid-js'
 import { PitchOverTimeCanvas } from '@/components/PitchOverTimeCanvas'
 import type { PitchDetectionResult } from '@/lib/pitch-algorithms'
-import { AutocorrelatorDetector, FFTDetector, YINDetector, } from '@/lib/pitch-algorithms'
+import { AutocorrelatorDetector, FFTDetector, SwiftF0Adapter, YINDetector, } from '@/lib/pitch-algorithms'
 import { currentScale } from '@/stores/melody-store'
 import type { TimeStampedPitchSample } from '@/types/pitch-algorithms'
 
@@ -15,18 +15,25 @@ interface PitchTestingTabProps {
 }
 
 type DetectionMode = 'mic' | 'file' | 'generate'
-type AlgorithmId = 'yin' | 'fft' | 'autocorr'
+type AlgorithmId = 'yin' | 'fft' | 'autocorr' | 'swift'
 
 interface TestNoteResult {
   noteName: string
   targetFreq: number
   passed: boolean
   detectedFreq: number | null
+  errorCents: number | null
+  errorHz: number | null
 }
 
 interface EnsembleTickResult {
   algorithm: AlgorithmId
   result: PitchDetectionResult | null
+}
+
+/** Calculate cents error between detected and target frequency (absolute value). */
+function centsError(detectedFreq: number, targetFreq: number): number {
+  return Math.abs(1200 * Math.log2(detectedFreq / targetFreq))
 }
 
 const TEST_FREQUENCIES = [
@@ -83,11 +90,11 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
     new YINDetector(),
     new FFTDetector(),
     new AutocorrelatorDetector(),
+    new SwiftF0Adapter(),
   ])
 
-  const [selectedAlgorithm, setSelectedAlgorithm] = createSignal<
-    'yin' | 'fft' | 'autocorr'
-  >('yin')
+  const [selectedAlgorithm, setSelectedAlgorithm] =
+    createSignal<AlgorithmId>('yin')
   const [ensembleMode, setEnsembleMode] = createSignal(false)
   const [ensembleAlgorithms, setEnsembleAlgorithms] = createSignal<
     Set<AlgorithmId>
@@ -142,7 +149,8 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
   const [isRunningTest, setIsRunningTest] = createSignal(false)
   const [zoomLevel, setZoomLevel] = createSignal(1)
   const [sensitivity, setSensitivity] = createSignal(7)
-  const [minConfidence, setMinConfidence] = createSignal(0.3)
+  const [minConfidence, setMinConfidence] = createSignal(0.1)
+  const [centsThreshold, setCentsThreshold] = createSignal(15)
 
   let detectionTimerId: number | null = null
   let detectionStartTime = 0
@@ -462,12 +470,11 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
     let passed = 0
     const noteResults: TestNoteResult[] = []
 
-    TEST_FREQUENCIES.forEach((freq, index) => {
-      setTimeout(() => {
-        if (cancelTest) {
-          if (index === 0) setIsRunningTest(false)
-          return
-        }
+    // Run tests sequentially to avoid race conditions with async detectors
+    const runAll = async () => {
+      for (let index = 0; index < TEST_FREQUENCIES.length; index++) {
+        if (cancelTest) break
+        const freq = TEST_FREQUENCIES[index]!
         const wave = new Float32Array(testSampleRate * 0.5)
         for (let i = 0; i < wave.length; i++) {
           const t = i / testSampleRate
@@ -475,29 +482,35 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
         }
 
         let detectedFreq: number | null
-        let isPass: boolean
 
         if (isEnsemble) {
-          // Reset all detectors before each note to prevent stability-filter
-          // cross-contamination — note jumps >15% get rejected as outliers.
           detectors().forEach((d) => d.reset())
           const ensembleOutput = ensembleDetect(wave)
           detectedFreq = ensembleOutput.result?.frequency ?? null
-          isPass =
-            ensembleOutput.result !== null &&
-            Math.abs(ensembleOutput.result.frequency - freq) < 5
         } else {
           const detector = detectors().find(
             (d) => d.algorithm === selectedAlgorithm(),
           )
           detector?.reset()
-          const result = detector!.detect(wave)
+          let result: PitchDetectionResult | null
+          const asyncDetector = detector as {
+            detectAsync?: (
+              data: Float32Array,
+            ) => Promise<PitchDetectionResult | null>
+          }
+          if (asyncDetector.detectAsync) {
+            result = await asyncDetector.detectAsync(wave)
+          } else {
+            result = detector!.detect(wave)
+          }
           detectedFreq = result?.frequency ?? null
-          isPass =
-            result !== null &&
-            result !== undefined &&
-            Math.abs(result.frequency - freq) < 5
         }
+
+        const errorHz =
+          detectedFreq !== null ? Math.abs(detectedFreq - freq) : null
+        const errorCents =
+          detectedFreq !== null ? centsError(detectedFreq, freq) : null
+        const isPass = errorCents !== null && errorCents <= centsThreshold()
 
         if (isPass) {
           passed++
@@ -510,21 +523,23 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
           targetFreq: freq,
           passed: isPass,
           detectedFreq,
+          errorCents,
+          errorHz,
         })
 
-        const newFailed = errors.length
         setTestResults({
           passed,
-          failed: newFailed,
-          errors,
+          failed: errors.length,
+          errors: [...errors],
           noteResults: [...noteResults],
         })
 
-        if (passed + newFailed === TEST_FREQUENCIES.length) {
-          setIsRunningTest(false)
-        }
-      }, index * 100)
-    })
+        // Yield to UI between notes so progress updates render
+        await new Promise<void>((r) => setTimeout(r, 20))
+      }
+      setIsRunningTest(false)
+    }
+    void runAll()
   }
 
   // Stop everything — detection and/or running test
@@ -715,6 +730,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                   <option value="yin">YIN Algorithm</option>
                   <option value="autocorr">Autocorrelation</option>
                   <option value="fft">FFT Max Bin</option>
+                  <option value="swift">SwiftF0 ML (ONNX)</option>
                 </select>
               }
             >
@@ -740,63 +756,112 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
             </Show>
           </div>
 
-          <div class="control-group">
-            <label>
-              Sensitivity{' '}
-              <span class="slider-value-badge">{sensitivity()}</span>
-            </label>
-            <input
-              type="range"
-              class="sensitivity-slider"
-              min="1"
-              max="10"
-              step="1"
-              value={sensitivity()}
-              disabled={isRunningTest()}
-              onInput={(e) => {
-                const val = Number(e.currentTarget.value)
-                setSensitivity(val)
-                if (ensembleMode()) {
-                  detectors().forEach((d) => d.setSensitivity(val))
-                } else {
-                  detectorForAlgorithm()?.setSensitivity(val)
-                }
-              }}
-            />
-            <div class="slider-range-labels">
-              <span>1</span>
-              <span>10</span>
+          <Show when={ensembleMode() || selectedAlgorithm() !== 'swift'}>
+            <div class="control-group">
+              <label>
+                Sensitivity{' '}
+                <span class="slider-value-badge">{sensitivity()}</span>
+              </label>
+              <input
+                type="range"
+                class="sensitivity-slider"
+                min="1"
+                max="10"
+                step="1"
+                value={sensitivity()}
+                disabled={isRunningTest()}
+                onInput={(e) => {
+                  const val = Number(e.currentTarget.value)
+                  setSensitivity(val)
+                  if (ensembleMode()) {
+                    detectors().forEach((d) => d.setSensitivity(val))
+                  } else {
+                    detectorForAlgorithm()?.setSensitivity(val)
+                  }
+                }}
+              />
+              <div class="slider-range-labels">
+                <span>1</span>
+                <span>10</span>
+              </div>
             </div>
-          </div>
+
+            <div class="control-group">
+              <label>
+                Min Confidence{' '}
+                <span class="slider-value-badge">
+                  {minConfidence().toFixed(1)}
+                </span>
+              </label>
+              <input
+                type="range"
+                class="confidence-slider"
+                min="0.1"
+                max="0.9"
+                step="0.05"
+                value={minConfidence()}
+                disabled={isRunningTest()}
+                onInput={(e) => {
+                  const val = Number(e.currentTarget.value)
+                  setMinConfidence(val)
+                  if (ensembleMode()) {
+                    detectors().forEach((d) => d.setMinConfidence(val))
+                  } else {
+                    detectorForAlgorithm()?.setMinConfidence(val)
+                  }
+                }}
+              />
+              <div class="slider-range-labels">
+                <span>0.1</span>
+                <span>0.9</span>
+              </div>
+            </div>
+          </Show>
 
           <div class="control-group">
             <label>
-              Min Confidence{' '}
-              <span class="slider-value-badge">
-                {minConfidence().toFixed(1)}
-              </span>
+              Cents Threshold{' '}
+              <span class="slider-value-badge">{centsThreshold()}¢</span>
             </label>
+            <div class="preset-buttons">
+              <button
+                class="btn btn-preset"
+                classList={{ active: centsThreshold() === 0 }}
+                disabled={isRunningTest()}
+                onClick={() => setCentsThreshold(0)}
+              >
+                Perfect (0¢)
+              </button>
+              <button
+                class="btn btn-preset"
+                classList={{ active: centsThreshold() === 5 }}
+                disabled={isRunningTest()}
+                onClick={() => setCentsThreshold(5)}
+              >
+                Great (±5¢)
+              </button>
+              <button
+                class="btn btn-preset"
+                classList={{ active: centsThreshold() === 10 }}
+                disabled={isRunningTest()}
+                onClick={() => setCentsThreshold(10)}
+              >
+                Okay (±10¢)
+              </button>
+            </div>
             <input
               type="range"
-              class="confidence-slider"
-              min="0.3"
-              max="0.9"
-              step="0.1"
-              value={minConfidence()}
+              class="cents-threshold-slider"
+              min="0"
+              max="20"
+              step="1"
+              value={centsThreshold()}
               disabled={isRunningTest()}
-              onInput={(e) => {
-                const val = Number(e.currentTarget.value)
-                setMinConfidence(val)
-                if (ensembleMode()) {
-                  detectors().forEach((d) => d.setMinConfidence(val))
-                } else {
-                  detectorForAlgorithm()?.setMinConfidence(val)
-                }
-              }}
+              onInput={(e) => setCentsThreshold(Number(e.currentTarget.value))}
             />
             <div class="slider-range-labels">
-              <span>0.3</span>
-              <span>0.9</span>
+              <span>0¢</span>
+              <span>20¢</span>
             </div>
           </div>
 
@@ -879,7 +944,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                 Regenerate Waveform
               </button>
               <span class="waveform-info">
-                Generated: {frequency()} Hz • 0.5s
+                Generated: {frequency()} Hz • 0.5 s
               </span>
             </div>
           </Show>
@@ -1084,7 +1149,8 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                   {ensembleMode()
                     ? `${[...ensembleAlgorithms()].join(' + ')} ensemble (majority vote)`
                     : (currentDetector()?.getName() ?? selectedAlgorithm())}
-                  . Pass = detected within &plusmn;5 Hz of target.
+                  . Pass = detected within &plusmn;{centsThreshold()}¢ of
+                  target.
                 </p>
               </Show>
 
@@ -1125,7 +1191,9 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                       <tr>
                         <th>Note</th>
                         <th>Target (Hz)</th>
-                        <th>Result</th>
+                        <th>Result (Hz)</th>
+                        <th>Error</th>
+                        <th>Status</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1142,15 +1210,21 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                               {nr.targetFreq.toFixed(2)}
                             </td>
                             <td class="test-note-result">
+                              {nr.detectedFreq !== null
+                                ? `${nr.detectedFreq.toFixed(1)}`
+                                : '—'}
+                            </td>
+                            <td class="test-note-error">
+                              {nr.errorCents !== null
+                                ? `${nr.errorCents < 0.05 ? '0.0' : nr.errorCents.toFixed(1)}¢ / ${nr.errorHz!.toFixed(1)} Hz`
+                                : '—'}
+                            </td>
+                            <td class="test-note-status">
                               <Show when={nr.passed}>
                                 <span class="result-badge pass">Pass</span>
                               </Show>
                               <Show when={!nr.passed}>
-                                <span class="result-badge fail">
-                                  {nr.detectedFreq !== null
-                                    ? `${nr.detectedFreq.toFixed(1)} Hz`
-                                    : 'No detection'}
-                                </span>
+                                <span class="result-badge fail">Fail</span>
                               </Show>
                             </td>
                           </tr>

@@ -4838,7 +4838,9 @@ input:checked + .settings-slider:before {
   border-radius: 6px;
   padding: 5px 14px;
   cursor: pointer;
-  transition: background 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    background 0.2s ease,
+    box-shadow 0.2s ease;
 }
 .whats-new-btn:hover {
   background: var(--accent);
@@ -11143,6 +11145,7 @@ input:checked + .settings-slider:before {
 
 .test-results-table {
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   font-size: 0.72rem;
 }
@@ -11162,6 +11165,25 @@ input:checked + .settings-slider:before {
   color: var(--text-muted);
   background: var(--bg-tertiary);
   border-bottom: 1px solid var(--border);
+}
+
+.test-results-table th:nth-child(1) {
+  width: 13%;
+}
+.test-results-table th:nth-child(2) {
+  width: 19%;
+}
+.test-results-table th:nth-child(3) {
+  width: 19%;
+  text-align: right;
+}
+.test-results-table th:nth-child(4) {
+  width: 15%;
+  text-align: right;
+}
+.test-results-table th:nth-child(5) {
+  width: 14%;
+  text-align: center;
 }
 
 .test-results-table td {
@@ -11194,6 +11216,17 @@ input:checked + .settings-slider:before {
 
 .test-note-result {
   text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.test-note-error {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+.test-note-status {
+  text-align: center;
 }
 
 .result-badge {
@@ -11213,4 +11246,38 @@ input:checked + .settings-slider:before {
 .result-badge.fail {
   background: var(--red-dim);
   color: var(--red);
+}
+
+/* Preset buttons for cents threshold */
+.preset-buttons {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.btn-preset {
+  padding: 3px 8px;
+  font-size: 0.68rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-preset.active {
+  background: var(--accent-dim, rgba(0, 122, 255, 0.15));
+  border-color: var(--accent, #007aff);
+  color: var(--accent, #007aff);
+  font-weight: 600;
+}
+
+.btn-preset:hover:not(:disabled) {
+  border-color: var(--text-muted);
+}
+
+.btn-preset:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
