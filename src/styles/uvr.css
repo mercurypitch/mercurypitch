@@ -241,7 +241,9 @@
 }
 
 .history-list-inline {
-  flex: 6 0 auto;
+  flex: 6 1 auto;
+  min-height: 0;
+  max-height: min(400px, 60vh);
   overflow-y: auto;
   margin-bottom: 0.75rem;
   border-bottom: 1px solid var(--border);

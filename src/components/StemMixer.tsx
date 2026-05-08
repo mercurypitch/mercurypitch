@@ -6446,7 +6446,7 @@ export const StemMixerStyles: string = `
 /* Workspace grid */
 .sm-workspace {
   display: grid;
-  grid-auto-rows: auto;
+  grid-auto-rows: minmax(0, 1fr);
   align-content: stretch;
   gap: 0.5rem;
   flex: 1;

@@ -4,7 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { For, Show } from 'solid-js'
-import { CheckCircle, Loader2, Music, Pause, Play, Settings, XCircle, } from './icons'
+import { CheckCircle, Loader2, Music, Play, Settings, XCircle, } from './icons'
 
 interface ProcessControlProps {
   sessionId: string
@@ -68,6 +68,14 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
               : 'Unknown error occurred',
           color: 'var(--error)',
         }
+      case 'uploading':
+        return {
+          icon: <Loader2 />,
+          title: 'Uploading file...',
+          description: 'Preparing to process',
+          color: 'var(--accent)',
+        }
+      case 'idle':
       default:
         return {
           icon: <Loader2 />,
@@ -174,7 +182,7 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
             class="process-btn process-btn-danger"
             onClick={props.onCancel}
           >
-            <Pause /> Cancel
+            Cancel
           </button>
         </Show>
         <Show when={props.status === 'error' && props.onRetry}>

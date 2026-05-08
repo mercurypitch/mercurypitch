@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createEffect, createSignal, For, onCleanup, Show } from 'solid-js'
+import { createEffect, createSignal, For, Show } from 'solid-js'
 import { generateVocalMidi } from '@/lib/midi-generator'
 import type { OutputFile } from '@/lib/uvr-api'
 import { DEFAULT_PROCESS_REQUEST, getProcessStatus, pollForCompletion, processAudio, } from '@/lib/uvr-api'
@@ -154,14 +154,6 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     }
   })
 
-  // Cleanup on unmount
-  onCleanup(() => {
-    // Clean up any processing sessions
-    if (session()?.status === 'processing') {
-      cancelUvrSession(session()!.sessionId)
-    }
-  })
-
   const handleFileSelect = (file: File) => {
     setSelectedFile(file)
     const sessionId = startUvrSession(
@@ -188,7 +180,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     if (session) {
       session.status = 'processing'
       saveAllUvrSessions(sessions)
-      setCurrentUvrSession(session)
+      setCurrentUvrSession({ ...session })
     }
 
     // Start real processing
