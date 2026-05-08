@@ -140,6 +140,31 @@ describe('decodeMelodyFromURL', () => {
     expect(result!.melody[0].note.midi).toBe(60)
   })
 
+  it('validates startBeat and duration', () => {
+    // startBeat < 0 or duration <= 0 should be skipped
+    const params = new URLSearchParams('n=m60s-1d2,m64s0d0,m67s0d-1,m72s0d2')
+    const result = decodeMelodyFromURL(params)
+
+    expect(result).not.toBeNull()
+    expect(result!.melody.length).toBe(1)
+    expect(result!.melody[0].note.midi).toBe(72)
+  })
+
+  it('returns null when all notes are invalid', () => {
+    const params = new URLSearchParams('n=m10s0d2,m60s-1d2,m64s0d0')
+    const result = decodeMelodyFromURL(params)
+    expect(result).toBeNull()
+  })
+
+  it('handles malformed optional numeric parameters', () => {
+    const params = new URLSearchParams('n=m60s0d2&bpm=abc&beats=xyz')
+    const result = decodeMelodyFromURL(params)
+
+    expect(result).not.toBeNull()
+    expect(result!.bpm).toBeNaN()
+    expect(result!.totalBeats).toBeNaN()
+  })
+
   it('rejects malformed note data', () => {
     const params = new URLSearchParams('n=invalid,m60s0')
     const result = decodeMelodyFromURL(params)
