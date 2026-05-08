@@ -12,11 +12,10 @@ interface MidiNoteEvent {
 }
 
 const TICKS_PER_BEAT = 480
-// Assume 120 BPM → each beat = 0.5s, window step = 0.025s → ~0.05 beats per step
 const DEFAULT_BPM = 120
-const WINDOW_SAMPLES = 2048
-const WINDOW_STEP_SEC = 0.025
-const MIN_NOTE_DURATION_SEC = 0.06
+const WINDOW_SAMPLES = 1024
+const WINDOW_STEP_SEC = 0.10
+const MIN_NOTE_DURATION_SEC = 0.08
 
 function writeVarLen(value: number): number[] {
   const bytes: number[] = []
@@ -122,8 +121,14 @@ function buildMidiFile(notes: MidiNoteEvent[], bpm: number): Uint8Array | null {
   return midiData
 }
 
+const YIELD_BATCH_SIZE = 80
+
 /** Pitch-detect a Float32Array and return an array of MIDI note events */
-function detectNotes(audioData: Float32Array, sampleRate: number): MidiNoteEvent[] {
+async function detectNotes(
+  audioData: Float32Array,
+  sampleRate: number,
+  onProgress?: (pct: number) => void,
+): Promise<MidiNoteEvent[]> {
   const detector = new PitchDetector({ sampleRate, bufferSize: WINDOW_SAMPLES, minAmplitude: 0.02, minConfidence: 0.3 })
 
   const windowStepSamples = Math.floor(WINDOW_STEP_SEC * sampleRate)
@@ -131,7 +136,6 @@ function detectNotes(audioData: Float32Array, sampleRate: number): MidiNoteEvent
 
   if (totalFrames <= 0) return []
 
-  // Collect pitch detections per time slice
   const detections: { midi: number; timeSec: number }[] = []
 
   for (let i = 0; i < totalFrames; i++) {
@@ -141,7 +145,6 @@ function detectNotes(audioData: Float32Array, sampleRate: number): MidiNoteEvent
 
     if (pitch.frequency > 0 && pitch.clarity > 0.3) {
       const midi = freqToMidi(pitch.frequency)
-      // Constrain to vocal range (roughly D2 to C7)
       if (midi >= 38 && midi <= 96) {
         detections.push({
           midi,
@@ -149,7 +152,15 @@ function detectNotes(audioData: Float32Array, sampleRate: number): MidiNoteEvent
         })
       }
     }
+
+    // Yield to browser every batch to avoid freezing the main thread
+    if (i % YIELD_BATCH_SIZE === 0 && i > 0) {
+      onProgress?.(Math.round((i / totalFrames) * 100))
+      await new Promise(r => setTimeout(r, 0))
+    }
   }
+
+  onProgress?.(100)
 
   if (detections.length === 0) return []
 
@@ -160,11 +171,9 @@ function detectNotes(audioData: Float32Array, sampleRate: number): MidiNoteEvent
 
   for (let i = 1; i < detections.length; i++) {
     const gap = detections[i].timeSec - detections[i - 1].timeSec
-    if (detections[i].midi === currentMidi && gap < 0.12) {
-      // Same note continues — extend
+    if (detections[i].midi === currentMidi && gap < WINDOW_STEP_SEC + 0.02) {
       continue
     }
-    // Note ended or changed
     const noteEndSec = detections[i - 1].timeSec + WINDOW_STEP_SEC
     const duration = noteEndSec - noteStartSec
     if (duration >= MIN_NOTE_DURATION_SEC) {
@@ -196,13 +205,15 @@ function detectNotes(audioData: Float32Array, sampleRate: number): MidiNoteEvent
  * Generate a MIDI blob from a vocal audio URL.
  * Fetches the audio, decodes it, runs YIN pitch detection, and builds a Standard MIDI File.
  */
-export async function generateVocalMidi(audioUrl: string): Promise<Blob | null> {
-  // Fetch and decode
+export async function generateVocalMidi(
+  audioUrl: string,
+  onProgress?: (pct: number) => void,
+): Promise<Blob | null> {
   const resp = await fetch(audioUrl)
   if (!resp.ok) throw new Error(`Failed to fetch audio: HTTP ${resp.status}`)
 
   const arrayBuffer = await resp.arrayBuffer()
-  const audioCtx = new OfflineAudioContext(1, 2, 44100) // placeholder, real decode happens below
+  const audioCtx = new OfflineAudioContext(1, 2, 44100)
   const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer)
 
   const sampleRate = audioBuffer.sampleRate
@@ -221,7 +232,7 @@ export async function generateVocalMidi(audioUrl: string): Promise<Blob | null> 
     monoData = channelData
   }
 
-  const notes = detectNotes(monoData, sampleRate)
+  const notes = await detectNotes(monoData, sampleRate, onProgress)
   if (notes.length === 0) return null
 
   const midiData = buildMidiFile(notes, DEFAULT_BPM)
