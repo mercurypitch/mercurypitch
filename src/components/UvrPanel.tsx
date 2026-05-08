@@ -110,6 +110,11 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   const [mixerPracticeMode, setMixerPracticeMode] = createSignal<
     'vocal' | 'instrumental' | 'full' | 'midi'
   >('full')
+  const [mixerRequestedStems, setMixerRequestedStems] = createSignal<{
+    vocal?: boolean
+    instrumental?: boolean
+    midi?: boolean
+  }>()
 
   // Computed session state
   const session = () => currentUvrSession()
@@ -316,12 +321,27 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
 
     setPrevView(currentView())
     setMixerPracticeMode(mode)
-    setMixerStems({
-      vocal: s.outputs.vocal,
-      instrumental: s.outputs.instrumental,
-      vocalMidi: s.outputs.vocalMidi,
-    })
     setMixerSessionId(s.sessionId)
+
+    // Set stems and requestedStems based on mode
+    if (mode === 'vocal') {
+      setMixerStems({ vocal: s.outputs.vocal })
+      setMixerRequestedStems({ vocal: true })
+    } else if (mode === 'instrumental') {
+      setMixerStems({ instrumental: s.outputs.instrumental })
+      setMixerRequestedStems({ instrumental: true })
+    } else if (mode === 'midi') {
+      // MIDI generation needs vocal audio — always include vocal URL
+      setMixerStems({ vocal: s.outputs.vocal })
+      setMixerRequestedStems({ midi: true })
+    } else {
+      // full: vocal + instrumental
+      setMixerStems({
+        vocal: s.outputs.vocal,
+        instrumental: s.outputs.instrumental,
+      })
+      setMixerRequestedStems({ vocal: true, instrumental: true })
+    }
     setCurrentView('mixer')
 
     if (props.onPracticeStart) {
@@ -339,14 +359,40 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
 
     setPrevView(currentView())
     const filter = stems || {}
-    const hasMidi = filter.midi === true
-    setMixerPracticeMode(hasMidi ? 'midi' : 'full')
+    const wantsMidi = filter.midi === true
+    const wantsVocal = filter.vocal !== false
+    const wantsInst = filter.instrumental !== false
+
+    // Determine practice mode
+    if (Object.keys(filter).length === 0) {
+      setMixerPracticeMode('full')
+    } else if (
+      wantsMidi &&
+      !wantsVocal &&
+      !wantsInst
+    ) {
+      setMixerPracticeMode('midi')
+    } else if (wantsMidi) {
+      setMixerPracticeMode('midi')
+    } else if (wantsVocal && !wantsInst) {
+      setMixerPracticeMode('vocal')
+    } else if (!wantsVocal && wantsInst) {
+      setMixerPracticeMode('instrumental')
+    } else {
+      setMixerPracticeMode('full')
+    }
+
+    // MIDI generation requires vocal audio — always include vocal URL when MIDI is wanted
     setMixerStems({
-      vocal: filter.vocal !== false ? s.outputs.vocal : undefined,
-      instrumental:
-        filter.instrumental !== false ? s.outputs.instrumental : undefined,
-      vocalMidi: s.outputs.vocalMidi,
+      vocal:
+        wantsVocal || wantsMidi ? s.outputs.vocal : undefined,
+      instrumental: wantsInst ? s.outputs.instrumental : undefined,
     })
+    setMixerRequestedStems(
+      Object.keys(filter).length > 0
+        ? { vocal: wantsVocal, instrumental: wantsInst, midi: wantsMidi }
+        : undefined,
+    )
     setMixerSessionId(s.sessionId)
     setCurrentView('mixer')
   }
@@ -772,6 +818,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
             sessionId={mixerSessionId()}
             songTitle={currentUvrSession()?.originalFile?.name ?? 'Unknown'}
             practiceMode={mixerPracticeMode()}
+            requestedStems={mixerRequestedStems()}
             onBack={() => setCurrentView(prevView())}
           />
         </div>

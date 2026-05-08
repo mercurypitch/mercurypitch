@@ -26,6 +26,9 @@ interface StemMixerProps {
   sessionId: string
   songTitle?: string
   practiceMode?: 'vocal' | 'instrumental' | 'full' | 'midi'
+  /** Which stems the user requested to see — only these appear in tracks().
+   *  Undefined = show all loaded stems (backwards-compat). */
+  requestedStems?: { vocal?: boolean; instrumental?: boolean; midi?: boolean }
   onBack?: () => void
 }
 
@@ -428,8 +431,15 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   const [midi, setMidi] = createSignal<StemTrack>(midiTrack())
 
   const tracks = () => {
-    const t = [vocal(), instrumental()]
-    if (props.practiceMode === 'midi' && midi().buffer) t.push(midi())
+    const req = props.requestedStems
+    const show = (stem: string) => {
+      if (!req) return true
+      return req[stem as keyof typeof req] === true
+    }
+    const t: StemTrack[] = []
+    if (show('vocal')) t.push(vocal())
+    if (show('instrumental')) t.push(instrumental())
+    if (show('midi') && midi().buffer) t.push(midi())
     return t.filter((tr) => !!(tr.url || tr.buffer))
   }
 
