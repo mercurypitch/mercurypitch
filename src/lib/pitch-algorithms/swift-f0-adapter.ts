@@ -164,9 +164,13 @@ export class SwiftF0Adapter implements IPitchDetector {
   }
 
   reset(): void {
-    this.detector.reset()
-    this.lastResult = null
-    this.pendingDetect = null
+  this.detector.reset()
+  this.lastResult = null
+  this.pendingDetect = null
+  this.cache.clear()
+  this.totalDetections = 0
+  this.consecutiveFailures = 0
+  this.averageClarity = 0
   }
 
   getMetrics(): DetectorMetrics {

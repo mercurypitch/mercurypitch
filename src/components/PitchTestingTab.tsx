@@ -143,7 +143,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
   const [isRunningTest, setIsRunningTest] = createSignal(false)
   const [zoomLevel, setZoomLevel] = createSignal(1)
   const [sensitivity, setSensitivity] = createSignal(7)
-  const [minConfidence, setMinConfidence] = createSignal(0.3)
+  const [minConfidence, setMinConfidence] = createSignal(0.1)
 
   let detectionTimerId: number | null = null
   let detectionStartTime = 0
@@ -786,9 +786,9 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
             <input
               type="range"
               class="confidence-slider"
-              min="0.3"
+              min="0.1"
               max="0.9"
-              step="0.1"
+              step="0.05"
               value={minConfidence()}
               disabled={isRunningTest()}
               onInput={(e) => {
@@ -802,7 +802,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
               }}
             />
             <div class="slider-range-labels">
-              <span>0.3</span>
+              <span>0.1</span>
               <span>0.9</span>
             </div>
           </div>
