@@ -465,12 +465,11 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
     let passed = 0
     const noteResults: TestNoteResult[] = []
 
-    TEST_FREQUENCIES.forEach((freq, index) => {
-      setTimeout(async () => {
-        if (cancelTest) {
-          if (index === 0) setIsRunningTest(false)
-          return
-        }
+    // Run tests sequentially to avoid race conditions with async detectors
+    const runAll = async () => {
+      for (let index = 0; index < TEST_FREQUENCIES.length; index++) {
+        if (cancelTest) break
+        const freq = TEST_FREQUENCIES[index]!
         const wave = new Float32Array(testSampleRate * 0.5)
         for (let i = 0; i < wave.length; i++) {
           const t = i / testSampleRate
@@ -494,7 +493,6 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
             (d) => d.algorithm === selectedAlgorithm(),
           )
           detector?.reset()
-          // Use async detection for SwiftF0, sync for others
           let result: PitchDetectionResult | null
           const asyncDetector = detector as { detectAsync?: (data: Float32Array) => Promise<PitchDetectionResult | null> }
           if (asyncDetector.detectAsync) {
@@ -523,19 +521,19 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
           errorCents,
         })
 
-        const newFailed = errors.length
         setTestResults({
           passed,
-          failed: newFailed,
-          errors,
+          failed: errors.length,
+          errors: [...errors],
           noteResults: [...noteResults],
         })
 
-        if (passed + newFailed === TEST_FREQUENCIES.length) {
-          setIsRunningTest(false)
-        }
-      }, index * 100)
-    })
+        // Yield to UI between notes so progress updates render
+        await new Promise<void>((r) => setTimeout(r, 20))
+      }
+      setIsRunningTest(false)
+    }
+    void runAll()
   }
 
   // Stop everything — detection and/or running test

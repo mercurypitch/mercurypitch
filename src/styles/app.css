@@ -11143,6 +11143,7 @@ input:checked + .settings-slider:before {
 
 .test-results-table {
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   font-size: 0.72rem;
 }
@@ -11163,6 +11164,12 @@ input:checked + .settings-slider:before {
   background: var(--bg-tertiary);
   border-bottom: 1px solid var(--border);
 }
+
+.test-results-table th:nth-child(1) { width: 13%; }
+.test-results-table th:nth-child(2) { width: 19%; }
+.test-results-table th:nth-child(3) { width: 19%; text-align: right; }
+.test-results-table th:nth-child(4) { width: 15%; text-align: right; }
+.test-results-table th:nth-child(5) { width: 14%; text-align: center; }
 
 .test-results-table td {
   padding: 6px 10px;
