@@ -1751,7 +1751,30 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     const rect = canvas.getBoundingClientRect()
     const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
     const winStart = windowStart()
-    seekTo(winStart + ratio * windowDuration())
+    const newTime = winStart + ratio * windowDuration()
+    seekTo(newTime)
+    if (!playing()) {
+      setWindowStart(Math.max(0, newTime - windowDuration() * 0.3))
+    }
+  }
+
+  const handleCanvasWheel = (e: WheelEvent) => {
+    e.preventDefault()
+    const canvas = e.currentTarget as HTMLCanvasElement
+    const rect = canvas.getBoundingClientRect()
+    const mouseX = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
+    const mouseTime = windowStart() + mouseX * windowDuration()
+    const delta = e.deltaY > 0 ? 5 : -5
+    const newDuration = Math.max(10, Math.min(150, windowDuration() + delta))
+    if (newDuration === windowDuration()) return
+    const newStart = Math.max(0, mouseTime - mouseX * newDuration)
+    setWindowDuration(newDuration)
+    setWindowStart(newStart)
+    syncCanvasSizes()
+    drawWaveformOverview()
+    drawLiveWaveform()
+    drawPitchCanvas()
+    drawMidiCanvas()
   }
 
   // ── Volume / Mute / Solo ─────────────────────────────────────
@@ -2940,7 +2963,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                 <svg viewBox="0 0 24 24" width="10" height="10" class="sm-drag-icon"><path fill="currentColor" d="M20 9H4v2h16V9zM4 15h16v-2H4v2z"/></svg>
                 Waveform Overview
               </div>
-              <canvas ref={waveformCanvasRef} class="sm-canvas sm-canvas-overview" onClick={handleWaveformClick} />
+              <canvas ref={waveformCanvasRef} class="sm-canvas sm-canvas-overview" onClick={handleWaveformClick} onWheel={handleCanvasWheel} />
               <div
                 class="sm-resize-handle"
                 onPointerDown={(e) => handleResizeStart('overview', e)}
@@ -2963,7 +2986,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                 <svg viewBox="0 0 24 24" width="10" height="10" class="sm-drag-icon"><path fill="currentColor" d="M20 9H4v2h16V9zM4 15h16v-2H4v2z"/></svg>
                 Live Waveform
               </div>
-              <canvas ref={liveWaveCanvasRef} class="sm-canvas sm-canvas-live" />
+              <canvas ref={liveWaveCanvasRef} class="sm-canvas sm-canvas-live" onWheel={handleCanvasWheel} />
               <div
                 class="sm-resize-handle"
                 onPointerDown={(e) => handleResizeStart('live', e)}
@@ -2986,7 +3009,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                 <svg viewBox="0 0 24 24" width="10" height="10" class="sm-drag-icon"><path fill="currentColor" d="M20 9H4v2h16V9zM4 15h16v-2H4v2z"/></svg>
                 Vocal Pitch
               </div>
-              <canvas ref={pitchCanvasRef} class="sm-canvas sm-canvas-pitch" />
+              <canvas ref={pitchCanvasRef} class="sm-canvas sm-canvas-pitch" onWheel={handleCanvasWheel} />
               <div
                 class="sm-resize-handle"
                 onPointerDown={(e) => handleResizeStart('pitch', e)}
@@ -3010,7 +3033,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                   <svg viewBox="0 0 24 24" width="10" height="10" class="sm-drag-icon"><path fill="currentColor" d="M20 9H4v2h16V9zM4 15h16v-2H4v2z"/></svg>
                   MIDI Melody
                 </div>
-                <canvas ref={midiCanvasRef} class="sm-canvas sm-canvas-midi" />
+                <canvas ref={midiCanvasRef} class="sm-canvas sm-canvas-midi" onWheel={handleCanvasWheel} />
                 <div
                   class="sm-resize-handle"
                   onPointerDown={(e) => handleResizeStart('midi', e)}
@@ -3783,7 +3806,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                 <div class="sm-fixed-col sm-fixed-col-left">
                   <div class="sm-workspace-panel" style={{ height: `${fixedPanelHeights().overview}px` }} data-fixed-panel="overview">
                     <div class="sm-panel-header">Waveform Overview</div>
-                    <canvas ref={waveformCanvasRef} class="sm-canvas sm-canvas-overview" onClick={handleWaveformClick} />
+                    <canvas ref={waveformCanvasRef} class="sm-canvas sm-canvas-overview" onClick={handleWaveformClick} onWheel={handleCanvasWheel} />
                     <div
                       class="sm-resize-handle"
                       onPointerDown={(e) => handleFixedResizeStart('overview', e)}
@@ -4096,7 +4119,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                 <div class="sm-fixed-col sm-fixed-col-right">
                   <div class="sm-workspace-panel" style={{ height: `${fixedPanelHeights().live}px` }} data-fixed-panel="live">
                     <div class="sm-panel-header">Live Waveform</div>
-                    <canvas ref={liveWaveCanvasRef} class="sm-canvas sm-canvas-live" />
+                    <canvas ref={liveWaveCanvasRef} class="sm-canvas sm-canvas-live" onWheel={handleCanvasWheel} />
                     <div
                       class="sm-resize-handle"
                       onPointerDown={(e) => handleFixedResizeStart('live', e)}
@@ -4104,7 +4127,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                   </div>
                   <div class="sm-workspace-panel" style={{ height: `${fixedPanelHeights().pitch}px` }} data-fixed-panel="pitch">
                     <div class="sm-panel-header">Vocal Pitch</div>
-                    <canvas ref={pitchCanvasRef} class="sm-canvas sm-canvas-pitch" />
+                    <canvas ref={pitchCanvasRef} class="sm-canvas sm-canvas-pitch" onWheel={handleCanvasWheel} />
                     <div
                       class="sm-resize-handle"
                       onPointerDown={(e) => handleFixedResizeStart('pitch', e)}
@@ -4113,7 +4136,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                   <Show when={props.practiceMode === 'midi'}>
                     <div class="sm-workspace-panel" style={{ height: `${fixedPanelHeights().midi}px` }} data-fixed-panel="midi">
                       <div class="sm-panel-header">MIDI Melody</div>
-                      <canvas ref={midiCanvasRef} class="sm-canvas sm-canvas-midi" />
+                      <canvas ref={midiCanvasRef} class="sm-canvas sm-canvas-midi" onWheel={handleCanvasWheel} />
                       <div
                         class="sm-resize-handle"
                         onPointerDown={(e) => handleFixedResizeStart('midi', e)}
