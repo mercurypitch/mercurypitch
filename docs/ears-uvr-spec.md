@@ -300,6 +300,49 @@ Each guide step shall display explanatory text and icon-based feature cards cove
 
 ---
 
+## 14. Mic Pitch Scoring
+
+### REQ-UV-068 — Mic Input Activation
+**WHEN** the user toggles the microphone button in the StemMixer, the system shall:
+1. Request microphone access via `getUserMedia`.
+2. Create a `PitchDetector` instance connected to the mic stream.
+3. Display the live mic pitch as a waveform overlay on the pitch canvas.
+4. Show an error message if microphone access is denied or unavailable.
+
+### REQ-UV-069 — Pitch Comparison Collection
+**WHILE** playback is active and the microphone is enabled, the system shall collect `ComparisonPoint` data at the RAF frame rate (~60fps). Each point shall record:
+- `time`: elapsed playback time (seconds)
+- `vocalNote`: the note from the vocal stem at that moment
+- `micNote`: the note detected from the microphone
+- `centsOff`: the cents deviation between mic and vocal pitch (positive = mic is sharp)
+- `inTolerance`: whether the deviation is within the configured tolerance (default 50 cents)
+
+### REQ-UV-070 — Score Computation
+**WHEN** playback stops (via Stop button) while the microphone was active, the system shall compute a `MicScore` from all collected `ComparisonPoint` data. The computation shall be a pure function of the data array:
+
+```ts
+function computeScore(data: ComparisonPoint[]): MicScore
+```
+
+Grading thresholds:
+- **S**: >= 95% of notes within tolerance
+- **A**: >= 85%
+- **B**: >= 70%
+- **C**: >= 50%
+- **D**: < 50%
+
+### REQ-UV-071 — Score Display
+**WHEN** a score is computed, the system shall display a score card showing:
+1. Grade letter (S/A/B/C/D) with color coding.
+2. Accuracy percentage.
+3. Matched notes count out of total.
+4. Average cents deviation.
+
+### REQ-UV-072 — Score Reset
+**WHEN** the user clicks Restart, the system shall clear all stored comparison data and hide the score card, allowing a fresh scoring session.
+
+---
+
 ## Summary of Requirements
 
 | ID | Category | Type | Description |
@@ -371,3 +414,8 @@ Each guide step shall display explanatory text and icon-based feature cards cove
 | REQ-UV-065 | Cross | Event-driven | Memory management |
 | REQ-UV-066 | Cross | Ubiquitous | Browser CSS compatibility |
 | REQ-UV-067 | Cross | Ubiquitous | SVG icons, no emoji |
+| REQ-UV-068 | Mic Score | Event-driven | Mic input activation |
+| REQ-UV-069 | Mic Score | State-driven | Pitch comparison data collection |
+| REQ-UV-070 | Mic Score | Event-driven | Score computation with grading |
+| REQ-UV-071 | Mic Score | State-driven | Score card display |
+| REQ-UV-072 | Mic Score | Event-driven | Score reset on restart |
