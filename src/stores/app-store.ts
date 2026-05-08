@@ -648,6 +648,24 @@ export const [showSelection, setShowSelection] = createSignal(false)
 export const [selectedWalkthrough, setSelectedWalkthrough] = createSignal<
   string | null
 >(null)
+
+/** Whether the WalkthroughModal (reading a specific chapter) is open */
+export const [walkthroughModalOpen, setWalkthroughModalOpen] =
+  createSignal(false)
+
+/** Close the walkthrough chapter modal */
+export function closeWalkthroughChapter(): void {
+  setWalkthroughModalOpen(false)
+  setSelectedWalkthrough(null)
+}
+
+/** Open a specific walkthrough chapter by ID (for hash-based deep linking) */
+export function openWalkthroughChapter(chapterId: string): void {
+  setSelectedWalkthrough(chapterId)
+  setShowSelection(false)
+  setWalkthroughModalOpen(true)
+}
+
 export const openLearningWalkthrough = () => {
   setShowSelection(true)
   setSelectedWalkthrough(null)

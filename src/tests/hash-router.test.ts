@@ -26,6 +26,78 @@ describe('parseHash', () => {
     expect(parseHash('#/uvr')).toEqual({ type: 'uvr-upload' })
   })
 
+  // REQ-RT-011: Learn routes
+  it('parses learn route', () => {
+    expect(parseHash('#/learn')).toEqual({ type: 'learn' })
+  })
+
+  it('parses learn chapter route with chapter ID', () => {
+    expect(parseHash('#/learn/practice-toolbar')).toEqual({
+      type: 'learn-chapter',
+      chapterId: 'practice-toolbar',
+    })
+  })
+
+  it('parses learn chapter route with hyphenated IDs', () => {
+    expect(parseHash('#/learn/editor-piano-roll')).toEqual({
+      type: 'learn-chapter',
+      chapterId: 'editor-piano-roll',
+    })
+  })
+
+  // REQ-RT-012: Guide routes
+  it('parses guide selection route', () => {
+    expect(parseHash('#/guide')).toEqual({ type: 'guide' })
+  })
+
+  it('parses guide all (full tour) route', () => {
+    expect(parseHash('#/guide/all')).toEqual({
+      type: 'guide-start',
+      sectionId: 'all',
+    })
+  })
+
+  it('parses guide section route for practice', () => {
+    expect(parseHash('#/guide/practice')).toEqual({
+      type: 'guide-start',
+      sectionId: 'practice',
+    })
+  })
+
+  it('parses guide section route for toolbar', () => {
+    expect(parseHash('#/guide/toolbar')).toEqual({
+      type: 'guide-start',
+      sectionId: 'toolbar',
+    })
+  })
+
+  it('parses guide section route for editor', () => {
+    expect(parseHash('#/guide/editor')).toEqual({
+      type: 'guide-start',
+      sectionId: 'editor',
+    })
+  })
+
+  it('parses guide section route for settings', () => {
+    expect(parseHash('#/guide/settings')).toEqual({
+      type: 'guide-start',
+      sectionId: 'settings',
+    })
+  })
+
+  it('returns unknown for invalid guide section', () => {
+    expect(parseHash('#/guide/nonexistent')).toEqual({ type: 'unknown' })
+  })
+
+  // Learn/guide take precedence over tab routes
+  it('learn routes take precedence over tab named learn', () => {
+    expect(parseHash('#/learn').type).toBe('learn')
+  })
+
+  it('guide routes take precedence over tab named guide', () => {
+    expect(parseHash('#/guide').type).toBe('guide')
+  })
+
   // REQ-RT-002: UVR sub-routes
   it('parses UVR upload route (#/uvr or #/uvr/upload)', () => {
     expect(parseHash('#/uvr')).toEqual({ type: 'uvr-upload' })
@@ -148,6 +220,29 @@ describe('buildHash', () => {
   it('builds unknown as root slash', () => {
     expect(buildHash({ type: 'unknown' })).toBe('/')
   })
+
+  it('builds learn hash', () => {
+    expect(buildHash({ type: 'learn' })).toBe('/learn')
+  })
+
+  it('builds learn-chapter hash', () => {
+    expect(buildHash({ type: 'learn-chapter', chapterId: 'practice-toolbar' }))
+      .toBe('/learn/practice-toolbar')
+  })
+
+  it('builds guide hash', () => {
+    expect(buildHash({ type: 'guide' })).toBe('/guide')
+  })
+
+  it('builds guide-start all hash', () => {
+    expect(buildHash({ type: 'guide-start', sectionId: 'all' })).toBe('/guide/all')
+  })
+
+  it('builds guide-start section hash', () => {
+    expect(buildHash({ type: 'guide-start', sectionId: 'editor' })).toBe(
+      '/guide/editor',
+    )
+  })
 })
 
 // ── Round-trip ─────────────────────────────────────────────────
@@ -161,6 +256,12 @@ describe('parseHash ↔ buildHash round-trip', () => {
     '#/uvr/session/sess-123',
     '#/uvr/session/sess-123/mixer',
     '#/share?type=melody&id=share-456',
+    '#/learn',
+    '#/learn/practice-toolbar',
+    '#/guide',
+    '#/guide/all',
+    '#/guide/practice',
+    '#/guide/editor',
   ]
 
   for (const hash of routes) {

@@ -11,6 +11,10 @@ export type HashRoute =
   | { type: 'uvr-session'; sessionId: string }
   | { type: 'uvr-session-mixer'; sessionId: string }
   | { type: 'share'; shareType: string; shareId: string }
+  | { type: 'learn' }
+  | { type: 'learn-chapter'; chapterId: string }
+  | { type: 'guide' }
+  | { type: 'guide-start'; sectionId: string }
   | { type: 'unknown' }
 
 const VALID_TABS: Set<string> = new Set([
@@ -22,6 +26,13 @@ const VALID_TABS: Set<string> = new Set([
   'leaderboard',
   'vocal-challenges',
   'uvr',
+])
+
+const VALID_GUIDE_SECTIONS: Set<string> = new Set([
+  'practice',
+  'toolbar',
+  'editor',
+  'settings',
 ])
 
 function isValidTab(tab: string): tab is ActiveTab {
@@ -73,6 +84,33 @@ export function parseHash(rawHash: string): HashRoute {
     return { type: 'share', shareType: shareMatch[1], shareId: shareMatch[2] }
   }
 
+  // Match: /learn/:chapterId
+  const learnChapterMatch = hash.match(/^\/learn\/(.+)$/)
+  if (learnChapterMatch) {
+    return { type: 'learn-chapter', chapterId: learnChapterMatch[1] }
+  }
+
+  // Match: /learn
+  if (hash === '/learn') {
+    return { type: 'learn' }
+  }
+
+  // Match: /guide/all
+  if (hash === '/guide/all') {
+    return { type: 'guide-start', sectionId: 'all' }
+  }
+
+  // Match: /guide/:sectionId
+  const guideSectionMatch = hash.match(/^\/guide\/([a-z-]+)$/)
+  if (guideSectionMatch && VALID_GUIDE_SECTIONS.has(guideSectionMatch[1])) {
+    return { type: 'guide-start', sectionId: guideSectionMatch[1] }
+  }
+
+  // Match: /guide
+  if (hash === '/guide') {
+    return { type: 'guide' }
+  }
+
   // Match: /tab-name
   const tabMatch = hash.match(/^\/([a-z-]+)$/)
   if (tabMatch && isValidTab(tabMatch[1])) {
@@ -99,6 +137,14 @@ export function buildHash(route: HashRoute): string {
       return `/uvr/session/${route.sessionId}/mixer`
     case 'share':
       return `/share?type=${route.shareType}&id=${route.shareId}`
+    case 'learn':
+      return '/learn'
+    case 'learn-chapter':
+      return `/learn/${route.chapterId}`
+    case 'guide':
+      return '/guide'
+    case 'guide-start':
+      return route.sectionId === 'all' ? '/guide/all' : `/guide/${route.sectionId}`
     case 'unknown':
       return '/'
   }

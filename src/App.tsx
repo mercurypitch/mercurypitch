@@ -44,7 +44,7 @@ import { melodyIndexAtBeat, melodyTotalBeats } from '@/lib/scale-data'
 import { buildScaleMelody, buildSessionPlaybackMelody, } from '@/lib/session-builder'
 import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
 import { setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPlaybackSpeed, setScaleType, } from '@/stores'
-import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initBpm, initPresets, initReverb, initSessionHistory, initSettings, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, toggleMicWaveVisible, } from '@/stores'
+import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initBpm, initPresets, initReverb, initSessionHistory, initSettings, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, openLearningWalkthrough, openWalkthroughChapter, playbackSpeed, scaleType as scaleTypeSignal, selectedWalkthrough, sessionActive, sessionMode, showNotification, showSelection, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, toggleMicWaveVisible, walkthroughModalOpen, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import { getSession, templateToSession } from '@/stores/session-store'
 import { selectedCharacter } from '@/stores/settings-store'
@@ -612,6 +612,18 @@ const AppShell: Component<AppProps> = (props) => {
       setActiveTab('uvr')
       setInitialUvrSessionId(initialRoute.sessionId)
       setInitialUvrView('mixer')
+    } else if (initialRoute.type === 'learn') {
+      openLearningWalkthrough()
+    } else if (initialRoute.type === 'learn-chapter') {
+      openWalkthroughChapter(initialRoute.chapterId)
+    } else if (initialRoute.type === 'guide') {
+      setShowGuideSelection(true)
+    } else if (initialRoute.type === 'guide-start') {
+      const sectionIds =
+        initialRoute.sectionId === 'all'
+          ? undefined
+          : [initialRoute.sectionId]
+      startWalkthrough(sectionIds)
     }
 
     // ── Hash routing: back/forward navigation ───────────────
@@ -639,6 +651,18 @@ const AppShell: Component<AppProps> = (props) => {
         setInitialUvrSessionId(route.sessionId)
         setInitialUvrView('mixer')
         setActiveUvrSessionId(route.sessionId)
+      } else if (route.type === 'learn') {
+        openLearningWalkthrough()
+      } else if (route.type === 'learn-chapter') {
+        openWalkthroughChapter(route.chapterId)
+      } else if (route.type === 'guide') {
+        setShowGuideSelection(true)
+      } else if (route.type === 'guide-start') {
+        const sectionIds =
+          route.sectionId === 'all'
+            ? undefined
+            : [route.sectionId]
+        startWalkthrough(sectionIds)
       }
       hashSyncing = false
     })
@@ -729,6 +753,8 @@ const AppShell: Component<AppProps> = (props) => {
   // ── Hash routing: sync activeTab → URL hash ───────────────
   createEffect(() => {
     if (hashSyncing) return
+    // Don't clobber walkthrough/guide hashes while those UIs are open
+    if (showSelection() || walkthroughModalOpen() || showGuideSelection()) return
     const tab = activeTab()
     if (tab !== 'uvr') {
       const expectedHash = `#/${tab}`
@@ -752,6 +778,28 @@ const AppShell: Component<AppProps> = (props) => {
     const expectedHash = `#${buildHash(route)}`
     if (window.location.hash !== expectedHash) {
       replaceHash(route)
+    }
+  })
+
+  // ── Hash routing: sync walkthrough/guide state → URL hash ──
+  createEffect(() => {
+    if (hashSyncing) return
+    if (walkthroughModalOpen() && selectedWalkthrough()) {
+      const id = selectedWalkthrough()!
+      const expectedHash = `#/learn/${id}`
+      if (window.location.hash !== expectedHash) {
+        replaceHash({ type: 'learn-chapter', chapterId: id })
+      }
+    } else if (showSelection()) {
+      const expectedHash = '#/learn'
+      if (window.location.hash !== expectedHash) {
+        replaceHash({ type: 'learn' })
+      }
+    } else if (showGuideSelection()) {
+      const expectedHash = '#/guide'
+      if (window.location.hash !== expectedHash) {
+        replaceHash({ type: 'guide' })
+      }
     }
   })
 
