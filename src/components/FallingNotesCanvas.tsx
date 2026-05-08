@@ -20,6 +20,7 @@ interface FallingNotesCanvasProps {
   isMicActive: () => boolean
   inputMode?: () => 'mic' | 'midi'
   visibleBeatWindow?: () => number
+  midiHeldNotes?: () => { midi: number; velocity: number }[]
 }
 
 interface Particle {
@@ -649,6 +650,31 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
       hlGrad.addColorStop(1, 'rgba(56,139,253,0.25)')
       ctx.fillStyle = hlGrad
       ctx.fillRect(x + 1, kbTop + 1, colWidth - 2, kbHeight - 2)
+    }
+
+    // Highlight keys being pressed via MIDI input
+    const held = props.midiHeldNotes?.()
+    if (held && held.length > 0) {
+      for (const e of held) {
+        const col = midiToWhiteIndex(e.midi)
+        const wi = col - minWhite
+        if (wi < 0 || wi >= rangeWhite) continue
+        const x = wi * colWidth
+        const opacity = 0.25 + (e.velocity / 127) * 0.45
+
+        const midiGrad = ctx.createLinearGradient(x, kbTop, x, kbTop + kbHeight)
+        midiGrad.addColorStop(0, `rgba(56,180,255,${opacity})`)
+        midiGrad.addColorStop(1, `rgba(56,180,255,${opacity * 0.6})`)
+        ctx.fillStyle = midiGrad
+        ctx.fillRect(x + 1, kbTop + 1, colWidth - 2, kbHeight - 2)
+
+        ctx.strokeStyle = `rgba(56,200,255,${opacity * 0.8})`
+        ctx.lineWidth = 2
+        ctx.beginPath()
+        ctx.moveTo(x + 1, kbTop + 1)
+        ctx.lineTo(x + colWidth - 1, kbTop + 1)
+        ctx.stroke()
+      }
     }
   }
 

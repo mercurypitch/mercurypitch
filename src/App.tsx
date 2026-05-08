@@ -1096,6 +1096,7 @@ const AppShell: Component<AppProps> = (props) => {
                     isMicActive={fallingNotes.isMicActive}
                     inputMode={fallingNotes.inputMode}
                     visibleBeatWindow={fallingNotes.visibleBeatWindow}
+                    midiHeldNotes={fallingNotes.midiHeldNotes}
                   />
                 </div>
                 {/* Score overlay for finished game */}

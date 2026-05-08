@@ -6,6 +6,7 @@
 import { createSignal, onCleanup } from 'solid-js'
 import type { AudioEngine } from '@/lib/audio-engine'
 import { FallingNotesEngine } from '@/lib/falling-notes-engine'
+import type { MidiNoteEvent } from '@/lib/midi-engine'
 import { MidiEngine } from '@/lib/midi-engine'
 import { centsToRating, ratingToScore } from '@/lib/practice-engine'
 import { freqToMidi, midiToFreq, midiToNote } from '@/lib/scale-data'
@@ -405,6 +406,10 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
     setShowNoteLabels((v) => !v)
   }
 
+  const midiHeldNotes = (): MidiNoteEvent[] => {
+    return Array.from(midiEngine.getHeldNotes().values())
+  }
+
   return {
     // Signals
     gameState,
@@ -429,6 +434,7 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
     isMicActive: micOn,
     midiConnect,
     midiDisconnect,
+    midiHeldNotes,
     inputMode,
     midiConnected,
     startGame,
