@@ -5,6 +5,7 @@
 import type { Component } from 'solid-js'
 import { onCleanup, onMount } from 'solid-js'
 import type { FallingNote, NoteJudgment } from '@/stores/falling-notes-store'
+import { setVisibleBeatWindow } from '@/stores/falling-notes-store'
 
 interface FallingNotesCanvasProps {
   songNotes: () => FallingNote[]
@@ -18,6 +19,7 @@ interface FallingNotesCanvasProps {
   currentPitch: () => { frequency: number; noteName: string; octave: number; cents: number } | null
   isMicActive: () => boolean
   inputMode?: () => 'mic' | 'midi'
+  visibleBeatWindow?: () => number
 }
 
 interface Particle {
@@ -96,8 +98,56 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
 
     startLoop()
 
+    // Ctrl+scroll zoom
+    const onWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey && !e.metaKey) return
+      e.preventDefault()
+      const step = e.deltaY < 0 ? -1 : 1
+      const current = props.visibleBeatWindow?.() ?? 8
+      const next = Math.max(2, Math.min(24, current + step))
+      if (next !== current) {
+        setVisibleBeatWindow(next)
+      }
+    }
+
+    // Touch pinch-to-zoom
+    let pinchStartDist = 0
+    let pinchStartWindow = 0
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        pinchStartDist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY,
+        )
+        pinchStartWindow = props.visibleBeatWindow?.() ?? 8
+      }
+    }
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches.length !== 2 || pinchStartDist === 0) return
+      e.preventDefault()
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY,
+      )
+      const scale = pinchStartDist / dist
+      const next = Math.max(2, Math.min(24, Math.round(pinchStartWindow * scale)))
+      setVisibleBeatWindow(next)
+    }
+    const onTouchEnd = () => {
+      pinchStartDist = 0
+    }
+
+    canvasRef.addEventListener('wheel', onWheel, { passive: false })
+    canvasRef.addEventListener('touchstart', onTouchStart, { passive: true })
+    canvasRef.addEventListener('touchmove', onTouchMove, { passive: false })
+    canvasRef.addEventListener('touchend', onTouchEnd)
+
     onCleanup(() => {
       ro.disconnect()
+      canvasRef?.removeEventListener('wheel', onWheel)
+      canvasRef?.removeEventListener('touchstart', onTouchStart)
+      canvasRef?.removeEventListener('touchmove', onTouchMove)
+      canvasRef?.removeEventListener('touchend', onTouchEnd)
       if (animFrameId !== null) cancelAnimationFrame(animFrameId)
     })
   })
@@ -233,7 +283,7 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
     const colWidth = w / displayRange
 
     const currentBeat = props.playheadBeat()
-    const visibleBeats = 8
+    const visibleBeats = props.visibleBeatWindow?.() ?? 8
     const bps = noteAreaH / visibleBeats
 
     const beatToY = (beat: number) => jLineY - (beat - currentBeat) * bps
@@ -379,7 +429,7 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
     jLineY: number,
   ) => {
     if (!ctx) return
-    const visibleBeats = 8
+    const visibleBeats = props.visibleBeatWindow?.() ?? 8
     const startBeat = currentBeat
     const endBeat = currentBeat + visibleBeats
 

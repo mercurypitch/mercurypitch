@@ -36,8 +36,10 @@ import {
   setSelectedSongName,
   setSongNotes,
   setTotalNotes,
+  setVisibleBeatWindow,
   songNotes,
   totalNotes,
+  visibleBeatWindow,
 } from '@/stores/falling-notes-store'
 import type { AccuracyRating } from '@/types'
 
@@ -370,6 +372,33 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
     setPlayheadBeat(0)
   }
 
+  const setSpeedSafe = (newSpeed: number) => {
+    // When speed changes during playback, rebase gameStartTime
+    // to maintain beat continuity
+    if (gameState() === 'playing') {
+      const currentBeat = playheadBeat()
+      const newBps = beatsPerSecond() * newSpeed
+      gameStartTime = performance.now() - (currentBeat / newBps) * 1000
+    }
+    setSpeed(newSpeed)
+  }
+
+  const ZOOM_MIN = 2
+  const ZOOM_MAX = 24
+  const ZOOM_STEP = 1
+
+  const zoomIn = () => {
+    setVisibleBeatWindow(Math.max(ZOOM_MIN, visibleBeatWindow() - ZOOM_STEP))
+  }
+
+  const zoomOut = () => {
+    setVisibleBeatWindow(Math.min(ZOOM_MAX, visibleBeatWindow() + ZOOM_STEP))
+  }
+
+  const zoomPercent = () => {
+    return Math.round((8 / visibleBeatWindow()) * 100)
+  }
+
   return {
     // Signals
     gameState,
@@ -382,6 +411,7 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
     currentPitch,
     songNotes,
     playheadBeat,
+    visibleBeatWindow,
 
     // Signals
     isCountingIn,
@@ -402,7 +432,10 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
     resetGame,
     loadSong,
     speed,
-    setSpeed,
+    setSpeed: setSpeedSafe,
+    zoomIn,
+    zoomOut,
+    zoomPercent,
     setBpm: setCurrentSongBpm,
 
     // Engine (for waveform display)

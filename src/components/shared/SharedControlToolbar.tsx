@@ -101,6 +101,11 @@ interface SharedControlToolbarProps {
   isRecording?: () => boolean
   onRecordToggle?: () => Promise<void>
 
+  // Zoom (falling-notes tab only)
+  zoomLevel?: () => number
+  onZoomIn?: () => void
+  onZoomOut?: () => void
+
   // MIDI (falling-notes tab only)
   inputMode?: () => 'mic' | 'midi'
   midiConnected?: () => boolean
@@ -645,6 +650,30 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
               <option value="2">2x</option>
             </select>
           </div>
+
+          {/* Zoom — falling notes tab only */}
+          <Show when={isFallingNotesTab() && props.zoomLevel && props.onZoomIn && props.onZoomOut}>
+          <div class="zoom-group inline-control" title="Zoom level">
+            <span class="inline-control-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="14" height="14">
+                <path fill="currentColor" d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+              </svg>
+            </span>
+            <button
+              class="zoom-btn"
+              title="Zoom out"
+              aria-label="Zoom out"
+              onClick={() => props.onZoomOut?.()}
+            >-</button>
+            <span class="zoom-label">{props.zoomLevel?.() ?? 100}%</span>
+            <button
+              class="zoom-btn"
+              title="Zoom in"
+              aria-label="Zoom in"
+              onClick={() => props.onZoomIn?.()}
+            >+</button>
+          </div>
+          </Show>
         </div>
 
         {/* Save Melody — editor tab only */}
