@@ -3,7 +3,7 @@
 // Framework for comparing and evaluating pitch detection algorithms
 // ============================================================
 
-export type PitchAlgorithm = 'yin' | 'fft' | 'autocorr' | 'mpm' | 'pyin' | null
+export type PitchAlgorithm = 'yin' | 'fft' | 'autocorr' | 'mpm' | 'pyin' | 'swift' | null
 
 export interface PitchDetectionResult {
   frequency: number

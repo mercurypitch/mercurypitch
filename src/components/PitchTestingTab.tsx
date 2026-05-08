@@ -6,7 +6,7 @@ import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, Show, } from 'solid-js'
 import { PitchOverTimeCanvas } from '@/components/PitchOverTimeCanvas'
 import type { PitchDetectionResult } from '@/lib/pitch-algorithms'
-import { AutocorrelatorDetector, FFTDetector, YINDetector, } from '@/lib/pitch-algorithms'
+import { AutocorrelatorDetector, FFTDetector, SwiftF0Adapter, YINDetector, } from '@/lib/pitch-algorithms'
 import { currentScale } from '@/stores/melody-store'
 import type { TimeStampedPitchSample } from '@/types/pitch-algorithms'
 
@@ -15,7 +15,7 @@ interface PitchTestingTabProps {
 }
 
 type DetectionMode = 'mic' | 'file' | 'generate'
-type AlgorithmId = 'yin' | 'fft' | 'autocorr'
+type AlgorithmId = 'yin' | 'fft' | 'autocorr' | 'swift'
 
 interface TestNoteResult {
   noteName: string
@@ -83,10 +83,11 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
     new YINDetector(),
     new FFTDetector(),
     new AutocorrelatorDetector(),
+    new SwiftF0Adapter(),
   ])
 
   const [selectedAlgorithm, setSelectedAlgorithm] = createSignal<
-    'yin' | 'fft' | 'autocorr'
+    AlgorithmId
   >('yin')
   const [ensembleMode, setEnsembleMode] = createSignal(false)
   const [ensembleAlgorithms, setEnsembleAlgorithms] = createSignal<
@@ -463,7 +464,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
     const noteResults: TestNoteResult[] = []
 
     TEST_FREQUENCIES.forEach((freq, index) => {
-      setTimeout(() => {
+      setTimeout(async () => {
         if (cancelTest) {
           if (index === 0) setIsRunningTest(false)
           return
@@ -478,8 +479,6 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
         let isPass: boolean
 
         if (isEnsemble) {
-          // Reset all detectors before each note to prevent stability-filter
-          // cross-contamination — note jumps >15% get rejected as outliers.
           detectors().forEach((d) => d.reset())
           const ensembleOutput = ensembleDetect(wave)
           detectedFreq = ensembleOutput.result?.frequency ?? null
@@ -491,7 +490,14 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
             (d) => d.algorithm === selectedAlgorithm(),
           )
           detector?.reset()
-          const result = detector!.detect(wave)
+          // Use async detection for SwiftF0, sync for others
+          let result: PitchDetectionResult | null
+          const asyncDetector = detector as { detectAsync?: (data: Float32Array) => Promise<PitchDetectionResult | null> }
+          if (asyncDetector.detectAsync) {
+            result = await asyncDetector.detectAsync(wave)
+          } else {
+            result = detector!.detect(wave)
+          }
           detectedFreq = result?.frequency ?? null
           isPass =
             result !== null &&
@@ -715,6 +721,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                   <option value="yin">YIN Algorithm</option>
                   <option value="autocorr">Autocorrelation</option>
                   <option value="fft">FFT Max Bin</option>
+                  <option value="swift">SwiftF0 ML (ONNX)</option>
                 </select>
               }
             >
