@@ -197,6 +197,7 @@ export async function searchLyricsMulti(rawInput: string): Promise<LyricsSearchM
     try {
       const batch = await fetchSearchLrclib(q.artist, q.title)
       for (const match of batch) {
+        if (results.length >= 20) break
         if (!seen.has(match.id)) {
           seen.add(match.id)
           results.push(match)
@@ -209,20 +210,24 @@ export async function searchLyricsMulti(rawInput: string): Promise<LyricsSearchM
 }
 
 export async function fetchLyricsById(id: number): Promise<LyricsSearchResult | null> {
-  const { signal, clear } = createTimeoutSignal(7000)
-  const resp = await fetch(`https://lrclib.net/api/get/${id}`, { signal })
-  clear()
-  if (!resp.ok) return null
+  try {
+    const { signal, clear } = createTimeoutSignal(7000)
+    const resp = await fetch(`https://lrclib.net/api/get/${id}`, { signal })
+    clear()
+    if (!resp.ok) return null
 
-  const data = await resp.json()
+    const data = await resp.json()
 
-  if (typeof data?.syncedLyrics === 'string' && data.syncedLyrics.length > 20) {
-    return { text: data.syncedLyrics, format: 'lrc' }
+    if (typeof data?.syncedLyrics === 'string' && data.syncedLyrics.length > 20) {
+      return { text: data.syncedLyrics, format: 'lrc' }
+    }
+    if (typeof data?.plainLyrics === 'string' && data.plainLyrics.length > 10) {
+      return { text: data.plainLyrics, format: 'txt' }
+    }
+    return null
+  } catch {
+    return null
   }
-  if (typeof data?.plainLyrics === 'string' && data.plainLyrics.length > 10) {
-    return { text: data.plainLyrics, format: 'txt' }
-  }
-  return null
 }
 
 async function fetchSearchLrclib(artist: string, title: string): Promise<LyricsSearchMatch[]> {

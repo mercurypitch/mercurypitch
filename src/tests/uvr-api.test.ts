@@ -155,25 +155,24 @@ describe('pollForCompletion (REQ-UV-006, REQ-UV-009)', () => {
     } as Response)
 
     const onError = vi.fn()
+    const controller = new AbortController()
 
-    // Poll with very short interval and rely on the immediate timeout check
-    // We need to set maxTimeMs shorter for testing — but it's hard-coded at 10min.
-    // Instead verify the function rejects on timeout by checking the behavior
-    // with a custom max time. For now, just verify it doesn't hang and calls error
-    // when fetch returns processing forever (we trust the timeout code).
-
-    // The timeout is 10min — not practical to test. Verify structure instead.
-    const _promise = pollForCompletion(
+    const promise = pollForCompletion(
       'test-session',
       vi.fn(),
       vi.fn(),
       onError,
       10,
+      controller.signal,
     )
 
     // Let it run a few polls then check it's still pending
     await new Promise((r) => setTimeout(r, 50))
     expect(onError).not.toHaveBeenCalled() // Not timed out yet
+
+    // Clean up: abort polling so it doesn't leak into other tests
+    controller.abort()
+    await expect(promise).rejects.toThrow('Polling aborted')
   })
 })
 

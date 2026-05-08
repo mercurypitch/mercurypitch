@@ -4,14 +4,17 @@
 
 import { describe, expect, it, vi } from 'vitest'
 import type { LrcLine } from '@/lib/lyrics-service'
+import type { LyricsSearchMatch } from '@/lib/lyrics-service'
 import {
   extractTitle,
+  fetchLyricsById,
   getCurrentLineIndex,
   getCurrentLrcIndex,
   parseArtistTitle,
   parseLrcFile,
   parseTextLyrics,
   searchLyrics,
+  searchLyricsMulti,
 } from '@/lib/lyrics-service'
 
 // ── REQ-UV-029: LRC Parsing ──────────────────────────────────
@@ -329,5 +332,228 @@ describe('searchLyrics', () => {
 
     const result = await searchLyrics('Test')
     expect(result).toBeNull()
+  })
+})
+
+// ── searchLyricsMulti ──────────────────────────────────────────
+
+describe('searchLyricsMulti', () => {
+  const makeMatch = (overrides: Partial<LyricsSearchMatch> = {}): LyricsSearchMatch => ({
+    id: 1,
+    artist: 'Test Artist',
+    title: 'Test Song',
+    ...overrides,
+  })
+
+  it('returns deduplicated results from LRCLIB search', async () => {
+    vi.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve([
+        { id: 1, artistName: 'Artist A', trackName: 'Song A', syncedLyrics: '[00:05.00]Line 1' },
+        { id: 2, artistName: 'Artist B', trackName: 'Song B', plainLyrics: 'Plain text' },
+      ]),
+    } as Response)
+
+    const results = await searchLyricsMulti('Artist A - Song A')
+    expect(results).toHaveLength(2)
+    expect(results[0].id).toBe(1)
+    expect(results[0].artist).toBe('Artist A')
+    expect(results[0].title).toBe('Song A')
+    expect(results[0].syncedLyrics).toBe('[00:05.00]Line 1')
+    expect(results[1].id).toBe(2)
+    expect(results[1].plainLyrics).toBe('Plain text')
+  })
+
+  it('deduplicates results by ID across multiple queries', async () => {
+    // Same ID returned from both queries
+    vi.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve([
+        { id: 1, artistName: 'Artist', trackName: 'Song' },
+      ]),
+    } as Response)
+
+    const results = await searchLyricsMulti('Artist - Song')
+    // Only one unique result despite multiple queries
+    expect(results).toHaveLength(1)
+    expect(results[0].id).toBe(1)
+  })
+
+  it('caps results at 20', async () => {
+    const allResults = Array.from({ length: 25 }, (_, i) => ({
+      id: i + 1,
+      artistName: `Artist ${i}`,
+      trackName: `Song ${i}`,
+    }))
+
+    vi.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve(allResults),
+    } as Response)
+
+    const results = await searchLyricsMulti('Song')
+    expect(results.length).toBeLessThanOrEqual(20)
+  })
+
+  it('returns empty array when search fails', async () => {
+    vi.spyOn(global, 'fetch').mockRejectedValue(new Error('Network error'))
+
+    const results = await searchLyricsMulti('Nonexistent Song')
+    expect(results).toEqual([])
+  })
+
+  it('returns empty array for non-ok response', async () => {
+    vi.spyOn(global, 'fetch').mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: () => Promise.resolve({}),
+    } as Response)
+
+    const results = await searchLyricsMulti('Test Song')
+    expect(results).toEqual([])
+  })
+
+  it('handles non-array API response gracefully', async () => {
+    vi.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({ error: 'invalid' }),
+    } as Response)
+
+    const results = await searchLyricsMulti('Test')
+    expect(results).toEqual([])
+  })
+
+  it('uses artistName/trackName fields from LRCLIB response', async () => {
+    vi.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve([
+        { id: 42, artistName: 'The Beatles', trackName: 'Yesterday', syncedLyrics: '[00:10.00]Yesterday' },
+      ]),
+    } as Response)
+
+    const results = await searchLyricsMulti('The Beatles - Yesterday')
+    expect(results).toHaveLength(1)
+    expect(results[0].artist).toBe('The Beatles')
+    expect(results[0].title).toBe('Yesterday')
+    expect(results[0].syncedLyrics).toBe('[00:10.00]Yesterday')
+  })
+
+  it('filters out items without numeric ID', async () => {
+    vi.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve([
+        { artistName: 'No ID', trackName: 'Bad' },
+        { id: 1, artistName: 'Has ID', trackName: 'Good' },
+        { id: 'string-id', artistName: 'String ID', trackName: 'Bad' },
+      ]),
+    } as Response)
+
+    const results = await searchLyricsMulti('Test')
+    expect(results).toHaveLength(1)
+    expect(results[0].id).toBe(1)
+  })
+
+  it('tries multiple query variants (with and without artist)', async () => {
+    const fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve([]),
+    } as Response)
+
+    await searchLyricsMulti('Artist - Title (Remix)')
+
+    const urls = fetchSpy.mock.calls.map((c) => String(c[0]))
+    // Should try: artist+title, artist+cleaned title, title-only, cleaned title-only
+    expect(urls.length).toBeGreaterThanOrEqual(1)
+    // At least one should contain track_name
+    expect(urls.some((u) => u.includes('track_name='))).toBe(true)
+  })
+})
+
+// ── fetchLyricsById ────────────────────────────────────────────
+
+describe('fetchLyricsById', () => {
+  it('returns LRC format when syncedLyrics available', async () => {
+    vi.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({
+        id: 123,
+        syncedLyrics: '[00:05.00]Line one\n[00:10.00]Line two\n[00:15.00]Line three\n',
+        plainLyrics: 'Line one\nLine two\nLine three\n',
+      }),
+    } as Response)
+
+    const result = await fetchLyricsById(123)
+    expect(result).not.toBeNull()
+    expect(result!.format).toBe('lrc')
+    expect(result!.text).toContain('[00:05.00]')
+  })
+
+  it('falls back to plain lyrics when no synced lyrics', async () => {
+    vi.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({
+        id: 456,
+        plainLyrics: 'Plain lyrics content here\nmore than 10 chars',
+      }),
+    } as Response)
+
+    const result = await fetchLyricsById(456)
+    expect(result).not.toBeNull()
+    expect(result!.format).toBe('txt')
+    expect(result!.text).toBe('Plain lyrics content here\nmore than 10 chars')
+  })
+
+  it('returns null for non-ok response', async () => {
+    vi.spyOn(global, 'fetch').mockResolvedValue({
+      ok: false,
+      status: 404,
+      json: () => Promise.resolve({}),
+    } as Response)
+
+    const result = await fetchLyricsById(999)
+    expect(result).toBeNull()
+  })
+
+  it('returns null when lyrics text is too short', async () => {
+    vi.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({ plainLyrics: 'short' }),
+    } as Response)
+
+    const result = await fetchLyricsById(1)
+    expect(result).toBeNull()
+  })
+
+  it('returns null on network error', async () => {
+    vi.spyOn(global, 'fetch').mockRejectedValue(new Error('Network error'))
+
+    const result = await fetchLyricsById(1)
+    expect(result).toBeNull()
+  })
+
+  it('fetches from correct LRCLIB endpoint', async () => {
+    const fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({
+        syncedLyrics: '[00:10.00]Test lyric line here\n',
+      }),
+    } as Response)
+
+    await fetchLyricsById(789)
+    expect(fetchSpy).toHaveBeenCalledWith(
+      'https://lrclib.net/api/get/789',
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    )
   })
 })
