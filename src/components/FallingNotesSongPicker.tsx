@@ -93,7 +93,7 @@ export const FallingNotesSongPicker: Component<FallingNotesSongPickerProps> = (
               return
             }
             setSelectedId(id)
-            handleLoadWithId(id)
+            queueMicrotask(() => handleLoadWithId(id))
           }}
         >
           <option value="">-- Select a song --</option>

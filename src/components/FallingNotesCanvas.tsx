@@ -99,6 +99,8 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
 
   let lastHitCount = 0
   let clickedKey: number | null = null
+  let pointerDownX = 0
+  let pointerDownY = 0
 
   // Hit-test: convert mouse/touch coordinates to MIDI note number
   const hitTestKeyboard = (clientX: number, clientY: number): number | null => {
@@ -181,6 +183,8 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
       const midi = hitTestKeyboard(e.clientX, e.clientY)
       if (midi !== null) {
         clickedKey = midi
+        pointerDownX = e.clientX
+        pointerDownY = e.clientY
         props.onClickPianoOn?.(midi)
         canvasRef?.setPointerCapture(e.pointerId)
       }
@@ -195,9 +199,13 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
 
     const onPointerMove = (e: PointerEvent) => {
       if (clickedKey === null) return
+      // Ignore sub-5px movement to prevent iOS tap-jitter key switching
+      const dx = e.clientX - pointerDownX
+      const dy = e.clientY - pointerDownY
+      if (Math.abs(dx) < 5 && Math.abs(dy) < 5) return
+
       const midi = hitTestKeyboard(e.clientX, e.clientY)
       if (midi !== clickedKey) {
-        // Moved to a different key — switch
         clickedKey = midi
         if (midi !== null) {
           props.onClickPianoOn?.(midi)
@@ -961,6 +969,10 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
         height: '100%',
         display: 'block',
         'border-radius': '6px',
+        'touch-action': 'manipulation',
+        'user-select': 'none',
+        '-webkit-user-select': 'none',
+        '-webkit-touch-callout': 'none',
       }}
     />
   )

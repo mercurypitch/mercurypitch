@@ -183,8 +183,9 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
       }
     }
 
-    // Check if all notes are done
-    if (judgedNotes.size >= notes.length && notes.length > 0) {
+    // Check if all notes are done AND playhead has passed the last note
+    const maxEndBeat = Math.max(...notes.map((n) => n.startBeat + n.duration))
+    if (judgedNotes.size >= notes.length && currentBeat >= maxEndBeat && notes.length > 0) {
       finishGame()
     }
   }
