@@ -21,11 +21,11 @@ export { VocalAnalysis } from './VocalAnalysis'
 export { VocalChallenges } from './VocalChallenges'
 export { UvrGuide } from './UvrGuide'
 export { UvrUploadControl } from './UvrUploadControl'
-export { UvrUploadControlStyles } from './UvrUploadControl'
+
 export { UvrProcessControl } from './UvrProcessControl'
-export { UvrProcessControlStyles } from './UvrProcessControl'
+
 export { UvrResultViewer } from './UvrResultViewer'
-export { UvrResultViewerStyles } from './UvrResultViewer'
+
 export {
   FileUpload,
   MusicNote,
@@ -40,9 +40,9 @@ export {
   FileText,
 } from './icons'
 export { UvrSessionResult } from './UvrSessionResult'
-export { UvrSessionResultStyles } from './UvrSessionResult'
+
 export { UvrPanel } from './UvrPanel'
-export { UvrPanelStyles } from './UvrPanel'
+
 export { StemMixer } from './StemMixer'
 export { StemMixerStyles } from './StemMixer'
 export { LyricsUploader } from './LyricsUploader'

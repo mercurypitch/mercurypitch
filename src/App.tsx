@@ -50,7 +50,7 @@ import { getSession, templateToSession } from '@/stores/session-store'
 import { selectedCharacter } from '@/stores/settings-store'
 import type { ActiveTab, MelodyItem, PlaybackMode, SpacedRestMode, } from '@/types'
 import { Walkthrough, WalkthroughControl } from './components'
-import { LyricsUploaderStyles, StemMixerStyles, UvrPanelStyles, UvrProcessControlStyles, UvrResultViewerStyles, UvrSessionResultStyles,UvrUploadControlStyles,  } from './components'
+import { LyricsUploaderStyles, StemMixerStyles } from './components'
 import { AppErrorBoundary } from './components/AppErrorBoundary'
 import { CrashModal } from './components/CrashModal'
 import { GuideSelection } from './components/GuideSelection'
@@ -671,11 +671,6 @@ const AppShell: Component<AppProps> = (props) => {
     const styleElements = [
       LyricsUploaderStyles,
       StemMixerStyles,
-      UvrPanelStyles,
-      UvrUploadControlStyles,
-      UvrProcessControlStyles,
-      UvrResultViewerStyles,
-      UvrSessionResultStyles,
       _UvrGuideStyles,
     ]
 
