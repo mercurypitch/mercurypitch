@@ -30,6 +30,11 @@ interface EnsembleTickResult {
   result: PitchDetectionResult | null
 }
 
+/** Calculate cents error between detected and target frequency (absolute value). */
+function centsError(detectedFreq: number, targetFreq: number): number {
+  return Math.abs(1200 * Math.log2(detectedFreq / targetFreq))
+}
+
 const TEST_FREQUENCIES = [
   65.41, 73.42, 82.41, 87.31, 98.0, 110.0, 130.81, 146.83, 164.81, 196.0, 220.0,
   261.63, 293.66, 329.63, 392.0, 440.0, 523.25, 587.33, 659.25, 783.99, 880.0,
@@ -484,10 +489,6 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
           detectors().forEach((d) => d.reset())
           const ensembleOutput = ensembleDetect(wave)
           detectedFreq = ensembleOutput.result?.frequency ?? null
-          errorCents = detectedFreq !== null
-            ? Math.abs(1200 * Math.log2(detectedFreq / freq))
-            : null
-          isPass = errorCents !== null && errorCents <= centsThreshold()
         } else {
           const detector = detectors().find(
             (d) => d.algorithm === selectedAlgorithm(),
@@ -501,11 +502,10 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
             result = detector!.detect(wave)
           }
           detectedFreq = result?.frequency ?? null
-          errorCents = detectedFreq !== null
-            ? Math.abs(1200 * Math.log2(detectedFreq / freq))
-            : null
-          isPass = errorCents !== null && errorCents <= centsThreshold()
         }
+
+        errorCents = detectedFreq !== null ? centsError(detectedFreq, freq) : null
+        isPass = errorCents !== null && errorCents <= centsThreshold()
 
         if (isPass) {
           passed++
