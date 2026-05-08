@@ -747,65 +747,67 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
             </Show>
           </div>
 
-          <div class="control-group">
-            <label>
-              Sensitivity{' '}
-              <span class="slider-value-badge">{sensitivity()}</span>
-            </label>
-            <input
-              type="range"
-              class="sensitivity-slider"
-              min="1"
-              max="10"
-              step="1"
-              value={sensitivity()}
-              disabled={isRunningTest()}
-              onInput={(e) => {
-                const val = Number(e.currentTarget.value)
-                setSensitivity(val)
-                if (ensembleMode()) {
-                  detectors().forEach((d) => d.setSensitivity(val))
-                } else {
-                  detectorForAlgorithm()?.setSensitivity(val)
-                }
-              }}
-            />
-            <div class="slider-range-labels">
-              <span>1</span>
-              <span>10</span>
+          <Show when={ensembleMode() || selectedAlgorithm() !== 'swift'}>
+            <div class="control-group">
+              <label>
+                Sensitivity{' '}
+                <span class="slider-value-badge">{sensitivity()}</span>
+              </label>
+              <input
+                type="range"
+                class="sensitivity-slider"
+                min="1"
+                max="10"
+                step="1"
+                value={sensitivity()}
+                disabled={isRunningTest()}
+                onInput={(e) => {
+                  const val = Number(e.currentTarget.value)
+                  setSensitivity(val)
+                  if (ensembleMode()) {
+                    detectors().forEach((d) => d.setSensitivity(val))
+                  } else {
+                    detectorForAlgorithm()?.setSensitivity(val)
+                  }
+                }}
+              />
+              <div class="slider-range-labels">
+                <span>1</span>
+                <span>10</span>
+              </div>
             </div>
-          </div>
 
-          <div class="control-group">
-            <label>
-              Min Confidence{' '}
-              <span class="slider-value-badge">
-                {minConfidence().toFixed(1)}
-              </span>
-            </label>
-            <input
-              type="range"
-              class="confidence-slider"
-              min="0.1"
-              max="0.9"
-              step="0.05"
-              value={minConfidence()}
-              disabled={isRunningTest()}
-              onInput={(e) => {
-                const val = Number(e.currentTarget.value)
-                setMinConfidence(val)
-                if (ensembleMode()) {
-                  detectors().forEach((d) => d.setMinConfidence(val))
-                } else {
-                  detectorForAlgorithm()?.setMinConfidence(val)
-                }
-              }}
-            />
-            <div class="slider-range-labels">
-              <span>0.1</span>
-              <span>0.9</span>
+            <div class="control-group">
+              <label>
+                Min Confidence{' '}
+                <span class="slider-value-badge">
+                  {minConfidence().toFixed(1)}
+                </span>
+              </label>
+              <input
+                type="range"
+                class="confidence-slider"
+                min="0.1"
+                max="0.9"
+                step="0.05"
+                value={minConfidence()}
+                disabled={isRunningTest()}
+                onInput={(e) => {
+                  const val = Number(e.currentTarget.value)
+                  setMinConfidence(val)
+                  if (ensembleMode()) {
+                    detectors().forEach((d) => d.setMinConfidence(val))
+                  } else {
+                    detectorForAlgorithm()?.setMinConfidence(val)
+                  }
+                }}
+              />
+              <div class="slider-range-labels">
+                <span>0.1</span>
+                <span>0.9</span>
+              </div>
             </div>
-          </div>
+          </Show>
 
           <div class="control-group">
             <label>Detection Mode</label>
