@@ -199,7 +199,6 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
           const outputs: UvrSession['outputs'] = {
             vocal: '',
             instrumental: '',
-            vocalMidi: '',
           }
           const meta: Record<string, { duration?: number; size?: number }> = {}
 

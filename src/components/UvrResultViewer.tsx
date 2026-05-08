@@ -162,7 +162,7 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
         exportType: 'instrumental',
       })
     }
-    if (props.outputs?.vocalMidi !== undefined) {
+    if (props.outputs?.vocal !== undefined) {
       list.push({
         key: 'vocalMidi',
         label: 'Vocal MIDI',

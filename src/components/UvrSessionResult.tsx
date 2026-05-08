@@ -287,7 +287,7 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
                 </Show>
               </button>
             </Show>
-            <Show when={session()?.outputs?.vocalMidi}>
+            <Show when={session()?.outputs?.vocal}>
               <button
                 class={`stem-pill stem-pill-midi ${selectedStems().has('vocal-midi') ? 'stem-pill-selected' : ''}`}
                 onClick={() => toggleStemSelection('vocal-midi')}
