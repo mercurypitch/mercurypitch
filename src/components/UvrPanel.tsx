@@ -451,12 +451,55 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
 
         <Show when={currentView() === 'upload'}>
           <div class="view-section upload-section">
-            <div class="section-header">
-              <h4>Upload Audio</h4>
-              <button class="guide-toggle" onClick={() => setShowGuide(true)}>
-                <Music /> See Guide
-              </button>
-            </div>
+            {/* Sessions list first (if any exist) */}
+            <Show when={allSessions().length > 0}>
+              <div class="section-header">
+                <h4>Recent Sessions</h4>
+                <button class="back-btn" onClick={() => setCurrentView('history')}>
+                  View All ({allSessions().length})
+                </button>
+              </div>
+              <div class="history-list history-list-inline">
+                <For
+                  each={allSessions()
+                    .sort((a, b) => b.createdAt - a.createdAt)
+                    .slice(0, 12)}
+                >
+                  {(s) => (
+                    <UvrSessionResult
+                      sessionId={s.sessionId}
+                      onView={() => handleSessionView(s.sessionId)}
+                      onExport={(type) => {
+                        void handleExportSession(
+                          s.sessionId,
+                          type as 'vocal' | 'instrumental' | 'vocal-midi',
+                        )
+                      }}
+                      onOpenMixer={(sessionId, stems) =>
+                        handleOpenMixerFromHistory(sessionId, stems)
+                      }
+                    />
+                  )}
+                </For>
+              </div>
+              <div class="upload-divider">
+                <span class="upload-divider-text">or start a new session</span>
+              </div>
+              <div class="section-header">
+                <h4>Upload Audio</h4>
+                <button class="guide-toggle" onClick={() => setShowGuide(true)}>
+                  <Music /> See Guide
+                </button>
+              </div>
+            </Show>
+            <Show when={allSessions().length === 0}>
+              <div class="section-header">
+                <h4>Upload Audio</h4>
+                <button class="guide-toggle" onClick={() => setShowGuide(true)}>
+                  <Music /> See Guide
+                </button>
+              </div>
+            </Show>
             <UvrUploadControl
               onFileSelect={handleFileSelect}
               onFileReady={setSelectedFile}
@@ -903,6 +946,34 @@ export const UvrPanelStyles: string = `
   overflow-y: auto;
   max-height: calc(100vh - 200px);
   padding-right: 0.25rem;
+}
+
+.history-list-inline {
+  max-height: 360px;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 1rem;
+}
+
+.upload-divider {
+  display: flex;
+  align-items: center;
+  margin: 0 0 1.5rem;
+}
+
+.upload-divider::before {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid var(--border);
+}
+
+.upload-divider-text {
+  padding: 0 1rem;
+  font-size: 0.8rem;
+  color: var(--fg-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
 }
 
 .history-empty {
