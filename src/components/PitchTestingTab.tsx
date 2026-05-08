@@ -150,7 +150,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
   const [zoomLevel, setZoomLevel] = createSignal(1)
   const [sensitivity, setSensitivity] = createSignal(7)
   const [minConfidence, setMinConfidence] = createSignal(0.1)
-  const [centsThreshold, setCentsThreshold] = createSignal(5)
+  const [centsThreshold, setCentsThreshold] = createSignal(15)
 
   let detectionTimerId: number | null = null
   let detectionStartTime = 0
