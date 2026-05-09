@@ -767,45 +767,93 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
     const held = props.midiHeldNotes?.()
     if (held && held.length > 0) {
       for (const e of held) {
+        const isBlackKey = IS_BLACK_KEY[e.midi % 12]
         const col = midiToWhiteIndex(e.midi)
         const wi = col - minWhite
         if (wi < 0 || wi >= rangeWhite) continue
-        const x = wi * colWidth
         const opacity = 0.25 + (e.velocity / 127) * 0.45
 
-        const midiGrad = ctx.createLinearGradient(x, kbTop, x, kbTop + kbHeight)
-        midiGrad.addColorStop(0, `rgba(56,180,255,${opacity})`)
-        midiGrad.addColorStop(1, `rgba(56,180,255,${opacity * 0.6})`)
-        ctx.fillStyle = midiGrad
-        ctx.fillRect(x + 1, kbTop + 1, colWidth - 2, kbHeight - 2)
+        if (isBlackKey) {
+          const bw = colWidth * BLACK_KEY_WIDTH_RATIO
+          const bx = wi * colWidth + colWidth * 0.7 - bw / 2
+          const blackKeyH = kbHeight * BLACK_KEY_HEIGHT_RATIO
+          const bRadius = Math.min(bw * 0.15, 3)
 
-        ctx.strokeStyle = `rgba(56,200,255,${opacity * 0.8})`
-        ctx.lineWidth = 2
-        ctx.beginPath()
-        ctx.moveTo(x + 1, kbTop + 1)
-        ctx.lineTo(x + colWidth - 1, kbTop + 1)
-        ctx.stroke()
+          ctx.fillStyle = `rgba(56,180,255,${opacity})`
+          ctx.beginPath()
+          ctx.moveTo(bx, kbTop + 1)
+          ctx.lineTo(bx + bw, kbTop + 1)
+          ctx.lineTo(bx + bw, kbTop + blackKeyH - bRadius)
+          ctx.arcTo(bx + bw, kbTop + blackKeyH, bx + bw - bRadius, kbTop + blackKeyH, bRadius)
+          ctx.lineTo(bx + bRadius, kbTop + blackKeyH)
+          ctx.arcTo(bx, kbTop + blackKeyH, bx, kbTop + blackKeyH - bRadius, bRadius)
+          ctx.closePath()
+          ctx.fill()
+
+          ctx.strokeStyle = `rgba(56,200,255,${opacity * 0.8})`
+          ctx.lineWidth = 2
+          ctx.stroke()
+        } else {
+          const x = wi * colWidth
+          const midiGrad = ctx.createLinearGradient(x, kbTop, x, kbTop + kbHeight)
+          midiGrad.addColorStop(0, `rgba(56,180,255,${opacity})`)
+          midiGrad.addColorStop(1, `rgba(56,180,255,${opacity * 0.6})`)
+          ctx.fillStyle = midiGrad
+          ctx.fillRect(x + 1, kbTop + 1, colWidth - 2, kbHeight - 2)
+
+          ctx.strokeStyle = `rgba(56,200,255,${opacity * 0.8})`
+          ctx.lineWidth = 2
+          ctx.beginPath()
+          ctx.moveTo(x + 1, kbTop + 1)
+          ctx.lineTo(x + colWidth - 1, kbTop + 1)
+          ctx.stroke()
+        }
       }
     }
 
     // Highlight key being clicked/touched on piano
     if (clickedKey !== null) {
+      const isBlack = IS_BLACK_KEY[clickedKey % 12]
       const col = midiToWhiteIndex(clickedKey)
       const wi = col - minWhite
       if (wi >= 0 && wi < rangeWhite) {
-        const x = wi * colWidth
-        const clickGrad = ctx.createLinearGradient(x, kbTop, x, kbTop + kbHeight)
-        clickGrad.addColorStop(0, 'rgba(255,180,60,0.55)')
-        clickGrad.addColorStop(1, 'rgba(255,140,30,0.35)')
-        ctx.fillStyle = clickGrad
-        ctx.fillRect(x + 1, kbTop + 1, colWidth - 2, kbHeight - 2)
+        if (isBlack) {
+          // Highlight the black key itself
+          const bw = colWidth * BLACK_KEY_WIDTH_RATIO
+          const bx = wi * colWidth + colWidth * 0.7 - bw / 2
+          const blackKeyH = kbHeight * BLACK_KEY_HEIGHT_RATIO
+          const bRadius = Math.min(bw * 0.15, 3)
 
-        ctx.strokeStyle = 'rgba(255,200,80,0.9)'
-        ctx.lineWidth = 2
-        ctx.beginPath()
-        ctx.moveTo(x + 1, kbTop + 1)
-        ctx.lineTo(x + colWidth - 1, kbTop + 1)
-        ctx.stroke()
+          ctx.fillStyle = 'rgba(255,180,60,0.7)'
+          ctx.beginPath()
+          ctx.moveTo(bx, kbTop + 1)
+          ctx.lineTo(bx + bw, kbTop + 1)
+          ctx.lineTo(bx + bw, kbTop + blackKeyH - bRadius)
+          ctx.arcTo(bx + bw, kbTop + blackKeyH, bx + bw - bRadius, kbTop + blackKeyH, bRadius)
+          ctx.lineTo(bx + bRadius, kbTop + blackKeyH)
+          ctx.arcTo(bx, kbTop + blackKeyH, bx, kbTop + blackKeyH - bRadius, bRadius)
+          ctx.closePath()
+          ctx.fill()
+
+          ctx.strokeStyle = 'rgba(255,200,80,0.9)'
+          ctx.lineWidth = 2
+          ctx.stroke()
+        } else {
+          // Highlight the white key
+          const x = wi * colWidth
+          const clickGrad = ctx.createLinearGradient(x, kbTop, x, kbTop + kbHeight)
+          clickGrad.addColorStop(0, 'rgba(255,180,60,0.55)')
+          clickGrad.addColorStop(1, 'rgba(255,140,30,0.35)')
+          ctx.fillStyle = clickGrad
+          ctx.fillRect(x + 1, kbTop + 1, colWidth - 2, kbHeight - 2)
+
+          ctx.strokeStyle = 'rgba(255,200,80,0.9)'
+          ctx.lineWidth = 2
+          ctx.beginPath()
+          ctx.moveTo(x + 1, kbTop + 1)
+          ctx.lineTo(x + colWidth - 1, kbTop + 1)
+          ctx.stroke()
+        }
       }
     }
   }
