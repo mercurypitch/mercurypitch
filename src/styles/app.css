@@ -1055,10 +1055,12 @@ header h1 {
   height: 12px;
   width: 12px;
   left: 2px;
-  bottom: 2px;
+  bottom: auto;
+  top: 50%;
+  transform: translateY(-50%);
 }
 .vis-grid-toggle.settings-toggle input:checked + .settings-slider:before {
-  transform: translateX(16px);
+  transform: translate(16px, -50%);
 }
 
 /* Bottom-anchored sections in sidebar */
@@ -4958,7 +4960,9 @@ Keeps your existing styles, only adjusts layout
   height: 16px;
   width: 16px;
   left: 2px;
-  bottom: 2px;
+  bottom: auto;
+  top: 50%;
+  transform: translateY(-50%);
   background-color: var(--text-secondary);
   transition: 0.3s;
   border-radius: 50%;
@@ -4970,7 +4974,7 @@ input:checked + .settings-slider {
 }
 
 input:checked + .settings-slider:before {
-  transform: translateX(20px);
+  transform: translate(20px, -50%);
   background-color: var(--accent);
 }
 
