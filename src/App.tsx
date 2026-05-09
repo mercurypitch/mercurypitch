@@ -379,7 +379,7 @@ const AppShell: Component<AppProps> = (props) => {
     if (currentTab === TAB_SINGING || currentTab === TAB_COMPOSE) {
       await resetPlaybackState()
     }
-    if (currentTab === 'falling-notes' && fallingNotes.isMicActive()) {
+    if (currentTab === TAB_PIANO && fallingNotes.isMicActive()) {
       fallingNotes.stopMic()
     }
     setActiveTab(newTab)
@@ -1423,7 +1423,7 @@ const AppShell: Component<AppProps> = (props) => {
               <div id="falling-notes-panel">
                 <SharedControlToolbar
                   activeTab={activeTab}
-                  fallingNotesTab={() => activeTab() === TAB_PIANO}
+                  pianoTab={() => activeTab() === TAB_PIANO}
                   isPlaying={() =>
                     fallingNotes.gameState() === 'playing' ||
                     fallingNotes.gameState() === 'countdown'

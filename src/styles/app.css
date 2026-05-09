@@ -3961,6 +3961,63 @@ Keeps your existing styles, only adjusts layout
   color: var(--text-primary);
 }
 
+/* ── Label toggle (Falling Notes tab) ────────────────────────────
+   Compact toggle button to show/hide note labels overlaid on the
+   falling notes canvas. Styled to match `.ctrl-btn` / `.roll-zoom-btn`
+   so it sits cohesively inside the `.inline-controls-row` cluster.
+   ──────────────────────────────────────────────────────────────── */
+.label-toggle-group {
+  display: inline-flex;
+  align-items: center;
+}
+
+.label-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  flex-shrink: 0;
+}
+
+.label-toggle-btn:hover {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  color: var(--text-primary);
+}
+
+.label-toggle-btn:active {
+  transform: scale(0.97);
+}
+
+.label-toggle-btn.active {
+  border-color: var(--green);
+  background: rgba(63, 185, 80, 0.12);
+  color: var(--green);
+}
+
+.label-toggle-text {
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+}
+
+@media (max-width: 600px) {
+  .label-toggle-btn {
+    padding: 3px 8px;
+  }
+  .label-toggle-text {
+    display: none;
+  }
+}
+
 /* Grid toggle button in piano roll toolbar */
 .roll-grid-toggle-btn {
   padding: 4px 10px;
