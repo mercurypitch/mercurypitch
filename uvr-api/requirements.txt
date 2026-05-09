@@ -1,0 +1,17 @@
+# ============================================================
+# UVR API Server Dependencies
+# ============================================================
+
+# Audio processing
+# audio-separator[gpu]
+#  for AMD GPUs
+audio-separator
+
+# Web framework
+fastapi
+uvicorn
+python-multipart
+
+# Utilities
+python-dotenv
+aiofiles

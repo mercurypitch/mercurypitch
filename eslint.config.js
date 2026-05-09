@@ -17,6 +17,7 @@ export default defineConfig(
       '**/*.spec.ts',
       '**/e2e/**',
       'docs/**',
+      'src/index.js',
       'src/index.tsx',
       'src/lib/engine-bridge.ts',
       'e2e-server.js',

@@ -2,8 +2,9 @@
 // CrashModal — Error handling modal for app crashes
 // ============================================================
 
-import type { Component } from 'solid-js'
-import { createMemo, createSignal, Show } from 'solid-js'
+import type { Component} from 'solid-js';
+import  { createSignal } from 'solid-js'
+import { createMemo, Show } from 'solid-js'
 import { APP_VERSION } from '@/lib/defaults'
 import { appError } from '@/stores'
 

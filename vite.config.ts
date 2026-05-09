@@ -19,6 +19,13 @@ export default defineConfig({
   },
   server: {
     port: 3000,
+    proxy: {
+      '/api/uvr': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/uvr/, ''), // Removes prefix before sending to API
+      },
+    },
   },
   build: {
     target: 'esnext',

@@ -34,7 +34,7 @@ test.describe('Playback', () => {
     page,
   }) => {
     // Click directly on Practice tab (welcome overlay may not be visible after dismiss)
-    const playBtn = page.locator('#tab-practice')
+    const playBtn = page.locator('#tab-singing')
     await playBtn.click()
     await page.waitForTimeout(1000)
 
@@ -53,7 +53,7 @@ test.describe('Playback', () => {
   test('Practice tab play button starts playback and moves playhead', async ({
     page,
   }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(500)
 
     // Verify we're on practice tab by checking practice-specific controls
@@ -97,7 +97,7 @@ test.describe('Playback', () => {
   })
 
   test('Practice tab pause button pauses playback', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(500)
 
     // Click Play
@@ -130,7 +130,7 @@ test.describe('Playback', () => {
   test('Practice tab stop button resets playhead to beginning', async ({
     page,
   }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(500)
 
     // Click Play
@@ -161,14 +161,14 @@ test.describe('Playback', () => {
   test.skip('Editor tab Play button starts playback', async ({ page }) => {
     // Play/Pause controls are only available in Practice mode
     // This test is skipped since Editor mode doesn't have playback controls
-    await page.locator('#tab-editor').click()
+    await page.locator('#tab-compose').click()
     await page.waitForTimeout(1000)
   })
 
   test.skip('Editor tab Pause button pauses playback', async ({ page }) => {
     // Play/Pause controls are only available in Practice mode
     // This test is skipped since Editor mode doesn't have playback controls
-    await page.locator('#tab-editor').click()
+    await page.locator('#tab-compose').click()
     await page.waitForTimeout(1000)
   })
 
@@ -177,7 +177,7 @@ test.describe('Playback', () => {
   }) => {
     // Play/Pause controls are only available in Practice mode
     // This test is skipped since Editor mode doesn't have playback controls
-    await page.locator('#tab-editor').click()
+    await page.locator('#tab-compose').click()
     await page.waitForTimeout(500)
   })
 
@@ -186,12 +186,12 @@ test.describe('Playback', () => {
   }) => {
     // Play/Pause controls are only available in Practice mode
     // This test is skipped since Editor mode doesn't have playback controls
-    await page.locator('#tab-editor').click()
+    await page.locator('#tab-compose').click()
     await page.waitForTimeout(500)
   })
 
   test('Metronome click does not interfere with playback', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(500)
 
     // Play button should be visible
@@ -241,7 +241,7 @@ test.describe('Playback - Once Mode', () => {
   test('Once mode: play button starts playback with count-in', async ({
     page,
   }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(500)
 
     // Set play mode to Once
@@ -282,7 +282,7 @@ test.describe('Playback - Once Mode', () => {
   })
 
   test('Once mode: playhead should advance steadily', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(500)
 
     await page.evaluate(() => {
@@ -324,7 +324,7 @@ test.describe('Playback - Once Mode', () => {
   test('Once mode: clicking Play again restarts from beginning', async ({
     page,
   }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(500)
 
     await page.evaluate(() => {
@@ -386,7 +386,7 @@ test.describe('Playback - Repeat Mode', () => {
   })
 
   test('Repeat mode: play starts with count-in and loops', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(500)
 
     // Set play mode to Repeat
@@ -421,7 +421,7 @@ test.describe('Playback - Repeat Mode', () => {
   test('Repeat mode: repeat button cycles through multiple plays', async ({
     page,
   }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(500)
 
     await page.evaluate(() => {
@@ -485,12 +485,12 @@ test.describe('Playback - Session Mode', () => {
   test('Session mode: play starts playback of session items', async ({
     page,
   }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(500)
 
     // Set play mode to Session Mode
     await page.evaluate(() => {
-      ;(window as any).__setPlayMode?.('practice')
+      ;(window as any).__setPlayMode?.('session')
     })
     await page.waitForTimeout(200)
 
@@ -520,12 +520,12 @@ test.describe('Playback - Session Mode', () => {
   test('Session mode: clicking play in session editor starts playback', async ({
     page,
   }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(500)
 
     // Set play mode to Session Mode
     await page.evaluate(() => {
-      ;(window as any).__setPlayMode?.('practice')
+      ;(window as any).__setPlayMode?.('session')
     })
     await page.waitForTimeout(200)
 
@@ -564,7 +564,7 @@ test.describe('Playback State Reset', () => {
   })
 
   test('After playback stop, all buttons reset correctly', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(500)
 
     // Set play mode
@@ -593,7 +593,7 @@ test.describe('Playback State Reset', () => {
   })
 
   test('Tab switch stops playback and resets state', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(500)
 
     await page.evaluate(() => {
@@ -609,7 +609,7 @@ test.describe('Playback State Reset', () => {
     await expect(page.locator('#playhead')).toBeVisible()
 
     // Switch tabs
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(500)
 
     // Playhead should be hidden after tab switch
@@ -617,7 +617,7 @@ test.describe('Playback State Reset', () => {
     await expect(playhead).not.toBeVisible()
 
     // Switch back to practice tab
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(500)
 
     // Playhead should still be hidden

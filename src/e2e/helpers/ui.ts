@@ -19,24 +19,24 @@ export async function dismissOverlays(page: Page) {
     const store = win.__pp?.appStore ?? win.__appStore ?? undefined
     if (store?.dismissWelcome) {
       store.dismissWelcome()
-      store.setActiveTab('practice')
+      store.setActiveTab('singing')
       if (store.exitFocusMode) store.exitFocusMode()
     }
 
     // Set localStorage as fallback
     localStorage.setItem('pitchperfect_welcome_version', '0.1')
-    localStorage.setItem('pitchperfect_active_tab', 'practice')
+    localStorage.setItem('pitchperfect_active_tab', 'singing')
     localStorage.setItem('pitchperfect_focus_mode', 'false')
   })
   await page.waitForTimeout(500)
 }
 
 export async function waitForTabs(page: Page) {
-  await page.waitForSelector('#tab-editor', {
+  await page.waitForSelector('#tab-compose', {
     timeout: 5000,
     state: 'attached',
   })
-  await page.waitForSelector('#tab-practice', {
+  await page.waitForSelector('#tab-singing', {
     timeout: 5000,
     state: 'attached',
   })
@@ -48,7 +48,7 @@ export async function waitForTabs(page: Page) {
 
 export async function switchTab(
   page: Page,
-  tabName: 'editor' | 'practice' | 'settings',
+  tabName: 'compose' | 'singing' | 'settings',
 ) {
   await page.evaluate((name) => {
     const store =

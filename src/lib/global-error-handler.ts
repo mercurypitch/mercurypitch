@@ -1,8 +1,8 @@
 import { exposeForE2E } from './test-utils'
 
 /**
- * Initializes global error and unhandled rejection handlers.
- * Also hooks into console.log/error to capture logs for E2E testing.
+ * Hooks into console.log/error to capture logs for E2E testing.
+ * Global error/unhandled rejection handling is in AppErrorBoundary.
  */
 export function initGlobalErrorHandlers(): void {
   if (typeof window === 'undefined') return
@@ -34,6 +34,7 @@ export function initGlobalErrorHandlers(): void {
       type: 'log',
       args: args.map((a) => String(a)),
     })
+    if (logs.length > 500) logs.splice(0, logs.length - 500)
     oldLog(...args)
   }
 
@@ -43,8 +44,9 @@ export function initGlobalErrorHandlers(): void {
       type: 'error',
       args: args.map((a) => String(a)),
     })
+    if (logs.length > 500) logs.splice(0, logs.length - 500)
     oldError(...args)
   }
 
-  console.log('global-error-handler: Handlers installed')
+  console.log('global-error-handler: Console log capture installed')
 }

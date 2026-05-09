@@ -3,6 +3,9 @@
 // These are used across multiple modules
 // ============================================================
 
+import type { Component } from 'solid-js'
+import type { PlaybackMode, WalkthroughTab } from '@/features/tabs/constants'
+
 /** Note name within an octave (C through B, with # for sharps) */
 export type NoteName =
   | 'C'
@@ -21,8 +24,7 @@ export type NoteName =
 /** Pitch accuracy rating for feedback */
 export type AccuracyRating = 'perfect' | 'excellent' | 'good' | 'okay' | 'off'
 
-/** Playback mode for the melody engine */
-export type PlaybackMode = 'once' | 'repeat' | 'practice'
+export type { PlaybackMode }
 
 /** Extra rest spacing used by the Practice tab's "Spaced" mode. */
 export type SpacedRestMode = 'none' | 'fourth' | 'half' | 'full'
@@ -163,6 +165,10 @@ export interface PracticeResult {
   // keep the midi notes info! Though we only need noteResult.item.note.midi values
   noteResult: NoteResult[]
 }
+
+export type { ActiveTab } from '@/features/tabs/constants'
+/** Practice sub-mode options */
+export type PracticeSubMode = 'all' | 'random' | 'focus' | 'reverse'
 
 /** Pitch result from practice engine */
 export interface PitchResult {
@@ -488,8 +494,7 @@ export interface SessionHistoryEntry {
   completedAt: number
 }
 
-/** Walkthrough tab type */
-export type WalkthroughTab = 'practice' | 'editor' | 'settings'
+export type { WalkthroughTab }
 
 /** Walkthrough step definition */
 export interface WalkthroughStep {
@@ -525,4 +530,67 @@ export interface WalkthroughContent {
 export interface WalkthroughProgress {
   /** Walkthrough ID -> timestamp when viewed/completed */
   [id: string]: number
+}
+
+// ============================================================
+// Community Leaderboard Types
+// ============================================================
+
+/** Leaderboard view mode */
+export type LeaderboardView = 'global' | 'friends' | 'weekly'
+
+/** User ranking in leaderboard */
+export interface LeaderboardUser {
+  /** User ID */
+  userId: string
+  /** Display name */
+  displayName: string
+  /** Avatar emoji or component */
+  avatar?: Component | string
+  /** Current score/rank points */
+  score: number
+  /** Rank position */
+  rank: number
+  /** Streak count */
+  streak: number
+  /** Total sessions completed */
+  totalSessions: number
+  /** Best score percentage */
+  bestScore: number
+  /** Current accuracy percentage */
+  accuracy: number
+  /** Join date */
+  joinDate: number
+}
+
+/** Leaderboard category */
+export type LeaderboardCategory =
+  | 'overall'
+  | 'best-score'
+  | 'accuracy'
+  | 'streak'
+  | 'sessions'
+
+/** Weekly challenge result */
+export interface WeeklyChallengeResult {
+  /** Challenge ID */
+  challengeId: string
+  /** Challenge name */
+  name: string
+  /** Challenge description */
+  description: string
+  /** Icon */
+  icon: Component | string
+  /** Current user's rank */
+  userRank: number
+  /** Global rank */
+  globalRank: number
+  /** Challenge date range */
+  startDate: number
+  /** Challenge type */
+  type: 'high-notes' | 'low-notes' | 'speed' | 'perfect' | 'scales'
+  /** Target score */
+  targetScore: number
+  /** User's score on this challenge */
+  userScore: number
 }

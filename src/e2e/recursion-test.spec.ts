@@ -23,7 +23,7 @@ test.describe('Recursion Detection (Quick Start removed)', () => {
   test('Quick Start → Presets Library → Play preset session', async ({
     page,
   }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(500)
 
     const quickStartBtn = page.locator(
@@ -46,7 +46,7 @@ test.describe('Recursion Detection (Quick Start removed)', () => {
       await page.waitForTimeout(3000)
 
       // Check practice tab is still active
-      await expect(page.locator('#tab-practice')).toHaveClass(/active/)
+      await expect(page.locator('#tab-singing')).toHaveClass(/active/)
     }
   })
 

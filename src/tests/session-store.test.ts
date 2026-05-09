@@ -3,7 +3,8 @@
 // ============================================================
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { advanceSessionItem, appStore, endPracticeSession, getCurrentSessionItem, initSessionHistory, isInSessionMode, recordSessionItemResult, } from '@/stores'
+import { PLAYBACK_MODE_SESSION } from '@/features/tabs/constants'
+import { advanceSessionItem, appStore, endPracticeSession, getCurrentSessionItem, isInSessionMode, recordSessionItemResult, } from '@/stores'
 import { createScaleItem } from '@/stores/session-store'
 import type { PracticeResult, SessionItem } from '@/types'
 
@@ -132,7 +133,7 @@ interface TestSession {
   deletable: boolean
   /** Creator name */
   author?: string
-  mode?: 'once' | 'repeat' | 'practice'
+  mode?: 'once' | 'repeat' | 'session'
   cycles?: number
   scale?: { name: string; degrees: number[]; description: string }
   currentCycle?: number
@@ -162,7 +163,7 @@ const makePracticeResult = (
   /** Session name */
   name: name,
   /** Practice mode */
-  mode: 'practice',
+  mode: PLAYBACK_MODE_SESSION,
   /** Completed at timestamp */
   completedAt: Date.now(),
   noteResult: [],
@@ -174,7 +175,7 @@ const makeSession = (id: string, itemCount: number): TestSession => ({
   description: `${id} description`,
   difficulty: 'beginner',
   category: 'vocal',
-  mode: 'practice',
+  mode: PLAYBACK_MODE_SESSION,
   cycles: 1,
   deletable: true,
   scale: { name: 'major', degrees: [0, 2, 4, 5, 7, 9, 11], description: '' },
@@ -190,13 +191,6 @@ const makeSession = (id: string, itemCount: number): TestSession => ({
   ),
   created: Date.now(),
 })
-
-// FIXME: Check if this is needed! Helper for test isolation (not used directly due to limitation)
-function _resetAppStoreSignals() {
-  // This would need to access private signals - for now, we rely on localStorage clearing
-  // and explicit endPracticeSession calls where needed
-  localStorageMock.clear()
-}
 
 describe('startPracticeSession', () => {
   beforeEach(() => {
@@ -221,8 +215,7 @@ describe('startPracticeSession', () => {
 describe('getCurrentSessionItem', () => {
   beforeEach(() => {
     localStorageMock.clear()
-    // Init stores then clean any lingering session
-    initSessionHistory()
+    // Clean any lingering session
     endPracticeSession()
   })
 
