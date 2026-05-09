@@ -6,11 +6,13 @@ import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
 import { PitchAlgorithmTester } from '@/components'
 import { ChangelogModal } from '@/components/ChangelogModal'
+import { ConsoleLog } from '@/components/ConsoleLog'
 import { TierSelector } from '@/components/TierSelector'
 import { APP_VERSION } from '@/lib/defaults'
 import { IS_DEV } from '@/lib/defaults'
 import { appStore } from '@/stores'
 import { adsr, playbackSpeed, setPlaybackSpeed, setSensitivity, settings, } from '@/stores'
+import { showConsoleLog, toggleConsoleLog } from '@/stores/console-store'
 import type { PitchAlgorithm } from '@/stores/settings-store'
 import type { PitchBufferSize } from '@/stores/settings-store'
 import { characterSounds, colorCodeNotes, flameMode, selectedCharacter, setCharacterSounds, setColorCodeNotes, setFlameMode, setShowAccuracyPercent, setShowPracticeResultPopup, setShowSidebarNoteList, showAccuracyPercent, showPracticeResultPopup, showSidebarNoteList, } from '@/stores/settings-store'
@@ -927,6 +929,30 @@ export const SettingsPanel: Component = () => {
                 Trigger Crash
               </button>
             </div>
+
+            <div class="settings-row danger-row">
+              <div class="danger-content">
+                <label class="danger-label" style="color: var(--yellow);">
+                  Developer Console Log
+                </label>
+                <small class="danger-desc">
+                  Toggle the visibility of the developer console log to
+                  intercept and view errors/warnings on mobile.
+                </small>
+              </div>
+              <label class="toggle-switch">
+                <input
+                  type="checkbox"
+                  checked={showConsoleLog()}
+                  onChange={() => toggleConsoleLog()}
+                />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+
+            <Show when={showConsoleLog()}>
+              <ConsoleLog />
+            </Show>
           </div>
 
           {/* Algorithm Tester */}
