@@ -400,6 +400,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
           </label>
         </div>
       </div>
+      <div class="fancy-divider" />
 
       {/* Library */}
       <div class="sidebar-section">

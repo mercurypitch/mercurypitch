@@ -724,7 +724,7 @@ export class AudioEngine {
     // A new note must replace the previous note immediately at the note boundary.
     // Lingering release tails here make the previous pitch sound over the next note.
     if (this.toneOscillator !== null) {
-      this.stopTone(0)
+      this.stopTone(20) // 20ms fade out to prevent popping/crackling
     }
 
     if (this.toneCleanupTimer !== null) {
@@ -849,8 +849,9 @@ export class AudioEngine {
     // Apply release envelope to fade out smoothly
     try {
       gain.gain.cancelScheduledValues(now)
-      gain.gain.setValueAtTime(gain.gain.value, now)
-      gain.gain.linearRampToValueAtTime(0, now + releaseSeconds)
+      // Use setTargetAtTime for a smooth asymptotic decay curve instead of a hard linear ramp,
+      // which eliminates clicking much more effectively.
+      gain.gain.setTargetAtTime(0, now, releaseSeconds / 3)
     } catch {
       // Gain may already be disconnected or at zero
     }

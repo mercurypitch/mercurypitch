@@ -4,7 +4,6 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
-import { PitchAlgorithmTester } from '@/components'
 import { ChangelogModal } from '@/components/ChangelogModal'
 import { ConsoleLog } from '@/components/ConsoleLog'
 import { TierSelector } from '@/components/TierSelector'
@@ -23,7 +22,6 @@ export const SettingsPanel: Component = () => {
   const s = () => settings()
   const [showResetConfirm, setShowResetConfirm] = createSignal(false)
   const [showChangelog, setShowChangelog] = createSignal(false)
-  const [showAlgoTester, setShowAlgoTester] = createSignal(false)
 
   const bandValues = createMemo(() => {
     const bands = s().bands
@@ -955,36 +953,7 @@ export const SettingsPanel: Component = () => {
             </Show>
           </div>
 
-          {/* Algorithm Tester */}
-          <div class="settings-section">
-            <h3 class="settings-section-title">Algorithm Testing</h3>
-            <div class="settings-divider" />
-            <p class="settings-desc">
-              Test and compare pitch detection algorithms on known samples.
-              Measures accuracy (cents), computation time, and realtime
-              viability.
-            </p>
 
-            <div class="settings-row">
-              <label>Algorithm Tester</label>
-              <button
-                class="primary-btn"
-                onClick={() => setShowAlgoTester(true)}
-              >
-                Open Tester
-              </button>
-            </div>
-          </div>
-
-          <Show when={showAlgoTester()}>
-            <div class="modal-overlay">
-              <div class="modal-content">
-                <PitchAlgorithmTester
-                  onClose={() => setShowAlgoTester(false)}
-                />
-              </div>
-            </div>
-          </Show>
         </Show>
 
         {/* About Section */}

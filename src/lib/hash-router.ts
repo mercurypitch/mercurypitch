@@ -2,7 +2,7 @@
 // Hash Router — Client-side hash-based routing
 // ============================================================
 
-import { TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_KARAOKE, TAB_LEADERBOARD, TAB_SETTINGS, TAB_SINGING, TAB_PIANO } from '@/features/tabs/constants'
+import { TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PIANO,TAB_SETTINGS, TAB_SINGING } from '@/features/tabs/constants'
 import type { ActiveTab } from '@/stores'
 
 export type HashRoute =

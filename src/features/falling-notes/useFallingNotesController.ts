@@ -364,7 +364,12 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
       let currentBeat = countInBeats
 
       const tick = () => {
+        // Only tick if the game hasn't been paused/stopped during count-in
+        if (gameState() !== 'countdown') return
+
         if (currentBeat > 0) {
+          // First beat of count-in is the downbeat (higher pitch)
+          audioEngine.playMetronomeClick(currentBeat === countInBeats)
           setCountInBeatTracker(currentBeat)
           setPlayheadBeat(-currentBeat)
         }
@@ -379,7 +384,7 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
         currentBeat--
         setTimeout(tick, beatMs)
       }
-      setTimeout(tick, beatMs)
+      tick() // Start first tick immediately
     } else {
       setGameState('playing')
       setPlayheadBeat(0)

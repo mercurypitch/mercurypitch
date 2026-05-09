@@ -412,7 +412,7 @@ export const LibraryTab: Component = () => {
     const handler = win.__pp?.playSessionSequence ?? win.__playSessionSequence
 
     if (handler !== undefined) {
-      handler(ids)
+      handler([]) // pass empty array to play the full session (including rests) rather than a transient filtered session
     }
   }
 

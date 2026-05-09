@@ -1,6 +1,7 @@
 import { createSignal } from 'solid-js'
 import { TAB_COMPOSE, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
 import { AudioEngine } from '@/lib/audio-engine'
+import { IS_DEV } from '@/lib/defaults'
 import { getCompletedCount, getRemainingWalkthroughs, } from '@/stores/walkthrough-store'
 import type { ActiveTab } from './ui-store'
 
@@ -791,6 +792,54 @@ export function endWalkthrough(): void {
   } catch {
     /* empty */
   }
+}
+
+// ── Feature Flags ───────────────────────────────────────────────────
+
+function loadBooleanFlag(key: string, defaultValue: boolean): boolean {
+  try {
+    const val = localStorage.getItem(key)
+    if (val !== null) return val === 'true'
+  } catch {
+    /* empty */
+  }
+  return defaultValue
+}
+
+function saveBooleanFlag(key: string, value: boolean): void {
+  try {
+    localStorage.setItem(key, value ? 'true' : 'false')
+  } catch {
+    /* empty */
+  }
+}
+
+const ADVANCED_FEATURES_KEY = 'pitchperfect_advanced_features'
+const initialAdvanced = IS_DEV ? true : loadBooleanFlag(ADVANCED_FEATURES_KEY, false)
+const [advancedFeaturesEnabledState, setAdvancedFeaturesEnabledState] =
+  createSignal(initialAdvanced)
+if (IS_DEV) saveBooleanFlag(ADVANCED_FEATURES_KEY, true)
+
+export const advancedFeaturesEnabled = (): boolean =>
+  advancedFeaturesEnabledState()
+
+export const setAdvancedFeaturesEnabled = (enabled: boolean): void => {
+  setAdvancedFeaturesEnabledState(enabled)
+  saveBooleanFlag(ADVANCED_FEATURES_KEY, enabled)
+}
+
+const DEV_FEATURES_KEY = 'pitchperfect_dev_features'
+const initialDev = IS_DEV ? true : loadBooleanFlag(DEV_FEATURES_KEY, false)
+const [devFeaturesEnabledState, setDevFeaturesEnabledState] = createSignal(
+  initialDev,
+)
+if (IS_DEV) saveBooleanFlag(DEV_FEATURES_KEY, true)
+
+export const devFeaturesEnabled = (): boolean => devFeaturesEnabledState()
+
+export const setDevFeaturesEnabled = (enabled: boolean): void => {
+  setDevFeaturesEnabledState(enabled)
+  saveBooleanFlag(DEV_FEATURES_KEY, enabled)
 }
 
 // ── App Crash / Error Handling ────────────────────────────────────────
