@@ -8,6 +8,7 @@ import { AudioEngine } from '@/lib/audio-engine'
 import { audioRegistry } from '@/lib/audio-registry'
 import type { PlaybackState } from '@/lib/piano-roll'
 import { PianoRollEditor } from '@/lib/piano-roll'
+import { gridLinesVisible } from '@/stores/settings-store'
 import type { MelodyItem, ScaleDegree } from '@/types'
 
 interface PianoRollCanvasProps {
@@ -157,6 +158,11 @@ export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
     }
     delete (window as unknown as { pianoRollAudioEngine?: unknown })
       .pianoRollAudioEngine
+  })
+
+  // Propagate grid visibility from settings
+  createEffect(() => {
+    editor?.setShowGrid(gridLinesVisible())
   })
 
   return (

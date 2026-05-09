@@ -7,7 +7,7 @@ import { createEffect, onCleanup, onMount } from 'solid-js'
 import type { ArcState } from '@/lib/arc-physics'
 import { BALL_RADIUS, buildPlayable, computeArcCy, computeArcEndBeat, computeBallPos, computeInitialArc, isBackwardsSeek, shouldAdvanceArc, } from '@/lib/arc-physics'
 import { appStore, bpm, focusMode } from '@/stores'
-import { colorCodeNotes, flameMode, showAccuracyPercent, showFocusBall, showPlaybackBall, } from '@/stores/settings-store'
+import { colorCodeNotes, flameMode, gridLinesVisible, showAccuracyPercent, showFocusBall, showPlaybackBall, } from '@/stores/settings-store'
 import type { MelodyItem, NoteResult, PitchSample, ScaleDegree } from '@/types'
 
 interface PitchCanvasProps {
@@ -468,12 +468,15 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
 
     for (const note of scale) {
       const y = freqToY(note.freq, h)
-      ctx.strokeStyle = 'rgba(48,54,61,0.7)'
-      ctx.lineWidth = 1
-      ctx.beginPath()
-      ctx.moveTo(0, y)
-      ctx.lineTo(w, y)
-      ctx.stroke()
+
+      if (gridLinesVisible()) {
+        ctx.strokeStyle = 'rgba(48,54,61,0.7)'
+        ctx.lineWidth = 1
+        ctx.beginPath()
+        ctx.moveTo(0, y)
+        ctx.lineTo(w, y)
+        ctx.stroke()
+      }
 
       ctx.fillStyle = '#484f58'
       ctx.font = '10px sans-serif'
@@ -791,12 +794,14 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
         }
       }
 
-      ctx.strokeStyle = 'rgba(48,54,61,0.35)'
-      ctx.lineWidth = 1
-      ctx.beginPath()
-      ctx.moveTo(x1, 0)
-      ctx.lineTo(x1, h)
-      ctx.stroke()
+      if (gridLinesVisible()) {
+        ctx.strokeStyle = 'rgba(48,54,61,0.35)'
+        ctx.lineWidth = 1
+        ctx.beginPath()
+        ctx.moveTo(x1, 0)
+        ctx.lineTo(x1, h)
+        ctx.stroke()
+      }
     }
 
     const history = props.pitchHistory()

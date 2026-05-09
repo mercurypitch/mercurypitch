@@ -1210,6 +1210,13 @@ export class PianoRollEditor {
     }
   }
 
+  public setShowGrid(visible: boolean): void {
+    if (this.showGrid !== visible) {
+      this.showGrid = visible
+      this.draw()
+    }
+  }
+
   destroy(): void {
     if (this.playbackAnimationId !== null) {
       cancelAnimationFrame(this.playbackAnimationId)
@@ -1592,8 +1599,7 @@ export class PianoRollEditor {
 
     // Grid toggle from app header/sidebar
     window.addEventListener('pitchperfect:gridToggle', (e) => {
-      this.showGrid = (e as CustomEvent<{ visible: boolean }>).detail.visible
-      this.draw()
+      this.setShowGrid((e as CustomEvent<{ visible: boolean }>).detail.visible)
     })
 
     // Grid mouse events
@@ -2952,12 +2958,14 @@ export class PianoRollEditor {
         ctx.fillRect(0, y, this.stretchedWidth, this.rowHeight)
       }
 
-      ctx.strokeStyle = '#21262d'
-      ctx.lineWidth = 0.5
-      ctx.beginPath()
-      ctx.moveTo(0, y)
-      ctx.lineTo(this.stretchedWidth, y)
-      ctx.stroke()
+      if (this.showGrid) {
+        ctx.strokeStyle = '#21262d'
+        ctx.lineWidth = 0.5
+        ctx.beginPath()
+        ctx.moveTo(0, y)
+        ctx.lineTo(this.stretchedWidth, y)
+        ctx.stroke()
+      }
     }
 
     // Vertical lines (only when grid is visible)
@@ -3019,12 +3027,14 @@ export class PianoRollEditor {
         ctx.fillRect(0, y, this.stretchedWidth, this.rowHeight)
       }
 
-      ctx.strokeStyle = '#21262d'
-      ctx.lineWidth = 0.5
-      ctx.beginPath()
-      ctx.moveTo(0, y)
-      ctx.lineTo(this.stretchedWidth, y)
-      ctx.stroke()
+      if (this.showGrid) {
+        ctx.strokeStyle = '#21262d'
+        ctx.lineWidth = 0.5
+        ctx.beginPath()
+        ctx.moveTo(0, y)
+        ctx.lineTo(this.stretchedWidth, y)
+        ctx.stroke()
+      }
     }
 
     // Vertical lines (only when grid is visible)

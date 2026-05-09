@@ -1021,6 +1021,8 @@ header h1 {
   align-items: center;
   margin: 16px 0 8px 0;
   height: 2px;
+  min-height: 2px;
+  flex-shrink: 0;
   background: linear-gradient(
     90deg,
     var(--border) 0%,
