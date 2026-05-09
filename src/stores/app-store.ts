@@ -16,6 +16,8 @@ export type InstrumentType = 'sine' | 'piano' | 'organ' | 'strings' | 'synth'
 
 export type UvrMode = 'separate' | 'instrumental' | 'vocal' | 'duo'
 
+export type UvrProcessingMode = 'server' | 'local'
+
 export interface UvrSettings {
   mode: UvrMode
   vocalIntensity: number // 0-100%
@@ -56,6 +58,23 @@ export const [uvrVocalIntensity, _setUvrVocalIntensity] = createSignal(70)
 export const [uvrInstrumentalIntensity, _setUvrInstrumentalIntensity] =
   createSignal(70)
 export const [uvrSmoothing, _setUvrSmoothing] = createSignal(0.3)
+
+// Processing mode (server vs local/browser)
+const DEFAULT_PROCESSING_MODE: UvrProcessingMode = 'server'
+
+export function getUvrProcessingMode(): UvrProcessingMode {
+  const saved = localStorage.getItem('pitchperfect_uvr-processing-mode')
+  if (saved === 'local') return 'local'
+  return DEFAULT_PROCESSING_MODE
+}
+
+export function setUvrProcessingMode(mode: UvrProcessingMode): void {
+  localStorage.setItem('pitchperfect_uvr-processing-mode', mode)
+  _setUvrProcessingMode(mode)
+}
+
+export const [uvrProcessingMode, _setUvrProcessingMode] =
+  createSignal<UvrProcessingMode>(getUvrProcessingMode())
 
 // Export for direct usage in components (internal setters that also persist)
 export const setUvrVocalIntensity = (intensity: number): void => {
@@ -112,6 +131,8 @@ export interface UvrSession {
     instrumentalMidi?: string
   }
   stemMeta?: Record<string, { duration?: number; size?: number }>
+  processingMode?: UvrProcessingMode
+  numChunks?: number
   createdAt: number
 }
 
@@ -162,6 +183,7 @@ export function startUvrSession(
   fileSize: number,
   mimeType: string,
   _mode: UvrMode = 'separate',
+  processingMode?: UvrProcessingMode,
 ): string {
   const sessionId = `uvr-session-${Date.now()}`
   const now = Date.now()
@@ -171,6 +193,7 @@ export function startUvrSession(
     status: 'idle',
     progress: 0,
     originalFile: { name: fileName, size: fileSize, mimeType },
+    processingMode: processingMode ?? getUvrProcessingMode(),
     createdAt: now,
   }
 
