@@ -295,7 +295,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
         ) {
           targetY = freqToY(nextItem.note.freq, h) - boxHalf
         }
-        
+
         const targetX = beatToX(nextItem.startBeat + nextItem.duration, w)
 
         arcState.noteIndex = nextIdx

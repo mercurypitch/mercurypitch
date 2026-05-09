@@ -38,8 +38,16 @@ function setupMockMidi(inputs: MockPort[] = []) {
   return { mockAccess, inputs }
 }
 
-function sendMidi(input: MockPort, status: number, note: number, velocity: number) {
-  input.onmidimessage?.({ data: new Uint8Array([status, note, velocity]), timeStamp: performance.now() })
+function sendMidi(
+  input: MockPort,
+  status: number,
+  note: number,
+  velocity: number,
+) {
+  input.onmidimessage?.({
+    data: new Uint8Array([status, note, velocity]),
+    timeStamp: performance.now(),
+  })
 }
 
 // ── Tests ────────────────────────────────────────────────────
@@ -253,9 +261,9 @@ describe('MidiEngine', () => {
       engine.callbacks.onNoteOff = (e) => offEvents.push(e)
 
       // Control change (0xB0)
-      sendMidi(input, 0xB0, 64, 127)
+      sendMidi(input, 0xb0, 64, 127)
       // Pitch bend (0xE0)
-      sendMidi(input, 0xE0, 0, 64)
+      sendMidi(input, 0xe0, 0, 64)
 
       expect(onEvents.length).toBe(0)
       expect(offEvents.length).toBe(0)

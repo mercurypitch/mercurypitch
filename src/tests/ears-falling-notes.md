@@ -98,7 +98,7 @@ pitch accuracy (40%).
   of the note reaches the judgment line), the system shall begin playing that note's
   target frequency tone via the Web Audio API.
 - **REQ-AUD-002**: The system shall play each note for `(note.duration / audioBps) *
-  1000` milliseconds, where `audioBps = BPM / 60 * speed`.
+1000` milliseconds, where `audioBps = BPM / 60 * speed`.
 - **REQ-AUD-003**: WHEN a note's end beat crosses the piano keyboard (the full note
   rectangle is consumed), the system shall stop the tone, and the note rectangle shall be
   clipped by the keyboard area.
@@ -118,9 +118,9 @@ pitch accuracy (40%).
 
 - **REQ-HIT-001**: The system shall evaluate every note exactly once — after the timing
   window has closed, the note shall be marked as judged and never re-evaluated.
-- **REQ-HIT-002**: The system shall compute a per-note score as `round(timingScore * 0.6
-  + pitchScore * 0.4)`, where timingScore ∈ {100, 75, 50} and pitchScore is derived from
-  `ratingToScore(centsToRating(abs(cents)))`.
+- **REQ-HIT-002**: The system shall compute a per-note score as `round(timingScore \* 0.6
+  - pitchScore \* 0.4)`, where timingScore ∈ {100, 75, 50} and pitchScore is derived from
+`ratingToScore(centsToRating(abs(cents)))`.
 
 ### Event-Driven Requirements
 
@@ -207,7 +207,7 @@ pitch accuracy (40%).
 ### Ubiquitous Requirements
 
 - **REQ-GRADE-001**: The system shall calculate final grade as `(totalScore /
-  (totalNotes * 100)) * 100`, expressed as a percentage of maximum possible score.
+(totalNotes * 100)) * 100`, expressed as a percentage of maximum possible score.
 - **REQ-GRADE-002**: The system shall classify the final percentage using `scoreGrade()`:
   - ≥ 90% → 'Pitch Perfect!' (`grade-perfect`)
   - ≥ 80% → 'Excellent!' (`grade-excellent`)
@@ -267,13 +267,13 @@ pitch accuracy (40%).
 
 ## Traceability Matrix
 
-| Requirement | Tests | Files |
-|---|---|---|
-| REQ-HIT-003, REQ-HIT-006 | falling-notes.test.ts: Timing window classification (10 tests) | useFallingNotesController.ts |
-| REQ-HIT-002, REQ-PITCH-001, REQ-PITCH-002 | falling-notes.test.ts: Note score calculation (7 tests) | useFallingNotesController.ts, practice-engine.ts |
-| REQ-GRADE-001, REQ-GRADE-002 | falling-notes.test.ts: scoreGrade (5 tests) | practice-engine.ts |
-| REQ-STATE-010 | falling-notes.test.ts: resetGame resets all (1 test) | falling-notes-store.ts |
-| REQ-STATE, REQ-SONG-004 | falling-notes.test.ts: loadSong sets all state (1 test) | falling-notes-store.ts |
-| REQ-HIT-004 | falling-notes.test.ts: maxCombo tracks highest (1 test) | falling-notes-store.ts |
-| REQ-AUD-001 | falling-notes.test.ts: beatsPerSecond (1 test) | falling-notes-store.ts |
-| REQ-ID-001 | falling-notes.test.ts: FallingNote identity (1 test) | types |
+| Requirement                               | Tests                                                          | Files                                            |
+| ----------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------ |
+| REQ-HIT-003, REQ-HIT-006                  | falling-notes.test.ts: Timing window classification (10 tests) | useFallingNotesController.ts                     |
+| REQ-HIT-002, REQ-PITCH-001, REQ-PITCH-002 | falling-notes.test.ts: Note score calculation (7 tests)        | useFallingNotesController.ts, practice-engine.ts |
+| REQ-GRADE-001, REQ-GRADE-002              | falling-notes.test.ts: scoreGrade (5 tests)                    | practice-engine.ts                               |
+| REQ-STATE-010                             | falling-notes.test.ts: resetGame resets all (1 test)           | falling-notes-store.ts                           |
+| REQ-STATE, REQ-SONG-004                   | falling-notes.test.ts: loadSong sets all state (1 test)        | falling-notes-store.ts                           |
+| REQ-HIT-004                               | falling-notes.test.ts: maxCombo tracks highest (1 test)        | falling-notes-store.ts                           |
+| REQ-AUD-001                               | falling-notes.test.ts: beatsPerSecond (1 test)                 | falling-notes-store.ts                           |
+| REQ-ID-001                                | falling-notes.test.ts: FallingNote identity (1 test)           | types                                            |

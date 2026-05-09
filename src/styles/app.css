@@ -1021,7 +1021,12 @@ header h1 {
   align-items: center;
   margin: 16px 0 8px 0;
   height: 2px;
-  background: linear-gradient(90deg, var(--border) 0%, var(--accent) 50%, var(--border) 100%);
+  background: linear-gradient(
+    90deg,
+    var(--border) 0%,
+    var(--accent) 50%,
+    var(--border) 100%
+  );
   border-radius: 1px;
   opacity: 0.7;
 }
