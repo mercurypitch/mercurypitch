@@ -48,10 +48,7 @@ import { buildScaleMelody, buildSessionPlaybackMelody, } from '@/lib/session-bui
 import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
 import { openWalkthroughChapter, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPlaybackSpeed, setScaleType, showSelection, walkthroughModalOpen, } from '@/stores'
 import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, toggleMicWaveVisible, } from '@/stores'
-import {
-  advancedFeaturesEnabled,
-  devFeaturesEnabled,
-} from '@/stores/app-store'
+import { advancedFeaturesEnabled, devFeaturesEnabled } from '@/stores/app-store'
 import { melodyStore } from '@/stores/melody-store'
 import { getSession, templateToSession } from '@/stores/session-store'
 import { selectedCharacter, showPracticeResultPopup, } from '@/stores/settings-store'
@@ -158,7 +155,9 @@ const AppShell: Component<AppProps> = (props) => {
 
   const [showScaleBuilder, setShowScaleBuilder] = createSignal(false)
   const [savedVol, setSavedVol] = createSignal<number>(80)
-  const [analysisSubTab, setAnalysisSubTab] = createSignal<'vocal' | 'detection' | 'algorithms'>('vocal')
+  const [analysisSubTab, setAnalysisSubTab] = createSignal<
+    'vocal' | 'detection' | 'algorithms'
+  >('vocal')
 
   const [metronomeEnabled, setMetronomeEnabled] = createSignal(false)
 
@@ -1382,22 +1381,28 @@ const AppShell: Component<AppProps> = (props) => {
             </Show>
 
             <Show when={activeTab() === TAB_ANALYSIS}>
-              <div class="analysis-container" style="display: flex; flex-direction: column; width: 100%; height: 100%;">
-                <div class="analysis-tabs" style="display: flex; gap: 1rem; padding: 1rem; background: var(--bg-secondary); border-bottom: 1px solid var(--border-color);">
-                  <button 
+              <div
+                class="analysis-container"
+                style="display: flex; flex-direction: column; width: 100%; height: 100%;"
+              >
+                <div
+                  class="analysis-tabs"
+                  style="display: flex; gap: 1rem; padding: 1rem; background: var(--bg-secondary); border-bottom: 1px solid var(--border-color);"
+                >
+                  <button
                     class={`view-btn ${analysisSubTab() === 'vocal' ? 'active' : ''}`}
                     onClick={() => setAnalysisSubTab('vocal')}
                   >
                     Vocal Analysis
                   </button>
                   <Show when={devFeaturesEnabled()}>
-                    <button 
+                    <button
                       class={`view-btn ${analysisSubTab() === 'detection' ? 'active' : ''}`}
                       onClick={() => setAnalysisSubTab('detection')}
                     >
                       Pitch Detection
                     </button>
-                    <button 
+                    <button
                       class={`view-btn ${analysisSubTab() === 'algorithms' ? 'active' : ''}`}
                       onClick={() => setAnalysisSubTab('algorithms')}
                     >
@@ -1406,18 +1411,28 @@ const AppShell: Component<AppProps> = (props) => {
                   </Show>
                 </div>
 
-                <div class="analysis-content" style="flex: 1; overflow: hidden; position: relative;">
+                <div
+                  class="analysis-content"
+                  style="flex: 1; overflow: hidden; position: relative;"
+                >
                   <Show when={analysisSubTab() === 'vocal'}>
-                    <div class="vocal-analysis-panel" style="width: 100%; height: 100%;">
+                    <div
+                      class="vocal-analysis-panel"
+                      style="width: 100%; height: 100%;"
+                    >
                       <VocalAnalysis />
                     </div>
                   </Show>
                   <Show when={devFeaturesEnabled()}>
                     <Show when={analysisSubTab() === 'detection'}>
-                      <PitchTestingTab onClose={() => setActiveTab(TAB_SINGING)} />
+                      <PitchTestingTab
+                        onClose={() => setActiveTab(TAB_SINGING)}
+                      />
                     </Show>
                     <Show when={analysisSubTab() === 'algorithms'}>
-                      <PitchAlgorithmTester onClose={() => setActiveTab(TAB_SINGING)} />
+                      <PitchAlgorithmTester
+                        onClose={() => setActiveTab(TAB_SINGING)}
+                      />
                     </Show>
                   </Show>
                 </div>
@@ -1499,9 +1514,15 @@ const AppShell: Component<AppProps> = (props) => {
                   onSpeedChange={fallingNotes.setSpeed}
                   metronomeEnabled={() => false}
                   onMetronomeToggle={() => {}}
-                  playMode={() => fallingNotes.pianoPlayMode() === 'repeat' ? PLAYBACK_MODE_REPEAT : PLAYBACK_MODE_ONCE}
+                  playMode={() =>
+                    fallingNotes.pianoPlayMode() === 'repeat'
+                      ? PLAYBACK_MODE_REPEAT
+                      : PLAYBACK_MODE_ONCE
+                  }
                   playModeChange={(mode) => {
-                    fallingNotes.setPianoPlayMode(mode === PLAYBACK_MODE_REPEAT ? 'repeat' : 'once')
+                    fallingNotes.setPianoPlayMode(
+                      mode === PLAYBACK_MODE_REPEAT ? 'repeat' : 'once',
+                    )
                     if (mode === PLAYBACK_MODE_REPEAT) {
                       fallingNotes.setPianoCurrentCycle(1)
                     }

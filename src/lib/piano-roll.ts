@@ -2082,7 +2082,8 @@ export class PianoRollEditor {
     if (this.isDragging && this.selectedNotesCache.length > 0) {
       // Drag snap: full beat for notes ≥ 1 beat, otherwise half-beat.
       const draggedNote = this.selectedNotesCache[0]
-      const dragSnapUnit = draggedNote !== undefined && draggedNote.duration >= 1 ? 1 : 0.5
+      const dragSnapUnit =
+        draggedNote !== undefined && draggedNote.duration >= 1 ? 1 : 0.5
       const deltaBeat =
         Math.round((x - this.dragStartX) / (this.beatWidth * dragSnapUnit)) *
         dragSnapUnit

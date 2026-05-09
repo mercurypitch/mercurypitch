@@ -8,7 +8,7 @@ import { Show } from 'solid-js'
 import { MicButton } from '@/components'
 import { PrecCountButton } from '@/components/PrecCountButton'
 import { Tooltip } from '@/components/Tooltip'
-import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_COMPOSE, TAB_PIANO,TAB_SINGING,  } from '@/features/tabs/constants'
+import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_COMPOSE, TAB_PIANO, TAB_SINGING, } from '@/features/tabs/constants'
 import { appStore } from '@/stores'
 import { bpm, micActive, micWaveVisible, playbackSpeed, setBpm, setPlaybackSpeed, setSensitivity, settings, toggleMicWaveVisible, } from '@/stores'
 import type { PlaybackMode, SpacedRestMode } from '@/types'
@@ -449,7 +449,10 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
 
         {/* Cycles input — applies to Repeat mode on both practice and piano tabs */}
         <Show
-          when={(isPracticeTab() || isPianoTab()) && props.playMode() === PLAYBACK_MODE_REPEAT}
+          when={
+            (isPracticeTab() || isPianoTab()) &&
+            props.playMode() === PLAYBACK_MODE_REPEAT
+          }
         >
           <div class="secondary-control-group cycles-control-group">
             <label class="opt-label cycles-label">Cycles</label>
@@ -550,7 +553,9 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
                 id="bpm-input"
                 min="40"
                 max="280"
-                value={isPianoTab() && props.bpmValue ? props.bpmValue() : bpm()}
+                value={
+                  isPianoTab() && props.bpmValue ? props.bpmValue() : bpm()
+                }
                 class="bpm-number-input"
                 aria-label="BPM"
                 onInput={(e) => {
@@ -569,7 +574,9 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
                 id="tempo"
                 min="40"
                 max="280"
-                value={isPianoTab() && props.bpmValue ? props.bpmValue() : bpm()}
+                value={
+                  isPianoTab() && props.bpmValue ? props.bpmValue() : bpm()
+                }
                 class="tempo-slider"
                 aria-label="BPM slider"
                 onInput={(e) => {

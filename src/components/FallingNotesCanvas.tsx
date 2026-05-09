@@ -5,7 +5,7 @@
 import type { Component } from 'solid-js'
 import { onCleanup, onMount } from 'solid-js'
 import type { FallingNote, NoteJudgment } from '@/stores/falling-notes-store'
-import { setVisibleBeatWindow, showNoteLabels } from '@/stores/falling-notes-store'
+import { setVisibleBeatWindow, showNoteLabels, } from '@/stores/falling-notes-store'
 
 interface FallingNotesCanvasProps {
   songNotes: () => FallingNote[]
@@ -16,7 +16,12 @@ interface FallingNotesCanvasProps {
   score: () => number
   totalNotes: () => number
   notesMissed: () => number
-  currentPitch: () => { frequency: number; noteName: string; octave: number; cents: number } | null
+  currentPitch: () => {
+    frequency: number
+    noteName: string
+    octave: number
+    cents: number
+  } | null
   isMicActive: () => boolean
   inputMode?: () => 'mic' | 'midi'
   visibleBeatWindow?: () => number
@@ -48,7 +53,20 @@ const NOTE_BORDER_RADIUS = 8
 const PARTICLE_BURST_COUNT = 24
 
 const WHITE_KEY_OFFSETS = [0, 0, 1, 1, 2, 3, 3, 4, 4, 5, 5, 6]
-const IS_BLACK_KEY = [false, true, false, true, false, false, true, false, true, false, true, false]
+const IS_BLACK_KEY = [
+  false,
+  true,
+  false,
+  true,
+  false,
+  false,
+  true,
+  false,
+  true,
+  false,
+  true,
+  false,
+]
 
 const NOTE_COLORS: Record<string, string> = {
   C: '#e74c3c',
@@ -70,7 +88,20 @@ function midiToWhiteIndex(midi: number): number {
 }
 
 function midiToNoteName(midi: number): string {
-  const names = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+  const names = [
+    'C',
+    'C#',
+    'D',
+    'D#',
+    'E',
+    'F',
+    'F#',
+    'G',
+    'G#',
+    'A',
+    'A#',
+    'B',
+  ]
   return names[midi % 12]
 }
 
@@ -86,13 +117,24 @@ function darkenColor(hex: string, factor: number): string {
 }
 
 function lightenColor(hex: string, amount: number): string {
-  const r = Math.min(255, parseInt(hex.slice(1, 3), 16) + Math.floor(amount * 255))
-  const g = Math.min(255, parseInt(hex.slice(3, 5), 16) + Math.floor(amount * 255))
-  const b = Math.min(255, parseInt(hex.slice(5, 7), 16) + Math.floor(amount * 255))
+  const r = Math.min(
+    255,
+    parseInt(hex.slice(1, 3), 16) + Math.floor(amount * 255),
+  )
+  const g = Math.min(
+    255,
+    parseInt(hex.slice(3, 5), 16) + Math.floor(amount * 255),
+  )
+  const b = Math.min(
+    255,
+    parseInt(hex.slice(5, 7), 16) + Math.floor(amount * 255),
+  )
   return `rgb(${r},${g},${b})`
 }
 
-export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) => {
+export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (
+  props,
+) => {
   let canvasRef: HTMLCanvasElement | undefined
   let ctx: CanvasRenderingContext2D | null = null
   let animFrameId: number | null = null
@@ -246,7 +288,10 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
         e.touches[0].clientY - e.touches[1].clientY,
       )
       const scale = pinchStartDist / dist
-      const next = Math.max(2, Math.min(24, Math.round(pinchStartWindow * scale)))
+      const next = Math.max(
+        2,
+        Math.min(24, Math.round(pinchStartWindow * scale)),
+      )
       setVisibleBeatWindow(next)
     }
     const onTouchEnd = () => {
@@ -324,7 +369,9 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
       const isMiss = r.timing === 'miss'
       const isPerfect = r.timing === 'perfect'
       const color = isMiss ? '#f85149' : isPerfect ? '#ffd700' : '#3fb950'
-      const burstCount = isPerfect ? PARTICLE_BURST_COUNT + 6 : PARTICLE_BURST_COUNT
+      const burstCount = isPerfect
+        ? PARTICLE_BURST_COUNT + 6
+        : PARTICLE_BURST_COUNT
 
       for (let p = 0; p < burstCount; p++) {
         const angle = Math.random() * Math.PI * 2
@@ -368,7 +415,13 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
         ctx.globalAlpha = trailAlpha
         ctx.fillStyle = p.color
         ctx.beginPath()
-        ctx.arc(p.x - p.vx * 0.015, p.y - p.vy * 0.015, p.size * 0.6, 0, Math.PI * 2)
+        ctx.arc(
+          p.x - p.vx * 0.015,
+          p.y - p.vy * 0.015,
+          p.size * 0.6,
+          0,
+          Math.PI * 2,
+        )
         ctx.fill()
       }
       ctx.globalAlpha = p.alpha
@@ -446,9 +499,7 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
 
       // Determine if note has been judged
       const results = props.hitResults()
-      const judgment = results.find(
-        (r) => r.itemIndex === note.id,
-      )
+      const judgment = results.find((r) => r.itemIndex === note.id)
       const isJudged = judgment !== undefined
       const wasMiss = judgment?.timing === 'miss'
       const wasHit = isJudged && !wasMiss
@@ -476,15 +527,19 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
         strokeColor = '#ffffff'
 
       // Shadow beneath note
-      if (useGradient)
-      ctx.save()
+      if (useGradient) ctx.save()
       ctx.shadowColor = 'rgba(0,0,0,0.4)'
       ctx.shadowBlur = 4
       ctx.shadowOffsetY = 2
 
       // Draw note rectangle with gradient or flat fill
       if (useGradient) {
-        const grad = ctx.createLinearGradient(x + xOffset, y, x + xOffset, y + noteH)
+        const grad = ctx.createLinearGradient(
+          x + xOffset,
+          y,
+          x + xOffset,
+          y + noteH,
+        )
         grad.addColorStop(0, lightenColor(fillColor, 0.35))
         grad.addColorStop(0.3, fillColor)
         grad.addColorStop(0.7, darkenColor(fillColor, 0.85))
@@ -502,7 +557,13 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
       ctx.lineTo(x + xOffset + wNote - r, y)
       ctx.arcTo(x + xOffset + wNote, y, x + xOffset + wNote, y + r, r)
       ctx.lineTo(x + xOffset + wNote, y + noteH - r)
-      ctx.arcTo(x + xOffset + wNote, y + noteH, x + xOffset + wNote - r, y + noteH, r)
+      ctx.arcTo(
+        x + xOffset + wNote,
+        y + noteH,
+        x + xOffset + wNote - r,
+        y + noteH,
+        r,
+      )
       ctx.lineTo(x + xOffset + r, y + noteH)
       ctx.arcTo(x + xOffset, y + noteH, x + xOffset, y + noteH - r, r)
       ctx.lineTo(x + xOffset, y + r)
@@ -518,11 +579,21 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
         const noteName = midiToNoteName(note.midi)
         const octave = Math.floor(note.midi / 12) - 1
         const labelFontSize = Math.max(9, Math.min(noteH * 0.5, 13))
-        ctx.fillStyle = wasMiss ? '#f85149' : wasHit ? '#3fb950' : isJudged ? '#8b949e' : '#ffffff'
+        ctx.fillStyle = wasMiss
+          ? '#f85149'
+          : wasHit
+            ? '#3fb950'
+            : isJudged
+              ? '#8b949e'
+              : '#ffffff'
         ctx.font = `bold ${labelFontSize}px sans-serif`
         ctx.textAlign = 'center'
         ctx.textBaseline = 'middle'
-        ctx.fillText(`${noteName}${octave}`, x + xOffset + wNote / 2, y + noteH / 2)
+        ctx.fillText(
+          `${noteName}${octave}`,
+          x + xOffset + wNote / 2,
+          y + noteH / 2,
+        )
       }
     }
 
@@ -532,10 +603,27 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
     drawKeyboardTopGlow(w, jLineY)
 
     // Draw keyboard
-    drawKeyboard(w, kbTop, kbHeight, displayMinWhite, displayRange, colWidth, currentBeat, notes, jLineY)
+    drawKeyboard(
+      w,
+      kbTop,
+      kbHeight,
+      displayMinWhite,
+      displayRange,
+      colWidth,
+      currentBeat,
+      notes,
+      jLineY,
+    )
 
     // Draw pitch indicator on keyboard
-    drawPitchIndicator(w, kbTop, kbHeight, displayMinWhite, displayRange, colWidth)
+    drawPitchIndicator(
+      w,
+      kbTop,
+      kbHeight,
+      displayMinWhite,
+      displayRange,
+      colWidth,
+    )
 
     // Draw particles on top
     drawParticles()
@@ -658,9 +746,21 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
       ctx.moveTo(x + 1, kbTop + 1)
       ctx.lineTo(x + colWidth - 1, kbTop + 1)
       ctx.lineTo(x + colWidth - 1, kbTop + kbHeight - keyRadius)
-      ctx.arcTo(x + colWidth - 1, kbTop + kbHeight - 1, x + colWidth - keyRadius, kbTop + kbHeight - 1, keyRadius)
+      ctx.arcTo(
+        x + colWidth - 1,
+        kbTop + kbHeight - 1,
+        x + colWidth - keyRadius,
+        kbTop + kbHeight - 1,
+        keyRadius,
+      )
       ctx.lineTo(x + 1 + keyRadius, kbTop + kbHeight - 1)
-      ctx.arcTo(x + 1, kbTop + kbHeight - 1, x + 1, kbTop + kbHeight - keyRadius, keyRadius)
+      ctx.arcTo(
+        x + 1,
+        kbTop + kbHeight - 1,
+        x + 1,
+        kbTop + kbHeight - keyRadius,
+        keyRadius,
+      )
       ctx.closePath()
       ctx.fill()
 
@@ -676,7 +776,6 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
       ctx.moveTo(x, kbTop)
       ctx.lineTo(x, kbTop + kbHeight)
       ctx.stroke()
-
     }
 
     // Draw black keys with 3D dark gradient
@@ -687,10 +786,15 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
         const nextIsBlack = IS_BLACK_KEY[nextMidi % 12]
         if (nextIsBlack) {
           const bw = colWidth * BLACK_KEY_WIDTH_RATIO
-          const bx = (wi * colWidth + colWidth * 0.7) - bw / 2
+          const bx = wi * colWidth + colWidth * 0.7 - bw / 2
 
           // 3D dark gradient
-          const bGrad = ctx.createLinearGradient(bx, kbTop, bx + bw, kbTop + blackKeyH)
+          const bGrad = ctx.createLinearGradient(
+            bx,
+            kbTop,
+            bx + bw,
+            kbTop + blackKeyH,
+          )
           bGrad.addColorStop(0, '#3a3e45')
           bGrad.addColorStop(0.3, '#1a1c22')
           bGrad.addColorStop(0.7, '#0d0e14')
@@ -702,9 +806,21 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
           ctx.moveTo(bx, kbTop + 1)
           ctx.lineTo(bx + bw, kbTop + 1)
           ctx.lineTo(bx + bw, kbTop + blackKeyH - bRadius)
-          ctx.arcTo(bx + bw, kbTop + blackKeyH, bx + bw - bRadius, kbTop + blackKeyH, bRadius)
+          ctx.arcTo(
+            bx + bw,
+            kbTop + blackKeyH,
+            bx + bw - bRadius,
+            kbTop + blackKeyH,
+            bRadius,
+          )
           ctx.lineTo(bx + bRadius, kbTop + blackKeyH)
-          ctx.arcTo(bx, kbTop + blackKeyH, bx, kbTop + blackKeyH - bRadius, bRadius)
+          ctx.arcTo(
+            bx,
+            kbTop + blackKeyH,
+            bx,
+            kbTop + blackKeyH - bRadius,
+            bRadius,
+          )
           ctx.closePath()
           ctx.fill()
 
@@ -742,7 +858,7 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
         const col = midiToWhiteIndex(e.midi)
         const wi = col - minWhite
         if (wi < 0 || wi >= rangeWhite) continue
-        
+
         // Velocity-based opacity for subtlety
         const opacity = 0.15 + (e.velocity / 127) * 0.25
 
@@ -758,21 +874,38 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
           ctx.moveTo(bx, kbTop + 1)
           ctx.lineTo(bx + bw, kbTop + 1)
           ctx.lineTo(bx + bw, kbTop + blackKeyH - bRadius)
-          ctx.arcTo(bx + bw, kbTop + blackKeyH, bx + bw - bRadius, kbTop + blackKeyH, bRadius)
+          ctx.arcTo(
+            bx + bw,
+            kbTop + blackKeyH,
+            bx + bw - bRadius,
+            kbTop + blackKeyH,
+            bRadius,
+          )
           ctx.lineTo(bx + bRadius, kbTop + blackKeyH)
-          ctx.arcTo(bx, kbTop + blackKeyH, bx, kbTop + blackKeyH - bRadius, bRadius)
+          ctx.arcTo(
+            bx,
+            kbTop + blackKeyH,
+            bx,
+            kbTop + blackKeyH - bRadius,
+            bRadius,
+          )
           ctx.closePath()
           ctx.fill()
         } else {
           const x = wi * colWidth
-          
+
           // Subtle darker gradient for pressed white keys, simulating depth
-          const midiGrad = ctx.createLinearGradient(x, kbTop, x, kbTop + kbHeight)
+          const midiGrad = ctx.createLinearGradient(
+            x,
+            kbTop,
+            x,
+            kbTop + kbHeight,
+          )
           midiGrad.addColorStop(0, `rgba(0,0,0,${opacity})`)
           midiGrad.addColorStop(1, `rgba(0,0,0,${opacity * 0.2})`)
           ctx.fillStyle = midiGrad
           ctx.fillRect(x + 1, kbTop + 1, colWidth - 2, kbHeight - 2)
-          
+
           // Very subtle blue tint at the bottom edge
           ctx.fillStyle = `rgba(56,180,255,${opacity * 0.6})`
           ctx.fillRect(x + 1, kbTop + kbHeight - 6, colWidth - 2, 4)
@@ -798,15 +931,32 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
           ctx.moveTo(bx, kbTop + 1)
           ctx.lineTo(bx + bw, kbTop + 1)
           ctx.lineTo(bx + bw, kbTop + blackKeyH - bRadius)
-          ctx.arcTo(bx + bw, kbTop + blackKeyH, bx + bw - bRadius, kbTop + blackKeyH, bRadius)
+          ctx.arcTo(
+            bx + bw,
+            kbTop + blackKeyH,
+            bx + bw - bRadius,
+            kbTop + blackKeyH,
+            bRadius,
+          )
           ctx.lineTo(bx + bRadius, kbTop + blackKeyH)
-          ctx.arcTo(bx, kbTop + blackKeyH, bx, kbTop + blackKeyH - bRadius, bRadius)
+          ctx.arcTo(
+            bx,
+            kbTop + blackKeyH,
+            bx,
+            kbTop + blackKeyH - bRadius,
+            bRadius,
+          )
           ctx.closePath()
           ctx.fill()
         } else {
           // Highlight the white key - subtle depth like MIDI
           const x = wi * colWidth
-          const clickGrad = ctx.createLinearGradient(x, kbTop, x, kbTop + kbHeight)
+          const clickGrad = ctx.createLinearGradient(
+            x,
+            kbTop,
+            x,
+            kbTop + kbHeight,
+          )
           clickGrad.addColorStop(0, 'rgba(0,0,0,0.15)')
           clickGrad.addColorStop(1, 'rgba(0,0,0,0.05)')
           ctx.fillStyle = clickGrad
@@ -829,14 +979,31 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
       ctx.font = `${Math.max(8, Math.min(colWidth * 0.65, 11))}px sans-serif`
       ctx.textAlign = 'center'
       ctx.textBaseline = 'bottom'
-      ctx.fillText(`${noteName}${octave}`, x + colWidth / 2, kbTop + kbHeight - 5)
+      ctx.fillText(
+        `${noteName}${octave}`,
+        x + colWidth / 2,
+        kbTop + kbHeight - 5,
+      )
     }
   }
 
   // ── Pitch Indicator ───────────────────────────────────────────
 
   const noteNameToMidi = (noteName: string, octave: number): number => {
-    const names = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+    const names = [
+      'C',
+      'C#',
+      'D',
+      'D#',
+      'E',
+      'F',
+      'F#',
+      'G',
+      'G#',
+      'A',
+      'A#',
+      'B',
+    ]
     const semitone = names.indexOf(noteName)
     if (semitone < 0) return 60
     return (octave + 1) * 12 + semitone
@@ -870,7 +1037,12 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
     glow.addColorStop(0.5, 'rgba(56,200,120,0.25)')
     glow.addColorStop(1, 'rgba(56,200,120,0)')
     ctx.fillStyle = glow
-    ctx.fillRect(x - colWidth * 0.7, y - colWidth * 0.7, colWidth * 1.4, colWidth * 1.4)
+    ctx.fillRect(
+      x - colWidth * 0.7,
+      y - colWidth * 0.7,
+      colWidth * 1.4,
+      colWidth * 1.4,
+    )
 
     // Dot
     ctx.fillStyle = '#3fb950'
@@ -884,7 +1056,8 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
     // Label
     const labelY = kbTop - 8
     ctx.fillStyle = 'rgba(0,0,0,0.7)'
-    const labelW = ctx.measureText(`${pitch.noteName}${pitch.octave}`).width + 12
+    const labelW =
+      ctx.measureText(`${pitch.noteName}${pitch.octave}`).width + 12
     ctx.fillRect(x - labelW / 2, labelY - 14, labelW, 18)
 
     ctx.fillStyle = '#3fb950'
@@ -895,8 +1068,16 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
 
     // Cents deviation
     if (pitch.cents !== 0) {
-      const centsStr = pitch.cents > 0 ? `+${Math.round(pitch.cents)}¢` : `${Math.round(pitch.cents)}¢`
-      ctx.fillStyle = Math.abs(pitch.cents) < 15 ? '#3fb950' : Math.abs(pitch.cents) < 30 ? '#f1c40f' : '#f85149'
+      const centsStr =
+        pitch.cents > 0
+          ? `+${Math.round(pitch.cents)}¢`
+          : `${Math.round(pitch.cents)}¢`
+      ctx.fillStyle =
+        Math.abs(pitch.cents) < 15
+          ? '#3fb950'
+          : Math.abs(pitch.cents) < 30
+            ? '#f1c40f'
+            : '#f85149'
       ctx.font = '9px sans-serif'
       ctx.fillText(centsStr, x, labelY - 28)
     }
@@ -958,11 +1139,7 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
     if (gs === 'countdown' || gs === 'paused') {
       ctx.fillStyle = gs === 'countdown' ? '#f1c40f' : '#8b949e'
       ctx.font = 'bold 14px sans-serif'
-      ctx.fillText(
-        gs === 'countdown' ? 'Get Ready...' : 'Paused',
-        w - 14,
-        34,
-      )
+      ctx.fillText(gs === 'countdown' ? 'Get Ready...' : 'Paused', w - 14, 34)
     }
   }
 

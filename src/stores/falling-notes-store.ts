@@ -28,7 +28,9 @@ export interface FallingNote {
 
 // ── Signals ─────────────────────────────────────────────────
 
-export const [selectedSongId, setSelectedSongId] = createSignal<string | null>(null)
+export const [selectedSongId, setSelectedSongId] = createSignal<string | null>(
+  null,
+)
 export const [gameState, setGameState] = createSignal<GameState>('idle')
 export const [score, setScore] = createSignal(0)
 export const [combo, setCombo] = createSignal(0)
@@ -104,7 +106,11 @@ export function recordHit(judgment: NoteJudgment): void {
   setScore((s) => s + judgment.score)
 }
 
-export function recordMiss(itemIndex: number, midiNote: number, noteName: string): void {
+export function recordMiss(
+  itemIndex: number,
+  midiNote: number,
+  noteName: string,
+): void {
   const judgment: NoteJudgment = {
     itemIndex,
     midiNote,
@@ -123,7 +129,11 @@ export function advancePlayhead(delta: number): void {
   setPlayheadBeat((b) => b + delta)
 }
 
-export function loadSong(notes: FallingNote[], name: string, bpm: number): void {
+export function loadSong(
+  notes: FallingNote[],
+  name: string,
+  bpm: number,
+): void {
   setSongNotes(notes)
   setSelectedSongName(name)
   setCurrentSongBpm(bpm)

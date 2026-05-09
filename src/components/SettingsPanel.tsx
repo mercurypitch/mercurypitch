@@ -952,8 +952,6 @@ export const SettingsPanel: Component = () => {
               <ConsoleLog />
             </Show>
           </div>
-
-
         </Show>
 
         {/* About Section */}

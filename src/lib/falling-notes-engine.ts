@@ -7,13 +7,15 @@ import type { AudioEngine } from './audio-engine'
 import { PitchDetector } from './pitch-detector'
 
 export interface FallingNotesEngineCallbacks {
-  onPitchDetected?: (pitch: {
-    frequency: number
-    clarity: number
-    noteName: string
-    octave: number
-    cents: number
-  } | null) => void
+  onPitchDetected?: (
+    pitch: {
+      frequency: number
+      clarity: number
+      noteName: string
+      octave: number
+      cents: number
+    } | null,
+  ) => void
   onMicStateChange?: (active: boolean, error?: string) => void
 }
 

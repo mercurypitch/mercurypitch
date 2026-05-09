@@ -5,26 +5,7 @@
 import { describe, expect, it } from 'vitest'
 import { centsToRating, ratingToScore, scoreGrade } from '@/lib/practice-engine'
 import type { FallingNote, NoteJudgment } from '@/stores/falling-notes-store'
-import {
-  beatsPerSecond,
-  combo,
-  gameState,
-  hitResults,
-  loadSong,
-  maxCombo,
-  notesMissed,
-  playheadBeat,
-  resetGame,
-  score,
-  setCombo,
-  setCurrentSongBpm,
-  setGameState,
-  setHitResults,
-  setMaxCombo,
-  setNotesMissed,
-  setPlayheadBeat,
-  setScore,
-} from '@/stores/falling-notes-store'
+import { beatsPerSecond, combo, gameState, hitResults, loadSong, maxCombo, notesMissed, playheadBeat, resetGame, score, setCombo, setCurrentSongBpm, setGameState, setHitResults, setMaxCombo, setNotesMissed, setPlayheadBeat, setScore, } from '@/stores/falling-notes-store'
 
 // ── Helpers ──────────────────────────────────────────────────
 
@@ -39,14 +20,12 @@ function classifyTiming(deltaMs: number): NoteJudgment['timing'] {
   return 'miss'
 }
 
-function computeNoteScore(
-  deltaMs: number,
-  cents: number | null,
-): number {
+function computeNoteScore(deltaMs: number, cents: number | null): number {
   const timing = classifyTiming(deltaMs)
   if (timing === 'miss') return 0
   const timingScore = timing === 'perfect' ? 100 : timing === 'great' ? 75 : 50
-  const pitchRating = cents !== null ? centsToRating(Math.abs(cents)) : 'perfect'
+  const pitchRating =
+    cents !== null ? centsToRating(Math.abs(cents)) : 'perfect'
   const pitchScore = ratingToScore(pitchRating)
   return Math.round(timingScore * 0.6 + pitchScore * 0.4)
 }
@@ -150,8 +129,22 @@ describe('Falling notes store', () => {
 
   it('loadSong sets all state correctly', () => {
     const notes: FallingNote[] = [
-      { id: 0, midi: 60, name: 'C4', startBeat: 0, duration: 1, targetFreq: 261.63 },
-      { id: 1, midi: 62, name: 'D4', startBeat: 1, duration: 1, targetFreq: 293.66 },
+      {
+        id: 0,
+        midi: 60,
+        name: 'C4',
+        startBeat: 0,
+        duration: 1,
+        targetFreq: 261.63,
+      },
+      {
+        id: 1,
+        midi: 62,
+        name: 'D4',
+        startBeat: 1,
+        duration: 1,
+        targetFreq: 293.66,
+      },
     ]
     loadSong(notes, 'Test Song', 140)
 
@@ -171,7 +164,15 @@ describe('Falling notes store', () => {
     setCombo(10)
     setMaxCombo(15)
     setHitResults([
-      { itemIndex: 0, midiNote: 60, noteName: 'C4', timing: 'perfect', pitchAccuracy: 'perfect', score: 100, timestamp: 0 },
+      {
+        itemIndex: 0,
+        midiNote: 60,
+        noteName: 'C4',
+        timing: 'perfect',
+        pitchAccuracy: 'perfect',
+        score: 100,
+        timestamp: 0,
+      },
     ])
     setNotesMissed(2)
     setPlayheadBeat(5)
@@ -249,9 +250,30 @@ describe('FallingNote identity', () => {
   it('each note has a unique id for hit-tracking', () => {
     const usedIds = new Set<number>()
     const notes: FallingNote[] = [
-      { id: 0, midi: 60, name: 'C4', startBeat: 0, duration: 1, targetFreq: 261.63 },
-      { id: 1, midi: 62, name: 'D4', startBeat: 1, duration: 1, targetFreq: 293.66 },
-      { id: 2, midi: 64, name: 'E4', startBeat: 2, duration: 1, targetFreq: 329.63 },
+      {
+        id: 0,
+        midi: 60,
+        name: 'C4',
+        startBeat: 0,
+        duration: 1,
+        targetFreq: 261.63,
+      },
+      {
+        id: 1,
+        midi: 62,
+        name: 'D4',
+        startBeat: 1,
+        duration: 1,
+        targetFreq: 293.66,
+      },
+      {
+        id: 2,
+        midi: 64,
+        name: 'E4',
+        startBeat: 2,
+        duration: 1,
+        targetFreq: 329.63,
+      },
     ]
     for (const note of notes) {
       expect(usedIds.has(note.id)).toBe(false)

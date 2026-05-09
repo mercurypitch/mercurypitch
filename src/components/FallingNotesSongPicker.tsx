@@ -98,7 +98,7 @@ export const FallingNotesSongPicker: Component<FallingNotesSongPickerProps> = (
               return
             }
             setSelectedId(id)
-             
+
             const currentMelodies = melodies()
             const onLoad = props.onSongLoaded
             queueMicrotask(() => handleLoadWithId(id, currentMelodies, onLoad))
@@ -119,9 +119,7 @@ export const FallingNotesSongPicker: Component<FallingNotesSongPickerProps> = (
         </button>
       </div>
 
-      {importStatus() && (
-        <div class="fn-import-status">{importStatus()}</div>
-      )}
+      {importStatus() && <div class="fn-import-status">{importStatus()}</div>}
     </div>
   )
 }

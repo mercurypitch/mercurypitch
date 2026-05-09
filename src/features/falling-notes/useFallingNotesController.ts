@@ -13,40 +13,7 @@ import { freqToMidi, midiToFreq, midiToNote } from '@/lib/scale-data'
 import { setMicActive } from '@/stores'
 import { countIn } from '@/stores'
 import type { FallingNote, NoteJudgment } from '@/stores/falling-notes-store'
-import {
-  beatsPerSecond,
-  clickPianoEnabled,
-  combo,
-  currentSongBpm,
-  gameState,
-  hitResults,
-  inputMode,
-  maxCombo,
-  midiConnected,
-  notesMissed,
-  playheadBeat,
-  score,
-  setClickPianoEnabled,
-  setCombo,
-  setCurrentSongBpm,
-  setGameState,
-  setHitResults,
-  setInputMode,
-  setMaxCombo,
-  setMidiConnected,
-  setNotesMissed,
-  setPlayheadBeat,
-  setScore,
-  setSelectedSongName,
-  setShowNoteLabels,
-  setSongNotes,
-  setTotalNotes,
-  setVisibleBeatWindow,
-  showNoteLabels,
-  songNotes,
-  totalNotes,
-  visibleBeatWindow,
-} from '@/stores/falling-notes-store'
+import { beatsPerSecond, clickPianoEnabled, combo, currentSongBpm, gameState, hitResults, inputMode, maxCombo, midiConnected, notesMissed, playheadBeat, score, setClickPianoEnabled, setCombo, setCurrentSongBpm, setGameState, setHitResults, setInputMode, setMaxCombo, setMidiConnected, setNotesMissed, setPlayheadBeat, setScore, setSelectedSongName, setShowNoteLabels, setSongNotes, setTotalNotes, setVisibleBeatWindow, showNoteLabels, songNotes, totalNotes, visibleBeatWindow, } from '@/stores/falling-notes-store'
 import type { AccuracyRating } from '@/types'
 
 export type PianoPlayMode = 'once' | 'repeat'
@@ -65,7 +32,7 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
     octave: number
     cents: number
   } | null>(null)
-  
+
   // Track if the user is actively holding a virtual key via mouse/touch
   let clickedMidi: number | null = null
   const [speed, setSpeed] = createSignal(1)
@@ -141,7 +108,7 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
         const now = performance.now()
         const elapsedMs = now - gameStartTime
         const bps = beatsPerSecond() * speed()
-        const elapsedBeats = elapsedMs / 1000 * bps
+        const elapsedBeats = (elapsedMs / 1000) * bps
         const newBeat = elapsedBeats
         setPlayheadBeat(newBeat)
 
@@ -192,7 +159,10 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
       const keyboardDelayBeats = visibleBeatWindow() * KEYBOARD_DELAY_FACTOR
       if (!playedNotes.has(note.id) && deltaBeats <= -keyboardDelayBeats) {
         playedNotes.add(note.id)
-        audioEngine.playTone(note.targetFreq, note.duration > 0 ? (note.duration / bps) * 1000 : 300)
+        audioEngine.playTone(
+          note.targetFreq,
+          note.duration > 0 ? (note.duration / bps) * 1000 : 300,
+        )
       }
 
       // Note has passed the max timing window — miss
@@ -212,7 +182,11 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
 
     // Check if all notes are done AND playhead has passed the last note
     const maxEndBeat = Math.max(...notes.map((n) => n.startBeat + n.duration))
-    if (judgedNotes.size >= notes.length && currentBeat >= maxEndBeat && notes.length > 0) {
+    if (
+      judgedNotes.size >= notes.length &&
+      currentBeat >= maxEndBeat &&
+      notes.length > 0
+    ) {
       finishGame()
     }
   }
@@ -229,11 +203,11 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
     else timing = 'good'
 
     // Pitch accuracy rating
-    const pitchRating: AccuracyRating = cents !== null
-      ? centsToRating(Math.abs(cents))
-      : 'perfect'
+    const pitchRating: AccuracyRating =
+      cents !== null ? centsToRating(Math.abs(cents)) : 'perfect'
 
-    const timingScore = timing === 'perfect' ? 100 : timing === 'great' ? 75 : 50
+    const timingScore =
+      timing === 'perfect' ? 100 : timing === 'great' ? 75 : 50
     const pitchScore = ratingToScore(pitchRating)
     const finalScore = Math.round(timingScore * 0.6 + pitchScore * 0.4)
 

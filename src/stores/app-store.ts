@@ -815,7 +815,9 @@ function saveBooleanFlag(key: string, value: boolean): void {
 }
 
 const ADVANCED_FEATURES_KEY = 'pitchperfect_advanced_features'
-const initialAdvanced = IS_DEV ? true : loadBooleanFlag(ADVANCED_FEATURES_KEY, false)
+const initialAdvanced = IS_DEV
+  ? true
+  : loadBooleanFlag(ADVANCED_FEATURES_KEY, false)
 const [advancedFeaturesEnabledState, setAdvancedFeaturesEnabledState] =
   createSignal(initialAdvanced)
 if (IS_DEV) saveBooleanFlag(ADVANCED_FEATURES_KEY, true)
@@ -830,9 +832,8 @@ export const setAdvancedFeaturesEnabled = (enabled: boolean): void => {
 
 const DEV_FEATURES_KEY = 'pitchperfect_dev_features'
 const initialDev = IS_DEV ? true : loadBooleanFlag(DEV_FEATURES_KEY, false)
-const [devFeaturesEnabledState, setDevFeaturesEnabledState] = createSignal(
-  initialDev,
-)
+const [devFeaturesEnabledState, setDevFeaturesEnabledState] =
+  createSignal(initialDev)
 if (IS_DEV) saveBooleanFlag(DEV_FEATURES_KEY, true)
 
 export const devFeaturesEnabled = (): boolean => devFeaturesEnabledState()

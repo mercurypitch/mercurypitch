@@ -568,10 +568,7 @@ export class AudioEngine {
     const now = this.audioCtx.currentTime
     gain.gain.setValueAtTime(0, now)
     gain.gain.linearRampToValueAtTime(0.4, now + 0.005)
-    gain.gain.exponentialRampToValueAtTime(
-      0.001,
-      now + 0.08,
-    )
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08)
 
     osc.connect(gain)
 
