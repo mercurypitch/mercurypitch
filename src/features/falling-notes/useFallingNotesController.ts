@@ -17,6 +17,7 @@ import {
   beatsPerSecond,
   clickPianoEnabled,
   combo,
+  currentSongBpm,
   gameState,
   hitResults,
   inputMode,
@@ -148,6 +149,11 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
   })
 
   // ── Hit Detection ────────────────────────────────────────────
+  // Visual layout: JUDGMENT_LINE_RATIO=0.82, KEYBOARD_START_RATIO=0.85
+  // So the keyboard sits 0.03h below the judgment line.
+  // Beats to travel from judgment line to keyboard:
+  //   offsetBeats = (0.03 / 0.82) * visibleBeatWindow
+  const KEYBOARD_DELAY_FACTOR = 0.03 / 0.82
 
   const checkHits = (currentBeat: number) => {
     const notes = songNotes()
@@ -162,8 +168,10 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
       const deltaBeats = note.startBeat - currentBeat
       const deltaMs = (deltaBeats / bps) * 1000
 
-      // Play audio when note reaches the judgment line
-      if (!playedNotes.has(note.id) && deltaMs <= 0) {
+      // Audio plays when the note reaches the piano keyboard (85% h),
+      // not the judgment line (82% h). The delay depends on zoom level.
+      const keyboardDelayBeats = visibleBeatWindow() * KEYBOARD_DELAY_FACTOR
+      if (!playedNotes.has(note.id) && deltaBeats <= -keyboardDelayBeats) {
         playedNotes.add(note.id)
         audioEngine.playTone(note.targetFreq, note.duration > 0 ? (note.duration / bps) * 1000 : 300)
       }
@@ -439,6 +447,7 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
     gameState,
     score,
     combo,
+    currentSongBpm,
     maxCombo,
     hitResults,
     totalNotes,
