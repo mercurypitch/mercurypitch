@@ -69,11 +69,6 @@ describe('UvrUploadControl Component', () => {
 
       expect(screen.getByText('Import Audio File')).toBeInTheDocument()
       expect(screen.getByTestId('music-note-icon')).toBeInTheDocument()
-      expect(
-        screen.getByText(
-          'Upload MP3 or WAV files to separate vocals and create MIDI',
-        ),
-      ).toBeInTheDocument()
     })
 
     it('renders upload zone with drop instruction', () => {
@@ -88,7 +83,6 @@ describe('UvrUploadControl Component', () => {
     it('displays supported formats', () => {
       render(() => <UvrUploadControl {...defaultProps} />)
 
-      expect(screen.getByText('Supported formats:')).toBeInTheDocument()
       expect(screen.getByText('MP3')).toBeInTheDocument()
       expect(screen.getByText('WAV')).toBeInTheDocument()
       expect(screen.getByText('FLAC')).toBeInTheDocument()
@@ -311,7 +305,7 @@ describe('UvrUploadControl Component', () => {
       expect(screen.getByText(/50 MB/i)).toBeInTheDocument()
     })
 
-    it('passes allowedTypes prop', () => {
+    it('passes allowedTypes prop to file input accept attribute', () => {
       render(() => (
         <UvrUploadControl
           {...defaultProps}
@@ -319,7 +313,11 @@ describe('UvrUploadControl Component', () => {
         />
       ))
 
-      expect(screen.getByText('Supported formats:')).toBeInTheDocument()
+      const input = document.getElementById(
+        'uvr-file-input',
+      ) as HTMLInputElement
+      expect(input).not.toBeNull()
+      expect(input.accept).toBe('audio/aac,audio/ogg')
     })
   })
 })

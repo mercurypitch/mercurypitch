@@ -31,7 +31,10 @@ export const computeBallPos = (
   s: ArcState,
 ): { x: number; y: number } => {
   if (s.startBeat < s.endBeat) {
-    const t = Math.max(0, Math.min(1, (beat - s.startBeat) / (s.endBeat - s.startBeat)))
+    const t = Math.max(
+      0,
+      Math.min(1, (beat - s.startBeat) / (s.endBeat - s.startBeat)),
+    )
     const midX = (s.sx + s.ex) / 2
     return {
       x: (1 - t) * (1 - t) * s.sx + 2 * (1 - t) * t * midX + t * t * s.ex,
@@ -70,7 +73,8 @@ export const shouldAdvanceArc = (
 ): boolean => {
   return (
     beat >= next.startBeat ||
-    (beat >= cur.startBeat + cur.duration && beat < next.startBeat + next.duration)
+    (beat >= cur.startBeat + cur.duration &&
+      beat < next.startBeat + next.duration)
   )
 }
 
@@ -97,7 +101,10 @@ export const computeInitialArc = (
   startX: number,
   targetX: number,
   targetY: number,
-): Pick<ArcState, 'sx' | 'sy' | 'ex' | 'ey' | 'cy' | 'startBeat' | 'endBeat' | 'noteIndex'> => {
+): Pick<
+  ArcState,
+  'sx' | 'sy' | 'ex' | 'ey' | 'cy' | 'startBeat' | 'endBeat' | 'noteIndex'
+> => {
   const aboveY = targetY - 100
   return {
     sx: startX,

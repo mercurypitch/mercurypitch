@@ -5488,8 +5488,15 @@ input:checked + .settings-slider:before {
 }
 
 .session-browser .modal-header {
+  position: relative;
   padding: 0 0 12px 0;
   margin-bottom: 12px;
+}
+
+.session-browser .modal-close-btn {
+  position: absolute;
+  top: 0;
+  right: 0;
 }
 
 .session-browser .session-categories {

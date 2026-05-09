@@ -49,7 +49,12 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
           e.stopPropagation()
         }}
       >
-        <button class="welcome-close" onClick={handleClose} title="Dismiss" aria-label="Dismiss">
+        <button
+          class="welcome-close"
+          onClick={handleClose}
+          title="Dismiss"
+          aria-label="Dismiss"
+        >
           <svg viewBox="0 0 24 24" width="20" height="20">
             <path
               fill="currentColor"

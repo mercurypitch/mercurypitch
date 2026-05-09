@@ -98,7 +98,7 @@ describe('UvrResultViewer Component', () => {
       expect(screen.queryByText('Instrumental')).not.toBeInTheDocument()
     })
 
-    it('does not render MIDI card when no vocalMidi output', () => {
+    it('renders MIDI card when vocal stem is present (generated on-the-fly)', () => {
       render(() => (
         <UvrResultViewer
           outputs={{
@@ -109,7 +109,9 @@ describe('UvrResultViewer Component', () => {
         />
       ))
 
-      expect(screen.queryByText('Vocal MIDI')).not.toBeInTheDocument()
+      // Vocal MIDI card is shown whenever vocal stem is available,
+      // since MIDI can be generated on-the-fly from the vocal audio.
+      expect(screen.getByText('Vocal MIDI')).toBeInTheDocument()
     })
 
     it('shows duration and size metadata when provided', () => {
