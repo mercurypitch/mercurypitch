@@ -2,9 +2,9 @@
 // Session Store — Unified session management with localStorage
 // ============================================================
 
-import type { MelodyItem, PlaybackSession, SessionTemplate, UnifiedLibrary, } from '@/types'
+import type { MelodyItem, PlaybackSession, SessionTemplate } from '@/types'
 import type { SessionCategory, SessionDifficulty, SessionItem } from '@/types'
-import { melodyStore, STORAGE_KEY_LIBRARY, STORAGE_KEY_SESSION_HIST, } from './melody-store'
+import { melodyStore, STORAGE_KEY_SESSION_HIST } from './melody-store'
 
 /** Generate unique item ID */
 export function generateSessionItemId(): string {
@@ -19,25 +19,8 @@ export function getAllSessions(): Record<string, PlaybackSession> {
 /** Save sessions to localStorage (UnifiedLibrary) */
 function _saveSessions(sessions: Record<string, PlaybackSession>): void {
   try {
-    const library = melodyStore.getMelodyLibrary()
-    const updatedLibrary: UnifiedLibrary = {
-      ...library,
-      sessions: sessions,
-      meta: {
-        author: library.meta.author,
-        version: library.meta.version,
-        lastUpdated: Date.now(),
-      },
-      renderSettings: library.renderSettings,
-    }
     melodyStore._setMelodyLibrary({ sessions })
-    localStorage.setItem(STORAGE_KEY_LIBRARY, JSON.stringify(updatedLibrary))
-    // NOTE: keep for log debug for later
-    // console.log('[_saveSessions] Saved to localStorage:', result)
-    // console.log(
-    //   '[_saveSessions] Stored value:',
-    //   localStorage.getItem(STORAGE_KEY_LIBRARY),
-    // )
+    melodyStore.saveLibrary()
   } catch (e) {
     console.log('[_saveSessions] Error:', e)
   }
