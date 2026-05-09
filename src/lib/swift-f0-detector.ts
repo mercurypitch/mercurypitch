@@ -79,9 +79,6 @@ export class SwiftF0Detector {
         this.ortModule = onnxModule
       } else {
         this.ortModule = (await import('onnxruntime-web')) as typeof ort
-        // Configure WASM path — in dev mode Vite doesn't copy the WASM
-        // to its dep cache, so we point ORT at the public/ directory.
-        ;(this.ortModule as typeof ort).env.wasm.wasmPaths = '/'
       }
 
       if (this.settings.sampleRate !== 16000) {
