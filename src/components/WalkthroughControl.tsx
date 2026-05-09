@@ -3,9 +3,9 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createSignal, Show } from 'solid-js'
+import { Show } from 'solid-js'
 import { WalkthroughModal, WalkthroughSelection } from '@/components/index'
-import { selectedWalkthrough, setSelectedWalkthrough, setShowSelection, showSelection, } from '@/stores'
+import { closeWalkthroughChapter, openWalkthroughChapter, selectedWalkthrough, setShowSelection, showSelection, walkthroughModalOpen, } from '@/stores'
 import type { WalkthroughTab } from '@/stores/walkthrough-store'
 
 interface WalkthroughControlProps {
@@ -18,25 +18,15 @@ interface WalkthroughControlProps {
 export const WalkthroughControl: Component<WalkthroughControlProps> = (
   _props,
 ) => {
-  const [showModal, setShowModal] = createSignal(false)
-
   const handleStartWalkthrough = (
     walkthroughId: string,
     _walkthroughTab: WalkthroughTab,
   ) => {
-    setSelectedWalkthrough(walkthroughId)
-    setShowSelection(false)
-    setShowModal(true)
-  }
-
-  const handleCloseWalkthroughModal = () => {
-    setShowModal(false)
-    setSelectedWalkthrough(null)
+    openWalkthroughChapter(walkthroughId)
   }
 
   const handleBackToSelection = () => {
-    setShowModal(false)
-    setSelectedWalkthrough(null)
+    closeWalkthroughChapter()
     setShowSelection(true)
   }
 
@@ -57,8 +47,8 @@ export const WalkthroughControl: Component<WalkthroughControlProps> = (
 
       {/* Walkthrough Modal */}
       <WalkthroughModal
-        isOpen={showModal()}
-        onClose={handleCloseWalkthroughModal}
+        isOpen={walkthroughModalOpen()}
+        onClose={closeWalkthroughChapter}
         onBackToList={handleBackToSelection}
         initialWalkthroughId={selectedWalkthrough()}
       />

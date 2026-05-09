@@ -32,7 +32,7 @@ test.describe('Session Editor', () => {
 
   test('Session Editor is collapsible via header toggle', async ({ page }) => {
     // Navigate to editor tab
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     // Check if Session Editor container exists
@@ -41,7 +41,7 @@ test.describe('Session Editor', () => {
   })
 
   test('Default state is expanded', async ({ page }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     const editorContent = page.locator('.session-editor-content')
@@ -49,7 +49,7 @@ test.describe('Session Editor', () => {
   })
 
   test('Collapsed state shows only header', async ({ page }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     const toggleBtn = page.locator('.toggle-btn')
@@ -64,7 +64,7 @@ test.describe('Session Editor', () => {
   })
 
   test('Expanded state shows melody library and timeline', async ({ page }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     const editorContent = page.locator('.session-editor-content')
@@ -77,7 +77,7 @@ test.describe('Session Editor', () => {
   })
 
   test('Expand/Collapse animation is smooth', async ({ page }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     const toggleBtn = page.locator('.toggle-btn')
@@ -97,7 +97,7 @@ test.describe('Session Editor', () => {
   test('Header displays Session Editor title with chevron icon', async ({
     page,
   }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     const header = page.locator('.session-editor-header')
@@ -116,7 +116,7 @@ test.describe('Session Editor', () => {
   test('Melody Library is displayed above timeline in expanded state', async ({
     page,
   }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     const melodyLibrary = page.locator('.melody-library-section')
@@ -127,7 +127,7 @@ test.describe('Session Editor', () => {
   })
 
   test('Melodies are displayed as draggable pills', async ({ page }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     const pills = page.locator('.melody-pill')
@@ -137,7 +137,7 @@ test.describe('Session Editor', () => {
   })
 
   test('Pills show melody name and BPM', async ({ page }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     const firstPill = page.locator('.melody-pill').first()
@@ -151,7 +151,7 @@ test.describe('Session Editor', () => {
   })
 
   test('User can search melodies by name', async ({ page }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     const searchInput = page.locator('.search-input')
@@ -163,7 +163,7 @@ test.describe('Session Editor', () => {
   })
 
   test('Search is case-insensitive and real-time', async ({ page }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     const searchInput = page.locator('.search-input')
@@ -176,7 +176,7 @@ test.describe('Session Editor', () => {
   })
 
   test('Search results are sorted alphabetically', async ({ page }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     const searchInput = page.locator('.search-input')
@@ -185,7 +185,7 @@ test.describe('Session Editor', () => {
   })
 
   test('Clicking a melody pill selects it', async ({ page }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     const firstPill = page.locator('.melody-pill').first()
@@ -202,7 +202,7 @@ test.describe('Session Editor', () => {
   // ==========================================
 
   test('Melody pills are draggable using HTML5 DnD API', async ({ page }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     const firstPill = page.locator('.melody-pill').first()
@@ -213,7 +213,7 @@ test.describe('Session Editor', () => {
   })
 
   test('Timeline accepts drop events from melody library', async ({ page }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     const timeline = page.locator('.timeline-section')
@@ -226,7 +226,7 @@ test.describe('Session Editor', () => {
   test('Dropping a melody inserts a new session item at drop position', async ({
     page,
   }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     // Would need drag-drop implementation
@@ -238,7 +238,7 @@ test.describe('Session Editor', () => {
   test('Drop position is determined by timeline coordinates', async ({
     page,
   }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     const timeline = page.locator('.timeline-section')
@@ -246,7 +246,7 @@ test.describe('Session Editor', () => {
   })
 
   test('Valid drop updates session data with new item', async ({ page }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     // Check session store for item count
@@ -258,7 +258,7 @@ test.describe('Session Editor', () => {
   })
 
   test('Invalid drop rejects item without changes', async ({ page }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     const itemCount = await page.evaluate(() => {
@@ -270,7 +270,7 @@ test.describe('Session Editor', () => {
   })
 
   test('Drop zone is clearly indicated', async ({ page }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     const timeline = page.locator('.timeline-drop-zone')
@@ -282,7 +282,7 @@ test.describe('Session Editor', () => {
   // ==========================================
 
   test('User can add rests between items', async ({ page }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     const restZones = page.locator('.rest-zone')
@@ -292,7 +292,7 @@ test.describe('Session Editor', () => {
   })
 
   test('Drop zones between items are clearly indicated', async ({ page }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     const restZones = page.locator('.rest-zone')
@@ -302,7 +302,7 @@ test.describe('Session Editor', () => {
   })
 
   test('Clicking drop zone adds a 4-second rest item', async ({ page }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     const restZones = page.locator('.rest-zone')
@@ -315,7 +315,7 @@ test.describe('Session Editor', () => {
   test('Rest items have type rest and appropriate duration', async ({
     page,
   }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     const restItems = page.locator('.rest-item')
@@ -325,7 +325,7 @@ test.describe('Session Editor', () => {
   })
 
   test('Rests are visible as gaps or pause indicators', async ({ page }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     const restItems = page.locator('.rest-item')
@@ -335,7 +335,7 @@ test.describe('Session Editor', () => {
   })
 
   test('User can delete rest items', async ({ page }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     const restItems = page.locator('.rest-item')
@@ -350,7 +350,7 @@ test.describe('Session Editor', () => {
   })
 
   test('Deleting a rest shifts subsequent items left', async ({ page }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     const restItems = page.locator('.rest-item')
@@ -364,7 +364,7 @@ test.describe('Session Editor', () => {
   // ==========================================
 
   test('Each item has a delete button', async ({ page }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     const items = page.locator('.session-item')
@@ -375,7 +375,7 @@ test.describe('Session Editor', () => {
   })
 
   test('Deleting an item removes it from the session', async ({ page }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     const items = page.locator('.session-item')
@@ -387,7 +387,7 @@ test.describe('Session Editor', () => {
   })
 
   test('Deleting an item shifts subsequent items left', async ({ page }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     const items = page.locator('.session-item')
@@ -397,7 +397,7 @@ test.describe('Session Editor', () => {
   })
 
   test('Item count is displayed in header', async ({ page }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     const itemCount = page.locator('.item-count')
@@ -405,7 +405,7 @@ test.describe('Session Editor', () => {
   })
 
   test('Save button persists changes to session', async ({ page }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     const saveBtn = page.locator('.save-btn')
@@ -416,7 +416,7 @@ test.describe('Session Editor', () => {
   })
 
   test('Load button reloads session from library', async ({ page }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     const loadBtn = page.locator('.load-btn')
@@ -433,7 +433,7 @@ test.describe('Session Editor', () => {
   test('Timeline displays session items in order of startBeat', async ({
     page,
   }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     const items = page.locator('.session-item')
@@ -445,7 +445,7 @@ test.describe('Session Editor', () => {
   test('Each item is rendered as a card with type icon and label', async ({
     page,
   }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     const firstItem = page.locator('.session-item').first()
@@ -460,7 +460,7 @@ test.describe('Session Editor', () => {
   test('Timeline is horizontally scrollable when items exceed width', async ({
     page,
   }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     const timeline = page.locator('.timeline-scroll-container')
@@ -470,7 +470,7 @@ test.describe('Session Editor', () => {
   test('Rest items are visually distinct from active items', async ({
     page,
   }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     const restItems = page.locator('.rest-item')
@@ -480,7 +480,7 @@ test.describe('Session Editor', () => {
   })
 
   test('Empty timeline shows message', async ({ page }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     const emptyState = page.locator('.empty-state')
@@ -488,7 +488,7 @@ test.describe('Session Editor', () => {
   })
 
   test('Timeline calculates and displays total duration', async ({ page }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     const durationDisplay = page.locator('.total-duration')
@@ -500,7 +500,7 @@ test.describe('Session Editor', () => {
   // ==========================================
 
   test('Timeline supports preset items from library', async ({ page }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     const presetItems = page.locator('.preset-item')
@@ -510,7 +510,7 @@ test.describe('Session Editor', () => {
   })
 
   test('Timeline supports melody items from library', async ({ page }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     const melodyItems = page.locator('.melody-item')
@@ -520,7 +520,7 @@ test.describe('Session Editor', () => {
   })
 
   test('Timeline supports scale items', async ({ page }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     const scaleItems = page.locator('.scale-item')
@@ -530,7 +530,7 @@ test.describe('Session Editor', () => {
   })
 
   test('Timeline supports rest items for pauses', async ({ page }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     const restItems = page.locator('.rest-item')
@@ -540,7 +540,7 @@ test.describe('Session Editor', () => {
   })
 
   test('Each item type has appropriate icon and display', async ({ page }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     const items = page.locator('.session-item')
@@ -551,7 +551,7 @@ test.describe('Session Editor', () => {
   })
 
   test('Type-specific information is displayed', async ({ page }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     const items = page.locator('.session-item')
@@ -566,7 +566,7 @@ test.describe('Session Editor', () => {
   // ==========================================
 
   test('Timeline scrolls horizontally on mouse wheel', async ({ page }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     const timeline = page.locator('.timeline-scroll-container')
@@ -579,7 +579,7 @@ test.describe('Session Editor', () => {
   test('Piano roll scrolling syncs with timeline scrolling', async ({
     page,
   }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     const pianoRoll = page.locator('#piano-roll-canvas')
@@ -590,7 +590,7 @@ test.describe('Session Editor', () => {
   })
 
   test('Drag scrolling is smooth and responsive', async ({ page }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     const timeline = page.locator('.timeline-scroll-container')
@@ -601,7 +601,7 @@ test.describe('Session Editor', () => {
   })
 
   test('Timeline auto-scrolls to show dropped items', async ({ page }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     const timeline = page.locator('.timeline-scroll-container')
@@ -611,7 +611,7 @@ test.describe('Session Editor', () => {
   test('Empty timeline has scrollable area for drag-and-drop', async ({
     page,
   }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     const timeline = page.locator('.timeline-scroll-container')

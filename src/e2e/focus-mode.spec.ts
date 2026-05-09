@@ -33,7 +33,7 @@ test.describe('Focus Mode', () => {
   test('User can activate Focus Mode via dedicated button', async ({
     page,
   }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const focusToggle = page.locator('#focus-mode-toggle')
@@ -47,7 +47,7 @@ test.describe('Focus Mode', () => {
   })
 
   test('Focus mode hides sidebar elements', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const sidebar = page.locator('nav')
@@ -63,7 +63,7 @@ test.describe('Focus Mode', () => {
   })
 
   test('Focus mode hides header elements', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const header = page.locator('header')
@@ -79,7 +79,7 @@ test.describe('Focus Mode', () => {
   })
 
   test('Focus mode hides unnecessary modals', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     // Activate focus mode
@@ -89,7 +89,7 @@ test.describe('Focus Mode', () => {
   })
 
   test('Focus mode expands practice area', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     // Activate focus mode
@@ -99,7 +99,7 @@ test.describe('Focus Mode', () => {
   })
 
   test('Active Focus Mode button is visually highlighted', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const focusToggle = page.locator('#focus-mode-toggle')
@@ -115,7 +115,7 @@ test.describe('Focus Mode', () => {
   // ==========================================
 
   test('User can deactivate Focus Mode via toggle', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const focusToggle = page.locator('#focus-mode-toggle')
@@ -130,7 +130,7 @@ test.describe('Focus Mode', () => {
   })
 
   test('Deactivating restores all hidden UI elements', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const focusToggle = page.locator('#focus-mode-toggle')
@@ -149,7 +149,7 @@ test.describe('Focus Mode', () => {
   })
 
   test('Focus mode can be exited by tab switching', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const focusToggle = page.locator('#focus-mode-toggle')
@@ -159,16 +159,16 @@ test.describe('Focus Mode', () => {
     await page.waitForTimeout(500)
 
     // Switch to another tab
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(500)
 
     // Switch back to practice
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
   })
 
   test('Deactivation preserves current practice state', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const focusToggle = page.locator('#focus-mode-toggle')
@@ -187,7 +187,7 @@ test.describe('Focus Mode', () => {
   // ==========================================
 
   test('Sidebar navigation is hidden in focus mode', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const sidebar = page.locator('nav')
@@ -201,7 +201,7 @@ test.describe('Focus Mode', () => {
   })
 
   test('Practice header is minimized in focus mode', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const header = page.locator('header')
@@ -216,7 +216,7 @@ test.describe('Focus Mode', () => {
   })
 
   test('Settings panel is not accessible in focus mode', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     // Activate focus mode
@@ -231,7 +231,7 @@ test.describe('Focus Mode', () => {
   test('Library modals are hidden or collapsed in focus mode', async ({
     page,
   }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     // Activate focus mode
@@ -243,7 +243,7 @@ test.describe('Focus Mode', () => {
   test('Help/walkthrough elements are hidden in focus mode', async ({
     page,
   }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     // Activate focus mode
@@ -255,7 +255,7 @@ test.describe('Focus Mode', () => {
   test('Piano roll expands to fill available space in focus mode', async ({
     page,
   }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     // Activate focus mode
@@ -271,7 +271,7 @@ test.describe('Focus Mode', () => {
   test('Focus mode does not interfere with playback controls', async ({
     page,
   }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const focusToggle = page.locator('#focus-mode-toggle')
@@ -288,7 +288,7 @@ test.describe('Focus Mode', () => {
   test('Focus mode does not affect metronome functionality', async ({
     page,
   }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const focusToggle = page.locator('#focus-mode-toggle')
@@ -303,7 +303,7 @@ test.describe('Focus Mode', () => {
   })
 
   test('Focus mode allows recording to piano roll', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const focusToggle = page.locator('#focus-mode-toggle')
@@ -318,7 +318,7 @@ test.describe('Focus Mode', () => {
   })
 
   test('Focus mode preserves all practice session state', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const focusToggle = page.locator('#focus-mode-toggle')
@@ -333,7 +333,7 @@ test.describe('Focus Mode', () => {
   })
 
   test('Focus mode can be toggled multiple times', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const focusToggle = page.locator('#focus-mode-toggle')
@@ -356,7 +356,7 @@ test.describe('Focus Mode', () => {
   // ==========================================
 
   test('Focus mode UI changes happen smoothly', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const focusToggle = page.locator('#focus-mode-toggle')
@@ -374,7 +374,7 @@ test.describe('Focus Mode', () => {
   test('Hidden elements remain hidden across focus mode toggle', async ({
     page,
   }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const focusToggle = page.locator('#focus-mode-toggle')
@@ -397,7 +397,7 @@ test.describe('Focus Mode', () => {
   })
 
   test('Focus mode has smooth animations', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const focusToggle = page.locator('#focus-mode-toggle')
@@ -417,7 +417,7 @@ test.describe('Focus Mode', () => {
   test('Focus mode works consistently across practice and editor tabs', async ({
     page,
   }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const focusToggle = page.locator('#focus-mode-toggle')
@@ -427,11 +427,11 @@ test.describe('Focus Mode', () => {
     await page.waitForTimeout(500)
 
     // Switch to editor
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(500)
 
     // Switch back to practice
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(500)
   })
 })

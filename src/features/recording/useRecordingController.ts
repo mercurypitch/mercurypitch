@@ -1,5 +1,6 @@
 import type { Accessor } from 'solid-js'
 import { createSignal } from 'solid-js'
+import { TAB_COMPOSE } from '@/features/tabs/constants'
 import type { AudioEngine } from '@/lib/audio-engine'
 import type { PlaybackRuntime } from '@/lib/playback-runtime'
 import type { PracticeEngine } from '@/lib/practice-engine'
@@ -96,7 +97,7 @@ export function useRecordingController(deps: Deps): RecordingController {
     currentNoteStartBeat = -1
     setIsRecording(false)
     audioEngine.setVolume(0.8)
-    uiStore.setActiveTab('editor')
+    uiStore.setActiveTab(TAB_COMPOSE)
   }
 
   const handleRecordToggle = async (): Promise<void> => {

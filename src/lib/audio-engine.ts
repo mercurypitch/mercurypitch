@@ -3,6 +3,7 @@
 // ============================================================
 
 import type { EffectType, MelodyItem, MelodyNote } from '@/types'
+import { UvrProcessor } from './uvr-processor'
 
 export interface AudioEngineCallbacks {
   onNoteComplete?: (item: MelodyItem, time: number) => void
@@ -18,6 +19,7 @@ export type InstrumentType = 'sine' | 'piano' | 'organ' | 'strings' | 'synth'
 export class AudioEngine {
   private audioCtx: AudioContext | null = null
   private mainGain: GainNode | null = null
+  private uvrOutput: GainNode | null = null
   // Microphone
   private micStream: MediaStream | null = null
   private micSource: MediaStreamAudioSourceNode | null = null
@@ -78,6 +80,13 @@ export class AudioEngine {
   private currentReverbType: 'off' | 'room' | 'hall' | 'cathedral' = 'room'
   private currentReverbWetness = 0.3
 
+  // UVR Vocal Separation
+  private uvrProcessor: UvrProcessor = new UvrProcessor()
+  private uvrInitialized = false
+  private uvrEnabled = false
+  private uvrMainGain: GainNode | null = null
+  private uvrSourceNode: AudioNode | null = null
+
   // ============================================================
   // Lifecycle
   // ============================================================
@@ -106,14 +115,23 @@ export class AudioEngine {
     this.reverbSendGain.gain.value = 0
     this.reverbReturnGain.gain.value = 0
 
+    // UVR processing node - inserted between mainGain and downstream effects
+    this.uvrOutput = this.audioCtx.createGain()
+
     if (
       this.playbackAnalyser !== null &&
       this.playbackAnalyser !== undefined &&
       typeof this.mainGain.connect === 'function'
     ) {
-      // Dry path: mainGain → playbackAnalyser (always full volume)
-      this.mainGain.connect(this.playbackAnalyser)
-      // Wet send tap: mainGain → reverbSendGain (gain = wetness, only active when reverb on)
+      // Create UVR output gain for vocal/instrumental separation
+      this.uvrOutput = this.audioCtx.createGain()
+      this.uvrOutput.gain.value = 1.0
+
+      // Main flow: mainGain → uvrOutput (UVR processing)
+      this.mainGain.connect(this.uvrOutput)
+      // Playback analyser: connects to uvrOutput for visualization
+      this.uvrOutput.connect(this.playbackAnalyser)
+      // Wet send for reverb: mainGain → reverbSendGain (separate from UVR)
       this.mainGain.connect(this.reverbSendGain)
     }
 
@@ -131,6 +149,95 @@ export class AudioEngine {
       this._playbackTimeData = new Float32Array(this.playbackAnalyser.fftSize)
       this._frequencyByteData = new Uint8Array(this.analyser.frequencyBinCount)
     }
+
+    // Initialize UVR processor
+    await this.uvrProcessor.initAudio(this.audioCtx)
+    this.uvrInitialized = true
+
+    // UVR output gain for vocal/instrumental separation
+    this.uvrOutput = this.audioCtx.createGain()
+    this.uvrOutput.gain.value = 1.0
+  }
+
+  /** Enable UVR vocal separation processing */
+  enableUvr(): void {
+    if (!this.uvrInitialized || !this.uvrOutput) return
+    this.uvrEnabled = true
+  }
+
+  /** Disable UVR vocal separation processing */
+  disableUvr(): void {
+    this.uvrEnabled = false
+  }
+
+  /** Toggle UVR processing */
+  toggleUvr(): void {
+    if (this.uvrEnabled) {
+      this.disableUvr()
+    } else {
+      this.enableUvr()
+    }
+  }
+
+  /** Check if UVR is enabled */
+  isUvrEnabled(): boolean {
+    return this.uvrEnabled
+  }
+
+  /** Apply UVR processing to audio output */
+  private _applyUvrProcessing(source: AudioNode): AudioNode[] {
+    if (!this.uvrEnabled || !this.uvrInitialized || !this.audioCtx) {
+      return [source]
+    }
+
+    // Use UVR processor to process the source
+    return this.uvrProcessor.processSegment(source, 0, this.audioCtx)
+  }
+
+  /** Get UVR processor instance */
+  getUvrProcessor(): UvrProcessor {
+    return this.uvrProcessor
+  }
+
+  /** Check if UVR is initialized */
+  isUvrInitialized(): boolean {
+    return this.uvrInitialized
+  }
+
+  /** Get UVR mode */
+  getUvrMode(): 'separate' | 'instrumental' | 'vocal' | 'duo' {
+    return this.uvrProcessor.getMode()
+  }
+
+  /** Set UVR mode */
+  setUvrMode(mode: 'separate' | 'instrumental' | 'vocal' | 'duo'): void {
+    this.uvrProcessor.setMode(mode)
+  }
+
+  /** Get UVR settings */
+  getUvrSettings(): {
+    mode: 'separate' | 'instrumental' | 'vocal' | 'duo'
+    vocalIntensity: number
+    instrumentalIntensity: number
+    smoothing: number
+  } {
+    const settings = this.uvrProcessor.getSettings()
+    return {
+      mode: settings.mode,
+      vocalIntensity: settings.vocalIntensity,
+      instrumentalIntensity: settings.instrumentalIntensity,
+      smoothing: settings.smoothing,
+    }
+  }
+
+  /** Set UVR settings */
+  setUvrSettings(settings: {
+    mode?: 'separate' | 'instrumental' | 'vocal' | 'duo'
+    vocalIntensity?: number
+    instrumentalIntensity?: number
+    smoothing?: number
+  }): void {
+    this.uvrProcessor.setSettings(settings)
   }
 
   /** Resume audio context if suspended (needed after user gesture) */
@@ -462,7 +569,12 @@ export class AudioEngine {
     )
 
     osc.connect(gain)
-    gain.connect(this.mainGain)
+
+    // Apply UVR processing if enabled
+    const processedNodes = this._applyUvrProcessing(gain)
+    processedNodes.forEach((node) =>
+      node.connect(this.uvrMainGain ?? this.mainGain!),
+    )
 
     osc.start(this.audioCtx.currentTime)
     osc.stop(this.audioCtx.currentTime + 0.08)
@@ -637,7 +749,12 @@ export class AudioEngine {
     const userGain = this.audioCtx.createGain()
     userGain.gain.value = this.volume
     masterGain.connect(userGain)
-    userGain.connect(this.mainGain)
+
+    // Apply UVR processing if enabled
+    const processedNodes = this._applyUvrProcessing(userGain)
+    processedNodes.forEach((node) =>
+      node.connect(this.uvrMainGain ?? this.mainGain!),
+    )
 
     // Start every oscillator (and any LFO modulators).
     for (const osc of voice.oscillators) osc.start(startTime)

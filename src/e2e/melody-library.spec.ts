@@ -21,7 +21,7 @@ test.describe('Melody Library', () => {
   // ==========================================
 
   test('Library tab is visible in sidebar', async ({ page }) => {
-    await page.locator('#tab-practice').click()
+    await page.locator('#tab-singing').click()
     await page.waitForTimeout(300)
 
     // Library tab should be visible
@@ -29,7 +29,7 @@ test.describe('Melody Library', () => {
   })
 
   test('Library tab has recent melodies section', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     await expect(page.locator('.recent-section')).toBeVisible()
@@ -39,7 +39,7 @@ test.describe('Melody Library', () => {
   })
 
   test('Recent melodies list can be displayed', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const recentItems = page.locator('.recent-item')
@@ -48,7 +48,7 @@ test.describe('Melody Library', () => {
   })
 
   test('Library tab has quick action buttons', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     await expect(page.locator('.quick-actions')).toBeVisible()
@@ -60,7 +60,7 @@ test.describe('Melody Library', () => {
   test.skip('Quick Start button opens presets library (removed)', async ({
     page,
   }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const quickStartBtn = page.locator(
@@ -76,7 +76,7 @@ test.describe('Melody Library', () => {
   })
 
   test('Sessions button opens session library', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const sessionsBtn = page.locator('.quick-action-btn:has-text("Sessions")')
@@ -90,7 +90,7 @@ test.describe('Melody Library', () => {
   })
 
   test('Library tab melodic action buttons are visible', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     // Check that melody-related buttons exist
@@ -110,7 +110,7 @@ test.describe('Melody Library', () => {
     await page.reload()
     await page.waitForTimeout(1000)
 
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const emptyTip = page.locator('.empty-tip')
@@ -120,11 +120,11 @@ test.describe('Melody Library', () => {
   test.skip('Recent melodies update when new melodies are added', async ({
     page,
   }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(1000)
 
     // Navigate back to library
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const recentItemsBefore = page.locator('.recent-item')
@@ -140,7 +140,7 @@ test.describe('Melody Library', () => {
     await page.waitForTimeout(500)
 
     // Navigate back to library
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(500)
 
     const recentItemsAfter = page.locator('.recent-item')
@@ -151,7 +151,7 @@ test.describe('Melody Library', () => {
   })
 
   test('Library tab clickable items have visual feedback', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const recentItems = page.locator('.recent-item').first()
@@ -169,7 +169,7 @@ test.describe('Melody Library', () => {
   // ==========================================
 
   test('Library modal button is visible in sidebar', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     // Look for the "Melodies" action button in Library tab
@@ -178,7 +178,7 @@ test.describe('Melody Library', () => {
   })
 
   test('Can open Library modal via toolbar', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const melodicBtn = page.locator('.tab-action-btn:has-text("Melodies")')
@@ -531,7 +531,7 @@ test.describe('Melody Library', () => {
       await page.waitForTimeout(300)
 
       // Verify app is in playback mode
-      const practiceTab = page.locator('#tab-practice')
+      const practiceTab = page.locator('#tab-singing')
       await expect(practiceTab).toBeVisible()
     }
   })
@@ -548,14 +548,14 @@ test.describe('Melody Library', () => {
       await page.waitForTimeout(300)
 
       // Verify editor tab is active
-      const editorTab = page.locator('#tab-editor')
+      const editorTab = page.locator('#tab-compose')
       await expect(editorTab).toHaveClass(/active/)
     }
   })
 
   test('Play button in library item plays the melody', async ({ page }) => {
     // Navigate to library
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     // Find and click play button on a recent item
@@ -567,7 +567,7 @@ test.describe('Melody Library', () => {
       await page.waitForTimeout(500)
 
       // Verify practice tab is still active
-      const practiceTab = page.locator('#tab-practice')
+      const practiceTab = page.locator('#tab-singing')
       await expect(practiceTab).toHaveClass(/active/)
     }
   })
@@ -638,7 +638,7 @@ test.describe('Melody Library', () => {
   // ==========================================
 
   test('Sessions Library modal button is visible', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const sessionsBtn = page.locator('.tab-action-btn:has-text("Sessions")')
@@ -646,7 +646,7 @@ test.describe('Melody Library', () => {
   })
 
   test('Can open Sessions Library modal', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const sessionsBtn = page.locator('.tab-action-btn:has-text("Sessions")')
@@ -706,7 +706,7 @@ test.describe('Melody Library', () => {
       await page.waitForTimeout(500)
 
       // Verify practice mode is active
-      const practiceTab = page.locator('#tab-practice')
+      const practiceTab = page.locator('#tab-singing')
       await expect(practiceTab).toHaveClass(/active/)
     }
   })
@@ -804,7 +804,7 @@ test.describe('Melody Library', () => {
       await page.waitForTimeout(300)
 
       // Go back to library
-      await switchTab(page, 'practice')
+      await switchTab(page, 'singing')
       await page.waitForTimeout(500)
 
       // Open library again and edit
@@ -827,7 +827,7 @@ test.describe('Melody Library', () => {
 
   test('Complete flow: create session, load, practice', async ({ page }) => {
     // Navigate to sessions
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const sessionsBtn = page.locator('.quick-action-btn:has-text("Sessions")')
@@ -841,7 +841,7 @@ test.describe('Melody Library', () => {
       await page.waitForTimeout(500)
 
       // Verify practice mode is active
-      const practiceTab = page.locator('#tab-practice')
+      const practiceTab = page.locator('#tab-singing')
       await expect(practiceTab).toHaveClass(/active/)
     }
   })
@@ -872,7 +872,7 @@ test.describe('Melody Library', () => {
     await page.waitForTimeout(2000)
 
     // Navigate back to library
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     // Check if the melody still exists in recent list
@@ -900,7 +900,7 @@ test.describe('Melody Library', () => {
       await page.waitForTimeout(500)
 
       // Navigate back to library to create another
-      await switchTab(page, 'practice')
+      await switchTab(page, 'singing')
       await page.waitForTimeout(300)
     }
 
@@ -918,7 +918,7 @@ test.describe('Melody Library', () => {
   test('Can navigate between Library and Presets libraries', async ({
     page,
   }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     // Click Melodies button
@@ -961,7 +961,7 @@ test.describe('Melody Library', () => {
     await page.waitForTimeout(500)
 
     // Navigate back and check if BPM is preserved in metadata
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const recentItems = page.locator('.recent-item')
@@ -991,7 +991,7 @@ test.describe('Melody Library', () => {
     await page.waitForTimeout(500)
 
     // Verify tags were saved
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const recentItems = page.locator('.recent-item')
@@ -1020,7 +1020,7 @@ test.describe('Melody Library', () => {
     await page.waitForTimeout(500)
 
     // Verify notes were saved
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const recentItems = page.locator('.recent-item')

@@ -1,0 +1,7 @@
+output/
+uploads/
+__pycache__/
+.git/
+*.wav
+*.mp3
+*.flac
