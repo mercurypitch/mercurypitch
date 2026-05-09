@@ -13,13 +13,13 @@
     "nodejs_compat"
   ],
   "routes": [
-    { "pattern": "mercurypitch.com/*", "custom_domain": true }
+    { "pattern": "mercurypitch.com", "custom_domain": true }
   ],
   "env": {
     "dev": {
       "name": "pitch-perfect-dev",
       "routes": [
-        { "pattern": "dev.mercurypitch.com/*", "custom_domain": true }
+        { "pattern": "dev.mercurypitch.com", "custom_domain": true }
       ]
     }
   }
