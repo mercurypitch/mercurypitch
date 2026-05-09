@@ -34,8 +34,8 @@ jobs:
       - name: Verify build output
         run: |
           test -f dist/index.html || exit 1
-          test -f dist/assets/*.js || exit 1
-          test -f dist/assets/*.css || exit 1
+          ls dist/assets/*.js >/dev/null 2>&1 || exit 1
+          ls dist/assets/*.css >/dev/null 2>&1 || exit 1
           echo "Build artifacts verified"
 
       # Deploys to dev.mercurypitch.com when pushing to the dev branch
