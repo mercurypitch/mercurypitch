@@ -1,0 +1,15 @@
+#!/bin/bash
+
+# Reject pushes to main branch
+while read oldrev newrev refname
+do
+  branch=$(git rev-parse --symbolic-full-name --abbrev-ref "$refname")
+
+  if [ "$branch" = "main" ]; then
+    echo "ERROR: Pushing to main branch is prohibited."
+    echo "Create a feature branch and open a PR targeting dev instead."
+    exit 1
+  fi
+done
+
+exit 0

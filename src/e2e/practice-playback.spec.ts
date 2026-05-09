@@ -34,7 +34,7 @@ test.describe('Practice Playback', () => {
     page,
   }) => {
     // Click directly on Practice tab (welcome overlay may not be visible after dismiss)
-    const playBtn = page.locator('#tab-practice')
+    const playBtn = page.locator('#tab-singing')
     await playBtn.click()
     await page.waitForTimeout(1000)
 
@@ -53,7 +53,7 @@ test.describe('Practice Playback', () => {
   test('Practice tab Play button starts playback and moves playhead', async ({
     page,
   }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(500)
 
     // Get initial playhead position
@@ -95,7 +95,7 @@ test.describe('Practice Playback', () => {
   })
 
   test('Practice tab pause button pauses playback', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(500)
 
     // Click Play
@@ -128,7 +128,7 @@ test.describe('Practice Playback', () => {
   test('Practice tab stop button resets playhead to beginning', async ({
     page,
   }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(500)
 
     // Click Play
@@ -157,7 +157,7 @@ test.describe('Practice Playback', () => {
   })
 
   test('Practice tab Play button moves playhead steadily', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(500)
 
     // Play
@@ -185,7 +185,7 @@ test.describe('Practice Playback', () => {
   })
 
   test('Play button shows correct label during playback', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(500)
 
     // Initial state should show Play button
@@ -212,7 +212,7 @@ test.describe('Practice Playback', () => {
   test('Practice tab allows clicking Play and playing immediately', async ({
     page,
   }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(500)
 
     // Verify default melody exists
@@ -254,7 +254,7 @@ test.describe('Practice Playback', () => {
   test('Practice tab metronome click does not interfere with playback', async ({
     page,
   }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(500)
 
     // Play button should be visible

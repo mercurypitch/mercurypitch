@@ -7,6 +7,24 @@ import { exposeForE2E } from './test-utils'
 export function initGlobalErrorHandlers(): void {
   if (typeof window === 'undefined') return
 
+  window.addEventListener('error', (e: ErrorEvent) => {
+    // Ignore benign ResizeObserver loop errors (see AppErrorBoundary.tsx)
+    const msg = e.message ?? ''
+    if (msg.includes('ResizeObserver')) {
+      e.preventDefault()
+      return
+    }
+    const errorMsg = e.error !== null ? e.error : e.message
+    console.error('Global error:', errorMsg)
+    exposeForE2E('__globalError', errorMsg)
+  })
+
+  window.addEventListener('unhandledrejection', (e: PromiseRejectionEvent) => {
+    console.error('Unhandled promise rejection:', e.reason)
+    exposeForE2E('__globalError', e.reason)
+  })
+
+  // Capture console logs for E2E debugging
   const logs: { type: string; args: string[] }[] = []
   exposeForE2E('__consoleLogs', logs)
 

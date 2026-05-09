@@ -4,6 +4,21 @@ import { createPersistedSignal } from '@/lib/storage'
 
 export type { PitchAlgorithm }
 
+export type PitchBufferSize = 512 | 1024 | 2048 | 4096
+export const PITCH_BUFFER_SIZES: PitchBufferSize[] = [512, 1024, 2048, 4096]
+export const PITCH_BUFFER_LABELS: Record<PitchBufferSize, string> = {
+  512: '512',
+  1024: '1K',
+  2048: '2K',
+  4096: '4K',
+}
+export const PITCH_BUFFER_DESCRIPTIONS: Record<PitchBufferSize, string> = {
+  512: 'Lowest latency, less accurate on low notes',
+  1024: 'Low latency, good for higher voices',
+  2048: 'Balanced (recommended)',
+  4096: 'High accuracy, more latency',
+}
+
 export type SensitivityPreset = 'quiet' | 'home' | 'noisy'
 export type AccuracyTier = 'learning' | 'singer' | 'professional'
 
@@ -99,6 +114,11 @@ export const DEFAULT_REVERB: ReverbConfig = {
   wetness: 30,
   type: 'room',
 }
+
+// ── TODO: Merge custom settings from UVR branch with dev settings ─────────────────────────────
+// The dev branch has new settings in the multi-setting form in SettingsPanel.
+// We need to add: perfect pitch sensitivity sliders, camera preview toggle,
+// and other UVR-specific controls while maintaining backward compatibility.
 
 export const [sensitivityPreset, _setSensitivityPreset] =
   createPersistedSignal<SensitivityPreset>(
@@ -253,24 +273,6 @@ export const [showAccuracyPercent, setShowAccuracyPercent] =
 export const [pitchAlgorithm, setPitchAlgorithm] =
   createPersistedSignal<PitchAlgorithm>('pitchperfect_pitch_algorithm', 'mpm')
 
-// ── Pitch Detection Buffer Size ───────────────────────────────────
-//
-// Larger buffers give better accuracy (especially for low frequencies)
-// but increase latency. 2048 is the sweet spot for most voices.
-export type PitchBufferSize = 512 | 1024 | 2048 | 4096
-export const PITCH_BUFFER_SIZES: PitchBufferSize[] = [512, 1024, 2048, 4096]
-export const PITCH_BUFFER_LABELS: Record<PitchBufferSize, string> = {
-  512: '512',
-  1024: '1K',
-  2048: '2K',
-  4096: '4K',
-}
-export const PITCH_BUFFER_DESCRIPTIONS: Record<PitchBufferSize, string> = {
-  512: 'Lowest latency, less accurate on low notes',
-  1024: 'Low latency, good for higher voices',
-  2048: 'Balanced (recommended)',
-  4096: 'High accuracy, more latency',
-}
 export const [pitchBufferSize, setPitchBufferSize] =
   createPersistedSignal<PitchBufferSize>('pitchperfect_pitch_buffer_size', 2048)
 
@@ -363,6 +365,30 @@ const SHOW_PRACTICE_RESULT_POPUP_KEY = 'pitchperfect_show_practice_result_popup'
 export const [showPracticeResultPopup, setShowPracticeResultPopup] =
   createPersistedSignal<boolean>(SHOW_PRACTICE_RESULT_POPUP_KEY, false)
 
+/**
+ * Show the jumping ball during playback mode. Off by default so the
+ * ball doesn't distract during regular practice / playback.
+ */
+const SHOW_PLAYBACK_BALL_KEY = 'pitchperfect_show_playback_ball'
+export const [showPlaybackBall, setShowPlaybackBall] =
+  createPersistedSignal<boolean>(SHOW_PLAYBACK_BALL_KEY, false)
+
+/**
+ * Show the jumping ball during Focus mode. On by default — Focus mode
+ * is explicitly for visual pitch tracking.
+ */
+const SHOW_FOCUS_BALL_KEY = 'pitchperfect_show_focus_ball'
+export const [showFocusBall, setShowFocusBall] =
+  createPersistedSignal<boolean>(SHOW_FOCUS_BALL_KEY, true)
+
+/**
+ * Show the playhead vertical line during playback/pause. On by default.
+ * When off, users can rely solely on the jumping ball for position tracking.
+ */
+const SHOW_PLAYHEAD_KEY = 'pitchperfect_show_playhead'
+export const [showPlayhead, setShowPlayhead] =
+  createPersistedSignal<boolean>(SHOW_PLAYHEAD_KEY, true)
+
 // ── Accuracy Presets ───────────────────────────────────────────────────
 
 export const [accuracyTier, _setAccuracyTier] =
@@ -389,6 +415,55 @@ export function applyAccuracyTier(tier: AccuracyTier): void {
     tonicAnchor: s.tonicAnchor,
   }))
   _setSensitivityPreset(TIER_SENSITIVITY[tier])
+  _setAccuracyTier(tier)
+}
+
+/** Get current accuracy tier preset information */
+export function getAccuracyTierInfo(tier: AccuracyTier): {
+  label: string
+  description: string
+  difficulty: 'Beginner' | 'Intermediate' | 'Advanced'
+} {
+  const info = {
+    learning: {
+      label: 'Learning',
+      description:
+        'Perfect pitch means being within 15 cents of the target note. Great for beginners.',
+      difficulty: 'Beginner',
+    },
+    singer: {
+      label: 'Singer',
+      description:
+        'Perfect pitch means being within 8 cents of the target note. For intermediate singers.',
+      difficulty: 'Intermediate',
+    },
+    professional: {
+      label: 'Professional',
+      description:
+        'Perfect pitch means being within 0 cents of the target note. For advanced virtuosos.',
+      difficulty: 'Advanced',
+    },
+  } as const
+  return info[tier]
+}
+
+// ── Accuracy Presets ───────────────────────────────────────────────────
+
+export const [accuracyTier, _setAccuracyTier] =
+  createPersistedSignal<AccuracyTier>(
+    'pitchperfect_accuracy_tier',
+    'professional',
+  )
+
+/** Apply accuracy tier preset to current settings */
+export function applyAccuracyTier(tier: AccuracyTier): void {
+  const bands = ACCURACY_PRESETS[tier]
+  const base = SENSITIVITY_PRESETS.noisy
+  setSettings((s) => ({
+    ...base,
+    bands,
+    tonicAnchor: s.tonicAnchor,
+  }))
   _setAccuracyTier(tier)
 }
 

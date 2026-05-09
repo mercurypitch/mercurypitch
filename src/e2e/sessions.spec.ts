@@ -23,7 +23,7 @@ test.describe('Practice Sessions', () => {
   test('SessionPlayer displays session header', async ({ page }) => {
     await page.evaluate(() => {
       // Create a simple practice session for testing
-      ;(window as any).__appStore?.setActiveTab('practice')
+      ;(window as any).__appStore?.setActiveTab('singing')
     })
     await page.waitForTimeout(300)
 
@@ -34,7 +34,7 @@ test.describe('Practice Sessions', () => {
 
   test('SessionPlayer shows elapsed timer', async ({ page }) => {
     await page.evaluate(() => {
-      ;(window as any).__appStore?.setActiveTab('practice')
+      ;(window as any).__appStore?.setActiveTab('singing')
     })
     await page.waitForTimeout(300)
 
@@ -44,7 +44,7 @@ test.describe('Practice Sessions', () => {
 
   test('SessionPlayer shows current item info', async ({ page }) => {
     await page.evaluate(() => {
-      ;(window as any).__appStore?.setActiveTab('practice')
+      ;(window as any).__appStore?.setActiveTab('singing')
     })
     await page.waitForTimeout(300)
 
@@ -54,7 +54,7 @@ test.describe('Practice Sessions', () => {
 
   test('SessionPlayer displays session name', async ({ page }) => {
     await page.evaluate(() => {
-      ;(window as any).__appStore?.setActiveTab('practice')
+      ;(window as any).__appStore?.setActiveTab('singing')
     })
     await page.waitForTimeout(300)
 
@@ -64,7 +64,7 @@ test.describe('Practice Sessions', () => {
 
   test('SessionPlayer shows item progress (X of Y)', async ({ page }) => {
     await page.evaluate(() => {
-      ;(window as any).__appStore?.setActiveTab('practice')
+      ;(window as any).__appStore?.setActiveTab('singing')
     })
     await page.waitForTimeout(300)
 
@@ -74,7 +74,7 @@ test.describe('Practice Sessions', () => {
 
   test('SessionPlayer shows skip button', async ({ page }) => {
     await page.evaluate(() => {
-      ;(window as any).__appStore?.setActiveTab('practice')
+      ;(window as any).__appStore?.setActiveTab('singing')
     })
     await page.waitForTimeout(300)
 
@@ -84,7 +84,7 @@ test.describe('Practice Sessions', () => {
 
   test('SessionPlayer shows end button', async ({ page }) => {
     await page.evaluate(() => {
-      ;(window as any).__appStore?.setActiveTab('practice')
+      ;(window as any).__appStore?.setActiveTab('singing')
     })
     await page.waitForTimeout(300)
 
@@ -94,7 +94,7 @@ test.describe('Practice Sessions', () => {
 
   test('Skip button is clickable', async ({ page }) => {
     await page.evaluate(() => {
-      ;(window as any).__appStore?.setActiveTab('practice')
+      ;(window as any).__appStore?.setActiveTab('singing')
     })
     await page.waitForTimeout(300)
 
@@ -106,7 +106,7 @@ test.describe('Practice Sessions', () => {
 
   test('End button is clickable', async ({ page }) => {
     await page.evaluate(() => {
-      ;(window as any).__appStore?.setActiveTab('practice')
+      ;(window as any).__appStore?.setActiveTab('singing')
     })
     await page.waitForTimeout(300)
 
@@ -118,7 +118,7 @@ test.describe('Practice Sessions', () => {
 
   test('Session timer increments over time', async ({ page }) => {
     await page.evaluate(() => {
-      ;(window as any).__appStore?.setActiveTab('practice')
+      ;(window as any).__appStore?.setActiveTab('singing')
     })
     await page.waitForTimeout(300)
 
@@ -139,7 +139,7 @@ test.describe('Practice Sessions', () => {
   // ==========================================
 
   test('Accuracy stats bars are visible', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const statBars = page.locator('#stats-bars')
@@ -149,7 +149,7 @@ test.describe('Practice Sessions', () => {
   test('Accuracy stat labels are visible (Perfect, Excellent, etc.)', async ({
     page,
   }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const statLabels = page.locator('.stat-label')
@@ -158,7 +158,7 @@ test.describe('Practice Sessions', () => {
   })
 
   test('Accuracy bars have color indicators', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const statBars = page.locator('.stat-bar')
@@ -167,7 +167,7 @@ test.describe('Practice Sessions', () => {
   })
 
   test('Accuracy bars show percentage values', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const statCounts = page.locator('.stat-count')
@@ -176,7 +176,7 @@ test.describe('Practice Sessions', () => {
   })
 
   test('Live score display is visible', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const scoreDisplay = page.locator('#score-display')
@@ -184,7 +184,7 @@ test.describe('Practice Sessions', () => {
   })
 
   test('Score label is visible', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const scoreLabel = page.locator('#score-label')
@@ -192,7 +192,7 @@ test.describe('Practice Sessions', () => {
   })
 
   test('Score value is visible', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const scoreValue = page.locator('#score-value')
@@ -200,7 +200,7 @@ test.describe('Practice Sessions', () => {
   })
 
   test('Score shows -- when no score yet', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const scoreValue = page.locator('#score-value')
@@ -211,7 +211,7 @@ test.describe('Practice Sessions', () => {
   })
 
   test('Session history panel shows when results exist', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     // No session history yet - should be hidden
@@ -227,7 +227,7 @@ test.describe('Practice Sessions', () => {
   test('Session history panel shows after completing a session', async ({
     page,
   }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(500)
 
     // Click Play to start a session item
@@ -256,7 +256,7 @@ test.describe('Practice Sessions', () => {
   test('Session history entries show session name and score', async ({
     page,
   }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const historyEntries = page.locator('.session-history-entry')
@@ -270,7 +270,7 @@ test.describe('Practice Sessions', () => {
 
   test('End session returns to normal practice mode', async ({ page }) => {
     // Start in practice mode
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const endBtn = page.locator('.session-end-btn')
@@ -287,7 +287,7 @@ test.describe('Practice Sessions', () => {
   test('Session results are saved to session history', async ({ page }) => {
     // Complete a session (this would normally require actual playback)
     // Just verify the UI can handle session completion
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const sessionHistory = page.locator('#session-history-panel')
@@ -297,7 +297,7 @@ test.describe('Practice Sessions', () => {
   })
 
   test('Session history limits to last 5 entries', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const sessionHistory = page.locator('#session-history-list')
@@ -311,7 +311,7 @@ test.describe('Practice Sessions', () => {
   test('Session score has color coding based on performance', async ({
     page,
   }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const scoreEntries = page.locator('.session-history-score')
@@ -320,7 +320,7 @@ test.describe('Practice Sessions', () => {
   })
 
   test('High scores have green color class', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const highScores = page.locator('.session-history-score.score-high')
@@ -329,7 +329,7 @@ test.describe('Practice Sessions', () => {
   })
 
   test('Mid scores have yellow color class', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const midScores = page.locator('.session-history-score.score-mid')
@@ -338,7 +338,7 @@ test.describe('Practice Sessions', () => {
   })
 
   test('Low scores have red color class', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const lowScores = page.locator('.session-history-score.score-low')
@@ -347,7 +347,7 @@ test.describe('Practice Sessions', () => {
   })
 
   test('Session history shows date/time', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const entries = page.locator('.session-history-entry')
@@ -356,7 +356,7 @@ test.describe('Practice Sessions', () => {
   })
 
   test('Can clear session history', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     // Look for clear history button if exists
@@ -367,13 +367,13 @@ test.describe('Practice Sessions', () => {
 
   test('Session completion resets session state', async ({ page }) => {
     // Navigate tabs multiple times to ensure state resets
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(100)
 
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(100)
 
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(100)
 
     // Should return to a valid practice state
@@ -386,7 +386,7 @@ test.describe('Practice Sessions', () => {
   // ==========================================
 
   test('Editor has instrument selector', async ({ page }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     const instrumentSelect = page.locator('#roll-instrument-select')
@@ -394,7 +394,7 @@ test.describe('Practice Sessions', () => {
   })
 
   test('Instrument selector has valid options', async ({ page }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     const instrumentSelect = page.locator('#roll-instrument-select')
@@ -406,7 +406,7 @@ test.describe('Practice Sessions', () => {
   })
 
   test('Instrument options include sine, piano, organ', async ({ page }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     const instrumentSelect = page.locator('#roll-instrument-select')
@@ -425,7 +425,7 @@ test.describe('Practice Sessions', () => {
   })
 
   test('Instrument can be changed via selector', async ({ page }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     const instrumentSelect = page.locator('#roll-instrument-select')
@@ -438,7 +438,7 @@ test.describe('Practice Sessions', () => {
   })
 
   test('Editor has WAV export button', async ({ page }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     const wavBtn = page.locator('#roll-export-wav')
@@ -446,7 +446,7 @@ test.describe('Practice Sessions', () => {
   })
 
   test('Editor has MIDI export button', async ({ page }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     const midiBtn = page.locator('#roll-export-midi')
@@ -454,7 +454,7 @@ test.describe('Practice Sessions', () => {
   })
 
   test('Editor has pitch track toggle', async ({ page }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     const pitchTrackBtn = page.locator('#roll-pitch-track-btn')
@@ -467,7 +467,7 @@ test.describe('Practice Sessions', () => {
   // ==========================================
 
   test('Practice tab has BPM control group', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const tempoGroup = page.locator('.tempo-group')
@@ -475,7 +475,7 @@ test.describe('Practice Sessions', () => {
   })
 
   test('BPM slider is visible', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const tempoSlider = page.locator('#tempo')
@@ -483,7 +483,7 @@ test.describe('Practice Sessions', () => {
   })
 
   test('BPM value display is visible', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const tempoValue = page.locator('#bpm-input')
@@ -491,7 +491,7 @@ test.describe('Practice Sessions', () => {
   })
 
   test('BPM slider changes value', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const tempoSlider = page.locator('#tempo')
@@ -503,7 +503,7 @@ test.describe('Practice Sessions', () => {
   })
 
   test('BPM value updates when slider changes', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const tempoSlider = page.locator('#tempo')
@@ -519,7 +519,7 @@ test.describe('Practice Sessions', () => {
   })
 
   test('Playback speed selector exists', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const playbackSpeedSelect = page.locator('#practice-panel select')
@@ -527,7 +527,7 @@ test.describe('Practice Sessions', () => {
   })
 
   test('Playback speed has valid options', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const playbackSpeedSelect = page.locator('#practice-panel select')
@@ -539,7 +539,7 @@ test.describe('Practice Sessions', () => {
   })
 
   test('Playback speed can be adjusted', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const playbackSpeedSelect = page.locator('#practice-panel select')
@@ -552,7 +552,7 @@ test.describe('Practice Sessions', () => {
   })
 
   test('Practice mode buttons exist', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const modeGroup = page.locator('.mode-group')
@@ -560,7 +560,7 @@ test.describe('Practice Sessions', () => {
   })
 
   test('Practice mode buttons are clickable', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const modeBtns = page.locator('.mode-btn')
@@ -573,7 +573,7 @@ test.describe('Practice Sessions', () => {
   // ==========================================
 
   test('Metronome button is visible', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const metronomeBtn = page.locator('.metronome-btn')
@@ -581,7 +581,7 @@ test.describe('Practice Sessions', () => {
   })
 
   test('Mic button is visible', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const micBtn = page.locator('#btn-mic')
@@ -589,7 +589,7 @@ test.describe('Practice Sessions', () => {
   })
 
   test('Transport play button is visible', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const playBtn = page.locator('.play-btn').first()
@@ -597,7 +597,7 @@ test.describe('Practice Sessions', () => {
   })
 
   test('Transport pause button is visible when playing', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const pauseBtn = page.locator('.stop-btn').first()
@@ -605,7 +605,7 @@ test.describe('Practice Sessions', () => {
   })
 
   test('Transport stop button is visible', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const stopBtn = page.locator('.stop-btn.stop').first()
@@ -624,15 +624,15 @@ test.describe('Practice Sessions', () => {
     await page.goto('/')
     await page.waitForTimeout(1000)
 
-    const practiceTab = page.locator('#tab-practice')
+    const practiceTab = page.locator('#tab-singing')
     await expect(practiceTab).toHaveClass(/active/)
   })
 
   test('Editor tab is accessible and visible', async ({ page }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
-    const editorTab = page.locator('#tab-editor')
+    const editorTab = page.locator('#tab-compose')
     await expect(editorTab).toHaveClass(/active/)
   })
 
@@ -645,7 +645,7 @@ test.describe('Practice Sessions', () => {
   })
 
   test('Sidebar is visible on all tabs', async ({ page }) => {
-    const tabs = ['practice', 'editor', 'settings'] as const
+    const tabs = ['singing', 'compose', 'settings'] as const
 
     for (const tab of tabs) {
       await switchTab(page, tab)

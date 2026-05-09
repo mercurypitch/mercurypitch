@@ -221,7 +221,7 @@ test.describe('Critical Flows — GH #121', () => {
 
   test.describe('Piano Roll — Note Entry', () => {
     test.beforeEach(async ({ page }) => {
-      await page.locator('#tab-editor').click()
+      await page.locator('#tab-compose').click()
       await page.waitForTimeout(2000)
     })
 
@@ -325,7 +325,7 @@ test.describe('Critical Flows — GH #121', () => {
             __appStore?: { setActiveTab: (tab: string) => void }
           }
         ).__appStore
-        if (store !== null && store !== undefined) store.setActiveTab('editor')
+        if (store !== null && store !== undefined) store.setActiveTab('compose')
       })
       await page.waitForTimeout(300)
 
@@ -660,7 +660,7 @@ test.describe('Critical Flows — GH #121', () => {
   test.describe('Tab Navigation', () => {
     test('tab switch stops audio from Practice tab', async ({ page }) => {
       // Go to Practice tab
-      await page.locator('#tab-practice').click()
+      await page.locator('#tab-singing').click()
       await page.waitForTimeout(1000)
 
       // Start playback
@@ -674,7 +674,7 @@ test.describe('Critical Flows — GH #121', () => {
       })
 
       // Switch to Editor tab - this should stop audio
-      await page.locator('#tab-editor').click()
+      await page.locator('#tab-compose').click()
       await page.waitForTimeout(1000)
 
       // Audio should have stopped - pause button should not be visible
@@ -686,7 +686,7 @@ test.describe('Critical Flows — GH #121', () => {
 
     test('tab switch stops audio from Editor tab', async ({ page }) => {
       // Go to Editor tab
-      await page.locator('#tab-editor').click()
+      await page.locator('#tab-compose').click()
       await page.waitForTimeout(1000)
 
       // Click Play button - this should start playback in Editor
@@ -699,7 +699,7 @@ test.describe('Critical Flows — GH #121', () => {
       ).toBeVisible({ timeout: 2000 })
 
       // Switch to Practice tab - audio should stop
-      await page.locator('#tab-practice').click()
+      await page.locator('#tab-singing').click()
       await page.waitForTimeout(2000)
 
       // The Play button should be visible (audio stopped)
@@ -710,8 +710,8 @@ test.describe('Critical Flows — GH #121', () => {
 
     test('all tabs are accessible', async ({ page }) => {
       const tabs = [
-        { id: '#tab-practice', name: 'Practice' },
-        { id: '#tab-editor', name: 'Editor' },
+        { id: '#tab-singing', name: 'Practice' },
+        { id: '#tab-compose', name: 'Editor' },
         { id: '#tab-settings', name: 'Settings' },
       ]
 
@@ -890,7 +890,7 @@ test.describe('Critical Flows — GH #121', () => {
     })
 
     test('Editor tab play button starts audio correctly', async ({ page }) => {
-      await page.locator('#tab-editor').click()
+      await page.locator('#tab-compose').click()
       await page.waitForTimeout(1000)
 
       // Verify play button exists
@@ -915,7 +915,7 @@ test.describe('Critical Flows — GH #121', () => {
     })
 
     test('PlaybackRuntime BPM syncs correctly', async ({ page }) => {
-      await page.locator('#tab-practice').click()
+      await page.locator('#tab-singing').click()
       await page.waitForTimeout(300)
 
       const tempoSlider = page.locator('#tempo')

@@ -4,6 +4,7 @@ import * as notifStore from '@/stores/notifications-store'
 import * as transportStore from '@/stores/transport-store'
 import * as uiStore from '@/stores/ui-store'
 import type { PlaybackMode } from '@/types'
+import { PLAYBACK_MODE_SESSION } from '@/features/tabs/constants'
 
 interface KeyboardShortcutHandlers {
   isPlaying: Accessor<boolean>
@@ -63,8 +64,8 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers): void {
     // P → toggle Practice mode
     if (e.code === 'KeyP' && !isTyping) {
       e.preventDefault()
-      if (handlers.playMode() !== 'practice') {
-        handlers.setPlayMode('practice')
+      if (handlers.playMode() !== PLAYBACK_MODE_SESSION) {
+        handlers.setPlayMode(PLAYBACK_MODE_SESSION)
         notifStore.showNotification('Mode: Practice', 'info')
       }
     }
