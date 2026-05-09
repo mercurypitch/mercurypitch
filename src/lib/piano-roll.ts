@@ -518,6 +518,7 @@ export class PianoRollEditor {
 
   // Interaction
   private selectedNoteIds: Set<number> = new Set()
+  private selectedNotesCache: MelodyItem[] = []
   private activeTool: ActiveTool = 'place'
   private isDragging = false
   private isResizing = false
@@ -1687,10 +1688,12 @@ export class PianoRollEditor {
         }
         this.isBoxSelecting = false
         this.isDragging = false
+        this.selectedNotesCache = []
       }
       // Also handle dragging/resizing that started on the canvas
       this.isDragging = false
       this.isResizing = false
+      this.selectedNotesCache = []
       this.resizeHandle = null
     })
 
@@ -1706,9 +1709,11 @@ export class PianoRollEditor {
         }
         this.isBoxSelecting = false
         this.isDragging = false
+        this.selectedNotesCache = []
       }
       this.isDragging = false
       this.isResizing = false
+      this.selectedNotesCache = []
       this.resizeHandle = null
     })
 
@@ -1963,6 +1968,11 @@ export class PianoRollEditor {
           this.isResizing = true
           this.resizeHandle = 'right'
         }
+
+        // Initialize cache for all selected notes (drag or resize)
+        this.selectedNotesCache = this.melody.filter(
+          (n) => (n.id ?? 0) === noteId || this.selectedNoteIds.has(n.id ?? 0),
+        )
       } else {
         // Empty space — start box selection for area-select, or place note on click
         this.isBoxSelecting = true
@@ -2007,6 +2017,11 @@ export class PianoRollEditor {
           this.isResizing = true
           this.resizeHandle = 'right'
         }
+
+        // Initialize cache for all selected notes (drag or resize)
+        this.selectedNotesCache = this.melody.filter(
+          (n) => (n.id ?? 0) === noteId || this.selectedNoteIds.has(n.id ?? 0),
+        )
         const first = this.melody.find(
           (n) => n.id !== undefined && this.selectedNoteIds.has(n.id),
         )
@@ -2064,22 +2079,16 @@ export class PianoRollEditor {
       }
     }
 
-    if (this.isDragging && this.selectedNoteIds.size > 0) {
+    if (this.isDragging && this.selectedNotesCache.length > 0) {
       // Drag snap: full beat for notes ≥ 1 beat, otherwise half-beat.
-      const draggedNoteId = this.selectedNoteIds.values().next().value
-      const draggedNote =
-        draggedNoteId !== undefined
-          ? this.melody.find((n) => (n.id ?? 0) === draggedNoteId)
-          : undefined
+      const draggedNote = this.selectedNotesCache[0]
       const dragSnapUnit = draggedNote && draggedNote.duration >= 1 ? 1 : 0.5
       const deltaBeat =
         Math.round((x - this.dragStartX) / (this.beatWidth * dragSnapUnit)) *
         dragSnapUnit
       const deltaRow = Math.round((y - this.dragStartY) / this.rowHeight)
       if (deltaBeat !== 0 || deltaRow !== 0) {
-        for (const noteId of this.selectedNoteIds) {
-          const note = this.melody.find((n) => (n.id ?? 0) === noteId)
-          if (!note) continue
+        for (const note of this.selectedNotesCache) {
           const newStartBeat = Math.max(0, this.dragStartBeat + deltaBeat)
           const newRow = Math.max(
             0,
@@ -2096,10 +2105,8 @@ export class PianoRollEditor {
         this.emitMelodyChange()
         this.draw()
       }
-    } else if (this.isResizing && this.selectedNoteIds.size > 0) {
-      for (const noteId of this.selectedNoteIds) {
-        const note = this.melody.find((n) => (n.id ?? 0) === noteId)
-        if (!note) continue
+    } else if (this.isResizing && this.selectedNotesCache.length > 0) {
+      for (const note of this.selectedNotesCache) {
         if (this.resizeHandle === 'right') {
           const endBeat = Math.round(x / this.beatWidth)
           note.duration = Math.max(
@@ -2142,6 +2149,7 @@ export class PianoRollEditor {
     }
     this.isDragging = false
     this.isResizing = false
+    this.selectedNotesCache = []
     this.resizeHandle = null
   }
 
@@ -2151,6 +2159,7 @@ export class PianoRollEditor {
     }
     this.isDragging = false
     this.isResizing = false
+    this.selectedNotesCache = []
     this.resizeHandle = null
     // Reset cursor
     if (this.gridCanvas) {
