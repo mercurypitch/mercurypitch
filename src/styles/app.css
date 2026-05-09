@@ -7148,13 +7148,9 @@ input:checked + .settings-slider:before {
   flex-direction: column;
   gap: 10px;
   padding: 10px;
-  border: 1px solid rgba(88, 166, 255, 0.16);
+  border: 1px solid var(--accent-dim);
   border-radius: 14px;
-  background: linear-gradient(
-    180deg,
-    rgba(22, 27, 34, 0.72),
-    rgba(13, 17, 23, 0.62)
-  );
+  background: linear-gradient(180deg, var(--bg-secondary), var(--bg-primary));
 }
 
 .tab-header {
@@ -7182,15 +7178,6 @@ input:checked + .settings-slider:before {
   border-radius: 10px;
 }
 
-/* Light theme: Library Tab */
-[data-theme='light'] .library-tab {
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.85),
-    rgba(246, 248, 250, 0.75)
-  );
-  border-color: rgba(88, 166, 255, 0.2);
-}
 [data-theme='light'] .session-items-section {
   background: rgba(246, 248, 250, 0.6);
   border-color: rgba(208, 215, 222, 0.5);
