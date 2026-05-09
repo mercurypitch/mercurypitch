@@ -45,6 +45,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           environment: 'dev'
+          packageManager: 'pnpm'
 
       # Deploys to mercurypitch.com when pushing to the main branch
       - name: Deploy to Production Environment
@@ -52,3 +53,4 @@ jobs:
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          packageManager: 'pnpm'
