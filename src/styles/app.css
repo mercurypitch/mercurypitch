@@ -884,6 +884,12 @@ header h1 {
 }
 
 /* Logo button in header — makes title clickable to navigate home */
+.header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
 .logo-btn {
   background: none;
   border: none;
@@ -1077,6 +1083,7 @@ header h1 {
   background: var(--bg-tertiary);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
+  min-height: 44px;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
@@ -1089,6 +1096,10 @@ header h1 {
   display: flex;
   align-items: center;
   gap: 6px;
+  flex-shrink: 0;
+}
+
+.practice-header-bar .essential-controls > * {
   flex-shrink: 0;
 }
 
@@ -1506,6 +1517,7 @@ header h1 {
   background: var(--bg-tertiary);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
+  min-height: 44px;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
@@ -1525,6 +1537,7 @@ header h1 {
   display: flex;
   align-items: center;
   gap: 6px;
+  flex-shrink: 0;
 }
 .practice-header-bar .secondary-control-group,
 .editor-header-bar .secondary-control-group {
@@ -1561,6 +1574,7 @@ header h1 {
 .mode-group {
   display: flex;
   gap: 4px;
+  flex-shrink: 0;
 }
 
 .cycles-input {
@@ -2061,6 +2075,7 @@ header h1 {
   transition: all 0.12s ease;
   white-space: nowrap;
   line-height: 1;
+  flex-shrink: 0;
 }
 
 .ctrl-btn:hover:not(:disabled) {
@@ -2181,6 +2196,7 @@ header h1 {
   font-size: 0.78rem;
   cursor: pointer;
   transition: all 0.15s ease;
+  flex-shrink: 0;
 }
 
 .mode-btn:hover {
@@ -3010,6 +3026,11 @@ header h1 {
     height: 50px;
   }
 
+  /* Header: make room for the fixed sidebar toggle button */
+  header {
+    padding-left: 56px;
+  }
+
   /* Header: compact gap */
   .app-header-bar {
     gap: 4px;
@@ -3180,7 +3201,18 @@ header h1 {
     font-size: 0.72rem;
   }
 
-  /* App header: hide subtitle and melody pill */
+  /* App header: hide subtitle and melody pill, stack vertically */
+  header {
+    flex-wrap: wrap;
+    padding-left: 50px;
+  }
+  .header-left {
+    flex: 1 1 auto;
+  }
+  .header-right {
+    width: 100%;
+    order: 99;
+  }
   .subtitle {
     display: none;
   }
@@ -3212,7 +3244,15 @@ header h1 {
   }
   .app-tab {
     padding: 4px 8px;
-    font-size: 0.72rem;
+    font-size: 0.7rem;
+    gap: 3px;
+  }
+  .tab-icon {
+    width: 12px;
+    height: 12px;
+  }
+  .tab-group-label {
+    font-size: 0.58rem;
   }
 
   /* Practice header: single essential row only */
@@ -3251,6 +3291,9 @@ header h1 {
   }
   .practice-header-bar .record-btn {
     min-width: auto;
+  }
+  .practice-header-bar .app-header-sep {
+    display: none;
   }
   .mode-group {
     gap: 2px;
@@ -3311,15 +3354,18 @@ header h1 {
 /* Tab bar */
 #app-tabs {
   display: flex;
-  gap: 4px;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
   overflow-x: auto;
-  white-space: nowrap;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
+  white-space: nowrap;
 }
-
 #app-tabs::-webkit-scrollbar {
+  /* TODO: apply this instead of no display? */
   height: 6px;
+  /*display: none; */
 }
 
 #app-tabs::-webkit-scrollbar-thumb {
@@ -3331,8 +3377,31 @@ header h1 {
   background: transparent;
 }
 
+/* Practice group container */
+.tab-group {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 4px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-secondary);
+}
+
+.tab-group-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  padding: 0 5px;
+  user-select: none;
+}
+
 .app-tab {
-  padding: 5px 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--bg-tertiary);
@@ -3351,6 +3420,17 @@ header h1 {
   border-color: var(--accent);
   background: var(--accent-dim);
   color: var(--accent);
+}
+
+.tab-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  opacity: 0.75;
+}
+
+.app-tab.active .tab-icon {
+  opacity: 1;
 }
 
 .tab-badge {
@@ -4305,8 +4385,16 @@ Keeps your existing styles, only adjusts layout
 /* ===== Mobile Piano Roll ===== */
 @media (max-width: 768px) {
   .app-tab {
-    padding: 4px 10px;
-    font-size: 0.72rem;
+    padding: 4px 8px;
+    font-size: 0.7rem;
+    gap: 3px;
+  }
+  .tab-icon {
+    width: 12px;
+    height: 12px;
+  }
+  .tab-group-label {
+    font-size: 0.58rem;
   }
   .roll-toolbar {
     display: grid; /* Ensure grid is active */
@@ -9269,15 +9357,10 @@ input:checked + .settings-slider:before {
 
 /* On desktop, .main-content shouldn't itself scroll for the practice
  * panel — the layout fits in the viewport. We keep `overflow:auto` as
- * a safety fallback for very small heights. */
-@media (min-width: 768px) {
-  .main-content {
-    overflow: hidden;
-  }
-  .main-content > #practice-panel {
-    overflow: hidden;
-  }
-}
+ * a safety fallback for very small heights.
+ * NOTE: Do NOT set overflow:hidden on #practice-panel — the practice
+ * header bar needs overflow-x:auto to scroll its toolbar buttons on
+ * narrower screens (e.g. iPhone landscape at 844px). */
 
 /* =====================================================================
  * Bottom safe-area padding on every long-scroll panel so the last
@@ -10214,6 +10297,21 @@ input:checked + .settings-slider:before {
     width: 100%;
     order: 99; /* push below the primary controls */
     justify-content: flex-start;
+  }
+
+  /* Tabs: horizontal scroll instead of wrapping */
+  #app-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 2px; /* breathing room for active border */
+  }
+  #app-tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .tab-group {
+    flex-shrink: 0;
   }
 }
 
@@ -11773,4 +11871,196 @@ input:checked + .settings-slider:before {
   justify-content: flex-start;
   align-items: stretch;
   padding: 1.5rem;
+}
+
+/* ============================================================
+   Falling Notes — Synthesia-style piano practice
+   ============================================================ */
+
+#falling-notes-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: 8px;
+  padding: 8px 8px 40px 8px;
+  background: #0d1117;
+}
+
+#falling-notes-song-picker {
+  flex-shrink: 0;
+}
+
+.fn-picker-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.fn-song-select {
+  flex: 1;
+  padding: 8px 12px;
+  background: #161b22;
+  color: #c9d1d9;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.fn-btn {
+  padding: 8px 16px;
+  background: #21262d;
+  color: #c9d1d9;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.fn-btn:hover:not(:disabled) {
+  background: #30363d;
+}
+
+.fn-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.fn-btn-play {
+  background: #238636;
+  border-color: #2ea043;
+}
+.fn-btn-play:hover:not(:disabled) {
+  background: #2ea043;
+}
+
+.fn-btn-pause {
+  background: #9e6a03;
+  border-color: #bb8009;
+}
+.fn-btn-pause:hover:not(:disabled) {
+  background: #bb8009;
+}
+
+.fn-btn-reset {
+  background: #da3633;
+  border-color: #f85149;
+}
+.fn-btn-reset:hover:not(:disabled) {
+  background: #f85149;
+}
+
+.fn-btn-mic {
+  background: #1f6feb;
+  border-color: #388bfd;
+}
+.fn-btn-mic:hover:not(:disabled) {
+  background: #388bfd;
+}
+
+.fn-import-status {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #8b949e;
+}
+
+#falling-notes-canvas-container {
+  flex: 1;
+  min-height: 300px;
+  background: #0d1117;
+  border: 1px solid #21262d;
+  border-radius: 6px;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+}
+
+.bpm-display-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #f0f6fc;
+  padding: 0 6px;
+  white-space: nowrap;
+}
+
+#fn-game-controls {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  padding: 4px 0;
+}
+
+.fn-score-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 100;
+  border-radius: 6px;
+}
+
+.fn-score-card {
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 12px;
+  padding: 32px 48px;
+  text-align: center;
+  color: #c9d1d9;
+}
+
+.fn-score-card h2 {
+  font-size: 24px;
+  margin-bottom: 12px;
+  color: #f0f6fc;
+}
+
+.fn-score-grade {
+  font-size: 32px;
+  font-weight: bold;
+  margin-bottom: 8px;
+  color: #3fb950;
+}
+
+.fn-score-pct {
+  font-size: 48px;
+  font-weight: bold;
+  color: #f0f6fc;
+  margin-bottom: 8px;
+}
+
+.fn-score-detail {
+  font-size: 14px;
+  color: #8b949e;
+  margin-bottom: 20px;
+}
+
+.fn-score-card .fn-btn {
+  padding: 10px 32px;
+  font-size: 16px;
+}
+
+.fn-score-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.fn-btn-close {
+  background: #30363d;
+  color: #8b949e;
+  border: 1px solid #484f58;
+  border-radius: 6px;
+  padding: 8px 24px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.fn-btn-close:hover {
+  background: #484f58;
+  color: #f0f6fc;
 }

@@ -5,6 +5,7 @@
 // ============================================================
 
 export { AudioEngine } from './audio-engine'
+export { FallingNotesEngine } from './falling-notes-engine'
 export { PitchDetector } from './pitch-detector'
 export {
   NOTE_NAMES,
