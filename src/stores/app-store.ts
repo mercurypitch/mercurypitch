@@ -2,6 +2,7 @@ import { createSignal } from 'solid-js'
 import { AudioEngine } from '@/lib/audio-engine'
 import { getCompletedCount, getRemainingWalkthroughs, } from '@/stores/walkthrough-store'
 import type { ActiveTab } from './ui-store'
+import { TAB_SINGING, TAB_COMPOSE, TAB_SETTINGS } from '@/features/tabs/constants'
 
 // ── Key / Scale / Presets ──────────────────────────────────
 
@@ -427,7 +428,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
       "PitchPerfect helps you practice and improve your musical pitch. Let's take a quick tour of the main features!",
     placement: 'bottom',
     section: 'practice',
-    requiredTab: 'practice',
+    requiredTab: TAB_SINGING,
   },
   {
     title: 'Choose your character!',
@@ -436,7 +437,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
       'Connect with your inner singer by choosing what suites you best!',
     placement: 'right',
     section: 'practice',
-    requiredTab: 'practice',
+    requiredTab: TAB_SINGING,
   },
   {
     title: 'Scale & Key',
@@ -445,7 +446,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
       'Choose your musical key and scale type here. The piano roll updates to match your selection automatically.',
     placement: 'right',
     section: 'practice',
-    requiredTab: 'practice',
+    requiredTab: TAB_SINGING,
   },
   {
     title: 'Load a Melody',
@@ -454,7 +455,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
       'Load a preset melody from the library, import a MIDI file, or record your own. Presets give you a great head start.',
     placement: 'right',
     section: 'practice',
-    requiredTab: 'practice',
+    requiredTab: TAB_SINGING,
   },
   {
     title: 'Mic Button',
@@ -463,7 +464,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
       'Tap to activate your microphone. The app detects your pitch in real time as you sing.',
     placement: 'bottom',
     section: 'practice',
-    requiredTab: 'practice',
+    requiredTab: TAB_SINGING,
   },
   {
     title: 'Play / Pause / Stop',
@@ -472,7 +473,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
       'Play starts the backing track, Pause halts it temporarily, and Stop returns to the beginning.',
     placement: 'bottom',
     section: 'practice',
-    requiredTab: 'practice',
+    requiredTab: TAB_SINGING,
   },
   {
     title: 'Practice Mode',
@@ -481,7 +482,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
       'In Practice mode, play a melody and sing along. The app detects your pitch in real time and scores your accuracy.',
     placement: 'right',
     section: 'practice',
-    requiredTab: 'practice',
+    requiredTab: TAB_SINGING,
   },
 
   // ── Toolbar Section ──
@@ -492,7 +493,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
       'Adjust the tempo with the number input or slider. Faster or slower practice speeds suit different comfort levels.',
     placement: 'bottom',
     section: 'toolbar',
-    requiredTab: 'practice',
+    requiredTab: TAB_SINGING,
   },
   {
     title: 'Volume & Speed',
@@ -501,7 +502,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
       'Control the backing track volume and playback speed. Slower speeds help with difficult passages.',
     placement: 'bottom',
     section: 'toolbar',
-    requiredTab: 'practice',
+    requiredTab: TAB_SINGING,
   },
   {
     title: 'Play Modes',
@@ -510,7 +511,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
       'Spaced plays a single cycle with modifiable rests between the notes',
     placement: 'bottom',
     section: 'toolbar',
-    requiredTab: 'practice',
+    requiredTab: TAB_SINGING,
   },
   {
     title: 'Play Modes',
@@ -518,7 +519,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     description: 'Repeat loops through set number of cycles',
     placement: 'bottom',
     section: 'toolbar',
-    requiredTab: 'practice',
+    requiredTab: TAB_SINGING,
   },
   {
     title: 'Play Modes',
@@ -526,7 +527,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     description: 'Practice runs your session in sequence.',
     placement: 'bottom',
     section: 'toolbar',
-    requiredTab: 'practice',
+    requiredTab: TAB_SINGING,
   },
   // {
   //   title: 'Count-In & Cycles',
@@ -535,7 +536,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
   //     'Set how many beats of count-in you want before playback starts, and how many cycles to run in Practice mode.',
   //   placement: 'bottom',
   //   section: 'toolbar',
-  //   requiredTab: 'practice',
+  //   requiredTab: TAB_SINGING,
   // },
 
   // ── Editor Section ──
@@ -546,7 +547,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
       'The Editor tab lets you build and modify melodies. Click to switch here to explore.',
     placement: 'bottom',
     section: 'editor',
-    requiredTab: 'editor',
+    requiredTab: TAB_COMPOSE,
   },
   {
     title: 'Piano Roll',
@@ -555,7 +556,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
       'Click on the grid to add notes. Drag them to adjust pitch or timing. Right-click a note to delete it.',
     placement: 'bottom',
     section: 'editor',
-    requiredTab: 'editor',
+    requiredTab: TAB_COMPOSE,
   },
   {
     title: 'Record to Piano Roll',
@@ -564,7 +565,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
       'Hit Record, sing into your mic, and your pitch gets captured as notes on the piano roll.',
     placement: 'bottom',
     section: 'editor',
-    requiredTab: 'editor',
+    requiredTab: TAB_COMPOSE,
   },
   {
     title: 'Save Melody',
@@ -573,7 +574,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
       'Save your melody to the library so you can load it later in Practice mode.',
     placement: 'bottom',
     section: 'editor',
-    requiredTab: 'editor',
+    requiredTab: TAB_COMPOSE,
   },
   {
     title: 'Editor Toolbar',
@@ -582,7 +583,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
       'Change key, scale, BPM, and sensitivity directly from the editor toolbar before recording or editing.',
     placement: 'bottom',
     section: 'editor',
-    requiredTab: 'editor',
+    requiredTab: TAB_COMPOSE,
   },
 
   // ── Settings Section ──
@@ -593,7 +594,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
       'Fine-tune pitch detection, accuracy scoring, and the app appearance. Click to switch to Settings.',
     placement: 'bottom',
     section: 'settings',
-    requiredTab: 'settings',
+    requiredTab: TAB_SETTINGS,
   },
   {
     title: 'Pitch Detection',
@@ -602,7 +603,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
       'Adjust sensitivity, threshold, and confidence to match your voice and environment. Lower sensitivity reduces false triggers.',
     placement: 'left',
     section: 'settings',
-    requiredTab: 'settings',
+    requiredTab: TAB_SETTINGS,
   },
   {
     title: 'Practice Aids',
@@ -611,7 +612,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
       'Tonic anchor gives a reference tone before singing, helping you stay in key.',
     placement: 'left',
     section: 'settings',
-    requiredTab: 'settings',
+    requiredTab: TAB_SETTINGS,
   },
   {
     title: 'Accuracy Bands',
@@ -620,7 +621,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
       'Customize the cent-threshold for each accuracy band. Tighter bands are more challenging.',
     placement: 'left',
     section: 'settings',
-    requiredTab: 'settings',
+    requiredTab: TAB_SETTINGS,
   },
   {
     title: 'Theme & Appearance',
@@ -629,7 +630,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
       'Switch between light and dark themes, toggle grid lines, and adjust the visual style.',
     placement: 'left',
     section: 'settings',
-    requiredTab: 'settings',
+    requiredTab: TAB_SETTINGS,
   },
   {
     title: 'Reverb & ADSR',
@@ -638,7 +639,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
       'Add reverb for a richer sound, or tweak ADSR envelope for more natural-sounding notes.',
     placement: 'left',
     section: 'settings',
-    requiredTab: 'settings',
+    requiredTab: TAB_SETTINGS,
   },
 ]
 

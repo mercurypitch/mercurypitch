@@ -4,6 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, For, onMount, Show } from 'solid-js'
+import { TAB_COMPOSE } from '@/features/tabs/constants'
 import { buildSessionItemMelody } from '@/lib/session-builder'
 import { appStore, setEditorView, showSessionPresetsLibrary } from '@/stores'
 import { setActiveTab, setActiveUserSession, showLibrary, showNotification, showSessionLibrary, userSession as userSessionSignal, } from '@/stores'
@@ -233,7 +234,7 @@ export const LibraryTab: Component = () => {
       setActiveUserSession(updatedSession)
     }
     melodyStore.loadMelody(newMelody.id)
-    setActiveTab('editor')
+    setActiveTab(TAB_COMPOSE)
     setEditorView('piano-roll')
     showNotification(`Melody "${newMelody.name}" created`, 'success')
   }

@@ -3,6 +3,16 @@
 // ============================================================
 
 import type { ActiveTab } from '@/stores'
+import {
+  TAB_SINGING,
+  TAB_COMPOSE,
+  TAB_SETTINGS,
+  TAB_ANALYSIS,
+  TAB_COMMUNITY,
+  TAB_LEADERBOARD,
+  TAB_CHALLENGES,
+  TAB_KARAOKE,
+} from '@/features/tabs/constants'
 
 export type HashRoute =
   | { type: 'tab'; tab: ActiveTab }
@@ -18,14 +28,14 @@ export type HashRoute =
   | { type: 'unknown' }
 
 const VALID_TABS: Set<string> = new Set([
-  'practice',
-  'editor',
-  'settings',
-  'vocal-analysis',
-  'community',
-  'leaderboard',
-  'vocal-challenges',
-  'uvr',
+  TAB_SINGING,
+  TAB_COMPOSE,
+  TAB_SETTINGS,
+  TAB_ANALYSIS,
+  TAB_COMMUNITY,
+  TAB_LEADERBOARD,
+  TAB_CHALLENGES,
+  TAB_KARAOKE,
 ])
 
 const VALID_GUIDE_SECTIONS: Set<string> = new Set([
@@ -44,7 +54,7 @@ function isValidTab(tab: string): tab is ActiveTab {
  * Leading `#` is stripped before parsing.
  *
  * Examples:
- *   #/practice              → { type: 'tab', tab: 'practice' }
+ *   #/singing               → { type: 'tab', tab: 'singing' }
  *   #/uvr/session/abc123    → { type: 'uvr-session', sessionId: 'abc123' }
  *   #/share?type=melody&id=xyz → { type: 'share', shareType: 'melody', shareId: 'xyz' }
  *   '' / #/unknown          → { type: 'unknown' }

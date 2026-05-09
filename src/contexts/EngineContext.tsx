@@ -1,5 +1,6 @@
 import type { JSX } from 'solid-js'
 import { createContext, createEffect, createSignal, onCleanup, useContext, } from 'solid-js'
+import { TAB_SINGING } from '@/features/tabs/constants'
 import type { InstrumentType } from '@/lib/audio-engine'
 import { AudioEngine } from '@/lib/audio-engine'
 import { PlaybackRuntime } from '@/lib/playback-runtime'
@@ -82,7 +83,7 @@ export function EngineProvider(props: { children: JSX.Element }) {
     const character = settingsStore.selectedCharacter()
     const tab = uiStore.activeTab()
     const effective: InstrumentType =
-      useCharacter && tab === 'practice'
+      useCharacter && tab === TAB_SINGING
         ? CHARACTER_INSTRUMENT[character]
         : userInstrument
     audioEngine.setInstrument(effective)

@@ -19,6 +19,7 @@ import { melodyStore } from '@/stores/melody-store'
 import { showSidebarNoteList } from '@/stores/settings-store'
 import { customScales as customScalesMap, customScaleTypeId, } from '@/stores/settings-store'
 import type { MelodyItem, NoteResult, PitchResult } from '@/types'
+import { TAB_SINGING, TAB_COMPOSE, TAB_SETTINGS } from '@/features/tabs/constants'
 
 interface AppSidebarProps {
   /** Called when a preset is loaded */
@@ -57,7 +58,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
   )
 
   const handleViewOctaveShift = (delta: number): void => {
-    if (activeTab() === 'editor') {
+    if (activeTab() === TAB_COMPOSE) {
       // Editor is allowed to mutate the actual melody (transpose notes).
       props.onOctaveShift?.(delta)
       setViewOctave(melodyStore.getCurrentOctave())
@@ -72,7 +73,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
     melodyStore.refreshScale(keyName(), nextOctave, scaleType())
   }
   const isPracticeOrSettingsTab = () =>
-    ['practice', 'settings'].includes(activeTab())
+    ([TAB_SINGING, TAB_SETTINGS] as string[]).includes(activeTab())
 
   // Live score derived from noteResults — updates as each note is played.
   const liveScore = createMemo(() => {
@@ -179,7 +180,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
                 // must be view-only: update key/scale display, but never write
                 // transposed notes back into the user's melody.
                 const melody = melodyStore.getCurrentItems()
-                if (activeTab() === 'editor' && melody.length > 0) {
+                if (activeTab() === TAB_COMPOSE && melody.length > 0) {
                   const currentOffset = KEY_OFFSETS[currentKey] ?? 0
                   const newOffset = KEY_OFFSETS[newKey] ?? 0
                   const delta = newOffset - currentOffset

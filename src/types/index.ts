@@ -4,6 +4,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
+import type { PlaybackMode, WalkthroughTab } from '@/features/tabs/constants'
 
 /** Note name within an octave (C through B, with # for sharps) */
 export type NoteName =
@@ -23,8 +24,7 @@ export type NoteName =
 /** Pitch accuracy rating for feedback */
 export type AccuracyRating = 'perfect' | 'excellent' | 'good' | 'okay' | 'off'
 
-/** Playback mode for the melody engine */
-export type PlaybackMode = 'once' | 'repeat' | 'practice'
+export type { PlaybackMode }
 
 /** Extra rest spacing used by the Practice tab's "Spaced" mode. */
 export type SpacedRestMode = 'none' | 'fourth' | 'half' | 'full'
@@ -166,16 +166,7 @@ export interface PracticeResult {
   noteResult: NoteResult[]
 }
 
-/** Active tab for the application */
-export type ActiveTab =
-  | 'practice'
-  | 'editor'
-  | 'settings'
-  | 'vocal-analysis'
-  | 'community'
-  | 'leaderboard'
-  | 'vocal-challenges'
-  | 'uvr'
+export type { ActiveTab } from '@/features/tabs/constants'
 /** Practice sub-mode options */
 export type PracticeSubMode = 'all' | 'random' | 'focus' | 'reverse'
 
@@ -503,8 +494,7 @@ export interface SessionHistoryEntry {
   completedAt: number
 }
 
-/** Walkthrough tab type */
-export type WalkthroughTab = 'practice' | 'editor' | 'settings'
+export type { WalkthroughTab }
 
 /** Walkthrough step definition */
 export interface WalkthroughStep {
