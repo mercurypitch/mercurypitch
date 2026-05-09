@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createSignal, For, onMount } from 'solid-js'
+import { createMemo, createSignal, For, onMount } from 'solid-js'
 import { importMelodyFromMIDI } from '@/lib/piano-roll'
 import type { FallingNote } from '@/stores/falling-notes-store'
 import { getAllMelodies, loadMelody } from '@/stores/melody-store'
@@ -30,14 +30,23 @@ export const FallingNotesSongPicker: Component<FallingNotesSongPickerProps> = (
   const [selectedId, setSelectedId] = createSignal<string | null>(null)
   const [importStatus, setImportStatus] = createSignal<string>('')
 
-  const melodies = () => getAllMelodies().filter((m) => m.items.length > 0)
+  const melodies = createMemo(() =>
+    getAllMelodies().filter((m) => m.items.length > 0),
+  )
 
   const handleLoadWithId = (id: string) => {
-    const melody = loadMelody(id)
+    // Read melody directly from the memoized list to avoid triggering
+    // loadMelody's signal write, which would re-render <For> options
+    // and cause the <select> to lose its displayed selection.
+    const melody = melodies().find((m) => m.id === id)
     if (!melody) return
 
     const notes = melodyToFallingNotes(melody.items)
     props.onSongLoaded(notes, melody.name, melody.bpm)
+
+    // Update playCount asynchronously to keep metadata fresh
+    // without invalidating the options list during selection.
+    queueMicrotask(() => loadMelody(id))
   }
 
   onMount(() => {

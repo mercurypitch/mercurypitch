@@ -456,9 +456,9 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
       let fillColor: string
       let useGradient = false
       if (wasMiss) {
-        fillColor = '#f8514966'
+        fillColor = '#f8514999'
       } else if (wasHit) {
-        fillColor = '#3fb95066'
+        fillColor = '#3fb95099'
       } else if (note.startBeat <= currentBeat && currentBeat <= endBeat) {
         fillColor = '#f0f6fc'
       } else {
@@ -955,9 +955,9 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
 
   function whiteIndexToMidi(whiteIdx: number): number {
     const octave = Math.floor(whiteIdx / 7)
-    const noteInOctave = whiteIdx % 7
+    const noteInOctave = ((whiteIdx % 7) + 7) % 7
     const whiteToChromatic = [0, 2, 4, 5, 7, 9, 11]
-    return (octave + 1) * 12 + whiteToChromatic[noteInOctave]
+    return octave * 12 + whiteToChromatic[noteInOctave]
   }
 
   return (
