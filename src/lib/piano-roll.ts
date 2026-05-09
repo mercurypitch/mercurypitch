@@ -3403,13 +3403,15 @@ export class PianoRollEditor {
    * Shift all notes by an octave and rebuild the scale.
    */
   private _shiftOctave(delta: number): void {
-    // FIXME: here we should shift melody notes by octave up/down
     const newOctave = this.octave + delta
     if (newOctave < 1 || newOctave > 6) return
     this.octave = newOctave
 
     const display = this.container.querySelector('#roll-octave-value')
     if (display) display.textContent = String(this.octave)
+
+    // Push history before transposing notes
+    this.pushHistory()
 
     // Transpose all notes by the octave delta
     const MIDI_OCTAVE_SHIFT = 12
