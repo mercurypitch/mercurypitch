@@ -565,11 +565,12 @@ export class AudioEngine {
     // Downbeat gets a higher pitch (440Hz = A4), other beats lower (220Hz = A3)
     osc.frequency.value = isDownbeat ? 880 : 440
 
-    gain.gain.value = 0.4
-    gain.gain.setValueAtTime(0.4, this.audioCtx.currentTime)
+    const now = this.audioCtx.currentTime
+    gain.gain.setValueAtTime(0, now)
+    gain.gain.linearRampToValueAtTime(0.4, now + 0.005)
     gain.gain.exponentialRampToValueAtTime(
       0.001,
-      this.audioCtx.currentTime + 0.08,
+      now + 0.08,
     )
 
     osc.connect(gain)
@@ -848,7 +849,12 @@ export class AudioEngine {
 
     // Apply release envelope to fade out smoothly
     try {
-      gain.gain.cancelScheduledValues(now)
+      if (typeof gain.gain.cancelAndHoldAtTime === 'function') {
+        gain.gain.cancelAndHoldAtTime(now)
+      } else {
+        gain.gain.cancelScheduledValues(now)
+        gain.gain.setValueAtTime(gain.gain.value, now)
+      }
       // Use setTargetAtTime for a smooth asymptotic decay curve instead of a hard linear ramp,
       // which eliminates clicking much more effectively.
       gain.gain.setTargetAtTime(0, now, releaseSeconds / 3)

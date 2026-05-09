@@ -599,11 +599,8 @@ const AppShell: Component<AppProps> = (props) => {
     playbackRuntime.on(
       'metronome',
       // eslint-disable-next-line solid/reactivity
-      (e: { beat?: number; isDownbeat?: boolean }) => {
-        const isCounting =
-          playbackRuntime.getCountIn() > 0 &&
-          playbackRuntime.getCurrentBeat() < playbackRuntime.getCountIn()
-        if (isCounting || metronomeEnabled() === true) {
+      (e: { beat?: number; isDownbeat?: boolean; isCountIn?: boolean }) => {
+        if (e.isCountIn === true || metronomeEnabled() === true) {
           audioEngine.playMetronomeClick(e?.isDownbeat ?? false)
         }
       },
