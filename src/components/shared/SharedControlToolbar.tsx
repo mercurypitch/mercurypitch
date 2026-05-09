@@ -411,8 +411,8 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
       <div class="secondary-controls">
         <div class="app-header-sep" />
 
-        {/* Mode toggles - only in practice mode */}
-        <Show when={isPracticeTab()}>
+        {/* Mode toggles - practice and piano modes */}
+        <Show when={isPracticeTab() || isPianoTab()}>
           <div class="mode-group">
             <button
               id="btn-once"
@@ -432,23 +432,24 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
             >
               Repeat
             </button>
-            <button
-              id="btn-session"
-              class={`mode-btn ${props.playMode() === PLAYBACK_MODE_SESSION ? 'active' : ''}`}
-              onClick={() => {
-                props.playModeChange(PLAYBACK_MODE_SESSION)
-              }}
-            >
-              Session
-            </button>
+            {/* Session button only on practice tab */}
+            <Show when={isPracticeTab()}>
+              <button
+                id="btn-session"
+                class={`mode-btn ${props.playMode() === PLAYBACK_MODE_SESSION ? 'active' : ''}`}
+                onClick={() => {
+                  props.playModeChange(PLAYBACK_MODE_SESSION)
+                }}
+              >
+                Session
+              </button>
+            </Show>
           </div>
         </Show>
 
-        {/* Cycles input — applies to Repeat mode (repeat the current melody
-            N times). Practice mode plays the session through once and is
-            controlled by the active session's items, not a cycle count. */}
+        {/* Cycles input — applies to Repeat mode on both practice and piano tabs */}
         <Show
-          when={isPracticeTab() && props.playMode() === PLAYBACK_MODE_REPEAT}
+          when={(isPracticeTab() || isPianoTab()) && props.playMode() === PLAYBACK_MODE_REPEAT}
         >
           <div class="secondary-control-group cycles-control-group">
             <label class="opt-label cycles-label">Cycles</label>

@@ -38,8 +38,9 @@ interface Particle {
   maxLife: number
 }
 
-const JUDGMENT_LINE_RATIO = 0.82
 const KEYBOARD_START_RATIO = 0.85
+// Judgment now happens at the keyboard top edge -- no separate floating line
+const JUDGMENT_LINE_RATIO = KEYBOARD_START_RATIO
 const BLACK_KEY_HEIGHT_RATIO = 0.6
 const BLACK_KEY_WIDTH_RATIO = 0.58
 const MIN_WHITE_KEYS_VISIBLE = 15
@@ -527,8 +528,8 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
 
     ctx.restore()
 
-    // Draw judgment line
-    drawJudgmentLine(w, jLineY, currentBeat)
+    // Draw keyboard-top glow (subtle indicator where notes get consumed)
+    drawKeyboardTopGlow(w, jLineY)
 
     // Draw keyboard
     drawKeyboard(w, kbTop, kbHeight, displayMinWhite, displayRange, colWidth, currentBeat, notes, jLineY)
@@ -543,40 +544,19 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
     drawHUD(w, h)
   }
 
-  // ── Judgment Line ────────────────────────────────────────────
+  // ── Keyboard Top Glow ────────────────────────────────────────
 
-  const drawJudgmentLine = (w: number, y: number, _beat: number) => {
+  const drawKeyboardTopGlow = (w: number, y: number) => {
     if (!ctx) return
-    // Animated shimmer
-    const shimmerAlpha = 0.3 + 0.15 * Math.sin(performance.now() / 600)
-    // Wide glow
-    const glow = ctx.createLinearGradient(0, y - 14, 0, y + 14)
+    // Subtle upward glow at the keyboard top edge. Notes are "consumed"
+    // here, so we draw a thin gradient that fades into the note area.
+    const shimmerAlpha = 0.2 + 0.1 * Math.sin(performance.now() / 800)
+    const glow = ctx.createLinearGradient(0, y - 10, 0, y + 2)
     glow.addColorStop(0, 'rgba(120,200,255,0)')
-    glow.addColorStop(0.3, `rgba(120,200,255,${shimmerAlpha * 0.5})`)
-    glow.addColorStop(0.5, `rgba(120,200,255,${shimmerAlpha})`)
-    glow.addColorStop(0.7, `rgba(120,200,255,${shimmerAlpha * 0.5})`)
-    glow.addColorStop(1, 'rgba(120,200,255,0)')
+    glow.addColorStop(0.6, `rgba(120,200,255,${shimmerAlpha * 0.35})`)
+    glow.addColorStop(1, `rgba(120,200,255,${shimmerAlpha * 0.6})`)
     ctx.fillStyle = glow
-    ctx.fillRect(0, y - 14, w, 28)
-
-    // Line
-    ctx.strokeStyle = `rgba(120,200,255,${0.6 + shimmerAlpha * 0.3})`
-    ctx.lineWidth = 2.5
-    ctx.beginPath()
-    ctx.moveTo(0, y)
-    ctx.lineTo(w, y)
-    ctx.stroke()
-
-    // Larger center diamond
-    const dSize = 8
-    ctx.fillStyle = `rgba(120,200,255,${0.8 + shimmerAlpha * 0.2})`
-    ctx.beginPath()
-    ctx.moveTo(w / 2, y - dSize)
-    ctx.lineTo(w / 2 + dSize, y)
-    ctx.lineTo(w / 2, y + dSize)
-    ctx.lineTo(w / 2 - dSize, y)
-    ctx.closePath()
-    ctx.fill()
+    ctx.fillRect(0, y - 10, w, 12)
   }
 
   // ── Grid Lines ────────────────────────────────────────────────
@@ -698,14 +678,6 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
       ctx.lineTo(x, kbTop + kbHeight)
       ctx.stroke()
 
-      // Note label
-      const noteName = midiToNoteName(midi)
-      const octave = Math.floor(midi / 12) - 1
-      ctx.fillStyle = '#1a1f2b'
-      ctx.font = `${Math.max(8, Math.min(colWidth * 0.65, 11))}px sans-serif`
-      ctx.textAlign = 'center'
-      ctx.textBaseline = 'bottom'
-      ctx.fillText(`${noteName}${octave}`, x + colWidth / 2, kbTop + kbHeight - 5)
     }
 
     // Draw black keys with 3D dark gradient
@@ -771,7 +743,9 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
         const col = midiToWhiteIndex(e.midi)
         const wi = col - minWhite
         if (wi < 0 || wi >= rangeWhite) continue
-        const opacity = 0.25 + (e.velocity / 127) * 0.45
+        
+        // Velocity-based opacity for subtlety
+        const opacity = 0.15 + (e.velocity / 127) * 0.25
 
         if (isBlackKey) {
           const bw = colWidth * BLACK_KEY_WIDTH_RATIO
@@ -779,7 +753,8 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
           const blackKeyH = kbHeight * BLACK_KEY_HEIGHT_RATIO
           const bRadius = Math.min(bw * 0.15, 3)
 
-          ctx.fillStyle = `rgba(56,180,255,${opacity})`
+          // Subtle lighter overlay for pressed black keys
+          ctx.fillStyle = `rgba(255,255,255,${opacity * 0.5})`
           ctx.beginPath()
           ctx.moveTo(bx, kbTop + 1)
           ctx.lineTo(bx + bw, kbTop + 1)
@@ -789,24 +764,19 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
           ctx.arcTo(bx, kbTop + blackKeyH, bx, kbTop + blackKeyH - bRadius, bRadius)
           ctx.closePath()
           ctx.fill()
-
-          ctx.strokeStyle = `rgba(56,200,255,${opacity * 0.8})`
-          ctx.lineWidth = 2
-          ctx.stroke()
         } else {
           const x = wi * colWidth
+          
+          // Subtle darker gradient for pressed white keys, simulating depth
           const midiGrad = ctx.createLinearGradient(x, kbTop, x, kbTop + kbHeight)
-          midiGrad.addColorStop(0, `rgba(56,180,255,${opacity})`)
-          midiGrad.addColorStop(1, `rgba(56,180,255,${opacity * 0.6})`)
+          midiGrad.addColorStop(0, `rgba(0,0,0,${opacity})`)
+          midiGrad.addColorStop(1, `rgba(0,0,0,${opacity * 0.2})`)
           ctx.fillStyle = midiGrad
           ctx.fillRect(x + 1, kbTop + 1, colWidth - 2, kbHeight - 2)
-
-          ctx.strokeStyle = `rgba(56,200,255,${opacity * 0.8})`
-          ctx.lineWidth = 2
-          ctx.beginPath()
-          ctx.moveTo(x + 1, kbTop + 1)
-          ctx.lineTo(x + colWidth - 1, kbTop + 1)
-          ctx.stroke()
+          
+          // Very subtle blue tint at the bottom edge
+          ctx.fillStyle = `rgba(56,180,255,${opacity * 0.6})`
+          ctx.fillRect(x + 1, kbTop + kbHeight - 6, colWidth - 2, 4)
         }
       }
     }
@@ -824,7 +794,7 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
           const blackKeyH = kbHeight * BLACK_KEY_HEIGHT_RATIO
           const bRadius = Math.min(bw * 0.15, 3)
 
-          ctx.fillStyle = 'rgba(255,180,60,0.7)'
+          ctx.fillStyle = 'rgba(255,255,255,0.4)'
           ctx.beginPath()
           ctx.moveTo(bx, kbTop + 1)
           ctx.lineTo(bx + bw, kbTop + 1)
@@ -834,27 +804,33 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
           ctx.arcTo(bx, kbTop + blackKeyH, bx, kbTop + blackKeyH - bRadius, bRadius)
           ctx.closePath()
           ctx.fill()
-
-          ctx.strokeStyle = 'rgba(255,200,80,0.9)'
-          ctx.lineWidth = 2
-          ctx.stroke()
         } else {
-          // Highlight the white key
+          // Highlight the white key - subtle depth like MIDI
           const x = wi * colWidth
           const clickGrad = ctx.createLinearGradient(x, kbTop, x, kbTop + kbHeight)
-          clickGrad.addColorStop(0, 'rgba(255,180,60,0.55)')
-          clickGrad.addColorStop(1, 'rgba(255,140,30,0.35)')
+          clickGrad.addColorStop(0, 'rgba(0,0,0,0.15)')
+          clickGrad.addColorStop(1, 'rgba(0,0,0,0.05)')
           ctx.fillStyle = clickGrad
           ctx.fillRect(x + 1, kbTop + 1, colWidth - 2, kbHeight - 2)
 
-          ctx.strokeStyle = 'rgba(255,200,80,0.9)'
-          ctx.lineWidth = 2
-          ctx.beginPath()
-          ctx.moveTo(x + 1, kbTop + 1)
-          ctx.lineTo(x + colWidth - 1, kbTop + 1)
-          ctx.stroke()
+          // Subtle orange tint at the bottom edge for mouse clicks
+          ctx.fillStyle = 'rgba(255,180,60,0.5)'
+          ctx.fillRect(x + 1, kbTop + kbHeight - 6, colWidth - 2, 4)
         }
       }
+    }
+
+    // Finally, draw note labels on top of all highlights
+    for (let wi = 0; wi < rangeWhite; wi++) {
+      const x = wi * colWidth
+      const midi = whiteIndexToMidi(minWhite + wi)
+      const noteName = midiToNoteName(midi)
+      const octave = Math.floor(midi / 12) - 1
+      ctx.fillStyle = '#1a1f2b'
+      ctx.font = `${Math.max(8, Math.min(colWidth * 0.65, 11))}px sans-serif`
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'bottom'
+      ctx.fillText(`${noteName}${octave}`, x + colWidth / 2, kbTop + kbHeight - 5)
     }
   }
 
