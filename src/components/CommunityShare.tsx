@@ -567,7 +567,7 @@ export const CommunityShare: Component = () => {
   }
 
   // Tabs
-  const tabs = [
+  const tabs = createMemo(() => [
     {
       id: 'melodies' as const,
       name: 'Melodies',
@@ -581,7 +581,7 @@ export const CommunityShare: Component = () => {
       count: sharedSessions().length,
     },
     { id: 'profile' as const, name: 'Profile', icon: IconUser, count: 0 },
-  ]
+  ])
 
   return (
     <div class="community-share-tab">
@@ -637,7 +637,7 @@ export const CommunityShare: Component = () => {
 
       {/* Tabs */}
       <div class="community-tabs">
-        <For each={tabs}>
+        <For each={tabs()}>
           {(tab) => (
             <button
               class={`community-tab ${activeTab() === tab.id ? 'active' : ''}`}
@@ -726,14 +726,16 @@ export const CommunityShare: Component = () => {
                   <div class="session-header">
                     <h3 class="session-name">{session.name}</h3>
                     <div class="session-scores">
-                      {session.results.map((score, _i) => (
-                        <span
-                          class="session-score-badge"
-                          style={{ '--score': score }}
-                        >
-                          {score}%
-                        </span>
-                      ))}
+                      <For each={session.results}>
+                        {(score) => (
+                          <span
+                            class="session-score-badge"
+                            style={{ '--score': score }}
+                          >
+                            {score}%
+                          </span>
+                        )}
+                      </For>
                     </div>
                   </div>
                   <div class="session-info">
@@ -840,33 +842,37 @@ export const CommunityShare: Component = () => {
               <div class="chart-card">
                 <h3>Weekly Progress</h3>
                 <div class="mini-chart">
-                  {[65, 78, 72, 85, 90, 82, 75].map((score, _i) => (
-                    <div class="mini-bar-wrapper">
-                      <div
-                        class="mini-bar"
-                        style={{
-                          width: `${score}%`,
-                          background: getBarColor(score),
-                        }}
-                      />
-                    </div>
-                  ))}
+                  <For each={[65, 78, 72, 85, 90, 82, 75]}>
+                    {(score) => (
+                      <div class="mini-bar-wrapper">
+                        <div
+                          class="mini-bar"
+                          style={{
+                            width: `${score}%`,
+                            background: getBarColor(score),
+                          }}
+                        />
+                      </div>
+                    )}
+                  </For>
                 </div>
               </div>
               <div class="chart-card">
                 <h3>Accuracy Over Time</h3>
                 <div class="mini-chart">
-                  {[70, 72, 71, 75, 78, 80, 82].map((score, _i) => (
-                    <div class="mini-bar-wrapper">
-                      <div
-                        class="mini-bar line-chart"
-                        style={{
-                          height: `${score}%`,
-                          background: getBarColor(score),
-                        }}
-                      />
-                    </div>
-                  ))}
+                  <For each={[70, 72, 71, 75, 78, 80, 82]}>
+                    {(score) => (
+                      <div class="mini-bar-wrapper">
+                        <div
+                          class="mini-bar line-chart"
+                          style={{
+                            height: `${score}%`,
+                            background: getBarColor(score),
+                          }}
+                        />
+                      </div>
+                    )}
+                  </For>
                 </div>
               </div>
             </div>

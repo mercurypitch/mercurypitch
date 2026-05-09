@@ -108,7 +108,7 @@ export const LyricsUploader: Component<LyricsUploaderProps> = (props) => {
       </Show>
 
       <Show when={props.onDismiss}>
-        <button class="lu-dismiss" onClick={props.onDismiss}>
+        <button class="lu-dismiss" onClick={() => props.onDismiss?.()}>
           Skip for now
         </button>
       </Show>

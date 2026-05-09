@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createSignal } from 'solid-js'
+import { createSignal, For } from 'solid-js'
 import { Headphones, Music, MusicBoard, Voice } from './icons'
 
 interface UvrGuideProps {
@@ -314,13 +314,15 @@ export const UvrGuide: Component<UvrGuideProps> = (props) => {
 
       {/* Step Dots */}
       <div class="guide-step-dots">
-        {steps.map((_, i) => (
-          <button
-            class={`guide-step-dot ${activeStep() === i ? 'active' : ''}`}
-            onClick={() => setActiveStep(i)}
-            aria-label={`Go to step ${i + 1}`}
-          />
-        ))}
+        <For each={steps}>
+          {(_, i) => (
+            <button
+              class={`guide-step-dot ${activeStep() === i() ? 'active' : ''}`}
+              onClick={() => setActiveStep(i())}
+              aria-label={`Go to step ${i() + 1}`}
+            />
+          )}
+        </For>
       </div>
 
       {/* Progress bar */}

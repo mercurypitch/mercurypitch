@@ -10,7 +10,7 @@ import { DEFAULT_PROCESS_REQUEST, getProcessStatus, pollForCompletion, processAu
 import type { UvrSession } from '@/stores/app-store'
 import { cancelUvrSession, completeUvrSession, currentUvrSession, deleteAllUvrSessions, getAllUvrSessions, getAllUvrSessionsReactive, getUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrSessionApiId, startUvrSession, updateUvrSessionOutputs, updateUvrSessionProgress, } from '@/stores/app-store'
 import { StemMixer, UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrSettings, UvrUploadControl, } from '.'
-import { CheckCircle, FileUpload, History, Music, Settings, Trash2, X } from './icons'
+import { CheckCircle, FileUpload, History, Music, Settings, Trash2, X, } from './icons'
 
 /**
  * Progress callback type for processing
@@ -358,11 +358,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     // Determine practice mode
     if (Object.keys(filter).length === 0) {
       setMixerPracticeMode('full')
-    } else if (
-      wantsMidi &&
-      !wantsVocal &&
-      !wantsInst
-    ) {
+    } else if (wantsMidi && !wantsVocal && !wantsInst) {
       setMixerPracticeMode('midi')
     } else if (wantsMidi) {
       setMixerPracticeMode('midi')
@@ -376,8 +372,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
 
     // MIDI generation requires vocal audio — always include vocal URL when MIDI is wanted
     setMixerStems({
-      vocal:
-        wantsVocal || wantsMidi ? s.outputs.vocal : undefined,
+      vocal: wantsVocal || wantsMidi ? s.outputs.vocal : undefined,
       instrumental: wantsInst ? s.outputs.instrumental : undefined,
     })
     setMixerRequestedStems(

@@ -3,8 +3,8 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { For, Show } from 'solid-js'
-import { CheckCircle, Loader2, Music, Play, Settings, XCircle, } from './icons'
+import { createMemo, For, Show } from 'solid-js'
+import { CheckCircle, Loader2, Music, Play, Settings, XCircle } from './icons'
 
 interface ProcessControlProps {
   sessionId: string
@@ -86,24 +86,29 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
     }
   }
 
-  const currentStage = getProcessStage()
-  const displayId = props.apiSessionId ?? props.sessionId
+  const currentStage = createMemo(() => getProcessStage())
+  const displayId = createMemo(() => props.apiSessionId ?? props.sessionId)
 
   return (
     <div class="uvr-process-control">
       {/* Status Header */}
       <div class="process-header">
-        <div class="process-icon-wrapper" style={{ color: currentStage.color }}>
+        <div
+          class="process-icon-wrapper"
+          style={{ color: currentStage().color }}
+        >
           <Show when={props.status === 'processing'}>
             <div class="pulse-spinner" />
           </Show>
-          <Show when={props.status !== 'processing'}>{currentStage.icon}</Show>
+          <Show when={props.status !== 'processing'}>
+            {currentStage().icon}
+          </Show>
         </div>
         <div class="process-info">
-          <h3>{currentStage.title}</h3>
-          <p>{currentStage.description}</p>
-          <p class="process-session-id" title={displayId}>
-            {displayId.length > 16 ? displayId.slice(-8) : displayId}
+          <h3>{currentStage().title}</h3>
+          <p>{currentStage().description}</p>
+          <p class="process-session-id" title={displayId()}>
+            {displayId().length > 16 ? displayId().slice(-8) : displayId()}
           </p>
         </div>
       </div>
@@ -122,7 +127,7 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
                   (props.indeterminate ?? false)
                     ? '100%'
                     : formatPercentage(props.progress),
-                '--progress-color': currentStage.color,
+                '--progress-color': currentStage().color,
               }}
             />
           </div>
@@ -180,7 +185,7 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
         <Show when={props.status === 'processing'}>
           <button
             class="process-btn process-btn-danger"
-            onClick={props.onCancel}
+            onClick={() => props.onCancel?.()}
           >
             Cancel
           </button>
@@ -188,7 +193,7 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
         <Show when={props.status === 'error' && props.onRetry}>
           <button
             class="process-btn process-btn-primary"
-            onClick={props.onRetry}
+            onClick={() => props.onRetry?.()}
           >
             <Play /> Retry
           </button>

@@ -96,7 +96,7 @@ const SongPicker = (p: SongPickerProps) => {
         />
         <button
           class="sm-song-picker-search-btn sm-btn sm-btn-secondary"
-          onClick={p.onRefine}
+          onClick={() => p.onRefine()}
           title="Search"
         >
           Search
@@ -117,7 +117,7 @@ const SongPicker = (p: SongPickerProps) => {
         </For>
       </div>
       <div class="sm-song-picker-footer">
-        <button class="sm-song-picker-upload-link" onClick={p.onUpload}>
+        <button class="sm-song-picker-upload-link" onClick={() => p.onUpload()}>
           Or upload a .lrc/.txt file
         </button>
       </div>
@@ -128,36 +128,39 @@ const SongPicker = (p: SongPickerProps) => {
 // ── Circular Progress ──────────────────────────────────────────
 
 const CircularProgress = (props: { pct: number; size?: number }) => {
-  const s = props.size ?? 24
-  const r = (s - 4) / 2
-  const circ = 2 * Math.PI * r
-  const offset = circ * (1 - props.pct / 100)
+  const m = createMemo(() => {
+    const s = props.size ?? 24
+    const r = (s - 4) / 2
+    const circ = 2 * Math.PI * r
+    const offset = circ * (1 - props.pct / 100)
+    return { s, r, circ, offset }
+  })
   return (
     <svg
-      width={s}
-      height={s}
-      viewBox={`0 0 ${s} ${s}`}
+      width={m().s}
+      height={m().s}
+      viewBox={`0 0 ${m().s} ${m().s}`}
       class="circular-progress"
     >
       <circle
-        cx={s / 2}
-        cy={s / 2}
-        r={r}
+        cx={m().s / 2}
+        cy={m().s / 2}
+        r={m().r}
         fill="none"
         stroke="var(--border, #30363d)"
         stroke-width="2"
       />
       <circle
-        cx={s / 2}
-        cy={s / 2}
-        r={r}
+        cx={m().s / 2}
+        cy={m().s / 2}
+        r={m().r}
         fill="none"
         stroke="var(--accent, #8b5cf6)"
         stroke-width="2"
-        stroke-dasharray={String(circ)}
-        stroke-dashoffset={String(offset)}
+        stroke-dasharray={String(m().circ)}
+        stroke-dashoffset={String(m().offset)}
         stroke-linecap="round"
-        transform={`rotate(-90 ${s / 2} ${s / 2})`}
+        transform={`rotate(-90 ${m().s / 2} ${m().s / 2})`}
       />
     </svg>
   )
@@ -2129,9 +2132,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         : label === 'Instrumental'
           ? setInstrumental
           : setMidi
+    const hasSolo = anySoloed()
     setter((prev) => {
       const muted = !prev.muted
-      const isAudible = prev.soloed || (!muted && !anySoloed())
+      const isAudible = prev.soloed || (!muted && !hasSolo)
       if (prev.gainNode) prev.gainNode.gain.value = isAudible ? prev.volume : 0
       return { ...prev, muted }
     })
@@ -3345,11 +3349,17 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       <div class="sm-header">
         <div class="sm-header-left">
           <Show when={props.onBack}>
-            <button class="sm-back-btn" onClick={props.onBack} title="Back">
+            <button
+              class="sm-back-btn"
+              onClick={() => props.onBack?.()}
+              title="Back"
+            >
               <ChevronLeft />
             </button>
           </Show>
-          <h2>{props.songTitle?.replace(/\.[^.]+$/, '') ?? 'Unknown'}</h2>
+          <h2>
+            {props.songTitle?.replace(/\.[^.]+$/, '') ?? 'Unknown'} (session)
+          </h2>
           <span class="sm-session-id">
             karaoke-session-{props.sessionId.replace(/^.*-session-/, '')}
           </span>
@@ -3424,7 +3434,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             </button>
             <button
               class="sm-transport-btn sm-transport-play"
-              onClick={playing() ? handlePause : handlePlay}
+              onClick={() => (playing() ? handlePause() : handlePlay())}
             >
               {playing() ? <Pause /> : <Play />}
             </button>

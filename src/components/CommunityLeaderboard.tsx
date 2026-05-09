@@ -415,12 +415,13 @@ const weeklyChallengesData: WeeklyChallengeResult[] = [
 // ============================================================
 
 export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
-  const [activeView, setActiveView] = createSignal<LeaderboardView>(
-    props.view || 'global',
-  )
-  const [activeCategory, setActiveCategory] = createSignal<LeaderboardCategory>(
-    props.category || 'overall',
-  )
+  // eslint-disable-next-line solid/reactivity -- one-time signal init
+  const initialView = (props.view ?? 'global') as LeaderboardView
+  // eslint-disable-next-line solid/reactivity -- one-time signal init
+  const initialCategory = (props.category ?? 'overall') as LeaderboardCategory
+  const [activeView, setActiveView] = createSignal<LeaderboardView>(initialView)
+  const [activeCategory, setActiveCategory] =
+    createSignal<LeaderboardCategory>(initialCategory)
   const [searchQuery, setSearchQuery] = createSignal('')
   const [selectedUser, setSelectedUser] = createSignal<LeaderboardUser | null>(
     null,
@@ -769,8 +770,8 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
             <div class="profile-charts">
               <h4>Weekly Performance</h4>
               <div class="mini-chart">
-                {[75, 82, 68, 90, 85, 92, 78].map(
-                  (score: number, _i: number) => (
+                <For each={[75, 82, 68, 90, 85, 92, 78]}>
+                  {(score) => (
                     <div class="mini-bar-wrapper">
                       <div
                         class="mini-bar leaderboard-bar"
@@ -780,8 +781,8 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
                         }}
                       />
                     </div>
-                  ),
-                )}
+                  )}
+                </For>
               </div>
             </div>
 

@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createSignal, For, onMount, Show } from 'solid-js'
+import { createMemo, createSignal, For, onMount, Show } from 'solid-js'
 import type { SharedMelody, SharedSession } from '@/components/CommunityShare'
 import type { MelodyItem } from '@/types'
 
@@ -95,7 +95,7 @@ export const SharePage: Component = () => {
         <Show when={error() === '' && content() === null}>
           <div class="loading-state">
             <div class="spinner" />
-            <p>Loading content...</p>
+            <p>Loading props.content...</p>
           </div>
         </Show>
       </div>
@@ -113,28 +113,28 @@ interface MelodyShareProps {
 }
 
 const MelodyShareContent: Component<MelodyShareProps> = (props) => {
-  const { content, onShare } = props
-
-  const notes = content.items
-    .filter(
-      (item: MelodyItem) => item.isRest !== true && item.note !== undefined,
-    )
-    .map((item: MelodyItem) => {
-      const note = item.note
-      return {
-        midi: note.midi,
-        noteName: note.name,
-        octave: note.octave,
-        freq: note.freq,
-        duration: item.duration,
-      }
-    })
+  const notes = createMemo(() =>
+    props.content.items
+      .filter(
+        (item: MelodyItem) => item.isRest !== true && item.note !== undefined,
+      )
+      .map((item: MelodyItem) => {
+        const note = item.note
+        return {
+          midi: note.midi,
+          noteName: note.name,
+          octave: note.octave,
+          freq: note.freq,
+          duration: item.duration,
+        }
+      }),
+  )
 
   return (
     <div class="share-content">
       <div class="share-header">
-        <h1>🎵 {content.name}</h1>
-        <p class="share-subtitle">Shared by {content.author}</p>
+        <h1>🎵 {props.content.name}</h1>
+        <p class="share-subtitle">Shared by {props.content.author}</p>
       </div>
 
       <div class="share-body">
@@ -143,12 +143,12 @@ const MelodyShareContent: Component<MelodyShareProps> = (props) => {
           <div class="info-grid">
             <div class="info-item">
               <span class="info-label">Notes</span>
-              <span class="info-value">{notes.length}</span>
+              <span class="info-value">{notes().length}</span>
             </div>
             <div class="info-item">
               <span class="info-label">Duration</span>
               <span class="info-value">
-                {notes.reduce(
+                {notes().reduce(
                   (a: number, b: { duration: number }) => a + b.duration,
                   0,
                 )}{' '}
@@ -157,22 +157,26 @@ const MelodyShareContent: Component<MelodyShareProps> = (props) => {
             </div>
             <div class="info-item">
               <span class="info-label">Author</span>
-              <span class="info-value">{content.author}</span>
+              <span class="info-value">{props.content.author}</span>
             </div>
             <div class="info-item">
               <span class="info-label">Shared</span>
               <span class="info-value">
-                {new Date(content.date).toLocaleDateString()}
+                {new Date(props.content.date).toLocaleDateString()}
               </span>
             </div>
           </div>
         </div>
 
-        <Show when={content.tags !== undefined && content.tags.length > 0}>
+        <Show
+          when={
+            props.content.tags !== undefined && props.content.tags.length > 0
+          }
+        >
           <div class="tags-section">
             <h3>Tags</h3>
             <div class="tags-container">
-              <For each={content.tags}>
+              <For each={props.content.tags}>
                 {(tag: string) => <span class="tag">{tag}</span>}
               </For>
             </div>
@@ -187,7 +191,7 @@ const MelodyShareContent: Component<MelodyShareProps> = (props) => {
               <span class="note-column">MIDI</span>
               <span class="note-column">Frequency (Hz)</span>
             </div>
-            <For each={notes}>
+            <For each={notes()}>
               {(
                 n: {
                   midi: number
@@ -213,14 +217,17 @@ const MelodyShareContent: Component<MelodyShareProps> = (props) => {
       </div>
 
       <div class="share-footer">
-        <button class="share-btn" onClick={() => onShare('melody', content.id)}>
+        <button
+          class="share-btn"
+          onClick={() => props.onShare('melody', props.content.id)}
+        >
           <span>🔗</span> Share Again
         </button>
         <button
           class="load-btn"
           onClick={() => (window.location.href = '/')}
           loaded-type="melody"
-          data-melody-id={content.id}
+          data-melody-id={props.content.id}
         >
           <span>📥</span> Load in App
         </button>
@@ -239,47 +246,49 @@ interface SessionShareProps {
 }
 
 const SessionShareContent: Component<SessionShareProps> = (props) => {
-  const { content, onShare } = props
-
   return (
     <div class="share-content">
       <div class="share-header">
-        <h1>📚 {content.name}</h1>
-        <p class="share-subtitle">Shared by {content.author}</p>
+        <h1>📚 {props.content.name}</h1>
+        <p class="share-subtitle">Shared by {props.content.author}</p>
       </div>
 
       <div class="share-body">
         <div class="info-section">
           <h3>Session Results</h3>
           <div class="results-list">
-            {content.results.map((score: number, i: number) => (
-              <div class="result-item">
-                <span class="result-index">Run {i + 1}</span>
-                <span
-                  class="result-score"
-                  style={{
-                    '--score': score,
-                    '--score-color': getScoreColor(score),
-                  }}
-                >
-                  {score}%
-                </span>
-              </div>
-            ))}
+            <For each={props.content.results}>
+              {(score: number, i) => (
+                <div class="result-item">
+                  <span class="result-index">Run {i() + 1}</span>
+                  <span
+                    class="result-score"
+                    style={{
+                      '--score': score,
+                      '--score-color': getScoreColor(score),
+                    }}
+                  >
+                    {score}%
+                  </span>
+                </div>
+              )}
+            </For>
           </div>
 
-          {content.results.length > 0 && (
+          {props.content.results.length > 0 && (
             <div class="stats-row">
               <div class="stat-item">
                 <span class="stat-label">Total Runs</span>
-                <span class="stat-value">{content.results.length}</span>
+                <span class="stat-value">{props.content.results.length}</span>
               </div>
               <div class="stat-item">
                 <span class="stat-label">Average</span>
                 <span class="stat-value">
                   {Math.round(
-                    content.results.reduce((a: number, b: number) => a + b, 0) /
-                      content.results.length,
+                    props.content.results.reduce(
+                      (a: number, b: number) => a + b,
+                      0,
+                    ) / props.content.results.length,
                   )}
                   %
                 </span>
@@ -293,12 +302,12 @@ const SessionShareContent: Component<SessionShareProps> = (props) => {
           <div class="info-grid">
             <div class="info-item">
               <span class="info-label">Shared by</span>
-              <span class="info-value">{content.author}</span>
+              <span class="info-value">{props.content.author}</span>
             </div>
             <div class="info-item">
               <span class="info-label">Shared on</span>
               <span class="info-value">
-                {new Date(content.date).toLocaleDateString()}
+                {new Date(props.content.date).toLocaleDateString()}
               </span>
             </div>
           </div>
@@ -308,7 +317,7 @@ const SessionShareContent: Component<SessionShareProps> = (props) => {
       <div class="share-footer">
         <button
           class="share-btn"
-          onClick={() => onShare('session', content.id)}
+          onClick={() => props.onShare('session', props.content.id)}
         >
           <span>🔗</span> Share Again
         </button>
@@ -316,7 +325,7 @@ const SessionShareContent: Component<SessionShareProps> = (props) => {
           class="load-btn"
           onClick={() => (window.location.href = '/')}
           loaded-type="session"
-          data-session-id={content.id}
+          data-session-id={props.content.id}
         >
           <span>📥</span> Load in App
         </button>

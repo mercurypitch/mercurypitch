@@ -1204,9 +1204,9 @@ const ChallengeModal: Component<ChallengeModalProps> = (props) => {
 
   return (
     <div class="challenge-modal">
-      <div class="modal-backdrop" onClick={props.onClose} />
+      <div class="modal-backdrop" onClick={() => props.onClose?.()} />
       <div class="modal-content">
-        <button class="modal-close" onClick={props.onClose}>
+        <button class="modal-close" onClick={() => props.onClose?.()}>
           <IconClose />
         </button>
 
