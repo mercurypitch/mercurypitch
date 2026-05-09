@@ -58,6 +58,7 @@ export default defineConfig(
       'import-x/no-unresolved': 'off',
       'import-x/namespace': 'off',
       'import-x/no-duplicates': 'off',
+      'import-x/named': 'off',
 
       '@typescript-eslint/unified-signatures': 'off',
       'no-console': [
