@@ -2,6 +2,7 @@ import { createSignal } from 'solid-js'
 import { AudioEngine } from '@/lib/audio-engine'
 import { getCompletedCount, getRemainingWalkthroughs, } from '@/stores/walkthrough-store'
 import type { ActiveTab } from './ui-store'
+import { TAB_SINGING, TAB_COMPOSE, TAB_SETTINGS } from '@/features/tabs/constants'
 
 // ── Key / Scale / Presets ──────────────────────────────────
 
@@ -11,19 +12,360 @@ export const [instrument, setInstrument] = createSignal<InstrumentType>('sine')
 
 export type InstrumentType = 'sine' | 'piano' | 'organ' | 'strings' | 'synth'
 
+// ── UVR (Vocal Separation) ─────────────────────────────────────
+
+export type UvrMode = 'separate' | 'instrumental' | 'vocal' | 'duo'
+
+export interface UvrSettings {
+  mode: UvrMode
+  vocalIntensity: number // 0-100%
+  instrumentalIntensity: number // 0-100%
+  smoothing: number // 0-1
+}
+
+const DEFAULT_UVR_SETTINGS: UvrSettings = {
+  mode: 'separate',
+  vocalIntensity: 70,
+  instrumentalIntensity: 70,
+  smoothing: 0.3,
+}
+
+export function getUvrSettings(): UvrSettings {
+  const saved = localStorage.getItem('pitchperfect_uvr-settings')
+  if (saved !== null) {
+    try {
+      return { ...DEFAULT_UVR_SETTINGS, ...JSON.parse(saved) }
+    } catch {
+      // Return defaults on parse error
+    }
+  }
+  return DEFAULT_UVR_SETTINGS
+}
+
+export function setUvrSettings(settings: Partial<UvrSettings>): void {
+  const current = getUvrSettings()
+  const newSettings: UvrSettings = {
+    ...current,
+    ...settings,
+  }
+  localStorage.setItem('pitchperfect_uvr-settings', JSON.stringify(newSettings))
+}
+
+export const [uvrMode, setUvrMode] = createSignal<UvrMode>('separate')
+export const [uvrVocalIntensity, _setUvrVocalIntensity] = createSignal(70)
+export const [uvrInstrumentalIntensity, _setUvrInstrumentalIntensity] =
+  createSignal(70)
+export const [uvrSmoothing, _setUvrSmoothing] = createSignal(0.3)
+
+// Export for direct usage in components (internal setters that also persist)
+export const setUvrVocalIntensity = (intensity: number): void => {
+  _setUvrVocalIntensity(intensity)
+  setUvrSettings({ vocalIntensity: intensity })
+}
+
+export const setUvrInstrumentalIntensity = (intensity: number): void => {
+  _setUvrInstrumentalIntensity(intensity)
+  setUvrSettings({ instrumentalIntensity: intensity })
+}
+
+export const setUvrSmoothing = (value: number): void => {
+  _setUvrSmoothing(value)
+  setUvrSettings({ smoothing: value })
+}
+
+// Getters for UVR settings
+export const getUvrMode = (): UvrMode => uvrMode()
+export const getUvrVocalIntensity = (): number => uvrVocalIntensity()
+export const getUvrInstrumentalIntensity = (): number =>
+  uvrInstrumentalIntensity()
+export const getUvrSmoothing = (): number => uvrSmoothing()
+
+// ── UVR Session Management (Full Workflow) ─────────────────────────
+
+/** UVR processing status */
+export type UvrStatus =
+  | 'idle'
+  | 'uploading'
+  | 'processing'
+  | 'completed'
+  | 'error'
+  | 'cancelled'
+
+/** UVR session interface */
+export interface UvrSession {
+  sessionId: string
+  apiSessionId?: string
+  status: UvrStatus
+  progress: number
+  indeterminate?: boolean
+  processingTime?: number
+  error?: string
+  originalFile?: {
+    name: string
+    size: number
+    mimeType: string
+  }
+  outputs?: {
+    vocal?: string
+    instrumental?: string
+    vocalMidi?: string
+    instrumentalMidi?: string
+  }
+  stemMeta?: Record<string, { duration?: number; size?: number }>
+  createdAt: number
+}
+
+/** Current UVR session state */
+export const [currentUvrSession, setCurrentUvrSession] =
+  createSignal<UvrSession | null>(null)
+
+/** Reactive version counter — bumped on every session mutation */
+const [sessionsVersion, setSessionsVersion] = createSignal(0)
+
+function bumpSessions() {
+  setSessionsVersion((v) => v + 1)
+}
+
+/** Get all sessions (reactive — reads sessionsVersion to track dependency) */
+export function getAllUvrSessionsReactive(): UvrSession[] {
+  sessionsVersion() // track signal dependency
+  return getAllUvrSessions()
+}
+
+/** Get session by ID */
+export function getUvrSession(sessionId: string): UvrSession | undefined {
+  const sessions = getAllUvrSessions()
+  return sessions.find((s) => s.sessionId === sessionId)
+}
+
+/** Get all sessions */
+export function getAllUvrSessions(): UvrSession[] {
+  const saved = localStorage.getItem('pitchperfect_uvr_sessions')
+  if (saved !== null) {
+    try {
+      return JSON.parse(saved)
+    } catch {
+      return []
+    }
+  }
+  return []
+}
+
+/** Save all sessions */
+export function saveAllUvrSessions(sessions: UvrSession[]): void {
+  localStorage.setItem('pitchperfect_uvr_sessions', JSON.stringify(sessions))
+}
+
+/** Start a new UVR session */
+export function startUvrSession(
+  fileName: string,
+  fileSize: number,
+  mimeType: string,
+  _mode: UvrMode = 'separate',
+): string {
+  const sessionId = `uvr-session-${Date.now()}`
+  const now = Date.now()
+
+  const newSession: UvrSession = {
+    sessionId,
+    status: 'idle',
+    progress: 0,
+    originalFile: { name: fileName, size: fileSize, mimeType },
+    createdAt: now,
+  }
+
+  const sessions = getAllUvrSessions()
+  sessions.push(newSession)
+  saveAllUvrSessions(sessions)
+  bumpSessions()
+
+  setCurrentUvrSession(newSession)
+  return sessionId
+}
+
+/** Update UVR session progress */
+export function updateUvrSessionProgress(
+  sessionId: string,
+  progress: number,
+  processingTime?: number,
+  indeterminate?: boolean,
+): void {
+  const sessions = getAllUvrSessions()
+  const session = sessions.find((s) => s.sessionId === sessionId)
+  if (session) {
+    session.progress = progress
+    session.indeterminate = indeterminate ?? false
+    if (processingTime !== undefined) {
+      session.processingTime = processingTime
+    }
+    saveAllUvrSessions(sessions)
+    bumpSessions()
+    setCurrentUvrSession({ ...session })
+  }
+}
+
+/** Set the API session ID on a local session */
+export function setUvrSessionApiId(
+  sessionId: string,
+  apiSessionId: string,
+): void {
+  const sessions = getAllUvrSessions()
+  const session = sessions.find((s) => s.sessionId === sessionId)
+  if (session) {
+    session.apiSessionId = apiSessionId
+    saveAllUvrSessions(sessions)
+    bumpSessions()
+    setCurrentUvrSession({ ...session })
+  }
+}
+
+/** Complete UVR session with results */
+export function completeUvrSession(
+  sessionId: string,
+  outputs: UvrSession['outputs'],
+  stemMeta?: UvrSession['stemMeta'],
+): void {
+  const sessions = getAllUvrSessions()
+  const session = sessions.find((s) => s.sessionId === sessionId)
+  if (session) {
+    session.status = 'completed'
+    session.outputs = outputs
+    session.stemMeta = stemMeta
+    session.progress = 100
+    session.processingTime = Date.now() - session.createdAt
+    saveAllUvrSessions(sessions)
+    bumpSessions()
+    setCurrentUvrSession({ ...session })
+  }
+}
+
+/** Set UVR session error */
+export function setErrorUvrSession(sessionId: string, error: string): void {
+  const sessions = getAllUvrSessions()
+  const session = sessions.find((s) => s.sessionId === sessionId)
+  if (session) {
+    session.status = 'error'
+    session.error = error
+    saveAllUvrSessions(sessions)
+    bumpSessions()
+    setCurrentUvrSession({ ...session })
+  }
+}
+
+/** Cancel UVR session */
+export function cancelUvrSession(sessionId: string): void {
+  const sessions = getAllUvrSessions()
+  const session = sessions.find((s) => s.sessionId === sessionId)
+  if (session) {
+    session.status = 'cancelled'
+    saveAllUvrSessions(sessions)
+    bumpSessions()
+    setCurrentUvrSession({ ...session })
+  }
+}
+
+/** Delete UVR session */
+export function deleteUvrSession(sessionId: string): void {
+  const sessions = getAllUvrSessions().filter((s) => s.sessionId !== sessionId)
+  saveAllUvrSessions(sessions)
+  bumpSessions()
+  if (currentUvrSession()?.sessionId === sessionId) {
+    setCurrentUvrSession(null)
+  }
+}
+
+/** Delete all UVR sessions */
+export function deleteAllUvrSessions(): void {
+  saveAllUvrSessions([])
+  bumpSessions()
+  setCurrentUvrSession(null)
+}
+
+/** Get UVR session stats */
+export function getUvrSessionStats(): {
+  totalSessions: number
+  completedSessions: number
+  failedSessions: number
+  totalProcessingTime: number
+} {
+  const sessions = getAllUvrSessions()
+  return {
+    totalSessions: sessions.length,
+    completedSessions: sessions.filter((s) => s.status === 'completed').length,
+    failedSessions: sessions.filter((s) => s.status === 'error').length,
+    totalProcessingTime: sessions
+      .filter((s) => s.processingTime !== undefined)
+      .reduce((sum, s) => sum + (s.processingTime ?? 0), 0),
+  }
+}
+
+/** Refresh session output files from API data */
+export function updateUvrSessionOutputs(
+  sessionId: string,
+  files: { stem: string; path: string; duration?: number; size?: number }[],
+): void {
+  const sessions = getAllUvrSessions()
+  const session = sessions.find((s) => s.sessionId === sessionId)
+  if (!session) return
+
+  const outputs: UvrSession['outputs'] = {
+    vocal: session.outputs?.vocal ?? '',
+    instrumental: session.outputs?.instrumental ?? '',
+    vocalMidi: session.outputs?.vocalMidi ?? '',
+  }
+  const meta: Record<string, { duration?: number; size?: number }> = {}
+
+  for (const f of files) {
+    if (f.stem === 'vocal') {
+      outputs.vocal = f.path
+      meta.vocal = { duration: f.duration, size: f.size }
+    } else if (f.stem === 'instrumental') {
+      outputs.instrumental = f.path
+      meta.instrumental = { duration: f.duration, size: f.size }
+    }
+  }
+
+  session.outputs = outputs
+  session.stemMeta = meta
+  saveAllUvrSessions(sessions)
+  bumpSessions()
+  if (currentUvrSession()?.sessionId === sessionId) {
+    setCurrentUvrSession({ ...session })
+  }
+}
+
 // ── Audio Engine (single instance) ─────────────────────────────
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let _audioEngineInstance: any = null
+let _audioEngineInstance: AudioEngine | null = null
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function initAudioEngine(): Promise<any> {
+export async function initAudioEngine(): Promise<AudioEngine> {
   if (_audioEngineInstance !== null && _audioEngineInstance !== undefined) {
     return _audioEngineInstance
   }
 
   _audioEngineInstance = new AudioEngine()
   return _audioEngineInstance
+}
+
+/** Apply current UVR settings to the audio engine */
+export async function applyUvrSettings(): Promise<void> {
+  const engine = _audioEngineInstance
+  if (!engine) return
+
+  const mode = getUvrMode()
+  const vocalIntensity = getUvrVocalIntensity()
+  const instrumentalIntensity = getUvrInstrumentalIntensity()
+  const smoothing = getUvrSmoothing()
+
+  engine.setUvrSettings({
+    mode,
+    vocalIntensity,
+    instrumentalIntensity,
+    smoothing,
+  })
+
+  // Enable UVR processing
+  engine.enableUvr()
 }
 
 // ── Walkthrough Tutorial (GH #140, GH #199) ────────────────────
@@ -86,7 +428,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
       "PitchPerfect helps you practice and improve your musical pitch. Let's take a quick tour of the main features!",
     placement: 'bottom',
     section: 'practice',
-    requiredTab: 'practice',
+    requiredTab: TAB_SINGING,
   },
   {
     title: 'Choose your character!',
@@ -95,7 +437,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
       'Connect with your inner singer by choosing what suites you best!',
     placement: 'right',
     section: 'practice',
-    requiredTab: 'practice',
+    requiredTab: TAB_SINGING,
   },
   {
     title: 'Scale & Key',
@@ -104,7 +446,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
       'Choose your musical key and scale type here. The piano roll updates to match your selection automatically.',
     placement: 'right',
     section: 'practice',
-    requiredTab: 'practice',
+    requiredTab: TAB_SINGING,
   },
   {
     title: 'Load a Melody',
@@ -113,7 +455,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
       'Load a preset melody from the library, import a MIDI file, or record your own. Presets give you a great head start.',
     placement: 'right',
     section: 'practice',
-    requiredTab: 'practice',
+    requiredTab: TAB_SINGING,
   },
   {
     title: 'Mic Button',
@@ -122,7 +464,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
       'Tap to activate your microphone. The app detects your pitch in real time as you sing.',
     placement: 'bottom',
     section: 'practice',
-    requiredTab: 'practice',
+    requiredTab: TAB_SINGING,
   },
   {
     title: 'Play / Pause / Stop',
@@ -131,7 +473,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
       'Play starts the backing track, Pause halts it temporarily, and Stop returns to the beginning.',
     placement: 'bottom',
     section: 'practice',
-    requiredTab: 'practice',
+    requiredTab: TAB_SINGING,
   },
   {
     title: 'Practice Mode',
@@ -140,7 +482,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
       'In Practice mode, play a melody and sing along. The app detects your pitch in real time and scores your accuracy.',
     placement: 'right',
     section: 'practice',
-    requiredTab: 'practice',
+    requiredTab: TAB_SINGING,
   },
 
   // ── Toolbar Section ──
@@ -151,7 +493,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
       'Adjust the tempo with the number input or slider. Faster or slower practice speeds suit different comfort levels.',
     placement: 'bottom',
     section: 'toolbar',
-    requiredTab: 'practice',
+    requiredTab: TAB_SINGING,
   },
   {
     title: 'Volume & Speed',
@@ -160,7 +502,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
       'Control the backing track volume and playback speed. Slower speeds help with difficult passages.',
     placement: 'bottom',
     section: 'toolbar',
-    requiredTab: 'practice',
+    requiredTab: TAB_SINGING,
   },
   {
     title: 'Play Modes',
@@ -169,7 +511,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
       'Spaced plays a single cycle with modifiable rests between the notes',
     placement: 'bottom',
     section: 'toolbar',
-    requiredTab: 'practice',
+    requiredTab: TAB_SINGING,
   },
   {
     title: 'Play Modes',
@@ -177,7 +519,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     description: 'Repeat loops through set number of cycles',
     placement: 'bottom',
     section: 'toolbar',
-    requiredTab: 'practice',
+    requiredTab: TAB_SINGING,
   },
   {
     title: 'Play Modes',
@@ -185,7 +527,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     description: 'Practice runs your session in sequence.',
     placement: 'bottom',
     section: 'toolbar',
-    requiredTab: 'practice',
+    requiredTab: TAB_SINGING,
   },
   // {
   //   title: 'Count-In & Cycles',
@@ -194,7 +536,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
   //     'Set how many beats of count-in you want before playback starts, and how many cycles to run in Practice mode.',
   //   placement: 'bottom',
   //   section: 'toolbar',
-  //   requiredTab: 'practice',
+  //   requiredTab: TAB_SINGING,
   // },
 
   // ── Editor Section ──
@@ -205,7 +547,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
       'The Editor tab lets you build and modify melodies. Click to switch here to explore.',
     placement: 'bottom',
     section: 'editor',
-    requiredTab: 'editor',
+    requiredTab: TAB_COMPOSE,
   },
   {
     title: 'Piano Roll',
@@ -214,7 +556,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
       'Click on the grid to add notes. Drag them to adjust pitch or timing. Right-click a note to delete it.',
     placement: 'bottom',
     section: 'editor',
-    requiredTab: 'editor',
+    requiredTab: TAB_COMPOSE,
   },
   {
     title: 'Record to Piano Roll',
@@ -223,7 +565,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
       'Hit Record, sing into your mic, and your pitch gets captured as notes on the piano roll.',
     placement: 'bottom',
     section: 'editor',
-    requiredTab: 'editor',
+    requiredTab: TAB_COMPOSE,
   },
   {
     title: 'Save Melody',
@@ -232,7 +574,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
       'Save your melody to the library so you can load it later in Practice mode.',
     placement: 'bottom',
     section: 'editor',
-    requiredTab: 'editor',
+    requiredTab: TAB_COMPOSE,
   },
   {
     title: 'Editor Toolbar',
@@ -241,7 +583,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
       'Change key, scale, BPM, and sensitivity directly from the editor toolbar before recording or editing.',
     placement: 'bottom',
     section: 'editor',
-    requiredTab: 'editor',
+    requiredTab: TAB_COMPOSE,
   },
 
   // ── Settings Section ──
@@ -252,7 +594,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
       'Fine-tune pitch detection, accuracy scoring, and the app appearance. Click to switch to Settings.',
     placement: 'bottom',
     section: 'settings',
-    requiredTab: 'settings',
+    requiredTab: TAB_SETTINGS,
   },
   {
     title: 'Pitch Detection',
@@ -261,7 +603,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
       'Adjust sensitivity, threshold, and confidence to match your voice and environment. Lower sensitivity reduces false triggers.',
     placement: 'left',
     section: 'settings',
-    requiredTab: 'settings',
+    requiredTab: TAB_SETTINGS,
   },
   {
     title: 'Practice Aids',
@@ -270,7 +612,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
       'Tonic anchor gives a reference tone before singing, helping you stay in key.',
     placement: 'left',
     section: 'settings',
-    requiredTab: 'settings',
+    requiredTab: TAB_SETTINGS,
   },
   {
     title: 'Accuracy Bands',
@@ -279,7 +621,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
       'Customize the cent-threshold for each accuracy band. Tighter bands are more challenging.',
     placement: 'left',
     section: 'settings',
-    requiredTab: 'settings',
+    requiredTab: TAB_SETTINGS,
   },
   {
     title: 'Theme & Appearance',
@@ -288,7 +630,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
       'Switch between light and dark themes, toggle grid lines, and adjust the visual style.',
     placement: 'left',
     section: 'settings',
-    requiredTab: 'settings',
+    requiredTab: TAB_SETTINGS,
   },
   {
     title: 'Reverb & ADSR',
@@ -297,7 +639,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
       'Add reverb for a richer sound, or tweak ADSR envelope for more natural-sounding notes.',
     placement: 'left',
     section: 'settings',
-    requiredTab: 'settings',
+    requiredTab: TAB_SETTINGS,
   },
 ]
 
@@ -307,6 +649,24 @@ export const [showSelection, setShowSelection] = createSignal(false)
 export const [selectedWalkthrough, setSelectedWalkthrough] = createSignal<
   string | null
 >(null)
+
+/** Whether the WalkthroughModal (reading a specific chapter) is open */
+export const [walkthroughModalOpen, setWalkthroughModalOpen] =
+  createSignal(false)
+
+/** Close the walkthrough chapter modal */
+export function closeWalkthroughChapter(): void {
+  setWalkthroughModalOpen(false)
+  setSelectedWalkthrough(null)
+}
+
+/** Open a specific walkthrough chapter by ID (for hash-based deep linking) */
+export function openWalkthroughChapter(chapterId: string): void {
+  setSelectedWalkthrough(chapterId)
+  setShowSelection(false)
+  setWalkthroughModalOpen(true)
+}
+
 export const openLearningWalkthrough = () => {
   setShowSelection(true)
   setSelectedWalkthrough(null)

@@ -1,0 +1,16 @@
+services:
+  uvr-api:
+    build: .
+    container_name: uvr-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./models:/tmp/audio-separator-models
+      - ./output:/app/output
+      - ./api.py:/app/api.py
+      - .:/app
+    command: uvicorn api:app --host 0.0.0.0 --port 8000 --reload
+    group_add:
+      - video
+    environment:
+      - PYTHONUNBUFFERED=1

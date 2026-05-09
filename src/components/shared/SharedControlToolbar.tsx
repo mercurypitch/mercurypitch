@@ -10,7 +10,8 @@ import { PrecCountButton } from '@/components/PrecCountButton'
 import { Tooltip } from '@/components/Tooltip'
 import { appStore } from '@/stores'
 import { bpm, micActive, micWaveVisible, playbackSpeed, setBpm, setPlaybackSpeed, setSensitivity, settings, toggleMicWaveVisible, } from '@/stores'
-import type { SpacedRestMode } from '@/types'
+import type { SpacedRestMode, PlaybackMode } from '@/types'
+import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_SINGING, TAB_COMPOSE, } from '@/features/tabs/constants'
 import { ControlGroup } from './ControlGroup'
 
 // ========================================
@@ -20,17 +21,17 @@ import { ControlGroup } from './ControlGroup'
 // TODO: Only for tests, need to update all!
 /** Determine the current practice mode based on global state */
 export function activePracticeMode(
-  playMode: () => 'once' | 'repeat' | 'practice',
+  playMode: () => PlaybackMode,
   sessionActive: () => boolean,
 ): string {
   // Session mode takes priority
   if (sessionActive()) return 'Session'
 
   // Practice run-once vs repeat
-  if (playMode() === 'practice') {
+  if (playMode() === PLAYBACK_MODE_SESSION) {
     return 'Run-once'
   }
-  if (playMode() === 'repeat') {
+  if (playMode() === PLAYBACK_MODE_REPEAT) {
     return 'Repeat'
   }
   return 'Run-once'
@@ -49,21 +50,18 @@ export const SCALE_TYPES = [
 ] as const
 
 export type PracticeSubMode = 'all' | 'random' | 'focus' | 'reverse'
-export type LocalActiveTab = 'practice' | 'editor' | 'settings'
-
-// Re-export for use in tests
-export type ActiveTab = 'practice' | 'editor' | 'settings'
+import type {ActiveTab} from '@/types'
 
 interface SharedControlToolbarProps {
-  // Tab identification - matching App's ActiveTab
-  activeTab: () => boolean
-  practiceTab?: () => boolean
+  // Tab identification
+  activeTab: () => ActiveTab
+  singingTab?: () => boolean
   editorTab?: () => boolean
 
   // Playback state
   isPlaying: () => boolean
   isPaused: () => boolean
-  playMode: () => 'once' | 'repeat' | 'practice'
+  playMode: () => PlaybackMode
   practiceCycles: () => number
   currentCycle: () => number
   isCountingIn: () => boolean
@@ -91,7 +89,7 @@ interface SharedControlToolbarProps {
   onMetronomeToggle: () => void
 
   // Practice-specific
-  playModeChange: (mode: 'once' | 'repeat' | 'practice') => void
+  playModeChange: (mode: PlaybackMode) => void
   onCyclesChange: (cycles: number) => void
   practiceSubMode: () => PracticeSubMode
   onPracticeSubModeChange: (mode: PracticeSubMode) => void
@@ -115,6 +113,9 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
   props,
 ) => {
   const isPracticeTab = () =>
+    props.singingTab?.() ?? props.activeTab() === TAB_SINGING
+  const isEditorTab = () =>
+    props.editorTab?.() ?? props.activeTab() === TAB_COMPOSE
     props.activeTab?.() ?? props.practiceTab?.() ?? false
   const isEditorTab = () => props.activeTab?.() ?? props.editorTab?.() ?? false
 
@@ -288,7 +289,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
         </div>
         <button
           class={`ctrl-btn metronome-btn ${props.metronomeEnabled() ? 'active' : ''}`}
-          onClick={props.onMetronomeToggle}
+          onClick={() => props.onMetronomeToggle()}
           title="Toggle metronome"
           aria-label="Toggle metronome"
         >
@@ -326,27 +327,27 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
           <div class="mode-group">
             <button
               id="btn-once"
-              class={`mode-btn ${props.playMode() === 'once' ? 'active' : ''}`}
+              class={`mode-btn ${props.playMode() === PLAYBACK_MODE_ONCE ? 'active' : ''}`}
               onClick={() => {
-                props.playModeChange('once')
+                props.playModeChange(PLAYBACK_MODE_ONCE)
               }}
             >
               Once
             </button>
             <button
               id="btn-repeat"
-              class={`mode-btn ${props.playMode() === 'repeat' ? 'active' : ''}`}
+              class={`mode-btn ${props.playMode() === PLAYBACK_MODE_REPEAT ? 'active' : ''}`}
               onClick={() => {
-                props.playModeChange('repeat')
+                props.playModeChange(PLAYBACK_MODE_REPEAT)
               }}
             >
               Repeat
             </button>
             <button
               id="btn-session"
-              class={`mode-btn ${props.playMode() === 'practice' ? 'active' : ''}`}
+              class={`mode-btn ${props.playMode() === PLAYBACK_MODE_SESSION ? 'active' : ''}`}
               onClick={() => {
-                props.playModeChange('practice')
+                props.playModeChange(PLAYBACK_MODE_SESSION)
               }}
             >
               Session
@@ -357,7 +358,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
         {/* Cycles input — applies to Repeat mode (repeat the current melody
             N times). Practice mode plays the session through once and is
             controlled by the active session's items, not a cycle count. */}
-        <Show when={isPracticeTab() && props.playMode() === 'repeat'}>
+        <Show when={isPracticeTab() && props.playMode() === PLAYBACK_MODE_REPEAT}>
           <div class="secondary-control-group cycles-control-group">
             <label class="opt-label cycles-label">Cycles</label>
             <input
@@ -386,7 +387,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
         </Show>
 
         {/* Practice sub-mode selector — only in practice mode */}
-        <Show when={isPracticeTab() && props.playMode() === 'practice'}>
+        <Show when={isPracticeTab() && props.playMode() === PLAYBACK_MODE_SESSION}>
           <div class="secondary-control-group practice-mode-control-group">
             <label class="opt-label practice-mode-label">Mode</label>
             <select
@@ -408,7 +409,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
         </Show>
 
         {/* Spaced mode selector — once-through playback with optional rests inserted between notes. */}
-        <Show when={isPracticeTab() && props.playMode() === 'once'}>
+        <Show when={isPracticeTab() && props.playMode() === PLAYBACK_MODE_ONCE}>
           <div class="secondary-control-group practice-mode-control-group spaced-mode-control-group">
             <label class="opt-label practice-mode-label">Rest</label>
             <select

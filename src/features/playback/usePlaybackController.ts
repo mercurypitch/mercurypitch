@@ -13,6 +13,7 @@ import { melodyStore } from '@/stores/melody-store'
 import { playback } from '@/stores/playback-store'
 import type { PlaybackSession } from '@/types'
 import type { MelodyItem, PlaybackMode, SessionResult } from '@/types'
+import { PLAYBACK_MODE_SESSION, TAB_SINGING } from '@/features/tabs/constants'
 
 export interface PlaybackController {
   isPlaying: Accessor<boolean>
@@ -232,7 +233,7 @@ export function usePlaybackController(
     // handleSessionItemComplete (wired in App.tsx). Rest items are
     // handled inside loadNextSessionItem (silent pause, see
     // useSessionSequencer.ts).
-    if (playMode() === 'practice') {
+    if (playMode() === PLAYBACK_MODE_SESSION) {
       const activeSession = userSession()
       if (activeSession && activeSession.items.length > 0) {
         // Always (re)seed the practice session
@@ -299,7 +300,7 @@ export function usePlaybackController(
     const subMode =
       forcedDurationBeats !== undefined
         ? 'all'
-        : playMode() === 'practice'
+        : playMode() === PLAYBACK_MODE_SESSION
           ? practiceSubMode()
           : 'all'
 
@@ -533,8 +534,8 @@ export function usePlaybackController(
     if (!session || session.items.length === 0) return
 
     closeSidebar()
-    setPlayMode('practice')
-    setActiveTab('practice')
+    setPlayMode(PLAYBACK_MODE_SESSION)
+    setActiveTab(TAB_SINGING)
 
     // eslint-disable-next-line solid/reactivity
     resetPlaybackState().then(() => {

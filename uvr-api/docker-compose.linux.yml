@@ -1,0 +1,5 @@
+services:
+  uvr-api:
+    devices:
+      - "/dev/kfd:/dev/kfd"
+      - "/dev/dri:/dev/dri"

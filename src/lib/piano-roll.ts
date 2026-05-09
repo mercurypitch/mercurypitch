@@ -2,6 +2,8 @@
 // Piano Roll Editor — Canvas-based note editor
 // ============================================================
 
+import type { BallPhysicsConfig, BallPhysicsState, NoteBounds, } from '@/features/playback/yousician-ball-physics'
+import { createBallPhysics, getBallPhysics, } from '@/features/playback/yousician-ball-physics'
 import type { AudioEngine, InstrumentType } from '@/lib/audio-engine'
 import { PitchDetector } from '@/lib/pitch-detector'
 import { buildMultiOctaveScale, midiToFreq, midiToNote } from '@/lib/scale-data'
@@ -489,7 +491,18 @@ export class PianoRollEditor {
   // Whether the editor was playing before switching to external playback
   private wasPlayingBeforeExternal = false
   private startedNoteIds = new Set<number>()
-  private currentNoteRow = -1 // GH #129: tracks current note row for glowing dot
+  private currentNoteRow = -1 // GH #129: tracks current note row for glowing dot (deprecated in favor of ball physics)
+  // Ball physics state for Yousician-like ball jumping through notes
+  private ballCanvas: HTMLCanvasElement | null = null
+  private ballCtx: CanvasRenderingContext2D | null = null
+  private ballState: BallPhysicsState | null = null
+  private ballNotes: NoteBounds[] = []
+  private ballSpeed = 0.05
+  private ballGravity = 0.003
+  private ballBounce = 0.8
+  private ballRadius = 8
+  private ballPadding = { top: 5, bottom: 5, left: 0, right: 0 }
+  private useBallPhysics = false // Toggle between vertical dot and ball physics
   // Track whether playback is external (from Practice tab) vs local (Editor tab)
   private isExternalPlayback = false
   private isSeeking = false
@@ -598,6 +611,9 @@ export class PianoRollEditor {
       id: item.id ?? this.nextNoteId++,
     }))
 
+    // Initialize ball physics with new melody
+    this.initializeBallPhysics()
+
     // Auto-fit octave row count to the melody's MIDI span so notes
     // outside the currently displayed range become visible. We only ever
     // GROW the row count here — shrinking would surprise the user who
@@ -628,6 +644,66 @@ export class PianoRollEditor {
     }
 
     this.draw()
+  }
+
+  /**
+   * Initialize ball physics with current melody data
+   * Converts melody items to NoteBounds for physics collision
+   */
+  private async initializeBallPhysics(): Promise<void> {
+    if (this.ballState) return
+
+    const midiNotes = this.melody
+      .filter((item) => item.note?.midi !== undefined)
+      .map((item) => ({
+        startBeat: item.startBeat,
+        endBeat: item.startBeat + item.duration,
+        midi: item.note!.midi,
+        duration: item.duration,
+        freq: item.note!.freq,
+      }))
+
+    if (midiNotes.length > 0) {
+      this.ballNotes = midiNotes
+      this.ballState = createBallPhysics({
+        speed: this.ballSpeed,
+        gravity: this.ballGravity,
+        bounce: this.ballBounce,
+        radius: this.ballRadius,
+        padding: this.ballPadding,
+      })
+      this.useBallPhysics = true
+    } else {
+      this.useBallPhysics = false
+    }
+  }
+
+  /**
+   * Recreate ball physics when BPM changes
+   * Called when user changes the BPM in the editor
+   */
+  private recreateBallPhysics(): void {
+    if (this.useBallPhysics && this.ballState && this.ballNotes.length > 0) {
+      this.ballState = createBallPhysics({
+        speed: this.ballSpeed,
+        gravity: this.ballGravity,
+        bounce: this.ballBounce,
+        radius: this.ballRadius,
+        padding: this.ballPadding,
+      })
+    }
+  }
+
+  /**
+   * Get note bounds at current beat position for ball physics
+   */
+  private getCurrentNoteAtBeat(beat: number): NoteBounds | null {
+    for (const note of this.ballNotes) {
+      if (note.startBeat <= beat && beat < note.endBeat) {
+        return note
+      }
+    }
+    return null
   }
 
   /**
@@ -739,6 +815,7 @@ export class PianoRollEditor {
 
   setBPM(bpm: number): void {
     this.bpm = bpm
+    this.recreateBallPhysics()
   }
 
   setInstrument(instrument: InstrumentType): void {
@@ -1341,6 +1418,7 @@ export class PianoRollEditor {
         </div>
       </div>
       <canvas id="roll-pitch-track-canvas" class="roll-pitch-track" style="display:none"></canvas>
+      <canvas id="roll-ball-canvas" class="roll-ball" style="display:none"></canvas>
       <div class="roll-status">
         <span id="roll-note-info">Click on the grid to place notes</span>
         <span id="roll-timeline-info">Bar 1/${Math.ceil(this.totalBeats / PIANO_ROLL_CONFIG.beatsPerBar)} | Beat 1</span>
@@ -1362,6 +1440,9 @@ export class PianoRollEditor {
     ) as HTMLElement
     this.pitchTrackCanvas = this.container.querySelector(
       '#roll-pitch-track-canvas',
+    ) as HTMLCanvasElement
+    this.ballCanvas = this.container.querySelector(
+      '#roll-ball-canvas',
     ) as HTMLCanvasElement
 
     this.pianoCtx = this.pianoCanvas.getContext('2d')
@@ -1410,6 +1491,17 @@ export class PianoRollEditor {
       this.gridCanvas.style.height = `${totalHeight}px`
       this.gridCtx = this.gridCanvas.getContext('2d')
       if (this.gridCtx) this.gridCtx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    }
+
+    // Ball canvas (for Yousician-style ball jumping through notes)
+    if (this.ballCanvas) {
+      const containerWidth = this.gridContainer?.clientWidth ?? 0
+      this.ballCanvas.width = containerWidth * dpr
+      this.ballCanvas.height = totalHeight * dpr
+      this.ballCanvas.style.width = `${containerWidth}px`
+      this.ballCanvas.style.height = `${totalHeight}px`
+      this.ballCtx = this.ballCanvas.getContext('2d') ?? null
+      if (this.ballCtx) this.ballCtx.setTransform(dpr, 0, 0, dpr, 0, 0)
     }
 
     // Cache status bar elements
@@ -2359,6 +2451,60 @@ export class PianoRollEditor {
       const currentBeat = (elapsed / 60000) * this.bpm
 
       this.updatePlaybackPosition(currentBeat)
+
+      // Show ball canvas during playback
+      if (this.ballCanvas) {
+        this.ballCanvas.style.display = 'block'
+      }
+
+      // Update ball physics position
+      if (this.useBallPhysics && this.ballState && this.ballCtx) {
+        const ballCtx = this.ballCtx!
+        const ballCanvas = this.ballCanvas!
+        const _playheadX = currentBeat * this.beatWidth
+
+        const ballConfig: BallPhysicsConfig = {
+          notes: this.ballNotes,
+          rowHeight: this.rowHeight,
+          radius: this.ballRadius,
+          padding: this.ballPadding,
+          bpm: this.bpm,
+        }
+
+        const result = getBallPhysics(this.ballState, ballConfig)
+        this.ballState.x = result.x
+        this.ballState.y = result.y
+        this.ballState.lastEndBeat = result.note
+          ? result.note.endBeat
+          : this.ballState.lastEndBeat
+        this.ballState.lastNote = result.note
+
+        // Convert to pixel coordinates for drawing
+        const pixelY =
+          this.ballState.y * this.rowHeight +
+          this.rowHeight / 2 +
+          this.rowHeight / 2
+        const pixelX = this.ballState.x * this.beatWidth
+
+        // Draw ball with glowing effect
+        ballCtx.clearRect(0, 0, ballCanvas.width, ballCanvas.height)
+
+        // Glow effect
+        ballCtx.save()
+        ballCtx.shadowColor = 'rgba(63, 185, 80, 0.9)'
+        ballCtx.shadowBlur = 12
+        ballCtx.fillStyle = '#3fb950'
+        ballCtx.beginPath()
+        ballCtx.arc(pixelX, pixelY, this.ballRadius, 0, Math.PI * 2)
+        ballCtx.fill()
+        // White core for extra glow
+        ballCtx.fillStyle = 'rgba(255, 255, 255, 0.7)'
+        ballCtx.beginPath()
+        ballCtx.arc(pixelX, pixelY, this.ballRadius * 0.5, 0, Math.PI * 2)
+        ballCtx.fill()
+        ballCtx.restore()
+      }
+
       this.playbackAnimationId = requestAnimationFrame(animate)
     }
 
@@ -2372,7 +2518,70 @@ export class PianoRollEditor {
   private handleBeatUpdate(beat: number): void {
     this.remoteBeat = beat
 
-    // GH #129: Track the current note row for vertical glow dot
+    // Show ball canvas during playback
+    if (this.ballCanvas) {
+      this.ballCanvas.style.display = 'block'
+    }
+
+    // Ball physics update for external playback
+    if (this.useBallPhysics && this.ballState && this.ballCtx) {
+      const ballCtx = this.ballCtx
+      const ballCanvas = this.ballCanvas
+      const playheadX = beat * this.beatWidth
+
+      const ballConfig: BallPhysicsConfig = {
+        notes: this.ballNotes,
+        rowHeight: this.rowHeight,
+        radius: this.ballRadius,
+        padding: this.ballPadding,
+        bpm: this.bpm,
+      }
+
+      const result = getBallPhysics(this.ballState, ballConfig)
+      this.ballState.x = result.x
+      this.ballState.y = result.y
+      this.ballState.lastEndBeat = result.note
+        ? result.note.endBeat
+        : this.ballState.lastEndBeat
+      this.ballState.lastNote = result.note
+
+      // Convert to pixel coordinates for drawing
+      const pixelY =
+        this.ballState.y * this.rowHeight +
+        this.rowHeight / 2 +
+        this.rowHeight / 2
+      const pixelX = this.ballState.x * this.beatWidth
+
+      // Draw ball with glowing effect
+      if (ballCanvas) {
+        ballCtx.clearRect(0, 0, ballCanvas.width, ballCanvas.height)
+      }
+
+      // Glow effect
+      ballCtx.save()
+      ballCtx.shadowColor = 'rgba(63, 185, 80, 0.9)'
+      ballCtx.shadowBlur = 12
+      ballCtx.fillStyle = '#3fb950'
+      ballCtx.beginPath()
+      ballCtx.arc(pixelX, pixelY, this.ballRadius, 0, Math.PI * 2)
+      ballCtx.fill()
+      // White core for extra glow
+      ballCtx.fillStyle = 'rgba(255, 255, 255, 0.7)'
+      ballCtx.beginPath()
+      ballCtx.arc(pixelX, pixelY, this.ballRadius * 0.5, 0, Math.PI * 2)
+      ballCtx.fill()
+      ballCtx.restore()
+
+      // Scroll grid to keep ball within view
+      const containerWidth = this.gridContainer?.clientWidth ?? 0
+      const targetScroll = playheadX - containerWidth * 0.3
+      if (targetScroll > 0) {
+        this.gridContainer!.scrollLeft = targetScroll
+      }
+    }
+
+    // GH #129: Track the current note row for vertical glow dot (deprecated)
+    // Keep this for backward compatibility
     const sortedNotes = [...this.melody].sort(
       (a, b) => a.startBeat - b.startBeat,
     )
@@ -2384,14 +2593,6 @@ export class PianoRollEditor {
       }
     }
     this.currentNoteRow = foundRow
-
-    // Scroll grid to keep playhead visible
-    const playheadX = beat * this.beatWidth
-    const containerWidth = this.gridContainer?.clientWidth ?? 0
-    const targetScroll = playheadX - containerWidth * 0.3
-    if (targetScroll > 0) {
-      this.gridContainer!.scrollLeft = targetScroll
-    }
 
     this.drawWithPlayhead()
 
@@ -2447,6 +2648,21 @@ export class PianoRollEditor {
     this.startedNoteIds.clear()
     this.currentPlayingNoteIds.clear()
     this.currentNoteRow = -1
+    // Reset ball state
+    this.useBallPhysics = false
+    this.ballState = null
+    this.ballNotes = []
+    if (this.ballCanvas) {
+      this.ballCanvas.style.display = 'none'
+    }
+    if (this.ballCtx && this.ballCanvas) {
+      this.ballCtx.clearRect(
+        0,
+        0,
+        this.ballCanvas.width,
+        this.ballCanvas.height,
+      )
+    }
   }
 
   private seekToRulerPosition(e: MouseEvent): void {
@@ -2842,7 +3058,8 @@ export class PianoRollEditor {
     this.drawRulerWithPlayhead()
 
     // GH #129: Draw glowing dot at current note row's Y position (vertical movement)
-    if (this.currentNoteRow >= 0) {
+    // DEPRECATED in favor of ball physics
+    if (!this.useBallPhysics && this.currentNoteRow >= 0) {
       ctx.save()
       ctx.shadowColor = 'rgba(63, 185, 80, 0.9)'
       ctx.shadowBlur = 12
