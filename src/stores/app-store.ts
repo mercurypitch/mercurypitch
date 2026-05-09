@@ -1,8 +1,8 @@
 import { createSignal } from 'solid-js'
+import { TAB_COMPOSE, TAB_SETTINGS,TAB_SINGING } from '@/features/tabs/constants'
 import { AudioEngine } from '@/lib/audio-engine'
 import { getCompletedCount, getRemainingWalkthroughs, } from '@/stores/walkthrough-store'
 import type { ActiveTab } from './ui-store'
-import { TAB_SINGING, TAB_COMPOSE, TAB_SETTINGS } from '@/features/tabs/constants'
 
 // ── Key / Scale / Presets ──────────────────────────────────
 

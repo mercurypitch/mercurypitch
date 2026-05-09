@@ -3,6 +3,7 @@
 // ============================================================
 
 import type { WalkthroughTab } from '@/features/tabs/constants'
+
 export type { WalkthroughTab }
 
 export interface WalkthroughContent {

@@ -3,7 +3,7 @@
 // ============================================================
 
 import { createSignal } from 'solid-js'
-import { TAB_SINGING, TAB_COMPOSE, TAB_SETTINGS, WALKTHROUGH_TAB_STUDY, } from '@/features/tabs/constants'
+import { TAB_COMPOSE, TAB_SETTINGS, TAB_SINGING, WALKTHROUGH_TAB_STUDY, } from '@/features/tabs/constants'
 import type { WalkthroughProgress, WalkthroughTab } from '@/types/walkthrough'
 import { WALKTHROUGHS } from '@/types/walkthrough'
 

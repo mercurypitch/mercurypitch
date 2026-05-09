@@ -3,6 +3,7 @@
 // ============================================================
 
 import { describe, expect, it, vi } from 'vitest'
+import { TAB_COMPOSE, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
 import { buildHash, navigateTo, parseHash, replaceHash, } from '@/lib/hash-router'
 
 // ── parseHash ─────────────────────────────────────────────────
@@ -210,8 +211,8 @@ describe('parseHash', () => {
 
 describe('buildHash', () => {
   it('builds tab hash', () => {
-    expect(buildHash({ type: 'tab', tab: 'practice' })).toBe('/practice')
-    expect(buildHash({ type: 'tab', tab: 'settings' })).toBe('/settings')
+    expect(buildHash({ type: 'tab', tab: TAB_SINGING })).toBe('/practice')
+    expect(buildHash({ type: 'tab', tab: TAB_SETTINGS })).toBe('/settings')
   })
 
   it('builds UVR upload hash', () => {
@@ -306,7 +307,7 @@ describe('navigateTo', () => {
     const locationMock = { hash: '' } as Location
     vi.stubGlobal('location', locationMock)
 
-    navigateTo({ type: 'tab', tab: 'editor' })
+    navigateTo({ type: 'tab', tab: TAB_COMPOSE })
     expect(locationMock.hash).toBe('#/editor')
   })
 
@@ -322,7 +323,7 @@ describe('navigateTo', () => {
     })
     vi.stubGlobal('location', locationMock)
 
-    navigateTo({ type: 'tab', tab: 'practice' })
+    navigateTo({ type: 'tab', tab: TAB_SINGING })
     expect(setCount).toBe(0) // same target, no write
   })
 })

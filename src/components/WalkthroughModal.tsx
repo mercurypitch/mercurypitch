@@ -4,8 +4,8 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, Show } from 'solid-js'
+import { TAB_COMPOSE, TAB_SETTINGS, TAB_SINGING, WALKTHROUGH_TAB_STUDY, } from '@/features/tabs/constants'
 import { renderMarkdownToHtml } from '@/lib/render-markdown'
-import { TAB_SINGING, TAB_COMPOSE, TAB_SETTINGS, WALKTHROUGH_TAB_STUDY, } from '@/features/tabs/constants'
 import type { WalkthroughTab } from '@/stores/walkthrough-store'
 import { completeWalkthrough, getWalkthrough, getWalkthroughsForTab, isWalkthroughCompleted, viewWalkthrough, } from '@/stores/walkthrough-store'
 import type { WalkthroughContent } from '@/types/walkthrough'
