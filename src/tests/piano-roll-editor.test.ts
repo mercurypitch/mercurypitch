@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { PianoRollEditor } from '../lib/piano-roll'
 
 describe('PianoRollEditor', () => {
@@ -28,7 +28,7 @@ describe('PianoRollEditor', () => {
       createLinearGradient: vi.fn().mockReturnValue({
         addColorStop: vi.fn(),
       }),
-    }) as any
+    }) as unknown as typeof HTMLCanvasElement.prototype.getContext
 
     container = document.createElement('div')
     document.body.appendChild(container)
@@ -49,7 +49,7 @@ describe('PianoRollEditor', () => {
     const melody = [
       {
         id: 1,
-        note: { midi: 60, freq: 261.63, name: 'C', octave: 4 },
+        note: { midi: 60, freq: 261.63, name: 'C' as const, octave: 4 },
         startBeat: 0,
         duration: 1,
       },
@@ -63,7 +63,7 @@ describe('PianoRollEditor', () => {
     const melody = [
       {
         id: 1,
-        note: { midi: 60, freq: 261.63, name: 'C', octave: 4 },
+        note: { midi: 60, freq: 261.63, name: 'C' as const, octave: 4 },
         startBeat: 0,
         duration: 1,
       },
@@ -122,7 +122,7 @@ describe('PianoRollEditor', () => {
     const melody = [
       {
         id: 1,
-        note: { midi: 60, freq: 261.63, name: 'C', octave: 4 },
+        note: { midi: 60, freq: 261.63, name: 'C' as const, octave: 4 },
         startBeat: 0,
         duration: 1,
       },
