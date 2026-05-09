@@ -8,10 +8,10 @@ import { Show } from 'solid-js'
 import { MicButton } from '@/components'
 import { PrecCountButton } from '@/components/PrecCountButton'
 import { Tooltip } from '@/components/Tooltip'
+import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_COMPOSE,TAB_SINGING,  } from '@/features/tabs/constants'
 import { appStore } from '@/stores'
 import { bpm, micActive, micWaveVisible, playbackSpeed, setBpm, setPlaybackSpeed, setSensitivity, settings, toggleMicWaveVisible, } from '@/stores'
-import type { SpacedRestMode, PlaybackMode } from '@/types'
-import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_SINGING, TAB_COMPOSE, } from '@/features/tabs/constants'
+import type { PlaybackMode,SpacedRestMode } from '@/types'
 import { ControlGroup } from './ControlGroup'
 
 // ========================================
@@ -116,8 +116,6 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
     props.singingTab?.() ?? props.activeTab() === TAB_SINGING
   const isEditorTab = () =>
     props.editorTab?.() ?? props.activeTab() === TAB_COMPOSE
-    props.activeTab?.() ?? props.practiceTab?.() ?? false
-  const isEditorTab = () => props.activeTab?.() ?? props.editorTab?.() ?? false
 
   const isActive = () => props.isPlaying() || props.isPaused()
   const isStopped = () => !props.isPlaying() && !props.isPaused()

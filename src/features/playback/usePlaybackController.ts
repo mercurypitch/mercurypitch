@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- compat shim deps; remove with future redesign */
 import type { Accessor, Setter } from 'solid-js'
 import { createEffect, createMemo, createSignal } from 'solid-js'
+import { PLAYBACK_MODE_SESSION, TAB_SINGING } from '@/features/tabs/constants'
 import type { AudioEngine } from '@/lib/audio-engine'
 import { audioRegistry } from '@/lib/audio-registry'
 import type { PlaybackRuntime } from '@/lib/playback-runtime'
@@ -13,7 +14,6 @@ import { melodyStore } from '@/stores/melody-store'
 import { playback } from '@/stores/playback-store'
 import type { PlaybackSession } from '@/types'
 import type { MelodyItem, PlaybackMode, SessionResult } from '@/types'
-import { PLAYBACK_MODE_SESSION, TAB_SINGING } from '@/features/tabs/constants'
 
 export interface PlaybackController {
   isPlaying: Accessor<boolean>

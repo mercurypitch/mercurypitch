@@ -3,16 +3,16 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
+import type { ArcState, PlayableNote } from '@/lib/arc-physics'
 import {
-  computeBallPos,
+  buildPlayable,
   computeArcCy,
   computeArcEndBeat,
-  shouldAdvanceArc,
-  buildPlayable,
+  computeBallPos,
   computeInitialArc,
   isBackwardsSeek,
+  shouldAdvanceArc,
 } from '@/lib/arc-physics'
-import type { ArcState, PlayableNote } from '@/lib/arc-physics'
 
 // ---------------------------------------------------------------------------
 // computeBallPos

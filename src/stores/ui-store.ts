@@ -1,8 +1,9 @@
 import { createSignal } from 'solid-js'
+import type {ActiveTab} from '@/features/tabs/constants';
+import {  DEFAULT_TAB } from '@/features/tabs/constants'
 import { APP_VERSION } from '@/lib/defaults'
 import { createPersistedSignal } from '@/lib/storage'
 import { exposeForE2E } from '@/lib/test-utils'
-import { type ActiveTab, DEFAULT_TAB } from '@/features/tabs/constants'
 
 export type { ActiveTab } from '@/features/tabs/constants'
 

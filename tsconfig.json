@@ -1,13 +1,13 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
+    "target": "ES2023",
     "module": "ESNext",
     "moduleResolution": "bundler",
     "strict": true,
     "noEmit": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "jsx": "preserve",
     "jsxImportSource": "solid-js",
     "types": ["vitest/globals", "node"],

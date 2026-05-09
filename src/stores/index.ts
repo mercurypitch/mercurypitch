@@ -4,15 +4,16 @@
 
 import { buildSessionItemMelody } from '@/lib/session-builder'
 import type { PlaybackSession } from '@/types'
+import * as appStoreCore from './app-store'
 import {
   WALKTHROUGH_STEPS,
   walkthroughActive,
   walkthroughStep,
 } from './app-store'
-import * as appStoreCore from './app-store'
 import * as micStore from './mic-store'
 import * as notifStore from './notifications-store'
 import * as playbackStateStore from './playback-state-store'
+import * as practiceStore from './practice-session-store'
 import {
   sessionMode as _sessionMode,
   setPracticeResults as _setPracticeResults,
@@ -22,14 +23,13 @@ import {
   setSessionItemRepeat as _setSessionItemRepeat,
   setSessionMode as _setSessionMode,
 } from './practice-session-store'
-import * as practiceStore from './practice-session-store'
+import { getSessionHistory, sessionResults } from './practice-session-store'
 import * as settingsStore from './settings-store'
 import * as themeStore from './theme-store'
 import * as transportStore from './transport-store'
 import * as uiStore from './ui-store'
 import * as userSessionStore from './user-session-store'
 import * as walkthroughStore from './walkthrough-store'
-import { getSessionHistory, sessionResults } from './practice-session-store'
 
 export * from './app-store'
 export * from './mic-store'

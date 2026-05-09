@@ -3,12 +3,12 @@
 // Manages timing, note playback, and provides clean API for UI
 // ============================================================
 
+import type { PlaybackMode } from '@/features/tabs/constants'
 import type { InstrumentType } from '@/stores'
 import type { MelodyItem } from '@/types'
 import { AudioEngine } from './audio-engine'
 import { melodyIndexAtBeat } from './scale-data'
 
-import type { PlaybackMode } from '@/features/tabs/constants'
 export type { PlaybackMode }
 
 /** Playback state - what component should track */
