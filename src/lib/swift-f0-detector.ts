@@ -79,9 +79,17 @@ export class SwiftF0Detector {
         this.ortModule = onnxModule
       } else {
         this.ortModule = (await import('onnxruntime-web')) as typeof ort
-        // Configure WASM path — in dev mode Vite doesn't copy the WASM
-        // to its dep cache, so we point ORT at the public/ directory.
-        ;(this.ortModule as typeof ort).env.wasm.wasmPaths = '/'
+        // In Vite dev mode the ONNX bundle is cached to .vite/deps/ but its
+        // companion .mjs / .wasm files are not copied there.  ORT resolves
+        // backend paths relative to import.meta.url, so they 404 inside the
+        // dep cache.  We point wasmPaths at the source dist/ via Vite's
+        // /@fs/ raw-filesystem prefix so the worker module is served without
+        // Vite's transform pipeline interfering.
+        if (import.meta.env.DEV) {
+          // Injected by vite.config.ts define — absolute /@fs/ path to ORT dist/
+          ;(this.ortModule as typeof ort).env.wasm.wasmPaths =
+            __ORT_WASM_DIST__
+        }
       }
 
       if (this.settings.sampleRate !== 16000) {

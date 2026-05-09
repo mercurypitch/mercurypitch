@@ -33,6 +33,9 @@ export default defineConfig({
   },
   define: {
     'process.env': {},
+    __ORT_WASM_DIST__: JSON.stringify(
+      '/@fs' + resolve(__dirname, 'node_modules/onnxruntime-web/dist') + '/',
+    ),
   },
   css: {
     transformer: 'lightningcss',
