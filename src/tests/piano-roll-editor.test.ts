@@ -26,8 +26,8 @@ describe('PianoRollEditor', () => {
       setLineDash: vi.fn(),
       setTransform: vi.fn(),
       createLinearGradient: vi.fn().mockReturnValue({
-        addColorStop: vi.fn()
-      })
+        addColorStop: vi.fn(),
+      }),
     }) as any
 
     container = document.createElement('div')
@@ -36,7 +36,7 @@ describe('PianoRollEditor', () => {
       container,
       scale: [],
       bpm: 120,
-      totalBeats: 16
+      totalBeats: 16,
     })
   })
 
@@ -46,30 +46,50 @@ describe('PianoRollEditor', () => {
   })
 
   it('sets and gets melody correctly', () => {
-    const melody = [{ id: 1, note: { midi: 60, freq: 261.63, name: 'C', octave: 4 }, startBeat: 0, duration: 1 }]
+    const melody = [
+      {
+        id: 1,
+        note: { midi: 60, freq: 261.63, name: 'C', octave: 4 },
+        startBeat: 0,
+        duration: 1,
+      },
+    ]
     editor.setMelody(melody)
     expect(editor.getMelody()).toHaveLength(1)
     expect(editor.getMelody()[0].note?.midi).toBe(60)
   })
 
   it('shifts octave and transposes notes', () => {
-    const melody = [{ id: 1, note: { midi: 60, freq: 261.63, name: 'C', octave: 4 }, startBeat: 0, duration: 1 }]
+    const melody = [
+      {
+        id: 1,
+        note: { midi: 60, freq: 261.63, name: 'C', octave: 4 },
+        startBeat: 0,
+        duration: 1,
+      },
+    ]
     editor.setMelody(melody)
-    
+
     // Simulate octave up click
-    const upBtn = container.querySelector('#roll-octave-up') as HTMLButtonElement
+    const upBtn = container.querySelector(
+      '#roll-octave-up',
+    ) as HTMLButtonElement
     upBtn.click()
 
     const newMelody = editor.getMelody()
     expect(newMelody[0].note?.midi).toBe(72) // 60 + 12
-    
-    const octaveSpan = container.querySelector('#roll-octave-value') as HTMLSpanElement
+
+    const octaveSpan = container.querySelector(
+      '#roll-octave-value',
+    ) as HTMLSpanElement
     expect(octaveSpan.textContent).toBe('5') // Assuming default is 4
   })
 
   it('changes duration on duration button click', () => {
     // 1/8 note is 0.5
-    const durBtn = container.querySelector('button[data-dur="0.5"]') as HTMLButtonElement
+    const durBtn = container.querySelector(
+      'button[data-dur="0.5"]',
+    ) as HTMLButtonElement
     durBtn.click()
 
     expect(durBtn.classList.contains('active')).toBe(true)
@@ -77,15 +97,21 @@ describe('PianoRollEditor', () => {
 
   it('changes number of octaves displayed', () => {
     // initial should be 2
-    const octavesSpan = container.querySelector('#roll-octaves-value') as HTMLSpanElement
+    const octavesSpan = container.querySelector(
+      '#roll-octaves-value',
+    ) as HTMLSpanElement
     expect(octavesSpan.textContent).toBe('2')
 
-    const plusBtn = container.querySelector('#roll-octaves-plus') as HTMLButtonElement
+    const plusBtn = container.querySelector(
+      '#roll-octaves-plus',
+    ) as HTMLButtonElement
     plusBtn.click()
 
     expect(octavesSpan.textContent).toBe('3')
 
-    const minusBtn = container.querySelector('#roll-octaves-minus') as HTMLButtonElement
+    const minusBtn = container.querySelector(
+      '#roll-octaves-minus',
+    ) as HTMLButtonElement
     minusBtn.click()
     expect(octavesSpan.textContent).toBe('2')
     minusBtn.click()
@@ -93,14 +119,23 @@ describe('PianoRollEditor', () => {
   })
 
   it('handles undo and redo correctly', () => {
-    const melody = [{ id: 1, note: { midi: 60, freq: 261.63, name: 'C', octave: 4 }, startBeat: 0, duration: 1 }]
+    const melody = [
+      {
+        id: 1,
+        note: { midi: 60, freq: 261.63, name: 'C', octave: 4 },
+        startBeat: 0,
+        duration: 1,
+      },
+    ]
     editor.setMelody(melody)
-    
+
     expect(editor.canUndo()).toBe(false)
     expect(editor.canRedo()).toBe(false)
 
     // Simulate octave up click
-    const upBtn = container.querySelector('#roll-octave-up') as HTMLButtonElement
+    const upBtn = container.querySelector(
+      '#roll-octave-up',
+    ) as HTMLButtonElement
     upBtn.click()
 
     expect(editor.canUndo()).toBe(true)
