@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createEffect, createSignal, For, Show } from 'solid-js'
+import { createEffect, createSignal, For, onCleanup, Show } from 'solid-js'
 import { generateVocalMidi } from '@/lib/midi-generator'
 import type { OutputFile } from '@/lib/uvr-api'
 import { DEFAULT_PROCESS_REQUEST, getProcessStatus, pollForCompletion, processAudio, } from '@/lib/uvr-api'
@@ -251,6 +251,42 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   // Computed session state
   const session = () => currentUvrSession()
   const allSessions = () => getAllUvrSessionsReactive()
+
+  // Model loading state for browser mode
+  const [modelStatus, setModelStatus] = createSignal<'unloaded' | 'loading' | 'ready' | 'error'>('unloaded')
+  const [modelError, setModelError] = createSignal('')
+
+  // Pre-initialize ONNX model when switching to browser mode
+  createEffect(() => {
+    const mode = uvrProcessingMode()
+    if (mode === 'local' && modelStatus() === 'unloaded') {
+      setModelStatus('loading')
+      setModelError('')
+      getOrCreateSeparator()
+        .then(() => setModelStatus('ready'))
+        .catch((err: Error) => {
+          setModelStatus('error')
+          setModelError(err.message || 'Failed to load model')
+        })
+    }
+  })
+
+  // Clean up separator when switching away from local mode or unmounting
+  createEffect(() => {
+    const mode = uvrProcessingMode()
+    if (mode === 'server' && vocalSeparator !== null) {
+      vocalSeparator.destroy()
+      vocalSeparator = null
+      setModelStatus('unloaded')
+    }
+  })
+
+  onCleanup(() => {
+    if (vocalSeparator !== null) {
+      vocalSeparator.destroy()
+      vocalSeparator = null
+    }
+  })
 
   // React to initialView prop changes (from hash navigation)
   let lastInitialView: UvrView | null = null
@@ -666,6 +702,19 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
             >
               Browser
             </button>
+            <Show when={uvrProcessingMode() === 'local' && modelStatus() !== 'ready'}>
+              <span
+                class={`model-status-badge model-status-${modelStatus()}`}
+                title={modelStatus() === 'error' ? modelError() : modelStatus() === 'loading' ? 'Loading ONNX model...' : ''}
+              >
+                <Show when={modelStatus() === 'loading'}>
+                  <span class="model-loading-dot" />
+                </Show>
+                <Show when={modelStatus() === 'error'}>
+                  <span class="model-error-icon">!</span>
+                </Show>
+              </span>
+            </Show>
           </div>
           <button
             class="header-btn header-btn-ghost"
