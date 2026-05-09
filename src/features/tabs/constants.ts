@@ -3,6 +3,7 @@
 // Renaming a tab is a single-line change here — no string-hunt needed.
 
 export const TAB_SINGING = 'singing' as const
+export const TAB_PIANO = 'piano' as const
 export const TAB_COMPOSE = 'compose' as const
 export const TAB_SETTINGS = 'settings' as const
 export const TAB_ANALYSIS = 'analysis' as const
@@ -15,6 +16,7 @@ export const TAB_PITCH_ALGO = 'pitch-algo' as const
 
 export type ActiveTab =
   | typeof TAB_SINGING
+  | typeof TAB_PIANO
   | typeof TAB_COMPOSE
   | typeof TAB_SETTINGS
   | typeof TAB_ANALYSIS
@@ -52,6 +54,7 @@ export type WalkthroughTab = ActiveTab | typeof WALKTHROUGH_TAB_STUDY
 
 const TAB_TO_ELEMENT_ID: Record<ActiveTab, string> = {
   [TAB_SINGING]: 'singing',
+  [TAB_PIANO]: 'piano',
   [TAB_COMPOSE]: 'compose',
   [TAB_SETTINGS]: 'settings',
   [TAB_ANALYSIS]: 'analysis',
@@ -77,6 +80,7 @@ export function tabButtonId(tab: ActiveTab): string {
 export function tabLabel(tab: ActiveTab): string {
   const labels: Record<ActiveTab, string> = {
     [TAB_SINGING]: 'Singing',
+    [TAB_PIANO]: 'Piano',
     [TAB_COMPOSE]: 'Compose',
     [TAB_SETTINGS]: 'Settings',
     [TAB_ANALYSIS]: 'Analysis',

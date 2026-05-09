@@ -4,9 +4,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { onCleanup } from 'solid-js'
-import { For } from 'solid-js'
-import { createEffect, createMemo, createSignal, onMount, Show } from 'solid-js'
+import { For, createEffect, createMemo, onCleanup, createSignal, onMount, Show, } from 'solid-js'
 import { VocalAnalysis, VocalChallenges } from '@/components'
 import { AppSidebar } from '@/components/AppSidebar'
 import { CommunityLeaderboard } from '@/components/CommunityLeaderboard'
@@ -32,12 +30,13 @@ import { UvrPanel } from '@/components/UvrPanel'
 import { EngineProvider, useEngines } from '@/contexts/EngineContext'
 import { useEditorController } from '@/features/editor/useEditorController'
 import { usePianoRollEvents } from '@/features/events/usePianoRollEvents'
+import { useFallingNotesController } from '@/features/falling-notes/useFallingNotesController'
 import { useKeyboardShortcuts } from '@/features/keyboard/useKeyboardShortcuts'
 import { usePlaybackController } from '@/features/playback/usePlaybackController'
 import { usePracticeController } from '@/features/practice/usePracticeController'
 import { useRecordingController } from '@/features/recording/useRecordingController'
 import { useSessionSequencer } from '@/features/session/useSessionSequencer'
-import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
+import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_SETTINGS, TAB_SINGING, tabLabel, } from '@/features/tabs/constants'
 import type { InstrumentType } from '@/lib/audio-engine'
 import { audioRegistry } from '@/lib/audio-registry'
 import { debounce } from '@/lib/debounce'
@@ -58,6 +57,8 @@ import { Walkthrough, WalkthroughControl } from './components'
 import { LyricsUploaderStyles, StemMixerStyles } from './components'
 import { AppErrorBoundary } from './components/AppErrorBoundary'
 import { CrashModal } from './components/CrashModal'
+import { FallingNotesCanvas } from './components/FallingNotesCanvas'
+import { FallingNotesSongPicker } from './components/FallingNotesSongPicker'
 import { GuideSelection } from './components/GuideSelection'
 import { _UvrGuideStyles } from './components/UvrGuide'
 import { WelcomeScreen } from './components/WelcomeScreen'
@@ -336,6 +337,9 @@ const AppShell: Component<AppProps> = (props) => {
   // for future toolbar integration. Currently unused at the App level.
   useEditorController({ audioEngine })
 
+  // ── Falling Notes controller ─────────────────────────────────
+  const fallingNotes = useFallingNotesController(audioEngine)
+
   // ── Keyboard shortcuts & piano roll events ─────────────────
   useKeyboardShortcuts({
     isPlaying,
@@ -374,6 +378,9 @@ const AppShell: Component<AppProps> = (props) => {
     const currentTab = activeTab()
     if (currentTab === TAB_SINGING || currentTab === TAB_COMPOSE) {
       await resetPlaybackState()
+    }
+    if (currentTab === 'falling-notes' && fallingNotes.isMicActive()) {
+      fallingNotes.stopMic()
     }
     setActiveTab(newTab)
   }
@@ -906,19 +913,113 @@ const AppShell: Component<AppProps> = (props) => {
             />
           </div>
           <nav id="app-tabs">
-            <button
-              id="tab-singing"
-              class={`app-tab ${activeTab() === TAB_SINGING ? 'active' : ''}`}
-              onClick={() => void handleTabChange(TAB_SINGING)}
-            >
-              Practice
-            </button>
+            <div class="tab-group">
+              <span class="tab-group-label">Practice</span>
+              <button
+                id="tab-singing"
+                class={`app-tab ${activeTab() === TAB_SINGING ? 'active' : ''}`}
+                onClick={() => void handleTabChange(TAB_SINGING)}
+              >
+                <svg
+                  class="tab-icon"
+                  viewBox="0 0 24 24"
+                  width="14"
+                  height="14"
+                  fill="currentColor"
+                >
+                  <path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+                  <path
+                    d="M19 10v1a7 7 0 0 1-14 0v-1"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                  />
+                  <line
+                    x1="12"
+                    y1="19"
+                    x2="12"
+                    y2="22"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                  />
+                  <line
+                    x1="8"
+                    y1="22"
+                    x2="16"
+                    y2="22"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                  />
+                </svg>
+                {tabLabel(TAB_SINGING)}
+              </button>
+              <button
+                id="tab-falling-notes"
+                class={`app-tab ${activeTab() === TAB_PIANO ? 'active' : ''}`}
+                onClick={() => void handleTabChange(TAB_PIANO)}
+              >
+                <svg
+                  class="tab-icon"
+                  viewBox="0 0 24 24"
+                  width="14"
+                  height="14"
+                  fill="currentColor"
+                >
+                  <rect x="2" y="5" width="4" height="15" rx="0.5" />
+                  <rect x="7" y="5" width="4" height="15" rx="0.5" />
+                  <rect x="12" y="5" width="4" height="15" rx="0.5" />
+                  <rect x="17" y="5" width="4" height="15" rx="0.5" />
+                  <rect
+                    x="4"
+                    y="5"
+                    width="2.5"
+                    height="10"
+                    rx="0.5"
+                    fill="var(--bg-primary)"
+                  />
+                  <rect
+                    x="9.5"
+                    y="5"
+                    width="2.5"
+                    height="10"
+                    rx="0.5"
+                    fill="var(--bg-primary)"
+                  />
+                  <rect
+                    x="14.5"
+                    y="5"
+                    width="2.5"
+                    height="10"
+                    rx="0.5"
+                    fill="var(--bg-primary)"
+                  />
+                </svg>
+                {tabLabel(TAB_PIANO)}
+              </button>
+            </div>
             <button
               id="tab-compose"
               class={`app-tab ${activeTab() === TAB_COMPOSE ? 'active' : ''}`}
               onClick={() => void handleTabChange(TAB_COMPOSE)}
             >
-              Editor
+              <svg
+                class="tab-icon"
+                viewBox="0 0 24 24"
+                width="14"
+                height="14"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                <path d="m15 5 4 4" />
+              </svg>
+              {tabLabel(TAB_COMPOSE)}
               <Show when={melodyStore.items().length > 0}>
                 <span class="tab-badge">{melodyStore.items().length}</span>
               </Show>
@@ -934,7 +1035,7 @@ const AppShell: Component<AppProps> = (props) => {
                   d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"
                 />
               </svg>
-              Analysis
+              {tabLabel(TAB_ANALYSIS)}
             </button>
             <button
               id="tab-community"
@@ -947,7 +1048,7 @@ const AppShell: Component<AppProps> = (props) => {
                   d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"
                 />
               </svg>
-              Community
+              {tabLabel(TAB_COMMUNITY)}
             </button>
             <button
               id="tab-leaderboard"
@@ -960,7 +1061,7 @@ const AppShell: Component<AppProps> = (props) => {
                   d="M5 3H3v18h2V3zm4 0H7v18h2V3zm4 0h-2v18h2V3zm4 0h-2v18h2V3zm4 0h-2v18h2V3z"
                 />
               </svg>
-              Leaderboard
+              {tabLabel(TAB_LEADERBOARD)}
             </button>
             <button
               id="tab-challenges"
@@ -973,7 +1074,7 @@ const AppShell: Component<AppProps> = (props) => {
                   d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
                 />
               </svg>
-              Challenges
+              {tabLabel(TAB_CHALLENGES)}
             </button>
             <button
               id="tab-karaoke"
@@ -990,14 +1091,28 @@ const AppShell: Component<AppProps> = (props) => {
                   d="M3 18 Q10 14 17 20 L19 20 L17 17 Q10 12 3 12 Z"
                 />
               </svg>
-              Vocal Sep
+              {tabLabel(TAB_KARAOKE)}
             </button>
             <button
               id="tab-settings"
               class={`app-tab ${activeTab() === TAB_SETTINGS ? 'active' : ''}`}
               onClick={() => void handleTabChange(TAB_SETTINGS)}
             >
-              Settings
+              <svg
+                class="tab-icon"
+                viewBox="0 0 24 24"
+                width="14"
+                height="14"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="3" />
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" />
+              </svg>
+              {tabLabel(TAB_SETTINGS)}
             </button>
             <Show when={IS_DEV}>
               <button
@@ -1005,14 +1120,14 @@ const AppShell: Component<AppProps> = (props) => {
                 class={`app-tab ${activeTab() === TAB_PITCH_TEST ? 'active' : ''}`}
                 onClick={() => void handleTabChange(TAB_PITCH_TEST)}
               >
-                Pitch Test
+                {tabLabel(TAB_PITCH_TEST)}
               </button>
               <button
                 id="tab-pitch-algo"
                 class={`app-tab ${activeTab() === TAB_PITCH_ALGO ? 'active' : ''}`}
                 onClick={() => void handleTabChange(TAB_PITCH_ALGO)}
               >
-                Algo Tester
+                {tabLabel(TAB_PITCH_ALGO)}
               </button>
             </Show>
           </nav>
@@ -1302,6 +1417,137 @@ const AppShell: Component<AppProps> = (props) => {
                     console.log('Viewing session:', sessionId)
                   }}
                 />
+              </div>
+            </Show>
+            <Show when={activeTab() === TAB_PIANO}>
+              <div id="falling-notes-panel">
+                <SharedControlToolbar
+                  activeTab={activeTab}
+                  fallingNotesTab={() => activeTab() === TAB_PIANO}
+                  isPlaying={() =>
+                    fallingNotes.gameState() === 'playing' ||
+                    fallingNotes.gameState() === 'countdown'
+                  }
+                  isPaused={() => fallingNotes.gameState() === 'paused'}
+                  onPlay={fallingNotes.startGame}
+                  onPause={fallingNotes.pauseGame}
+                  onResume={fallingNotes.resumeGame}
+                  onStop={fallingNotes.resetGame}
+                  volume={savedVol}
+                  onVolumeChange={(vol) => {
+                    setSavedVol(vol)
+                    audioEngine?.setVolume(vol / 100)
+                  }}
+                  speed={fallingNotes.speed()}
+                  onSpeedChange={fallingNotes.setSpeed}
+                  metronomeEnabled={() => false}
+                  onMetronomeToggle={() => {}}
+                  playMode={() => PLAYBACK_MODE_ONCE}
+                  playModeChange={() => {}}
+                  practiceCycles={() => 1}
+                  onCyclesChange={() => {}}
+                  currentCycle={() => 1}
+                  practiceSubMode={() => 'all' as const}
+                  onPracticeSubModeChange={() => {}}
+                  isCountingIn={() => fallingNotes.isCountingIn()}
+                  countInBeat={() => fallingNotes.countInBeat()}
+                  countInBeats={() => countIn()}
+                  onMicToggle={() => {
+                    if (fallingNotes.isMicActive()) {
+                      fallingNotes.stopMic()
+                    } else {
+                      void fallingNotes.startMic()
+                    }
+                  }}
+                  inputMode={fallingNotes.inputMode}
+                  midiConnected={fallingNotes.midiConnected}
+                  onMidiToggle={() => {
+                    if (fallingNotes.midiConnected()) {
+                      fallingNotes.midiDisconnect()
+                    } else {
+                      void fallingNotes.midiConnect()
+                    }
+                  }}
+                  zoomLevel={fallingNotes.zoomPercent}
+                  onZoomIn={fallingNotes.zoomIn}
+                  onZoomOut={fallingNotes.zoomOut}
+                  showNoteLabels={fallingNotes.showNoteLabels}
+                  onToggleNoteLabels={fallingNotes.toggleNoteLabels}
+                />
+                <FallingNotesSongPicker onSongLoaded={fallingNotes.loadSong} />
+                <div id="falling-notes-canvas-container">
+                  <FallingNotesCanvas
+                    songNotes={fallingNotes.songNotes}
+                    gameState={fallingNotes.gameState}
+                    playheadBeat={fallingNotes.playheadBeat}
+                    hitResults={fallingNotes.hitResults}
+                    combo={fallingNotes.combo}
+                    score={fallingNotes.score}
+                    totalNotes={fallingNotes.totalNotes}
+                    notesMissed={fallingNotes.notesMissed}
+                    currentPitch={fallingNotes.currentPitch}
+                    isMicActive={fallingNotes.isMicActive}
+                    inputMode={fallingNotes.inputMode}
+                    visibleBeatWindow={fallingNotes.visibleBeatWindow}
+                    midiHeldNotes={fallingNotes.midiHeldNotes}
+                    onClickPianoOn={fallingNotes.clickPianoNoteOn}
+                    onClickPianoOff={fallingNotes.clickPianoNoteOff}
+                    clickPianoEnabled={fallingNotes.clickPianoEnabled}
+                  />
+                </div>
+                {/* Score overlay for finished game */}
+                <Show when={fallingNotes.gameState() === 'finished'}>
+                  <div class="fn-score-overlay">
+                    <div class="fn-score-card">
+                      <h2>Complete!</h2>
+                      <div class="fn-score-grade">
+                        {(() => {
+                          const s = fallingNotes.score()
+                          const t = fallingNotes.totalNotes()
+                          const pct =
+                            t > 0 ? Math.round((s / (t * 100)) * 100) : 0
+                          return pct >= 90
+                            ? 'Pitch Perfect!'
+                            : pct >= 80
+                              ? 'Excellent!'
+                              : pct >= 65
+                                ? 'Good!'
+                                : pct >= 50
+                                  ? 'Okay!'
+                                  : 'Keep Practicing!'
+                        })()}
+                      </div>
+                      <div class="fn-score-pct">
+                        {fallingNotes.totalNotes() > 0
+                          ? Math.round(
+                              (fallingNotes.score() /
+                                (fallingNotes.totalNotes() * 100)) *
+                                100,
+                            )
+                          : 0}
+                        %
+                      </div>
+                      <div class="fn-score-detail">
+                        {fallingNotes.totalNotes()} notes · Max Combo:{' '}
+                        {fallingNotes.maxCombo()}x
+                      </div>
+                      <div class="fn-score-actions">
+                        <button
+                          class="fn-btn fn-btn-play"
+                          onClick={fallingNotes.startGame}
+                        >
+                          Play Again
+                        </button>
+                        <button
+                          class="fn-btn fn-btn-close"
+                          onClick={fallingNotes.resetGame}
+                        >
+                          Close
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </Show>
               </div>
             </Show>
           </div>
