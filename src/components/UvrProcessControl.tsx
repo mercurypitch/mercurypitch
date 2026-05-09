@@ -26,6 +26,8 @@ interface ProcessControlProps {
     vocalMidi?: string
     instrumentalMidi?: string
   }
+  processingMode?: 'server' | 'local'
+  numChunks?: number
   onCancel?: () => void
   onRetry?: () => void
 }
@@ -42,13 +44,17 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
     return `${Math.round(percent)}%`
   }
 
+  const isLocal = (): boolean => props.processingMode === 'local'
+
   const getProcessStage = () => {
     switch (props.status) {
       case 'processing':
         return {
           icon: <Loader2 />,
-          title: 'Processing with UVR',
-          description: 'Separating vocals and instrumental...',
+          title: isLocal() ? 'Processing in Browser' : 'Processing with UVR',
+          description: isLocal()
+            ? 'Running ONNX model locally...'
+            : 'Separating vocals and instrumental...',
           color: 'var(--accent)',
         }
       case 'completed':
@@ -137,6 +143,11 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
               : formatPercentage(props.progress)}{' '}
             • {formatTime(props.processingTime ?? 0)}
           </div>
+          <Show when={isLocal() && props.numChunks !== undefined && props.numChunks > 1}>
+            <div class="progress-chunk-info">
+              Chunk {Math.max(1, Math.min(props.numChunks ?? 1, Math.ceil((props.progress / 100) * (props.numChunks ?? 1))))} of {props.numChunks}
+            </div>
+          </Show>
         </div>
       </Show>
 
