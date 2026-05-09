@@ -10,8 +10,6 @@ import type { SwiftF0Detector } from './swift-f0-detector'
 /** Supported pitch detection algorithms */
 export type PitchAlgorithm = 'yin' | 'mpm' | 'swift'
 
-export type PitchAlgorithm = 'yin' | 'mpm'
-
 /** Internal pitch detection result (partial PitchResult) */
 export interface DetectedPitch {
   frequency: number

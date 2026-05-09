@@ -4,9 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, onCleanup, onMount } from 'solid-js'
-import { appStore, bpm, focusMode } from '@/stores'
-import { colorCodeNotes, flameMode, showAccuracyPercent, showFocusBall, showPlaybackBall, } from '@/stores/settings-store'
-import type { MelodyItem, NoteResult, PitchSample, ScaleDegree } from '@/types'
+import type {ArcState} from '@/lib/arc-physics';
 import {
   BALL_RADIUS,
   buildPlayable,
@@ -15,9 +13,11 @@ import {
   computeBallPos,
   computeInitialArc,
   isBackwardsSeek,
-  shouldAdvanceArc,
-  type ArcState,
+  shouldAdvanceArc
 } from '@/lib/arc-physics'
+import { appStore, bpm, focusMode } from '@/stores'
+import { colorCodeNotes, flameMode, showAccuracyPercent, showFocusBall, showPlaybackBall, } from '@/stores/settings-store'
+import type { MelodyItem, NoteResult, PitchSample, ScaleDegree } from '@/types'
 
 interface PitchCanvasProps {
   melody: () => MelodyItem[]
@@ -269,7 +269,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
 
     // ---- Guard: ensure current note index is valid ------------------
     const curItem = playable[arcState.noteIndex]?.item
-    if (!curItem) {
+    if (curItem === undefined) {
       arcState.initialized = false
       return
     }

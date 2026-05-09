@@ -11,15 +11,15 @@ import { LibraryTab } from '@/components/LibraryTab'
 import { NoteList } from '@/components/NoteList'
 import { PitchDisplay } from '@/components/PitchDisplay'
 import { StatsBars } from '@/components/StatsBars'
+import { TAB_COMPOSE, TAB_SETTINGS,TAB_SINGING } from '@/features/tabs/constants'
 import { ratingToScore } from '@/lib/practice-engine'
 import { KEY_OFFSETS, midiToFreq, midiToNote } from '@/lib/scale-data'
 import { activeTab as appActiveTab, appStore, sessionResults, showNotification, } from '@/stores'
 import { keyName, scaleType, setKeyName, setScaleType } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
-import { showSidebarNoteList, setShowSidebarNoteList, } from '@/stores/settings-store'
+import { setShowSidebarNoteList,showSidebarNoteList,  } from '@/stores/settings-store'
 import { customScales as customScalesMap, customScaleTypeId, } from '@/stores/settings-store'
 import type { MelodyItem, NoteResult, PitchResult } from '@/types'
-import { TAB_SINGING, TAB_COMPOSE, TAB_SETTINGS } from '@/features/tabs/constants'
 
 interface AppSidebarProps {
   /** Called when a preset is loaded */
@@ -74,17 +74,6 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
   }
   const isPracticeOrSettingsTab = () =>
     ([TAB_SINGING, TAB_SETTINGS] as string[]).includes(activeTab())
-
-  // Live score derived from noteResults — updates as each note is played.
-  const liveScore = createMemo(() => {
-    const results = props.noteResults()
-    if (results.length === 0) return null
-    let total = 0
-    for (const r of results) {
-      total += ratingToScore(r.rating)
-    }
-    return Math.round(total / results.length)
-  })
 
   // Live score derived from noteResults — updates as each note is played.
   const liveScore = createMemo(() => {

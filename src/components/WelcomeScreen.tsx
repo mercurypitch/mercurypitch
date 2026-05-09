@@ -6,7 +6,6 @@ import type { Component } from 'solid-js'
 import { createSignal } from 'solid-js'
 import { TierSelector } from '@/components/TierSelector'
 import { appStore } from '@/stores'
-import { accuracyTier, applyAccuracyTier } from '@/stores/settings-store'
 
 interface WelcomeScreenProps {
   onTakeTour?: () => void

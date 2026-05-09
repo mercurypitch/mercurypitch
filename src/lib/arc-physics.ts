@@ -83,7 +83,7 @@ export const buildPlayable = <T extends { isRest?: boolean }>(
 ): { idx: number; item: T }[] => {
   const out: { idx: number; item: T }[] = []
   for (let i = 0; i < melody.length; i++) {
-    if (!melody[i].isRest) out.push({ idx: i, item: melody[i] })
+    if (melody[i].isRest === false) out.push({ idx: i, item: melody[i] })
   }
   return out
 }
