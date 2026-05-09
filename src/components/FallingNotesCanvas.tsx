@@ -180,7 +180,7 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
     // ── Piano key click/touch handlers ─────────────────────────
 
     const onPointerDown = (e: PointerEvent) => {
-      if (!props.clickPianoEnabled?.()) return
+      if (props.clickPianoEnabled?.() !== true) return
       const midi = hitTestKeyboard(e.clientX, e.clientY)
       if (midi !== null) {
         clickedKey = midi
@@ -643,7 +643,6 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
     // Draw white keys first with 3D ivory gradient
     for (let wi = 0; wi < rangeWhite; wi++) {
       const x = wi * colWidth
-      const midi = whiteIndexToMidi(minWhite + wi)
 
       // 3D ivory gradient
       const wGrad = ctx.createLinearGradient(x, kbTop, x, kbTop + kbHeight)

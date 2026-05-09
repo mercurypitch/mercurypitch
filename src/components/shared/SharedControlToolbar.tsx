@@ -751,7 +751,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
               title="Toggle note labels"
             >
               <button
-                class={`label-toggle-btn ${props.showNoteLabels?.() ? 'active' : ''}`}
+                class={`label-toggle-btn ${props.showNoteLabels?.() === true ? 'active' : ''}`}
                 aria-label="Toggle note labels"
                 onClick={() => props.onToggleNoteLabels?.()}
               >
