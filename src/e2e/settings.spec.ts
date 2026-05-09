@@ -192,7 +192,7 @@ test.describe('Settings Panel', () => {
 
   test('BPM changes affect all playback immediately', async ({ page }) => {
     // First navigate to practice tab to have playback setup
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     // Then switch to settings

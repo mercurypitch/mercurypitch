@@ -176,6 +176,12 @@ export function resetMelodyLibrary(): void {
   setMelodyLibrary(defaultLibrary)
 }
 
+/** Reload library from localStorage without wiping (used by tests) */
+export function _reloadLibraryFromStorage(): void {
+  _idCounter = 100
+  setMelodyLibrary(loadLibrary())
+}
+
 // ============================================================
 // Session Operations — Delegate to session-store
 // ============================================================
@@ -914,8 +920,6 @@ export function saveCurrentMelody(name?: string): MelodyData {
     return createNewMelody(name)
   }
   const key = melody.id
-  // FIXME: Do we read the signal for some purpose? Can we refactor/redesign this?
-  const _library = melodyLibrarySignal()
   const updatedMelody = {
     ...melody,
     name: name ?? melody.name,
@@ -1038,9 +1042,6 @@ export function setNumOctaves(num: number): void {
 
 export function createPlaylist(name: string): string {
   const id = `playlist-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
-  // FIXME: Do we read this signal for some purpose, can we refactor/resesign this or this is purely
-  // reactivity wise OK...?
-  const _library = melodyLibrarySignal()
   setMelodyLibrary((prev) => ({
     ...prev,
     playlists: {

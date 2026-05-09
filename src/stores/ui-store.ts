@@ -1,12 +1,15 @@
 import { createSignal } from 'solid-js'
+import type {ActiveTab} from '@/features/tabs/constants';
+import {  DEFAULT_TAB } from '@/features/tabs/constants'
 import { APP_VERSION } from '@/lib/defaults'
 import { createPersistedSignal } from '@/lib/storage'
 import { exposeForE2E } from '@/lib/test-utils'
 
+export type { ActiveTab } from '@/features/tabs/constants'
+
 // ── Active tab ───────────────────────────────────────────────
 
-export type ActiveTab = 'practice' | 'editor' | 'settings'
-export const [activeTab, setActiveTab] = createSignal<ActiveTab>('practice')
+export const [activeTab, setActiveTab] = createSignal<ActiveTab>(DEFAULT_TAB)
 
 // Editor view within the Editor tab
 export type EditorView = 'piano-roll' | 'session-editor'

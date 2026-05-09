@@ -3,16 +3,22 @@
 // v3 refactor: thin shell using providers + controllers
 // ============================================================
 
-import type { Component } from 'solid-js'
+import type { Component} from 'solid-js';
+import  { onCleanup } from 'solid-js'
 import { For } from 'solid-js'
-import { createMemo, createSignal, onMount, Show } from 'solid-js'
+import { createEffect, createMemo, createSignal, onMount, Show } from 'solid-js'
+import { VocalAnalysis, VocalChallenges } from '@/components'
 import { AppSidebar } from '@/components/AppSidebar'
+import { CommunityLeaderboard } from '@/components/CommunityLeaderboard'
+import { CommunityShare } from '@/components/CommunityShare'
 import { FocusMode } from '@/components/FocusMode'
 import { HistoryCanvas } from '@/components/HistoryCanvas'
 import { LibraryModal } from '@/components/LibraryModal'
 import { Notifications } from '@/components/Notifications'
 import { PianoRollCanvas } from '@/components/PianoRollCanvas'
+import { PitchAlgorithmTester } from '@/components/PitchAlgorithmTester'
 import { PitchCanvas } from '@/components/PitchCanvas'
+import { PitchTestingTab } from '@/components/PitchTestingTab'
 import { ScaleBuilder } from '@/components/ScaleBuilder'
 import { SessionBrowser } from '@/components/SessionBrowser'
 import { SessionEditor } from '@/components/SessionEditor'
@@ -21,6 +27,8 @@ import { SessionPlayer } from '@/components/SessionPlayer'
 import { SettingsPanel } from '@/components/SettingsPanel'
 import type { PracticeSubMode } from '@/components/shared/SharedControlToolbar'
 import { SharedControlToolbar } from '@/components/shared/SharedControlToolbar'
+import type { UvrView } from '@/components/UvrPanel'
+import { UvrPanel } from '@/components/UvrPanel'
 import { EngineProvider, useEngines } from '@/contexts/EngineContext'
 import { useEditorController } from '@/features/editor/useEditorController'
 import { usePianoRollEvents } from '@/features/events/usePianoRollEvents'
@@ -29,23 +37,35 @@ import { usePlaybackController } from '@/features/playback/usePlaybackController
 import { usePracticeController } from '@/features/practice/usePracticeController'
 import { useRecordingController } from '@/features/recording/useRecordingController'
 import { useSessionSequencer } from '@/features/session/useSessionSequencer'
+import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_KARAOKE, TAB_LEADERBOARD,
+  TAB_PITCH_ALGO,
+  TAB_PITCH_TEST, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
 import type { InstrumentType } from '@/lib/audio-engine'
 import { audioRegistry } from '@/lib/audio-registry'
 import { debounce } from '@/lib/debounce'
+import { IS_DEV } from '@/lib/defaults'
 import { registerE2EBridge } from '@/lib/e2e-bridge'
+import type { HashRoute } from '@/lib/hash-router'
+import { buildHash, parseHash, replaceHash } from '@/lib/hash-router'
 import { melodyIndexAtBeat, melodyTotalBeats } from '@/lib/scale-data'
 import { buildScaleMelody, buildSessionPlaybackMelody, } from '@/lib/session-builder'
 import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
-import { setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPlaybackSpeed, setScaleType, } from '@/stores'
-import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initBpm, initPresets, initReverb, initSessionHistory, initSettings, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, toggleMicWaveVisible, } from '@/stores'
+import {
+  openWalkthroughChapter, selectedWalkthrough,
+  setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPlaybackSpeed, setScaleType,
+  showSelection,
+  walkthroughModalOpen, } from '@/stores'
+import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, toggleMicWaveVisible, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import { getSession, templateToSession } from '@/stores/session-store'
 import { selectedCharacter, showPracticeResultPopup, } from '@/stores/settings-store'
-import type { MelodyItem, PlaybackMode, SpacedRestMode } from '@/types'
+import type { ActiveTab, MelodyItem, PlaybackMode, SpacedRestMode, } from '@/types'
 import { Walkthrough, WalkthroughControl } from './components'
+import { LyricsUploaderStyles, StemMixerStyles } from './components'
 import { AppErrorBoundary } from './components/AppErrorBoundary'
 import { CrashModal } from './components/CrashModal'
 import { GuideSelection } from './components/GuideSelection'
+import { _UvrGuideStyles } from './components/UvrGuide'
 import { WelcomeScreen } from './components/WelcomeScreen'
 
 // ============================================================
@@ -53,7 +73,6 @@ import { WelcomeScreen } from './components/WelcomeScreen'
 // ============================================================
 
 export type EditorView = 'piano-roll' | 'session-editor'
-export type ActiveTab = 'practice' | 'editor' | 'settings'
 
 interface AppProps {
   onMounted?: () => void
@@ -137,19 +156,33 @@ const AppShell: Component<AppProps> = (props) => {
   const [sidebarOpen, setSidebarOpen] = createSignal(false)
   const toggleSidebar = () => setSidebarOpen(sidebarOpen() === false)
   const closeSidebar = () => setSidebarOpen(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = createSignal(false)
 
   const [showScaleBuilder, setShowScaleBuilder] = createSignal(false)
   const [savedVol, setSavedVol] = createSignal<number>(80)
   const [metronomeEnabled, setMetronomeEnabled] = createSignal(false)
 
   // ── Play mode ───────────────────────────────────────────────
-  const [playMode, setPlayMode] = createSignal<PlaybackMode>('once')
+  const [playMode, setPlayMode] = createSignal<PlaybackMode>(PLAYBACK_MODE_ONCE)
   const [repeatCycles, setRepeatCycles] = createSignal<number>(5)
   const [currentRepeat, setCurrentRepeat] = createSignal<number>(1)
   const [practiceSubMode, setPracticeSubMode] =
     createSignal<PracticeSubMode>('all')
   const [spacedRestMode, setSpacedRestMode] =
     createSignal<SpacedRestMode>('none')
+
+  // Hash routing — prevents effect loop when hash is being updated from code
+  let hashSyncing = false
+  const [initialUvrSessionId, setInitialUvrSessionId] = createSignal<
+    string | null
+  >(null)
+  const [initialUvrView, setInitialUvrView] = createSignal<
+    'upload' | 'history' | 'results' | 'mixer' | null
+  >(null)
+  const [activeUvrSessionId, setActiveUvrSessionId] = createSignal<
+    string | null
+  >(null)
+  const [activeUvrView, setActiveUvrView] = createSignal<UvrView>('upload')
 
   // ── Guide Selection dialog ──────────────────────────────────
   const [showGuideSelection, setShowGuideSelection] = createSignal(false)
@@ -194,7 +227,7 @@ const AppShell: Component<AppProps> = (props) => {
     setLiveScore: ((v: unknown) => practice.setLiveScore(v as never)) as never,
     closeSidebar,
     filterMelodyForPractice: (melody, subMode) =>
-      playMode() === 'once'
+      playMode() === PLAYBACK_MODE_ONCE
         ? applySpacedRests(melody, spacedRestMode())
         : filterMelodyForPractice(melody, subMode),
     buildSessionPlaybackMelody,
@@ -339,10 +372,13 @@ const AppShell: Component<AppProps> = (props) => {
     }) as never,
   })
 
+  // Clean up pending session sequencer timeouts on unmount
+  onCleanup(() => sessionSequencer.destroy())
+
   // ── Tab change handler with audio cleanup ──────────────────
   const handleTabChange = async (newTab: ActiveTab) => {
     const currentTab = activeTab()
-    if (currentTab === 'practice' || currentTab === 'editor') {
+    if (currentTab === TAB_SINGING || currentTab === TAB_COMPOSE) {
       await resetPlaybackState()
     }
     setActiveTab(newTab)
@@ -457,7 +493,7 @@ const AppShell: Component<AppProps> = (props) => {
 
   const handlePracticeModeChange = (mode: PlaybackMode) => {
     setPlayMode(mode)
-    if (mode === 'repeat') {
+    if (mode === PLAYBACK_MODE_REPEAT) {
       setCurrentRepeat(1)
     }
   }
@@ -485,7 +521,7 @@ const AppShell: Component<AppProps> = (props) => {
 
       if (!isRestItem) {
         setTargetPitch(item.note.freq)
-        if (activeTab() === 'practice') {
+        if (activeTab() === TAB_SINGING) {
           practiceEngine.onNoteStart(item.note, index)
         }
       } else {
@@ -554,12 +590,12 @@ const AppShell: Component<AppProps> = (props) => {
       }
 
       const sessionModeValue = sessionMode()
-      if (sessionModeValue === true && mode === 'practice') {
+      if (sessionModeValue === true && mode === PLAYBACK_MODE_SESSION) {
         handleSessionItemComplete()
         return
       }
 
-      if (mode === 'repeat') {
+      if (mode === PLAYBACK_MODE_REPEAT) {
         handleRepeatModeComplete()
         return
       }
@@ -572,11 +608,90 @@ const AppShell: Component<AppProps> = (props) => {
 
   onMount(() => {
     initTheme()
-    initBpm()
-    initPresets()
-    initSessionHistory()
-    initSettings()
-    initReverb()
+
+    // ── Hash routing: initial load ──────────────────────────
+    const initialRoute = parseHash(window.location.hash)
+    if (initialRoute.type === 'tab') {
+      setActiveTab(initialRoute.tab)
+    } else if (initialRoute.type === 'uvr-upload') {
+      setActiveTab(TAB_KARAOKE)
+      setInitialUvrView('upload')
+    } else if (initialRoute.type === 'uvr-history') {
+      setActiveTab(TAB_KARAOKE)
+      setInitialUvrView('history')
+    } else if (initialRoute.type === 'uvr-session') {
+      setActiveTab(TAB_KARAOKE)
+      setInitialUvrSessionId(initialRoute.sessionId)
+      setInitialUvrView('results')
+    } else if (initialRoute.type === 'uvr-session-mixer') {
+      setActiveTab(TAB_KARAOKE)
+      setInitialUvrSessionId(initialRoute.sessionId)
+      setInitialUvrView('mixer')
+    } else if (initialRoute.type === 'learn') {
+      openLearningWalkthrough()
+    } else if (initialRoute.type === 'learn-chapter') {
+      openWalkthroughChapter(initialRoute.chapterId)
+    } else if (initialRoute.type === 'guide') {
+      setShowGuideSelection(true)
+    } else if (initialRoute.type === 'guide-start') {
+      const sectionIds =
+        initialRoute.sectionId === 'all' ? undefined : [initialRoute.sectionId]
+      startWalkthrough(sectionIds)
+    }
+
+    // ── Hash routing: back/forward navigation ───────────────
+    window.addEventListener('hashchange', () => {
+      const route = parseHash(window.location.hash)
+      hashSyncing = true
+      if (route.type === 'tab') {
+        setActiveTab(route.tab)
+        setActiveUvrSessionId(null)
+      } else if (route.type === 'uvr-upload') {
+        setActiveTab(TAB_KARAOKE)
+        setInitialUvrView('upload')
+        setActiveUvrSessionId(null)
+      } else if (route.type === 'uvr-history') {
+        setActiveTab(TAB_KARAOKE)
+        setInitialUvrView('history')
+        setActiveUvrSessionId(null)
+      } else if (route.type === 'uvr-session') {
+        setActiveTab(TAB_KARAOKE)
+        setInitialUvrSessionId(route.sessionId)
+        setInitialUvrView('results')
+        setActiveUvrSessionId(route.sessionId)
+      } else if (route.type === 'uvr-session-mixer') {
+        setActiveTab(TAB_KARAOKE)
+        setInitialUvrSessionId(route.sessionId)
+        setInitialUvrView('mixer')
+        setActiveUvrSessionId(route.sessionId)
+      } else if (route.type === 'learn') {
+        openLearningWalkthrough()
+      } else if (route.type === 'learn-chapter') {
+        openWalkthroughChapter(route.chapterId)
+      } else if (route.type === 'guide') {
+        setShowGuideSelection(true)
+      } else if (route.type === 'guide-start') {
+        const sectionIds =
+          route.sectionId === 'all' ? undefined : [route.sectionId]
+        startWalkthrough(sectionIds)
+      }
+      hashSyncing = false
+    })
+
+    // Inject UVR component styles
+    const styleElements = [
+      LyricsUploaderStyles,
+      StemMixerStyles,
+      _UvrGuideStyles,
+    ]
+
+    styleElements.forEach((styleString) => {
+      if (typeof styleString === 'string' && styleString.trim()) {
+        const style = document.createElement('style')
+        style.textContent = styleString
+        document.head.appendChild(style)
+      }
+    })
 
     melodyStore.seedDefaultSession()
 
@@ -641,6 +756,60 @@ const AppShell: Component<AppProps> = (props) => {
     props.onMounted?.()
   })
 
+  // ── Hash routing: sync activeTab → URL hash ───────────────
+  createEffect(() => {
+    if (hashSyncing) return
+    // Don't clobber walkthrough/guide hashes while those UIs are open
+    if (showSelection() || walkthroughModalOpen() || showGuideSelection())
+      return
+    const tab = activeTab()
+    if (tab !== TAB_KARAOKE) {
+      const expectedHash = `#/${tab}`
+      if (window.location.hash !== expectedHash) {
+        replaceHash({ type: 'tab', tab })
+      }
+      return
+    }
+    const view = activeUvrView()
+    const sessionId = activeUvrSessionId()
+    let route: HashRoute
+    if (view === 'results' && sessionId !== null) {
+      route = { type: 'uvr-session', sessionId }
+    } else if (view === 'mixer' && sessionId !== null) {
+      route = { type: 'uvr-session-mixer', sessionId }
+    } else if (view === 'history') {
+      route = { type: 'uvr-history' }
+    } else {
+      route = { type: 'uvr-upload' }
+    }
+    const expectedHash = `#${buildHash(route)}`
+    if (window.location.hash !== expectedHash) {
+      replaceHash(route)
+    }
+  })
+
+  // ── Hash routing: sync walkthrough/guide state → URL hash ──
+  createEffect(() => {
+    if (hashSyncing) return
+    if (walkthroughModalOpen() && selectedWalkthrough() !== null) {
+      const id = selectedWalkthrough()!
+      const expectedHash = `#/learn/${id}`
+      if (window.location.hash !== expectedHash) {
+        replaceHash({ type: 'learn-chapter', chapterId: id })
+      }
+    } else if (showSelection()) {
+      const expectedHash = '#/learn'
+      if (window.location.hash !== expectedHash) {
+        replaceHash({ type: 'learn' })
+      }
+    } else if (showGuideSelection()) {
+      const expectedHash = '#/guide'
+      if (window.location.hash !== expectedHash) {
+        replaceHash({ type: 'guide' })
+      }
+    }
+  })
+
   // ============================================================
   // Render
   // ============================================================
@@ -675,7 +844,7 @@ const AppShell: Component<AppProps> = (props) => {
         <div class="sidebar-backdrop" onClick={closeSidebar} />
       </Show>
 
-      <button class="sidebar-toggle-btn" onClick={toggleSidebar} title="Menu">
+      <button class="sidebar-toggle-btn" onClick={toggleSidebar} title="Menu" aria-label="Menu">
         <svg viewBox="0 0 24 24" width="16" height="16">
           <path
             fill="currentColor"
@@ -691,7 +860,7 @@ const AppShell: Component<AppProps> = (props) => {
             <button
               id="app-title"
               class="logo-btn"
-              onClick={() => void handleTabChange('practice')}
+              onClick={() => void handleTabChange(TAB_SINGING)}
               title="Go to Practice"
             >
               <h1 class="app-title">PitchPerfect</h1>
@@ -703,7 +872,7 @@ const AppShell: Component<AppProps> = (props) => {
             <Show when={melodyStore.getCurrentMelody()}>
               <button
                 class="melody-indicator-pill"
-                onClick={() => void handleTabChange('practice')}
+                onClick={() => void handleTabChange(TAB_SINGING)}
                 title={`Now loaded: ${melodyStore.getCurrentMelody()?.name ?? 'Untitled'}`}
               >
                 <svg
@@ -739,16 +908,16 @@ const AppShell: Component<AppProps> = (props) => {
           </div>
           <nav id="app-tabs">
             <button
-              id="tab-practice"
-              class={`app-tab ${activeTab() === 'practice' ? 'active' : ''}`}
-              onClick={() => void handleTabChange('practice')}
+              id="tab-singing"
+              class={`app-tab ${activeTab() === TAB_SINGING ? 'active' : ''}`}
+              onClick={() => void handleTabChange(TAB_SINGING)}
             >
               Practice
             </button>
             <button
-              id="tab-editor"
-              class={`app-tab ${activeTab() === 'editor' ? 'active' : ''}`}
-              onClick={() => void handleTabChange('editor')}
+              id="tab-compose"
+              class={`app-tab ${activeTab() === TAB_COMPOSE ? 'active' : ''}`}
+              onClick={() => void handleTabChange(TAB_COMPOSE)}
             >
               Editor
               <Show when={melodyStore.items().length > 0}>
@@ -756,12 +925,92 @@ const AppShell: Component<AppProps> = (props) => {
               </Show>
             </button>
             <button
+              id="tab-analysis"
+              class={`app-tab ${activeTab() === TAB_ANALYSIS ? 'active' : ''}`}
+              onClick={() => void handleTabChange(TAB_ANALYSIS)}
+            >
+              <svg viewBox="0 0 24 24" width="18" height="18">
+                <path
+                  fill="currentColor"
+                  d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"
+                />
+              </svg>
+              Analysis
+            </button>
+            <button
+              id="tab-community"
+              class={`app-tab ${activeTab() === TAB_COMMUNITY ? 'active' : ''}`}
+              onClick={() => void handleTabChange(TAB_COMMUNITY)}
+            >
+              <svg viewBox="0 0 24 24" width="18" height="18">
+                <path
+                  fill="currentColor"
+                  d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"
+                />
+              </svg>
+              Community
+            </button>
+            <button
+              id="tab-leaderboard"
+              class={`app-tab ${activeTab() === TAB_LEADERBOARD ? 'active' : ''}`}
+              onClick={() => void handleTabChange(TAB_LEADERBOARD)}
+            >
+              <svg viewBox="0 0 24 24" width="18" height="18">
+                <path
+                  fill="currentColor"
+                  d="M5 3H3v18h2V3zm4 0H7v18h2V3zm4 0h-2v18h2V3zm4 0h-2v18h2V3zm4 0h-2v18h2V3z"
+                />
+              </svg>
+              Leaderboard
+            </button>
+            <button
+              id="tab-challenges"
+              class={`app-tab ${activeTab() === TAB_CHALLENGES ? 'active' : ''}`}
+              onClick={() => void handleTabChange(TAB_CHALLENGES)}
+            >
+              <svg viewBox="0 0 24 24" width="18" height="18">
+                <path
+                  fill="currentColor"
+                  d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
+                />
+              </svg>
+              Challenges
+            </button>
+            <button
+              id="tab-karaoke"
+              class={`app-tab ${activeTab() === TAB_KARAOKE ? 'active' : ''}`}
+              onClick={() => void handleTabChange(TAB_KARAOKE)}
+            >
+              <svg viewBox="0 0 24 24" width="18" height="18">
+                <path fill="currentColor" d="M9 18V5l12-2v13" />
+                <circle cx="6" cy="18" r="3" />
+                <circle cx="18" cy="16" r="3" />
+              </svg>
+              Vocal Sep
+            </button>
+            <button
               id="tab-settings"
-              class={`app-tab ${activeTab() === 'settings' ? 'active' : ''}`}
-              onClick={() => void handleTabChange('settings')}
+              class={`app-tab ${activeTab() === TAB_SETTINGS ? 'active' : ''}`}
+              onClick={() => void handleTabChange(TAB_SETTINGS)}
             >
               Settings
             </button>
+            <Show when={IS_DEV}>
+              <button
+                id="tab-pitch-test"
+                class={`app-tab ${activeTab() === TAB_PITCH_TEST ? 'active' : ''}`}
+                onClick={() => void handleTabChange(TAB_PITCH_TEST)}
+              >
+                Pitch Test
+              </button>
+              <button
+                id="tab-pitch-algo"
+                class={`app-tab ${activeTab() === TAB_PITCH_ALGO ? 'active' : ''}`}
+                onClick={() => void handleTabChange(TAB_PITCH_ALGO)}
+              >
+                Algo Tester
+              </button>
+            </Show>
           </nav>
         </header>
 
@@ -784,18 +1033,20 @@ const AppShell: Component<AppProps> = (props) => {
             pitch={currentPitch}
             targetNoteName={targetNoteName}
             onClose={closeSidebar}
+            collapsed={sidebarCollapsed()}
+            onToggleCollapse={() => setSidebarCollapsed((prev) => !prev)}
           />
 
           {/* Tab content */}
           <div class="main-content">
-            <Show when={activeTab() === 'practice'}>
+            <Show when={activeTab() === TAB_SINGING}>
               {/* Practice panel */}
               <div id="practice-panel">
                 {/* Shared control toolbar with practice-specific options */}
                 <SharedControlToolbar
-                  activeTab={activeTab}
-                  practiceTab={() => activeTab() === 'practice'}
-                  editorTab={() => activeTab() === 'editor'}
+                  activeTab={() => activeTab()}
+                  singingTab={() => activeTab() === TAB_SINGING}
+                  editorTab={() => activeTab() === TAB_COMPOSE}
                   isPlaying={isPlaying}
                   isPaused={isPaused}
                   onPlay={handlePracticePlay}
@@ -858,7 +1109,7 @@ const AppShell: Component<AppProps> = (props) => {
                   <div
                     id="playhead"
                     style={{
-                      display: isPlaying() || isPaused() ? 'block' : 'none',
+                      display: (isPlaying() || isPaused()) && appStore.showPlayhead() ? 'block' : 'none',
                       left: `${playheadPosition()}%`,
                     }}
                   >
@@ -876,10 +1127,10 @@ const AppShell: Component<AppProps> = (props) => {
               </div>
             </Show>
 
-            <Show when={activeTab() === 'editor'}>
+            <Show when={activeTab() === TAB_COMPOSE}>
               <SharedControlToolbar
-                activeTab={activeTab}
-                editorTab={() => activeTab() === 'editor'}
+                activeTab={() => activeTab()}
+                editorTab={() => activeTab() === TAB_COMPOSE}
                 isPlaying={editorIsPlaying}
                 isPaused={editorIsPaused}
                 onPlay={() => void handleEditorPlay()}
@@ -897,7 +1148,7 @@ const AppShell: Component<AppProps> = (props) => {
                 onMetronomeToggle={() =>
                   setMetronomeEnabled(metronomeEnabled() === false)
                 }
-                playMode={() => 'once'}
+                playMode={() => PLAYBACK_MODE_ONCE}
                 playModeChange={() => {}}
                 practiceCycles={() => 1}
                 onCyclesChange={() => {}}
@@ -984,9 +1235,66 @@ const AppShell: Component<AppProps> = (props) => {
               </Show>
             </Show>
 
-            <Show when={activeTab() === 'settings'}>
+            <Show when={activeTab() === TAB_ANALYSIS}>
+              <div class="vocal-analysis-panel">
+                <VocalAnalysis />
+              </div>
+            </Show>
+
+            <Show when={activeTab() === TAB_COMMUNITY}>
+              <div class="community-panel">
+                <CommunityShare />
+              </div>
+            </Show>
+
+            <Show when={activeTab() === TAB_LEADERBOARD}>
+              <div class="leaderboard-panel">
+                <CommunityLeaderboard />
+              </div>
+            </Show>
+
+            <Show when={activeTab() === TAB_CHALLENGES}>
+              <div class="vocal-challenges-panel">
+                <VocalChallenges />
+              </div>
+            </Show>
+
+            <Show when={activeTab() === TAB_SETTINGS}>
               <div id="settings-panel">
                 <SettingsPanel />
+              </div>
+            </Show>
+            <Show when={IS_DEV}>
+              <Show when={activeTab() === TAB_PITCH_TEST}>
+                <PitchTestingTab onClose={() => setActiveTab(TAB_SINGING)} />
+              </Show>
+              <Show when={activeTab() === TAB_PITCH_ALGO}>
+                <PitchAlgorithmTester
+                  onClose={() => setActiveTab(TAB_SINGING)}
+                />
+              </Show>
+            </Show>
+
+            <Show when={activeTab() === TAB_KARAOKE}>
+              <div id="uvr-panel">
+                <UvrPanel
+                  initialView={initialUvrView() ?? 'upload'}
+                  initialSessionId={initialUvrSessionId() ?? undefined}
+                  onSessionChange={(sessionId) =>
+                    setActiveUvrSessionId(sessionId)
+                  }
+                  onViewChange={(view) => setActiveUvrView(view)}
+                  onPracticeStart={(mode) => {
+                    // For now, this could load a session from UVR
+                    console.log('Starting practice with mode:', mode)
+                  }}
+                  onExport={(type) => {
+                    console.log('Exporting:', type)
+                  }}
+                  onSessionView={(sessionId) => {
+                    console.log('Viewing session:', sessionId)
+                  }}
+                />
               </div>
             </Show>
           </div>

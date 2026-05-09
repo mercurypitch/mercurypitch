@@ -4,6 +4,8 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
+import { PitchAlgorithmTester } from '@/components'
+import { ChangelogModal } from '@/components/ChangelogModal'
 import { TierSelector } from '@/components/TierSelector'
 import { APP_VERSION } from '@/lib/defaults'
 import { IS_DEV } from '@/lib/defaults'
@@ -18,6 +20,8 @@ import { PITCH_BUFFER_DESCRIPTIONS, PITCH_BUFFER_LABELS, PITCH_BUFFER_SIZES, pit
 export const SettingsPanel: Component = () => {
   const s = () => settings()
   const [showResetConfirm, setShowResetConfirm] = createSignal(false)
+  const [showChangelog, setShowChangelog] = createSignal(false)
+  const [showAlgoTester, setShowAlgoTester] = createSignal(false)
 
   const bandValues = createMemo(() => {
     const bands = s().bands
@@ -535,6 +539,77 @@ export const SettingsPanel: Component = () => {
           </div>
 
           <div class="settings-row">
+            <label for="vis-practice-result-popup">Practice Result Popup</label>
+            <label class="settings-toggle">
+              <input
+                type="checkbox"
+                id="vis-practice-result-popup"
+                checked={showPracticeResultPopup()}
+                onChange={(e) => {
+                  setShowPracticeResultPopup(e.currentTarget.checked)
+                }}
+              />
+              <span class="settings-slider" />
+            </label>
+            <small>
+              Show a score overlay after each practice run or session completes.
+              When off, results are still recorded in history.
+            </small>
+          </div>
+
+          <div class="settings-row">
+            <label for="vis-playback-ball">Jumping Ball (Playback)</label>
+            <label class="settings-toggle">
+              <input
+                type="checkbox"
+                id="vis-playback-ball"
+                checked={appStore.showPlaybackBall()}
+                onChange={(e) => {
+                  appStore.setShowPlaybackBall(e.currentTarget.checked)
+                }}
+              />
+              <span class="settings-slider" />
+            </label>
+            <small>
+              Show the animated jumping ball during playback mode. Off by default.
+            </small>
+          </div>
+
+          <div class="settings-row">
+            <label for="vis-focus-ball">Jumping Ball (Focus Mode)</label>
+            <label class="settings-toggle">
+              <input
+                type="checkbox"
+                id="vis-focus-ball"
+                checked={appStore.showFocusBall()}
+                onChange={(e) => {
+                  appStore.setShowFocusBall(e.currentTarget.checked)
+                }}
+              />
+              <span class="settings-slider" />
+            </label>
+            <small>
+              Show the animated jumping ball during Focus mode. On by default.
+            </small>
+          </div>
+
+          <div class="settings-row">
+            <label for="vis-playhead">Playhead</label>
+            <label class="settings-toggle">
+              <input
+                type="checkbox"
+                id="vis-playhead"
+                checked={appStore.showPlayhead()}
+                onChange={(e) => {
+                  appStore.setShowPlayhead(e.currentTarget.checked)
+                }}
+              />
+              <span class="settings-slider" />
+            </label>
+            <small>Show the vertical playhead line during playback</small>
+          </div>
+
+          <div class="settings-row">
             <label for="vis-theme">Theme</label>
             <label>
               <select
@@ -852,6 +927,37 @@ export const SettingsPanel: Component = () => {
               </button>
             </div>
           </div>
+
+          {/* Algorithm Tester */}
+          <div class="settings-section">
+            <h3 class="settings-section-title">Algorithm Testing</h3>
+            <div class="settings-divider" />
+            <p class="settings-desc">
+              Test and compare pitch detection algorithms on known samples.
+              Measures accuracy (cents), computation time, and realtime
+              viability.
+            </p>
+
+            <div class="settings-row">
+              <label>Algorithm Tester</label>
+              <button
+                class="primary-btn"
+                onClick={() => setShowAlgoTester(true)}
+              >
+                Open Tester
+              </button>
+            </div>
+          </div>
+
+          <Show when={showAlgoTester()}>
+            <div class="modal-overlay">
+              <div class="modal-content">
+                <PitchAlgorithmTester
+                  onClose={() => setShowAlgoTester(false)}
+                />
+              </div>
+            </div>
+          </Show>
         </Show>
 
         {/* About Section */}
@@ -880,6 +986,18 @@ export const SettingsPanel: Component = () => {
             </div>
             <p class="about-name">PitchPerfect</p>
             <p class="about-version">Version {APP_VERSION}</p>
+            <button
+              class="whats-new-btn"
+              onClick={() => setShowChangelog(true)}
+            >
+              <svg viewBox="0 0 24 24" width="14" height="14">
+                <path
+                  fill="currentColor"
+                  d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"
+                />
+              </svg>
+              What's New
+            </button>
             <p class="about-desc">
               A web-based vocal pitch practice tool. Sing into your microphone
               and see your accuracy on the pitch canvas. Use the piano roll
@@ -943,6 +1061,10 @@ export const SettingsPanel: Component = () => {
                 Reverb effects
               </span>
             </div>
+            <ChangelogModal
+              open={showChangelog()}
+              onClose={() => setShowChangelog(false)}
+            />
             <p class="about-credits">Vocal Pitch Practice — Redefined.</p>
             <div class="about-links">
               <a

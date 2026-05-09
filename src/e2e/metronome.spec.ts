@@ -32,7 +32,7 @@ test.describe('Metronome', () => {
 
   test('User can toggle metronome on/off', async ({ page }) => {
     // Navigate to practice tab first
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const metroToggle = page.locator('#metronome-toggle')
@@ -47,7 +47,7 @@ test.describe('Metronome', () => {
   })
 
   test('Metronome enable state persists across sessions', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const metroToggle = page.locator('#metronome-toggle')
@@ -64,7 +64,7 @@ test.describe('Metronome', () => {
   })
 
   test('Toggle button shows visual state', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const metroToggle = page.locator('#metronome-toggle')
@@ -75,7 +75,7 @@ test.describe('Metronome', () => {
   })
 
   test('Toggle shows active state (red indicator)', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const metroToggle = page.locator('#metronome-toggle')
@@ -87,7 +87,7 @@ test.describe('Metronome', () => {
   })
 
   test('Metronome only sounds during playback', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const metroToggle = page.locator('#metronome-toggle')
@@ -103,7 +103,7 @@ test.describe('Metronome', () => {
   test('When metronome is off, visual indicator does not advance', async ({
     page,
   }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const metroToggle = page.locator('#metronome-toggle')
@@ -119,7 +119,7 @@ test.describe('Metronome', () => {
   test('Clicking metronome toggle immediately starts/stops metronome', async ({
     page,
   }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const metroToggle = page.locator('#metronome-toggle')
@@ -138,7 +138,7 @@ test.describe('Metronome', () => {
   // ==========================================
 
   test('User can select metronome sound type', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const soundSelect = page.locator('#metro-sound-select')
@@ -148,7 +148,7 @@ test.describe('Metronome', () => {
   test('Available sound types are click, click-off, syncopated', async ({
     page,
   }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const soundSelect = page.locator('#metro-sound-select')
@@ -159,7 +159,7 @@ test.describe('Metronome', () => {
   })
 
   test('Sound selection persists across sessions', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const soundSelect = page.locator('#metro-sound-select')
@@ -178,7 +178,7 @@ test.describe('Metronome', () => {
   test('Each sound type has distinct auditory characteristics', async ({
     page,
   }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const soundSelect = page.locator('#metro-sound-select')
@@ -196,7 +196,7 @@ test.describe('Metronome', () => {
   })
 
   test('Click-off sounds on weaker beats', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const soundSelect = page.locator('#metro-sound-select')
@@ -209,7 +209,7 @@ test.describe('Metronome', () => {
   test('Syncopated alternates between strong and weak beats', async ({
     page,
   }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const soundSelect = page.locator('#metro-sound-select')
@@ -224,7 +224,7 @@ test.describe('Metronome', () => {
   // ==========================================
 
   test('User can adjust metronome volume independently', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const volSlider = page.locator('#metro-volume-slider')
@@ -243,7 +243,7 @@ test.describe('Metronome', () => {
   })
 
   test('Default metronome volume is 50%', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const volSlider = page.locator('#metro-volume-slider')
@@ -251,7 +251,7 @@ test.describe('Metronome', () => {
   })
 
   test('Volume changes take effect immediately', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const volSlider = page.locator('#metro-volume-slider')
@@ -262,7 +262,7 @@ test.describe('Metronome', () => {
   })
 
   test('Volume range is 0-100%', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const volSlider = page.locator('#metro-volume-slider')
@@ -283,7 +283,7 @@ test.describe('Metronome', () => {
   // ==========================================
 
   test('Metronome is synchronized with BPM setting', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const bpmInput = page.locator('#bpm-input')
@@ -295,7 +295,7 @@ test.describe('Metronome', () => {
   })
 
   test('Metronome does not drift from BPM reference', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const bpmInput = page.locator('#bpm-input')
@@ -307,7 +307,7 @@ test.describe('Metronome', () => {
   })
 
   test('Metronome sounds at precise BPM intervals', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const metroToggle = page.locator('#metronome-toggle')
@@ -319,7 +319,7 @@ test.describe('Metronome', () => {
   test('Metronome works correctly at all BPM ranges (40-280)', async ({
     page,
   }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const bpmInput = page.locator('#bpm-input')
@@ -356,7 +356,7 @@ test.describe('Metronome', () => {
   // ==========================================
 
   test('Visual beat indicator advances with metronome', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const beatIndicator = page.locator('.beat-indicator')
@@ -364,7 +364,7 @@ test.describe('Metronome', () => {
   })
 
   test('Indicator shows current beat number', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const beatIndicator = page.locator('.beat-indicator')
@@ -372,7 +372,7 @@ test.describe('Metronome', () => {
   })
 
   test('Indicator is synchronized with audio', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const metroToggle = page.locator('#metronome-toggle')
@@ -381,7 +381,7 @@ test.describe('Metronome', () => {
   })
 
   test('When metronome is off, indicator does not update', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const metroToggle = page.locator('#metronome-toggle')
@@ -395,7 +395,7 @@ test.describe('Metronome', () => {
   })
 
   test('Indicator is visible during playback', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     const beatIndicator = page.locator('.beat-indicator')

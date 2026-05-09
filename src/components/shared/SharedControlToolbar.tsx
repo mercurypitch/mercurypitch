@@ -8,11 +8,11 @@ import { Show } from 'solid-js'
 import { MicButton } from '@/components'
 import { PrecCountButton } from '@/components/PrecCountButton'
 import { Tooltip } from '@/components/Tooltip'
+import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_COMPOSE,TAB_SINGING,  } from '@/features/tabs/constants'
 import { appStore } from '@/stores'
 import { bpm, micActive, micWaveVisible, playbackSpeed, setBpm, setPlaybackSpeed, setSensitivity, settings, toggleMicWaveVisible, } from '@/stores'
-import type { SpacedRestMode } from '@/types'
+import type { PlaybackMode,SpacedRestMode } from '@/types'
 import { ControlGroup } from './ControlGroup'
-import { MetronomeGroup } from './MetronomeGroup'
 
 // ========================================
 // Utility functions
@@ -21,17 +21,17 @@ import { MetronomeGroup } from './MetronomeGroup'
 // TODO: Only for tests, need to update all!
 /** Determine the current practice mode based on global state */
 export function activePracticeMode(
-  playMode: () => 'once' | 'repeat' | 'practice',
+  playMode: () => PlaybackMode,
   sessionActive: () => boolean,
 ): string {
   // Session mode takes priority
   if (sessionActive()) return 'Session'
 
   // Practice run-once vs repeat
-  if (playMode() === 'practice') {
+  if (playMode() === PLAYBACK_MODE_SESSION) {
     return 'Run-once'
   }
-  if (playMode() === 'repeat') {
+  if (playMode() === PLAYBACK_MODE_REPEAT) {
     return 'Repeat'
   }
   return 'Run-once'
@@ -50,18 +50,18 @@ export const SCALE_TYPES = [
 ] as const
 
 export type PracticeSubMode = 'all' | 'random' | 'focus' | 'reverse'
-export type ActiveTab = 'practice' | 'editor' | 'settings'
+import type {ActiveTab} from '@/types'
 
 interface SharedControlToolbarProps {
   // Tab identification
   activeTab: () => ActiveTab
-  practiceTab?: () => boolean
+  singingTab?: () => boolean
   editorTab?: () => boolean
 
   // Playback state
   isPlaying: () => boolean
   isPaused: () => boolean
-  playMode: () => 'once' | 'repeat' | 'practice'
+  playMode: () => PlaybackMode
   practiceCycles: () => number
   currentCycle: () => number
   isCountingIn: () => boolean
@@ -89,7 +89,7 @@ interface SharedControlToolbarProps {
   onMetronomeToggle: () => void
 
   // Practice-specific
-  playModeChange: (mode: 'once' | 'repeat' | 'practice') => void
+  playModeChange: (mode: PlaybackMode) => void
   onCyclesChange: (cycles: number) => void
   practiceSubMode: () => PracticeSubMode
   onPracticeSubModeChange: (mode: PracticeSubMode) => void
@@ -113,9 +113,9 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
   props,
 ) => {
   const isPracticeTab = () =>
-    props.practiceTab?.() ?? props.activeTab() === 'practice'
+    props.singingTab?.() ?? props.activeTab() === TAB_SINGING
   const isEditorTab = () =>
-    props.editorTab?.() ?? props.activeTab() === 'editor'
+    props.editorTab?.() ?? props.activeTab() === TAB_COMPOSE
 
   const isActive = () => props.isPlaying() || props.isPaused()
   const isStopped = () => !props.isPlaying() && !props.isPaused()
@@ -144,6 +144,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
               class={`ctrl-btn wave-btn ${micWaveVisible() ? 'active' : ''}`}
               onClick={toggleMicWaveVisible}
               title="Toggle mic waveform view"
+              aria-label="Toggle mic waveform view"
             >
               <svg viewBox="0 0 24 24" width="16" height="16">
                 <path
@@ -279,12 +280,33 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
           </button>
         </Show>
 
-        {/* Precount toggle */}
-        <div class="app-header-sep" />
+        {/* Precount + Metronome */}
         <div class="app-header-sep" />
         <div class="control-group">
           <PrecCountButton />
         </div>
+        <button
+          class={`ctrl-btn metronome-btn ${props.metronomeEnabled() ? 'active' : ''}`}
+          onClick={() => props.onMetronomeToggle()}
+          title="Toggle metronome"
+          aria-label="Toggle metronome"
+        >
+          <svg viewBox="0 0 24 24" width="16" height="16">
+            <path
+              fill="currentColor"
+              d="M12 2L8 22h8L12 2zm0 5.5l2.5 10h-5L12 7.5z"
+            />
+            <line
+              x1="12"
+              y1="2"
+              x2="12"
+              y2="5"
+              stroke="currentColor"
+              stroke-width="1.5"
+            />
+            <circle cx="12" cy="3.5" r="0.5" fill="currentColor" />
+          </svg>
+        </button>
 
         {/* Count-in badge */}
         <Show when={props.isCountingIn()}>
@@ -303,27 +325,27 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
           <div class="mode-group">
             <button
               id="btn-once"
-              class={`mode-btn ${props.playMode() === 'once' ? 'active' : ''}`}
+              class={`mode-btn ${props.playMode() === PLAYBACK_MODE_ONCE ? 'active' : ''}`}
               onClick={() => {
-                props.playModeChange('once')
+                props.playModeChange(PLAYBACK_MODE_ONCE)
               }}
             >
               Once
             </button>
             <button
               id="btn-repeat"
-              class={`mode-btn ${props.playMode() === 'repeat' ? 'active' : ''}`}
+              class={`mode-btn ${props.playMode() === PLAYBACK_MODE_REPEAT ? 'active' : ''}`}
               onClick={() => {
-                props.playModeChange('repeat')
+                props.playModeChange(PLAYBACK_MODE_REPEAT)
               }}
             >
               Repeat
             </button>
             <button
               id="btn-session"
-              class={`mode-btn ${props.playMode() === 'practice' ? 'active' : ''}`}
+              class={`mode-btn ${props.playMode() === PLAYBACK_MODE_SESSION ? 'active' : ''}`}
               onClick={() => {
-                props.playModeChange('practice')
+                props.playModeChange(PLAYBACK_MODE_SESSION)
               }}
             >
               Session
@@ -334,7 +356,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
         {/* Cycles input — applies to Repeat mode (repeat the current melody
             N times). Practice mode plays the session through once and is
             controlled by the active session's items, not a cycle count. */}
-        <Show when={isPracticeTab() && props.playMode() === 'repeat'}>
+        <Show when={isPracticeTab() && props.playMode() === PLAYBACK_MODE_REPEAT}>
           <div class="secondary-control-group cycles-control-group">
             <label class="opt-label cycles-label">Cycles</label>
             <input
@@ -363,7 +385,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
         </Show>
 
         {/* Practice sub-mode selector — only in practice mode */}
-        <Show when={isPracticeTab() && props.playMode() === 'practice'}>
+        <Show when={isPracticeTab() && props.playMode() === PLAYBACK_MODE_SESSION}>
           <div class="secondary-control-group practice-mode-control-group">
             <label class="opt-label practice-mode-label">Mode</label>
             <select
@@ -385,7 +407,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
         </Show>
 
         {/* Spaced mode selector — once-through playback with optional rests inserted between notes. */}
-        <Show when={isPracticeTab() && props.playMode() === 'once'}>
+        <Show when={isPracticeTab() && props.playMode() === PLAYBACK_MODE_ONCE}>
           <div class="secondary-control-group practice-mode-control-group spaced-mode-control-group">
             <label class="opt-label practice-mode-label">Rest</label>
             <select
@@ -569,14 +591,6 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
             </select>
           </div>
         </div>
-
-        {/* Metronome */}
-        <ControlGroup>
-          <MetronomeGroup
-            active={props.metronomeEnabled}
-            onClick={props.onMetronomeToggle}
-          />
-        </ControlGroup>
 
         {/* Save Melody — editor tab only */}
         <Show when={isEditorTab() && props.onSaveMelody}>

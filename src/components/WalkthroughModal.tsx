@@ -4,6 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, Show } from 'solid-js'
+import { TAB_COMPOSE, TAB_SETTINGS, TAB_SINGING, WALKTHROUGH_TAB_STUDY, } from '@/features/tabs/constants'
 import { renderMarkdownToHtml } from '@/lib/render-markdown'
 import type { WalkthroughTab } from '@/stores/walkthrough-store'
 import { completeWalkthrough, getWalkthrough, getWalkthroughsForTab, isWalkthroughCompleted, viewWalkthrough, } from '@/stores/walkthrough-store'
@@ -82,10 +83,10 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
   const handleContinue = () => {
     // Find next unfinished walkthrough across all tabs
     for (const tab of [
-      'practice',
-      'editor',
-      'settings',
-      'study',
+      TAB_SINGING,
+      TAB_COMPOSE,
+      TAB_SETTINGS,
+      WALKTHROUGH_TAB_STUDY,
     ] as WalkthroughTab[]) {
       const walkthroughs = getWalkthroughsForTab(tab)
       const next = walkthroughs.find((w) => !isWalkthroughCompleted(w.id))

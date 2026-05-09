@@ -35,12 +35,6 @@ export const currentSessionItemIndex = sessionItemIndex
 export const currentSessionItemRepeat = sessionItemRepeat
 export const sessionMode = sessionModeSignal
 
-export function initSessionHistory(): void {
-  // FIXME: See to remove this from APIs if not required for testing integration!
-  //
-  // handled by persisted signal initialization
-}
-
 export function getSessionHistory() {
   return sessionResults()
 }

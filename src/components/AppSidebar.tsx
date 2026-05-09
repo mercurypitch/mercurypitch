@@ -11,12 +11,13 @@ import { LibraryTab } from '@/components/LibraryTab'
 import { NoteList } from '@/components/NoteList'
 import { PitchDisplay } from '@/components/PitchDisplay'
 import { StatsBars } from '@/components/StatsBars'
+import { TAB_COMPOSE, TAB_SETTINGS,TAB_SINGING } from '@/features/tabs/constants'
 import { ratingToScore } from '@/lib/practice-engine'
 import { KEY_OFFSETS, midiToFreq, midiToNote } from '@/lib/scale-data'
 import { activeTab as appActiveTab, appStore, sessionResults, showNotification, } from '@/stores'
 import { keyName, scaleType, setKeyName, setScaleType } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
-import { showSidebarNoteList } from '@/stores/settings-store'
+import { setShowSidebarNoteList,showSidebarNoteList,  } from '@/stores/settings-store'
 import { customScales as customScalesMap, customScaleTypeId, } from '@/stores/settings-store'
 import type { MelodyItem, NoteResult, PitchResult } from '@/types'
 
@@ -43,6 +44,10 @@ interface AppSidebarProps {
   class?: string
   /** Called when the mobile close button is clicked */
   onClose?: () => void
+  /** Whether the sidebar is collapsed (desktop) */
+  collapsed?: boolean
+  /** Called when the collapse toggle is clicked */
+  onToggleCollapse?: () => void
 }
 
 export const AppSidebar: Component<AppSidebarProps> = (props) => {
@@ -53,7 +58,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
   )
 
   const handleViewOctaveShift = (delta: number): void => {
-    if (activeTab() === 'editor') {
+    if (activeTab() === TAB_COMPOSE) {
       // Editor is allowed to mutate the actual melody (transpose notes).
       props.onOctaveShift?.(delta)
       setViewOctave(melodyStore.getCurrentOctave())
@@ -68,7 +73,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
     melodyStore.refreshScale(keyName(), nextOctave, scaleType())
   }
   const isPracticeOrSettingsTab = () =>
-    ['practice', 'settings'].includes(activeTab())
+    ([TAB_SINGING, TAB_SETTINGS] as string[]).includes(activeTab())
 
   // Live score derived from noteResults — updates as each note is played.
   const liveScore = createMemo(() => {
@@ -83,13 +88,37 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
 
   return (
     <aside
-      class={`app-sidebar${props.class !== undefined && props.class !== '' ? ` ${props.class}` : ''}`}
+      class={`app-sidebar${props.class !== undefined && props.class !== '' ? ` ${props.class}` : ''}${(props.collapsed ?? false) ? ' collapsed' : ''}`}
     >
+      {/* Desktop collapse toggle */}
+      <button
+        class="sidebar-collapse-btn"
+        onClick={() => props.onToggleCollapse?.()}
+        title={
+          (props.collapsed ?? false) ? 'Expand sidebar' : 'Collapse sidebar'
+        }
+      >
+        <svg
+          viewBox="0 0 24 24"
+          width="16"
+          height="16"
+          style={{
+            transform: (props.collapsed ?? false) ? 'rotate(180deg)' : '',
+          }}
+        >
+          <path
+            fill="currentColor"
+            d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"
+          />
+        </svg>
+      </button>
+
       {/* Mobile close button */}
       <button
         class="sidebar-close-btn"
         onClick={() => props.onClose?.()}
         title="Close menu"
+        aria-label="Close menu"
       >
         <svg viewBox="0 0 24 24" width="18" height="18">
           <path
@@ -152,7 +181,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
                 // must be view-only: update key/scale display, but never write
                 // transposed notes back into the user's melody.
                 const melody = melodyStore.getCurrentItems()
-                if (activeTab() === 'editor' && melody.length > 0) {
+                if (activeTab() === TAB_COMPOSE && melody.length > 0) {
                   const currentOffset = KEY_OFFSETS[currentKey] ?? 0
                   const newOffset = KEY_OFFSETS[newKey] ?? 0
                   const delta = newOffset - currentOffset
@@ -198,6 +227,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
               <button
                 class="octave-btn"
                 title="Lower octave"
+                aria-label="Lower octave"
                 onClick={() => handleViewOctaveShift(-1)}
               >
                 <svg viewBox="0 0 24 24" width="14" height="14">
@@ -211,6 +241,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
               <button
                 class="octave-btn"
                 title="Higher octave"
+                aria-label="Higher octave"
                 onClick={() => handleViewOctaveShift(1)}
               >
                 <svg viewBox="0 0 24 24" width="14" height="14">
@@ -287,6 +318,88 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
           </div>
         </div>
       </Show>
+
+      {/* Quick visibility toggles — compact 2x3 grid */}
+      <div class="sidebar-section sidebar-vis-grid">
+        <div class="vis-grid-cell">
+          <span class="vis-grid-label">Ball</span>
+          <label class="settings-toggle vis-grid-toggle">
+            <input
+              type="checkbox"
+              checked={appStore.showPlaybackBall()}
+              onChange={(e) => {
+                appStore.setShowPlaybackBall(e.currentTarget.checked)
+              }}
+            />
+            <span class="settings-slider" />
+          </label>
+        </div>
+        <div class="vis-grid-cell">
+          <span class="vis-grid-label">Playhead</span>
+          <label class="settings-toggle vis-grid-toggle">
+            <input
+              type="checkbox"
+              checked={appStore.showPlayhead()}
+              onChange={(e) => {
+                appStore.setShowPlayhead(e.currentTarget.checked)
+              }}
+            />
+            <span class="settings-slider" />
+          </label>
+        </div>
+        <div class="vis-grid-cell">
+          <span class="vis-grid-label">Grid</span>
+          <label class="settings-toggle vis-grid-toggle">
+            <input
+              type="checkbox"
+              checked={appStore.gridLinesVisible()}
+              onChange={(e) => {
+                appStore.setGridLinesVisible(e.currentTarget.checked)
+              }}
+            />
+            <span class="settings-slider" />
+          </label>
+        </div>
+        <div class="vis-grid-cell">
+          <span class="vis-grid-label">Notes</span>
+          <label class="settings-toggle vis-grid-toggle">
+            <input
+              type="checkbox"
+              checked={showSidebarNoteList()}
+              onChange={(e) => {
+                setShowSidebarNoteList(e.currentTarget.checked)
+              }}
+            />
+            <span class="settings-slider" />
+          </label>
+        </div>
+        <div class="vis-grid-cell">
+          <span class="vis-grid-label">Stats</span>
+          <label class="settings-toggle vis-grid-toggle">
+            <input
+              type="checkbox"
+              checked={appStore.showStats()}
+              onChange={(e) => {
+                appStore.setShowStats(e.currentTarget.checked)
+              }}
+            />
+            <span class="settings-slider" />
+          </label>
+        </div>
+        <div class="vis-grid-cell">
+          <span class="vis-grid-label">Pitch</span>
+          <label class="settings-toggle vis-grid-toggle">
+            <input
+              type="checkbox"
+              checked={appStore.showPitchDisplay()}
+              onChange={(e) => {
+                appStore.setShowPitchDisplay(e.currentTarget.checked)
+              }}
+            />
+            <span class="settings-slider" />
+          </label>
+        </div>
+      </div>
 
       {/* Library */}
       <div class="sidebar-section">

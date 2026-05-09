@@ -18,7 +18,7 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
   // ==========================================
 
   test('navigate to all tabs using sidebar buttons', async ({ page }) => {
-    const tabs = ['practice', 'editor', 'settings'] as const
+    const tabs = ['singing', 'compose', 'settings'] as const
 
     for (const tab of tabs) {
       await switchTab(page, tab)
@@ -29,45 +29,45 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
   test('practice tab navigation persists after navigation away', async ({
     page,
   }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
 
-    await switchTab(page, 'practice')
-    await expect(page.locator('#tab-practice')).toHaveClass(/active/)
+    await switchTab(page, 'singing')
+    await expect(page.locator('#tab-singing')).toHaveClass(/active/)
   })
 
   test('settings panel can be toggled from editor tab', async ({ page }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await switchTab(page, 'settings')
     await expect(page.locator('#settings-panel')).toBeVisible()
   })
 
   test('settings panel closes when clicking outside', async ({ page }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await expect(page.locator('#practice-panel')).toBeVisible()
   })
 
   test('tab switching preserves note data in editor tab', async ({ page }) => {
-    await switchTab(page, 'editor')
-    await switchTab(page, 'practice')
-    await switchTab(page, 'editor')
-    await expect(page.locator('#tab-editor')).toHaveClass(/active/)
+    await switchTab(page, 'compose')
+    await switchTab(page, 'singing')
+    await switchTab(page, 'compose')
+    await expect(page.locator('#tab-compose')).toHaveClass(/active/)
   })
 
   test('focus mode exits when tab is changed', async ({ page }) => {
-    await switchTab(page, 'practice')
-    await expect(page.locator('#tab-practice')).toHaveClass(/active/)
+    await switchTab(page, 'singing')
+    await expect(page.locator('#tab-singing')).toHaveClass(/active/)
 
-    await switchTab(page, 'editor')
-    await expect(page.locator('#tab-editor')).toHaveClass(/active/)
+    await switchTab(page, 'compose')
+    await expect(page.locator('#tab-compose')).toHaveClass(/active/)
   })
 
   test('can navigate from practice tab to editor to practice', async ({
     page,
   }) => {
-    await switchTab(page, 'practice')
-    await switchTab(page, 'editor')
-    await switchTab(page, 'practice')
-    await expect(page.locator('#tab-practice')).toHaveClass(/active/)
+    await switchTab(page, 'singing')
+    await switchTab(page, 'compose')
+    await switchTab(page, 'singing')
+    await expect(page.locator('#tab-singing')).toHaveClass(/active/)
   })
 
   test('settings tab remains accessible after multiple navigations', async ({
@@ -76,29 +76,29 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
     for (let i = 0; i < 5; i++) {
       await switchTab(page, 'settings')
       await expect(page.locator('#tab-settings')).toHaveClass(/active/)
-      await switchTab(page, 'editor')
+      await switchTab(page, 'compose')
     }
   })
 
   test('main layout maintains structure on navigation', async ({ page }) => {
-    const editorTab = page.locator('#tab-editor')
-    const practiceTab = page.locator('#tab-practice')
+    const editorTab = page.locator('#tab-compose')
+    const practiceTab = page.locator('#tab-singing')
 
     await editorTab.click()
     await page.waitForTimeout(300)
 
     await expect(page.locator('nav')).toBeVisible()
-    await expect(page.locator('#tab-editor')).toHaveClass(/active/)
+    await expect(page.locator('#tab-compose')).toHaveClass(/active/)
 
     // Navigate back to practice
     await practiceTab.click()
     await page.waitForTimeout(300)
 
-    await expect(page.locator('#tab-practice')).toHaveClass(/active/)
+    await expect(page.locator('#tab-singing')).toHaveClass(/active/)
   })
 
   test('sidebar controls are visible on all tabs', async ({ page }) => {
-    const tabs = ['editor', 'practice'] as const
+    const tabs = ['compose', 'singing'] as const
 
     for (const tab of tabs) {
       await page.locator(`#tab-${tab}`).click()
@@ -110,9 +110,9 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
   })
 
   test('practice sub-mode select exists', async ({ page }) => {
-    // Practice sub-mode select only shows when playMode === 'practice'
-    // Click the Practice tab then the Practice (Session) mode button
-    await switchTab(page, 'practice')
+    // Practice sub-mode select only shows when playMode === 'session'
+    // Click the Singing tab then the Session mode button
+    await switchTab(page, 'singing')
     await expect(page.locator('#practice-panel')).toBeVisible()
     // The Practice mode button is #btn-session
     const btnSession = page.locator('#btn-session')
@@ -125,14 +125,14 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
   })
 
   test('editor tab is accessible', async ({ page }) => {
-    await switchTab(page, 'editor')
-    await expect(page.locator('#tab-editor')).toHaveClass(/active/)
+    await switchTab(page, 'compose')
+    await expect(page.locator('#tab-compose')).toHaveClass(/active/)
   })
 
   test('playback speed selector is visible in practice tab', async ({
     page,
   }) => {
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await expect(page.locator('#practice-panel')).toBeVisible()
   })
 
@@ -141,7 +141,7 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
   // ==========================================
 
   test('play button starts playback', async ({ page }) => {
-    const practiceTab = page.locator('#tab-practice')
+    const practiceTab = page.locator('#tab-singing')
     await practiceTab.click()
     await page.waitForTimeout(500)
 
@@ -163,7 +163,7 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
   })
 
   test('pause button stops playback', async ({ page }) => {
-    const practiceTab = page.locator('#tab-practice')
+    const practiceTab = page.locator('#tab-singing')
     await practiceTab.click()
     await page.waitForTimeout(500)
 
@@ -178,7 +178,7 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
   })
 
   test('stop button resets playback position', async ({ page }) => {
-    const practiceTab = page.locator('#tab-practice')
+    const practiceTab = page.locator('#tab-singing')
     await practiceTab.click()
     await page.waitForTimeout(500)
 
@@ -197,7 +197,7 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
   })
 
   test('play/pause cycle works correctly', async ({ page }) => {
-    const practiceTab = page.locator('#tab-practice')
+    const practiceTab = page.locator('#tab-singing')
     await practiceTab.click()
     await page.waitForTimeout(500)
 
@@ -225,31 +225,31 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
 
   // Note: Skip buttons were removed in current version
   test('skip-forward button exists (no error)', async ({ page }) => {
-    const practiceTab = page.locator('#tab-practice')
+    const practiceTab = page.locator('#tab-singing')
     await practiceTab.click()
     await page.waitForTimeout(300)
 
-    await expect(page.locator('#tab-practice')).toHaveClass(/active/)
+    await expect(page.locator('#tab-singing')).toHaveClass(/active/)
   })
 
   test('skip-back button exists (no error)', async ({ page }) => {
-    const practiceTab = page.locator('#tab-practice')
+    const practiceTab = page.locator('#tab-singing')
     await practiceTab.click()
     await page.waitForTimeout(300)
 
-    await expect(page.locator('#tab-practice')).toHaveClass(/active/)
+    await expect(page.locator('#tab-singing')).toHaveClass(/active/)
   })
 
   // Note: Record and mic button tests were removed as they reference non-existent elements
   // in the current version. These features are implemented through other means.
 
   test('preset selector can be changed', async ({ page }) => {
-    const practiceTab = page.locator('#tab-practice')
+    const practiceTab = page.locator('#tab-singing')
     await practiceTab.click()
     await page.waitForTimeout(300)
 
     // Editor tab exists and can be navigated to
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     // Navigate back to practice
@@ -260,12 +260,12 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
   })
 
   test('can save new preset', async ({ page }) => {
-    const practiceTab = page.locator('#tab-practice')
+    const practiceTab = page.locator('#tab-singing')
     await practiceTab.click()
     await page.waitForTimeout(300)
 
     // Navigate to editor
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     // Navigate back to practice
@@ -274,12 +274,12 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
   })
 
   test('can load saved preset', async ({ page }) => {
-    const practiceTab = page.locator('#tab-practice')
+    const practiceTab = page.locator('#tab-singing')
     await practiceTab.click()
     await page.waitForTimeout(300)
 
     // Navigate to editor
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     // Navigate back to practice
@@ -288,7 +288,7 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
   })
 
   test('clear-all button clears melody', async ({ page }) => {
-    const editorTab = page.locator('#tab-editor')
+    const editorTab = page.locator('#tab-compose')
     await editorTab.click()
     await page.waitForTimeout(500)
 
@@ -297,7 +297,7 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
   })
 
   test('effect buttons update hint text', async ({ page }) => {
-    const editorTab = page.locator('#tab-editor')
+    const editorTab = page.locator('#tab-compose')
     await editorTab.click()
     await page.waitForTimeout(500)
 
@@ -309,7 +309,7 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
   // The instrument selector functionality exists but has different implementation
 
   test('duration buttons are clickable', async ({ page }) => {
-    const editorTab = page.locator('#tab-editor')
+    const editorTab = page.locator('#tab-compose')
 
     await editorTab.click()
     await page.waitForTimeout(300)
@@ -322,7 +322,7 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
   })
 
   test('tool buttons toggle active state', async ({ page }) => {
-    const editorTab = page.locator('#tab-editor')
+    const editorTab = page.locator('#tab-compose')
     const toolBtns = page.locator('.roll-tool-btn')
 
     await editorTab.click()
@@ -340,7 +340,7 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
   // Note placement functionality is tested in other tests
 
   test('zoom in button increases zoom level', async ({ page }) => {
-    const editorTab = page.locator('#tab-editor')
+    const editorTab = page.locator('#tab-compose')
 
     await editorTab.click()
     await page.waitForTimeout(500)
@@ -350,7 +350,7 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
   })
 
   test('zoom out button decreases zoom level', async ({ page }) => {
-    const editorTab = page.locator('#tab-editor')
+    const editorTab = page.locator('#tab-compose')
 
     await editorTab.click()
     await page.waitForTimeout(500)
@@ -364,7 +364,7 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
   // ==========================================
 
   test('MIDI import button is visible', async ({ page }) => {
-    const editorTab = page.locator('#tab-editor')
+    const editorTab = page.locator('#tab-compose')
 
     await editorTab.click()
     await page.waitForTimeout(500)
@@ -374,7 +374,7 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
   })
 
   test('MIDI export button is visible', async ({ page }) => {
-    const editorTab = page.locator('#tab-editor')
+    const editorTab = page.locator('#tab-compose')
 
     await editorTab.click()
     await page.waitForTimeout(500)
@@ -384,7 +384,7 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
   })
 
   test('WAV export button is visible', async ({ page }) => {
-    const editorTab = page.locator('#tab-editor')
+    const editorTab = page.locator('#tab-compose')
 
     await editorTab.click()
     await page.waitForTimeout(500)
@@ -394,7 +394,7 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
   })
 
   test('MIDI export opens download dialog', async ({ page }) => {
-    const editorTab = page.locator('#tab-editor')
+    const editorTab = page.locator('#tab-compose')
 
     await editorTab.click()
     await page.waitForTimeout(500)
@@ -404,7 +404,7 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
   })
 
   test('WAV export triggers browser download', async ({ page }) => {
-    const editorTab = page.locator('#tab-editor')
+    const editorTab = page.locator('#tab-compose')
 
     await editorTab.click()
     await page.waitForTimeout(500)
@@ -414,7 +414,7 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
   })
 
   test('can navigate to editor tab (MIDI test)', async ({ page }) => {
-    const editorTab = page.locator('#tab-editor')
+    const editorTab = page.locator('#tab-compose')
 
     await editorTab.click()
     await page.waitForTimeout(500)
@@ -424,7 +424,7 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
   })
 
   test('editor tab is accessible for MIDI operations', async ({ page }) => {
-    const editorTab = page.locator('#tab-editor')
+    const editorTab = page.locator('#tab-compose')
 
     await editorTab.click()
     await page.waitForTimeout(500)
@@ -438,7 +438,7 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
   // ==========================================
 
   test('play button has hover state', async ({ page }) => {
-    const practiceTab = page.locator('#tab-practice')
+    const practiceTab = page.locator('#tab-singing')
     const playBtn = page.locator('.play-btn').first()
 
     await practiceTab.click()
@@ -449,7 +449,7 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
   })
 
   test('pause button has hover state', async ({ page }) => {
-    const practiceTab = page.locator('#tab-practice')
+    const practiceTab = page.locator('#tab-singing')
     const pauseBtn = page.locator('.stop-btn').first()
 
     await practiceTab.click()
@@ -460,7 +460,7 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
   })
 
   test('stop button resets playback position to 0', async ({ page }) => {
-    const practiceTab = page.locator('#tab-practice')
+    const practiceTab = page.locator('#tab-singing')
     const playBtn = page.locator('.play-btn').first()
 
     await practiceTab.click()
@@ -482,8 +482,8 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
   })
 
   test('skip-forward button is clickable multiple times', async ({ page }) => {
-    const practiceTab = page.locator('#tab-practice')
-    const editorTab = page.locator('#tab-editor')
+    const practiceTab = page.locator('#tab-singing')
+    const editorTab = page.locator('#tab-compose')
 
     await practiceTab.click()
     await page.waitForTimeout(300)
@@ -499,8 +499,8 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
   })
 
   test('skip-back button is clickable multiple times', async ({ page }) => {
-    const practiceTab = page.locator('#tab-practice')
-    const editorTab = page.locator('#tab-editor')
+    const practiceTab = page.locator('#tab-singing')
+    const editorTab = page.locator('#tab-compose')
 
     await practiceTab.click()
     await page.waitForTimeout(300)
@@ -522,7 +522,7 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
   test('play button enables on first navigation to practice', async ({
     page,
   }) => {
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     const playBtn = page.locator('.play-btn').first()
@@ -532,7 +532,7 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
   test('all playback controls are visible in practice tab', async ({
     page,
   }) => {
-    const practiceTab = page.locator('#tab-practice')
+    const practiceTab = page.locator('#tab-singing')
 
     await practiceTab.click()
     await page.waitForTimeout(300)
@@ -541,7 +541,7 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
   })
 
   test('playback speed select has valid options', async ({ page }) => {
-    const practiceTab = page.locator('#tab-practice')
+    const practiceTab = page.locator('#tab-singing')
     await practiceTab.click()
     await page.waitForTimeout(300)
 
@@ -549,7 +549,7 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
   })
 
   test('BPM slider changes tempo display', async ({ page }) => {
-    const practiceTab = page.locator('#tab-practice')
+    const practiceTab = page.locator('#tab-singing')
     await practiceTab.click()
     await page.waitForTimeout(300)
 
@@ -559,7 +559,7 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
   // Note: Arrow keys test removed - references non-existent elements
 
   test('practice mode buttons change mode indicator', async ({ page }) => {
-    const practiceTab = page.locator('#tab-practice')
+    const practiceTab = page.locator('#tab-singing')
     await practiceTab.click()
     await page.waitForTimeout(300)
 
@@ -567,7 +567,7 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
   })
 
   test('continue button is disabled during playback', async ({ page }) => {
-    const practiceTab = page.locator('#tab-practice')
+    const practiceTab = page.locator('#tab-singing')
     await practiceTab.click()
     await page.waitForTimeout(300)
 
@@ -581,7 +581,7 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
   // ==========================================
 
   test('piano roll canvas is visible in editor tab', async ({ page }) => {
-    const editorTab = page.locator('#tab-editor')
+    const editorTab = page.locator('#tab-compose')
 
     await editorTab.click()
     await page.waitForTimeout(500)
@@ -591,7 +591,7 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
   })
 
   test('note count badge updates when notes are placed', async ({ page }) => {
-    const editorTab = page.locator('#tab-editor')
+    const editorTab = page.locator('#tab-compose')
 
     await editorTab.click()
     await page.waitForTimeout(500)
@@ -605,53 +605,53 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
   })
 
   test('scale mode select shows multiple options', async ({ page }) => {
-    const editorTab = page.locator('#tab-editor')
+    const editorTab = page.locator('#tab-compose')
 
     await editorTab.click()
     await page.waitForTimeout(300)
 
     // Verify tab is active
-    await expect(page.locator('#tab-editor')).toHaveClass(/active/)
+    await expect(page.locator('#tab-compose')).toHaveClass(/active/)
   })
 
   test('scale mode changes the visible scale', async ({ page }) => {
-    const editorTab = page.locator('#tab-editor')
+    const editorTab = page.locator('#tab-compose')
 
     await editorTab.click()
     await page.waitForTimeout(300)
 
     // Verify tab is active
-    await expect(page.locator('#tab-editor')).toHaveClass(/active/)
+    await expect(page.locator('#tab-compose')).toHaveClass(/active/)
   })
 
   test('octave up button increases octave display', async ({ page }) => {
-    const editorTab = page.locator('#tab-editor')
+    const editorTab = page.locator('#tab-compose')
 
     await editorTab.click()
     await page.waitForTimeout(300)
 
     // Verify tab is active
-    await expect(page.locator('#tab-editor')).toHaveClass(/active/)
+    await expect(page.locator('#tab-compose')).toHaveClass(/active/)
   })
 
   test('octave down button decreases octave display', async ({ page }) => {
-    const editorTab = page.locator('#tab-editor')
+    const editorTab = page.locator('#tab-compose')
 
     await editorTab.click()
     await page.waitForTimeout(300)
 
     // Verify tab is active
-    await expect(page.locator('#tab-editor')).toHaveClass(/active/)
+    await expect(page.locator('#tab-compose')).toHaveClass(/active/)
   })
 
   test('bars down button decreases total beats', async ({ page }) => {
-    const editorTab = page.locator('#tab-editor')
+    const editorTab = page.locator('#tab-compose')
 
     await editorTab.click()
     await page.waitForTimeout(300)
 
     // Verify tab is active
-    await expect(page.locator('#tab-editor')).toHaveClass(/active/)
+    await expect(page.locator('#tab-compose')).toHaveClass(/active/)
   })
 
   // Note: Bars up/down, grid toggle, pitch track toggle, toolbar, timeline, note info tests removed
@@ -687,17 +687,17 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
     })
 
     for (let i = 0; i < 20; i++) {
-      await switchTab(page, 'practice')
+      await switchTab(page, 'singing')
       await page.waitForTimeout(100)
 
-      await switchTab(page, 'editor')
+      await switchTab(page, 'compose')
       await page.waitForTimeout(100)
 
       await switchTab(page, 'settings')
       await page.waitForTimeout(100)
     }
 
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(100)
 
     expect(errors).toHaveLength(0)
@@ -711,7 +711,7 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
       }
     })
 
-    const practiceTab = page.locator('#tab-practice')
+    const practiceTab = page.locator('#tab-singing')
 
     for (let i = 0; i < 30; i++) {
       await practiceTab.click()
@@ -742,10 +742,10 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
     })
 
     for (let i = 0; i < 15; i++) {
-      await switchTab(page, 'practice')
+      await switchTab(page, 'singing')
       await page.waitForTimeout(100)
 
-      await switchTab(page, 'editor')
+      await switchTab(page, 'compose')
       await page.waitForTimeout(100)
 
       await switchTab(page, 'settings')
@@ -753,7 +753,7 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
     }
 
     // Navigate to practice tab to verify it's accessible
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(500)
 
     expect(errors).toHaveLength(0)
@@ -767,12 +767,12 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
     await page.setViewportSize({ width: 1280, height: 800 })
     await page.waitForTimeout(300)
 
-    await switchTab(page, 'editor')
+    await switchTab(page, 'compose')
     await page.waitForTimeout(300)
 
     await expect(page.locator('nav')).toBeVisible()
-    await expect(page.locator('#tab-practice')).toBeVisible()
-    await expect(page.locator('#tab-editor')).toBeVisible()
+    await expect(page.locator('#tab-singing')).toBeVisible()
+    await expect(page.locator('#tab-compose')).toBeVisible()
     await expect(page.locator('#tab-settings')).toBeVisible()
   })
 
@@ -780,7 +780,7 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
     await page.setViewportSize({ width: 1280, height: 800 })
     await page.waitForTimeout(300)
 
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     await page.setViewportSize({ width: 1024, height: 768 })
@@ -794,23 +794,23 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
     await page.setViewportSize({ width: 1280, height: 800 })
     await page.waitForTimeout(300)
 
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
-    await expect(page.locator('#tab-practice')).toBeVisible()
+    await expect(page.locator('#tab-singing')).toBeVisible()
   })
 
   test('practice tab controls remain visible on resize', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 })
     await page.waitForTimeout(300)
 
-    await switchTab(page, 'practice')
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
     await page.setViewportSize({ width: 1024, height: 768 })
     await page.waitForTimeout(300)
 
-    await expect(page.locator('#tab-practice')).toBeVisible()
+    await expect(page.locator('#tab-singing')).toBeVisible()
   })
 
   test('settings panel remains scrollable on resize', async ({ page }) => {
@@ -824,16 +824,16 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
   })
 
   test(' piano roll scales with viewport', async ({ page }) => {
-    const editorTab = page.locator('#tab-editor')
+    const editorTab = page.locator('#tab-compose')
     await editorTab.click()
     await page.waitForTimeout(300)
 
-    await expect(page.locator('#tab-editor')).toBeVisible()
-    await expect(page.locator('#tab-practice')).toBeVisible()
+    await expect(page.locator('#tab-compose')).toBeVisible()
+    await expect(page.locator('#tab-singing')).toBeVisible()
   })
 
   test('tabs remain accessible at bottom of navigation', async ({ page }) => {
-    const tabs = ['practice', 'editor', 'settings']
+    const tabs = ['singing', 'compose', 'settings']
 
     for (const tab of tabs) {
       await page.locator(`#tab-${tab}`).click()
