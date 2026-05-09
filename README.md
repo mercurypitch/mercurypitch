@@ -47,83 +47,86 @@ Open [pitchperfect.clodhost.com](https://pitchperfect.clodhost.com) in a modern 
 
 | Tab | Description |
 |-----|-------------|
-| Practice | Main pitch practice with piano roll editor |
-| Editor | Piano roll note editor |
-| Vocal Analysis | Analyze and visualize vocal recordings |
-| UVR | AI stem separation — upload audio, mix stems, view lyrics |
+| Singing | Main pitch practice with piano roll and real-time feedback |
+| Compose | Piano roll note editor with scale builder and MIDI import/export |
+| Analysis | Visualize vocal recordings and session history |
+| Karaoke | AI stem separation — upload audio, mix stems, synced lyrics |
 | Community | Browse shared melodies and sessions |
 | Leaderboard | Top performers across challenges |
-| Vocal Challenges | Timed pitch accuracy challenges |
-| Settings | App settings, keyboard shortcuts, about |
+| Challenges | Timed pitch accuracy challenges |
+| Pitch Analysis | Analyze and compare pitch detection algorithms |
+| Pitch Test | Test pitch detection with live microphone input |
+| Settings | App settings, keyboard shortcuts, theme, about |
 
 ## Project Structure
 
 ```
 ├── src/
 │   ├── App.tsx                    # Main SolidJS application
+│   ├── index.tsx                  # Entry point
 │   ├── components/                # UI components
-│   │   ├── StemMixer.tsx          # Multi-stem mixer with pitch viz + lyrics
-│   │   ├── UvrPanel.tsx           # UVR unified panel (upload, history, mixer)
-│   │   ├── CommunityShare.tsx     # Community sharing UI
-│   │   ├── CommunityLeaderboard.tsx
-│   │   ├── VocalChallenges.tsx    # Vocal challenge mode
-│   │   ├── PianoRollCanvas.tsx    # Piano roll editor
-│   │   ├── PitchCanvas.tsx        # Live pitch visualization
-│   │   ├── SettingsPanel.tsx      # Settings / About panel
-│   │   └── ...
-│   ├── lib/
+│   ├── contexts/                  # SolidJS context providers
+│   ├── data/                      # Static data and presets
+│   ├── e2e/                       # End-to-end test utilities
+│   ├── features/                  # Feature modules (practice, UVR, community)
+│   ├── lib/                       # Core business logic and utilities
 │   │   ├── audio-engine.ts        # Web Audio playback + ADSR + reverb
 │   │   ├── pitch-detector.ts      # YIN pitch detection via microphone
 │   │   ├── piano-roll.ts          # Piano roll canvas rendering
-│   │   ├── melody-engine.ts       # Melody playback + callbacks
+│   │   ├── playback-engine.ts     # Playback orchestration
+│   │   ├── playback-runtime.ts    # Playback runtime state machine
 │   │   ├── practice-engine.ts     # Practice mode scoring
+│   │   ├── melody-engine.ts       # Melody playback + callbacks
 │   │   ├── uvr-api.ts             # UVR REST API client
 │   │   ├── uvr-processor.ts       # Client-side processing logic
 │   │   ├── lyrics-service.ts      # Lyrics fetch/parse (LRCLIB, lyrics.ovh)
 │   │   ├── hash-router.ts         # Hash-based client routing
 │   │   ├── scale-data.ts          # Music theory utilities
-│   │   └── share-url.ts           # URL-encoded preset sharing
-│   ├── stores/
-│   │   ├── app-store.ts           # Global app state (SolidJS signals)
-│   │   ├── melody-store.ts        # Melody state
-│   │   └── playback-store.ts      # Playback state
-│   ├── types/index.ts             # TypeScript interfaces
-│   ├── styles/app.css             # Global styles
-│   └── tests/                     # Vitest unit tests (679 tests, ~20 suites)
+│   │   ├── pitch-algorithms/      # Pitch detection algorithm implementations
+│   │   └── ...
+│   ├── pages/                     # Top-level page views
+│   ├── stores/                    # SolidJS signal stores
+│   ├── styles/                    # Global styles and design system
+│   ├── test/                      # Test utilities and helpers
+│   ├── tests/                     # Vitest unit tests
+│   └── types/                     # TypeScript type definitions
 ├── public/                        # Apache DocumentRoot
 ├── docs/                          # Documentation and plans
-└── vite.config.ts                 # Vite bundler config
+├── scripts/                       # Build and utility scripts
+├── uvr-api/                       # UVR Python API server
+├── vite.config.ts                 # Vite bundler config
+└── vitest.config.ts               # Vitest test config
 ```
 
 ## Development
 
 ```bash
 # Install dependencies
-npm install
+pnpm install
 
 # Run dev server
-npm run dev
+pnpm run dev
 
 # Run type checking
-npm run typecheck
+pnpm run typecheck
 
 # Run all checks (typecheck + lint + format)
-npm run check:syntax
+pnpm run check:syntax
 
 # Run tests (watch mode)
-npm test
+pnpm test
 
 # Run tests once (CI mode)
-npm run test:run
+pnpm run test:run
 
 # Build for production
-npm run build
+pnpm run build
 
 # Preview production build
-npm run serve
+pnpm run serve
 
 # Run E2E tests
-npm run test:e2e
+pnpm run test:e2e
 ```
 
 ## Architecture
