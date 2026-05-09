@@ -1421,8 +1421,11 @@ export const melodyStore = {
 
   // Export library
   melodyLibrary: getMelodyLibrary,
+  getMelodyLibrary,
   unifiedLibrary: () => melodyLibrarySignal() as UnifiedLibrary,
   _setUnifiedLibrary: _setMelodyLibrary,
+  _setMelodyLibrary,
+  saveLibrary: _saveLibraryToStorage,
 
   // User Sessions
   getSessions,
