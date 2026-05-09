@@ -4,7 +4,7 @@
 
 import type { MelodyItem, PlaybackSession, SessionTemplate } from '@/types'
 import type { SessionCategory, SessionDifficulty, SessionItem } from '@/types'
-import { melodyStore, STORAGE_KEY_SESSION_HIST } from './melody-store'
+import { melodyStore, STORAGE_KEY_LIBRARY, STORAGE_KEY_SESSION_HIST } from './melody-store'
 
 /** Generate unique item ID */
 export function generateSessionItemId(): string {
