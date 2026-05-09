@@ -34,18 +34,22 @@ export const FallingNotesSongPicker: Component<FallingNotesSongPickerProps> = (
     getAllMelodies().filter((m) => m.items.length > 0),
   )
 
-  const handleLoadWithId = (id: string) => {
-    const melody = melodies().find((m) => m.id === id)
+  const handleLoadWithId = (
+    id: string,
+    melodyList: MelodyData[],
+    onLoad: typeof props.onSongLoaded,
+  ) => {
+    const melody = melodyList.find((m) => m.id === id)
     if (!melody) return
     const notes = melodyToFallingNotes(melody.items)
-    props.onSongLoaded(notes, melody.name, melody.bpm)
+    onLoad(notes, melody.name, melody.bpm)
   }
 
   onMount(() => {
     const list = melodies()
     if (list.length > 0) {
       setSelectedId(list[0].id)
-      handleLoadWithId(list[0].id)
+      handleLoadWithId(list[0].id, list, props.onSongLoaded)
     }
   })
 
@@ -94,7 +98,10 @@ export const FallingNotesSongPicker: Component<FallingNotesSongPickerProps> = (
               return
             }
             setSelectedId(id)
-            queueMicrotask(() => handleLoadWithId(id))
+             
+            const currentMelodies = melodies()
+            const onLoad = props.onSongLoaded
+            queueMicrotask(() => handleLoadWithId(id, currentMelodies, onLoad))
           }}
         >
           <option value="">-- Select a song --</option>

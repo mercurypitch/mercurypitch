@@ -1,7 +1,7 @@
 import type { Accessor, Setter } from 'solid-js'
 import { onCleanup, onMount } from 'solid-js'
 import type { ActiveTab } from '@/features/tabs/constants'
-import { TAB_PIANO, TAB_SINGING } from '@/features/tabs/constants'
+import { TAB_PIANO } from '@/features/tabs/constants'
 import { PLAYBACK_MODE_SESSION } from '@/features/tabs/constants'
 import * as notifStore from '@/stores/notifications-store'
 import * as transportStore from '@/stores/transport-store'

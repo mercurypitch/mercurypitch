@@ -36,11 +36,10 @@ import { usePlaybackController } from '@/features/playback/usePlaybackController
 import { usePracticeController } from '@/features/practice/usePracticeController'
 import { useRecordingController } from '@/features/recording/useRecordingController'
 import { useSessionSequencer } from '@/features/session/useSessionSequencer'
-import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_SETTINGS, TAB_SINGING, tabLabel, } from '@/features/tabs/constants'
+import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PIANO, TAB_SETTINGS, TAB_SINGING, tabLabel, } from '@/features/tabs/constants'
 import type { InstrumentType } from '@/lib/audio-engine'
 import { audioRegistry } from '@/lib/audio-registry'
 import { debounce } from '@/lib/debounce'
-import { IS_DEV } from '@/lib/defaults'
 import { registerE2EBridge } from '@/lib/e2e-bridge'
 import type { HashRoute } from '@/lib/hash-router'
 import { buildHash, parseHash, replaceHash } from '@/lib/hash-router'
@@ -51,9 +50,7 @@ import { openWalkthroughChapter, selectedWalkthrough, setActiveTab, setActiveUse
 import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, toggleMicWaveVisible, } from '@/stores'
 import {
   advancedFeaturesEnabled,
-  appError,
   devFeaturesEnabled,
-  initAudioEngine,
 } from '@/stores/app-store'
 import { melodyStore } from '@/stores/melody-store'
 import { getSession, templateToSession } from '@/stores/session-store'
@@ -1604,7 +1601,7 @@ const AppShell: Component<AppProps> = (props) => {
                       <div class="fn-score-actions">
                         <button
                           class="fn-btn fn-btn-play"
-                          onClick={fallingNotes.startGame}
+                          onClick={() => void fallingNotes.startGame()}
                         >
                           Play Again
                         </button>
