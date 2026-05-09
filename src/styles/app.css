@@ -6265,37 +6265,64 @@ input:checked + .settings-slider:before {
 
 .library-tabs {
   display: flex;
-  gap: 4px;
-  padding: 10px 20px 0;
+  gap: 0;
+  padding: 0 20px;
   border-bottom: 1px solid var(--border);
 }
 
-.library-tab {
-  padding: 8px 16px;
+.library-modal-tab {
+  position: relative;
+  padding: 10px 20px;
   border: none;
-  border-bottom: 2px solid transparent;
   background: none;
   color: var(--text-secondary);
   font-size: 0.85rem;
+  font-weight: 500;
   cursor: pointer;
-  border-radius: 4px 4px 0 0;
-  transition: all 0.15s;
+  transition: color 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.library-tab.active {
+.library-modal-tab::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 8px;
+  right: 8px;
+  height: 2px;
+  background: transparent;
+  border-radius: 2px 2px 0 0;
+  transition: background 0.15s ease;
+}
+
+.library-modal-tab:hover {
+  color: var(--text-primary);
+}
+
+.library-modal-tab.active {
   color: var(--accent);
-  border-bottom-color: var(--accent);
-  background: var(--accent-dim);
+  font-weight: 600;
+}
+
+.library-modal-tab.active::after {
+  background: var(--accent);
 }
 
 .tab-count {
-  background: var(--accent);
-  color: #fff;
   font-size: 0.7rem;
   font-weight: 600;
-  padding: 1px 8px;
+  padding: 1px 7px;
   border-radius: 10px;
-  margin-left: 6px;
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.library-modal-tab.active .tab-count {
+  background: var(--accent-dim);
+  color: var(--accent);
 }
 
 .library-content {
@@ -6977,15 +7004,7 @@ input:checked + .settings-slider:before {
   background: #4090e0;
 }
 
-/* ===== Library Tab (sidebar) ===== */
-.library-tab {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 12px;
-  background: var(--bg-secondary);
-  border-right: 1px solid var(--border);
-}
+/* ===== Library Tab (sidebar) — see second definition below ===== */
 
 .tab-header {
   display: flex;

@@ -31,11 +31,7 @@ export const isInSessionMode = () => _sessionMode()
 // No-op kept for backward compat (was a presets-store init).
 export const initPresets = (): void => {}
 
-// Session presets library (stub for backward compat)
-export const showSessionPresetsLibrary = (): void => {}
-export const hideSessionPresetsLibrary = (): void => {}
-export const isSessionPresetsLibraryOpen = () => false
-export const initSessionPresetsLibrary = (): void => {}
+// Session presets library stubs removed — real implementations in ui-store.ts
 
 // Composer for starting a practice session — sets practice store fields together.
 import type { PlaybackSession as _PlaybackSession } from '@/types'
