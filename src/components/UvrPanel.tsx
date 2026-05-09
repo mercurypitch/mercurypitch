@@ -7,8 +7,10 @@ import { createEffect, createSignal, For, Show } from 'solid-js'
 import { generateVocalMidi } from '@/lib/midi-generator'
 import type { OutputFile } from '@/lib/uvr-api'
 import { DEFAULT_PROCESS_REQUEST, getProcessStatus, pollForCompletion, processAudio, } from '@/lib/uvr-api'
-import type { UvrSession } from '@/stores/app-store'
-import { cancelUvrSession, completeUvrSession, currentUvrSession, deleteAllUvrSessions, getAllUvrSessions, getAllUvrSessionsReactive, getUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrSessionApiId, startUvrSession, updateUvrSessionOutputs, updateUvrSessionProgress, } from '@/stores/app-store'
+import { computeChunkRanges, UVR_CHUNK_CONFIG } from '@/lib/audio-chunker'
+import { VocalSeparator } from '@/lib/vocal-separator'
+import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
+import { cancelUvrSession, completeUvrSession, currentUvrSession, deleteAllUvrSessions, getAllUvrSessions, getAllUvrSessionsReactive, getUvrProcessingMode, getUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrProcessingMode, setUvrSessionApiId, startUvrSession, updateUvrSessionOutputs, updateUvrSessionProgress, uvrProcessingMode, } from '@/stores/app-store'
 import { StemMixer, UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrSettings, UvrUploadControl, } from '.'
 import { CheckCircle, FileUpload, History, Music, Settings, Trash2, X, } from './icons'
 
@@ -16,6 +18,136 @@ import { CheckCircle, FileUpload, History, Music, Settings, Trash2, X, } from '.
  * Progress callback type for processing
  */
 type OnProgress = (progress: number) => void
+
+/** Singleton VocalSeparator instance for browser-mode processing */
+let vocalSeparator: VocalSeparator | null = null
+const MODEL_PATH = '/models/UVR-MDX-NET-Inst_HQ_3.onnx'
+
+async function getOrCreateSeparator(): Promise<VocalSeparator> {
+  if (vocalSeparator !== null && vocalSeparator.isReady()) {
+    return vocalSeparator
+  }
+  vocalSeparator = new VocalSeparator()
+  await vocalSeparator.initialize(MODEL_PATH)
+  return vocalSeparator
+}
+
+function float32ToWavBlob(audio: Float32Array, sampleRate: number): Blob {
+  const numChannels = 1
+  const bitsPerSample = 16
+  const byteRate = sampleRate * numChannels * (bitsPerSample / 8)
+  const blockAlign = numChannels * (bitsPerSample / 8)
+  const dataSize = audio.length * (bitsPerSample / 8)
+  const buffer = new ArrayBuffer(44 + dataSize)
+  const view = new DataView(buffer)
+
+  function writeString(offset: number, str: string) {
+    for (let i = 0; i < str.length; i++) {
+      view.setUint8(offset + i, str.charCodeAt(i))
+    }
+  }
+
+  writeString(0, 'RIFF')
+  view.setUint32(4, 36 + dataSize, true)
+  writeString(8, 'WAVE')
+  writeString(12, 'fmt ')
+  view.setUint32(16, 16, true)
+  view.setUint16(20, 1, true)
+  view.setUint16(22, numChannels, true)
+  view.setUint32(24, sampleRate, true)
+  view.setUint32(28, byteRate, true)
+  view.setUint16(32, blockAlign, true)
+  view.setUint16(34, bitsPerSample, true)
+  writeString(36, 'data')
+  view.setUint32(40, dataSize, true)
+
+  for (let i = 0; i < audio.length; i++) {
+    const s = Math.max(-1, Math.min(1, audio[i]))
+    const val = s < 0 ? s * 0x8000 : s * 0x7fff
+    view.setInt16(44 + i * 2, val, true)
+  }
+
+  return new Blob([buffer], { type: 'audio/wav' })
+}
+
+async function startLocalProcessing(
+  file: File,
+  sessionId: string,
+  onProgress: OnProgress,
+  onError: (error: string) => void,
+): Promise<void> {
+  const separator = await getOrCreateSeparator()
+
+  // Decode audio file
+  const audioCtx = new AudioContext()
+  let audioBuffer: AudioBuffer
+  try {
+    const arrayBuf = await file.arrayBuffer()
+    audioBuffer = await audioCtx.decodeAudioData(arrayBuf)
+  } catch (err) {
+    onError(`Failed to decode audio: ${err instanceof Error ? err.message : String(err)}`)
+    audioCtx.close()
+    return
+  }
+  audioCtx.close()
+
+  // Convert to mono Float32Array
+  let audio: Float32Array
+  if (audioBuffer.numberOfChannels > 1) {
+    // Mix down to mono
+    audio = new Float32Array(audioBuffer.length)
+    for (let ch = 0; ch < audioBuffer.numberOfChannels; ch++) {
+      const chData = audioBuffer.getChannelData(ch)
+      for (let i = 0; i < audioBuffer.length; i++) {
+        audio[i] += chData[i]
+      }
+    }
+    // Normalize
+    const scale = 1 / audioBuffer.numberOfChannels
+    for (let i = 0; i < audio.length; i++) {
+      audio[i] *= scale
+    }
+  } else {
+    audio = new Float32Array(audioBuffer.getChannelData(0))
+  }
+
+  // Set numChunks for progress display
+  const numChunks = computeChunkRanges(audio.length, UVR_CHUNK_CONFIG).length
+  const sessions = getAllUvrSessions()
+  const session = sessions.find((s) => s.sessionId === sessionId)
+  if (session) {
+    session.numChunks = numChunks
+    saveAllUvrSessions(sessions)
+  }
+
+  separator.onProgress = (pct: number) => {
+    updateUvrSessionProgress(sessionId, pct)
+    onProgress(pct)
+  }
+
+  try {
+    const result = await separator.separate(audio, audioBuffer.sampleRate)
+
+    // Create blob URLs for stems
+    const vocalBlob = float32ToWavBlob(result.vocals, result.sampleRate)
+    const instrBlob = float32ToWavBlob(result.instrumental, result.sampleRate)
+    const vocalUrl = URL.createObjectURL(vocalBlob)
+    const instrUrl = URL.createObjectURL(instrBlob)
+
+    const outputs: UvrSession['outputs'] = {
+      vocal: vocalUrl,
+      instrumental: instrUrl,
+    }
+    const meta: Record<string, { duration?: number; size?: number }> = {
+      vocal: { duration: result.durationSec, size: vocalBlob.size },
+      instrumental: { duration: result.durationSec, size: instrBlob.size },
+    }
+
+    completeUvrSession(sessionId, outputs, meta)
+  } catch (err) {
+    onError(err instanceof Error ? err.message : 'Local processing failed')
+  }
+}
 
 /**
  * Handle starting the actual audio processing via API
@@ -156,23 +288,27 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
 
   const handleFileSelect = (file: File) => {
     setSelectedFile(file)
+    const mode = getUvrProcessingMode()
     const sessionId = startUvrSession(
       file.name,
       file.size,
       file.type,
       'separate',
+      mode,
     )
     setCurrentView('processing')
     // Immediately start processing with the created session
-    handleProcessStart(sessionId)
+    handleProcessStart(sessionId, mode)
   }
 
-  const handleProcessStart = async (sessionId: string) => {
+  const handleProcessStart = async (sessionId: string, mode?: UvrProcessingMode) => {
     const file = selectedFile()
     if (!file) {
       console.error('No file selected')
       return
     }
+
+    const processingMode = mode ?? getUvrProcessingMode()
 
     // Set session to processing status
     const sessions = getAllUvrSessions()
@@ -183,7 +319,27 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       setCurrentUvrSession({ ...session })
     }
 
-    // Start real processing
+    if (processingMode === 'local') {
+      try {
+        await startLocalProcessing(
+          file,
+          sessionId,
+          (_progress) => {
+            // Session state already updated inside startLocalProcessing
+          },
+          showError,
+        )
+        setCurrentView('results')
+      } catch (error) {
+        console.error('Local processing error:', error)
+        const message = error instanceof Error ? error.message : 'Processing failed'
+        setErrorUvrSession(sessionId, message)
+        showError(message)
+      }
+      return
+    }
+
+    // Server mode — start real processing
     try {
       await startRealProcessing(
         file,
@@ -497,6 +653,20 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
           </div>
         </div>
         <div class="header-actions">
+          <div class="uvr-mode-toggle" title={`Processing: ${uvrProcessingMode() === 'local' ? 'Browser' : 'Server'}`}>
+            <button
+              class={`mode-toggle-btn${uvrProcessingMode() === 'server' ? ' active' : ''}`}
+              onClick={() => setUvrProcessingMode('server')}
+            >
+              Server
+            </button>
+            <button
+              class={`mode-toggle-btn${uvrProcessingMode() === 'local' ? ' active' : ''}`}
+              onClick={() => setUvrProcessingMode('local')}
+            >
+              Browser
+            </button>
+          </div>
           <button
             class="header-btn header-btn-ghost"
             onClick={() => setShowSettings(!showSettings())}
@@ -633,7 +803,12 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 indeterminate={session()!.indeterminate}
                 processingTime={session()!.processingTime}
                 error={session()!.error}
+                processingMode={session()!.processingMode}
+                numChunks={session()!.numChunks}
                 onCancel={() => {
+                  if (session()!.processingMode === 'local') {
+                    getOrCreateSeparator().then(s => s.cancel()).catch(() => {})
+                  }
                   cancelUvrSession(session()!.sessionId)
                   setCurrentView('upload')
                 }}

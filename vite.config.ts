@@ -56,6 +56,11 @@ export default defineConfig({
   },
   server: {
     port: 3000,
+    headers: {
+      // Cross-origin isolation for multi-threaded WASM (ONNX Runtime)
+      'Cross-Origin-Opener-Policy': 'same-origin',
+      'Cross-Origin-Embedder-Policy': 'credentialless',
+    },
     proxy: {
       '/api/uvr': {
         target: 'http://localhost:8000',
@@ -81,6 +86,9 @@ export default defineConfig({
         },
       },
     },
+  },
+  worker: {
+    format: 'es',
   },
   define: {
     'process.env': {},
