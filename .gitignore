@@ -38,6 +38,7 @@ test-results/
 .vite/
 
 public/assets/
+public/ort-wasm-simd-threaded.jsep.wasm
 **/**/*.patch
 
 # wrangler files
