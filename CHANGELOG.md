@@ -2,67 +2,76 @@
 
 All notable changes to this project will be documented in this file.
 
-## [v0.2.0]
-### Features
-- Implement basic piano practice mode with black key visual feedback
-- Integrate UVR (Ultimate Vocal Remover) for audio separation
-- Integrate SwiftF0 for pitch detection improvements
-- Add developer console log component
-- Add changelog modal with "What's New" button
-- Add score modal optional setting
-- Optimize piano-roll move loop for better performance
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-### Fixes
-- Fix BPM safe setter and audio timing at keyboard
-- Fix dropdown reactivity and visual visibility for judged notes
-- Fix whiteIndexToMidi octave offset
-- Fix serving of ONNX Runtime WASM backend and dev mode MIME type
-- Fix memory leak in useSessionSequencer (setTimeout cleanup)
-- Fix Safari error handling
-- Resolve silent errors and remove dead code
-- Fix metronome icon alignment and remove duplicate divider
+## [0.2.0] - 2026-05-09
+### Added
+- Basic piano practice mode with black key visual feedback
+- UVR (Ultimate Vocal Remover) integration for audio separation
+- SwiftF0 integration for pitch detection improvements
+- Developer console log component
+- Changelog modal with "What's New" button
+- Score modal optional setting
 
-## [v0.1.2]
-### Features
-- Add perfect pitch deviance presets
-- Add McLeod pitch detection algorithm and settings
-- Redesign the note and accuracy score displays
+### Changed
+- Optimized piano-roll move loop for better performance
 
-### Fixes
-- Fix Yin algorithm failure when McLeod is set to 4K buffer size
-- Fix playback and stop behavior on ESC key
-- Fix session play issues and sequence REST getting stuck
-- Fix per-note accuracy percentage display
-- Update and fix UI styles for dropdowns, sidebar, and header
+### Fixed
+- BPM safe setter and audio timing at keyboard
+- Dropdown reactivity and visual visibility for judged notes
+- whiteIndexToMidi octave offset
+- Serving of ONNX Runtime WASM backend and dev mode MIME type
+- Memory leak in useSessionSequencer (setTimeout cleanup)
+- Safari error handling
+- Silent errors and removed dead code
+- Metronome icon alignment and duplicate divider removed
 
-## [v0.1.1]
-### Features
+## [0.1.2] - 2026-05-06
+### Added
+- Perfect pitch deviance presets
+- McLeod pitch detection algorithm and settings
+
+### Changed
+- Redesigned the note and accuracy score displays
+
+### Fixed
+- Yin algorithm failure when McLeod is set to 4K buffer size
+- Playback and stop behavior on ESC key
+- Session play issues and sequence REST getting stuck
+- Per-note accuracy percentage display
+- UI styles for dropdowns, sidebar, and header
+
+## [0.1.1] - 2026-05-03
+### Added
 - Initial PitchPerfect voice practice application release
 - Extend BPM range to 280
 - Organize sidebar notes by melody and add accuracy color-coding
 - Support 1-3 octaves in piano roll based on available vertical space
-- Implement multi-select and vocal technique effects
+- Multi-select and vocal technique effects
 - Scrollable playhead with drag-to-seek and timeline
-- Add shareable preset URLs and scale modes
-- Add instrument sounds (piano, organ, strings, synth)
-- Add Settings tab with configurable pitch detection parameters and adjustable accuracy bands
+- Shareable preset URLs and scale modes
+- Instrument sounds (piano, organ, strings, synth)
+- Settings tab with configurable pitch detection parameters and adjustable accuracy bands
+- Pitch track canvas overlay on piano roll editor
+- Pitch accuracy heatmap to piano roll
+- Copy/cut/paste notes for piano roll editor
+- Snap-to-grid toggle for piano roll editor
+- Dark/light theme toggle with localStorage persistence
+- Playback speed control
+
+### Changed
 - Playhead drag resumes from position with audio effects (vibrato LFO, slides, ease)
 - Sync layout, instrument sounds, octave/rows/mode controls, and effects
-- Add pitch track canvas overlay on piano roll editor
-- Add pitch accuracy heatmap to piano roll
-- Add copy/cut/paste notes for piano roll editor
-- Add snap-to-grid toggle for piano roll editor
-- Add dark/light theme toggle with localStorage persistence
 - Extract AppHeader and AppSidebar for shared layout shell
-- Add playback speed control
 
-### Fixes
-- Fix default melody initialization in piano roll editor
+### Fixed
+- Default melody initialization in piano roll editor
 - Clip pitch trail to visible canvas area during auto-scroll
-- Fix z-index layering so grid stacks correctly and piano keys are positioned properly
+- z-index layering so grid stacks correctly and piano keys are positioned properly
 - Apply saved volume and default volume on app start
 - Stretch piano roll to fill viewport width and synchronize playhead triangle with grid line
 - Reset playhead to beat 0 on Reset to fix playhead getting stuck
 - Initialize audioCtx to fix editor playback having no sound
 - Prevent flash of unstyled content on load
-- Fix preset system saves, loading scale data, and reactivity
+- Preset system saves, loading scale data, and reactivity
