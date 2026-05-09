@@ -284,7 +284,11 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
 
       if (shouldAdvanceArc(cur, next, beat)) {
         const src = computeBallPos(beat, arcState)
-        const targetY = freqToY(nextItem.note.freq, h) - boxHalf
+        let targetY = h / 2
+        if (nextItem.isRest !== true && nextItem.note && nextItem.note.freq) {
+          targetY = freqToY(nextItem.note.freq, h) - boxHalf
+        }
+        
         const targetX = beatToX(nextItem.startBeat + nextItem.duration, w)
 
         arcState.noteIndex = nextIdx
@@ -295,6 +299,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
         arcState.cy = computeArcCy(src.y, targetY, bpm())
         arcState.startBeat = beat
         arcState.endBeat = computeArcEndBeat(next)
+        arcState.isRest = nextItem.isRest === true
 
         if (arcState.endBeat <= arcState.startBeat) {
           arcState.endBeat = arcState.startBeat + 0.5
@@ -936,6 +941,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       arcState.trail = []
       arcState.noteIndex = -1
       arcState.initialized = false
+      arcState.isRest = false
     }
 
     ctx.restore()
