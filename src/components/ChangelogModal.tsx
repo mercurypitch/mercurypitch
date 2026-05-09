@@ -18,7 +18,11 @@ const parseChangelog = (md: string): VersionEntry[] => {
     const versionMatch = line.match(/^## \[([^\]]+)\](?: - (.*))?/)
     if (versionMatch) {
       if (currentVersion) versions.push(currentVersion)
-      currentVersion = { version: versionMatch[1].replace(/^v/, ''), date: versionMatch[2] || '', sections: [] }
+      currentVersion = {
+        version: versionMatch[1].replace(/^v/, ''),
+        date: versionMatch[2] || '',
+        sections: [],
+      }
       currentSection = null
       continue
     }
