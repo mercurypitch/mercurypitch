@@ -418,6 +418,16 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
     setSpeed(newSpeed)
   }
 
+  const setBpmSafe = (newBpm: number) => {
+    setCurrentSongBpm(newBpm)
+    // Rebase gameStartTime so playhead doesn't jump
+    if (gameState() === 'playing') {
+      const currentBeat = playheadBeat()
+      const newBps = (newBpm / 60) * speed()
+      gameStartTime = performance.now() - (currentBeat / newBps) * 1000
+    }
+  }
+
   const ZOOM_MIN = 2
   const ZOOM_MAX = 24
   const ZOOM_STEP = 1
@@ -487,7 +497,7 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
     zoomPercent,
     showNoteLabels,
     toggleNoteLabels,
-    setBpm: setCurrentSongBpm,
+    setBpm: setBpmSafe,
 
     // Engine (for waveform display)
     engine,
