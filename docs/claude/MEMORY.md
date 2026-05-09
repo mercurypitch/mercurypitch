@@ -2,6 +2,6 @@
 
 Use these commands for code validation and formatting:
 
-- **Lint & Fix:** `npm run lint:fix`
-- **Format:** `npm run fmt:write`
-- **Typecheck:** `npm run typecheck`
+- **Lint & Fix:** `pnpm run lint:fix`
+- **Format:** `pnpm run fmt:write`
+- **Typecheck:** `pnpm run typecheck`

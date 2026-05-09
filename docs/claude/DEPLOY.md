@@ -4,24 +4,24 @@
 
 ```bash
 # Install dependencies (first time only)
-npm install
+pnpm install
 
 # Development server (runs at localhost:3000)
-npm run dev
+pnpm run dev
 
 # Production build (outputs to App/dist/)
-npm run build
+pnpm run build
 
 # Type check (CI uses this)
-npm run typecheck
+pnpm run typecheck
 
 # Run tests
-npm run test
+pnpm run test
 ```
 
 ## What the Build Produces
 
-`npm run build` generates static files in `dist/` with base path `/solid/`:
+`pnpm run build` generates static files in `dist/` with base path `/solid/`:
 
 ```
 dist/
@@ -45,7 +45,7 @@ The deploy script:
 
 1. Pulls latest `main` branch from GitHub
 2. Runs syntax checks on JS files
-3. Rebuilds the SolidJS app (`npm run build` in App/)
+3. Rebuilds the SolidJS app (`pnpm run build` in App/)
 4. Verifies required files exist in `public/`
 5. Apache serves from `pitch-perfect-repo/public/` (DocumentRoot)
 
@@ -60,14 +60,14 @@ The deploy script:
 
 If you need to configure NodeDeploy or similar service:
 
-- **Build command**: `npm run build`
+- **Build command**: `pnpm run build`
 - **Output directory**: `dist/` (or leave blank — most deploy UIs detect it)
 - **Node version**: 18+ recommended
 
 ## Local Development
 
 ```bash
-npm install
-npm run dev    # dev server at localhost:3000
-npm run test   # run tests
+pnpm install
+pnpm run dev    # dev server at localhost:3000
+pnpm run test   # run tests
 ```
