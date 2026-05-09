@@ -115,7 +115,7 @@ export const computeInitialArc = (
   targetY: number,
 ): Pick<
   ArcState,
-  'sx' | 'sy' | 'ex' | 'ey' | 'cy' | 'startBeat' | 'endBeat' | 'noteIndex'
+  'sx' | 'sy' | 'ex' | 'ey' | 'cy' | 'startBeat' | 'endBeat' | 'noteIndex' | 'isRest'
 > => {
   const aboveY = targetY - 100
   return {

@@ -20,6 +20,7 @@ describe('computeBallPos', () => {
     endBeat: 1,
     noteIndex: 0,
     initialized: true,
+    isRest: false,
   }
 
   it('returns source position at t=0 (start of arc)', () => {
@@ -330,6 +331,7 @@ describe('Arc state transitions (integration)', () => {
     const state: ArcState = {
       ...initial,
       initialized: true,
+      isRest: false,
     }
 
     let prevBeat = sampleBeats[0]
@@ -503,6 +505,7 @@ describe('Arc state transitions (integration)', () => {
       endBeat: computeArcEndBeat(first), // 0 + 4 = 4
       noteIndex: 0,
       initialized: true,
+      isRest: false,
     }
 
     // At beat 4 (note 1's startBeat): shouldAdvanceArc fires, arc starts.
@@ -526,6 +529,7 @@ describe('Arc state transitions (integration)', () => {
       endBeat: computeArcEndBeat(second), // 4 + 4 = 8
       noteIndex: 1,
       initialized: true,
+      isRest: false,
     }
 
     // At beat 4 (t=0): ball at source
@@ -555,6 +559,7 @@ describe('Arc state transitions (integration)', () => {
       endBeat: computeArcEndBeat(note), // 2 + 3 = 5
       noteIndex: 0,
       initialized: true,
+      isRest: false,
     }
 
     // 80% through the note — ball should NOT be at corner
@@ -611,6 +616,7 @@ describe('Arc state transitions (integration)', () => {
       endBeat: computeArcEndBeat(notes[0]), // 2
       noteIndex: 0,
       initialized: true,
+      isRest: false,
     }
 
     // At beat 2 (end of note 0), advance fires. Ball position at beat 2:
@@ -627,6 +633,7 @@ describe('Arc state transitions (integration)', () => {
       endBeat: computeArcEndBeat(notes[1]), // 8 + 2 = 10
       noteIndex: 1,
       initialized: true,
+      isRest: false,
     }
 
     // During rest (beat 5): ball is mid-flight
