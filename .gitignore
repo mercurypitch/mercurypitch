@@ -55,3 +55,6 @@ uvr-api/output/
 uvr-api/uploads/
 uvr-api/models/
 uvr-api/__pycache__/
+
+# ONNX models for client-side UVR (download separately)
+public/models/
