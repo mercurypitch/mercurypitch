@@ -1,5 +1,5 @@
 import ssl from '@vitejs/plugin-basic-ssl'
-import { copyFileSync } from 'node:fs'
+import { copyFileSync, existsSync, rmSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { Plugin } from 'vite'
@@ -30,8 +30,24 @@ function copyOrtWorkerPlugin(): Plugin {
   }
 }
 
+/** Remove large UVR model from dist to avoid Cloudflare size limits */
+function removeLargeUvrModelPlugin(): Plugin {
+  return {
+    name: 'remove-large-uvr-model',
+    apply: 'build',
+    closeBundle() {
+      // FIXME: Stop copying the 63mb model to dist until we need it for client-side processing
+      const modelPath = resolve(__dirname, 'dist/models/UVR-MDX-NET-Inst_HQ_3.onnx')
+      if (existsSync(modelPath)) {
+        rmSync(modelPath)
+        console.log('Removed large UVR model from dist/')
+      }
+    },
+  }
+}
+
 export default defineConfig({
-  plugins: [isDev ? ssl() : [], solidPlugin(), copyOrtWorkerPlugin()],
+  plugins: [isDev ? ssl() : [], solidPlugin(), copyOrtWorkerPlugin(), removeLargeUvrModelPlugin()],
   base: './',
   resolve: {
     alias: {
