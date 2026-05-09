@@ -29,7 +29,12 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build app
-        run: pnpm run build
+        run: |
+          if [ "${{ github.ref }}" = "refs/heads/dev" ]; then
+            pnpm run build:dev
+          else
+            pnpm run build
+          fi
 
       - name: Verify build output
         run: |
