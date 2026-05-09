@@ -110,17 +110,6 @@ export const LibraryTab: Component = () => {
     () => melodyStore.getCurrentMelody()?.id ?? null,
   )
 
-  const sessionMelodyIds = createMemo(() => {
-    const session = userSession()
-    if (session === null || session.items === undefined) return []
-    return session.items
-      .filter(
-        (item: SessionItem) =>
-          item.melodyId !== null && item.melodyId !== undefined,
-      )
-      .map((item: SessionItem) => item.melodyId as string)
-  })
-
   const selectedMelodyIds = createMemo(
     () => appStore.getSelectedMelodyIds?.() ?? [],
   )
@@ -397,7 +386,6 @@ export const LibraryTab: Component = () => {
    * This sets up a callback to play the next melody when the current one completes
    */
   const handlePlaySessionSequence = () => {
-    const ids = sessionMelodyIds()
     if ((userSession()?.items.length ?? 0) === 0) return
 
     // Get the sequence playback handler from App.tsx.
