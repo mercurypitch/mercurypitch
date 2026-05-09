@@ -7,13 +7,13 @@ This document contains my Claude Code workflow preferences for this project.
 - **ALWAYS commit and push after fixing bugs**
 - **ALWAYS include tests and linting in the same PR/commit**
 - **Do NOT leave uncommitted changes on the refactor branch**
-- After any code change, run: `npm run lint && npm test -- --run && npm run typecheck && npm run build && git add -A && git commit -m "fix: ..." && git push`
+- After any code change, run: `pnpm run lint && pnpm run test:run && pnpm run typecheck && pnpm run build && git add -A && git commit -m "fix: ..." && git push`
 
 ## Runtime Error Detection Workflow (MUST DO AFTER EVERY CODE CHANGE)
 
 1. **Kill any existing vite processes**: `pkill -f "vite" || true`
 
-2. **Start dev server in background**: `npm run dev > /tmp/pitch-dev.log 2>&1 &`
+2. **Start dev server in background**: `pnpm run dev > /tmp/pitch-dev.log 2>&1 &`
 
 3. **Wait for server**: `sleep 8`
 
@@ -21,7 +21,7 @@ This document contains my Claude Code workflow preferences for this project.
 
 5. **Check for runtime errors**: `grep -i "error\|fail\|undefined" /tmp/pitch-dev.log || echo "No errors in logs"`
 
-6. **Run production build to catch any issues**: `npm run build && echo "Build successful"`
+6. **Run production build to catch any issues**: `pnpm run build && echo "Build successful"`
 
 7. **Kill server**: `pkill -f "vite" || true`
 

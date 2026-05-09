@@ -27,8 +27,8 @@ git config core.hooksPath .githooks
 
 ## Build & Verify
 ```bash
-npm run typecheck    # TypeScript: tsc --noEmit
-npm run build        # Vite production build
+pnpm run typecheck   # TypeScript: tsc --noEmit
+pnpm run build       # Vite production build
 ```
 
 ## Deploy

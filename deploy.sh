@@ -81,7 +81,7 @@ rebuild_solidjs() {
     info "Rebuilding SolidJS app..."
 
     if [[ -f "$REPO_DIR/package.json" ]]; then
-        if npm run build >/dev/null 2>&1; then
+        if pnpm run build >/dev/null 2>&1; then
             info "  ✓ SolidJS app built"
         else
             warn "  ! SolidJS build failed"
