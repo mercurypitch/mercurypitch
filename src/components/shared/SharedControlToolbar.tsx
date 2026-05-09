@@ -12,7 +12,6 @@ import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_CO
 import { appStore } from '@/stores'
 import { bpm, micActive, micWaveVisible, playbackSpeed, setBpm, setPlaybackSpeed, setSensitivity, settings, toggleMicWaveVisible, } from '@/stores'
 import type { PlaybackMode, SpacedRestMode } from '@/types'
-import { currentSongBpm } from '@/stores/falling-notes-store'
 import { ControlGroup } from './ControlGroup'
 
 // ========================================
@@ -119,6 +118,10 @@ interface SharedControlToolbarProps {
   // Common
   onMicToggle?: () => void
   onWaveToggle?: () => void
+
+  // BPM override (piano tab uses currentSongBpm, others use global bpm)
+  bpmValue?: () => number
+  onBpmChange?: (bpm: number) => void
 
   // Save button (editor tab only)
   onSaveMelody?: () => void
@@ -531,7 +534,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
         */}
         <div class="inline-controls-row">
           {/* BPM */}
-          <Show when={!isPianoTab()}>
+          <Show when={!isPianoTab() || (props.bpmValue && props.onBpmChange)}>
             <div class="tempo-group inline-control" title="Tempo (BPM)">
               <span class="inline-control-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" width="14" height="14">
@@ -546,13 +549,17 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
                 id="bpm-input"
                 min="40"
                 max="280"
-                value={bpm()}
+                value={isPianoTab() && props.bpmValue ? props.bpmValue() : bpm()}
                 class="bpm-number-input"
                 aria-label="BPM"
                 onInput={(e) => {
                   const value = parseInt(e.currentTarget.value)
                   if (value !== undefined && !isNaN(value)) {
-                    setBpm(value)
+                    if (isPianoTab() && props.onBpmChange) {
+                      props.onBpmChange(value)
+                    } else {
+                      setBpm(value)
+                    }
                   }
                 }}
               />
@@ -561,26 +568,18 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
                 id="tempo"
                 min="40"
                 max="280"
-                value={bpm()}
+                value={isPianoTab() && props.bpmValue ? props.bpmValue() : bpm()}
                 class="tempo-slider"
                 aria-label="BPM slider"
-                onInput={(e) => setBpm(parseInt(e.currentTarget.value) || 80)}
+                onInput={(e) => {
+                  const val = parseInt(e.currentTarget.value) || 80
+                  if (isPianoTab() && props.onBpmChange) {
+                    props.onBpmChange(val)
+                  } else {
+                    setBpm(val)
+                  }
+                }}
               />
-            </div>
-          </Show>
-
-          {/* BPM display — read-only for falling notes */}
-          <Show when={isPianoTab() && currentSongBpm() > 0}>
-            <div class="tempo-group inline-control" title="Song BPM">
-              <span class="inline-control-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" width="14" height="14">
-                  <path
-                    fill="currentColor"
-                    d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8zm.5-13H11v6l5.2 3.1.8-1.3-4.5-2.7z"
-                  />
-                </svg>
-              </span>
-              <span class="bpm-display-label">{currentSongBpm()} BPM</span>
             </div>
           </Show>
 
