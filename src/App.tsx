@@ -58,7 +58,8 @@ import {
 import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, toggleMicWaveVisible, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import { getSession, templateToSession } from '@/stores/session-store'
-import { selectedCharacter, showPracticeResultPopup, } from '@/stores/settings-store'
+import { selectedCharacter } from '@/stores/settings-store'
+import { DEFAULT_TAB, PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_KARAOKE, TAB_LEADERBOARD, TAB_SETTINGS, TAB_SINGING, TAB_UVR, } from '@/features/tabs/constants'
 import type { ActiveTab, MelodyItem, PlaybackMode, SpacedRestMode, } from '@/types'
 import { Walkthrough, WalkthroughControl } from './components'
 import { LyricsUploaderStyles, StemMixerStyles } from './components'
@@ -982,9 +983,8 @@ const AppShell: Component<AppProps> = (props) => {
               onClick={() => void handleTabChange(TAB_KARAOKE)}
             >
               <svg viewBox="0 0 24 24" width="18" height="18">
-                <path fill="currentColor" d="M9 18V5l12-2v13" />
-                <circle cx="6" cy="18" r="3" />
-                <circle cx="18" cy="16" r="3" />
+                <path fill="currentColor" d="M3 6 Q10 10 17 4 L19 4 L17 7 Q10 12 3 12 Z" />
+                <path fill="currentColor" d="M3 18 Q10 14 17 20 L19 20 L17 17 Q10 12 3 12 Z" />
               </svg>
               Vocal Sep
             </button>
