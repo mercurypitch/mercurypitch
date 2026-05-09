@@ -357,6 +357,31 @@ const AppShell: Component<AppProps> = (props) => {
     },
     playMode,
     setPlayMode,
+    activeTab,
+    piano: {
+      isPlaying: () =>
+        fallingNotes.gameState() === 'playing' ||
+        fallingNotes.gameState() === 'countdown',
+      isPaused: () => fallingNotes.gameState() === 'paused',
+      gameState: fallingNotes.gameState,
+      startGame: () => {
+        fallingNotes.setPianoCurrentCycle(1)
+        void fallingNotes.startGame()
+      },
+      pauseGame: fallingNotes.pauseGame,
+      resumeGame: fallingNotes.resumeGame,
+      resetGame: fallingNotes.resetGame,
+    },
+    modals: {
+      practiceResult,
+      closePracticeResult: () => setPracticeResult(null),
+      sessionSummary,
+      closeSessionSummary: () => setSessionSummary(null),
+      showScaleBuilder,
+      closeScaleBuilder: () => setShowScaleBuilder(false),
+      showGuideSelection,
+      closeGuideSelection,
+    },
   })
 
   usePianoRollEvents({
@@ -1429,7 +1454,13 @@ const AppShell: Component<AppProps> = (props) => {
                     fallingNotes.gameState() === 'countdown'
                   }
                   isPaused={() => fallingNotes.gameState() === 'paused'}
-                  onPlay={fallingNotes.startGame}
+                  onPlay={() => {
+                    // Fresh user-triggered Play resets cycle counter
+                    if (fallingNotes.gameState() !== 'paused') {
+                      fallingNotes.setPianoCurrentCycle(1)
+                    }
+                    void fallingNotes.startGame()
+                  }}
                   onPause={fallingNotes.pauseGame}
                   onResume={fallingNotes.resumeGame}
                   onStop={fallingNotes.resetGame}
@@ -1442,11 +1473,16 @@ const AppShell: Component<AppProps> = (props) => {
                   onSpeedChange={fallingNotes.setSpeed}
                   metronomeEnabled={() => false}
                   onMetronomeToggle={() => {}}
-                  playMode={() => PLAYBACK_MODE_ONCE}
-                  playModeChange={() => {}}
-                  practiceCycles={() => 1}
-                  onCyclesChange={() => {}}
-                  currentCycle={() => 1}
+                  playMode={() => fallingNotes.pianoPlayMode() === 'repeat' ? PLAYBACK_MODE_REPEAT : PLAYBACK_MODE_ONCE}
+                  playModeChange={(mode) => {
+                    fallingNotes.setPianoPlayMode(mode === PLAYBACK_MODE_REPEAT ? 'repeat' : 'once')
+                    if (mode === PLAYBACK_MODE_REPEAT) {
+                      fallingNotes.setPianoCurrentCycle(1)
+                    }
+                  }}
+                  practiceCycles={() => fallingNotes.pianoRepeatCycles()}
+                  onCyclesChange={(n) => fallingNotes.setPianoRepeatCycles(n)}
+                  currentCycle={() => fallingNotes.pianoCurrentCycle()}
                   practiceSubMode={() => 'all' as const}
                   onPracticeSubModeChange={() => {}}
                   isCountingIn={() => fallingNotes.isCountingIn()}
