@@ -198,7 +198,7 @@ describe('shouldAdvanceArc', () => {
 // buildPlayable
 // ---------------------------------------------------------------------------
 describe('buildPlayable', () => {
-  it('filters out rests', () => {
+  it('includes rests in playable array', () => {
     const melody = [
       {
         startBeat: 0,
@@ -215,17 +215,18 @@ describe('buildPlayable', () => {
       },
     ]
     const playable = buildPlayable(melody)
-    expect(playable).toHaveLength(2)
+    expect(playable).toHaveLength(3)
     expect(playable[0].idx).toBe(0)
-    expect(playable[1].idx).toBe(2)
+    expect(playable[1].idx).toBe(1)
+    expect(playable[2].idx).toBe(2)
   })
 
-  it('returns empty for all-rest melody', () => {
+  it('returns all rests for all-rest melody', () => {
     const melody = [
       { startBeat: 0, duration: 1, isRest: true },
       { startBeat: 1, duration: 1, isRest: true },
     ]
-    expect(buildPlayable(melody)).toHaveLength(0)
+    expect(buildPlayable(melody)).toHaveLength(2)
   })
 
   it('preserves original index', () => {
@@ -235,7 +236,8 @@ describe('buildPlayable', () => {
       { startBeat: 2, duration: 1, isRest: false },
     ]
     const playable = buildPlayable(melody)
-    expect(playable[0].idx).toBe(2)
+    expect(playable[0].idx).toBe(0)
+    expect(playable[2].idx).toBe(2)
   })
 
   it('items without isRest are included', () => {

@@ -211,7 +211,7 @@ describe('parseHash', () => {
 
 describe('buildHash', () => {
   it('builds tab hash', () => {
-    expect(buildHash({ type: 'tab', tab: TAB_SINGING })).toBe('/practice')
+    expect(buildHash({ type: 'tab', tab: TAB_SINGING })).toBe('/singing')
     expect(buildHash({ type: 'tab', tab: TAB_SETTINGS })).toBe('/settings')
   })
 
@@ -308,7 +308,7 @@ describe('navigateTo', () => {
     vi.stubGlobal('location', locationMock)
 
     navigateTo({ type: 'tab', tab: TAB_COMPOSE })
-    expect(locationMock.hash).toBe('#/editor')
+    expect(locationMock.hash).toBe('#/compose')
   })
 
   it('does not set hash if already at the same hash', () => {
