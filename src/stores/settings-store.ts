@@ -366,12 +366,11 @@ export const [showPracticeResultPopup, setShowPracticeResultPopup] =
   createPersistedSignal<boolean>(SHOW_PRACTICE_RESULT_POPUP_KEY, false)
 
 /**
- * Show the jumping ball during playback mode. Off by default so the
- * ball doesn't distract during regular practice / playback.
+ * Show the jumping ball during playback mode. On by default.
  */
 const SHOW_PLAYBACK_BALL_KEY = 'pitchperfect_show_playback_ball'
 export const [showPlaybackBall, setShowPlaybackBall] =
-  createPersistedSignal<boolean>(SHOW_PLAYBACK_BALL_KEY, false)
+  createPersistedSignal<boolean>(SHOW_PLAYBACK_BALL_KEY, true)
 
 /**
  * Show the jumping ball during Focus mode. On by default — Focus mode
@@ -384,13 +383,13 @@ export const [showFocusBall, setShowFocusBall] = createPersistedSignal<boolean>(
 )
 
 /**
- * Show the playhead vertical line during playback/pause. On by default.
- * When off, users can rely solely on the jumping ball for position tracking.
+ * Show the playhead vertical line during playback/pause. Off by default.
+ * When off, users rely solely on the jumping ball for position tracking.
  */
 const SHOW_PLAYHEAD_KEY = 'pitchperfect_show_playhead'
 export const [showPlayhead, setShowPlayhead] = createPersistedSignal<boolean>(
   SHOW_PLAYHEAD_KEY,
-  true,
+  false,
 )
 
 // ── Accuracy Presets ───────────────────────────────────────────────────
