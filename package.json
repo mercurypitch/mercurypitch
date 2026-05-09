@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "if [ \"$CF_PAGES_BRANCH\" = \"dev\" ] || [ \"$CF_WORKER_BRANCH\" = \"dev\" ]; then vite build --mode development; else vite build; fi",
+    "build": "vite build",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "test": "vitest",

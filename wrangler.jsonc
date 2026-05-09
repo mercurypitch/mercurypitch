@@ -18,6 +18,9 @@
     }
   },
   "main": "src/index.js",
+  "build": {
+    "command": "pnpm run build"
+  },
   "assets": {
     "directory": "dist"
   },
@@ -32,7 +35,10 @@
       "name": "pitch-perfect-dev",
       "routes": [
         { "pattern": "dev.mercurypitch.com", "custom_domain": true }
-      ]
+      ],
+      "build": {
+        "command": "pnpm run build:dev"
+      }
     }
   }
 }
