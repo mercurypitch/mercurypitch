@@ -8,10 +8,11 @@ import { Show } from 'solid-js'
 import { MicButton } from '@/components'
 import { PrecCountButton } from '@/components/PrecCountButton'
 import { Tooltip } from '@/components/Tooltip'
-import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_COMPOSE, TAB_SINGING, } from '@/features/tabs/constants'
+import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_COMPOSE, TAB_SINGING, TAB_PIANO } from '@/features/tabs/constants'
 import { appStore } from '@/stores'
 import { bpm, micActive, micWaveVisible, playbackSpeed, setBpm, setPlaybackSpeed, setSensitivity, settings, toggleMicWaveVisible, } from '@/stores'
 import type { PlaybackMode, SpacedRestMode } from '@/types'
+import { currentSongBpm } from '@/stores/falling-notes-store'
 import { ControlGroup } from './ControlGroup'
 
 // ========================================
@@ -57,6 +58,7 @@ interface SharedControlToolbarProps {
   activeTab: () => ActiveTab
   singingTab?: () => boolean
   editorTab?: () => boolean
+  fallingNotesTab?: () => boolean
 
   // Playback state
   isPlaying: () => boolean
@@ -100,6 +102,20 @@ interface SharedControlToolbarProps {
   isRecording?: () => boolean
   onRecordToggle?: () => Promise<void>
 
+  // Zoom (falling-notes tab only)
+  zoomLevel?: () => number
+  onZoomIn?: () => void
+  onZoomOut?: () => void
+
+  // Labels toggle (falling-notes tab only)
+  showNoteLabels?: () => boolean
+  onToggleNoteLabels?: () => void
+
+  // MIDI (falling-notes tab only)
+  inputMode?: () => 'mic' | 'midi'
+  midiConnected?: () => boolean
+  onMidiToggle?: () => void
+
   // Common
   onMicToggle?: () => void
   onWaveToggle?: () => void
@@ -116,6 +132,8 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
     props.singingTab?.() ?? props.activeTab() === TAB_SINGING
   const isEditorTab = () =>
     props.editorTab?.() ?? props.activeTab() === TAB_COMPOSE
+  const isFallingNotesTab = () =>
+    props.fallingNotesTab?.() ?? props.activeTab() === TAB_PIANO
 
   const isActive = () => props.isPlaying() || props.isPaused()
   const isStopped = () => !props.isPlaying() && !props.isPaused()
@@ -136,6 +154,30 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
             </div>
           </div>
         )}
+
+        {/* MIDI — falling notes only, toggle between mic and MIDI input */}
+        <Show when={isFallingNotesTab() && props.onMidiToggle}>
+          <div class="essential-control-group">
+            <button
+              class={`ctrl-btn midi-btn ${(props.midiConnected?.() ?? false) ? 'active' : ''}`}
+              onClick={() => props.onMidiToggle?.()}
+              title={(props.midiConnected?.() ?? false) ? 'Disconnect MIDI' : 'Connect MIDI Keyboard'}
+              aria-label={(props.midiConnected?.() ?? false) ? 'Disconnect MIDI' : 'Connect MIDI Keyboard'}
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <circle cx="12" cy="12" r="3" />
+                {/* 5-pin DIN connector dots */}
+                <circle cx="12" cy="5" r="1" fill="currentColor" stroke="none" />
+                <circle cx="18.7" cy="7.7" r="1" fill="currentColor" stroke="none" />
+                <circle cx="16.2" cy="16.2" r="1" fill="currentColor" stroke="none" />
+                <circle cx="7.8" cy="16.2" r="1" fill="currentColor" stroke="none" />
+                <circle cx="5.3" cy="7.7" r="1" fill="currentColor" stroke="none" />
+              </svg>
+              <span>MIDI</span>
+            </button>
+          </div>
+        </Show>
 
         {/* Wave toggle - practice tab only */}
         <Show when={isPracticeTab()}>
@@ -308,6 +350,32 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
           </svg>
         </button>
 
+        {/* Metronome — hidden for falling notes */}
+        <Show when={!isFallingNotesTab()}>
+          <button
+            class={`ctrl-btn metronome-btn ${props.metronomeEnabled() ? 'active' : ''}`}
+            onClick={() => props.onMetronomeToggle()}
+            title="Toggle metronome"
+            aria-label="Toggle metronome"
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16">
+              <path
+                fill="currentColor"
+                d="M12 2L8 22h8L12 2zm0 5.5l2.5 10h-5L12 7.5z"
+              />
+              <line
+                x1="12"
+                y1="2"
+                x2="12"
+                y2="5"
+                stroke="currentColor"
+                stroke-width="1.5"
+              />
+              <circle cx="12" cy="3.5" r="0.5" fill="currentColor" />
+            </svg>
+          </button>
+        </Show>
+
         {/* Count-in badge */}
         <Show when={props.isCountingIn()}>
           <div id="countin-display" class="countin-badge">
@@ -443,6 +511,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
         */}
         <div class="inline-controls-row">
           {/* BPM */}
+          <Show when={!isFallingNotesTab()}>
           <div class="tempo-group inline-control" title="Tempo (BPM)">
             <span class="inline-control-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" width="14" height="14">
@@ -478,6 +547,22 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
               onInput={(e) => setBpm(parseInt(e.currentTarget.value) || 80)}
             />
           </div>
+          </Show>
+
+          {/* BPM display — read-only for falling notes */}
+          <Show when={isFallingNotesTab() && currentSongBpm() > 0}>
+          <div class="tempo-group inline-control" title="Song BPM">
+            <span class="inline-control-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="14" height="14">
+                <path
+                  fill="currentColor"
+                  d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8zm.5-13H11v6l5.2 3.1.8-1.3-4.5-2.7z"
+                />
+              </svg>
+            </span>
+            <span class="bpm-display-label">{currentSongBpm()} BPM</span>
+          </div>
+          </Show>
 
           {/* Volume */}
           <div class="volume-group inline-control" title="Volume">
@@ -524,6 +609,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
           {/* Sensitivity — styled like BPM/Volume so the entire mic
               sensitivity widget reads as one cohesive control instead
               of a stray label-slider pair tucked at the right edge. */}
+          <Show when={!isFallingNotesTab()}>
           <div
             class="sensitivity-group inline-control"
             title="Mic sensitivity (1 = quiet rooms, 10 = noisy)"
@@ -566,6 +652,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
               }}
             />
           </div>
+          </Show>
 
           {/* Speed */}
           <div class="speed-group inline-control" title="Playback speed">
@@ -594,6 +681,46 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
               <option value="2">2x</option>
             </select>
           </div>
+
+          {/* Zoom — falling notes tab only */}
+          <Show when={isFallingNotesTab() && props.zoomLevel && props.onZoomIn && props.onZoomOut}>
+          <div class="zoom-group inline-control" title="Zoom level">
+            <span class="inline-control-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="14" height="14">
+                <path fill="currentColor" d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+              </svg>
+            </span>
+            <button
+              class="zoom-btn"
+              title="Zoom out"
+              aria-label="Zoom out"
+              onClick={() => props.onZoomOut?.()}
+            >-</button>
+            <span class="zoom-label">{props.zoomLevel?.() ?? 100}%</span>
+            <button
+              class="zoom-btn"
+              title="Zoom in"
+              aria-label="Zoom in"
+              onClick={() => props.onZoomIn?.()}
+            >+</button>
+          </div>
+          </Show>
+
+          {/* Note label toggle — falling notes tab only */}
+          <Show when={isFallingNotesTab() && props.showNoteLabels && props.onToggleNoteLabels}>
+          <div class="label-toggle-group inline-control" title="Toggle note labels">
+            <button
+              class={`label-toggle-btn ${props.showNoteLabels?.() ? 'active' : ''}`}
+              aria-label="Toggle note labels"
+              onClick={() => props.onToggleNoteLabels?.()}
+            >
+              <svg viewBox="0 0 24 24" width="14" height="14">
+                <path fill="currentColor" d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+              </svg>
+              <span class="label-toggle-text">Labels</span>
+            </button>
+          </div>
+          </Show>
         </div>
 
         {/* Save Melody — editor tab only */}
