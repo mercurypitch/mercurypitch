@@ -4,7 +4,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { For, createEffect, createMemo, onCleanup, createSignal, onMount, Show, } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import { VocalAnalysis, VocalChallenges } from '@/components'
 import { AppSidebar } from '@/components/AppSidebar'
 import { CommunityLeaderboard } from '@/components/CommunityLeaderboard'
@@ -49,6 +49,12 @@ import { buildScaleMelody, buildSessionPlaybackMelody, } from '@/lib/session-bui
 import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
 import { openWalkthroughChapter, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPlaybackSpeed, setScaleType, showSelection, walkthroughModalOpen, } from '@/stores'
 import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, toggleMicWaveVisible, } from '@/stores'
+import {
+  advancedFeaturesEnabled,
+  appError,
+  devFeaturesEnabled,
+  initAudioEngine,
+} from '@/stores/app-store'
 import { melodyStore } from '@/stores/melody-store'
 import { getSession, templateToSession } from '@/stores/session-store'
 import { selectedCharacter, showPracticeResultPopup, } from '@/stores/settings-store'
@@ -155,6 +161,8 @@ const AppShell: Component<AppProps> = (props) => {
 
   const [showScaleBuilder, setShowScaleBuilder] = createSignal(false)
   const [savedVol, setSavedVol] = createSignal<number>(80)
+  const [analysisSubTab, setAnalysisSubTab] = createSignal<'vocal' | 'detection' | 'algorithms'>('vocal')
+
   const [metronomeEnabled, setMetronomeEnabled] = createSignal(false)
 
   // ── Play mode ───────────────────────────────────────────────
@@ -1024,100 +1032,113 @@ const AppShell: Component<AppProps> = (props) => {
                 </svg>
                 {tabLabel(TAB_PIANO)}
               </button>
-            </div>
-            <button
-              id="tab-compose"
-              class={`app-tab ${activeTab() === TAB_COMPOSE ? 'active' : ''}`}
-              onClick={() => void handleTabChange(TAB_COMPOSE)}
-            >
-              <svg
-                class="tab-icon"
-                viewBox="0 0 24 24"
-                width="14"
-                height="14"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
+              <button
+                id="tab-karaoke"
+                class={`app-tab ${activeTab() === TAB_KARAOKE ? 'active' : ''}`}
+                onClick={() => void handleTabChange(TAB_KARAOKE)}
               >
-                <path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                <path d="m15 5 4 4" />
-              </svg>
-              {tabLabel(TAB_COMPOSE)}
-              <Show when={melodyStore.items().length > 0}>
-                <span class="tab-badge">{melodyStore.items().length}</span>
+                <svg viewBox="0 0 24 24" width="18" height="18">
+                  <path
+                    fill="currentColor"
+                    d="M3 6 Q10 10 17 4 L19 4 L17 7 Q10 12 3 12 Z"
+                  />
+                  <path
+                    fill="currentColor"
+                    d="M3 18 Q10 14 17 20 L19 20 L17 17 Q10 12 3 12 Z"
+                  />
+                </svg>
+                {tabLabel(TAB_KARAOKE)}
+              </button>
+            </div>
+
+            <Show when={advancedFeaturesEnabled()}>
+              <div class="tab-group">
+                <span class="tab-group-label">Social</span>
+                <button
+                  id="tab-community"
+                  class={`app-tab ${activeTab() === TAB_COMMUNITY ? 'active' : ''}`}
+                  onClick={() => void handleTabChange(TAB_COMMUNITY)}
+                >
+                  <svg viewBox="0 0 24 24" width="18" height="18">
+                    <path
+                      fill="currentColor"
+                      d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"
+                    />
+                  </svg>
+                  {tabLabel(TAB_COMMUNITY)}
+                </button>
+                <button
+                  id="tab-leaderboard"
+                  class={`app-tab ${activeTab() === TAB_LEADERBOARD ? 'active' : ''}`}
+                  onClick={() => void handleTabChange(TAB_LEADERBOARD)}
+                >
+                  <svg viewBox="0 0 24 24" width="18" height="18">
+                    <path
+                      fill="currentColor"
+                      d="M5 3H3v18h2V3zm4 0H7v18h2V3zm4 0h-2v18h2V3zm4 0h-2v18h2V3zm4 0h-2v18h2V3z"
+                    />
+                  </svg>
+                  {tabLabel(TAB_LEADERBOARD)}
+                </button>
+                <button
+                  id="tab-challenges"
+                  class={`app-tab ${activeTab() === TAB_CHALLENGES ? 'active' : ''}`}
+                  onClick={() => void handleTabChange(TAB_CHALLENGES)}
+                >
+                  <svg viewBox="0 0 24 24" width="18" height="18">
+                    <path
+                      fill="currentColor"
+                      d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
+                    />
+                  </svg>
+                  {tabLabel(TAB_CHALLENGES)}
+                </button>
+              </div>
+            </Show>
+
+            <div class="tab-group">
+              <span class="tab-group-label">Advanced</span>
+              <button
+                id="tab-compose"
+                class={`app-tab ${activeTab() === TAB_COMPOSE ? 'active' : ''}`}
+                onClick={() => void handleTabChange(TAB_COMPOSE)}
+              >
+                <svg
+                  class="tab-icon"
+                  viewBox="0 0 24 24"
+                  width="14"
+                  height="14"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                  <path d="m15 5 4 4" />
+                </svg>
+                {tabLabel(TAB_COMPOSE)}
+                <Show when={melodyStore.items().length > 0}>
+                  <span class="tab-badge">{melodyStore.items().length}</span>
+                </Show>
+              </button>
+              <Show when={advancedFeaturesEnabled()}>
+                <button
+                  id="tab-analysis"
+                  class={`app-tab ${activeTab() === TAB_ANALYSIS ? 'active' : ''}`}
+                  onClick={() => void handleTabChange(TAB_ANALYSIS)}
+                >
+                  <svg viewBox="0 0 24 24" width="18" height="18">
+                    <path
+                      fill="currentColor"
+                      d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"
+                    />
+                  </svg>
+                  {tabLabel(TAB_ANALYSIS)}
+                </button>
               </Show>
-            </button>
-            <button
-              id="tab-analysis"
-              class={`app-tab ${activeTab() === TAB_ANALYSIS ? 'active' : ''}`}
-              onClick={() => void handleTabChange(TAB_ANALYSIS)}
-            >
-              <svg viewBox="0 0 24 24" width="18" height="18">
-                <path
-                  fill="currentColor"
-                  d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"
-                />
-              </svg>
-              {tabLabel(TAB_ANALYSIS)}
-            </button>
-            <button
-              id="tab-community"
-              class={`app-tab ${activeTab() === TAB_COMMUNITY ? 'active' : ''}`}
-              onClick={() => void handleTabChange(TAB_COMMUNITY)}
-            >
-              <svg viewBox="0 0 24 24" width="18" height="18">
-                <path
-                  fill="currentColor"
-                  d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"
-                />
-              </svg>
-              {tabLabel(TAB_COMMUNITY)}
-            </button>
-            <button
-              id="tab-leaderboard"
-              class={`app-tab ${activeTab() === TAB_LEADERBOARD ? 'active' : ''}`}
-              onClick={() => void handleTabChange(TAB_LEADERBOARD)}
-            >
-              <svg viewBox="0 0 24 24" width="18" height="18">
-                <path
-                  fill="currentColor"
-                  d="M5 3H3v18h2V3zm4 0H7v18h2V3zm4 0h-2v18h2V3zm4 0h-2v18h2V3zm4 0h-2v18h2V3z"
-                />
-              </svg>
-              {tabLabel(TAB_LEADERBOARD)}
-            </button>
-            <button
-              id="tab-challenges"
-              class={`app-tab ${activeTab() === TAB_CHALLENGES ? 'active' : ''}`}
-              onClick={() => void handleTabChange(TAB_CHALLENGES)}
-            >
-              <svg viewBox="0 0 24 24" width="18" height="18">
-                <path
-                  fill="currentColor"
-                  d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
-                />
-              </svg>
-              {tabLabel(TAB_CHALLENGES)}
-            </button>
-            <button
-              id="tab-karaoke"
-              class={`app-tab ${activeTab() === TAB_KARAOKE ? 'active' : ''}`}
-              onClick={() => void handleTabChange(TAB_KARAOKE)}
-            >
-              <svg viewBox="0 0 24 24" width="18" height="18">
-                <path
-                  fill="currentColor"
-                  d="M3 6 Q10 10 17 4 L19 4 L17 7 Q10 12 3 12 Z"
-                />
-                <path
-                  fill="currentColor"
-                  d="M3 18 Q10 14 17 20 L19 20 L17 17 Q10 12 3 12 Z"
-                />
-              </svg>
-              {tabLabel(TAB_KARAOKE)}
-            </button>
+            </div>
+
             <button
               id="tab-settings"
               class={`app-tab ${activeTab() === TAB_SETTINGS ? 'active' : ''}`}
@@ -1139,22 +1160,6 @@ const AppShell: Component<AppProps> = (props) => {
               </svg>
               {tabLabel(TAB_SETTINGS)}
             </button>
-            <Show when={IS_DEV}>
-              <button
-                id="tab-pitch-test"
-                class={`app-tab ${activeTab() === TAB_PITCH_TEST ? 'active' : ''}`}
-                onClick={() => void handleTabChange(TAB_PITCH_TEST)}
-              >
-                {tabLabel(TAB_PITCH_TEST)}
-              </button>
-              <button
-                id="tab-pitch-algo"
-                class={`app-tab ${activeTab() === TAB_PITCH_ALGO ? 'active' : ''}`}
-                onClick={() => void handleTabChange(TAB_PITCH_ALGO)}
-              >
-                {tabLabel(TAB_PITCH_ALGO)}
-              </button>
-            </Show>
           </nav>
         </header>
 
@@ -1383,8 +1388,45 @@ const AppShell: Component<AppProps> = (props) => {
             </Show>
 
             <Show when={activeTab() === TAB_ANALYSIS}>
-              <div class="vocal-analysis-panel">
-                <VocalAnalysis />
+              <div class="analysis-container" style="display: flex; flex-direction: column; width: 100%; height: 100%;">
+                <div class="analysis-tabs" style="display: flex; gap: 1rem; padding: 1rem; background: var(--bg-secondary); border-bottom: 1px solid var(--border-color);">
+                  <button 
+                    class={`view-btn ${analysisSubTab() === 'vocal' ? 'active' : ''}`}
+                    onClick={() => setAnalysisSubTab('vocal')}
+                  >
+                    Vocal Analysis
+                  </button>
+                  <Show when={devFeaturesEnabled()}>
+                    <button 
+                      class={`view-btn ${analysisSubTab() === 'detection' ? 'active' : ''}`}
+                      onClick={() => setAnalysisSubTab('detection')}
+                    >
+                      Pitch Detection
+                    </button>
+                    <button 
+                      class={`view-btn ${analysisSubTab() === 'algorithms' ? 'active' : ''}`}
+                      onClick={() => setAnalysisSubTab('algorithms')}
+                    >
+                      Pitch Algorithms
+                    </button>
+                  </Show>
+                </div>
+
+                <div class="analysis-content" style="flex: 1; overflow: hidden; position: relative;">
+                  <Show when={analysisSubTab() === 'vocal'}>
+                    <div class="vocal-analysis-panel" style="width: 100%; height: 100%;">
+                      <VocalAnalysis />
+                    </div>
+                  </Show>
+                  <Show when={devFeaturesEnabled()}>
+                    <Show when={analysisSubTab() === 'detection'}>
+                      <PitchTestingTab onClose={() => setActiveTab(TAB_SINGING)} />
+                    </Show>
+                    <Show when={analysisSubTab() === 'algorithms'}>
+                      <PitchAlgorithmTester onClose={() => setActiveTab(TAB_SINGING)} />
+                    </Show>
+                  </Show>
+                </div>
               </div>
             </Show>
 
@@ -1410,16 +1452,6 @@ const AppShell: Component<AppProps> = (props) => {
               <div id="settings-panel">
                 <SettingsPanel />
               </div>
-            </Show>
-            <Show when={IS_DEV}>
-              <Show when={activeTab() === TAB_PITCH_TEST}>
-                <PitchTestingTab onClose={() => setActiveTab(TAB_SINGING)} />
-              </Show>
-              <Show when={activeTab() === TAB_PITCH_ALGO}>
-                <PitchAlgorithmTester
-                  onClose={() => setActiveTab(TAB_SINGING)}
-                />
-              </Show>
             </Show>
 
             <Show when={activeTab() === TAB_KARAOKE}>

@@ -1012,18 +1012,29 @@ header h1 {
 .sidebar-vis-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 4px 6px;
-  padding: 6px 0;
-  border-bottom: 1px solid var(--border);
+  gap: 8px 12px;
+  padding: 12px 4px 0 4px;
 }
+
+.fancy-divider {
+  display: flex;
+  align-items: center;
+  margin: 16px 0 8px 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--border) 0%, var(--accent) 50%, var(--border) 100%);
+  border-radius: 1px;
+  opacity: 0.7;
+}
+
 .vis-grid-cell {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 2px 6px;
+  padding: 4px 10px;
   background: var(--bg-tertiary);
-  border-radius: 4px;
-  min-height: 26px;
+  border-radius: 8px;
+  min-height: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.02);
 }
 .vis-grid-label {
   font-size: 0.7rem;
