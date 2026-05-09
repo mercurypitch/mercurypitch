@@ -2,17 +2,17 @@
 // Hash Router — Client-side hash-based routing
 // ============================================================
 
-import type { ActiveTab } from '@/stores'
 import {
-  TAB_SINGING,
-  TAB_COMPOSE,
-  TAB_SETTINGS,
   TAB_ANALYSIS,
-  TAB_COMMUNITY,
-  TAB_LEADERBOARD,
   TAB_CHALLENGES,
+  TAB_COMMUNITY,
+  TAB_COMPOSE,
   TAB_KARAOKE,
+  TAB_LEADERBOARD,
+  TAB_SETTINGS,
+  TAB_SINGING,
 } from '@/features/tabs/constants'
+import type { ActiveTab } from '@/stores'
 
 export type HashRoute =
   | { type: 'tab'; tab: ActiveTab }

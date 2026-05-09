@@ -1,13 +1,13 @@
 import type { Accessor, Setter } from 'solid-js'
 import { createSignal } from 'solid-js'
+import { PLAYBACK_MODE_SESSION, TAB_SINGING } from '@/features/tabs/constants'
 import type { PlaybackRuntime } from '@/lib/playback-runtime'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { melodyTotalBeats } from '@/lib/scale-data'
 import { buildSessionItemMelody } from '@/lib/session-builder'
 import { advanceSessionItem, countIn, getCurrentSessionItem, recordSessionItemResult, sessionItemIndex, setActiveTab, setBpm, setKeyName, setScaleType, setSessionActive, showNotification, userSession, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
-import type { MelodyItem, NoteResult, PracticeResult, PlaybackMode, SessionResult, } from '@/types'
-import { PLAYBACK_MODE_SESSION, TAB_SINGING } from '@/features/tabs/constants'
+import type { MelodyItem, NoteResult, PlaybackMode, PracticeResult, SessionResult, } from '@/types'
 
 export interface SessionSequencer {
   sessionMelodyIds: Accessor<string[]>

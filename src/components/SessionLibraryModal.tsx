@@ -4,7 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
-import { TAB_SINGING, TAB_COMPOSE } from '@/features/tabs/constants'
+import { TAB_COMPOSE,TAB_SINGING } from '@/features/tabs/constants'
 import { appStore, melodyStore, setActiveTab, setEditorView } from '@/stores'
 import { setActiveUserSession, showNotification } from '@/stores'
 import { createSession, saveSession } from '@/stores/session-store'

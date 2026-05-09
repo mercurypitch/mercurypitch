@@ -4,7 +4,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { PLAYBACK_MODE_SESSION } from '@/features/tabs/constants'
-import { advanceSessionItem, appStore, endPracticeSession, getCurrentSessionItem, initSessionHistory, isInSessionMode, recordSessionItemResult, } from '@/stores'
+import { advanceSessionItem, appStore, endPracticeSession, getCurrentSessionItem, isInSessionMode, recordSessionItemResult, } from '@/stores'
 import { createScaleItem } from '@/stores/session-store'
 import type { PracticeResult, SessionItem } from '@/types'
 

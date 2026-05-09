@@ -3,7 +3,8 @@
 // v3 refactor: thin shell using providers + controllers
 // ============================================================
 
-import type { Component } from 'solid-js'
+import type { Component} from 'solid-js';
+import  { onCleanup } from 'solid-js'
 import { For } from 'solid-js'
 import { createEffect, createMemo, createSignal, onMount, Show } from 'solid-js'
 import { VocalAnalysis, VocalChallenges } from '@/components'
@@ -36,6 +37,9 @@ import { usePlaybackController } from '@/features/playback/usePlaybackController
 import { usePracticeController } from '@/features/practice/usePracticeController'
 import { useRecordingController } from '@/features/recording/useRecordingController'
 import { useSessionSequencer } from '@/features/session/useSessionSequencer'
+import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_KARAOKE, TAB_LEADERBOARD,
+  TAB_PITCH_ALGO,
+  TAB_PITCH_TEST, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
 import type { InstrumentType } from '@/lib/audio-engine'
 import { audioRegistry } from '@/lib/audio-registry'
 import { debounce } from '@/lib/debounce'
@@ -46,17 +50,17 @@ import { buildHash, parseHash, replaceHash } from '@/lib/hash-router'
 import { melodyIndexAtBeat, melodyTotalBeats } from '@/lib/scale-data'
 import { buildScaleMelody, buildSessionPlaybackMelody, } from '@/lib/session-builder'
 import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
-import { setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPlaybackSpeed, setScaleType, } from '@/stores'
+import {
+  openWalkthroughChapter, selectedWalkthrough,
+  setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPlaybackSpeed, setScaleType,
+  showSelection,
+  walkthroughModalOpen, } from '@/stores'
 import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, toggleMicWaveVisible, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import { getSession, templateToSession } from '@/stores/session-store'
 import { selectedCharacter, showPracticeResultPopup, } from '@/stores/settings-store'
-import type { MelodyItem, PlaybackMode, SpacedRestMode } from '@/types'
-import { DEFAULT_TAB, PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_KARAOKE, TAB_LEADERBOARD, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
 import type { ActiveTab, MelodyItem, PlaybackMode, SpacedRestMode, } from '@/types'
 import { Walkthrough, WalkthroughControl } from './components'
-import { AppErrorBoundary } from './components/AppErrorBoundary'
-import { CrashModal } from './components/CrashModal'
 import { LyricsUploaderStyles, StemMixerStyles } from './components'
 import { AppErrorBoundary } from './components/AppErrorBoundary'
 import { CrashModal } from './components/CrashModal'
@@ -69,12 +73,6 @@ import { WelcomeScreen } from './components/WelcomeScreen'
 // ============================================================
 
 export type EditorView = 'piano-roll' | 'session-editor'
-export type ActiveTab =
-  | 'practice'
-  | 'editor'
-  | 'settings'
-  | 'pitch-test'
-  | 'pitch-algo'
 
 interface AppProps {
   onMounted?: () => void
@@ -616,17 +614,17 @@ const AppShell: Component<AppProps> = (props) => {
     if (initialRoute.type === 'tab') {
       setActiveTab(initialRoute.tab)
     } else if (initialRoute.type === 'uvr-upload') {
-      setActiveTab('uvr')
+      setActiveTab(TAB_KARAOKE)
       setInitialUvrView('upload')
     } else if (initialRoute.type === 'uvr-history') {
-      setActiveTab('uvr')
+      setActiveTab(TAB_KARAOKE)
       setInitialUvrView('history')
     } else if (initialRoute.type === 'uvr-session') {
       setActiveTab(TAB_KARAOKE)
       setInitialUvrSessionId(initialRoute.sessionId)
       setInitialUvrView('results')
     } else if (initialRoute.type === 'uvr-session-mixer') {
-      setActiveTab('uvr')
+      setActiveTab(TAB_KARAOKE)
       setInitialUvrSessionId(initialRoute.sessionId)
       setInitialUvrView('mixer')
     } else if (initialRoute.type === 'learn') {
@@ -649,11 +647,11 @@ const AppShell: Component<AppProps> = (props) => {
         setActiveTab(route.tab)
         setActiveUvrSessionId(null)
       } else if (route.type === 'uvr-upload') {
-        setActiveTab('uvr')
+        setActiveTab(TAB_KARAOKE)
         setInitialUvrView('upload')
         setActiveUvrSessionId(null)
       } else if (route.type === 'uvr-history') {
-        setActiveTab('uvr')
+        setActiveTab(TAB_KARAOKE)
         setInitialUvrView('history')
         setActiveUvrSessionId(null)
       } else if (route.type === 'uvr-session') {
@@ -662,7 +660,7 @@ const AppShell: Component<AppProps> = (props) => {
         setInitialUvrView('results')
         setActiveUvrSessionId(route.sessionId)
       } else if (route.type === 'uvr-session-mixer') {
-        setActiveTab('uvr')
+        setActiveTab(TAB_KARAOKE)
         setInitialUvrSessionId(route.sessionId)
         setInitialUvrView('mixer')
         setActiveUvrSessionId(route.sessionId)
@@ -765,7 +763,7 @@ const AppShell: Component<AppProps> = (props) => {
     if (showSelection() || walkthroughModalOpen() || showGuideSelection())
       return
     const tab = activeTab()
-    if (tab !== 'uvr') {
+    if (tab !== TAB_KARAOKE) {
       const expectedHash = `#/${tab}`
       if (window.location.hash !== expectedHash) {
         replaceHash({ type: 'tab', tab })
@@ -1000,15 +998,15 @@ const AppShell: Component<AppProps> = (props) => {
             <Show when={IS_DEV}>
               <button
                 id="tab-pitch-test"
-                class={`app-tab ${activeTab() === 'pitch-test' ? 'active' : ''}`}
-                onClick={() => void handleTabChange('pitch-test')}
+                class={`app-tab ${activeTab() === TAB_PITCH_TEST ? 'active' : ''}`}
+                onClick={() => void handleTabChange(TAB_PITCH_TEST)}
               >
                 Pitch Test
               </button>
               <button
                 id="tab-pitch-algo"
-                class={`app-tab ${activeTab() === 'pitch-algo' ? 'active' : ''}`}
-                onClick={() => void handleTabChange('pitch-algo')}
+                class={`app-tab ${activeTab() === TAB_PITCH_ALGO ? 'active' : ''}`}
+                onClick={() => void handleTabChange(TAB_PITCH_ALGO)}
               >
                 Algo Tester
               </button>
@@ -1046,7 +1044,7 @@ const AppShell: Component<AppProps> = (props) => {
               <div id="practice-panel">
                 {/* Shared control toolbar with practice-specific options */}
                 <SharedControlToolbar
-                  activeTab={() => activeTab() === TAB_SINGING}
+                  activeTab={() => activeTab()}
                   singingTab={() => activeTab() === TAB_SINGING}
                   editorTab={() => activeTab() === TAB_COMPOSE}
                   isPlaying={isPlaying}
@@ -1131,7 +1129,7 @@ const AppShell: Component<AppProps> = (props) => {
 
             <Show when={activeTab() === TAB_COMPOSE}>
               <SharedControlToolbar
-                activeTab={() => activeTab() === TAB_COMPOSE}
+                activeTab={() => activeTab()}
                 editorTab={() => activeTab() === TAB_COMPOSE}
                 isPlaying={editorIsPlaying}
                 isPaused={editorIsPaused}
