@@ -571,7 +571,8 @@ export const SettingsPanel: Component = () => {
               <span class="settings-slider" />
             </label>
             <small>
-              Show the animated jumping ball during playback mode. Off by default.
+              Show the animated jumping ball during playback mode. Off by
+              default.
             </small>
           </div>
 

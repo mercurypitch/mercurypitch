@@ -26,4 +26,3 @@ export function setPlaybackSpeed(speed: number): void {
   const clamped = Math.max(0.25, Math.min(2.0, speed))
   _setPlaybackSpeed(clamped)
 }
-

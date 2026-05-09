@@ -4,17 +4,8 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, onCleanup, onMount } from 'solid-js'
-import type {ArcState} from '@/lib/arc-physics';
-import {
-  BALL_RADIUS,
-  buildPlayable,
-  computeArcCy,
-  computeArcEndBeat,
-  computeBallPos,
-  computeInitialArc,
-  isBackwardsSeek,
-  shouldAdvanceArc
-} from '@/lib/arc-physics'
+import type { ArcState } from '@/lib/arc-physics'
+import { BALL_RADIUS, buildPlayable, computeArcCy, computeArcEndBeat, computeBallPos, computeInitialArc, isBackwardsSeek, shouldAdvanceArc, } from '@/lib/arc-physics'
 import { appStore, bpm, focusMode } from '@/stores'
 import { colorCodeNotes, flameMode, showAccuracyPercent, showFocusBall, showPlaybackBall, } from '@/stores/settings-store'
 import type { MelodyItem, NoteResult, PitchSample, ScaleDegree } from '@/types'
@@ -254,7 +245,11 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
         rightX,
         topY,
       )
-      Object.assign(arcState, init, { trail: [], initialized: true, noteIndex: startIdx })
+      Object.assign(arcState, init, {
+        trail: [],
+        initialized: true,
+        noteIndex: startIdx,
+      })
       _prevBeat = beat
       return
     }
@@ -311,8 +306,13 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
 
     // ---- Trail buffer -----------------------------------------------
     if (arcState.startBeat < arcState.endBeat) {
-      const t = Math.max(0, Math.min(1,
-        (beat - arcState.startBeat) / (arcState.endBeat - arcState.startBeat)))
+      const t = Math.max(
+        0,
+        Math.min(
+          1,
+          (beat - arcState.startBeat) / (arcState.endBeat - arcState.startBeat),
+        ),
+      )
       if (t > 0 && t < 1) {
         const pos = computeBallPos(beat, arcState)
         arcState.trail.push({ x: pos.x, y: pos.y, alpha: 0.6, time: now })
@@ -844,7 +844,11 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
 
     // Yousician-style jumping ball — quadratic Bezier arcs between notes
     const ballToggle = focusMode() ? showFocusBall() : showPlaybackBall()
-    if (ballToggle && (props.isPlaying() || props.isPaused()) && arcState.noteIndex >= 0) {
+    if (
+      ballToggle &&
+      (props.isPlaying() || props.isPaused()) &&
+      arcState.noteIndex >= 0
+    ) {
       const beat = props.currentBeat()
       const pos = computeBallPos(beat, arcState)
       const ballX = pos.x
@@ -877,8 +881,12 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
 
       // Outer glow (white with subtle blue tint)
       const glowGrad = ctx.createRadialGradient(
-        ballX, ballY, 0,
-        ballX, ballY, GLOW_RADIUS,
+        ballX,
+        ballY,
+        0,
+        ballX,
+        ballY,
+        GLOW_RADIUS,
       )
       glowGrad.addColorStop(0, 'rgba(200,220,255,0.45)')
       glowGrad.addColorStop(0.5, 'rgba(150,180,230,0.15)')
@@ -896,8 +904,12 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
 
       // Ball body (white gradient for 3D sphere look)
       const ballGrad = ctx.createRadialGradient(
-        ballX - 2, ballY - 3, 0,
-        ballX, ballY, BALL_RADIUS,
+        ballX - 2,
+        ballY - 3,
+        0,
+        ballX,
+        ballY,
+        BALL_RADIUS,
       )
       ballGrad.addColorStop(0, '#ffffff')
       ballGrad.addColorStop(0.7, '#e8ecf0')

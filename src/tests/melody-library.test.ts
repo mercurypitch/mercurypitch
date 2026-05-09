@@ -3,7 +3,7 @@
 // ============================================================
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { _reloadLibraryFromStorage, melodyStore, STORAGE_KEY_LIBRARY } from '@/stores/melody-store'
+import { _reloadLibraryFromStorage, melodyStore, STORAGE_KEY_LIBRARY, } from '@/stores/melody-store'
 import { createRestItem, createScaleItem, createSession, } from '@/stores/session-store'
 import type { MelodyData, MelodyItem, MelodyNote, PlaybackSession, } from '@/types'
 
@@ -1101,7 +1101,11 @@ describe('Melody Library System', () => {
         STORAGE_KEY_LIBRARY,
         JSON.stringify({
           meta: { author: 'User', version: '1.0', lastUpdated: Date.now() },
-          renderSettings: { gridlines: true, showLabels: true, showNumbers: false },
+          renderSettings: {
+            gridlines: true,
+            showLabels: true,
+            showNumbers: false,
+          },
           melodies: {},
           playlists: {},
           sessions: {

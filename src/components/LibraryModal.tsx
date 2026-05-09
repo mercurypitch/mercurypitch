@@ -552,7 +552,11 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
         <div class="library-modal" onClick={(e) => e.stopPropagation()}>
           <div class="library-header">
             <h2>Library</h2>
-            <button class="close-btn" onClick={() => props.close()} aria-label="Close">
+            <button
+              class="close-btn"
+              onClick={() => props.close()}
+              aria-label="Close"
+            >
               <svg viewBox="0 0 24 24" width="20" height="20">
                 <path
                   fill="currentColor"
