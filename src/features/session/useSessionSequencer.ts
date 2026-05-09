@@ -87,7 +87,10 @@ export function useSessionSequencer(deps: Deps): SessionSequencer {
 
   const pendingTimeouts = new Set<ReturnType<typeof setTimeout>>()
 
-  const scheduleCleanup = (fn: () => void, ms: number): ReturnType<typeof setTimeout> => {
+  const scheduleCleanup = (
+    fn: () => void,
+    ms: number,
+  ): ReturnType<typeof setTimeout> => {
     const id = setTimeout(() => {
       pendingTimeouts.delete(id)
       fn()

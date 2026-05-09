@@ -21,9 +21,7 @@ export type { WalkthroughTab }
 const STORAGE_KEY = 'pitchperfect_walkthroughs'
 
 /** Get all available walkthroughs for a given tab */
-export function getWalkthroughsForTab(
-  tab: WalkthroughTab,
-) {
+export function getWalkthroughsForTab(tab: WalkthroughTab) {
   const walkthroughs = WALKTHROUGHS[tab]
   return walkthroughs !== null && walkthroughs !== undefined ? walkthroughs : []
 }

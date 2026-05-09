@@ -4,7 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
-import { TAB_COMPOSE,TAB_SINGING } from '@/features/tabs/constants'
+import { TAB_COMPOSE, TAB_SINGING } from '@/features/tabs/constants'
 import { appStore, melodyStore, setActiveTab, setEditorView } from '@/stores'
 import { setActiveUserSession, showNotification } from '@/stores'
 import { createSession, saveSession } from '@/stores/session-store'
@@ -161,7 +161,11 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
         <div class="library-modal" onClick={(e) => e.stopPropagation()}>
           <div class="library-header">
             <h2>Practice Sessions</h2>
-            <button class="close-btn" onClick={() => props.close()} aria-label="Close">
+            <button
+              class="close-btn"
+              onClick={() => props.close()}
+              aria-label="Close"
+            >
               <svg viewBox="0 0 24 24" width="20" height="20">
                 <path
                   fill="currentColor"

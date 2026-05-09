@@ -3,8 +3,8 @@
 // v3 refactor: thin shell using providers + controllers
 // ============================================================
 
-import type { Component} from 'solid-js';
-import  { onCleanup } from 'solid-js'
+import type { Component } from 'solid-js'
+import { onCleanup } from 'solid-js'
 import { For } from 'solid-js'
 import { createEffect, createMemo, createSignal, onMount, Show } from 'solid-js'
 import { VocalAnalysis, VocalChallenges } from '@/components'
@@ -37,9 +37,7 @@ import { usePlaybackController } from '@/features/playback/usePlaybackController
 import { usePracticeController } from '@/features/practice/usePracticeController'
 import { useRecordingController } from '@/features/recording/useRecordingController'
 import { useSessionSequencer } from '@/features/session/useSessionSequencer'
-import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_KARAOKE, TAB_LEADERBOARD,
-  TAB_PITCH_ALGO,
-  TAB_PITCH_TEST, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
+import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
 import type { InstrumentType } from '@/lib/audio-engine'
 import { audioRegistry } from '@/lib/audio-registry'
 import { debounce } from '@/lib/debounce'
@@ -50,16 +48,11 @@ import { buildHash, parseHash, replaceHash } from '@/lib/hash-router'
 import { melodyIndexAtBeat, melodyTotalBeats } from '@/lib/scale-data'
 import { buildScaleMelody, buildSessionPlaybackMelody, } from '@/lib/session-builder'
 import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
-import {
-  openWalkthroughChapter, selectedWalkthrough,
-  setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPlaybackSpeed, setScaleType,
-  showSelection,
-  walkthroughModalOpen, } from '@/stores'
+import { openWalkthroughChapter, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPlaybackSpeed, setScaleType, showSelection, walkthroughModalOpen, } from '@/stores'
 import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, toggleMicWaveVisible, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import { getSession, templateToSession } from '@/stores/session-store'
-import { selectedCharacter } from '@/stores/settings-store'
-import { DEFAULT_TAB, PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_KARAOKE, TAB_LEADERBOARD, TAB_SETTINGS, TAB_SINGING, TAB_UVR, } from '@/features/tabs/constants'
+import { selectedCharacter, showPracticeResultPopup, } from '@/stores/settings-store'
 import type { ActiveTab, MelodyItem, PlaybackMode, SpacedRestMode, } from '@/types'
 import { Walkthrough, WalkthroughControl } from './components'
 import { LyricsUploaderStyles, StemMixerStyles } from './components'
@@ -845,7 +838,12 @@ const AppShell: Component<AppProps> = (props) => {
         <div class="sidebar-backdrop" onClick={closeSidebar} />
       </Show>
 
-      <button class="sidebar-toggle-btn" onClick={toggleSidebar} title="Menu" aria-label="Menu">
+      <button
+        class="sidebar-toggle-btn"
+        onClick={toggleSidebar}
+        title="Menu"
+        aria-label="Menu"
+      >
         <svg viewBox="0 0 24 24" width="16" height="16">
           <path
             fill="currentColor"
@@ -983,8 +981,14 @@ const AppShell: Component<AppProps> = (props) => {
               onClick={() => void handleTabChange(TAB_KARAOKE)}
             >
               <svg viewBox="0 0 24 24" width="18" height="18">
-                <path fill="currentColor" d="M3 6 Q10 10 17 4 L19 4 L17 7 Q10 12 3 12 Z" />
-                <path fill="currentColor" d="M3 18 Q10 14 17 20 L19 20 L17 17 Q10 12 3 12 Z" />
+                <path
+                  fill="currentColor"
+                  d="M3 6 Q10 10 17 4 L19 4 L17 7 Q10 12 3 12 Z"
+                />
+                <path
+                  fill="currentColor"
+                  d="M3 18 Q10 14 17 20 L19 20 L17 17 Q10 12 3 12 Z"
+                />
               </svg>
               Vocal Sep
             </button>
@@ -1109,7 +1113,10 @@ const AppShell: Component<AppProps> = (props) => {
                   <div
                     id="playhead"
                     style={{
-                      display: (isPlaying() || isPaused()) && appStore.showPlayhead() ? 'block' : 'none',
+                      display:
+                        (isPlaying() || isPaused()) && appStore.showPlayhead()
+                          ? 'block'
+                          : 'none',
                       left: `${playheadPosition()}%`,
                     }}
                   >

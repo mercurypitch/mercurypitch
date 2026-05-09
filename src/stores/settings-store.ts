@@ -378,16 +378,20 @@ export const [showPlaybackBall, setShowPlaybackBall] =
  * is explicitly for visual pitch tracking.
  */
 const SHOW_FOCUS_BALL_KEY = 'pitchperfect_show_focus_ball'
-export const [showFocusBall, setShowFocusBall] =
-  createPersistedSignal<boolean>(SHOW_FOCUS_BALL_KEY, true)
+export const [showFocusBall, setShowFocusBall] = createPersistedSignal<boolean>(
+  SHOW_FOCUS_BALL_KEY,
+  true,
+)
 
 /**
  * Show the playhead vertical line during playback/pause. On by default.
  * When off, users can rely solely on the jumping ball for position tracking.
  */
 const SHOW_PLAYHEAD_KEY = 'pitchperfect_show_playhead'
-export const [showPlayhead, setShowPlayhead] =
-  createPersistedSignal<boolean>(SHOW_PLAYHEAD_KEY, true)
+export const [showPlayhead, setShowPlayhead] = createPersistedSignal<boolean>(
+  SHOW_PLAYHEAD_KEY,
+  true,
+)
 
 // ── Accuracy Presets ───────────────────────────────────────────────────
 

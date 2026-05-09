@@ -4,23 +4,17 @@
 
 import { describe, expect, it } from 'vitest'
 import type { ArcState, PlayableNote } from '@/lib/arc-physics'
-import {
-  buildPlayable,
-  computeArcCy,
-  computeArcEndBeat,
-  computeBallPos,
-  computeInitialArc,
-  isBackwardsSeek,
-  shouldAdvanceArc,
-} from '@/lib/arc-physics'
+import { buildPlayable, computeArcCy, computeArcEndBeat, computeBallPos, computeInitialArc, isBackwardsSeek, shouldAdvanceArc, } from '@/lib/arc-physics'
 
 // ---------------------------------------------------------------------------
 // computeBallPos
 // ---------------------------------------------------------------------------
 describe('computeBallPos', () => {
   const base: ArcState = {
-    sx: 100, sy: 300,
-    ex: 300, ey: 100,
+    sx: 100,
+    sy: 300,
+    ex: 300,
+    ey: 100,
     cy: 50,
     startBeat: 0,
     endBeat: 1,
@@ -77,7 +71,14 @@ describe('computeBallPos', () => {
   })
 
   it('vertical-only arc (same X, different Y) produces no horizontal movement', () => {
-    const vert: ArcState = { ...base, sx: 200, ex: 200, sy: 400, ey: 100, cy: 50 }
+    const vert: ArcState = {
+      ...base,
+      sx: 200,
+      ex: 200,
+      sy: 400,
+      ey: 100,
+      cy: 50,
+    }
     const start = computeBallPos(0, vert)
     expect(start.x).toBeCloseTo(200, 1)
     const mid = computeBallPos(0.5, vert)
@@ -198,9 +199,19 @@ describe('shouldAdvanceArc', () => {
 describe('buildPlayable', () => {
   it('filters out rests', () => {
     const melody = [
-      { startBeat: 0, duration: 1, isRest: false, note: { freq: 440, name: 'A4' } },
+      {
+        startBeat: 0,
+        duration: 1,
+        isRest: false,
+        note: { freq: 440, name: 'A4' },
+      },
       { startBeat: 1, duration: 1, isRest: true, note: { freq: 0, name: '' } },
-      { startBeat: 2, duration: 1, isRest: false, note: { freq: 880, name: 'A5' } },
+      {
+        startBeat: 2,
+        duration: 1,
+        isRest: false,
+        note: { freq: 880, name: 'A5' },
+      },
     ]
     const playable = buildPlayable(melody)
     expect(playable).toHaveLength(2)
@@ -242,11 +253,11 @@ describe('computeInitialArc', () => {
   it('arcs diagonally from above note start to top-right corner', () => {
     const note: PlayableNote = { startBeat: 0, duration: 2 }
     const arc = computeInitialArc(note, 50, 200, 200)
-    expect(arc.sx).toBe(50)   // start at note start X
-    expect(arc.ex).toBe(200)  // end at note end X (top-right corner)
-    expect(arc.sy).toBe(100)  // 200 - 100 = above target
+    expect(arc.sx).toBe(50) // start at note start X
+    expect(arc.ex).toBe(200) // end at note end X (top-right corner)
+    expect(arc.sy).toBe(100) // 200 - 100 = above target
     expect(arc.ey).toBe(200)
-    expect(arc.cy).toBe(40)   // 200 - 160
+    expect(arc.cy).toBe(40) // 200 - 160
     expect(arc.noteIndex).toBe(0)
   })
 
@@ -355,7 +366,10 @@ describe('Arc state transitions (integration)', () => {
       }
 
       // Record current note index
-      if (visited.length === 0 || visited[visited.length - 1] !== state.noteIndex) {
+      if (
+        visited.length === 0 ||
+        visited[visited.length - 1] !== state.noteIndex
+      ) {
         visited.push(state.noteIndex)
       }
     }
@@ -417,7 +431,7 @@ describe('Arc state transitions (integration)', () => {
 
   it('does NOT reset during normal forward playback (even with gaps)', () => {
     const notes: PlayableNote[] = [
-      { startBeat: 4, duration: 2 },  // first note starts at beat 4!
+      { startBeat: 4, duration: 2 }, // first note starts at beat 4!
       { startBeat: 10, duration: 2 }, // second note starts at beat 10
     ]
 
@@ -455,9 +469,7 @@ describe('Arc state transitions (integration)', () => {
   })
 
   it('single playable note — arc stays on that note', () => {
-    const notes: PlayableNote[] = [
-      { startBeat: 0, duration: 4 },
-    ]
+    const notes: PlayableNote[] = [{ startBeat: 0, duration: 4 }]
 
     const sampleBeats = [0, 1, 2, 3, 4, 5]
     const { state, visited } = simulateMelody(notes, 120, sampleBeats)
@@ -482,8 +494,10 @@ describe('Arc state transitions (integration)', () => {
     // Build a simple arc for note 1 so we can sample at its startBeat
     const first = notes[0]
     const firstArc: ArcState = {
-      sx: 100, sy: 100,
-      ex: 300, ey: 300,
+      sx: 100,
+      sy: 100,
+      ex: 300,
+      ey: 300,
       cy: 50,
       startBeat: 0,
       endBeat: computeArcEndBeat(first), // 0 + 4 = 4
@@ -505,7 +519,8 @@ describe('Arc state transitions (integration)', () => {
     const newArc: ArcState = {
       sx: ballAtStartOfNote.x,
       sy: ballAtStartOfNote.y,
-      ex: 500, ey: 100,
+      ex: 500,
+      ey: 100,
       cy: computeArcCy(ballAtStartOfNote.y, 100, 120),
       startBeat: 4,
       endBeat: computeArcEndBeat(second), // 4 + 4 = 8
@@ -531,8 +546,10 @@ describe('Arc state transitions (integration)', () => {
   it('ball reaches corner exactly at note endBeat, not before', () => {
     const note: PlayableNote = { startBeat: 2, duration: 3 }
     const arc: ArcState = {
-      sx: 50, sy: 400,
-      ex: 200, ey: 150,
+      sx: 50,
+      sy: 400,
+      ex: 200,
+      ey: 150,
       cy: computeArcCy(400, 150, 120),
       startBeat: 2,
       endBeat: computeArcEndBeat(note), // 2 + 3 = 5
@@ -585,8 +602,10 @@ describe('Arc state transitions (integration)', () => {
     ]
 
     const firstArc: ArcState = {
-      sx: 100, sy: 200,
-      ex: 200, ey: 300,
+      sx: 100,
+      sy: 200,
+      ex: 200,
+      ey: 300,
       cy: 50,
       startBeat: 0,
       endBeat: computeArcEndBeat(notes[0]), // 2
@@ -601,7 +620,8 @@ describe('Arc state transitions (integration)', () => {
     const restArc: ArcState = {
       sx: ballAtAdvance.x,
       sy: ballAtAdvance.y,
-      ex: 400, ey: 100,
+      ex: 400,
+      ey: 100,
       cy: computeArcCy(ballAtAdvance.y, 100, 120),
       startBeat: 2,
       endBeat: computeArcEndBeat(notes[1]), // 8 + 2 = 10

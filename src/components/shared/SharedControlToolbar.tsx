@@ -8,10 +8,10 @@ import { Show } from 'solid-js'
 import { MicButton } from '@/components'
 import { PrecCountButton } from '@/components/PrecCountButton'
 import { Tooltip } from '@/components/Tooltip'
-import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_COMPOSE,TAB_SINGING,  } from '@/features/tabs/constants'
+import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_COMPOSE, TAB_SINGING, } from '@/features/tabs/constants'
 import { appStore } from '@/stores'
 import { bpm, micActive, micWaveVisible, playbackSpeed, setBpm, setPlaybackSpeed, setSensitivity, settings, toggleMicWaveVisible, } from '@/stores'
-import type { PlaybackMode,SpacedRestMode } from '@/types'
+import type { PlaybackMode, SpacedRestMode } from '@/types'
 import { ControlGroup } from './ControlGroup'
 
 // ========================================
@@ -50,7 +50,7 @@ export const SCALE_TYPES = [
 ] as const
 
 export type PracticeSubMode = 'all' | 'random' | 'focus' | 'reverse'
-import type {ActiveTab} from '@/types'
+import type { ActiveTab } from '@/types'
 
 interface SharedControlToolbarProps {
   // Tab identification
@@ -356,7 +356,9 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
         {/* Cycles input — applies to Repeat mode (repeat the current melody
             N times). Practice mode plays the session through once and is
             controlled by the active session's items, not a cycle count. */}
-        <Show when={isPracticeTab() && props.playMode() === PLAYBACK_MODE_REPEAT}>
+        <Show
+          when={isPracticeTab() && props.playMode() === PLAYBACK_MODE_REPEAT}
+        >
           <div class="secondary-control-group cycles-control-group">
             <label class="opt-label cycles-label">Cycles</label>
             <input
@@ -385,7 +387,9 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
         </Show>
 
         {/* Practice sub-mode selector — only in practice mode */}
-        <Show when={isPracticeTab() && props.playMode() === PLAYBACK_MODE_SESSION}>
+        <Show
+          when={isPracticeTab() && props.playMode() === PLAYBACK_MODE_SESSION}
+        >
           <div class="secondary-control-group practice-mode-control-group">
             <label class="opt-label practice-mode-label">Mode</label>
             <select
