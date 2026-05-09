@@ -2,7 +2,7 @@
 // Hash Router — Client-side hash-based routing
 // ============================================================
 
-import { TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_KARAOKE, TAB_LEADERBOARD, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
+import { TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_KARAOKE, TAB_LEADERBOARD, TAB_SETTINGS, TAB_SINGING, TAB_PIANO } from '@/features/tabs/constants'
 import type { ActiveTab } from '@/stores'
 
 export type HashRoute =
@@ -20,6 +20,7 @@ export type HashRoute =
 
 const VALID_TABS: Set<string> = new Set([
   TAB_SINGING,
+  TAB_PIANO,
   TAB_COMPOSE,
   TAB_SETTINGS,
   TAB_ANALYSIS,
@@ -27,7 +28,6 @@ const VALID_TABS: Set<string> = new Set([
   TAB_LEADERBOARD,
   TAB_CHALLENGES,
   TAB_KARAOKE,
-  TAB_SINGING,
 ])
 
 const VALID_GUIDE_SECTIONS: Set<string> = new Set([

@@ -49,6 +49,8 @@ import {
 } from '@/stores/falling-notes-store'
 import type { AccuracyRating } from '@/types'
 
+export type PianoPlayMode = 'once' | 'repeat'
+
 const PERFECT_MS = 30
 const GREAT_MS = 75
 const GOOD_MS = 150
@@ -63,10 +65,18 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
     octave: number
     cents: number
   } | null>(null)
+  
+  // Track if the user is actively holding a virtual key via mouse/touch
+  let clickedMidi: number | null = null
   const [speed, setSpeed] = createSignal(1)
   const [micOn, setMicOn] = createSignal(false)
   const [isCountingIn, setIsCountingIn] = createSignal(false)
   const [countInBeatTracker, setCountInBeatTracker] = createSignal(0)
+
+  // ── Practice repeat mode (mirrors Singing tab's Repeat mode) ──
+  const [pianoPlayMode, setPianoPlayMode] = createSignal<PianoPlayMode>('once')
+  const [pianoRepeatCycles, setPianoRepeatCycles] = createSignal(5)
+  const [pianoCurrentCycle, setPianoCurrentCycle] = createSignal(1)
 
   let animFrameId: number | null = null
   let gameStartTime = 0
@@ -79,20 +89,27 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
   }
 
   // MIDI callbacks — inject pitch data via the same currentPitch signal
+  // AND play an audible tone so the user hears what they press.
   midiEngine.callbacks.onNoteOn = (e) => {
     const { name, octave } = midiToNote(e.midi)
+    const freq = midiToFreq(e.midi)
     setCurrentPitch({
-      frequency: midiToFreq(e.midi),
+      frequency: freq,
       noteName: name,
       octave,
       cents: 0, // MIDI notes are exact — no cents deviation
     })
+    // Play MIDI input tone directly (bypasses volume slider — always audible)
+    // Uses a short default duration; the note will be cut by the next
+    // noteOff or replaced by the next noteOn.
+    void audioEngine.playTone(freq, 800)
   }
 
   midiEngine.callbacks.onNoteOff = () => {
-    // If no more notes are held, clear pitch
+    // If no more notes are held, clear pitch and stop the tone
     if (midiEngine.getHeldNotes().size === 0) {
       setCurrentPitch(null)
+      audioEngine.stopTone(50) // short release to avoid clicks
     }
   }
 
@@ -102,16 +119,19 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
     const loop = () => {
       // Detect pitch from mic (only in mic mode)
       if (inputMode() === 'mic') {
-        const pitch = engine.detectPitch()
-        if (pitch) {
-          setCurrentPitch({
-            frequency: pitch.frequency,
-            noteName: pitch.noteName,
-            octave: pitch.octave,
-            cents: pitch.cents,
-          })
-        } else {
-          setCurrentPitch(null)
+        // If the user is actively clicking a piano key, do not overwrite it with mic silence
+        if (clickedMidi === null) {
+          const pitch = engine.detectPitch()
+          if (pitch) {
+            setCurrentPitch({
+              frequency: pitch.frequency,
+              noteName: pitch.noteName,
+              octave: pitch.octave,
+              cents: pitch.cents,
+            })
+          } else {
+            setCurrentPitch(null)
+          }
         }
       }
       // MIDI mode: pitch is set synchronously by midiEngine callbacks
@@ -149,11 +169,10 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
   })
 
   // ── Hit Detection ────────────────────────────────────────────
-  // Visual layout: JUDGMENT_LINE_RATIO=0.82, KEYBOARD_START_RATIO=0.85
-  // So the keyboard sits 0.03h below the judgment line.
-  // Beats to travel from judgment line to keyboard:
-  //   offsetBeats = (0.03 / 0.82) * visibleBeatWindow
-  const KEYBOARD_DELAY_FACTOR = 0.03 / 0.82
+  // Visual layout: JUDGMENT_LINE_RATIO = KEYBOARD_START_RATIO = 0.85
+  // Judgment and audio playback now happen at the same position (keyboard top).
+  // No offset needed.
+  const KEYBOARD_DELAY_FACTOR = 0
 
   const checkHits = (currentBeat: number) => {
     const notes = songNotes()
@@ -294,24 +313,38 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
 
   const clickPianoNoteOn = (midi: number) => {
     if (!clickPianoEnabled()) return
+    clickedMidi = midi
     const { name, octave } = midiToNote(midi)
+    const freq = midiToFreq(midi)
     setCurrentPitch({
-      frequency: midiToFreq(midi),
+      frequency: freq,
       noteName: name,
       octave,
       cents: 0,
     })
+    // Play the clicked note so the user hears it
+    void audioEngine.playTone(freq, 800)
   }
 
   const clickPianoNoteOff = () => {
+    clickedMidi = null
     setCurrentPitch(null)
+    audioEngine.stopTone(50)
   }
 
   const toggleClickPiano = () => {
     setClickPianoEnabled((v) => !v)
   }
 
-  const startGame = () => {
+  const startGame = async () => {
+    // Eagerly initialize and resume AudioContext on game start.
+    // This prevents the issue where audio is silent until the user
+    // interacts with BPM/play/stop controls (which internally call
+    // init/resume). User gesture (clicking Play) satisfies the
+    // browser autoplay policy requirement.
+    await audioEngine.init()
+    await audioEngine.resume()
+
     judgedNotes = new Set<number>()
     playedNotes = new Set<number>()
     setScore(0)
@@ -374,6 +407,28 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
   }
 
   const finishGame = () => {
+    // In repeat mode, check if we should auto-restart for the next cycle
+    if (pianoPlayMode() === 'repeat') {
+      const current = pianoCurrentCycle()
+      const total = pianoRepeatCycles()
+      if (current < total) {
+        // Advance to next cycle and restart
+        setPianoCurrentCycle(current + 1)
+        judgedNotes = new Set<number>()
+        playedNotes = new Set<number>()
+        setScore(0)
+        setCombo(0)
+        setMaxCombo(0)
+        setHitResults([])
+        setNotesMissed(0)
+        setPlayheadBeat(0)
+        setGameState('playing')
+        gameStartTime = performance.now()
+        return
+      }
+      // Final cycle completed — reset cycle counter for next run
+      setPianoCurrentCycle(1)
+    }
     setGameState('finished')
   }
 
@@ -467,9 +522,17 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
     playheadBeat,
     visibleBeatWindow,
 
-    // Signals
+    // Count-in signals
     isCountingIn,
     countInBeat: countInBeatTracker,
+
+    // Practice repeat mode
+    pianoPlayMode,
+    setPianoPlayMode,
+    pianoRepeatCycles,
+    setPianoRepeatCycles,
+    pianoCurrentCycle,
+    setPianoCurrentCycle,
 
     // Actions
     startMic,
