@@ -931,18 +931,21 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
     ctx.lineTo(w, 48)
     ctx.stroke()
 
+    // Set consistent text baseline for the entire HUD
+    ctx.textBaseline = 'middle'
+
     // Score — left
     ctx.fillStyle = '#f0f6fc'
     ctx.font = 'bold 20px sans-serif'
     ctx.textAlign = 'left'
-    ctx.fillText(`Score: ${s}`, 14, 30)
+    ctx.fillText(`Score: ${s}`, 14, 24)
 
     // Combo — center
     ctx.textAlign = 'center'
     if (c > 1) {
       ctx.fillStyle = '#3fb950'
       ctx.font = 'bold 20px sans-serif'
-      ctx.fillText(`${c}x Combo!`, w / 2, 30)
+      ctx.fillText(`${c}x Combo!`, w / 2, 24)
     }
 
     // Hit/miss — right
@@ -959,7 +962,7 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (props) =>
       ctx.fillText(
         gs === 'countdown' ? 'Get Ready...' : 'Paused',
         w - 14,
-        36,
+        34,
       )
     }
   }

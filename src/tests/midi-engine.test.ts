@@ -3,8 +3,8 @@
 // ============================================================
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { MidiEngine } from '@/lib/midi-engine'
 import type { MidiNoteEvent } from '@/lib/midi-engine'
+import { MidiEngine } from '@/lib/midi-engine'
 
 // ── Helpers ──────────────────────────────────────────────────
 
