@@ -525,7 +525,9 @@ export class AudioEngine {
   playClick(): void {
     if (!this.audioCtx || !this.mainGain) return
     // Ensure AudioContext is ready
-    this.resume().catch((err) => console.warn('AudioContext resume failed:', err))
+    this.resume().catch((err) =>
+      console.warn('AudioContext resume failed:', err),
+    )
 
     const osc = this.audioCtx.createOscillator()
     const gain = this.audioCtx.createGain()
@@ -552,7 +554,9 @@ export class AudioEngine {
    */
   playMetronomeClick(isDownbeat: boolean): void {
     if (!this.audioCtx || !this.mainGain) return
-    this.resume().catch((err) => console.warn('AudioContext resume failed:', err))
+    this.resume().catch((err) =>
+      console.warn('AudioContext resume failed:', err),
+    )
 
     const osc = this.audioCtx.createOscillator()
     const gain = this.audioCtx.createGain()

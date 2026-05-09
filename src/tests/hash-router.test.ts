@@ -11,21 +11,21 @@ import { buildHash, navigateTo, parseHash, replaceHash, } from '@/lib/hash-route
 describe('parseHash', () => {
   // REQ-RT-001: Tab routes
   it('parses simple tab routes', () => {
-    expect(parseHash('#/practice')).toEqual({ type: 'tab', tab: 'practice' })
-    expect(parseHash('#/editor')).toEqual({ type: 'tab', tab: 'editor' })
+    expect(parseHash('#/singing')).toEqual({ type: 'tab', tab: 'singing' })
+    expect(parseHash('#/compose')).toEqual({ type: 'tab', tab: 'compose' })
     expect(parseHash('#/settings')).toEqual({ type: 'tab', tab: 'settings' })
-    expect(parseHash('#/vocal-analysis')).toEqual({
+    expect(parseHash('#/analysis')).toEqual({
       type: 'tab',
-      tab: 'vocal-analysis',
+      tab: 'analysis',
     })
     expect(parseHash('#/community')).toEqual({ type: 'tab', tab: 'community' })
     expect(parseHash('#/leaderboard')).toEqual({
       type: 'tab',
       tab: 'leaderboard',
     })
-    expect(parseHash('#/vocal-challenges')).toEqual({
+    expect(parseHash('#/challenges')).toEqual({
       type: 'tab',
-      tab: 'vocal-challenges',
+      tab: 'challenges',
     })
     // #/uvr is treated as uvr-upload by the router, not tab:uvr
     // Test separately in UVR routes below
@@ -174,7 +174,7 @@ describe('parseHash', () => {
 
   // REQ-RT-005: Edge cases
   it('handles hash without leading #', () => {
-    expect(parseHash('/practice')).toEqual({ type: 'tab', tab: 'practice' })
+    expect(parseHash('/singing')).toEqual({ type: 'tab', tab: 'singing' })
   })
 
   it('handles hash with session ID containing special chars', () => {
@@ -276,7 +276,7 @@ describe('buildHash', () => {
 
 describe('parseHash ↔ buildHash round-trip', () => {
   const routes = [
-    '#/practice',
+    '#/singing',
     '#/settings',
     '#/uvr',
     '#/uvr/history',
@@ -315,7 +315,7 @@ describe('navigateTo', () => {
     let setCount = 0
     const locationMock = {} as Location
     Object.defineProperty(locationMock, 'hash', {
-      get: () => '#/practice',
+      get: () => '#/singing',
       set: () => {
         setCount++
       },

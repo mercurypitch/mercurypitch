@@ -23,7 +23,9 @@ export interface WalkthroughStep {
   target?: string
 }
 
-export const WALKTHROUGHS: Partial<Record<WalkthroughTab, WalkthroughContent[]>> = {
+export const WALKTHROUGHS: Partial<
+  Record<WalkthroughTab, WalkthroughContent[]>
+> = {
   singing: [
     {
       id: 'practice-toolbar',
