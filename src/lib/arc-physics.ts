@@ -18,6 +18,7 @@ export interface ArcState {
   endBeat: number
   noteIndex: number
   initialized: boolean
+  isRest: boolean
 }
 
 export const BALL_RADIUS = 8
@@ -35,10 +36,21 @@ export const computeBallPos = (
       0,
       Math.min(1, (beat - s.startBeat) / (s.endBeat - s.startBeat)),
     )
-    const midX = (s.sx + s.ex) / 2
-    return {
-      x: (1 - t) * (1 - t) * s.sx + 2 * (1 - t) * t * midX + t * t * s.ex,
-      y: (1 - t) * (1 - t) * s.sy + 2 * (1 - t) * t * s.cy + t * t * s.ey,
+    if (s.isRest) {
+      const x = (1 - t) * s.sx + t * s.ex
+      // Sine wave effect: completes some cycles over the duration
+      // The duration in beats determines how many cycles to make it look nice
+      const beats = s.endBeat - s.startBeat
+      const cycles = Math.max(1, Math.round(beats))
+      const sineVal = Math.sin(t * Math.PI * 2 * cycles) * 40
+      const y = (1 - t) * s.sy + t * s.ey + sineVal
+      return { x, y }
+    } else {
+      const midX = (s.sx + s.ex) / 2
+      return {
+        x: (1 - t) * (1 - t) * s.sx + 2 * (1 - t) * t * midX + t * t * s.ex,
+        y: (1 - t) * (1 - t) * s.sy + 2 * (1 - t) * t * s.cy + t * t * s.ey,
+      }
     }
   }
   return { x: s.sx, y: s.sy }
@@ -87,7 +99,7 @@ export const buildPlayable = <T extends { isRest?: boolean }>(
 ): { idx: number; item: T }[] => {
   const out: { idx: number; item: T }[] = []
   for (let i = 0; i < melody.length; i++) {
-    if (melody[i].isRest !== true) out.push({ idx: i, item: melody[i] })
+    out.push({ idx: i, item: melody[i] })
   }
   return out
 }
@@ -115,6 +127,7 @@ export const computeInitialArc = (
     startBeat: Math.max(0, firstNote.startBeat - 0.5),
     endBeat: firstNote.startBeat + firstNote.duration,
     noteIndex: 0,
+    isRest: false,
   }
 }
 

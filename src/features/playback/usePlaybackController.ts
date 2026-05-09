@@ -533,6 +533,8 @@ export function usePlaybackController(
 
     if (!session || session.items.length === 0) return
 
+    startPracticeSession(session)
+
     closeSidebar()
     setPlayMode(PLAYBACK_MODE_SESSION)
     setActiveTab(TAB_SINGING)
