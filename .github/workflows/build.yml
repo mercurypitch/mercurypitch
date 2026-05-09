@@ -1,12 +1,14 @@
-name: Build & Deploy Verification
+name: Build & Deploy
 
 on:
   pull_request:
     branches: [main]
+  push:
+    branches: [main, dev]
 
 jobs:
-  build:
-    name: Build App
+  build-and-deploy:
+    name: Build & Deploy App
     runs-on: ubuntu-latest
 
     steps:
@@ -31,8 +33,22 @@ jobs:
 
       - name: Verify build output
         run: |
-          # Verify critical build artifacts exist
           test -f dist/index.html || exit 1
           test -f dist/assets/*.js || exit 1
           test -f dist/assets/*.css || exit 1
           echo "Build artifacts verified"
+
+      # Deploys to dev.mercurypitch.com when pushing to the dev branch
+      - name: Deploy to Dev Environment
+        if: github.ref == 'refs/heads/dev' && github.event_name == 'push'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          environment: 'dev'
+
+      # Deploys to mercurypitch.com when pushing to the main branch
+      - name: Deploy to Production Environment
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}

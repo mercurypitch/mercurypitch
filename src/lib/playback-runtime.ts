@@ -25,6 +25,7 @@ export interface PlaybackEvent {
   index?: number
   countIn?: number
   isDownbeat?: boolean
+  isCountIn?: boolean
 }
 
 export interface PlaybackRuntimeCallbacks {
@@ -494,6 +495,7 @@ export class PlaybackRuntime {
             type: 'metronome',
             beat: currentInt,
             isDownbeat,
+            isCountIn: true,
           })
         }
 
@@ -523,6 +525,7 @@ export class PlaybackRuntime {
             type: 'metronome',
             beat: intBeat,
             isDownbeat,
+            isCountIn: false,
           })
         }
         this.metronomeLastBeat = intBeat
