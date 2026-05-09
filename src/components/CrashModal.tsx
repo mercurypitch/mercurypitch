@@ -3,8 +3,8 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createSignal } from 'solid-js'
-import { createMemo, Show } from 'solid-js'
+import { createMemo, createSignal, Show } from 'solid-js'
+import { ConsoleLog } from '@/components/ConsoleLog'
 import { APP_VERSION } from '@/lib/defaults'
 import { appError } from '@/stores'
 
@@ -80,6 +80,8 @@ export const CrashModal: Component = () => {
       window.location.reload()
     }
   }
+
+  const [showLogs, setShowLogs] = createSignal(false)
 
   const errorStack = createMemo(() => {
     const err = error()
@@ -186,7 +188,33 @@ export const CrashModal: Component = () => {
               </div>
             </div>
 
+            <Show when={showLogs()}>
+              <div style="margin-top: 1rem; width: 100%;">
+                <ConsoleLog />
+              </div>
+            </Show>
+
             <div class="crash-actions-container">
+              <button
+                onClick={() => setShowLogs(!showLogs())}
+                class="crash-btn"
+                style="background: transparent; border: 1px solid var(--border); color: var(--text);"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                </svg>
+                {showLogs() ? 'Hide Logs' : 'View Logs'}
+              </button>
+
               <button
                 onClick={handleReload}
                 class="crash-btn crash-btn-primary"

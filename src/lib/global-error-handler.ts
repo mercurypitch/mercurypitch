@@ -1,8 +1,10 @@
+import { addConsoleLog } from '@/stores/console-store'
 import { exposeForE2E } from './test-utils'
 
 /**
- * Hooks into console.log/error to capture logs for E2E testing.
- * Global error/unhandled rejection handling is in AppErrorBoundary.
+ * Initializes global error and unhandled rejection handlers.
+ * Also hooks into console.log/error/warn/info to capture logs for E2E testing
+ * and for the developer console log component.
  */
 export function initGlobalErrorHandlers(): void {
   if (typeof window === 'undefined') return
@@ -24,7 +26,7 @@ export function initGlobalErrorHandlers(): void {
     exposeForE2E('__globalError', e.reason)
   })
 
-  // Capture console logs for E2E debugging
+  // Capture console logs for E2E debugging and the in-app developer console
   const logs: { type: string; args: string[] }[] = []
   exposeForE2E('__consoleLogs', logs)
 
@@ -35,6 +37,7 @@ export function initGlobalErrorHandlers(): void {
       args: args.map((a) => String(a)),
     })
     if (logs.length > 500) logs.splice(0, logs.length - 500)
+    addConsoleLog('log', args)
     oldLog(...args)
   }
 
@@ -45,8 +48,29 @@ export function initGlobalErrorHandlers(): void {
       args: args.map((a) => String(a)),
     })
     if (logs.length > 500) logs.splice(0, logs.length - 500)
+    addConsoleLog('error', args)
     oldError(...args)
   }
 
-  console.log('global-error-handler: Console log capture installed')
+  const oldWarn = console.warn
+  console.warn = (...args) => {
+    logs.push({
+      type: 'warn',
+      args: args.map((a) => String(a)),
+    })
+    addConsoleLog('warn', args)
+    oldWarn(...args)
+  }
+
+  const oldInfo = console.info
+  console.info = (...args) => {
+    logs.push({
+      type: 'info',
+      args: args.map((a) => String(a)),
+    })
+    addConsoleLog('info', args)
+    oldInfo(...args)
+  }
+
+  console.log('global-error-handler: Handlers installed')
 }
