@@ -2,7 +2,8 @@
 // Walkthrough Types and Definitions
 // ============================================================
 
-export type WalkthroughTab = 'practice' | 'editor' | 'settings' | 'study'
+import type { WalkthroughTab } from '@/features/tabs/constants'
+export type { WalkthroughTab }
 
 export interface WalkthroughContent {
   id: string
@@ -21,11 +22,11 @@ export interface WalkthroughStep {
   target?: string
 }
 
-export const WALKTHROUGHS: Record<WalkthroughTab, WalkthroughContent[]> = {
-  practice: [
+export const WALKTHROUGHS: Partial<Record<WalkthroughTab, WalkthroughContent[]>> = {
+  singing: [
     {
       id: 'practice-toolbar',
-      tab: 'practice',
+      tab: 'singing',
       title: 'Practice Toolbar Overview',
       description: 'Master the main practice controls for vocal pitch training',
       content: `
@@ -91,7 +92,7 @@ export const WALKTHROUGHS: Record<WalkthroughTab, WalkthroughContent[]> = {
     },
     {
       id: 'practice-modes',
-      tab: 'practice',
+      tab: 'singing',
       title: 'Understanding Practice Modes',
       description: 'Learn when to use Once, Repeat, or Practice mode',
       content: `
@@ -151,10 +152,10 @@ Randomizes the order of notes each run.
       thumbnail: '🔄',
     },
   ],
-  editor: [
+  compose: [
     {
       id: 'editor-toolbar',
-      tab: 'editor',
+      tab: 'compose',
       title: 'Editor Toolbar Overview',
       description: 'Learn how to use the piano roll editor to compose melodies',
       content: `
@@ -222,7 +223,7 @@ Scroll horizontally for longer melodies, vertically for multiple octaves. The pl
     },
     {
       id: 'editor-midi',
-      tab: 'editor',
+      tab: 'compose',
       title: 'Importing and Exporting MIDI',
       description: 'Workflow for working with MIDI files',
       content: `
@@ -277,7 +278,7 @@ MIDI files are a universal format for sharing music between applications. PitchP
     },
     {
       id: 'editor-advanced',
-      tab: 'editor',
+      tab: 'compose',
       title: 'Advanced Editor Features',
       description: 'Tips and techniques for complex melodies',
       content: `

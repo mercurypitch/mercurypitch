@@ -6,7 +6,8 @@ import { melodyTotalBeats } from '@/lib/scale-data'
 import { buildSessionItemMelody } from '@/lib/session-builder'
 import { advanceSessionItem, countIn, getCurrentSessionItem, recordSessionItemResult, sessionItemIndex, setActiveTab, setBpm, setKeyName, setScaleType, setSessionActive, showNotification, userSession, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
-import type { MelodyItem, NoteResult, PracticeResult, SessionResult, } from '@/types'
+import type { MelodyItem, NoteResult, PracticeResult, PlaybackMode, SessionResult, } from '@/types'
+import { PLAYBACK_MODE_SESSION, TAB_SINGING } from '@/features/tabs/constants'
 
 export interface SessionSequencer {
   sessionMelodyIds: Accessor<string[]>
@@ -49,7 +50,7 @@ interface Deps {
   setPlaybackDisplayBeats: (b: number | null) => void
   handleStop: () => Promise<SessionResult | null | undefined>
   handlePlay: () => void
-  setPlayMode: Setter<'once' | 'repeat' | 'practice'>
+  setPlayMode: Setter<PlaybackMode>
   closeSidebar: () => void
   /** Repeat mode tracking */
   currentRepeat: Accessor<number>
@@ -372,8 +373,8 @@ export function useSessionSequencer(deps: Deps): SessionSequencer {
     closeSidebar()
     setSessionMelodyIds([])
     setSessionCurrentMelodyIndex(-1)
-    setPlayMode('practice')
-    setActiveTab('practice')
+    setPlayMode(PLAYBACK_MODE_SESSION)
+    setActiveTab(TAB_SINGING)
 
     handlePlay()
   }

@@ -4,8 +4,9 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import type { ActiveTab, PracticeSubMode, } from '@/components/shared/SharedControlToolbar'
+import { PLAYBACK_MODE_SESSION, TAB_COMPOSE, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
 import { appStore } from '@/stores'
+import type { ActiveTab, PlaybackMode, PracticeSubMode } from '@/types'
 
 // ========================================
 // Utility functions (copied for testing without triggering imports)
@@ -13,14 +14,14 @@ import { appStore } from '@/stores'
 
 /** Determine current practice mode based on global state */
 function activePracticeMode(
-  playMode: () => 'once' | 'repeat' | 'practice',
+  playMode: () => PlaybackMode,
   sessionActive: () => boolean,
 ): string {
   // Session mode takes priority
   if (sessionActive()) return 'Session'
 
   // Practice run-once vs repeat
-  if (playMode() === 'practice') {
+  if (playMode() === PLAYBACK_MODE_SESSION) {
     return 'Run-once'
   }
   if (playMode() === 'repeat') {
@@ -51,10 +52,10 @@ describe('SharedControlToolbar Types', () => {
   })
 
   it('ActiveTab has all expected values', () => {
-    const tabs: ActiveTab[] = ['practice', 'editor', 'settings']
-    expect(tabs).toContain('practice')
-    expect(tabs).toContain('editor')
-    expect(tabs).toContain('settings')
+    const tabs: ActiveTab[] = [TAB_SINGING, TAB_COMPOSE, TAB_SETTINGS]
+    expect(tabs).toContain(TAB_SINGING)
+    expect(tabs).toContain(TAB_COMPOSE)
+    expect(tabs).toContain(TAB_SETTINGS)
   })
 })
 
@@ -66,7 +67,7 @@ describe('activePracticeMode utility', () => {
   it('returns "Session" when session is active', () => {
     appStore.setSessionActive(true)
     const result = activePracticeMode(
-      () => 'practice',
+      () => PLAYBACK_MODE_SESSION,
       () => appStore.sessionActive(),
     )
     expect(result).toBe('Session')
@@ -75,7 +76,7 @@ describe('activePracticeMode utility', () => {
   it('returns "Run-once" when playMode is practice and no session', () => {
     appStore.setSessionActive(false)
     const result = activePracticeMode(
-      () => 'practice',
+      () => PLAYBACK_MODE_SESSION,
       () => appStore.sessionActive(),
     )
     expect(result).toBe('Run-once')
@@ -124,7 +125,7 @@ describe('activePracticeMode utility', () => {
     ).toBe('Repeat')
     expect(
       activePracticeMode(
-        () => 'practice',
+        () => PLAYBACK_MODE_SESSION,
         () => false,
       ),
     ).toBe('Run-once')
