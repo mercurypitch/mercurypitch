@@ -23,7 +23,7 @@ type OnProgress = (progress: number) => void
 let vocalSeparator: VocalSeparator | null = null
 const MODEL_BASE = import.meta.env.DEV
   ? window.location.origin
-  : 'https://mercurypitch.com'
+  : 'https://pub-2aafe9bb91454abb998beb378a16d44a.r2.dev'
 const MODEL_PATH = `${MODEL_BASE}/models/UVR-MDX-NET-Inst_HQ_3.onnx`
 
 async function getOrCreateSeparator(): Promise<VocalSeparator> {
