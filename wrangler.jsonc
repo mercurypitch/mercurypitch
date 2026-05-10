@@ -43,7 +43,8 @@
         {
           "class_name": "UvrContainer",
           "image": "./uvr-api/Dockerfile",
-          "max_instances": 3
+          "max_instances": 3,
+          "instance_type": "standard-4"
         }
       ],
       "durable_objects": {

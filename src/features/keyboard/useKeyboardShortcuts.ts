@@ -1,7 +1,7 @@
 import type { Accessor, Setter } from 'solid-js'
 import { onCleanup, onMount } from 'solid-js'
 import type { ActiveTab } from '@/features/tabs/constants'
-import { TAB_PIANO } from '@/features/tabs/constants'
+import { TAB_PIANO, TAB_KARAOKE } from '@/features/tabs/constants'
 import { PLAYBACK_MODE_SESSION } from '@/features/tabs/constants'
 import * as notifStore from '@/stores/notifications-store'
 import * as transportStore from '@/stores/transport-store'
@@ -49,9 +49,20 @@ interface KeyboardShortcutHandlers {
 export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers): void {
   const onKeyDown = (e: KeyboardEvent) => {
     // Skip if typing in input/select/textarea
-    const isTyping = (e.target as Element | null)?.closest(
+    const isTyping = !!(e.target as Element | null)?.closest(
       'input,textarea,select,[contenteditable]',
     )
+
+    const tab = handlers.activeTab?.()
+
+    // ── Karaoke exclusions ────────────────────────────────────
+    // The Karaoke tab (StemMixer) handles its own audio playback graph.
+    // Skip global transport controls to avoid triggering Singing/Piano playback.
+    if (tab === TAB_KARAOKE && !isTyping) {
+      if (['Space', 'Home', 'KeyR', 'KeyP', 'ArrowUp', 'ArrowDown'].includes(e.code)) {
+        return
+      }
+    }
 
     // ── Escape ────────────────────────────────────────────────
     if (e.code === 'Escape') {
@@ -71,7 +82,6 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers): void {
       }
 
       // 3. Stop piano game
-      const tab = handlers.activeTab?.()
       if (tab === TAB_PIANO && handlers.piano) {
         const gs = handlers.piano.gameState()
         if (gs === 'playing' || gs === 'paused' || gs === 'countdown') {
@@ -92,8 +102,6 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers): void {
     // ── Space — play/pause toggle ─────────────────────────────
     if (e.code === 'Space' && !isTyping) {
       e.preventDefault()
-
-      const tab = handlers.activeTab?.()
 
       // Piano tab — delegate to piano game handlers
       if (tab === TAB_PIANO && handlers.piano) {

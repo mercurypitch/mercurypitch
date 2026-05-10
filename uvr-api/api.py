@@ -100,7 +100,8 @@ def get_audio_duration(file_path: str) -> float:
 
 def write_progress(session_dir: str, progress: float, status: str,
                    duration: float = 0.0, started_at: float = 0.0,
-                   estimated_total: float = 0.0, cpu_profile: str = 'high'):
+                   estimated_total: float = 0.0, cpu_profile: str = 'high',
+                   error_msg: Optional[str] = None):
     """Write progress data to session directory."""
     progress_file = os.path.join(session_dir, "progress.json")
     data = {
@@ -112,6 +113,8 @@ def write_progress(session_dir: str, progress: float, status: str,
         "cpu_profile": cpu_profile,
         "updated_at": time.time(),
     }
+    if error_msg:
+        data["error"] = error_msg
     with open(progress_file, 'w') as f:
         json.dump(data, f)
 
@@ -352,7 +355,7 @@ async def process_audio(
         except Exception as e:
             logger.error(f"Processing error for session {session_id}: {e}")
             try:
-                write_progress(session_output_dir, 0.0, "error", 0, 0)
+                write_progress(session_output_dir, 0.0, "error", 0, 0, error_msg=str(e))
             except Exception:
                 pass
 
@@ -384,6 +387,7 @@ async def get_status(session_id: str):
 
     # Read progress file for real progress data
     progress = None
+    pdata = {}
     progress_file = os.path.join(session_output_dir, "progress.json")
     if os.path.exists(progress_file):
         try:
@@ -394,10 +398,8 @@ async def get_status(session_id: str):
             pass
 
     # If processing is ongoing, calculate live progress from elapsed time
-    if not is_done and progress is not None and progress < 100:
+    if not is_done and progress is not None and progress < 100 and pdata.get("status") != "error":
         try:
-            with open(progress_file) as f:
-                pdata = json.load(f)
             started = pdata.get("started_at", 0)
             estimated = pdata.get("estimated_total_secs", 0)
             if started > 0 and estimated > 0:
@@ -449,10 +451,15 @@ async def get_status(session_id: str):
             })
 
     # Determine status and message
+    error_msg = None
     if is_done:
          status = "completed"
          message = "Processing completed successfully"
          progress = 100
+    elif pdata.get("status") == "error":
+         status = "error"
+         message = "Processing failed"
+         error_msg = pdata.get("error", "An internal error occurred during processing.")
     elif progress is not None:
          status = "processing"
          message = "Processing in progress..."
@@ -471,7 +478,8 @@ async def get_status(session_id: str):
         status=status,
         progress=progress,
         files=files,
-        message=message
+        message=message,
+        error=error_msg
     )
 
 
