@@ -232,8 +232,15 @@ export async function pollForCompletion(
           return
         }
 
+        if (status.status === 'not_started') {
+          const errMsg = 'Processing server restarted unexpectedly. Please retry.'
+          onError(errMsg)
+          reject(new Error(errMsg))
+          return
+        }
+
         // Use server progress if available
-        if (status.progress !== undefined) {
+        if (status.progress !== undefined && status.progress !== null) {
           onProgress(status.progress, estimateExceeded)
         } else {
           // Fallback: estimate from server's estimated_total_secs or default

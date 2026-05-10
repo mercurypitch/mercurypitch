@@ -339,6 +339,44 @@ export function getUvrSessionStats(): {
   }
 }
 
+// Auto-cleanup stale sessions on module load
+export function cleanupStaleUvrSessions(): void {
+  if (typeof window === 'undefined') return
+  const sessions = getAllUvrSessions()
+  let changed = false
+  for (const session of sessions) {
+    if (session.status === 'processing' || session.status === 'uploading') {
+      session.status = 'error'
+      session.error = 'Session interrupted by page reload or closure.'
+      changed = true
+    }
+  }
+  if (changed) {
+    saveAllUvrSessions(sessions)
+  }
+}
+
+// Run cleanup immediately
+cleanupStaleUvrSessions()
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', () => {
+    const sessions = getAllUvrSessions()
+    const API_BASE = IS_DEV
+      ? 'https://dev.mercurypitch.com/api/uvr'
+      : 'https://mercurypitch.com/api/uvr'
+      
+    for (const session of sessions) {
+      if ((session.status === 'processing' || session.status === 'uploading') && session.apiSessionId) {
+        fetch(`${API_BASE}/session/${session.apiSessionId}`, {
+          method: 'DELETE',
+          keepalive: true
+        }).catch(() => {})
+      }
+    }
+  })
+}
+
 /** Refresh session output files from API data */
 export function updateUvrSessionOutputs(
   sessionId: string,
