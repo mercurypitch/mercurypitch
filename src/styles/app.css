@@ -1104,12 +1104,7 @@ header h1 {
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
   min-height: 44px;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-}
-.practice-header-bar::-webkit-scrollbar {
-  display: none;
+  flex-wrap: wrap;
 }
 .practice-header-bar .essential-controls,
 .practice-header-bar .secondary-controls {
@@ -1538,12 +1533,7 @@ header h1 {
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
   min-height: 44px;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-}
-.editor-header-bar::-webkit-scrollbar {
-  display: none;
+  flex-wrap: wrap;
 }
 .editor-header-bar .essential-controls,
 .editor-header-bar .secondary-controls {
@@ -3060,24 +3050,16 @@ header h1 {
   .practice-header-bar {
     padding: 5px 8px;
     gap: 4px;
-    overflow-x: auto;
-    overflow-y: hidden;
-    flex-wrap: nowrap;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    flex-direction: row;
+    flex-wrap: wrap;
     flex-shrink: 1;
   }
   .practice-header-bar .essential-controls {
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     flex-shrink: 0;
   }
   .practice-header-bar .control-group {
     display: flex;
     flex-shrink: 0;
-  }
-  .practice-header-bar::-webkit-scrollbar {
-    display: none;
   }
   .practice-header-bar .opt-label {
     font-size: 0.65rem;
@@ -3277,23 +3259,16 @@ header h1 {
 
   /* Practice header: single essential row only */
   .practice-header-bar {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    overflow-y: hidden;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
+    flex-wrap: wrap;
     flex-shrink: 1;
   }
   .practice-header-bar .essential-controls {
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     flex-shrink: 0;
   }
   .practice-header-bar .control-group {
     display: flex;
     flex-shrink: 0;
-  }
-  .practice-header-bar::-webkit-scrollbar {
-    display: none;
   }
   /* Keep only: mic, record, play/stop, sessions, mode toggles, count-in badge */
   .practice-header-bar .tempo-group,
