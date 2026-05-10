@@ -31,27 +31,6 @@
     { "pattern": "mercurypitch.com", "custom_domain": true }
   ],
   "env": {
-    "containers": [
-      {
-        "class_name": "UvrContainer",
-        "image": "./uvr-api/Dockerfile",
-        "max_instances": 3
-      }
-    ],
-    "durable_objects": {
-      "bindings": [
-        {
-          "name": "UVR_SERVICE",
-          "class_name": "UvrContainer"
-        }
-      ]
-    },
-    "migrations": [
-      {
-        "tag": "v1",
-        "new_classes": ["UvrContainer"]
-      }
-    ],
     "dev": {
       "name": "pitch-perfect-dev",
       "routes": [
@@ -59,7 +38,28 @@
       ],
       "build": {
         "command": "pnpm run build:dev"
-      }
+      },
+      "containers": [
+        {
+          "class_name": "UvrContainer",
+          "image": "./uvr-api/Dockerfile",
+          "max_instances": 3
+        }
+      ],
+      "durable_objects": {
+        "bindings": [
+          {
+            "name": "UVR_SERVICE",
+            "class_name": "UvrContainer"
+          }
+        ]
+      },
+      "migrations": [
+        {
+          "tag": "v1",
+          "new_classes": ["UvrContainer"]
+        }
+      ]
     }
   }
 }
