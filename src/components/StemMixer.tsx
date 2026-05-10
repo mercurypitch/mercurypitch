@@ -527,8 +527,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         showNotification(msg, 'warning')
       }
 
-      // MIDI processing — detect notes & synthesize audio when practiceMode is 'midi'
-      if (props.practiceMode === 'midi' && vocal().buffer) {
+      // MIDI processing — detect notes & synthesize audio when MIDI is requested or in midi practice mode
+      const needsMidi =
+        props.practiceMode === 'midi' || props.requestedStems?.midi === true
+      if (needsMidi && vocal().buffer) {
         setMidiGenerating(true)
         setMidiProgress(0)
         try {
@@ -3758,7 +3760,12 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             </div>
 
             {/* Panel: MIDI Pitch */}
-            <Show when={props.practiceMode === 'midi'}>
+            <Show
+              when={
+                props.practiceMode === 'midi' ||
+                props.requestedStems?.midi === true
+              }
+            >
               <div
                 class="sm-workspace-panel"
                 style={panelStyle('midi')}
@@ -3890,64 +3897,66 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                   </div>
                 )}
 
-                {midi().buffer && props.practiceMode === 'midi' && (
-                  <div class="sm-stem-strip">
-                    <div class="sm-stem-header">
-                      <span
-                        class="sm-stem-dot"
-                        style={{ background: midi().color }}
+                {midi().buffer &&
+                  (props.practiceMode === 'midi' ||
+                    props.requestedStems?.midi === true) && (
+                    <div class="sm-stem-strip">
+                      <div class="sm-stem-header">
+                        <span
+                          class="sm-stem-dot"
+                          style={{ background: midi().color }}
+                        />
+                        <span class="sm-stem-label">{midi().label}</span>
+                        <span class="sm-stem-vol-pct">
+                          {Math.round(
+                            midi().muted || (anySoloed() && !midi().soloed)
+                              ? 0
+                              : midi().volume * 100,
+                          )}
+                          %
+                        </span>
+                      </div>
+                      <div class="sm-stem-actions">
+                        <button
+                          class={`sm-action-btn ${midi().soloed ? 'sm-active' : ''}`}
+                          onClick={() => toggleSolo('MIDI')}
+                          title="Solo"
+                          style={{ color: midi().soloed ? midi().color : '' }}
+                        >
+                          <Ear />
+                        </button>
+                        <button
+                          class={`sm-action-btn ${midi().muted ? 'sm-muted' : ''}`}
+                          onClick={() => toggleMute('MIDI')}
+                          title="Mute"
+                        >
+                          {midi().muted ? <VolumeX /> : <Volume2 />}
+                        </button>
+                        <button
+                          class="sm-action-btn"
+                          onClick={() => {
+                            void handleDownload(midi())
+                          }}
+                          title="Download MIDI"
+                        >
+                          <Download />
+                        </button>
+                      </div>
+                      <input
+                        type="range"
+                        class="sm-volume-slider"
+                        min="0"
+                        max="100"
+                        value={Math.round(midi().volume * 100)}
+                        onInput={(e) =>
+                          setTrackVolume(
+                            'MIDI',
+                            parseInt(e.currentTarget.value) / 100,
+                          )
+                        }
                       />
-                      <span class="sm-stem-label">{midi().label}</span>
-                      <span class="sm-stem-vol-pct">
-                        {Math.round(
-                          midi().muted || (anySoloed() && !midi().soloed)
-                            ? 0
-                            : midi().volume * 100,
-                        )}
-                        %
-                      </span>
                     </div>
-                    <div class="sm-stem-actions">
-                      <button
-                        class={`sm-action-btn ${midi().soloed ? 'sm-active' : ''}`}
-                        onClick={() => toggleSolo('MIDI')}
-                        title="Solo"
-                        style={{ color: midi().soloed ? midi().color : '' }}
-                      >
-                        <Ear />
-                      </button>
-                      <button
-                        class={`sm-action-btn ${midi().muted ? 'sm-muted' : ''}`}
-                        onClick={() => toggleMute('MIDI')}
-                        title="Mute"
-                      >
-                        {midi().muted ? <VolumeX /> : <Volume2 />}
-                      </button>
-                      <button
-                        class="sm-action-btn"
-                        onClick={() => {
-                          void handleDownload(midi())
-                        }}
-                        title="Download MIDI"
-                      >
-                        <Download />
-                      </button>
-                    </div>
-                    <input
-                      type="range"
-                      class="sm-volume-slider"
-                      min="0"
-                      max="100"
-                      value={Math.round(midi().volume * 100)}
-                      onInput={(e) =>
-                        setTrackVolume(
-                          'MIDI',
-                          parseInt(e.currentTarget.value) / 100,
-                        )
-                      }
-                    />
-                  </div>
-                )}
+                  )}
 
                 {instrumental().url && (
                   <div class="sm-stem-strip">
@@ -6039,7 +6048,12 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                     onPointerDown={(e) => handleFixedResizeStart('pitch', e)}
                   />
                 </div>
-                <Show when={props.practiceMode === 'midi'}>
+                <Show
+                  when={
+                    props.practiceMode === 'midi' ||
+                    props.requestedStems?.midi === true
+                  }
+                >
                   <div
                     class="sm-workspace-panel"
                     style={{ height: `${fixedPanelHeights().midi}px` }}
@@ -6139,64 +6153,66 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                       />
                     </div>
                   )}
-                  {midi().buffer && props.practiceMode === 'midi' && (
-                    <div class="sm-stem-strip">
-                      <div class="sm-stem-header">
-                        <span
-                          class="sm-stem-dot"
-                          style={{ background: midi().color }}
+                  {midi().buffer &&
+                    (props.practiceMode === 'midi' ||
+                      props.requestedStems?.midi === true) && (
+                      <div class="sm-stem-strip">
+                        <div class="sm-stem-header">
+                          <span
+                            class="sm-stem-dot"
+                            style={{ background: midi().color }}
+                          />
+                          <span class="sm-stem-label">{midi().label}</span>
+                          <span class="sm-stem-vol-pct">
+                            {Math.round(
+                              midi().muted || (anySoloed() && !midi().soloed)
+                                ? 0
+                                : midi().volume * 100,
+                            )}
+                            %
+                          </span>
+                        </div>
+                        <div class="sm-stem-actions">
+                          <button
+                            class={`sm-action-btn ${midi().soloed ? 'sm-active' : ''}`}
+                            onClick={() => toggleSolo('MIDI')}
+                            title="Solo"
+                            style={{ color: midi().soloed ? midi().color : '' }}
+                          >
+                            <Ear />
+                          </button>
+                          <button
+                            class={`sm-action-btn ${midi().muted ? 'sm-muted' : ''}`}
+                            onClick={() => toggleMute('MIDI')}
+                            title="Mute"
+                          >
+                            {midi().muted ? <VolumeX /> : <Volume2 />}
+                          </button>
+                          <button
+                            class="sm-action-btn"
+                            onClick={() => {
+                              void handleDownload(midi())
+                            }}
+                            title="Download MIDI"
+                          >
+                            <Download />
+                          </button>
+                        </div>
+                        <input
+                          type="range"
+                          class="sm-volume-slider"
+                          min="0"
+                          max="100"
+                          value={Math.round(midi().volume * 100)}
+                          onInput={(e) =>
+                            setTrackVolume(
+                              'MIDI',
+                              parseInt(e.currentTarget.value) / 100,
+                            )
+                          }
                         />
-                        <span class="sm-stem-label">{midi().label}</span>
-                        <span class="sm-stem-vol-pct">
-                          {Math.round(
-                            midi().muted || (anySoloed() && !midi().soloed)
-                              ? 0
-                              : midi().volume * 100,
-                          )}
-                          %
-                        </span>
                       </div>
-                      <div class="sm-stem-actions">
-                        <button
-                          class={`sm-action-btn ${midi().soloed ? 'sm-active' : ''}`}
-                          onClick={() => toggleSolo('MIDI')}
-                          title="Solo"
-                          style={{ color: midi().soloed ? midi().color : '' }}
-                        >
-                          <Ear />
-                        </button>
-                        <button
-                          class={`sm-action-btn ${midi().muted ? 'sm-muted' : ''}`}
-                          onClick={() => toggleMute('MIDI')}
-                          title="Mute"
-                        >
-                          {midi().muted ? <VolumeX /> : <Volume2 />}
-                        </button>
-                        <button
-                          class="sm-action-btn"
-                          onClick={() => {
-                            void handleDownload(midi())
-                          }}
-                          title="Download MIDI"
-                        >
-                          <Download />
-                        </button>
-                      </div>
-                      <input
-                        type="range"
-                        class="sm-volume-slider"
-                        min="0"
-                        max="100"
-                        value={Math.round(midi().volume * 100)}
-                        onInput={(e) =>
-                          setTrackVolume(
-                            'MIDI',
-                            parseInt(e.currentTarget.value) / 100,
-                          )
-                        }
-                      />
-                    </div>
-                  )}
+                    )}
                   {instrumental().url && (
                     <div class="sm-stem-strip">
                       <div class="sm-stem-header">
