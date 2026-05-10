@@ -385,7 +385,8 @@ if (typeof window !== 'undefined') {
     for (const session of sessions) {
       if (
         (session.status === 'processing' || session.status === 'uploading') &&
-        session.apiSessionId
+        session.apiSessionId !== undefined &&
+        session.apiSessionId !== ''
       ) {
         fetch(`${API_BASE}/session/${session.apiSessionId}`, {
           method: 'DELETE',

@@ -521,7 +521,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       }
 
       if (total > 0 && loaded === 0) {
-        const msg = 'Stems could not be loaded. Audio data may have been lost after a page reload.'
+        const msg =
+          'Stems could not be loaded. Audio data may have been lost after a page reload.'
         setLoadError(msg)
         showNotification(msg, 'warning')
       }
@@ -1892,7 +1893,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       src.buffer = track.buffer
 
       const gain = ctx.createGain()
-      gain.gain.value = isAudible ? track.volume : 0
+      // Start at 0 and ramp up to avoid click/pop on play
+      const targetGain = isAudible ? track.volume : 0
+      gain.gain.setValueAtTime(0, now)
+      gain.gain.linearRampToValueAtTime(targetGain, now + 0.02)
 
       const analyser = ctx.createAnalyser()
       analyser.fftSize = FFT_SIZE
@@ -1943,47 +1947,72 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }
   }
 
+  const FADE_OUT_MS = 20
+
   const disconnectSources = () => {
-    for (const track of tracks()) {
-      try {
-        track.sourceNode?.stop()
-      } catch (_) {
-        /* already stopped */
-      }
-      try {
-        track.sourceNode?.disconnect()
-      } catch (_) {
-        /* */
-      }
-      try {
-        track.gainNode?.disconnect()
-      } catch (_) {
-        /* */
-      }
-      try {
-        track.analyserNode?.disconnect()
-      } catch (_) {
-        /* */
+    const ctx = audioCtx
+    if (ctx) {
+      // Fade out all gains to 0 over 20ms to avoid pop
+      const now = ctx.currentTime
+      for (const track of tracks()) {
+        if (track.gainNode) {
+          try {
+            track.gainNode.gain.cancelScheduledValues(now)
+            track.gainNode.gain.setValueAtTime(track.gainNode.gain.value, now)
+            track.gainNode.gain.linearRampToValueAtTime(
+              0,
+              now + FADE_OUT_MS / 1000,
+            )
+          } catch (_) {
+            /* already disconnected */
+          }
+        }
       }
     }
-    setVocal((prev) => ({
-      ...prev,
-      sourceNode: null,
-      gainNode: null,
-      analyserNode: null,
-    }))
-    setInstrumental((prev) => ({
-      ...prev,
-      sourceNode: null,
-      gainNode: null,
-      analyserNode: null,
-    }))
-    setMidi((prev) => ({
-      ...prev,
-      sourceNode: null,
-      gainNode: null,
-      analyserNode: null,
-    }))
+
+    // Delay the actual stop/disconnect until after the fade completes
+    setTimeout(() => {
+      for (const track of tracks()) {
+        try {
+          track.sourceNode?.stop()
+        } catch (_) {
+          /* already stopped */
+        }
+        try {
+          track.sourceNode?.disconnect()
+        } catch (_) {
+          /* */
+        }
+        try {
+          track.gainNode?.disconnect()
+        } catch (_) {
+          /* */
+        }
+        try {
+          track.analyserNode?.disconnect()
+        } catch (_) {
+          /* */
+        }
+      }
+      setVocal((prev) => ({
+        ...prev,
+        sourceNode: null,
+        gainNode: null,
+        analyserNode: null,
+      }))
+      setInstrumental((prev) => ({
+        ...prev,
+        sourceNode: null,
+        gainNode: null,
+        analyserNode: null,
+      }))
+      setMidi((prev) => ({
+        ...prev,
+        sourceNode: null,
+        gainNode: null,
+        analyserNode: null,
+      }))
+    }, FADE_OUT_MS)
   }
 
   // ── Transport ────────────────────────────────────────────────

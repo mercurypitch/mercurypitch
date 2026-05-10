@@ -2,7 +2,7 @@
 // Vocal Separator — Main-thread API wrapping the Web Worker
 // ============================================================
 
-import type { WorkerCancelMessage, WorkerCompleteMessage, WorkerErrorMessage, WorkerInitMessage, WorkerOutMessage, WorkerProgressMessage, WorkerReadyMessage, WorkerSeparateMessage, } from '../workers/vocal-separator.worker'
+import type { WorkerCancelMessage, WorkerInitMessage, WorkerOutMessage, WorkerSeparateMessage, } from '../workers/vocal-separator.worker'
 
 export interface SeparateOptions {
   /** If true, returns instrumental instead of vocals as primary output. */
@@ -28,7 +28,7 @@ export class VocalSeparator {
   private _status: SeparatorStatus = 'idle'
   private _error: string | null = null
   private _provider: string | null = null
-  private readyResolve: ((value: void) => void) | null = null
+  private readyResolve: (() => void) | null = null
   private readyPromise: Promise<void> | null = null
   private pendingRequest: {
     resolve: (result: SeparationResult) => void
