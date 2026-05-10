@@ -718,6 +718,7 @@ const AppShell: Component<AppProps> = (props) => {
 
   onMount(() => {
     initTheme()
+    initDefaultOGTags()
 
     // Inject UVR component styles
     const styleElements = [
@@ -784,6 +785,11 @@ const AppShell: Component<AppProps> = (props) => {
           setScaleType(sharedData.scaleType)
         }
         showNotification('Shared preset loaded from URL', 'info')
+        setMelodyOGTags({
+          noteCount: sharedData.melody.length,
+          bpm: sharedData.bpm,
+          key: sharedData.key,
+        })
       }
     }
 
