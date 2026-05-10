@@ -5,6 +5,7 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
+import { lazy } from 'solid-js'
 import { VocalAnalysis, VocalChallenges } from '@/components'
 import { AppSidebar } from '@/components/AppSidebar'
 import { CommunityLeaderboard } from '@/components/CommunityLeaderboard'
@@ -14,9 +15,18 @@ import { HistoryCanvas } from '@/components/HistoryCanvas'
 import { LibraryModal } from '@/components/LibraryModal'
 import { Notifications } from '@/components/Notifications'
 import { PianoRollCanvas } from '@/components/PianoRollCanvas'
-import { PitchAlgorithmTester } from '@/components/PitchAlgorithmTester'
 import { PitchCanvas } from '@/components/PitchCanvas'
-import { PitchTestingTab } from '@/components/PitchTestingTab'
+
+const PitchAlgorithmTester = lazy(async () =>
+  import('@/components/PitchAlgorithmTester').then((m) => ({
+    default: m.PitchAlgorithmTester,
+  })),
+)
+const PitchTestingTab = lazy(async () =>
+  import('@/components/PitchTestingTab').then((m) => ({
+    default: m.PitchTestingTab,
+  })),
+)
 import { ScaleBuilder } from '@/components/ScaleBuilder'
 import { SessionBrowser } from '@/components/SessionBrowser'
 import { SessionEditor } from '@/components/SessionEditor'
