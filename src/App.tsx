@@ -1351,6 +1351,7 @@ const AppShell: Component<AppProps> = (props) => {
 
   onMount(() => {
     initTheme()
+    initDefaultOGTags()
 
     // Cloud settings sync: pull on startup/auth change, write-through
     // on preference changes. Inert when no API is configured.
@@ -1480,6 +1481,11 @@ const AppShell: Component<AppProps> = (props) => {
           setScaleType(sharedData.scaleType)
         }
         showNotification('Shared preset loaded from URL', 'info')
+        setMelodyOGTags({
+          noteCount: sharedData.melody.length,
+          bpm: sharedData.bpm,
+          key: sharedData.key,
+        })
       }
     }
 
