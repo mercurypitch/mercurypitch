@@ -60,6 +60,7 @@ export interface WorkerErrorMessage {
 
 export interface WorkerReadyMessage {
   type: 'ready'
+  provider: string
 }
 
 export type WorkerOutMessage =
@@ -402,7 +403,7 @@ self.onmessage = async (e: MessageEvent<WorkerInMessage>) => {
     case 'init': {
       try {
         await loadModel(msg.modelPath)
-        postMessage({ type: 'ready' } satisfies WorkerOutMessage)
+        postMessage({ type: 'ready', provider: activeProviders[0] } satisfies WorkerOutMessage)
       } catch (err) {
         postMessage({
           type: 'error',

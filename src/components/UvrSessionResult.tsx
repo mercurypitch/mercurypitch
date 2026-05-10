@@ -6,7 +6,7 @@ import type { Component } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
 import { deleteUvrSession, getUvrSession } from '@/stores/app-store'
 import type { UvrSession, UvrStatus } from '@/types/uvr'
-import { Box, Calendar, CheckCircle, Headphones, Loader2, Midi, Music, Play, RotateCcw, Share, SlidersHorizontal, Trash2, Voice, X, XCircle, } from './icons'
+import { Box, Calendar, CheckCircle, Headphones, Loader2, Midi, Music, Play, RotateCcw, Share, SlidersHorizontal, Trash2, Voice, X, XCircle, Cpu, Zap, } from './icons'
 
 interface SessionResultProps {
   sessionId: string
@@ -226,6 +226,14 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
               : ''
           })()}
         </span>
+        <Show when={session()?.provider}>
+          <div class="status-provider" style={{ "display": "flex", "align-items": "center", "gap": "4px", "font-size": "11px", "font-weight": "600", "background": "var(--bg-tertiary)", "padding": "2px 8px", "border-radius": "12px", "margin-left": "auto" }}>
+            <span style={{ "display": "flex", "width": "14px", "height": "14px", "color": session()?.provider === 'webgpu' ? 'var(--accent)' : 'var(--fg-secondary)' }}>
+              {session()?.provider === 'webgpu' ? <Zap /> : <Cpu />}
+            </span>
+            {session()?.provider === 'webgpu' ? 'GPU (WebGPU)' : 'CPU (WASM)'}
+          </div>
+        </Show>
         <Show when={!session()}>
           <span class="status-time">Idle</span>
         </Show>
