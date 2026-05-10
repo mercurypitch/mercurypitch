@@ -172,10 +172,10 @@ export const HistoryCanvas: Component<HistoryCanvasProps> = (props) => {
       ctx.fillStyle = color
       ctx.font = 'bold 15px sans-serif'
       ctx.textAlign = 'right'
-      ctx.fillText(`${score}%`, w - 10, 20)
+      ctx.fillText(`${score}%`, w - 10, 65)
       ctx.fillStyle = '#8b949e'
       ctx.font = '9px sans-serif'
-      ctx.fillText('live score', w - 10, 32)
+      ctx.fillText('live score', w - 10, 77)
     }
   }
 
