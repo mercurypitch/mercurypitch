@@ -7,13 +7,12 @@ import { dismissOverlays, switchTab } from './helpers/ui'
 
 test.describe('Melody Library', () => {
   test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      (window as any).E2E_TEST_MODE = true
+    })
     await page.goto('/')
-    await page.waitForFunction(
-      () => typeof (window as any).__appStore !== 'undefined',
-      { timeout: 5000 },
-    )
+    await page.waitForSelector('#app-tabs', { timeout: 10000 })
     await dismissOverlays(page)
-    await page.waitForTimeout(500)
   })
 
   // ==========================================
