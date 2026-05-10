@@ -4,6 +4,7 @@
 // Handles: init (load model), separate (process audio), cancel.
 // ============================================================
 
+import type * as OrtModule from 'onnxruntime-web'
 import type { InferenceSession, Tensor } from 'onnxruntime-web'
 import { computeChunkRanges, overlapAdd, UVR_CHUNK_CONFIG, } from '../lib/audio-chunker'
 import { getCachedModel, setCachedModel } from '../lib/model-cache'
@@ -83,9 +84,9 @@ const ZERO_BINS = 3 // zero first N frequency bins before ONNX
 // ---------------------------------------------------------------------------
 
 let session: InferenceSession | null = null
-let ort: typeof import('onnxruntime-web') | null = null
+let ort: typeof OrtModule | null = null
 let cancelled = false
-let currentRequestId = 0
+let _currentRequestId = 0
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -418,7 +419,7 @@ self.onmessage = async (e: MessageEvent<WorkerInMessage>) => {
     }
 
     case 'separate': {
-      currentRequestId = msg.requestId
+      _currentRequestId = msg.requestId
       try {
         await separate(msg.audio, msg.sampleRate, msg.requestId)
       } catch (err) {
