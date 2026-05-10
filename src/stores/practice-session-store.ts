@@ -114,6 +114,18 @@ export function endPracticeSession(): SessionResult | null {
 
   setSessionResults((prev) => [result, ...prev].slice(0, 50))
 
+  // Dual-write to IndexedDB (fire-and-forget)
+  import('@/db/services/session-service').then(({ saveSessionRecord }) => {
+    saveSessionRecord({
+      melodyName: session.name,
+      score: avgScore,
+      accuracy: avgScore,
+      notesHit: results.length,
+      notesTotal: session.items.length,
+      streak: 0,
+    })
+  })
+
   setSessionActive(false)
   setPracticeSession(null)
   setSessionItemIndex(0)
