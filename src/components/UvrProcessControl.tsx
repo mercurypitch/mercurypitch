@@ -55,7 +55,7 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
       case 'processing':
         return {
           icon: <Loader2 />,
-          title: `Processing ${props.originalFileName ?? 'audio'} into stems`,
+          title: `Separating ${props.originalFileName ?? 'audio'} into stems`,
           description: '',
           color: 'var(--accent)',
         }
