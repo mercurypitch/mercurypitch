@@ -21,7 +21,10 @@ type OnProgress = (progress: number) => void
 
 /** Singleton VocalSeparator instance for browser-mode processing */
 let vocalSeparator: VocalSeparator | null = null
-const MODEL_PATH = '/models/UVR-MDX-NET-Inst_HQ_3.onnx'
+const MODEL_BASE = import.meta.env.DEV
+  ? window.location.origin
+  : 'https://mercurypitch.com'
+const MODEL_PATH = `${MODEL_BASE}/models/UVR-MDX-NET-Inst_HQ_3.onnx`
 
 async function getOrCreateSeparator(): Promise<VocalSeparator> {
   if (vocalSeparator !== null && vocalSeparator.isReady()) {
