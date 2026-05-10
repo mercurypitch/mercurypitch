@@ -5,7 +5,7 @@
 // ============================================================
 
 import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
-import { getAllUvrSessions, saveAllUvrSessions, setUvrSessionApiId, updateUvrSessionProgress, } from '@/stores/app-store'
+import { getAllUvrSessions, saveAllUvrSessions, setUvrSessionApiId, updateUvrSessionProgress, setUvrSessionProvider } from '@/stores/app-store'
 import { computeChunkRanges, UVR_CHUNK_CONFIG } from './audio-chunker'
 import type { OutputFile } from './uvr-api'
 import { deleteSession, pollForCompletion, processAudio } from './uvr-api'
@@ -112,6 +112,7 @@ async function processLocal(
   const s = sessions.find((x) => x.sessionId === sessionId)
   if (s) {
     s.numChunks = numChunks
+    if (sep.provider) setUvrSessionProvider(sessionId, sep.provider)
     saveAllUvrSessions(sessions)
   }
 
