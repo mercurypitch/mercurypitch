@@ -6,7 +6,7 @@ import type { Component } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
 import { deleteUvrSession, getUvrSession } from '@/stores/app-store'
 import type { UvrSession, UvrStatus } from '@/types/uvr'
-import { Box, Calendar, CheckCircle, Headphones, Loader2, Midi, Music, Play, Share, SlidersHorizontal, Trash2, Voice, XCircle, } from './icons'
+import { Box, Calendar, CheckCircle, Headphones, Loader2, Midi, Music, Play, RotateCcw, Share, SlidersHorizontal, Trash2, Voice, X, XCircle, } from './icons'
 
 interface SessionResultProps {
   sessionId: string
@@ -19,6 +19,7 @@ interface SessionResultProps {
     sessionId: string,
     stems?: { vocal?: boolean; instrumental?: boolean; midi?: boolean },
   ) => void
+  onRetry?: (sessionId: string) => void
   onClose?: () => void
 }
 
@@ -115,6 +116,8 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
         return 'var(--success)'
       case 'error':
         return 'var(--error)'
+      case 'cancelled':
+        return 'var(--fg-secondary)'
       case 'processing':
         return 'var(--accent)'
       default:
@@ -128,8 +131,10 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
         return <CheckCircle />
       case 'error':
         return <XCircle />
+      case 'cancelled':
+        return <X />
       case 'processing':
-        return <Loader2 />
+        return <div style={{ animation: 'spin 1.5s linear infinite', display: 'inline-flex' }}><Loader2 /></div>
       default:
         return <Loader2 />
     }
@@ -315,20 +320,33 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
       </Show>
 
       {/* Actions */}
-      <Show when={session()?.status === 'completed'}>
+      <Show when={session()?.status === 'completed' || session()?.status === 'error'}>
         <div class="session-result-actions">
-          <button
-            class="session-result-btn session-result-btn-primary"
-            onClick={() => props.onView?.(props.sessionId)}
-          >
-            <Play /> View Results
-          </button>
-          <Show when={hasSelection()}>
+          <Show when={session()?.status === 'completed'}>
             <button
-              class="session-result-btn session-result-btn-mixer"
-              onClick={handleMixSelected}
+              class="session-result-btn session-result-btn-primary"
+              onClick={() => props.onView?.(props.sessionId)}
             >
-              <SlidersHorizontal /> Mix Selected
+              <Play /> View Results
+            </button>
+            <Show when={hasSelection()}>
+              <button
+                class="session-result-btn session-result-btn-mixer"
+                onClick={handleMixSelected}
+              >
+                <SlidersHorizontal /> Mix Selected
+              </button>
+            </Show>
+          </Show>
+          <Show when={session()?.status === 'error'}>
+            <button
+              class="session-result-btn session-result-btn-primary"
+              onClick={(e) => {
+                e.stopPropagation()
+                props.onRetry?.(props.sessionId)
+              }}
+            >
+              <RotateCcw /> Retry
             </button>
           </Show>
         </div>

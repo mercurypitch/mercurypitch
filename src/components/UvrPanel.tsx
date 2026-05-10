@@ -586,6 +586,10 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                       onOpenMixer={(sessionId, stems) =>
                         handleOpenMixerFromHistory(sessionId, stems)
                       }
+                      onRetry={(sessionId) => {
+                        retryUvrSession(sessionId)
+                        void handleProcessStart(sessionId, getUvrSession(sessionId)?.processingMode)
+                      }}
                     />
                   )}
                 </For>
@@ -636,7 +640,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 processingMode={session()!.processingMode}
                 numChunks={session()!.numChunks}
                 onCancel={() => {
-                  cancelUvrPipeline(session()!.processingMode ?? 'server')
+                  cancelUvrPipeline(session()!.processingMode ?? 'server', session()!.apiSessionId)
                   cancelUvrSession(session()!.sessionId)
                   setCurrentView('upload')
                 }}
@@ -725,6 +729,10 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                       onOpenMixer={(sessionId, stems) =>
                         handleOpenMixerFromHistory(sessionId, stems)
                       }
+                      onRetry={(sessionId) => {
+                        retryUvrSession(sessionId)
+                        void handleProcessStart(sessionId, getUvrSession(sessionId)?.processingMode)
+                      }}
                     />
                   )}
                 </For>

@@ -154,7 +154,7 @@ function createModelInput(
   for (let frame = 0; frame < nFrames; frame++) {
     for (let f = 0; f < nFreq; f++) {
       const srcIdx = frame * nFreq * 2 + f * 2
-      const dstBase = frame * nFreq + f
+      const dstBase = f * nFrames + frame
       const real = stftData[srcIdx]
       const imag = stftData[srcIdx + 1]
       output[0 * totalBins + dstBase] = real
@@ -202,7 +202,7 @@ function modelOutputToStft(
 
   for (let frame = 0; frame < nFrames; frame++) {
     for (let f = 0; f < nFreq; f++) {
-      const srcBase = frame * nFreq + f
+      const srcBase = f * nFrames + frame
       const dstIdx = frame * nFreq * 2 + f * 2
       result[dstIdx] = modelOutput[0 * totalBins + srcBase]     // real
       result[dstIdx + 1] = modelOutput[1 * totalBins + srcBase] // imag
