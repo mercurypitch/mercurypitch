@@ -3,10 +3,17 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createMemo, createSignal, For, Show } from 'solid-js'
+import { createMemo, createSignal, For, onMount, Show } from 'solid-js'
 import { generateId } from '@/lib/id'
 import { appStore, getSessionHistory, melodyStore } from '@/stores'
 import type { MelodyItem, PlaybackSession } from '@/types'
+import {
+  loadUserProfile,
+  loadSharedMelodies,
+  loadSharedSessions,
+  saveSharedMelody as saveSharedMelodyToDb,
+  saveSharedSession as saveSharedSessionToDb,
+} from '@/db/services/share-service'
 
 // ============================================================
 // SVG Icons (Classy, minimal style)
@@ -410,32 +417,56 @@ export const CommunityShare: Component = () => {
   const [_selectedShare, _setSelectedShare] =
     createSignal<ShareableContent | null>(null)
 
-  // Load shared data from localStorage
+  // DB-backed signals
+  const [dbMelodies, setDbMelodies] = createSignal<SharedMelody[]>([])
+  const [dbSessions, setDbSessions] = createSignal<SharedSession[]>([])
+  const [dbProfile, setDbProfile] = createSignal<{
+    userId: string
+    displayName: string
+    bio?: string
+    joinDate: number
+  } | null>(null)
+
+  onMount(async () => {
+    const [profile, melodies, sessions] = await Promise.all([
+      loadUserProfile(),
+      loadSharedMelodies(),
+      loadSharedSessions(),
+    ])
+    if (profile) setDbProfile(profile)
+    if (melodies.length > 0) setDbMelodies(melodies as SharedMelody[])
+    if (sessions.length > 0) setDbSessions(sessions as SharedSession[])
+  })
+
+  // Load shared data from localStorage + DB
   const sharedMelodies = createMemo(() => {
+    const db = dbMelodies()
+    let stored: SharedMelody[] = []
     try {
-      const stored = localStorage.getItem('pp_shared_melodies')
-      if (stored !== null) {
-        return JSON.parse(stored) as SharedMelody[]
-      }
+      const raw = localStorage.getItem('pp_shared_melodies')
+      if (raw !== null) stored = JSON.parse(raw) as SharedMelody[]
     } catch {
       /* localStorage not available */
     }
-    return []
+    // DB data takes priority; merge localStorage items not in DB
+    const dbIds = new Set(db.map((m) => m.id))
+    return [...db, ...stored.filter((m) => !dbIds.has(m.id))]
   })
 
   const sharedSessions = createMemo(() => {
+    const db = dbSessions()
+    let stored: SharedSession[] = []
     try {
-      const stored = localStorage.getItem('pp_shared_sessions')
-      if (stored !== null) {
-        return JSON.parse(stored) as SharedSession[]
-      }
+      const raw = localStorage.getItem('pp_shared_sessions')
+      if (raw !== null) stored = JSON.parse(raw) as SharedSession[]
     } catch {
       /* localStorage not available */
     }
-    return []
+    const dbIds = new Set(db.map((s) => s.id))
+    return [...db, ...stored.filter((s) => !dbIds.has(s.id))]
   })
 
-  // Current user profile (in-memory for demo)
+  // Current user profile (DB-backed with localStorage fallback)
   const currentProfile = createMemo(() => {
     const userId = localStorage.getItem('pp_user_id') ?? `user_${Date.now()}`
     localStorage.setItem('pp_user_id', userId)
@@ -446,11 +477,15 @@ export const CommunityShare: Component = () => {
     const _maxStreak = 5
     const currentStreak = 2
 
+    const dbProf = dbProfile()
+
     return {
       userId,
-      displayName: 'SingerPro',
+      displayName: dbProf?.displayName ?? 'SingerPro',
       avatar: IconMic(),
-      bio: 'PitchPerfect enthusiast • Learning vocals • Member since 2026',
+      bio:
+        dbProf?.bio ??
+        'PitchPerfect enthusiast • Learning vocals • Member since 2026',
       streak: currentStreak,
       totalSessions: sessions.length,
       bestScore:
@@ -458,7 +493,7 @@ export const CommunityShare: Component = () => {
           ? Math.max(...sessions.map((s) => s.score || 0))
           : 0,
       accuracy: sessions.length > 0 ? avgScore : 0,
-      joinDate: Date.now() - 1000 * 60 * 60 * 24 * 30, // 30 days ago
+      joinDate: dbProf?.joinDate ?? Date.now() - 1000 * 60 * 60 * 24 * 30,
     }
   })
 
@@ -525,6 +560,13 @@ export const CommunityShare: Component = () => {
 
     const updated = [...sharedMelodies(), shareable]
     localStorage.setItem('pp_shared_melodies', JSON.stringify(updated))
+    // Dual-write to DB (fire-and-forget)
+    saveSharedMelodyToDb({
+      name: shareable.name,
+      items: shareable.items,
+      author: shareable.author,
+      tags: shareable.tags,
+    })
     alert('Melody shared successfully!')
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -548,6 +590,13 @@ export const CommunityShare: Component = () => {
 
     const updated = [...sharedSessions(), shareable]
     localStorage.setItem('pp_shared_sessions', JSON.stringify(updated))
+    // Dual-write to DB (fire-and-forget)
+    saveSharedSessionToDb({
+      name: shareable.name,
+      items: shareable.items,
+      author: shareable.author,
+      results: shareable.results,
+    })
     alert('Session shared successfully!')
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }

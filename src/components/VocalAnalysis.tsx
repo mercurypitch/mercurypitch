@@ -3,10 +3,11 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createMemo, createSignal, For, onCleanup, Show } from 'solid-js'
+import { createMemo, createSignal, For, onCleanup, onMount, Show } from 'solid-js'
 import { frequenciesToNoteName } from '@/lib/frequency-to-note'
 import { getSessionHistory } from '@/stores'
 import type { PitchResult, PracticeResult, SessionResult } from '@/types'
+import { loadSessionRecords } from '@/db/services/session-service'
 
 // ============================================================
 // SVG Icons
@@ -158,7 +159,39 @@ export const VocalAnalysis: Component = () => {
   const [spectralData, setSpectralData] = createSignal<SpectrumData[]>([])
   const [vocalRunData, setVocalRunData] = createSignal<PitchResult[]>([])
   const [isAnalyzing, setIsAnalyzing] = createSignal(false)
-  const [history] = createSignal<SessionResult[]>(getSessionHistory())
+  const [dbSessionRecords, setDbSessionRecords] = createSignal<
+    SessionResult[]
+  >([])
+
+  onMount(async () => {
+    const records = await loadSessionRecords(50)
+    if (records.length > 0) {
+      setDbSessionRecords(
+        records.map((r) => ({
+          sessionId: r.id,
+          name: r.melodyName,
+          sessionName: r.melodyName,
+          completedAt: new Date(r.endedAt).getTime(),
+          itemsCompleted: r.notesHit,
+          practiceItemResult: [],
+          totalItems: r.notesTotal,
+          score: r.score,
+        })),
+      )
+    }
+  })
+
+  // Merge localStorage and DB session history
+  const history = createMemo(() => {
+    const local = getSessionHistory()
+    const db = dbSessionRecords()
+    const dbIds = new Set(local.map((s) => s.sessionId))
+    const newFromDb = db.filter((s) => !dbIds.has(s.sessionId))
+    return [...local, ...newFromDb].sort(
+      (a, b) => (b.completedAt ?? 0) - (a.completedAt ?? 0),
+    )
+  })
+
   const [_selectedDate, _setSelectedDate] = createSignal<string>('all')
 
   // Get recent session scores
