@@ -11,6 +11,7 @@ import { buildMidiFile, DEFAULT_BPM, detectNotes, mergeConsecutiveNotes, MIDI_NO
 import type { DetectedPitch } from '@/lib/pitch-detector'
 import { PitchDetector } from '@/lib/pitch-detector'
 import { freqToMidi, midiToNote } from '@/lib/scale-data'
+import { showNotification } from '@/stores/notifications-store'
 import { ChevronLeft, Download, Ear, Mic, Pause, Play, Share, SkipBack, SlidersHorizontal, Volume2, VolumeX, } from './icons'
 import type { LyricsUploadResult } from './LyricsUploader'
 import { LyricsUploader } from './LyricsUploader'
@@ -520,7 +521,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       }
 
       if (total > 0 && loaded === 0) {
-        setLoadError('Failed to load any stems')
+        const msg = 'Stems could not be loaded. Audio data may have been lost after a page reload.'
+        setLoadError(msg)
+        showNotification(msg, 'warning')
       }
 
       // MIDI processing — detect notes & synthesize audio when practiceMode is 'midi'
@@ -551,7 +554,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         }
       }
     } catch (e) {
-      setLoadError(e instanceof Error ? e.message : 'Failed to load stems')
+      const msg = e instanceof Error ? e.message : 'Failed to load stems'
+      setLoadError(msg)
+      showNotification(`Stem loading failed: ${msg}`, 'error')
     } finally {
       setLoading(false)
     }
@@ -1882,13 +1887,12 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       if (!track.buffer) continue
 
       const isAudible = track.soloed || (!track.muted && !anySoloed())
-      if (!isAudible) continue
 
       const src = ctx.createBufferSource()
       src.buffer = track.buffer
 
       const gain = ctx.createGain()
-      gain.gain.value = track.volume
+      gain.gain.value = isAudible ? track.volume : 0
 
       const analyser = ctx.createAnalyser()
       analyser.fftSize = FFT_SIZE

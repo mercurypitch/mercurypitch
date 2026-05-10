@@ -100,32 +100,45 @@
 .uvr-mode-toggle {
   display: flex;
   align-items: center;
-  gap: 0;
+  gap: 0.25rem;
   margin-right: 0.5rem;
   background: var(--bg-tertiary);
   border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  overflow: hidden;
+  border-radius: 2rem;
+  padding: 0.25rem;
 }
 
 .mode-toggle-btn {
-  padding: 0.25rem 0.6rem;
+  padding: 0.25rem 0.8rem;
   font-size: 0.75rem;
-  font-weight: 500;
+  font-weight: 600;
   background: transparent;
   border: none;
+  border-radius: 1.5rem;
   color: var(--fg-secondary);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.mode-toggle-btn:hover {
+.mode-toggle-btn:hover:not(.active) {
   color: var(--fg-primary);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .mode-toggle-btn.active {
   background: var(--accent);
   color: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.mode-toggle-btn-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.mode-toggle-btn-disabled:hover:not(.active) {
+  background: transparent;
+  color: var(--fg-secondary);
 }
 
 /* Model Status Badge */
@@ -342,35 +355,41 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 3rem 1rem;
+  padding: 4rem 1rem;
   color: var(--fg-tertiary);
+  grid-column: 1 / -1;
+  min-height: 40vh;
 }
 
 .history-empty svg {
-  width: 3rem;
-  height: 3rem;
-  margin-bottom: 1rem;
+  width: 3.5rem;
+  height: 3.5rem;
+  margin-bottom: 1.25rem;
+  opacity: 0.5;
 }
 
 .history-empty p {
-  margin: 0 0 1rem;
-  font-size: 0.9rem;
+  margin: 0 0 1.25rem;
+  font-size: 0.95rem;
 }
 
 .history-empty button {
-  padding: 0.625rem 1.25rem;
+  padding: 0.625rem 1.5rem;
   background: var(--accent);
   color: var(--bg-primary);
   border: none;
-  border-radius: 0.5rem;
+  border-radius: 2rem;
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .history-empty button:hover {
   opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 /* Section Header Actions */
@@ -1766,11 +1785,23 @@
 }
 
 .rv-processing-time {
-  font-size: 0.72rem;
-  color: var(--fg-tertiary);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--fg-secondary);
   background: var(--bg-tertiary);
-  padding: 0.15rem 0.5rem;
-  border-radius: 0.3rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 2rem;
+  white-space: nowrap;
+}
+
+.rv-time-icon {
+  display: flex;
+  width: 14px;
+  height: 14px;
+  color: var(--accent);
 }
 
 .rv-header-right {
@@ -2259,4 +2290,41 @@
 .share-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* ============================================================
+// Process Control Meta & Status Provider Pill
+// ============================================================ */
+
+.process-meta-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.status-provider {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--bg-tertiary);
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+.status-bar .status-provider {
+  margin-left: auto;
+}
+
+.provider-icon {
+  display: flex;
+  width: 14px;
+  height: 14px;
+  color: var(--fg-secondary);
+}
+
+.provider-icon.provider-gpu {
+  color: var(--accent);
 }
