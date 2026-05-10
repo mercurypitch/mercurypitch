@@ -15,7 +15,7 @@
     "serve": "npx http-server dist -p 4173 -c-1",
     "typecheck": "tsc --noEmit",
     "fmt": "prettier src --check",
-    "fmt:write": "prettier src --write",
+    "fmt:write": "prettier src --write --log-level warn",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
     "lines": "cloc src --exclude-dir=node_modules,dist --by-file-by-lang --not-match-f='(.*[.]d[.]ts|.*[.]stories[.].*|.*[.]test[.].*|.*[.]json)'",

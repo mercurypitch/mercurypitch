@@ -24,6 +24,7 @@ interface ResultViewerProps {
   sessionId?: string
   originalFileName?: string
   onStartPractice?: (mode: 'vocal' | 'instrumental' | 'full' | 'midi') => void
+  onStartMix?: (selectedStems: string[]) => void
   onOpenMixer?: (sessionId: string) => void
   onExport?: (
     type: 'vocal' | 'instrumental' | 'vocal-midi' | 'instrumental-midi',
@@ -177,6 +178,35 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
 
     return list
   }
+  const [selectedKeys, setSelectedKeys] = createSignal<Set<string>>(new Set())
+
+  const toggleSelected = (key: string) => {
+    setSelectedKeys((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) {
+        next.delete(key)
+      } else {
+        next.add(key)
+      }
+      return next
+    })
+  }
+
+  const selectedCount = () => selectedKeys().size
+
+  const handleMixPlay = () => {
+    const keys = selectedKeys()
+    if (keys.size < 2) return
+    props.onStartMix?.([...keys])
+  }
+
+  const selectedLabel = () => {
+    const keys = selectedKeys()
+    const labels = stems()
+      .filter((s) => keys.has(s.key))
+      .map((s) => s.label)
+    return labels.join(' + ')
+  }
 
   return (
     <div class="uvr-result-viewer">
@@ -220,9 +250,53 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
         <For each={stems()}>
           {(stem) => {
             const meta = props.stemMeta?.[stem.key]
+            const isSelected = () => selectedKeys().has(stem.key)
             return (
-              <div class="rv-stem-card" style={{ '--stem-color': stem.color }}>
+              <div
+                class="rv-stem-card"
+                classList={{ 'rv-stem-card-selected': isSelected() }}
+                style={{ '--stem-color': stem.color }}
+                onClick={() => toggleSelected(stem.key)}
+              >
                 <div class="rv-stem-card-top">
+                  <div
+                    class="rv-stem-select"
+                    classList={{ 'rv-stem-select-active': isSelected() }}
+                  >
+                    <Show
+                      when={isSelected()}
+                      fallback={
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          width="100%"
+                          height="100%"
+                        >
+                          <circle cx="12" cy="12" r="10" />
+                        </svg>
+                      }
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        width="100%"
+                        height="100%"
+                      >
+                        <circle
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          fill="currentColor"
+                          opacity="0.15"
+                        />
+                        <polyline points="8 12 11 15 16 9" />
+                      </svg>
+                    </Show>
+                  </div>
                   <div class="rv-stem-icon" style={{ color: stem.color }}>
                     {<stem.icon />}
                   </div>
@@ -243,7 +317,10 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
                     </div>
                   </div>
                 </div>
-                <div class="rv-stem-card-actions">
+                <div
+                  class="rv-stem-card-actions"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <button
                     class="rv-stem-btn rv-stem-btn-play"
                     onClick={() => handleStartPractice(stem.practiceMode)}
@@ -305,7 +382,7 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
         </For>
       </div>
 
-      {/* Full Mix Card */}
+      {/* Full Mix — always visible when both stems exist */}
       <Show
         when={
           props.outputs?.vocal !== undefined &&
@@ -329,15 +406,28 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
             >
               <Play /> Play
             </button>
+          </div>
+        </div>
+      </Show>
+
+      {/* Mix Selected — only when individual stems are checked */}
+      <Show when={selectedCount() >= 2}>
+        <div class="rv-mix-selected-card">
+          <div class="rv-full-mix-left">
+            <div class="rv-stem-icon" style={{ color: '#8b5cf6' }}>
+              <SlidersHorizontal />
+            </div>
+            <div class="rv-stem-info">
+              <span class="rv-stem-name">Mix Selected</span>
+              <span class="rv-stem-format">{selectedLabel()}</span>
+            </div>
+          </div>
+          <div class="rv-full-mix-actions">
             <button
-              class="rv-stem-btn rv-stem-btn-mixer"
-              onClick={() => {
-                if (props.sessionId !== undefined) {
-                  handleStartPractice('full')
-                }
-              }}
+              class="rv-stem-btn rv-stem-btn-play"
+              onClick={handleMixPlay}
             >
-              <SlidersHorizontal /> Mix
+              <Play /> Play
             </button>
           </div>
         </div>
