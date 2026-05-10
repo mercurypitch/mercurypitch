@@ -903,41 +903,80 @@ function loadBooleanFlag(key: string, defaultValue: boolean): boolean {
   return defaultValue
 }
 
-function saveBooleanFlag(key: string, value: boolean): void {
-  try {
-    localStorage.setItem(key, value ? 'true' : 'false')
-  } catch {
-    /* empty */
-  }
-}
-
 const ADVANCED_FEATURES_KEY = 'pitchperfect_advanced_features'
+const DEV_FEATURES_KEY = 'pitchperfect_dev_features'
+
 const initialAdvanced = IS_DEV
   ? true
   : loadBooleanFlag(ADVANCED_FEATURES_KEY, false)
+const initialDev = IS_DEV
+  ? true
+  : loadBooleanFlag(DEV_FEATURES_KEY, false)
+
 const [advancedFeaturesEnabledState, setAdvancedFeaturesEnabledState] =
   createSignal(initialAdvanced)
-if (IS_DEV) saveBooleanFlag(ADVANCED_FEATURES_KEY, true)
+const [devFeaturesEnabledState, setDevFeaturesEnabledState] =
+  createSignal(initialDev)
 
 export const advancedFeaturesEnabled = (): boolean =>
   advancedFeaturesEnabledState()
 
-export const setAdvancedFeaturesEnabled = (enabled: boolean): void => {
-  setAdvancedFeaturesEnabledState(enabled)
-  saveBooleanFlag(ADVANCED_FEATURES_KEY, enabled)
+export const devFeaturesEnabled = (): boolean => devFeaturesEnabledState()
+
+/** Persist a feature flag to the database layer (falls back to localStorage). */
+async function persistFeatureFlag(
+  key: string,
+  value: boolean,
+): Promise<void> {
+  try {
+    const { getDb } = await import('@/db')
+    const db = await getDb()
+    const repo = db.getRepository<
+      import('@/db').FeatureFlag
+    >('featureFlags')
+    const existing = await repo.findAll({ where: { key } as Partial<import('@/db').FeatureFlag> })
+    if (existing.length > 0) {
+      await repo.update(existing[0].id, { value })
+    } else {
+      await repo.create({ key, value })
+    }
+  } catch {
+    try {
+      localStorage.setItem(key, String(value))
+    } catch {
+      /* empty */
+    }
+  }
 }
 
-const DEV_FEATURES_KEY = 'pitchperfect_dev_features'
-const initialDev = IS_DEV ? true : loadBooleanFlag(DEV_FEATURES_KEY, false)
-const [devFeaturesEnabledState, setDevFeaturesEnabledState] =
-  createSignal(initialDev)
-if (IS_DEV) saveBooleanFlag(DEV_FEATURES_KEY, true)
-
-export const devFeaturesEnabled = (): boolean => devFeaturesEnabledState()
+export const setAdvancedFeaturesEnabled = (enabled: boolean): void => {
+  setAdvancedFeaturesEnabledState(enabled)
+  persistFeatureFlag(ADVANCED_FEATURES_KEY, enabled)
+}
 
 export const setDevFeaturesEnabled = (enabled: boolean): void => {
   setDevFeaturesEnabledState(enabled)
-  saveBooleanFlag(DEV_FEATURES_KEY, enabled)
+  persistFeatureFlag(DEV_FEATURES_KEY, enabled)
+}
+
+/** Sync feature flags from DB on startup. Call once after DB is ready. */
+export async function initFeatureFlagsFromDb(): Promise<void> {
+  try {
+    const { getDb } = await import('@/db')
+    const db = await getDb()
+    const repo = db.getRepository<
+      import('@/db').FeatureFlag
+    >('featureFlags')
+    const flags = await repo.findAll()
+    for (const flag of flags) {
+      if (flag.key === ADVANCED_FEATURES_KEY)
+        setAdvancedFeaturesEnabledState(flag.value)
+      if (flag.key === DEV_FEATURES_KEY)
+        setDevFeaturesEnabledState(flag.value)
+    }
+  } catch {
+    // DB not available, keep current signal values
+  }
 }
 
 // ── App Crash / Error Handling ────────────────────────────────────────

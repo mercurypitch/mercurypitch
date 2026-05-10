@@ -5,6 +5,24 @@
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, onMount, Show } from 'solid-js'
 import { getSessionHistory } from '@/stores'
+import {
+  loadChallengeDefinitions,
+  loadChallengeProgress,
+  loadBadgeDefinitions,
+  loadUserBadges,
+  loadAchievementDefinitions,
+  loadUserAchievements,
+  saveChallengeProgress,
+} from '@/db/services/challenges-service'
+import type {
+  ChallengeDefinition as DBChallengeDefinition,
+  ChallengeProgress as DBChallengeProgress,
+  BadgeDefinition as DBBadgeDefinition,
+  UserBadge as DBUserBadge,
+  Achievement as DBAchievement,
+  UserAchievement as DBUserAchievement,
+} from '@/db/entities'
+import { getUserId } from '@/db/seed'
 
 // Alternative: directly render icon with casting
 const renderIcon = (icon: Component | string) => {
@@ -584,7 +602,7 @@ export const VocalChallenges: Component = () => {
   const [activeCategory, setActiveCategory] =
     createSignal<ChallengeType>('high-notes')
 
-  // Update challenge progress
+  // Update challenge progress (also saves to DB)
   function updateChallengeProgress(
     challengeId: string,
     score: number,
@@ -628,6 +646,23 @@ export const VocalChallenges: Component = () => {
 
     progress[progressKey] = saved
     saveProgress(progress)
+
+    // Also save to DB
+    const def = dbChallengeDefs().find((d) => d.id === challengeId)
+    if (def) {
+      saveChallengeProgress({
+        userId: getUserId(),
+        challengeId,
+        progress: saved.progress,
+        currentScore: saved.currentScore,
+        bestScore: Math.max(
+          ...(saved.actualScores ?? [saved.currentScore]),
+        ),
+        status: saved.status === 'completed' ? 'completed' : 'active',
+        completed: saved.status === 'completed',
+        attempts: (saved.actualScores?.length ?? 1),
+      })
+    }
   }
 
   // Start challenge handler
@@ -684,7 +719,15 @@ export const VocalChallenges: Component = () => {
   // Load session history for real progress tracking
   const sessionHistory = createMemo(() => getSessionHistory())
 
-  // Challenge progress stored in localStorage
+  // DB-backed data signals
+  const [dbChallengeDefs, setDbChallengeDefs] = createSignal<DBChallengeDefinition[]>([])
+  const [dbChallengeProg, setDbChallengeProg] = createSignal<DBChallengeProgress[]>([])
+  const [dbBadgeDefs, setDbBadgeDefs] = createSignal<DBBadgeDefinition[]>([])
+  const [dbUserBadges, setDbUserBadges] = createSignal<DBUserBadge[]>([])
+  const [dbAchievementDefs, setDbAchievementDefs] = createSignal<DBAchievement[]>([])
+  const [dbUserAchievements, setDbUserAchievements] = createSignal<DBUserAchievement[]>([])
+
+  // Challenge progress stored in localStorage (legacy fallback)
   const [userProgress, setUserProgress] =
     createSignal<UserChallengeProgress | null>(null)
 
@@ -717,8 +760,25 @@ export const VocalChallenges: Component = () => {
     }))
   })
 
-  // Load user progress from localStorage
-  onMount(() => {
+  // Load data from DB (with legacy localStorage fallback)
+  onMount(async () => {
+    // Load challenge definitions & progress from DB
+    const [defs, prog, badgeDefs, userBadges, achDefs, userAchs] = await Promise.all([
+      loadChallengeDefinitions(),
+      loadChallengeProgress(),
+      loadBadgeDefinitions(),
+      loadUserBadges(),
+      loadAchievementDefinitions(),
+      loadUserAchievements(),
+    ])
+    setDbChallengeDefs(defs)
+    setDbChallengeProg(prog)
+    setDbBadgeDefs(badgeDefs)
+    setDbUserBadges(userBadges)
+    setDbAchievementDefs(achDefs)
+    setDbUserAchievements(userAchs)
+
+    // Legacy localStorage fallback
     try {
       const stored = localStorage.getItem('pp_challenge_progress')
       if (stored !== null) {
@@ -729,7 +789,7 @@ export const VocalChallenges: Component = () => {
     }
   })
 
-  // Save user progress to localStorage
+  // Save user progress to localStorage + DB
   const saveProgress = (progress: UserChallengeProgress | null) => {
     setUserProgress(progress)
     if (progress) {
@@ -763,12 +823,72 @@ export const VocalChallenges: Component = () => {
     return streak
   }
 
+  // Map emoji icon strings (from DB) to component icon functions
+  function iconForEmoji(emoji: string): Component | string {
+    const map: Record<string, Component> = {
+      '🎤': IconMicChallenge,
+      '🔥': IconFireChallenge,
+      '🚀': IconRocket,
+      '🎸': IconGuitarChallenge,
+      '🔊': IconVolume,
+      '⚡': IconBoltChallenge,
+      '⏱️': IconStopwatch,
+      '🦅': IconEagle,
+      '🎯': IconTarget,
+      '💎': IconDiamond,
+      '🎹': IconKeyboardChallenge,
+      '🌙': IconMoon,
+      '🌱': IconLeaf,
+      '🎵': IconMusic,
+      '👑': IconCrown,
+      '✨': IconSparkle,
+      '📄': IconPaper,
+      '📊': IconChart,
+    }
+    return map[emoji] || emoji
+  }
+
+  function mapDbStatus(status: string): ChallengeProgress['status'] {
+    if (status === 'completed') return 'completed'
+    if (status === 'active') return 'in-progress'
+    return 'not-started'
+  }
+
   // Challenges data (merged with real progress)
   function getChallengesForCategory(
     category: ChallengeType,
   ): ChallengeProgress[] {
-    let challenges: ChallengeProgress[] = []
+    const defs = dbChallengeDefs()
+    const progress = userProgress()
 
+    if (defs.length > 0) {
+      return defs
+        .filter((d) => d.category === category)
+        .map((d) => {
+          const dbProg = dbChallengeProg().find((p) => p.challengeId === d.id)
+          const localProg = progress?.[`ch-${d.id}`]
+          return {
+            id: d.id,
+            type: d.category,
+            name: d.title,
+            description: d.description,
+            icon: iconForEmoji(d.icon),
+            targetScore: d.targetScore,
+            currentScore: dbProg?.currentScore ?? localProg?.currentScore ?? 0,
+            progress: dbProg?.progress ?? localProg?.progress ?? 0,
+            status:
+              dbProg
+                ? mapDbStatus(dbProg.status)
+                : localProg?.status ?? 'not-started',
+            unlockedDate: localProg?.unlockedDate,
+            completedDate: localProg?.completedDate,
+            actualScores: localProg?.actualScores ?? [],
+          }
+        })
+    }
+
+    // Fall back to mock data, merged with localStorage progress
+    let challenges: ChallengeProgress[] = []
     switch (category) {
       case 'high-notes':
         challenges = mockChallenges.filter((c) => c.type === 'high-notes')
@@ -787,13 +907,9 @@ export const VocalChallenges: Component = () => {
         break
     }
 
-    // Merge real progress with mock challenge data
     return challenges.map((c) => {
-      const challengeKey = `ch-${c.id}`
-      const storedProgress = (userProgress() || {})[challengeKey]
-      if (storedProgress !== undefined) {
-        return storedProgress
-      }
+      const storedProgress = (progress || {})[`ch-${c.id}`]
+      if (storedProgress !== undefined) return storedProgress
       return c
     })
   }
@@ -803,8 +919,27 @@ export const VocalChallenges: Component = () => {
     getChallengesForCategory(activeCategory()),
   )
 
-  // Calculate user badges from session history
+  // Calculate user badges (DB-backed with mock fallback)
   function getBadges(): UserBadge[] {
+    const badgeDefs = dbBadgeDefs()
+    if (badgeDefs.length > 0) {
+      return badgeDefs.map((def) => {
+        const userBadge = dbUserBadges().find((ub) => ub.badgeId === def.id)
+        return {
+          id: def.id,
+          name: def.name,
+          description: def.description,
+          icon: iconForEmoji(def.icon),
+          tier: def.tier,
+          earned: !!userBadge,
+          earnedDate: userBadge
+            ? new Date(userBadge.earnedAt).getTime()
+            : 0,
+        }
+      })
+    }
+
+    // Fall back to mock data with session-based computation
     const sessions = sessionHistory()
     const totalSessions = sessions.length
     const bestScore =
@@ -871,8 +1006,31 @@ export const VocalChallenges: Component = () => {
     })
   }
 
-  // Calculate user achievements from session history
+  // Calculate user achievements (DB-backed with mock fallback)
   function getAchievements(): UserAchievement[] {
+    const achDefs = dbAchievementDefs()
+    if (achDefs.length > 0) {
+      return achDefs.map((def) => {
+        const userAch = dbUserAchievements().find(
+          (ua) => ua.achievementId === def.id,
+        )
+        return {
+          id: def.id,
+          name: def.name,
+          description: def.description,
+          icon: iconForEmoji(def.icon),
+          points: def.points,
+          unlocked: userAch?.unlocked ?? false,
+          unlockedDate: userAch?.unlockedAt
+            ? new Date(userAch.unlockedAt).getTime()
+            : undefined,
+          progress: userAch?.progress ?? 0,
+          required: def.required,
+        }
+      })
+    }
+
+    // Fall back to mock data with session-based computation
     const sessions = sessionHistory()
     const totalSessions = sessions.length
     const bestScore =
