@@ -254,16 +254,16 @@ function modelOutputToStft(
   return result
 }
 
-function applyWienerMask(
+function subtractStft(
   originalStft: Float32Array,
   instrStft: Float32Array,
-  nFreq: number,
-  nFrames: number,
 ): { instrumental: Float32Array; vocal: Float32Array } {
-  const len = nFreq * nFrames * 2
+  // The model output IS the instrumental stem. Vocal = Original - Instrumental
+  // in the complex STFT domain. This avoids the phase artifacts that occur
+  // when subtracting after separate iSTFT round-trips.
+  const len = originalStft.length
   const instrumental = new Float32Array(len)
   const vocal = new Float32Array(len)
-  const eps = 1e-8
 
   for (let i = 0; i < len; i += 2) {
     const origR = originalStft[i]
@@ -271,22 +271,10 @@ function applyWienerMask(
     const instrR = instrStft[i]
     const instrI = instrStft[i + 1]
 
-    // Vocal = Original - Instrumental (complex subtraction in STFT domain)
-    const vocalR = origR - instrR
-    const vocalI = origI - instrI
-
-    // Magnitudes squared
-    const instrMag2 = instrR * instrR + instrI * instrI
-    const vocalMag2 = vocalR * vocalR + vocalI * vocalI
-
-    // Wiener-like soft mask: avoids hard 0/1 decisions that cause artifacts
-    const mask = instrMag2 / (instrMag2 + vocalMag2 + eps)
-
-    // Apply masks to original STFT (preserves phase from original)
-    instrumental[i] = mask * origR
-    instrumental[i + 1] = mask * origI
-    vocal[i] = (1 - mask) * origR
-    vocal[i + 1] = (1 - mask) * origI
+    instrumental[i] = instrR
+    instrumental[i + 1] = instrI
+    vocal[i] = origR - instrR
+    vocal[i + 1] = origI - instrI
   }
 
   return { instrumental, vocal }
@@ -299,19 +287,14 @@ function applyWienerMask(
 async function processChunk(
   audioChunk: Float32Array,
 ): Promise<{ instrumental: Float32Array; vocals: Float32Array }> {
-  // STFT → save copy → zero bins → ONNX → instrument STFT → soft mask → iSTFT both
+  // STFT → save copy → zero bins → ONNX → instrument STFT → subtract → iSTFT both
   const stft = stftForward(audioChunk, N_FFT, HOP_LENGTH)
   const originalStft = new Float32Array(stft.data)
   processStftForModel(stft.data, stft.nFreq, stft.nFrames)
   const modelOutput = await runInference(stft.data, stft.nFreq, stft.nFrames)
   const instrStft = modelOutputToStft(modelOutput, stft.nFreq, stft.nFrames)
 
-  const { instrumental, vocal: vocals } = applyWienerMask(
-    originalStft,
-    instrStft,
-    stft.nFreq,
-    stft.nFrames,
-  )
+  const { instrumental, vocal: vocals } = subtractStft(originalStft, instrStft)
 
   const stftParams = {
     nFreq: stft.nFreq,
