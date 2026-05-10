@@ -81,6 +81,7 @@ async function processLocal(
   sessionId: string,
   callbacks: ProcessingCallbacks,
 ): Promise<void> {
+  const startTime = Date.now()
   const sep = await getSeparator()
 
   // Decode audio
@@ -115,7 +116,8 @@ async function processLocal(
   }
 
   sep.onProgress = (pct) => {
-    updateUvrSessionProgress(sessionId, pct)
+    const elapsed = Date.now() - startTime
+    updateUvrSessionProgress(sessionId, pct, elapsed)
     callbacks.onProgress(pct)
   }
 

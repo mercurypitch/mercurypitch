@@ -69,8 +69,9 @@ export type WorkerOutMessage =
 // Constants
 // ---------------------------------------------------------------------------
 
-const N_FFT = 6142 // produces nFreq = N_FFT/2+1 = 3072 matching model input dim
+const N_FFT = 6144 // Standard MDX FFT size
 const HOP_LENGTH = 1024
+const MODEL_BINS = 3072         // Model expects exactly 3072 frequency bins
 const ZERO_BINS = 3             // zero first N frequency bins before ONNX
 
 // ---------------------------------------------------------------------------
@@ -142,9 +143,9 @@ function createModelInput(
   nFreq: number,
   nFrames: number,
 ): Float32Array {
-  // Model expects [1, 4, nFreq, nFrames] where 4 = stereo × (real+imag)
+  // Model expects [1, 4, MODEL_BINS, nFrames] where 4 = stereo × (real+imag)
   // We produce mono → duplicate for left/right channels
-  const totalBins = nFreq * nFrames
+  const totalBins = MODEL_BINS * nFrames
   const output = new Float32Array(4 * totalBins)
 
   // Channel 0 (left, real): copy real part
@@ -152,7 +153,8 @@ function createModelInput(
   // Channel 2 (right, real): copy real part (mono → stereo)
   // Channel 3 (right, imag): copy imag part (mono → stereo)
   for (let frame = 0; frame < nFrames; frame++) {
-    for (let f = 0; f < nFreq; f++) {
+    for (let f = 0; f < MODEL_BINS; f++) {
+      // f is safely < nFreq because MODEL_BINS is 3072 and nFreq is 3073
       const srcIdx = frame * nFreq * 2 + f * 2
       const dstBase = f * nFrames + frame
       const real = stftData[srcIdx]
@@ -174,7 +176,7 @@ async function runInference(
   if (!ort || !session) throw new Error('Model not initialized')
 
   const inputData = createModelInput(stftData, nFreq, nFrames)
-  const tensor = new ort.Tensor('float32', inputData, [1, 4, nFreq, nFrames])
+  const tensor = new ort.Tensor('float32', inputData, [1, 4, MODEL_BINS, nFrames])
 
   const feeds: Record<string, Tensor> = {}
   // The ONNX model has a single input — use the first input name
@@ -195,18 +197,19 @@ function modelOutputToStft(
   nFreq: number,
   nFrames: number,
 ): Float32Array {
-  // Model outputs [1, 4, nFreq, nFrames] — we take left channel only (first 2 of 4)
+  // Model outputs [1, 4, MODEL_BINS, nFrames] — we take left channel only (first 2 of 4)
   // and re-interleave into complex format
-  const totalBins = nFreq * nFrames
+  const totalBins = MODEL_BINS * nFrames
   const result = new Float32Array(nFreq * nFrames * 2)
 
   for (let frame = 0; frame < nFrames; frame++) {
-    for (let f = 0; f < nFreq; f++) {
+    for (let f = 0; f < MODEL_BINS; f++) {
       const srcBase = f * nFrames + frame
       const dstIdx = frame * nFreq * 2 + f * 2
       result[dstIdx] = modelOutput[0 * totalBins + srcBase]     // real
       result[dstIdx + 1] = modelOutput[1 * totalBins + srcBase] // imag
     }
+    // The Nyquist bin (f = 3072) remains 0.0 in the result since the model didn't predict it
   }
   return result
 }
