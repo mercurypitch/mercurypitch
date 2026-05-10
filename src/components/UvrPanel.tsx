@@ -7,6 +7,7 @@ import { createEffect, createSignal, For, onCleanup, Show } from 'solid-js'
 import { generateVocalMidi } from '@/lib/midi-generator'
 import { getProcessStatus } from '@/lib/uvr-api'
 import { cancelUvrPipeline, destroyPipeline, preInitModel, runUvrPipeline, } from '@/lib/uvr-processing-pipeline'
+import { hydrateStemUrls } from '@/db/services/uvr-service'
 import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
 import { cancelUvrSession, completeUvrSession, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, getAllUvrSessions, getAllUvrSessionsReactive, getUvrProcessingMode, getUvrSession, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrProcessingMode, startUvrSession, updateUvrSessionOutputs, uvrProcessingMode, } from '@/stores/app-store'
 import { showNotification } from '@/stores/notifications-store'
@@ -283,6 +284,29 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       ) {
         refreshSessionOutputs(session)
       }
+      // For local-mode sessions, hydrate blob URLs from IndexedDB
+      // (blob: URLs from localStorage are dead after page reload)
+      if (
+        session.processingMode === 'local' &&
+        session.status === 'completed'
+      ) {
+        void hydrateStemUrls(sessionId).then((urls) => {
+          if (urls) {
+            const updated = {
+              ...session,
+              outputs: { ...session.outputs, ...urls },
+            }
+            setCurrentUvrSession(updated)
+            // Also persist the updated outputs to localStorage
+            const all = getAllUvrSessions()
+            const idx = all.findIndex((s) => s.sessionId === sessionId)
+            if (idx !== -1) {
+              all[idx] = { ...all[idx], outputs: { ...all[idx].outputs, ...urls } }
+              saveAllUvrSessions(all)
+            }
+          }
+        })
+      }
     }
     setCurrentView('results')
   }
@@ -485,6 +509,27 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       } catch {
         // API unavailable — keep stored data
       }
+    }
+
+    // Hydrate local-mode sessions from IndexedDB (blob URLs stale after reload)
+    const localSessions = sessionToRefresh
+      ? [sessionToRefresh].filter(
+          (s) => s.processingMode === 'local' && s.status === 'completed',
+        )
+      : getAllUvrSessions().filter(
+          (s) => s.processingMode === 'local' && s.status === 'completed',
+        )
+    for (const s of localSessions) {
+      void hydrateStemUrls(s.sessionId).then((urls) => {
+        if (urls) {
+          const all = getAllUvrSessions()
+          const idx = all.findIndex((x) => x.sessionId === s.sessionId)
+          if (idx !== -1) {
+            all[idx] = { ...all[idx], outputs: { ...all[idx].outputs, ...urls } }
+            saveAllUvrSessions(all)
+          }
+        }
+      })
     }
   }
 

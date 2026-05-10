@@ -50,4 +50,6 @@ export type {
   MelodyRecord,
   SessionTemplate,
   PlaylistRecord,
+  UvrSessionRecord,
+  UvrStemBlob,
 } from './entities'

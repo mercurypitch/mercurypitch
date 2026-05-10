@@ -24,6 +24,8 @@ const STORE_SCHEMAS: Record<string, string> = {
   sharedSessions: 'id, userId, sessionId, isPublic',
   featureFlags: 'id, &key',
   userSettings: 'id, userId, key',
+  uvrSessions: 'id, appSessionId, userId, status, createdAt',
+  uvrStemBlobs: 'id, sessionId, stemType',
 }
 
 // ── DexieDatabase class ─────────────────────────────────────────
