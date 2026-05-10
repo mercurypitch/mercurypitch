@@ -106,7 +106,12 @@ async function processLocal(
     audio.set(audioBuffer.getChannelData(0))
   }
 
-  if (sep.provider !== undefined && sep.provider !== '') setUvrSessionProvider(sessionId, sep.provider)
+  if (
+    sep.provider !== undefined &&
+    sep.provider !== null &&
+    sep.provider !== ''
+  )
+    setUvrSessionProvider(sessionId, sep.provider)
 
   // Store chunk count for UI
   const numChunks = computeChunkRanges(audio.length, UVR_CHUNK_CONFIG).length

@@ -20,6 +20,7 @@ export default defineConfig(
       'src/index.js',
       'src/index.tsx',
       'src/lib/engine-bridge.ts',
+      'src/uvr-container.js',
       'e2e-server.js',
     ],
   },
@@ -276,6 +277,20 @@ export default defineConfig(
         'webkitResolveLocalFileSystemURL',
         'webkitStorageInfo',
       ],
+    },
+  },
+  // Web Workers legitimately use self, postMessage, and other worker globals
+  {
+    files: ['src/workers/**/*.ts'],
+    rules: {
+      'no-restricted-globals': 'off',
+    },
+  },
+  // IndexedDB usage in model cache is intentional
+  {
+    files: ['src/lib/model-cache.ts'],
+    rules: {
+      'no-restricted-globals': 'off',
     },
   },
 )

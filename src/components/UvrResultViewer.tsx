@@ -186,7 +186,9 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
           <h3>Stems</h3>
           <Show when={props.processingTime}>
             <span class="rv-processing-time">
-              <span class="rv-time-icon"><Clock /></span>
+              <span class="rv-time-icon">
+                <Clock />
+              </span>
               {Math.round(props.processingTime! / 1000)}s
             </span>
           </Show>
