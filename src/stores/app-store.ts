@@ -288,6 +288,22 @@ export function cancelUvrSession(sessionId: string): void {
   }
 }
 
+/** Reset a failed/cancelled session for retry */
+export function retryUvrSession(sessionId: string): void {
+  const sessions = getAllUvrSessions()
+  const idx = sessions.findIndex((s) => s.sessionId === sessionId)
+  if (idx === -1) return
+  sessions[idx].status = 'processing'
+  sessions[idx].progress = 0
+  sessions[idx].error = undefined
+  sessions[idx].processingTime = 0
+  sessions[idx].indeterminate = true
+  sessions[idx].apiSessionId = undefined
+  saveAllUvrSessions(sessions)
+  bumpSessions()
+  setCurrentUvrSession({ ...sessions[idx] })
+}
+
 /** Delete UVR session */
 export function deleteUvrSession(sessionId: string): void {
   const sessions = getAllUvrSessions().filter((s) => s.sessionId !== sessionId)
