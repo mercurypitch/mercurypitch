@@ -9,6 +9,7 @@ import { getProcessStatus } from '@/lib/uvr-api'
 import { cancelUvrPipeline, destroyPipeline, preInitModel, runUvrPipeline, } from '@/lib/uvr-processing-pipeline'
 import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
 import { cancelUvrSession, completeUvrSession, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, getAllUvrSessions, getAllUvrSessionsReactive, getUvrProcessingMode, getUvrSession, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrProcessingMode, startUvrSession, updateUvrSessionOutputs, uvrProcessingMode, } from '@/stores/app-store'
+import { showNotification } from '@/stores/notifications-store'
 import { StemMixer, UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrSettings, UvrUploadControl, } from '.'
 import { CheckCircle, FileUpload, History, Music, Settings, Trash2, X, } from './icons'
 
@@ -163,7 +164,10 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   ) => {
     const file = selectedFile()
     if (!file) {
-      console.error('No file selected')
+      const msg = 'File lost from memory. Please start a new session.'
+      console.error(msg)
+      setErrorUvrSession(sessionId, msg)
+      showNotification(msg, 'warning')
       return
     }
 
@@ -197,7 +201,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       const message =
         error instanceof Error ? error.message : 'Processing failed'
       setErrorUvrSession(sessionId, message)
-      showError(message)
+      showNotification(message, 'error')
     }
   }
 
@@ -480,8 +484,13 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
             title={`Processing: ${uvrProcessingMode() === 'local' ? 'Browser' : 'Server'}`}
           >
             <button
-              class={`mode-toggle-btn${uvrProcessingMode() === 'server' ? ' active' : ''}`}
-              onClick={() => setUvrProcessingMode('server')}
+              class={`mode-toggle-btn mode-toggle-btn-disabled${uvrProcessingMode() === 'server' ? ' active' : ''}`}
+              onClick={() =>
+                showNotification(
+                  'Server-side processing not yet available.',
+                  'info',
+                )
+              }
             >
               Server
             </button>
@@ -660,6 +669,8 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 error={session()!.error}
                 processingMode={session()!.processingMode}
                 numChunks={session()!.numChunks}
+                provider={session()!.provider}
+                originalFileName={session()!.originalFile?.name}
                 onCancel={() => {
                   cancelUvrPipeline(
                     session()!.processingMode ?? 'server',
@@ -688,7 +699,10 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
         <Show when={currentView() === 'results'}>
           <div class="view-section results-section">
             <div class="section-header">
-              <h4>Processing Results</h4>
+              <h4>
+                Processing Results for{' '}
+                {session()?.originalFile?.name ?? 'audio'}
+              </h4>
               <button class="back-btn" onClick={() => setCurrentView('upload')}>
                 <FileUpload /> Back to Upload
               </button>

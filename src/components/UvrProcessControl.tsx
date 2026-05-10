@@ -4,7 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, For, Show } from 'solid-js'
-import { CheckCircle, FilePlus, Loader2, Music, RotateCcw, Settings, Trash2, XCircle, } from './icons'
+import { CheckCircle, Cpu, FilePlus, Loader2, Music, RotateCcw, Server, Settings, Trash2, XCircle, Zap, } from './icons'
 
 interface ProcessControlProps {
   sessionId: string
@@ -28,6 +28,8 @@ interface ProcessControlProps {
   }
   processingMode?: 'server' | 'local'
   numChunks?: number
+  provider?: string
+  originalFileName?: string
   onCancel?: () => void
   onRetry?: () => void
   onNewSession?: () => void
@@ -53,10 +55,8 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
       case 'processing':
         return {
           icon: <Loader2 />,
-          title: isLocal() ? 'Processing in Browser' : 'Processing with UVR',
-          description: isLocal()
-            ? 'Running ONNX model locally...'
-            : 'Separating vocals and instrumental...',
+          title: `Processing ${props.originalFileName ?? 'audio'} into stems`,
+          description: '',
           color: 'var(--accent)',
         }
       case 'completed':
@@ -114,10 +114,40 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
         </div>
         <div class="process-info">
           <h3>{currentStage().title}</h3>
-          <p>{currentStage().description}</p>
-          <p class="process-session-id" title={displayId()}>
-            {displayId().length > 16 ? displayId().slice(-8) : displayId()}
-          </p>
+          <Show when={currentStage().description}>
+            <p>{currentStage().description}</p>
+          </Show>
+          <div class="process-meta-info">
+            <Show when={props.processingMode}>
+              <div class="status-provider">
+                {props.processingMode === 'server' ? 'Server' : 'Browser'}
+              </div>
+            </Show>
+            <Show when={props.processingMode === 'server' || props.provider}>
+              <div class="status-provider">
+                <span
+                  class="provider-icon"
+                  classList={{ 'provider-gpu': props.provider === 'webgpu' }}
+                >
+                  {props.processingMode === 'server' ? (
+                    <Server />
+                  ) : props.provider === 'webgpu' ? (
+                    <Zap />
+                  ) : (
+                    <Cpu />
+                  )}
+                </span>
+                {props.processingMode === 'server'
+                  ? 'Cloud Server'
+                  : props.provider === 'webgpu'
+                    ? 'GPU (WebGPU)'
+                    : 'CPU (WASM)'}
+              </div>
+            </Show>
+            <p class="process-session-id" title={displayId()}>
+              {displayId().length > 16 ? displayId().slice(-8) : displayId()}
+            </p>
+          </div>
         </div>
       </div>
 
