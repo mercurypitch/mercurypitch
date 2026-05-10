@@ -5,10 +5,10 @@
 // ============================================================
 
 import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
-import { getAllUvrSessions, saveAllUvrSessions, setUvrSessionApiId, updateUvrSessionProgress } from '@/stores/app-store'
+import { getAllUvrSessions, saveAllUvrSessions, setUvrSessionApiId, updateUvrSessionProgress, } from '@/stores/app-store'
 import { computeChunkRanges, UVR_CHUNK_CONFIG } from './audio-chunker'
 import type { OutputFile } from './uvr-api'
-import { pollForCompletion, processAudio, deleteSession } from './uvr-api'
+import { deleteSession, pollForCompletion, processAudio } from './uvr-api'
 import { MODEL_PATH } from './uvr-model-config'
 import { VocalSeparator } from './vocal-separator'
 
@@ -206,7 +206,10 @@ export async function runUvrPipeline(
   }
 }
 
-export function cancelUvrPipeline(mode: UvrProcessingMode, apiSessionId?: string): void {
+export function cancelUvrPipeline(
+  mode: UvrProcessingMode,
+  apiSessionId?: string,
+): void {
   if (mode === 'local') {
     separator?.cancel()
   } else if (apiSessionId) {

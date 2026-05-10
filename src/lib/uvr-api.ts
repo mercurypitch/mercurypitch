@@ -233,7 +233,8 @@ export async function pollForCompletion(
         }
 
         if (status.status === 'not_started') {
-          const errMsg = 'Processing server restarted unexpectedly. Please retry.'
+          const errMsg =
+            'Processing server restarted unexpectedly. Please retry.'
           onError(errMsg)
           reject(new Error(errMsg))
           return

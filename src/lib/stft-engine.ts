@@ -11,8 +11,8 @@ export interface StftResult {
    *  Layout: data[frame * nFreq * 2 + freq * 2 + 0] = real
    *          data[frame * nFreq * 2 + freq * 2 + 1] = imag */
   data: Float32Array
-  nFreq: number    // nFft / 2 + 1
-  nFrames: number  // number of time frames
+  nFreq: number // nFft / 2 + 1
+  nFrames: number // number of time frames
   nFft: number
   hopLength: number
 }
@@ -258,10 +258,7 @@ export function stftForward(
  *                 If omitted, returns the full reconstructed signal.
  * @returns Reconstructed mono audio (Float32Array)
  */
-export function stftInverse(
-  stft: StftResult,
-  origLen?: number,
-): Float32Array {
+export function stftInverse(stft: StftResult, origLen?: number): Float32Array {
   const { data, nFreq, nFrames, nFft, hopLength } = stft
   const window = periodicHannWindow(nFft)
   const padSize = nFft / 2
@@ -300,7 +297,7 @@ export function stftInverse(
   }
 
   // Normalize by window overlap weights
-  const totalLen = origLen ?? (sigLen - nFft) // strip center padding by default
+  const totalLen = origLen ?? sigLen - nFft // strip center padding by default
   const output = new Float32Array(totalLen)
   const start = origLen !== undefined ? padSize : 0
   const end = origLen !== undefined ? padSize + totalLen : totalLen

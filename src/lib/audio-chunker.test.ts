@@ -3,9 +3,13 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { computeChunkRanges, crossfadeWindows, overlapAdd, UVR_CHUNK_CONFIG } from './audio-chunker'
+import { computeChunkRanges, crossfadeWindows, overlapAdd, UVR_CHUNK_CONFIG, } from './audio-chunker'
 
-function createSineBuffer(length: number, frequency: number, sampleRate: number): Float32Array {
+function createSineBuffer(
+  length: number,
+  frequency: number,
+  sampleRate: number,
+): Float32Array {
   const buffer = new Float32Array(length)
   for (let i = 0; i < length; i++) {
     buffer[i] = Math.sin((2 * Math.PI * frequency * i) / sampleRate)
@@ -33,7 +37,9 @@ describe('computeChunkRanges', () => {
 
     // Chunks are spaced by genSize
     for (let i = 1; i < ranges.length; i++) {
-      expect(ranges[i].start - ranges[i - 1].start).toBe(UVR_CHUNK_CONFIG.genSize)
+      expect(ranges[i].start - ranges[i - 1].start).toBe(
+        UVR_CHUNK_CONFIG.genSize,
+      )
     }
   })
 
@@ -140,7 +146,9 @@ describe('overlapAdd', () => {
     const config = UVR_CHUNK_CONFIG
     const audio = createSineBuffer(44100 * 2, 440, 44100)
     const ranges = computeChunkRanges(audio.length, config)
-    const chunks = ranges.map(r => audio.slice(r.start, Math.min(r.end, audio.length)))
+    const chunks = ranges.map((r) =>
+      audio.slice(r.start, Math.min(r.end, audio.length)),
+    )
     // Pad last chunk if needed
     const lastChunk = chunks[chunks.length - 1]
     if (lastChunk.length < config.chunkSize) {

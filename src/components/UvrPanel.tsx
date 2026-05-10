@@ -6,12 +6,11 @@ import type { Component } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, Show } from 'solid-js'
 import { generateVocalMidi } from '@/lib/midi-generator'
 import { getProcessStatus } from '@/lib/uvr-api'
-import { cancelUvrPipeline, destroyPipeline, preInitModel, runUvrPipeline } from '@/lib/uvr-processing-pipeline'
+import { cancelUvrPipeline, destroyPipeline, preInitModel, runUvrPipeline, } from '@/lib/uvr-processing-pipeline'
 import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
 import { cancelUvrSession, completeUvrSession, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, getAllUvrSessions, getAllUvrSessionsReactive, getUvrProcessingMode, getUvrSession, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrProcessingMode, startUvrSession, updateUvrSessionOutputs, uvrProcessingMode, } from '@/stores/app-store'
 import { StemMixer, UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrSettings, UvrUploadControl, } from '.'
 import { CheckCircle, FileUpload, History, Music, Settings, Trash2, X, } from './icons'
-
 
 export type UvrView = 'upload' | 'processing' | 'results' | 'history' | 'mixer'
 
@@ -76,7 +75,9 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   const allSessions = () => getAllUvrSessionsReactive()
 
   // Model loading state for browser mode
-  const [modelStatus, setModelStatus] = createSignal<'unloaded' | 'loading' | 'ready' | 'error'>('unloaded')
+  const [modelStatus, setModelStatus] = createSignal<
+    'unloaded' | 'loading' | 'ready' | 'error'
+  >('unloaded')
   const [modelError, setModelError] = createSignal('')
 
   // Pre-initialize ONNX model when switching to browser mode
@@ -156,7 +157,10 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     handleProcessStart(sessionId, mode)
   }
 
-  const handleProcessStart = async (sessionId: string, mode?: UvrProcessingMode) => {
+  const handleProcessStart = async (
+    sessionId: string,
+    mode?: UvrProcessingMode,
+  ) => {
     const file = selectedFile()
     if (!file) {
       console.error('No file selected')
@@ -190,7 +194,8 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       })
     } catch (error) {
       console.error('Processing error:', error)
-      const message = error instanceof Error ? error.message : 'Processing failed'
+      const message =
+        error instanceof Error ? error.message : 'Processing failed'
       setErrorUvrSession(sessionId, message)
       showError(message)
     }
@@ -470,7 +475,10 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
           </div>
         </div>
         <div class="header-actions">
-          <div class="uvr-mode-toggle" title={`Processing: ${uvrProcessingMode() === 'local' ? 'Browser' : 'Server'}`}>
+          <div
+            class="uvr-mode-toggle"
+            title={`Processing: ${uvrProcessingMode() === 'local' ? 'Browser' : 'Server'}`}
+          >
             <button
               class={`mode-toggle-btn${uvrProcessingMode() === 'server' ? ' active' : ''}`}
               onClick={() => setUvrProcessingMode('server')}
@@ -483,10 +491,20 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
             >
               Browser
             </button>
-            <Show when={uvrProcessingMode() === 'local' && modelStatus() !== 'ready'}>
+            <Show
+              when={
+                uvrProcessingMode() === 'local' && modelStatus() !== 'ready'
+              }
+            >
               <span
                 class={`model-status-badge model-status-${modelStatus()}`}
-                title={modelStatus() === 'error' ? modelError() : modelStatus() === 'loading' ? 'Loading ONNX model...' : ''}
+                title={
+                  modelStatus() === 'error'
+                    ? modelError()
+                    : modelStatus() === 'loading'
+                      ? 'Loading ONNX model...'
+                      : ''
+                }
               >
                 <Show when={modelStatus() === 'loading'}>
                   <span class="model-loading-dot" />
@@ -588,7 +606,10 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                       }
                       onRetry={(sessionId) => {
                         retryUvrSession(sessionId)
-                        void handleProcessStart(sessionId, getUvrSession(sessionId)?.processingMode)
+                        void handleProcessStart(
+                          sessionId,
+                          getUvrSession(sessionId)?.processingMode,
+                        )
                       }}
                     />
                   )}
@@ -640,13 +661,19 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 processingMode={session()!.processingMode}
                 numChunks={session()!.numChunks}
                 onCancel={() => {
-                  cancelUvrPipeline(session()!.processingMode ?? 'server', session()!.apiSessionId)
+                  cancelUvrPipeline(
+                    session()!.processingMode ?? 'server',
+                    session()!.apiSessionId,
+                  )
                   cancelUvrSession(session()!.sessionId)
                   setCurrentView('upload')
                 }}
                 onRetry={() => {
                   retryUvrSession(session()!.sessionId)
-                  void handleProcessStart(session()!.sessionId, session()!.processingMode)
+                  void handleProcessStart(
+                    session()!.sessionId,
+                    session()!.processingMode,
+                  )
                 }}
                 onNewSession={() => setCurrentView('upload')}
                 onDeleteAndNew={() => {
@@ -731,7 +758,10 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                       }
                       onRetry={(sessionId) => {
                         retryUvrSession(sessionId)
-                        void handleProcessStart(sessionId, getUvrSession(sessionId)?.processingMode)
+                        void handleProcessStart(
+                          sessionId,
+                          getUvrSession(sessionId)?.processingMode,
+                        )
                       }}
                     />
                   )}

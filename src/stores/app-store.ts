@@ -365,12 +365,15 @@ if (typeof window !== 'undefined') {
     const API_BASE = IS_DEV
       ? 'https://dev.mercurypitch.com/api/uvr'
       : 'https://mercurypitch.com/api/uvr'
-      
+
     for (const session of sessions) {
-      if ((session.status === 'processing' || session.status === 'uploading') && session.apiSessionId) {
+      if (
+        (session.status === 'processing' || session.status === 'uploading') &&
+        session.apiSessionId
+      ) {
         fetch(`${API_BASE}/session/${session.apiSessionId}`, {
           method: 'DELETE',
-          keepalive: true
+          keepalive: true,
         }).catch(() => {})
       }
     }

@@ -134,7 +134,16 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
       case 'cancelled':
         return <X />
       case 'processing':
-        return <div style={{ animation: 'spin 1.5s linear infinite', display: 'inline-flex' }}><Loader2 /></div>
+        return (
+          <div
+            style={{
+              animation: 'spin 1.5s linear infinite',
+              display: 'inline-flex',
+            }}
+          >
+            <Loader2 />
+          </div>
+        )
       default:
         return <Loader2 />
     }
@@ -320,7 +329,11 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
       </Show>
 
       {/* Actions */}
-      <Show when={session()?.status === 'completed' || session()?.status === 'error'}>
+      <Show
+        when={
+          session()?.status === 'completed' || session()?.status === 'error'
+        }
+      >
         <div class="session-result-actions">
           <Show when={session()?.status === 'completed'}>
             <button
@@ -338,7 +351,7 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
               </button>
             </Show>
           </Show>
-          <Show when={session()?.status === 'error'}>
+          <Show when={session()?.status === 'error' && session()?.originalFile}>
             <button
               class="session-result-btn session-result-btn-primary"
               onClick={(e) => {
