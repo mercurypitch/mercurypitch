@@ -53,7 +53,15 @@
             "class_name": "UvrContainer"
           }
         ]
-      }
+      },
+      "migrations": [
+        {
+          "tag": "v1",
+          "new_classes": [
+            "UvrContainer"
+          ]
+        }
+      ]
     }
   }
 }
