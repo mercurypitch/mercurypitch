@@ -75,7 +75,7 @@ export const NoteList: Component<NoteListProps> = (props) => {
             >
               <div class="note-dot" />
               <span class="note-name">
-                {isRest ? '𝄽 Rest' : `${item.note.name}${item.note.octave}`}
+                {isRest ? 'Rest' : `${item.note.name}${item.note.octave}`}
               </span>
               <span class="note-freq">
                 {isRest
