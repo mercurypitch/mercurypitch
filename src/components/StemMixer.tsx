@@ -1953,15 +1953,23 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
   const disconnectSources = () => {
     const ctx = audioCtx
+
+    // Capture current nodes to disconnect
+    const nodesToDisconnect = tracks().map((track) => ({
+      sourceNode: track.sourceNode,
+      gainNode: track.gainNode,
+      analyserNode: track.analyserNode,
+    }))
+
     if (ctx) {
       // Fade out all gains to 0 over 20ms to avoid pop
       const now = ctx.currentTime
-      for (const track of tracks()) {
-        if (track.gainNode) {
+      for (const nodes of nodesToDisconnect) {
+        if (nodes.gainNode) {
           try {
-            track.gainNode.gain.cancelScheduledValues(now)
-            track.gainNode.gain.setValueAtTime(track.gainNode.gain.value, now)
-            track.gainNode.gain.linearRampToValueAtTime(
+            nodes.gainNode.gain.cancelScheduledValues(now)
+            nodes.gainNode.gain.setValueAtTime(nodes.gainNode.gain.value, now)
+            nodes.gainNode.gain.linearRampToValueAtTime(
               0,
               now + FADE_OUT_MS / 1000,
             )
@@ -1972,48 +1980,50 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       }
     }
 
+    // Clear state synchronously so we don't accidentally wipe out new nodes
+    setVocal((prev) => ({
+      ...prev,
+      sourceNode: null,
+      gainNode: null,
+      analyserNode: null,
+    }))
+    setInstrumental((prev) => ({
+      ...prev,
+      sourceNode: null,
+      gainNode: null,
+      analyserNode: null,
+    }))
+    setMidi((prev) => ({
+      ...prev,
+      sourceNode: null,
+      gainNode: null,
+      analyserNode: null,
+    }))
+
     // Delay the actual stop/disconnect until after the fade completes
     setTimeout(() => {
-      for (const track of tracks()) {
+      for (const nodes of nodesToDisconnect) {
         try {
-          track.sourceNode?.stop()
+          nodes.sourceNode?.stop()
         } catch (_) {
           /* already stopped */
         }
         try {
-          track.sourceNode?.disconnect()
+          nodes.sourceNode?.disconnect()
         } catch (_) {
           /* */
         }
         try {
-          track.gainNode?.disconnect()
+          nodes.gainNode?.disconnect()
         } catch (_) {
           /* */
         }
         try {
-          track.analyserNode?.disconnect()
+          nodes.analyserNode?.disconnect()
         } catch (_) {
           /* */
         }
       }
-      setVocal((prev) => ({
-        ...prev,
-        sourceNode: null,
-        gainNode: null,
-        analyserNode: null,
-      }))
-      setInstrumental((prev) => ({
-        ...prev,
-        sourceNode: null,
-        gainNode: null,
-        analyserNode: null,
-      }))
-      setMidi((prev) => ({
-        ...prev,
-        sourceNode: null,
-        gainNode: null,
-        analyserNode: null,
-      }))
     }, FADE_OUT_MS)
   }
 
