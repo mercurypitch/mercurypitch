@@ -61,7 +61,7 @@ export const [uvrInstrumentalIntensity, _setUvrInstrumentalIntensity] =
 export const [uvrSmoothing, _setUvrSmoothing] = createSignal(0.3)
 
 // Processing mode (server vs local/browser)
-const DEFAULT_PROCESSING_MODE: UvrProcessingMode = 'server'
+const DEFAULT_PROCESSING_MODE: UvrProcessingMode = 'local'
 
 export function getUvrProcessingMode(): UvrProcessingMode {
   const saved = localStorage.getItem('pitchperfect_uvr-processing-mode')
