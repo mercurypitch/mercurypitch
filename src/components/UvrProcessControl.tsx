@@ -4,7 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, For, Show } from 'solid-js'
-import { CheckCircle, FilePlus, Loader2, Music, RotateCcw, Settings, Trash2, XCircle } from './icons'
+import { CheckCircle, FilePlus, Loader2, Music, RotateCcw, Settings, Trash2, XCircle, } from './icons'
 
 interface ProcessControlProps {
   sessionId: string
@@ -145,9 +145,21 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
               : formatPercentage(props.progress)}{' '}
             • {formatTime(props.processingTime ?? 0)}
           </div>
-          <Show when={isLocal() && props.numChunks !== undefined && props.numChunks > 1}>
+          <Show
+            when={
+              isLocal() && props.numChunks !== undefined && props.numChunks > 1
+            }
+          >
             <div class="progress-chunk-info">
-              Chunk {Math.max(1, Math.min(props.numChunks ?? 1, Math.ceil((props.progress / 100) * (props.numChunks ?? 1))))} of {props.numChunks}
+              Chunk{' '}
+              {Math.max(
+                1,
+                Math.min(
+                  props.numChunks ?? 1,
+                  Math.ceil((props.progress / 100) * (props.numChunks ?? 1)),
+                ),
+              )}{' '}
+              of {props.numChunks}
             </div>
           </Show>
         </div>
@@ -208,21 +220,27 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
             class="process-btn-icon process-btn-retry"
             onClick={() => props.onRetry?.()}
           >
-            <span class="process-btn-icon-svg"><RotateCcw /></span>
+            <span class="process-btn-icon-svg">
+              <RotateCcw />
+            </span>
             <span class="process-btn-icon-label">Retry</span>
           </button>
           <button
             class="process-btn-icon process-btn-new"
             onClick={() => props.onNewSession?.()}
           >
-            <span class="process-btn-icon-svg"><FilePlus /></span>
+            <span class="process-btn-icon-svg">
+              <FilePlus />
+            </span>
             <span class="process-btn-icon-label">New Session</span>
           </button>
           <button
             class="process-btn-icon process-btn-delete"
             onClick={() => props.onDeleteAndNew?.()}
           >
-            <span class="process-btn-icon-svg"><Trash2 /></span>
+            <span class="process-btn-icon-svg">
+              <Trash2 />
+            </span>
             <span class="process-btn-icon-label">Delete & New</span>
           </button>
         </Show>

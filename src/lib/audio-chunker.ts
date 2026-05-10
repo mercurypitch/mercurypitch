@@ -6,9 +6,9 @@
 
 /** Parameters for chunked overlap-add processing. */
 export interface ChunkConfig {
-  chunkSize: number   // samples per chunk (e.g. 261120)
-  trim: number        // trim samples at chunk edges (e.g. 3840)
-  genSize: number     // chunkSize - trim, the stride between chunks
+  chunkSize: number // samples per chunk (e.g. 261120)
+  trim: number // trim samples at chunk edges (e.g. 3840)
+  genSize: number // chunkSize - trim, the stride between chunks
 }
 
 /** Default UVR-MDX chunk config matching the ONNX model's 256-frame window. */
@@ -38,9 +38,7 @@ export function computeChunkRanges(
   // For audio shorter than chunkSize, one chunk covers everything.
   // Otherwise: need enough chunks so that (numChunks-1)*genSize + chunkSize >= audioLen
   const numChunks =
-    audioLen <= chunkSize
-      ? 1
-      : Math.ceil((audioLen - trim) / genSize)
+    audioLen <= chunkSize ? 1 : Math.ceil((audioLen - trim) / genSize)
   const totalPadded = (numChunks - 1) * genSize + chunkSize
   const ranges: ChunkRange[] = []
 

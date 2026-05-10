@@ -26,7 +26,9 @@ function openDB(): Promise<IDBDatabase> {
 }
 
 /** Retrieve a cached model buffer by key (filename). Returns undefined if not cached. */
-export async function getCachedModel(key: string): Promise<ArrayBuffer | undefined> {
+export async function getCachedModel(
+  key: string,
+): Promise<ArrayBuffer | undefined> {
   const db = await openDB()
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, 'readonly')
@@ -38,7 +40,10 @@ export async function getCachedModel(key: string): Promise<ArrayBuffer | undefin
 }
 
 /** Store a model buffer in the cache keyed by filename. */
-export async function setCachedModel(key: string, buffer: ArrayBuffer): Promise<void> {
+export async function setCachedModel(
+  key: string,
+  buffer: ArrayBuffer,
+): Promise<void> {
   const db = await openDB()
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, 'readwrite')
