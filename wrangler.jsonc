@@ -37,6 +37,20 @@
       "max_instances": 3
     }
   ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "UVR_SERVICE",
+        "class_name": "UvrContainer"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_classes": ["UvrContainer"]
+    }
+  ],
   "env": {
     "dev": {
       "name": "pitch-perfect-dev",

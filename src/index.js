@@ -1,9 +1,20 @@
 // Cloudflare Worker entry point for PitchPerfect
-// Serves the built static files from App/dist/
+// Serves static files and proxies /api/uvr/* to the UVR container
 
 export default {
-  async fetch(request) {
+  async fetch(request, env) {
     const url = new URL(request.url)
+
+    // Proxy UVR API requests to the Docker container
+    if (url.pathname.startsWith('/api/uvr/')) {
+      const id = env.UVR_SERVICE.idFromName('uvr-instance')
+      const container = env.UVR_SERVICE.get(id)
+      // Strip /api/uvr prefix — container routes expect /process, /status, etc.
+      const containerUrl = new URL(request.url)
+      containerUrl.pathname = url.pathname.replace('/api/uvr', '')
+      const proxied = new Request(containerUrl.toString(), request)
+      return await container.fetch(proxied)
+    }
 
     // Serve index.html (the built SPA)
     if (url.pathname === '/') {
