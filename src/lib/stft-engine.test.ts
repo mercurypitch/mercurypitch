@@ -21,15 +21,15 @@ function createSineBuffer(
 
 describe('periodicHannWindow', () => {
   it('has correct length', () => {
-    const w = periodicHannWindow(7680)
-    expect(w.length).toBe(7680)
+    const w = periodicHannWindow(6142)
+    expect(w.length).toBe(6142)
   })
 
   it('starts and ends near zero (periodic)', () => {
-    const w = periodicHannWindow(7680)
+    const w = periodicHannWindow(6142)
     expect(w[0]).toBe(0)
     // Periodic: last element should be 0.5*(1 - cos(2π*(N-1)/N)) ≈ very small
-    expect(w[7679]).toBeCloseTo(0, 5)
+    expect(w[6141]).toBeCloseTo(0, 5)
   })
 
   it('is symmetric when last element is zero', () => {
@@ -46,7 +46,7 @@ describe('periodicHannWindow', () => {
   })
 
   it('all values between 0 and 1', () => {
-    const w = periodicHannWindow(7680)
+    const w = periodicHannWindow(6142)
     for (let i = 0; i < w.length; i++) {
       expect(w[i]).toBeGreaterThanOrEqual(0)
       expect(w[i]).toBeLessThanOrEqual(1)
@@ -65,20 +65,20 @@ describe('stftForward', () => {
     expect(result.data.length).toBe(result.nFreq * result.nFrames * 2)
   })
 
-  it('returns correct output shape for non-power-of-2 nFft (7680)', () => {
+  it('returns correct output shape for non-power-of-2 nFft (6142)', () => {
     const audio = createSineBuffer(44100, 440, 6.0)
-    const result = stftForward(audio, 7680, 1024)
-    expect(result.nFft).toBe(7680)
-    expect(result.nFreq).toBe(3841) // 7680/2 + 1
+    const result = stftForward(audio, 6142, 1024)
+    expect(result.nFft).toBe(6142)
+    expect(result.nFreq).toBe(3072) // 6142/2 + 1
     expect(result.nFrames).toBeGreaterThan(0)
-    expect(result.data.length).toBe(3841 * result.nFrames * 2)
+    expect(result.data.length).toBe(3072 * result.nFrames * 2)
   })
 
-  it('produces exactly 256 frames for 261120 samples (nFft=7680, hop=1024)', () => {
-    // With center=True: paddedLen = 261120 + 7680 = 268800
-    // nFrames = (268800 - 7680) / 1024 + 1 = 261120/1024 + 1 = 255 + 1 = 256
+  it('produces exactly 256 frames for 261120 samples (nFft=6142, hop=1024)', () => {
+    // With center=True: paddedLen = 261120 + 6142 = 267262
+    // nFrames = (267262 - 6142) / 1024 + 1 = 261120/1024 + 1 = 255 + 1 = 256
     const audio = new Float32Array(261120)
-    const result = stftForward(audio, 7680, 1024)
+    const result = stftForward(audio, 6142, 1024)
     expect(result.nFrames).toBe(256)
   })
 
@@ -122,9 +122,9 @@ describe('stftForward', () => {
 
   it('handles very short input (shorter than nFft)', () => {
     const audio = createSineBuffer(44100, 440, 0.01) // ~441 samples
-    const result = stftForward(audio, 7680, 1024)
+    const result = stftForward(audio, 6142, 1024)
     expect(result.nFrames).toBe(1)
-    expect(result.data.length).toBe(3841 * 2)
+    expect(result.data.length).toBe(3072 * 2)
   })
 
   it('handles empty input', () => {
@@ -173,9 +173,9 @@ describe('stftInverse', () => {
     expect(maxError).toBeLessThan(0.1)
   })
 
-  it('roundtrips audio through STFT → iSTFT (non-power-of-2, nFft=7680)', () => {
-    const audio = createSineBuffer(44100, 440, 6.0) // need enough frames for 7680
-    const nFft = 7680
+  it('roundtrips audio through STFT → iSTFT (non-power-of-2, nFft=6142)', () => {
+    const audio = createSineBuffer(44100, 440, 6.0) // need enough frames for 6142
+    const nFft = 6142
     const hopLen = 1024
 
     const stft = stftForward(audio, nFft, hopLen)
@@ -231,17 +231,17 @@ describe('stftInverse', () => {
 })
 
 describe('Bluestein DFT edge cases', () => {
-  it('handles nFft=7680 correctly (frame count for typical audio)', () => {
+  it('handles nFft=6142 correctly (frame count for typical audio)', () => {
     // 6 seconds @ 44100 = 264600 samples
     const audio = createSineBuffer(44100, 440, 6.0)
-    const stft = stftForward(audio, 7680, 1024)
+    const stft = stftForward(audio, 6142, 1024)
 
-    // With center padding: (264600 + 7680 - 7680) / 1024 + 1 = 264600/1024 + 1 ≈ 259
+    // With center padding: (264600 + 6142 - 6142) / 1024 + 1 = 264600/1024 + 1 ≈ 259
     const expectedFrames = Math.floor(264600 / 1024) + 1
     expect(stft.nFrames).toBe(expectedFrames)
 
-    // Each frame has 3841 freq bins × 2 (real+imag) = 7682 values
-    expect(stft.data.length).toBe(3841 * expectedFrames * 2)
+    // Each frame has 3072 freq bins × 2 (real+imag) = 6144 values
+    expect(stft.data.length).toBe(3072 * expectedFrames * 2)
   })
 
   it('handles odd nFft (if ever needed)', () => {

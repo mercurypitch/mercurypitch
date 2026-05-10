@@ -69,7 +69,7 @@ export type WorkerOutMessage =
 // Constants
 // ---------------------------------------------------------------------------
 
-const N_FFT = 7680
+const N_FFT = 6142 // produces nFreq = N_FFT/2+1 = 3072 matching model input dim
 const HOP_LENGTH = 1024
 const ZERO_BINS = 3             // zero first N frequency bins before ONNX
 
