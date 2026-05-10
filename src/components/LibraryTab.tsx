@@ -63,20 +63,22 @@ export const LibraryTab: Component = () => {
     const session = userSession()
     if (session === null || session.items === undefined) return []
 
-    return session.items.map((item) => {
-      if (
-        item.type === 'melody' &&
-        item.melodyId !== null &&
-        item.melodyId !== undefined
-      ) {
-        const melodyData = melodyStore.getMelody(item.melodyId)
-        return {
-          ...item,
-          melodyData,
+    return session.items
+      .filter((item) => item.type !== 'rest')
+      .map((item) => {
+        if (
+          item.type === 'melody' &&
+          item.melodyId !== null &&
+          item.melodyId !== undefined
+        ) {
+          const melodyData = melodyStore.getMelody(item.melodyId)
+          return {
+            ...item,
+            melodyData,
+          }
         }
-      }
-      return item
-    })
+        return item
+      })
   })
 
   // Practice session items (legacy model)
