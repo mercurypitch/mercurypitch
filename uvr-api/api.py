@@ -12,11 +12,8 @@ import logging
 import time
 from typing import Optional, List, Dict, Any
 import threading
-from audio_separator.separator import Separator
 import subprocess
 import json
-from fastapi import HTTPException
-import onnxruntime as ort
 
 # Setup logging
 logging.basicConfig(
@@ -47,9 +44,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- AMD ROCm OVERRIDE (only when ROCm is available) ---
-_providers = ort.get_available_providers()
-if "ROCMExecutionProvider" in _providers:
+# --- AMD ROCm OVERRIDE (applied lazily before first use) ---
+_rocm_patched = False
+
+def _apply_rocm_patch():
+    """Apply ROCm ONNX provider override once, on first use."""
+    global _rocm_patched
+    if _rocm_patched:
+        return
+    _rocm_patched = True
+    import onnxruntime as ort
+    _providers = ort.get_available_providers()
+    if "ROCMExecutionProvider" not in _providers:
+        return
     original_get_providers = ort.get_available_providers
     def _rocm_get_providers():
         providers = original_get_providers()
@@ -276,6 +283,10 @@ async def process_audio(
     def process_task(session_id: str, input_path: str, model_name: str):
         try:
             logger.info(f"Starting processing for session {session_id}")
+
+            # Lazy-load heavy deps so uvicorn starts fast
+            _apply_rocm_patch()
+            from audio_separator.separator import Separator
 
             # Get audio duration and file size for progress estimation
             file_size = os.path.getsize(input_path)
