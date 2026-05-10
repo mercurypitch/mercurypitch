@@ -22,14 +22,6 @@ function setMeta(property: string, content: string, isName = false): void {
   el.setAttribute('content', content)
 }
 
-function removeMeta(property: string, isName = false): void {
-  const attr = isName ? 'name' : 'property'
-  const el = document.head.querySelector<HTMLMetaElement>(
-    `meta[${attr}="${property}"]`,
-  )
-  if (el) el.remove()
-}
-
 /** Set the static default OG tags. Call on app init. */
 export function initDefaultOGTags(): void {
   setMeta('og:title', OG_TITLE)
@@ -52,13 +44,13 @@ export interface MelodyOGMeta {
 
 /** Update OG tags for a shared melody. */
 export function setMelodyOGTags(meta: MelodyOGMeta): void {
-  const title = meta.key
+  const title = meta.key !== null && meta.key !== undefined
     ? `Melody in ${meta.key} shared on PitchPerfect`
     : 'Melody shared on PitchPerfect'
 
   const parts: string[] = [`A ${meta.noteCount}-note melody`]
-  if (meta.bpm) parts.push(`at ${meta.bpm} BPM`)
-  if (meta.key) parts.push(`in ${meta.key}`)
+  if (meta.bpm !== null && meta.bpm !== undefined) parts.push(`at ${meta.bpm} BPM`)
+  if (meta.key !== null && meta.key !== undefined) parts.push(`in ${meta.key}`)
   parts.push('— practice it on PitchPerfect.')
   const description = parts.join(' ')
 

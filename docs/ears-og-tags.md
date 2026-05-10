@@ -22,7 +22,7 @@
 **WHEN** a dedicated OG image is not available, **THEN** the system shall use the app favicon (`favicon.png`, 512×512) as the `og:image`.
 
 ### REQ-OG-003 — Canonical URL
-**Ubiquitous:** The HTML shell shall include a `<link rel="canonical">` pointing to the production URL `https://pitchperfect.clodhost.com/`.
+**Ubiquitous:** The HTML shell shall include a `<link rel="canonical">` pointing to the production URL `https://mercurypitch.com/`.
 
 ---
 
