@@ -520,9 +520,9 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
               class="dropdown-select-style spaced-rest-select"
             >
               <option value="none">None</option>
-              <option value="fourth">𝄽 Fourth rest</option>
-              <option value="half">𝄼 Half rest</option>
-              <option value="full">𝄻 Full bar rest</option>
+              <option value="fourth">Fourth rest</option>
+              <option value="half">Half rest</option>
+              <option value="full">Full bar rest</option>
             </select>
           </div>
         </Show>
