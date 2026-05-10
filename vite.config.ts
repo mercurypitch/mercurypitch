@@ -67,6 +67,20 @@ export default defineConfig({
   build: {
     target: 'esnext',
     sourcemap: true,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('onnxruntime')) return undefined
+            return 'vendor'
+          }
+          if (id.includes('CommunityShare') || id.includes('CommunityLeaderboard')) return 'community'
+          if (id.includes('PitchTestingTab') || id.includes('PitchAlgorithmTester') || id.includes('VocalChallenges') || id.includes('VocalAnalysis')) return 'vocal'
+          if (id.includes('UvrPanel') || id.includes('UvrGuide') || id.includes('uvr-api') || id.includes('StemMixer')) return 'uvr'
+          if (id.includes('LibraryModal') || id.includes('SessionLibraryModal')) return 'library'
+        },
+      },
+    },
   },
   define: {
     'process.env': {},
