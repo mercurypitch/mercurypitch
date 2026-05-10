@@ -47,29 +47,26 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- START AMD ROCm OVERRIDE ---
-# 1. Trick the library into passing the "Is CUDA installed?" check
-original_get_providers = ort.get_available_providers
-def rocm_get_providers():
-    providers = original_get_providers()
-    if "ROCMExecutionProvider" in providers and "CUDAExecutionProvider" not in providers:
-        providers.append("CUDAExecutionProvider")
-    return providers
+# --- AMD ROCm OVERRIDE (only when ROCm is available) ---
+_providers = ort.get_available_providers()
+if "ROCMExecutionProvider" in _providers:
+    original_get_providers = ort.get_available_providers
+    def _rocm_get_providers():
+        providers = original_get_providers()
+        if "ROCMExecutionProvider" in providers and "CUDAExecutionProvider" not in providers:
+            providers.append("CUDAExecutionProvider")
+        return providers
+    ort.get_available_providers = _rocm_get_providers
 
-ort.get_available_providers = rocm_get_providers
-
-# 2. Silently swap the NVIDIA provider for the AMD one when the model loads
-original_session = ort.InferenceSession
-def rocm_inference_session(*args, **kwargs):
-    if "providers" in kwargs:
-        kwargs["providers"] = [
-            "ROCMExecutionProvider" if p == "CUDAExecutionProvider" else p
-            for p in kwargs["providers"]
-        ]
-    return original_session(*args, **kwargs)
-
-ort.InferenceSession = rocm_inference_session
-# --- END AMD ROCm OVERRIDE ---
+    original_session = ort.InferenceSession
+    def _rocm_inference_session(*args, **kwargs):
+        if "providers" in kwargs:
+            kwargs["providers"] = [
+                "ROCMExecutionProvider" if p == "CUDAExecutionProvider" else p
+                for p in kwargs["providers"]
+            ]
+        return original_session(*args, **kwargs)
+    ort.InferenceSession = _rocm_inference_session
 
 # Configure paths
 OUTPUT_DIR = "/app/output"

@@ -1,0 +1,49 @@
+# ============================================================
+# UVR Audio Separator API Dockerfile (GPU — AMD ROCm)
+# For local GPU deployment. Not used by Cloudflare Containers.
+# ============================================================
+
+FROM python:3.11-slim
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHOME=/app \
+    PATH=/app/.local/bin:$PATH
+
+ENV LD_LIBRARY_PATH="/usr/local/lib/python3.11/site-packages/torch/lib:$LD_LIBRARY_PATH"
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    python3-dev \
+    ffmpeg \
+    wget \
+    && wget http://archive.ubuntu.com/ubuntu/pool/universe/p/prelink/execstack_0.0.20131005-1.1_amd64.deb \
+    && apt-get install -y --no-install-recommends ./execstack_0.0.20131005-1.1_amd64.deb \
+    && rm execstack_0.0.20131005-1.1_amd64.deb \
+    && apt-get remove -y wget \
+    && apt-get autoremove -y \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+COPY requirements.txt .
+
+RUN pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/rocm7.2 --no-cache-dir \
+    && pip install --no-cache-dir -r requirements.txt \
+    && pip uninstall -y onnxruntime onnxruntime-gpu \
+    && pip install --no-cache-dir onnxruntime-rocm \
+    && find /usr/local/lib/python3.11/site-packages/onnxruntime -name "*.so" -exec execstack -c {} \;
+
+RUN ln -sf /usr/local/lib/python3.11/site-packages/torch/lib/libhipblas.so /usr/local/lib/python3.11/site-packages/torch/lib/libhipblas.so.2 \
+    && ln -sf /usr/local/lib/python3.11/site-packages/torch/lib/librocm_smi64.so /usr/local/lib/python3.11/site-packages/torch/lib/librocm_smi64.so.7 \
+    && ln -sf /usr/local/lib/python3.11/site-packages/torch/lib/libamdhip64.so /usr/local/lib/python3.11/site-packages/torch/lib/libamdhip64.so.6
+
+RUN mkdir -p /app/output /app/uploads
+
+COPY api.py .
+
+EXPOSE 8080
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8080/health || exit 1
+
+CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8080"]
