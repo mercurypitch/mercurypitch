@@ -8,7 +8,7 @@ import { generateVocalMidi } from '@/lib/midi-generator'
 import { getProcessStatus } from '@/lib/uvr-api'
 import { cancelUvrPipeline, destroyPipeline, preInitModel, runUvrPipeline } from '@/lib/uvr-processing-pipeline'
 import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
-import { cancelUvrSession, completeUvrSession, currentUvrSession, deleteAllUvrSessions, getAllUvrSessions, getAllUvrSessionsReactive, getUvrProcessingMode, getUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrProcessingMode, startUvrSession, updateUvrSessionOutputs, uvrProcessingMode, } from '@/stores/app-store'
+import { cancelUvrSession, completeUvrSession, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, getAllUvrSessions, getAllUvrSessionsReactive, getUvrProcessingMode, getUvrSession, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrProcessingMode, startUvrSession, updateUvrSessionOutputs, uvrProcessingMode, } from '@/stores/app-store'
 import { StemMixer, UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrSettings, UvrUploadControl, } from '.'
 import { CheckCircle, FileUpload, History, Music, Settings, Trash2, X, } from './icons'
 
@@ -641,7 +641,12 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                   setCurrentView('upload')
                 }}
                 onRetry={() => {
-                  // Retry logic
+                  retryUvrSession(session()!.sessionId)
+                  void handleProcessStart(session()!.sessionId, session()!.processingMode)
+                }}
+                onNewSession={() => setCurrentView('upload')}
+                onDeleteAndNew={() => {
+                  deleteUvrSession(session()!.sessionId)
                   setCurrentView('upload')
                 }}
               />

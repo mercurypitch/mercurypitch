@@ -20,6 +20,7 @@ export default {
 
       try {
         const container = env.UVR_SERVICE.getByName('uvr-instance')
+        await container.start()
         const containerUrl = new URL(request.url)
         containerUrl.pathname = stripped
         const proxied = new Request(containerUrl.toString(), request)

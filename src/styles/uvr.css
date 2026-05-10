@@ -1080,6 +1080,91 @@
   background: rgba(239, 68, 68, 0.1);
 }
 
+/* Error action buttons — vertical icon + label layout */
+.process-actions:has(.process-btn-icon) {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+
+.process-btn-icon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.75rem 0.5rem;
+  border: none;
+  border-radius: 0.6rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: transparent;
+}
+
+.process-btn-icon-svg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.process-btn-icon-svg svg {
+  width: 26px;
+  height: 26px;
+}
+
+.process-btn-icon-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Retry — primary fill */
+.process-btn-retry {
+  background: var(--accent);
+  color: var(--bg-primary);
+}
+
+.process-btn-retry:hover:not(:disabled) {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.process-btn-retry .process-btn-icon-label {
+  color: var(--bg-primary);
+  opacity: 0.9;
+}
+
+/* New Session — outlined neutral */
+.process-btn-new {
+  background: transparent;
+  color: var(--fg-primary);
+  border: 1px solid var(--border);
+}
+
+.process-btn-new:hover:not(:disabled) {
+  background: var(--bg-hover);
+  border-color: var(--fg-tertiary);
+  transform: translateY(-1px);
+}
+
+.process-btn-new .process-btn-icon-label {
+  color: var(--fg-secondary);
+}
+
+/* Delete & New — subtle ghost */
+.process-btn-delete {
+  color: var(--fg-tertiary);
+}
+
+.process-btn-delete:hover:not(:disabled) {
+  color: var(--error);
+  background: rgba(239, 68, 68, 0.06);
+  transform: translateY(-1px);
+}
+
+.process-btn-delete .process-btn-icon-label {
+  color: var(--fg-tertiary);
+}
+
 /* ============================================================
 // Session Result Card (UvrSessionResult)
 // ============================================================ */

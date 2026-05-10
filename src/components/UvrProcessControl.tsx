@@ -4,7 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, For, Show } from 'solid-js'
-import { CheckCircle, Loader2, Music, Play, Settings, XCircle } from './icons'
+import { CheckCircle, FilePlus, Loader2, Music, RotateCcw, Settings, Trash2, XCircle } from './icons'
 
 interface ProcessControlProps {
   sessionId: string
@@ -30,6 +30,8 @@ interface ProcessControlProps {
   numChunks?: number
   onCancel?: () => void
   onRetry?: () => void
+  onNewSession?: () => void
+  onDeleteAndNew?: () => void
 }
 
 export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
@@ -201,12 +203,27 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
             Cancel
           </button>
         </Show>
-        <Show when={props.status === 'error' && props.onRetry}>
+        <Show when={props.status === 'error'}>
           <button
-            class="process-btn process-btn-primary"
+            class="process-btn-icon process-btn-retry"
             onClick={() => props.onRetry?.()}
           >
-            <Play /> Retry
+            <span class="process-btn-icon-svg"><RotateCcw /></span>
+            <span class="process-btn-icon-label">Retry</span>
+          </button>
+          <button
+            class="process-btn-icon process-btn-new"
+            onClick={() => props.onNewSession?.()}
+          >
+            <span class="process-btn-icon-svg"><FilePlus /></span>
+            <span class="process-btn-icon-label">New Session</span>
+          </button>
+          <button
+            class="process-btn-icon process-btn-delete"
+            onClick={() => props.onDeleteAndNew?.()}
+          >
+            <span class="process-btn-icon-svg"><Trash2 /></span>
+            <span class="process-btn-icon-label">Delete & New</span>
           </button>
         </Show>
         <Show when={props.status === 'completed'}>
