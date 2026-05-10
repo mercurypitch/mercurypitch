@@ -233,8 +233,7 @@ function modelOutputToStft(
   nFrames: number,
 ): Float32Array {
   // Model outputs [1, 4, MODEL_BINS, nFrames] mapped as [Left_R, Right_R, Left_I, Right_I]
-  // We take the left channel only (Channel 0 for Real, Channel 2 for Imag)
-  // and re-interleave into complex format
+  // Average both stereo channels for mono reconstruction.
   const totalBins = MODEL_BINS * nFrames
   const result = new Float32Array(nFreq * nFrames * 2)
 
@@ -242,31 +241,88 @@ function modelOutputToStft(
     for (let f = 0; f < MODEL_BINS; f++) {
       const srcBase = f * nFrames + frame
       const dstIdx = frame * nFreq * 2 + f * 2
-      result[dstIdx] = modelOutput[0 * totalBins + srcBase] // Left Real
-      result[dstIdx + 1] = modelOutput[2 * totalBins + srcBase] // Left Imag
+      result[dstIdx] =
+        (modelOutput[0 * totalBins + srcBase] +
+          modelOutput[1 * totalBins + srcBase]) /
+        2
+      result[dstIdx + 1] =
+        (modelOutput[2 * totalBins + srcBase] +
+          modelOutput[3 * totalBins + srcBase]) /
+        2
     }
-    // The Nyquist bin (f = 3072) remains 0.0 in the result since the model didn't predict it
   }
   return result
+}
+
+function applyWienerMask(
+  originalStft: Float32Array,
+  instrStft: Float32Array,
+  nFreq: number,
+  nFrames: number,
+): { instrumental: Float32Array; vocal: Float32Array } {
+  const len = nFreq * nFrames * 2
+  const instrumental = new Float32Array(len)
+  const vocal = new Float32Array(len)
+  const eps = 1e-8
+
+  for (let i = 0; i < len; i += 2) {
+    const origR = originalStft[i]
+    const origI = originalStft[i + 1]
+    const instrR = instrStft[i]
+    const instrI = instrStft[i + 1]
+
+    // Vocal = Original - Instrumental (complex subtraction in STFT domain)
+    const vocalR = origR - instrR
+    const vocalI = origI - instrI
+
+    // Magnitudes squared
+    const instrMag2 = instrR * instrR + instrI * instrI
+    const vocalMag2 = vocalR * vocalR + vocalI * vocalI
+
+    // Wiener-like soft mask: avoids hard 0/1 decisions that cause artifacts
+    const mask = instrMag2 / (instrMag2 + vocalMag2 + eps)
+
+    // Apply masks to original STFT (preserves phase from original)
+    instrumental[i] = mask * origR
+    instrumental[i + 1] = mask * origI
+    vocal[i] = (1 - mask) * origR
+    vocal[i + 1] = (1 - mask) * origI
+  }
+
+  return { instrumental, vocal }
 }
 
 // ---------------------------------------------------------------------------
 // Main processing
 // ---------------------------------------------------------------------------
 
-async function processChunk(audioChunk: Float32Array): Promise<Float32Array> {
-  // STFT → zero bins → ONNX → iSTFT
+async function processChunk(
+  audioChunk: Float32Array,
+): Promise<{ instrumental: Float32Array; vocals: Float32Array }> {
+  // STFT → save copy → zero bins → ONNX → instrument STFT → soft mask → iSTFT both
   const stft = stftForward(audioChunk, N_FFT, HOP_LENGTH)
+  const originalStft = new Float32Array(stft.data)
   processStftForModel(stft.data, stft.nFreq, stft.nFrames)
   const modelOutput = await runInference(stft.data, stft.nFreq, stft.nFrames)
-  const outputStft = modelOutputToStft(modelOutput, stft.nFreq, stft.nFrames)
-  return stftInverse({
-    data: outputStft,
+  const instrStft = modelOutputToStft(modelOutput, stft.nFreq, stft.nFrames)
+
+  const { instrumental, vocal: vocals } = applyWienerMask(
+    originalStft,
+    instrStft,
+    stft.nFreq,
+    stft.nFrames,
+  )
+
+  const stftParams = {
     nFreq: stft.nFreq,
     nFrames: stft.nFrames,
     nFft: N_FFT,
     hopLength: HOP_LENGTH,
-  })
+  }
+  return {
+    instrumental: stftInverse({ data: instrumental, ...stftParams }),
+    vocals: stftInverse({ data: vocals, ...stftParams }),
+  }
 }
 
 async function separate(
@@ -286,7 +342,8 @@ async function separate(
   const padded = new Float32Array(totalPadded)
   padded.set(audio)
 
-  const chunkOutputs: Float32Array[] = []
+  const instrChunks: Float32Array[] = []
+  const vocalChunks: Float32Array[] = []
 
   for (let ci = 0; ci < numChunks; ci++) {
     if (cancelled) {
@@ -302,14 +359,16 @@ async function separate(
     const chunk = padded.slice(start, end)
 
     try {
-      const output = await processChunk(chunk)
-      chunkOutputs.push(output)
+      const { instrumental, vocals } = await processChunk(chunk)
+      instrChunks.push(instrumental)
+      vocalChunks.push(vocals)
     } catch (err) {
       if (err instanceof Error && err.message === 'WEBGPU_CRASH') {
         // Fallback to wasm and retry the chunk
         await loadModel(currentModelPath)
-        const output = await processChunk(chunk)
-        chunkOutputs.push(output)
+        const { instrumental, vocals } = await processChunk(chunk)
+        instrChunks.push(instrumental)
+        vocalChunks.push(vocals)
       } else {
         throw err
       }
@@ -320,14 +379,8 @@ async function separate(
   }
 
   // Overlap-add all chunks
-  const instrumental = overlapAdd(chunkOutputs, audio.length, UVR_CHUNK_CONFIG)
-
-  // Secondary stem via time-domain subtraction
-  const compensate = 1.0
-  const vocals = new Float32Array(audio.length)
-  for (let i = 0; i < audio.length; i++) {
-    vocals[i] = audio[i] - instrumental[i] * compensate
-  }
+  const instrumental = overlapAdd(instrChunks, audio.length, UVR_CHUNK_CONFIG)
+  const vocals = overlapAdd(vocalChunks, audio.length, UVR_CHUNK_CONFIG)
 
   // Transfer buffers to main thread (zero-copy)
   const vocalsBuf = vocals.buffer
