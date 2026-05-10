@@ -1,7 +1,7 @@
 import type { Accessor, Setter } from 'solid-js'
 import { onCleanup, onMount } from 'solid-js'
 import type { ActiveTab } from '@/features/tabs/constants'
-import { TAB_PIANO, TAB_KARAOKE } from '@/features/tabs/constants'
+import { TAB_KARAOKE, TAB_PIANO } from '@/features/tabs/constants'
 import { PLAYBACK_MODE_SESSION } from '@/features/tabs/constants'
 import * as notifStore from '@/stores/notifications-store'
 import * as transportStore from '@/stores/transport-store'
@@ -59,7 +59,11 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers): void {
     // The Karaoke tab (StemMixer) handles its own audio playback graph.
     // Skip global transport controls to avoid triggering Singing/Piano playback.
     if (tab === TAB_KARAOKE && !isTyping) {
-      if (['Space', 'Home', 'KeyR', 'KeyP', 'ArrowUp', 'ArrowDown'].includes(e.code)) {
+      if (
+        ['Space', 'Home', 'KeyR', 'KeyP', 'ArrowUp', 'ArrowDown'].includes(
+          e.code,
+        )
+      ) {
         return
       }
     }
