@@ -5,8 +5,8 @@
 const OG_TITLE = 'PitchPerfect — Vocal Pitch Training with Real-Time Feedback'
 const OG_DESC =
   'Train your vocal pitch with real-time audio feedback, piano roll visualization, and accuracy scoring.'
-const OG_IMAGE = 'https://pitchperfect.clodhost.com/favicon.png'
-const OG_URL = 'https://pitchperfect.clodhost.com/'
+const OG_IMAGE = 'https://mercurypitch.com/favicon.png'
+const OG_URL = 'https://mercurypitch.com/'
 const SITE_NAME = 'PitchPerfect'
 
 function setMeta(property: string, content: string, isName = false): void {
