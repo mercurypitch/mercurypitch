@@ -1,6 +1,8 @@
 // Cloudflare Worker entry point for PitchPerfect
 // Proxies /api/uvr/* to the UVR Docker container.
-// Static assets are served by Cloudflare's assets feature (no worker code needed).
+// Static assets are served by Cloudflare's assets feature.
+
+export { UvrContainer } from './uvr-container.js'
 
 export default {
   async fetch(request, env) {
@@ -18,7 +20,6 @@ export default {
     }
 
     // All other requests (static assets, SPA routes) are served by the assets binding.
-    // Pass through to the asset handler.
     return env.ASSETS.fetch(request)
   },
 }
