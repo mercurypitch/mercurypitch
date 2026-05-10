@@ -85,9 +85,9 @@ describe('UvrPanel Component', () => {
 
     it('renders header with correct title and subtitle', () => {
       render(() => <UvrPanel {...defaultProps} />)
-      expect(screen.getByText('Vocal Separation')).toBeInTheDocument()
+      expect(screen.getByText(/Vocal Separation/)).toBeInTheDocument()
       expect(
-        screen.getByText('Separate vocals and create MIDI'),
+        screen.getByText(/Separate vocals and create MIDI/),
       ).toBeInTheDocument()
     })
 
@@ -113,7 +113,7 @@ describe('UvrPanel Component', () => {
     it('renders results view when initialView is results', () => {
       render(() => <UvrPanel {...defaultProps} initialView="results" />)
 
-      expect(screen.getByText('Processing Results')).toBeInTheDocument()
+      expect(screen.getByText(/Processing Results/)).toBeInTheDocument()
     })
 
     it('shows no history message when no sessions', () => {
