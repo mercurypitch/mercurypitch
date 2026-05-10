@@ -46,6 +46,7 @@ import { buildHash, parseHash, replaceHash } from '@/lib/hash-router'
 import { melodyIndexAtBeat, melodyTotalBeats } from '@/lib/scale-data'
 import { buildScaleMelody, buildSessionPlaybackMelody, } from '@/lib/session-builder'
 import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
+import { initDefaultOGTags, setMelodyOGTags } from '@/lib/og-tags'
 import { openWalkthroughChapter, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPlaybackSpeed, setScaleType, showSelection, walkthroughModalOpen, } from '@/stores'
 import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, toggleMicWaveVisible, } from '@/stores'
 import { advancedFeaturesEnabled, devFeaturesEnabled } from '@/stores/app-store'
@@ -635,6 +636,7 @@ const AppShell: Component<AppProps> = (props) => {
 
   onMount(() => {
     initTheme()
+    initDefaultOGTags()
 
     // ── Hash routing: initial load ──────────────────────────
     const initialRoute = parseHash(window.location.hash)
@@ -770,6 +772,11 @@ const AppShell: Component<AppProps> = (props) => {
           setScaleType(sharedData.scaleType)
         }
         showNotification('Shared preset loaded from URL', 'info')
+        setMelodyOGTags({
+          noteCount: sharedData.melody.length,
+          bpm: sharedData.bpm,
+          key: sharedData.key,
+        })
       }
     }
 
