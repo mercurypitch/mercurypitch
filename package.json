@@ -23,6 +23,7 @@
     "size": "vite build && du -sh dist/assets/*.js dist/assets/*.css dist/assets/*.wasm 2>/dev/null | sort -rh"
   },
   "dependencies": {
+    "@cloudflare/containers": "^0.3.3",
     "lightningcss": "^1.32.0",
     "midi-writer-js": "^3.2.1",
     "onnxruntime-web": "^1.25.1",
