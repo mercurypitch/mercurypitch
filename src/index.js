@@ -1,3 +1,7 @@
+import { ContainerProxy } from '@cloudflare/containers'
+export { ContainerProxy }
+export { UvrContainer } from './uvr-container.js'
+
 // Cloudflare Worker entry point for PitchPerfect
 // Proxies /api/uvr/* to the UVR Docker container.
 // Static assets are served by Cloudflare's assets feature.
@@ -7,7 +11,6 @@ export default {
     const url = new URL(request.url)
     const method = request.method
 
-    // Debug: log all requests
     console.log(`[worker] ${method} ${url.pathname}`)
 
     // Proxy UVR API requests to the Docker container
@@ -16,9 +19,7 @@ export default {
       console.log(`[worker] proxying /api/uvr${stripped} → container`)
 
       try {
-        const id = env.UVR_SERVICE.idFromName('uvr-instance')
-        const container = env.UVR_SERVICE.get(id)
-        // Strip /api/uvr prefix — container routes expect /process, /status, etc.
+        const container = env.UVR_SERVICE.getByName('uvr-instance')
         const containerUrl = new URL(request.url)
         containerUrl.pathname = stripped
         const proxied = new Request(containerUrl.toString(), request)
