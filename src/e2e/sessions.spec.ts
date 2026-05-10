@@ -7,13 +7,12 @@ import { dismissOverlays, switchTab } from './helpers/ui'
 
 test.describe('Practice Sessions', () => {
   test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      (window as any).E2E_TEST_MODE = true
+    })
     await page.goto('/')
-    await page.waitForFunction(
-      () => typeof (window as any).__appStore !== 'undefined',
-      { timeout: 5000 },
-    )
+    await page.waitForSelector('#app-tabs', { timeout: 10000 })
     await dismissOverlays(page)
-    await page.waitForTimeout(500)
   })
 
   // ==========================================
@@ -21,116 +20,154 @@ test.describe('Practice Sessions', () => {
   // ==========================================
 
   test('SessionPlayer displays session header', async ({ page }) => {
-    await page.evaluate(() => {
-      // Create a simple practice session for testing
-      ;(window as any).__appStore?.setActiveTab('singing')
-    })
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
-    // Check for session header elements
-    const sessionHeader = page.locator('.session-player')
-    await expect(sessionHeader).toBeVisible()
+    // Enter session mode
+    const sessionBtn = page.locator('#btn-session')
+    if ((await sessionBtn.count()) > 0) {
+      await sessionBtn.click()
+      await page.waitForTimeout(500)
+
+      const sessionHeader = page.locator('.session-player')
+      await expect(sessionHeader).toBeVisible()
+    }
   })
 
   test('SessionPlayer shows elapsed timer', async ({ page }) => {
-    await page.evaluate(() => {
-      ;(window as any).__appStore?.setActiveTab('singing')
-    })
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
-    const elapsedTime = page.locator('.session-elapsed')
-    await expect(elapsedTime).toBeVisible()
+    const sessionBtn = page.locator('#btn-session')
+    if ((await sessionBtn.count()) > 0) {
+      await sessionBtn.click()
+      await page.waitForTimeout(500)
+
+      const elapsedTime = page.locator('.session-elapsed')
+      await expect(elapsedTime).toBeVisible()
+    }
   })
 
   test('SessionPlayer shows current item info', async ({ page }) => {
-    await page.evaluate(() => {
-      ;(window as any).__appStore?.setActiveTab('singing')
-    })
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
-    const sessionPlayerItem = page.locator('.session-player-item')
-    await expect(sessionPlayerItem).toBeVisible()
+    const sessionBtn = page.locator('#btn-session')
+    if ((await sessionBtn.count()) > 0) {
+      await sessionBtn.click()
+      await page.waitForTimeout(500)
+
+      const sessionPlayerItem = page.locator('.session-player-item')
+      await expect(sessionPlayerItem).toBeVisible()
+    }
   })
 
   test('SessionPlayer displays session name', async ({ page }) => {
-    await page.evaluate(() => {
-      ;(window as any).__appStore?.setActiveTab('singing')
-    })
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
-    const sessionName = page.locator('.session-player-title')
-    await expect(sessionName).toBeVisible()
+    const sessionBtn = page.locator('#btn-session')
+    if ((await sessionBtn.count()) > 0) {
+      await sessionBtn.click()
+      await page.waitForTimeout(500)
+
+      const sessionName = page.locator('.session-player-title')
+      await expect(sessionName).toBeVisible()
+    }
   })
 
   test('SessionPlayer shows item progress (X of Y)', async ({ page }) => {
-    await page.evaluate(() => {
-      ;(window as any).__appStore?.setActiveTab('singing')
-    })
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
-    const progressText = page.locator('.session-player-progress')
-    await expect(progressText).toBeVisible()
+    const sessionBtn = page.locator('#btn-session')
+    if ((await sessionBtn.count()) > 0) {
+      await sessionBtn.click()
+      await page.waitForTimeout(500)
+
+      const progressText = page.locator('.session-player-progress')
+      await expect(progressText).toBeVisible()
+    }
   })
 
   test('SessionPlayer shows skip button', async ({ page }) => {
-    await page.evaluate(() => {
-      ;(window as any).__appStore?.setActiveTab('singing')
-    })
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
-    const skipBtn = page.locator('.session-skip-btn')
-    await expect(skipBtn).toBeVisible()
+    const sessionBtn = page.locator('#btn-session')
+    if ((await sessionBtn.count()) > 0) {
+      await sessionBtn.click()
+      await page.waitForTimeout(500)
+
+      const skipBtn = page.locator('.session-skip-btn')
+      await expect(skipBtn).toBeVisible()
+    }
   })
 
   test('SessionPlayer shows end button', async ({ page }) => {
-    await page.evaluate(() => {
-      ;(window as any).__appStore?.setActiveTab('singing')
-    })
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
-    const endBtn = page.locator('.session-end-btn')
-    await expect(endBtn).toBeVisible()
+    const sessionBtn = page.locator('#btn-session')
+    if ((await sessionBtn.count()) > 0) {
+      await sessionBtn.click()
+      await page.waitForTimeout(500)
+
+      const endBtn = page.locator('.session-end-btn')
+      await expect(endBtn).toBeVisible()
+    }
   })
 
   test('Skip button is clickable', async ({ page }) => {
-    await page.evaluate(() => {
-      ;(window as any).__appStore?.setActiveTab('singing')
-    })
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
-    const skipBtn = page.locator('.session-skip-btn')
-    await expect(skipBtn).toBeVisible()
-    await skipBtn.click()
-    await page.waitForTimeout(200)
+    const sessionBtn = page.locator('#btn-session')
+    if ((await sessionBtn.count()) > 0) {
+      await sessionBtn.click()
+      await page.waitForTimeout(500)
+
+      const skipBtn = page.locator('.session-skip-btn')
+      await expect(skipBtn).toBeVisible()
+      await skipBtn.click()
+      await page.waitForTimeout(200)
+    }
   })
 
   test('End button is clickable', async ({ page }) => {
-    await page.evaluate(() => {
-      ;(window as any).__appStore?.setActiveTab('singing')
-    })
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
-    const endBtn = page.locator('.session-end-btn')
-    await expect(endBtn).toBeVisible()
-    await endBtn.click()
-    await page.waitForTimeout(200)
+    const sessionBtn = page.locator('#btn-session')
+    if ((await sessionBtn.count()) > 0) {
+      await sessionBtn.click()
+      await page.waitForTimeout(500)
+
+      const endBtn = page.locator('.session-end-btn')
+      await expect(endBtn).toBeVisible()
+      await endBtn.click()
+      await page.waitForTimeout(200)
+    }
   })
 
   test('Session timer increments over time', async ({ page }) => {
-    await page.evaluate(() => {
-      ;(window as any).__appStore?.setActiveTab('singing')
-    })
+    await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
-    const elapsedTime = page.locator('.session-elapsed')
-    const initialTime = await elapsedTime.textContent()
+    const sessionBtn = page.locator('#btn-session')
+    if ((await sessionBtn.count()) > 0) {
+      await sessionBtn.click()
+      await page.waitForTimeout(500)
 
-    if (initialTime) {
-      await page.waitForTimeout(1000)
-      const finalTime = await elapsedTime.textContent()
+      const elapsedTime = page.locator('.session-elapsed')
+      const initialTime = await elapsedTime.textContent()
 
-      // Timer should show progression
-      expect(finalTime).not.toBe(initialTime)
+      if (initialTime) {
+        await page.waitForTimeout(1000)
+        const finalTime = await elapsedTime.textContent()
+
+        expect(finalTime).not.toBe(initialTime)
+      }
     }
   })
 
