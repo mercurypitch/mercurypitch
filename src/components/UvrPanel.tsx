@@ -323,6 +323,40 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     }
   }
 
+  const handleMixStart = (selectedStems: string[]) => {
+    const s = currentUvrSession()
+    if (!s?.outputs) return
+
+    setPrevView(currentView())
+    setMixerSessionId(s.sessionId)
+
+    const stemUrls: { vocal?: string; instrumental?: string } = {}
+    const requested: {
+      vocal?: boolean
+      instrumental?: boolean
+      midi?: boolean
+    } = {}
+
+    for (const key of selectedStems) {
+      if (key === 'vocal') {
+        stemUrls.vocal = s.outputs.vocal
+        requested.vocal = true
+      } else if (key === 'instrumental') {
+        stemUrls.instrumental = s.outputs.instrumental
+        requested.instrumental = true
+      } else if (key === 'vocalMidi') {
+        // MIDI needs the vocal audio to generate from
+        stemUrls.vocal = s.outputs.vocal
+        requested.midi = true
+      }
+    }
+
+    setMixerStems(stemUrls)
+    setMixerRequestedStems(requested)
+    setMixerPracticeMode('full')
+    setCurrentView('mixer')
+  }
+
   const handleOpenMixerFromHistory = (
     sessionId: string,
     stems?: { vocal?: boolean; instrumental?: boolean; midi?: boolean },
@@ -466,11 +500,8 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       {/* Header */}
       <div class="panel-header">
         <div class="header-left">
-          <div class="header-icon">
-            <Music />
-          </div>
           <div>
-            <h3>Vocal Separation</h3>
+            <h3>Karaoke | Vocal Separation</h3>
             <p class="header-subtitle">
               {allSessions().length > 0
                 ? `${allSessions().length} session${allSessions().length !== 1 ? 's' : ''} · ${allSessions().filter((s) => s.status === 'completed').length} done`
@@ -715,6 +746,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 sessionId={session()!.sessionId}
                 originalFileName={session()?.originalFile?.name}
                 onStartPractice={handlePracticeStart}
+                onStartMix={handleMixStart}
                 onExport={(type) => {
                   void handleExport(type)
                 }}
