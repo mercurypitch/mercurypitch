@@ -5,7 +5,7 @@
 import type { Component } from 'solid-js'
 import { createSignal, For, Show } from 'solid-js'
 import { generateVocalMidi } from '@/lib/midi-generator'
-import { Download, Headphones, Midi, MusicBoard, Play, Share, SlidersHorizontal, Voice, X, } from './icons'
+import { Clock, Download, Headphones, Midi, MusicBoard, Play, Share, SlidersHorizontal, Voice, X, } from './icons'
 
 interface StemMeta {
   duration?: number
@@ -186,7 +186,8 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
           <h3>Stems</h3>
           <Show when={props.processingTime}>
             <span class="rv-processing-time">
-              processed in {Math.round(props.processingTime! / 1000)}s
+              <span class="rv-time-icon"><Clock /></span>
+              {Math.round(props.processingTime! / 1000)}s
             </span>
           </Show>
         </div>

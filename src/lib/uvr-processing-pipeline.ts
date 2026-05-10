@@ -5,7 +5,7 @@
 // ============================================================
 
 import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
-import { getAllUvrSessions, saveAllUvrSessions, setUvrSessionApiId, updateUvrSessionProgress, setUvrSessionProvider } from '@/stores/app-store'
+import { getAllUvrSessions, saveAllUvrSessions, setUvrSessionApiId, setUvrSessionProvider, updateUvrSessionProgress, } from '@/stores/app-store'
 import { computeChunkRanges, UVR_CHUNK_CONFIG } from './audio-chunker'
 import type { OutputFile } from './uvr-api'
 import { deleteSession, pollForCompletion, processAudio } from './uvr-api'
@@ -106,13 +106,14 @@ async function processLocal(
     audio.set(audioBuffer.getChannelData(0))
   }
 
+  if (sep.provider !== undefined && sep.provider !== '') setUvrSessionProvider(sessionId, sep.provider)
+
   // Store chunk count for UI
   const numChunks = computeChunkRanges(audio.length, UVR_CHUNK_CONFIG).length
   const sessions = getAllUvrSessions()
   const s = sessions.find((x) => x.sessionId === sessionId)
   if (s) {
     s.numChunks = numChunks
-    if (sep.provider) setUvrSessionProvider(sessionId, sep.provider)
     saveAllUvrSessions(sessions)
   }
 
@@ -213,7 +214,7 @@ export function cancelUvrPipeline(
 ): void {
   if (mode === 'local') {
     separator?.cancel()
-  } else if (apiSessionId) {
+  } else if (apiSessionId !== undefined && apiSessionId !== '') {
     // Server mode cancellation: delete the session on the backend
     deleteSession(apiSessionId).catch((err) => {
       console.warn('Failed to delete server session on cancel:', err)
