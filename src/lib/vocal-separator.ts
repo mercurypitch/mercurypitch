@@ -27,6 +27,7 @@ export class VocalSeparator {
   private worker: Worker | null = null
   private _status: SeparatorStatus = 'idle'
   private _error: string | null = null
+  private _provider: string | null = null
   private readyResolve: ((value: void) => void) | null = null
   private readyPromise: Promise<void> | null = null
   private pendingRequest: {
@@ -42,6 +43,10 @@ export class VocalSeparator {
 
   get error(): string | null {
     return this._error
+  }
+
+  get provider(): string | null {
+    return this._provider
   }
 
   /** Progress callback — receives 0-100 percentage. */
@@ -72,6 +77,7 @@ export class VocalSeparator {
       case 'ready': {
         this._status = 'ready'
         this._error = null
+        this._provider = msg.provider
         if (this.readyResolve) {
           this.readyResolve()
           this.readyResolve = null

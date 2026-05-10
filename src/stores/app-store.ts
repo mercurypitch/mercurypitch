@@ -133,6 +133,7 @@ export interface UvrSession {
   }
   stemMeta?: Record<string, { duration?: number; size?: number }>
   processingMode?: UvrProcessingMode
+  provider?: string
   numChunks?: number
   createdAt: number
 }
@@ -237,6 +238,21 @@ export function setUvrSessionApiId(
   const session = sessions.find((s) => s.sessionId === sessionId)
   if (session) {
     session.apiSessionId = apiSessionId
+    saveAllUvrSessions(sessions)
+    bumpSessions()
+    setCurrentUvrSession({ ...session })
+  }
+}
+
+/** Set the provider (WebGPU/WASM) on a local session */
+export function setUvrSessionProvider(
+  sessionId: string,
+  provider: string,
+): void {
+  const sessions = getAllUvrSessions()
+  const session = sessions.find((s) => s.sessionId === sessionId)
+  if (session) {
+    session.provider = provider
     saveAllUvrSessions(sessions)
     bumpSessions()
     setCurrentUvrSession({ ...session })
