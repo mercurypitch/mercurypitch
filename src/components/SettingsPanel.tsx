@@ -538,25 +538,6 @@ export const SettingsPanel: Component = () => {
           </div>
 
           <div class="settings-row">
-            <label for="vis-practice-result-popup">Practice Result Popup</label>
-            <label class="settings-toggle">
-              <input
-                type="checkbox"
-                id="vis-practice-result-popup"
-                checked={showPracticeResultPopup()}
-                onChange={(e) => {
-                  setShowPracticeResultPopup(e.currentTarget.checked)
-                }}
-              />
-              <span class="settings-slider" />
-            </label>
-            <small>
-              Show a score overlay after each practice run or session completes.
-              When off, results are still recorded in history.
-            </small>
-          </div>
-
-          <div class="settings-row">
             <label for="vis-playback-ball">Jumping Ball (Playback)</label>
             <label class="settings-toggle">
               <input
