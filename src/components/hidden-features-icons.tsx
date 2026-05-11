@@ -2,8 +2,6 @@
 // SVG Icons for Hidden Features (Challenges, Community, etc.)
 // ============================================================
 
-/** @jsxImportSource solid-js */
-
 // ── Challenge Icons ───────────────────────────────────────────────
 
 export const IconMicChallenge = () => (
