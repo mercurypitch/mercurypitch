@@ -1,6 +1,6 @@
 {
   "name": "pitch-perfect-app",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -14,7 +14,7 @@
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
-    "serve": "npx http-server dist -p 4173 -c-1",
+    "serve": "pnpm dlx http-server dist -p 4173 -c-1",
     "typecheck": "tsc --noEmit",
     "fmt": "prettier src --check",
     "fmt:write": "prettier src --write --log-level warn",
@@ -22,7 +22,7 @@
     "lint:fix": "eslint src --fix",
     "lines": "cloc src --exclude-dir=node_modules,dist --by-file-by-lang --not-match-f='(.*[.]d[.]ts|.*[.]stories[.].*|.*[.]test[.].*|.*[.]json)'",
     "check:syntax": "run-s typecheck lint fmt",
-    "deploy:dev": "npx wrangler deploy --env dev",
+    "deploy:dev": "pnpm exec wrangler deploy --env dev",
     "size": "vite build && du -sh dist/assets/*.js dist/assets/*.css dist/assets/*.wasm 2>/dev/null | sort -rh"
   },
   "dependencies": {

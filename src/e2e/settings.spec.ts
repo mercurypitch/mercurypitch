@@ -255,7 +255,7 @@ test.describe('Settings Panel', () => {
     const versionEl = page.locator('.about-version')
     await expect(versionEl).toBeVisible()
     const text = await versionEl.textContent()
-    expect(text).toMatch(/Version\s+\d/)
+    expect(text).toMatch(/v\d+\.\d+\.\d+/i)
   })
 
   test('About section has description', async ({ page }) => {

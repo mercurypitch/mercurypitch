@@ -2,7 +2,7 @@ import { test } from '@playwright/test'
 import { dismissOverlays } from './helpers/ui'
 
 test('debug settings tab click - detailed', async ({ page }) => {
-  await page.goto('http://localhost:4173/')
+  await page.goto('/')
   await page.waitForSelector('#app-tabs', { timeout: 10000 })
 
   await dismissOverlays(page)

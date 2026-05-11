@@ -19,7 +19,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: `npm run build && npx serve dist -l ${process.env.VITE_E2E_PORT || 3001}`,
+    command: `pnpm run build && pnpm dlx serve dist -l ${process.env.VITE_E2E_PORT || 3001}`,
     url: `http://localhost:${process.env.VITE_E2E_PORT || 3001}`,
     reuseExistingServer: true,
     timeout: 120000,
