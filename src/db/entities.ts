@@ -234,6 +234,7 @@ export interface UvrSessionRecord extends DbEntity {
   userId: string
   status: string           // 'idle' | 'uploading' | 'processing' | 'completed' | 'error' | 'cancelled'
   progress: number
+  fileHash?: string        // SHA-256 hex digest of the original file
   originalFileName: string
   originalFileSize: number
   originalFileType: string

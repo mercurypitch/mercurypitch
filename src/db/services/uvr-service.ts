@@ -107,6 +107,7 @@ export async function saveUvrSession(
     numChunks?: number
     processingTime?: number
     error?: string
+    fileHash?: string
     vocalStemId?: string
     instrumentalStemId?: string
     originalFileBlobId?: string
@@ -130,6 +131,7 @@ export async function saveUvrSession(
       userId: getUserId(),
       status: session.status,
       progress: session.progress,
+      fileHash: session.fileHash,
       originalFileName: session.originalFileName,
       originalFileSize: session.originalFileSize,
       originalFileType: session.originalFileType,
@@ -143,6 +145,23 @@ export async function saveUvrSession(
       originalFileBlobId: session.originalFileBlobId,
     })
     return created.id
+  } catch {
+    return null
+  }
+}
+
+export async function findSessionByFileHash(
+  fileHash: string,
+): Promise<{ sessionId: string } | null> {
+  try {
+    const db = await getDb()
+    const repo = db.getRepository<UvrSessionRecord>('uvrSessions')
+    const results = await repo.findAll({
+      where: { fileHash } as Record<string, unknown>,
+      limit: 1,
+    })
+    if (results.length === 0) return null
+    return { sessionId: results[0].appSessionId }
   } catch {
     return null
   }

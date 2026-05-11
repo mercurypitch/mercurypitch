@@ -4,12 +4,13 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, Show } from 'solid-js'
+import { computeFileHash } from '@/lib/file-hash'
 import { generateVocalMidi } from '@/lib/midi-generator'
 import { getProcessStatus } from '@/lib/uvr-api'
 import { cancelUvrPipeline, destroyPipeline, preInitModel, runUvrPipeline, } from '@/lib/uvr-processing-pipeline'
-import { hydrateStemUrls } from '@/db/services/uvr-service'
+import { findSessionByFileHash, hydrateStemUrls, saveUvrSession } from '@/db/services/uvr-service'
 import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
-import { cancelUvrSession, completeUvrSession, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, getAllUvrSessions, getAllUvrSessionsReactive, getUvrProcessingMode, getUvrSession, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrProcessingMode, startUvrSession, updateUvrSessionOutputs, uvrProcessingMode, } from '@/stores/app-store'
+import { cancelUvrSession, completeUvrSession, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, getAllUvrSessions, getAllUvrSessionsReactive, getUvrProcessingMode, getUvrSession, getUvrSessionByHash, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrProcessingMode, startUvrSession, updateUvrSessionOutputs, uvrProcessingMode, } from '@/stores/app-store'
 import { showNotification } from '@/stores/notifications-store'
 import { StemMixer, UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrSettings, UvrUploadControl, } from '.'
 import { CheckCircle, FileUpload, Music, Settings, Trash2, X, } from './icons'
@@ -168,8 +169,35 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     return session
   }
 
-  const handleFileSelect = (file: File) => {
+  const handleFileSelect = async (file: File) => {
     setSelectedFile(file)
+
+    // Compute file hash for dedup
+    const hash = await computeFileHash(file)
+
+    // Check localStorage first for a completed session with this hash
+    const existing = getUvrSessionByHash(hash)
+    if (existing) {
+      const hydrated = await ensureHydrated(existing)
+      setCurrentUvrSession(hydrated)
+      setCurrentView('results')
+      showNotification('This file was already processed — loaded existing stems.', 'info')
+      return
+    }
+
+    // Check IndexedDB for persisted sessions with this hash
+    const dbMatch = await findSessionByFileHash(hash)
+    if (dbMatch) {
+      const stored = getUvrSession(dbMatch.sessionId)
+      if (stored && stored.status === 'completed') {
+        const hydrated = await ensureHydrated(stored)
+        setCurrentUvrSession(hydrated)
+        setCurrentView('results')
+        showNotification('This file was already processed — loaded existing stems.', 'info')
+        return
+      }
+    }
+
     const mode = getUvrProcessingMode()
     const sessionId = startUvrSession(
       file.name,
@@ -177,9 +205,9 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       file.type,
       'separate',
       mode,
+      hash,
     )
     setCurrentView('processing')
-    // Immediately start processing with the created session
     handleProcessStart(sessionId, mode)
   }
 
@@ -214,6 +242,21 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
         },
         onComplete: (result) => {
           completeUvrSession(sessionId, result.outputs, result.stemMeta)
+          // Persist session to IndexedDB for hash-based dedup
+          const s = getUvrSession(sessionId)
+          if (s) {
+            void saveUvrSession({
+              sessionId,
+              status: 'completed',
+              progress: 100,
+              fileHash: s.fileHash,
+              originalFileName: s.originalFile?.name ?? file.name,
+              originalFileSize: s.originalFile?.size ?? file.size,
+              originalFileType: s.originalFile?.mimeType ?? file.type,
+              processingMode: processingMode,
+              processingTime: s.processingTime,
+            })
+          }
           setCurrentView('results')
         },
         onError: (message) => {

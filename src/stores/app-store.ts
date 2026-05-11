@@ -121,6 +121,7 @@ export interface UvrSession {
   indeterminate?: boolean
   processingTime?: number
   error?: string
+  fileHash?: string
   originalFile?: {
     name: string
     size: number
@@ -162,6 +163,14 @@ export function getUvrSession(sessionId: string): UvrSession | undefined {
   return sessions.find((s) => s.sessionId === sessionId)
 }
 
+/** Find a completed session by file hash */
+export function getUvrSessionByHash(fileHash: string): UvrSession | undefined {
+  const sessions = getAllUvrSessions()
+  return sessions.find(
+    (s) => s.fileHash === fileHash && s.status === 'completed',
+  )
+}
+
 /** Get all sessions */
 export function getAllUvrSessions(): UvrSession[] {
   const saved = localStorage.getItem('pitchperfect_uvr_sessions')
@@ -187,6 +196,7 @@ export function startUvrSession(
   mimeType: string,
   _mode: UvrMode = 'separate',
   processingMode?: UvrProcessingMode,
+  fileHash?: string,
 ): string {
   const sessionId = `uvr-session-${Date.now()}`
   const now = Date.now()
@@ -195,6 +205,7 @@ export function startUvrSession(
     sessionId,
     status: 'idle',
     progress: 0,
+    fileHash,
     originalFile: { name: fileName, size: fileSize, mimeType },
     processingMode: processingMode ?? getUvrProcessingMode(),
     createdAt: now,
