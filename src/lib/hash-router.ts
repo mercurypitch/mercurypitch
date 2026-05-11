@@ -27,6 +27,7 @@ const VALID_TABS: Set<string> = new Set([
   TAB_LEADERBOARD,
   TAB_CHALLENGES,
   TAB_KARAOKE,
+  TAB_JAM,
 ])
 
 const VALID_GUIDE_SECTIONS: Set<string> = new Set([

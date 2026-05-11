@@ -2,7 +2,7 @@
 // WebSocket client that connects to the Cloudflare Durable Object
 // signaling relay for SDP/ICE exchange and room lifecycle.
 
-import type { SignalingMessage, JamCallbacks } from './jam-types'
+import type { JamCallbacks, SignalingMessage } from './jam-types'
 
 const SIGNALING_URL = import.meta.env.VITE_JAM_SIGNALING_URL ?? '/api/jam'
 
@@ -15,7 +15,10 @@ export function createSignalingClient(callbacks: JamCallbacks) {
   let connecting = false
 
   function connect(roomId: string, displayName: string): void {
-    if (ws?.readyState === WebSocket.OPEN || ws?.readyState === WebSocket.CONNECTING) {
+    if (
+      ws?.readyState === WebSocket.OPEN ||
+      ws?.readyState === WebSocket.CONNECTING
+    ) {
       return
     }
 
@@ -39,10 +42,10 @@ export function createSignalingClient(callbacks: JamCallbacks) {
 
     ws.onclose = () => {
       connecting = false
-      if (currentRoomId && currentDisplayName) {
+      if (currentRoomId !== null && currentDisplayName !== null) {
         // Auto-reconnect after 2 seconds
         reconnectTimer = setTimeout(() => {
-          if (currentRoomId && currentDisplayName) {
+          if (currentRoomId !== null && currentDisplayName !== null) {
             connect(currentRoomId, currentDisplayName)
           }
         }, 2000)
@@ -56,7 +59,10 @@ export function createSignalingClient(callbacks: JamCallbacks) {
   }
 
   function createRoom(displayName: string): void {
-    if (ws?.readyState === WebSocket.OPEN || ws?.readyState === WebSocket.CONNECTING) {
+    if (
+      ws?.readyState === WebSocket.OPEN ||
+      ws?.readyState === WebSocket.CONNECTING
+    ) {
       return
     }
 
@@ -212,4 +218,3 @@ function parseMessage(data: string): SignalingMessage | null {
     return null
   }
 }
-

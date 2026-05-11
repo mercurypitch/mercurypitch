@@ -3,21 +3,9 @@
 
 import type { Component } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
-import {
-  jamRoomId,
-  jamIsHost,
-  jamPeers,
-  jamIsMuted,
-  jamError,
-  jamState,
-  jamConnectedPeers,
-  createJamRoom,
-  joinJamRoom,
-  leaveJamRoom,
-  toggleJamMute,
-} from '@/stores/jam-store'
-import { JamPeerList } from './JamPeerList'
+import { createJamRoom, jamConnectedPeers, jamError, jamIsMuted, jamPeers, jamRoomId, jamState, joinJamRoom, leaveJamRoom, toggleJamMute, } from '@/stores/jam-store'
 import { JamInviteModal } from './JamInviteModal'
+import { JamPeerList } from './JamPeerList'
 
 export const JamPanel: Component = () => {
   const [displayName, setDisplayName] = createSignal('')
@@ -25,18 +13,17 @@ export const JamPanel: Component = () => {
   const [showInvite, setShowInvite] = createSignal(false)
   const [joining, setJoining] = createSignal(false)
 
-  const handleCreate = async () => {
+  const handleCreate = () => {
     const name = displayName().trim() || 'Anonymous'
-    await createJamRoom(name)
+    createJamRoom(name).catch(() => {})
   }
 
-  const handleJoin = async () => {
+  const handleJoin = () => {
     const roomId = joinRoomId().trim()
     if (!roomId) return
     setJoining(true)
     const name = displayName().trim() || 'Anonymous'
-    await joinJamRoom(roomId, name)
-    setJoining(false)
+    joinJamRoom(roomId, name).finally(() => setJoining(false))
   }
 
   return (
@@ -128,7 +115,10 @@ export const JamPanel: Component = () => {
               >
                 {jamIsMuted() ? 'Unmute' : 'Mute'}
               </button>
-              <button class="jam-btn jam-btn-sm jam-btn-danger" onClick={leaveJamRoom}>
+              <button
+                class="jam-btn jam-btn-sm jam-btn-danger"
+                onClick={leaveJamRoom}
+              >
                 Leave
               </button>
             </div>
