@@ -142,4 +142,8 @@ export class ServerAdapter implements DatabaseAdapter {
     // the server handles atomicity per-endpoint.
     return fn(this)
   }
+
+  async destroy(): Promise<void> {
+    this.repositories.clear()
+  }
 }

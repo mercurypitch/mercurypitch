@@ -1,7 +1,7 @@
 import type { Accessor, Setter } from 'solid-js'
 import { onCleanup, onMount } from 'solid-js'
 import type { ActiveTab } from '@/features/tabs/constants'
-import { TAB_KARAOKE, TAB_PIANO } from '@/features/tabs/constants'
+import { TAB_KARAOKE, TAB_PIANO, TAB_SINGING } from '@/features/tabs/constants'
 import { PLAYBACK_MODE_SESSION } from '@/features/tabs/constants'
 import * as notifStore from '@/stores/notifications-store'
 import * as transportStore from '@/stores/transport-store'
@@ -120,13 +120,15 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers): void {
         return
       }
 
-      // Singing / other tabs — play/pause playback
-      if (handlers.isPlaying()) {
-        handlers.pause()
-      } else if (handlers.isPaused()) {
-        handlers.resume()
-      } else {
-        handlers.play()
+      // Singing tab — play/pause playback
+      if (tab === TAB_SINGING) {
+        if (handlers.isPlaying()) {
+          handlers.pause()
+        } else if (handlers.isPaused()) {
+          handlers.resume()
+        } else {
+          handlers.play()
+        }
       }
     }
 

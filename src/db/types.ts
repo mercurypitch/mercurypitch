@@ -38,4 +38,7 @@ export interface DatabaseAdapter {
 
   /** Schema version — adapters use this for migrations. */
   readonly schemaVersion: number
+
+  /** Delete the entire database. Used for factory reset. */
+  destroy(): Promise<void>
 }
