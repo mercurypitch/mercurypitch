@@ -4,7 +4,6 @@
 
 import { getDb } from '@/db'
 import type { UserProfile } from '@/db/entities'
-import { getUserId } from '@/db/seed'
 
 function todayDateString(): string {
   return new Date().toISOString().slice(0, 10)
@@ -38,7 +37,7 @@ export async function updatePracticeStreak(): Promise<number> {
 
     let newStreak: number
 
-    if (!lastDate || lastDate === '') {
+    if (lastDate === null || lastDate === '') {
       newStreak = 1
     } else if (lastDate === today) {
       newStreak = profile?.currentStreak ?? 1
@@ -48,7 +47,7 @@ export async function updatePracticeStreak(): Promise<number> {
       newStreak = 1
     }
 
-    if (profile) {
+    if (profile !== undefined) {
       await repo.update(profile.id, {
         lastPracticeDate: today,
         currentStreak: newStreak,
@@ -71,7 +70,12 @@ export async function getCurrentStreak(): Promise<number> {
     const profiles = await repo.findAll()
     const profile = profiles[0]
 
-    if (!profile?.lastPracticeDate) return 0
+    if (
+      profile === undefined ||
+      profile.lastPracticeDate === null ||
+      profile.lastPracticeDate === ''
+    )
+      return 0
 
     const today = todayDateString()
     const yesterday = yesterdayDateString()
