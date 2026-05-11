@@ -11,6 +11,7 @@ import { Box, Calendar, CheckCircle, Cpu, Headphones, Loader2, Midi, Music, Play
 
 interface SessionResultProps {
   sessionId: string
+  disabled?: boolean
   onView?: (sessionId: string) => void
   onExport?: (
     sessionId: string,
@@ -92,6 +93,7 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
   }
 
   const toggleStemSelection = (stem: string) => {
+    if (props.disabled && session()?.status !== 'processing') return
     setSelectedStems((prev) => {
       const next = new Set(prev)
       if (next.has(stem)) next.delete(stem)
@@ -135,24 +137,53 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
         return <XCircle />
       case 'cancelled':
         return <X />
-      case 'processing':
+      case 'processing': {
+        const progress = session()?.progress ?? 0
+        const radius = 9
+        const circumference = 2 * Math.PI * radius
+        const offset = circumference - (progress / 100) * circumference
         return (
-          <div
-            style={{
-              animation: 'spin 1.5s linear infinite',
-              display: 'inline-flex',
-            }}
+          <svg
+            viewBox="0 0 24 24"
+            width="1em"
+            height="1em"
+            style={{ transform: 'rotate(-90deg)' }}
           >
-            <Loader2 />
-          </div>
+            <circle
+              cx="12"
+              cy="12"
+              r={radius}
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-opacity="0.2"
+            />
+            <circle
+              cx="12"
+              cy="12"
+              r={radius}
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-dasharray={circumference}
+              stroke-dashoffset={offset}
+              stroke-linecap="round"
+              style={{ transition: 'stroke-dashoffset 0.3s ease' }}
+            />
+          </svg>
         )
+      }
       default:
         return <Loader2 />
     }
   }
 
   return (
-    <div class="uvr-session-result">
+    <div
+      class={`uvr-session-result ${
+        props.disabled && session()?.status !== 'processing' ? 'disabled' : ''
+      }`}
+    >
       {/* Header */}
       <div class="session-header">
         <div class="session-icon-wrapper">
@@ -187,6 +218,7 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
           class="session-delete-btn"
           onClick={handleDelete}
           aria-label="Delete session"
+          disabled={props.disabled}
         >
           <Trash2 />
         </button>
@@ -196,6 +228,7 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
             void handleCopyLink(e)
           }}
           title="Copy share link"
+          disabled={props.disabled}
         >
           <Share />
         </button>
@@ -217,7 +250,7 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
             : session()?.status === 'completed'
               ? 'Completed'
               : session()?.status === 'processing'
-                ? 'Processing...'
+                ? `Processing... ${Math.round(session()?.progress ?? 0)}%`
                 : (session()?.status ?? 'Idle')}
         </span>
         <span class="status-time">
@@ -356,20 +389,47 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
       {/* Actions */}
       <Show
         when={
-          session()?.status === 'completed' || session()?.status === 'error'
+          session()?.status === 'completed' ||
+          session()?.status === 'error' ||
+          session()?.status === 'processing'
         }
       >
         <div class="session-result-actions">
-          <Show when={session()?.status === 'completed'}>
+          <Show
+            when={
+              session()?.status === 'completed' ||
+              session()?.status === 'processing'
+            }
+          >
             <button
               class="session-result-btn session-result-btn-primary"
+              disabled={props.disabled && session()?.status !== 'processing'}
               onClick={() => props.onView?.(props.sessionId)}
             >
-              <Play /> View Results
+              <Show
+                when={session()?.status === 'processing'}
+                fallback={
+                  <>
+                    <Play /> View Results
+                  </>
+                }
+              >
+                <span
+                  style={{
+                    animation: 'spin 1.5s linear infinite',
+                    display: 'inline-flex',
+                    'align-items': 'center',
+                  }}
+                >
+                  <Loader2 />
+                </span>{' '}
+                View Progress
+              </Show>
             </button>
-            <Show when={hasSelection()}>
+            <Show when={session()?.status === 'completed' && hasSelection()}>
               <button
                 class="session-result-btn session-result-btn-mixer"
+                disabled={props.disabled}
                 onClick={handleMixSelected}
               >
                 <SlidersHorizontal /> Mix Selected
@@ -379,6 +439,7 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
           <Show when={session()?.status === 'error' && session()?.originalFile}>
             <button
               class="session-result-btn session-result-btn-primary"
+              disabled={props.disabled}
               onClick={(e) => {
                 e.stopPropagation()
                 props.onRetry?.(props.sessionId)

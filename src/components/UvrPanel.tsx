@@ -368,7 +368,12 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
         saveAllUvrSessions(all)
       }
     }
-    setCurrentView('results')
+
+    if (hydrated.status === 'processing') {
+      setCurrentView('processing')
+    } else {
+      setCurrentView('results')
+    }
   }
 
   const handlePracticeStart = async (
@@ -753,6 +758,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 void handleProcessStart(file)
               }}
               processing={session()?.status === 'processing'}
+              disabled={allSessions().some((s) => s.status === 'processing')}
             />
             <Show when={allSessions().length > 0}>
               <div class="upload-divider">
@@ -768,7 +774,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                     onClick={() => setShowClearStorageConfirm(true)}
                     title="Delete all sessions, stems, and uploaded files from database"
                   >
-                    <Trash2 /> Clear Storage
+                    <Trash2 /> Clear Cached Songs
                   </button>
                   <button
                     class="delete-all-btn"
@@ -785,6 +791,9 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                   {(s) => (
                     <UvrSessionResult
                       sessionId={s.sessionId}
+                      disabled={allSessions().some(
+                        (s) => s.status === 'processing',
+                      )}
                       onView={() => {
                         void handleSessionView(s.sessionId)
                       }}
@@ -937,7 +946,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
           onClick={() => setShowClearStorageConfirm(false)}
         >
           <div class="delete-all-dialog" onClick={(e) => e.stopPropagation()}>
-            <h4>Clear Storage</h4>
+            <h4>Clear Cached Songs</h4>
             <p>
               This will permanently remove all {allSessions().length} session
               {allSessions().length !== 1 ? 's' : ''}, generated stems, and
@@ -952,7 +961,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 Cancel
               </button>
               <button class="delete-all-confirm" onClick={handleClearStorage}>
-                <Trash2 /> Clear Storage
+                <Trash2 /> Clear Cached Songs
               </button>
             </div>
           </div>

@@ -710,6 +710,12 @@
   min-height: 0;
 }
 
+.uvr-upload-control.disabled {
+  opacity: 0.4;
+  filter: grayscale(100%);
+  pointer-events: none;
+}
+
 .upload-header {
   text-align: center;
 }
@@ -1263,6 +1269,12 @@
   transition:
     border-color 0.2s,
     box-shadow 0.2s;
+}
+
+.uvr-session-result.disabled {
+  opacity: 0.4;
+  filter: grayscale(100%);
+  pointer-events: none;
 }
 
 .uvr-session-result:hover {
