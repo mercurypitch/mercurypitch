@@ -657,6 +657,19 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
               </span>
             </Show>
           </div>
+          <Show when={currentView() !== 'upload'}>
+            <button
+              class="header-btn header-btn-ghost"
+              onClick={() => {
+                setCurrentView('upload')
+                props.onViewChange?.('upload')
+                props.onSessionChange?.(null)
+              }}
+              title="All Sessions"
+            >
+              <FileUpload />
+            </button>
+          </Show>
           <button
             class="header-btn header-btn-ghost"
             onClick={() => setShowSettings(!showSettings())}
