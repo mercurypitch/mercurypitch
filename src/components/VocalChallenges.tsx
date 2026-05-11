@@ -8,7 +8,7 @@ import type { Achievement as DBAchievement, BadgeDefinition as DBBadgeDefinition
 import { getUserId } from '@/db/seed'
 import { loadAchievementDefinitions, loadBadgeDefinitions, loadChallengeDefinitions, loadChallengeProgress, loadUserAchievements, loadUserBadges, saveChallengeProgress, } from '@/db/services/challenges-service'
 import { getSessionHistory } from '@/stores'
-import { IconBadge, IconBoltChallenge, IconChart, IconCheckSolid, IconCloseSimple, IconCrown, IconDiamond, IconEagle, IconFireChallenge, IconGuitarChallenge, IconKeyboardChallenge, IconLeaf, IconLockSimple, IconMicChallenge, IconMoon, IconMusicChallenge, IconPaper, IconRefreshSimple, IconRocket, IconSparkle, IconStarChallenge, IconStopwatch, IconTarget, IconVolume, iconByName, renderIcon, } from './hidden-features-icons'
+import { IconBadge, IconBoltChallenge, iconByName, IconChart, IconCheckSolid, IconCloseSimple, IconCrown, IconDiamond, IconEagle, IconFireChallenge, IconGuitarChallenge, IconKeyboardChallenge, IconLeaf, IconLockSimple, IconMicChallenge, IconMoon, IconMusicChallenge, IconPaper, IconRefreshSimple, IconRocket, IconSparkle, IconStarChallenge, IconStopwatch, IconTarget, IconVolume, renderIcon, } from './hidden-features-icons'
 
 // (SVG icons imported from ./hidden-features-icons)
 
