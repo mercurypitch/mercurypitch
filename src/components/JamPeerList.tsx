@@ -23,14 +23,14 @@ export const JamPeerList: Component<JamPeerListProps> = (props) => {
         when={props.peers.length > 0}
         fallback={<p class="jam-peer-empty">Waiting for peers to join...</p>}
       >
-        <h3 class="jam-peer-heading">
-          Peers ({props.peers.length})
-        </h3>
+        <h3 class="jam-peer-heading">Peers ({props.peers.length})</h3>
         <For each={props.peers}>
           {(peer) => (
             <div class={`jam-peer-item jam-peer-${peer.connectionState}`}>
               <div class="jam-peer-info">
-                <span class={`jam-peer-dot jam-peer-dot-${peer.connectionState}`} />
+                <span
+                  class={`jam-peer-dot jam-peer-dot-${peer.connectionState}`}
+                />
                 <span class="jam-peer-name">{peer.displayName}</span>
               </div>
               <div class="jam-peer-meta">

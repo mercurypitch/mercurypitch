@@ -2,9 +2,9 @@
 // Reactive state management for P2P jam sessions.
 // Wires together jam-service callbacks with SolidJS signals.
 
-import { createSignal, createMemo } from 'solid-js'
-import type { JamPeer } from '@/lib/jam-types'
+import { createMemo, createSignal } from 'solid-js'
 import { createJamService } from '@/lib/jam-service'
+import type { JamPeer } from '@/lib/jam-types'
 
 // ── Signals ─────────────────────────────────────────────────────────
 
@@ -14,7 +14,9 @@ export const [jamIsHost, setJamIsHost] = createSignal(false)
 export const [jamPeers, setJamPeers] = createSignal<JamPeer[]>([])
 export const [jamIsMuted, setJamIsMuted] = createSignal(false)
 export const [jamError, setJamError] = createSignal<string | null>(null)
-export const [jamState, setJamState] = createSignal<'idle' | 'connecting' | 'active'>('idle')
+export const [jamState, setJamState] = createSignal<
+  'idle' | 'connecting' | 'active'
+>('idle')
 
 // ── Derived ─────────────────────────────────────────────────────────
 
@@ -28,7 +30,7 @@ export const jamHasActiveRoom = createMemo(() => jamRoomId() !== null)
 // Created once per session and wired to store signals.
 
 let jamService: ReturnType<typeof createJamService> | null = null
-let remoteAudioNodes = new Map<string, MediaStreamAudioSourceNode>()
+const remoteAudioNodes = new Map<string, MediaStreamAudioSourceNode>()
 let audioContext: AudioContext | null = null
 
 function getAudioContext(): AudioContext {
@@ -62,7 +64,9 @@ export function initJam() {
     },
     onConnectionStateChange: (peerId, state) => {
       setJamPeers((prev) =>
-        prev.map((p) => (p.id === peerId ? { ...p, connectionState: state } : p)),
+        prev.map((p) =>
+          p.id === peerId ? { ...p, connectionState: state } : p,
+        ),
       )
     },
     onLatencyUpdate: (peerId, latency) => {
@@ -79,7 +83,9 @@ export function initJam() {
   })
 }
 
-export async function createJamRoom(displayName: string): Promise<string | null> {
+export async function createJamRoom(
+  displayName: string,
+): Promise<string | null> {
   initJam()
   setJamState('connecting')
   setJamIsHost(true)
@@ -91,7 +97,7 @@ export async function createJamRoom(displayName: string): Promise<string | null>
     setJamPeerId(jamService!.getPeerId())
     setJamState('active')
     return roomId
-  } catch (err) {
+  } catch (_err) {
     setJamError('Failed to create room')
     setJamState('idle')
     return null
@@ -111,7 +117,7 @@ export async function joinJamRoom(
     setJamPeerId(jamService!.getPeerId())
     setJamState('active')
     return true
-  } catch (err) {
+  } catch (_err) {
     setJamError('Failed to join room')
     setJamState('idle')
     return false
@@ -156,7 +162,7 @@ function waitForRoomId(): Promise<string> {
     const interval = setInterval(() => {
       attempts++
       const id = jamService?.getRoomId()
-      if (id) {
+      if (id !== null && id !== undefined) {
         clearInterval(interval)
         resolve(id)
       } else if (attempts > 20) {

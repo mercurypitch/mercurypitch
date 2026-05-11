@@ -3,8 +3,8 @@
 // Handles RTCPeerConnection lifecycle, Opus codec configuration,
 // and audio track management.
 
-import type { JamCallbacks, JamPeer } from './jam-types'
 import { createSignalingClient } from './jam-signaling'
+import type { JamCallbacks, JamPeer } from './jam-types'
 
 const ICE_SERVERS: RTCIceServer[] = [
   { urls: 'stun:stun.l.google.com:19302' },
@@ -27,12 +27,9 @@ export function createJamService(callbacks: JamCallbacks) {
 
   const signaling = createSignalingClient({
     ...callbacks,
-    // Wrap onPeerJoined: initiate WebRTC handshake, then notify store
-    onPeerJoined: async (peer: JamPeer) => {
-      await initiatePeerConnection(peer)
-      callbacks.onPeerJoined(peer)
+    onPeerJoined: (peer: JamPeer) => {
+      initiateNewPeer(peer)
     },
-    // Wrap onPeerLeft: close PC, then notify store
     onPeerLeft: (peerId: string) => {
       const pc = peerConnections.get(peerId)
       if (pc) {
@@ -41,14 +38,14 @@ export function createJamService(callbacks: JamCallbacks) {
       }
       callbacks.onPeerLeft(peerId)
     },
-    onOffer: async (target, sdp) => {
-      await handleOffer(target, sdp)
+    onOffer: (target, sdp) => {
+      handleOffer(target, sdp).catch(() => {})
     },
-    onAnswer: async (target, sdp) => {
-      await handleAnswer(target, sdp)
+    onAnswer: (target, sdp) => {
+      handleAnswer(target, sdp).catch(() => {})
     },
-    onIceCandidate: async (target, candidate) => {
-      await handleIceCandidate(target, candidate)
+    onIceCandidate: (target, candidate) => {
+      handleIceCandidate(target, candidate).catch(() => {})
     },
   })
 
@@ -103,7 +100,7 @@ export function createJamService(callbacks: JamCallbacks) {
 
   // ── Peer connection management ──────────────────────────────────
 
-  async function initiatePeerConnection(peer: JamPeer): Promise<void> {
+  async function initiateNewPeer(peer: JamPeer): Promise<void> {
     if (disposed || peerConnections.has(peer.id)) return
 
     const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS })
@@ -118,7 +115,7 @@ export function createJamService(callbacks: JamCallbacks) {
     // Handle remote audio track
     pc.ontrack = (event) => {
       const remoteStream = event.streams[0]
-      if (remoteStream) {
+      if (remoteStream !== undefined) {
         callbacks.onPeerStream(peer.id, remoteStream)
       }
     }
@@ -137,7 +134,10 @@ export function createJamService(callbacks: JamCallbacks) {
 
     pc.onicecandidate = (event) => {
       if (event.candidate) {
-        signaling.sendIceCandidate(peer.id, JSON.stringify(event.candidate.toJSON()))
+        signaling.sendIceCandidate(
+          peer.id,
+          JSON.stringify(event.candidate.toJSON()),
+        )
       }
     }
 
@@ -176,7 +176,10 @@ export function createJamService(callbacks: JamCallbacks) {
     await pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(sdp)))
   }
 
-  async function handleIceCandidate(target: string, candidate: string): Promise<void> {
+  async function handleIceCandidate(
+    target: string,
+    candidate: string,
+  ): Promise<void> {
     const pc = peerConnections.get(target)
     if (!pc || disposed) return
     try {
@@ -189,12 +192,15 @@ export function createJamService(callbacks: JamCallbacks) {
   function setupPeerHandlers(pc: RTCPeerConnection, peerId: string): void {
     pc.ontrack = (event) => {
       const remoteStream = event.streams[0]
-      if (remoteStream) {
+      if (remoteStream !== undefined) {
         callbacks.onPeerStream(peerId, remoteStream)
       }
     }
     pc.onconnectionstatechange = () => {
-      callbacks.onConnectionStateChange(peerId, mapConnectionState(pc.connectionState))
+      callbacks.onConnectionStateChange(
+        peerId,
+        mapConnectionState(pc.connectionState),
+      )
     }
     pc.oniceconnectionstatechange = () => {
       if (pc.iceConnectionState === 'connected') {
@@ -203,19 +209,28 @@ export function createJamService(callbacks: JamCallbacks) {
     }
     pc.onicecandidate = (event) => {
       if (event.candidate) {
-        signaling.sendIceCandidate(peerId, JSON.stringify(event.candidate.toJSON()))
+        signaling.sendIceCandidate(
+          peerId,
+          JSON.stringify(event.candidate.toJSON()),
+        )
       }
     }
   }
 
   // ── Latency measurement ─────────────────────────────────────────
 
-  async function measureLatency(peerId: string, pc: RTCPeerConnection): Promise<void> {
+  async function measureLatency(
+    peerId: string,
+    pc: RTCPeerConnection,
+  ): Promise<void> {
     try {
       const stats = await pc.getStats()
       let rtt = 0
       stats.forEach((report) => {
-        if (report.type === 'candidate-pair' && 'currentRoundTripTime' in report) {
+        if (
+          report.type === 'candidate-pair' &&
+          'currentRoundTripTime' in report
+        ) {
           rtt = (report.currentRoundTripTime as number) * 1000
         }
       })
@@ -263,7 +278,9 @@ export function createJamService(callbacks: JamCallbacks) {
   }
 }
 
-function mapConnectionState(state: RTCPeerConnectionState): JamPeer['connectionState'] {
+function mapConnectionState(
+  state: RTCPeerConnectionState,
+): JamPeer['connectionState'] {
   switch (state) {
     case 'new':
     case 'connecting':
