@@ -530,7 +530,8 @@ export class AudioEngine {
     osc.frequency.value = 800 // 800 Hz click (matches old app)
 
     gain.gain.value = 0.3
-    gain.gain.setValueAtTime(0.3, this.audioCtx.currentTime)
+    gain.gain.setValueAtTime(0, this.audioCtx.currentTime)
+    gain.gain.linearRampToValueAtTime(0.3, this.audioCtx.currentTime + 0.005)
     gain.gain.exponentialRampToValueAtTime(
       0.001,
       this.audioCtx.currentTime + 0.05,
@@ -716,7 +717,7 @@ export class AudioEngine {
     // A new note must replace the previous note immediately at the note boundary.
     // Lingering release tails here make the previous pitch sound over the next note.
     if (this.toneOscillator !== null) {
-      this.stopTone(20) // 20ms fade out to prevent popping/crackling
+      this.stopTone(50) // 50ms fade out to prevent popping/crackling
     }
 
     if (this.toneCleanupTimer !== null) {
@@ -825,7 +826,7 @@ export class AudioEngine {
   }
 
   /** Stop the current tone with release envelope */
-  stopTone(releaseMs: number = 10): void {
+  stopTone(releaseMs: number = 50): void {
     if (!this.audioCtx || !this.toneGain || !this.toneOscillator) return
 
     const now = this.audioCtx.currentTime
@@ -931,7 +932,7 @@ export class AudioEngine {
 
     if (!hasCustomEnvelope) {
       mainGain.gain.setValueAtTime(0, now)
-      mainGain.gain.linearRampToValueAtTime(this.volume, now + 0.01)
+      mainGain.gain.linearRampToValueAtTime(this.volume, now + 0.015)
     }
 
     for (const osc of oscillators) {
@@ -1235,7 +1236,8 @@ export class AudioEngine {
 
     osc.type = 'square'
     osc.frequency.value = type === 'start' ? 600 : 400
-    gain.gain.setValueAtTime(0.2, this.audioCtx.currentTime)
+    gain.gain.setValueAtTime(0, this.audioCtx.currentTime)
+    gain.gain.linearRampToValueAtTime(0.2, this.audioCtx.currentTime + 0.005)
     gain.gain.exponentialRampToValueAtTime(
       0.001,
       this.audioCtx.currentTime + 0.1,
