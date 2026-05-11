@@ -141,7 +141,7 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
         <Show when={selectedFile()}>
           <div class="file-info">
             <div class="file-preview">
-              <div class="file-icon">🎵</div>
+              <div class="file-icon"><MusicNote /></div>
               <div class="file-details">
                 <p class="file-name">{selectedFile()?.name ?? 'Unknown'}</p>
                 <p class="file-meta">
