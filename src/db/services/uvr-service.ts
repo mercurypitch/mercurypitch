@@ -195,3 +195,25 @@ export async function deleteUvrSessionFromDb(sessionId: string): Promise<void> {
     // Best-effort cleanup
   }
 }
+
+export async function deleteAllUvrSessionsFromDb(): Promise<void> {
+  try {
+    const db = await getDb()
+
+    // Delete all stem blobs
+    const blobRepo = db.getRepository<UvrStemBlob>('uvrStemBlobs')
+    const blobs = await blobRepo.findAll({})
+    for (const blob of blobs) {
+      await blobRepo.delete(blob.id)
+    }
+
+    // Delete all session records
+    const repo = db.getRepository<UvrSessionRecord>('uvrSessions')
+    const existing = await repo.findAll({})
+    for (const rec of existing) {
+      await repo.delete(rec.id)
+    }
+  } catch {
+    // Best-effort cleanup
+  }
+}

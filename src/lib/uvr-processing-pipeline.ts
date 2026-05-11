@@ -94,9 +94,6 @@ async function processLocal(
     ctx.close()
   }
 
-  // Persist original file to IndexedDB (non-blocking)
-  void saveStemBlob(sessionId, 'original', file, file.name).catch(() => {})
-
   // Mono mixdown
   const audio = new Float32Array(audioBuffer.length)
   if (audioBuffer.numberOfChannels > 1) {
@@ -182,9 +179,6 @@ async function processServer(
   }
 
   setUvrSessionApiId(sessionId, response.session_id)
-
-  // Persist original file to IndexedDB (non-blocking)
-  void saveStemBlob(sessionId, 'original', file, file.name).catch(() => {})
 
   const startTime = Date.now()
 

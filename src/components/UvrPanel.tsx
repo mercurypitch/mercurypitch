@@ -4,7 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, Show } from 'solid-js'
-import { findSessionByFileHash, getOriginalFileBlob, hydrateStemUrls, saveUvrSession, } from '@/db/services/uvr-service'
+import { deleteAllUvrSessionsFromDb, deleteUvrSessionFromDb, findSessionByFileHash, getOriginalFileBlob, hydrateStemUrls, saveStemBlob, saveUvrSession, } from '@/db/services/uvr-service'
 import { computeFileHash } from '@/lib/file-hash'
 import { generateVocalMidi } from '@/lib/midi-generator'
 import { getProcessStatus } from '@/lib/uvr-api'
@@ -53,6 +53,8 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   const [showGuide, setShowGuide] = createSignal(false)
   const [showSettings, setShowSettings] = createSignal(false)
   const [showDeleteAllConfirm, setShowDeleteAllConfirm] = createSignal(false)
+  const [showClearStorageConfirm, setShowClearStorageConfirm] =
+    createSignal(false)
   const [deleteAllToast, setDeleteAllToast] = createSignal('')
   const [midiExporting, setMidiExporting] = createSignal(false)
   const [midiExportProgress, setMidiExportProgress] = createSignal(0)
@@ -212,6 +214,10 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     if (!file) {
       // Retry path: original file is no longer in memory, load from IndexedDB
       file = await getOriginalFileBlob(sessionId)
+    } else {
+      // Initial path: file is in memory, save it to IndexedDB immediately
+      // so it's not lost if the session is interrupted or page reloaded
+      void saveStemBlob(sessionId, 'original', file, file.name).catch(() => {})
     }
     if (!file) {
       const msg = 'File lost from memory. Please start a new session.'
@@ -551,6 +557,14 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     setTimeout(() => setDeleteAllToast(''), 2500)
   }
 
+  const handleClearStorage = () => {
+    deleteAllUvrSessions()
+    void deleteAllUvrSessionsFromDb()
+    setShowClearStorageConfirm(false)
+    setDeleteAllToast('Storage cleared (all sessions and stems deleted)')
+    setTimeout(() => setDeleteAllToast(''), 2500)
+  }
+
   // Refresh session outputs from API
   const refreshSessionOutputs = async (sessionToRefresh?: UvrSession) => {
     const sessions = sessionToRefresh
@@ -741,14 +755,28 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
               processing={session()?.status === 'processing'}
             />
             <Show when={allSessions().length > 0}>
+              <div class="upload-divider">
+                <span class="upload-divider-text">
+                  or continue from existing session
+                </span>
+              </div>
               <div class="section-header">
                 <h4>Recent Sessions</h4>
-                <button
-                  class="delete-all-btn"
-                  onClick={() => setShowDeleteAllConfirm(true)}
-                >
-                  <Trash2 /> Delete All
-                </button>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    class="delete-all-btn"
+                    onClick={() => setShowClearStorageConfirm(true)}
+                    title="Delete all sessions, stems, and uploaded files from database"
+                  >
+                    <Trash2 /> Clear Storage
+                  </button>
+                  <button
+                    class="delete-all-btn"
+                    onClick={() => setShowDeleteAllConfirm(true)}
+                  >
+                    <Trash2 /> Delete All
+                  </button>
+                </div>
               </div>
               <div class="history-list history-list-inline">
                 <For
@@ -820,6 +848,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 onNewSession={() => setCurrentView('upload')}
                 onDeleteAndNew={() => {
                   deleteUvrSession(session()!.sessionId)
+                  void deleteUvrSessionFromDb(session()!.sessionId)
                   setCurrentView('upload')
                 }}
               />
@@ -883,9 +912,8 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
           <div class="delete-all-dialog" onClick={(e) => e.stopPropagation()}>
             <h4>Delete All Sessions</h4>
             <p>
-              This will permanently remove all {allSessions().length} session
-              {allSessions().length !== 1 ? 's' : ''} and their generated files.
-              This action cannot be undone.
+              This will remove all {allSessions().length} session
+              {allSessions().length !== 1 ? 's' : ''} from your history.
             </p>
             <div class="delete-all-actions">
               <button
@@ -896,6 +924,35 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
               </button>
               <button class="delete-all-confirm" onClick={handleDeleteAll}>
                 <Trash2 /> Delete All
+              </button>
+            </div>
+          </div>
+        </div>
+      </Show>
+
+      {/* Clear Storage Confirmation Modal */}
+      <Show when={showClearStorageConfirm()}>
+        <div
+          class="delete-all-overlay"
+          onClick={() => setShowClearStorageConfirm(false)}
+        >
+          <div class="delete-all-dialog" onClick={(e) => e.stopPropagation()}>
+            <h4>Clear Storage</h4>
+            <p>
+              This will permanently remove all {allSessions().length} session
+              {allSessions().length !== 1 ? 's' : ''}, generated stems, and
+              uploaded mp3 files from your local database. This action cannot be
+              undone.
+            </p>
+            <div class="delete-all-actions">
+              <button
+                class="delete-all-cancel"
+                onClick={() => setShowClearStorageConfirm(false)}
+              >
+                Cancel
+              </button>
+              <button class="delete-all-confirm" onClick={handleClearStorage}>
+                <Trash2 /> Clear Storage
               </button>
             </div>
           </div>
