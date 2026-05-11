@@ -11,6 +11,14 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 // Only use SSL in dev mode - production builds don't need it
 const isDev = process.env.NODE_ENV !== 'production'
 
+let commitSha = 'unknown'
+try {
+  const { execSync } = await import('node:child_process')
+  commitSha = execSync('git rev-parse --short HEAD').toString().trim()
+} catch (e) {
+  console.warn('Failed to get git commit sha', e)
+}
+
 /** Copy ORT companion files to dist during production build */
 function copyOrtWorkerPlugin(): Plugin {
   return {
@@ -70,6 +78,7 @@ export default defineConfig({
   },
   define: {
     'process.env': {},
+    __COMMIT_SHA__: JSON.stringify(commitSha),
   },
   optimizeDeps: {
     exclude: ['onnxruntime-web'],

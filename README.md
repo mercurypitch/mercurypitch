@@ -2,9 +2,19 @@
 
 A browser-based vocal pitch practice tool with AI stem separation, community features, and real-time audio processing. Sing along with customizable melodies, get real-time feedback on your pitch accuracy, and track your progress over time.
 
+## Live Demo
+
+Open [mercurypitch.com](https://mercurypitch.com) in a modern browser to try it out.
+
+## Showcase
+
+![PitchPerfect Singing Practice](assets/BasicMelodyPractice_Singing.jpg)
+
+![PitchPerfect Piano Roll Editor](assets/BasicMelodyPractice_Piano.jpg)
 ## Features
 
 ### Core Practice
+
 - **Real-time pitch detection** — Web Audio API + YIN algorithm tracks your voice with sub-cent accuracy
 - **Practice modes** — Once, Repeat, and cyclic Practice with configurable cycles
 - **Piano roll editor** — Click to place notes, drag to move, right-click to delete
@@ -19,6 +29,7 @@ A browser-based vocal pitch practice tool with AI stem separation, community fea
 - **Accuracy bands** — Configure how many cents off counts as Perfect/Excellent/Good/Okay
 
 ### UVR Stem Separation
+
 - **AI vocal separation** — Separate any audio file into vocal and instrumental stems using UVR-MDX-NET
 - **Multi-stem mixer** — Mix stems with independent volume control and synchronized playback
 - **Synced lyrics** — Auto-fetch and display synced (LRC) lyrics during stem playback
@@ -28,13 +39,10 @@ A browser-based vocal pitch practice tool with AI stem separation, community fea
 - **Hash-based deep links** — Shareable URLs for sessions, mixer views, and community content
 
 ### Community
+
 - **Vocal challenges** — Take on pitch accuracy challenges and compete on the leaderboard
 - **Community sharing** — Share melodies and session results with hash-based URLs
 - **Leaderboard** — See top performers and recent activity
-
-## Live Demo
-
-Open [pitchperfect.clodhost.com](https://pitchperfect.clodhost.com) in a modern browser.
 
 ### Getting Started
 
@@ -45,18 +53,18 @@ Open [pitchperfect.clodhost.com](https://pitchperfect.clodhost.com) in a modern 
 
 ### Tabs
 
-| Tab | Description |
-|-----|-------------|
-| Singing | Main pitch practice with piano roll and real-time feedback |
-| Compose | Piano roll note editor with scale builder and MIDI import/export |
-| Analysis | Visualize vocal recordings and session history |
-| Karaoke | AI stem separation — upload audio, mix stems, synced lyrics |
-| Community | Browse shared melodies and sessions |
-| Leaderboard | Top performers across challenges |
-| Challenges | Timed pitch accuracy challenges |
-| Pitch Analysis | Analyze and compare pitch detection algorithms |
-| Pitch Test | Test pitch detection with live microphone input |
-| Settings | App settings, keyboard shortcuts, theme, about |
+| Tab            | Description                                                      |
+| -------------- | ---------------------------------------------------------------- |
+| Singing        | Main pitch practice with piano roll and real-time feedback       |
+| Compose        | Piano roll note editor with scale builder and MIDI import/export |
+| Analysis       | Visualize vocal recordings and session history                   |
+| Karaoke        | AI stem separation — upload audio, mix stems, synced lyrics      |
+| Community      | Browse shared melodies and sessions                              |
+| Leaderboard    | Top performers across challenges                                 |
+| Challenges     | Timed pitch accuracy challenges                                  |
+| Pitch Analysis | Analyze and compare pitch detection algorithms                   |
+| Pitch Test     | Test pitch detection with live microphone input                  |
+| Settings       | App settings, keyboard shortcuts, theme, about                   |
 
 ## Project Structure
 

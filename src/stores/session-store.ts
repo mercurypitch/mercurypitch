@@ -284,14 +284,14 @@ function createDefaultSession(): PlaybackSession {
       type: 'melody',
       startBeat: 0,
       label: 'C Major Scale',
-      melodyId: 'scale-major-c4',
+      melodyId: 'scale-major-c3',
     },
     {
       id: generateSessionItemId(),
       type: 'melody',
       startBeat: 16,
       label: 'G Major Scale',
-      melodyId: 'scale-major-g4',
+      melodyId: 'scale-major-g3',
     },
     {
       id: generateSessionItemId(),

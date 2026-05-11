@@ -41,21 +41,21 @@ const DEFAULT_LIBRARY: UnifiedLibrary = {
         // Previously G Major was a `type:'scale'` item, which made the
         // sidebar's selection logic treat it differently from C Major
         // and skip the `selected` CSS class. Use the pre-built scale
-        // melodies (`scale-major-c4`, `scale-major-g4`) seeded by
+        // melodies (`scale-major-c3`, `scale-major-g3`) seeded by
         // seedDefaultSession() instead.
         {
           id: generateSessionItemId(),
           type: 'melody',
           startBeat: 0,
           label: 'C Major Scale',
-          melodyId: 'scale-major-c4',
+          melodyId: 'scale-major-c3',
         },
         {
           id: generateSessionItemId(),
           type: 'melody',
           startBeat: 16,
           label: 'G Major Scale',
-          melodyId: 'scale-major-g4',
+          melodyId: 'scale-major-g3',
         },
         {
           id: generateSessionItemId(),
@@ -347,13 +347,27 @@ export function seedDefaultSession(): void {
       scaleType: 'major',
       key: 'C',
       octave: 4,
-      name: 'C Major Scale',
+      name: 'C Major Scale (C4)',
       degrees: SCALE_DEGREES.major,
     },
     {
       scaleType: 'major',
       key: 'G',
       octave: 4,
+      name: 'G Major Scale (G4)',
+      degrees: SCALE_DEGREES.major,
+    },
+    {
+      scaleType: 'major',
+      key: 'C',
+      octave: 3,
+      name: 'C Major Scale',
+      degrees: SCALE_DEGREES.major,
+    },
+    {
+      scaleType: 'major',
+      key: 'G',
+      octave: 3,
       name: 'G Major Scale',
       degrees: SCALE_DEGREES.major,
     },
@@ -473,8 +487,8 @@ export function seedDefaultSession(): void {
   // Persist library to localStorage
   _saveLibraryToStorage()
 
-  if (currentMelody() === null && newMelodies['scale-major-c4'] !== undefined) {
-    setCurrentMelody(newMelodies['scale-major-c4'])
+  if (currentMelody() === null && newMelodies['scale-major-c3'] !== undefined) {
+    setCurrentMelody(newMelodies['scale-major-c3'])
   }
 
   try {
@@ -636,7 +650,7 @@ export function addMelodyToActiveSession(
 
 const DEFAULT_KEY = 'C'
 const DEFAULT_SCALE_TYPE = 'major'
-const DEFAULT_OCTAVE = 4
+const DEFAULT_OCTAVE = 3
 const DEFAULT_BPM = 80
 
 // ============================================================

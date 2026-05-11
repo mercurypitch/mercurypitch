@@ -201,6 +201,9 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     canvasRef.style.width = `${w}px`
     canvasRef.style.height = `${h}px`
     ctx?.setTransform(dpr, 0, 0, dpr, 0, 0)
+    
+    // Force arc physics to re-evaluate physical coordinates so it doesn't land on the lower/wrong edge due to a stale `h` value!
+    arcState.initialized = false
   }
 
   const startLoop = () => {
