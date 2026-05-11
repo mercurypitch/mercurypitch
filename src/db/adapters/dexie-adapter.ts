@@ -15,9 +15,9 @@ const STORE_SCHEMAS: Record<string, string> = {
   sessionRecords: 'id, userId, endedAt',
   challengeDefinitions: 'id, category, isActive, sortOrder',
   challengeProgress: 'id, userId, challengeId',
-  badgeDefinitions: 'id, category, tier',
+  badgeDefinitions: 'id, category, tier, sortOrder',
   userBadges: 'id, userId, badgeId',
-  achievements: 'id',
+  achievements: 'id, sortOrder',
   userAchievements: 'id, userId, achievementId',
   leaderboardEntries: 'id, userId, category, period',
   sharedMelodies: 'id, userId, melodyId, isPublic',
@@ -38,6 +38,11 @@ class DexieDatabase extends DexieDB {
     // v2: add sortOrder index on challengeDefinitions
     this.version(2).stores({
       challengeDefinitions: 'id, category, isActive, sortOrder',
+    })
+    // v3: add sortOrder index on badgeDefinitions and achievements
+    this.version(3).stores({
+      badgeDefinitions: 'id, category, tier, sortOrder',
+      achievements: 'id, sortOrder',
     })
   }
 
