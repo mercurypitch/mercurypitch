@@ -8,7 +8,7 @@ import { computeFileHash } from '@/lib/file-hash'
 import { generateVocalMidi } from '@/lib/midi-generator'
 import { getProcessStatus } from '@/lib/uvr-api'
 import { cancelUvrPipeline, destroyPipeline, preInitModel, runUvrPipeline, } from '@/lib/uvr-processing-pipeline'
-import { findSessionByFileHash, hydrateStemUrls, saveUvrSession } from '@/db/services/uvr-service'
+import { findSessionByFileHash, getOriginalFileBlob, hydrateStemUrls, saveUvrSession, } from '@/db/services/uvr-service'
 import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
 import { cancelUvrSession, completeUvrSession, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, getAllUvrSessions, getAllUvrSessionsReactive, getUvrProcessingMode, getUvrSession, getUvrSessionByHash, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrProcessingMode, startUvrSession, updateUvrSessionOutputs, uvrProcessingMode, } from '@/stores/app-store'
 import { showNotification } from '@/stores/notifications-store'
@@ -215,7 +215,11 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     sessionId: string,
     mode?: UvrProcessingMode,
   ) => {
-    const file = selectedFile()
+    let file = selectedFile()
+    if (!file) {
+      // Retry path: original file is no longer in memory, load from IndexedDB
+      file = await getOriginalFileBlob(sessionId)
+    }
     if (!file) {
       const msg = 'File lost from memory. Please start a new session.'
       console.error(msg)

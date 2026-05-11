@@ -68,6 +68,26 @@ export async function getStemBlobUrl(
   }
 }
 
+export async function getOriginalFileBlob(
+  sessionId: string,
+): Promise<File | null> {
+  try {
+    const db = await getDb()
+    const repo = db.getRepository<UvrStemBlob>('uvrStemBlobs')
+    const results = await repo.findAll({
+      where: { sessionId, stemType: 'original' } as Record<string, unknown>,
+      orderBy: 'createdAt',
+      orderDir: 'desc',
+      limit: 1,
+    })
+    if (results.length === 0) return null
+    const entry = results[0]
+    return new File([entry.data], entry.fileName, { type: entry.mimeType })
+  } catch {
+    return null
+  }
+}
+
 export async function hydrateStemUrls(
   sessionId: string,
 ): Promise<{ vocal?: string; instrumental?: string } | null> {
