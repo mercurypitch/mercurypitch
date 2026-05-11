@@ -175,7 +175,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://pitchperfect.clodhost.com", "http://localhost:3000"],
+    allow_origins=["https://mercurypitch.com", "http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -532,7 +532,7 @@ docker build -t pitchperfect-uvr .
 docker run -d -p 8000:8000 \
   --gpus all \
   --restart unless-stopped \
-  -v /var/www/pitchperfect.clodhost.com/uvr-output:/app/output \
+  -v /var/www/mercurypitch.com/uvr-output:/app/output \
   pitchperfect-uvr
 ```
 

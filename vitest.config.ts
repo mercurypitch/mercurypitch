@@ -16,11 +16,13 @@ export default defineConfig({
     setupFiles: ['./src/tests/setup.ts'],
     include: ['src/tests/**/*.test.ts', 'src/tests/**/*.test.tsx', 'src/lib/**/*.test.ts', 'src/components/__tests__/**/*.test.tsx'],
     coverage: {
+      provider: 'istanbul',
       reporter: ['text', 'json', 'html'],
       include: [
         'src/lib/**/*.ts',
         'src/stores/**/*.ts',
         'src/components/**/*.tsx',
+        'src/db/**/*.ts',
       ],
       exclude: ['src/tests/**', '**/*.d.ts'],
     },

@@ -2,7 +2,7 @@ import { createSignal } from 'solid-js'
 import type { FeatureFlag } from '@/db'
 import { TAB_COMPOSE, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
 import { AudioEngine } from '@/lib/audio-engine'
-import { IS_DEV } from '@/lib/defaults'
+import { getUvrApiBase, IS_DEV } from '@/lib/defaults'
 import { getCompletedCount, getRemainingWalkthroughs, } from '@/stores/walkthrough-store'
 import type { ActiveTab } from './ui-store'
 
@@ -379,9 +379,7 @@ cleanupStaleUvrSessions()
 if (typeof window !== 'undefined') {
   window.addEventListener('beforeunload', () => {
     const sessions = getAllUvrSessions()
-    const API_BASE = IS_DEV
-      ? 'https://dev.mercurypitch.com/api/uvr'
-      : 'https://mercurypitch.com/api/uvr'
+    const API_BASE = getUvrApiBase()
 
     for (const session of sessions) {
       if (

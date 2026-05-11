@@ -37,5 +37,5 @@ pnpm run build       # Vite production build
 ./deploy.sh --check-only # Syntax checks only, no pull
 ```
 
-Live URL: https://pitchperfect.clodhost.com
+Live URL: https://mercurypitch.com
 Apache DocumentRoot: `pitch-perfect-repo/public/`

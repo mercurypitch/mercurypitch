@@ -30,15 +30,10 @@ app = FastAPI(
 )
 
 # CORS configuration
+CORS_ORIGINS = os.getenv("CORS_ORIGINS", "https://mercurypitch.com,https://dev.mercurypitch.com").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://mercurypitch.com",
-        "https://dev.mercurypitch.com",
-        "https://pitchperfect.clodhost.com",
-        "http://localhost:5173",
-        "http://localhost:3000",
-    ],
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -547,7 +542,7 @@ if __name__ == "__main__":
 
     uvicorn.run(
         "api:app",
-        host="0.0.0.0",
-        port=8080,
+        host=os.getenv("UVR_API_HOST", "0.0.0.0"),
+        port=int(os.getenv("UVR_API_PORT", "8080")),
         reload=True
     )

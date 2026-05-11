@@ -5,7 +5,7 @@ import { chromium } from 'playwright';
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage();
 
-  await page.goto('https://pitchperfect.clodhost.com', { waitUntil: 'networkidle', timeout: 30000 });
+  await page.goto('https://mercurypitch.com', { waitUntil: 'networkidle', timeout: 30000 });
 
   // Open sessions browser
   await page.click('button:has-text("Sessions")');

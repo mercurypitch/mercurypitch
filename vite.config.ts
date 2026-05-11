@@ -3,7 +3,7 @@ import { copyFileSync, existsSync, rmSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { Plugin } from 'vite'
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import solidPlugin from 'vite-plugin-solid'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -63,7 +63,7 @@ export default defineConfig({
     },
   },
   server: {
-    port: 3000,
+    port: Number(process.env.VITE_DEV_PORT) || 3000,
     headers: {
       // Cross-origin isolation for multi-threaded WASM (ONNX Runtime)
       'Cross-Origin-Opener-Policy': 'same-origin',
@@ -71,7 +71,7 @@ export default defineConfig({
     },
     proxy: {
       '/api/uvr': {
-        target: 'http://localhost:8000',
+        target: `http://localhost:${Number(process.env.VITE_UVR_PROXY_PORT) || 8000}`,
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/uvr/, ''), // Removes prefix before sending to API
       },
