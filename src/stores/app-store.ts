@@ -1,5 +1,6 @@
 import { createSignal } from 'solid-js'
 import type { FeatureFlag } from '@/db'
+import { getDb } from '@/db'
 import { TAB_COMPOSE, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
 import { AudioEngine } from '@/lib/audio-engine'
 import { getUvrApiBase, IS_DEV } from '@/lib/defaults'
@@ -924,7 +925,6 @@ export const devFeaturesEnabled = (): boolean => devFeaturesEnabledState()
 /** Persist a feature flag to the database layer (falls back to localStorage). */
 async function persistFeatureFlag(key: string, value: boolean): Promise<void> {
   try {
-    const { getDb } = await import('@/db')
     const db = await getDb()
     const repo = db.getRepository<FeatureFlag>('featureFlags')
     const existing = await repo.findAll({
@@ -957,7 +957,6 @@ export const setDevFeaturesEnabled = (enabled: boolean): void => {
 /** Sync feature flags from DB on startup. Call once after DB is ready. */
 export async function initFeatureFlagsFromDb(): Promise<void> {
   try {
-    const { getDb } = await import('@/db')
     const db = await getDb()
     const repo = db.getRepository<FeatureFlag>('featureFlags')
     const flags = await repo.findAll()
