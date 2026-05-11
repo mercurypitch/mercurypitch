@@ -2,17 +2,17 @@
 // Database Layer — Factory & Singleton
 // ============================================================
 
+import { DexieAdapter } from './adapters/dexie-adapter'
+import { seedAll } from './seed'
 import type { DatabaseAdapter } from './types'
 
 let dbPromise: Promise<DatabaseAdapter> | null = null
 
 /** Create a new database adapter instance. Called once at app init. */
 export async function createDatabase(): Promise<DatabaseAdapter> {
-  const { DexieAdapter } = await import('./adapters/dexie-adapter')
   const adapter = new DexieAdapter()
 
   // Seed sample data on first run
-  const { seedAll } = await import('./seed')
   await seedAll(adapter)
 
   return adapter
@@ -50,4 +50,6 @@ export type {
   MelodyRecord,
   SessionTemplate,
   PlaylistRecord,
+  UvrSessionRecord,
+  UvrStemBlob,
 } from './entities'

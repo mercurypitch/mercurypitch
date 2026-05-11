@@ -24,6 +24,8 @@ const STORE_SCHEMAS: Record<string, string> = {
   sharedSessions: 'id, userId, sessionId, isPublic',
   featureFlags: 'id, &key',
   userSettings: 'id, userId, key',
+  uvrSessions: 'id, appSessionId, userId, status, fileHash, createdAt',
+  uvrStemBlobs: 'id, sessionId, stemType, createdAt',
 }
 
 // ── DexieDatabase class ─────────────────────────────────────────
@@ -35,15 +37,6 @@ class DexieDatabase extends DexieDB {
   constructor() {
     super('PitchPerfectDB')
     this.version(1).stores(STORE_SCHEMAS)
-    // v2: add sortOrder index on challengeDefinitions
-    this.version(2).stores({
-      challengeDefinitions: 'id, category, isActive, sortOrder',
-    })
-    // v3: add sortOrder index on badgeDefinitions and achievements
-    this.version(3).stores({
-      badgeDefinitions: 'id, category, tier, sortOrder',
-      achievements: 'id, sortOrder',
-    })
   }
 
   /** Add a new table at the next schema version. */

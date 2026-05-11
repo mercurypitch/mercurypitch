@@ -226,3 +226,33 @@ export interface PlaylistRecord extends DbEntity {
   description?: string
   melodyIds: string // JSON array of melody IDs
 }
+
+// ── UVR Sessions & Stem Blobs ────────────────────────────────────
+
+export interface UvrSessionRecord extends DbEntity {
+  appSessionId: string // matches UvrSession.sessionId from app-store
+  userId: string
+  status: string // 'idle' | 'uploading' | 'processing' | 'completed' | 'error' | 'cancelled'
+  progress: number
+  fileHash?: string // SHA-256 hex digest of the original file
+  originalFileName: string
+  originalFileSize: number
+  originalFileType: string
+  processingMode: string // 'server' | 'local'
+  provider?: string
+  numChunks?: number
+  processingTime?: number
+  error?: string
+  vocalStemId?: string // FK → uvrStemBlobs.id
+  instrumentalStemId?: string
+  originalFileBlobId?: string // FK → uvrStemBlobs.id
+}
+
+export interface UvrStemBlob extends DbEntity {
+  sessionId: string // matches UvrSession.sessionId from app-store
+  stemType: 'vocal' | 'instrumental' | 'original'
+  mimeType: string // 'audio/wav' | 'audio/mpeg'
+  data: ArrayBuffer // binary audio data
+  size: number // byte size
+  fileName: string
+}
