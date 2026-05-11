@@ -6,7 +6,7 @@ import type { Component } from 'solid-js'
 import { createEffect, onCleanup, onMount } from 'solid-js'
 import type { ArcState } from '@/lib/arc-physics'
 import { BALL_RADIUS, buildPlayable, computeArcCy, computeArcEndBeat, computeBallPos, computeInitialArc, isBackwardsSeek, shouldAdvanceArc, } from '@/lib/arc-physics'
-import { appStore, bpm, focusMode } from '@/stores'
+import { bpm, focusMode, micWaveVisible } from '@/stores'
 import { colorCodeNotes, flameMode, gridLinesVisible, showAccuracyPercent, showFocusBall, showPlaybackBall, } from '@/stores/settings-store'
 import type { MelodyItem, NoteResult, PitchSample, ScaleDegree } from '@/types'
 
@@ -427,7 +427,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     )
 
     if (props.getWaveform) {
-      if (appStore.micWaveVisible()) {
+      if (micWaveVisible()) {
         const waveform = props.getWaveform()
         if (waveform && waveform.length > 0) {
           ctx.save()
