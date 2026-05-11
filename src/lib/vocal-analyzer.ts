@@ -61,6 +61,66 @@ export interface SlideTrackingResult {
   cleanCount: number
 }
 
+// ── Phase 2 Types ──────────────────────────────────────────────
+
+export interface VibratoResult {
+  /** Vibrato rate in Hz (cycles per second of pitch modulation) */
+  rateHz: number
+  /** Vibrato depth in cents (peak-to-peak pitch variation) */
+  depthCents: number
+  /** Classification based on rate */
+  classification: 'none' | 'slow-operatic' | 'natural' | 'nervous' | 'wide'
+  /** Whether vibrato was detected at all */
+  detected: boolean
+  /** Confidence 0-100 */
+  confidence: number
+}
+
+export interface HarmonicRichnessResult {
+  /** Weighted harmonic amplitude relative to fundamental (0-100) */
+  richnessScore: number
+  /** Number of detectable harmonics above noise floor */
+  harmonicCount: number
+  /** Amplitudes of harmonics H1-H15 (normalized to H1=1) */
+  harmonicProfile: number[]
+  /** Classification */
+  quality: 'thin' | 'normal' | 'rich' | 'very-rich'
+}
+
+export type ResonanceZone = 'chest' | 'mask' | 'head' | 'mixed'
+
+export interface ResonanceResult {
+  dominantZone: ResonanceZone
+  /** Energy ratio in each zone (0-1, sum=1) */
+  chestRatio: number
+  maskRatio: number
+  headRatio: number
+  /** Spectral centroid in Hz */
+  spectralCentroid: number
+}
+
+export interface FatigueCheckpoint {
+  time: number
+  hnrDb: number
+  richnessScore: number
+  pitchStability: number
+}
+
+export interface FatigueResult {
+  /** Whether fatigue is suspected */
+  fatigued: boolean
+  /** Alert message if fatigued */
+  alert: string | null
+  /** Per-metric trend: negative = declining */
+  trends: {
+    hnrTrend: number
+    richnessTrend: number
+    stabilityTrend: number
+  }
+  /** Checkpoints collected */
+  checkpoints: FatigueCheckpoint[]
+}
+
 // ── Intensity Mirroring ───────────────────────────────────────
 
 /**
@@ -539,7 +599,587 @@ function scoreSlide(
   return Math.max(0, Math.min(100, score))
 }
 
-// ── Helpers ────────────────────────────────────────────────────
+// ── Phase 2.1: Vibrato Detection ──────────────────────────────
+
+/**
+ * Detect vibrato from a continuous pitch stream.
+ *
+ * Vibrato is periodic modulation of pitch, typically 4-8 Hz with
+ * ±25-50 cents depth. We run an FFT on the pitch time series
+ * (in cents, relative to a smoothed baseline) to find the dominant
+ * modulation frequency.
+ */
+export function detectVibrato(
+  pitchSamples: Array<{ time: number; freq: number; midi: number }>,
+  sampleRateEstimate = 100, // approximate Hz of pitch sample stream
+): VibratoResult {
+  if (pitchSamples.length < sampleRateEstimate * 0.25) {
+    return { rateHz: 0, depthCents: 0, classification: 'none', detected: false, confidence: 0 }
+  }
+
+  // Convert to cents around a smoothed baseline
+  const cents: number[] = []
+  let baselineSum = 0
+  for (const p of pitchSamples) {
+    baselineSum += p.midi
+  }
+  const baselineMidi = baselineSum / pitchSamples.length
+
+  for (const p of pitchSamples) {
+    cents.push((p.midi - baselineMidi) * 100)
+  }
+
+  // Remove DC offset
+  const dcOffset = cents.reduce((a, b) => a + b, 0) / cents.length
+  const centered = cents.map((c) => c - dcOffset)
+
+  // Compute FFT on the pitch modulation signal
+  // Use radix-2, zero-padded
+  const n = nextPow2(centered.length)
+  const real = new Float64Array(n)
+  const imag = new Float64Array(n)
+  for (let i = 0; i < centered.length; i++) {
+    real[i] = centered[i]
+  }
+
+  fft64(real, imag, n, false)
+
+  // Find dominant frequency in 3-10 Hz range (vibrato band)
+  const binWidth = sampleRateEstimate / n
+  const minBin = Math.max(1, Math.round(3 / binWidth))
+  const maxBin = Math.min(n / 2 - 1, Math.round(10 / binWidth))
+
+  let maxMag = 0
+  let maxBinIdx = minBin
+
+  for (let i = minBin; i <= maxBin; i++) {
+    const mag = Math.sqrt(real[i] * real[i] + imag[i] * imag[i])
+    if (mag > maxMag) {
+      maxMag = mag
+      maxBinIdx = i
+    }
+  }
+
+  const rateHz = maxBinIdx * binWidth
+
+  // Measure depth: peak-to-peak cents of the modulation
+  const depthCents = measureVibratoDepth(centered, rateHz, sampleRateEstimate)
+
+  // Determine if vibrato is present
+  // Significance: peak magnitude relative to mean magnitude in band
+  let meanMag = 0
+  let count = 0
+  for (let i = minBin; i <= maxBin; i++) {
+    meanMag += Math.sqrt(real[i] * real[i] + imag[i] * imag[i])
+    count++
+  }
+  meanMag /= count
+
+  const significance = meanMag > 0 ? maxMag / meanMag : 0
+  const detected = significance > 2.0 && depthCents > 10
+
+  let classification: VibratoResult['classification']
+  if (!detected || depthCents < 10) {
+    classification = 'none'
+  } else if (rateHz < 4.5) {
+    classification = 'slow-operatic'
+  } else if (rateHz <= 7) {
+    classification = 'natural'
+  } else if (depthCents > 80) {
+    classification = 'wide'
+  } else {
+    classification = 'nervous'
+  }
+
+  const confidence = Math.round(Math.min(95, significance * 15))
+
+  return {
+    rateHz: Math.round(rateHz * 10) / 10,
+    depthCents: Math.round(depthCents),
+    classification,
+    detected,
+    confidence,
+  }
+}
+
+function measureVibratoDepth(
+  cents: number[],
+  rateHz: number,
+  sampleRate: number,
+): number {
+  if (rateHz < 1) return 0
+
+  // Bandpass-filter the cents around the detected vibrato rate
+  // Simple approach: compute envelope of the filtered signal
+  const periodSamples = Math.round(sampleRate / rateHz)
+  if (periodSamples < 2 || periodSamples > cents.length) return 0
+
+  // Compute RMS over sliding windows of vibrato period length
+  const rmsValues: number[] = []
+  const halfPeriod = Math.max(1, Math.floor(periodSamples / 2))
+
+  for (let i = 0; i < cents.length - halfPeriod; i += halfPeriod) {
+    let sumSq = 0
+    const windowSize = Math.min(periodSamples, cents.length - i)
+    for (let j = i; j < i + windowSize; j++) {
+      sumSq += cents[j] * cents[j]
+    }
+    rmsValues.push(Math.sqrt(sumSq / windowSize))
+  }
+
+  if (rmsValues.length === 0) return 0
+
+  // Depth = 2 * mean RMS (peak-to-peak estimate)
+  const meanRms = rmsValues.reduce((a, b) => a + b, 0) / rmsValues.length
+  return meanRms * 2
+}
+
+// ── Phase 2.2: Harmonic Richness Score ────────────────────────
+
+/**
+ * Compute harmonic richness from a magnitude spectrum.
+ *
+ * Identifies harmonics H1-H15 of the fundamental, normalizes to H1,
+ * and produces a weighted richness score. A "rich" voice has substantial
+ * energy in higher harmonics; a "thin" voice has only the first few.
+ */
+export function computeHarmonicRichness(
+  magnitudeSpectrum: Float32Array | number[],
+  sampleRate: number,
+  fundamentalFreq: number,
+  fftSize: number,
+): HarmonicRichnessResult {
+  const binWidth = sampleRate / fftSize
+  const f0Bin = Math.round(fundamentalFreq / binWidth)
+
+  if (f0Bin < 1 || f0Bin * 15 >= magnitudeSpectrum.length) {
+    return {
+      richnessScore: 0,
+      harmonicCount: 0,
+      harmonicProfile: [],
+      quality: 'thin',
+    }
+  }
+
+  // Extract harmonic amplitudes
+  const harmonicAmps: number[] = []
+  const window = Math.max(1, Math.round(binWidth / binWidth)) // 1-bin window
+
+  for (let h = 1; h <= 15; h++) {
+    const bin = f0Bin * h
+    if (bin >= magnitudeSpectrum.length) break
+
+    // Take the max magnitude in a small window around the harmonic
+    let maxAmp = 0
+    for (let w = -window; w <= window; w++) {
+      const idx = bin + w
+      if (idx >= 0 && idx < magnitudeSpectrum.length) {
+        maxAmp = Math.max(maxAmp, magnitudeSpectrum[idx])
+      }
+    }
+    harmonicAmps.push(maxAmp)
+  }
+
+  if (harmonicAmps.length === 0 || harmonicAmps[0] === 0) {
+    return {
+      richnessScore: 0,
+      harmonicCount: 0,
+      harmonicProfile: [],
+      quality: 'thin',
+    }
+  }
+
+  // Normalize to H1
+  const h1 = harmonicAmps[0]
+  const normalized = harmonicAmps.map((a) => a / h1)
+
+  // Count detectable harmonics (above 5% of H1, typical noise floor)
+  let harmonicCount = 0
+  for (let h = 0; h < normalized.length; h++) {
+    if (normalized[h] > 0.05) harmonicCount++
+  }
+
+  // Compute richness score: weighted sum of harmonics above H1
+  // Higher harmonics get higher weight (they're harder to produce)
+  let weightedSum = 0
+  const weights = [0, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+  for (let h = 1; h < normalized.length; h++) {
+    weightedSum += normalized[h] * weights[h] * 100
+  }
+
+  const richnessScore = Math.round(
+    Math.min(100, weightedSum / (normalized.length - 1)),
+  )
+
+  let quality: HarmonicRichnessResult['quality']
+  if (harmonicCount >= 12 && richnessScore > 40) quality = 'very-rich'
+  else if (harmonicCount >= 8 && richnessScore > 25) quality = 'rich'
+  else if (harmonicCount >= 4 && richnessScore > 10) quality = 'normal'
+  else quality = 'thin'
+
+  return {
+    richnessScore,
+    harmonicCount,
+    harmonicProfile: normalized.map((a) => Math.round(a * 1000) / 1000),
+    quality,
+  }
+}
+
+/**
+ * Lightweight harmonic richness estimate from pitch data only (no spectrum).
+ * Uses pitch stability and clarity as proxies.
+ */
+export function approximateRichness(
+  pitchResults: Array<{ freq: number; clarity: number }>,
+): { richnessScore: number; harmonicCount: number; quality: HarmonicRichnessResult['quality'] } {
+  if (pitchResults.length < 3) {
+    return { richnessScore: 0, harmonicCount: 0, quality: 'thin' }
+  }
+
+  const valid = pitchResults.filter((p) => p.freq > 20 && p.clarity > 0)
+  if (valid.length < 3) {
+    return { richnessScore: 10, harmonicCount: 2, quality: 'thin' }
+  }
+
+  const avgClarity = valid.reduce((s, p) => s + p.clarity, 0) / valid.length
+  const clarityNorm = Math.min(100, avgClarity) / 100
+
+  // Higher clarity → more detectable harmonics
+  const harmonicCount = Math.round(3 + clarityNorm * 10)
+  const richnessScore = Math.round(clarityNorm * 60 + 10)
+
+  let quality: HarmonicRichnessResult['quality']
+  if (harmonicCount >= 12) quality = 'very-rich'
+  else if (harmonicCount >= 8) quality = 'rich'
+  else if (harmonicCount >= 4) quality = 'normal'
+  else quality = 'thin'
+
+  return { richnessScore, harmonicCount, quality }
+}
+
+// ── Phase 2.3: Resonance Zone Detection ────────────────────────
+
+/**
+ * Detect resonance zone (chest/mask/head) from spectral energy distribution.
+ *
+ * Chest:   energy concentrated in 200-800 Hz
+ * Mask:    energy concentrated in 800-2500 Hz
+ * Head:    energy concentrated in 2500+ Hz
+ *
+ * Uses spectral centroid and energy-band ratios.
+ */
+export function detectResonance(
+  magnitudeSpectrum: Float32Array | number[],
+  sampleRate: number,
+  fftSize: number,
+): ResonanceResult {
+  const binWidth = sampleRate / fftSize
+
+  const chestLo = Math.round(200 / binWidth)
+  const chestHi = Math.round(800 / binWidth)
+  const maskLo = Math.round(800 / binWidth)
+  const maskHi = Math.round(2500 / binWidth)
+  const headLo = Math.round(2500 / binWidth)
+  const headHi = Math.round(sampleRate / 2 / binWidth)
+
+  let chestEnergy = 0
+  let maskEnergy = 0
+  let headEnergy = 0
+  let totalEnergy = 0
+  let weightedFreqSum = 0
+
+  for (let i = 0; i < magnitudeSpectrum.length; i++) {
+    const mag = magnitudeSpectrum[i]
+    const power = mag * mag
+    totalEnergy += power
+    weightedFreqSum += power * (i * binWidth)
+
+    if (i >= chestLo && i <= chestHi) chestEnergy += power
+    if (i >= maskLo && i <= maskHi) maskEnergy += power
+    if (i >= headLo && i <= headHi) headEnergy += power
+  }
+
+  if (totalEnergy === 0) {
+    return {
+      dominantZone: 'chest',
+      chestRatio: 0,
+      maskRatio: 0,
+      headRatio: 0,
+      spectralCentroid: 0,
+    }
+  }
+
+  const chestRatio = chestEnergy / totalEnergy
+  const maskRatio = maskEnergy / totalEnergy
+  const headRatio = headEnergy / totalEnergy
+  const spectralCentroid = weightedFreqSum / totalEnergy
+
+  let dominantZone: ResonanceZone
+  if (maskRatio > chestRatio && maskRatio > headRatio) {
+    dominantZone = 'mask'
+  } else if (headRatio > chestRatio && headRatio > maskRatio) {
+    dominantZone = 'head'
+  } else if (
+    (chestRatio > 0.1 && maskRatio > 0.1 && Math.abs(chestRatio - maskRatio) < 0.05) ||
+    (maskRatio > 0.1 && headRatio > 0.1 && Math.abs(maskRatio - headRatio) < 0.05) ||
+    (chestRatio > 0.1 && headRatio > 0.1 && Math.abs(chestRatio - headRatio) < 0.05)
+  ) {
+    dominantZone = 'mixed'
+  } else {
+    dominantZone = 'chest'
+  }
+
+  return {
+    dominantZone,
+    chestRatio: Math.round(chestRatio * 1000) / 1000,
+    maskRatio: Math.round(maskRatio * 1000) / 1000,
+    headRatio: Math.round(headRatio * 1000) / 1000,
+    spectralCentroid: Math.round(spectralCentroid),
+  }
+}
+
+/**
+ * Lightweight resonance estimate from pitch data.
+ * Uses the pitch range as a proxy: lower pitches → chest, mid → mask, high → head.
+ */
+export function approximateResonance(
+  pitchResults: Array<{ freq: number }>,
+): ResonanceResult {
+  if (pitchResults.length === 0) {
+    return {
+      dominantZone: 'chest',
+      chestRatio: 0,
+      maskRatio: 0,
+      headRatio: 0,
+      spectralCentroid: 0,
+    }
+  }
+
+  const freqs = pitchResults.filter((p) => p.freq > 20).map((p) => p.freq)
+  if (freqs.length === 0) {
+    return {
+      dominantZone: 'chest',
+      chestRatio: 0,
+      maskRatio: 0,
+      headRatio: 0,
+      spectralCentroid: 0,
+    }
+  }
+
+  const avgFreq = freqs.reduce((a, b) => a + b, 0) / freqs.length
+
+  // Rough resonance mapping based on average frequency
+  let chestRatio: number
+  let maskRatio: number
+  let headRatio: number
+
+  if (avgFreq < 300) {
+    chestRatio = 0.7
+    maskRatio = 0.25
+    headRatio = 0.05
+  } else if (avgFreq < 500) {
+    chestRatio = 0.4
+    maskRatio = 0.5
+    headRatio = 0.1
+  } else if (avgFreq < 800) {
+    chestRatio = 0.2
+    maskRatio = 0.6
+    headRatio = 0.2
+  } else {
+    chestRatio = 0.1
+    maskRatio = 0.4
+    headRatio = 0.5
+  }
+
+  let dominantZone: ResonanceZone
+  if (maskRatio > chestRatio && maskRatio > headRatio) dominantZone = 'mask'
+  else if (headRatio > chestRatio && headRatio > maskRatio) dominantZone = 'head'
+  else if (Math.abs(chestRatio - maskRatio) < 0.1) dominantZone = 'mixed'
+  else dominantZone = 'chest'
+
+  return {
+    dominantZone,
+    chestRatio: Math.round(chestRatio * 1000) / 1000,
+    maskRatio: Math.round(maskRatio * 1000) / 1000,
+    headRatio: Math.round(headRatio * 1000) / 1000,
+    spectralCentroid: Math.round(avgFreq),
+  }
+}
+
+// ── Phase 2.4: Vocal Fatigue Tracker ───────────────────────────
+
+/**
+ * Analyze collected checkpoints for vocal fatigue trends.
+ *
+ * Fatigue indicators:
+ *   - HNR decreasing (breathier as voice tires)
+ *   - Harmonic richness declining (fewer overtones)
+ *   - Pitch stability worsening (more wavering)
+ *
+ * Returns trend slopes and fatigue alert if 2+ metrics are declining.
+ */
+export function analyzeFatigue(
+  checkpoints: FatigueCheckpoint[],
+): FatigueResult {
+  if (checkpoints.length < 3) {
+    return {
+      fatigued: false,
+      alert: null,
+      trends: { hnrTrend: 0, richnessTrend: 0, stabilityTrend: 0 },
+      checkpoints,
+    }
+  }
+
+  // Compute linear trend slopes
+  const hnrTrend = computeTrend(checkpoints.map((c) => c.hnrDb))
+  const richnessTrend = computeTrend(
+    checkpoints.map((c) => c.richnessScore),
+  )
+  const stabilityTrend = computeTrend(
+    checkpoints.map((c) => c.pitchStability),
+  )
+
+  // Normalize trends to % change over the session
+  const first = checkpoints[0]
+  const hnrChange =
+    first.hnrDb > 0 ? (hnrTrend / first.hnrDb) * 100 : 0
+  const richnessChange =
+    first.richnessScore > 0
+      ? (richnessTrend / first.richnessScore) * 100
+      : 0
+  const stabilityChange =
+    first.pitchStability > 0
+      ? (stabilityTrend / first.pitchStability) * 100
+      : 0
+
+  // Count declining metrics
+  let decliningCount = 0
+  if (hnrChange < -5) decliningCount++
+  if (richnessChange < -5) decliningCount++
+  if (stabilityChange < -5) decliningCount++
+
+  const fatigued = decliningCount >= 2
+
+  let alert: string | null = null
+  if (fatigued) {
+    if (decliningCount === 3) {
+      alert =
+        'Significant vocal fatigue detected. Your harmonics, breath support, and pitch stability are all declining. Consider resting your voice.'
+    } else {
+      const issues: string[] = []
+      if (hnrChange < -5) issues.push('breath support is weakening')
+      if (richnessChange < -5)
+        issues.push('high-end harmonics are dropping')
+      if (stabilityChange < -5)
+        issues.push('pitch stability is declining')
+      alert = `Your ${issues.join(' and ')} — it may be time to rest.`
+    }
+  }
+
+  return {
+    fatigued,
+    alert,
+    trends: {
+      hnrTrend: Math.round(hnrChange * 10) / 10,
+      richnessTrend: Math.round(richnessChange * 10) / 10,
+      stabilityTrend: Math.round(stabilityChange * 10) / 10,
+    },
+    checkpoints,
+  }
+}
+
+/**
+ * Compute trend slope using simple linear regression.
+ * Returns total change over the series (last - first estimate).
+ */
+function computeTrend(values: number[]): number {
+  if (values.length < 2) return 0
+
+  const n = values.length
+  let sumX = 0
+  let sumY = 0
+  let sumXY = 0
+  let sumX2 = 0
+
+  for (let i = 0; i < n; i++) {
+    sumX += i
+    sumY += values[i]
+    sumXY += i * values[i]
+    sumX2 += i * i
+  }
+
+  const denominator = n * sumX2 - sumX * sumX
+  if (denominator === 0) return 0
+
+  const slope = (n * sumXY - sumX * sumY) / denominator
+  return slope * (n - 1) // total change over the series
+}
+
+// ── DFT/FFT Utilities ──────────────────────────────────────────
+
+function nextPow2(n: number): number {
+  let p = 1
+  while (p < n) p <<= 1
+  return p
+}
+
+function fft64(
+  real: Float64Array,
+  imag: Float64Array,
+  n: number,
+  inverse: boolean,
+): void {
+  // Bit-reversal permutation
+  let j = 0
+  for (let i = 0; i < n; i++) {
+    if (i < j) {
+      ;[real[i], real[j]] = [real[j], real[i]]
+      ;[imag[i], imag[j]] = [imag[j], imag[i]]
+    }
+    let k = n >> 1
+    while (k > 0 && j & k) {
+      j &= ~k
+      k >>= 1
+    }
+    j |= k
+  }
+
+  // Cooley-Tukey
+  const sign = inverse ? 1 : -1
+  for (let len = 2; len <= n; len <<= 1) {
+    const half = len >> 1
+    const angle = (2 * Math.PI) / len
+    const wReal = Math.cos(angle)
+    const wImag = sign * Math.sin(angle)
+
+    for (let i = 0; i < n; i += len) {
+      let curReal = 1
+      let curImag = 0
+
+      for (let k = 0; k < half; k++) {
+        const evenR = real[i + k]
+        const evenI = imag[i + k]
+        const oddR = real[i + k + half]
+        const oddI = imag[i + k + half]
+
+        const tR = curReal * oddR - curImag * oddI
+        const tI = curReal * oddI + curImag * oddR
+
+        real[i + k] = evenR + tR
+        imag[i + k] = evenI + tI
+        real[i + k + half] = evenR - tR
+        imag[i + k + half] = evenI - tI
+
+        const nextR = curReal * wReal - curImag * wImag
+        const nextI = curReal * wImag + curImag * wReal
+        curReal = nextR
+        curImag = nextI
+      }
+    }
+  }
+}
+
+// ── Phase 1 Helpers (continued) ────────────────────────────────
 
 function findClosestByTime<T extends { time: number }>(
   points: T[],

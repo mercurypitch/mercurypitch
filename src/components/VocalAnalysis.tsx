@@ -8,14 +8,22 @@ import { IconPlay } from '@/components/hidden-features-icons'
 import { loadSessionRecords } from '@/db/services/session-service'
 import { frequenciesToNoteName } from '@/lib/frequency-to-note'
 import {
+  analyzeFatigue,
   approximateBreathiness,
+  approximateResonance,
+  approximateRichness,
   detectSlides,
+  detectVibrato,
   intensityFromPitchResults,
 } from '@/lib/vocal-analyzer'
 import type {
   BreathinessResult,
-  IntensityScore,
+  FatigueCheckpoint,
+  FatigueResult,
+  HarmonicRichnessResult,
+  ResonanceResult,
   SlideTrackingResult,
+  VibratoResult,
 } from '@/lib/vocal-analyzer'
 import { getSessionHistory } from '@/stores'
 import type { PitchResult, PracticeResult, SessionResult } from '@/types'
@@ -185,6 +193,15 @@ export const VocalAnalysis: Component = () => {
   )
   const [slideTracking, setSlideTracking] =
     createSignal<SlideTrackingResult | null>(null)
+
+  // Phase 2 analysis signals
+  const [vibratoAnalysis, setVibratoAnalysis] =
+    createSignal<VibratoResult | null>(null)
+  const [harmonicRichness, setHarmonicRichness] =
+    createSignal<HarmonicRichnessResult | null>(null)
+  const [resonanceData, setResonanceData] =
+    createSignal<ResonanceResult | null>(null)
+  const [fatigueData, setFatigueData] = createSignal<FatigueResult | null>(null)
 
   onMount(() => {
     void (async () => {
@@ -491,6 +508,60 @@ export const VocalAnalysis: Component = () => {
           })),
         )
         setSlideTracking(slides)
+
+        // Phase 2: Vibrato Detection
+        const vibrato = detectVibrato(
+          pitchResults.map((p, i) => ({
+            time: i * 0.01,
+            freq: p.freq,
+            midi: p.midi,
+          })),
+        )
+        setVibratoAnalysis(vibrato)
+
+        // Phase 2: Harmonic Richness
+        const richness = approximateRichness(
+          pitchResults.map((p) => ({
+            freq: p.freq,
+            clarity: p.clarity,
+          })),
+        )
+        setHarmonicRichness({
+          richnessScore: richness.richnessScore,
+          harmonicCount: richness.harmonicCount,
+          harmonicProfile: [],
+          quality: richness.quality,
+        })
+
+        // Phase 2: Resonance Zone
+        const resonance = approximateResonance(
+          pitchResults.map((p) => ({ freq: p.freq })),
+        )
+        setResonanceData(resonance)
+
+        // Phase 2: Vocal Fatigue (build checkpoints from session history)
+        const sessionData = getSessionHistory()
+        const checkpoints: FatigueCheckpoint[] = []
+        for (let ci = 0; ci < Math.min(sessionData.length, 10); ci++) {
+          const s = sessionData[ci]
+          const sPitch = s.practiceItemResult.flatMap((pr) =>
+            pr.noteResult.map((r) => ({
+              freq: r.item.note.freq,
+              clarity: r.avgCents || 0,
+            })),
+          )
+          const sBreath = approximateBreathiness(sPitch)
+          const sRichness = approximateRichness(sPitch)
+          checkpoints.push({
+            time: s.completedAt || ci,
+            hnrDb: sBreath.hnrDb,
+            richnessScore: sRichness.richnessScore,
+            pitchStability: s.score || 50,
+          })
+        }
+        if (checkpoints.length >= 3) {
+          setFatigueData(analyzeFatigue(checkpoints))
+        }
 
         // Build spectral approximation
         const spectral: SpectrumData[] = practiceResults
@@ -891,6 +962,270 @@ export const VocalAnalysis: Component = () => {
                 <div class="phase1-hint">
                   Not enough note transitions detected. Try singing a melody
                   with more note changes.
+                </div>
+              </Show>
+            </div>
+          </Show>
+
+          {/* Phase 2.1: Vibrato Oscilloscope */}
+          <Show when={vibratoAnalysis()}>
+            <div class="stat-card phase2-card">
+              <h3>Vibrato Detection</h3>
+              <div class="phase2-metrics">
+                <div class="phase2-metric">
+                  <span class="phase2-label">Rate</span>
+                  <span class="phase2-value">
+                    {vibratoAnalysis()!.detected
+                      ? `${vibratoAnalysis()!.rateHz.toFixed(1)} Hz`
+                      : '—'}
+                  </span>
+                </div>
+                <div class="phase2-metric">
+                  <span class="phase2-label">Depth</span>
+                  <span class="phase2-value">
+                    {vibratoAnalysis()!.detected
+                      ? `${vibratoAnalysis()!.depthCents}¢`
+                      : '—'}
+                  </span>
+                </div>
+                <div class="phase2-metric">
+                  <span class="phase2-label">Type</span>
+                  <span
+                    class={`phase2-badge phase2-badge--${vibratoAnalysis()!.classification}`}
+                  >
+                    {vibratoAnalysis()!.classification === 'none'
+                      ? 'None'
+                      : vibratoAnalysis()!.classification === 'slow-operatic'
+                        ? 'Operatic'
+                        : vibratoAnalysis()!.classification === 'natural'
+                          ? 'Natural'
+                          : vibratoAnalysis()!.classification === 'nervous'
+                            ? 'Nervous'
+                            : 'Wide'}
+                  </span>
+                </div>
+                <div class="phase2-metric">
+                  <span class="phase2-label">Confidence</span>
+                  <span class="phase2-value">
+                    {vibratoAnalysis()!.confidence}%
+                  </span>
+                </div>
+              </div>
+              <div class="phase2-bar-container">
+                <div
+                  class="phase2-bar phase2-bar-vibrato"
+                  style={{
+                    width: `${vibratoAnalysis()!.confidence}%`,
+                  }}
+                />
+              </div>
+              <div class="phase2-hint">
+                <Show
+                  when={vibratoAnalysis()!.detected}
+                  fallback="No vibrato detected — try sustaining a note with gentle pitch wobble"
+                >
+                  {vibratoAnalysis()!.classification === 'natural'
+                    ? 'Natural, musical vibrato — excellent control'
+                    : vibratoAnalysis()!.classification === 'slow-operatic'
+                      ? 'Slow, operatic vibrato — dramatic and controlled'
+                      : vibratoAnalysis()!.classification === 'nervous'
+                        ? 'Fast, nervous vibrato — try slowing it down'
+                        : 'Wide vibrato — consider tightening pitch control'}
+                </Show>
+              </div>
+            </div>
+          </Show>
+
+          {/* Phase 2.2: Harmonic Richness Score */}
+          <Show when={harmonicRichness()}>
+            <div class="stat-card phase2-card">
+              <h3>Harmonic Richness</h3>
+              <div class="phase2-metrics">
+                <div class="phase2-metric">
+                  <span class="phase2-label">Score</span>
+                  <span class="phase2-value">
+                    {harmonicRichness()!.richnessScore}
+                  </span>
+                </div>
+                <div class="phase2-metric">
+                  <span class="phase2-label">Harmonics</span>
+                  <span class="phase2-value">
+                    {harmonicRichness()!.harmonicCount}
+                  </span>
+                </div>
+                <div class="phase2-metric">
+                  <span class="phase2-label">Quality</span>
+                  <span
+                    class={`phase2-badge phase2-badge--${harmonicRichness()!.quality}`}
+                  >
+                    {harmonicRichness()!.quality === 'thin'
+                      ? 'Thin'
+                      : harmonicRichness()!.quality === 'normal'
+                        ? 'Normal'
+                        : harmonicRichness()!.quality === 'rich'
+                          ? 'Rich'
+                          : 'Very Rich'}
+                  </span>
+                </div>
+              </div>
+              <div class="phase2-bar-container">
+                <div
+                  class="phase2-bar phase2-bar-harmonics"
+                  style={{
+                    width: `${harmonicRichness()!.richnessScore}%`,
+                  }}
+                />
+              </div>
+              <div class="phase2-hint">
+                {harmonicRichness()!.quality === 'very-rich'
+                  ? 'Exceptionally rich tone — full harmonic spectrum'
+                  : harmonicRichness()!.quality === 'rich'
+                    ? 'Rich, full tone with strong overtones'
+                    : harmonicRichness()!.quality === 'normal'
+                      ? 'Decent harmonic presence — room for more resonance'
+                      : 'Thin tone — try opening your throat for more resonance'}
+              </div>
+            </div>
+          </Show>
+
+          {/* Phase 2.3: Resonance Zone Detection */}
+          <Show when={resonanceData()}>
+            <div class="stat-card phase2-card">
+              <h3>Resonance Zone</h3>
+              <div class="phase2-resonance-map">
+                <div
+                  class="phase2-zone phase2-zone-head"
+                  classList={{
+                    'phase2-zone--active':
+                      resonanceData()!.dominantZone === 'head' ||
+                      resonanceData()!.dominantZone === 'mixed',
+                  }}
+                  style={{
+                    opacity: Math.max(
+                      0.3,
+                      resonanceData()!.headRatio * 2,
+                    ),
+                  }}
+                >
+                  <span class="phase2-zone-label">Head</span>
+                  <span class="phase2-zone-pct">
+                    {(resonanceData()!.headRatio * 100).toFixed(0)}%
+                  </span>
+                </div>
+                <div
+                  class="phase2-zone phase2-zone-mask"
+                  classList={{
+                    'phase2-zone--active':
+                      resonanceData()!.dominantZone === 'mask' ||
+                      resonanceData()!.dominantZone === 'mixed',
+                  }}
+                  style={{
+                    opacity: Math.max(
+                      0.3,
+                      resonanceData()!.maskRatio * 2,
+                    ),
+                  }}
+                >
+                  <span class="phase2-zone-label">Mask</span>
+                  <span class="phase2-zone-pct">
+                    {(resonanceData()!.maskRatio * 100).toFixed(0)}%
+                  </span>
+                </div>
+                <div
+                  class="phase2-zone phase2-zone-chest"
+                  classList={{
+                    'phase2-zone--active':
+                      resonanceData()!.dominantZone === 'chest' ||
+                      resonanceData()!.dominantZone === 'mixed',
+                  }}
+                  style={{
+                    opacity: Math.max(
+                      0.3,
+                      resonanceData()!.chestRatio * 2,
+                    ),
+                  }}
+                >
+                  <span class="phase2-zone-label">Chest</span>
+                  <span class="phase2-zone-pct">
+                    {(resonanceData()!.chestRatio * 100).toFixed(0)}%
+                  </span>
+                </div>
+              </div>
+              <div class="phase2-metrics">
+                <div class="phase2-metric">
+                  <span class="phase2-label">Dominant</span>
+                  <span
+                    class={`phase2-badge phase2-badge--${resonanceData()!.dominantZone}`}
+                  >
+                    {resonanceData()!.dominantZone === 'chest'
+                      ? 'Chest'
+                      : resonanceData()!.dominantZone === 'mask'
+                        ? 'Mask'
+                        : resonanceData()!.dominantZone === 'head'
+                          ? 'Head'
+                          : 'Mixed'}
+                  </span>
+                </div>
+                <div class="phase2-metric">
+                  <span class="phase2-label">Centroid</span>
+                  <span class="phase2-value">
+                    {resonanceData()!.spectralCentroid} Hz
+                  </span>
+                </div>
+              </div>
+              <div class="phase2-hint">
+                {resonanceData()!.dominantZone === 'mixed'
+                  ? 'Balanced mixed voice — smooth blend of registers'
+                  : resonanceData()!.dominantZone === 'chest'
+                    ? 'Strong chest resonance — powerful lower register'
+                    : resonanceData()!.dominantZone === 'mask'
+                      ? 'Forward mask resonance — bright, projected tone'
+                      : 'Head voice dominant — light, airy upper register'}
+              </div>
+            </div>
+          </Show>
+
+          {/* Phase 2.4: Vocal Fatigue Tracker */}
+          <Show when={fatigueData()}>
+            <div class="stat-card phase2-card">
+              <h3>Vocal Fatigue Tracker</h3>
+              <div class="phase2-metrics">
+                <div class="phase2-metric">
+                  <span class="phase2-label">Breath</span>
+                  <span
+                    class={`phase2-value ${fatigueData()!.trends.hnrTrend < -5 ? 'phase2-value--warn' : ''}`}
+                  >
+                    {fatigueData()!.trends.hnrTrend > 0 ? '+' : ''}
+                    {fatigueData()!.trends.hnrTrend}%
+                  </span>
+                </div>
+                <div class="phase2-metric">
+                  <span class="phase2-label">Harmonics</span>
+                  <span
+                    class={`phase2-value ${fatigueData()!.trends.richnessTrend < -5 ? 'phase2-value--warn' : ''}`}
+                  >
+                    {fatigueData()!.trends.richnessTrend > 0 ? '+' : ''}
+                    {fatigueData()!.trends.richnessTrend}%
+                  </span>
+                </div>
+                <div class="phase2-metric">
+                  <span class="phase2-label">Stability</span>
+                  <span
+                    class={`phase2-value ${fatigueData()!.trends.stabilityTrend < -5 ? 'phase2-value--warn' : ''}`}
+                  >
+                    {fatigueData()!.trends.stabilityTrend > 0 ? '+' : ''}
+                    {fatigueData()!.trends.stabilityTrend}%
+                  </span>
+                </div>
+              </div>
+              <Show when={fatigueData()!.fatigued}>
+                <div class="phase2-alert">{fatigueData()!.alert}</div>
+              </Show>
+              <Show when={!fatigueData()!.fatigued}>
+                <div class="phase2-hint">
+                  {fatigueData()!.checkpoints.length < 3
+                    ? 'Need more session data to track fatigue trends'
+                    : 'Voice metrics are stable — no fatigue detected'}
                 </div>
               </Show>
             </div>

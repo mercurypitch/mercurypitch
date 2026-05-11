@@ -5,13 +5,22 @@
 import { describe, expect, it } from 'vitest'
 import {
   approximateBreathiness,
+  approximateResonance,
+  approximateRichness,
+  analyzeFatigue,
   compareIntensity,
+  computeHarmonicRichness,
   computeHNR,
   computeRMSEnvelope,
+  detectResonance,
   detectSlides,
+  detectVibrato,
   intensityFromPitchResults,
 } from '@/lib/vocal-analyzer'
-import type { EnvelopePoint } from '@/lib/vocal-analyzer'
+import type {
+  EnvelopePoint,
+  FatigueCheckpoint,
+} from '@/lib/vocal-analyzer'
 
 // ── computeRMSEnvelope ─────────────────────────────────────────
 
@@ -398,5 +407,288 @@ describe('detectSlides', () => {
       wobbleResult.slides.length > 0 ? wobbleResult.slides[0].score : 0
 
     expect(cleanScore).toBeGreaterThan(wobbleScore)
+  })
+})
+
+// ── Phase 2.1: detectVibrato ───────────────────────────────────
+
+describe('detectVibrato', () => {
+  it('returns none for insufficient samples', () => {
+    const result = detectVibrato([
+      { time: 0, freq: 440, midi: 69 },
+    ])
+    expect(result.detected).toBe(false)
+    expect(result.classification).toBe('none')
+  })
+
+  it('detects synthetic vibrato in pitch stream', () => {
+    const samples: Array<{ time: number; freq: number; midi: number }> = []
+    const vibratoRate = 5.5 // Hz
+    const vibratoDepth = 0.5 // semitones peak-to-peak (±0.25)
+    const sampleRate = 100 // Hz
+
+    for (let i = 0; i < 200; i++) {
+      const t = i / sampleRate
+      const modulation = Math.sin(2 * Math.PI * vibratoRate * t) * vibratoDepth / 2
+      const midi = 60 + modulation
+      const freq = 440 * Math.pow(2, modulation / 12)
+      samples.push({ time: t, freq, midi })
+    }
+
+    const result = detectVibrato(samples)
+    expect(result.detected).toBe(true)
+    expect(result.rateHz).toBeGreaterThanOrEqual(4)
+    expect(result.rateHz).toBeLessThanOrEqual(7)
+    expect(result.classification).toBe('natural')
+    expect(result.confidence).toBeGreaterThan(0)
+  })
+
+  it('detects slow operatic vibrato', () => {
+    const samples: Array<{ time: number; freq: number; midi: number }> = []
+    const vibratoRate = 4.2 // slow
+
+    for (let i = 0; i < 200; i++) {
+      const t = i / 100
+      const modulation = Math.sin(2 * Math.PI * vibratoRate * t) * 0.25
+      samples.push({ time: t, freq: 440 * Math.pow(2, modulation / 12), midi: 60 + modulation })
+    }
+
+    const result = detectVibrato(samples)
+    if (result.detected) {
+      expect(result.rateHz).toBeLessThan(5.5)
+      expect(['slow-operatic', 'natural']).toContain(result.classification)
+    }
+  })
+
+  it('returns none for flat pitch (no modulation)', () => {
+    const samples: Array<{ time: number; freq: number; midi: number }> = []
+    for (let i = 0; i < 200; i++) {
+      samples.push({ time: i * 0.01, freq: 440, midi: 60 })
+    }
+
+    const result = detectVibrato(samples)
+    expect(result.detected).toBe(false)
+    expect(result.classification).toBe('none')
+  })
+})
+
+// ── Phase 2.2: computeHarmonicRichness ─────────────────────────
+
+describe('computeHarmonicRichness', () => {
+  it('returns thin for f0 out of range', () => {
+    const spectrum = new Float32Array(1024)
+    const result = computeHarmonicRichness(spectrum, 44100, 0, 2048)
+    expect(result.richnessScore).toBe(0)
+    expect(result.quality).toBe('thin')
+  })
+
+  it('detects rich harmonic structure', () => {
+    const spectrum = new Float32Array(2048)
+    const f0 = 220
+    const sampleRate = 44100
+    const fftSize = 4096
+    const binWidth = sampleRate / fftSize
+    const f0Bin = Math.round(f0 / binWidth)
+
+    // Strong harmonics decaying slowly
+    for (let h = 1; h <= 15; h++) {
+      const bin = f0Bin * h
+      if (bin < spectrum.length) {
+        spectrum[bin] = 10 / h // decaying amplitude
+      }
+    }
+
+    const result = computeHarmonicRichness(spectrum, sampleRate, f0, fftSize)
+    expect(result.harmonicCount).toBeGreaterThanOrEqual(8)
+    expect(result.richnessScore).toBeGreaterThan(8)
+    expect(result.harmonicProfile.length).toBeGreaterThan(0)
+  })
+
+  it('detects thin voice with few harmonics', () => {
+    const spectrum = new Float32Array(2048)
+    const f0 = 440
+    const sampleRate = 44100
+    const fftSize = 4096
+    const binWidth = sampleRate / fftSize
+    const f0Bin = Math.round(f0 / binWidth)
+
+    // Only first 3 harmonics
+    for (let h = 1; h <= 3; h++) {
+      const bin = f0Bin * h
+      if (bin < spectrum.length) spectrum[bin] = 8 / h
+    }
+
+    const result = computeHarmonicRichness(spectrum, sampleRate, f0, fftSize)
+    expect(result.harmonicCount).toBeLessThan(8)
+    expect(result.quality === 'thin' || result.quality === 'normal').toBe(true)
+  })
+
+  it('normalizes harmonic profile to H1', () => {
+    const spectrum = new Float32Array(2048)
+    const f0 = 300
+    const sampleRate = 44100
+    const fftSize = 4096
+    const binWidth = sampleRate / fftSize
+    const f0Bin = Math.round(f0 / binWidth)
+
+    spectrum[f0Bin] = 5 // H1 = 5
+    if (f0Bin * 2 < spectrum.length) spectrum[f0Bin * 2] = 2.5 // H2
+
+    const result = computeHarmonicRichness(spectrum, sampleRate, f0, fftSize)
+    expect(result.harmonicProfile[0]).toBe(1) // H1 normalized = 1
+    if (result.harmonicProfile.length > 1) {
+      expect(result.harmonicProfile[1]).toBeCloseTo(0.5, 1)
+    }
+  })
+})
+
+// ── approximateRichness ────────────────────────────────────────
+
+describe('approximateRichness', () => {
+  it('returns thin for empty input', () => {
+    const result = approximateRichness([])
+    expect(result.quality).toBe('thin')
+    expect(result.richnessScore).toBe(0)
+  })
+
+  it('estimates richness from clarity', () => {
+    const results = [
+      { freq: 440, clarity: 95 },
+      { freq: 441, clarity: 90 },
+      { freq: 439, clarity: 93 },
+    ]
+    const result = approximateRichness(results)
+    expect(result.richnessScore).toBeGreaterThan(30)
+    expect(result.harmonicCount).toBeGreaterThan(5)
+  })
+})
+
+// ── Phase 2.3: detectResonance ──────────────────────────────────
+
+describe('detectResonance', () => {
+  it('returns chest for empty spectrum', () => {
+    const spectrum = new Float32Array(1024)
+    const result = detectResonance(spectrum, 44100, 2048)
+    expect(result.dominantZone).toBe('chest')
+  })
+
+  it('detects chest-dominant resonance (low frequency emphasis)', () => {
+    const spectrum = new Float32Array(2048)
+    const sampleRate = 44100
+    const fftSize = 4096
+    const binWidth = sampleRate / fftSize
+
+    // Put most energy in chest band (200-800 Hz)
+    const chestCenter = Math.round(500 / binWidth)
+    for (let i = chestCenter - 5; i <= chestCenter + 5; i++) {
+      if (i >= 0 && i < spectrum.length) spectrum[i] = 5
+    }
+
+    const result = detectResonance(spectrum, sampleRate, fftSize)
+    expect(result.dominantZone).toBe('chest')
+    expect(result.chestRatio).toBeGreaterThan(result.headRatio)
+  })
+
+  it('detects head-dominant resonance (high frequency emphasis)', () => {
+    const spectrum = new Float32Array(2048)
+    const sampleRate = 44100
+    const fftSize = 4096
+    const binWidth = sampleRate / fftSize
+
+    // Put most energy in head band (2500+ Hz)
+    const headCenter = Math.round(3000 / binWidth)
+    for (let i = headCenter - 5; i <= headCenter + 5; i++) {
+      if (i >= 0 && i < spectrum.length) spectrum[i] = 5
+    }
+
+    const result = detectResonance(spectrum, sampleRate, fftSize)
+    expect(result.headRatio).toBeGreaterThan(result.chestRatio)
+  })
+
+  it('ratios sum to approximately 1', () => {
+    const spectrum = new Float32Array(2048)
+    // Fill with some energy across all bands
+    for (let i = 0; i < spectrum.length; i++) {
+      spectrum[i] = Math.random()
+    }
+
+    const result = detectResonance(spectrum, 44100, 4096)
+    const sum = result.chestRatio + result.maskRatio + result.headRatio
+    expect(sum).toBeCloseTo(1, 1)
+  })
+})
+
+// ── approximateResonance ────────────────────────────────────────
+
+describe('approximateResonance', () => {
+  it('returns chest for low frequencies', () => {
+    const results = [
+      { freq: 200 },
+      { freq: 220 },
+      { freq: 250 },
+    ]
+    const result = approximateResonance(results)
+    expect(result.dominantZone).toBe('chest')
+    expect(result.chestRatio).toBeGreaterThan(0.3)
+  })
+
+  it('returns head for high frequencies', () => {
+    const results = [
+      { freq: 900 },
+      { freq: 1000 },
+      { freq: 1100 },
+    ]
+    const result = approximateResonance(results)
+    expect(result.headRatio).toBeGreaterThan(0.3)
+  })
+})
+
+// ── Phase 2.4: analyzeFatigue ───────────────────────────────────
+
+describe('analyzeFatigue', () => {
+  it('returns no fatigue for insufficient checkpoints', () => {
+    const checkpoints: FatigueCheckpoint[] = [
+      { time: 0, hnrDb: 20, richnessScore: 50, pitchStability: 80 },
+      { time: 1, hnrDb: 18, richnessScore: 48, pitchStability: 78 },
+    ]
+    const result = analyzeFatigue(checkpoints)
+    expect(result.fatigued).toBe(false)
+    expect(result.alert).toBeNull()
+  })
+
+  it('detects fatigue when metrics decline', () => {
+    const checkpoints: FatigueCheckpoint[] = [
+      { time: 0, hnrDb: 25, richnessScore: 60, pitchStability: 90 },
+      { time: 1, hnrDb: 20, richnessScore: 50, pitchStability: 85 },
+      { time: 2, hnrDb: 15, richnessScore: 40, pitchStability: 75 },
+      { time: 3, hnrDb: 10, richnessScore: 30, pitchStability: 65 },
+    ]
+    const result = analyzeFatigue(checkpoints)
+    expect(result.fatigued).toBe(true)
+    expect(result.alert).not.toBeNull()
+    expect(result.trends.hnrTrend).toBeLessThan(0)
+  })
+
+  it('returns no fatigue for stable metrics', () => {
+    const checkpoints: FatigueCheckpoint[] = [
+      { time: 0, hnrDb: 20, richnessScore: 50, pitchStability: 80 },
+      { time: 1, hnrDb: 21, richnessScore: 51, pitchStability: 79 },
+      { time: 2, hnrDb: 19, richnessScore: 49, pitchStability: 81 },
+      { time: 3, hnrDb: 20, richnessScore: 50, pitchStability: 80 },
+    ]
+    const result = analyzeFatigue(checkpoints)
+    expect(result.fatigued).toBe(false)
+  })
+
+  it('detects single-metric decline without triggering fatigue', () => {
+    const checkpoints: FatigueCheckpoint[] = [
+      { time: 0, hnrDb: 25, richnessScore: 50, pitchStability: 80 },
+      { time: 1, hnrDb: 20, richnessScore: 50, pitchStability: 80 },
+      { time: 2, hnrDb: 15, richnessScore: 50, pitchStability: 80 },
+      { time: 3, hnrDb: 10, richnessScore: 49, pitchStability: 81 },
+    ]
+    const result = analyzeFatigue(checkpoints)
+    // Only HNR declining significantly, needs 2+ metrics
+    expect(result.fatigued).toBe(false)
   })
 })
