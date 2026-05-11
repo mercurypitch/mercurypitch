@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
+import { createMemo, createSignal, For, onMount, Show } from 'solid-js'
 import { IconPlay } from '@/components/hidden-features-icons'
 import { loadSessionRecords } from '@/db/services/session-service'
 import { frequenciesToNoteName } from '@/lib/frequency-to-note'
@@ -448,143 +448,124 @@ export const VocalAnalysis: Component = () => {
     return Math.max(...runData.map((r) => r.clarity || 0))
   }
 
-  // Start analyzing current input
-  let analysisInterval: ReturnType<typeof setInterval> | null = null
+  // Start analyzing session history
   const startAnalysis = () => {
-    if (analysisInterval !== null) clearInterval(analysisInterval)
     setIsAnalyzing(true)
     setVocalRunData([])
     setSpectralData([])
 
-    // Simulate real analysis (would connect to real mic data in production)
-    let analysisComplete = false
-    const maxNotes = 100
+    const allData = history()
 
-    analysisInterval = setInterval(() => {
-      const allData = getSessionHistory()
-      if (allData.length > 0) {
-        // Convert SessionResult[] to PitchResult[] by flattening practiceItemResult
-        const practiceResults = allData.flatMap((s) => s.practiceItemResult)
-        const pitchResults = practiceResults
-          .flatMap((p) => p.noteResult)
-          .map((r) => ({
-            freq: r.pitchFreq || 0,
-            midi: r.item.note.midi,
-            note: r.item.note.name,
-            noteName: r.item.note.name,
-            clarity: r.avgCents || 0,
-          })) as PitchResult[]
-        setVocalRunData(pitchResults)
+    if (allData.length === 0) {
+      setIsAnalyzing(false)
+      return
+    }
 
-        // Phase 1: Intensity Profile
-        const intensity = intensityFromPitchResults(
-          pitchResults.map((p, i) => ({
-            time: i * 0.01,
-            clarity: p.clarity,
-            midi: p.midi,
-          })),
-        )
-        setIntensityProfile({
-          avgDb: intensity.avgDb,
-          peakDb: intensity.peakDb,
-          dynamicRange: intensity.dynamicRange,
-        })
+    // Convert SessionResult[] to PitchResult[] by flattening practiceItemResult
+    const practiceResults = allData.flatMap((s) => s.practiceItemResult)
+    const pitchResults = practiceResults
+      .flatMap((p) => p.noteResult)
+      .map((r) => ({
+        freq: r.pitchFreq || 0,
+        midi: r.item.note.midi,
+        note: r.item.note.name,
+        noteName: r.item.note.name,
+        clarity: r.avgCents || 0,
+      })) as PitchResult[]
+    setVocalRunData(pitchResults)
 
-        // Phase 1: Breathiness
-        const breath = approximateBreathiness(
-          pitchResults.map((p) => ({
-            freq: p.freq,
-            clarity: p.clarity,
-          })),
-        )
-        setBreathiness(breath)
-
-        // Phase 1: Slide Tracking
-        const slides = detectSlides(
-          pitchResults.map((p, i) => ({
-            time: i * 0.01,
-            midi: p.midi,
-            freq: p.freq,
-          })),
-        )
-        setSlideTracking(slides)
-
-        // Phase 2: Vibrato Detection
-        const vibrato = detectVibrato(
-          pitchResults.map((p, i) => ({
-            time: i * 0.01,
-            freq: p.freq,
-            midi: p.midi,
-          })),
-        )
-        setVibratoAnalysis(vibrato)
-
-        // Phase 2: Harmonic Richness
-        const richness = approximateRichness(
-          pitchResults.map((p) => ({
-            freq: p.freq,
-            clarity: p.clarity,
-          })),
-        )
-        setHarmonicRichness({
-          richnessScore: richness.richnessScore,
-          harmonicCount: richness.harmonicCount,
-          harmonicProfile: [],
-          quality: richness.quality,
-        })
-
-        // Phase 2: Resonance Zone
-        const resonance = approximateResonance(
-          pitchResults.map((p) => ({ freq: p.freq })),
-        )
-        setResonanceData(resonance)
-
-        // Phase 2: Vocal Fatigue (build checkpoints from session history)
-        const sessionData = getSessionHistory()
-        const checkpoints: FatigueCheckpoint[] = []
-        for (let ci = 0; ci < Math.min(sessionData.length, 10); ci++) {
-          const s = sessionData[ci]
-          const sPitch = s.practiceItemResult.flatMap((pr) =>
-            pr.noteResult.map((r) => ({
-              freq: r.item.note.freq,
-              clarity: r.avgCents || 0,
-            })),
-          )
-          const sBreath = approximateBreathiness(sPitch)
-          const sRichness = approximateRichness(sPitch)
-          checkpoints.push({
-            time: s.completedAt || ci,
-            hnrDb: sBreath.hnrDb,
-            richnessScore: sRichness.richnessScore,
-            pitchStability: s.score || 50,
-          })
-        }
-        if (checkpoints.length >= 3) {
-          setFatigueData(analyzeFatigue(checkpoints))
-        }
-
-        // Build spectral approximation
-        const spectral: SpectrumData[] = practiceResults
-          .slice(-30)
-          .map((r: PracticeResult, i: number) => ({
-            frequency: r.score * 20,
-            amplitude: Math.abs(r.avgCents) * 3,
-            phase: (i / 30) * Math.PI * 2,
-          }))
-        setSpectralData(spectral)
-      }
-
-      const runHistory = getSessionHistory()
-      if (runHistory.length >= maxNotes || analysisComplete) {
-        if (analysisInterval !== null) clearInterval(analysisInterval)
-        setIsAnalyzing(false)
-        analysisComplete = true
-      }
-    }, 100)
-
-    onCleanup(() => {
-      if (analysisInterval !== null) clearInterval(analysisInterval)
+    // Phase 1: Intensity Profile
+    const intensity = intensityFromPitchResults(
+      pitchResults.map((p, i) => ({
+        time: i * 0.01,
+        clarity: p.clarity,
+        midi: p.midi,
+      })),
+    )
+    setIntensityProfile({
+      avgDb: intensity.avgDb,
+      peakDb: intensity.peakDb,
+      dynamicRange: intensity.dynamicRange,
     })
+
+    // Phase 1: Breathiness
+    const breath = approximateBreathiness(
+      pitchResults.map((p) => ({ freq: p.freq, clarity: p.clarity })),
+    )
+    setBreathiness(breath)
+
+    // Phase 1: Slide Tracking
+    const slides = detectSlides(
+      pitchResults.map((p, i) => ({
+        time: i * 0.01,
+        midi: p.midi,
+        freq: p.freq,
+      })),
+    )
+    setSlideTracking(slides)
+
+    // Phase 2: Vibrato Detection
+    const vibrato = detectVibrato(
+      pitchResults.map((p, i) => ({
+        time: i * 0.01,
+        freq: p.freq,
+        midi: p.midi,
+      })),
+    )
+    setVibratoAnalysis(vibrato)
+
+    // Phase 2: Harmonic Richness
+    const richness = approximateRichness(
+      pitchResults.map((p) => ({ freq: p.freq, clarity: p.clarity })),
+    )
+    setHarmonicRichness({
+      richnessScore: richness.richnessScore,
+      harmonicCount: richness.harmonicCount,
+      harmonicProfile: [],
+      quality: richness.quality,
+    })
+
+    // Phase 2: Resonance Zone
+    const resonance = approximateResonance(
+      pitchResults.map((p) => ({ freq: p.freq })),
+    )
+    setResonanceData(resonance)
+
+    // Phase 2: Vocal Fatigue (build checkpoints from session history)
+    const sessionData = allData
+    const checkpoints: FatigueCheckpoint[] = []
+    for (let ci = 0; ci < Math.min(sessionData.length, 10); ci++) {
+      const s = sessionData[ci]
+      const sPitch = s.practiceItemResult.flatMap((pr) =>
+        pr.noteResult.map((r) => ({
+          freq: r.item.note.freq,
+          clarity: r.avgCents || 0,
+        })),
+      )
+      const sBreath = approximateBreathiness(sPitch)
+      const sRichness = approximateRichness(sPitch)
+      checkpoints.push({
+        time: s.completedAt || ci,
+        hnrDb: sBreath.hnrDb,
+        richnessScore: sRichness.richnessScore,
+        pitchStability: s.score || 50,
+      })
+    }
+    if (checkpoints.length >= 3) {
+      setFatigueData(analyzeFatigue(checkpoints))
+    }
+
+    // Build spectral approximation
+    const spectral: SpectrumData[] = practiceResults
+      .slice(-30)
+      .map((r: PracticeResult, i: number) => ({
+        frequency: r.score * 20,
+        amplitude: Math.abs(r.avgCents) * 3,
+        phase: (i / 30) * Math.PI * 2,
+      }))
+    setSpectralData(spectral)
+
+    setIsAnalyzing(false)
   }
 
   const exercises: Array<{
