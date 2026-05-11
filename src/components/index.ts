@@ -43,6 +43,9 @@ export {
 export { UvrSessionResult } from './UvrSessionResult'
 
 export { UvrPanel } from './UvrPanel'
+export { JamPanel } from './JamPanel'
+export { JamPeerList } from './JamPeerList'
+export { JamInviteModal } from './JamInviteModal'
 
 export { StemMixer } from './StemMixer'
 export { StemMixerStyles } from './StemMixer'

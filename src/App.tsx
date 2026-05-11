@@ -78,7 +78,7 @@ import { usePracticeController } from '@/features/practice/usePracticeController
 import { useRecordingController } from '@/features/recording/useRecordingController'
 import { useHashRouter } from '@/features/routing/useHashRouter'
 import { useSessionSequencer } from '@/features/session/useSessionSequencer'
-import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PIANO, TAB_SETTINGS, TAB_SINGING, tabLabel, } from '@/features/tabs/constants'
+import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PIANO, TAB_SETTINGS, TAB_SINGING, tabLabel, } from '@/features/tabs/constants'
 import type { InstrumentType } from '@/lib/audio-engine'
 import { audioRegistry } from '@/lib/audio-registry'
 import { debounce } from '@/lib/debounce'
@@ -101,6 +101,7 @@ import { CrashModal } from './components/CrashModal'
 import { FallingNotesCanvas } from './components/FallingNotesCanvas'
 import { FallingNotesSongPicker } from './components/FallingNotesSongPicker'
 import { GuideSelection } from './components/GuideSelection'
+import { JamPanel } from './components/JamPanel'
 import { TabErrorBoundary } from './components/TabErrorBoundary'
 import { _UvrGuideStyles } from './components/UvrGuide'
 import { WelcomeScreen } from './components/WelcomeScreen'
@@ -1061,6 +1062,29 @@ const AppShell: Component<AppProps> = (props) => {
                     </svg>
                     {tabLabel(TAB_CHALLENGES)}
                   </button>
+                  <button
+                    id="tab-jam"
+                    class={`app-tab ${activeTab() === TAB_JAM ? 'active' : ''}`}
+                    onClick={() => void handleTabChange(TAB_JAM)}
+                    aria-label="Jam session"
+                  >
+                    <svg
+                      class="tab-icon"
+                      viewBox="0 0 24 24"
+                      width="14"
+                      height="14"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path d="M9 18V5l12-2v13" />
+                      <circle cx="6" cy="18" r="3" />
+                      <circle cx="18" cy="16" r="3" />
+                    </svg>
+                    {tabLabel(TAB_JAM)}
+                  </button>
                 </div>
               </Show>
 
@@ -1417,6 +1441,14 @@ const AppShell: Component<AppProps> = (props) => {
                         </Show>
                       </Show>
                     </div>
+                  </div>
+                </TabErrorBoundary>
+              </Show>
+
+              <Show when={activeTab() === TAB_JAM}>
+                <TabErrorBoundary tabName={tabLabel(TAB_JAM)}>
+                  <div id="jam-panel">
+                    <JamPanel />
                   </div>
                 </TabErrorBoundary>
               </Show>
