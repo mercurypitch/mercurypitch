@@ -843,6 +843,20 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
           </div>
         </Show>
 
+        {/* Stem Mixer Inline */}
+        <Show when={currentView() === 'mixer'}>
+          <div class="view-section mixer-section">
+            <StemMixer
+              stems={mixerStems()}
+              sessionId={mixerSessionId()}
+              songTitle={currentUvrSession()?.originalFile?.name ?? 'Unknown'}
+              practiceMode={mixerPracticeMode()}
+              requestedStems={mixerRequestedStems()}
+              onBack={() => setCurrentView(prevView())}
+            />
+          </div>
+        </Show>
+
       </div>
 
       {/* Delete All Confirmation Modal */}
@@ -916,19 +930,6 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
         </div>
       </Show>
 
-      {/* Stem Mixer Inline */}
-      <Show when={currentView() === 'mixer'}>
-        <div class="view-section mixer-section">
-          <StemMixer
-            stems={mixerStems()}
-            sessionId={mixerSessionId()}
-            songTitle={currentUvrSession()?.originalFile?.name ?? 'Unknown'}
-            practiceMode={mixerPracticeMode()}
-            requestedStems={mixerRequestedStems()}
-            onBack={() => setCurrentView(prevView())}
-          />
-        </div>
-      </Show>
     </div>
   )
 }
