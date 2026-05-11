@@ -681,6 +681,21 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }
   }
 
+  const handleForceSearch = async () => {
+    setLyricsLoading(true)
+    const title = extractTitle(props.songTitle ?? props.sessionId ?? '')
+    try {
+      const results = await searchLyricsMulti(title)
+      setSongMatches(results)
+      setSongPickerQuery(title)
+      setShowSongPicker(true)
+    } catch {
+      // keep existing
+    } finally {
+      setLyricsLoading(false)
+    }
+  }
+
   const loadLyrics = async () => {
     // Check persisted lyrics first — no need for API call if user already uploaded
     const persisted = loadPersistedLyrics()
@@ -784,97 +799,100 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }
   }
 
-  // ── Word-level timing + render data ─────────────────────────
-  // Single memo that pre-computes ALL active states so the template
-  // re-renders reliably when elapsed / currentLineIdx change.
-  // Using .map() instead of <For> because <For> skips re-renders
-  // when the source array identity hasn't changed (which it doesn't
-  // during playback — lrcLines/textLines stay the same).
+  const computeActiveWord = (
+    words: string[],
+    startTime: number,
+    endTime: number,
+    elapsedTime: number,
+  ): { activeUpTo: number; charProgress: number } => {
+    if (words.length === 0) return { activeUpTo: -1, charProgress: 0 }
+    const lineDuration = Math.max(0.05, endTime - startTime)
+    const progress = (elapsedTime - startTime) / lineDuration
+    if (progress < 0) return { activeUpTo: -1, charProgress: 0 }
+    if (progress >= 1)
+      return {
+        activeUpTo: words.length - 1,
+        charProgress: words[words.length - 1]?.length || 0,
+      }
 
-  interface LyricRenderLine {
-    key: string
-    time: number
-    words: string[]
-    isActive: boolean
-    activeUpTo: number // -1 = no words active, N = words 0..N are "done"
-    activeCharProgress: number // 0..word.length, chars "done" in the word at activeUpTo+1
+    const wordDuration = lineDuration / words.length
+    const currentWordIdx = Math.floor(progress * words.length)
+    const activeUpTo = currentWordIdx - 1
+
+    const elapsedInWord =
+      elapsedTime - startTime - currentWordIdx * wordDuration
+    const currentWord = words[currentWordIdx]
+    const charProgress = Math.min(
+      Math.floor((elapsedInWord / wordDuration) * currentWord.length),
+      currentWord.length,
+    )
+
+    return { activeUpTo, charProgress }
   }
 
-  const lyricsRenderData = createMemo<LyricRenderLine[]>(() => {
+  const stableParsedLyrics = createMemo(() => {
     const dur = duration()
     const lrc = lrcLines()
     const txt = lyricsLines()
-    const curIdx = currentLineIdx()
-    const elapsedTime = elapsed()
 
-    const computeActiveWord = (
-      words: string[],
-      startTime: number,
-      endTime: number,
-    ): { activeUpTo: number; charProgress: number } => {
-      if (words.length === 0) return { activeUpTo: -1, charProgress: 0 }
-      const lineDuration = Math.max(0.05, endTime - startTime)
-      const progress = (elapsedTime - startTime) / lineDuration
-      if (progress < 0) return { activeUpTo: -1, charProgress: 0 }
-      if (progress >= 1)
-        return {
-          activeUpTo: words.length - 1,
-          charProgress: words[words.length - 1]?.length || 0,
-        }
-
-      const wordDuration = lineDuration / words.length
-      const currentWordIdx = Math.floor(progress * words.length)
-      const activeUpTo = currentWordIdx - 1
-
-      const elapsedInWord =
-        elapsedTime - startTime - currentWordIdx * wordDuration
-      const currentWord = words[currentWordIdx]
-      const charProgress = Math.min(
-        Math.floor((elapsedInWord / wordDuration) * currentWord.length),
-        currentWord.length,
-      )
-
-      return { activeUpTo, charProgress }
-    }
+    const map = new Map<
+      number,
+      { time: number; endTime: number; words: string[]; key: string }
+    >()
 
     if (lrc.length > 0) {
-      return lrc.map((line, i) => {
+      lrc.forEach((line, i) => {
         const words = line.text.split(/\s+/).filter((w: string) => w.length > 0)
         const endTime = i + 1 < lrc.length ? lrc[i + 1].time : dur
-        const isActive = i === curIdx
-        const { activeUpTo, charProgress } = isActive
-          ? computeActiveWord(words, line.time, endTime)
-          : { activeUpTo: -1, charProgress: 0 }
-        return {
-          key: `lrc-${i}`,
-          time: line.time,
-          words,
-          isActive,
-          activeUpTo,
-          activeCharProgress: charProgress,
-        }
+        map.set(i, { key: `lrc-${i}`, time: line.time, endTime, words })
       })
+      return map
     }
     if (txt.length > 0 && dur > 0) {
-      return txt.map((text, i) => {
+      txt.forEach((text, i) => {
         const words = text.split(/\s+/).filter((w: string) => w.length > 0)
         const startTime = (i / txt.length) * dur
         const endTime = ((i + 1) / txt.length) * dur
-        const isActive = i === curIdx
-        const { activeUpTo, charProgress } = isActive
-          ? computeActiveWord(words, startTime, endTime)
-          : { activeUpTo: -1, charProgress: 0 }
-        return {
-          key: `txt-${i}`,
-          time: startTime,
-          words,
-          isActive,
-          activeUpTo,
-          activeCharProgress: charProgress,
-        }
+        map.set(i, { key: `txt-${i}`, time: startTime, endTime, words })
       })
+      return map
     }
-    return []
+    return map
+  })
+
+  const blockStarts = createMemo(() => {
+    const starts = new Map<
+      number,
+      {
+        blockId: string
+        label: string
+        instanceIdx: number
+        isTemplate: boolean
+        repeatCount: number
+        color: string
+        startLine: number
+        endLine: number
+      }
+    >()
+    for (const [blockId, instances] of Object.entries(blockInstances())) {
+      const block = getBlockById(blockId)
+      if (!block) continue
+      const color = getBlockColor(blockId)
+      for (let i = 0; i < instances.length; i++) {
+        const [s, e] = instances[i]
+        starts.set(s, {
+          blockId,
+          label: block.label,
+          instanceIdx: i,
+          isTemplate: i === 0,
+          repeatCount: block.repeatCount,
+          color,
+          startLine: s,
+          endLine: e,
+        })
+      }
+    }
+    return starts
   })
 
   // Display lines — preserves blank lines from raw text for visual spacing
@@ -4097,6 +4115,22 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                     class="sm-lyrics-edit-btn"
                     onClick={(e) => {
                       e.stopPropagation()
+                      handleForceSearch()
+                    }}
+                    title="Search Lyrics Online"
+                    style={{ 'margin-right': '4px' }}
+                  >
+                    <svg viewBox="0 0 24 24" width="11" height="11">
+                      <path
+                        fill="currentColor"
+                        d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    class="sm-lyrics-edit-btn"
+                    onClick={(e) => {
+                      e.stopPropagation()
                       toggleEditMode()
                     }}
                     title="Edit word timings"
@@ -4530,7 +4564,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                       }
                     }}
                   >
-                    <For each={lyricsRenderData()}>
+                    <For each={Array.from(stableParsedLyrics().values())}>
                       {(rl) => {
                         const idx = parseInt(rl.key.split('-')[1])
                         return (
@@ -4798,49 +4832,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                     }}
                   >
                     {/* ── Block instance badge + line group rendering ── */}
-                    {(() => {
-                      const rl = lyricsRenderData()
-                      const rlByLyricIdx = new Map<number, LyricRenderLine>()
-                      for (const item of rl) {
-                        rlByLyricIdx.set(parseInt(item.key.split('-')[1]), item)
-                      }
-
-                      // Map line index → block info for badge placement
-                      const blockStarts = new Map<
-                        number,
-                        {
-                          blockId: string
-                          label: string
-                          instanceIdx: number
-                          isTemplate: boolean
-                          repeatCount: number
-                          color: string
-                          startLine: number
-                          endLine: number
-                        }
-                      >()
-                      for (const [blockId, instances] of Object.entries(
-                        blockInstances(),
-                      )) {
-                        const block = getBlockById(blockId)
-                        if (!block) continue
-                        const color = getBlockColor(blockId)
-                        for (let i = 0; i < instances.length; i++) {
-                          const [s, e] = instances[i]
-                          blockStarts.set(s, {
-                            blockId,
-                            label: block.label,
-                            instanceIdx: i,
-                            isTemplate: i === 0,
-                            repeatCount: block.repeatCount,
-                            color,
-                            startLine: s,
-                            endLine: e,
-                          })
-                        }
-                      }
-
-                      return displayLines().map((dl) => {
+                    <For each={displayLines()}>
+                      {(dl) => {
                         if (dl.isBlank) {
                           return (
                             <div
@@ -4863,10 +4856,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                         }
 
                         const idx = dl.lyricsIndex
-                        const rlItem = rlByLyricIdx.get(idx)
-                        if (!rlItem) return null
+                        const parsedLyric = stableParsedLyrics().get(idx)
+                        if (!parsedLyric) return null
 
-                        const blockInfo = blockStarts.get(idx)
+                        const blockInfo = blockStarts().get(idx)
                         const blockForLine = getBlockForLine(idx)
                         const blockColor = blockForLine
                           ? getBlockColor(blockForLine.blockId)
@@ -4880,6 +4873,17 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                           markEndLine() !== null &&
                           idx >= markStartLine()! &&
                           idx < markEndLine()!
+
+                        const isActive = () => idx === currentLineIdx()
+                        const activeWordInfo = () =>
+                          isActive()
+                            ? computeActiveWord(
+                                parsedLyric.words,
+                                parsedLyric.time,
+                                parsedLyric.endTime,
+                                elapsed(),
+                              )
+                            : { activeUpTo: -1, charProgress: 0 }
 
                         return (
                           <>
@@ -4923,7 +4927,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                               </div>
                             )}
                             <span
-                              class={`sm-lyrics-line${rlItem.isActive ? ' sm-lyrics-line-active' : ''}${blockForLine ? ' sm-lyrics-line--blocked' : ''}${blockForLine && !blockForLine.isTemplate ? ' sm-lyrics-line--block-instance' : ''}${blockMarkMode() ? ' sm-lyrics-line-markable' : ''}${isMarkSelected ? ' sm-lyrics-line-mark-selected' : ''}`}
+                              class={`sm-lyrics-line${isActive() ? ' sm-lyrics-line-active' : ''}${blockForLine ? ' sm-lyrics-line--blocked' : ''}${blockForLine && !blockForLine.isTemplate ? ' sm-lyrics-line--block-instance' : ''}${blockMarkMode() ? ' sm-lyrics-line-markable' : ''}${isMarkSelected ? ' sm-lyrics-line-mark-selected' : ''}`}
                               style={
                                 blockColor !== undefined
                                   ? { '--block-color': blockColor }
@@ -4973,14 +4977,14 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                                 </span>
                               )}
                               <span class="sm-lyrics-time">
-                                {formatTime(rlItem.time)}
+                                {formatTime(parsedLyric.time)}
                               </span>
-                              {rlItem.words.length === 0
-                                ? rlItem.key.startsWith('lrc-')
+                              {parsedLyric.words.length === 0
+                                ? parsedLyric.key.startsWith('lrc-')
                                   ? lrcLines()[idx]?.text || ''
                                   : lyricsLines()[idx] || ''
-                                : rlItem.words.map((word, wi) => {
-                                    if (wi <= rlItem.activeUpTo) {
+                                : parsedLyric.words.map((word, wi) => {
+                                    if (wi <= activeWordInfo().activeUpTo) {
                                       return (
                                         <span class="sm-lyrics-word sm-lyrics-word-done">
                                           {word}{' '}
@@ -4988,20 +4992,20 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                                       )
                                     }
                                     if (
-                                      wi === rlItem.activeUpTo + 1 &&
-                                      rlItem.activeCharProgress > 0
+                                      wi === activeWordInfo().activeUpTo + 1 &&
+                                      activeWordInfo().charProgress > 0
                                     ) {
                                       return (
                                         <span class="sm-lyrics-word sm-lyrics-word-current">
                                           <span class="sm-lyrics-char-done">
                                             {word.slice(
                                               0,
-                                              rlItem.activeCharProgress,
+                                              activeWordInfo().charProgress,
                                             )}
                                           </span>
                                           <span class="sm-lyrics-char-remaining">
                                             {word.slice(
-                                              rlItem.activeCharProgress,
+                                              activeWordInfo().charProgress,
                                             )}
                                           </span>{' '}
                                         </span>
@@ -5016,8 +5020,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                             </span>
                           </>
                         )
-                      })
-                    })()}
+                      }}
+                    </For>
                   </div>
                 </Show>
               </Show>
@@ -5096,6 +5100,22 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                         (lyricsSource() === 'api' && !editMode())
                       }
                     >
+                      <button
+                        class="sm-lyrics-edit-btn"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleForceSearch()
+                        }}
+                        title="Search Lyrics Online"
+                        style={{ 'margin-right': '4px' }}
+                      >
+                        <svg viewBox="0 0 24 24" width="11" height="11">
+                          <path
+                            fill="currentColor"
+                            d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"
+                          />
+                        </svg>
+                      </button>
                       <button
                         class="sm-lyrics-edit-btn"
                         onClick={(e) => {
@@ -5522,7 +5542,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                           }
                         }}
                       >
-                        <For each={lyricsRenderData()}>
+                        <For each={Array.from(stableParsedLyrics().values())}>
                           {(rl) => {
                             const idx = parseInt(rl.key.split('-')[1])
                             return (
@@ -5794,51 +5814,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                           }
                         }}
                       >
-                        {(() => {
-                          const rl = lyricsRenderData()
-                          const rlByLyricIdx = new Map<
-                            number,
-                            LyricRenderLine
-                          >()
-                          for (const item of rl)
-                            rlByLyricIdx.set(
-                              parseInt(item.key.split('-')[1]),
-                              item,
-                            )
-                          const blockStarts = new Map<
-                            number,
-                            {
-                              blockId: string
-                              label: string
-                              instanceIdx: number
-                              isTemplate: boolean
-                              repeatCount: number
-                              color: string
-                              startLine: number
-                              endLine: number
-                            }
-                          >()
-                          for (const [blockId, instances] of Object.entries(
-                            blockInstances(),
-                          )) {
-                            const block = getBlockById(blockId)
-                            if (!block) continue
-                            const color = getBlockColor(blockId)
-                            for (let i = 0; i < instances.length; i++) {
-                              const [s, e] = instances[i]
-                              blockStarts.set(s, {
-                                blockId,
-                                label: block.label,
-                                instanceIdx: i,
-                                isTemplate: i === 0,
-                                repeatCount: block.repeatCount,
-                                color,
-                                startLine: s,
-                                endLine: e,
-                              })
-                            }
-                          }
-                          return displayLines().map((dl) => {
+                        <For each={displayLines()}>
+                          {(dl) => {
                             if (dl.isBlank)
                               return (
                                 <div
@@ -5863,9 +5840,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                                 </div>
                               )
                             const idx = dl.lyricsIndex
-                            const rlItem = rlByLyricIdx.get(idx)
-                            if (!rlItem) return null
-                            const blockInfo = blockStarts.get(idx)
+                            const parsedLyric = stableParsedLyrics().get(idx)
+                            if (!parsedLyric) return null
+                            const blockInfo = blockStarts().get(idx)
                             const blockForLine = getBlockForLine(idx)
                             const blockColor = blockForLine
                               ? getBlockColor(blockForLine.blockId)
@@ -5879,6 +5856,16 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                               markEndLine() !== null &&
                               idx >= markStartLine()! &&
                               idx < markEndLine()!
+                            const isActive = () => idx === currentLineIdx()
+                            const activeWordInfo = () =>
+                              isActive()
+                                ? computeActiveWord(
+                                    parsedLyric.words,
+                                    parsedLyric.time,
+                                    parsedLyric.endTime,
+                                    elapsed(),
+                                  )
+                                : { activeUpTo: -1, charProgress: 0 }
                             return (
                               <>
                                 {blockInfo && (
@@ -5919,7 +5906,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                                   </div>
                                 )}
                                 <span
-                                  class={`sm-lyrics-line${rlItem.isActive ? ' sm-lyrics-line-active' : ''}${blockForLine ? ' sm-lyrics-line--blocked' : ''}${blockForLine && !blockForLine.isTemplate ? ' sm-lyrics-line--block-instance' : ''}${blockMarkMode() ? ' sm-lyrics-line-markable' : ''}${isMarkSelected ? ' sm-lyrics-line-mark-selected' : ''}`}
+                                  class={`sm-lyrics-line${isActive() ? ' sm-lyrics-line-active' : ''}${blockForLine ? ' sm-lyrics-line--blocked' : ''}${blockForLine && !blockForLine.isTemplate ? ' sm-lyrics-line--block-instance' : ''}${blockMarkMode() ? ' sm-lyrics-line-markable' : ''}${isMarkSelected ? ' sm-lyrics-line-mark-selected' : ''}`}
                                   style={
                                     blockColor !== undefined
                                       ? { '--block-color': blockColor }
@@ -5965,34 +5952,35 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                                     </span>
                                   )}
                                   <span class="sm-lyrics-time">
-                                    {formatTime(rlItem.time)}
+                                    {formatTime(parsedLyric.time)}
                                   </span>
-                                  {rlItem.words.length === 0
-                                    ? rlItem.key.startsWith('lrc-')
+                                  {parsedLyric.words.length === 0
+                                    ? parsedLyric.key.startsWith('lrc-')
                                       ? lrcLines()[idx]?.text || ''
                                       : lyricsLines()[idx] || ''
-                                    : rlItem.words.map((word, wi) => {
-                                        if (wi <= rlItem.activeUpTo)
+                                    : parsedLyric.words.map((word, wi) => {
+                                        if (wi <= activeWordInfo().activeUpTo)
                                           return (
                                             <span class="sm-lyrics-word sm-lyrics-word-done">
                                               {word}{' '}
                                             </span>
                                           )
                                         if (
-                                          wi === rlItem.activeUpTo + 1 &&
-                                          rlItem.activeCharProgress > 0
+                                          wi ===
+                                            activeWordInfo().activeUpTo + 1 &&
+                                          activeWordInfo().charProgress > 0
                                         )
                                           return (
                                             <span class="sm-lyrics-word sm-lyrics-word-current">
                                               <span class="sm-lyrics-char-done">
                                                 {word.slice(
                                                   0,
-                                                  rlItem.activeCharProgress,
+                                                  activeWordInfo().charProgress,
                                                 )}
                                               </span>
                                               <span class="sm-lyrics-char-remaining">
                                                 {word.slice(
-                                                  rlItem.activeCharProgress,
+                                                  activeWordInfo().charProgress,
                                                 )}
                                               </span>{' '}
                                             </span>
@@ -6006,8 +5994,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                                 </span>
                               </>
                             )
-                          })
-                        })()}
+                          }}
+                        </For>
                       </div>
                     </Show>
                   </Show>

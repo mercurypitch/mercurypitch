@@ -39,7 +39,7 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
   }
 
   const handleFileSelect = (file: File) => {
-    if (props.disabled) return
+    if (props.disabled === true) return
 
     // Validate file size
     if (file.size > maxSize()) {
@@ -70,7 +70,7 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
 
   const handleDrop = (e: DragEvent) => {
     e.preventDefault()
-    if (props.disabled) return
+    if (props.disabled === true) return
     setIsDragging(false)
 
     const files = e.dataTransfer?.files
@@ -87,7 +87,7 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
   }
 
   const handleClear = () => {
-    if (props.disabled) return
+    if (props.disabled === true) return
     setSelectedFile(null)
     const fileInput = document.getElementById(
       'uvr-file-input',
@@ -96,7 +96,7 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
   }
 
   const handleProcess = () => {
-    if (props.disabled) return
+    if (props.disabled === true) return
     if (selectedFile()) {
       // Generate session ID
       const sessionId = `session-${Date.now()}`
@@ -107,7 +107,9 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
   }
 
   return (
-    <div class={`uvr-upload-control ${props.disabled ? 'disabled' : ''}`}>
+    <div
+      class={`uvr-upload-control ${props.disabled === true ? 'disabled' : ''}`}
+    >
       <div class="upload-header">
         <div class="upload-icon-wrapper">
           <MusicNote />
@@ -117,8 +119,8 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
 
       {/* Upload Zone */}
       <label
-        class={`upload-zone ${isDragging() ? 'dragging' : ''} ${props.disabled ? 'disabled' : ''}`}
-        onDragEnter={() => !props.disabled && setIsDragging(true)}
+        class={`upload-zone ${isDragging() ? 'dragging' : ''} ${props.disabled === true ? 'disabled' : ''}`}
+        onDragEnter={() => props.disabled !== true && setIsDragging(true)}
         onDragOver={(e) => e.preventDefault()}
         onDragLeave={() => setIsDragging(false)}
         onDrop={handleDrop}
