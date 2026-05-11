@@ -894,23 +894,13 @@ export function endWalkthrough(): void {
 
 // ── Feature Flags ───────────────────────────────────────────────────
 
-function loadBooleanFlag(key: string, defaultValue: boolean): boolean {
-  try {
-    const val = localStorage.getItem(key)
-    if (val !== null) return val === 'true'
-  } catch {
-    /* empty */
-  }
-  return defaultValue
-}
-
 const ADVANCED_FEATURES_KEY = 'pitchperfect_advanced_features'
 const DEV_FEATURES_KEY = 'pitchperfect_dev_features'
 
+// Initialize to IS_DEV defaults — initFeatureFlagsFromDb() overrides
+// with persisted DB values on startup, eliminating the localStorage race.
 const initialAdvanced = IS_DEV
-  ? true
-  : loadBooleanFlag(ADVANCED_FEATURES_KEY, false)
-const initialDev = IS_DEV ? true : loadBooleanFlag(DEV_FEATURES_KEY, false)
+const initialDev = IS_DEV
 
 const [advancedFeaturesEnabledState, setAdvancedFeaturesEnabledState] =
   createSignal(initialAdvanced)

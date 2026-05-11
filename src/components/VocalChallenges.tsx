@@ -1274,22 +1274,6 @@ const mockAchievements: UserAchievement[] = [
   },
 ]
 
-function _generateMockChallenges(): ChallengeProgress[] {
-  return mockChallenges
-}
-
-function _generateMockBadges(): UserBadge[] {
-  return mockBadges
-}
-
-function _generateMockAchievements(): UserAchievement[] {
-  return mockAchievements
-}
-
-function _generateMockProgress(): ChallengeProgress[] {
-  return mockChallenges
-}
-
 function getChallengeProgressColor(progress: number): string {
   if (progress >= 100) return 'var(--green)'
   if (progress >= 75) return 'var(--accent)'

@@ -122,7 +122,6 @@ export function endPracticeSession(): SessionResult | null {
       accuracy: avgScore,
       notesHit: results.length,
       notesTotal: session.items.length,
-      streak: 0,
     })
   })
 
