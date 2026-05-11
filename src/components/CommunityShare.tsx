@@ -6,7 +6,7 @@ import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, onMount, Show } from 'solid-js'
 import { loadSharedMelodies, loadSharedSessions, loadUserProfile, saveSharedMelody as saveSharedMelodyToDb, saveSharedSession as saveSharedSessionToDb, } from '@/db/services/share-service'
 import { generateId } from '@/lib/id'
-import { appStore, getSessionHistory, melodyStore } from '@/stores'
+import { getSessionHistory, melodyStore } from '@/stores'
 import type { MelodyItem, PlaybackSession } from '@/types'
 
 // ============================================================
@@ -569,7 +569,7 @@ export const CommunityShare: Component = () => {
 
   // Export current session as shareable
   const exportSession = () => {
-    const sessions = appStore.getSessionHistory()
+    const sessions = getSessionHistory()
     if (sessions.length === 0) {
       alert('No session to share!')
       return

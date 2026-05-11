@@ -5,8 +5,7 @@
 
 import type { Component } from 'solid-js'
 import { createSignal, onCleanup, onMount, Show } from 'solid-js'
-import { appStore } from '@/stores'
-import { getCurrentSessionItem } from '@/stores'
+import { getCurrentSessionItem, practiceSession, sessionItemIndex, sessionMode, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 
 interface SessionPlayerProps {
@@ -35,10 +34,10 @@ export const SessionPlayer: Component<SessionPlayerProps> = (props) => {
     if (timer) clearInterval(timer)
   })
 
-  const session = () => appStore.practiceSession()
-  const itemIndex = () => appStore.sessionItemIndex()
+  const session = () => practiceSession()
+  const itemIndex = () => sessionItemIndex()
   const currentItem = () => getCurrentSessionItem()
-  const isSessionSequence = () => appStore.sessionMode()
+  const isSessionSequence = () => sessionMode()
 
   const formatTime = (s: number) => {
     const m = Math.floor(s / 60)
