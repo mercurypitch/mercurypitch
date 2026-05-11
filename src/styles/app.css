@@ -12157,3 +12157,67 @@ input:checked + .settings-slider:before {
   background: #484f58;
   color: #f0f6fc;
 }
+
+/* ---------------------------------------------------------------------------
+   iOS / macOS Safari — select element crash fixes
+   ---------------------------------------------------------------------------
+   Safari on iOS (and occasionally macOS) has compositing bugs that cause
+   tab crashes when <select> elements open their popover. Three known
+   triggers:
+     1. CSS `transition` on <select> — compositing conflict with the
+        native popover window
+     2. `color-scheme: dark` — forces the popover to render in dark mode
+        which sometimes deadlocks the renderer
+     3. `appearance: none` + custom background-image — the custom chevron
+        rendering path can hit an uncontended WebKit code path
+
+   We target only Apple OSes via `-webkit-touch-callout` (iOS) and
+   `-apple-system` font check (macOS), leaving the default styling
+   untouched on all other platforms.
+   --------------------------------------------------------------------------- */
+
+/* iOS: strip all known crash-triggering properties.
+   Use high-specificity selectors to override component-level rules. */
+@supports (-webkit-touch-callout: none) {
+  select,
+  .settings-row select,
+  .settings-panel .settings-row select,
+  #settings-panel .settings-row select {
+    transition: none;
+    background-image: none;
+    color-scheme: normal;
+    padding-right: 10px;
+  }
+
+  select:hover,
+  select:focus,
+  .settings-row select:hover,
+  .settings-row select:focus,
+  .settings-panel .settings-row select:hover,
+  .settings-panel .settings-row select:focus,
+  #settings-panel .settings-row select:hover,
+  #settings-panel .settings-row select:focus {
+    transition: none;
+  }
+}
+
+/* macOS Safari: strip transitions (same compositing bug, rarer) */
+@supports (font: -apple-system-body) and (not (-webkit-touch-callout: none)) {
+  select,
+  .settings-row select,
+  .settings-panel .settings-row select,
+  #settings-panel .settings-row select {
+    transition: none;
+  }
+
+  select:hover,
+  select:focus,
+  .settings-row select:hover,
+  .settings-row select:focus,
+  .settings-panel .settings-row select:hover,
+  .settings-panel .settings-row select:focus,
+  #settings-panel .settings-row select:hover,
+  #settings-panel .settings-row select:focus {
+    transition: none;
+  }
+}
