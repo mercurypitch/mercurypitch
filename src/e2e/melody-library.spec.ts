@@ -566,7 +566,9 @@ test.describe('Melody Library', () => {
     })
     await page.waitForTimeout(500)
 
-    const melodiesTab = page.locator('.library-modal-tab.active:has-text("Melodies")')
+    const melodiesTab = page.locator(
+      '.library-modal-tab.active:has-text("Melodies")',
+    )
     const count = await melodiesTab.count()
     expect(count).toBeGreaterThanOrEqual(0)
   })
@@ -578,11 +580,15 @@ test.describe('Melody Library', () => {
     await page.waitForTimeout(500)
 
     // Click playlists tab
-    const playlistsTab = page.locator('.library-modal-tab:has-text("Playlists")')
+    const playlistsTab = page.locator(
+      '.library-modal-tab:has-text("Playlists")',
+    )
     await playlistsTab.click()
     await page.waitForTimeout(300)
 
-    const activePlaylists = page.locator('.library-modal-tab.active:has-text("Playlists")')
+    const activePlaylists = page.locator(
+      '.library-modal-tab.active:has-text("Playlists")',
+    )
     await expect(activePlaylists).toBeVisible()
 
     // Click melodies tab
@@ -590,7 +596,9 @@ test.describe('Melody Library', () => {
     await melodiesTab.click()
     await page.waitForTimeout(300)
 
-    const activeMelodies = page.locator('.library-modal-tab.active:has-text("Melodies")')
+    const activeMelodies = page.locator(
+      '.library-modal-tab.active:has-text("Melodies")',
+    )
     await expect(activeMelodies).toBeVisible()
   })
 
@@ -677,7 +685,9 @@ test.describe('Melody Library', () => {
     expect(count).toBeGreaterThanOrEqual(0)
   })
 
-  test('Sessions Library modal can be closed by clicking overlay', async ({ page }) => {
+  test('Sessions Library modal can be closed by clicking overlay', async ({
+    page,
+  }) => {
     await page.evaluate(() => {
       ;(window as any).__pp?.appStore?.showSessionLibrary()
     })

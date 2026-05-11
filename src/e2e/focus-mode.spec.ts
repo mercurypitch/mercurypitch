@@ -9,7 +9,7 @@ import { dismissOverlays, switchTab } from './helpers/ui'
 test.describe('Focus Mode', () => {
   test.beforeEach(async ({ page }) => {
     await page.addInitScript(() => {
-      (window as any).E2E_TEST_MODE = true
+      ;(window as any).E2E_TEST_MODE = true
     })
     await page.goto('/')
     await page.waitForSelector('#app-tabs', { timeout: 10000 })
@@ -21,7 +21,10 @@ test.describe('Focus Mode', () => {
   test('Focus mode button is visible on practice tab', async ({ page }) => {
     const focusBtn = page.locator('.focus-btn')
     await expect(focusBtn).toBeVisible()
-    await expect(focusBtn).toHaveAttribute('title', 'Enter Focus Mode (minimal UI)')
+    await expect(focusBtn).toHaveAttribute(
+      'title',
+      'Enter Focus Mode (minimal UI)',
+    )
   })
 
   test('Entering focus mode shows focus-mode view', async ({ page }) => {

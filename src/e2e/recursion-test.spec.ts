@@ -8,7 +8,7 @@ import { dismissOverlays, switchTab } from './helpers/ui'
 test.describe('Recursion Detection (Quick Start removed)', () => {
   test.beforeEach(async ({ page }) => {
     await page.addInitScript(() => {
-      (window as any).E2E_TEST_MODE = true
+      ;(window as any).E2E_TEST_MODE = true
     })
     await page.goto('/')
     await page.waitForSelector('#app-tabs', { timeout: 10000 })
@@ -23,11 +23,15 @@ test.describe('Recursion Detection (Quick Start removed)', () => {
     test.skip()
   })
 
-  test('Quick Start → Presets Library → Play preset session', async ({ page }) => {
+  test('Quick Start → Presets Library → Play preset session', async ({
+    page,
+  }) => {
     await switchTab(page, 'singing')
     await page.waitForTimeout(500)
 
-    const quickStartBtn = page.locator('.quick-action-btn:has-text("Quick Start")')
+    const quickStartBtn = page.locator(
+      '.quick-action-btn:has-text("Quick Start")',
+    )
     const count = await quickStartBtn.count()
     expect(count).toBeGreaterThanOrEqual(0)
   })

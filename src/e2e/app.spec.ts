@@ -4,7 +4,7 @@ import { dismissOverlays } from '@/e2e/helpers/ui'
 test.describe('PitchPerfect App', () => {
   test.beforeEach(async ({ page }) => {
     await page.addInitScript(() => {
-      (window as any).E2E_TEST_MODE = true
+      ;(window as any).E2E_TEST_MODE = true
     })
     await page.goto('/')
     // Wait for app to initialize

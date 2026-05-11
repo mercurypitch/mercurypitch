@@ -4,16 +4,10 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, onMount, Show } from 'solid-js'
+import { loadSharedMelodies, loadSharedSessions, loadUserProfile, saveSharedMelody as saveSharedMelodyToDb, saveSharedSession as saveSharedSessionToDb, } from '@/db/services/share-service'
 import { generateId } from '@/lib/id'
 import { appStore, getSessionHistory, melodyStore } from '@/stores'
 import type { MelodyItem, PlaybackSession } from '@/types'
-import {
-  loadUserProfile,
-  loadSharedMelodies,
-  loadSharedSessions,
-  saveSharedMelody as saveSharedMelodyToDb,
-  saveSharedSession as saveSharedSessionToDb,
-} from '@/db/services/share-service'
 
 // ============================================================
 // SVG Icons (Classy, minimal style)
@@ -427,15 +421,17 @@ export const CommunityShare: Component = () => {
     joinDate: number
   } | null>(null)
 
-  onMount(async () => {
-    const [profile, melodies, sessions] = await Promise.all([
-      loadUserProfile(),
-      loadSharedMelodies(),
-      loadSharedSessions(),
-    ])
-    if (profile) setDbProfile(profile)
-    if (melodies.length > 0) setDbMelodies(melodies as SharedMelody[])
-    if (sessions.length > 0) setDbSessions(sessions as SharedSession[])
+  onMount(() => {
+    void (async () => {
+      const [profile, melodies, sessions] = await Promise.all([
+        loadUserProfile(),
+        loadSharedMelodies(),
+        loadSharedSessions(),
+      ])
+      if (profile) setDbProfile(profile)
+      if (melodies.length > 0) setDbMelodies(melodies as SharedMelody[])
+      if (sessions.length > 0) setDbSessions(sessions as SharedSession[])
+    })()
   })
 
   // Load shared data from localStorage + DB
