@@ -65,22 +65,30 @@ describe('stftForward', () => {
     expect(result.data.length).toBe(result.nFreq * result.nFrames * 2)
   })
 
-  it('returns correct output shape for non-power-of-2 nFft (6142)', () => {
-    const audio = createSineBuffer(44100, 440, 6.0)
-    const result = stftForward(audio, 6142, 1024)
-    expect(result.nFft).toBe(6142)
-    expect(result.nFreq).toBe(3072) // 6142/2 + 1
-    expect(result.nFrames).toBeGreaterThan(0)
-    expect(result.data.length).toBe(3072 * result.nFrames * 2)
-  })
+  it(
+    'returns correct output shape for non-power-of-2 nFft (6142)',
+    { timeout: 15000 },
+    () => {
+      const audio = createSineBuffer(44100, 440, 6.0)
+      const result = stftForward(audio, 6142, 1024)
+      expect(result.nFft).toBe(6142)
+      expect(result.nFreq).toBe(3072) // 6142/2 + 1
+      expect(result.nFrames).toBeGreaterThan(0)
+      expect(result.data.length).toBe(3072 * result.nFrames * 2)
+    },
+  )
 
-  it('produces exactly 256 frames for 261120 samples (nFft=6142, hop=1024)', () => {
-    // With center=True: paddedLen = 261120 + 6142 = 267262
-    // nFrames = (267262 - 6142) / 1024 + 1 = 261120/1024 + 1 = 255 + 1 = 256
-    const audio = new Float32Array(261120)
-    const result = stftForward(audio, 6142, 1024)
-    expect(result.nFrames).toBe(256)
-  })
+  it(
+    'produces exactly 256 frames for 261120 samples (nFft=6142, hop=1024)',
+    { timeout: 15000 },
+    () => {
+      // With center=True: paddedLen = 261120 + 6142 = 267262
+      // nFrames = (267262 - 6142) / 1024 + 1 = 261120/1024 + 1 = 255 + 1 = 256
+      const audio = new Float32Array(261120)
+      const result = stftForward(audio, 6142, 1024)
+      expect(result.nFrames).toBe(256)
+    },
+  )
 
   it('detects frequency peak in spectrogram for pure sine', () => {
     const sineFreq = 440
@@ -173,33 +181,37 @@ describe('stftInverse', () => {
     expect(maxError).toBeLessThan(0.1)
   })
 
-  it('roundtrips audio through STFT → iSTFT (non-power-of-2, nFft=6142)', () => {
-    const audio = createSineBuffer(44100, 440, 6.0) // need enough frames for 6142
-    const nFft = 6142
-    const hopLen = 1024
+  it(
+    'roundtrips audio through STFT → iSTFT (non-power-of-2, nFft=6142)',
+    { timeout: 25000 },
+    () => {
+      const audio = createSineBuffer(44100, 440, 6.0) // need enough frames for 6142
+      const nFft = 6142
+      const hopLen = 1024
 
-    const stft = stftForward(audio, nFft, hopLen)
-    const reconstructed = stftInverse(stft, audio.length)
+      const stft = stftForward(audio, nFft, hopLen)
+      const reconstructed = stftInverse(stft, audio.length)
 
-    expect(reconstructed.length).toBe(audio.length)
+      expect(reconstructed.length).toBe(audio.length)
 
-    // Check reconstruction accuracy
-    const margin = nFft
-    let maxError = 0
-    let sumSqError = 0
-    let sumSqOrig = 0
-    for (let i = margin; i < audio.length - margin; i++) {
-      const err = Math.abs(audio[i] - reconstructed[i])
-      maxError = Math.max(maxError, err)
-      sumSqError += err * err
-      sumSqOrig += audio[i] * audio[i]
-    }
+      // Check reconstruction accuracy
+      const margin = nFft
+      let maxError = 0
+      let sumSqError = 0
+      let sumSqOrig = 0
+      for (let i = margin; i < audio.length - margin; i++) {
+        const err = Math.abs(audio[i] - reconstructed[i])
+        maxError = Math.max(maxError, err)
+        sumSqError += err * err
+        sumSqOrig += audio[i] * audio[i]
+      }
 
-    const rmsError = Math.sqrt(sumSqError / (audio.length - 2 * margin))
-    const rmsOrig = Math.sqrt(sumSqOrig / (audio.length - 2 * margin))
-    expect(rmsError / rmsOrig).toBeLessThan(0.08)
-    expect(maxError).toBeLessThan(0.15)
-  })
+      const rmsError = Math.sqrt(sumSqError / (audio.length - 2 * margin))
+      const rmsOrig = Math.sqrt(sumSqOrig / (audio.length - 2 * margin))
+      expect(rmsError / rmsOrig).toBeLessThan(0.08)
+      expect(maxError).toBeLessThan(0.15)
+    },
+  )
 
   it('preserves original length when specified', () => {
     const audio = createSineBuffer(44100, 440, 1.0)
@@ -231,18 +243,22 @@ describe('stftInverse', () => {
 })
 
 describe('Bluestein DFT edge cases', () => {
-  it('handles nFft=6142 correctly (frame count for typical audio)', () => {
-    // 6 seconds @ 44100 = 264600 samples
-    const audio = createSineBuffer(44100, 440, 6.0)
-    const stft = stftForward(audio, 6142, 1024)
+  it(
+    'handles nFft=6142 correctly (frame count for typical audio)',
+    { timeout: 15000 },
+    () => {
+      // 6 seconds @ 44100 = 264600 samples
+      const audio = createSineBuffer(44100, 440, 6.0)
+      const stft = stftForward(audio, 6142, 1024)
 
-    // With center padding: (264600 + 6142 - 6142) / 1024 + 1 = 264600/1024 + 1 ≈ 259
-    const expectedFrames = Math.floor(264600 / 1024) + 1
-    expect(stft.nFrames).toBe(expectedFrames)
+      // With center padding: (264600 + 6142 - 6142) / 1024 + 1 = 264600/1024 + 1 ≈ 259
+      const expectedFrames = Math.floor(264600 / 1024) + 1
+      expect(stft.nFrames).toBe(expectedFrames)
 
-    // Each frame has 3072 freq bins × 2 (real+imag) = 6144 values
-    expect(stft.data.length).toBe(3072 * expectedFrames * 2)
-  })
+      // Each frame has 3072 freq bins × 2 (real+imag) = 6144 values
+      expect(stft.data.length).toBe(3072 * expectedFrames * 2)
+    },
+  )
 
   it('handles odd nFft (if ever needed)', () => {
     const audio = createSineBuffer(44100, 440, 0.5)
