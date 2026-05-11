@@ -43,7 +43,7 @@
     "@typescript-eslint/eslint-plugin": "^8.58.2",
     "@typescript-eslint/parser": "^8.58.2",
     "@vitejs/plugin-basic-ssl": "^2.3.0",
-    "@vitest/coverage-istanbul": "^4.1.5",
+    "@vitest/coverage-v8": "^4.1.5",
     "@vitest/ui": "^4.1.5",
     "cloc": "^2.6.0-cloc",
     "eslint": "9.39.1",
