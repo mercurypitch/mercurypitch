@@ -3608,3 +3608,185 @@
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
 }
+
+/* ============================================================
+   Vocal Analysis — Mode Toggle, Live Mic & Demo Hint
+   ============================================================ */
+
+.vocal-header-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.mode-toggle {
+  display: flex;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--bg-tertiary);
+}
+
+.mode-toggle-btn {
+  padding: 6px 14px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mode-toggle-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+}
+
+.mode-toggle-btn.active {
+  background: var(--accent);
+  color: white;
+}
+
+/* Demo hint card */
+.demo-hint {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.demo-hint-icon {
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.demo-hint-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.demo-hint-text strong {
+  color: var(--text-primary);
+  font-size: 0.95rem;
+}
+
+.demo-hint-text p {
+  margin: 4px 0 0 0;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.demo-hint-dev {
+  color: var(--accent) !important;
+  font-size: 0.8rem !important;
+  margin-top: 6px !important;
+}
+
+.demo-hint-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.demo-btn {
+  padding: 8px 16px;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--accent);
+  font-weight: 500;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.demo-btn:hover {
+  background: var(--accent);
+  color: white;
+}
+
+.demo-btn--live {
+  border-color: var(--border);
+  color: var(--text-muted);
+}
+
+.demo-btn--live:hover {
+  border-color: var(--accent);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+/* Live mic controls */
+.live-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.live-start-btn {
+  background: #3fb950;
+}
+
+.live-start-btn:hover:not(:disabled) {
+  background: #3fb950;
+  opacity: 0.85;
+}
+
+.live-stop-btn {
+  background: #f85149;
+}
+
+.live-stop-btn:hover:not(:disabled) {
+  background: #f85149;
+  opacity: 0.85;
+}
+
+.live-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #3fb950;
+  animation: live-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes live-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* Live mic error */
+.live-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  margin-bottom: 16px;
+  background: rgba(248, 81, 73, 0.1);
+  border: 1px solid rgba(248, 81, 73, 0.3);
+  border-radius: 8px;
+  color: #f85149;
+  font-size: 0.85rem;
+}
+
+.live-error-icon {
+  flex-shrink: 0;
+  font-size: 1.1rem;
+}

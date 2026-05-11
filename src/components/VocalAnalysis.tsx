@@ -3,10 +3,12 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createMemo, createSignal, For, onMount, Show } from 'solid-js'
+import { createMemo, createSignal, For, onCleanup, onMount, Show } from 'solid-js'
 import { IconPlay } from '@/components/hidden-features-icons'
 import { loadSessionRecords } from '@/db/services/session-service'
+import { IS_DEV } from '@/lib/defaults'
 import { frequenciesToNoteName } from '@/lib/frequency-to-note'
+import { PitchDetector } from '@/lib/pitch-detector'
 import {
   analyzeFatigue,
   approximateBreathiness,
@@ -25,6 +27,9 @@ import type {
   SlideTrackingResult,
   VibratoResult,
 } from '@/lib/vocal-analyzer'
+import { generateMockSessions } from '@/lib/vocal-analysis-mock'
+import { initAudioEngine } from '@/stores'
+import type { AudioEngine } from '@/lib/audio-engine'
 import { getSessionHistory } from '@/stores'
 import type { PitchResult, PracticeResult, SessionResult } from '@/types'
 
@@ -202,6 +207,15 @@ export const VocalAnalysis: Component = () => {
   const [resonanceData, setResonanceData] =
     createSignal<ResonanceResult | null>(null)
   const [fatigueData, setFatigueData] = createSignal<FatigueResult | null>(null)
+
+  // Live mic analysis signals
+  const [analysisMode, setAnalysisMode] = createSignal<'history' | 'live'>('history')
+  const [isLiveActive, setIsLiveActive] = createSignal(false)
+  const [liveError, setLiveError] = createSignal<string | null>(null)
+  const [liveSampleCount, setLiveSampleCount] = createSignal(0)
+  let rafId: number | null = null
+  let audioEngine: AudioEngine | null = null
+  let pitchDetector: PitchDetector | null = null
 
   onMount(() => {
     void (async () => {
@@ -568,6 +582,162 @@ export const VocalAnalysis: Component = () => {
     setIsAnalyzing(false)
   }
 
+  // Load demo data for preview when no sessions exist
+  const loadDemoData = () => {
+    const mock = generateMockSessions()
+    setDbSessionRecords(mock)
+    // Also run analysis immediately
+    setTimeout(() => startAnalysis(), 50)
+  }
+
+  // ── Live Mic Analysis ──────────────────────────────────────────
+
+  const startLiveAnalysis = async () => {
+    setLiveError(null)
+    setLiveSampleCount(0)
+    setIsLiveActive(true)
+    setVocalRunData([])
+    setSpectralData([])
+
+    try {
+      audioEngine = await initAudioEngine()
+      const ok = await audioEngine.startMic()
+      if (!ok) {
+        setLiveError('Microphone access denied or not available.')
+        setIsLiveActive(false)
+        return
+      }
+
+      pitchDetector = new PitchDetector({
+        algorithm: 'yin',
+        sampleRate: audioEngine.audioCtx.sampleRate,
+        minConfidence: 0.3,
+        minAmplitude: 0.02,
+      })
+
+      // Buffer of pitch samples accumulated from live mic
+      const buffer: Array<{ time: number; freq: number; midi: number; clarity: number }> = []
+      let frameCount = 0
+      const ANALYSIS_INTERVAL = 90 // ~1.5s at 60fps
+
+      const loop = () => {
+        if (!isLiveActive() || !audioEngine || !pitchDetector) return
+
+        const timeData = audioEngine.getTimeData()
+        const result = pitchDetector.detect(timeData)
+
+        if (result.frequency > 0 && result.confidence > 0.3) {
+          buffer.push({
+            time: performance.now() / 1000,
+            freq: result.frequency,
+            midi: result.midi,
+            clarity: result.clarity,
+          })
+          setLiveSampleCount(buffer.length)
+        }
+
+        frameCount++
+        if (frameCount % ANALYSIS_INTERVAL === 0 && buffer.length >= 3) {
+          // Run Phase 1/2 analysis on accumulated buffer
+          const snapshot = buffer.slice()
+
+          // Intensity
+          const intensity = intensityFromPitchResults(
+            snapshot.map((s, i) => ({ time: i * 0.01, clarity: s.clarity, midi: s.midi })),
+          )
+          setIntensityProfile({
+            avgDb: intensity.avgDb,
+            peakDb: intensity.peakDb,
+            dynamicRange: intensity.dynamicRange,
+          })
+
+          // Breathiness
+          const breath = approximateBreathiness(
+            snapshot.map((s) => ({ freq: s.freq, clarity: s.clarity })),
+          )
+          setBreathiness(breath)
+
+          // Slide tracking
+          if (snapshot.length >= 4) {
+            const slides = detectSlides(snapshot)
+            setSlideTracking(slides)
+          }
+
+          // Vibrato (need enough samples for modulation detection)
+          if (snapshot.length >= 15) {
+            const vibrato = detectVibrato(snapshot)
+            setVibratoAnalysis(vibrato)
+          }
+
+          // Harmonic richness
+          const richness = approximateRichness(
+            snapshot.map((s) => ({ freq: s.freq, clarity: s.clarity })),
+          )
+          setHarmonicRichness({
+            richnessScore: richness.richnessScore,
+            harmonicCount: richness.harmonicCount,
+            harmonicProfile: [],
+            quality: richness.quality,
+          })
+
+          // Resonance zone
+          const resonance = approximateResonance(
+            snapshot.map((s) => ({ freq: s.freq })),
+          )
+          setResonanceData(resonance)
+
+          // Build a vocal run data approximation for exercise checks
+          setVocalRunData(
+            snapshot.map((s) => ({
+              freq: s.freq,
+              midi: s.midi,
+              note: '',
+              noteName: '',
+              clarity: s.clarity,
+            })) as unknown as PitchResult[],
+          )
+
+          // Spectral approximation
+          const spectral = snapshot.slice(-30).map((s, i) => ({
+            frequency: s.freq,
+            amplitude: s.clarity * 0.5,
+            phase: (i / 30) * Math.PI * 2,
+          }))
+          setSpectralData(spectral)
+        }
+
+        rafId = requestAnimationFrame(loop)
+      }
+
+      rafId = requestAnimationFrame(loop)
+    } catch (err) {
+      setLiveError('Failed to start microphone: ' + (err as Error).message)
+      setIsLiveActive(false)
+    }
+  }
+
+  const stopLiveAnalysis = () => {
+    setIsLiveActive(false)
+    if (rafId !== null) {
+      cancelAnimationFrame(rafId)
+      rafId = null
+    }
+    if (audioEngine) {
+      audioEngine.stopMic()
+      audioEngine = null
+    }
+    pitchDetector = null
+  }
+
+  // Cleanup on unmount
+  onCleanup(() => {
+    if (rafId !== null) cancelAnimationFrame(rafId)
+    if (audioEngine) {
+      audioEngine.stopMic()
+      audioEngine = null
+    }
+  })
+
   const exercises: Array<{
     type: VocalExerciseType
     name: string
@@ -612,20 +782,98 @@ export const VocalAnalysis: Component = () => {
             Track your progress, analyze technique, and improve your voice
           </p>
         </div>
-        <button
-          class="analyze-btn"
-          onClick={startAnalysis}
-          disabled={isAnalyzing()}
-        >
-          {isAnalyzing() ? (
-            'Analyzing...'
-          ) : (
-            <>
-              <IconPlay /> Start Vocal Analysis
-            </>
-          )}
-        </button>
+        <div class="vocal-header-actions">
+          {/* Mode toggle */}
+          <div class="mode-toggle">
+            <button
+              class={`mode-toggle-btn ${analysisMode() === 'history' ? 'active' : ''}`}
+              onClick={() => {
+                setAnalysisMode('history')
+                stopLiveAnalysis()
+              }}
+            >
+              Session History
+            </button>
+            <button
+              class={`mode-toggle-btn ${analysisMode() === 'live' ? 'active' : ''}`}
+              onClick={() => setAnalysisMode('live')}
+            >
+              Live Mic
+            </button>
+          </div>
+
+          {/* History mode button */}
+          <Show when={analysisMode() === 'history'}>
+            <button
+              class="analyze-btn"
+              onClick={startAnalysis}
+              disabled={isAnalyzing() || history().length === 0}
+            >
+              {isAnalyzing() ? (
+                'Analyzing...'
+              ) : (
+                <>
+                  <IconPlay /> Start Vocal Analysis
+                </>
+              )}
+            </button>
+          </Show>
+
+          {/* Live mode controls */}
+          <Show when={analysisMode() === 'live'}>
+            <Show
+              when={isLiveActive()}
+              fallback={
+                <button class="analyze-btn live-start-btn" onClick={startLiveAnalysis}>
+                  <IconPlay /> Start Live Analysis
+                </button>
+              }
+            >
+              <div class="live-controls">
+                <button class="analyze-btn live-stop-btn" onClick={stopLiveAnalysis}>
+                  Stop Live Analysis
+                </button>
+                <span class="live-status">
+                  <span class="live-dot" />
+                  Live &middot; {liveSampleCount()} samples
+                </span>
+              </div>
+            </Show>
+          </Show>
+        </div>
       </div>
+
+      {/* Demo data hint — shown when no session history */}
+      <Show when={analysisMode() === 'history' && !isAnalyzing() && history().length === 0 && !isLiveActive()}>
+        <div class="demo-hint">
+          <div class="demo-hint-icon">🎤</div>
+          <div class="demo-hint-text">
+            <strong>No practice sessions yet.</strong>
+            <p>Start a practice session or try the Live Mic mode to analyze your voice in real time.</p>
+            <Show when={IS_DEV}>
+              <p class="demo-hint-dev">Developer: load mock data to preview analysis cards.</p>
+            </Show>
+          </div>
+          <div class="demo-hint-actions">
+            <Show when={IS_DEV}>
+              <button class="demo-btn" onClick={loadDemoData}>
+                Load Demo Data
+              </button>
+            </Show>
+            <button class="demo-btn demo-btn--live" onClick={() => setAnalysisMode('live')}>
+              Try Live Mic
+            </button>
+          </div>
+        </div>
+      </Show>
+
+      {/* Live mic error */}
+      <Show when={liveError()}>
+        <div class="live-error">
+          <span class="live-error-icon">⚠</span>
+          {liveError()}
+        </div>
+      </Show>
 
       {/* Main Grid */}
       <div class="vocal-grid">
