@@ -124,12 +124,15 @@ async function loadModel(modelPath: string): Promise<void> {
 
   // If activeProviders is already set to wasm (due to fallback), don't reset it
   if (activeProviders.length === 0 || activeProviders[0] !== 'wasm') {
-    const isFirefox = /Firefox/i.test(navigator.userAgent)
     activeProviders = []
-    // Firefox WebGPU has insufficient memory limits for this model (~300MB).
+    // Linux Firefox has insufficient WebGPU memory limits for this model (~300MB).
     // Uncapped errors ("Not enough memory left") produce garbage output without
     // throwing, so the normal WebGPU→WASM fallback never triggers.
-    if (!isFirefox) {
+    // Windows/macOS Firefox handles WebGPU correctly.
+    const isLinuxFirefox =
+      /Firefox/i.test(navigator.userAgent) &&
+      /Linux/i.test(navigator.platform || navigator.userAgent)
+    if (!isLinuxFirefox) {
       try {
         if ('gpu' in navigator) {
           activeProviders.push('webgpu')
