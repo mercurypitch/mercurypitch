@@ -746,6 +746,8 @@ async function seedUserProfile(db: DatabaseAdapter): Promise<void> {
     displayName: 'SingerPro',
     bio: 'Aspiring vocalist on a journey to perfect pitch.',
     joinDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30).toISOString(),
+    lastPracticeDate: null,
+    currentStreak: 0,
   })
 }
 

@@ -14,6 +14,8 @@ export interface UserProfile extends DbEntity {
   avatarUrl?: string
   bio?: string
   joinDate: string // ISO 8601
+  lastPracticeDate: string | null // ISO 8601 date-only (YYYY-MM-DD)
+  currentStreak: number
 }
 
 // ── Sessions & Practice Results ─────────────────────────────────
