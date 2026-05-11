@@ -2,7 +2,7 @@ name: Tests
 
 on:
   pull_request:
-    branches: [main, dev]
+    branches: [main]
   push:
     branches: [main]
 
@@ -34,30 +34,29 @@ jobs:
       - name: Run tests
         run: pnpm run test:run
 
-# FIXME: Disabled due to inssuficient time to resolve test issues, we should also run smoke test instead of all tests for faster development 
-#  e2e:
-#    name: E2E Tests
-#    runs-on: ubuntu-latest
-#
-#    steps:
-#      - name: Checkout code
-#        uses: actions/checkout@v4
-#
-#      - name: Setup Node.js
-#        uses: actions/setup-node@v4
-#        with:
-#          node-version: '22'
-#          cache: 'npm'
-#          cache-dependency-path: package-lock.json
-#
-#      - name: Install dependencies
-#        run: npm ci
-#
-#      - name: Build app
-#        run: npm run build
-#
-#      - name: Install Playwright browsers
-#        run: npx playwright install --with-deps chromium
-#
-#      - name: Run E2E tests
-#        run: npm run test:e2e
+  e2e:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+          cache-dependency-path: pnpm-lock.json
+
+      - name: Install dependencies
+        run: pnpm ci
+
+      - name: Build app
+        run: pnpm run build
+
+      - name: Install Playwright browsers
+        run: pnpm playwright install --with-deps chromium
+
+      - name: Run E2E tests
+        run: pnpm test:e2e
