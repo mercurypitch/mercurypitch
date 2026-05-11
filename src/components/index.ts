@@ -66,4 +66,10 @@ export {
   History,
   ChevronDown,
   ChevronUp,
+  ImportFile,
+  Metronome,
+  WaveformBars,
+  MagnifyingGlass,
+  Eye,
+  MidiDin,
 } from './icons'

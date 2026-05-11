@@ -692,3 +692,108 @@ export const Clock: Component = () => (
     <polyline points="12 6 12 12 16 14" />
   </svg>
 )
+
+// Import File Icon (upload arrow into tray — from piano roll MIDI import)
+export const ImportFile: Component = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    width="24"
+    height="24"
+  >
+    <path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5z" />
+  </svg>
+)
+
+// Metronome Icon
+export const Metronome: Component = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    width="24"
+    height="24"
+  >
+    <path d="M12 2 8 22h8L12 2z" />
+    <path d="M12 7.5 14.5 17.5h-5z" />
+  </svg>
+)
+
+// Waveform Bars Icon (audio visualization)
+export const WaveformBars: Component = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    width="24"
+    height="24"
+  >
+    <path d="M3 9h2v6H3zM7 6h2v12H7zM11 12h2v3h-2zM15 9h2v6h-2zM19 7h2v10h-2z" />
+  </svg>
+)
+
+// Magnifying Glass Icon (search/zoom)
+export const MagnifyingGlass: Component = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    width="24"
+    height="24"
+  >
+    <circle cx="11" cy="11" r="8" />
+    <path d="m21 21-4.35-4.35" />
+  </svg>
+)
+
+// Eye Icon (visibility)
+export const Eye: Component = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    width="24"
+    height="24"
+  >
+    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+    <circle cx="12" cy="12" r="3" />
+  </svg>
+)
+
+// MIDI DIN Connector Icon
+export const MidiDin: Component = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    width="24"
+    height="24"
+  >
+    <circle cx="12" cy="12" r="10" />
+    <circle cx="12" cy="12" r="3" />
+    <circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none" />
+    <circle cx="18.7" cy="7.7" r="1.5" fill="currentColor" stroke="none" />
+    <circle cx="16.2" cy="16.2" r="1.5" fill="currentColor" stroke="none" />
+    <circle cx="7.8" cy="16.2" r="1.5" fill="currentColor" stroke="none" />
+    <circle cx="5.3" cy="7.7" r="1.5" fill="currentColor" stroke="none" />
+  </svg>
+)

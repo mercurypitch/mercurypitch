@@ -9,6 +9,7 @@ import { UvrUploadControl } from '../UvrUploadControl'
 // Mock icons
 vi.mock('../icons', () => ({
   FileUpload: () => <span data-testid="file-upload-icon">FileUpload</span>,
+  ImportFile: () => <span data-testid="import-file-icon">ImportFile</span>,
   MusicNote: () => <span data-testid="music-note-icon">MusicNote</span>,
 }))
 
