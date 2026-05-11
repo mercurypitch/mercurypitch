@@ -5,11 +5,7 @@
 
 import type { Component } from 'solid-js'
 import { createSignal, For, Show } from 'solid-js'
-import {
-  IconMusicNote,
-  IconPause,
-  IconPiano,
-} from '@/components/hidden-features-icons'
+import { IconMusicNote, IconPause, IconPiano, } from '@/components/hidden-features-icons'
 import { bpm, melodyStore, setActiveUserSession, userSession } from '@/stores'
 import type { MelodyData, SessionItem } from '@/types'
 
@@ -210,7 +206,7 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
     props.onDeleteItem(itemId)
   }
 
-    const getRestDuration = (restMs: number) => {
+  const getRestDuration = (restMs: number) => {
     if (restMs < 1000) return `${Math.round(restMs / 100)}s`
     if (restMs < 60000) return `${Math.round(restMs / 1000)}s`
     const m = Math.floor(restMs / 60000)
@@ -279,11 +275,13 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
                   >
                     <div class="item-header">
                       <span class="item-type-icon">
-                        {item.type === 'melody'
-                          ? <IconMusicNote />
-                          : (item.type as string) === 'scale'
-                            ? <IconPiano />
-                            : <IconPause />}
+                        {item.type === 'melody' ? (
+                          <IconMusicNote />
+                        ) : (item.type as string) === 'scale' ? (
+                          <IconPiano />
+                        ) : (
+                          <IconPause />
+                        )}
                       </span>
                       <span class="item-label">{itemLabel}</span>
                       <button
