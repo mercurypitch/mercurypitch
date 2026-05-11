@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createMemo, For, Show } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, onCleanup, Show } from 'solid-js'
 import { CheckCircle, Cpu, FilePlus, Loader2, Music, RotateCcw, Server, Settings, Trash2, XCircle, Zap, } from './icons'
 
 interface ProcessControlProps {
@@ -49,6 +49,31 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
   }
 
   const isLocal = (): boolean => props.processingMode === 'local'
+
+  // Continuous elapsed-time display while processing.
+  // The pipeline only sends progress at chunk boundaries (~5s on CPU)
+  // so the visible time would freeze between chunks without this timer.
+  const [tick, setTick] = createSignal(0)
+  let timer: ReturnType<typeof setInterval> | null = null
+
+  createEffect(() => {
+    if (props.status === 'processing') {
+      timer = setInterval(() => setTick((t) => t + 1), 200)
+    } else {
+      if (timer) { clearInterval(timer); timer = null }
+      setTick(0)
+    }
+    onCleanup(() => { if (timer) { clearInterval(timer); timer = null } })
+  })
+
+  const displayTime = createMemo(() => {
+    if (props.status !== 'processing') return 0
+    // When a progress event arrives, props.processingTime jumps forward.
+    // Between events, the local tick counter fills the gaps smoothly.
+    // Use the larger of the two to avoid regressing during render cycles.
+    const local = (tick() * 200)
+    return Math.max(props.processingTime ?? 0, local)
+  })
 
   const getProcessStage = () => {
     switch (props.status) {
@@ -173,7 +198,7 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
             {(props.indeterminate ?? false)
               ? 'Estimating...'
               : formatPercentage(props.progress)}{' '}
-            • {formatTime(props.processingTime ?? 0)}
+            • {formatTime(displayTime())}
           </div>
           <Show
             when={
