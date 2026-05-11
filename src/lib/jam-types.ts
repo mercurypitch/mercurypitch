@@ -21,7 +21,12 @@ export type SignalingMessage =
   | { type: 'create-room'; displayName: string }
   | { type: 'room-created'; roomId: string; peerId: string }
   | { type: 'join-room'; roomId: string; displayName: string }
-  | { type: 'room-joined'; roomId: string; peerId: string; peers: Array<{ id: string; displayName: string }> }
+  | {
+      type: 'room-joined'
+      roomId: string
+      peerId: string
+      peers: Array<{ id: string; displayName: string }>
+    }
   | { type: 'peer-joined'; peerId: string; displayName: string }
   | { type: 'peer-left'; peerId: string }
   | { type: 'offer'; target: string; sdp: string }
@@ -49,7 +54,10 @@ export interface JamCallbacks {
   onPeerJoined: (peer: JamPeer) => void
   onPeerLeft: (peerId: string) => void
   onPeerStream: (peerId: string, stream: MediaStream) => void
-  onConnectionStateChange: (peerId: string, state: JamPeer['connectionState']) => void
+  onConnectionStateChange: (
+    peerId: string,
+    state: JamPeer['connectionState'],
+  ) => void
   onLatencyUpdate: (peerId: string, latency: number) => void
   onRoomClosed: () => void
   onError: (message: string) => void
