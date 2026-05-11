@@ -25,7 +25,7 @@ interface StemMixerProps {
     vocalMidi?: string
   }
   sessionId: string
-  songTitle?: string
+  songTitle: string
   practiceMode?: 'vocal' | 'instrumental' | 'full' | 'midi'
   /** Which stems the user requested to see — only these appear in tracks().
    *  Undefined = show all loaded stems (backwards-compat). */
@@ -682,7 +682,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
   const handleForceSearch = async () => {
     setLyricsLoading(true)
-    const title = extractTitle(props.songTitle ?? props.sessionId ?? '')
+    const title = extractTitle(props.songTitle)
     try {
       const results = await searchLyricsMulti(title)
       setSongMatches(results)
@@ -712,7 +712,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       return
     }
 
-    const rawInput = props.songTitle ?? props.sessionId ?? ''
+    const rawInput = props.songTitle
     const title = extractTitle(rawInput)
     if (!title || title === 'Unknown') {
       setLyricsSource('none')
@@ -2365,7 +2365,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       const blobUrl = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = blobUrl
-      const base = (props.songTitle ?? 'audio')
+      const base = props.songTitle
         .replace(/\.[^.]+$/, '')
         .replace(/\s+/g, '_')
         .replace(/[^a-zA-Z0-9_-]/g, '')
@@ -3498,9 +3498,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
               <ChevronLeft />
             </button>
           </Show>
-          <h2>
-            {props.songTitle?.replace(/\.[^.]+$/, '') ?? 'Unknown'} (session)
-          </h2>
+          <h2>{props.songTitle.replace(/\.[^.]+$/, '')} (session)</h2>
           <span class="sm-session-id">
             karaoke-session-{props.sessionId.replace(/^.*-session-/, '')}
           </span>

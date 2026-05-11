@@ -343,7 +343,7 @@ export class PracticeEngine {
       let sumCents = 0
       let validCount = 0
       for (const s of this.currentSamples) {
-        if (s.cents !== undefined && s.freq !== null) {
+        if (s.freq != null) {
           sumCents += Math.abs(s.cents)
           validCount++
         }

@@ -17,7 +17,7 @@ test('debug reactive behavior', async ({ page }) => {
 
     // Click the tab using mouse
     const btn = document.getElementById('tab-settings')
-    if (btn !== null && btn !== undefined) {
+    if (btn != null) {
       // Check if click event fires
       let clickFired = false
       btn.addEventListener(

@@ -11,7 +11,7 @@ test('debug appStore structure', async ({ page }) => {
   const storeInfo = await page.evaluate(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const store = (window as any).__appStore
-    if (store === null || store === undefined) return 'no store'
+    if (store == null) return 'no store'
 
     // Check if sensitivityPreset exists and is a function
     const sp = store.sensitivityPreset

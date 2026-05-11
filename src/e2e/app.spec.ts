@@ -225,7 +225,7 @@ test.describe('MercuryPitch App', () => {
     // Button should now show Stop or have recording class
     const hasStop = await recordBtn.textContent()
     // After clicking (mic start may fail in test env), click again to reset
-    if (hasStop !== null && hasStop !== undefined && hasStop.includes('Stop')) {
+    if (hasStop != null && hasStop.includes('Stop')) {
       await recordBtn.click()
     }
   })

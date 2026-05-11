@@ -722,7 +722,7 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
             <div class="profile-header">
               {(() => {
                 const user = selectedUser()
-                return user !== null && user.avatar !== undefined
+                return user != null && user.avatar != null
                   ? renderIcon(user.avatar)
                   : null
               })()}

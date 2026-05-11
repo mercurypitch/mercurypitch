@@ -348,7 +348,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
   }
 
   const hasNotes = (notes?: string): boolean => {
-    return notes !== null && notes !== undefined && notes.trim().length > 0
+    return notes != null && notes.trim().length > 0
   }
 
   const _handleCreatePlaylist = () => {

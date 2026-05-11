@@ -14,7 +14,7 @@ interface TransportControlsProps {
 
 export const TransportControls: Component<TransportControlsProps> = (props) => {
   const handlePlayClick = () => {
-    if (props.disabled !== undefined && props.disabled !== null) return
+    if (props.disabled != null) return
     const state = playback.state()
     if (state === 'stopped') {
       playback.startPlayback()

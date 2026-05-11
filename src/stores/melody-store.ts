@@ -204,7 +204,7 @@ export function _reloadLibraryFromStorage(): void {
 export function getSessions(): PlaybackSession[] {
   const lib = melodyLibrarySignal()
   return Object.values(lib.sessions ?? {})
-    .filter((s): s is PlaybackSession => s !== null && s !== undefined)
+    .filter((s): s is PlaybackSession => s != null)
     .sort(
       (a, b) =>
         (b.lastPlayed ?? b.created ?? 0) - (a.lastPlayed ?? a.created ?? 0),
@@ -554,7 +554,7 @@ function _restoreCurrentMelodyId(): void {
     const saved = localStorage.getItem(STORAGE_KEY_CURRENT_MELODY_ID)
     if (saved !== null) {
       const melody = melodyLibrarySignal().melodies[saved]
-      if (melody !== undefined && melody !== null) {
+      if (melody != null) {
         _setCurrentMelodySignal(melody)
       }
     }
@@ -566,7 +566,7 @@ function _restoreCurrentMelodyId(): void {
 export const setCurrentMelody = (m: MelodyData | null) => {
   _setCurrentMelodySignal(m)
   try {
-    if (m !== null && m !== undefined) {
+    if (m != null) {
       localStorage.setItem(STORAGE_KEY_CURRENT_MELODY_ID, m.id)
     } else {
       localStorage.removeItem(STORAGE_KEY_CURRENT_MELODY_ID)
@@ -742,7 +742,7 @@ export function addMelodyNote(
   duration: number,
 ): number {
   const current = currentMelody()
-  if (current === null || current === undefined) return 0
+  if (current == null) return 0
   const items = current.items ?? []
   const key = current.id
   const newItem = { id: generateId(), note, startBeat, duration }
@@ -766,7 +766,7 @@ export function addMelodyNote(
 
 export function removeMelodyNote(id: number): void {
   const current = currentMelody()
-  if (current === null || current === undefined) return
+  if (current == null) return
   const items = current.items ?? []
   const key = current.id
   const updatedItems = items.filter((item) => item.id !== id)
@@ -792,7 +792,7 @@ export function updateMelodyNote(
   updates: Partial<Pick<MelodyItem, 'startBeat' | 'duration' | 'note'>>,
 ): void {
   const current = currentMelody()
-  if (current === null || current === undefined) return
+  if (current == null) return
   const items = current.items ?? []
   const key = current.id
   const updatedItems = items.map((item) =>
@@ -825,7 +825,7 @@ export function updateMelodyNote(
 export function loadMelody(key: string): MelodyData | null {
   const library = melodyLibrarySignal()
   const melody = library.melodies[key]
-  if (melody !== null && melody !== undefined) {
+  if (melody != null) {
     const playCount = 'playCount' in melody ? melody.playCount : 0
     const updatedMelody = {
       ...melody,
@@ -958,7 +958,7 @@ export function setMelody(items: MelodyItem[]): void {
   const existing = currentMelody()
   const _library = melodyLibrarySignal()
 
-  if (existing !== null && existing !== undefined) {
+  if (existing != null) {
     setMelodyLibrary((prev) => ({
       ...prev,
       melodies: {
@@ -1258,7 +1258,7 @@ export function buildPlaylistAsSession(
   playlistId: string,
 ): PlaybackSession | null {
   const playlist = getPlaylist(playlistId)
-  if (playlist === null || playlist === undefined) return null
+  if (playlist == null) return null
 
   const lib = melodyLibrarySignal()
   const items: SessionItem[] = []
@@ -1320,7 +1320,7 @@ export function getPlaylistMelodyIds(playlistId: string): string[] {
 
 export function playPlaylist(playlistId: string): void {
   const playlist = getPlaylist(playlistId)
-  if (playlist === null || playlist === undefined) return
+  if (playlist == null) return
 
   const library = melodyLibrarySignal()
   let currentIndex = 0
@@ -1330,7 +1330,7 @@ export function playPlaylist(playlistId: string): void {
     const playlistItem = playlist.melodyKeys[currentIndex]
     const melody = library.melodies[playlistItem]
 
-    if (melody !== null && melody !== undefined) {
+    if (melody != null) {
       // Load the melody
       melodyStore.loadMelody(melody.id)
 

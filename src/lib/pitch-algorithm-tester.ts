@@ -318,7 +318,7 @@ export async function benchmarkAlgorithmAsync(
   })
 
   // Initialize with onnx module if provided
-  if (options.onnxModule !== undefined && options.onnxModule !== null) {
+  if (options.onnxModule != null) {
     detector.init(options.onnxModule).catch(() => {})
   }
 
