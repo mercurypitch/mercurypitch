@@ -3,14 +3,16 @@ services:
     build: .
     container_name: uvr-api
     ports:
-      - "8080:8080"
+      - "${UVR_API_PORT:-8080}:${UVR_API_PORT:-8080}"
     volumes:
       - ./models:/tmp/audio-separator-models
       - ./output:/app/output
       - ./api.py:/app/api.py
       - .:/app
-    command: uvicorn api:app --host 0.0.0.0 --port 8080 --reload
+    command: uvicorn api:app --host ${UVR_API_HOST:-0.0.0.0} --port ${UVR_API_PORT:-8080} --reload
     group_add:
       - video
     environment:
       - PYTHONUNBUFFERED=1
+      - UVR_API_PORT=${UVR_API_PORT:-8080}
+      - CORS_ORIGINS=${CORS_ORIGINS:-https://mercurypitch.com,https://dev.mercurypitch.com}
