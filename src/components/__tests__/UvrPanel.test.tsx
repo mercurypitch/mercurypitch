@@ -57,7 +57,6 @@ vi.mock('@/stores', () => ({
   themeStore: {},
   transportStore: {},
   uiStore: {},
-  userSessionStore: {},
   playbackStateStore: {},
 
   // Audio engine
