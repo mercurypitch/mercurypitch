@@ -4682,8 +4682,7 @@ Keeps your existing styles, only adjusts layout
   border-bottom: 1px solid var(--border-color);
 }
 
-.settings-divider,
-.changelog-divider {
+.settings-divider {
   height: 4px;
   width: 100%;
   background: linear-gradient(
