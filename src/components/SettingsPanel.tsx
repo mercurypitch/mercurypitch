@@ -876,7 +876,9 @@ export const SettingsPanel: Component = () => {
                   </button>
                   <button
                     class="danger-btn-primary"
-                    onClick={handleResetStorage}
+                    onClick={() => {
+                      void handleResetStorage()
+                    }}
                   >
                     Reset All Data
                   </button>
