@@ -1886,6 +1886,17 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     const ctx = audioCtx!
     const now = ctx.currentTime
 
+    // Fade master output in from 0 to avoid click/pop on start
+    if (mainGain) {
+      try {
+        mainGain.gain.cancelScheduledValues(now)
+        mainGain.gain.setValueAtTime(mainGain.gain.value, now)
+        mainGain.gain.linearRampToValueAtTime(0.7, now + 0.01)
+      } catch (_) {
+        mainGain.gain.value = 0.7
+      }
+    }
+
     for (const track of tracks()) {
       if (!track.buffer) continue
 
@@ -1949,7 +1960,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }
   }
 
-  const FADE_OUT_MS = 20
+  const FADE_OUT_MS = 30
 
   const disconnectSources = () => {
     const ctx = audioCtx
@@ -1962,19 +1973,29 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }))
 
     if (ctx) {
-      // Fade out all gains to 0 over 20ms to avoid pop
+      // Fade out all gains to 0 to avoid pop, then schedule source.stop()
+      // on the audio timeline so the ramp always completes before the cut.
       const now = ctx.currentTime
+      const fadeOutSecs = FADE_OUT_MS / 1000
+      const stopTime = now + fadeOutSecs + 0.01
       for (const nodes of nodesToDisconnect) {
         if (nodes.gainNode) {
           try {
             nodes.gainNode.gain.cancelScheduledValues(now)
-            nodes.gainNode.gain.setValueAtTime(nodes.gainNode.gain.value, now)
-            nodes.gainNode.gain.linearRampToValueAtTime(
-              0,
-              now + FADE_OUT_MS / 1000,
+            nodes.gainNode.gain.setValueAtTime(
+              nodes.gainNode.gain.value,
+              now,
             )
+            nodes.gainNode.gain.linearRampToValueAtTime(0, now + fadeOutSecs)
           } catch (_) {
             /* already disconnected */
+          }
+        }
+        if (nodes.sourceNode) {
+          try {
+            nodes.sourceNode.stop(stopTime)
+          } catch (_) {
+            /* already stopped */
           }
         }
       }
@@ -2000,14 +2021,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       analyserNode: null,
     }))
 
-    // Delay the actual stop/disconnect until after the fade completes
+    // Disconnect after fade+stop completes. The audio-timeline stop is
+    // precise; setTimeout is only for safe, non-timing-critical cleanup.
     setTimeout(() => {
       for (const nodes of nodesToDisconnect) {
-        try {
-          nodes.sourceNode?.stop()
-        } catch (_) {
-          /* already stopped */
-        }
         try {
           nodes.sourceNode?.disconnect()
         } catch (_) {
@@ -2024,7 +2041,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           /* */
         }
       }
-    }, FADE_OUT_MS)
+    }, FADE_OUT_MS + 20)
   }
 
   // ── Transport ────────────────────────────────────────────────
