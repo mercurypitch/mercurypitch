@@ -34,8 +34,7 @@ export function exportMelodyToMIDI(
   melody: MelodyItem[],
   bpm: number,
 ): Uint8Array | null {
-  if (melody === null || melody === undefined || melody.length === 0)
-    return null
+  if (melody == null || melody.length === 0) return null
 
   const TICKS_PER_BEAT = 480
 
@@ -192,9 +191,7 @@ export function downloadMIDI(
   const a = document.createElement('a')
   a.href = url
   a.download =
-    filename !== null && filename !== undefined && filename !== ''
-      ? filename
-      : 'pitchperfect-melody.mid'
+    filename != null && filename !== '' ? filename : 'pitchperfect-melody.mid'
   document.body.appendChild(a)
   a.click()
   document.body.removeChild(a)
@@ -599,7 +596,7 @@ export class PianoRollEditor {
     this.clearHistory()
     this.melody = melody.map((item) => ({
       ...item,
-      id: item.id ?? this.nextNoteId++,
+      id: item.id,
     }))
 
     // Initialize ball physics with new melody
@@ -778,10 +775,8 @@ export class PianoRollEditor {
     const redoBtn = this.container.querySelector(
       '#roll-redo-btn',
     ) as HTMLButtonElement
-    if (undoBtn !== null && undoBtn !== undefined)
-      undoBtn.disabled = !this.canUndo()
-    if (redoBtn !== null && redoBtn !== undefined)
-      redoBtn.disabled = !this.canRedo()
+    if (undoBtn != null) undoBtn.disabled = !this.canUndo()
+    if (redoBtn != null) redoBtn.disabled = !this.canRedo()
   }
 
   setScale(scale: ScaleDegree[]): void {
@@ -847,7 +842,7 @@ export class PianoRollEditor {
       this.remoteBeat = 0
     } else {
       const item = this.melody[index]
-      if (item !== null && item !== undefined) {
+      if (item != null) {
         this.remoteBeat = item.startBeat
       }
     }
@@ -1898,7 +1893,7 @@ export class PianoRollEditor {
         if (this.selectedNoteIds.size > 0) {
           this.pushHistory()
           for (const noteId of this.selectedNoteIds) {
-            const note = this.melody.find((n) => (n.id ?? 0) === noteId)
+            const note = this.melody.find((n) => n.id === noteId)
             if (note) this.eraseNoteInternal(note)
           }
           this.selectedNoteIds.clear()
@@ -1933,7 +1928,7 @@ export class PianoRollEditor {
       const existingNote = this.findNoteAt(beat, row)
       if (existingNote) {
         // Select the note and enable drag/resize — do NOT enter box-select mode
-        const noteId = existingNote.id ?? 0
+        const noteId = existingNote.id
         this.selectedNoteIds.clear()
         this.selectedNoteIds.add(noteId)
         this.onNoteSelect?.(existingNote)
@@ -1954,7 +1949,7 @@ export class PianoRollEditor {
 
         // Initialize cache for all selected notes (drag or resize)
         this.selectedNotesCache = this.melody.filter(
-          (n) => (n.id ?? 0) === noteId || this.selectedNoteIds.has(n.id ?? 0),
+          (n) => n.id === noteId || this.selectedNoteIds.has(n.id),
         )
       } else {
         // Empty space — start box selection for area-select, or place note on click
@@ -1974,7 +1969,7 @@ export class PianoRollEditor {
     } else if (this.activeTool === 'select') {
       const note = this.findNoteAt(beat, row)
       if (note) {
-        const noteId = note.id ?? 0
+        const noteId = note.id
         if (e.shiftKey) {
           if (this.selectedNoteIds.has(noteId)) {
             this.selectedNoteIds.delete(noteId)
@@ -2003,11 +1998,9 @@ export class PianoRollEditor {
 
         // Initialize cache for all selected notes (drag or resize)
         this.selectedNotesCache = this.melody.filter(
-          (n) => (n.id ?? 0) === noteId || this.selectedNoteIds.has(n.id ?? 0),
+          (n) => n.id === noteId || this.selectedNoteIds.has(n.id),
         )
-        const first = this.melody.find(
-          (n) => n.id !== undefined && this.selectedNoteIds.has(n.id),
-        )
+        const first = this.melody.find((n) => this.selectedNoteIds.has(n.id))
         this.onNoteSelect?.(first ?? null)
       } else {
         if (!e.shiftKey) {
@@ -2044,7 +2037,7 @@ export class PianoRollEditor {
       const beat = x / this.beatWidth
       const row = Math.floor(y / this.rowHeight)
       const note = this.findNoteAt(beat, row)
-      if (note && note.id !== undefined && this.selectedNoteIds.has(note.id)) {
+      if (note && this.selectedNoteIds.has(note.id)) {
         const noteX = note.startBeat * this.beatWidth
         const noteW = note.duration * this.beatWidth
         if (x - noteX < 8) {
@@ -2079,7 +2072,7 @@ export class PianoRollEditor {
             Math.min(this.totalRows - 1, this.dragStartRow + deltaRow),
           )
           const newScaleNote = this.scale[newRow]
-          if (newScaleNote === null || newScaleNote === undefined) continue
+          if (newScaleNote == null) continue
           note.startBeat = newStartBeat
           note.note.midi = newScaleNote.midi
           note.note.name = newScaleNote.name as NoteName
@@ -2169,14 +2162,10 @@ export class PianoRollEditor {
       const noteX1 = note.startBeat * this.beatWidth
       const noteX2 = (note.startBeat + note.duration) * this.beatWidth
       if (noteX2 < x1 || noteX1 > x2) continue
-      if (note.id !== undefined) {
-        this.selectedNoteIds.add(note.id)
-      }
+      this.selectedNoteIds.add(note.id)
     }
     const first =
-      this.melody.find(
-        (n) => n.id !== undefined && this.selectedNoteIds.has(n.id),
-      ) ?? null
+      this.melody.find((n) => this.selectedNoteIds.has(n.id)) ?? null
     this.onNoteSelect?.(first)
   }
 
@@ -2226,9 +2215,9 @@ export class PianoRollEditor {
       e.preventDefault()
       this.selectedNoteIds.clear()
       for (const note of this.melody) {
-        if (note.id !== undefined) this.selectedNoteIds.add(note.id)
+        this.selectedNoteIds.add(note.id)
       }
-      const first = this.melody.find((n) => n.id !== undefined) ?? null
+      const first = this.melody[0] ?? null
       this.onNoteSelect?.(first)
       this.draw()
       this._updateHint()
@@ -2238,7 +2227,7 @@ export class PianoRollEditor {
       if (this.selectedNoteIds.size > 0) {
         this.pushHistory()
         for (const noteId of this.selectedNoteIds) {
-          const note = this.melody.find((n) => (n.id ?? 0) === noteId)
+          const note = this.melody.find((n) => n.id === noteId)
           if (note) this.eraseNoteInternal(note)
         }
         this.selectedNoteIds.clear()
@@ -2266,7 +2255,7 @@ export class PianoRollEditor {
       const firstSelectedId = [...this.selectedNoteIds][0] ?? -1
       const currentIdx =
         this.selectedNoteIds.size > 0
-          ? sortedNotes.findIndex((n) => (n.id ?? 0) === firstSelectedId)
+          ? sortedNotes.findIndex((n) => n.id === firstSelectedId)
           : -1
 
       let newIdx: number
@@ -2277,7 +2266,7 @@ export class PianoRollEditor {
       }
       const noteToSelect = sortedNotes[newIdx]
       this.selectedNoteIds.clear()
-      this.selectedNoteIds.add(noteToSelect.id ?? 0)
+      this.selectedNoteIds.add(noteToSelect.id)
       this.onNoteSelect?.(noteToSelect)
       this.draw()
     } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
@@ -2286,7 +2275,7 @@ export class PianoRollEditor {
         this.pushHistory()
         const delta = e.key === 'ArrowLeft' ? -0.5 : 0.5
         for (const noteId of this.selectedNoteIds) {
-          const note = this.melody.find((n) => (n.id ?? 0) === noteId)
+          const note = this.melody.find((n) => n.id === noteId)
           if (note) {
             note.startBeat = Math.max(0, note.startBeat + delta)
           }
@@ -2764,7 +2753,7 @@ export class PianoRollEditor {
     for (let i = 0; i < this.totalRows; i++) {
       const y = i * this.rowHeight
       const scaleNote = this.scale[i]
-      if (scaleNote === null || scaleNote === undefined) continue
+      if (scaleNote == null) continue
 
       const isBlack = scaleNote.name.includes('#')
 
@@ -2919,10 +2908,9 @@ export class PianoRollEditor {
     for (let i = 0; i <= this.totalRows; i++) {
       const y = i * this.rowHeight
       const note = i < this.totalRows ? this.scale[i] : null
-      const isBlack =
-        note !== null && note !== undefined && note.name.includes('#')
+      const isBlack = note != null && note.name.includes('#')
 
-      if (isBlack !== null && isBlack !== undefined && isBlack) {
+      if (isBlack != null && isBlack) {
         ctx.fillStyle = 'rgba(26, 31, 39, 0.5)'
         ctx.fillRect(0, y, this.stretchedWidth, this.rowHeight)
       }
@@ -2988,10 +2976,9 @@ export class PianoRollEditor {
     for (let i = 0; i <= this.totalRows; i++) {
       const y = i * this.rowHeight
       const note = i < this.totalRows ? this.scale[i] : null
-      const isBlack =
-        note !== null && note !== undefined && note.name.includes('#')
+      const isBlack = note != null && note.name.includes('#')
 
-      if (isBlack !== null && isBlack !== undefined && isBlack) {
+      if (isBlack != null && isBlack) {
         ctx.fillStyle = 'rgba(26, 31, 39, 0.5)'
         ctx.fillRect(0, y, this.stretchedWidth, this.rowHeight)
       }
@@ -3093,7 +3080,7 @@ export class PianoRollEditor {
     const wf = this.getWaveform()
     if (!wf || wf.length === 0) return
     const isRec = this.isRecording?.()
-    if (isRec === null || isRec === undefined || !isRec) return
+    if (isRec == null || !isRec) return
 
     ctx.save()
     ctx.strokeStyle = 'rgba(219,112,219,0.55)'
@@ -3199,8 +3186,7 @@ export class PianoRollEditor {
 
       if (w < 2) continue
 
-      const isSelected =
-        note.id !== undefined && this.selectedNoteIds.has(note.id)
+      const isSelected = this.selectedNoteIds.has(note.id)
       const isActive =
         highlightActive &&
         this.getCurrentBeat() >= note.startBeat &&
@@ -3447,9 +3433,7 @@ export class PianoRollEditor {
 
   private _getSelectedNotes(): MelodyItem[] {
     if (this.selectedNoteIds.size === 0) return []
-    return this.melody.filter(
-      (n) => n.id !== undefined && this.selectedNoteIds.has(n.id),
-    )
+    return this.melody.filter((n) => this.selectedNoteIds.has(n.id))
   }
 
   private _applyEffect(type: EffectType): void {

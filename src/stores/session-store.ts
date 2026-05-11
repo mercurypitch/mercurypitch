@@ -41,7 +41,7 @@ export function selectAllMelodies(): void {
   const session = userSession()
   if (session && session.items.length > 0) {
     const melodyIds = session.items
-      .filter((item) => item.melodyId !== null && item.melodyId !== undefined)
+      .filter((item) => item.melodyId != null)
       .map((item) => item.melodyId!)
     setSelectedMelodyIds(melodyIds)
   }
@@ -307,7 +307,7 @@ export function getDefaultSession(): PlaybackSession {
   const sessions = getAllSessions()
   const defaultSession = sessions['default']
 
-  if (defaultSession === null || defaultSession === undefined) {
+  if (defaultSession == null) {
     const session = createDefaultSession()
     _saveSessions({ ...sessions, default: session })
     return session

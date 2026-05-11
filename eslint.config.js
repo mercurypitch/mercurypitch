@@ -69,7 +69,7 @@ export default defineConfig(
       'no-throw-literal': 'error',
       'no-useless-concat': 'error',
       'prefer-template': 'error',
-      eqeqeq: 'error',
+      eqeqeq: ['error', 'smart'],
       '@typescript-eslint/no-unused-vars': [
         'error',
         {

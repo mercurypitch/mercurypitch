@@ -44,12 +44,10 @@ export function encodeMelodyToURL(
 
   params.set('n', noteStr)
 
-  if (bpm !== null && bpm !== undefined && bpm !== 0)
-    params.set('bpm', String(bpm))
-  if (key !== null && key !== undefined && key !== '') params.set('k', key)
-  if (scaleType !== null && scaleType !== undefined && scaleType !== '')
-    params.set('s', scaleType)
-  if (totalBeats !== null && totalBeats !== undefined && totalBeats !== 0)
+  if (bpm != null && bpm !== 0) params.set('bpm', String(bpm))
+  if (key != null && key !== '') params.set('k', key)
+  if (scaleType != null && scaleType !== '') params.set('s', scaleType)
+  if (totalBeats != null && totalBeats !== 0)
     params.set('beats', String(totalBeats))
 
   return params.toString()
@@ -67,7 +65,7 @@ export function decodeMelodyFromURL(params: URLSearchParams): {
   totalBeats?: number
 } | null {
   const noteStr = params.get('n')
-  if (noteStr === null || noteStr === undefined || noteStr === '') return null
+  if (noteStr == null || noteStr === '') return null
 
   try {
     const melody: MelodyItem[] = []
@@ -109,14 +107,8 @@ export function decodeMelodyFromURL(params: URLSearchParams): {
     return {
       melody,
       bpm: params.has('bpm') ? parseInt(params.get('bpm')!, 10) : undefined,
-      key:
-        params.get('k') !== null && params.get('k') !== undefined
-          ? params.get('k')!
-          : undefined,
-      scaleType:
-        params.get('s') !== null && params.get('s') !== undefined
-          ? params.get('s')!
-          : undefined,
+      key: params.get('k') != null ? params.get('k')! : undefined,
+      scaleType: params.get('s') != null ? params.get('s')! : undefined,
       totalBeats: params.has('beats')
         ? parseInt(params.get('beats')!, 10)
         : undefined,

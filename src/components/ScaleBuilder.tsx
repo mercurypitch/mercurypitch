@@ -69,7 +69,7 @@ export const ScaleBuilder: Component<ScaleBuilderProps> = (props) => {
   const loadScale = (name: string) => {
     const scales = customScales()
     const scale = scales[name]
-    if (scale !== null && scale !== undefined) {
+    if (scale != null) {
       setScaleName(name)
       setCustomNotes(new Set(scale))
     }

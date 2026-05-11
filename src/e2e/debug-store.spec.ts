@@ -11,14 +11,13 @@ test('debug settings tab - comprehensive', async ({ page }) => {
   const storeType = await page.evaluate(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const store = (window as any).__appStore
-    const at =
-      store !== null && store !== undefined ? store.activeTab : undefined
+    const at = store != null ? store.activeTab : undefined
     return {
       type: typeof at,
       isFunction: typeof at === 'function',
-      isSignal: at !== null && at !== undefined && typeof at === 'object',
+      isSignal: at != null && typeof at === 'object',
       keys:
-        store !== null && store !== undefined
+        store != null
           ? Object.keys(store).filter(
               (k) =>
                 k.includes('Tab') || k.includes('tab') || k.includes('active'),
@@ -33,18 +32,15 @@ test('debug settings tab - comprehensive', async ({ page }) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const store = (window as any).__appStore
     return {
-      storeKeys:
-        store !== null && store !== undefined
-          ? Object.keys(store).slice(0, 30)
-          : [],
+      storeKeys: store != null ? Object.keys(store).slice(0, 30) : [],
       navKeys:
         // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-        store !== null && store !== undefined && store.navigation
+        store != null && store.navigation
           ? Object.keys(store.navigation)
           : 'no nav',
       settingsKeys:
         // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-        store !== null && store !== undefined && store.settings
+        store != null && store.settings
           ? Object.keys(store.settings).slice(0, 10)
           : 'no settings',
     }

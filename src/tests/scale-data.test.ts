@@ -171,11 +171,13 @@ describe('Melody Utilities', () => {
   it('calculates total beats correctly', () => {
     const melody: MelodyItem[] = [
       {
+        id: 0,
         note: { name: 'C', octave: 4, midi: 60, freq: 261 },
         startBeat: 0,
         duration: 2,
       },
       {
+        id: 0,
         note: { name: 'E', octave: 4, midi: 64, freq: 329 },
         startBeat: 2,
         duration: 4,
@@ -191,11 +193,13 @@ describe('Melody Utilities', () => {
   it('finds note at specific beat', () => {
     const melody: MelodyItem[] = [
       {
+        id: 0,
         note: { name: 'C', octave: 4, midi: 60, freq: 261 },
         startBeat: 0,
         duration: 2,
       },
       {
+        id: 0,
         note: { name: 'E', octave: 4, midi: 64, freq: 329 },
         startBeat: 3,
         duration: 2,
@@ -211,11 +215,13 @@ describe('Melody Utilities', () => {
   it('finds note index at beat', () => {
     const melody: MelodyItem[] = [
       {
+        id: 0,
         note: { name: 'C', octave: 4, midi: 60, freq: 261 },
         startBeat: 0,
         duration: 2,
       },
       {
+        id: 0,
         note: { name: 'E', octave: 4, midi: 64, freq: 329 },
         startBeat: 3,
         duration: 2,
@@ -240,16 +246,19 @@ describe('Melody Utilities', () => {
   it('calculates MIDI range correctly', () => {
     const melody: MelodyItem[] = [
       {
+        id: 0,
         note: { name: 'C', octave: 4, midi: 60, freq: 261 },
         startBeat: 0,
         duration: 1,
       },
       {
+        id: 0,
         note: { name: 'G', octave: 4, midi: 67, freq: 392 },
         startBeat: 1,
         duration: 1,
       },
       {
+        id: 0,
         note: { name: 'C', octave: 5, midi: 72, freq: 523 },
         startBeat: 2,
         duration: 1,

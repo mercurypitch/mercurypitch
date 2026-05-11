@@ -28,7 +28,7 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
   createEffect(() => {
     const id = props.initialWalkthroughId
     const open = props.isOpen
-    if (id !== null && id !== undefined && open && !initialLoaded) {
+    if (id != null && open && !initialLoaded) {
       const walkthrough = getWalkthrough(id)
       if (walkthrough) {
         setCurrentWalkthrough(walkthrough)

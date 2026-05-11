@@ -96,7 +96,7 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
         items.splice(targetIndex, 0, removed)
 
         const sessionId = userSession()?.id
-        if (sessionId !== null && sessionId !== undefined) {
+        if (sessionId != null) {
           const activeSession = userSession()!
           const updatedSession = {
             ...activeSession,
@@ -172,7 +172,7 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
 
     // Update the session with new order
     const sessionId = userSession()?.id
-    if (sessionId !== null && sessionId !== undefined) {
+    if (sessionId != null) {
       // Create updated session with reordered items
       const activeSession = userSession()!
       const updatedSession = {

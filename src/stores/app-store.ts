@@ -503,7 +503,7 @@ export function updateUvrSessionOutputs(
 let _audioEngineInstance: AudioEngine | null = null
 
 export async function initAudioEngine(): Promise<AudioEngine> {
-  if (_audioEngineInstance !== null && _audioEngineInstance !== undefined) {
+  if (_audioEngineInstance != null) {
     return _audioEngineInstance
   }
 
@@ -906,7 +906,7 @@ export function nextWalkthroughStep(): void {
 export function skipSection(): void {
   const steps = tourSteps()
   const current = steps[walkthroughStep()]
-  if (current === null || current === undefined) {
+  if (current == null) {
     endWalkthrough()
     return
   }
