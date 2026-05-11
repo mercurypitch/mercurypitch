@@ -27,7 +27,12 @@ export async function getDb(): Promise<DatabaseAdapter> {
 }
 
 /** Re-export types for convenience. */
-export type { DatabaseAdapter, Repository, QueryOptions, DbEntity } from './types'
+export type {
+  DatabaseAdapter,
+  Repository,
+  QueryOptions,
+  DbEntity,
+} from './types'
 export type {
   UserProfile,
   SessionRecord,

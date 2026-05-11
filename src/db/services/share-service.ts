@@ -3,7 +3,7 @@
 // ============================================================
 
 import { getDb } from '@/db'
-import type { UserProfile, SharedMelody, SharedSession } from '@/db/entities'
+import type { SharedMelody, SharedSession, UserProfile } from '@/db/entities'
 import { getUserId } from '@/db/seed'
 
 export interface SharedMelodyView {
@@ -146,7 +146,12 @@ export async function saveSharedSession(data: {
       sessionId: '',
       sessionName: data.name,
       author: data.author,
-      score: data.results.length > 0 ? Math.round(data.results.reduce((a, b) => a + b, 0) / data.results.length) : 0,
+      score:
+        data.results.length > 0
+          ? Math.round(
+              data.results.reduce((a, b) => a + b, 0) / data.results.length,
+            )
+          : 0,
       accuracy: 0,
       resultsJson: JSON.stringify(data.results),
       isPublic: true,

@@ -9,7 +9,7 @@ import { dismissOverlays, switchTab } from './helpers/ui'
 test.describe('Playback', () => {
   test.beforeEach(async ({ page }) => {
     await page.addInitScript(() => {
-      (window as any).E2E_TEST_MODE = true
+      ;(window as any).E2E_TEST_MODE = true
     })
     await page.goto('/')
     await page.waitForSelector('#app-tabs', { timeout: 10000 })
@@ -60,7 +60,9 @@ test.describe('Playback', () => {
     await page.waitForTimeout(500)
   })
 
-  test('Practice tab pause button pauses and shows continue', async ({ page }) => {
+  test('Practice tab pause button pauses and shows continue', async ({
+    page,
+  }) => {
     await switchTab(page, 'singing')
     await page.waitForTimeout(500)
 
