@@ -9,7 +9,7 @@ import { dismissOverlays } from './helpers/ui'
 test.describe('Walkthrough Feature', () => {
   test.beforeEach(async ({ page }) => {
     await page.addInitScript(() => {
-      (window as any).E2E_TEST_MODE = true
+      ;(window as any).E2E_TEST_MODE = true
     })
     await page.goto('/')
     await page.waitForSelector('#app-tabs', { timeout: 10000 })
@@ -21,7 +21,9 @@ test.describe('Walkthrough Feature', () => {
     await expect(walkthroughBtn).toBeVisible()
   })
 
-  test('Clicking walkthrough button opens selection modal', async ({ page }) => {
+  test('Clicking walkthrough button opens selection modal', async ({
+    page,
+  }) => {
     const walkthroughBtn = page.locator('.walkthrough-control-btn').first()
     await walkthroughBtn.click()
     await page.waitForTimeout(500)
@@ -65,7 +67,9 @@ test.describe('Walkthrough Feature', () => {
     await expect(modal).not.toBeVisible()
   })
 
-  test('Footer Got it button closes walkthrough selection', async ({ page }) => {
+  test('Footer Got it button closes walkthrough selection', async ({
+    page,
+  }) => {
     const walkthroughBtn = page.locator('.walkthrough-control-btn').first()
     await walkthroughBtn.click()
     await page.waitForTimeout(500)

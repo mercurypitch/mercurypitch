@@ -13,12 +13,7 @@
 //   DELETE /api/<entity>/:id      → delete
 //   GET    /api/<entity>/count    → count
 
-import type {
-  DbEntity,
-  DatabaseAdapter,
-  QueryOptions,
-  Repository,
-} from '@/db/types'
+import type { DatabaseAdapter, DbEntity, QueryOptions, Repository, } from '@/db/types'
 
 // ── Config ──────────────────────────────────────────────────────
 
@@ -46,10 +41,7 @@ class ServerRepository<T extends DbEntity> implements Repository<T> {
     }
   }
 
-  private async request<R>(
-    path: string,
-    init?: RequestInit,
-  ): Promise<R> {
+  private async request<R>(path: string, init?: RequestInit): Promise<R> {
     const res = await fetch(`${this.url}${path}`, {
       ...init,
       headers: { ...this.headers(), ...init?.headers },
@@ -80,7 +72,7 @@ class ServerRepository<T extends DbEntity> implements Repository<T> {
         if (v !== undefined) params.set(`where[${k}]`, String(v))
       }
     }
-    if (opts?.orderBy) {
+    if (opts?.orderBy !== undefined) {
       params.set('orderBy', String(opts.orderBy))
       if (opts.orderDir) params.set('orderDir', opts.orderDir)
     }
@@ -90,9 +82,7 @@ class ServerRepository<T extends DbEntity> implements Repository<T> {
     return this.request<T[]>(qs ? `?${qs}` : '')
   }
 
-  async create(
-    entity: Omit<T, 'id' | 'createdAt' | 'updatedAt'>,
-  ): Promise<T> {
+  async create(entity: Omit<T, 'id' | 'createdAt' | 'updatedAt'>): Promise<T> {
     return this.request<T>('', {
       method: 'POST',
       body: JSON.stringify(entity),
@@ -110,7 +100,7 @@ class ServerRepository<T extends DbEntity> implements Repository<T> {
   }
 
   async delete(id: string): Promise<void> {
-    await this.request<void>(`/${encodeURIComponent(id)}`, {
+    await this.request(`/${encodeURIComponent(id)}`, {
       method: 'DELETE',
     })
   }
@@ -147,9 +137,7 @@ export class ServerAdapter implements DatabaseAdapter {
     return repo
   }
 
-  async transaction<R>(
-    fn: (db: DatabaseAdapter) => Promise<R>,
-  ): Promise<R> {
+  async transaction<R>(fn: (db: DatabaseAdapter) => Promise<R>): Promise<R> {
     // Server adapter has no true transaction support —
     // the server handles atomicity per-endpoint.
     return fn(this)

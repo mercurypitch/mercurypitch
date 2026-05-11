@@ -1,4 +1,5 @@
 import { createSignal } from 'solid-js'
+import type { FeatureFlag } from '@/db'
 import { TAB_COMPOSE, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
 import { AudioEngine } from '@/lib/audio-engine'
 import { IS_DEV } from '@/lib/defaults'
@@ -909,9 +910,7 @@ const DEV_FEATURES_KEY = 'pitchperfect_dev_features'
 const initialAdvanced = IS_DEV
   ? true
   : loadBooleanFlag(ADVANCED_FEATURES_KEY, false)
-const initialDev = IS_DEV
-  ? true
-  : loadBooleanFlag(DEV_FEATURES_KEY, false)
+const initialDev = IS_DEV ? true : loadBooleanFlag(DEV_FEATURES_KEY, false)
 
 const [advancedFeaturesEnabledState, setAdvancedFeaturesEnabledState] =
   createSignal(initialAdvanced)
@@ -924,17 +923,14 @@ export const advancedFeaturesEnabled = (): boolean =>
 export const devFeaturesEnabled = (): boolean => devFeaturesEnabledState()
 
 /** Persist a feature flag to the database layer (falls back to localStorage). */
-async function persistFeatureFlag(
-  key: string,
-  value: boolean,
-): Promise<void> {
+async function persistFeatureFlag(key: string, value: boolean): Promise<void> {
   try {
     const { getDb } = await import('@/db')
     const db = await getDb()
-    const repo = db.getRepository<
-      import('@/db').FeatureFlag
-    >('featureFlags')
-    const existing = await repo.findAll({ where: { key } as Partial<import('@/db').FeatureFlag> })
+    const repo = db.getRepository<FeatureFlag>('featureFlags')
+    const existing = await repo.findAll({
+      where: { key } as Partial<FeatureFlag>,
+    })
     if (existing.length > 0) {
       await repo.update(existing[0].id, { value })
     } else {
@@ -964,15 +960,12 @@ export async function initFeatureFlagsFromDb(): Promise<void> {
   try {
     const { getDb } = await import('@/db')
     const db = await getDb()
-    const repo = db.getRepository<
-      import('@/db').FeatureFlag
-    >('featureFlags')
+    const repo = db.getRepository<FeatureFlag>('featureFlags')
     const flags = await repo.findAll()
     for (const flag of flags) {
       if (flag.key === ADVANCED_FEATURES_KEY)
         setAdvancedFeaturesEnabledState(flag.value)
-      if (flag.key === DEV_FEATURES_KEY)
-        setDevFeaturesEnabledState(flag.value)
+      if (flag.key === DEV_FEATURES_KEY) setDevFeaturesEnabledState(flag.value)
     }
   } catch {
     // DB not available, keep current signal values

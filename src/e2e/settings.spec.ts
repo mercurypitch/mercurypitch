@@ -10,7 +10,7 @@ import { dismissOverlays, switchTab } from './helpers/ui'
 test.describe('Settings Panel', () => {
   test.beforeEach(async ({ page }) => {
     await page.addInitScript(() => {
-      (window as any).E2E_TEST_MODE = true
+      ;(window as any).E2E_TEST_MODE = true
     })
     await page.goto('/')
     await page.waitForSelector('#app-tabs', { timeout: 10000 })
@@ -216,7 +216,9 @@ test.describe('Settings Panel', () => {
     await expect(confirmBox).toBeVisible()
   })
 
-  test('Confirmation modal has Cancel and Confirm buttons', async ({ page }) => {
+  test('Confirmation modal has Cancel and Confirm buttons', async ({
+    page,
+  }) => {
     await switchTab(page, 'settings')
     await page.locator('.danger-btn:has-text("Reset")').click()
     await page.waitForTimeout(200)

@@ -4,7 +4,7 @@ import { dismissOverlays } from '@/e2e/helpers/ui'
 test.describe('Critical Flows — GH #121', () => {
   test.beforeEach(async ({ page }) => {
     await page.addInitScript(() => {
-      (window as any).E2E_TEST_MODE = true
+      ;(window as any).E2E_TEST_MODE = true
     })
     await page.goto('/')
     await page.waitForSelector('#app-tabs', { timeout: 10000 })
@@ -448,9 +448,7 @@ test.describe('Critical Flows — GH #121', () => {
       await expect(cyclePill).toBeVisible()
     })
 
-    test('Repeat mode cycles input accepts valid values', async ({
-      page,
-    }) => {
+    test('Repeat mode cycles input accepts valid values', async ({ page }) => {
       await page.locator('#tab-singing').click()
       await page.waitForTimeout(500)
 
@@ -482,9 +480,7 @@ test.describe('Critical Flows — GH #121', () => {
       await expect(precountBtn).not.toHaveClass(/active/)
     })
 
-    test('Session mode shows practice sub-mode selector', async ({
-      page,
-    }) => {
+    test('Session mode shows practice sub-mode selector', async ({ page }) => {
       await page.locator('#tab-singing').click()
       await page.waitForTimeout(500)
 

@@ -3,7 +3,7 @@
 // ============================================================
 
 import { getDb } from '@/db'
-import type { LeaderboardEntry, LeaderboardCategory, LeaderboardPeriod } from '@/db/entities'
+import type { LeaderboardCategory, LeaderboardEntry, LeaderboardPeriod, } from '@/db/entities'
 import { getUserId } from '@/db/seed'
 
 export interface LeaderboardUserView {
@@ -60,7 +60,10 @@ export async function loadCurrentUserEntry(
     const db = await getDb()
     const repo = db.getRepository<LeaderboardEntry>('leaderboardEntries')
     const entries = await repo.findAll({
-      where: { userId: getUserId(), category, period } as Record<string, unknown>,
+      where: { userId: getUserId(), category, period } as Record<
+        string,
+        unknown
+      >,
     })
     if (entries.length === 0) return null
     const e = entries[0]

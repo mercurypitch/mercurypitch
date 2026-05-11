@@ -27,7 +27,9 @@ test.describe('Session Editor', () => {
   })
 
   test('Session Editor header shows title', async ({ page }) => {
-    await expect(page.locator('.session-editor-title')).toContainText('Session Editor')
+    await expect(page.locator('.session-editor-title')).toContainText(
+      'Session Editor',
+    )
   })
 
   test('Session Editor is expanded by default', async ({ page }) => {
@@ -69,7 +71,7 @@ test.describe('Session Editor', () => {
     await expect(timelineHeadings).toBeVisible()
   })
 
-test('Rest duration input is visible', async ({ page }) => {
+  test('Rest duration input is visible', async ({ page }) => {
     await expect(page.locator('#rest-duration')).toBeVisible()
   })
 

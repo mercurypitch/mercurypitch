@@ -4,25 +4,10 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, onMount, Show } from 'solid-js'
-import { getSessionHistory } from '@/stores'
-import {
-  loadChallengeDefinitions,
-  loadChallengeProgress,
-  loadBadgeDefinitions,
-  loadUserBadges,
-  loadAchievementDefinitions,
-  loadUserAchievements,
-  saveChallengeProgress,
-} from '@/db/services/challenges-service'
-import type {
-  ChallengeDefinition as DBChallengeDefinition,
-  ChallengeProgress as DBChallengeProgress,
-  BadgeDefinition as DBBadgeDefinition,
-  UserBadge as DBUserBadge,
-  Achievement as DBAchievement,
-  UserAchievement as DBUserAchievement,
-} from '@/db/entities'
+import type { Achievement as DBAchievement, BadgeDefinition as DBBadgeDefinition, ChallengeDefinition as DBChallengeDefinition, ChallengeProgress as DBChallengeProgress, UserAchievement as DBUserAchievement, UserBadge as DBUserBadge, } from '@/db/entities'
 import { getUserId } from '@/db/seed'
+import { loadAchievementDefinitions, loadBadgeDefinitions, loadChallengeDefinitions, loadChallengeProgress, loadUserAchievements, loadUserBadges, saveChallengeProgress, } from '@/db/services/challenges-service'
+import { getSessionHistory } from '@/stores'
 
 // Alternative: directly render icon with casting
 const renderIcon = (icon: Component | string) => {
@@ -655,12 +640,10 @@ export const VocalChallenges: Component = () => {
         challengeId,
         progress: saved.progress,
         currentScore: saved.currentScore,
-        bestScore: Math.max(
-          ...(saved.actualScores ?? [saved.currentScore]),
-        ),
+        bestScore: Math.max(...(saved.actualScores ?? [saved.currentScore])),
         status: saved.status === 'completed' ? 'completed' : 'active',
         completed: saved.status === 'completed',
-        attempts: (saved.actualScores?.length ?? 1),
+        attempts: saved.actualScores?.length ?? 1,
       })
     }
   }
@@ -720,12 +703,20 @@ export const VocalChallenges: Component = () => {
   const sessionHistory = createMemo(() => getSessionHistory())
 
   // DB-backed data signals
-  const [dbChallengeDefs, setDbChallengeDefs] = createSignal<DBChallengeDefinition[]>([])
-  const [dbChallengeProg, setDbChallengeProg] = createSignal<DBChallengeProgress[]>([])
+  const [dbChallengeDefs, setDbChallengeDefs] = createSignal<
+    DBChallengeDefinition[]
+  >([])
+  const [dbChallengeProg, setDbChallengeProg] = createSignal<
+    DBChallengeProgress[]
+  >([])
   const [dbBadgeDefs, setDbBadgeDefs] = createSignal<DBBadgeDefinition[]>([])
   const [dbUserBadges, setDbUserBadges] = createSignal<DBUserBadge[]>([])
-  const [dbAchievementDefs, setDbAchievementDefs] = createSignal<DBAchievement[]>([])
-  const [dbUserAchievements, setDbUserAchievements] = createSignal<DBUserAchievement[]>([])
+  const [dbAchievementDefs, setDbAchievementDefs] = createSignal<
+    DBAchievement[]
+  >([])
+  const [dbUserAchievements, setDbUserAchievements] = createSignal<
+    DBUserAchievement[]
+  >([])
 
   // Challenge progress stored in localStorage (legacy fallback)
   const [userProgress, setUserProgress] =
@@ -761,32 +752,35 @@ export const VocalChallenges: Component = () => {
   })
 
   // Load data from DB (with legacy localStorage fallback)
-  onMount(async () => {
-    // Load challenge definitions & progress from DB
-    const [defs, prog, badgeDefs, userBadges, achDefs, userAchs] = await Promise.all([
-      loadChallengeDefinitions(),
-      loadChallengeProgress(),
-      loadBadgeDefinitions(),
-      loadUserBadges(),
-      loadAchievementDefinitions(),
-      loadUserAchievements(),
-    ])
-    setDbChallengeDefs(defs)
-    setDbChallengeProg(prog)
-    setDbBadgeDefs(badgeDefs)
-    setDbUserBadges(userBadges)
-    setDbAchievementDefs(achDefs)
-    setDbUserAchievements(userAchs)
+  onMount(() => {
+    void (async () => {
+      // Load challenge definitions & progress from DB
+      const [defs, prog, badgeDefs, userBadges, achDefs, userAchs] =
+        await Promise.all([
+          loadChallengeDefinitions(),
+          loadChallengeProgress(),
+          loadBadgeDefinitions(),
+          loadUserBadges(),
+          loadAchievementDefinitions(),
+          loadUserAchievements(),
+        ])
+      setDbChallengeDefs(defs)
+      setDbChallengeProg(prog)
+      setDbBadgeDefs(badgeDefs)
+      setDbUserBadges(userBadges)
+      setDbAchievementDefs(achDefs)
+      setDbUserAchievements(userAchs)
 
-    // Legacy localStorage fallback
-    try {
-      const stored = localStorage.getItem('pp_challenge_progress')
-      if (stored !== null) {
-        setUserProgress(JSON.parse(stored))
+      // Legacy localStorage fallback
+      try {
+        const stored = localStorage.getItem('pp_challenge_progress')
+        if (stored !== null) {
+          setUserProgress(JSON.parse(stored))
+        }
+      } catch {
+        /* localStorage not available */
       }
-    } catch {
-      /* localStorage not available */
-    }
+    })()
   })
 
   // Save user progress to localStorage + DB
@@ -845,7 +839,7 @@ export const VocalChallenges: Component = () => {
       '📄': IconPaper,
       '📊': IconChart,
     }
-    return map[emoji] || emoji
+    return map[emoji] ?? emoji
   }
 
   function mapDbStatus(status: string): ChallengeProgress['status'] {
@@ -876,10 +870,9 @@ export const VocalChallenges: Component = () => {
             targetScore: d.targetScore,
             currentScore: dbProg?.currentScore ?? localProg?.currentScore ?? 0,
             progress: dbProg?.progress ?? localProg?.progress ?? 0,
-            status:
-              dbProg
-                ? mapDbStatus(dbProg.status)
-                : localProg?.status ?? 'not-started',
+            status: dbProg
+              ? mapDbStatus(dbProg.status)
+              : (localProg?.status ?? 'not-started'),
             unlockedDate: localProg?.unlockedDate,
             completedDate: localProg?.completedDate,
             actualScores: localProg?.actualScores ?? [],
@@ -932,9 +925,7 @@ export const VocalChallenges: Component = () => {
           icon: iconForEmoji(def.icon),
           tier: def.tier,
           earned: !!userBadge,
-          earnedDate: userBadge
-            ? new Date(userBadge.earnedAt).getTime()
-            : 0,
+          earnedDate: userBadge ? new Date(userBadge.earnedAt).getTime() : 0,
         }
       })
     }
@@ -1021,9 +1012,10 @@ export const VocalChallenges: Component = () => {
           icon: iconForEmoji(def.icon),
           points: def.points,
           unlocked: userAch?.unlocked ?? false,
-          unlockedDate: userAch?.unlockedAt
-            ? new Date(userAch.unlockedAt).getTime()
-            : undefined,
+          unlockedDate:
+            userAch?.unlockedAt !== undefined
+              ? new Date(userAch.unlockedAt).getTime()
+              : undefined,
           progress: userAch?.progress ?? 0,
           required: def.required,
         }

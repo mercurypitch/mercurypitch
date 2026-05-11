@@ -5,13 +5,9 @@
 import type { Component } from 'solid-js'
 import type { JSX } from 'solid-js'
 import { createMemo, createSignal, For, onMount, Show } from 'solid-js'
+import type { LeaderboardCategory as DBLeaderboardCategory, LeaderboardPeriod, } from '@/db/entities'
+import { loadLeaderboard } from '@/db/services/leaderboard-service'
 import type { LeaderboardCategory, LeaderboardUser, LeaderboardView, WeeklyChallengeResult, } from '@/types'
-import {
-  loadLeaderboard,
-  loadCurrentUserEntry,
-  type LeaderboardUserView,
-} from '@/db/services/leaderboard-service'
-import type { LeaderboardCategory as DBLeaderboardCategory, LeaderboardPeriod } from '@/db/entities'
 
 // ============================================================
 // SVG Icons (Classy, minimal style)
@@ -438,27 +434,29 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
     LeaderboardUser[]
   >([])
 
-  onMount(async () => {
-    const dbUsers = await loadLeaderboard(
-      activeCategory() as DBLeaderboardCategory,
-      'all-time' as LeaderboardPeriod,
-    )
-    if (dbUsers.length > 0) {
-      setDbLeaderboardUsers(
-        dbUsers.map((u) => ({
-          userId: u.userId,
-          displayName: u.displayName,
-          avatar: IconUser,
-          score: u.score,
-          rank: u.rank,
-          streak: u.streak,
-          totalSessions: u.totalSessions,
-          bestScore: u.bestScore,
-          accuracy: u.accuracy,
-          joinDate: 0,
-        })),
+  onMount(() => {
+    void (async () => {
+      const dbUsers = await loadLeaderboard(
+        activeCategory() as DBLeaderboardCategory,
+        'all-time' as LeaderboardPeriod,
       )
-    }
+      if (dbUsers.length > 0) {
+        setDbLeaderboardUsers(
+          dbUsers.map((u) => ({
+            userId: u.userId,
+            displayName: u.displayName,
+            avatar: IconUser,
+            score: u.score,
+            rank: u.rank,
+            streak: u.streak,
+            totalSessions: u.totalSessions,
+            bestScore: u.bestScore,
+            accuracy: u.accuracy,
+            joinDate: 0,
+          })),
+        )
+      }
+    })()
   })
 
   // Unified user list: DB data when available, mock fallback
@@ -469,9 +467,7 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
 
   // Current user's data
   const _currentUser = createMemo(() => {
-    return (
-      allLeaderboardUsers().find((u) => u.userId === 'me') || null
-    )
+    return allLeaderboardUsers().find((u) => u.userId === 'me') || null
   })
 
   // Filter users based on search

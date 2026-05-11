@@ -5,20 +5,8 @@
 // Seeds IndexedDB with initial data for hidden features.
 // Called once at app init. Idempotent — checks for seed flag.
 
+import type { Achievement, BadgeDefinition, ChallengeDefinition, ChallengeProgress, LeaderboardCategory, LeaderboardEntry, LeaderboardPeriod, UserAchievement, UserBadge, UserProfile, } from './entities'
 import type { DatabaseAdapter } from './types'
-import type {
-  Achievement,
-  BadgeDefinition,
-  ChallengeCategory,
-  ChallengeDefinition,
-  ChallengeProgress,
-  LeaderboardCategory,
-  LeaderboardEntry,
-  LeaderboardPeriod,
-  UserAchievement,
-  UserBadge,
-  UserProfile,
-} from './entities'
 
 const SEEDED_FLAG = 'db_seeded_v1'
 
@@ -26,8 +14,16 @@ const SEEDED_FLAG = 'db_seeded_v1'
 
 async function isSeeded(db: DatabaseAdapter): Promise<boolean> {
   try {
-    const repo = db.getRepository<{ key: string; value: boolean } & { id: string; createdAt: string; updatedAt: string }>('featureFlags')
-    const flags = await repo.findAll({ where: { key: SEEDED_FLAG } as Record<string, unknown> })
+    const repo = db.getRepository<
+      { key: string; value: boolean } & {
+        id: string
+        createdAt: string
+        updatedAt: string
+      }
+    >('featureFlags')
+    const flags = await repo.findAll({
+      where: { key: SEEDED_FLAG } as Record<string, unknown>,
+    })
     return flags.length > 0 && flags[0].value === true
   } catch {
     return false
@@ -35,13 +31,22 @@ async function isSeeded(db: DatabaseAdapter): Promise<boolean> {
 }
 
 async function markSeeded(db: DatabaseAdapter): Promise<void> {
-  const repo = db.getRepository<{ key: string; value: boolean } & { id: string; createdAt: string; updatedAt: string }>('featureFlags')
+  const repo = db.getRepository<
+    { key: string; value: boolean } & {
+      id: string
+      createdAt: string
+      updatedAt: string
+    }
+  >('featureFlags')
   await repo.create({ key: SEEDED_FLAG, value: true })
 }
 
 // ── Challenge Definitions ───────────────────────────────────────
 
-const challengeDefinitions: Omit<ChallengeDefinition, 'id' | 'createdAt' | 'updatedAt'>[] = [
+const challengeDefinitions: Omit<
+  ChallengeDefinition,
+  'id' | 'createdAt' | 'updatedAt'
+>[] = [
   {
     category: 'high-notes',
     title: 'High Note Hero',
@@ -166,7 +171,10 @@ const challengeDefinitions: Omit<ChallengeDefinition, 'id' | 'createdAt' | 'upda
 
 // ── Badge Definitions ───────────────────────────────────────────
 
-const badgeDefinitions: Omit<BadgeDefinition, 'id' | 'createdAt' | 'updatedAt'>[] = [
+const badgeDefinitions: Omit<
+  BadgeDefinition,
+  'id' | 'createdAt' | 'updatedAt'
+>[] = [
   {
     name: 'First Steps',
     description: 'Complete your first challenge',
@@ -243,7 +251,10 @@ const badgeDefinitions: Omit<BadgeDefinition, 'id' | 'createdAt' | 'updatedAt'>[
 
 // ── Achievement Definitions ─────────────────────────────────────
 
-const achievementDefinitions: Omit<Achievement, 'id' | 'createdAt' | 'updatedAt'>[] = [
+const achievementDefinitions: Omit<
+  Achievement,
+  'id' | 'createdAt' | 'updatedAt'
+>[] = [
   {
     name: '10 Notes',
     description: 'Complete 10 practice sessions',
@@ -315,7 +326,7 @@ let defaultUserId = ''
 
 function getDefaultUserId(): string {
   if (!defaultUserId) {
-    defaultUserId = crypto.randomUUID()
+    defaultUserId = window.crypto.randomUUID()
   }
   return defaultUserId
 }
@@ -359,23 +370,119 @@ async function seedChallengeProgress(
     completed: boolean
     attempts: number
   }> = [
-    { title: 'High Note Hero', progress: 75, currentScore: 75, bestScore: 82, status: 'active', completed: false, attempts: 5 },
-    { title: 'Belting Master', progress: 65, currentScore: 65, bestScore: 70, status: 'active', completed: false, attempts: 3 },
-    { title: 'Above It All', progress: 10, currentScore: 10, bestScore: 15, status: 'active', completed: false, attempts: 1 },
-    { title: 'Deep Note King', progress: 88, currentScore: 88, bestScore: 92, status: 'active', completed: false, attempts: 4 },
-    { title: 'Subwoofer Sound', progress: 20, currentScore: 20, bestScore: 20, status: 'active', completed: false, attempts: 1 },
-    { title: 'Scale Speedster', progress: 30, currentScore: 30, bestScore: 40, status: 'active', completed: false, attempts: 3 },
-    { title: 'Rapid Fire', progress: 45, currentScore: 45, bestScore: 55, status: 'active', completed: false, attempts: 4 },
-    { title: 'Climbing Eagle', progress: 5, currentScore: 5, bestScore: 8, status: 'active', completed: false, attempts: 1 },
-    { title: 'Perfect Pitch Pilot', progress: 85, currentScore: 85, bestScore: 90, status: 'active', completed: false, attempts: 6 },
-    { title: 'Crystal Clear', progress: 60, currentScore: 60, bestScore: 65, status: 'active', completed: false, attempts: 2 },
-    { title: 'Major Scale Master', progress: 42, currentScore: 5, bestScore: 5, status: 'active', completed: false, attempts: 3 },
-    { title: 'Minor Scale Sage', progress: 38, currentScore: 3, bestScore: 3, status: 'active', completed: false, attempts: 2 },
+    {
+      title: 'High Note Hero',
+      progress: 75,
+      currentScore: 75,
+      bestScore: 82,
+      status: 'active',
+      completed: false,
+      attempts: 5,
+    },
+    {
+      title: 'Belting Master',
+      progress: 65,
+      currentScore: 65,
+      bestScore: 70,
+      status: 'active',
+      completed: false,
+      attempts: 3,
+    },
+    {
+      title: 'Above It All',
+      progress: 10,
+      currentScore: 10,
+      bestScore: 15,
+      status: 'active',
+      completed: false,
+      attempts: 1,
+    },
+    {
+      title: 'Deep Note King',
+      progress: 88,
+      currentScore: 88,
+      bestScore: 92,
+      status: 'active',
+      completed: false,
+      attempts: 4,
+    },
+    {
+      title: 'Subwoofer Sound',
+      progress: 20,
+      currentScore: 20,
+      bestScore: 20,
+      status: 'active',
+      completed: false,
+      attempts: 1,
+    },
+    {
+      title: 'Scale Speedster',
+      progress: 30,
+      currentScore: 30,
+      bestScore: 40,
+      status: 'active',
+      completed: false,
+      attempts: 3,
+    },
+    {
+      title: 'Rapid Fire',
+      progress: 45,
+      currentScore: 45,
+      bestScore: 55,
+      status: 'active',
+      completed: false,
+      attempts: 4,
+    },
+    {
+      title: 'Climbing Eagle',
+      progress: 5,
+      currentScore: 5,
+      bestScore: 8,
+      status: 'active',
+      completed: false,
+      attempts: 1,
+    },
+    {
+      title: 'Perfect Pitch Pilot',
+      progress: 85,
+      currentScore: 85,
+      bestScore: 90,
+      status: 'active',
+      completed: false,
+      attempts: 6,
+    },
+    {
+      title: 'Crystal Clear',
+      progress: 60,
+      currentScore: 60,
+      bestScore: 65,
+      status: 'active',
+      completed: false,
+      attempts: 2,
+    },
+    {
+      title: 'Major Scale Master',
+      progress: 42,
+      currentScore: 5,
+      bestScore: 5,
+      status: 'active',
+      completed: false,
+      attempts: 3,
+    },
+    {
+      title: 'Minor Scale Sage',
+      progress: 38,
+      currentScore: 3,
+      bestScore: 3,
+      status: 'active',
+      completed: false,
+      attempts: 2,
+    },
   ]
 
   for (const p of progressData) {
     const challengeId = challengeIdMap.get(p.title)
-    if (!challengeId) continue
+    if (challengeId === undefined) continue
     await repo.create({
       userId,
       challengeId,
@@ -424,11 +531,13 @@ async function seedUserBadges(
 
   for (const { name, daysAgo } of earnedBadges) {
     const badgeId = badgeIdMap.get(name)
-    if (!badgeId) continue
+    if (badgeId === undefined) continue
     await repo.create({
       userId,
       badgeId,
-      earnedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * daysAgo).toISOString(),
+      earnedAt: new Date(
+        Date.now() - 1000 * 60 * 60 * 24 * daysAgo,
+      ).toISOString(),
     })
   }
 }
@@ -473,37 +582,123 @@ async function seedUserAchievements(
 
   for (const p of progress) {
     const achievementId = achievementIdMap.get(p.name)
-    if (!achievementId) continue
+    if (achievementId === undefined) continue
     await repo.create({
       userId,
       achievementId,
       progress: p.progress,
       unlocked: p.unlocked,
-      unlockedAt: p.unlocked ? new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString() : undefined,
+      unlockedAt: p.unlocked
+        ? new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString()
+        : undefined,
     })
   }
 }
 
-async function seedLeaderboardEntries(
-  db: DatabaseAdapter,
-): Promise<void> {
+async function seedLeaderboardEntries(db: DatabaseAdapter): Promise<void> {
   const repo = db.getRepository<LeaderboardEntry>('leaderboardEntries')
   const existing = await repo.count()
   if (existing > 0) return
 
   const userId = getDefaultUserId()
-  const categories: LeaderboardCategory[] = ['overall', 'best-score', 'accuracy', 'streak', 'sessions']
+  const categories: LeaderboardCategory[] = [
+    'overall',
+    'best-score',
+    'accuracy',
+    'streak',
+    'sessions',
+  ]
   const period: LeaderboardPeriod = 'all-time'
 
   const users = [
-    { userId: 'lb-u1', displayName: 'MelodyMaven', score: 1543200, rank: 1, streak: 45, totalSessions: 324, bestScore: 98, accuracy: 92, daysAgo: 365 },
-    { userId: 'lb-u2', displayName: 'VocalVirtuoso', score: 1498500, rank: 2, streak: 38, totalSessions: 289, bestScore: 97, accuracy: 91, daysAgo: 730 },
-    { userId: 'lb-u3', displayName: 'PitchPerfectPro', score: 1421000, rank: 3, streak: 52, totalSessions: 356, bestScore: 96, accuracy: 90, daysAgo: 1095 },
-    { userId: 'lb-u4', displayName: 'SingingStar', score: 1385000, rank: 4, streak: 28, totalSessions: 198, bestScore: 95, accuracy: 88, daysAgo: 730 },
-    { userId: 'lb-u5', displayName: 'HarmonyKing', score: 1312000, rank: 5, streak: 31, totalSessions: 245, bestScore: 94, accuracy: 87, daysAgo: 365 },
-    { userId: 'lb-u6', displayName: 'ToneMaster', score: 1248000, rank: 6, streak: 22, totalSessions: 187, bestScore: 93, accuracy: 86, daysAgo: 365 },
-    { userId: 'lb-u7', displayName: 'VoiceWizard', score: 1183000, rank: 7, streak: 25, totalSessions: 156, bestScore: 92, accuracy: 85, daysAgo: 365 },
-    { userId: 'lb-u8', displayName: 'SoundSaga', score: 1125000, rank: 8, streak: 19, totalSessions: 134, bestScore: 91, accuracy: 84, daysAgo: 365 },
+    {
+      userId: 'lb-u1',
+      displayName: 'MelodyMaven',
+      score: 1543200,
+      rank: 1,
+      streak: 45,
+      totalSessions: 324,
+      bestScore: 98,
+      accuracy: 92,
+      daysAgo: 365,
+    },
+    {
+      userId: 'lb-u2',
+      displayName: 'VocalVirtuoso',
+      score: 1498500,
+      rank: 2,
+      streak: 38,
+      totalSessions: 289,
+      bestScore: 97,
+      accuracy: 91,
+      daysAgo: 730,
+    },
+    {
+      userId: 'lb-u3',
+      displayName: 'PitchPerfectPro',
+      score: 1421000,
+      rank: 3,
+      streak: 52,
+      totalSessions: 356,
+      bestScore: 96,
+      accuracy: 90,
+      daysAgo: 1095,
+    },
+    {
+      userId: 'lb-u4',
+      displayName: 'SingingStar',
+      score: 1385000,
+      rank: 4,
+      streak: 28,
+      totalSessions: 198,
+      bestScore: 95,
+      accuracy: 88,
+      daysAgo: 730,
+    },
+    {
+      userId: 'lb-u5',
+      displayName: 'HarmonyKing',
+      score: 1312000,
+      rank: 5,
+      streak: 31,
+      totalSessions: 245,
+      bestScore: 94,
+      accuracy: 87,
+      daysAgo: 365,
+    },
+    {
+      userId: 'lb-u6',
+      displayName: 'ToneMaster',
+      score: 1248000,
+      rank: 6,
+      streak: 22,
+      totalSessions: 187,
+      bestScore: 93,
+      accuracy: 86,
+      daysAgo: 365,
+    },
+    {
+      userId: 'lb-u7',
+      displayName: 'VoiceWizard',
+      score: 1183000,
+      rank: 7,
+      streak: 25,
+      totalSessions: 156,
+      bestScore: 92,
+      accuracy: 85,
+      daysAgo: 365,
+    },
+    {
+      userId: 'lb-u8',
+      displayName: 'SoundSaga',
+      score: 1125000,
+      rank: 8,
+      streak: 19,
+      totalSessions: 134,
+      bestScore: 91,
+      accuracy: 84,
+      daysAgo: 365,
+    },
     {
       userId,
       displayName: 'You',

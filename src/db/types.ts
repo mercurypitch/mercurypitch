@@ -23,10 +23,7 @@ export interface Repository<T extends DbEntity> {
   findById(id: string): Promise<T | null>
   findAll(opts?: QueryOptions<T>): Promise<T[]>
   create(entity: Omit<T, 'id' | 'createdAt' | 'updatedAt'>): Promise<T>
-  update(
-    id: string,
-    patch: Partial<Omit<T, 'id' | 'createdAt'>>,
-  ): Promise<T>
+  update(id: string, patch: Partial<Omit<T, 'id' | 'createdAt'>>): Promise<T>
   delete(id: string): Promise<void>
   count(opts?: QueryOptions<T>): Promise<number>
 }

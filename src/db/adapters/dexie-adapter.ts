@@ -2,13 +2,9 @@
 // Dexie (IndexedDB) Adapter
 // ============================================================
 
-import Dexie, { type Table } from 'dexie'
-import type {
-  DbEntity,
-  DatabaseAdapter,
-  QueryOptions,
-  Repository,
-} from '@/db/types'
+import type { Table } from 'dexie'
+import DexieDB from 'dexie'
+import type { DatabaseAdapter, DbEntity, QueryOptions, Repository, } from '@/db/types'
 
 // ── Schema definitions ──────────────────────────────────────────
 // Store schema format: primaryKey, index1, index2, ...
@@ -32,7 +28,7 @@ const STORE_SCHEMAS: Record<string, string> = {
 
 // ── DexieDatabase class ─────────────────────────────────────────
 
-class DexieDatabase extends Dexie {
+class DexieDatabase extends DexieDB {
   // Dynamic table access — tables are created via schema definition
   // and accessed through the base Dexie.table() method.
 
@@ -66,8 +62,7 @@ class DexieRepository<T extends DbEntity> implements Repository<T> {
 
   async findAll(opts?: QueryOptions<T>): Promise<T[]> {
     // Start with a collection
-    let collection: Dexie.Collection<T, string> =
-      this.table.toCollection()
+    let collection: DexieDB.Collection<T, string> = this.table.toCollection()
 
     // Apply where filters
     if (opts?.where) {
@@ -81,10 +76,8 @@ class DexieRepository<T extends DbEntity> implements Repository<T> {
     }
 
     // Apply ordering — use orderBy which works with indexes
-    if (opts?.orderBy) {
-      const orderCol = this.table.orderBy(
-        opts.orderBy as string,
-      )
+    if (opts?.orderBy !== undefined) {
+      const orderCol = this.table.orderBy(opts.orderBy as string)
       if (opts?.orderDir === 'desc') {
         collection = orderCol.reverse()
       } else {
@@ -105,7 +98,7 @@ class DexieRepository<T extends DbEntity> implements Repository<T> {
     let result = await collection.toArray()
 
     // Apply offset and limit in-memory
-    if (opts?.offset) {
+    if (opts?.offset !== undefined) {
       result = result.slice(opts.offset)
     }
     if (opts?.limit !== undefined) {
@@ -115,13 +108,11 @@ class DexieRepository<T extends DbEntity> implements Repository<T> {
     return result
   }
 
-  async create(
-    entity: Omit<T, 'id' | 'createdAt' | 'updatedAt'>,
-  ): Promise<T> {
+  async create(entity: Omit<T, 'id' | 'createdAt' | 'updatedAt'>): Promise<T> {
     const now = new Date().toISOString()
     const full = {
       ...entity,
-      id: crypto.randomUUID(),
+      id: window.crypto.randomUUID(),
       createdAt: now,
       updatedAt: now,
     } as unknown as T
@@ -189,9 +180,7 @@ export class DexieAdapter implements DatabaseAdapter {
     return repo
   }
 
-  async transaction<R>(
-    fn: (db: DatabaseAdapter) => Promise<R>,
-  ): Promise<R> {
+  async transaction<R>(fn: (db: DatabaseAdapter) => Promise<R>): Promise<R> {
     return this.db.transaction('rw', this.db.tables, async () => {
       return fn(this)
     })

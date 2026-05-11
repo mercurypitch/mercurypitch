@@ -9,7 +9,7 @@ export const appMounted = test.extend<{
 }>({
   isMounted: async ({ page }, use) => {
     await page.addInitScript(() => {
-      (window as any).E2E_TEST_MODE = true
+      ;(window as any).E2E_TEST_MODE = true
     })
     await page.goto('/')
     await page.waitForSelector('#app-tabs', { timeout: 10000 })

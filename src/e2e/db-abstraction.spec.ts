@@ -33,8 +33,14 @@ async function withIndexedDB<T>(
           const result = fn(db)
           if (result instanceof Promise) {
             result.then(
-              (r) => { db.close(); resolve(r) },
-              (e) => { db.close(); reject(e) },
+              (r) => {
+                db.close()
+                resolve(r)
+              },
+              (e) => {
+                db.close()
+                reject(e)
+              },
             )
           } else {
             db.close()
@@ -64,7 +70,9 @@ test.describe('Database Abstraction Layer', () => {
   // DB Initialization Tests
   // ==========================================
 
-  test('IndexedDB is created when feature flag is toggled', async ({ page }) => {
+  test('IndexedDB is created when feature flag is toggled', async ({
+    page,
+  }) => {
     await ensureDb(page)
 
     const dbExists = await page.evaluate(async () => {
@@ -190,7 +198,9 @@ test.describe('Database Abstraction Layer', () => {
     expect(count).toBeGreaterThanOrEqual(1)
   })
 
-  test('Seed is idempotent — reload does not duplicate data', async ({ page }) => {
+  test('Seed is idempotent — reload does not duplicate data', async ({
+    page,
+  }) => {
     await ensureDb(page)
 
     const count1 = await withIndexedDB<number>(
@@ -290,7 +300,9 @@ test.describe('Database Abstraction Layer', () => {
     expect(flagValue).toBe(false)
   })
 
-  test('Feature flag state in DB can be synced to signals via initFeatureFlagsFromDb', async ({ page }) => {
+  test('Feature flag state in DB can be synced to signals via initFeatureFlagsFromDb', async ({
+    page,
+  }) => {
     await page.evaluate(async () => {
       ;(window as any).__pp?.appStore?.setAdvancedFeaturesEnabled(true)
       await new Promise((r) => setTimeout(r, 2000))
@@ -365,8 +377,14 @@ test.describe('Database Abstraction Layer', () => {
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           })
-          tx.oncomplete = () => { db.close(); resolve() }
-          tx.onerror = () => { db.close(); reject(tx.error) }
+          tx.oncomplete = () => {
+            db.close()
+            resolve()
+          }
+          tx.onerror = () => {
+            db.close()
+            reject(tx.error)
+          }
         }
         req.onerror = () => reject(req.error)
       })
@@ -415,10 +433,19 @@ test.describe('Database Abstraction Layer', () => {
           tx.oncomplete = () => {
             const ct = db.transaction('sessionRecords', 'readonly')
             const cr = ct.objectStore('sessionRecords').count()
-            cr.onsuccess = () => { db.close(); resolve(cr.result) }
-            cr.onerror = () => { db.close(); reject(cr.error) }
+            cr.onsuccess = () => {
+              db.close()
+              resolve(cr.result)
+            }
+            cr.onerror = () => {
+              db.close()
+              reject(cr.error)
+            }
           }
-          tx.onerror = () => { db.close(); reject(tx.error) }
+          tx.onerror = () => {
+            db.close()
+            reject(tx.error)
+          }
         }
         req.onerror = () => reject(req.error)
       })
@@ -523,8 +550,14 @@ test.describe('Database Abstraction Layer', () => {
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           })
-          tx.oncomplete = () => { db.close(); resolve() }
-          tx.onerror = () => { db.close(); reject(tx.error) }
+          tx.oncomplete = () => {
+            db.close()
+            resolve()
+          }
+          tx.onerror = () => {
+            db.close()
+            reject(tx.error)
+          }
         }
         req.onerror = () => reject(req.error)
       })
@@ -550,7 +583,9 @@ test.describe('Database Abstraction Layer', () => {
   // Hidden Feature Tab Visibility Tests
   // ==========================================
 
-  test('Hidden feature tabs appear when advanced features enabled', async ({ page }) => {
+  test('Hidden feature tabs appear when advanced features enabled', async ({
+    page,
+  }) => {
     await page.evaluate(async () => {
       ;(window as any).__pp?.appStore?.setAdvancedFeaturesEnabled(true)
       await new Promise((r) => setTimeout(r, 500))
@@ -562,7 +597,9 @@ test.describe('Database Abstraction Layer', () => {
     await expect(page.locator('#tab-analysis')).toBeVisible()
   })
 
-  test('Hidden feature tabs hidden when advanced features disabled', async ({ page }) => {
+  test('Hidden feature tabs hidden when advanced features disabled', async ({
+    page,
+  }) => {
     await page.evaluate(async () => {
       ;(window as any).__pp?.appStore?.setAdvancedFeaturesEnabled(false)
       await new Promise((r) => setTimeout(r, 500))
