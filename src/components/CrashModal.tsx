@@ -6,8 +6,8 @@ import type { Component } from 'solid-js'
 import { createMemo, createSignal, Show } from 'solid-js'
 import { ConsoleLog } from '@/components/ConsoleLog'
 import { APP_VERSION } from '@/lib/defaults'
-import { appError } from '@/stores'
 import { replaceHash } from '@/lib/hash-router'
+import { appError } from '@/stores'
 
 /**
  * App crashed modal shown when an unhandled error occurs.
