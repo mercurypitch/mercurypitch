@@ -29,7 +29,9 @@ describe('UvrProcessControl Component', () => {
     it('renders processing header with loader', () => {
       render(() => <UvrProcessControl {...defaultProps} />)
 
-      expect(screen.getByText(/Separating audio into stems/i)).toBeInTheDocument()
+      expect(
+        screen.getByText(/Separating audio into stems/i),
+      ).toBeInTheDocument()
     })
 
     it('shows progress bar for processing status', () => {
@@ -317,7 +319,9 @@ describe('UvrProcessControl Component', () => {
     it('shows loader icon for processing', () => {
       render(() => <UvrProcessControl {...defaultProps} />)
 
-      expect(screen.getByText(/Separating audio into stems/)).toBeInTheDocument()
+      expect(
+        screen.getByText(/Separating audio into stems/),
+      ).toBeInTheDocument()
     })
 
     it('shows check circle for completed', () => {
