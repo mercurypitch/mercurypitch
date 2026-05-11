@@ -86,46 +86,42 @@ export async function searchLyrics(
 ): Promise<LyricsSearchResult | null> {
   const { artist, title } = parseArtistTitle(rawInput)
 
-  const queries: { artist: string; title: string }[] = []
+  const cleanTitle = title.replace(/\s*\(.*?\)\s*/g, '').trim()
 
-  if (artist && title) {
-    queries.push({ artist, title })
-    queries.push({ artist, title: title.replace(/\s*\(.*?\)\s*/g, '').trim() })
-  }
-  queries.push({ artist: '', title })
-  queries.push({
-    artist: '',
-    title: title.replace(/\s*\(.*?\)\s*/g, '').trim(),
-  })
-
-  // 1. LRCLIB — best source, returns synced LRC + plain text
-  for (const q of queries.slice(0, 3)) {
+  // 1. Try strict GET match first if we have both artist and title
+  if (artist && cleanTitle) {
     try {
-      const result = await fetchLyricsLrclib(q.artist, q.title)
+      const result = await fetchLyricsLrclib(artist, cleanTitle)
       if (result) return result
     } catch {
-      /* continue */
+      /* ignore */
     }
   }
 
-  // 2. Lyrics.ovh — reliable plain text
-  for (const q of queries) {
-    try {
-      const lyrics = await fetchLyricsOvh(q.artist, q.title)
-      if (lyrics !== null) return { text: lyrics, format: 'txt' }
-    } catch {
-      /* continue */
-    }
-  }
+  // 2. Fallback to a single fuzzy search using 'q'
+  // We use the cleaned title (no parentheticals) to maximize match chances
+  const queryStr = artist ? `${artist} ${cleanTitle}` : cleanTitle
 
-  // 3. Astrid.sh — fallback plain text
-  for (const q of queries.slice(0, 2)) {
-    try {
-      const lyrics = await fetchLyricsAstrid(q.artist, q.title)
-      if (lyrics !== null) return { text: lyrics, format: 'txt' }
-    } catch {
-      /* continue */
+  try {
+    const results = await fetchSearchLrclib(queryStr)
+    if (results && results.length > 0) {
+      // Find best match with synced lyrics first
+      const synced = results.find(
+        (r) => r.syncedLyrics && r.syncedLyrics.length > 20,
+      )
+      if (synced && synced.syncedLyrics) {
+        return { text: synced.syncedLyrics, format: 'lrc' }
+      }
+      // Fallback to any plain lyrics
+      const plain = results.find(
+        (r) => r.plainLyrics && r.plainLyrics.length > 10,
+      )
+      if (plain && plain.plainLyrics) {
+        return { text: plain.plainLyrics, format: 'txt' }
+      }
     }
+  } catch {
+    /* ignore */
   }
 
   return null
@@ -139,9 +135,12 @@ async function fetchLyricsLrclib(
   params.set('track_name', title)
   if (artist) params.set('artist_name', artist)
 
-  const { signal, clear } = createTimeoutSignal(7000)
+  const { signal, clear } = createTimeoutSignal(25000)
   const resp = await fetch(`https://lrclib.net/api/get?${params.toString()}`, {
     signal,
+    headers: {
+      'LrcLib-Client': 'PitchPerfect/1.0.0',
+    },
   })
   clear()
   if (!resp.ok) return null
@@ -155,49 +154,6 @@ async function fetchLyricsLrclib(
   // Fall back to plain lyrics
   if (typeof data?.plainLyrics === 'string' && data.plainLyrics.length > 10) {
     return { text: data.plainLyrics, format: 'txt' }
-  }
-  return null
-}
-
-async function fetchLyricsOvh(
-  artist: string,
-  title: string,
-): Promise<string | null> {
-  if (!artist) return null // lyrics.ovh requires artist
-
-  const url = `https://api.lyrics.ovh/v1/${encodeURIComponent(artist)}/${encodeURIComponent(title)}`
-
-  const { signal, clear } = createTimeoutSignal(6000)
-  const resp = await fetch(url, { signal })
-  clear()
-  if (!resp.ok) return null
-
-  const data = await resp.json()
-  if (typeof data?.lyrics === 'string' && data.lyrics.length > 10) {
-    return data.lyrics
-  }
-  return null
-}
-
-async function fetchLyricsAstrid(
-  artist: string,
-  title: string,
-): Promise<string | null> {
-  const params = new URLSearchParams()
-  if (artist) params.set('artist', artist)
-  params.set('title', title)
-
-  const { signal, clear } = createTimeoutSignal(6000)
-  const resp = await fetch(
-    `https://lyrics.astrid.sh/api/lyrics?${params.toString()}`,
-    { signal },
-  )
-  clear()
-  if (!resp.ok) return null
-
-  const data = await resp.json()
-  if (typeof data?.lyrics === 'string' && data.lyrics.length > 10) {
-    return data.lyrics
   }
   return null
 }
@@ -217,16 +173,22 @@ export async function searchLyricsMulti(
 ): Promise<LyricsSearchMatch[]> {
   const { artist, title } = parseArtistTitle(rawInput)
 
-  const queries: { artist: string; title: string }[] = []
+  const cleanTitle = title.replace(/\s*\(.*?\)\s*/g, '').trim()
+  const rawQueries: string[] = []
+
   if (artist && title) {
-    queries.push({ artist, title })
-    queries.push({ artist, title: title.replace(/\s*\(.*?\)\s*/g, '').trim() })
+    if (title !== cleanTitle) {
+      rawQueries.push(`${artist} ${cleanTitle}`)
+    }
+    rawQueries.push(`${artist} ${title}`)
   }
-  queries.push({ artist: '', title })
-  queries.push({
-    artist: '',
-    title: title.replace(/\s*\(.*?\)\s*/g, '').trim(),
-  })
+  if (title !== cleanTitle) {
+    rawQueries.push(cleanTitle)
+  }
+  rawQueries.push(title)
+
+  // Deduplicate to avoid making identical API calls
+  const queries = [...new Set(rawQueries)]
 
   const seen = new Set<number>()
   const results: LyricsSearchMatch[] = []
@@ -234,13 +196,17 @@ export async function searchLyricsMulti(
   for (const q of queries) {
     if (results.length >= 20) break
     try {
-      const batch = await fetchSearchLrclib(q.artist, q.title)
-      for (const match of batch) {
-        if (results.length >= 20) break
-        if (!seen.has(match.id)) {
-          seen.add(match.id)
-          results.push(match)
+      const batch = await fetchSearchLrclib(q)
+      if (batch && batch.length > 0) {
+        for (const match of batch) {
+          if (results.length >= 20) break
+          if (!seen.has(match.id)) {
+            seen.add(match.id)
+            results.push(match)
+          }
         }
+        // If we found results for this query, stop falling back to avoid rate limits
+        if (results.length > 0) break
       }
     } catch {
       /* continue */
@@ -254,8 +220,13 @@ export async function fetchLyricsById(
   id: number,
 ): Promise<LyricsSearchResult | null> {
   try {
-    const { signal, clear } = createTimeoutSignal(7000)
-    const resp = await fetch(`https://lrclib.net/api/get/${id}`, { signal })
+    const { signal, clear } = createTimeoutSignal(25000)
+    const resp = await fetch(`https://lrclib.net/api/get/${id}`, {
+      signal,
+      headers: {
+        'LrcLib-Client': 'PitchPerfect/1.0.0',
+      },
+    })
     clear()
     if (!resp.ok) return null
 
@@ -276,46 +247,71 @@ export async function fetchLyricsById(
   }
 }
 
-async function fetchSearchLrclib(
-  artist: string,
-  title: string,
-): Promise<LyricsSearchMatch[]> {
+async function fetchSearchLrclib(query: string): Promise<LyricsSearchMatch[]> {
   const params = new URLSearchParams()
-  params.set('track_name', title)
-  if (artist) params.set('artist_name', artist)
+  params.set('q', query)
 
-  const { signal, clear } = createTimeoutSignal(7000)
-  const resp = await fetch(
-    `https://lrclib.net/api/search?${params.toString()}`,
-    { signal },
-  )
-  clear()
-  if (!resp.ok) return []
+  console.log(`[Lyrics Service] -> Fetching search API: q="${query}"`)
+  const { signal, clear } = createTimeoutSignal(25000)
 
-  const data = await resp.json()
-  if (!Array.isArray(data)) return []
+  try {
+    const resp = await fetch(
+      `https://lrclib.net/api/search?${params.toString()}`,
+      {
+        signal,
+        headers: {
+          'LrcLib-Client': 'PitchPerfect/1.0.0',
+        },
+      },
+    )
+    clear()
 
-  return data
-    .filter((item: Record<string, unknown>) => typeof item.id === 'number')
-    .map((item: Record<string, unknown>) => ({
-      id: item.id as number,
-      artist:
-        typeof item.artistName === 'string'
-          ? item.artistName
-          : typeof item.artist === 'string'
-            ? item.artist
-            : 'Unknown',
-      title:
-        typeof item.trackName === 'string'
-          ? item.trackName
-          : typeof item.name === 'string'
-            ? item.name
-            : 'Unknown',
-      plainLyrics:
-        typeof item.plainLyrics === 'string' ? item.plainLyrics : undefined,
-      syncedLyrics:
-        typeof item.syncedLyrics === 'string' ? item.syncedLyrics : undefined,
-    }))
+    console.log(
+      `[Lyrics Service] <- Search API status: ${resp.status} for q="${query}"`,
+    )
+
+    if (!resp.ok) {
+      console.warn(
+        `[Lyrics Service] Search API error response: ${resp.statusText}`,
+      )
+      return []
+    }
+
+    const data = await resp.json()
+    if (!Array.isArray(data)) {
+      console.warn(`[Lyrics Service] Search API returned non-array data.`)
+      return []
+    }
+
+    console.log(
+      `[Lyrics Service] <- Search API returned ${data.length} results.`,
+    )
+
+    return data
+      .filter((item: Record<string, unknown>) => typeof item.id === 'number')
+      .map((item: Record<string, unknown>) => ({
+        id: item.id as number,
+        artist:
+          typeof item.artistName === 'string'
+            ? item.artistName
+            : typeof item.artist === 'string'
+              ? item.artist
+              : 'Unknown',
+        title:
+          typeof item.trackName === 'string'
+            ? item.trackName
+            : typeof item.name === 'string'
+              ? item.name
+              : 'Unknown',
+        plainLyrics:
+          typeof item.plainLyrics === 'string' ? item.plainLyrics : undefined,
+        syncedLyrics:
+          typeof item.syncedLyrics === 'string' ? item.syncedLyrics : undefined,
+      }))
+  } catch (error) {
+    console.error(`[Lyrics Service] Search API error:`, error)
+    return []
+  }
 }
 
 // ── Text Parsing ─────────────────────────────────────────────
