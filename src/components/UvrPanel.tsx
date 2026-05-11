@@ -13,7 +13,7 @@ import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
 import { cancelUvrSession, completeUvrSession, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, getAllUvrSessions, getAllUvrSessionsReactive, getUvrProcessingMode, getUvrSession, getUvrSessionByHash, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrProcessingMode, startUvrSession, updateUvrSessionOutputs, uvrProcessingMode, } from '@/stores/app-store'
 import { showNotification } from '@/stores/notifications-store'
 import { StemMixer, UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrSettings, UvrUploadControl, } from '.'
-import { CheckCircle, FileUpload, Music, Settings, Trash2, X, } from './icons'
+import { CheckCircle, ImportFile, Music, Settings, Trash2, X, } from './icons'
 
 export type UvrView = 'upload' | 'processing' | 'results' | 'mixer'
 
@@ -657,7 +657,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 props.onSessionChange?.(null)
               }}
             >
-              <FileUpload />
+              <ImportFile />
               <span>Sessions</span>
             </button>
             <button
@@ -823,7 +823,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 {session()?.originalFile?.name ?? 'audio'}
               </h4>
               <button class="back-btn" onClick={() => setCurrentView('upload')}>
-                <FileUpload /> Back to Upload
+                <ImportFile /> Back to Upload
               </button>
             </div>
             {session() && (
