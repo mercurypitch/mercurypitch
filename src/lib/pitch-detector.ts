@@ -622,8 +622,8 @@ export class PitchDetector {
 
   /** Set minimum amplitude (RMS) threshold (0-1) */
   setMinAmplitude(value: number): void {
-    // Convert 1-10 scale to 0.01-0.20 range
-    this.minAmplitude = Math.max(0.01, Math.min(0.2, (value / 10) * 0.2))
+    // Convert 1-10 scale to 0.005-0.05 range (much more sensitive)
+    this.minAmplitude = Math.max(0.005, Math.min(0.05, (value / 10) * 0.05))
   }
 
   /** Set the pitch detection algorithm at runtime */

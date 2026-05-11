@@ -248,7 +248,9 @@ export const SettingsPanel: Component = () => {
               }}
             />
             <span class="settings-val">{s().minAmplitude}</span>
-            <small>Minimum signal loudness required</small>
+            <small>
+              Minimum signal loudness required (applies to all algorithms).
+            </small>
           </div>
         </div>
 

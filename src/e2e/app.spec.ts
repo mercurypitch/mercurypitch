@@ -24,7 +24,7 @@ test.describe('PitchPerfect App', () => {
     await page.waitForTimeout(300)
   })
 
-  test('loads without console errors', async ({ page }) => {
+  test('loads without console errors @smoke', async ({ page }) => {
     const errors: string[] = []
     page.on('console', (msg) => {
       if (msg.type() === 'error') {
@@ -56,7 +56,7 @@ test.describe('PitchPerfect App', () => {
     await expect(practiceTab).toHaveClass(/active/)
   })
 
-  test('tab navigation switches content', async ({ page }) => {
+  test('tab navigation switches content @smoke', async ({ page }) => {
     await dismissOverlays(page)
     // Click Editor tab and verify its content
     await page.locator('#tab-compose').click()
@@ -257,7 +257,7 @@ test.describe('PitchPerfect App', () => {
     }
   })
 
-  test('can place a note on the piano roll', async ({ page }) => {
+  test('can place a note on the piano roll @smoke', async ({ page }) => {
     await page.locator('#tab-compose').click()
     await page.waitForTimeout(2000)
 
