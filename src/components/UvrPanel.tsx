@@ -12,9 +12,9 @@ import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
 import { cancelUvrSession, completeUvrSession, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, getAllUvrSessions, getAllUvrSessionsReactive, getUvrProcessingMode, getUvrSession, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrProcessingMode, startUvrSession, updateUvrSessionOutputs, uvrProcessingMode, } from '@/stores/app-store'
 import { showNotification } from '@/stores/notifications-store'
 import { StemMixer, UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrSettings, UvrUploadControl, } from '.'
-import { CheckCircle, FileUpload, History, Music, Settings, Trash2, X, } from './icons'
+import { CheckCircle, FileUpload, Music, Settings, Trash2, X, } from './icons'
 
-export type UvrView = 'upload' | 'processing' | 'results' | 'history' | 'mixer'
+export type UvrView = 'upload' | 'processing' | 'results' | 'mixer'
 
 interface UvrPanelProps {
   /** Initial view from hash route — only used on first mount */
@@ -550,13 +550,6 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     }
   }
 
-  // Refresh outputs when viewing history
-  createEffect(() => {
-    if (currentView() === 'history') {
-      refreshSessionOutputs()
-    }
-  })
-
   return (
     <div class="uvr-panel">
       {/* Header */}
@@ -631,13 +624,6 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
           >
             <Music />
           </button>
-          <button
-            class="header-btn header-btn-ghost"
-            onClick={() => setCurrentView('history')}
-            title="History"
-          >
-            <History />
-          </button>
         </div>
       </div>
 
@@ -676,22 +662,34 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
 
         <Show when={currentView() === 'upload'}>
           <div class="view-section upload-section">
-            {/* Sessions list first (if any exist) */}
+            <div class="section-header">
+              <h4>Upload Audio</h4>
+              <button class="guide-toggle" onClick={() => setShowGuide(true)}>
+                <Music /> See Guide
+              </button>
+            </div>
+            <UvrUploadControl
+              onFileSelect={handleFileSelect}
+              onFileReady={setSelectedFile}
+              onProcessStart={(file) => {
+                void handleProcessStart(file)
+              }}
+              processing={session()?.status === 'processing'}
+            />
             <Show when={allSessions().length > 0}>
               <div class="section-header">
                 <h4>Recent Sessions</h4>
                 <button
-                  class="back-btn"
-                  onClick={() => setCurrentView('history')}
+                  class="delete-all-btn"
+                  onClick={() => setShowDeleteAllConfirm(true)}
                 >
-                  View All ({allSessions().length})
+                  <Trash2 /> Delete All
                 </button>
               </div>
               <div class="history-list history-list-inline">
                 <For
                   each={allSessions()
-                    .sort((a, b) => b.createdAt - a.createdAt)
-                    .slice(0, 12)}
+                    .sort((a, b) => b.createdAt - a.createdAt)}
                 >
                   {(s) => (
                     <UvrSessionResult
@@ -717,32 +715,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                   )}
                 </For>
               </div>
-              <div class="upload-divider">
-                <span class="upload-divider-text">or start a new session</span>
-              </div>
-              <div class="section-header">
-                <h4>Upload Audio</h4>
-                <button class="guide-toggle" onClick={() => setShowGuide(true)}>
-                  <Music /> See Guide
-                </button>
-              </div>
             </Show>
-            <Show when={allSessions().length === 0}>
-              <div class="section-header">
-                <h4>Upload Audio</h4>
-                <button class="guide-toggle" onClick={() => setShowGuide(true)}>
-                  <Music /> See Guide
-                </button>
-              </div>
-            </Show>
-            <UvrUploadControl
-              onFileSelect={handleFileSelect}
-              onFileReady={setSelectedFile}
-              onProcessStart={(file) => {
-                void handleProcessStart(file)
-              }}
-              processing={session()?.status === 'processing'}
-            />
           </div>
         </Show>
 
@@ -817,67 +790,6 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
           </div>
         </Show>
 
-        <Show when={currentView() === 'history'}>
-          <div class="view-section history-section">
-            <div class="section-header">
-              <h4>Processing History</h4>
-              <div class="section-header-actions">
-                <Show when={allSessions().length > 0}>
-                  <button
-                    class="delete-all-btn"
-                    onClick={() => setShowDeleteAllConfirm(true)}
-                  >
-                    <Trash2 /> Delete All
-                  </button>
-                </Show>
-                <button
-                  class="back-btn"
-                  onClick={() => setCurrentView('upload')}
-                >
-                  <FileUpload /> New Upload
-                </button>
-              </div>
-            </div>
-            <div class="history-list">
-              {allSessions().length === 0 ? (
-                <div class="history-empty">
-                  <Music />
-                  <p>No processing history yet</p>
-                  <button onClick={() => setCurrentView('upload')}>
-                    Start First Session
-                  </button>
-                </div>
-              ) : (
-                <For
-                  each={allSessions().sort((a, b) => b.createdAt - a.createdAt)}
-                >
-                  {(s) => (
-                    <UvrSessionResult
-                      sessionId={s.sessionId}
-                      onView={() => handleSessionView(s.sessionId)}
-                      onExport={(type) => {
-                        void handleExportSession(
-                          s.sessionId,
-                          type as 'vocal' | 'instrumental' | 'vocal-midi',
-                        )
-                      }}
-                      onOpenMixer={(sessionId, stems) =>
-                        handleOpenMixerFromHistory(sessionId, stems)
-                      }
-                      onRetry={(sessionId) => {
-                        retryUvrSession(sessionId)
-                        void handleProcessStart(
-                          sessionId,
-                          getUvrSession(sessionId)?.processingMode,
-                        )
-                      }}
-                    />
-                  )}
-                </For>
-              )}
-            </div>
-          </div>
-        </Show>
       </div>
 
       {/* Delete All Confirmation Modal */}
