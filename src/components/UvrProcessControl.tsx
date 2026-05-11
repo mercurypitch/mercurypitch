@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createEffect, createMemo, createSignal, For, onCleanup, Show } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, onCleanup, Show, } from 'solid-js'
 import { CheckCircle, Cpu, FilePlus, Loader2, Music, RotateCcw, Server, Settings, Trash2, XCircle, Zap, } from './icons'
 
 interface ProcessControlProps {
@@ -60,10 +60,18 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
     if (props.status === 'processing') {
       timer = setInterval(() => setTick((t) => t + 1), 200)
     } else {
-      if (timer) { clearInterval(timer); timer = null }
+      if (timer) {
+        clearInterval(timer)
+        timer = null
+      }
       setTick(0)
     }
-    onCleanup(() => { if (timer) { clearInterval(timer); timer = null } })
+    onCleanup(() => {
+      if (timer) {
+        clearInterval(timer)
+        timer = null
+      }
+    })
   })
 
   const displayTime = createMemo(() => {
@@ -71,7 +79,7 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
     // When a progress event arrives, props.processingTime jumps forward.
     // Between events, the local tick counter fills the gaps smoothly.
     // Use the larger of the two to avoid regressing during render cycles.
-    const local = (tick() * 200)
+    const local = tick() * 200
     return Math.max(props.processingTime ?? 0, local)
   })
 

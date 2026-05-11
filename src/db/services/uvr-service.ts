@@ -2,8 +2,8 @@
 // UVR Service — DB-backed UVR session & stem blob operations
 // ============================================================
 
-import type { UvrSessionRecord, UvrStemBlob } from '@/db/entities'
 import { getDb } from '@/db'
+import type { UvrSessionRecord, UvrStemBlob } from '@/db/entities'
 import { getUserId } from '@/db/seed'
 
 // ── Stem Blob Operations ─────────────────────────────────────────
@@ -21,7 +21,8 @@ export async function saveStemBlob(
     const created = await repo.create({
       sessionId,
       stemType,
-      mimeType: blob.type || (fileName.endsWith('.mp3') ? 'audio/mpeg' : 'audio/wav'),
+      mimeType:
+        blob.type || (fileName.endsWith('.mp3') ? 'audio/mpeg' : 'audio/wav'),
       data,
       size: blob.size,
       fileName,
@@ -96,25 +97,23 @@ export async function hydrateStemUrls(
 
 // ── Session Record Operations ────────────────────────────────────
 
-export async function saveUvrSession(
-  session: {
-    sessionId: string
-    status: string
-    progress: number
-    originalFileName: string
-    originalFileSize: number
-    originalFileType: string
-    processingMode: string
-    provider?: string
-    numChunks?: number
-    processingTime?: number
-    error?: string
-    fileHash?: string
-    vocalStemId?: string
-    instrumentalStemId?: string
-    originalFileBlobId?: string
-  },
-): Promise<string | null> {
+export async function saveUvrSession(session: {
+  sessionId: string
+  status: string
+  progress: number
+  originalFileName: string
+  originalFileSize: number
+  originalFileType: string
+  processingMode: string
+  provider?: string
+  numChunks?: number
+  processingTime?: number
+  error?: string
+  fileHash?: string
+  vocalStemId?: string
+  instrumentalStemId?: string
+  originalFileBlobId?: string
+}): Promise<string | null> {
   try {
     const db = await getDb()
     const repo = db.getRepository<UvrSessionRecord>('uvrSessions')

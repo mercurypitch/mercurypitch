@@ -4,16 +4,16 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, Show } from 'solid-js'
+import { findSessionByFileHash, getOriginalFileBlob, hydrateStemUrls, saveUvrSession, } from '@/db/services/uvr-service'
 import { computeFileHash } from '@/lib/file-hash'
 import { generateVocalMidi } from '@/lib/midi-generator'
 import { getProcessStatus } from '@/lib/uvr-api'
 import { cancelUvrPipeline, destroyPipeline, preInitModel, runUvrPipeline, } from '@/lib/uvr-processing-pipeline'
-import { findSessionByFileHash, getOriginalFileBlob, hydrateStemUrls, saveUvrSession, } from '@/db/services/uvr-service'
 import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
 import { cancelUvrSession, completeUvrSession, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, getAllUvrSessions, getAllUvrSessionsReactive, getUvrProcessingMode, getUvrSession, getUvrSessionByHash, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrProcessingMode, startUvrSession, updateUvrSessionOutputs, uvrProcessingMode, } from '@/stores/app-store'
 import { showNotification } from '@/stores/notifications-store'
 import { StemMixer, UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrSettings, UvrUploadControl, } from '.'
-import { CheckCircle, ImportFile, Music, Settings, Trash2, X, } from './icons'
+import { CheckCircle, ImportFile, Music, Settings, Trash2, X } from './icons'
 
 export type UvrView = 'upload' | 'processing' | 'results' | 'mixer'
 
@@ -168,7 +168,10 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       const hydrated = await ensureHydrated(existing)
       setCurrentUvrSession(hydrated)
       setCurrentView('results')
-      showNotification('This file was already processed — loaded existing stems.', 'info')
+      showNotification(
+        'This file was already processed — loaded existing stems.',
+        'info',
+      )
       return
     }
 
@@ -180,7 +183,10 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
         const hydrated = await ensureHydrated(stored)
         setCurrentUvrSession(hydrated)
         setCurrentView('results')
-        showNotification('This file was already processed — loaded existing stems.', 'info')
+        showNotification(
+          'This file was already processed — loaded existing stems.',
+          'info',
+        )
         return
       }
     }
@@ -337,10 +343,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       return
     }
     // Refresh outputs from API if we have an API session ID
-    if (
-      session.apiSessionId !== undefined &&
-      session.status === 'completed'
-    ) {
+    if (session.apiSessionId !== undefined && session.status === 'completed') {
       refreshSessionOutputs(session)
     }
     // Hydrate blob URLs from IndexedDB before showing results
@@ -352,7 +355,10 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       const all = getAllUvrSessions()
       const idx = all.findIndex((s) => s.sessionId === sessionId)
       if (idx !== -1) {
-        all[idx] = { ...all[idx], outputs: { ...all[idx].outputs, ...hydrated.outputs } }
+        all[idx] = {
+          ...all[idx],
+          outputs: { ...all[idx].outputs, ...hydrated.outputs },
+        }
         saveAllUvrSessions(all)
       }
     }
@@ -579,7 +585,10 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
           const all = getAllUvrSessions()
           const idx = all.findIndex((x) => x.sessionId === s.sessionId)
           if (idx !== -1) {
-            all[idx] = { ...all[idx], outputs: { ...all[idx].outputs, ...urls } }
+            all[idx] = {
+              ...all[idx],
+              outputs: { ...all[idx].outputs, ...urls },
+            }
             saveAllUvrSessions(all)
           }
         }
@@ -722,8 +731,10 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
               </button>
             </div>
             <UvrUploadControl
-              onFileSelect={handleFileSelect}
-              onFileReady={setSelectedFile}
+              onFileSelect={(file) => {
+                void handleFileSelect(file)
+              }}
+              onFileReady={(file) => setSelectedFile(file)}
               onProcessStart={(file) => {
                 void handleProcessStart(file)
               }}
@@ -741,22 +752,23 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
               </div>
               <div class="history-list history-list-inline">
                 <For
-                  each={allSessions()
-                    .sort((a, b) => b.createdAt - a.createdAt)}
+                  each={allSessions().sort((a, b) => b.createdAt - a.createdAt)}
                 >
                   {(s) => (
                     <UvrSessionResult
                       sessionId={s.sessionId}
-                      onView={() => handleSessionView(s.sessionId)}
+                      onView={() => {
+                        void handleSessionView(s.sessionId)
+                      }}
                       onExport={(type) => {
                         void handleExportSession(
                           s.sessionId,
                           type as 'vocal' | 'instrumental' | 'vocal-midi',
                         )
                       }}
-                      onOpenMixer={(sessionId, stems) =>
-                        handleOpenMixerFromHistory(sessionId, stems)
-                      }
+                      onOpenMixer={(sessionId, stems) => {
+                        void handleOpenMixerFromHistory(sessionId, stems)
+                      }}
                       onRetry={(sessionId) => {
                         retryUvrSession(sessionId)
                         void handleProcessStart(
@@ -833,8 +845,12 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 processingTime={session()!.processingTime}
                 sessionId={session()!.sessionId}
                 originalFileName={session()?.originalFile?.name}
-                onStartPractice={handlePracticeStart}
-                onStartMix={handleMixStart}
+                onStartPractice={(mode) => {
+                  void handlePracticeStart(mode)
+                }}
+                onStartMix={(stems) => {
+                  void handleMixStart(stems)
+                }}
                 onExport={(type) => {
                   void handleExport(type)
                 }}
@@ -856,7 +872,6 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
             />
           </div>
         </Show>
-
       </div>
 
       {/* Delete All Confirmation Modal */}
@@ -929,7 +944,6 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
           Generating MIDI... {midiExportProgress()}%
         </div>
       </Show>
-
     </div>
   )
 }

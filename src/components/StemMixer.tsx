@@ -1982,10 +1982,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         if (nodes.gainNode) {
           try {
             nodes.gainNode.gain.cancelScheduledValues(now)
-            nodes.gainNode.gain.setValueAtTime(
-              nodes.gainNode.gain.value,
-              now,
-            )
+            nodes.gainNode.gain.setValueAtTime(nodes.gainNode.gain.value, now)
             nodes.gainNode.gain.linearRampToValueAtTime(0, now + fadeOutSecs)
           } catch (_) {
             /* already disconnected */
