@@ -8,8 +8,7 @@ import { ChangelogModal } from '@/components/ChangelogModal'
 import { ConsoleLog } from '@/components/ConsoleLog'
 import { TierSelector } from '@/components/TierSelector'
 import { APP_VERSION, COMMIT_SHA, IS_DEV } from '@/lib/defaults'
-import { appStore } from '@/stores'
-import { adsr, playbackSpeed, setPlaybackSpeed, setSensitivity, settings, } from '@/stores'
+import { adsr, applySensitivityPreset, gridLinesVisible, playbackSpeed, reverbConfig, sensitivityPreset, setAttack, setBand, setDecay, setDetectionThreshold, setGridLinesVisible, setMinAmplitude, setMinConfidence, setPlaybackSpeed, setRelease, setReverbType, setReverbWetness, setSensitivity, setShowFocusBall, setShowPitchDisplay, setShowPlaybackBall, setShowPlaybackSetup, setShowPlayhead, setShowStats, setSustain, settings, setTheme, setTonicAnchor, showFocusBall, showPitchDisplay, showPlaybackBall, showPlaybackSetupInfo, showPlayhead, showStats, theme, } from '@/stores'
 import { showConsoleLog, toggleConsoleLog } from '@/stores/console-store'
 import type { PitchAlgorithm } from '@/stores/settings-store'
 import type { PitchBufferSize } from '@/stores/settings-store'
@@ -49,7 +48,7 @@ export const SettingsPanel: Component = () => {
               : 50),
     )
     if (idx >= 0) {
-      appStore.setBand(idx, num)
+      setBand(idx, num)
     }
   }
 
@@ -81,9 +80,9 @@ export const SettingsPanel: Component = () => {
             <label for="preset-select">Environment</label>
             <select
               id="preset-select"
-              value={appStore.sensitivityPreset()}
+              value={sensitivityPreset()}
               onChange={(e) => {
-                appStore.applySensitivityPreset(
+                applySensitivityPreset(
                   e.currentTarget.value as 'quiet' | 'home' | 'noisy',
                 )
               }}
@@ -174,9 +173,7 @@ export const SettingsPanel: Component = () => {
               step="1"
               value={Math.round(s().detectionThreshold * 100)}
               onInput={(e) => {
-                appStore.setDetectionThreshold(
-                  parseInt(e.currentTarget.value) / 100,
-                )
+                setDetectionThreshold(parseInt(e.currentTarget.value) / 100)
               }}
             />
             <span class="settings-val">
@@ -212,7 +209,7 @@ export const SettingsPanel: Component = () => {
               step="5"
               value={Math.round(s().minConfidence * 100)}
               onInput={(e) => {
-                appStore.setMinConfidence(parseInt(e.currentTarget.value) / 100)
+                setMinConfidence(parseInt(e.currentTarget.value) / 100)
               }}
             />
             <span class="settings-val">
@@ -231,7 +228,7 @@ export const SettingsPanel: Component = () => {
               step="1"
               value={s().minAmplitude}
               onInput={(e) => {
-                appStore.setMinAmplitude(parseInt(e.currentTarget.value))
+                setMinAmplitude(parseInt(e.currentTarget.value))
               }}
             />
             <span class="settings-val">{s().minAmplitude}</span>
@@ -252,7 +249,7 @@ export const SettingsPanel: Component = () => {
                 id="set-tonic-anchor"
                 checked={s().tonicAnchor}
                 onChange={(e) => {
-                  appStore.setTonicAnchor(e.currentTarget.checked)
+                  setTonicAnchor(e.currentTarget.checked)
                 }}
               />
               <span class="settings-slider" />
@@ -370,7 +367,7 @@ export const SettingsPanel: Component = () => {
               step="10"
               value={adsr().attack}
               onInput={(e) => {
-                appStore.setAttack(parseInt(e.currentTarget.value))
+                setAttack(parseInt(e.currentTarget.value))
               }}
             />
             <span class="settings-val">{adsr().attack}ms</span>
@@ -387,7 +384,7 @@ export const SettingsPanel: Component = () => {
               step="10"
               value={adsr().decay}
               onInput={(e) => {
-                appStore.setDecay(parseInt(e.currentTarget.value))
+                setDecay(parseInt(e.currentTarget.value))
               }}
             />
             <span class="settings-val">{adsr().decay}ms</span>
@@ -404,7 +401,7 @@ export const SettingsPanel: Component = () => {
               step="5"
               value={adsr().sustain}
               onInput={(e) => {
-                appStore.setSustain(parseInt(e.currentTarget.value))
+                setSustain(parseInt(e.currentTarget.value))
               }}
             />
             <span class="settings-val">{adsr().sustain}%</span>
@@ -421,7 +418,7 @@ export const SettingsPanel: Component = () => {
               step="50"
               value={adsr().release}
               onInput={(e) => {
-                appStore.setRelease(parseInt(e.currentTarget.value))
+                setRelease(parseInt(e.currentTarget.value))
               }}
             />
             <span class="settings-val">{adsr().release}ms</span>
@@ -441,9 +438,9 @@ export const SettingsPanel: Component = () => {
               <input
                 type="checkbox"
                 id="vis-gridlines"
-                checked={appStore.gridLinesVisible()}
+                checked={gridLinesVisible()}
                 onChange={(e) => {
-                  appStore.setGridLinesVisible(e.currentTarget.checked)
+                  setGridLinesVisible(e.currentTarget.checked)
                 }}
               />
               <span class="settings-slider" />
@@ -476,9 +473,9 @@ export const SettingsPanel: Component = () => {
               <input
                 type="checkbox"
                 id="vis-playback-setup"
-                checked={appStore.showPlaybackSetupInfo()}
+                checked={showPlaybackSetupInfo()}
                 onChange={(e) => {
-                  appStore.setShowPlaybackSetup(e.currentTarget.checked)
+                  setShowPlaybackSetup(e.currentTarget.checked)
                 }}
               />
               <span class="settings-slider" />
@@ -492,9 +489,9 @@ export const SettingsPanel: Component = () => {
               <input
                 type="checkbox"
                 id="vis-stats"
-                checked={appStore.showStats()}
+                checked={showStats()}
                 onChange={(e) => {
-                  appStore.setShowStats(e.currentTarget.checked)
+                  setShowStats(e.currentTarget.checked)
                 }}
               />
               <span class="settings-slider" />
@@ -508,9 +505,9 @@ export const SettingsPanel: Component = () => {
               <input
                 type="checkbox"
                 id="vis-pitch-display"
-                checked={appStore.showPitchDisplay()}
+                checked={showPitchDisplay()}
                 onChange={(e) => {
-                  appStore.setShowPitchDisplay(e.currentTarget.checked)
+                  setShowPitchDisplay(e.currentTarget.checked)
                 }}
               />
               <span class="settings-slider" />
@@ -543,9 +540,9 @@ export const SettingsPanel: Component = () => {
               <input
                 type="checkbox"
                 id="vis-playback-ball"
-                checked={appStore.showPlaybackBall()}
+                checked={showPlaybackBall()}
                 onChange={(e) => {
-                  appStore.setShowPlaybackBall(e.currentTarget.checked)
+                  setShowPlaybackBall(e.currentTarget.checked)
                 }}
               />
               <span class="settings-slider" />
@@ -562,9 +559,9 @@ export const SettingsPanel: Component = () => {
               <input
                 type="checkbox"
                 id="vis-focus-ball"
-                checked={appStore.showFocusBall()}
+                checked={showFocusBall()}
                 onChange={(e) => {
-                  appStore.setShowFocusBall(e.currentTarget.checked)
+                  setShowFocusBall(e.currentTarget.checked)
                 }}
               />
               <span class="settings-slider" />
@@ -580,9 +577,9 @@ export const SettingsPanel: Component = () => {
               <input
                 type="checkbox"
                 id="vis-playhead"
-                checked={appStore.showPlayhead()}
+                checked={showPlayhead()}
                 onChange={(e) => {
-                  appStore.setShowPlayhead(e.currentTarget.checked)
+                  setShowPlayhead(e.currentTarget.checked)
                 }}
               />
               <span class="settings-slider" />
@@ -595,9 +592,9 @@ export const SettingsPanel: Component = () => {
             <label>
               <select
                 id="vis-theme"
-                value={appStore.theme()}
+                value={theme()}
                 onChange={(e) => {
-                  appStore.setTheme(e.currentTarget.value as 'dark' | 'light')
+                  setTheme(e.currentTarget.value as 'dark' | 'light')
                 }}
               >
                 <option value="dark">Dark</option>
@@ -738,9 +735,9 @@ export const SettingsPanel: Component = () => {
             <label for="reverb-type">Type</label>
             <select
               id="reverb-type"
-              value={appStore.reverb().type}
+              value={reverbConfig().type}
               onChange={(e) => {
-                appStore.setReverbType(
+                setReverbType(
                   e.currentTarget.value as
                     | 'off'
                     | 'room'
@@ -764,12 +761,12 @@ export const SettingsPanel: Component = () => {
               min="0"
               max="100"
               step="5"
-              value={appStore.reverb().wetness}
+              value={reverbConfig().wetness}
               onInput={(e) => {
-                appStore.setReverbWetness(parseInt(e.currentTarget.value))
+                setReverbWetness(parseInt(e.currentTarget.value))
               }}
             />
-            <span class="settings-val">{appStore.reverb().wetness}%</span>
+            <span class="settings-val">{reverbConfig().wetness}%</span>
             <small>How much reverb vs dry signal</small>
           </div>
         </div>

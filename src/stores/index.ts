@@ -56,7 +56,7 @@ export const startPracticeSession = (session: PlaybackSession): void => {
 }
 
 // appStore bundles all stores for backward-compatible access.
-// TODO: Replace all appStore.<something> calls with proper calls!
+// appStore retains all store exports for test compatibility.
 // To ease the migration and avoid breaking the rest of the application
 // right away, we expose a monolithic "appStore" namespace that bundles
 // all the signals and setters from the individual stores.

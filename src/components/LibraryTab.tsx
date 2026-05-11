@@ -7,8 +7,7 @@ import { createMemo, For, onMount, Show } from 'solid-js'
 import { IconCheckSolid, IconCloseSimple, IconEighthNote, IconMusicNote, IconPause, IconPiano, IconPlay, IconPlayAll, IconQuarterNote, } from '@/components/hidden-features-icons'
 import { TAB_COMPOSE } from '@/features/tabs/constants'
 import { buildSessionItemMelody } from '@/lib/session-builder'
-import { appStore, setEditorView, showSessionPresetsLibrary } from '@/stores'
-import { setActiveTab, setActiveUserSession, showLibrary, showNotification, showSessionLibrary, userSession as userSessionSignal, } from '@/stores'
+import { clearMelodySelection, getCurrentSessionItemIndex, getSelectedMelodyIds, practiceSession, selectAllMelodies, setActiveTab, setActiveUserSession, setEditorView, showLibrary, showNotification, showSessionLibrary, showSessionPresetsLibrary, toggleMelodySelection, userSession as userSessionSignal, } from '@/stores'
 import { getActiveSession, getSessions } from '@/stores/melody-store'
 import { melodyStore } from '@/stores/melody-store'
 import { playback } from '@/stores/playback-store'
@@ -111,9 +110,7 @@ export const LibraryTab: Component = () => {
     () => melodyStore.getCurrentMelody()?.id ?? null,
   )
 
-  const selectedMelodyIds = createMemo(
-    () => appStore.getSelectedMelodyIds?.() ?? [],
-  )
+  const selectedMelodyIds = createMemo(() => getSelectedMelodyIds() ?? [])
 
   const sessionItems = createMemo(() => {
     const session = userSession()
@@ -136,15 +133,9 @@ export const LibraryTab: Component = () => {
   })
 
   // Practice session items (legacy model)
-  const practiceSessionItems = createMemo(
-    () => appStore.practiceSession()?.items ?? [],
-  )
-  const currentSessionItemIndex = createMemo(() =>
-    appStore.getCurrentSessionItemIndex(),
-  )
-  const hasActivePracticeSession = createMemo(
-    () => appStore.practiceSession() !== null,
-  )
+  const practiceSessionItems = createMemo(() => practiceSession()?.items ?? [])
+  const currentSessionItemIndex = createMemo(() => getCurrentSessionItemIndex())
+  const hasActivePracticeSession = createMemo(() => practiceSession() !== null)
 
   const openLibrary = () => {
     showLibrary()
@@ -295,7 +286,7 @@ export const LibraryTab: Component = () => {
   const handleMelodyClick = (melodyId: string, e: MouseEvent) => {
     if (e.ctrlKey || e.metaKey) {
       // Toggle selection
-      appStore.toggleMelodySelection?.(melodyId)
+      toggleMelodySelection(melodyId)
       return
     }
     // Guard: changing the active melody mid-playback would desync the
@@ -357,7 +348,7 @@ export const LibraryTab: Component = () => {
   }
 
   const handlePlaySelected = () => {
-    const ids = appStore.getSelectedMelodyIds?.() ?? []
+    const ids = getSelectedMelodyIds() ?? []
     const handler = getSessionPlaybackHandler()
     if (ids.length > 0) {
       if (handler !== null) {
@@ -521,7 +512,7 @@ export const LibraryTab: Component = () => {
               >
                 <button
                   class="pill-action-btn"
-                  onClick={() => appStore.selectAllMelodies?.()}
+                  onClick={() => selectAllMelodies()}
                   title="Select All"
                 >
                   <IconCheckSolid />
@@ -530,7 +521,7 @@ export const LibraryTab: Component = () => {
               <Show when={selectedMelodyIds().length > 0}>
                 <button
                   class="pill-action-btn"
-                  onClick={() => appStore.clearMelodySelection?.()}
+                  onClick={() => clearMelodySelection()}
                   title="Clear Selection"
                 >
                   <IconCloseSimple />
