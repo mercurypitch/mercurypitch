@@ -146,10 +146,23 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
 
   // Hydrate stale blob URLs from IndexedDB for local-mode completed sessions
   const ensureHydrated = async (session: UvrSession): Promise<UvrSession> => {
+    console.log('[UVR] ensureHydrated called:', {
+      sessionId: session.sessionId,
+      processingMode: session.processingMode,
+      status: session.status,
+      outputVocal: session.outputs?.vocal?.substring(0, 40),
+      outputInstr: session.outputs?.instrumental?.substring(0, 40),
+    })
     if (session.processingMode === 'local' && session.status === 'completed') {
       const urls = await hydrateStemUrls(session.sessionId)
+      console.log('[UVR] hydrateStemUrls returned:', urls)
       if (urls) {
-        return { ...session, outputs: { ...session.outputs, ...urls } }
+        const merged = { ...session, outputs: { ...session.outputs, ...urls } }
+        console.log('[UVR] hydrated outputs:', {
+          vocal: merged.outputs?.vocal?.substring(0, 40),
+          instrumental: merged.outputs?.instrumental?.substring(0, 40),
+        })
+        return merged
       }
     }
     return session
