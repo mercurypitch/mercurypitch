@@ -93,7 +93,7 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
   }
 
   const toggleStemSelection = (stem: string) => {
-    if (props.disabled && session()?.status !== 'processing') return
+    if (props.disabled === true && session()?.status !== 'processing') return
     setSelectedStems((prev) => {
       const next = new Set(prev)
       if (next.has(stem)) next.delete(stem)
@@ -165,8 +165,8 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
               fill="none"
               stroke="currentColor"
               stroke-width="2"
-              stroke-dasharray={circumference}
-              stroke-dashoffset={offset}
+              stroke-dasharray={circumference.toString()}
+              stroke-dashoffset={offset.toString()}
               stroke-linecap="round"
               style={{ transition: 'stroke-dashoffset 0.3s ease' }}
             />
@@ -181,7 +181,9 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
   return (
     <div
       class={`uvr-session-result ${
-        props.disabled && session()?.status !== 'processing' ? 'disabled' : ''
+        props.disabled === true && session()?.status !== 'processing'
+          ? 'disabled'
+          : ''
       }`}
     >
       {/* Header */}
@@ -403,7 +405,9 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
           >
             <button
               class="session-result-btn session-result-btn-primary"
-              disabled={props.disabled && session()?.status !== 'processing'}
+              disabled={
+                props.disabled === true && session()?.status !== 'processing'
+              }
               onClick={() => props.onView?.(props.sessionId)}
             >
               <Show

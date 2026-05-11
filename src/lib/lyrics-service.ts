@@ -104,19 +104,19 @@ export async function searchLyrics(
 
   try {
     const results = await fetchSearchLrclib(queryStr)
-    if (results && results.length > 0) {
+    if (results.length > 0) {
       // Find best match with synced lyrics first
       const synced = results.find(
-        (r) => r.syncedLyrics && r.syncedLyrics.length > 20,
+        (r) => r.syncedLyrics !== undefined && r.syncedLyrics.length > 20,
       )
-      if (synced && synced.syncedLyrics) {
+      if (synced !== undefined && synced.syncedLyrics !== undefined) {
         return { text: synced.syncedLyrics, format: 'lrc' }
       }
       // Fallback to any plain lyrics
       const plain = results.find(
-        (r) => r.plainLyrics && r.plainLyrics.length > 10,
+        (r) => r.plainLyrics !== undefined && r.plainLyrics.length > 10,
       )
-      if (plain && plain.plainLyrics) {
+      if (plain !== undefined && plain.plainLyrics !== undefined) {
         return { text: plain.plainLyrics, format: 'txt' }
       }
     }
@@ -197,7 +197,7 @@ export async function searchLyricsMulti(
     if (results.length >= 20) break
     try {
       const batch = await fetchSearchLrclib(q)
-      if (batch && batch.length > 0) {
+      if (batch.length > 0) {
         for (const match of batch) {
           if (results.length >= 20) break
           if (!seen.has(match.id)) {
