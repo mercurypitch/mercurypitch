@@ -53,6 +53,7 @@ import { debounce } from '@/lib/debounce'
 import { registerE2EBridge } from '@/lib/e2e-bridge'
 import type { HashRoute } from '@/lib/hash-router'
 import { buildHash, parseHash, replaceHash } from '@/lib/hash-router'
+import { initDefaultOGTags, setMelodyOGTags } from '@/lib/og-tags'
 import { melodyIndexAtBeat, melodyTotalBeats } from '@/lib/scale-data'
 import { buildScaleMelody, buildSessionPlaybackMelody, } from '@/lib/session-builder'
 import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
@@ -645,6 +646,7 @@ const AppShell: Component<AppProps> = (props) => {
 
   onMount(() => {
     initTheme()
+    initDefaultOGTags()
 
     // ── Hash routing: initial load ──────────────────────────
     const initialRoute = parseHash(window.location.hash)
@@ -780,6 +782,11 @@ const AppShell: Component<AppProps> = (props) => {
           setScaleType(sharedData.scaleType)
         }
         showNotification('Shared preset loaded from URL', 'info')
+        setMelodyOGTags({
+          noteCount: sharedData.melody.length,
+          bpm: sharedData.bpm,
+          key: sharedData.key,
+        })
       }
     }
 
