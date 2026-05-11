@@ -129,10 +129,16 @@ async function loadModel(modelPath: string): Promise<void> {
     // Uncapped errors ("Not enough memory left") produce garbage output without
     // throwing, so the normal WebGPU→WASM fallback never triggers.
     // Windows/macOS Firefox handles WebGPU correctly.
+    //
+    // Android/mobile WebGPU (especially Mali GPUs) also produces garbage ONNX
+    // inference output without throwing — same class of silent corruption.
+    // Skip WebGPU on all mobile browsers and use WASM unconditionally.
     const isLinuxFirefox =
       /Firefox/i.test(navigator.userAgent) &&
       /Linux/i.test(navigator.platform || navigator.userAgent)
-    if (!isLinuxFirefox) {
+    const isMobile =
+      /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent)
+    if (!isLinuxFirefox && !isMobile) {
       try {
         if ('gpu' in navigator) {
           activeProviders.push('webgpu')
