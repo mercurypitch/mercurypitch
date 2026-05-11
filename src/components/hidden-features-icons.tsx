@@ -494,7 +494,14 @@ export const IconQuarterNote = () => (
     height="20"
   >
     <ellipse cx="8" cy="18" rx="4.5" ry="4" transform="rotate(-20 8 18)" />
-    <line x1="12" x2="12" y1="18" y2="4" stroke="currentColor" stroke-width="2" />
+    <line
+      x1="12"
+      x2="12"
+      y1="18"
+      y2="4"
+      stroke="currentColor"
+      stroke-width="2"
+    />
   </svg>
 )
 
@@ -508,8 +515,20 @@ export const IconEighthNote = () => (
     height="20"
   >
     <ellipse cx="8" cy="18" rx="4.5" ry="4" transform="rotate(-20 8 18)" />
-    <line x1="12" x2="12" y1="18" y2="4" stroke="currentColor" stroke-width="2" />
-    <path d="M12 4c0 0 3.5 0.5 5.5-1.5" stroke="currentColor" stroke-width="2" fill="none" />
+    <line
+      x1="12"
+      x2="12"
+      y1="18"
+      y2="4"
+      stroke="currentColor"
+      stroke-width="2"
+    />
+    <path
+      d="M12 4c0 0 3.5 0.5 5.5-1.5"
+      stroke="currentColor"
+      stroke-width="2"
+      fill="none"
+    />
     <ellipse cx="18" cy="6" rx="4" ry="3.5" transform="rotate(-20 18 6)" />
   </svg>
 )

@@ -4,7 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createSignal, For } from 'solid-js'
-import { IconArrowLeft, IconArrowRight } from '@/components/hidden-features-icons'
+import { IconArrowLeft, IconArrowRight, } from '@/components/hidden-features-icons'
 import { Headphones, Music, MusicBoard, Voice } from './icons'
 
 interface UvrGuideProps {
@@ -349,7 +349,13 @@ export const UvrGuide: Component<UvrGuideProps> = (props) => {
             }
           }}
         >
-          {activeStep() === steps.length - 1 ? 'Close' : <>Next <IconArrowRight /></>}
+          {activeStep() === steps.length - 1 ? (
+            'Close'
+          ) : (
+            <>
+              Next <IconArrowRight />
+            </>
+          )}
         </button>
       </div>
     </div>

@@ -4,7 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, onCleanup, Show } from 'solid-js'
-import { IconArrowLeft, IconArrowRight } from '@/components/hidden-features-icons'
+import { IconArrowLeft, IconArrowRight, } from '@/components/hidden-features-icons'
 import type { WalkthroughStep } from '@/stores/app-store'
 import { walkthroughStep } from '@/stores/app-store'
 import { tourSteps, walkthroughActive } from '@/stores/app-store'
@@ -356,7 +356,13 @@ export const Walkthrough: Component = () => {
                 class="walkthrough-next"
                 onClick={isLast() ? endWalkthrough : nextWalkthroughStep}
               >
-                {isLast() ? 'Finish' : <>Next <IconArrowRight /></>}
+                {isLast() ? (
+                  'Finish'
+                ) : (
+                  <>
+                    Next <IconArrowRight />
+                  </>
+                )}
               </button>
             </div>
           </div>

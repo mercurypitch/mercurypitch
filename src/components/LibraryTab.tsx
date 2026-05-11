@@ -4,17 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, For, onMount, Show } from 'solid-js'
-import {
-  IconCheckSolid,
-  IconCloseSimple,
-  IconEighthNote,
-  IconMusicNote,
-  IconPause,
-  IconPiano,
-  IconPlay,
-  IconPlayAll,
-  IconQuarterNote,
-} from '@/components/hidden-features-icons'
+import { IconCheckSolid, IconCloseSimple, IconEighthNote, IconMusicNote, IconPause, IconPiano, IconPlay, IconPlayAll, IconQuarterNote, } from '@/components/hidden-features-icons'
 import { TAB_COMPOSE } from '@/features/tabs/constants'
 import { buildSessionItemMelody } from '@/lib/session-builder'
 import { appStore, setEditorView, showSessionPresetsLibrary } from '@/stores'
@@ -297,7 +287,8 @@ export const LibraryTab: Component = () => {
   const getMelodyIcon = (melody: MelodyData | undefined) => {
     if (melody === undefined) return <IconEighthNote />
     if (melody.scaleType === 'chromatic') return <IconQuarterNote />
-    if (melody.scaleType === 'major' || melody.scaleType === 'minor') return <IconQuarterNote />
+    if (melody.scaleType === 'major' || melody.scaleType === 'minor')
+      return <IconQuarterNote />
     return <IconEighthNote />
   }
 
