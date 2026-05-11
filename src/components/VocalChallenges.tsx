@@ -2,12 +2,14 @@
 // VocalChallenges — Practice challenges & achievements
 // ============================================================
 
-import type { Component } from 'solid-js'
+import type { Component, JSX } from 'solid-js'
 import { createMemo, createSignal, For, onMount, Show } from 'solid-js'
 import type { Achievement as DBAchievement, BadgeDefinition as DBBadgeDefinition, ChallengeDefinition as DBChallengeDefinition, ChallengeProgress as DBChallengeProgress, UserAchievement as DBUserAchievement, UserBadge as DBUserBadge, } from '@/db/entities'
 import { getUserId } from '@/db/seed'
 import { loadAchievementDefinitions, loadBadgeDefinitions, loadChallengeDefinitions, loadChallengeProgress, loadUserAchievements, loadUserBadges, saveChallengeProgress, } from '@/db/services/challenges-service'
+import { TAB_SINGING } from '@/features/tabs/constants'
 import { getSessionHistory } from '@/stores'
+import { setActiveTab } from '@/stores/ui-store'
 import { IconBadge, IconBoltChallenge, iconByName, IconChart, IconCheckSolid, IconCloseSimple, IconCrown, IconDiamond, IconEagle, IconFireChallenge, IconGuitarChallenge, IconKeyboardChallenge, IconLeaf, IconLockSimple, IconMicChallenge, IconMoon, IconMusicChallenge, IconPaper, IconRefreshSimple, IconRocket, IconSparkle, IconStarChallenge, IconStopwatch, IconTarget, IconVolume, renderIcon, } from './hidden-features-icons'
 
 // (SVG icons imported from ./hidden-features-icons)
@@ -102,6 +104,18 @@ export const [showChallengeModal, setShowChallengeModal] = createSignal(false)
 export const [selectedChallenge, setSelectedChallenge] =
   createSignal<ChallengeProgress | null>(null)
 
+interface ResultModalState {
+  title: string
+  message: string
+  icon: () => JSX.Element
+  actionLabel?: string
+  onAction?: () => void
+}
+
+const [resultModal, setResultModal] = createSignal<ResultModalState | null>(
+  null,
+)
+
 export const VocalChallenges: Component = () => {
   const [activeCategory, setActiveCategory] =
     createSignal<ChallengeType>('high-notes')
@@ -173,9 +187,12 @@ export const VocalChallenges: Component = () => {
 
     if (challenge.status === 'completed') {
       const completedScore = challenge.actualScores?.[0] ?? 0
-      alert(
-        `"${challenge.name}" completed!\nYour score: ${completedScore}%\n${challenge.actualScores?.length ?? 1} session(s) played`,
-      )
+      setResultModal({
+        title: 'Challenge Completed!',
+        message: `"${challenge.name}" was completed with a score of ${completedScore}%. ${challenge.actualScores?.length ?? 1} session(s) played.`,
+        icon: () => <IconSparkle />,
+        actionLabel: 'Close',
+      })
       return
     }
 
@@ -185,9 +202,16 @@ export const VocalChallenges: Component = () => {
         scores.length > 0
           ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
           : 0
-      alert(
-        `Continue "${challenge.name}"!\nCurrent progress: ${avgScore}%\n(${challenge.actualScores?.length ?? 0} session(s))`,
-      )
+      setResultModal({
+        title: 'Continue Challenge',
+        message: `"${challenge.name}" is in progress. Current average: ${avgScore}% (${challenge.actualScores?.length ?? 0} session(s)).`,
+        icon: () => <IconRefreshSimple />,
+        actionLabel: 'Continue Practice',
+        onAction: () => {
+          setSelectedChallenge(challenge)
+          setShowChallengeModal(true)
+        },
+      })
       return
     }
 
@@ -201,21 +225,16 @@ export const VocalChallenges: Component = () => {
           )
         : 0
 
-    // Show dialog to confirm starting the challenge
-    const confirmed = confirm(
-      `Starting "${challenge.name}"!\n\nYour recent average score: ${avgScore}%\n\nStart this challenge?`,
-    )
-
-    if (confirmed) {
-      // If we have scores, show the modal directly
-      if (avgScore > 0) {
+    setResultModal({
+      title: challenge.name,
+      message: `Your recent average score: ${avgScore}%. Start this challenge?`,
+      icon: () => renderIcon(challenge.icon),
+      actionLabel: 'Start',
+      onAction: () => {
         setSelectedChallenge(challenge)
         setShowChallengeModal(true)
-      } else {
-        setSelectedChallenge(challenge)
-        setShowChallengeModal(true)
-      }
-    }
+      },
+    })
   }
 
   // Load session history for real progress tracking
@@ -810,9 +829,50 @@ export const VocalChallenges: Component = () => {
           onComplete={() => {
             setShowChallengeModal(false)
             setSelectedChallenge(null)
-            alert('<IconSparkle /> Challenge completed! Keep it up!')
+            setResultModal({
+              title: 'Challenge Completed!',
+              message: 'Great job! Keep it up!',
+              icon: () => <IconSparkle />,
+              actionLabel: 'Close',
+            })
           }}
         />
+      </Show>
+
+      {/* Result Modal */}
+      <Show when={resultModal()}>
+        <div class="challenge-modal">
+          <div class="modal-backdrop" onClick={() => setResultModal(null)} />
+          <div class="modal-content">
+            <button class="modal-close" onClick={() => setResultModal(null)}>
+              <IconCloseSimple />
+            </button>
+            <div class="modal-header">
+              <span class="modal-icon">{resultModal()!.icon()}</span>
+              <h2 class="modal-title">{resultModal()!.title}</h2>
+              <p class="modal-desc">{resultModal()!.message}</p>
+            </div>
+            <div class="modal-actions">
+              {resultModal()!.onAction && (
+                <button
+                  class="modal-btn primary"
+                  onClick={() => {
+                    resultModal()!.onAction!()
+                    setResultModal(null)
+                  }}
+                >
+                  {resultModal()!.actionLabel ?? 'OK'}
+                </button>
+              )}
+              <button
+                class={`modal-btn ${resultModal()!.onAction ? 'secondary' : 'primary'}`}
+                onClick={() => setResultModal(null)}
+              >
+                {resultModal()!.onAction ? 'Cancel' : 'Close'}
+              </button>
+            </div>
+          </div>
+        </div>
       </Show>
     </div>
   )
@@ -945,7 +1005,10 @@ const ChallengeModal: Component<ChallengeModalProps> = (props) => {
               </button>
               <button
                 class="modal-btn primary"
-                onClick={() => setIsPracticing(true)}
+                onClick={() => {
+                  setActiveTab(TAB_SINGING)
+                  props.onClose()
+                }}
               >
                 Start Practice
               </button>
