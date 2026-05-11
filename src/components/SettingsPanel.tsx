@@ -7,11 +7,7 @@ import { createMemo, createSignal, For, Show } from 'solid-js'
 import { ChangelogModal } from '@/components/ChangelogModal'
 import { ConsoleLog } from '@/components/ConsoleLog'
 import { TierSelector } from '@/components/TierSelector'
-import {
-  APP_VERSION,
-  COMMIT_SHA,
-  IS_DEV,
-} from '@/lib/defaults'
+import { APP_VERSION, COMMIT_SHA, IS_DEV } from '@/lib/defaults'
 import { appStore } from '@/stores'
 import { adsr, playbackSpeed, setPlaybackSpeed, setSensitivity, settings, } from '@/stores'
 import { showConsoleLog, toggleConsoleLog } from '@/stores/console-store'
@@ -982,10 +978,20 @@ export const SettingsPanel: Component = () => {
               </svg>
             </div>
             <p class="about-name">PitchPerfect</p>
-            <div class="about-version-container" style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-bottom: 1rem;">
-              <p class="about-version" style="margin: 0;">v{APP_VERSION}-{COMMIT_SHA}</p>
+            <div
+              class="about-version-container"
+              style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-bottom: 1rem;"
+            >
+              <p class="about-version" style="margin: 0;">
+                v{APP_VERSION}-{COMMIT_SHA}
+              </p>
               <Show when={IS_DEV}>
-                <span class="feature-pill pill-detection" style="padding: 2px 6px; font-size: 0.7rem; font-weight: bold; background: var(--purple); color: white; border-radius: 4px; display: inline-flex; align-items: center;">DEV</span>
+                <span
+                  class="feature-pill pill-detection"
+                  style="padding: 2px 6px; font-size: 0.7rem; font-weight: bold; background: var(--purple); color: white; border-radius: 4px; display: inline-flex; align-items: center;"
+                >
+                  DEV
+                </span>
               </Show>
             </div>
             <button

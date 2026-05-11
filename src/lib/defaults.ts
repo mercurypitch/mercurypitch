@@ -22,4 +22,5 @@ export const IS_TEST = import.meta.env.MODE === 'test'
 export const APP_VERSION = packageJson.version
 
 /** Git commit SHA injected by Vite. */
-export const COMMIT_SHA = typeof __COMMIT_SHA__ !== 'undefined' ? __COMMIT_SHA__ : 'unknown'
+export const COMMIT_SHA =
+  typeof __COMMIT_SHA__ !== 'undefined' ? __COMMIT_SHA__ : 'unknown'
