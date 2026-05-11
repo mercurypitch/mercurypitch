@@ -4,7 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, For, onMount, Show } from 'solid-js'
-import { IconCheckSolid, IconCloseSimple, IconEighthNote, IconMusicNote, IconPause, IconPiano, IconPlay, IconPlayAll, IconQuarterNote, } from '@/components/hidden-features-icons'
+import { IconCheckSolid, IconCloseSimple, IconEighthNote, IconMusicNote, IconPause, IconPlay, IconPlayAll, IconQuarterNote, } from '@/components/hidden-features-icons'
 import { TAB_COMPOSE } from '@/features/tabs/constants'
 import { buildSessionItemMelody } from '@/lib/session-builder'
 import { clearMelodySelection, getCurrentSessionItemIndex, getSelectedMelodyIds, practiceSession, selectAllMelodies, setActiveTab, setActiveUserSession, setEditorView, showLibrary, showNotification, showSessionLibrary, showSessionPresetsLibrary, toggleMelodySelection, userSession as userSessionSignal, } from '@/stores'
