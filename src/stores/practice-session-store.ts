@@ -1,4 +1,5 @@
 import { createSignal } from 'solid-js'
+import { saveSessionRecord } from '@/db/services/session-service'
 import { createPersistedSignal } from '@/lib/storage'
 import type { PlaybackSession, PracticeResult, SessionItem, SessionResult, } from '@/types'
 import { STORAGE_KEY_SESSION_HIST } from './melody-store'
@@ -114,15 +115,12 @@ export function endPracticeSession(): SessionResult | null {
 
   setSessionResults((prev) => [result, ...prev].slice(0, 50))
 
-  // Dual-write to IndexedDB (fire-and-forget)
-  import('@/db/services/session-service').then(({ saveSessionRecord }) => {
-    saveSessionRecord({
-      melodyName: session.name,
-      score: avgScore,
-      accuracy: avgScore,
-      notesHit: results.length,
-      notesTotal: session.items.length,
-    })
+  void saveSessionRecord({
+    melodyName: session.name,
+    score: avgScore,
+    accuracy: avgScore,
+    notesHit: results.length,
+    notesTotal: session.items.length,
   })
 
   setSessionActive(false)

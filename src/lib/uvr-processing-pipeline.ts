@@ -4,11 +4,12 @@
 //   • Local mode   → VocalSeparator (ONNX in Web Worker)
 // ============================================================
 
+import { saveStemBlob } from '@/db/services/uvr-service'
 import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
 import { getAllUvrSessions, saveAllUvrSessions, setUvrSessionApiId, setUvrSessionProvider, updateUvrSessionProgress, } from '@/stores/app-store'
 import { computeChunkRanges, UVR_CHUNK_CONFIG } from './audio-chunker'
 import type { OutputFile } from './uvr-api'
-import { deleteSession, pollForCompletion, processAudio } from './uvr-api'
+import { deleteSession, getOutputFile, pollForCompletion, processAudio, } from './uvr-api'
 import { MODEL_PATH } from './uvr-model-config'
 import { VocalSeparator } from './vocal-separator'
 
@@ -133,6 +134,23 @@ async function processLocal(
   const vocalBlob = float32ToWavBlob(result.vocals, result.sampleRate)
   const instrBlob = float32ToWavBlob(result.instrumental, result.sampleRate)
 
+  // Persist stems to IndexedDB (non-blocking, fire-and-forget)
+  const persistSessionId = sessionId
+  void Promise.all([
+    saveStemBlob(
+      persistSessionId,
+      'vocal',
+      vocalBlob,
+      `${file.name}_vocal.wav`,
+    ),
+    saveStemBlob(
+      persistSessionId,
+      'instrumental',
+      instrBlob,
+      `${file.name}_instrumental.wav`,
+    ),
+  ]).catch(() => {})
+
   callbacks.onComplete({
     outputs: {
       vocal: URL.createObjectURL(vocalBlob),
@@ -175,6 +193,8 @@ async function processServer(
       const outputs: UvrSession['outputs'] = {}
       const meta: Record<string, { duration?: number; size?: number }> = {}
 
+      const apiSessionId = response.session_id
+
       for (const f of files) {
         if (f.stem === 'vocal') {
           outputs.vocal = f.path
@@ -183,6 +203,22 @@ async function processServer(
           outputs.instrumental = f.path
           meta.instrumental = { duration: f.duration, size: f.size }
         }
+
+        // Download and persist stem to IndexedDB (non-blocking)
+        void (async () => {
+          try {
+            const resp = await getOutputFile(apiSessionId, f.path)
+            const blob = await resp.blob()
+            await saveStemBlob(
+              sessionId,
+              f.stem as 'vocal' | 'instrumental',
+              blob,
+              f.filename,
+            )
+          } catch {
+            /* non-critical */
+          }
+        })()
       }
 
       callbacks.onComplete({ outputs, stemMeta: meta })

@@ -557,7 +557,6 @@ function _restoreCurrentMelodyId(): void {
       const melody = melodyLibrarySignal().melodies[saved]
       if (melody !== undefined && melody !== null) {
         _setCurrentMelodySignal(melody)
-        console.info('[melodyStore] Restored currentMelodyId:', saved)
       }
     }
   } catch {
@@ -570,7 +569,6 @@ export const setCurrentMelody = (m: MelodyData | null) => {
   try {
     if (m !== null && m !== undefined) {
       localStorage.setItem(STORAGE_KEY_CURRENT_MELODY_ID, m.id)
-      console.info('[melodyStore] setCurrentMelody:', m.id)
     } else {
       localStorage.removeItem(STORAGE_KEY_CURRENT_MELODY_ID)
     }
@@ -716,7 +714,6 @@ function _restoreActiveSessionId(): void {
     const saved = localStorage.getItem(STORAGE_KEY_ACTIVE_SESSION_ID)
     if (saved !== null) {
       setActiveSessionId(saved)
-      console.info('[melodyStore] Restored activeSessionId:', saved)
     }
   } catch {
     // Ignore
@@ -731,7 +728,6 @@ export const setActiveSessionId = (id: string | null) => {
     } else {
       localStorage.removeItem(STORAGE_KEY_ACTIVE_SESSION_ID)
     }
-    console.info('[melodyStore] setActiveSessionId:', id)
   } catch {
     // Ignore
   }

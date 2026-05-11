@@ -4,7 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
-import { FileUpload, MusicNote } from './icons'
+import { FileUpload, ImportFile, MusicNote } from './icons'
 
 interface UploadControlProps {
   onFileSelect?: (file: File) => void
@@ -173,7 +173,8 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
                   onClick={handleProcess}
                   disabled={!selectedFile()}
                 >
-                  Process with UVR
+                  <ImportFile />
+                  Process
                 </button>
               </div>
             </Show>

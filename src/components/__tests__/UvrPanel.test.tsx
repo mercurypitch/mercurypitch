@@ -90,17 +90,11 @@ describe('UvrPanel Component', () => {
       ).toBeInTheDocument()
     })
 
-    it('renders header buttons', () => {
+    it('renders header tabs', () => {
       render(() => <UvrPanel {...defaultProps} />)
-      expect(screen.getByTitle('View Guide')).toBeInTheDocument()
-      expect(screen.getByTitle('History')).toBeInTheDocument()
-      expect(screen.getByTitle('UVR Settings')).toBeInTheDocument()
-    })
-
-    it('renders specified default view', () => {
-      render(() => <UvrPanel {...defaultProps} initialView="history" />)
-
-      expect(screen.getByText('Processing History')).toBeInTheDocument()
+      expect(screen.getByText('Guide')).toBeInTheDocument()
+      expect(screen.getByText('Settings')).toBeInTheDocument()
+      expect(screen.getByText('Sessions')).toBeInTheDocument()
     })
 
     it('defaults to upload when initialView is not set', () => {
@@ -113,13 +107,6 @@ describe('UvrPanel Component', () => {
       render(() => <UvrPanel {...defaultProps} initialView="results" />)
 
       expect(screen.getByText(/Processing Results/)).toBeInTheDocument()
-    })
-
-    it('shows no history message when no sessions', () => {
-      render(() => <UvrPanel {...defaultProps} initialView="history" />)
-
-      expect(screen.getByText('No processing history yet')).toBeInTheDocument()
-      expect(screen.getByText('Start First Session')).toBeInTheDocument()
     })
   })
 })

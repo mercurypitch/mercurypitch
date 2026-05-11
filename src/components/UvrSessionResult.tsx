@@ -4,6 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
+import { deleteUvrSessionFromDb } from '@/db/services/uvr-service'
 import { deleteUvrSession, getUvrSession } from '@/stores/app-store'
 import type { UvrSession, UvrStatus } from '@/types/uvr'
 import { Box, Calendar, CheckCircle, Cpu, Headphones, Loader2, Midi, Music, Play, RotateCcw, Server, Share, SlidersHorizontal, Trash2, Voice, X, XCircle, Zap, } from './icons'
@@ -77,6 +78,7 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
 
   const confirmDelete = () => {
     deleteUvrSession(props.sessionId)
+    void deleteUvrSessionFromDb(props.sessionId)
     setShowDeleteConfirm(false)
     if (props.onClose) props.onClose()
     setToastMessage('Session deleted')

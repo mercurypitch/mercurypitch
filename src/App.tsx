@@ -186,7 +186,7 @@ const AppShell: Component<AppProps> = (props) => {
     string | null
   >(null)
   const [initialUvrView, setInitialUvrView] = createSignal<
-    'upload' | 'history' | 'results' | 'mixer' | null
+    'upload' | 'results' | 'mixer' | null
   >(null)
   const [activeUvrSessionId, setActiveUvrSessionId] = createSignal<
     string | null
@@ -653,9 +653,6 @@ const AppShell: Component<AppProps> = (props) => {
     } else if (initialRoute.type === 'uvr-upload') {
       setActiveTab(TAB_KARAOKE)
       setInitialUvrView('upload')
-    } else if (initialRoute.type === 'uvr-history') {
-      setActiveTab(TAB_KARAOKE)
-      setInitialUvrView('history')
     } else if (initialRoute.type === 'uvr-session') {
       setActiveTab(TAB_KARAOKE)
       setInitialUvrSessionId(initialRoute.sessionId)
@@ -686,10 +683,6 @@ const AppShell: Component<AppProps> = (props) => {
       } else if (route.type === 'uvr-upload') {
         setActiveTab(TAB_KARAOKE)
         setInitialUvrView('upload')
-        setActiveUvrSessionId(null)
-      } else if (route.type === 'uvr-history') {
-        setActiveTab(TAB_KARAOKE)
-        setInitialUvrView('history')
         setActiveUvrSessionId(null)
       } else if (route.type === 'uvr-session') {
         setActiveTab(TAB_KARAOKE)
@@ -814,8 +807,6 @@ const AppShell: Component<AppProps> = (props) => {
       route = { type: 'uvr-session', sessionId }
     } else if (view === 'mixer' && sessionId !== null) {
       route = { type: 'uvr-session-mixer', sessionId }
-    } else if (view === 'history') {
-      route = { type: 'uvr-history' }
     } else {
       route = { type: 'uvr-upload' }
     }

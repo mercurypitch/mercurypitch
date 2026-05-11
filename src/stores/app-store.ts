@@ -1,5 +1,6 @@
 import { createSignal } from 'solid-js'
 import type { FeatureFlag } from '@/db'
+import { getDb } from '@/db'
 import { TAB_COMPOSE, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
 import { AudioEngine } from '@/lib/audio-engine'
 import { getUvrApiBase, IS_DEV } from '@/lib/defaults'
@@ -121,6 +122,7 @@ export interface UvrSession {
   indeterminate?: boolean
   processingTime?: number
   error?: string
+  fileHash?: string
   originalFile?: {
     name: string
     size: number
@@ -162,6 +164,14 @@ export function getUvrSession(sessionId: string): UvrSession | undefined {
   return sessions.find((s) => s.sessionId === sessionId)
 }
 
+/** Find a completed session by file hash */
+export function getUvrSessionByHash(fileHash: string): UvrSession | undefined {
+  const sessions = getAllUvrSessions()
+  return sessions.find(
+    (s) => s.fileHash === fileHash && s.status === 'completed',
+  )
+}
+
 /** Get all sessions */
 export function getAllUvrSessions(): UvrSession[] {
   const saved = localStorage.getItem('pitchperfect_uvr_sessions')
@@ -187,6 +197,7 @@ export function startUvrSession(
   mimeType: string,
   _mode: UvrMode = 'separate',
   processingMode?: UvrProcessingMode,
+  fileHash?: string,
 ): string {
   const sessionId = `uvr-session-${Date.now()}`
   const now = Date.now()
@@ -195,6 +206,7 @@ export function startUvrSession(
     sessionId,
     status: 'idle',
     progress: 0,
+    fileHash,
     originalFile: { name: fileName, size: fileSize, mimeType },
     processingMode: processingMode ?? getUvrProcessingMode(),
     createdAt: now,
@@ -913,7 +925,6 @@ export const devFeaturesEnabled = (): boolean => devFeaturesEnabledState()
 /** Persist a feature flag to the database layer (falls back to localStorage). */
 async function persistFeatureFlag(key: string, value: boolean): Promise<void> {
   try {
-    const { getDb } = await import('@/db')
     const db = await getDb()
     const repo = db.getRepository<FeatureFlag>('featureFlags')
     const existing = await repo.findAll({
@@ -946,7 +957,6 @@ export const setDevFeaturesEnabled = (enabled: boolean): void => {
 /** Sync feature flags from DB on startup. Call once after DB is ready. */
 export async function initFeatureFlagsFromDb(): Promise<void> {
   try {
-    const { getDb } = await import('@/db')
     const db = await getDb()
     const repo = db.getRepository<FeatureFlag>('featureFlags')
     const flags = await repo.findAll()
