@@ -90,10 +90,11 @@ describe('UvrPanel Component', () => {
       ).toBeInTheDocument()
     })
 
-    it('renders header buttons', () => {
+    it('renders header tabs', () => {
       render(() => <UvrPanel {...defaultProps} />)
-      expect(screen.getByTitle('View Guide')).toBeInTheDocument()
-      expect(screen.getByTitle('UVR Settings')).toBeInTheDocument()
+      expect(screen.getByText('Guide')).toBeInTheDocument()
+      expect(screen.getByText('Settings')).toBeInTheDocument()
+      expect(screen.getByText('Sessions')).toBeInTheDocument()
     })
 
     it('defaults to upload when initialView is not set', () => {

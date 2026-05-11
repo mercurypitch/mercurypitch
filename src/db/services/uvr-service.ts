@@ -26,10 +26,8 @@ export async function saveStemBlob(
       size: blob.size,
       fileName,
     })
-    console.log(`[UVR] saveStemBlob OK: sessionId=${sessionId} stemType=${stemType} size=${blob.size} id=${created.id}`)
     return created.id
-  } catch (err) {
-    console.error('[UVR] saveStemBlob ERROR:', err)
+  } catch {
     return null
   }
 }
@@ -47,23 +45,11 @@ export async function getStemBlobUrl(
       orderDir: 'desc',
       limit: 1,
     })
-    console.log(`[UVR] getStemBlobUrl sessionId=${sessionId} stemType=${stemType} found=${results.length}`)
     if (results.length === 0) return null
     const entry = results[0]
-    console.log(`[UVR] getStemBlobUrl entry:`, {
-      id: entry.id,
-      sessionId: entry.sessionId,
-      stemType: entry.stemType,
-      mimeType: entry.mimeType,
-      size: entry.size,
-      dataBytes: entry.data?.byteLength,
-    })
     const blob = new Blob([entry.data], { type: entry.mimeType })
-    const url = URL.createObjectURL(blob)
-    console.log(`[UVR] getStemBlobUrl created blob URL: ${url.substring(0, 50)}...`)
-    return url
-  } catch (err) {
-    console.error(`[UVR] getStemBlobUrl ERROR:`, err)
+    return URL.createObjectURL(blob)
+  } catch {
     return null
   }
 }
@@ -91,23 +77,19 @@ export async function getOriginalFileBlob(
 export async function hydrateStemUrls(
   sessionId: string,
 ): Promise<{ vocal?: string; instrumental?: string } | null> {
-  console.log(`[UVR] hydrateStemUrls called for sessionId=${sessionId}`)
   try {
     const [vocalUrl, instrUrl] = await Promise.all([
       getStemBlobUrl(sessionId, 'vocal'),
       getStemBlobUrl(sessionId, 'instrumental'),
     ])
-    console.log(`[UVR] hydrateStemUrls results: vocal=${vocalUrl?.substring(0, 40)} instr=${instrUrl?.substring(0, 40)}`)
     if (vocalUrl === null && instrUrl === null) {
-      console.warn('[UVR] hydrateStemUrls: no stems found in IndexedDB for', sessionId)
       return null
     }
     const result: { vocal?: string; instrumental?: string } = {}
     if (vocalUrl !== null) result.vocal = vocalUrl
     if (instrUrl !== null) result.instrumental = instrUrl
     return result
-  } catch (err) {
-    console.error('[UVR] hydrateStemUrls ERROR:', err)
+  } catch {
     return null
   }
 }

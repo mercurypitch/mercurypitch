@@ -173,7 +173,8 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
                   onClick={handleProcess}
                   disabled={!selectedFile()}
                 >
-                  Process with UVR
+                  <FileUpload />
+                  Process
                 </button>
               </div>
             </Show>

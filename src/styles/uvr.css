@@ -100,6 +100,45 @@
   color: var(--error);
 }
 
+/* View Tabs — icon + label sub-navigation */
+.uvr-view-tabs {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.view-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.35rem 0.65rem;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  color: var(--fg-secondary);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.view-tab svg {
+  width: 0.85rem;
+  height: 0.85rem;
+  flex-shrink: 0;
+}
+
+.view-tab:hover {
+  background: var(--bg-primary);
+  color: var(--fg-primary);
+  border-color: var(--fg-tertiary);
+}
+
+.view-tab.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
 /* Processing Mode Toggle */
 .uvr-mode-toggle {
   display: flex;
@@ -856,6 +895,12 @@
 .upload-btn-primary {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
+}
+
+.upload-btn svg {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
 }
 
 .upload-btn-primary:hover:not(:disabled) {

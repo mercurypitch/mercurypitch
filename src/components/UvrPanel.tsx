@@ -147,23 +147,10 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
 
   // Hydrate stale blob URLs from IndexedDB for local-mode completed sessions
   const ensureHydrated = async (session: UvrSession): Promise<UvrSession> => {
-    console.log('[UVR] ensureHydrated called:', {
-      sessionId: session.sessionId,
-      processingMode: session.processingMode,
-      status: session.status,
-      outputVocal: session.outputs?.vocal?.substring(0, 40),
-      outputInstr: session.outputs?.instrumental?.substring(0, 40),
-    })
     if (session.processingMode === 'local' && session.status === 'completed') {
       const urls = await hydrateStemUrls(session.sessionId)
-      console.log('[UVR] hydrateStemUrls returned:', urls)
       if (urls) {
-        const merged = { ...session, outputs: { ...session.outputs, ...urls } }
-        console.log('[UVR] hydrated outputs:', {
-          vocal: merged.outputs?.vocal?.substring(0, 40),
-          instrumental: merged.outputs?.instrumental?.substring(0, 40),
-        })
-        return merged
+        return { ...session, outputs: { ...session.outputs, ...urls } }
       }
     }
     return session
@@ -375,8 +362,9 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   const handlePracticeStart = async (
     mode: 'vocal' | 'instrumental' | 'midi' | 'full',
   ) => {
-    const s = await ensureHydrated(currentUvrSession())
-    if (!s?.outputs) return
+    const current = currentUvrSession()
+    if (!current?.outputs) return
+    const s = await ensureHydrated(current)
 
     setCurrentUvrSession(s)
     setPrevView(currentView())
@@ -385,20 +373,20 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
 
     // Set stems and requestedStems based on mode
     if (mode === 'vocal') {
-      setMixerStems({ vocal: s.outputs.vocal })
+      setMixerStems({ vocal: s.outputs?.vocal })
       setMixerRequestedStems({ vocal: true })
     } else if (mode === 'instrumental') {
-      setMixerStems({ instrumental: s.outputs.instrumental })
+      setMixerStems({ instrumental: s.outputs?.instrumental })
       setMixerRequestedStems({ instrumental: true })
     } else if (mode === 'midi') {
       // MIDI generation needs vocal audio — always include vocal URL
-      setMixerStems({ vocal: s.outputs.vocal })
+      setMixerStems({ vocal: s.outputs?.vocal })
       setMixerRequestedStems({ midi: true })
     } else {
       // full: vocal + instrumental
       setMixerStems({
-        vocal: s.outputs.vocal,
-        instrumental: s.outputs.instrumental,
+        vocal: s.outputs?.vocal,
+        instrumental: s.outputs?.instrumental,
       })
       setMixerRequestedStems({ vocal: true, instrumental: true })
     }
@@ -410,8 +398,9 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   }
 
   const handleMixStart = async (selectedStems: string[]) => {
-    const s = await ensureHydrated(currentUvrSession())
-    if (!s?.outputs) return
+    const current = currentUvrSession()
+    if (!current?.outputs) return
+    const s = await ensureHydrated(current)
 
     setCurrentUvrSession(s)
     setPrevView(currentView())
@@ -426,14 +415,14 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
 
     for (const key of selectedStems) {
       if (key === 'vocal') {
-        stemUrls.vocal = s.outputs.vocal
+        stemUrls.vocal = s.outputs?.vocal
         requested.vocal = true
       } else if (key === 'instrumental') {
-        stemUrls.instrumental = s.outputs.instrumental
+        stemUrls.instrumental = s.outputs?.instrumental
         requested.instrumental = true
       } else if (key === 'vocalMidi') {
         // MIDI needs the vocal audio to generate from
-        stemUrls.vocal = s.outputs.vocal
+        stemUrls.vocal = s.outputs?.vocal
         requested.midi = true
       }
     }
@@ -451,6 +440,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     const raw = getUvrSession(sessionId)
     if (!raw?.outputs) return
     const s = await ensureHydrated(raw)
+    if (!s.outputs) return
     setCurrentUvrSession(s)
 
     setPrevView(currentView())
@@ -657,33 +647,36 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
               </span>
             </Show>
           </div>
-          <Show when={currentView() !== 'upload'}>
+          <div class="uvr-view-tabs">
             <button
-              class="header-btn header-btn-ghost"
+              class="view-tab"
+              classList={{ active: currentView() === 'upload' }}
               onClick={() => {
                 setCurrentView('upload')
                 props.onViewChange?.('upload')
                 props.onSessionChange?.(null)
               }}
-              title="All Sessions"
             >
               <FileUpload />
+              <span>Sessions</span>
             </button>
-          </Show>
-          <button
-            class="header-btn header-btn-ghost"
-            onClick={() => setShowSettings(!showSettings())}
-            title="UVR Settings"
-          >
-            <Settings />
-          </button>
-          <button
-            class="header-btn header-btn-ghost"
-            onClick={() => setShowGuide(!showGuide())}
-            title="View Guide"
-          >
-            <Music />
-          </button>
+            <button
+              class="view-tab"
+              classList={{ active: showSettings() }}
+              onClick={() => setShowSettings(!showSettings())}
+            >
+              <Settings />
+              <span>Settings</span>
+            </button>
+            <button
+              class="view-tab"
+              classList={{ active: showGuide() }}
+              onClick={() => setShowGuide(!showGuide())}
+            >
+              <Music />
+              <span>Guide</span>
+            </button>
+          </div>
         </div>
       </div>
 
