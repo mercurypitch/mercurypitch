@@ -845,8 +845,11 @@ const AppShell: Component<AppProps> = (props) => {
                 class="logo-btn"
                 onClick={() => void handleTabChange(TAB_SINGING)}
                 title="Go to Practice"
+                aria-label="MercuryPitch — Go to Practice"
               >
-                <h1 class="app-title">MercuryPitch</h1>
+                <span class="app-title" role="heading" aria-level="1">
+                  MercuryPitch
+                </span>
               </button>
               <p class="subtitle">Voice Pitch Practice</p>
             </div>
@@ -896,6 +899,7 @@ const AppShell: Component<AppProps> = (props) => {
                   id="tab-singing"
                   class={`app-tab ${activeTab() === TAB_SINGING ? 'active' : ''}`}
                   onClick={() => void handleTabChange(TAB_SINGING)}
+                  aria-label="Singing practice"
                 >
                   <svg
                     class="tab-icon"
@@ -937,6 +941,7 @@ const AppShell: Component<AppProps> = (props) => {
                   id="tab-falling-notes"
                   class={`app-tab ${activeTab() === TAB_PIANO ? 'active' : ''}`}
                   onClick={() => void handleTabChange(TAB_PIANO)}
+                  aria-label="Falling notes piano"
                 >
                   <svg
                     class="tab-icon"
@@ -980,6 +985,7 @@ const AppShell: Component<AppProps> = (props) => {
                   id="tab-karaoke"
                   class={`app-tab ${activeTab() === TAB_KARAOKE ? 'active' : ''}`}
                   onClick={() => void handleTabChange(TAB_KARAOKE)}
+                  aria-label="Karaoke"
                 >
                   <svg viewBox="0 0 24 24" width="18" height="18">
                     <path
@@ -1002,6 +1008,7 @@ const AppShell: Component<AppProps> = (props) => {
                     id="tab-community"
                     class={`app-tab ${activeTab() === TAB_COMMUNITY ? 'active' : ''}`}
                     onClick={() => void handleTabChange(TAB_COMMUNITY)}
+                    aria-label="Community"
                   >
                     <svg viewBox="0 0 24 24" width="18" height="18">
                       <path
@@ -1015,6 +1022,7 @@ const AppShell: Component<AppProps> = (props) => {
                     id="tab-leaderboard"
                     class={`app-tab ${activeTab() === TAB_LEADERBOARD ? 'active' : ''}`}
                     onClick={() => void handleTabChange(TAB_LEADERBOARD)}
+                    aria-label="Leaderboard"
                   >
                     <svg viewBox="0 0 24 24" width="18" height="18">
                       <path
@@ -1028,6 +1036,7 @@ const AppShell: Component<AppProps> = (props) => {
                     id="tab-challenges"
                     class={`app-tab ${activeTab() === TAB_CHALLENGES ? 'active' : ''}`}
                     onClick={() => void handleTabChange(TAB_CHALLENGES)}
+                    aria-label="Challenges"
                   >
                     <svg viewBox="0 0 24 24" width="18" height="18">
                       <path
@@ -1046,6 +1055,7 @@ const AppShell: Component<AppProps> = (props) => {
                   id="tab-compose"
                   class={`app-tab ${activeTab() === TAB_COMPOSE ? 'active' : ''}`}
                   onClick={() => void handleTabChange(TAB_COMPOSE)}
+                  aria-label="Compose melodies"
                 >
                   <svg
                     class="tab-icon"
@@ -1071,6 +1081,7 @@ const AppShell: Component<AppProps> = (props) => {
                     id="tab-analysis"
                     class={`app-tab ${activeTab() === TAB_ANALYSIS ? 'active' : ''}`}
                     onClick={() => void handleTabChange(TAB_ANALYSIS)}
+                    aria-label="Vocal analysis"
                   >
                     <svg viewBox="0 0 24 24" width="18" height="18">
                       <path
@@ -1087,6 +1098,7 @@ const AppShell: Component<AppProps> = (props) => {
                 id="tab-settings"
                 class={`app-tab ${activeTab() === TAB_SETTINGS ? 'active' : ''}`}
                 onClick={() => void handleTabChange(TAB_SETTINGS)}
+                aria-label="Settings"
               >
                 <svg
                   class="tab-icon"
@@ -1131,7 +1143,7 @@ const AppShell: Component<AppProps> = (props) => {
             />
 
             {/* Tab content */}
-            <div class="main-content">
+            <main class="main-content">
               <Show when={activeTab() === TAB_SINGING}>
                 <TabErrorBoundary tabName={tabLabel(TAB_SINGING)}>
                   {/* Practice panel */}
@@ -1617,7 +1629,7 @@ const AppShell: Component<AppProps> = (props) => {
                   </div>
                 </TabErrorBoundary>
               </Show>
-            </div>
+            </main>
           </div>
         </Show>
 

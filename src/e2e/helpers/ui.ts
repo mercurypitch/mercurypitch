@@ -2,9 +2,9 @@ import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 export async function dismissOverlays(page: Page) {
-  // Force hide any overlays and reset focus mode
+  // Force hide any overlays and reset focus mode via hash and localStorage
   await page.evaluate(() => {
-    // Hide all overlays including focus mode
+    // Hide all overlays including focus mode in DOM immediately
     const overlays = document.querySelectorAll(
       '.welcome-overlay, .walkthrough-overlay, .overlay, .focus-mode-backdrop',
     )
@@ -14,35 +14,21 @@ export async function dismissOverlays(page: Page) {
       el.style.pointerEvents = 'none'
     }
 
-    // Try to use appStore if available (triggers SolidJS reactivity)
-    const win = window as any
-    const store = win.__pp?.appStore ?? win.__appStore ?? undefined
-    if (store?.dismissWelcome) {
-      store.dismissWelcome()
-      store.setActiveTab('singing')
-      if (store.exitFocusMode) store.exitFocusMode()
-    }
-
-    // Set localStorage as fallback
+    // Set localStorage to prevent overlays from reappearing
     localStorage.setItem('pitchperfect_welcome_version', '0.1')
     localStorage.setItem('pitchperfect_active_tab', 'singing')
     localStorage.setItem('pitchperfect_focus_mode', 'false')
   })
+
+  // Navigate to singing tab via hash to ensure app state is synced
+  await page.goto('/#/singing')
   await page.waitForTimeout(500)
 }
 
 export async function waitForTabs(page: Page) {
-  await page.waitForSelector('#tab-compose', {
+  await page.waitForSelector('#app-tabs', {
     timeout: 5000,
-    state: 'attached',
-  })
-  await page.waitForSelector('#tab-singing', {
-    timeout: 5000,
-    state: 'attached',
-  })
-  await page.waitForSelector('#tab-settings', {
-    timeout: 5000,
-    state: 'attached',
+    state: 'visible',
   })
 }
 
@@ -57,16 +43,15 @@ export async function switchTab(
     | 'community'
     | 'analysis',
 ) {
+  // Use hash navigation as it's the most reliable way to trigger the app's router
+  // and works even if the internal store bridge is not available.
   await page.evaluate((name) => {
-    const store =
-      (window as any).__pp?.appStore ?? (window as any).__appStore ?? null
-    if (store) {
-      store.setActiveTab(name)
-    } else {
-      localStorage.setItem('pitchperfect_active_tab', name)
-    }
+    window.location.hash = `#/${name}`
   }, tabName)
-  await page.waitForTimeout(500)
+
+  // Wait for the tab to be marked as active in the DOM
+  const tabButton = page.locator(`#tab-${tabName}`)
+  await expect(tabButton).toHaveClass(/active/, { timeout: 5000 })
 }
 
 export async function goToAndWait(page: Page, url: string) {
