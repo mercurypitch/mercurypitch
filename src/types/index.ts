@@ -65,7 +65,7 @@ export type EffectType =
 /** A melody item used by the audio engine and piano roll */
 export interface MelodyItem {
   /** Unique identifier for the note block */
-  id?: number
+  id: number
   /** Note data (name, octave, MIDI, frequency) */
   note: MelodyNote
   /** Duration in beats */
@@ -448,15 +448,22 @@ export interface PlaybackSession {
   description?: string
 }
 
-/** Pitch sample for pitch history tracking */
-export interface PitchSample {
-  /** Pitch frequency in Hz */
-  freq: number | null
-  /** Cents deviation from target (undefined = no pitch detected) */
-  cents?: number
-  /** Sample timestamp (beat position or performance.now() delta) */
+// ── PitchSample discriminated union ──────────────────────────
+/** No pitch detected — freq is null, no cents value */
+export interface NoPitchSample {
+  freq: null
   time: number
 }
+
+/** Pitch detected with frequency and cents deviation */
+export interface DetectedPitchSample {
+  freq: number
+  cents: number
+  time: number
+}
+
+/** Pitch sample for pitch history tracking */
+export type PitchSample = NoPitchSample | DetectedPitchSample
 
 /** Piano roll editor configuration */
 export interface PianoRollConfig {

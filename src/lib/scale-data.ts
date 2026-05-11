@@ -308,14 +308,14 @@ export function buildSampleMelody(
 ): MelodyItem[] {
   const scale = buildMajorScale(keyName, octave)
   return [
-    { note: scale[0] as MelodyNote, startBeat: 0, duration: 2 },
-    { note: scale[2] as MelodyNote, startBeat: 2, duration: 2 },
-    { note: scale[4] as MelodyNote, startBeat: 4, duration: 2 },
-    { note: scale[6] as MelodyNote, startBeat: 6, duration: 4 },
-    { note: scale[4] as MelodyNote, startBeat: 10, duration: 2 },
-    { note: scale[3] as MelodyNote, startBeat: 12, duration: 2 },
-    { note: scale[2] as MelodyNote, startBeat: 14, duration: 2 },
-    { note: scale[0] as MelodyNote, startBeat: 16, duration: 4 },
+    { id: 1, note: scale[0] as MelodyNote, startBeat: 0, duration: 2 },
+    { id: 2, note: scale[2] as MelodyNote, startBeat: 2, duration: 2 },
+    { id: 3, note: scale[4] as MelodyNote, startBeat: 4, duration: 2 },
+    { id: 4, note: scale[6] as MelodyNote, startBeat: 6, duration: 4 },
+    { id: 5, note: scale[4] as MelodyNote, startBeat: 10, duration: 2 },
+    { id: 6, note: scale[3] as MelodyNote, startBeat: 12, duration: 2 },
+    { id: 7, note: scale[2] as MelodyNote, startBeat: 14, duration: 2 },
+    { id: 8, note: scale[0] as MelodyNote, startBeat: 16, duration: 4 },
   ]
 }
 

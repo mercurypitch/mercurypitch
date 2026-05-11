@@ -460,7 +460,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
       const detector = detectors().find(
         (d) => d.algorithm === selectedAlgorithm(),
       )
-      if (detector === null || detector === undefined) {
+      if (detector == null) {
         setIsRunningTest(false)
         return
       }

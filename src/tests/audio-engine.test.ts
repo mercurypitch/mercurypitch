@@ -948,7 +948,7 @@ describe('AudioEngine', () => {
 
       for (let i = 0; i < 50; i++) {
         const id = await engine.playNote(440 + i * 10, 100)
-        if (id !== null && id !== undefined) {
+        if (id != null) {
           noteIds.push(id)
         }
       }

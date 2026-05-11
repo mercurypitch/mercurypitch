@@ -12,7 +12,7 @@ interface ControlGroupProps {
 }
 
 function hasLabel(val: unknown): val is string {
-  if (val === undefined || val === null) return false
+  if (val == null) return false
   if (typeof val !== 'string') return false
   return true
 }

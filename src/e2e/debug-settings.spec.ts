@@ -9,7 +9,7 @@ test('debug settings panel mounting', async ({ page }) => {
   // Get initial DOM state
   const initialMainContent = await page.evaluate(() => {
     const el = document.querySelector('.main-content')
-    if (el === null || el === undefined) return 'not found'
+    if (el == null) return 'not found'
     return Array.from(el.children).map(
       (c) => `${c.tagName}#${c.id}.${c.className.split(' ')[0]}`,
     )
@@ -27,7 +27,7 @@ test('debug settings panel mounting', async ({ page }) => {
   // Get final DOM state
   const finalMainContent = await page.evaluate(() => {
     const el = document.querySelector('.main-content')
-    if (el === null || el === undefined) return 'not found'
+    if (el == null) return 'not found'
     return Array.from(el.children).map(
       (c) => `${c.tagName}#${c.id}.${c.className.split(' ')[0]}`,
     )

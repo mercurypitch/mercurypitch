@@ -80,8 +80,7 @@ export const LibraryTab: Component = () => {
 
   const allSessions = createMemo(() => {
     const sessions = Object.values(library().sessions).filter(
-      (session): session is PlaybackSession =>
-        session !== null && session !== undefined,
+      (session): session is PlaybackSession => session != null,
     )
     const explicitSession = userSessionSignal?.()
     const defaultSession = getDefaultSession()
@@ -91,7 +90,7 @@ export const LibraryTab: Component = () => {
       sessionMap.set(defaultSession.id, defaultSession)
     }
 
-    if (explicitSession !== null && explicitSession !== undefined) {
+    if (explicitSession != null) {
       sessionMap.set(explicitSession.id, explicitSession)
     }
 
@@ -233,7 +232,7 @@ export const LibraryTab: Component = () => {
       const activeSessionId = melodyStore.getActiveSessionId()
       if (activeSessionId === null) {
         const defaultSession = getSession('default')
-        if (defaultSession !== undefined && defaultSession !== null) {
+        if (defaultSession != null) {
           setActiveUserSession(defaultSession)
           melodyStore.setActiveSessionId(defaultSession.id)
         }
@@ -249,7 +248,7 @@ export const LibraryTab: Component = () => {
       // Load first melody in session if exists
       let firstMelodyId: string | undefined = undefined
       for (const i of item.data.items) {
-        if (i.melodyId !== null && i.melodyId !== undefined) {
+        if (i.melodyId != null) {
           firstMelodyId = i.melodyId
           break
         }
@@ -318,7 +317,7 @@ export const LibraryTab: Component = () => {
     const sid = melodyStore.getActiveSessionId()
     if (sid === null) {
       const defaultSession = getSession('default')
-      if (defaultSession !== undefined && defaultSession !== null) {
+      if (defaultSession != null) {
         setActiveUserSession(defaultSession)
         melodyStore.setActiveSessionId(defaultSession.id)
       }

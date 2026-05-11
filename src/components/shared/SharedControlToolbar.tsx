@@ -779,7 +779,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
             <div class="save-melody-group">
               <button
                 id="save-melody-btn"
-                class={`save-melody-btn ${props.onSaveMelodyLabel !== null && props.onSaveMelodyLabel !== undefined && props.onSaveMelodyLabel.length > 0 ? 'with-label' : ''}`}
+                class={`save-melody-btn ${props.onSaveMelodyLabel != null && props.onSaveMelodyLabel.length > 0 ? 'with-label' : ''}`}
                 onClick={() => props.onSaveMelody?.()}
                 title="Save melody to library"
               >
