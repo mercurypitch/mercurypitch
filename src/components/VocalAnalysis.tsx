@@ -253,11 +253,32 @@ export const VocalAnalysis: Component = () => {
       }
     }
 
-    const freqs = runData.map((r) => r.freq)
-    const avgFreq = freqs.reduce((a, b) => a + b, 0) / freqs.length
+    let totalFreq = 0
+    let minFreq = Infinity
+    let maxFreq = -Infinity
+    let totalVolume = 0
+    let minV = Infinity
+    let maxV = -Infinity
+
+    for (let i = 0; i < runData.length; i++) {
+      const r = runData[i]
+      const f = r.freq
+      const v = r.clarity || 0
+
+      totalFreq += f
+      if (f < minFreq) minFreq = f
+      if (f > maxFreq) maxFreq = f
+
+      totalVolume += v
+      if (v < minV) minV = v
+      if (v > maxV) maxV = v
+    }
+
+    const avgFreq = totalFreq / runData.length
+    const avgV = totalVolume / runData.length
     const midFreq = 440 // A4
     const isHighRange = avgFreq > midFreq * 1.5 // Belting is usually above A4
-    const volumeVariation = maxVolume() / minVolume()
+    const volumeVariation = maxV / minV
 
     return {
       type: 'belting',
@@ -268,9 +289,9 @@ export const VocalAnalysis: Component = () => {
         : 'Try singing at a higher intensity to engage your chest voice.',
       metrics: {
         noteCount: runData.length,
-        minFreq: Math.min(...freqs),
-        maxFreq: Math.max(...freqs),
-        avgVolume: avgVolume(),
+        minFreq,
+        maxFreq,
+        avgVolume: avgV,
       },
     }
   }
@@ -293,25 +314,40 @@ export const VocalAnalysis: Component = () => {
       }
     }
 
-    const freqs = runData.map((r) => r.freq)
-    const avgFreq = freqs.reduce((a, b) => a + b, 0) / freqs.length
+    let totalFreq = 0
+    let minFreq = Infinity
+    let maxFreq = -Infinity
+    let totalVolume = 0
+
+    for (let i = 0; i < runData.length; i++) {
+      const r = runData[i]
+      const f = r.freq
+      const v = r.clarity || 0
+
+      totalFreq += f
+      if (f < minFreq) minFreq = f
+      if (f > maxFreq) maxFreq = f
+      totalVolume += v
+    }
+
+    const avgFreq = totalFreq / runData.length
+    const avgV = totalVolume / runData.length
     const midFreq = 440 // A4 frequency
     const isHighRange = avgFreq > midFreq * 1.2
-    const volume = avgVolume()
 
     return {
       type: 'falsetto',
-      passed: isHighRange && volume < 60,
-      confidence: Math.min(90, Math.round((120 - volume) * 1.2)),
+      passed: isHighRange && avgV < 60,
+      confidence: Math.min(90, Math.round((120 - avgV) * 1.2)),
       feedback:
-        volume < 60
+        avgV < 60
           ? '✓ Clean falsetto! Your head voice resonance is smooth.'
           : 'Try reducing volume slightly to let your head voice ring more.',
       metrics: {
         noteCount: runData.length,
-        minFreq: Math.min(...freqs),
-        maxFreq: Math.max(...freqs),
-        avgVolume: volume,
+        minFreq,
+        maxFreq,
+        avgVolume: avgV,
       },
     }
   }
@@ -334,9 +370,22 @@ export const VocalAnalysis: Component = () => {
       }
     }
 
-    const volumes = runData.map((r) => r.clarity)
-    const minV = Math.min(...volumes)
-    const maxV = Math.max(...volumes)
+    let minV = Infinity
+    let maxV = -Infinity
+    let minFreq = Infinity
+    let maxFreq = -Infinity
+
+    for (let i = 0; i < runData.length; i++) {
+      const r = runData[i]
+      const f = r.freq
+      const v = r.clarity || 0
+
+      if (v < minV) minV = v
+      if (v > maxV) maxV = v
+      if (f < minFreq) minFreq = f
+      if (f > maxFreq) maxFreq = f
+    }
+
     const range = maxV - minV
     const isDynamic = range > 25
 
@@ -349,31 +398,13 @@ export const VocalAnalysis: Component = () => {
         : 'Try gradually increasing and decreasing your volume across notes.',
       metrics: {
         noteCount: runData.length,
-        minFreq: Math.min(...runData.map((r) => r.freq)),
-        maxFreq: Math.max(...runData.map((r) => r.freq)),
+        minFreq,
+        maxFreq,
         avgVolume: (minV + maxV) / 2,
       },
     }
   }
 
-  // Helper to get volume metrics from run data
-  const avgVolume = (): number => {
-    const runData = vocalRunData()
-    if (runData.length === 0) return 0
-    return runData.reduce((a, r) => a + (r.clarity || 0), 0) / runData.length
-  }
-
-  const minVolume = (): number => {
-    const runData = vocalRunData()
-    if (runData.length === 0) return 0
-    return Math.min(...runData.map((r) => r.clarity || 0))
-  }
-
-  const maxVolume = (): number => {
-    const runData = vocalRunData()
-    if (runData.length === 0) return 0
-    return Math.max(...runData.map((r) => r.clarity || 0))
-  }
 
   // Start analyzing current input
   const startAnalysis = () => {
