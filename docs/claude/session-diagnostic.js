@@ -22,7 +22,7 @@ import { chromium } from 'playwright';
     }
   });
 
-  await page.goto('https://pitchperfect.clodhost.com', { waitUntil: 'networkidle', timeout: 30000 });
+  await page.goto('https://mercurypitch.com', { waitUntil: 'networkidle', timeout: 30000 });
 
   log('Page loaded, clicking Sessions');
   const sessionsBtn = await page.$('button:has-text("Sessions")');

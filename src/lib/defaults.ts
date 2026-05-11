@@ -24,3 +24,16 @@ export const APP_VERSION = packageJson.version
 /** Git commit SHA injected by Vite. */
 export const COMMIT_SHA =
   typeof __COMMIT_SHA__ !== 'undefined' ? __COMMIT_SHA__ : 'unknown'
+
+// ── Domains (from .env / .env.local) ─────────────────────────
+
+export const PROD_DOMAIN =
+  import.meta.env.VITE_PROD_DOMAIN ?? 'mercurypitch.com'
+export const DEV_DOMAIN =
+  import.meta.env.VITE_DEV_DOMAIN ?? 'dev.mercurypitch.com'
+
+export function getUvrApiBase(): string {
+  return IS_DEV
+    ? `https://${DEV_DOMAIN}/api/uvr`
+    : `https://${PROD_DOMAIN}/api/uvr`
+}

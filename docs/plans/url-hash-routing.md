@@ -178,9 +178,9 @@ Add a "Copy Link" button to each session in the history view, using `#/uvr/sessi
 
 ## Verification
 
-1. Navigate to `https://pitchperfect.clodhost.com` → defaults to Practice tab
-2. Navigate to `https://pitchperfect.clodhost.com#/settings` → opens Settings tab directly
-3. Navigate to `https://pitchperfect.clodhost.com#/uvr` → opens UVR tab
+1. Navigate to `https://mercurypitch.com` → defaults to Practice tab
+2. Navigate to `https://mercurypitch.com#/settings` → opens Settings tab directly
+3. Navigate to `https://mercurypitch.com#/uvr` → opens UVR tab
 4. Click tabs in the UI → URL hash updates to `#/tab-name`
 5. Press browser back → previous tab opens, hash updates
 6. Share a UVR session → copied URL is `#/uvr/session/:id`; opening it navigates to that session
