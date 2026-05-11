@@ -3250,3 +3250,164 @@
 .settings-panel .info-list li {
   padding-left: 14px;
 }
+
+/* ============================================================
+   Phase 1: Vocal Analysis Cards (Intensity, Breathiness, Slides)
+   ============================================================ */
+
+.phase1-card {
+  margin-top: 16px;
+  padding: 16px;
+  background: var(--bg-secondary, #161b22);
+  border: 1px solid var(--border, #30363d);
+  border-radius: 8px;
+}
+
+.phase1-card h3 {
+  margin: 0 0 12px 0;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.phase1-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.phase1-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.phase1-label {
+  font-size: 0.7rem;
+  color: var(--text-muted, #8b949e);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.phase1-value {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.phase1-value--good {
+  color: #3fb950;
+}
+
+.phase1-value--warn {
+  color: #d29922;
+}
+
+.phase1-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.phase1-badge--resonant {
+  background: rgba(63, 185, 80, 0.15);
+  color: #3fb950;
+}
+
+.phase1-badge--normal {
+  background: rgba(88, 166, 255, 0.15);
+  color: #58a6ff;
+}
+
+.phase1-badge--pressed {
+  background: rgba(210, 153, 34, 0.15);
+  color: #d29922;
+}
+
+.phase1-badge--breathy {
+  background: rgba(248, 81, 73, 0.15);
+  color: #f85149;
+}
+
+.phase1-bar-container {
+  height: 6px;
+  background: var(--bg-tertiary, #21262d);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.phase1-bar {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+.phase1-bar-intensity {
+  background: linear-gradient(90deg, #58a6ff, #bc8cff);
+}
+
+.phase1-bar-breathiness {
+  background: linear-gradient(90deg, #f85149, #3fb950);
+}
+
+.phase1-bar-slides {
+  background: linear-gradient(90deg, #d29922, #3fb950);
+}
+
+.phase1-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted, #8b949e);
+  line-height: 1.4;
+}
+
+.phase1-slide-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.phase1-slide-item {
+  display: grid;
+  grid-template-columns: 20px 40px 70px 1fr;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  background: var(--bg-tertiary, #21262d);
+}
+
+.phase1-slide-dir {
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.phase1-slide-span {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+.phase1-slide-type {
+  text-transform: capitalize;
+  font-weight: 500;
+}
+
+.phase1-slide--clean .phase1-slide-type { color: #3fb950; }
+.phase1-slide--scoop .phase1-slide-type,
+.phase1-slide--fall .phase1-slide-type { color: #d29922; }
+.phase1-slide--overshoot .phase1-slide-type,
+.phase1-slide--wobble .phase1-slide-type { color: #f85149; }
+
+.phase1-slide-score {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}

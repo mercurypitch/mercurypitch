@@ -7,6 +7,16 @@ import { createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-
 import { IconPlay } from '@/components/hidden-features-icons'
 import { loadSessionRecords } from '@/db/services/session-service'
 import { frequenciesToNoteName } from '@/lib/frequency-to-note'
+import {
+  approximateBreathiness,
+  detectSlides,
+  intensityFromPitchResults,
+} from '@/lib/vocal-analyzer'
+import type {
+  BreathinessResult,
+  IntensityScore,
+  SlideTrackingResult,
+} from '@/lib/vocal-analyzer'
 import { getSessionHistory } from '@/stores'
 import type { PitchResult, PracticeResult, SessionResult } from '@/types'
 
@@ -163,6 +173,18 @@ export const VocalAnalysis: Component = () => {
   const [dbSessionRecords, setDbSessionRecords] = createSignal<SessionResult[]>(
     [],
   )
+
+  // Phase 1 analysis signals
+  const [intensityProfile, setIntensityProfile] = createSignal<{
+    avgDb: number
+    peakDb: number
+    dynamicRange: number
+  } | null>(null)
+  const [breathiness, setBreathiness] = createSignal<BreathinessResult | null>(
+    null,
+  )
+  const [slideTracking, setSlideTracking] =
+    createSignal<SlideTrackingResult | null>(null)
 
   onMount(() => {
     void (async () => {
@@ -426,17 +448,50 @@ export const VocalAnalysis: Component = () => {
       if (allData.length > 0) {
         // Convert SessionResult[] to PitchResult[] by flattening practiceItemResult
         const practiceResults = allData.flatMap((s) => s.practiceItemResult)
-        setVocalRunData(
-          practiceResults
-            .flatMap((p) => p.noteResult)
-            .map((r) => ({
-              freq: r.pitchFreq || 0,
-              midi: r.item.note.midi,
-              note: r.item.note.name,
-              noteName: r.item.note.name,
-              clarity: r.avgCents || 0,
-            })) as PitchResult[],
+        const pitchResults = practiceResults
+          .flatMap((p) => p.noteResult)
+          .map((r) => ({
+            freq: r.pitchFreq || 0,
+            midi: r.item.note.midi,
+            note: r.item.note.name,
+            noteName: r.item.note.name,
+            clarity: r.avgCents || 0,
+          })) as PitchResult[]
+        setVocalRunData(pitchResults)
+
+        // Phase 1: Intensity Profile
+        const intensity = intensityFromPitchResults(
+          pitchResults.map((p, i) => ({
+            time: i * 0.01,
+            clarity: p.clarity,
+            midi: p.midi,
+          })),
         )
+        setIntensityProfile({
+          avgDb: intensity.avgDb,
+          peakDb: intensity.peakDb,
+          dynamicRange: intensity.dynamicRange,
+        })
+
+        // Phase 1: Breathiness
+        const breath = approximateBreathiness(
+          pitchResults.map((p) => ({
+            freq: p.freq,
+            clarity: p.clarity,
+          })),
+        )
+        setBreathiness(breath)
+
+        // Phase 1: Slide Tracking
+        const slides = detectSlides(
+          pitchResults.map((p, i) => ({
+            time: i * 0.01,
+            midi: p.midi,
+            freq: p.freq,
+          })),
+        )
+        setSlideTracking(slides)
+
         // Build spectral approximation
         const spectral: SpectrumData[] = practiceResults
           .slice(-30)
@@ -689,6 +744,157 @@ export const VocalAnalysis: Component = () => {
               </div>
             </Show>
           </div>
+
+          {/* Phase 1: Intensity Profile */}
+          <Show when={intensityProfile()}>
+            <div class="stat-card phase1-card">
+              <h3>Intensity Profile</h3>
+              <div class="phase1-metrics">
+                <div class="phase1-metric">
+                  <span class="phase1-label">Avg Level</span>
+                  <span class="phase1-value">
+                    {intensityProfile()!.avgDb.toFixed(1)} dB
+                  </span>
+                </div>
+                <div class="phase1-metric">
+                  <span class="phase1-label">Peak</span>
+                  <span class="phase1-value">
+                    {intensityProfile()!.peakDb.toFixed(1)} dB
+                  </span>
+                </div>
+                <div class="phase1-metric">
+                  <span class="phase1-label">Dynamic Range</span>
+                  <span class="phase1-value">
+                    {intensityProfile()!.dynamicRange.toFixed(1)} dB
+                  </span>
+                </div>
+              </div>
+              <div class="phase1-bar-container">
+                <div
+                  class="phase1-bar phase1-bar-intensity"
+                  style={{
+                    width: `${Math.min(100, Math.max(0, (intensityProfile()!.dynamicRange / 40) * 100))}%`,
+                  }}
+                />
+              </div>
+              <div class="phase1-hint">
+                {intensityProfile()!.dynamicRange > 20
+                  ? 'Good dynamic range — expressive singing'
+                  : 'Limited dynamic range — try varying your volume more'}
+              </div>
+            </div>
+          </Show>
+
+          {/* Phase 1: Breathiness Meter */}
+          <Show when={breathiness()}>
+            <div class="stat-card phase1-card">
+              <h3>Breathiness Efficiency</h3>
+              <div class="phase1-metrics">
+                <div class="phase1-metric">
+                  <span class="phase1-label">HNR</span>
+                  <span class="phase1-value">{breathiness()!.hnrDb} dB</span>
+                </div>
+                <div class="phase1-metric">
+                  <span class="phase1-label">Quality</span>
+                  <span
+                    class={`phase1-badge phase1-badge--${breathiness()!.quality}`}
+                  >
+                    {breathiness()!.quality}
+                  </span>
+                </div>
+                <div class="phase1-metric">
+                  <span class="phase1-label">Efficiency</span>
+                  <span class="phase1-value">
+                    {breathiness()!.efficiency}%
+                  </span>
+                </div>
+              </div>
+              <div class="phase1-bar-container">
+                <div
+                  class="phase1-bar phase1-bar-breathiness"
+                  style={{
+                    width: `${breathiness()!.efficiency}%`,
+                  }}
+                />
+              </div>
+              <div class="phase1-hint">
+                {breathiness()!.quality === 'resonant'
+                  ? 'Clean, efficient tone — great breath support'
+                  : breathiness()!.quality === 'pressed'
+                    ? 'Very tight tone — try relaxing slightly'
+                    : breathiness()!.quality === 'breathy'
+                      ? 'Airy tone — work on breath support exercises'
+                      : 'Decent tone — keep working on resonance'}
+              </div>
+            </div>
+          </Show>
+
+          {/* Phase 1: Slide Tracking */}
+          <Show when={slideTracking()}>
+            <div class="stat-card phase1-card">
+              <h3>Slide & Transition Analysis</h3>
+              <div class="phase1-metrics">
+                <div class="phase1-metric">
+                  <span class="phase1-label">Transitions</span>
+                  <span class="phase1-value">
+                    {slideTracking()!.totalTransitions}
+                  </span>
+                </div>
+                <div class="phase1-metric">
+                  <span class="phase1-label">Clean</span>
+                  <span class="phase1-value phase1-value--good">
+                    {slideTracking()!.cleanCount}
+                  </span>
+                </div>
+                <div class="phase1-metric">
+                  <span class="phase1-label">Scoops</span>
+                  <span class="phase1-value phase1-value--warn">
+                    {slideTracking()!.scoopCount}
+                  </span>
+                </div>
+                <div class="phase1-metric">
+                  <span class="phase1-label">Overall</span>
+                  <span class="phase1-value">
+                    {slideTracking()!.overallScore}%
+                  </span>
+                </div>
+              </div>
+              <div class="phase1-bar-container">
+                <div
+                  class="phase1-bar phase1-bar-slides"
+                  style={{
+                    width: `${slideTracking()!.overallScore}%`,
+                  }}
+                />
+              </div>
+              <Show when={slideTracking()!.slides.length > 0}>
+                <div class="phase1-slide-list">
+                  <For each={slideTracking()!.slides.slice(0, 5)}>
+                    {(slide) => (
+                      <div class={`phase1-slide-item phase1-slide--${slide.type}`}>
+                        <span class="phase1-slide-dir">
+                          {slide.direction === 'ascending' ? '↑' : '↓'}
+                        </span>
+                        <span class="phase1-slide-span">
+                          {slide.semitoneSpan.toFixed(1)} st
+                        </span>
+                        <span class="phase1-slide-type">{slide.type}</span>
+                        <span class="phase1-slide-score">
+                          {slide.score}%
+                        </span>
+                      </div>
+                    )}
+                  </For>
+                </div>
+              </Show>
+              <Show when={slideTracking()!.slides.length === 0}>
+                <div class="phase1-hint">
+                  Not enough note transitions detected. Try singing a melody
+                  with more note changes.
+                </div>
+              </Show>
+            </div>
+          </Show>
 
           {/* Spectrogram Display */}
           <div class="spectrogram-display">
