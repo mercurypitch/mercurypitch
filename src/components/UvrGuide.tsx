@@ -4,6 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createSignal, For } from 'solid-js'
+import { IconArrowLeft, IconArrowRight } from '@/components/hidden-features-icons'
 import { Headphones, Music, MusicBoard, Voice } from './icons'
 
 interface UvrGuideProps {
@@ -288,7 +289,7 @@ export const UvrGuide: Component<UvrGuideProps> = (props) => {
           disabled={activeStep() === 0}
           aria-label="Previous step"
         >
-          ←
+          <IconArrowLeft />
         </button>
         <div class="guide-step-icons">
           <Voice />
@@ -308,7 +309,7 @@ export const UvrGuide: Component<UvrGuideProps> = (props) => {
           disabled={activeStep() === steps.length - 1}
           aria-label="Next step"
         >
-          →
+          <IconArrowRight />
         </button>
       </div>
 
@@ -348,7 +349,7 @@ export const UvrGuide: Component<UvrGuideProps> = (props) => {
             }
           }}
         >
-          {activeStep() === steps.length - 1 ? 'Close' : 'Next →'}
+          {activeStep() === steps.length - 1 ? 'Close' : <>Next <IconArrowRight /></>}
         </button>
       </div>
     </div>

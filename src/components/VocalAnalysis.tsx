@@ -4,6 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
+import { IconPlay } from '@/components/hidden-features-icons'
 import { loadSessionRecords } from '@/db/services/session-service'
 import { frequenciesToNoteName } from '@/lib/frequency-to-note'
 import { getSessionHistory } from '@/stores'
@@ -299,7 +300,7 @@ export const VocalAnalysis: Component = () => {
       passed: isHighRange && volumeVariation > 1.3,
       confidence: Math.min(95, Math.round((volumeVariation - 1) * 50)),
       feedback: isHighRange
-        ? '✓ Great belting technique! Your chest voice projection is strong.'
+        ? 'Great belting technique! Your chest voice projection is strong.'
         : 'Try singing at a higher intensity to engage your chest voice.',
       metrics: {
         noteCount: runData.length,
@@ -340,7 +341,7 @@ export const VocalAnalysis: Component = () => {
       confidence: Math.min(90, Math.round((120 - volume) * 1.2)),
       feedback:
         volume < 60
-          ? '✓ Clean falsetto! Your head voice resonance is smooth.'
+          ? 'Clean falsetto! Your head voice resonance is smooth.'
           : 'Try reducing volume slightly to let your head voice ring more.',
       metrics: {
         noteCount: runData.length,
@@ -380,7 +381,7 @@ export const VocalAnalysis: Component = () => {
       passed: isDynamic,
       confidence: Math.min(95, Math.round(range)),
       feedback: isDynamic
-        ? '✓ Excellent dynamic control! Your volume changes smoothly.'
+        ? 'Excellent dynamic control! Your volume changes smoothly.'
         : 'Try gradually increasing and decreasing your volume across notes.',
       metrics: {
         noteCount: runData.length,
@@ -507,7 +508,7 @@ export const VocalAnalysis: Component = () => {
           onClick={startAnalysis}
           disabled={isAnalyzing()}
         >
-          {isAnalyzing() ? 'Analyzing...' : '▶ Start Vocal Analysis'}
+          {isAnalyzing() ? 'Analyzing...' : <><IconPlay /> Start Vocal Analysis</>}
         </button>
       </div>
 

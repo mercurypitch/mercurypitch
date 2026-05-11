@@ -136,20 +136,3 @@ export async function saveChallengeProgress(
   }
 }
 
-export function challengeIcon(icon: string): string {
-  const map: Record<string, string> = {
-    '🎤': 'mic',
-    '🔥': 'fire',
-    '🚀': 'rocket',
-    '🎸': 'guitar',
-    '🔊': 'volume',
-    '⚡': 'bolt',
-    '⏱️': 'stopwatch',
-    '🦅': 'eagle',
-    '🎯': 'target',
-    '💎': 'diamond',
-    '🎹': 'keyboard',
-    '🌙': 'moon',
-  }
-  return map[icon] || 'target'
-}
