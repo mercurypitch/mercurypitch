@@ -144,6 +144,17 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     }
   })
 
+  // Hydrate stale blob URLs from IndexedDB for local-mode completed sessions
+  const ensureHydrated = async (session: UvrSession): Promise<UvrSession> => {
+    if (session.processingMode === 'local' && session.status === 'completed') {
+      const urls = await hydrateStemUrls(session.sessionId)
+      if (urls) {
+        return { ...session, outputs: { ...session.outputs, ...urls } }
+      }
+    }
+    return session
+  }
+
   const handleFileSelect = (file: File) => {
     setSelectedFile(file)
     const mode = getUvrProcessingMode()
@@ -269,54 +280,45 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     props.onExport?.(type)
   }
 
-  const handleSessionView = (sessionId: string) => {
+  const handleSessionView = async (sessionId: string) => {
     if (props.onSessionView) {
       props.onSessionView(sessionId)
     }
-    // Set the session from history into current view
     const session = getUvrSession(sessionId)
-    if (session) {
-      setCurrentUvrSession(session)
-      // Refresh outputs from API if we have an API session ID
-      if (
-        session.apiSessionId !== undefined &&
-        session.status === 'completed'
-      ) {
-        refreshSessionOutputs(session)
-      }
-      // For local-mode sessions, hydrate blob URLs from IndexedDB
-      // (blob: URLs from localStorage are dead after page reload)
-      if (
-        session.processingMode === 'local' &&
-        session.status === 'completed'
-      ) {
-        void hydrateStemUrls(sessionId).then((urls) => {
-          if (urls) {
-            const updated = {
-              ...session,
-              outputs: { ...session.outputs, ...urls },
-            }
-            setCurrentUvrSession(updated)
-            // Also persist the updated outputs to localStorage
-            const all = getAllUvrSessions()
-            const idx = all.findIndex((s) => s.sessionId === sessionId)
-            if (idx !== -1) {
-              all[idx] = { ...all[idx], outputs: { ...all[idx].outputs, ...urls } }
-              saveAllUvrSessions(all)
-            }
-          }
-        })
+    if (!session) {
+      setCurrentView('results')
+      return
+    }
+    // Refresh outputs from API if we have an API session ID
+    if (
+      session.apiSessionId !== undefined &&
+      session.status === 'completed'
+    ) {
+      refreshSessionOutputs(session)
+    }
+    // Hydrate blob URLs from IndexedDB before showing results
+    // (blob: URLs from localStorage are dead after page reload)
+    const hydrated = await ensureHydrated(session)
+    setCurrentUvrSession(hydrated)
+    // Persist the hydrated URLs to localStorage
+    if (hydrated !== session) {
+      const all = getAllUvrSessions()
+      const idx = all.findIndex((s) => s.sessionId === sessionId)
+      if (idx !== -1) {
+        all[idx] = { ...all[idx], outputs: { ...all[idx].outputs, ...hydrated.outputs } }
+        saveAllUvrSessions(all)
       }
     }
     setCurrentView('results')
   }
 
-  const handlePracticeStart = (
+  const handlePracticeStart = async (
     mode: 'vocal' | 'instrumental' | 'midi' | 'full',
   ) => {
-    const s = currentUvrSession()
+    const s = await ensureHydrated(currentUvrSession())
     if (!s?.outputs) return
 
+    setCurrentUvrSession(s)
     setPrevView(currentView())
     setMixerPracticeMode(mode)
     setMixerSessionId(s.sessionId)
@@ -347,10 +349,11 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     }
   }
 
-  const handleMixStart = (selectedStems: string[]) => {
-    const s = currentUvrSession()
+  const handleMixStart = async (selectedStems: string[]) => {
+    const s = await ensureHydrated(currentUvrSession())
     if (!s?.outputs) return
 
+    setCurrentUvrSession(s)
     setPrevView(currentView())
     setMixerSessionId(s.sessionId)
 
@@ -381,12 +384,13 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     setCurrentView('mixer')
   }
 
-  const handleOpenMixerFromHistory = (
+  const handleOpenMixerFromHistory = async (
     sessionId: string,
     stems?: { vocal?: boolean; instrumental?: boolean; midi?: boolean },
   ) => {
-    const s = getUvrSession(sessionId)
-    if (!s?.outputs) return
+    const raw = getUvrSession(sessionId)
+    if (!raw?.outputs) return
+    const s = await ensureHydrated(raw)
     setCurrentUvrSession(s)
 
     setPrevView(currentView())
