@@ -1,18 +1,18 @@
-// ============================================================
-// Mock Session Data Generator — demo data for Vocal Analysis
-// ============================================================
-
+import type { PlaybackMode } from '@/features/tabs/constants'
 import type { MelodyItem, MelodyNote, NoteResult, PracticeResult, SessionResult, } from '@/types'
-
 // ── Helpers ──────────────────────────────────────────────────
+import type { AccuracyRating, NoteName } from '@/types'
 
 let _idCounter = 1000
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
 
 function nextId(): number {
   return _idCounter++
 }
 
-const NOTE_NAMES = [
+const NOTE_NAMES: NoteName[] = [
   'C',
   'C#',
   'D',
@@ -27,114 +27,159 @@ const NOTE_NAMES = [
   'B',
 ] as const
 
-function makeMelodyNote(midi: number): MelodyNote {
-  const name = NOTE_NAMES[midi % 12]
-  const octave = Math.floor(midi / 12) - 1
-  const freq = 440 * Math.pow(2, (midi - 69) / 12)
-  return { midi, name, octave, freq }
+function midiToFreq(midi: number): number {
+  return 440 * Math.pow(2, (midi - 69) / 12)
 }
 
-function makeMelodyItem(midi: number, duration = 1, startBeat = 0): MelodyItem {
+function midiToNoteName(midi: number): NoteName {
+  return NOTE_NAMES[midi % 12]
+}
+
+function midiToOctave(midi: number): number {
+  return Math.floor(midi / 12) - 1
+}
+
+function makeNote(midi: number): MelodyNote {
+  return {
+    midi,
+    name: midiToNoteName(midi),
+    octave: midiToOctave(midi),
+    freq: midiToFreq(midi),
+  }
+}
+
+function makeMelodyItem(
+  midi: number,
+  duration: number,
+  startBeat: number,
+): MelodyItem {
   return {
     id: nextId(),
-    note: makeMelodyNote(midi),
+    note: makeNote(midi),
     duration,
     startBeat,
     velocity: 100,
   }
 }
 
-function randomAround(base: number, spread: number): number {
-  return base + (Math.random() - 0.5) * spread * 2
-}
-
 // ── Melody Templates ─────────────────────────────────────────
+// ---------------------------------------------------------------------------
+// Melody patterns (MIDI note sequences)
+// ---------------------------------------------------------------------------
 
-const MELODY_TEMPLATES: Array<{ name: string; midis: number[] }> = [
-  { name: 'Major Scale Warmup', midis: [60, 62, 64, 65, 67, 69, 71, 72] },
+const MELODIES: Array<{ name: string; notes: number[]; mode: PlaybackMode }> = [
   {
-    name: 'Arpeggio Exercise',
-    midis: [60, 64, 67, 72, 67, 64, 60, 55, 60],
+    name: 'C Major Scale (Ascending)',
+    notes: [60, 62, 64, 65, 67, 69, 71, 72],
+    mode: 'session' as PlaybackMode,
   },
   {
-    name: 'Descending Run',
-    midis: [72, 71, 69, 67, 65, 64, 62, 60, 59, 57],
+    name: 'Arpeggio in C',
+    notes: [60, 64, 67, 72, 67, 64, 60, 55],
+    mode: 'session' as PlaybackMode,
   },
-  { name: 'Interval Jumps', midis: [60, 67, 62, 69, 64, 71, 65, 72] },
-  { name: 'Pentatonic Flow', midis: [60, 62, 64, 67, 69, 72, 69, 67, 64, 62] },
+  {
+    name: 'Pop Melody Snippet',
+    notes: [60, 62, 64, 65, 67, 65, 64, 62, 60, 62, 64, 67, 65, 64, 62, 60],
+    mode: 'repeat' as PlaybackMode,
+  },
+  {
+    name: 'Vibrato Practice (Sustain)',
+    notes: [62, 62, 62, 65, 65, 65, 67, 67, 67, 65, 65, 65],
+    mode: 'session' as PlaybackMode,
+  },
+  {
+    name: 'Wide Interval Jumps',
+    notes: [60, 72, 62, 74, 64, 76, 65, 77, 67, 79, 71, 72],
+    mode: 'session' as PlaybackMode,
+  },
 ]
 
-// ── Mock Generators ──────────────────────────────────────────
+// ---------------------------------------------------------------------------
+// Clarity / accuracy patterns per session
+// ---------------------------------------------------------------------------
 
-function generateNoteResults(items: MelodyItem[]): NoteResult[] {
-  return items.map((item, i) => {
-    const avgCents = randomAround(i % 3 === 0 ? 15 : 8, 20)
-    let rating: NoteResult['rating']
-    const abs = Math.abs(avgCents)
-    if (abs < 15) rating = 'perfect'
-    else if (abs < 25) rating = 'excellent'
-    else if (abs < 40) rating = 'good'
-    else if (abs < 60) rating = 'okay'
-    else rating = 'off'
-    return {
-      item,
-      pitchFreq: item.note.freq * (1 + avgCents / 1200),
-      pitchCents: avgCents,
-      time: randomAround(300, 80),
-      rating,
-      avgCents,
-      targetNote: `${item.note.name}${item.note.octave}`,
-    }
-  })
+function ratingFromCents(cents: number): AccuracyRating {
+  const abs = Math.abs(cents)
+  if (abs < 10) return 'perfect'
+  if (abs < 25) return 'excellent'
+  if (abs < 40) return 'good'
+  if (abs < 60) return 'okay'
+  return 'off'
 }
 
-function generatePracticeResult(
-  name: string,
-  midis: number[],
-  score: number,
-  completedAt: number,
-): PracticeResult {
-  const items = midis.map((m, i) => makeMelodyItem(m, 1, i))
-  const noteResults = generateNoteResults(items)
-  return {
-    score,
-    noteCount: items.length,
-    avgCents:
-      noteResults.reduce((s, r) => s + Math.abs(r.avgCents), 0) /
-      noteResults.length,
-    itemsCompleted: items.length,
-    totalItems: items.length,
-    name,
-    mode: 'session',
-    completedAt,
-    noteResult: noteResults,
-  }
-}
+// ---------------------------------------------------------------------------
+// Generator
+// ---------------------------------------------------------------------------
 
 // ── Public API ────────────────────────────────────────────────
-
+/**
+ * Generate mock session results for demo purposes.
+ * Creates 5 varied sessions with realistic pitch data, clarity scores,
+ * and recent timestamps to exercise all vocal analysis cards.
+ */
 export function generateMockSessions(): SessionResult[] {
-  _idCounter = 1000 // reset for deterministic output
   const now = Date.now()
   const DAY = 86400000
 
-  return MELODY_TEMPLATES.map((template, idx) => {
-    const completedAt = now - (4 - idx) * DAY - randomAround(3600000, 1800000)
-    const score = Math.min(100, Math.round(randomAround(72 + idx * 5, 10)))
-    const practiceResults = [
-      generatePracticeResult(template.name, template.midis, score, completedAt),
-    ]
+  return MELODIES.map((melody, sessionIdx) => {
+    const daysAgo = 6 - sessionIdx // spread across 6 days
+    const hourOffset = (sessionIdx * 3) % 12 // varied times of day
+    const completedAt = now - daysAgo * DAY - hourOffset * 3600000
+
+    // Each "note" in the melody becomes a practice item result
+    const noteResults: NoteResult[] = melody.notes.map((midi, noteIdx) => {
+      const targetFreq = midiToFreq(midi)
+      // Introduce realistic pitch variation: ±30 cents
+      const centsOff =
+        Math.sin(noteIdx * 1.7 + sessionIdx) * 25 + (Math.random() - 0.5) * 20
+      const actualFreq = targetFreq * Math.pow(2, centsOff / 1200)
+      // Clarity decays slightly across session (fatigue simulation)
+      const baseClarity = 85 - sessionIdx * 5 - noteIdx * 0.3
+      const clarity = Math.max(
+        10,
+        Math.min(98, baseClarity + (Math.random() - 0.5) * 15),
+      )
+
+      return {
+        item: makeMelodyItem(midi, 1, noteIdx),
+        pitchFreq: actualFreq,
+        pitchCents: Math.round(centsOff),
+        time: 800 + Math.round(Math.random() * 400), // 800-1200ms per note
+        rating: ratingFromCents(centsOff),
+        avgCents: Math.round(clarity),
+        targetNote: midiToNoteName(midi) + midiToOctave(midi).toString(),
+      }
+    })
+
+    const practiceResult: PracticeResult = {
+      score: Math.round(65 + sessionIdx * 3 + Math.random() * 15),
+      noteCount: noteResults.length,
+      avgCents: Math.round(
+        noteResults.reduce((a, r) => a + r.avgCents, 0) / noteResults.length,
+      ),
+      itemsCompleted: noteResults.length,
+      totalItems: noteResults.length,
+      name: melody.name,
+      mode: melody.mode,
+      completedAt,
+      noteResult: noteResults,
+    }
+
+    const totalCents = noteResults.reduce((a, r) => a + r.avgCents, 0)
+    const avgCents = Math.round(totalCents / noteResults.length)
 
     return {
-      sessionId: `mock-session-${idx + 1}`,
-      name: template.name,
-      score,
-      totalItems: template.midis.length,
-      practiceItemResult: practiceResults,
-      itemsCompleted: template.midis.length,
-      sessionName: template.name,
+      sessionId: `demo-session-${sessionIdx + 1}`,
+      name: melody.name,
+      sessionName: melody.name,
+      score: practiceResult.score,
+      totalItems: noteResults.length,
+      itemsCompleted: noteResults.length,
       completedAt,
-      avgCents: practiceResults[0].avgCents,
+      avgCents,
+      rating: ratingFromCents(avgCents),
+      practiceItemResult: [practiceResult],
     }
   })
 }
