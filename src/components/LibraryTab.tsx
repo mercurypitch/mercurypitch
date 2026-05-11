@@ -4,6 +4,17 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, For, onMount, Show } from 'solid-js'
+import {
+  IconCheckSolid,
+  IconCloseSimple,
+  IconEighthNote,
+  IconMusicNote,
+  IconPause,
+  IconPiano,
+  IconPlay,
+  IconPlayAll,
+  IconQuarterNote,
+} from '@/components/hidden-features-icons'
 import { TAB_COMPOSE } from '@/features/tabs/constants'
 import { buildSessionItemMelody } from '@/lib/session-builder'
 import { appStore, setEditorView, showSessionPresetsLibrary } from '@/stores'
@@ -268,28 +279,26 @@ export const LibraryTab: Component = () => {
     }
   }
 
-  // Get icon for session item type
-  const getItemIcon = (item: SessionItem): string => {
+  const getItemIcon = (item: SessionItem) => {
     switch (item.type) {
       case 'scale' as never:
-        return '♩'
+        return <IconQuarterNote />
       case 'rest':
-        return '⏸'
+        return <IconPause />
       case 'preset' as never:
-        return '♪'
+        return <IconEighthNote />
       case 'melody':
-        return '🎵'
+        return <IconMusicNote />
       default:
-        return '•'
+        return null
     }
   }
 
-  // Get icon for melody data
-  const getMelodyIcon = (melody: MelodyData | undefined): string => {
-    if (melody === undefined) return '♪'
-    if (melody.scaleType === 'chromatic') return '♩'
-    if (melody.scaleType === 'major' || melody.scaleType === 'minor') return '♩'
-    return '♪'
+  const getMelodyIcon = (melody: MelodyData | undefined) => {
+    if (melody === undefined) return <IconEighthNote />
+    if (melody.scaleType === 'chromatic') return <IconQuarterNote />
+    if (melody.scaleType === 'major' || melody.scaleType === 'minor') return <IconQuarterNote />
+    return <IconEighthNote />
   }
 
   const handleMelodyClick = (melodyId: string, e: MouseEvent) => {
@@ -501,7 +510,7 @@ export const LibraryTab: Component = () => {
                 onClick={handlePlaySessionSequence}
                 title="Play All in sequence"
               >
-                ▶▶
+                <IconPlayAll />
               </button>
               <Show when={selectedMelodyIds().length > 1}>
                 <button
@@ -509,7 +518,7 @@ export const LibraryTab: Component = () => {
                   onClick={handlePlaySelected}
                   title="Play Selected"
                 >
-                  ▶ Selected
+                  <IconPlay /> Selected
                 </button>
               </Show>
               <Show
@@ -524,7 +533,7 @@ export const LibraryTab: Component = () => {
                   onClick={() => appStore.selectAllMelodies?.()}
                   title="Select All"
                 >
-                  ✓
+                  <IconCheckSolid />
                 </button>
               </Show>
               <Show when={selectedMelodyIds().length > 0}>
@@ -533,7 +542,7 @@ export const LibraryTab: Component = () => {
                   onClick={() => appStore.clearMelodySelection?.()}
                   title="Clear Selection"
                 >
-                  ✕
+                  <IconCloseSimple />
                 </button>
               </Show>
             </div>
