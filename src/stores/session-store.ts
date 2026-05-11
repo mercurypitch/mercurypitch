@@ -2,9 +2,58 @@
 // Session Store — Unified session management with localStorage
 // ============================================================
 
+import { createSignal } from 'solid-js'
 import type { MelodyItem, PlaybackSession, SessionTemplate } from '@/types'
 import type { SessionCategory, SessionDifficulty, SessionItem } from '@/types'
 import { melodyStore, STORAGE_KEY_LIBRARY, STORAGE_KEY_SESSION_HIST, } from './melody-store'
+
+// ── Reactive UI state ──────────────────────────────────────────
+
+export const [userSession, setUserSession] =
+  createSignal<PlaybackSession | null>(null)
+export const [selectedMelodyIds, setSelectedMelodyIds] = createSignal<string[]>(
+  [],
+)
+
+export function setActiveUserSession(session: PlaybackSession): void {
+  setUserSession(session)
+  setSelectedMelodyIds([])
+  melodyStore.setActiveSessionId(session?.id ?? null)
+}
+
+export function getUserSession(): PlaybackSession | null {
+  return userSession()
+}
+
+export function getSelectedMelodyIds(): string[] {
+  return selectedMelodyIds()
+}
+
+export function toggleMelodySelection(melodyId: string): void {
+  setSelectedMelodyIds((prev) =>
+    prev.includes(melodyId)
+      ? prev.filter((id) => id !== melodyId)
+      : [...prev, melodyId],
+  )
+}
+
+export function selectAllMelodies(): void {
+  const session = userSession()
+  if (session && session.items.length > 0) {
+    const melodyIds = session.items
+      .filter((item) => item.melodyId !== null && item.melodyId !== undefined)
+      .map((item) => item.melodyId!)
+    setSelectedMelodyIds(melodyIds)
+  }
+}
+
+export function clearMelodySelection(): void {
+  setSelectedMelodyIds([])
+}
+
+export function loadSession(session: PlaybackSession) {
+  setActiveUserSession(session)
+}
 
 /** Generate unique item ID */
 export function generateSessionItemId(): string {

@@ -16,7 +16,7 @@ import * as settingsStore from './settings-store'
 import * as themeStore from './theme-store'
 import * as transportStore from './transport-store'
 import * as uiStore from './ui-store'
-import * as userSessionStore from './user-session-store'
+import { clearMelodySelection, getSelectedMelodyIds, loadSession, selectAllMelodies, toggleMelodySelection, } from './session-store'
 import * as walkthroughStore from './walkthrough-store'
 
 export * from './app-store'
@@ -27,7 +27,7 @@ export * from './settings-store'
 export * from './theme-store'
 export * from './transport-store'
 export * from './ui-store'
-export * from './user-session-store'
+
 export * from './walkthrough-store'
 export * from './playback-state-store'
 export * from './falling-notes-store'
@@ -69,12 +69,8 @@ export const appStore = {
   ...themeStore,
   ...transportStore,
   ...uiStore,
-  ...userSessionStore,
   ...walkthroughStore,
   ...playbackStateStore,
-
-  // Re-map loadSession correctly since it was in userSessionStore but was expected in appStore
-  loadSession: userSessionStore.loadSession,
 
   startPracticeSession: (session: PlaybackSession) => {
     practiceStore.setPracticeSession(session)
@@ -84,6 +80,13 @@ export const appStore = {
     practiceStore.setSessionItemIndex(0)
     practiceStore.setSessionItemRepeat(0)
   },
+  // Session loading & melody selection
+  loadSession,
+  getSelectedMelodyIds,
+  toggleMelodySelection,
+  selectAllMelodies,
+  clearMelodySelection,
+
   // Audio settings wrappers needed by the app
   reverb: settingsStore.reverbConfig,
 
