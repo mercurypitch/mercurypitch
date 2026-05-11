@@ -135,4 +135,3 @@ export async function saveChallengeProgress(
     return null
   }
 }
-

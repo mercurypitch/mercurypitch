@@ -508,7 +508,13 @@ export const VocalAnalysis: Component = () => {
           onClick={startAnalysis}
           disabled={isAnalyzing()}
         >
-          {isAnalyzing() ? 'Analyzing...' : <><IconPlay /> Start Vocal Analysis</>}
+          {isAnalyzing() ? (
+            'Analyzing...'
+          ) : (
+            <>
+              <IconPlay /> Start Vocal Analysis
+            </>
+          )}
         </button>
       </div>
 

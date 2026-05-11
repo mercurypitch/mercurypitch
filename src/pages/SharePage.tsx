@@ -5,14 +5,7 @@
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, onMount, Show } from 'solid-js'
 import type { SharedMelody, SharedSession } from '@/components/CommunityShare'
-import {
-  IconAlertTriangle,
-  IconArrowLeft,
-  IconBooks,
-  IconDownload,
-  IconLink,
-  IconMusicNote,
-} from '@/components/hidden-features-icons'
+import { IconAlertTriangle, IconArrowLeft, IconBooks, IconDownload, IconLink, IconMusicNote, } from '@/components/hidden-features-icons'
 import type { MelodyItem } from '@/types'
 
 export const SharePage: Component = () => {
@@ -74,7 +67,9 @@ export const SharePage: Component = () => {
       <div class="share-container">
         <Show when={error()}>
           <div class="error-state">
-            <span class="error-icon"><IconAlertTriangle /></span>
+            <span class="error-icon">
+              <IconAlertTriangle />
+            </span>
             <h2>Share Link Not Found</h2>
             <p>{error()}</p>
             <button
@@ -141,7 +136,12 @@ const MelodyShareContent: Component<MelodyShareProps> = (props) => {
   return (
     <div class="share-content">
       <div class="share-header">
-        <h1><span class="share-header-icon"><IconMusicNote /></span>{props.content.name}</h1>
+        <h1>
+          <span class="share-header-icon">
+            <IconMusicNote />
+          </span>
+          {props.content.name}
+        </h1>
         <p class="share-subtitle">Shared by {props.content.author}</p>
       </div>
 
@@ -257,7 +257,12 @@ const SessionShareContent: Component<SessionShareProps> = (props) => {
   return (
     <div class="share-content">
       <div class="share-header">
-        <h1><span class="share-header-icon"><IconBooks /></span>{props.content.name}</h1>
+        <h1>
+          <span class="share-header-icon">
+            <IconBooks />
+          </span>
+          {props.content.name}
+        </h1>
         <p class="share-subtitle">Shared by {props.content.author}</p>
       </div>
 
