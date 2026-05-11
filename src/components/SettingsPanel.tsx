@@ -52,13 +52,29 @@ export const SettingsPanel: Component = () => {
     }
   }
 
-  const handleResetStorage = () => {
+  const handleResetStorage = async () => {
     // Clear all pitchperfect_ keys
     Object.keys(localStorage).forEach((key) => {
       if (key.startsWith('pitchperfect_')) {
         localStorage.removeItem(key)
       }
     })
+
+    // Clear IndexedDB and model cache
+    try {
+      const { clearModelCache } = await import('@/lib/model-cache')
+      await clearModelCache()
+    } catch {
+      /* non-critical */
+    }
+
+    try {
+      const { resetDatabase } = await import('@/db')
+      await resetDatabase()
+    } catch {
+      /* non-critical */
+    }
+
     // Navigate back to the default URL (removing any hashes)
     window.location.href = '/'
   }
