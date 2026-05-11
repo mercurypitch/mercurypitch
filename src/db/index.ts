@@ -26,6 +26,16 @@ export async function getDb(): Promise<DatabaseAdapter> {
   return dbPromise
 }
 
+/** Destroy the current database, reset the singleton, and create a fresh one. */
+export async function resetDatabase(): Promise<DatabaseAdapter> {
+  if (dbPromise) {
+    const db = await dbPromise
+    await db.destroy()
+  }
+  dbPromise = null
+  return createDatabase()
+}
+
 /** Re-export types for convenience. */
 export type {
   DatabaseAdapter,

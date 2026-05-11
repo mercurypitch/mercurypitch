@@ -187,6 +187,11 @@ export class DexieAdapter implements DatabaseAdapter {
       return fn(this)
     })
   }
+
+  async destroy(): Promise<void> {
+    this.repositories.clear()
+    await this.db.delete()
+  }
 }
 
 // Type re-exports for convenience
