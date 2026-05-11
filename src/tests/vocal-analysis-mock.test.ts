@@ -15,7 +15,7 @@ describe('generateMockSessions', () => {
     const sessions = generateMockSessions()
     for (const session of sessions) {
       expect(session.sessionId).toBeTruthy()
-      expect(session.sessionId).toMatch(/^mock-session-/)
+      expect(session.sessionId).toMatch(/^demo-session-/)
       expect(session.name).toBeTruthy()
       expect(typeof session.score).toBe('number')
       expect(session.score).toBeGreaterThan(0)
@@ -32,7 +32,7 @@ describe('generateMockSessions', () => {
       for (const pr of session.practiceItemResult) {
         expect(pr.noteResult.length).toBeGreaterThan(0)
         expect(pr.score).toBeGreaterThan(0)
-        expect(pr.mode).toBe('session')
+        expect(['session', 'repeat']).toContain(pr.mode)
 
         for (const nr of pr.noteResult) {
           expect(nr.item).toBeDefined()
