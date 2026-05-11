@@ -184,10 +184,10 @@ export class PlaybackRuntime {
       this.playStartTime = performance.now()
     }
 
-    // Add accumulated pause duration to be accounted for in the animation loop
-    this.pauseOffset +=
-      this.pauseStartTime > 0 ? performance.now() - this.pauseStartTime : 0
-    // Reset pauseStartTime for next pause
+    if (isResuming) {
+      this.pauseOffset +=
+        this.pauseStartTime > 0 ? performance.now() - this.pauseStartTime : 0
+    }
     this.pauseStartTime = 0
 
     this._emit({ type: 'state', state: 'playing' })
@@ -226,6 +226,10 @@ export class PlaybackRuntime {
     this.audioEngine.stopTone()
     this.isPlaying = false
     this.isPaused = false
+
+    // Reset pause tracking so a fresh start() after stop isn't poisoned
+    this.pauseStartTime = 0
+    this.pauseOffset = 0
 
     // During precount, only reset playback state, not count-in state
     if (this._countInBeats > 0) {
