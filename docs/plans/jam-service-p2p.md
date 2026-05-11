@@ -320,13 +320,13 @@ For initial usage (~100 concurrent jam rooms, signaling only):
 
 No server audio processing costs — all audio is P2P.
 
-## Open Questions
+## Design Decisions (resolved)
 
-1. **Mesh vs SFU**: For 2-4 peers, mesh is simplest. Should we plan SFU from day one for scalability?
-2. **Mixed output**: Should local audio + jam peers be routable through existing PitchPerfect audio engine (for pitch detection on jam sessions)?
-3. **Authentication**: Should jam rooms require user profiles, or anonymous with display name?
-4. **Mobile support**: WebRTC works on mobile browsers but iOS Safari has limitations — test early.
-5. **NAT traversal**: TURN server fallback needed for ~8% of users behind symmetric NAT. Options: Cloudflare's TURN service, coturn on a small VPS (~$5/mo), or third-party (Twilio/Google STUN+TURN).
+1. **Mesh topology** — Start with mesh for simplicity; evaluate SFU later if real usage shows pain. Mesh handles 2-4 peers fine.
+2. **Separate audio engine** — Jam audio outputs directly to speakers, bypassing pitch detection. Integrate later when the feature proves itself.
+3. **Anonymous auth** — Join with room code + display name, no account/profile required. Lowest friction for early testing.
+4. **Skip TURN** — No TURN relay for MWE. Accept that ~8% of symmetric NAT users won't connect; revisit when real users hit the wall.
+5. **Mobile support** — WebRTC works on mobile browsers but iOS Safari has limitations — test early.
 
 ## Success Criteria (MWE)
 
