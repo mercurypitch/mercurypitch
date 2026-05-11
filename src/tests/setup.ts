@@ -147,6 +147,16 @@ global.ResizeObserver = class ResizeObserver {
   disconnect() {}
 } as unknown as typeof ResizeObserver
 
+// Prevent jsdom "Not implemented: navigation" errors.
+// downloadMelodyAsWAV creates <a> elements with blob: URLs and clicks them.
+// jsdom only supports hash-based navigation, so redirect blob/data URLs to
+// hash URLs that jsdom can handle without throwing.
+const _origCreateObjectURL = URL.createObjectURL.bind(URL)
+URL.createObjectURL = (blob: Blob) => {
+  void blob
+  return `#download-${Math.random().toString(36).slice(2)}`
+}
+
 // Mock requestAnimationFrame
 let rafId = 0
 global.requestAnimationFrame = (_cb: FrameRequestCallback) => {

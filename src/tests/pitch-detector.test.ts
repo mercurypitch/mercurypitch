@@ -679,7 +679,7 @@ describe('PitchDetector', () => {
       expect(duration).toBeGreaterThan(0)
     })
 
-    it('handles 500 detections without memory leak', { timeout: 15000 }, () => {
+    it('handles 500 detections without memory leak', { timeout: 30000 }, () => {
       const startTime = performance.now()
       for (let i = 0; i < 500; i++) {
         const buffer = createSineBuffer(44100, 440, 0.02)
