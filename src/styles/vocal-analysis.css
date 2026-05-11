@@ -436,7 +436,16 @@
 }
 
 .tab-icon {
-  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+}
+
+.tab-icon svg {
+  width: 100%;
+  height: 100%;
 }
 
 .tab-name {
@@ -528,6 +537,10 @@
 
 .action-btn {
   flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   padding: 8px 12px;
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -536,6 +549,16 @@
   cursor: pointer;
   font-size: 0.875rem;
   transition: all 0.2s ease;
+}
+
+.action-btn span {
+  display: flex;
+  align-items: center;
+}
+
+.action-btn svg {
+  width: 16px;
+  height: 16px;
 }
 
 .action-btn:hover {
@@ -621,7 +644,15 @@
 }
 
 .stat-icon {
-  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  width: 16px;
+  height: 16px;
+}
+
+.stat-icon svg {
+  width: 100%;
+  height: 100%;
 }
 
 .stat-value {
@@ -639,8 +670,17 @@
 }
 
 .empty-icon {
-  font-size: 4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
   margin-bottom: 16px;
+}
+
+.empty-icon svg {
+  width: 100%;
+  height: 100%;
 }
 
 .empty-state h3 {

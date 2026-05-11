@@ -13,7 +13,7 @@ import type { DatabaseAdapter, DbEntity, QueryOptions, Repository, } from '@/db/
 const STORE_SCHEMAS: Record<string, string> = {
   userProfiles: 'id',
   sessionRecords: 'id, userId, endedAt',
-  challengeDefinitions: 'id, category, isActive',
+  challengeDefinitions: 'id, category, isActive, sortOrder',
   challengeProgress: 'id, userId, challengeId',
   badgeDefinitions: 'id, category, tier',
   userBadges: 'id, userId, badgeId',
@@ -35,6 +35,10 @@ class DexieDatabase extends DexieDB {
   constructor() {
     super('PitchPerfectDB')
     this.version(1).stores(STORE_SCHEMAS)
+    // v2: add sortOrder index on challengeDefinitions
+    this.version(2).stores({
+      challengeDefinitions: 'id, category, isActive, sortOrder',
+    })
   }
 
   /** Add a new table at the next schema version. */

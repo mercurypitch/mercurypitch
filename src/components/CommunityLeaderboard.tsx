@@ -8,6 +8,7 @@ import { createMemo, createSignal, For, onMount, Show } from 'solid-js'
 import type { LeaderboardCategory as DBLeaderboardCategory, LeaderboardPeriod, } from '@/db/entities'
 import { loadLeaderboard } from '@/db/services/leaderboard-service'
 import type { LeaderboardCategory, LeaderboardUser, LeaderboardView, WeeklyChallengeResult, } from '@/types'
+import { IconCloseSimple, IconFilter } from './hidden-features-icons'
 
 // ============================================================
 // SVG Icons (Classy, minimal style)
@@ -581,7 +582,7 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
           onInput={(e) => setSearchQuery(e.currentTarget.value)}
         />
         <button class="filter-btn">
-          <span>⚙️</span> Filter
+          <IconFilter /> Filter
         </button>
       </div>
 
@@ -765,7 +766,7 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
               class="profile-modal-close"
               onClick={() => setSelectedUser(null)}
             >
-              ✕
+              <IconCloseSimple />
             </button>
 
             <div class="profile-header">
