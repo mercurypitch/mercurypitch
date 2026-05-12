@@ -11,6 +11,7 @@ import { buildMidiFile, DEFAULT_BPM, detectNotes, mergeConsecutiveNotes, MIDI_NO
 import type { DetectedPitch } from '@/lib/pitch-detector'
 import { PitchDetector } from '@/lib/pitch-detector'
 import { freqToMidi, midiToNote } from '@/lib/scale-data'
+import { showNotification } from '@/stores/notifications-store'
 import { ChevronLeft, Download, Ear, Mic, Pause, Play, Share, SkipBack, SlidersHorizontal, Volume2, VolumeX, } from './icons'
 import type { LyricsUploadResult } from './LyricsUploader'
 import { LyricsUploader } from './LyricsUploader'
@@ -520,11 +521,16 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       }
 
       if (total > 0 && loaded === 0) {
-        setLoadError('Failed to load any stems')
+        const msg =
+          'Stems could not be loaded. Audio data may have been lost after a page reload.'
+        setLoadError(msg)
+        showNotification(msg, 'warning')
       }
 
-      // MIDI processing — detect notes & synthesize audio when practiceMode is 'midi'
-      if (props.practiceMode === 'midi' && vocal().buffer) {
+      // MIDI processing — detect notes & synthesize audio when MIDI is requested or in midi practice mode
+      const needsMidi =
+        props.practiceMode === 'midi' || props.requestedStems?.midi === true
+      if (needsMidi && vocal().buffer) {
         setMidiGenerating(true)
         setMidiProgress(0)
         try {
@@ -551,7 +557,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         }
       }
     } catch (e) {
-      setLoadError(e instanceof Error ? e.message : 'Failed to load stems')
+      const msg = e instanceof Error ? e.message : 'Failed to load stems'
+      setLoadError(msg)
+      showNotification(`Stem loading failed: ${msg}`, 'error')
     } finally {
       setLoading(false)
     }
@@ -673,6 +681,21 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }
   }
 
+  const handleForceSearch = async () => {
+    setLyricsLoading(true)
+    const title = extractTitle(props.songTitle ?? props.sessionId ?? '')
+    try {
+      const results = await searchLyricsMulti(title)
+      setSongMatches(results)
+      setSongPickerQuery(title)
+      setShowSongPicker(true)
+    } catch {
+      // keep existing
+    } finally {
+      setLyricsLoading(false)
+    }
+  }
+
   const loadLyrics = async () => {
     // Check persisted lyrics first — no need for API call if user already uploaded
     const persisted = loadPersistedLyrics()
@@ -776,97 +799,100 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }
   }
 
-  // ── Word-level timing + render data ─────────────────────────
-  // Single memo that pre-computes ALL active states so the template
-  // re-renders reliably when elapsed / currentLineIdx change.
-  // Using .map() instead of <For> because <For> skips re-renders
-  // when the source array identity hasn't changed (which it doesn't
-  // during playback — lrcLines/textLines stay the same).
+  const computeActiveWord = (
+    words: string[],
+    startTime: number,
+    endTime: number,
+    elapsedTime: number,
+  ): { activeUpTo: number; charProgress: number } => {
+    if (words.length === 0) return { activeUpTo: -1, charProgress: 0 }
+    const lineDuration = Math.max(0.05, endTime - startTime)
+    const progress = (elapsedTime - startTime) / lineDuration
+    if (progress < 0) return { activeUpTo: -1, charProgress: 0 }
+    if (progress >= 1)
+      return {
+        activeUpTo: words.length - 1,
+        charProgress: words[words.length - 1]?.length || 0,
+      }
 
-  interface LyricRenderLine {
-    key: string
-    time: number
-    words: string[]
-    isActive: boolean
-    activeUpTo: number // -1 = no words active, N = words 0..N are "done"
-    activeCharProgress: number // 0..word.length, chars "done" in the word at activeUpTo+1
+    const wordDuration = lineDuration / words.length
+    const currentWordIdx = Math.floor(progress * words.length)
+    const activeUpTo = currentWordIdx - 1
+
+    const elapsedInWord =
+      elapsedTime - startTime - currentWordIdx * wordDuration
+    const currentWord = words[currentWordIdx]
+    const charProgress = Math.min(
+      Math.floor((elapsedInWord / wordDuration) * currentWord.length),
+      currentWord.length,
+    )
+
+    return { activeUpTo, charProgress }
   }
 
-  const lyricsRenderData = createMemo<LyricRenderLine[]>(() => {
+  const stableParsedLyrics = createMemo(() => {
     const dur = duration()
     const lrc = lrcLines()
     const txt = lyricsLines()
-    const curIdx = currentLineIdx()
-    const elapsedTime = elapsed()
 
-    const computeActiveWord = (
-      words: string[],
-      startTime: number,
-      endTime: number,
-    ): { activeUpTo: number; charProgress: number } => {
-      if (words.length === 0) return { activeUpTo: -1, charProgress: 0 }
-      const lineDuration = Math.max(0.05, endTime - startTime)
-      const progress = (elapsedTime - startTime) / lineDuration
-      if (progress < 0) return { activeUpTo: -1, charProgress: 0 }
-      if (progress >= 1)
-        return {
-          activeUpTo: words.length - 1,
-          charProgress: words[words.length - 1]?.length || 0,
-        }
-
-      const wordDuration = lineDuration / words.length
-      const currentWordIdx = Math.floor(progress * words.length)
-      const activeUpTo = currentWordIdx - 1
-
-      const elapsedInWord =
-        elapsedTime - startTime - currentWordIdx * wordDuration
-      const currentWord = words[currentWordIdx]
-      const charProgress = Math.min(
-        Math.floor((elapsedInWord / wordDuration) * currentWord.length),
-        currentWord.length,
-      )
-
-      return { activeUpTo, charProgress }
-    }
+    const map = new Map<
+      number,
+      { time: number; endTime: number; words: string[]; key: string }
+    >()
 
     if (lrc.length > 0) {
-      return lrc.map((line, i) => {
+      lrc.forEach((line, i) => {
         const words = line.text.split(/\s+/).filter((w: string) => w.length > 0)
         const endTime = i + 1 < lrc.length ? lrc[i + 1].time : dur
-        const isActive = i === curIdx
-        const { activeUpTo, charProgress } = isActive
-          ? computeActiveWord(words, line.time, endTime)
-          : { activeUpTo: -1, charProgress: 0 }
-        return {
-          key: `lrc-${i}`,
-          time: line.time,
-          words,
-          isActive,
-          activeUpTo,
-          activeCharProgress: charProgress,
-        }
+        map.set(i, { key: `lrc-${i}`, time: line.time, endTime, words })
       })
+      return map
     }
     if (txt.length > 0 && dur > 0) {
-      return txt.map((text, i) => {
+      txt.forEach((text, i) => {
         const words = text.split(/\s+/).filter((w: string) => w.length > 0)
         const startTime = (i / txt.length) * dur
         const endTime = ((i + 1) / txt.length) * dur
-        const isActive = i === curIdx
-        const { activeUpTo, charProgress } = isActive
-          ? computeActiveWord(words, startTime, endTime)
-          : { activeUpTo: -1, charProgress: 0 }
-        return {
-          key: `txt-${i}`,
-          time: startTime,
-          words,
-          isActive,
-          activeUpTo,
-          activeCharProgress: charProgress,
-        }
+        map.set(i, { key: `txt-${i}`, time: startTime, endTime, words })
       })
+      return map
     }
-    return []
+    return map
+  })
+
+  const blockStarts = createMemo(() => {
+    const starts = new Map<
+      number,
+      {
+        blockId: string
+        label: string
+        instanceIdx: number
+        isTemplate: boolean
+        repeatCount: number
+        color: string
+        startLine: number
+        endLine: number
+      }
+    >()
+    for (const [blockId, instances] of Object.entries(blockInstances())) {
+      const block = getBlockById(blockId)
+      if (!block) continue
+      const color = getBlockColor(blockId)
+      for (let i = 0; i < instances.length; i++) {
+        const [s, e] = instances[i]
+        starts.set(s, {
+          blockId,
+          label: block.label,
+          instanceIdx: i,
+          isTemplate: i === 0,
+          repeatCount: block.repeatCount,
+          color,
+          startLine: s,
+          endLine: e,
+        })
+      }
+    }
+    return starts
   })
 
   // Display lines — preserves blank lines from raw text for visual spacing
@@ -1878,17 +1904,30 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     const ctx = audioCtx!
     const now = ctx.currentTime
 
+    // Fade master output in from 0 to avoid click/pop on start
+    if (mainGain) {
+      try {
+        mainGain.gain.cancelScheduledValues(now)
+        mainGain.gain.setValueAtTime(mainGain.gain.value, now)
+        mainGain.gain.linearRampToValueAtTime(0.7, now + 0.01)
+      } catch (_) {
+        mainGain.gain.value = 0.7
+      }
+    }
+
     for (const track of tracks()) {
       if (!track.buffer) continue
 
       const isAudible = track.soloed || (!track.muted && !anySoloed())
-      if (!isAudible) continue
 
       const src = ctx.createBufferSource()
       src.buffer = track.buffer
 
       const gain = ctx.createGain()
-      gain.gain.value = track.volume
+      // Start at 0 and ramp up to avoid click/pop on play
+      const targetGain = isAudible ? track.volume : 0
+      gain.gain.setValueAtTime(0, now)
+      gain.gain.linearRampToValueAtTime(targetGain, now + 0.02)
 
       const analyser = ctx.createAnalyser()
       analyser.fftSize = FFT_SIZE
@@ -1939,29 +1978,45 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }
   }
 
+  const FADE_OUT_MS = 30
+
   const disconnectSources = () => {
-    for (const track of tracks()) {
-      try {
-        track.sourceNode?.stop()
-      } catch (_) {
-        /* already stopped */
-      }
-      try {
-        track.sourceNode?.disconnect()
-      } catch (_) {
-        /* */
-      }
-      try {
-        track.gainNode?.disconnect()
-      } catch (_) {
-        /* */
-      }
-      try {
-        track.analyserNode?.disconnect()
-      } catch (_) {
-        /* */
+    const ctx = audioCtx
+
+    // Capture current nodes to disconnect
+    const nodesToDisconnect = tracks().map((track) => ({
+      sourceNode: track.sourceNode,
+      gainNode: track.gainNode,
+      analyserNode: track.analyserNode,
+    }))
+
+    if (ctx) {
+      // Fade out all gains to 0 to avoid pop, then schedule source.stop()
+      // on the audio timeline so the ramp always completes before the cut.
+      const now = ctx.currentTime
+      const fadeOutSecs = FADE_OUT_MS / 1000
+      const stopTime = now + fadeOutSecs + 0.01
+      for (const nodes of nodesToDisconnect) {
+        if (nodes.gainNode) {
+          try {
+            nodes.gainNode.gain.cancelScheduledValues(now)
+            nodes.gainNode.gain.setValueAtTime(nodes.gainNode.gain.value, now)
+            nodes.gainNode.gain.linearRampToValueAtTime(0, now + fadeOutSecs)
+          } catch (_) {
+            /* already disconnected */
+          }
+        }
+        if (nodes.sourceNode) {
+          try {
+            nodes.sourceNode.stop(stopTime)
+          } catch (_) {
+            /* already stopped */
+          }
+        }
       }
     }
+
+    // Clear state synchronously so we don't accidentally wipe out new nodes
     setVocal((prev) => ({
       ...prev,
       sourceNode: null,
@@ -1980,6 +2035,28 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       gainNode: null,
       analyserNode: null,
     }))
+
+    // Disconnect after fade+stop completes. The audio-timeline stop is
+    // precise; setTimeout is only for safe, non-timing-critical cleanup.
+    setTimeout(() => {
+      for (const nodes of nodesToDisconnect) {
+        try {
+          nodes.sourceNode?.disconnect()
+        } catch (_) {
+          /* */
+        }
+        try {
+          nodes.gainNode?.disconnect()
+        } catch (_) {
+          /* */
+        }
+        try {
+          nodes.analyserNode?.disconnect()
+        } catch (_) {
+          /* */
+        }
+      }
+    }, FADE_OUT_MS + 20)
   }
 
   // ── Transport ────────────────────────────────────────────────
@@ -3725,7 +3802,12 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             </div>
 
             {/* Panel: MIDI Pitch */}
-            <Show when={props.practiceMode === 'midi'}>
+            <Show
+              when={
+                props.practiceMode === 'midi' ||
+                props.requestedStems?.midi === true
+              }
+            >
               <div
                 class="sm-workspace-panel"
                 style={panelStyle('midi')}
@@ -3857,64 +3939,66 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                   </div>
                 )}
 
-                {midi().buffer && props.practiceMode === 'midi' && (
-                  <div class="sm-stem-strip">
-                    <div class="sm-stem-header">
-                      <span
-                        class="sm-stem-dot"
-                        style={{ background: midi().color }}
+                {midi().buffer &&
+                  (props.practiceMode === 'midi' ||
+                    props.requestedStems?.midi === true) && (
+                    <div class="sm-stem-strip">
+                      <div class="sm-stem-header">
+                        <span
+                          class="sm-stem-dot"
+                          style={{ background: midi().color }}
+                        />
+                        <span class="sm-stem-label">{midi().label}</span>
+                        <span class="sm-stem-vol-pct">
+                          {Math.round(
+                            midi().muted || (anySoloed() && !midi().soloed)
+                              ? 0
+                              : midi().volume * 100,
+                          )}
+                          %
+                        </span>
+                      </div>
+                      <div class="sm-stem-actions">
+                        <button
+                          class={`sm-action-btn ${midi().soloed ? 'sm-active' : ''}`}
+                          onClick={() => toggleSolo('MIDI')}
+                          title="Solo"
+                          style={{ color: midi().soloed ? midi().color : '' }}
+                        >
+                          <Ear />
+                        </button>
+                        <button
+                          class={`sm-action-btn ${midi().muted ? 'sm-muted' : ''}`}
+                          onClick={() => toggleMute('MIDI')}
+                          title="Mute"
+                        >
+                          {midi().muted ? <VolumeX /> : <Volume2 />}
+                        </button>
+                        <button
+                          class="sm-action-btn"
+                          onClick={() => {
+                            void handleDownload(midi())
+                          }}
+                          title="Download MIDI"
+                        >
+                          <Download />
+                        </button>
+                      </div>
+                      <input
+                        type="range"
+                        class="sm-volume-slider"
+                        min="0"
+                        max="100"
+                        value={Math.round(midi().volume * 100)}
+                        onInput={(e) =>
+                          setTrackVolume(
+                            'MIDI',
+                            parseInt(e.currentTarget.value) / 100,
+                          )
+                        }
                       />
-                      <span class="sm-stem-label">{midi().label}</span>
-                      <span class="sm-stem-vol-pct">
-                        {Math.round(
-                          midi().muted || (anySoloed() && !midi().soloed)
-                            ? 0
-                            : midi().volume * 100,
-                        )}
-                        %
-                      </span>
                     </div>
-                    <div class="sm-stem-actions">
-                      <button
-                        class={`sm-action-btn ${midi().soloed ? 'sm-active' : ''}`}
-                        onClick={() => toggleSolo('MIDI')}
-                        title="Solo"
-                        style={{ color: midi().soloed ? midi().color : '' }}
-                      >
-                        <Ear />
-                      </button>
-                      <button
-                        class={`sm-action-btn ${midi().muted ? 'sm-muted' : ''}`}
-                        onClick={() => toggleMute('MIDI')}
-                        title="Mute"
-                      >
-                        {midi().muted ? <VolumeX /> : <Volume2 />}
-                      </button>
-                      <button
-                        class="sm-action-btn"
-                        onClick={() => {
-                          void handleDownload(midi())
-                        }}
-                        title="Download MIDI"
-                      >
-                        <Download />
-                      </button>
-                    </div>
-                    <input
-                      type="range"
-                      class="sm-volume-slider"
-                      min="0"
-                      max="100"
-                      value={Math.round(midi().volume * 100)}
-                      onInput={(e) =>
-                        setTrackVolume(
-                          'MIDI',
-                          parseInt(e.currentTarget.value) / 100,
-                        )
-                      }
-                    />
-                  </div>
-                )}
+                  )}
 
                 {instrumental().url && (
                   <div class="sm-stem-strip">
@@ -4027,6 +4111,22 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                     (lyricsSource() === 'api' && !editMode())
                   }
                 >
+                  <button
+                    class="sm-lyrics-edit-btn"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleForceSearch()
+                    }}
+                    title="Search Lyrics Online"
+                    style={{ 'margin-right': '4px' }}
+                  >
+                    <svg viewBox="0 0 24 24" width="11" height="11">
+                      <path
+                        fill="currentColor"
+                        d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"
+                      />
+                    </svg>
+                  </button>
                   <button
                     class="sm-lyrics-edit-btn"
                     onClick={(e) => {
@@ -4464,7 +4564,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                       }
                     }}
                   >
-                    <For each={lyricsRenderData()}>
+                    <For each={Array.from(stableParsedLyrics().values())}>
                       {(rl) => {
                         const idx = parseInt(rl.key.split('-')[1])
                         return (
@@ -4732,49 +4832,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                     }}
                   >
                     {/* ── Block instance badge + line group rendering ── */}
-                    {(() => {
-                      const rl = lyricsRenderData()
-                      const rlByLyricIdx = new Map<number, LyricRenderLine>()
-                      for (const item of rl) {
-                        rlByLyricIdx.set(parseInt(item.key.split('-')[1]), item)
-                      }
-
-                      // Map line index → block info for badge placement
-                      const blockStarts = new Map<
-                        number,
-                        {
-                          blockId: string
-                          label: string
-                          instanceIdx: number
-                          isTemplate: boolean
-                          repeatCount: number
-                          color: string
-                          startLine: number
-                          endLine: number
-                        }
-                      >()
-                      for (const [blockId, instances] of Object.entries(
-                        blockInstances(),
-                      )) {
-                        const block = getBlockById(blockId)
-                        if (!block) continue
-                        const color = getBlockColor(blockId)
-                        for (let i = 0; i < instances.length; i++) {
-                          const [s, e] = instances[i]
-                          blockStarts.set(s, {
-                            blockId,
-                            label: block.label,
-                            instanceIdx: i,
-                            isTemplate: i === 0,
-                            repeatCount: block.repeatCount,
-                            color,
-                            startLine: s,
-                            endLine: e,
-                          })
-                        }
-                      }
-
-                      return displayLines().map((dl) => {
+                    <For each={displayLines()}>
+                      {(dl) => {
                         if (dl.isBlank) {
                           return (
                             <div
@@ -4797,10 +4856,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                         }
 
                         const idx = dl.lyricsIndex
-                        const rlItem = rlByLyricIdx.get(idx)
-                        if (!rlItem) return null
+                        const parsedLyric = stableParsedLyrics().get(idx)
+                        if (!parsedLyric) return null
 
-                        const blockInfo = blockStarts.get(idx)
+                        const blockInfo = blockStarts().get(idx)
                         const blockForLine = getBlockForLine(idx)
                         const blockColor = blockForLine
                           ? getBlockColor(blockForLine.blockId)
@@ -4814,6 +4873,17 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                           markEndLine() !== null &&
                           idx >= markStartLine()! &&
                           idx < markEndLine()!
+
+                        const isActive = () => idx === currentLineIdx()
+                        const activeWordInfo = () =>
+                          isActive()
+                            ? computeActiveWord(
+                                parsedLyric.words,
+                                parsedLyric.time,
+                                parsedLyric.endTime,
+                                elapsed(),
+                              )
+                            : { activeUpTo: -1, charProgress: 0 }
 
                         return (
                           <>
@@ -4857,7 +4927,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                               </div>
                             )}
                             <span
-                              class={`sm-lyrics-line${rlItem.isActive ? ' sm-lyrics-line-active' : ''}${blockForLine ? ' sm-lyrics-line--blocked' : ''}${blockForLine && !blockForLine.isTemplate ? ' sm-lyrics-line--block-instance' : ''}${blockMarkMode() ? ' sm-lyrics-line-markable' : ''}${isMarkSelected ? ' sm-lyrics-line-mark-selected' : ''}`}
+                              class={`sm-lyrics-line${isActive() ? ' sm-lyrics-line-active' : ''}${blockForLine ? ' sm-lyrics-line--blocked' : ''}${blockForLine && !blockForLine.isTemplate ? ' sm-lyrics-line--block-instance' : ''}${blockMarkMode() ? ' sm-lyrics-line-markable' : ''}${isMarkSelected ? ' sm-lyrics-line-mark-selected' : ''}`}
                               style={
                                 blockColor !== undefined
                                   ? { '--block-color': blockColor }
@@ -4907,14 +4977,14 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                                 </span>
                               )}
                               <span class="sm-lyrics-time">
-                                {formatTime(rlItem.time)}
+                                {formatTime(parsedLyric.time)}
                               </span>
-                              {rlItem.words.length === 0
-                                ? rlItem.key.startsWith('lrc-')
+                              {parsedLyric.words.length === 0
+                                ? parsedLyric.key.startsWith('lrc-')
                                   ? lrcLines()[idx]?.text || ''
                                   : lyricsLines()[idx] || ''
-                                : rlItem.words.map((word, wi) => {
-                                    if (wi <= rlItem.activeUpTo) {
+                                : parsedLyric.words.map((word, wi) => {
+                                    if (wi <= activeWordInfo().activeUpTo) {
                                       return (
                                         <span class="sm-lyrics-word sm-lyrics-word-done">
                                           {word}{' '}
@@ -4922,20 +4992,20 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                                       )
                                     }
                                     if (
-                                      wi === rlItem.activeUpTo + 1 &&
-                                      rlItem.activeCharProgress > 0
+                                      wi === activeWordInfo().activeUpTo + 1 &&
+                                      activeWordInfo().charProgress > 0
                                     ) {
                                       return (
                                         <span class="sm-lyrics-word sm-lyrics-word-current">
                                           <span class="sm-lyrics-char-done">
                                             {word.slice(
                                               0,
-                                              rlItem.activeCharProgress,
+                                              activeWordInfo().charProgress,
                                             )}
                                           </span>
                                           <span class="sm-lyrics-char-remaining">
                                             {word.slice(
-                                              rlItem.activeCharProgress,
+                                              activeWordInfo().charProgress,
                                             )}
                                           </span>{' '}
                                         </span>
@@ -4950,8 +5020,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                             </span>
                           </>
                         )
-                      })
-                    })()}
+                      }}
+                    </For>
                   </div>
                 </Show>
               </Show>
@@ -5030,6 +5100,22 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                         (lyricsSource() === 'api' && !editMode())
                       }
                     >
+                      <button
+                        class="sm-lyrics-edit-btn"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleForceSearch()
+                        }}
+                        title="Search Lyrics Online"
+                        style={{ 'margin-right': '4px' }}
+                      >
+                        <svg viewBox="0 0 24 24" width="11" height="11">
+                          <path
+                            fill="currentColor"
+                            d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"
+                          />
+                        </svg>
+                      </button>
                       <button
                         class="sm-lyrics-edit-btn"
                         onClick={(e) => {
@@ -5456,7 +5542,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                           }
                         }}
                       >
-                        <For each={lyricsRenderData()}>
+                        <For each={Array.from(stableParsedLyrics().values())}>
                           {(rl) => {
                             const idx = parseInt(rl.key.split('-')[1])
                             return (
@@ -5728,51 +5814,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                           }
                         }}
                       >
-                        {(() => {
-                          const rl = lyricsRenderData()
-                          const rlByLyricIdx = new Map<
-                            number,
-                            LyricRenderLine
-                          >()
-                          for (const item of rl)
-                            rlByLyricIdx.set(
-                              parseInt(item.key.split('-')[1]),
-                              item,
-                            )
-                          const blockStarts = new Map<
-                            number,
-                            {
-                              blockId: string
-                              label: string
-                              instanceIdx: number
-                              isTemplate: boolean
-                              repeatCount: number
-                              color: string
-                              startLine: number
-                              endLine: number
-                            }
-                          >()
-                          for (const [blockId, instances] of Object.entries(
-                            blockInstances(),
-                          )) {
-                            const block = getBlockById(blockId)
-                            if (!block) continue
-                            const color = getBlockColor(blockId)
-                            for (let i = 0; i < instances.length; i++) {
-                              const [s, e] = instances[i]
-                              blockStarts.set(s, {
-                                blockId,
-                                label: block.label,
-                                instanceIdx: i,
-                                isTemplate: i === 0,
-                                repeatCount: block.repeatCount,
-                                color,
-                                startLine: s,
-                                endLine: e,
-                              })
-                            }
-                          }
-                          return displayLines().map((dl) => {
+                        <For each={displayLines()}>
+                          {(dl) => {
                             if (dl.isBlank)
                               return (
                                 <div
@@ -5797,9 +5840,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                                 </div>
                               )
                             const idx = dl.lyricsIndex
-                            const rlItem = rlByLyricIdx.get(idx)
-                            if (!rlItem) return null
-                            const blockInfo = blockStarts.get(idx)
+                            const parsedLyric = stableParsedLyrics().get(idx)
+                            if (!parsedLyric) return null
+                            const blockInfo = blockStarts().get(idx)
                             const blockForLine = getBlockForLine(idx)
                             const blockColor = blockForLine
                               ? getBlockColor(blockForLine.blockId)
@@ -5813,6 +5856,16 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                               markEndLine() !== null &&
                               idx >= markStartLine()! &&
                               idx < markEndLine()!
+                            const isActive = () => idx === currentLineIdx()
+                            const activeWordInfo = () =>
+                              isActive()
+                                ? computeActiveWord(
+                                    parsedLyric.words,
+                                    parsedLyric.time,
+                                    parsedLyric.endTime,
+                                    elapsed(),
+                                  )
+                                : { activeUpTo: -1, charProgress: 0 }
                             return (
                               <>
                                 {blockInfo && (
@@ -5853,7 +5906,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                                   </div>
                                 )}
                                 <span
-                                  class={`sm-lyrics-line${rlItem.isActive ? ' sm-lyrics-line-active' : ''}${blockForLine ? ' sm-lyrics-line--blocked' : ''}${blockForLine && !blockForLine.isTemplate ? ' sm-lyrics-line--block-instance' : ''}${blockMarkMode() ? ' sm-lyrics-line-markable' : ''}${isMarkSelected ? ' sm-lyrics-line-mark-selected' : ''}`}
+                                  class={`sm-lyrics-line${isActive() ? ' sm-lyrics-line-active' : ''}${blockForLine ? ' sm-lyrics-line--blocked' : ''}${blockForLine && !blockForLine.isTemplate ? ' sm-lyrics-line--block-instance' : ''}${blockMarkMode() ? ' sm-lyrics-line-markable' : ''}${isMarkSelected ? ' sm-lyrics-line-mark-selected' : ''}`}
                                   style={
                                     blockColor !== undefined
                                       ? { '--block-color': blockColor }
@@ -5899,34 +5952,35 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                                     </span>
                                   )}
                                   <span class="sm-lyrics-time">
-                                    {formatTime(rlItem.time)}
+                                    {formatTime(parsedLyric.time)}
                                   </span>
-                                  {rlItem.words.length === 0
-                                    ? rlItem.key.startsWith('lrc-')
+                                  {parsedLyric.words.length === 0
+                                    ? parsedLyric.key.startsWith('lrc-')
                                       ? lrcLines()[idx]?.text || ''
                                       : lyricsLines()[idx] || ''
-                                    : rlItem.words.map((word, wi) => {
-                                        if (wi <= rlItem.activeUpTo)
+                                    : parsedLyric.words.map((word, wi) => {
+                                        if (wi <= activeWordInfo().activeUpTo)
                                           return (
                                             <span class="sm-lyrics-word sm-lyrics-word-done">
                                               {word}{' '}
                                             </span>
                                           )
                                         if (
-                                          wi === rlItem.activeUpTo + 1 &&
-                                          rlItem.activeCharProgress > 0
+                                          wi ===
+                                            activeWordInfo().activeUpTo + 1 &&
+                                          activeWordInfo().charProgress > 0
                                         )
                                           return (
                                             <span class="sm-lyrics-word sm-lyrics-word-current">
                                               <span class="sm-lyrics-char-done">
                                                 {word.slice(
                                                   0,
-                                                  rlItem.activeCharProgress,
+                                                  activeWordInfo().charProgress,
                                                 )}
                                               </span>
                                               <span class="sm-lyrics-char-remaining">
                                                 {word.slice(
-                                                  rlItem.activeCharProgress,
+                                                  activeWordInfo().charProgress,
                                                 )}
                                               </span>{' '}
                                             </span>
@@ -5940,8 +5994,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                                 </span>
                               </>
                             )
-                          })
-                        })()}
+                          }}
+                        </For>
                       </div>
                     </Show>
                   </Show>
@@ -6006,7 +6060,12 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                     onPointerDown={(e) => handleFixedResizeStart('pitch', e)}
                   />
                 </div>
-                <Show when={props.practiceMode === 'midi'}>
+                <Show
+                  when={
+                    props.practiceMode === 'midi' ||
+                    props.requestedStems?.midi === true
+                  }
+                >
                   <div
                     class="sm-workspace-panel"
                     style={{ height: `${fixedPanelHeights().midi}px` }}
@@ -6106,64 +6165,66 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                       />
                     </div>
                   )}
-                  {midi().buffer && props.practiceMode === 'midi' && (
-                    <div class="sm-stem-strip">
-                      <div class="sm-stem-header">
-                        <span
-                          class="sm-stem-dot"
-                          style={{ background: midi().color }}
+                  {midi().buffer &&
+                    (props.practiceMode === 'midi' ||
+                      props.requestedStems?.midi === true) && (
+                      <div class="sm-stem-strip">
+                        <div class="sm-stem-header">
+                          <span
+                            class="sm-stem-dot"
+                            style={{ background: midi().color }}
+                          />
+                          <span class="sm-stem-label">{midi().label}</span>
+                          <span class="sm-stem-vol-pct">
+                            {Math.round(
+                              midi().muted || (anySoloed() && !midi().soloed)
+                                ? 0
+                                : midi().volume * 100,
+                            )}
+                            %
+                          </span>
+                        </div>
+                        <div class="sm-stem-actions">
+                          <button
+                            class={`sm-action-btn ${midi().soloed ? 'sm-active' : ''}`}
+                            onClick={() => toggleSolo('MIDI')}
+                            title="Solo"
+                            style={{ color: midi().soloed ? midi().color : '' }}
+                          >
+                            <Ear />
+                          </button>
+                          <button
+                            class={`sm-action-btn ${midi().muted ? 'sm-muted' : ''}`}
+                            onClick={() => toggleMute('MIDI')}
+                            title="Mute"
+                          >
+                            {midi().muted ? <VolumeX /> : <Volume2 />}
+                          </button>
+                          <button
+                            class="sm-action-btn"
+                            onClick={() => {
+                              void handleDownload(midi())
+                            }}
+                            title="Download MIDI"
+                          >
+                            <Download />
+                          </button>
+                        </div>
+                        <input
+                          type="range"
+                          class="sm-volume-slider"
+                          min="0"
+                          max="100"
+                          value={Math.round(midi().volume * 100)}
+                          onInput={(e) =>
+                            setTrackVolume(
+                              'MIDI',
+                              parseInt(e.currentTarget.value) / 100,
+                            )
+                          }
                         />
-                        <span class="sm-stem-label">{midi().label}</span>
-                        <span class="sm-stem-vol-pct">
-                          {Math.round(
-                            midi().muted || (anySoloed() && !midi().soloed)
-                              ? 0
-                              : midi().volume * 100,
-                          )}
-                          %
-                        </span>
                       </div>
-                      <div class="sm-stem-actions">
-                        <button
-                          class={`sm-action-btn ${midi().soloed ? 'sm-active' : ''}`}
-                          onClick={() => toggleSolo('MIDI')}
-                          title="Solo"
-                          style={{ color: midi().soloed ? midi().color : '' }}
-                        >
-                          <Ear />
-                        </button>
-                        <button
-                          class={`sm-action-btn ${midi().muted ? 'sm-muted' : ''}`}
-                          onClick={() => toggleMute('MIDI')}
-                          title="Mute"
-                        >
-                          {midi().muted ? <VolumeX /> : <Volume2 />}
-                        </button>
-                        <button
-                          class="sm-action-btn"
-                          onClick={() => {
-                            void handleDownload(midi())
-                          }}
-                          title="Download MIDI"
-                        >
-                          <Download />
-                        </button>
-                      </div>
-                      <input
-                        type="range"
-                        class="sm-volume-slider"
-                        min="0"
-                        max="100"
-                        value={Math.round(midi().volume * 100)}
-                        onInput={(e) =>
-                          setTrackVolume(
-                            'MIDI',
-                            parseInt(e.currentTarget.value) / 100,
-                          )
-                        }
-                      />
-                    </div>
-                  )}
+                    )}
                   {instrumental().url && (
                     <div class="sm-stem-strip">
                       <div class="sm-stem-header">

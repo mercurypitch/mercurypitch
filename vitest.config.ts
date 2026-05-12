@@ -21,6 +21,7 @@ export default defineConfig({
         'src/lib/**/*.ts',
         'src/stores/**/*.ts',
         'src/components/**/*.tsx',
+        'src/db/**/*.ts',
       ],
       exclude: ['src/tests/**', '**/*.d.ts'],
     },

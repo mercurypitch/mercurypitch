@@ -4,7 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
-import { FileUpload, MusicNote } from './icons'
+import { FileUpload, ImportFile, MusicNote } from './icons'
 
 interface UploadControlProps {
   onFileSelect?: (file: File) => void
@@ -13,6 +13,7 @@ interface UploadControlProps {
   maxSize?: number
   allowedTypes?: string[]
   processing?: boolean
+  disabled?: boolean
 }
 
 export const UvrUploadControl: Component<UploadControlProps> = (props) => {
@@ -38,6 +39,8 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
   }
 
   const handleFileSelect = (file: File) => {
+    if (props.disabled === true) return
+
     // Validate file size
     if (file.size > maxSize()) {
       alert(`File too large! Maximum size: ${formatFileSize(maxSize())}`)
@@ -67,6 +70,7 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
 
   const handleDrop = (e: DragEvent) => {
     e.preventDefault()
+    if (props.disabled === true) return
     setIsDragging(false)
 
     const files = e.dataTransfer?.files
@@ -83,6 +87,7 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
   }
 
   const handleClear = () => {
+    if (props.disabled === true) return
     setSelectedFile(null)
     const fileInput = document.getElementById(
       'uvr-file-input',
@@ -91,6 +96,7 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
   }
 
   const handleProcess = () => {
+    if (props.disabled === true) return
     if (selectedFile()) {
       // Generate session ID
       const sessionId = `session-${Date.now()}`
@@ -101,7 +107,9 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
   }
 
   return (
-    <div class="uvr-upload-control">
+    <div
+      class={`uvr-upload-control ${props.disabled === true ? 'disabled' : ''}`}
+    >
       <div class="upload-header">
         <div class="upload-icon-wrapper">
           <MusicNote />
@@ -111,8 +119,8 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
 
       {/* Upload Zone */}
       <label
-        class={`upload-zone ${isDragging() ? 'dragging' : ''}`}
-        onDragEnter={() => setIsDragging(true)}
+        class={`upload-zone ${isDragging() ? 'dragging' : ''} ${props.disabled === true ? 'disabled' : ''}`}
+        onDragEnter={() => props.disabled !== true && setIsDragging(true)}
         onDragOver={(e) => e.preventDefault()}
         onDragLeave={() => setIsDragging(false)}
         onDrop={handleDrop}
@@ -124,6 +132,7 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
           accept={allowedTypes().join(',')}
           onChange={handleFileInput}
           class="file-input"
+          disabled={props.disabled}
         />
 
         <Show when={!selectedFile()}>
@@ -141,7 +150,9 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
         <Show when={selectedFile()}>
           <div class="file-info">
             <div class="file-preview">
-              <div class="file-icon">🎵</div>
+              <div class="file-icon">
+                <MusicNote />
+              </div>
               <div class="file-details">
                 <p class="file-name">{selectedFile()?.name ?? 'Unknown'}</p>
                 <p class="file-meta">
@@ -163,15 +174,17 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
                 <button
                   class="upload-btn upload-btn-secondary"
                   onClick={handleClear}
+                  disabled={props.disabled}
                 >
                   Change File
                 </button>
                 <button
                   class="upload-btn upload-btn-primary"
                   onClick={handleProcess}
-                  disabled={!selectedFile()}
+                  disabled={!selectedFile() || props.disabled}
                 >
-                  Process with UVR
+                  <ImportFile />
+                  Process
                 </button>
               </div>
             </Show>

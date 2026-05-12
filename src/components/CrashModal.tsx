@@ -6,6 +6,7 @@ import type { Component } from 'solid-js'
 import { createMemo, createSignal, Show } from 'solid-js'
 import { ConsoleLog } from '@/components/ConsoleLog'
 import { APP_VERSION } from '@/lib/defaults'
+import { replaceHash } from '@/lib/hash-router'
 import { appError } from '@/stores'
 
 /**
@@ -18,6 +19,7 @@ export const CrashModal: Component = () => {
   const [copyError, setCopyError] = createSignal<string | null>(null)
 
   const handleReload = (): void => {
+    replaceHash({ type: 'tab', tab: 'singing' })
     window.location.reload()
   }
 
@@ -237,7 +239,7 @@ export const CrashModal: Component = () => {
 
               <div class="crash-secondary-actions">
                 <a
-                  href="https://github.com/yourusername/pitch-perfect/issues/new"
+                  href="https://github.com/Komediruzecki/pitch-perfect/issues/new"
                   target="_blank"
                   rel="noopener noreferrer"
                   class="crash-action-link"

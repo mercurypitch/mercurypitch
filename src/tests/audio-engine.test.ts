@@ -120,12 +120,9 @@ global.OfflineAudioContext = vi.fn().mockImplementation(function (
   })
 })
 
-// Mock URL.createObjectURL for download tests
-global.URL = {
-  createObjectURL: vi.fn().mockReturnValue('mock-url'),
-  revokeObjectURL: vi.fn().mockImplementation(() => {}),
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-} as any
+// Mock URL.revokeObjectURL for download tests (createObjectURL is handled
+// globally in test setup to avoid jsdom navigation errors)
+global.URL.revokeObjectURL = vi.fn().mockImplementation(() => {})
 
 global.navigator = {
   mediaDevices: {
@@ -259,12 +256,9 @@ global.OfflineAudioContext = vi.fn().mockImplementation(function (
   })
 })
 
-// Mock URL.createObjectURL for download tests
-global.URL = {
-  createObjectURL: vi.fn().mockReturnValue('mock-url'),
-  revokeObjectURL: vi.fn().mockImplementation(() => {}),
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-} as any
+// Mock URL.revokeObjectURL for download tests (createObjectURL is handled
+// globally in test setup to avoid jsdom navigation errors)
+global.URL.revokeObjectURL = vi.fn().mockImplementation(() => {})
 
 global.navigator = {
   mediaDevices: {

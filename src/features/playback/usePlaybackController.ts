@@ -189,7 +189,9 @@ export function usePlaybackController(
     setPitchHistory([])
     setNoteResults([])
 
-    // Reset session playback state
+    // Reset session playback state so a fresh Play always re-seeds
+    setSessionMode(false)
+    setSessionActive(false)
     setPlaybackDisplayMelody(null)
     setPlaybackDisplayBeats(null)
 

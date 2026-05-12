@@ -1,0 +1,77 @@
+// ============================================================
+// Wrangler config WITH UVR Docker containers (Pro feature)
+// ============================================================
+// Usage:  wrangler deploy --env dev --config wrangler.containers.jsonc
+//
+// This config extends the dev environment with the UVR API container
+// for server-side vocal separation. Use this when you want to deploy
+// the Docker-based processing backend alongside the static app.
+// ============================================================
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "pitch-perfect",
+  "compatibility_date": "2026-04-30",
+  "observability": {
+    "enabled": false,
+    "head_sampling_rate": 1,
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "persist": true,
+      "invocation_logs": true
+    },
+    "traces": {
+      "enabled": false,
+      "persist": true,
+      "head_sampling_rate": 1
+    }
+  },
+  "main": "src/index.js",
+  "build": {
+    "command": "pnpm run build"
+  },
+  "assets": {
+    "directory": "dist"
+  },
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "routes": [
+    { "pattern": "mercurypitch.com", "custom_domain": true }
+  ],
+  "env": {
+    "dev": {
+      "name": "pitch-perfect-dev",
+      "routes": [
+        { "pattern": "dev.mercurypitch.com", "custom_domain": true }
+      ],
+      "build": {
+        "command": "pnpm run build:dev"
+      },
+      "containers": [
+        {
+          "class_name": "UvrContainer",
+          "image": "./uvr-api/Dockerfile",
+          "max_instances": 3,
+          "instance_type": "standard-4"
+        }
+      ],
+      "durable_objects": {
+        "bindings": [
+          {
+            "name": "UVR_SERVICE",
+            "class_name": "UvrContainer"
+          }
+        ]
+      },
+      "migrations": [
+        {
+          "tag": "v1",
+          "new_sqlite_classes": [
+            "UvrContainer"
+          ]
+        }
+      ]
+    }
+  }
+}

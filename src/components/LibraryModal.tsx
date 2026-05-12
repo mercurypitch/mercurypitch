@@ -4,6 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
+import { IconCheckSolid, IconMusicNote, IconSheetMusic, } from '@/components/hidden-features-icons'
 import { TAB_COMPOSE } from '@/features/tabs/constants'
 import { setEditorView } from '@/stores'
 // Note: setActiveTab is aliased to setAppActiveTab to avoid collision
@@ -1054,7 +1055,11 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                             }
                           >
                             <span class="playlist-picker-icon">
-                              {item.type === 'session' ? '🎼' : '🎵'}
+                              {item.type === 'session' ? (
+                                <IconSheetMusic />
+                              ) : (
+                                <IconMusicNote />
+                              )}
                             </span>
                             <span class="playlist-picker-copy">
                               <span class="select-item-title">
@@ -1063,7 +1068,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                               <span class="select-item-meta">{item.meta}</span>
                             </span>
                             <span class="playlist-picker-check">
-                              {selected ? '✓' : '+'}
+                              {selected ? <IconCheckSolid /> : '+'}
                             </span>
                           </button>
                         )

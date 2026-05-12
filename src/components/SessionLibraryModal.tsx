@@ -5,8 +5,7 @@
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
 import { TAB_COMPOSE, TAB_SINGING } from '@/features/tabs/constants'
-import { appStore, melodyStore, setActiveTab, setEditorView } from '@/stores'
-import { setActiveUserSession, showNotification } from '@/stores'
+import { loadSession, melodyStore, setActiveTab, setActiveUserSession, setEditorView, showNotification, } from '@/stores'
 import { createSession, saveSession } from '@/stores/session-store'
 import type { PlaybackSession, SessionCategory, SessionDifficulty, } from '@/types'
 import { SessionMiniTimeline } from './SessionMiniTimeline'
@@ -60,16 +59,16 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
    *      maps to useSessionSequencer.playSessionSequence — same code path
    *      as the Library button.
    *
-   * The previous handler only called `appStore.loadSession()` (which
+   * The previous handler only called `loadSession()` (which
    * sets the active session) and closed the modal — it never actually
    * started playback, so the Play button appeared to do nothing.
    */
   const handlePlay = (session: PlaybackSession) => {
     setActiveUserSession(session)
-    // appStore.loadSession also seeds bpm/key/scale and other UI state
+    // loadSession also seeds bpm/key/scale and other UI state
     // that Play-All relies on (it's called indirectly via the bridge).
     // Calling it here keeps the two routes identical.
-    appStore.loadSession(session)
+    loadSession(session)
     setActiveTab(TAB_SINGING)
     // playMode is forced to PLAYBACK_MODE_SESSION inside usePlaybackController's
     // playSessionSequence() handler, so we don't need to set it here —

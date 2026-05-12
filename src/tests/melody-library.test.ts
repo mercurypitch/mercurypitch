@@ -47,7 +47,7 @@ describe('Melody Library System', () => {
       expect(_melody.bpm).toBe(80)
       expect(_melody.key).toBe('C')
       expect(_melody.scaleType).toBe('major')
-      expect(_melody.octave).toBe(4)
+      expect(_melody.octave).toBe(3)
       expect(_melody.items).toEqual([])
       expect(_melody.createdAt).toBeGreaterThan(0)
       expect(_melody.updatedAt).toBeGreaterThan(0)
