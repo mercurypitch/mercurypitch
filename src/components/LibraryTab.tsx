@@ -116,7 +116,9 @@ export const LibraryTab: Component = () => {
     const session = userSession()
     if (session === null || session.items === undefined) return []
 
-    return session.items.map((item) => {
+    return session.items
+      .filter((item) => item.type !== 'rest')
+      .map((item) => {
       if (
         item.type === 'melody' &&
         item.melodyId !== null &&
