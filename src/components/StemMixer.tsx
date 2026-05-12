@@ -2210,6 +2210,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     pitchHistory = []
     micPitchHistory = []
     setWindowStart(0)
+    setUserScrolled(false)
     cancelAnimationFrame(rafId)
     syncCanvasSizes()
     drawWaveformOverview()
@@ -5252,7 +5253,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                 </div>
                 <div
                   class="sm-workspace-panel"
-                  style={{ flex: '1', 'min-height': '120px' }}
+                  style={{ flex: '1', 'min-height': '0' }}
                 >
                   <div class="sm-panel-header">
                     Lyrics
@@ -7132,6 +7133,12 @@ export const StemMixerStyles: string = `
   column-count: 2;
   column-gap: 1rem;
   display: block;
+}
+.sm-lyrics-columns-2 .sm-lyrics-line,
+.sm-lyrics-columns-2 .sm-lyrics-rest,
+.sm-lyrics-columns-2 .sm-lyrics-line-spacer,
+.sm-lyrics-columns-2 .sm-lyrics-block-badge {
+  break-inside: avoid;
 }
 
 /* Per-word highlighting */
