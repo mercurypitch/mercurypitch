@@ -3265,12 +3265,14 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     if (liveWaveCanvasRef) resizeObserver.observe(liveWaveCanvasRef)
     if (pitchCanvasRef) resizeObserver.observe(pitchCanvasRef)
     if (midiCanvasRef) resizeObserver.observe(midiCanvasRef)
-    // Sync and redraw synchronously — effect runs after DOM update, before paint
-    syncCanvasSizes()
-    drawWaveformOverview()
-    drawLiveWaveform()
-    drawPitchCanvas()
-    drawMidiCanvas()
+    // Defer to rAF so the browser finishes layout before measuring canvas sizes
+    requestAnimationFrame(() => {
+      syncCanvasSizes()
+      drawWaveformOverview()
+      drawLiveWaveform()
+      drawPitchCanvas()
+      drawMidiCanvas()
+    })
   })
 
   createEffect(() => {
@@ -8302,7 +8304,7 @@ export const StemMixerStyles: string = `
   flex-direction: column;
   gap: 0.5rem;
   min-height: 0;
-  overflow: hidden;
+  overflow: auto;
 }
 
 /* Right Sidebar */
