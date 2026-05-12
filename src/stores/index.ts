@@ -12,11 +12,11 @@ import * as playbackStateStore from './playback-state-store'
 import * as practiceStore from './practice-session-store'
 import { sessionMode as _sessionMode, setPracticeResults as _setPracticeResults, setPracticeSession as _setPracticeSession, setSessionActive as _setSessionActive, setSessionItemIndex as _setSessionItemIndex, setSessionItemRepeat as _setSessionItemRepeat, setSessionMode as _setSessionMode, } from './practice-session-store'
 import { getSessionHistory, sessionResults } from './practice-session-store'
+import { clearMelodySelection, getSelectedMelodyIds, loadSession, selectAllMelodies, toggleMelodySelection, } from './session-store'
 import * as settingsStore from './settings-store'
 import * as themeStore from './theme-store'
 import * as transportStore from './transport-store'
 import * as uiStore from './ui-store'
-import * as userSessionStore from './user-session-store'
 import * as walkthroughStore from './walkthrough-store'
 
 export * from './app-store'
@@ -27,7 +27,7 @@ export * from './settings-store'
 export * from './theme-store'
 export * from './transport-store'
 export * from './ui-store'
-export * from './user-session-store'
+
 export * from './walkthrough-store'
 export * from './playback-state-store'
 export * from './falling-notes-store'
@@ -56,7 +56,7 @@ export const startPracticeSession = (session: PlaybackSession): void => {
 }
 
 // appStore bundles all stores for backward-compatible access.
-// TODO: Replace all appStore.<something> calls with proper calls!
+// appStore retains all store exports for test compatibility.
 // To ease the migration and avoid breaking the rest of the application
 // right away, we expose a monolithic "appStore" namespace that bundles
 // all the signals and setters from the individual stores.
@@ -69,12 +69,8 @@ export const appStore = {
   ...themeStore,
   ...transportStore,
   ...uiStore,
-  ...userSessionStore,
   ...walkthroughStore,
   ...playbackStateStore,
-
-  // Re-map loadSession correctly since it was in userSessionStore but was expected in appStore
-  loadSession: userSessionStore.loadSession,
 
   startPracticeSession: (session: PlaybackSession) => {
     practiceStore.setPracticeSession(session)
@@ -84,6 +80,13 @@ export const appStore = {
     practiceStore.setSessionItemIndex(0)
     practiceStore.setSessionItemRepeat(0)
   },
+  // Session loading & melody selection
+  loadSession,
+  getSelectedMelodyIds,
+  toggleMelodySelection,
+  selectAllMelodies,
+  clearMelodySelection,
+
   // Audio settings wrappers needed by the app
   reverb: settingsStore.reverbConfig,
 

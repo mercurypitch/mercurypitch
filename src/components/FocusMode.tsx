@@ -6,8 +6,7 @@ import type { Component } from 'solid-js'
 import { createMemo, Show } from 'solid-js'
 import { PitchCanvas } from '@/components/PitchCanvas'
 import { melodyTotalBeats } from '@/lib/scale-data'
-import { appStore } from '@/stores'
-import { keyName, playbackSpeed, scaleType, sessionActive, setPlaybackSpeed, } from '@/stores'
+import { currentSessionItemRepeat, exitFocusMode, keyName, playbackSpeed, scaleType, sessionActive, sessionItemIndex, setPlaybackSpeed, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import type { MelodyItem, PitchSample } from '@/types'
 import type { NoteResult, PitchResult, PracticeResult } from '@/types'
@@ -58,8 +57,8 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
 
   // Session info
   const isSession = createMemo(() => sessionActive())
-  const sessionItem = createMemo(() => appStore.sessionItemIndex())
-  const sessionRepeat = createMemo(() => appStore.currentSessionItemRepeat())
+  const sessionItem = createMemo(() => sessionItemIndex())
+  const sessionRepeat = createMemo(() => currentSessionItemRepeat())
 
   // Calculate pitch dot position based on current pitch frequency
   const pitchDotPosition = createMemo(() => {
@@ -189,7 +188,7 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
         <button
           class="focus-exit"
           onClick={() => {
-            appStore.exitFocusMode()
+            exitFocusMode()
           }}
           title="Exit Focus Mode"
           aria-label="Exit Focus Mode"

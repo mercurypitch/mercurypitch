@@ -14,8 +14,8 @@ import { StatsBars } from '@/components/StatsBars'
 import { TAB_COMPOSE, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
 import { ratingToScore } from '@/lib/practice-engine'
 import { KEY_OFFSETS, midiToFreq, midiToNote } from '@/lib/scale-data'
-import { activeTab as appActiveTab, appStore, sessionResults, showNotification, } from '@/stores'
-import { keyName, scaleType, setKeyName, setScaleType } from '@/stores'
+import { activeTab as appActiveTab, sessionResults, showNotification, } from '@/stores'
+import { gridLinesVisible, keyName, scaleType, setGridLinesVisible, setKeyName, setScaleType, setShowPitchDisplay, setShowPlaybackBall, setShowPlayhead, setShowStats, showPitchDisplay, showPlaybackBall, showPlaybackSetupInfo, showPlayhead, showStats, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import { setShowSidebarNoteList, showSidebarNoteList, } from '@/stores/settings-store'
 import { customScales as customScalesMap, customScaleTypeId, } from '@/stores/settings-store'
@@ -163,7 +163,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
       />
 
       {/* Playback Setup section */}
-      <Show when={appStore.showPlaybackSetupInfo()}>
+      <Show when={showPlaybackSetupInfo()}>
         <div class="sidebar-section">
           <h2 class="panel-title">Playback Setup</h2>
 
@@ -326,9 +326,9 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
           <label class="settings-toggle vis-grid-toggle">
             <input
               type="checkbox"
-              checked={appStore.showPlaybackBall()}
+              checked={showPlaybackBall()}
               onChange={(e) => {
-                appStore.setShowPlaybackBall(e.currentTarget.checked)
+                setShowPlaybackBall(e.currentTarget.checked)
               }}
             />
             <span class="settings-slider" />
@@ -339,9 +339,9 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
           <label class="settings-toggle vis-grid-toggle">
             <input
               type="checkbox"
-              checked={appStore.showPlayhead()}
+              checked={showPlayhead()}
               onChange={(e) => {
-                appStore.setShowPlayhead(e.currentTarget.checked)
+                setShowPlayhead(e.currentTarget.checked)
               }}
             />
             <span class="settings-slider" />
@@ -352,9 +352,9 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
           <label class="settings-toggle vis-grid-toggle">
             <input
               type="checkbox"
-              checked={appStore.gridLinesVisible()}
+              checked={gridLinesVisible()}
               onChange={(e) => {
-                appStore.setGridLinesVisible(e.currentTarget.checked)
+                setGridLinesVisible(e.currentTarget.checked)
               }}
             />
             <span class="settings-slider" />
@@ -378,9 +378,9 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
           <label class="settings-toggle vis-grid-toggle">
             <input
               type="checkbox"
-              checked={appStore.showStats()}
+              checked={showStats()}
               onChange={(e) => {
-                appStore.setShowStats(e.currentTarget.checked)
+                setShowStats(e.currentTarget.checked)
               }}
             />
             <span class="settings-slider" />
@@ -391,9 +391,9 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
           <label class="settings-toggle vis-grid-toggle">
             <input
               type="checkbox"
-              checked={appStore.showPitchDisplay()}
+              checked={showPitchDisplay()}
               onChange={(e) => {
-                appStore.setShowPitchDisplay(e.currentTarget.checked)
+                setShowPitchDisplay(e.currentTarget.checked)
               }}
             />
             <span class="settings-slider" />
@@ -408,7 +408,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
       </div>
 
       {/* Stats panel */}
-      <Show when={isPracticeOrSettingsTab() && appStore.showStats()}>
+      <Show when={isPracticeOrSettingsTab() && showStats()}>
         <div class="sidebar-section">
           <div id="stats-panel">
             <h3>Accuracy</h3>
@@ -459,7 +459,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
       </Show>
 
       {/* Pitch display (bottom-anchored) */}
-      <Show when={isPracticeOrSettingsTab() && appStore.showPitchDisplay()}>
+      <Show when={isPracticeOrSettingsTab() && showPitchDisplay()}>
         <div class="sidebar-section sidebar-notes-bottom">
           <PitchDisplay pitch={props.pitch} targetNote={props.targetNoteName} />
         </div>

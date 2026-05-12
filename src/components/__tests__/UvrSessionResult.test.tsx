@@ -115,7 +115,7 @@ describe('UvrSessionResult Component', () => {
 
       render(() => <UvrSessionResult {...defaultProps} />)
 
-      expect(screen.getByText('Processing...')).toBeInTheDocument()
+      expect(screen.getByText(/Processing\.\.\./)).toBeInTheDocument()
     })
 
     it('renders error status with X icon', () => {

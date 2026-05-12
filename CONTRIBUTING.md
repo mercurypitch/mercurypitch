@@ -10,7 +10,7 @@ git clone <repo-url>
 cd pitch-perfect-repo
 pnpm install
 
-# Install git hooks (blocks direct pushes to main)
+# Install git hooks (auto-format on commit, blocks direct pushes to main)
 git config core.hooksPath .githooks
 ```
 

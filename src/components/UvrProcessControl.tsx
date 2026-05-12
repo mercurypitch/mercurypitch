@@ -3,8 +3,8 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createMemo, For, Show } from 'solid-js'
-import { CheckCircle, Loader2, Music, Play, Settings, XCircle } from './icons'
+import { createEffect, createMemo, createSignal, For, onCleanup, Show, } from 'solid-js'
+import { CheckCircle, Cpu, FilePlus, Loader2, Music, RotateCcw, Server, Settings, Trash2, XCircle, Zap, } from './icons'
 
 interface ProcessControlProps {
   sessionId: string
@@ -26,8 +26,14 @@ interface ProcessControlProps {
     vocalMidi?: string
     instrumentalMidi?: string
   }
+  processingMode?: 'server' | 'local'
+  numChunks?: number
+  provider?: string
+  originalFileName?: string
   onCancel?: () => void
   onRetry?: () => void
+  onNewSession?: () => void
+  onDeleteAndNew?: () => void
 }
 
 export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
@@ -42,13 +48,48 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
     return `${Math.round(percent)}%`
   }
 
+  const isLocal = (): boolean => props.processingMode === 'local'
+
+  // Continuous elapsed-time display while processing.
+  // The pipeline only sends progress at chunk boundaries (~5s on CPU)
+  // so the visible time would freeze between chunks without this timer.
+  const [tick, setTick] = createSignal(0)
+  let timer: ReturnType<typeof setInterval> | null = null
+
+  createEffect(() => {
+    if (props.status === 'processing') {
+      timer = setInterval(() => setTick((t) => t + 1), 200)
+    } else {
+      if (timer) {
+        clearInterval(timer)
+        timer = null
+      }
+      setTick(0)
+    }
+    onCleanup(() => {
+      if (timer) {
+        clearInterval(timer)
+        timer = null
+      }
+    })
+  })
+
+  const displayTime = createMemo(() => {
+    if (props.status !== 'processing') return 0
+    // When a progress event arrives, props.processingTime jumps forward.
+    // Between events, the local tick counter fills the gaps smoothly.
+    // Use the larger of the two to avoid regressing during render cycles.
+    const local = tick() * 200
+    return Math.max(props.processingTime ?? 0, local)
+  })
+
   const getProcessStage = () => {
     switch (props.status) {
       case 'processing':
         return {
           icon: <Loader2 />,
-          title: 'Processing with UVR',
-          description: 'Separating vocals and instrumental...',
+          title: `Separating ${props.originalFileName ?? 'audio'} into stems`,
+          description: '',
           color: 'var(--accent)',
         }
       case 'completed':
@@ -106,10 +147,40 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
         </div>
         <div class="process-info">
           <h3>{currentStage().title}</h3>
-          <p>{currentStage().description}</p>
-          <p class="process-session-id" title={displayId()}>
-            {displayId().length > 16 ? displayId().slice(-8) : displayId()}
-          </p>
+          <Show when={currentStage().description}>
+            <p>{currentStage().description}</p>
+          </Show>
+          <div class="process-meta-info">
+            <Show when={props.processingMode}>
+              <div class="status-provider">
+                {props.processingMode === 'server' ? 'Server' : 'Browser'}
+              </div>
+            </Show>
+            <Show when={props.processingMode === 'server' || props.provider}>
+              <div class="status-provider">
+                <span
+                  class="provider-icon"
+                  classList={{ 'provider-gpu': props.provider === 'webgpu' }}
+                >
+                  {props.processingMode === 'server' ? (
+                    <Server />
+                  ) : props.provider === 'webgpu' ? (
+                    <Zap />
+                  ) : (
+                    <Cpu />
+                  )}
+                </span>
+                {props.processingMode === 'server'
+                  ? 'Cloud Server'
+                  : props.provider === 'webgpu'
+                    ? 'GPU (WebGPU)'
+                    : 'CPU (WASM)'}
+              </div>
+            </Show>
+            <p class="process-session-id" title={displayId()}>
+              {displayId().length > 16 ? displayId().slice(-8) : displayId()}
+            </p>
+          </div>
         </div>
       </div>
 
@@ -135,8 +206,25 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
             {(props.indeterminate ?? false)
               ? 'Estimating...'
               : formatPercentage(props.progress)}{' '}
-            • {formatTime(props.processingTime ?? 0)}
+            • {formatTime(displayTime())}
           </div>
+          <Show
+            when={
+              isLocal() && props.numChunks !== undefined && props.numChunks > 1
+            }
+          >
+            <div class="progress-chunk-info">
+              Chunk{' '}
+              {Math.max(
+                1,
+                Math.min(
+                  props.numChunks ?? 1,
+                  Math.ceil((props.progress / 100) * (props.numChunks ?? 1)),
+                ),
+              )}{' '}
+              of {props.numChunks}
+            </div>
+          </Show>
         </div>
       </Show>
 
@@ -190,12 +278,33 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
             Cancel
           </button>
         </Show>
-        <Show when={props.status === 'error' && props.onRetry}>
+        <Show when={props.status === 'error'}>
           <button
-            class="process-btn process-btn-primary"
+            class="process-btn-icon process-btn-retry"
             onClick={() => props.onRetry?.()}
           >
-            <Play /> Retry
+            <span class="process-btn-icon-svg">
+              <RotateCcw />
+            </span>
+            <span class="process-btn-icon-label">Retry</span>
+          </button>
+          <button
+            class="process-btn-icon process-btn-new"
+            onClick={() => props.onNewSession?.()}
+          >
+            <span class="process-btn-icon-svg">
+              <FilePlus />
+            </span>
+            <span class="process-btn-icon-label">New Session</span>
+          </button>
+          <button
+            class="process-btn-icon process-btn-delete"
+            onClick={() => props.onDeleteAndNew?.()}
+          >
+            <span class="process-btn-icon-svg">
+              <Trash2 />
+            </span>
+            <span class="process-btn-icon-label">Delete & New</span>
           </button>
         </Show>
         <Show when={props.status === 'completed'}>

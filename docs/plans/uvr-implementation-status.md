@@ -49,7 +49,7 @@
 ### Backend Requirements
 **The backend API server needs to be running for real file processing:**
 ```bash
-cd /var/www/pitchperfect.clodhost.com/pitch-perfect-repo/uvr-api
+cd /var/www/mercurypitch.com/pitch-perfect-repo/uvr-api
 docker build -t uvr-api .
 docker run -d --name uvr-api -p 8000:8000 uvr-api
 ```
@@ -59,7 +59,7 @@ docker run -d --name uvr-api -p 8000:8000 uvr-api
 - Frontend makes requests to `/api/uvr` endpoint
 
 **CORS Configuration:**
-- `pitchperfect.clodhost.com` ✅
+- `mercurypitch.com` ✅
 - `localhost:5173` (Vite dev server) ✅
 - `localhost:3000` (dev server) ✅
 
@@ -121,7 +121,7 @@ docker run -d --name uvr-api -p 8000:8000 uvr-api
 ### Next Steps
 1. **Deploy the backend API server**:
    ```bash
-   cd /var/www/pitchperfect.clodhost.com/pitch-perfect-repo/uvr-api
+   cd /var/www/mercurypitch.com/pitch-perfect-repo/uvr-api
    docker build -t uvr-api .
    docker run -d --name uvr-api -p 8000:8000 uvr-api
    ```

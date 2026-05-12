@@ -132,5 +132,5 @@ grep "v=18" public/index.html
 5. Close corresponding issue/PR
 
 ### UX Todo File
-- Location: `/var/www/pitchperfect.clodhost.com/pitch-perfect-repo/ux-todo.md`
+- Location: `/var/www/mercurypitch.com/pitch-perfect-repo/ux-todo.md`
 - Used for planning user experience improvements

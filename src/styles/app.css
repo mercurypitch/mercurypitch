@@ -3450,7 +3450,7 @@ ROLL TOOLBAR — GRID RIBBON REFACTOR (NON-DESTRUCTIVE)
 Keeps your existing styles, only adjusts layout
 ========================================================= */
 
-/* 🔥 MAIN TOOLBAR: force ONE horizontal row */
+/*  MAIN TOOLBAR: force ONE horizontal row */
 .roll-toolbar {
   display: grid;
   grid-auto-flow: column;
@@ -3544,7 +3544,7 @@ Keeps your existing styles, only adjusts layout
   white-space: nowrap;
 }
 
-/* 🎯 Optional polish: subtle panel depth (Word-like feel) */
+/* Optional polish: subtle panel depth (Word-like feel) */
 .roll-group {
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
 }
@@ -4657,8 +4657,7 @@ Keeps your existing styles, only adjusts layout
   border-bottom: 1px solid var(--border-color);
 }
 
-.settings-divider,
-.changelog-divider {
+.settings-divider {
   height: 4px;
   width: 100%;
   background: linear-gradient(
@@ -8691,20 +8690,15 @@ input:checked + .settings-slider:before {
 }
 
 .walkthrough-item.completed::before {
-  content: '✓';
+  content: '';
   position: absolute;
-  top: 8px;
-  right: 8px;
-  font-size: 1rem;
-  color: var(--green);
-  background: var(--green-dim);
-  border-radius: 50%;
-  width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
+  top: 10px;
+  right: 10px;
+  width: 7px;
+  height: 12px;
+  border-right: 2px solid var(--green);
+  border-bottom: 2px solid var(--green);
+  transform: rotate(45deg);
 }
 
 .walkthrough-item.completed .walkthrough-item-title {
@@ -10183,6 +10177,12 @@ input:checked + .settings-slider:before {
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.06);
   font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.playlist-picker-icon .icon-svg {
+  width: 16px;
+  height: 16px;
   flex-shrink: 0;
 }
 
@@ -11863,6 +11863,20 @@ input:checked + .settings-slider:before {
   stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+/* Context-specific icon sizing */
+
+/* Note/type icons in session editor timeline */
+.item-type-icon .icon-svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* Pill action buttons (e.g. play all in sequence in sidebar) */
+.pill-action-btn .icon-svg {
+  width: 14px;
+  height: 14px;
 }
 
 .icon-svg.w-24 {

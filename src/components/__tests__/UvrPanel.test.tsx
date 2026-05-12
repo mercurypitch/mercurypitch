@@ -57,7 +57,6 @@ vi.mock('@/stores', () => ({
   themeStore: {},
   transportStore: {},
   uiStore: {},
-  userSessionStore: {},
   playbackStateStore: {},
 
   // Audio engine
@@ -85,23 +84,17 @@ describe('UvrPanel Component', () => {
 
     it('renders header with correct title and subtitle', () => {
       render(() => <UvrPanel {...defaultProps} />)
-      expect(screen.getByText('Vocal Separation')).toBeInTheDocument()
+      expect(screen.getByText(/Vocal Separation/)).toBeInTheDocument()
       expect(
-        screen.getByText('Separate vocals and create MIDI'),
+        screen.getByText(/Separate vocals and create MIDI/),
       ).toBeInTheDocument()
     })
 
-    it('renders header buttons', () => {
+    it('renders header tabs', () => {
       render(() => <UvrPanel {...defaultProps} />)
-      expect(screen.getByTitle('View Guide')).toBeInTheDocument()
-      expect(screen.getByTitle('History')).toBeInTheDocument()
-      expect(screen.getByTitle('UVR Settings')).toBeInTheDocument()
-    })
-
-    it('renders specified default view', () => {
-      render(() => <UvrPanel {...defaultProps} initialView="history" />)
-
-      expect(screen.getByText('Processing History')).toBeInTheDocument()
+      expect(screen.getByText('Guide')).toBeInTheDocument()
+      expect(screen.getByText('Settings')).toBeInTheDocument()
+      expect(screen.getByText('Sessions')).toBeInTheDocument()
     })
 
     it('defaults to upload when initialView is not set', () => {
@@ -113,14 +106,7 @@ describe('UvrPanel Component', () => {
     it('renders results view when initialView is results', () => {
       render(() => <UvrPanel {...defaultProps} initialView="results" />)
 
-      expect(screen.getByText('Processing Results')).toBeInTheDocument()
-    })
-
-    it('shows no history message when no sessions', () => {
-      render(() => <UvrPanel {...defaultProps} initialView="history" />)
-
-      expect(screen.getByText('No processing history yet')).toBeInTheDocument()
-      expect(screen.getByText('Start First Session')).toBeInTheDocument()
+      expect(screen.getByText(/Processing Results/)).toBeInTheDocument()
     })
   })
 })

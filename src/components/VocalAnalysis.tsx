@@ -3,7 +3,9 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createMemo, createSignal, For, onCleanup, Show } from 'solid-js'
+import { createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
+import { IconPlay } from '@/components/hidden-features-icons'
+import { loadSessionRecords } from '@/db/services/session-service'
 import { frequenciesToNoteName } from '@/lib/frequency-to-note'
 import { getSessionHistory } from '@/stores'
 import type { PitchResult, PracticeResult, SessionResult } from '@/types'
@@ -158,8 +160,40 @@ export const VocalAnalysis: Component = () => {
   const [spectralData, setSpectralData] = createSignal<SpectrumData[]>([])
   const [vocalRunData, setVocalRunData] = createSignal<PitchResult[]>([])
   const [isAnalyzing, setIsAnalyzing] = createSignal(false)
-  const [history] = createSignal<SessionResult[]>(getSessionHistory())
-  const [_selectedDate, _setSelectedDate] = createSignal<string>('all')
+  const [dbSessionRecords, setDbSessionRecords] = createSignal<SessionResult[]>(
+    [],
+  )
+
+  onMount(() => {
+    void (async () => {
+      const records = await loadSessionRecords(50)
+      if (records.length > 0) {
+        setDbSessionRecords(
+          records.map((r) => ({
+            sessionId: r.id,
+            name: r.melodyName,
+            sessionName: r.melodyName,
+            completedAt: new Date(r.endedAt).getTime(),
+            itemsCompleted: r.notesHit,
+            practiceItemResult: [],
+            totalItems: r.notesTotal,
+            score: r.score,
+          })),
+        )
+      }
+    })()
+  })
+
+  // Merge localStorage and DB session history
+  const history = createMemo(() => {
+    const local = getSessionHistory()
+    const db = dbSessionRecords()
+    const dbIds = new Set(local.map((s) => s.sessionId))
+    const newFromDb = db.filter((s) => !dbIds.has(s.sessionId))
+    return [...local, ...newFromDb].sort(
+      (a, b) => (b.completedAt ?? 0) - (a.completedAt ?? 0),
+    )
+  })
 
   // Get recent session scores
   const recentSessions = createMemo(() => {
@@ -264,7 +298,7 @@ export const VocalAnalysis: Component = () => {
       passed: isHighRange && volumeVariation > 1.3,
       confidence: Math.min(95, Math.round((volumeVariation - 1) * 50)),
       feedback: isHighRange
-        ? '✓ Great belting technique! Your chest voice projection is strong.'
+        ? 'Great belting technique! Your chest voice projection is strong.'
         : 'Try singing at a higher intensity to engage your chest voice.',
       metrics: {
         noteCount: runData.length,
@@ -305,7 +339,7 @@ export const VocalAnalysis: Component = () => {
       confidence: Math.min(90, Math.round((120 - volume) * 1.2)),
       feedback:
         volume < 60
-          ? '✓ Clean falsetto! Your head voice resonance is smooth.'
+          ? 'Clean falsetto! Your head voice resonance is smooth.'
           : 'Try reducing volume slightly to let your head voice ring more.',
       metrics: {
         noteCount: runData.length,
@@ -345,7 +379,7 @@ export const VocalAnalysis: Component = () => {
       passed: isDynamic,
       confidence: Math.min(95, Math.round(range)),
       feedback: isDynamic
-        ? '✓ Excellent dynamic control! Your volume changes smoothly.'
+        ? 'Excellent dynamic control! Your volume changes smoothly.'
         : 'Try gradually increasing and decreasing your volume across notes.',
       metrics: {
         noteCount: runData.length,
@@ -376,7 +410,9 @@ export const VocalAnalysis: Component = () => {
   }
 
   // Start analyzing current input
+  let analysisInterval: ReturnType<typeof setInterval> | null = null
   const startAnalysis = () => {
+    if (analysisInterval !== null) clearInterval(analysisInterval)
     setIsAnalyzing(true)
     setVocalRunData([])
     setSpectralData([])
@@ -385,7 +421,7 @@ export const VocalAnalysis: Component = () => {
     let analysisComplete = false
     const maxNotes = 100
 
-    const interval = setInterval(() => {
+    analysisInterval = setInterval(() => {
       const allData = getSessionHistory()
       if (allData.length > 0) {
         // Convert SessionResult[] to PitchResult[] by flattening practiceItemResult
@@ -414,13 +450,15 @@ export const VocalAnalysis: Component = () => {
 
       const runHistory = getSessionHistory()
       if (runHistory.length >= maxNotes || analysisComplete) {
-        clearInterval(interval)
+        if (analysisInterval !== null) clearInterval(analysisInterval)
         setIsAnalyzing(false)
         analysisComplete = true
       }
     }, 100)
 
-    onCleanup(() => clearInterval(interval))
+    onCleanup(() => {
+      if (analysisInterval !== null) clearInterval(analysisInterval)
+    })
   }
 
   const exercises: Array<{
@@ -472,7 +510,13 @@ export const VocalAnalysis: Component = () => {
           onClick={startAnalysis}
           disabled={isAnalyzing()}
         >
-          {isAnalyzing() ? 'Analyzing...' : '▶ Start Vocal Analysis'}
+          {isAnalyzing() ? (
+            'Analyzing...'
+          ) : (
+            <>
+              <IconPlay /> Start Vocal Analysis
+            </>
+          )}
         </button>
       </div>
 
@@ -798,22 +842,107 @@ export const VocalAnalysis: Component = () => {
   }
 
   function getRiffCheck(): ExerciseCheck {
+    const runData = vocalRunData()
+    if (runData.length < 6) {
+      return {
+        type: 'riffs' as const,
+        passed: false,
+        confidence: 0,
+        feedback: 'Sing a longer phrase (6+ notes) to detect riffs.',
+        metrics: {
+          noteCount: runData.length,
+          minFreq: 0,
+          maxFreq: 0,
+          avgVolume: 0,
+        },
+      }
+    }
+    const midis = runData.map((r) => r.midi).filter((m) => m > 0)
+    let alternationCount = 0
+    let prevDir = 0
+    for (let i = 1; i < midis.length - 1; i++) {
+      const interval = Math.abs(midis[i] - midis[i - 1])
+      const dir = midis[i] - midis[i - 1]
+      if (
+        interval > 0 &&
+        interval <= 3 &&
+        prevDir !== 0 &&
+        dir !== 0 &&
+        Math.sign(dir) !== Math.sign(prevDir)
+      ) {
+        alternationCount++
+      }
+      if (dir !== 0) prevDir = dir
+    }
+    const density = alternationCount / Math.max(1, midis.length - 2)
+    const passed = density >= 0.25
     return {
       type: 'riffs' as const,
-      passed: false,
-      confidence: 0,
-      feedback: 'Record a riff.',
-      metrics: { noteCount: 0, minFreq: 0, maxFreq: 0, avgVolume: 0 },
+      passed,
+      confidence: Math.min(95, Math.round(density * 150)),
+      feedback: passed
+        ? 'Nice riff! Rapid note alternations detected.'
+        : 'Try quick back-and-forth between adjacent notes for a riff.',
+      metrics: {
+        noteCount: runData.length,
+        minFreq: 0,
+        maxFreq: 0,
+        avgVolume: 0,
+      },
     }
   }
 
   function getRunCheck(): ExerciseCheck {
+    const runData = vocalRunData()
+    if (runData.length < 6) {
+      return {
+        type: 'runs' as const,
+        passed: false,
+        confidence: 0,
+        feedback: 'Sing a longer phrase (6+ notes) to detect runs.',
+        metrics: {
+          noteCount: runData.length,
+          minFreq: 0,
+          maxFreq: 0,
+          avgVolume: 0,
+        },
+      }
+    }
+    const midis = runData.map((r) => r.midi).filter((m) => m > 0)
+    let maxConsecutive = 0
+    let currentRun = 0
+    let currentDir = 0
+    for (let i = 1; i < midis.length; i++) {
+      const diff = midis[i] - midis[i - 1]
+      const step = Math.abs(diff)
+      if (step >= 1 && step <= 2) {
+        const dir = Math.sign(diff)
+        if (dir === currentDir) {
+          currentRun++
+        } else {
+          currentRun = 1
+          currentDir = dir
+        }
+        maxConsecutive = Math.max(maxConsecutive, currentRun)
+      } else {
+        currentRun = 0
+        currentDir = 0
+      }
+    }
+    const passed = maxConsecutive >= 4
     return {
       type: 'runs' as const,
-      passed: false,
-      confidence: 0,
-      feedback: 'Record a run.',
-      metrics: { noteCount: 0, minFreq: 0, maxFreq: 0, avgVolume: 0 },
+      passed,
+      confidence: Math.min(95, maxConsecutive * 15),
+      feedback: passed
+        ? `Great run! ${maxConsecutive} consecutive stepwise notes detected.`
+        : 'Try a sequence of adjacent notes moving up or down for a run.',
+      metrics: {
+        noteCount: runData.length,
+        minFreq: 0,
+        maxFreq: 0,
+        avgVolume: 0,
+      },
     }
   }
 }

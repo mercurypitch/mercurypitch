@@ -91,7 +91,7 @@ export const WALKTHROUGHS: Partial<
           target: 'ctrl-btn.focus-btn',
         },
       ],
-      thumbnail: '🎵',
+      thumbnail: 'music',
     },
     {
       id: 'practice-modes',
@@ -152,7 +152,7 @@ Randomizes the order of notes each run.
           target: 'cycles',
         },
       ],
-      thumbnail: '🔄',
+      thumbnail: 'refresh',
     },
   ],
   compose: [
@@ -222,7 +222,7 @@ Scroll horizontally for longer melodies, vertically for multiple octaves. The pl
           target: '#save-melody-btn',
         },
       ],
-      thumbnail: '🎹',
+      thumbnail: 'piano',
     },
     {
       id: 'editor-midi',
@@ -277,7 +277,7 @@ MIDI files are a universal format for sharing music between applications. PitchP
           target: '.roll-grid',
         },
       ],
-      thumbnail: '🎵',
+      thumbnail: 'music',
     },
     {
       id: 'editor-advanced',
@@ -343,7 +343,7 @@ Aligns notes to time divisions (1/4, 1/8, 1/16 note). Makes melodies rhythmicall
           target: '#roll-zoom-in, #roll-zoom-out',
         },
       ],
-      thumbnail: '✨',
+      thumbnail: 'sparkle',
     },
   ],
   settings: [
@@ -424,7 +424,7 @@ Controls how each note sounds during playback:
           target: '#band-perfect, #band-excellent',
         },
       ],
-      thumbnail: '⚙️',
+      thumbnail: 'gear',
     },
     {
       id: 'settings-tone',
@@ -500,7 +500,7 @@ Time after note ends to fade to silence.
           target: '#adsr-release',
         },
       ],
-      thumbnail: '🎼',
+      thumbnail: 'sheet',
     },
     {
       id: 'settings-reverb',
@@ -558,7 +558,7 @@ Controls how much reverb vs dry signal:
           target: '.play-btn',
         },
       ],
-      thumbnail: '🏛️',
+      thumbnail: 'building',
     },
   ],
   study: [
@@ -630,7 +630,7 @@ All Western music is based on 12 notes within an octave:
           target: '#tonic-anchor',
         },
       ],
-      thumbnail: '🎵',
+      thumbnail: 'music',
     },
     {
       id: 'study-scale-types',
@@ -708,7 +708,7 @@ Best for: Demonstrating full pitch range.
           target: '.play-btn',
         },
       ],
-      thumbnail: '🎼',
+      thumbnail: 'sheet',
     },
     {
       id: 'study-progress-tracking',
@@ -783,7 +783,7 @@ Progress tracking helps you see your improvement over time and stay motivated.
           target: '.practice-controls',
         },
       ],
-      thumbnail: '📈',
+      thumbnail: 'trending',
     },
     {
       id: 'study-tips-tricks',
@@ -856,7 +856,7 @@ Use these professional practice techniques to get the most out of your sessions.
           target: '#key-select',
         },
       ],
-      thumbnail: '✨',
+      thumbnail: 'sparkle',
     },
   ],
 }

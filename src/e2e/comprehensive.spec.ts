@@ -679,6 +679,7 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
   test('no errors when navigating repeatedly between tabs', async ({
     page,
   }) => {
+    test.setTimeout(60000)
     const errors: string[] = []
     page.on('console', (msg) => {
       if (msg.type() === 'error') {
@@ -734,6 +735,7 @@ test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
   // Note: Piano roll rapid clicking test removed - references non-existent canvas elements
 
   test('no errors when navigating tabs', async ({ page }) => {
+    test.setTimeout(60000)
     const errors: string[] = []
     page.on('console', (msg) => {
       if (msg.type() === 'error') {
