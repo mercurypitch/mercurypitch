@@ -514,7 +514,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
             ctx.font = 'bold 11px sans-serif'
             ctx.textAlign = 'center'
             ctx.textBaseline = 'middle'
-            ctx.fillText('𝄽 rest', x1 + bw / 2, h / 2)
+            ctx.fillText('rest', x1 + bw / 2, h / 2)
             ctx.textBaseline = 'alphabetic'
           }
         }
