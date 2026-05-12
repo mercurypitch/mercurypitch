@@ -111,7 +111,7 @@ export function usePracticeController(deps: Deps): PracticeController {
               cents: pitch.cents,
             },
           ]
-          return next.length > 800 ? next.slice(-800) : next
+          return next.length > 2000 ? next.slice(-2000) : next
         })
       }
 

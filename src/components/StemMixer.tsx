@@ -221,6 +221,13 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     createSignal<WordTimingsMap>({})
   const [windowDuration, setWindowDuration] = createSignal(30) // seconds, range 10-150
   const [windowStart, setWindowStart] = createSignal(0)
+  const PITCH_WINDOW_FILL_RATIO = 0.75
+
+  const lrclibSearchUrl = () => {
+    const title = extractTitle(props.songTitle ?? '')
+    if (!title) return undefined
+    return `https://lrclib.net/search/${encodeURIComponent(title)}`
+  }
 
   // ── Repeat blocks state ─────────────────────────────────────────
   interface LyricsBlock {
@@ -964,7 +971,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }
     if (targetTime === null) return
     seekTo(targetTime)
-    setWindowStart(Math.max(0, targetTime - windowDuration() * 0.3))
+    setWindowStart(
+      Math.max(0, targetTime - windowDuration() * PITCH_WINDOW_FILL_RATIO),
+    )
   }
 
   // ── Edit mode helpers ─────────────────────────────────────────
@@ -2132,7 +2141,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
     const target = ratio * duration()
     seekTo(target)
-    setWindowStart(Math.max(0, target - windowDuration() * 0.3))
+    setWindowStart(
+      Math.max(0, target - windowDuration() * PITCH_WINDOW_FILL_RATIO),
+    )
   }
 
   const seekTo = (time: number) => {
@@ -2163,7 +2174,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     const winStart = windowStart()
     const newTime = winStart + ratio * windowDuration()
     seekTo(newTime)
-    setWindowStart(Math.max(0, newTime - windowDuration() * 0.3))
+    setWindowStart(
+      Math.max(0, newTime - windowDuration() * PITCH_WINDOW_FILL_RATIO),
+    )
   }
 
   const handleCanvasWheel = (e: WheelEvent) => {
@@ -2480,7 +2493,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       }
 
       // Continuous-scroll time window: keep playhead at 30% from left
-      const newStart = elapsedTime - windowDuration() * 0.3
+      const newStart = elapsedTime - windowDuration() * PITCH_WINDOW_FILL_RATIO
       setWindowStart(Math.max(0, newStart))
 
       syncCanvasSizes()
@@ -3138,12 +3151,14 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     if (liveWaveCanvasRef) resizeObserver.observe(liveWaveCanvasRef)
     if (pitchCanvasRef) resizeObserver.observe(pitchCanvasRef)
     if (midiCanvasRef) resizeObserver.observe(midiCanvasRef)
-    // Sync and redraw synchronously — effect runs after DOM update, before paint
-    syncCanvasSizes()
-    drawWaveformOverview()
-    drawLiveWaveform()
-    drawPitchCanvas()
-    drawMidiCanvas()
+    // Defer to rAF so the browser finishes layout before measuring canvas sizes
+    requestAnimationFrame(() => {
+      syncCanvasSizes()
+      drawWaveformOverview()
+      drawLiveWaveform()
+      drawPitchCanvas()
+      drawMidiCanvas()
+    })
   })
 
   createEffect(() => {
@@ -5032,6 +5047,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                     <LyricsUploader
                       onUpload={handleLyricsUpload}
                       suggestion={props.songTitle}
+                      searchUrl={lrclibSearchUrl()}
                     />
                   }
                 >
@@ -6006,6 +6022,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                         <LyricsUploader
                           onUpload={handleLyricsUpload}
                           suggestion={props.songTitle}
+                          searchUrl={lrclibSearchUrl()}
                         />
                       }
                     >
@@ -6518,7 +6535,7 @@ export const StemMixerStyles: string = `
   align-content: stretch;
   gap: 0.5rem;
   flex: 1;
-  overflow: hidden;
+  overflow: auto;
   padding: 0.5rem;
   min-height: 0;
 }
@@ -8172,7 +8189,7 @@ export const StemMixerStyles: string = `
   flex-direction: column;
   gap: 0.5rem;
   min-height: 0;
-  overflow: hidden;
+  overflow: auto;
 }
 
 /* Right Sidebar */

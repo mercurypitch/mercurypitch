@@ -4,7 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
-import { FileText, FileUpload } from './icons'
+import { FileText, FileUpload, MagnifyingGlass } from './icons'
 
 export interface LyricsUploadResult {
   text: string
@@ -16,6 +16,7 @@ interface LyricsUploaderProps {
   onUpload: (result: LyricsUploadResult) => void
   suggestion?: string
   onDismiss?: () => void
+  searchUrl?: string
 }
 
 export const LyricsUploader: Component<LyricsUploaderProps> = (props) => {
@@ -105,6 +106,18 @@ export const LyricsUploader: Component<LyricsUploaderProps> = (props) => {
 
       <Show when={error()}>
         <span class="lu-error">{error()}</span>
+      </Show>
+
+      <Show when={props.searchUrl}>
+        <a
+          class="lu-search-link"
+          href={props.searchUrl!}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <MagnifyingGlass />
+          Search on LRCLIB
+        </a>
       </Show>
 
       <Show when={props.onDismiss}>
@@ -239,6 +252,29 @@ export const LyricsUploaderStyles: string = `
   font-size: 0.62rem;
   color: var(--error, #f85149);
   text-align: center;
+}
+
+.lu-search-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.62rem;
+  color: var(--accent, #58a6ff);
+  text-decoration: none;
+  padding: 0.3rem 0.5rem;
+  border-radius: 0.3rem;
+  transition: all 0.15s;
+}
+
+.lu-search-link:hover {
+  background: rgba(from var(--accent, #58a6ff) r g b / 0.08);
+  text-decoration: underline;
+}
+
+.lu-search-link svg {
+  width: 0.75rem;
+  height: 0.75rem;
+  flex-shrink: 0;
 }
 
 .lu-dismiss {

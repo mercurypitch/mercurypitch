@@ -6,6 +6,7 @@ import type { Component } from 'solid-js'
 import { createEffect, onCleanup, onMount } from 'solid-js'
 import type { ArcState } from '@/lib/arc-physics'
 import { BALL_RADIUS, buildPlayable, computeArcCy, computeArcEndBeat, computeBallPos, computeInitialArc, isBackwardsSeek, shouldAdvanceArc, } from '@/lib/arc-physics'
+import { beatToHistoryX } from '@/lib/pitch-history-window'
 import { bpm, focusMode, micWaveVisible } from '@/stores'
 import { colorCodeNotes, flameMode, gridLinesVisible, showAccuracyPercent, showFocusBall, showPlaybackBall, } from '@/stores/settings-store'
 import type { MelodyItem, NoteResult, PitchSample, ScaleDegree } from '@/types'
@@ -826,7 +827,12 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
           continue
         }
         const beat = pt.time
-        const px = beatToX(beat, w)
+        const px = beatToHistoryX(
+          beat,
+          w,
+          props.currentBeat(),
+          props.totalBeats(),
+        )
         const py = freqToY(pt.freq, h)
         if (!started) {
           ctx.moveTo(px, py)
@@ -843,7 +849,12 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
         last.freq > 0
       ) {
         const ly = freqToY(last.freq, h)
-        const lx = beatToX(last.time, w)
+        const lx = beatToHistoryX(
+          last.time,
+          w,
+          props.currentBeat(),
+          props.totalBeats(),
+        )
         const grad = ctx.createRadialGradient(lx, ly, 0, lx, ly, 12)
         grad.addColorStop(0, 'rgba(63,185,80,0.55)')
         grad.addColorStop(1, 'rgba(63,185,80,0)')
