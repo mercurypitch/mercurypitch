@@ -5,7 +5,7 @@
 import { expect, test } from '@playwright/test'
 import { dismissOverlays, switchTab } from './helpers/ui'
 
-test.describe('PitchPerfect App — Comprehensive Functionality Tests', () => {
+test.describe('MercuryPitch App — Comprehensive Functionality Tests', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/')
     // Wait for app tabs to render

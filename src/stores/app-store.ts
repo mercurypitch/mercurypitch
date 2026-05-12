@@ -531,10 +531,10 @@ export const GUIDE_SECTIONS: WalkthroughSection[] = [
 export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
   // ── Practice Section ──
   {
-    title: 'Welcome to PitchPerfect',
+    title: 'Welcome to MercuryPitch',
     targetSelector: '#app-title',
     description:
-      "PitchPerfect helps you practice and improve your musical pitch. Let's take a quick tour of the main features!",
+      "MercuryPitch helps you practice and improve your musical pitch. Let's take a quick tour of the main features!",
     placement: 'bottom',
     section: 'practice',
     requiredTab: TAB_SINGING,

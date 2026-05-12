@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { dismissOverlays } from '@/e2e/helpers/ui'
 
-test.describe('PitchPerfect App', () => {
+test.describe('MercuryPitch App', () => {
   test.beforeEach(async ({ page }) => {
     await page.addInitScript(() => {
       ;(window as any).E2E_TEST_MODE = true
@@ -354,7 +354,7 @@ test.describe('PitchPerfect App', () => {
         'h3.settings-section-title:has-text("Tone Envelope (ADSR)")',
       ),
     ).toBeVisible({ timeout: 10000 })
-    await expect(page.locator('.about-name')).toContainText('PitchPerfect')
+    await expect(page.locator('.about-name')).toContainText('MercuryPitch')
   })
 
   test('Settings panel shows GitHub link in About section', async ({
@@ -478,7 +478,7 @@ test.describe('PitchPerfect App', () => {
     const welcomeOverlay = page.locator('.welcome-overlay')
     if ((await welcomeOverlay.count()) > 0) {
       await expect(welcomeOverlay).toBeVisible({ timeout: 3000 })
-      await expect(page.locator('.welcome-title')).toContainText('PitchPerfect')
+      await expect(page.locator('.welcome-title')).toContainText('MercuryPitch')
 
       // Click the dismiss/close button inside the welcome card
       // const dismissBtn = page.locator('.overlay-close, .welcome-cta').first()

@@ -139,7 +139,7 @@ async function fetchLyricsLrclib(
   const resp = await fetch(`https://lrclib.net/api/get?${params.toString()}`, {
     signal,
     headers: {
-      'LrcLib-Client': 'PitchPerfect/1.0.0',
+      'LrcLib-Client': 'MercuryPitch/1.0.0',
     },
   })
   clear()
@@ -224,7 +224,7 @@ export async function fetchLyricsById(
     const resp = await fetch(`https://lrclib.net/api/get/${id}`, {
       signal,
       headers: {
-        'LrcLib-Client': 'PitchPerfect/1.0.0',
+        'LrcLib-Client': 'MercuryPitch/1.0.0',
       },
     })
     clear()
@@ -260,7 +260,7 @@ async function fetchSearchLrclib(query: string): Promise<LyricsSearchMatch[]> {
       {
         signal,
         headers: {
-          'LrcLib-Client': 'PitchPerfect/1.0.0',
+          'LrcLib-Client': 'MercuryPitch/1.0.0',
         },
       },
     )

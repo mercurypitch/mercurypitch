@@ -2,7 +2,7 @@
 
 ## Overview
 
-PitchPerfect uses real-time monophonic pitch detection to track a user's singing voice and compare it against target melody notes. The system supports two algorithms (YIN and McLeod Pitch Method) selectable at runtime via the Settings panel.
+MercuryPitch uses real-time monophonic pitch detection to track a user's singing voice and compare it against target melody notes. The system supports two algorithms (YIN and McLeod Pitch Method) selectable at runtime via the Settings panel.
 
 ## Pipeline
 

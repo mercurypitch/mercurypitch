@@ -1,4 +1,4 @@
-# Project Commands (PitchPerfect App)
+# Project Commands (MercuryPitch App)
 
 Use these commands for code validation and formatting:
 

@@ -31,7 +31,7 @@
 ## 3. HTML Meta Tags
 
 ### REQ-SEO-006 — Page Title
-**Ubiquitous:** The `<title>` tag shall include the primary keyword phrase "Vocal Pitch Training" and the brand name "PitchPerfect".
+**Ubiquitous:** The `<title>` tag shall include the primary keyword phrase "Vocal Pitch Training" and the brand name "MercuryPitch".
 
 ### REQ-SEO-007 — Meta Description
 **Ubiquitous:** The `<meta name="description">` shall be 120-160 characters and include keywords: pitch training, vocal practice, real-time feedback, microphone, UVR, practice modes.
@@ -40,7 +40,7 @@
 **Ubiquitous:** The `<meta name="keywords">` shall include: pitch training, vocal practice, ear training, singing practice, pitch detector, music education, real-time feedback.
 
 ### REQ-SEO-009 — Meta Author
-**Ubiquitous:** The `<meta name="author">` shall be set to `PitchPerfect`.
+**Ubiquitous:** The `<meta name="author">` shall be set to `MercuryPitch`.
 
 ### REQ-SEO-010 — Robots Meta
 **Ubiquitous:** The `<meta name="robots">` shall be set to `index, follow` to allow search engine indexing.

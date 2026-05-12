@@ -1,4 +1,4 @@
-# PitchPerfect SolidJS Migration Audit Report
+# MercuryPitch SolidJS Migration Audit Report
 
 **Date:** 2026-04-23
 **Branch:** refactor/unify-playback
@@ -406,7 +406,7 @@ All TypeScript/TSX source files follow SolidJS patterns correctly.
 
 ## 📌 Final Assessment
 
-The PitchPerfect SolidJS migration is **successful and production-ready**. The codebase demonstrates:
+The MercuryPitch SolidJS migration is **successful and production-ready**. The codebase demonstrates:
 
 1. ✅ Correct SolidJS patterns (Signals, Memos, Stores)
 2. ✅ Clean component architecture

@@ -481,7 +481,7 @@ export const CommunityShare: Component = () => {
       avatar: IconMic(),
       bio:
         dbProf?.bio ??
-        'PitchPerfect enthusiast • Learning vocals • Member since 2026',
+        'MercuryPitch enthusiast • Learning vocals • Member since 2026',
       streak: currentStreak,
       totalSessions: sessions.length,
       bestScore:

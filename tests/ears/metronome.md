@@ -1,7 +1,7 @@
 # Metronome Specification (EARS)
 
 ## 1. PURPOSE
-Define the behavior of the metronome feature in the Pitch Perfect application.
+Define the behavior of the metronome feature in the MercuryPitch application.
 
 ## 2. SCOPE
 This specification covers:

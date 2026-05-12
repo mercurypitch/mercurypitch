@@ -1,4 +1,4 @@
-# PitchPerfect SolidJS App — Deployment Guide
+# MercuryPitch SolidJS App — Deployment Guide
 
 ## Build Commands
 
@@ -37,7 +37,7 @@ The main repo has a deploy script that handles everything:
 
 ```bash
 # Run from repo root (not App/)
-cd /var/www/mercurypitch.com/pitch-perfect-repo
+cd /var/www/mercurypitch.com/mercury-pitch-repo
 ./deploy.sh
 ```
 
@@ -47,7 +47,7 @@ The deploy script:
 2. Runs syntax checks on JS files
 3. Rebuilds the SolidJS app (`pnpm run build` in App/)
 4. Verifies required files exist in `public/`
-5. Apache serves from `pitch-perfect-repo/public/` (DocumentRoot)
+5. Apache serves from `mercury-pitch-repo/public/` (DocumentRoot)
 
 ## Vite Config Notes
 

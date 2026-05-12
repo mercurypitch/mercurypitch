@@ -2,7 +2,7 @@
 
 ## Overview
 
-This plan implements a complete UVR (Ultimate Vocal Remover) workflow in PitchPerfect:
+This plan implements a complete UVR (Ultimate Vocal Remover) workflow in MercuryPitch:
 1. **Import MP3/WAV** files ✅ DONE
 2. **Process with UVR CLI** to separate vocals and instrumental stems ⏳ NEXT
 3. **Generate MIDI** from vocal stem using pitch detection ⏳ TODO

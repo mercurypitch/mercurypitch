@@ -1,4 +1,4 @@
-# PitchPerfect Project Overview Map
+# MercuryPitch Project Overview Map
 
 **Date:** 2026-04-23
 **Branch:** refactor/unify-playback
@@ -25,7 +25,7 @@
 ## 🌳 File Tree (Cleaned)
 
 ```
-pitch-perfect/src/
+mercury-pitch/src/
 ├── components/
 │   ├── AppHeader.tsx           # Transport controls toolbar
 │   ├── AppSidebar.tsx          # Sidebar navigation
@@ -365,7 +365,7 @@ export type PlaybackState = 'stopped' | 'playing' | 'paused'
 
 ## 📌 Final Assessment
 
-The PitchPerfect project demonstrates **excellent naming consistency** with minor issues that don't impact usability. The codebase is well-organized with clear separation of concerns:
+The MercuryPitch project demonstrates **excellent naming consistency** with minor issues that don't impact usability. The codebase is well-organized with clear separation of concerns:
 
 - **Stores** handle reactive state
 - **Libraries** contain pure logic

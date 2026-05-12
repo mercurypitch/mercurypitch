@@ -1,4 +1,4 @@
-# PitchPerfect Characters & Moods
+# MercuryPitch Characters & Moods
 
 A set of unique characters designed to connect with different singing styles and motivate users through streaks, goals, and real-time feedback.
 

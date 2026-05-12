@@ -2,7 +2,7 @@ import { ContainerProxy } from '@cloudflare/containers'
 export { ContainerProxy }
 export { UvrContainer } from './uvr-container.js'
 
-// Cloudflare Worker entry point for PitchPerfect
+// Cloudflare Worker entry point for MercuryPitch
 // Proxies /api/uvr/* to the UVR Docker container.
 // Static assets are served by Cloudflare's assets feature.
 
