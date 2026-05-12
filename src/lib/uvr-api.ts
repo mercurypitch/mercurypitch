@@ -2,6 +2,8 @@
 // UVR API Client - Frontend Integration
 // ============================================================
 
+import { z } from 'zod/v4'
+
 const API_BASE = '/api/uvr'
 
 /**
@@ -58,6 +60,49 @@ export interface OutputFile {
   duration?: number
 }
 
+// ── Zod schemas for API response validation ─────────────────────
+
+const OutputFileSchema = z.object({
+  stem: z.string(),
+  filename: z.string(),
+  path: z.string(),
+  size: z.number().optional(),
+  duration: z.number().optional(),
+})
+
+const ProcessResponseSchema = z.object({
+  session_id: z.string(),
+  status: z.string(),
+  message: z.string(),
+  model: z.string(),
+  output_format: z.string(),
+})
+
+const ProcessStatusResponseSchema = z.object({
+  session_id: z.string(),
+  status: z.enum(['processing', 'completed', 'not_started', 'error']),
+  progress: z.number().optional(),
+  estimated_total_secs: z.number().optional(),
+  cpu_profile: z.string().optional(),
+  message: z.string().optional(),
+  files: z.array(OutputFileSchema),
+  error: z.string().optional(),
+})
+
+const ModelsResponseSchema = z.object({
+  models: z.array(z.string()),
+})
+
+const StatusMessageSchema = z.object({
+  status: z.string(),
+  message: z.string(),
+})
+
+const HealthCheckSchema = z.object({
+  status: z.string(),
+  version: z.string(),
+})
+
 /**
  * Available UVR models
  */
@@ -96,8 +141,8 @@ export async function listModels(): Promise<string[]> {
   if (!response.ok) {
     throw new Error(`Failed to list models: ${response.statusText}`)
   }
-  const data = await response.json()
-  return Array.isArray(data.models) ? data.models : []
+  const data = ModelsResponseSchema.parse(await response.json())
+  return data.models
 }
 
 /**
@@ -133,7 +178,7 @@ export async function processAudio(
     throw new Error(error || `Failed to process audio: ${response.statusText}`)
   }
 
-  return response.json() as Promise<ProcessResponse>
+  return ProcessResponseSchema.parse(await response.json())
 }
 
 /**
@@ -146,7 +191,7 @@ export async function getProcessStatus(
   if (!response.ok) {
     throw new Error(`Failed to get status: ${response.statusText}`)
   }
-  return response.json() as Promise<ProcessStatusResponse>
+  return ProcessStatusResponseSchema.parse(await response.json())
 }
 
 /**
@@ -171,7 +216,7 @@ export async function deleteSession(
   if (!response.ok) {
     throw new Error(`Failed to delete session: ${response.statusText}`)
   }
-  return response.json() as Promise<{ status: string; message: string }>
+  return StatusMessageSchema.parse(await response.json())
 }
 
 /**
@@ -185,7 +230,7 @@ export async function healthCheck(): Promise<{
   if (!response.ok) {
     throw new Error(`Health check failed: ${response.statusText}`)
   }
-  return response.json() as Promise<{ status: string; version: string }>
+  return HealthCheckSchema.parse(await response.json())
 }
 /**
  * Poll for processing completion with timeout and abort support

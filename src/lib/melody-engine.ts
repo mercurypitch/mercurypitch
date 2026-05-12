@@ -29,8 +29,6 @@ export interface MelodyEngineOptions {
 
 export class MelodyEngine {
   private runtime: PlaybackRuntime
-  private pauseStartTime = 0
-  private pauseOffset = 0
 
   constructor(options: MelodyEngineOptions) {
     this.runtime = new PlaybackRuntime({

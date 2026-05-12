@@ -59,3 +59,35 @@ export function createPersistedSignal<T>(
 
   return [value, setValuePersisted]
 }
+
+export function storageGet<T = unknown>(key: string, fallback?: T): T | null {
+  try {
+    const item = localStorage.getItem(key)
+    if (item === null || item === undefined) return fallback ?? null
+    try {
+      return JSON.parse(item) as T
+    } catch {
+      return item as unknown as T
+    }
+  } catch (e) {
+    console.warn(`[storage] Failed to read key "${key}":`, e)
+    return fallback ?? null
+  }
+}
+
+export function storageSet(key: string, value: unknown): void {
+  try {
+    const serialized = typeof value === 'string' ? value : JSON.stringify(value)
+    localStorage.setItem(key, serialized)
+  } catch (e) {
+    console.warn(`[storage] Failed to write key "${key}":`, e)
+  }
+}
+
+export function storageRemove(key: string): void {
+  try {
+    localStorage.removeItem(key)
+  } catch (e) {
+    console.warn(`[storage] Failed to remove key "${key}":`, e)
+  }
+}

@@ -6,7 +6,7 @@
 
 import { saveStemBlob } from '@/db/services/uvr-service'
 import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
-import { getAllUvrSessions, saveAllUvrSessions, setUvrSessionApiId, setUvrSessionProvider, updateUvrSessionProgress, } from '@/stores/app-store'
+import { getAllUvrSessions, saveAllUvrSessions, setUvrModelError, setUvrModelStatus, setUvrSessionApiId, setUvrSessionProvider, updateUvrSessionProgress, } from '@/stores/app-store'
 import { computeChunkRanges, UVR_CHUNK_CONFIG } from './audio-chunker'
 import { UVR_MODEL_PATH } from './defaults'
 import type { OutputFile } from './uvr-api'
@@ -35,10 +35,30 @@ export interface ProcessingResult {
 let separator: VocalSeparator | null = null
 
 async function getSeparator(): Promise<VocalSeparator> {
-  if (separator !== null && separator.isReady()) return separator
-  separator = new VocalSeparator()
-  await separator.initialize(UVR_MODEL_PATH)
-  return separator
+  if (separator === null) {
+    separator = new VocalSeparator()
+  }
+
+  // If already ready or currently processing, return as is.
+  if (separator.status === 'ready' || separator.status === 'processing') {
+    return separator
+  }
+
+  // If idle, error, or already initializing, call initialize().
+  // VocalSeparator.initialize handles waiting for the promise if already initializing.
+  setUvrModelStatus('loading')
+  setUvrModelError('')
+
+  try {
+    await separator.initialize(UVR_MODEL_PATH)
+    setUvrModelStatus('ready')
+    return separator
+  } catch (err) {
+    setUvrModelStatus('error')
+    const msg = err instanceof Error ? err.message : String(err)
+    setUvrModelError(msg)
+    throw err
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -267,5 +287,7 @@ export function destroyPipeline(): void {
   if (separator) {
     separator.destroy()
     separator = null
+    setUvrModelStatus('unloaded')
+    setUvrModelError('')
   }
 }

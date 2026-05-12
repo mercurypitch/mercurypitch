@@ -534,7 +534,6 @@ export function createMelodyFromScale(
     createdAt: Date.now(),
     updatedAt: Date.now(),
   }
-  const _library = melodyLibrarySignal()
   setMelodyLibrary((prev) => ({
     ...prev,
     melodies: { ...prev.melodies, [id]: melody },
@@ -748,7 +747,6 @@ export function addMelodyNote(
   const key = current.id
   const newItem = { id: generateId(), note, startBeat, duration }
 
-  const _library = melodyLibrarySignal()
   setMelodyLibrary((prev) => ({
     ...prev,
     melodies: {

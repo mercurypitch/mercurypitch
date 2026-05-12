@@ -201,27 +201,6 @@ export const VocalAnalysis: Component = () => {
     return sessions.slice(0, 20)
   })
 
-  // Calculate practice heatmap data (by day and hour)
-  const _heatmapData = createMemo(() => {
-    const heatmap = new Map<string, { sessions: number; totalScore: number }>()
-    const sessions = history()
-
-    for (const session of sessions) {
-      const date = new Date(session.completedAt)
-      const dayStr = date.toISOString().split('T')[0]
-      const hour = date.getHours()
-
-      const key = `${dayStr}-${hour}`
-      const existing = heatmap.get(key) || { sessions: 0, totalScore: 0 }
-      heatmap.set(key, {
-        sessions: existing.sessions + 1,
-        totalScore: existing.totalScore + (session.score || 0),
-      })
-    }
-
-    return heatmap
-  })
-
   // Average scores by day of week
   const weeklyScores = createMemo(() => {
     const scores = [0, 0, 0, 0, 0, 0, 0] // Mon-Sun

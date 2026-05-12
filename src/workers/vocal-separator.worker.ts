@@ -89,7 +89,6 @@ const ZERO_BINS = 3 // zero first N frequency bins before ONNX
 let session: InferenceSession | null = null
 let ort: typeof OrtModule | null = null
 let cancelled = false
-let _currentRequestId = 0
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -436,7 +435,6 @@ self.onmessage = async (e: MessageEvent<WorkerInMessage>) => {
     }
 
     case 'separate': {
-      _currentRequestId = msg.requestId
       try {
         await separate(msg.audio, msg.sampleRate, msg.requestId)
       } catch (err) {

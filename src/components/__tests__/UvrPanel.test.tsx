@@ -3,8 +3,33 @@
 // ============================================================
 
 import { render, screen } from '@solidjs/testing-library'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { UvrPanel } from '../UvrPanel'
+
+// Mock Worker and URL.createObjectURL
+beforeAll(() => {
+  class MockWorker {
+    onmessage: ((e: MessageEvent) => void) | null = null
+    onerror: ((e: ErrorEvent) => void) | null = null
+    postMessage = vi.fn()
+    terminate = vi.fn()
+    addEventListener = vi.fn()
+    removeEventListener = vi.fn()
+    dispatchEvent = vi.fn()
+  }
+
+  vi.stubGlobal('Worker', MockWorker)
+
+  const originalURL = window.URL
+  // Keep original URL but mock static methods
+  vi.stubGlobal(
+    'URL',
+    class extends originalURL {
+      static createObjectURL = vi.fn(() => 'blob:mock-url')
+      static revokeObjectURL = vi.fn()
+    },
+  )
+})
 
 // Mock the entire stores barrel
 vi.mock('@/stores', () => ({

@@ -327,7 +327,7 @@ describe('Melody Library System', () => {
 
   describe('Melody Items', () => {
     it('adds a melody note', () => {
-      const _melody = melodyStore.createNewMelody('Test')
+      melodyStore.createNewMelody('Test')
       melodyStore.addMelodyNote(
         { midi: 60, name: 'C', octave: 4, freq: 261.63 },
         0,
@@ -342,7 +342,7 @@ describe('Melody Library System', () => {
     })
 
     it('adds multiple melody notes', () => {
-      const _melody = melodyStore.createNewMelody('Test')
+      melodyStore.createNewMelody('Test')
       melodyStore.addMelodyNote(
         { midi: 60, name: 'C', octave: 4, freq: 261.63 },
         0,
@@ -359,7 +359,7 @@ describe('Melody Library System', () => {
     })
 
     it('removes a melody note by ID', () => {
-      const _melody = melodyStore.createNewMelody('Test')
+      melodyStore.createNewMelody('Test')
       melodyStore.addMelodyNote(
         { midi: 60, name: 'C', octave: 4, freq: 261.63 },
         0,
@@ -375,7 +375,7 @@ describe('Melody Library System', () => {
     })
 
     it('removes specific melody note', () => {
-      const _melody = melodyStore.createNewMelody('Test')
+      melodyStore.createNewMelody('Test')
       const _note1 = melodyStore.addMelodyNote(
         { midi: 60, name: 'C', octave: 4, freq: 261.63 },
         0,
@@ -405,7 +405,7 @@ describe('Melody Library System', () => {
     })
 
     it('updates melody note properties', () => {
-      const _melody = melodyStore.createNewMelody('Test')
+      melodyStore.createNewMelody('Test')
       melodyStore.addMelodyNote(
         { midi: 60, name: 'C', octave: 4, freq: 261.63 },
         0,
@@ -770,7 +770,7 @@ describe('Melody Library System', () => {
 
   describe('Complex Melody Scenarios', () => {
     it('builds complete song with multiple notes and chords', () => {
-      const _melody = melodyStore.createNewMelody('Complete Song')
+      melodyStore.createNewMelody('Complete Song')
       const notes: MelodyNote[] = [
         { midi: 60, name: 'C', octave: 4, freq: 261.63 },
         { midi: 64, name: 'E', octave: 4, freq: 329.63 },
@@ -825,8 +825,6 @@ describe('Melody Library System', () => {
 
     it('updates lastPlayed timestamp when melody is loaded', () => {
       const _melody = melodyStore.createNewMelody('Test')
-      const _originalUpdated = _melody.updatedAt
-
       melodyStore.loadMelody(_melody.id)
       const _loaded = melodyStore.getMelody(_melody.id)
 
@@ -867,7 +865,7 @@ describe('Melody Library System', () => {
 
   describe('Edge Cases', () => {
     it('handles zero-length items list', () => {
-      const _melody = melodyStore.createNewMelody('Test')
+      melodyStore.createNewMelody('Test')
       melodyStore.setMelody([])
 
       const items = melodyStore.getCurrentItems()

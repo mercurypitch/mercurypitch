@@ -1,9 +1,7 @@
 import ssl from '@vitejs/plugin-basic-ssl'
-import { existsSync, rmSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import type { Plugin } from 'vite'
-import { defineConfig, loadEnv } from 'vite'
+import { defineConfig } from 'vite'
 import solidPlugin from 'vite-plugin-solid'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -17,25 +15,6 @@ try {
   commitSha = execSync('git rev-parse --short HEAD').toString().trim()
 } catch (e) {
   console.warn('Failed to get git commit sha', e)
-}
-
-/** Remove large UVR model from dist to avoid Cloudflare size limits */
-function removeLargeUvrModelPlugin(): Plugin {
-  return {
-    name: 'remove-large-uvr-model',
-    apply: 'build',
-    closeBundle() {
-      // FIXME: Stop copying the 63mb model to dist until we need it for client-side processing
-      const modelPath = resolve(
-        __dirname,
-        'dist/models/UVR-MDX-NET-Inst_HQ_3.onnx',
-      )
-      if (existsSync(modelPath)) {
-        rmSync(modelPath)
-        console.log('Removed large UVR model from dist/')
-      }
-    },
-  }
 }
 
 export default defineConfig({

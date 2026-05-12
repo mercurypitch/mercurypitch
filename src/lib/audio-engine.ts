@@ -56,11 +56,8 @@ export class AudioEngine {
   // BPM state (used for timing calculations)
   private _bpm = 120
 
-  private _appStoreBpm = 120
-
   setBpm(bpm: number): void {
     this._bpm = bpm
-    this._appStoreBpm = bpm
   }
 
   getBpm(): number {
@@ -77,7 +74,6 @@ export class AudioEngine {
   private reverbNode: ConvolverNode | null = null
   private reverbSendGain: GainNode | null = null
   private reverbReturnGain: GainNode | null = null
-  private currentReverbType: 'off' | 'room' | 'hall' | 'cathedral' = 'room'
   private currentReverbWetness = 0.3
 
   // UVR Vocal Separation
@@ -85,7 +81,6 @@ export class AudioEngine {
   private uvrInitialized = false
   private uvrEnabled = false
   private uvrMainGain: GainNode | null = null
-  private uvrSourceNode: AudioNode | null = null
 
   // ============================================================
   // Lifecycle
@@ -317,7 +312,6 @@ export class AudioEngine {
   async setReverbType(
     type: 'off' | 'room' | 'hall' | 'cathedral',
   ): Promise<void> {
-    this.currentReverbType = type
     if (!this.audioCtx) return
 
     if (type === 'off') {

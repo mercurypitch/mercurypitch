@@ -2,9 +2,11 @@
 // Pitch Detector — YIN + McLeod Pitch Method (MPM)
 // ============================================================
 
+import type ort from 'onnxruntime-web'
 import type { DetectorMetrics, DetectorSettings, PitchDetectionResult, } from '@/types/pitch-algorithms'
 import { adjustedThreshold, mpmPickThreshold, parabolicInterpolation, parabolicInterpolationMax, } from './pitch-detector-internals'
 import { freqToNote } from './scale-data'
+import type { MockOnnxModule } from './swift-f0-detector'
 import { SwiftF0Detector } from './swift-f0-detector'
 
 /** Supported pitch detection algorithms */
@@ -68,11 +70,8 @@ export class PitchDetector {
   private readonly yinBuffer: Float32Array
   private pitchHistory: number[] = []
   private readonly maxHistory = 5
-  private detectStartTime: number = 0
   private swiftDetector: SwiftF0Detector | null = null
-  private onnxModule: {
-    run: (data: Float32Array, dim: number) => number
-  } | null = null
+  private onnxModule: typeof ort | MockOnnxModule | null = null
   private initialized: boolean = false
 
   constructor(options: PitchDetectorOptions = {}) {
@@ -104,8 +103,9 @@ export class PitchDetector {
       })
       this.initialized =
         this.onnxModule !== null
-          ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            await this.swiftDetector.init(this.onnxModule as any)
+          ? await this.swiftDetector.init(
+              this.onnxModule as typeof ort | MockOnnxModule,
+            )
           : false
       return this.initialized
     } catch (error) {
@@ -121,11 +121,12 @@ export class PitchDetector {
   }
 
   /** Set ONNX module for SwiftF0 (useful for testing without actual ONNX) */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  setOnnxModule(ort: any): void {
-    this.onnxModule = ort
+  setOnnxModule(ortModule: typeof ort | MockOnnxModule): void {
+    this.onnxModule = ortModule
     if (this.swiftDetector) {
-      this.swiftDetector.init(ort).catch(() => {})
+      this.swiftDetector
+        .init(ortModule as typeof ort | MockOnnxModule)
+        .catch(() => {})
     }
   }
 
@@ -146,8 +147,6 @@ export class PitchDetector {
         cents: 0,
       }
     }
-
-    this.detectStartTime = performance.now()
 
     // For SwiftF0, we need frequency-domain input
     if (this.algorithm === 'swift') {
@@ -283,7 +282,6 @@ export class PitchDetector {
   private fftToFrequencyData(timeDomainBuffer: Float32Array): Float32Array {
     const N = Math.floor(timeDomainBuffer.length / 2)
     const freqData = new Float32Array(N)
-    const _sampleRate = this.sampleRate
 
     for (let i = 0; i < N; i++) {
       let real = 0
@@ -306,32 +304,6 @@ export class PitchDetector {
     }
 
     return freqData
-  }
-
-  /** Detect pitch using SwiftF0 algorithm */
-  private async detectSwift(timeData: Float32Array): Promise<DetectedPitch> {
-    await this.initializeSwiftDetector()
-
-    if (this.swiftDetector !== null && this.swiftDetector.isInitialized()) {
-      const swiftResult = await this.swiftDetector.detect(timeData)
-
-      if (
-        swiftResult.pitch > 0 &&
-        swiftResult.probability >= this.minConfidence
-      ) {
-        const { name, octave, cents } = freqToNote(swiftResult.pitch)
-        return {
-          frequency: swiftResult.pitch,
-          clarity: swiftResult.probability,
-          noteName: name,
-          octave,
-          cents,
-        }
-      }
-    }
-
-    // Fallback to peak detection if SwiftF0 fails
-    return this.detectFromFreqDataFallback(timeData)
   }
 
   // ── YIN Algorithm ─────────────────────────────────────────────

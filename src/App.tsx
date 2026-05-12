@@ -4,12 +4,20 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
+import { createMemo, createSignal, For, onCleanup, onMount, Show, Suspense, } from 'solid-js'
 import { lazy } from 'solid-js'
-import { VocalAnalysis, VocalChallenges } from '@/components'
 import { AppSidebar } from '@/components/AppSidebar'
-import { CommunityLeaderboard } from '@/components/CommunityLeaderboard'
-import { CommunityShare } from '@/components/CommunityShare'
+
+const CommunityLeaderboard = lazy(async () =>
+  import('@/components/CommunityLeaderboard').then((m) => ({
+    default: m.CommunityLeaderboard,
+  })),
+)
+const CommunityShare = lazy(async () =>
+  import('@/components/CommunityShare').then((m) => ({
+    default: m.CommunityShare,
+  })),
+)
 import { FocusMode } from '@/components/FocusMode'
 import { HistoryCanvas } from '@/components/HistoryCanvas'
 import { LibraryModal } from '@/components/LibraryModal'
@@ -27,17 +35,40 @@ const PitchTestingTab = lazy(async () =>
     default: m.PitchTestingTab,
   })),
 )
+const VocalAnalysis = lazy(async () =>
+  import('@/components/VocalAnalysis').then((m) => ({
+    default: m.VocalAnalysis,
+  })),
+)
+const VocalChallenges = lazy(async () =>
+  import('@/components/VocalChallenges').then((m) => ({
+    default: m.VocalChallenges,
+  })),
+)
 import { ScaleBuilder } from '@/components/ScaleBuilder'
-import { SessionBrowser } from '@/components/SessionBrowser'
-import { SessionEditor } from '@/components/SessionEditor'
+
+const SessionBrowser = lazy(async () =>
+  import('@/components/SessionBrowser').then((m) => ({
+    default: m.SessionBrowser,
+  })),
+)
+const SessionEditor = lazy(async () =>
+  import('@/components/SessionEditor').then((m) => ({
+    default: m.SessionEditor,
+  })),
+)
 import { SessionLibraryModal } from '@/components/SessionLibraryModal'
 import { SessionPlayer } from '@/components/SessionPlayer'
 import { SettingsPanel } from '@/components/SettingsPanel'
 import type { PracticeSubMode } from '@/components/shared/SharedControlToolbar'
 import { SharedControlToolbar } from '@/components/shared/SharedControlToolbar'
 import type { UvrView } from '@/components/UvrPanel'
-import { UvrPanel } from '@/components/UvrPanel'
+
+const UvrPanel = lazy(async () =>
+  import('@/components/UvrPanel').then((m) => ({ default: m.UvrPanel })),
+)
 import { EngineProvider, useEngines } from '@/contexts/EngineContext'
+import { PlaybackProvider } from '@/contexts/PlaybackContext'
 import { useEditorController } from '@/features/editor/useEditorController'
 import { usePianoRollEvents } from '@/features/events/usePianoRollEvents'
 import { useFallingNotesController } from '@/features/falling-notes/useFallingNotesController'
@@ -45,17 +76,17 @@ import { useKeyboardShortcuts } from '@/features/keyboard/useKeyboardShortcuts'
 import { usePlaybackController } from '@/features/playback/usePlaybackController'
 import { usePracticeController } from '@/features/practice/usePracticeController'
 import { useRecordingController } from '@/features/recording/useRecordingController'
+import { useHashRouter } from '@/features/routing/useHashRouter'
 import { useSessionSequencer } from '@/features/session/useSessionSequencer'
 import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PIANO, TAB_SETTINGS, TAB_SINGING, tabLabel, } from '@/features/tabs/constants'
 import type { InstrumentType } from '@/lib/audio-engine'
 import { audioRegistry } from '@/lib/audio-registry'
 import { debounce } from '@/lib/debounce'
 import { registerE2EBridge } from '@/lib/e2e-bridge'
-import type { HashRoute } from '@/lib/hash-router'
-import { buildHash, parseHash, replaceHash } from '@/lib/hash-router'
 import { melodyIndexAtBeat, melodyTotalBeats } from '@/lib/scale-data'
 import { buildScaleMelody, buildSessionPlaybackMelody, } from '@/lib/session-builder'
 import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
+import { storageGet } from '@/lib/storage'
 import { openWalkthroughChapter, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPlaybackSpeed, setScaleType, showSelection, walkthroughModalOpen, } from '@/stores'
 import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, showNotification, showPlayhead, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, toggleMicWaveVisible, } from '@/stores'
 import { advancedFeaturesEnabled, devFeaturesEnabled } from '@/stores/app-store'
@@ -70,6 +101,7 @@ import { CrashModal } from './components/CrashModal'
 import { FallingNotesCanvas } from './components/FallingNotesCanvas'
 import { FallingNotesSongPicker } from './components/FallingNotesSongPicker'
 import { GuideSelection } from './components/GuideSelection'
+import { TabErrorBoundary } from './components/TabErrorBoundary'
 import { _UvrGuideStyles } from './components/UvrGuide'
 import { WelcomeScreen } from './components/WelcomeScreen'
 
@@ -180,8 +212,6 @@ const AppShell: Component<AppProps> = (props) => {
   const [spacedRestMode, setSpacedRestMode] =
     createSignal<SpacedRestMode>('none')
 
-  // Hash routing — prevents effect loop when hash is being updated from code
-  let hashSyncing = false
   const [initialUvrSessionId, setInitialUvrSessionId] = createSignal<
     string | null
   >(null)
@@ -201,6 +231,25 @@ const AppShell: Component<AppProps> = (props) => {
     closeGuideSelection()
     startWalkthrough(sectionIds)
   }
+
+  // ── Hash routing ────────────────────────────────────────────
+  useHashRouter({
+    setActiveTab,
+    setInitialUvrView,
+    setInitialUvrSessionId,
+    setActiveUvrSessionId,
+    openLearningWalkthrough,
+    openWalkthroughChapter,
+    startWalkthrough,
+    setShowGuideSelection,
+    activeTab,
+    activeUvrView,
+    activeUvrSessionId,
+    showSelection,
+    walkthroughModalOpen,
+    showGuideSelection,
+    selectedWalkthrough,
+  })
 
   // ── Recording controller ────────────────────────────────────
   const recording = useRecordingController({
@@ -354,6 +403,13 @@ const AppShell: Component<AppProps> = (props) => {
   // ── Falling Notes controller ─────────────────────────────────
   const fallingNotes = useFallingNotesController(audioEngine)
 
+  const pianoIsPlaying = createMemo(
+    () =>
+      fallingNotes.gameState() === 'playing' ||
+      fallingNotes.gameState() === 'countdown',
+  )
+  const pianoIsPaused = createMemo(() => fallingNotes.gameState() === 'paused')
+
   // ── Keyboard shortcuts & piano roll events ─────────────────
   useKeyboardShortcuts({
     isPlaying,
@@ -373,10 +429,8 @@ const AppShell: Component<AppProps> = (props) => {
     setPlayMode,
     activeTab,
     piano: {
-      isPlaying: () =>
-        fallingNotes.gameState() === 'playing' ||
-        fallingNotes.gameState() === 'countdown',
-      isPaused: () => fallingNotes.gameState() === 'paused',
+      isPlaying: pianoIsPlaying,
+      isPaused: pianoIsPaused,
       gameState: fallingNotes.gameState,
       startGame: () => {
         fallingNotes.setPianoCurrentCycle(1)
@@ -509,6 +563,10 @@ const AppShell: Component<AppProps> = (props) => {
     if (pr.score >= 50) return 'Okay!'
     return 'Needs Work'
   })
+
+  const playheadVisible = createMemo(
+    () => (isPlaying() || isPaused()) && showPlayhead(),
+  )
 
   const closeScoreOverlay = () => {
     setPracticeResult(null)
@@ -646,68 +704,6 @@ const AppShell: Component<AppProps> = (props) => {
   onMount(() => {
     initTheme()
 
-    // ── Hash routing: initial load ──────────────────────────
-    const initialRoute = parseHash(window.location.hash)
-    if (initialRoute.type === 'tab') {
-      setActiveTab(initialRoute.tab)
-    } else if (initialRoute.type === 'uvr-upload') {
-      setActiveTab(TAB_KARAOKE)
-      setInitialUvrView('upload')
-    } else if (initialRoute.type === 'uvr-session') {
-      setActiveTab(TAB_KARAOKE)
-      setInitialUvrSessionId(initialRoute.sessionId)
-      setInitialUvrView('results')
-    } else if (initialRoute.type === 'uvr-session-mixer') {
-      setActiveTab(TAB_KARAOKE)
-      setInitialUvrSessionId(initialRoute.sessionId)
-      setInitialUvrView('mixer')
-    } else if (initialRoute.type === 'learn') {
-      openLearningWalkthrough()
-    } else if (initialRoute.type === 'learn-chapter') {
-      openWalkthroughChapter(initialRoute.chapterId)
-    } else if (initialRoute.type === 'guide') {
-      setShowGuideSelection(true)
-    } else if (initialRoute.type === 'guide-start') {
-      const sectionIds =
-        initialRoute.sectionId === 'all' ? undefined : [initialRoute.sectionId]
-      startWalkthrough(sectionIds)
-    }
-
-    // ── Hash routing: back/forward navigation ───────────────
-    window.addEventListener('hashchange', () => {
-      const route = parseHash(window.location.hash)
-      hashSyncing = true
-      if (route.type === 'tab') {
-        setActiveTab(route.tab)
-        setActiveUvrSessionId(null)
-      } else if (route.type === 'uvr-upload') {
-        setActiveTab(TAB_KARAOKE)
-        setInitialUvrView('upload')
-        setActiveUvrSessionId(null)
-      } else if (route.type === 'uvr-session') {
-        setActiveTab(TAB_KARAOKE)
-        setInitialUvrSessionId(route.sessionId)
-        setInitialUvrView('results')
-        setActiveUvrSessionId(route.sessionId)
-      } else if (route.type === 'uvr-session-mixer') {
-        setActiveTab(TAB_KARAOKE)
-        setInitialUvrSessionId(route.sessionId)
-        setInitialUvrView('mixer')
-        setActiveUvrSessionId(route.sessionId)
-      } else if (route.type === 'learn') {
-        openLearningWalkthrough()
-      } else if (route.type === 'learn-chapter') {
-        openWalkthroughChapter(route.chapterId)
-      } else if (route.type === 'guide') {
-        setShowGuideSelection(true)
-      } else if (route.type === 'guide-start') {
-        const sectionIds =
-          route.sectionId === 'all' ? undefined : [route.sectionId]
-        startWalkthrough(sectionIds)
-      }
-      hashSyncing = false
-    })
-
     // Inject UVR component styles
     const styleElements = [
       LyricsUploaderStyles,
@@ -777,7 +773,7 @@ const AppShell: Component<AppProps> = (props) => {
     }
 
     // Saved volume
-    const vol = parseInt(localStorage.getItem('pp_volume') ?? '80', 10)
+    const vol = parseInt(storageGet('pp_volume', '80')!, 10)
     setSavedVol(isNaN(vol) ? 80 : vol)
 
     // Wire runtime events
@@ -786,316 +782,311 @@ const AppShell: Component<AppProps> = (props) => {
     props.onMounted?.()
   })
 
-  // ── Hash routing: sync activeTab → URL hash ───────────────
-  createEffect(() => {
-    if (hashSyncing) return
-    // Don't clobber walkthrough/guide hashes while those UIs are open
-    if (showSelection() || walkthroughModalOpen() || showGuideSelection())
-      return
-    const tab = activeTab()
-    if (tab !== TAB_KARAOKE) {
-      const expectedHash = `#/${tab}`
-      if (window.location.hash !== expectedHash) {
-        replaceHash({ type: 'tab', tab })
-      }
-      return
-    }
-    const view = activeUvrView()
-    const sessionId = activeUvrSessionId()
-    let route: HashRoute
-    if (view === 'results' && sessionId !== null) {
-      route = { type: 'uvr-session', sessionId }
-    } else if (view === 'mixer' && sessionId !== null) {
-      route = { type: 'uvr-session-mixer', sessionId }
-    } else {
-      route = { type: 'uvr-upload' }
-    }
-    const expectedHash = `#${buildHash(route)}`
-    if (window.location.hash !== expectedHash) {
-      replaceHash(route)
-    }
-  })
-
-  // ── Hash routing: sync walkthrough/guide state → URL hash ──
-  createEffect(() => {
-    if (hashSyncing) return
-    if (walkthroughModalOpen() && selectedWalkthrough() !== null) {
-      const id = selectedWalkthrough()!
-      const expectedHash = `#/learn/${id}`
-      if (window.location.hash !== expectedHash) {
-        replaceHash({ type: 'learn-chapter', chapterId: id })
-      }
-    } else if (showSelection()) {
-      const expectedHash = '#/learn'
-      if (window.location.hash !== expectedHash) {
-        replaceHash({ type: 'learn' })
-      }
-    } else if (showGuideSelection()) {
-      const expectedHash = '#/guide'
-      if (window.location.hash !== expectedHash) {
-        replaceHash({ type: 'guide' })
-      }
-    }
-  })
+  // Hash routing: state → URL syncing is handled by useHashRouter above
 
   // ============================================================
   // Render
   // ============================================================
 
   return (
-    <div id="app">
-      {/* Welcome Screen (shown on first visit) */}
-      <Show when={showWelcome()}>
-        <WelcomeScreen
-          onTakeTour={openGuideSelection}
-          // Wire the welcome overlay's "Enable Mic" button to the same
-          // mic toggle the SharedToolbar uses, so first-run permission
-          // grants actually start the mic stream + pitch detection.
-          // Previously this prop wasn't passed at all, so clicking only
-          // flipped a local "micEnabled" UI signal in WelcomeScreen and
-          // the mic was never opened.
-          onEnableMic={handleMicToggle}
-        />
-      </Show>
-
-      {/* Guide Selection dialog */}
-      <GuideSelection
-        isOpen={showGuideSelection()}
-        onClose={closeGuideSelection}
-        onStartTour={startGuideTour}
-      />
-
-      {/* Guide Tour — Interactive spotlight overlay */}
-      <Walkthrough />
-
-      <Show when={sidebarOpen()}>
-        <div class="sidebar-backdrop" onClick={closeSidebar} />
-      </Show>
-
-      <button
-        class="sidebar-toggle-btn"
-        onClick={toggleSidebar}
-        title="Menu"
-        aria-label="Menu"
-      >
-        <svg viewBox="0 0 24 24" width="16" height="16">
-          <path
-            fill="currentColor"
-            d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"
+    <PlaybackProvider
+      playSessionSequence={playSessionSequence}
+      loadAndPlayMelodyForSession={loadAndPlayMelodyForSession}
+    >
+      <div id="app">
+        {/* Welcome Screen (shown on first visit) */}
+        <Show when={showWelcome()}>
+          <WelcomeScreen
+            onTakeTour={openGuideSelection}
+            // Wire the welcome overlay's "Enable Mic" button to the same
+            // mic toggle the SharedToolbar uses, so first-run permission
+            // grants actually start the mic stream + pitch detection.
+            // Previously this prop wasn't passed at all, so clicking only
+            // flipped a local "micEnabled" UI signal in WelcomeScreen and
+            // the mic was never opened.
+            onEnableMic={handleMicToggle}
           />
-        </svg>
-        Menu
-      </button>
+        </Show>
 
-      <Show when={!focusMode()}>
-        <header>
-          <div class="header-left">
-            <button
-              id="app-title"
-              class="logo-btn"
-              onClick={() => void handleTabChange(TAB_SINGING)}
-              title="Go to Practice"
-            >
-              <h1 class="app-title">MercuryPitch</h1>
-            </button>
-            <p class="subtitle">Voice Pitch Practice</p>
-          </div>
-          <div class="header-right">
-            {/* Current melody indicator pill */}
-            <Show when={melodyStore.getCurrentMelody()}>
-              <button
-                class="melody-indicator-pill"
-                onClick={() => void handleTabChange(TAB_SINGING)}
-                title={`Now loaded: ${melodyStore.getCurrentMelody()?.name ?? 'Untitled'}`}
-              >
-                <svg
-                  class="melody-indicator-icon"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <path d="M9 18V5l12-2v13" />
-                  <circle cx="6" cy="18" r="3" />
-                  <circle cx="18" cy="16" r="3" />
-                </svg>
-                <span class="melody-indicator-info">
-                  <span class="melody-indicator-name">
-                    {melodyStore.getCurrentMelody()?.name ?? 'Untitled'}
-                  </span>
-                  <span class="melody-indicator-character">
-                    {selectedCharacter()}
-                  </span>
-                </span>
-              </button>
-            </Show>
-            {/* Walkthrough Control Button */}
-            <WalkthroughControl
-              showOnStart={false}
-              onOpenGuide={openGuideSelection}
+        {/* Guide Selection dialog */}
+        <GuideSelection
+          isOpen={showGuideSelection()}
+          onClose={closeGuideSelection}
+          onStartTour={startGuideTour}
+        />
+
+        {/* Guide Tour — Interactive spotlight overlay */}
+        <Walkthrough />
+
+        <Show when={sidebarOpen()}>
+          <div class="sidebar-backdrop" onClick={closeSidebar} />
+        </Show>
+
+        <button
+          class="sidebar-toggle-btn"
+          onClick={toggleSidebar}
+          title="Menu"
+          aria-label="Menu"
+        >
+          <svg viewBox="0 0 24 24" width="16" height="16">
+            <path
+              fill="currentColor"
+              d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"
             />
-          </div>
-          <nav id="app-tabs">
-            <div class="tab-group">
-              <span class="tab-group-label">Practice</span>
+          </svg>
+          Menu
+        </button>
+
+        <Show when={!focusMode()}>
+          <header>
+            <div class="header-left">
               <button
-                id="tab-singing"
-                class={`app-tab ${activeTab() === TAB_SINGING ? 'active' : ''}`}
+                id="app-title"
+                class="logo-btn"
                 onClick={() => void handleTabChange(TAB_SINGING)}
+                title="Go to Practice"
               >
-                <svg
-                  class="tab-icon"
-                  viewBox="0 0 24 24"
-                  width="14"
-                  height="14"
-                  fill="currentColor"
+                <h1 class="app-title">MercuryPitch</h1>
+              </button>
+              <p class="subtitle">Voice Pitch Practice</p>
+            </div>
+            <div class="header-right">
+              {/* Current melody indicator pill */}
+              <Show when={melodyStore.getCurrentMelody()}>
+                <button
+                  class="melody-indicator-pill"
+                  onClick={() => void handleTabChange(TAB_SINGING)}
+                  title={`Now loaded: ${melodyStore.getCurrentMelody()?.name ?? 'Untitled'}`}
                 >
-                  <path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
-                  <path
-                    d="M19 10v1a7 7 0 0 1-14 0v-1"
+                  <svg
+                    class="melody-indicator-icon"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
                     stroke-width="2"
                     stroke-linecap="round"
-                  />
-                  <line
-                    x1="12"
-                    y1="19"
-                    x2="12"
-                    y2="22"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                  />
-                  <line
-                    x1="8"
-                    y1="22"
-                    x2="16"
-                    y2="22"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                  />
-                </svg>
-                {tabLabel(TAB_SINGING)}
-              </button>
-              <button
-                id="tab-falling-notes"
-                class={`app-tab ${activeTab() === TAB_PIANO ? 'active' : ''}`}
-                onClick={() => void handleTabChange(TAB_PIANO)}
-              >
-                <svg
-                  class="tab-icon"
-                  viewBox="0 0 24 24"
-                  width="14"
-                  height="14"
-                  fill="currentColor"
-                >
-                  <rect x="2" y="5" width="4" height="15" rx="0.5" />
-                  <rect x="7" y="5" width="4" height="15" rx="0.5" />
-                  <rect x="12" y="5" width="4" height="15" rx="0.5" />
-                  <rect x="17" y="5" width="4" height="15" rx="0.5" />
-                  <rect
-                    x="4"
-                    y="5"
-                    width="2.5"
-                    height="10"
-                    rx="0.5"
-                    fill="var(--bg-primary)"
-                  />
-                  <rect
-                    x="9.5"
-                    y="5"
-                    width="2.5"
-                    height="10"
-                    rx="0.5"
-                    fill="var(--bg-primary)"
-                  />
-                  <rect
-                    x="14.5"
-                    y="5"
-                    width="2.5"
-                    height="10"
-                    rx="0.5"
-                    fill="var(--bg-primary)"
-                  />
-                </svg>
-                {tabLabel(TAB_PIANO)}
-              </button>
-              <button
-                id="tab-karaoke"
-                class={`app-tab ${activeTab() === TAB_KARAOKE ? 'active' : ''}`}
-                onClick={() => void handleTabChange(TAB_KARAOKE)}
-              >
-                <svg viewBox="0 0 24 24" width="18" height="18">
-                  <path
-                    fill="currentColor"
-                    d="M3 6 Q10 10 17 4 L19 4 L17 7 Q10 12 3 12 Z"
-                  />
-                  <path
-                    fill="currentColor"
-                    d="M3 18 Q10 14 17 20 L19 20 L17 17 Q10 12 3 12 Z"
-                  />
-                </svg>
-                {tabLabel(TAB_KARAOKE)}
-              </button>
+                    stroke-linejoin="round"
+                  >
+                    <path d="M9 18V5l12-2v13" />
+                    <circle cx="6" cy="18" r="3" />
+                    <circle cx="18" cy="16" r="3" />
+                  </svg>
+                  <span class="melody-indicator-info">
+                    <span class="melody-indicator-name">
+                      {melodyStore.getCurrentMelody()?.name ?? 'Untitled'}
+                    </span>
+                    <span class="melody-indicator-character">
+                      {selectedCharacter()}
+                    </span>
+                  </span>
+                </button>
+              </Show>
+              {/* Walkthrough Control Button */}
+              <WalkthroughControl
+                showOnStart={false}
+                onOpenGuide={openGuideSelection}
+              />
             </div>
-
-            <Show when={advancedFeaturesEnabled()}>
+            <nav id="app-tabs">
               <div class="tab-group">
-                <span class="tab-group-label">Social</span>
+                <span class="tab-group-label">Practice</span>
                 <button
-                  id="tab-community"
-                  class={`app-tab ${activeTab() === TAB_COMMUNITY ? 'active' : ''}`}
-                  onClick={() => void handleTabChange(TAB_COMMUNITY)}
+                  id="tab-singing"
+                  class={`app-tab ${activeTab() === TAB_SINGING ? 'active' : ''}`}
+                  onClick={() => void handleTabChange(TAB_SINGING)}
                 >
-                  <svg viewBox="0 0 24 24" width="18" height="18">
+                  <svg
+                    class="tab-icon"
+                    viewBox="0 0 24 24"
+                    width="14"
+                    height="14"
+                    fill="currentColor"
+                  >
+                    <path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
                     <path
-                      fill="currentColor"
-                      d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"
+                      d="M19 10v1a7 7 0 0 1-14 0v-1"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                    />
+                    <line
+                      x1="12"
+                      y1="19"
+                      x2="12"
+                      y2="22"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                    />
+                    <line
+                      x1="8"
+                      y1="22"
+                      x2="16"
+                      y2="22"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
                     />
                   </svg>
-                  {tabLabel(TAB_COMMUNITY)}
+                  {tabLabel(TAB_SINGING)}
                 </button>
                 <button
-                  id="tab-leaderboard"
-                  class={`app-tab ${activeTab() === TAB_LEADERBOARD ? 'active' : ''}`}
-                  onClick={() => void handleTabChange(TAB_LEADERBOARD)}
+                  id="tab-falling-notes"
+                  class={`app-tab ${activeTab() === TAB_PIANO ? 'active' : ''}`}
+                  onClick={() => void handleTabChange(TAB_PIANO)}
                 >
-                  <svg viewBox="0 0 24 24" width="18" height="18">
-                    <path
-                      fill="currentColor"
-                      d="M5 3H3v18h2V3zm4 0H7v18h2V3zm4 0h-2v18h2V3zm4 0h-2v18h2V3zm4 0h-2v18h2V3z"
+                  <svg
+                    class="tab-icon"
+                    viewBox="0 0 24 24"
+                    width="14"
+                    height="14"
+                    fill="currentColor"
+                  >
+                    <rect x="2" y="5" width="4" height="15" rx="0.5" />
+                    <rect x="7" y="5" width="4" height="15" rx="0.5" />
+                    <rect x="12" y="5" width="4" height="15" rx="0.5" />
+                    <rect x="17" y="5" width="4" height="15" rx="0.5" />
+                    <rect
+                      x="4"
+                      y="5"
+                      width="2.5"
+                      height="10"
+                      rx="0.5"
+                      fill="var(--bg-primary)"
+                    />
+                    <rect
+                      x="9.5"
+                      y="5"
+                      width="2.5"
+                      height="10"
+                      rx="0.5"
+                      fill="var(--bg-primary)"
+                    />
+                    <rect
+                      x="14.5"
+                      y="5"
+                      width="2.5"
+                      height="10"
+                      rx="0.5"
+                      fill="var(--bg-primary)"
                     />
                   </svg>
-                  {tabLabel(TAB_LEADERBOARD)}
+                  {tabLabel(TAB_PIANO)}
                 </button>
                 <button
-                  id="tab-challenges"
-                  class={`app-tab ${activeTab() === TAB_CHALLENGES ? 'active' : ''}`}
-                  onClick={() => void handleTabChange(TAB_CHALLENGES)}
+                  id="tab-karaoke"
+                  class={`app-tab ${activeTab() === TAB_KARAOKE ? 'active' : ''}`}
+                  onClick={() => void handleTabChange(TAB_KARAOKE)}
                 >
                   <svg viewBox="0 0 24 24" width="18" height="18">
                     <path
                       fill="currentColor"
-                      d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
+                      d="M3 6 Q10 10 17 4 L19 4 L17 7 Q10 12 3 12 Z"
+                    />
+                    <path
+                      fill="currentColor"
+                      d="M3 18 Q10 14 17 20 L19 20 L17 17 Q10 12 3 12 Z"
                     />
                   </svg>
-                  {tabLabel(TAB_CHALLENGES)}
+                  {tabLabel(TAB_KARAOKE)}
                 </button>
               </div>
-            </Show>
 
-            <div class="tab-group">
-              <span class="tab-group-label">Advanced</span>
+              <Show when={advancedFeaturesEnabled()}>
+                <div class="tab-group">
+                  <span class="tab-group-label">Social</span>
+                  <button
+                    id="tab-community"
+                    class={`app-tab ${activeTab() === TAB_COMMUNITY ? 'active' : ''}`}
+                    onClick={() => void handleTabChange(TAB_COMMUNITY)}
+                  >
+                    <svg viewBox="0 0 24 24" width="18" height="18">
+                      <path
+                        fill="currentColor"
+                        d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"
+                      />
+                    </svg>
+                    {tabLabel(TAB_COMMUNITY)}
+                  </button>
+                  <button
+                    id="tab-leaderboard"
+                    class={`app-tab ${activeTab() === TAB_LEADERBOARD ? 'active' : ''}`}
+                    onClick={() => void handleTabChange(TAB_LEADERBOARD)}
+                  >
+                    <svg viewBox="0 0 24 24" width="18" height="18">
+                      <path
+                        fill="currentColor"
+                        d="M5 3H3v18h2V3zm4 0H7v18h2V3zm4 0h-2v18h2V3zm4 0h-2v18h2V3zm4 0h-2v18h2V3z"
+                      />
+                    </svg>
+                    {tabLabel(TAB_LEADERBOARD)}
+                  </button>
+                  <button
+                    id="tab-challenges"
+                    class={`app-tab ${activeTab() === TAB_CHALLENGES ? 'active' : ''}`}
+                    onClick={() => void handleTabChange(TAB_CHALLENGES)}
+                  >
+                    <svg viewBox="0 0 24 24" width="18" height="18">
+                      <path
+                        fill="currentColor"
+                        d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
+                      />
+                    </svg>
+                    {tabLabel(TAB_CHALLENGES)}
+                  </button>
+                </div>
+              </Show>
+
+              <div class="tab-group">
+                <span class="tab-group-label">Advanced</span>
+                <button
+                  id="tab-compose"
+                  class={`app-tab ${activeTab() === TAB_COMPOSE ? 'active' : ''}`}
+                  onClick={() => void handleTabChange(TAB_COMPOSE)}
+                >
+                  <svg
+                    class="tab-icon"
+                    viewBox="0 0 24 24"
+                    width="14"
+                    height="14"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                    <path d="m15 5 4 4" />
+                  </svg>
+                  {tabLabel(TAB_COMPOSE)}
+                  <Show when={melodyStore.items().length > 0}>
+                    <span class="tab-badge">{melodyStore.items().length}</span>
+                  </Show>
+                </button>
+                <Show when={advancedFeaturesEnabled()}>
+                  <button
+                    id="tab-analysis"
+                    class={`app-tab ${activeTab() === TAB_ANALYSIS ? 'active' : ''}`}
+                    onClick={() => void handleTabChange(TAB_ANALYSIS)}
+                  >
+                    <svg viewBox="0 0 24 24" width="18" height="18">
+                      <path
+                        fill="currentColor"
+                        d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"
+                      />
+                    </svg>
+                    {tabLabel(TAB_ANALYSIS)}
+                  </button>
+                </Show>
+              </div>
+
               <button
-                id="tab-compose"
-                class={`app-tab ${activeTab() === TAB_COMPOSE ? 'active' : ''}`}
-                onClick={() => void handleTabChange(TAB_COMPOSE)}
+                id="tab-settings"
+                class={`app-tab ${activeTab() === TAB_SETTINGS ? 'active' : ''}`}
+                onClick={() => void handleTabChange(TAB_SETTINGS)}
               >
                 <svg
                   class="tab-icon"
@@ -1108,746 +1099,734 @@ const AppShell: Component<AppProps> = (props) => {
                   stroke-linecap="round"
                   stroke-linejoin="round"
                 >
-                  <path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                  <path d="m15 5 4 4" />
+                  <circle cx="12" cy="12" r="3" />
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" />
                 </svg>
-                {tabLabel(TAB_COMPOSE)}
-                <Show when={melodyStore.items().length > 0}>
-                  <span class="tab-badge">{melodyStore.items().length}</span>
-                </Show>
+                {tabLabel(TAB_SETTINGS)}
               </button>
-              <Show when={advancedFeaturesEnabled()}>
-                <button
-                  id="tab-analysis"
-                  class={`app-tab ${activeTab() === TAB_ANALYSIS ? 'active' : ''}`}
-                  onClick={() => void handleTabChange(TAB_ANALYSIS)}
-                >
-                  <svg viewBox="0 0 24 24" width="18" height="18">
-                    <path
-                      fill="currentColor"
-                      d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"
+            </nav>
+          </header>
+
+          {/* Main layout: sidebar + content */}
+          <div class="main-layout" id="main-layout">
+            {/* Shared sidebar — with mobile open class */}
+            <AppSidebar
+              class={sidebarOpen() === true ? 'open' : ''}
+              onPresetLoad={(_name) => {
+                // Presets now handled by melodyStore/LibraryModal
+              }}
+              onOctaveShift={handleOctaveShift}
+              onOpenScaleBuilder={() => setShowScaleBuilder(true)}
+              onOpenLearn={openLearningWalkthrough}
+              onOpenGuide={openGuideSelection}
+              melody={() => melodyStore.items()}
+              currentNoteIndex={currentNoteIndex}
+              noteResults={noteResults}
+              isPlaying={isPlaying}
+              pitch={currentPitch}
+              targetNoteName={targetNoteName}
+              onClose={closeSidebar}
+              collapsed={sidebarCollapsed()}
+              onToggleCollapse={() => setSidebarCollapsed((prev) => !prev)}
+            />
+
+            {/* Tab content */}
+            <div class="main-content">
+              <Show when={activeTab() === TAB_SINGING}>
+                <TabErrorBoundary tabName={tabLabel(TAB_SINGING)}>
+                  {/* Practice panel */}
+                  <div id="practice-panel">
+                    {/* Shared control toolbar with practice-specific options */}
+                    <SharedControlToolbar
+                      activeTab={() => activeTab()}
+                      singingTab={() => activeTab() === TAB_SINGING}
+                      editorTab={() => activeTab() === TAB_COMPOSE}
+                      isPlaying={isPlaying}
+                      isPaused={isPaused}
+                      onPlay={handlePracticePlay}
+                      onPause={handlePause}
+                      onResume={handleResume}
+                      onStop={() => void handleStop()}
+                      volume={savedVol}
+                      onVolumeChange={(vol) => {
+                        setSavedVol(vol)
+                        audioEngine?.setVolume(vol / 100)
+                      }}
+                      speed={playbackSpeed()}
+                      onSpeedChange={setPlaybackSpeed}
+                      metronomeEnabled={() => metronomeEnabled()}
+                      onMetronomeToggle={() =>
+                        setMetronomeEnabled(metronomeEnabled() === false)
+                      }
+                      playMode={() => playMode()}
+                      playModeChange={handlePracticeModeChange}
+                      practiceCycles={() => repeatCycles()}
+                      onCyclesChange={setRepeatCycles}
+                      currentCycle={() => currentRepeat()}
+                      practiceSubMode={() => practiceSubMode()}
+                      onPracticeSubModeChange={setPracticeSubMode}
+                      spacedRestMode={spacedRestMode}
+                      onSpacedRestModeChange={setSpacedRestMode}
+                      isCountingIn={() => isCountingIn()}
+                      countInBeat={() => countInBeat()}
+                      countInBeats={() => countIn()}
+                      onMicToggle={() => {
+                        void handleMicToggle()
+                      }}
+                      onWaveToggle={toggleMicWaveVisible}
                     />
-                  </svg>
-                  {tabLabel(TAB_ANALYSIS)}
-                </button>
-              </Show>
-            </div>
 
-            <button
-              id="tab-settings"
-              class={`app-tab ${activeTab() === TAB_SETTINGS ? 'active' : ''}`}
-              onClick={() => void handleTabChange(TAB_SETTINGS)}
-            >
-              <svg
-                class="tab-icon"
-                viewBox="0 0 24 24"
-                width="14"
-                height="14"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <circle cx="12" cy="12" r="3" />
-                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" />
-              </svg>
-              {tabLabel(TAB_SETTINGS)}
-            </button>
-          </nav>
-        </header>
+                    <Show when={sessionActive()}>
+                      <SessionPlayer
+                        onSkip={handleSessionSkip}
+                        onEnd={handleSessionEnd}
+                      />
+                    </Show>
 
-        {/* Main layout: sidebar + content */}
-        <div class="main-layout" id="main-layout">
-          {/* Shared sidebar — with mobile open class */}
-          <AppSidebar
-            class={sidebarOpen() === true ? 'open' : ''}
-            onPresetLoad={(_name) => {
-              // Presets now handled by melodyStore/LibraryModal
-            }}
-            onOctaveShift={handleOctaveShift}
-            onOpenScaleBuilder={() => setShowScaleBuilder(true)}
-            onOpenLearn={openLearningWalkthrough}
-            onOpenGuide={openGuideSelection}
-            melody={() => melodyStore.items()}
-            currentNoteIndex={currentNoteIndex}
-            noteResults={noteResults}
-            isPlaying={isPlaying}
-            pitch={currentPitch}
-            targetNoteName={targetNoteName}
-            onClose={closeSidebar}
-            collapsed={sidebarCollapsed()}
-            onToggleCollapse={() => setSidebarCollapsed((prev) => !prev)}
-          />
+                    <div id="canvas-container">
+                      <PitchCanvas
+                        melody={activePlaybackItems}
+                        scale={() => melodyStore.currentScale()}
+                        totalBeats={totalBeats}
+                        currentBeat={currentBeat}
+                        pitchHistory={pitchHistory}
+                        currentNoteIndex={currentNoteIndex}
+                        isPlaying={isPlaying}
+                        isPaused={isPaused}
+                        isScrolling={() => false}
+                        targetPitch={targetPitch}
+                        noteAccuracyMap={noteAccuracyMap}
+                        isRecording={recording.isRecording}
+                        getWaveform={() =>
+                          audioEngine?.getWaveformData() ?? null
+                        }
+                        noteResults={noteResults}
+                      />
+                      <div
+                        id="playhead"
+                        style={{
+                          display: playheadVisible() ? 'block' : 'none',
+                          left: `${playheadPosition()}%`,
+                        }}
+                      >
+                        <div class="playhead-marker" style={{ left: '0' }} />
+                      </div>
+                    </div>
 
-          {/* Tab content */}
-          <div class="main-content">
-            <Show when={activeTab() === TAB_SINGING}>
-              {/* Practice panel */}
-              <div id="practice-panel">
-                {/* Shared control toolbar with practice-specific options */}
-                <SharedControlToolbar
-                  activeTab={() => activeTab()}
-                  singingTab={() => activeTab() === TAB_SINGING}
-                  editorTab={() => activeTab() === TAB_COMPOSE}
-                  isPlaying={isPlaying}
-                  isPaused={isPaused}
-                  onPlay={handlePracticePlay}
-                  onPause={handlePause}
-                  onResume={handleResume}
-                  onStop={() => void handleStop()}
-                  volume={savedVol}
-                  onVolumeChange={(vol) => {
-                    setSavedVol(vol)
-                    audioEngine?.setVolume(vol / 100)
-                  }}
-                  speed={playbackSpeed()}
-                  onSpeedChange={setPlaybackSpeed}
-                  metronomeEnabled={() => metronomeEnabled()}
-                  onMetronomeToggle={() =>
-                    setMetronomeEnabled(metronomeEnabled() === false)
-                  }
-                  playMode={() => playMode()}
-                  playModeChange={handlePracticeModeChange}
-                  practiceCycles={() => repeatCycles()}
-                  onCyclesChange={setRepeatCycles}
-                  currentCycle={() => currentRepeat()}
-                  practiceSubMode={() => practiceSubMode()}
-                  onPracticeSubModeChange={setPracticeSubMode}
-                  spacedRestMode={spacedRestMode}
-                  onSpacedRestModeChange={setSpacedRestMode}
-                  isCountingIn={() => isCountingIn()}
-                  countInBeat={() => countInBeat()}
-                  countInBeats={() => countIn()}
-                  onMicToggle={() => {
-                    void handleMicToggle()
-                  }}
-                  onWaveToggle={toggleMicWaveVisible}
-                />
-
-                <Show when={sessionActive()}>
-                  <SessionPlayer
-                    onSkip={handleSessionSkip}
-                    onEnd={handleSessionEnd}
-                  />
-                </Show>
-
-                <div id="canvas-container">
-                  <PitchCanvas
-                    melody={activePlaybackItems}
-                    scale={() => melodyStore.currentScale()}
-                    totalBeats={totalBeats}
-                    currentBeat={currentBeat}
-                    pitchHistory={pitchHistory}
-                    currentNoteIndex={currentNoteIndex}
-                    isPlaying={isPlaying}
-                    isPaused={isPaused}
-                    isScrolling={() => false}
-                    targetPitch={targetPitch}
-                    noteAccuracyMap={noteAccuracyMap}
-                    isRecording={recording.isRecording}
-                    getWaveform={() => audioEngine?.getWaveformData() ?? null}
-                    noteResults={noteResults}
-                  />
-                  <div
-                    id="playhead"
-                    style={{
-                      display:
-                        (isPlaying() || isPaused()) && showPlayhead()
-                          ? 'block'
-                          : 'none',
-                      left: `${playheadPosition()}%`,
-                    }}
-                  >
-                    <div class="playhead-marker" style={{ left: '0' }} />
+                    <div id="history-container">
+                      <HistoryCanvas
+                        frequencyData={frequencyData}
+                        waveformData={waveformData}
+                        liveScore={liveScore}
+                      />
+                    </div>
                   </div>
-                </div>
-
-                <div id="history-container">
-                  <HistoryCanvas
-                    frequencyData={frequencyData}
-                    waveformData={waveformData}
-                    liveScore={liveScore}
-                  />
-                </div>
-              </div>
-            </Show>
-
-            <Show when={activeTab() === TAB_COMPOSE}>
-              <SharedControlToolbar
-                activeTab={() => activeTab()}
-                editorTab={() => activeTab() === TAB_COMPOSE}
-                isPlaying={editorIsPlaying}
-                isPaused={editorIsPaused}
-                onPlay={() => void handleEditorPlay()}
-                onPause={handleEditorPause}
-                onResume={handleEditorResume}
-                onStop={handleEditorStop}
-                volume={savedVol}
-                onVolumeChange={(vol) => {
-                  setSavedVol(vol)
-                  audioEngine?.setVolume(vol / 100)
-                }}
-                speed={playbackSpeed()}
-                onSpeedChange={setPlaybackSpeed}
-                metronomeEnabled={() => metronomeEnabled()}
-                onMetronomeToggle={() =>
-                  setMetronomeEnabled(metronomeEnabled() === false)
-                }
-                playMode={() => PLAYBACK_MODE_ONCE}
-                playModeChange={() => {}}
-                practiceCycles={() => 1}
-                onCyclesChange={() => {}}
-                currentCycle={() => currentRepeat()}
-                practiceSubMode={() => 'all'}
-                onPracticeSubModeChange={() => {}}
-                isCountingIn={() => false}
-                countInBeat={() => 0}
-                countInBeats={() => countIn()}
-                isRecording={() => recording.isRecording()}
-                onRecordToggle={recording.handleRecordToggle}
-                onMicToggle={() => {
-                  void handleMicToggle()
-                }}
-                onWaveToggle={toggleMicWaveVisible}
-              />
-
-              <div class="editor-view-toggle">
-                <button
-                  class={`view-btn ${editorView() === 'piano-roll' ? 'active' : ''}`}
-                  onClick={() => setEditorView('piano-roll')}
-                >
-                  Piano Roll
-                </button>
-                <button
-                  class={`view-btn ${editorView() === 'session-editor' ? 'active' : ''}`}
-                  onClick={() => setEditorView('session-editor')}
-                >
-                  Session Editor
-                </button>
-              </div>
-
-              <Show when={editorView() === 'session-editor'}>
-                <div class="session-editor-container">
-                  <SessionEditor />
-                </div>
+                </TabErrorBoundary>
               </Show>
 
-              {/* Editor playhead is rendered by the piano-roll itself
+              <Show when={activeTab() === TAB_COMPOSE}>
+                <TabErrorBoundary tabName={tabLabel(TAB_COMPOSE)}>
+                  <SharedControlToolbar
+                    activeTab={() => activeTab()}
+                    editorTab={() => activeTab() === TAB_COMPOSE}
+                    isPlaying={editorIsPlaying}
+                    isPaused={editorIsPaused}
+                    onPlay={() => void handleEditorPlay()}
+                    onPause={handleEditorPause}
+                    onResume={handleEditorResume}
+                    onStop={handleEditorStop}
+                    volume={savedVol}
+                    onVolumeChange={(vol) => {
+                      setSavedVol(vol)
+                      audioEngine?.setVolume(vol / 100)
+                    }}
+                    speed={playbackSpeed()}
+                    onSpeedChange={setPlaybackSpeed}
+                    metronomeEnabled={() => metronomeEnabled()}
+                    onMetronomeToggle={() =>
+                      setMetronomeEnabled(metronomeEnabled() === false)
+                    }
+                    playMode={() => PLAYBACK_MODE_ONCE}
+                    playModeChange={() => {}}
+                    practiceCycles={() => 1}
+                    onCyclesChange={() => {}}
+                    currentCycle={() => currentRepeat()}
+                    practiceSubMode={() => 'all'}
+                    onPracticeSubModeChange={() => {}}
+                    isCountingIn={() => false}
+                    countInBeat={() => 0}
+                    countInBeats={() => countIn()}
+                    isRecording={() => recording.isRecording()}
+                    onRecordToggle={recording.handleRecordToggle}
+                    onMicToggle={() => {
+                      void handleMicToggle()
+                    }}
+                    onWaveToggle={toggleMicWaveVisible}
+                  />
+
+                  <div class="editor-view-toggle">
+                    <button
+                      class={`view-btn ${editorView() === 'piano-roll' ? 'active' : ''}`}
+                      onClick={() => setEditorView('piano-roll')}
+                    >
+                      Piano Roll
+                    </button>
+                    <button
+                      class={`view-btn ${editorView() === 'session-editor' ? 'active' : ''}`}
+                      onClick={() => setEditorView('session-editor')}
+                    >
+                      Session Editor
+                    </button>
+                  </div>
+
+                  <Show when={editorView() === 'session-editor'}>
+                    <div class="session-editor-container">
+                      <Suspense fallback={<div class="tab-loading" />}>
+                        <SessionEditor />
+                      </Suspense>
+                    </div>
+                  </Show>
+
+                  {/* Editor playhead is rendered by the piano-roll itself
                   on its internal ruler/grid canvases via
                   drawRulerWithPlayhead / drawGridWithPlayhead.  See
                   PianoRollCanvas + PianoRollEditor.setRemoteBeat. */}
-              <Show when={editorView() === 'piano-roll'}>
-                <PianoRollCanvas
-                  // FIXME: Check if playbck items or items should be sent
-                  melody={() => melodyStore.items()}
-                  scale={() => melodyStore.currentScale()}
-                  bpm={() => bpm()}
-                  totalBeats={() => totalBeats()}
-                  playbackState={editorPlaybackState}
-                  currentNoteIndex={() => melodyStore.currentNoteIndex()}
-                  currentBeat={currentBeat}
-                  isPlaying={editorIsPlaying}
-                  isPaused={editorIsPaused}
-                  isScrolling={() => false}
-                  targetPitch={() => null}
-                  noteAccuracyMap={() => new Map()}
-                  onMelodyChange={(melody) => {
-                    debouncedAutoSave()
-                    melodyStore.setMelody(melody)
-                  }}
-                  onInstrumentChange={(instrument) => {
-                    // Update three things at once:
-                    //   1. App's primary AudioEngine (used during practice
-                    //      playback).
-                    //   2. The piano-roll's secondary AudioEngine (used
-                    //      for in-editor preview clicks). Without this
-                    //      fanout via the audioRegistry, changing the
-                    //      instrument dropdown wouldn't audibly affect
-                    //      the editor's playback because the secondary
-                    //      engine kept its default 'sine' instrument.
-                    //   3. The global `instrument` signal so EngineContext's
-                    //      reactive createEffect can re-sync any future
-                    //      engine that's registered later.
-                    audioEngine.setInstrument(instrument as InstrumentType)
-                    audioRegistry.setInstrumentAll(instrument)
-                    setInstrument(instrument as InstrumentType)
-                  }}
-                  onPlaybackStateChange={(_state) => {
-                    // editor playback state owned by playbackController now
-                  }}
-                  getWaveform={() => audioEngine?.getWaveformData() ?? null}
-                />
+                  <Show when={editorView() === 'piano-roll'}>
+                    <PianoRollCanvas
+                      // FIXME: Check if playbck items or items should be sent
+                      melody={() => melodyStore.items()}
+                      scale={() => melodyStore.currentScale()}
+                      bpm={() => bpm()}
+                      totalBeats={() => totalBeats()}
+                      playbackState={editorPlaybackState}
+                      currentNoteIndex={() => melodyStore.currentNoteIndex()}
+                      currentBeat={currentBeat}
+                      isPlaying={editorIsPlaying}
+                      isPaused={editorIsPaused}
+                      isScrolling={() => false}
+                      targetPitch={() => null}
+                      noteAccuracyMap={() => new Map()}
+                      onMelodyChange={(melody) => {
+                        debouncedAutoSave()
+                        melodyStore.setMelody(melody)
+                      }}
+                      onInstrumentChange={(instrument) => {
+                        // Update three things at once:
+                        //   1. App's primary AudioEngine (used during practice
+                        //      playback).
+                        //   2. The piano-roll's secondary AudioEngine (used
+                        //      for in-editor preview clicks). Without this
+                        //      fanout via the audioRegistry, changing the
+                        //      instrument dropdown wouldn't audibly affect
+                        //      the editor's playback because the secondary
+                        //      engine kept its default 'sine' instrument.
+                        //   3. The global `instrument` signal so EngineContext's
+                        //      reactive createEffect can re-sync any future
+                        //      engine that's registered later.
+                        audioEngine.setInstrument(instrument as InstrumentType)
+                        audioRegistry.setInstrumentAll(
+                          instrument as InstrumentType,
+                        )
+                        setInstrument(instrument as InstrumentType)
+                      }}
+                      onPlaybackStateChange={(_state) => {
+                        // editor playback state owned by playbackController now
+                      }}
+                      getWaveform={() => audioEngine?.getWaveformData() ?? null}
+                    />
+                  </Show>
+                </TabErrorBoundary>
               </Show>
-            </Show>
 
-            <Show when={activeTab() === TAB_ANALYSIS}>
-              <div
-                class="analysis-container"
-                style="display: flex; flex-direction: column; width: 100%; height: 100%;"
-              >
-                <div
-                  class="analysis-tabs"
-                  style="display: flex; gap: 1rem; padding: 1rem; background: var(--bg-secondary); border-bottom: 1px solid var(--border-color);"
-                >
-                  <button
-                    class={`view-btn ${analysisSubTab() === 'vocal' ? 'active' : ''}`}
-                    onClick={() => setAnalysisSubTab('vocal')}
+              <Show when={activeTab() === TAB_ANALYSIS}>
+                <TabErrorBoundary tabName={tabLabel(TAB_ANALYSIS)}>
+                  <div
+                    class="analysis-container"
+                    style="display: flex; flex-direction: column; width: 100%; height: 100%;"
                   >
-                    Vocal Analysis
-                  </button>
-                  <Show when={devFeaturesEnabled()}>
-                    <button
-                      class={`view-btn ${analysisSubTab() === 'detection' ? 'active' : ''}`}
-                      onClick={() => setAnalysisSubTab('detection')}
-                    >
-                      Pitch Detection
-                    </button>
-                    <button
-                      class={`view-btn ${analysisSubTab() === 'algorithms' ? 'active' : ''}`}
-                      onClick={() => setAnalysisSubTab('algorithms')}
-                    >
-                      Pitch Algorithms
-                    </button>
-                  </Show>
-                </div>
-
-                <div
-                  class="analysis-content"
-                  style="flex: 1; overflow: hidden; position: relative;"
-                >
-                  <Show when={analysisSubTab() === 'vocal'}>
                     <div
-                      class="vocal-analysis-panel"
-                      style="width: 100%; height: 100%;"
+                      class="analysis-tabs"
+                      style="display: flex; gap: 1rem; padding: 1rem; background: var(--bg-secondary); border-bottom: 1px solid var(--border-color);"
                     >
-                      <VocalAnalysis />
+                      <button
+                        class={`view-btn ${analysisSubTab() === 'vocal' ? 'active' : ''}`}
+                        onClick={() => setAnalysisSubTab('vocal')}
+                      >
+                        Vocal Analysis
+                      </button>
+                      <Show when={devFeaturesEnabled()}>
+                        <button
+                          class={`view-btn ${analysisSubTab() === 'detection' ? 'active' : ''}`}
+                          onClick={() => setAnalysisSubTab('detection')}
+                        >
+                          Pitch Detection
+                        </button>
+                        <button
+                          class={`view-btn ${analysisSubTab() === 'algorithms' ? 'active' : ''}`}
+                          onClick={() => setAnalysisSubTab('algorithms')}
+                        >
+                          Pitch Algorithms
+                        </button>
+                      </Show>
                     </div>
-                  </Show>
-                  <Show when={devFeaturesEnabled()}>
-                    <Show when={analysisSubTab() === 'detection'}>
-                      <PitchTestingTab
-                        onClose={() => setActiveTab(TAB_SINGING)}
-                      />
-                    </Show>
-                    <Show when={analysisSubTab() === 'algorithms'}>
-                      <PitchAlgorithmTester
-                        onClose={() => setActiveTab(TAB_SINGING)}
-                      />
-                    </Show>
-                  </Show>
-                </div>
-              </div>
-            </Show>
 
-            <Show when={activeTab() === TAB_COMMUNITY}>
-              <div class="community-panel">
-                <CommunityShare />
-              </div>
-            </Show>
-
-            <Show when={activeTab() === TAB_LEADERBOARD}>
-              <div class="leaderboard-panel">
-                <CommunityLeaderboard />
-              </div>
-            </Show>
-
-            <Show when={activeTab() === TAB_CHALLENGES}>
-              <div class="vocal-challenges-panel">
-                <VocalChallenges />
-              </div>
-            </Show>
-
-            <Show when={activeTab() === TAB_SETTINGS}>
-              <div id="settings-panel">
-                <SettingsPanel />
-              </div>
-            </Show>
-
-            <Show when={activeTab() === TAB_KARAOKE}>
-              <div id="uvr-panel">
-                <UvrPanel
-                  initialView={initialUvrView() ?? 'upload'}
-                  initialSessionId={initialUvrSessionId() ?? undefined}
-                  onSessionChange={(sessionId) =>
-                    setActiveUvrSessionId(sessionId)
-                  }
-                  onViewChange={(view) => setActiveUvrView(view)}
-                  onPracticeStart={(mode) => {
-                    // For now, this could load a session from UVR
-                    console.log('Starting practice with mode:', mode)
-                  }}
-                  onExport={(type) => {
-                    console.log('Exporting:', type)
-                  }}
-                  onSessionView={(sessionId) => {
-                    console.log('Viewing session:', sessionId)
-                  }}
-                />
-              </div>
-            </Show>
-            <Show when={activeTab() === TAB_PIANO}>
-              <div id="falling-notes-panel">
-                <SharedControlToolbar
-                  activeTab={activeTab}
-                  pianoTab={() => activeTab() === TAB_PIANO}
-                  isPlaying={() =>
-                    fallingNotes.gameState() === 'playing' ||
-                    fallingNotes.gameState() === 'countdown'
-                  }
-                  isPaused={() => fallingNotes.gameState() === 'paused'}
-                  onPlay={() => {
-                    // Fresh user-triggered Play resets cycle counter
-                    if (fallingNotes.gameState() !== 'paused') {
-                      fallingNotes.setPianoCurrentCycle(1)
-                    }
-                    void fallingNotes.startGame()
-                  }}
-                  onPause={fallingNotes.pauseGame}
-                  onResume={fallingNotes.resumeGame}
-                  onStop={fallingNotes.resetGame}
-                  volume={savedVol}
-                  onVolumeChange={(vol) => {
-                    setSavedVol(vol)
-                    audioEngine?.setVolume(vol / 100)
-                  }}
-                  speed={fallingNotes.speed()}
-                  onSpeedChange={fallingNotes.setSpeed}
-                  metronomeEnabled={() => false}
-                  onMetronomeToggle={() => {}}
-                  playMode={() =>
-                    fallingNotes.pianoPlayMode() === 'repeat'
-                      ? PLAYBACK_MODE_REPEAT
-                      : PLAYBACK_MODE_ONCE
-                  }
-                  playModeChange={(mode) => {
-                    fallingNotes.setPianoPlayMode(
-                      mode === PLAYBACK_MODE_REPEAT ? 'repeat' : 'once',
-                    )
-                    if (mode === PLAYBACK_MODE_REPEAT) {
-                      fallingNotes.setPianoCurrentCycle(1)
-                    }
-                  }}
-                  practiceCycles={() => fallingNotes.pianoRepeatCycles()}
-                  onCyclesChange={(n) => fallingNotes.setPianoRepeatCycles(n)}
-                  currentCycle={() => fallingNotes.pianoCurrentCycle()}
-                  practiceSubMode={() => 'all' as const}
-                  onPracticeSubModeChange={() => {}}
-                  isCountingIn={() => fallingNotes.isCountingIn()}
-                  countInBeat={() => fallingNotes.countInBeat()}
-                  countInBeats={() => countIn()}
-                  onMicToggle={() => {
-                    if (fallingNotes.isMicActive()) {
-                      fallingNotes.stopMic()
-                    } else {
-                      void fallingNotes.startMic()
-                    }
-                  }}
-                  inputMode={fallingNotes.inputMode}
-                  midiConnected={fallingNotes.midiConnected}
-                  onMidiToggle={() => {
-                    if (fallingNotes.midiConnected()) {
-                      fallingNotes.midiDisconnect()
-                    } else {
-                      void fallingNotes.midiConnect()
-                    }
-                  }}
-                  zoomLevel={fallingNotes.zoomPercent}
-                  onZoomIn={fallingNotes.zoomIn}
-                  onZoomOut={fallingNotes.zoomOut}
-                  showNoteLabels={fallingNotes.showNoteLabels}
-                  onToggleNoteLabels={fallingNotes.toggleNoteLabels}
-                  bpmValue={fallingNotes.currentSongBpm}
-                  onBpmChange={fallingNotes.setBpm}
-                />
-                <FallingNotesSongPicker onSongLoaded={fallingNotes.loadSong} />
-                <div id="falling-notes-canvas-container">
-                  <FallingNotesCanvas
-                    songNotes={fallingNotes.songNotes}
-                    gameState={fallingNotes.gameState}
-                    playheadBeat={fallingNotes.playheadBeat}
-                    hitResults={fallingNotes.hitResults}
-                    combo={fallingNotes.combo}
-                    score={fallingNotes.score}
-                    totalNotes={fallingNotes.totalNotes}
-                    notesMissed={fallingNotes.notesMissed}
-                    currentPitch={fallingNotes.currentPitch}
-                    isMicActive={fallingNotes.isMicActive}
-                    inputMode={fallingNotes.inputMode}
-                    visibleBeatWindow={fallingNotes.visibleBeatWindow}
-                    midiHeldNotes={fallingNotes.midiHeldNotes}
-                    onClickPianoOn={fallingNotes.clickPianoNoteOn}
-                    onClickPianoOff={fallingNotes.clickPianoNoteOff}
-                    clickPianoEnabled={fallingNotes.clickPianoEnabled}
-                  />
-                </div>
-                {/* Score overlay for finished game */}
-                <Show when={fallingNotes.gameState() === 'finished'}>
-                  <div class="fn-score-overlay">
-                    <div class="fn-score-card">
-                      <h2>Complete!</h2>
-                      <div class="fn-score-grade">
-                        {(() => {
-                          const s = fallingNotes.score()
-                          const t = fallingNotes.totalNotes()
-                          const pct =
-                            t > 0 ? Math.round((s / (t * 100)) * 100) : 0
-                          return pct >= 90
-                            ? 'Pitch Perfect!'
-                            : pct >= 80
-                              ? 'Excellent!'
-                              : pct >= 65
-                                ? 'Good!'
-                                : pct >= 50
-                                  ? 'Okay!'
-                                  : 'Keep Practicing!'
-                        })()}
-                      </div>
-                      <div class="fn-score-pct">
-                        {fallingNotes.totalNotes() > 0
-                          ? Math.round(
-                              (fallingNotes.score() /
-                                (fallingNotes.totalNotes() * 100)) *
-                                100,
-                            )
-                          : 0}
-                        %
-                      </div>
-                      <div class="fn-score-detail">
-                        {fallingNotes.totalNotes()} notes · Max Combo:{' '}
-                        {fallingNotes.maxCombo()}x
-                      </div>
-                      <div class="fn-score-actions">
-                        <button
-                          class="fn-btn fn-btn-play"
-                          onClick={() => void fallingNotes.startGame()}
+                    <div
+                      class="analysis-content"
+                      style="flex: 1; overflow: hidden; position: relative;"
+                    >
+                      <Show when={analysisSubTab() === 'vocal'}>
+                        <div
+                          class="vocal-analysis-panel"
+                          style="width: 100%; height: 100%;"
                         >
-                          Play Again
-                        </button>
-                        <button
-                          class="fn-btn fn-btn-close"
-                          onClick={fallingNotes.resetGame}
-                        >
-                          Close
-                        </button>
-                      </div>
+                          <Suspense fallback={<div class="tab-loading" />}>
+                            <VocalAnalysis />
+                          </Suspense>
+                        </div>
+                      </Show>
+                      <Show when={devFeaturesEnabled()}>
+                        <Show when={analysisSubTab() === 'detection'}>
+                          <PitchTestingTab
+                            onClose={() => setActiveTab(TAB_SINGING)}
+                          />
+                        </Show>
+                        <Show when={analysisSubTab() === 'algorithms'}>
+                          <PitchAlgorithmTester
+                            onClose={() => setActiveTab(TAB_SINGING)}
+                          />
+                        </Show>
+                      </Show>
                     </div>
                   </div>
-                </Show>
-              </div>
-            </Show>
-          </div>
-        </div>
-      </Show>
+                </TabErrorBoundary>
+              </Show>
 
-      <Show when={focusMode()}>
-        <FocusMode
-          melody={activePlaybackItems}
-          isPlaying={isPlaying}
-          isPaused={isPaused}
-          currentPitch={currentPitch}
-          pitchHistory={pitchHistory}
-          noteResults={noteResults}
-          practiceResult={practiceResult}
-          liveScore={liveScore}
-          countInBeat={countInBeat}
-          isCountingIn={isCountingIn}
-          currentBeat={currentBeat}
-          currentNoteIndex={currentNoteIndex}
-          onPlay={handlePlay}
-          onPause={handlePause}
-          onResume={handleResume}
-          onStop={handleReset}
-        />
-      </Show>
+              <Show when={activeTab() === TAB_COMMUNITY}>
+                <TabErrorBoundary tabName={tabLabel(TAB_COMMUNITY)}>
+                  <div class="community-panel">
+                    <Suspense fallback={<div class="tab-loading" />}>
+                      <CommunityShare />
+                    </Suspense>
+                  </div>
+                </TabErrorBoundary>
+              </Show>
 
-      {/* Score overlay */}
-      <Show when={showPracticeResultPopup() && practiceResult() !== null}>
-        <div class="overlay" onClick={closeScoreOverlay}>
-          <div
-            id="score-card"
-            onClick={(e) => {
-              e.stopPropagation()
-            }}
-          >
-            <button class="overlay-close" onClick={closeScoreOverlay}>
-              &times;
-            </button>
-            <h2 id="score-title">Run Complete!</h2>
-            <div id="score-grade" class={scoreGrade()}>
-              {scoreLabel()}
-            </div>
-            <div id="score-pct">{practiceResult()!.score}%</div>
-            <div id="score-detail">
-              {practiceResult()!.noteCount} notes ·{' '}
-              {practiceResult()!.avgCents.toFixed(1)}¢ avg
-            </div>
-            <div id="score-stats">
-              <div class="score-stat score-stat-perfect">
-                <div class="score-stat-value">
-                  {
-                    (noteResults() ?? []).filter((r) => r.rating === 'perfect')
-                      .length
-                  }
-                </div>
-                <div class="score-stat-label">Perfect</div>
-              </div>
-              <div class="score-stat score-stat-excellent">
-                <div class="score-stat-value">
-                  {
-                    (noteResults() ?? []).filter(
-                      (r) => r.rating === 'excellent',
-                    ).length
-                  }
-                </div>
-                <div class="score-stat-label">Excellent</div>
-              </div>
-              <div class="score-stat score-stat-good">
-                <div class="score-stat-value">
-                  {
-                    (noteResults() ?? []).filter((r) => r.rating === 'good')
-                      .length
-                  }
-                </div>
-                <div class="score-stat-label">Good</div>
-              </div>
-              <div class="score-stat score-stat-okay">
-                <div class="score-stat-value">
-                  {
-                    (noteResults() ?? []).filter((r) => r.rating === 'okay')
-                      .length
-                  }
-                </div>
-                <div class="score-stat-label">Okay</div>
-              </div>
-              <div class="score-stat score-stat-off">
-                <div class="score-stat-value">
-                  {
-                    (noteResults() ?? []).filter((r) => r.rating === 'off')
-                      .length
-                  }
-                </div>
-                <div class="score-stat-label">Off</div>
-              </div>
-            </div>
-            <div id="score-actions">
-              <button
-                class="overlay-btn primary"
-                onClick={() => {
-                  closeScoreOverlay()
-                  handleReset()
-                  handlePlay()
-                }}
-              >
-                Try Again
-              </button>
-              <button class="overlay-btn" onClick={closeScoreOverlay}>
-                Close
-              </button>
-            </div>
+              <Show when={activeTab() === TAB_LEADERBOARD}>
+                <TabErrorBoundary tabName={tabLabel(TAB_LEADERBOARD)}>
+                  <div class="leaderboard-panel">
+                    <Suspense fallback={<div class="tab-loading" />}>
+                      <CommunityLeaderboard />
+                    </Suspense>
+                  </div>
+                </TabErrorBoundary>
+              </Show>
 
-            <Show when={getSessionHistory().length > 1}>
-              <div id="score-history">
-                <h3 class="history-title">Recent Progress</h3>
-                <div class="history-chart">
-                  <For each={getSessionHistory().slice(0, 10)}>
-                    {(session) => (
-                      <div
-                        class="history-bar"
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        style={{ height: `${(session as any).score}%` }}
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        title={`Score: ${(session as any).score}%`}
+              <Show when={activeTab() === TAB_CHALLENGES}>
+                <TabErrorBoundary tabName={tabLabel(TAB_CHALLENGES)}>
+                  <div class="vocal-challenges-panel">
+                    <Suspense fallback={<div class="tab-loading" />}>
+                      <VocalChallenges />
+                    </Suspense>
+                  </div>
+                </TabErrorBoundary>
+              </Show>
+
+              <Show when={activeTab() === TAB_SETTINGS}>
+                <TabErrorBoundary tabName={tabLabel(TAB_SETTINGS)}>
+                  <div id="settings-panel">
+                    <SettingsPanel />
+                  </div>
+                </TabErrorBoundary>
+              </Show>
+
+              <Show when={activeTab() === TAB_KARAOKE}>
+                <TabErrorBoundary tabName={tabLabel(TAB_KARAOKE)}>
+                  <div id="uvr-panel">
+                    <Suspense fallback={<div class="tab-loading" />}>
+                      <UvrPanel
+                        initialView={initialUvrView() ?? 'upload'}
+                        initialSessionId={initialUvrSessionId() ?? undefined}
+                        onSessionChange={(sessionId) =>
+                          setActiveUvrSessionId(sessionId)
+                        }
+                        onViewChange={(view) => setActiveUvrView(view)}
+                        onPracticeStart={(mode) => {
+                          console.log('Starting practice with mode:', mode)
+                        }}
+                        onExport={(type) => {
+                          console.log('Exporting:', type)
+                        }}
+                        onSessionView={(sessionId) => {
+                          console.log('Viewing session:', sessionId)
+                        }}
                       />
-                    )}
-                  </For>
+                    </Suspense>
+                  </div>
+                </TabErrorBoundary>
+              </Show>
+              <Show when={activeTab() === TAB_PIANO}>
+                <TabErrorBoundary tabName={tabLabel(TAB_PIANO)}>
+                  <div id="falling-notes-panel">
+                    <SharedControlToolbar
+                      activeTab={activeTab}
+                      pianoTab={() => activeTab() === TAB_PIANO}
+                      isPlaying={pianoIsPlaying}
+                      isPaused={pianoIsPaused}
+                      onPlay={() => {
+                        // Fresh user-triggered Play resets cycle counter
+                        if (fallingNotes.gameState() !== 'paused') {
+                          fallingNotes.setPianoCurrentCycle(1)
+                        }
+                        void fallingNotes.startGame()
+                      }}
+                      onPause={fallingNotes.pauseGame}
+                      onResume={fallingNotes.resumeGame}
+                      onStop={fallingNotes.resetGame}
+                      volume={savedVol}
+                      onVolumeChange={(vol) => {
+                        setSavedVol(vol)
+                        audioEngine?.setVolume(vol / 100)
+                      }}
+                      speed={fallingNotes.speed()}
+                      onSpeedChange={fallingNotes.setSpeed}
+                      metronomeEnabled={() => false}
+                      onMetronomeToggle={() => {}}
+                      playMode={() =>
+                        fallingNotes.pianoPlayMode() === 'repeat'
+                          ? PLAYBACK_MODE_REPEAT
+                          : PLAYBACK_MODE_ONCE
+                      }
+                      playModeChange={(mode) => {
+                        fallingNotes.setPianoPlayMode(
+                          mode === PLAYBACK_MODE_REPEAT ? 'repeat' : 'once',
+                        )
+                        if (mode === PLAYBACK_MODE_REPEAT) {
+                          fallingNotes.setPianoCurrentCycle(1)
+                        }
+                      }}
+                      practiceCycles={() => fallingNotes.pianoRepeatCycles()}
+                      onCyclesChange={(n) =>
+                        fallingNotes.setPianoRepeatCycles(n)
+                      }
+                      currentCycle={() => fallingNotes.pianoCurrentCycle()}
+                      practiceSubMode={() => 'all' as const}
+                      onPracticeSubModeChange={() => {}}
+                      isCountingIn={() => fallingNotes.isCountingIn()}
+                      countInBeat={() => fallingNotes.countInBeat()}
+                      countInBeats={() => countIn()}
+                      onMicToggle={() => {
+                        if (fallingNotes.isMicActive()) {
+                          fallingNotes.stopMic()
+                        } else {
+                          void fallingNotes.startMic()
+                        }
+                      }}
+                      inputMode={fallingNotes.inputMode}
+                      midiConnected={fallingNotes.midiConnected}
+                      onMidiToggle={() => {
+                        if (fallingNotes.midiConnected()) {
+                          fallingNotes.midiDisconnect()
+                        } else {
+                          void fallingNotes.midiConnect()
+                        }
+                      }}
+                      zoomLevel={fallingNotes.zoomPercent}
+                      onZoomIn={fallingNotes.zoomIn}
+                      onZoomOut={fallingNotes.zoomOut}
+                      showNoteLabels={fallingNotes.showNoteLabels}
+                      onToggleNoteLabels={fallingNotes.toggleNoteLabels}
+                      bpmValue={fallingNotes.currentSongBpm}
+                      onBpmChange={fallingNotes.setBpm}
+                    />
+                    <FallingNotesSongPicker
+                      onSongLoaded={fallingNotes.loadSong}
+                    />
+                    <div id="falling-notes-canvas-container">
+                      <FallingNotesCanvas
+                        songNotes={fallingNotes.songNotes}
+                        gameState={fallingNotes.gameState}
+                        playheadBeat={fallingNotes.playheadBeat}
+                        hitResults={fallingNotes.hitResults}
+                        combo={fallingNotes.combo}
+                        score={fallingNotes.score}
+                        totalNotes={fallingNotes.totalNotes}
+                        notesMissed={fallingNotes.notesMissed}
+                        currentPitch={fallingNotes.currentPitch}
+                        isMicActive={fallingNotes.isMicActive}
+                        inputMode={fallingNotes.inputMode}
+                        visibleBeatWindow={fallingNotes.visibleBeatWindow}
+                        midiHeldNotes={fallingNotes.midiHeldNotes}
+                        onClickPianoOn={fallingNotes.clickPianoNoteOn}
+                        onClickPianoOff={fallingNotes.clickPianoNoteOff}
+                        clickPianoEnabled={fallingNotes.clickPianoEnabled}
+                      />
+                    </div>
+                    {/* Score overlay for finished game */}
+                    <Show when={fallingNotes.gameState() === 'finished'}>
+                      <div class="fn-score-overlay">
+                        <div class="fn-score-card">
+                          <h2>Complete!</h2>
+                          <div class="fn-score-grade">
+                            {(() => {
+                              const s = fallingNotes.score()
+                              const t = fallingNotes.totalNotes()
+                              const pct =
+                                t > 0 ? Math.round((s / (t * 100)) * 100) : 0
+                              return pct >= 90
+                                ? 'Pitch Perfect!'
+                                : pct >= 80
+                                  ? 'Excellent!'
+                                  : pct >= 65
+                                    ? 'Good!'
+                                    : pct >= 50
+                                      ? 'Okay!'
+                                      : 'Keep Practicing!'
+                            })()}
+                          </div>
+                          <div class="fn-score-pct">
+                            {fallingNotes.totalNotes() > 0
+                              ? Math.round(
+                                  (fallingNotes.score() /
+                                    (fallingNotes.totalNotes() * 100)) *
+                                    100,
+                                )
+                              : 0}
+                            %
+                          </div>
+                          <div class="fn-score-detail">
+                            {fallingNotes.totalNotes()} notes · Max Combo:{' '}
+                            {fallingNotes.maxCombo()}x
+                          </div>
+                          <div class="fn-score-actions">
+                            <button
+                              class="fn-btn fn-btn-play"
+                              onClick={() => void fallingNotes.startGame()}
+                            >
+                              Play Again
+                            </button>
+                            <button
+                              class="fn-btn fn-btn-close"
+                              onClick={fallingNotes.resetGame}
+                            >
+                              Close
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </Show>
+                  </div>
+                </TabErrorBoundary>
+              </Show>
+            </div>
+          </div>
+        </Show>
+
+        <Show when={focusMode()}>
+          <FocusMode
+            melody={activePlaybackItems}
+            isPlaying={isPlaying}
+            isPaused={isPaused}
+            currentPitch={currentPitch}
+            pitchHistory={pitchHistory}
+            noteResults={noteResults}
+            practiceResult={practiceResult}
+            liveScore={liveScore}
+            countInBeat={countInBeat}
+            isCountingIn={isCountingIn}
+            currentBeat={currentBeat}
+            currentNoteIndex={currentNoteIndex}
+            onPlay={handlePlay}
+            onPause={handlePause}
+            onResume={handleResume}
+            onStop={handleReset}
+          />
+        </Show>
+
+        {/* Score overlay */}
+        <Show when={showPracticeResultPopup() && practiceResult() !== null}>
+          <div class="overlay" onClick={closeScoreOverlay}>
+            <div
+              id="score-card"
+              onClick={(e) => {
+                e.stopPropagation()
+              }}
+            >
+              <button class="overlay-close" onClick={closeScoreOverlay}>
+                &times;
+              </button>
+              <h2 id="score-title">Run Complete!</h2>
+              <div id="score-grade" class={scoreGrade()}>
+                {scoreLabel()}
+              </div>
+              <div id="score-pct">{practiceResult()!.score}%</div>
+              <div id="score-detail">
+                {practiceResult()!.noteCount} notes ·{' '}
+                {practiceResult()!.avgCents.toFixed(1)}¢ avg
+              </div>
+              <div id="score-stats">
+                <div class="score-stat score-stat-perfect">
+                  <div class="score-stat-value">
+                    {
+                      (noteResults() ?? []).filter(
+                        (r) => r.rating === 'perfect',
+                      ).length
+                    }
+                  </div>
+                  <div class="score-stat-label">Perfect</div>
+                </div>
+                <div class="score-stat score-stat-excellent">
+                  <div class="score-stat-value">
+                    {
+                      (noteResults() ?? []).filter(
+                        (r) => r.rating === 'excellent',
+                      ).length
+                    }
+                  </div>
+                  <div class="score-stat-label">Excellent</div>
+                </div>
+                <div class="score-stat score-stat-good">
+                  <div class="score-stat-value">
+                    {
+                      (noteResults() ?? []).filter((r) => r.rating === 'good')
+                        .length
+                    }
+                  </div>
+                  <div class="score-stat-label">Good</div>
+                </div>
+                <div class="score-stat score-stat-okay">
+                  <div class="score-stat-value">
+                    {
+                      (noteResults() ?? []).filter((r) => r.rating === 'okay')
+                        .length
+                    }
+                  </div>
+                  <div class="score-stat-label">Okay</div>
+                </div>
+                <div class="score-stat score-stat-off">
+                  <div class="score-stat-value">
+                    {
+                      (noteResults() ?? []).filter((r) => r.rating === 'off')
+                        .length
+                    }
+                  </div>
+                  <div class="score-stat-label">Off</div>
                 </div>
               </div>
-            </Show>
-          </div>
-        </div>
-      </Show>
+              <div id="score-actions">
+                <button
+                  class="overlay-btn primary"
+                  onClick={() => {
+                    closeScoreOverlay()
+                    handleReset()
+                    handlePlay()
+                  }}
+                >
+                  Try Again
+                </button>
+                <button class="overlay-btn" onClick={closeScoreOverlay}>
+                  Close
+                </button>
+              </div>
 
-      <ScaleBuilder
-        isOpen={showScaleBuilder()}
-        onClose={() => setShowScaleBuilder(false)}
-      />
-
-      <Show when={showPracticeResultPopup() && sessionSummary() !== null}>
-        <div class="overlay" onClick={() => setSessionSummary(null)}>
-          <div
-            id="session-summary-card"
-            onClick={(e) => {
-              e.stopPropagation()
-            }}
-          >
-            <button
-              class="overlay-close"
-              onClick={() => setSessionSummary(null)}
-            >
-              &times;
-            </button>
-            <h2>Session Complete!</h2>
-            <p id="session-summary-name">{sessionSummary()!.name}</p>
-            <div id="session-summary-score">{sessionSummary()!.score}%</div>
-            <div id="session-summary-items">
-              {sessionSummary()!.items} items completed
+              <Show when={getSessionHistory().length > 1}>
+                <div id="score-history">
+                  <h3 class="history-title">Recent Progress</h3>
+                  <div class="history-chart">
+                    <For each={getSessionHistory().slice(0, 10)}>
+                      {(session) => (
+                        <div
+                          class="history-bar"
+                          style={{ height: `${session.score}%` }}
+                          title={`Score: ${session.score}%`}
+                        />
+                      )}
+                    </For>
+                  </div>
+                </div>
+              </Show>
             </div>
-            <div id="score-actions">
+          </div>
+        </Show>
+
+        <ScaleBuilder
+          isOpen={showScaleBuilder()}
+          onClose={() => setShowScaleBuilder(false)}
+        />
+
+        <Show when={showPracticeResultPopup() && sessionSummary() !== null}>
+          <div class="overlay" onClick={() => setSessionSummary(null)}>
+            <div
+              id="session-summary-card"
+              onClick={(e) => {
+                e.stopPropagation()
+              }}
+            >
               <button
-                class="overlay-btn primary"
-                onClick={() => {
-                  setSessionSummary(null)
-                  showSessionPresetsLibrary()
-                }}
-              >
-                New Session
-              </button>
-              <button
-                class="overlay-btn"
+                class="overlay-close"
                 onClick={() => setSessionSummary(null)}
               >
-                Close
+                &times;
               </button>
+              <h2>Session Complete!</h2>
+              <p id="session-summary-name">{sessionSummary()!.name}</p>
+              <div id="session-summary-score">{sessionSummary()!.score}%</div>
+              <div id="session-summary-items">
+                {sessionSummary()!.items} items completed
+              </div>
+              <div id="score-actions">
+                <button
+                  class="overlay-btn primary"
+                  onClick={() => {
+                    setSessionSummary(null)
+                    showSessionPresetsLibrary()
+                  }}
+                >
+                  New Session
+                </button>
+                <button
+                  class="overlay-btn"
+                  onClick={() => setSessionSummary(null)}
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      </Show>
+        </Show>
 
-      <Notifications />
+        <Notifications />
 
-      <Show when={isLibraryModalOpenSignal()}>
-        <LibraryModal
-          isOpen={true}
-          close={() => hideLibrary()}
-          onPlayMelody={handlePlayMelodyFromModal}
-        />
-      </Show>
+        <Show when={isLibraryModalOpenSignal()}>
+          <LibraryModal
+            isOpen={true}
+            close={() => hideLibrary()}
+            onPlayMelody={handlePlayMelodyFromModal}
+          />
+        </Show>
 
-      <Show when={isSessionLibraryModalOpenSignal()}>
-        <SessionLibraryModal isOpen={true} close={() => hideSessionLibrary()} />
-      </Show>
+        <Show when={isSessionLibraryModalOpenSignal()}>
+          <SessionLibraryModal
+            isOpen={true}
+            close={() => hideSessionLibrary()}
+          />
+        </Show>
 
-      <Show when={showSessionBrowser()}>
-        <SessionBrowser
-          onClose={hideSessionPresetsLibrary}
-          onStartSession={(template) => {
-            // 1. Try to find the session in the library (if user previously saved/edited it)
-            // 2. Otherwise, convert the template to a regular session object
-            const practiceSess =
-              getSession(template.id) ?? templateToSession(template)
-
-            // Path B (SessionBrowser template start). Set the active
-            // session, then trigger the unified session-sequence path
-            // by passing an empty `ids` array so playSessionSequence
-            // falls back to userSession() which we just set.
-            setActiveUserSession(practiceSess)
-            playSessionSequence([])
-            hideSessionPresetsLibrary()
-          }}
-        />
-      </Show>
-    </div>
+        <Show when={showSessionBrowser()}>
+          <Suspense fallback={<div class="tab-loading" />}>
+            <SessionBrowser
+              onClose={hideSessionPresetsLibrary}
+              onStartSession={(template) => {
+                const practiceSess =
+                  getSession(template.id) ?? templateToSession(template)
+                setActiveUserSession(practiceSess)
+                playSessionSequence([])
+                hideSessionPresetsLibrary()
+              }}
+            />
+          </Suspense>
+        </Show>
+      </div>
+    </PlaybackProvider>
   )
 }
 

@@ -3,14 +3,14 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createEffect, createSignal, For, onCleanup, Show } from 'solid-js'
+import { createEffect, createSignal, For, Show } from 'solid-js'
 import { deleteAllUvrSessionsFromDb, deleteUvrSessionFromDb, findSessionByFileHash, getOriginalFileBlob, hydrateStemUrls, saveStemBlob, saveUvrSession, } from '@/db/services/uvr-service'
 import { computeFileHash } from '@/lib/file-hash'
 import { generateVocalMidi } from '@/lib/midi-generator'
 import { getProcessStatus } from '@/lib/uvr-api'
 import { cancelUvrPipeline, destroyPipeline, preInitModel, runUvrPipeline, } from '@/lib/uvr-processing-pipeline'
 import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
-import { cancelUvrSession, completeUvrSession, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, getAllUvrSessions, getAllUvrSessionsReactive, getUvrProcessingMode, getUvrSession, getUvrSessionByHash, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrProcessingMode, startUvrSession, updateUvrSessionOutputs, uvrProcessingMode, } from '@/stores/app-store'
+import { cancelUvrSession, completeUvrSession, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, getAllUvrSessions, getAllUvrSessionsReactive, getUvrProcessingMode, getUvrSession, getUvrSessionByHash, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrProcessingMode, startUvrSession, updateUvrSessionOutputs, uvrModelError, uvrModelStatus, uvrProcessingMode, } from '@/stores/app-store'
 import { showNotification } from '@/stores/notifications-store'
 import { StemMixer, UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrSettings, UvrUploadControl, } from '.'
 import { CheckCircle, ImportFile, Music, Settings, Trash2, X } from './icons'
@@ -49,7 +49,6 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     console.error(message)
     setOnError(message)
   }
-  const _clearError = () => setOnError('')
   const [showGuide, setShowGuide] = createSignal(false)
   const [showSettings, setShowSettings] = createSignal(false)
   const [showDeleteAllConfirm, setShowDeleteAllConfirm] = createSignal(false)
@@ -79,38 +78,20 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   const session = () => currentUvrSession()
   const allSessions = () => getAllUvrSessionsReactive()
 
-  // Model loading state for browser mode
-  const [modelStatus, setModelStatus] = createSignal<
-    'unloaded' | 'loading' | 'ready' | 'error'
-  >('unloaded')
-  const [modelError, setModelError] = createSignal('')
-
   // Pre-initialize ONNX model when switching to browser mode
   createEffect(() => {
     const mode = uvrProcessingMode()
-    if (mode === 'local' && modelStatus() === 'unloaded') {
-      setModelStatus('loading')
-      setModelError('')
-      preInitModel()
-        .then(() => setModelStatus('ready'))
-        .catch((err: Error) => {
-          setModelStatus('error')
-          setModelError(err.message || 'Failed to load model')
-        })
+    if (mode === 'local' && uvrModelStatus() === 'unloaded') {
+      void preInitModel()
     }
   })
 
-  // Clean up separator when switching away from local mode or unmounting
+  // Clean up separator when switching away from local mode
   createEffect(() => {
     const mode = uvrProcessingMode()
-    if (mode === 'server' && modelStatus() !== 'unloaded') {
+    if (mode === 'server' && uvrModelStatus() !== 'unloaded') {
       destroyPipeline()
-      setModelStatus('unloaded')
     }
-  })
-
-  onCleanup(() => {
-    destroyPipeline()
   })
 
   // React to initialView prop changes (from hash navigation)
@@ -653,23 +634,23 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
             </button>
             <Show
               when={
-                uvrProcessingMode() === 'local' && modelStatus() !== 'ready'
+                uvrProcessingMode() === 'local' && uvrModelStatus() !== 'ready'
               }
             >
               <span
-                class={`model-status-badge model-status-${modelStatus()}`}
+                class={`model-status-badge model-status-${uvrModelStatus()}`}
                 title={
-                  modelStatus() === 'error'
-                    ? modelError()
-                    : modelStatus() === 'loading'
+                  uvrModelStatus() === 'error'
+                    ? uvrModelError()
+                    : uvrModelStatus() === 'loading'
                       ? 'Loading ONNX model...'
                       : ''
                 }
               >
-                <Show when={modelStatus() === 'loading'}>
+                <Show when={uvrModelStatus() === 'loading'}>
                   <span class="model-loading-dot" />
                 </Show>
-                <Show when={modelStatus() === 'error'}>
+                <Show when={uvrModelStatus() === 'error'}>
                   <span class="model-error-icon">!</span>
                 </Show>
               </span>

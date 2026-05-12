@@ -142,23 +142,6 @@ const IconTrophy = () => (
   </svg>
 )
 
-const _IconGuitar = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    class="icon-svg"
-  >
-    <path d="M9 18V5l12-2v13" />
-    <circle cx="6" cy="18" r="3" />
-    <circle cx="18" cy="16" r="3" />
-    <path d="M11 14a3 3 0 1 0-4 0" />
-  </svg>
-)
-
 const IconWizard = () => (
   <svg
     viewBox="0 0 24 24"
@@ -191,20 +174,6 @@ const IconChallenge = () => (
   </svg>
 )
 
-const _IconFire = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    class="icon-svg"
-  >
-    <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.1.2-2.2.5-3.3.4.5.7 1.3 1 2.3z" />
-  </svg>
-)
-
 const IconSearch = () => (
   <svg
     viewBox="0 0 24 24"
@@ -217,20 +186,6 @@ const IconSearch = () => (
   >
     <circle cx="11" cy="11" r="8" />
     <path d="m21 21-4.3-4.3" />
-  </svg>
-)
-
-const _IconFilter = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    class="icon-svg"
-  >
-    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
   </svg>
 )
 
@@ -464,11 +419,6 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
   const allLeaderboardUsers = createMemo(() => {
     const db = dbLeaderboardUsers()
     return db.length > 0 ? db : mockLeaderboardUsers
-  })
-
-  // Current user's data
-  const _currentUser = createMemo(() => {
-    return allLeaderboardUsers().find((u) => u.userId === 'me') || null
   })
 
   // Filter users based on search

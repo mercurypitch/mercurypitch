@@ -86,12 +86,6 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
     setTimeout(() => setToastMessage(''), 2500)
   }
 
-  const _handleExport = (type: 'vocal' | 'instrumental' | 'vocal-midi') => {
-    if (props.onExport) {
-      props.onExport(props.sessionId, type)
-    }
-  }
-
   const toggleStemSelection = (stem: string) => {
     if (props.disabled === true && session()?.status !== 'processing') return
     setSelectedStems((prev) => {

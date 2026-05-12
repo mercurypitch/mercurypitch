@@ -6,6 +6,7 @@ import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, onMount, Show } from 'solid-js'
 import { loadSharedMelodies, loadSharedSessions, loadUserProfile, saveSharedMelody as saveSharedMelodyToDb, saveSharedSession as saveSharedSessionToDb, } from '@/db/services/share-service'
 import { generateId } from '@/lib/id'
+import { storageGet, storageSet } from '@/lib/storage'
 import { getSessionHistory, melodyStore } from '@/stores'
 import type { MelodyItem, PlaybackSession } from '@/types'
 
@@ -165,21 +166,6 @@ const IconEye = () => (
   </svg>
 )
 
-const _IconUser2 = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    class="icon-avatar"
-  >
-    <circle cx="12" cy="8" r="4" />
-    <path d="M20 21a8 8 0 1 0-16 0" />
-  </svg>
-)
-
 const IconMusic = () => (
   <svg
     viewBox="0 0 24 24"
@@ -211,65 +197,6 @@ const IconBook = () => (
   </svg>
 )
 
-const _IconStreak2 = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    class="icon-svg"
-  >
-    <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.1.2-2.2.5-3.3.4.5.7 1.3 1 2.3z" />
-  </svg>
-)
-
-const _IconCheck = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    class="icon-svg"
-  >
-    <polyline points="20 6 9 17 4 12" />
-  </svg>
-)
-
-const _IconLock = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    class="icon-svg"
-  >
-    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-  </svg>
-)
-
-const _IconRefresh = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    class="icon-svg"
-  >
-    <polyline points="23 4 23 10 17 10" />
-    <polyline points="1 20 1 14 7 14" />
-    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-  </svg>
-)
-
 const IconStar = () => (
   <svg
     viewBox="0 0 24 24"
@@ -281,71 +208,6 @@ const IconStar = () => (
     class="icon-svg"
   >
     <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-  </svg>
-)
-
-const _IconTrophy2 = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    class="icon-svg"
-  >
-    <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
-    <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
-    <path d="M4 22h16" />
-    <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
-    <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
-    <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
-  </svg>
-)
-
-const _IconEmblem = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    class="icon-svg"
-  >
-    <circle cx="12" cy="12" r="10" />
-    <path d="M12 16v-4" />
-    <path d="M12 8h.01" />
-  </svg>
-)
-
-const _IconEdit = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    class="icon-svg"
-  >
-    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-  </svg>
-)
-
-const _IconPlus = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    class="icon-svg"
-  >
-    <line x1="12" x2="12" y1="5" y2="19" />
-    <line x1="5" x2="19" y1="12" y2="12" />
   </svg>
 )
 
@@ -437,13 +299,7 @@ export const CommunityShare: Component = () => {
   // Load shared data from localStorage + DB
   const sharedMelodies = createMemo(() => {
     const db = dbMelodies()
-    let stored: SharedMelody[] = []
-    try {
-      const raw = localStorage.getItem('pp_shared_melodies')
-      if (raw !== null) stored = JSON.parse(raw) as SharedMelody[]
-    } catch {
-      /* localStorage not available */
-    }
+    const stored = storageGet<SharedMelody[]>('pp_shared_melodies', [])!
     // DB data takes priority; merge localStorage items not in DB
     const dbIds = new Set(db.map((m) => m.id))
     return [...db, ...stored.filter((m) => !dbIds.has(m.id))]
@@ -451,26 +307,19 @@ export const CommunityShare: Component = () => {
 
   const sharedSessions = createMemo(() => {
     const db = dbSessions()
-    let stored: SharedSession[] = []
-    try {
-      const raw = localStorage.getItem('pp_shared_sessions')
-      if (raw !== null) stored = JSON.parse(raw) as SharedSession[]
-    } catch {
-      /* localStorage not available */
-    }
+    const stored = storageGet<SharedSession[]>('pp_shared_sessions', [])!
     const dbIds = new Set(db.map((s) => s.id))
     return [...db, ...stored.filter((s) => !dbIds.has(s.id))]
   })
 
   // Current user profile (DB-backed with localStorage fallback)
   const currentProfile = createMemo(() => {
-    const userId = localStorage.getItem('pp_user_id') ?? `user_${Date.now()}`
-    localStorage.setItem('pp_user_id', userId)
+    const userId = storageGet('pp_user_id') ?? `user_${Date.now()}`
+    storageSet('pp_user_id', userId)
 
     const sessions = getSessionHistory()
     const totalScore = sessions.reduce((sum, s) => sum + (s.score || 0), 0)
     const avgScore = sessions.length > 0 ? totalScore / sessions.length : 0
-    const _maxStreak = 5
     const currentStreak = 2
 
     const dbProf = dbProfile()
@@ -555,7 +404,7 @@ export const CommunityShare: Component = () => {
     }
 
     const updated = [...sharedMelodies(), shareable]
-    localStorage.setItem('pp_shared_melodies', JSON.stringify(updated))
+    storageSet('pp_shared_melodies', updated)
     // Dual-write to DB (fire-and-forget)
     saveSharedMelodyToDb({
       name: shareable.name,
@@ -585,7 +434,7 @@ export const CommunityShare: Component = () => {
     }
 
     const updated = [...sharedSessions(), shareable]
-    localStorage.setItem('pp_shared_sessions', JSON.stringify(updated))
+    storageSet('pp_shared_sessions', updated)
     // Dual-write to DB (fire-and-forget)
     saveSharedSessionToDb({
       name: shareable.name,
@@ -603,12 +452,6 @@ export const CommunityShare: Component = () => {
     const link = `${baseUrl}/#/share?type=${type}&id=${id}`
     navigator.clipboard.writeText(link)
     alert('Share link copied to clipboard!')
-  }
-
-  // Generate shareable URL for content
-  const _generateShareUrl = (type: ShareableContent, id: string) => {
-    const baseUrl = window.location.origin
-    return `${baseUrl}/#/share?type=${type}&id=${id}`
   }
 
   // Tabs

@@ -151,7 +151,6 @@ global.ResizeObserver = class ResizeObserver {
 // downloadMelodyAsWAV creates <a> elements with blob: URLs and clicks them.
 // jsdom only supports hash-based navigation, so redirect blob/data URLs to
 // hash URLs that jsdom can handle without throwing.
-const _origCreateObjectURL = URL.createObjectURL.bind(URL)
 URL.createObjectURL = (blob: Blob) => {
   void blob
   return `#download-${Math.random().toString(36).slice(2)}`

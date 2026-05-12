@@ -11,9 +11,6 @@ export class FFTDetector implements IPitchDetector {
   private settings: Required<DetectorSettings>
   private metrics: DetectorMetrics
   private history: PitchDetectionResult[] = []
-  private cosTable: Float64Array | null = null
-  private sinTable: Float64Array | null = null
-  private tableBits = 0
 
   constructor(options: DetectorSettings = {}) {
     this.settings = this.normalizeSettings(options)

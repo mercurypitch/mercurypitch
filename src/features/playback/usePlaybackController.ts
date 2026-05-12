@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- compat shim deps; remove with future redesign */
 import type { Accessor, Setter } from 'solid-js'
 import { createEffect, createMemo, createSignal } from 'solid-js'
 import { PLAYBACK_MODE_SESSION, TAB_SINGING } from '@/features/tabs/constants'
@@ -12,8 +11,7 @@ import { buildSessionItemMelody } from '@/lib/session-builder'
 import { bpm, countIn, keyName, scaleType, sessionMode, setActiveTab, setActiveUserSession, setBpm, setKeyName, setScaleType, setSessionActive, setSessionItemIndex, setSessionItemRepeat, setSessionMode, settings, startPracticeSession, userSession, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import { playback } from '@/stores/playback-store'
-import type { PlaybackSession } from '@/types'
-import type { MelodyItem, PlaybackMode, SessionResult } from '@/types'
+import type { MelodyItem, NoteResult, PlaybackMode, PlaybackSession, PracticeResult, PracticeSubMode, SessionResult, } from '@/types'
 
 export interface PlaybackController {
   isPlaying: Accessor<boolean>
@@ -59,14 +57,17 @@ interface PlaybackControllerDeps {
   practiceEngine: PracticeEngine
   playMode: Accessor<PlaybackMode>
   setPlayMode: Setter<PlaybackMode>
-  practiceSubMode: Accessor<any>
-  setPitchHistory: Setter<any[]>
-  setNoteResults: Setter<any[]>
-  setPracticeResult: Setter<any>
+  practiceSubMode: Accessor<PracticeSubMode>
+  setPitchHistory: Setter<NoteResult[]>
+  setNoteResults: Setter<NoteResult[]>
+  setPracticeResult: Setter<PracticeResult | null>
   setLiveScore: Setter<number | null>
   closeSidebar: () => void
-  filterMelodyForPractice: (m: MelodyItem[], sub: any) => MelodyItem[]
-  buildSessionPlaybackMelody: (s: any) => {
+  filterMelodyForPractice: (
+    m: MelodyItem[],
+    sub: PracticeSubMode,
+  ) => MelodyItem[]
+  buildSessionPlaybackMelody: (s: PlaybackSession) => {
     items: MelodyItem[]
     durationBeats: number
   }

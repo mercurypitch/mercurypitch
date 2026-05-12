@@ -1,4 +1,5 @@
 import { createSignal } from 'solid-js'
+import { z } from 'zod/v4'
 import type { FeatureFlag } from '@/db'
 import { getDb } from '@/db'
 import { TAB_COMPOSE, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
@@ -79,6 +80,12 @@ export function setUvrProcessingMode(mode: UvrProcessingMode): void {
 export const [uvrProcessingMode, _setUvrProcessingMode] =
   createSignal<UvrProcessingMode>(getUvrProcessingMode())
 
+// UVR Model status (persists across tab navigation)
+export type UvrModelStatus = 'unloaded' | 'loading' | 'ready' | 'error'
+export const [uvrModelStatus, setUvrModelStatus] =
+  createSignal<UvrModelStatus>('unloaded')
+export const [uvrModelError, setUvrModelError] = createSignal('')
+
 // Export for direct usage in components (internal setters that also persist)
 export const setUvrVocalIntensity = (intensity: number): void => {
   _setUvrVocalIntensity(intensity)
@@ -141,6 +148,54 @@ export interface UvrSession {
   createdAt: number
 }
 
+const UvrSessionSchema = z.object({
+  sessionId: z.string(),
+  apiSessionId: z.string().optional(),
+  status: z.enum([
+    'idle',
+    'uploading',
+    'processing',
+    'completed',
+    'error',
+    'cancelled',
+  ]),
+  progress: z.number(),
+  indeterminate: z.boolean().optional(),
+  processingTime: z.number().optional(),
+  error: z.string().optional(),
+  fileHash: z.string().optional(),
+  originalFile: z
+    .object({
+      name: z.string(),
+      size: z.number(),
+      mimeType: z.string(),
+    })
+    .optional(),
+  outputs: z
+    .object({
+      vocal: z.string().optional(),
+      instrumental: z.string().optional(),
+      vocalMidi: z.string().optional(),
+      instrumentalMidi: z.string().optional(),
+    })
+    .optional(),
+  stemMeta: z
+    .record(
+      z.string(),
+      z.object({
+        duration: z.number().optional(),
+        size: z.number().optional(),
+      }),
+    )
+    .optional(),
+  processingMode: z.enum(['server', 'local']).optional(),
+  provider: z.string().optional(),
+  numChunks: z.number().optional(),
+  createdAt: z.number(),
+})
+
+const UvrSessionArraySchema = z.array(UvrSessionSchema)
+
 /** Current UVR session state */
 export const [currentUvrSession, setCurrentUvrSession] =
   createSignal<UvrSession | null>(null)
@@ -177,7 +232,7 @@ export function getAllUvrSessions(): UvrSession[] {
   const saved = localStorage.getItem('pitchperfect_uvr_sessions')
   if (saved !== null) {
     try {
-      return JSON.parse(saved)
+      return UvrSessionArraySchema.parse(JSON.parse(saved))
     } catch {
       return []
     }

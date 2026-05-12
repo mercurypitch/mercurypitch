@@ -199,8 +199,6 @@ describe('Block Color Assignment (REQ-UV-050)', () => {
 
   it('may differ for different IDs', () => {
     // Not strictly required but good to verify distribution
-    const _c1 = getBlockColor('chorus-1')
-    const _c2 = getBlockColor('verse-2')
     // Different IDs should often map to different colors (not guaranteed but highly likely)
     // No assertion needed — just verifying determinism above
   })
