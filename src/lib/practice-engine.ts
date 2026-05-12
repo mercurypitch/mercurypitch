@@ -52,11 +52,7 @@ export class PracticeEngine {
   // Check every ~10 frames (~167ms at 60fps) — aggressive enough to catch suspensions fast
   private micHealthCounter = 0
   private static readonly MIC_HEALTH_INTERVAL = 10
-  // Track consecutive health failures to detect genuine mic drops
-  private micHealthFailures = 0
-  private static readonly MIC_DROP_THRESHOLD = 5 // Treat as dropped after 5 consecutive failures
   // Last detected pitch to detect mic silence (vs suspension)
-  private lastDetectedPitch: PitchResult | null = null
 
   constructor(
     audioEngine: AudioEngine,
@@ -267,23 +263,6 @@ export class PracticeEngine {
     }
 
     const pitch = this.detectPitch()
-
-    // Track last detected pitch for genuine mic drop detection
-    if (pitch && pitch.frequency !== 0) {
-      this.lastDetectedPitch = {
-        freq: pitch.frequency,
-        midi: 0,
-        note: pitch.noteName + pitch.octave,
-        noteName: pitch.noteName,
-        targetMidi: 0,
-        targetNote: '',
-        frequency: pitch.frequency,
-        clarity: pitch.clarity,
-        cents: pitch.cents ?? 0,
-        octave: pitch.octave,
-      }
-      this.micHealthFailures = 0
-    }
 
     if (pitch && this.isPlaying && this.currentTargetNote) {
       // Compute cents relative to target

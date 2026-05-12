@@ -355,8 +355,6 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   let dragPanelId: string | null = null
   let dragStartOrder = -1
   let dragTargetOrder = -1
-  let _dragOffsetX = 0
-  let _dragOffsetY = 0
 
   // ── Resize drag state ──────────────────────────────────────────
   let resizePanelId: string | null = null
@@ -392,12 +390,6 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   let progressBarRef: HTMLDivElement | undefined
   let workspaceRef: HTMLDivElement | undefined
   let lyricsFileInputRef: HTMLInputElement | undefined
-
-  // Cached canvas dimensions — updated only on resize, not every frame
-  let _overviewRect = { w: 0, h: 0 }
-  let _liveRect = { w: 0, h: 0 }
-  let _pitchRect = { w: 0, h: 0 }
-  let _midiRect = { w: 0, h: 0 }
 
   const vocalTrack = (): StemTrack => ({
     label: 'Vocal',
@@ -1195,11 +1187,6 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     const parsed = parseTimeInput(value)
     if (parsed === null) return
     const prev = editBuffer()
-    const lineData =
-      (lrcLines().length > 0
-        ? lrcLines()[lineIdx]?.text
-        : lyricsLines()[lineIdx]) || ''
-    const _wordList = lineData.split(/\s+/).filter((w: string) => w.length > 0)
     const oldStart = prev[lineIdx]?.[0] ?? 0
     const delta = parsed - oldStart
     const next: WordTimingsMap = {}
@@ -1382,33 +1369,6 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }
   }
 
-  /** Which block ID does a line's instance belong to? */
-  const _getBlockIdForLine = (lineIdx: number): string | null => {
-    return getBlockForLine(lineIdx)?.blockId ?? null
-  }
-
-  /** Is this line the first line of a block instance? */
-  const _isBlockInstanceStart = (lineIdx: number): boolean => {
-    const bi = blockInstances()
-    for (const instances of Object.values(bi)) {
-      for (const inst of instances) {
-        if (inst[0] === lineIdx) return true
-      }
-    }
-    return false
-  }
-
-  /** Get all lines that belong to any block (for checking overlaps in mark mode). */
-  const _getBlockedLineSet = (): Set<number> => {
-    const s = new Set<number>()
-    for (const instances of Object.values(blockInstances())) {
-      for (const [start, end] of instances) {
-        for (let i = start; i < end; i++) s.add(i)
-      }
-    }
-    return s
-  }
-
   // ── Block-aware LRC gen helpers ───────────────────────────────────
 
   /** Check if a block's template has been fully mapped in the LRC gen session. */
@@ -1417,13 +1377,6 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     if (!block) return false
     const lineTimes = lrcGenLineTimes()
     return block.lineIndices.every((i) => lineTimes[i] !== undefined)
-  }
-
-  /** Get template block start time from lrcGenLineTimes. */
-  const _getTemplateStartTime = (blockId: string): number | undefined => {
-    const block = getBlockById(blockId)
-    if (!block) return undefined
-    return lrcGenLineTimes()[block.lineIndices[0]]
   }
 
   /** Auto-fill a block instance's line times and word timings using template relative offsets. */
@@ -2660,11 +2613,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     const dpr = window.devicePixelRatio || 1
     const w = canvas.width / dpr
     const h = canvas.height / dpr
-    if (h <= 0) {
-      _overviewRect = { w, h }
-      return
-    }
-    _overviewRect = { w, h }
+    if (h <= 0) return
     const ctx = canvas.getContext('2d')!
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
@@ -2747,11 +2696,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     const dpr = window.devicePixelRatio || 1
     const w = canvas.width / dpr
     const h = canvas.height / dpr
-    if (h <= 0) {
-      _liveRect = { w, h }
-      return
-    }
-    _liveRect = { w, h }
+    if (h <= 0) return
     const ctx = canvas.getContext('2d')!
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
@@ -2798,11 +2743,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     const dpr = window.devicePixelRatio || 1
     const w = canvas.width / dpr
     const h = canvas.height / dpr
-    if (h <= 0) {
-      _pitchRect = { w, h }
-      return
-    }
-    _pitchRect = { w, h }
+    if (h <= 0) return
     const ctx = canvas.getContext('2d')!
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
@@ -3032,11 +2973,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     const dpr = window.devicePixelRatio || 1
     const w = canvas.width / dpr
     const h = canvas.height / dpr
-    if (h <= 0) {
-      _midiRect = { w, h }
-      return
-    }
-    _midiRect = { w, h }
+    if (h <= 0) return
     const ctx = canvas.getContext('2d')!
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
@@ -3366,8 +3303,6 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     dragPanelId = panelId
     dragStartOrder = panelOrder
     dragTargetOrder = panelOrder
-    _dragOffsetX = e.clientX
-    _dragOffsetY = e.clientY
   }
 
   const handlePanelDragMove = (e: PointerEvent) => {
@@ -4993,9 +4928,6 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                         const blockColor = blockForLine
                           ? getBlockColor(blockForLine.blockId)
                           : undefined
-                        const _block = blockForLine
-                          ? getBlockById(blockForLine.blockId)
-                          : undefined
                         const isMarkSelected =
                           blockMarkMode() &&
                           markStartLine() !== null &&
@@ -5977,9 +5909,6 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                             const blockForLine = getBlockForLine(idx)
                             const blockColor = blockForLine
                               ? getBlockColor(blockForLine.blockId)
-                              : undefined
-                            const _block = blockForLine
-                              ? getBlockById(blockForLine.blockId)
                               : undefined
                             const isMarkSelected =
                               blockMarkMode() &&

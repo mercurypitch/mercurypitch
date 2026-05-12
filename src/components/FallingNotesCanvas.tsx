@@ -1010,7 +1010,7 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (
   }
 
   const drawPitchIndicator = (
-    w: number,
+    _w: number,
     kbTop: number,
     kbHeight: number,
     minWhite: number,

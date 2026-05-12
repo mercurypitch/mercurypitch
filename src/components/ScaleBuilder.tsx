@@ -5,6 +5,7 @@
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, Show } from 'solid-js'
 import { NOTE_NAMES } from '@/lib/scale-data'
+import { storageGet, storageRemove, storageSet } from '@/lib/storage'
 import { keyName, setScaleType, showNotification } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import { customScales, customScaleTypeId, deleteCustomScale, saveCustomScale, } from '@/stores/settings-store'
@@ -79,20 +80,16 @@ export const ScaleBuilder: Component<ScaleBuilderProps> = (props) => {
     deleteCustomScale(name)
 
     // If the deleted scale was the active custom scale, revert to major
-    try {
-      const current = localStorage.getItem('pitchperfect_active_custom_scale')
-      if (current !== null && current.includes(`:${name}:`)) {
-        localStorage.removeItem('pitchperfect_active_custom_scale')
-        setScaleType('major')
-        melodyStore.refreshScale(
-          keyName(),
-          melodyStore.getCurrentOctave(),
-          'major',
-        )
-        showNotification('Reverted to Major scale', 'info')
-      }
-    } catch {
-      /* empty */
+    const current = storageGet<string>('pitchperfect_active_custom_scale')
+    if (current !== null && current.includes(`:${name}:`)) {
+      storageRemove('pitchperfect_active_custom_scale')
+      setScaleType('major')
+      melodyStore.refreshScale(
+        keyName(),
+        melodyStore.getCurrentOctave(),
+        'major',
+      )
+      showNotification('Reverted to Major scale', 'info')
     }
   }
 
@@ -112,11 +109,7 @@ export const ScaleBuilder: Component<ScaleBuilderProps> = (props) => {
     const customId = customScaleTypeId(name, notes)
 
     // Store active custom scale marker
-    try {
-      localStorage.setItem('pitchperfect_active_custom_scale', customId)
-    } catch {
-      /* empty */
-    }
+    storageSet('pitchperfect_active_custom_scale', customId)
 
     // Update scale type (sidebar dropdown reacts to this)
     setScaleType(customId)
@@ -144,21 +137,17 @@ export const ScaleBuilder: Component<ScaleBuilderProps> = (props) => {
 
   const handleOpen = () => {
     // Try to load current custom scale if active
-    try {
-      const current = localStorage.getItem('pitchperfect_active_custom_scale')
-      if (
-        current !== null &&
-        current !== undefined &&
-        current.startsWith('custom:')
-      ) {
-        const parts = current.split(':')
-        if (parts.length >= 3) {
-          setScaleName(parts[1])
-          setCustomNotes(new Set(parts[2].split(',')))
-        }
+    const current = storageGet<string>('pitchperfect_active_custom_scale')
+    if (
+      current !== null &&
+      current !== undefined &&
+      current.startsWith('custom:')
+    ) {
+      const parts = current.split(':')
+      if (parts.length >= 3) {
+        setScaleName(parts[1])
+        setCustomNotes(new Set(parts[2].split(',')))
       }
-    } catch {
-      /* empty */
     }
   }
 

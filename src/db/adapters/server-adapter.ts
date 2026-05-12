@@ -28,7 +28,7 @@ class ServerRepository<T extends DbEntity> implements Repository<T> {
   private url: string
 
   constructor(
-    private entityName: string,
+    entityName: string,
     private config: ServerAdapterConfig,
   ) {
     this.url = `${config.baseUrl}/api/${entityName}`

@@ -5,6 +5,7 @@ import type { InstrumentType } from '@/lib/audio-engine'
 import { AudioEngine } from '@/lib/audio-engine'
 import { PlaybackRuntime } from '@/lib/playback-runtime'
 import { PracticeEngine } from '@/lib/practice-engine'
+import { storageGet } from '@/lib/storage'
 import * as appStoreCore from '@/stores/app-store'
 import * as settingsStore from '@/stores/settings-store'
 import * as transportStore from '@/stores/transport-store'
@@ -44,7 +45,7 @@ export function EngineProvider(props: { children: JSX.Element }) {
   const audioEngine = new AudioEngine()
 
   // Initialize from storage/stores
-  const savedVol = parseInt(localStorage.getItem('pp_volume') ?? '80', 10)
+  const savedVol = parseInt(storageGet('pp_volume', '80')!, 10)
   audioEngine.setVolume((isNaN(savedVol) ? 80 : savedVol) / 100)
   audioEngine.setBpm(transportStore.bpm() * transportStore.playbackSpeed())
   audioEngine.syncFromAppStore(settingsStore.adsr())

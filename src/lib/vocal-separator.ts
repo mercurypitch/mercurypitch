@@ -111,8 +111,9 @@ export class VocalSeparator {
 
       case 'error': {
         if (msg.requestId === this.pendingRequest?.requestId) {
-          this._status = 'error'
-          this._error = msg.message
+          const isCancel = msg.message === 'Cancelled'
+          this._status = isCancel ? 'ready' : 'error'
+          this._error = isCancel ? null : msg.message
           this.pendingRequest.reject(new Error(msg.message))
           this.pendingRequest = null
         } else if (msg.requestId === -1) {

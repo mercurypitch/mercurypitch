@@ -4,10 +4,11 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
+import { usePlayback } from '@/contexts/PlaybackContext'
 import { TAB_COMPOSE, TAB_SINGING } from '@/features/tabs/constants'
 import { loadSession, melodyStore, setActiveTab, setActiveUserSession, setEditorView, showNotification, } from '@/stores'
 import { createSession, saveSession } from '@/stores/session-store'
-import type { PlaybackSession, SessionCategory, SessionDifficulty, } from '@/types'
+import type { PlaybackSession } from '@/types'
 import { SessionMiniTimeline } from './SessionMiniTimeline'
 
 // Drag and drop state
@@ -44,49 +45,14 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
       )
   })
 
-  /**
-   * Start playing the selected session, exactly like the Library tab's
-   * "Play All in sequence" button does.
-   *
-   * Flow (must match LibraryTab.handlePlaySessionSequence so users get
-   * consistent behavior regardless of which UI they came from):
-   *   1. Make `session` the active user-session (so userSession() returns
-   *      it inside the playback controller).
-   *   2. Switch to the Singing tab + Session playMode (the per-item
-   *      runner only triggers when playMode === PLAYBACK_MODE_SESSION).
-   *   3. Close the modal so the practice canvas is visible.
-   *   4. Trigger window.__pp.playSessionSequence(...) which the bridge
-   *      maps to useSessionSequencer.playSessionSequence — same code path
-   *      as the Library button.
-   *
-   * The previous handler only called `loadSession()` (which
-   * sets the active session) and closed the modal — it never actually
-   * started playback, so the Play button appeared to do nothing.
-   */
+  const { playSessionSequence } = usePlayback()
+
   const handlePlay = (session: PlaybackSession) => {
     setActiveUserSession(session)
-    // loadSession also seeds bpm/key/scale and other UI state
-    // that Play-All relies on (it's called indirectly via the bridge).
-    // Calling it here keeps the two routes identical.
     loadSession(session)
     setActiveTab(TAB_SINGING)
-    // playMode is forced to PLAYBACK_MODE_SESSION inside usePlaybackController's
-    // playSessionSequence() handler, so we don't need to set it here —
-    // and there's no store-level setPlayMode export (it's an App-local
-    // signal). Setting the active tab + closing the modal + invoking
-    // the bridge is enough.
     props.close()
-
-    const win = window as unknown as {
-      __pp?: { playSessionSequence?: (melodyIds: string[]) => void }
-      __playSessionSequence?: (melodyIds: string[]) => void
-    }
-    const handler = win.__pp?.playSessionSequence ?? win.__playSessionSequence
-    if (handler !== undefined) {
-      // The handler reads userSession() internally; the ids array is
-      // ignored by the production sequencer, so an empty array is fine.
-      handler([])
-    }
+    playSessionSequence([])
   }
 
   const handleDelete = (id: string) => {
@@ -136,23 +102,6 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
       setDragState(null)
     }
   }
-
-  const _difficultyOptions: Array<{ value: SessionDifficulty; label: string }> =
-    [
-      { value: 'beginner', label: 'Beginner' },
-      { value: 'intermediate', label: 'Intermediate' },
-      { value: 'advanced', label: 'Advanced' },
-    ]
-
-  const _categoryOptions: Array<{ value: SessionCategory; label: string }> = [
-    { value: 'vocal', label: 'Vocal' },
-    { value: 'warmup', label: 'Warmup' },
-    { value: 'scales', label: 'Scales' },
-    { value: 'melodic', label: 'Melodic' },
-    { value: 'rhythmic', label: 'Rhythmic' },
-    { value: 'ear_training', label: 'Ear Training' },
-    { value: 'custom', label: 'Custom' },
-  ]
 
   return (
     <Show when={props.isOpen}>

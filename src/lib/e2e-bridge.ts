@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- intentional any in window hook bag */
 import type { Setter } from 'solid-js'
 import type { PlaybackRuntime } from '@/lib/playback-runtime'
 import { exposeForE2E } from '@/lib/test-utils'
@@ -17,7 +16,7 @@ export interface E2EBridgeDeps {
 
 declare global {
   interface Window {
-    __pp?: Record<string, any>
+    __pp?: Record<string, unknown>
     __appStore?: typeof appStore
     __melodyStore?: typeof melodyStore
     __playbackRuntime?: PlaybackRuntime
@@ -37,15 +36,15 @@ export function registerE2EBridge(deps: E2EBridgeDeps): void {
     setPlayMode,
   } = deps
 
-  // Preferred namespacing
-  window.__pp = {
+  // Preferred namespacing — gated to test/E2E only
+  exposeForE2E('__pp', {
     appStore: app,
     melodyStore: melody,
     playbackRuntime,
     loadAndPlayMelodyForSession,
     playSessionSequence,
     setPlayMode,
-  }
+  })
 
   // Deprecated aliases for compatibility
   exposeForE2E('__appStore', app)

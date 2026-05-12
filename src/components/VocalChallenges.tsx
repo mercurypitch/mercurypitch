@@ -8,6 +8,7 @@ import type { Achievement as DBAchievement, BadgeDefinition as DBBadgeDefinition
 import { getUserId } from '@/db/seed'
 import { loadAchievementDefinitions, loadBadgeDefinitions, loadChallengeDefinitions, loadChallengeProgress, loadUserAchievements, loadUserBadges, saveChallengeProgress, } from '@/db/services/challenges-service'
 import { TAB_SINGING } from '@/features/tabs/constants'
+import { storageGet, storageRemove, storageSet } from '@/lib/storage'
 import { getSessionHistory } from '@/stores'
 import { setActiveTab } from '@/stores/ui-store'
 import { IconBadge, IconBoltChallenge, iconByName, IconChart, IconCheckSolid, IconCloseSimple, IconCrown, IconDiamond, IconEagle, IconFireChallenge, IconGuitarChallenge, IconKeyboardChallenge, IconLeaf, IconLockSimple, IconMicChallenge, IconMoon, IconMusicChallenge, IconPaper, IconRefreshSimple, IconRocket, IconSparkle, IconStarChallenge, IconStopwatch, IconTarget, IconVolume, renderIcon, } from './hidden-features-icons'
@@ -268,27 +269,6 @@ export const VocalChallenges: Component = () => {
     return calculateStreak(scores.map((s) => s.completedAt || 0))
   })
 
-  const _weeklyScores = createMemo(() => {
-    const sessions = sessionHistory()
-    const scores = [0, 0, 0, 0, 0, 0, 0] // Mon-Sun
-    const counts = [0, 0, 0, 0, 0, 0, 0]
-
-    for (const session of sessions) {
-      const date = new Date(session.completedAt || 0)
-      const dayIndex = date.getDay() || 7 // Sunday = 7
-      if (dayIndex > 0 && dayIndex < 8) {
-        scores[dayIndex - 1] += session.score || 0
-        counts[dayIndex - 1]++
-      }
-    }
-
-    return scores.map((s, i) => ({
-      day: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][i],
-      score: counts[i] ? Math.round(s / counts[i]) : 0,
-      count: counts[i],
-    }))
-  })
-
   // Load data from DB (with legacy localStorage fallback)
   onMount(() => {
     void (async () => {
@@ -310,13 +290,9 @@ export const VocalChallenges: Component = () => {
       setDbUserAchievements(userAchs)
 
       // Legacy localStorage fallback
-      try {
-        const stored = localStorage.getItem('pp_challenge_progress')
-        if (stored !== null) {
-          setUserProgress(JSON.parse(stored))
-        }
-      } catch {
-        /* localStorage not available */
+      const stored = storageGet<UserChallengeProgress>('pp_challenge_progress')
+      if (stored !== null) {
+        setUserProgress(stored)
       }
     })()
   })
@@ -325,9 +301,9 @@ export const VocalChallenges: Component = () => {
   const saveProgress = (progress: UserChallengeProgress | null) => {
     setUserProgress(progress)
     if (progress) {
-      localStorage.setItem('pp_challenge_progress', JSON.stringify(progress))
+      storageSet('pp_challenge_progress', progress)
     } else {
-      localStorage.removeItem('pp_challenge_progress')
+      storageRemove('pp_challenge_progress')
     }
   }
 
@@ -337,7 +313,6 @@ export const VocalChallenges: Component = () => {
 
     const sorted = [...dates].sort((a, b) => b - a)
     const today = new Date().setHours(0, 0, 0, 0)
-    const _yesterday = today - 24 * 60 * 60 * 1000
     const oneDay = 24 * 60 * 60 * 1000
 
     let streak = 0
@@ -620,10 +595,6 @@ export const VocalChallenges: Component = () => {
     }
     return false
   }
-
-  const _totalCompletedChallenges = createMemo(() => {
-    return challenges().filter((c) => c.status === 'completed').length
-  })
 
   return (
     <div class="vocal-challenges">

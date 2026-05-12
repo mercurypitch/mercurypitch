@@ -79,13 +79,6 @@ function bezierQuadratic(
 }
 
 /**
- * Linear interpolation between two values
- */
-function _lerp(a: number, b: number, t: number): number {
-  return a + (b - a) * t
-}
-
-/**
  * Get horizontal speed based on BPM
  */
 function getHorizontalSpeed(bpm: number, baseSpeed: number): number {
@@ -125,10 +118,6 @@ export function getBallPhysics(
     const midY = Math.min(startY, endY) - arcHeight // Peak is ABOVE both points
 
     const controlPoint = { x: midX, y: midY }
-
-    // Distance to travel
-    const _distanceX = endX - startX
-    const _distanceY = endY - startY
 
     // Check if we need to jump
     const remainingX = nextNoteEndBeat - x
@@ -215,8 +204,6 @@ export function getBallPhysics(
     vx = -Math.abs(vx) * 0.5
     lastEndBeat = x
   }
-
-  const _isJumping = progress > 0 && progress < 1
 
   return {
     x,

@@ -34,10 +34,6 @@ export class UvrProcessor {
   private smoothing = 0.3
   private isInitialized = false
 
-  private init(): void {
-    // reset state only — does not mark audio as initialized
-  }
-
   setSettings(settings: Partial<UvrSettings>): void {
     this.mode = settings.mode ?? this.mode
     this.vocalIntensity = settings.vocalIntensity ?? this.vocalIntensity
@@ -104,7 +100,7 @@ export class UvrProcessor {
 
   private processSeparate(
     sourceNode: AudioNode,
-    time: number,
+    _time: number,
     ctx: AudioContext,
   ): AudioNode[] {
     const separateNode = ctx.createChannelSplitter(2)
@@ -138,7 +134,7 @@ export class UvrProcessor {
 
   private processInstrumental(
     sourceNode: AudioNode,
-    time: number,
+    _time: number,
     ctx: AudioContext,
   ): AudioNode[] {
     const instrumentalNode = ctx.createGain()
@@ -159,7 +155,7 @@ export class UvrProcessor {
 
   private processVocal(
     sourceNode: AudioNode,
-    time: number,
+    _time: number,
     ctx: AudioContext,
   ): AudioNode[] {
     const vocalNode = ctx.createGain()
@@ -180,7 +176,7 @@ export class UvrProcessor {
 
   private processDuo(
     sourceNode: AudioNode,
-    time: number,
+    _time: number,
     ctx: AudioContext,
   ): AudioNode[] {
     const vocalNode = ctx.createGain()
@@ -258,7 +254,7 @@ export class UvrProcessor {
 
   applyFade(
     source: AudioNode,
-    time: number,
+    _time: number,
     duration: number,
     ctx: AudioContext,
   ): AudioNode {

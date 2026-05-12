@@ -50,7 +50,7 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
 
   // Mobile touch handlers - use signals for state
   const [touchStartPos, setTouchStartPos] = createSignal({ x: 0, y: 0 })
-  const [touchCurrentPos, setTouchCurrentPos] = createSignal({ x: 0, y: 0 })
+  const [_touchCurrentPos, setTouchCurrentPos] = createSignal({ x: 0, y: 0 })
   const [touchActive, setTouchActive] = createSignal(false)
 
   const handleTouchStart = (
@@ -111,15 +111,6 @@ export const SessionEditorTimeline: Component<SessionEditorTimelineProps> = (
         setDragSourceIndex(-1)
       }
     }
-  }
-
-  // Track touch position for potential UI feedback
-  const _isDraggingX = () => {
-    const start = touchStartPos()
-    const current = touchCurrentPos()
-    return (
-      Math.abs(current.x - start.x) > 5 && Math.abs(current.y - start.y) <= 10
-    )
   }
 
   const handleTouchEnd = () => {

@@ -5,6 +5,7 @@
 import type { BallPhysicsConfig, BallPhysicsState, NoteBounds, } from '@/features/playback/yousician-ball-physics'
 import { createBallPhysics, getBallPhysics, } from '@/features/playback/yousician-ball-physics'
 import type { AudioEngine, InstrumentType } from '@/lib/audio-engine'
+import { eventBus } from '@/lib/event-bus'
 import { PitchDetector } from '@/lib/pitch-detector'
 import { buildMultiOctaveScale, midiToFreq, midiToNote } from '@/lib/scale-data'
 import type { MelodyItem, NoteName, PianoRollConfig, ScaleDegree, } from '@/types'
@@ -259,7 +260,6 @@ export function importMelodyFromMIDI(data: Uint8Array): MelodyItem[] | null {
       let tick = 0
       const trackEnd = offset + trackLen
       while (offset < trackEnd && offset < data.length) {
-        const _startOffset = offset
         // Read variable-length delta time (MIDI variable-length quantity)
         // Each byte: high bit=1 means continuation, high bit=0 means final byte.
         // The 7 low bits contribute to the value. Max 4 bytes per VLQ.
@@ -292,7 +292,7 @@ export function importMelodyFromMIDI(data: Uint8Array): MelodyItem[] | null {
         // Skip meta events (0xFF)
         if (status === 0xff) {
           if (offset >= data.length) break
-          const _metaType = data[offset++]
+          offset++ // skip meta type byte
           if (offset >= data.length) break
           const len = data[offset++]
           offset += len
@@ -506,12 +506,8 @@ export class PianoRollEditor {
   // Track whether playback is external (from Practice tab) vs local (Editor tab)
   private isExternalPlayback = false
   private isSeeking = false
-  private seekStartX = 0
   // Track currently playing notes (for audio stacking prevention)
   private currentPlayingNoteIds = new Set<number>()
-  // Track whether playback was started externally (Practice tab) vs internally (Editor tab)
-  private externalPlayback = false
-
   // Waveform props for recording visualization
   private isRecording: (() => boolean) | null = null
   private getWaveform: (() => Float32Array | null) | null = null
@@ -526,7 +522,6 @@ export class PianoRollEditor {
   private dragStartX = 0
   private dragStartY = 0
   private dragStartBeat = 0
-  private dragStartDuration = 0
   private selectedDuration = 1
   private nextNoteId = 1
   private isBoxSelecting = false
@@ -558,14 +553,9 @@ export class PianoRollEditor {
   private redoStack: MelodyItem[][] = []
   private readonly maxHistorySize = 50
 
-  // Note ID generation
-  private _nextId = 1
-
   // Callbacks
   private onMelodyChange?: (melody: MelodyItem[]) => void
   private onNoteSelect?: (note: MelodyItem | null) => void
-  private onPlayClick?: () => void
-  private onResetClick?: () => void
   private onInstrumentChange?: (instrument: InstrumentType) => void
   private onPlaybackStateChange?: (state: PlaybackState) => void
 
@@ -693,18 +683,6 @@ export class PianoRollEditor {
         padding: this.ballPadding,
       })
     }
-  }
-
-  /**
-   * Get note bounds at current beat position for ball physics
-   */
-  private getCurrentNoteAtBeat(beat: number): NoteBounds | null {
-    for (const note of this.ballNotes) {
-      if (note.startBeat <= beat && beat < note.endBeat) {
-        return note
-      }
-    }
-    return null
   }
 
   /**
@@ -1598,8 +1576,8 @@ export class PianoRollEditor {
       })
 
     // Grid toggle from app header/sidebar
-    window.addEventListener('pitchperfect:gridToggle', (e) => {
-      this.setShowGrid((e as CustomEvent<{ visible: boolean }>).detail.visible)
+    eventBus.on<{ visible: boolean }>('pitchperfect:gridToggle', (detail) => {
+      this.setShowGrid(detail.visible)
     })
 
     // Grid mouse events
@@ -1659,7 +1637,6 @@ export class PianoRollEditor {
     // Ruler drag-to-seek (click and drag on ruler to scrub playback position)
     this.rulerCanvas?.addEventListener('mousedown', (e) => {
       this.isSeeking = true
-      this.seekStartX = e.clientX
       this.seekToRulerPosition(e)
     })
 
@@ -2182,8 +2159,6 @@ export class PianoRollEditor {
     x2: number,
     y2: number,
   ): void {
-    const _startBeat = x1 / this.beatWidth
-    const _endBeat = x2 / this.beatWidth
     const startRow = Math.floor(y1 / this.rowHeight)
     const endRow = Math.floor(y2 / this.rowHeight)
     const r1 = Math.min(startRow, endRow)
@@ -2477,8 +2452,6 @@ export class PianoRollEditor {
       if (this.useBallPhysics && this.ballState && this.ballCtx) {
         const ballCtx = this.ballCtx!
         const ballCanvas = this.ballCanvas!
-        const _playheadX = currentBeat * this.beatWidth
-
         const ballConfig: BallPhysicsConfig = {
           notes: this.ballNotes,
           rowHeight: this.rowHeight,
@@ -2726,13 +2699,9 @@ export class PianoRollEditor {
     // never updated). The runtime's seekTo is state-aware and handles
     // playing / paused / stopped correctly.
     try {
-      window.dispatchEvent(
-        new CustomEvent('pitchperfect:seekToBeat', {
-          detail: { beat },
-        }),
-      )
+      eventBus.dispatch('pitchperfect:seekToBeat', { beat })
     } catch {
-      // Non-browser environments (tests) — ignore.
+      // Non-browser environments — ignore.
     }
   }
 
@@ -3178,8 +3147,6 @@ export class PianoRollEditor {
         const toX = target.startBeat * this.beatWidth
         const toRow = this.midiToRow(target.note.midi)
         const toY = toRow * this.rowHeight + this.rowHeight / 2
-        const _toW = target.duration * this.beatWidth
-
         const startX = fromX + fromW
         const startY = fromY
         const endX = toX
@@ -3421,11 +3388,10 @@ export class PianoRollEditor {
     }
 
     // Rebuild scale with new octave
-    window.dispatchEvent(
-      new CustomEvent('pitchperfect:octaveChange', {
-        detail: { octave: this.octave, numOctaves: this.numOctaves },
-      }),
-    )
+    eventBus.dispatch('pitchperfect:octaveChange', {
+      octave: this.octave,
+      numOctaves: this.numOctaves,
+    })
 
     this.draw()
     this.onMelodyChange?.(this.melody)
@@ -3446,11 +3412,10 @@ export class PianoRollEditor {
     const display = this.container.querySelector('#roll-octaves-value')
     if (display) display.textContent = String(this.numOctaves)
 
-    window.dispatchEvent(
-      new CustomEvent('pitchperfect:octaveChange', {
-        detail: { octave: this.octave, numOctaves: this.numOctaves },
-      }),
-    )
+    eventBus.dispatch('pitchperfect:octaveChange', {
+      octave: this.octave,
+      numOctaves: this.numOctaves,
+    })
   }
 
   /**
@@ -3473,11 +3438,7 @@ export class PianoRollEditor {
     this.totalRows = newScale.length
     this.draw()
 
-    window.dispatchEvent(
-      new CustomEvent('pitchperfect:modeChange', {
-        detail: { mode },
-      }),
-    )
+    eventBus.dispatch('pitchperfect:modeChange', { mode })
   }
 
   // ============================================================

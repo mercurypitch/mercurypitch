@@ -10,11 +10,9 @@
  * Phase 13 of refactor v3.
  */
 
-// Loose function type so concrete `AudioEngine.setInstrument(type: InstrumentType)`
-// is assignable. `(instrument: any)` keeps the contravariant parameter wide
-// enough that any string-literal-union typed setInstrument fits.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type SetInstrumentFn = (instrument: any) => void
+import type { InstrumentType } from '@/stores'
+
+type SetInstrumentFn = (instrument: InstrumentType) => void
 
 interface StoppableEngine {
   stopTone: () => void
@@ -55,7 +53,7 @@ export const audioRegistry = {
    * the App's primary engine — otherwise changing the instrument
    * dropdown wouldn't audibly affect playback in the editor.
    */
-  setInstrumentAll(instrument: string): void {
+  setInstrumentAll(instrument: InstrumentType): void {
     for (const engine of registered) {
       try {
         engine.setInstrument?.(instrument)

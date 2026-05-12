@@ -35,7 +35,6 @@ interface PianoRollCanvasProps {
 export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
   let containerRef: HTMLDivElement | undefined
   let editor: PianoRollEditor | null = null
-  let _onMelodyChange: ((melody: MelodyItem[]) => void) | null = null
   let audioEngine: AudioEngine | null = null
 
   onMount(() => {
@@ -58,7 +57,6 @@ export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
       onInstrumentChange: props.onInstrumentChange,
       onPlaybackStateChange: props.onPlaybackStateChange,
     })
-    _onMelodyChange = props.onMelodyChange
     editor.setMelody(props.melody())
     editor.setScale(props.scale())
     editor.setBPM(props.bpm())

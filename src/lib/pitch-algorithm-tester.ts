@@ -2,9 +2,10 @@
 // Pitch Algorithm Tester — Compare pitch detection algorithms
 // ============================================================
 
-import type { PitchDetectionResult } from './pitch-algorithms'
+import type ort from 'onnxruntime-web'
 import type { DetectedPitch, PitchAlgorithm } from './pitch-detector'
 import { PitchDetector } from './pitch-detector'
+import type { MockOnnxModule } from './swift-f0-detector'
 import { SwiftF0Detector } from './swift-f0-detector'
 
 /** Sample test note with known frequency and variation */
@@ -193,35 +194,6 @@ export function getAbsoluteOffsetCents(
   return Math.abs(frequencyToCents(detected, target))
 }
 
-/** Convert DetectedPitch to PitchDetectionResult format - TODO: Implement if needed */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function detectedToPitchResult(
-  detected: {
-    frequency: number
-    clarity: number
-    noteName: string
-    octave: number
-    cents: number
-  },
-  computationTime: number,
-): PitchDetectionResult {
-  const midi = getMidiFromFreq(detected.frequency)
-  return {
-    frequency: detected.frequency,
-    clarity: detected.clarity,
-    noteName: detected.noteName,
-    octave: detected.octave,
-    cents: detected.cents,
-    midi,
-    timestamp: Date.now(),
-    computationTime,
-  }
-}
-
-function getMidiFromFreq(freq: number): number {
-  return Math.round(69 + 12 * Math.log2(freq / 440))
-}
-
 /** Benchmark an algorithm on a test sample */
 export function benchmarkAlgorithm(
   algorithm: PitchAlgorithm,
@@ -230,7 +202,7 @@ export function benchmarkAlgorithm(
     sampleRate?: number
     bufferSize?: number
     minConfidence?: number
-    onnxModule?: { run: (data: Float32Array, dim: number) => number }
+    onnxModule?: typeof ort | MockOnnxModule
   } = {},
 ): AlgorithmResult | null {
   // For SwiftF0, we need async handling
@@ -432,39 +404,7 @@ export async function benchmarkAlgorithmAsync(
   }
 }
 
-/** Convert time-domain to frequency-domain using FFT approximation */
-function _fftToFrequencyData(
-  timeData: Float32Array,
-  sampleRate: number,
-  fftSize: number,
-): Float32Array {
-  const N = Math.floor(fftSize / 2)
-  const freqData = new Float32Array(N)
-
-  for (let i = 0; i < N; i++) {
-    let real = 0
-    let imag = 0
-
-    for (let j = 0; j < timeData.length; j += 2) {
-      const angle = (2 * Math.PI * i * j) / fftSize
-      real += timeData[j] * Math.cos(angle)
-      imag -= timeData[j] * Math.sin(angle)
-    }
-
-    if (i === 0) {
-      freqData[i] = real / fftSize
-    } else if (i === Math.floor(fftSize / 2)) {
-      freqData[i] = real / fftSize
-    } else {
-      freqData[i] = Math.sqrt(real * real + imag * imag) / fftSize
-    }
-  }
-
-  return freqData
-}
-
-/**
- * Generate a sine wave buffer for testing
+/** Generate a sine wave buffer for testing
  * duration: seconds of audio
  * frequency: Hz
  * sampleRate: Hz

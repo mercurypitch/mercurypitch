@@ -12221,3 +12221,7 @@ input:checked + .settings-slider:before {
     transition: none;
   }
 }
+
+.tab-loading {
+  min-height: 200px;
+}

@@ -349,7 +349,6 @@ export class PlaybackRuntime {
 
     // Current elapsed time (playing time only, not including count-in)
     const elapsedMs = now - this.playStartTime - this.pauseOffset
-    const _countInMs = (this._countInBeats || 0) * beatDurationOld
 
     // Current beat position (before count-in adjustment)
     const currentBeat = elapsedMs / beatDurationOld

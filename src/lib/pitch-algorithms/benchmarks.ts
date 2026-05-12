@@ -346,7 +346,6 @@ export function runBenchmarks(options: BenchmarkOptions): BenchmarkResult {
     let minErrorHz = Infinity
     let maxErrorHz = -Infinity
     let totalCompTime = 0
-    let totalClarity = 0
 
     const testSet =
       (options.includeIntervals ?? false)
@@ -372,7 +371,6 @@ export function runBenchmarks(options: BenchmarkOptions): BenchmarkResult {
         totalErrorHz += errorHz
         totalErrorCents += errorCents
         totalCompTime += result.computationTime
-        totalClarity += result.clarity ?? 0
 
         if (errorCents <= 5) passed5Cents++
         if (errorCents <= 10) passed10Cents++
@@ -386,12 +384,10 @@ export function runBenchmarks(options: BenchmarkOptions): BenchmarkResult {
     const avgErrorHz = errors.length > 0 ? totalErrorHz / errors.length : 0
     const avgErrorCents =
       errors.length > 0 ? totalErrorCents / errors.length : 0
-    const _avgClarity = errors.length > 0 ? totalClarity / errors.length : 0
     const avgCompTime = errors.length > 0 ? totalCompTime / errors.length : 0
 
     const _failedCount = totalTests - errors.length
     const passedCount = errors.length
-    const _passedCount = errors.length
 
     results.push({
       name: detector.getName(),

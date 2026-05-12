@@ -5,6 +5,7 @@
 import type { Component } from 'solid-js'
 import { createMemo, For, onMount, Show } from 'solid-js'
 import { IconCheckSolid, IconCloseSimple, IconEighthNote, IconMusicNote, IconPause, IconPlay, IconPlayAll, IconQuarterNote, } from '@/components/hidden-features-icons'
+import { usePlayback } from '@/contexts/PlaybackContext'
 import { TAB_COMPOSE } from '@/features/tabs/constants'
 import { buildSessionItemMelody } from '@/lib/session-builder'
 import { clearMelodySelection, getCurrentSessionItemIndex, getSelectedMelodyIds, practiceSession, selectAllMelodies, setActiveTab, setActiveUserSession, setEditorView, showLibrary, showNotification, showSessionLibrary, showSessionPresetsLibrary, toggleMelodySelection, userSession as userSessionSignal, } from '@/stores'
@@ -16,59 +17,6 @@ import type { MelodyData, PlaybackSession, SessionItem } from '@/types'
 
 export const LibraryTab: Component = () => {
   const library = createMemo(() => melodyStore.getMelodyLibrary())
-
-  const recentMelodies = createMemo(() => {
-    const items = Object.values(library().melodies) as MelodyData[]
-    return [...items]
-      .sort(
-        (a: MelodyData, b: MelodyData) =>
-          (b.lastPlayed ?? b.playCount ?? 0) -
-          (a.lastPlayed ?? a.playCount ?? 0),
-      )
-      .slice(0, 5)
-  })
-
-  const recentSessions = createMemo(() => {
-    const sessions = Object.values(library().sessions).filter(
-      (s): s is PlaybackSession => s !== null && s.id !== 'default',
-    )
-    return [...sessions]
-      .sort(
-        (a: PlaybackSession, b: PlaybackSession) =>
-          (b.lastPlayed ?? 0) - (a.lastPlayed ?? 0),
-      )
-      .slice(0, 5)
-  })
-
-  const _recentItems = createMemo(() => {
-    const items: Array<
-      | { type: 'melody'; data: MelodyData }
-      | { type: 'session'; data: PlaybackSession }
-    > = []
-
-    // Add recent melodies
-    const melodies = recentMelodies()
-    items.push(
-      ...melodies.map((m): { type: 'melody'; data: MelodyData } => ({
-        type: 'melody',
-        data: m,
-      })),
-    )
-
-    // Add recent sessions (exclude default)
-    const sessions = recentSessions()
-    items.push(
-      ...sessions.map((s): { type: 'session'; data: PlaybackSession } => ({
-        type: 'session',
-        data: s,
-      })),
-    )
-
-    // Sort by lastPlayed
-    return items
-      .sort((a, b) => (b.data.lastPlayed ?? 0) - (a.data.lastPlayed ?? 0))
-      .slice(0, 8)
-  })
 
   // User session (new melody-ID model)
   const userSession = createMemo(() => {
@@ -220,46 +168,6 @@ export const LibraryTab: Component = () => {
     showNotification(`Melody "${newMelody.name}" created`, 'success')
   }
 
-  const _handleRecentItemClick = (
-    item:
-      | { type: 'melody'; data: MelodyData }
-      | { type: 'session'; data: PlaybackSession },
-  ) => {
-    if (item.type === 'melody') {
-      // Load melody into editor
-      melodyStore.loadMelody(item.data.id)
-
-      // Ensure default session is loaded if no active session exists
-      const activeSessionId = melodyStore.getActiveSessionId()
-      if (activeSessionId === null) {
-        const defaultSession = getSession('default')
-        if (defaultSession !== undefined && defaultSession !== null) {
-          setActiveUserSession(defaultSession)
-          melodyStore.setActiveSessionId(defaultSession.id)
-        }
-      } else {
-        const activeSession = getSession(activeSessionId)
-        if (activeSession !== undefined) {
-          setActiveUserSession(activeSession)
-        }
-      }
-    } else if (item.type === 'session') {
-      // Load session as active
-      setActiveSessionAndSelectFirstMelody(item.data)
-      // Load first melody in session if exists
-      let firstMelodyId: string | undefined = undefined
-      for (const i of item.data.items) {
-        if (i.melodyId !== null && i.melodyId !== undefined) {
-          firstMelodyId = i.melodyId
-          break
-        }
-      }
-      if (firstMelodyId !== undefined) {
-        melodyStore.loadMelody(firstMelodyId)
-      }
-    }
-  }
-
   const getItemIcon = (item: SessionItem) => {
     switch (item.type) {
       case 'scale' as never:
@@ -334,29 +242,12 @@ export const LibraryTab: Component = () => {
     handlePlayMelodyInSession(melodyId)
   }
 
-  /**
-   * Get the session playback handler from window (set by App.tsx)
-   */
-  const getSessionPlaybackHandler = (): ((melodyId: string) => void) | null => {
-    return (
-      (
-        window as unknown as {
-          __loadAndPlayMelodyForSession?: (melodyId: string) => void
-        }
-      ).__loadAndPlayMelodyForSession ?? null
-    )
-  }
+  const { playSessionSequence, loadAndPlayMelodyForSession } = usePlayback()
 
   const handlePlaySelected = () => {
     const ids = getSelectedMelodyIds() ?? []
-    const handler = getSessionPlaybackHandler()
     if (ids.length > 0) {
-      if (handler !== null) {
-        handler(ids[0])
-      } else {
-        // Fallback: just load the melody
-        melodyStore.loadMelody(ids[0])
-      }
+      loadAndPlayMelodyForSession(ids[0])
     }
   }
 
@@ -364,35 +255,12 @@ export const LibraryTab: Component = () => {
    * Play a specific melody in session context
    */
   const handlePlayMelodyInSession = (melodyId: string) => {
-    const handler = getSessionPlaybackHandler()
-    if (handler !== null) {
-      handler(melodyId)
-    } else {
-      melodyStore.loadMelody(melodyId)
-    }
+    loadAndPlayMelodyForSession(melodyId)
   }
 
-  /**
-   * Play all melodies in the session sequentially
-   * This sets up a callback to play the next melody when the current one completes
-   */
   const handlePlaySessionSequence = () => {
     if ((userSession()?.items.length ?? 0) === 0) return
-
-    // Get the sequence playback handler from App.tsx.
-    // Production bridge lives under window.__pp. The old top-level
-    // __playSessionSequence alias is e2e/test-only (exposeForE2E), so
-    // reading only that alias made the real UI button a no-op in normal
-    // app mode.
-    const win = window as unknown as {
-      __pp?: { playSessionSequence?: (melodyIds: string[]) => void }
-      __playSessionSequence?: (melodyIds: string[]) => void
-    }
-    const handler = win.__pp?.playSessionSequence ?? win.__playSessionSequence
-
-    if (handler !== undefined) {
-      handler([]) // pass empty array to play the full session (including rests) rather than a transient filtered session
-    }
+    playSessionSequence([])
   }
 
   onMount(() => {

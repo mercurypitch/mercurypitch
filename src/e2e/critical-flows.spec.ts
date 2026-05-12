@@ -66,7 +66,6 @@ test.describe('Critical Flows — GH #121', () => {
 
     test('Stop button resets playback state', async ({ page }) => {
       const playBtn = page.locator('.play-btn')
-      const _stopBtn = page.locator('.play-btn + .stop-btn, button.stop')
 
       // Start playback
       await playBtn.click()
@@ -495,10 +494,8 @@ test.describe('Critical Flows — GH #121', () => {
     test('Mic toggle button changes state', async ({ page }) => {
       const micBtn = page.locator('.mic-toggle-btn')
       if ((await micBtn.count()) > 0 && (await micBtn.isVisible())) {
-        const _initialClass = await micBtn.getAttribute('class')
         await micBtn.click()
         await page.waitForTimeout(500)
-        const _newClass = await micBtn.getAttribute('class')
         // Class should change (active or inactive state)
         // Note: mic may fail in test env but button state should toggle
       }
@@ -575,8 +572,6 @@ test.describe('Critical Flows — GH #121', () => {
         (await sensitivitySlider.count()) > 0 &&
         (await sensitivitySlider.isVisible())
       ) {
-        const _initialSens = await sensitivitySlider.inputValue()
-
         // Change sensitivity
         await sensitivitySlider.fill('8')
         await page.waitForTimeout(200)

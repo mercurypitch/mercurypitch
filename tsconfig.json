@@ -15,8 +15,8 @@
       "@/*": ["./src/*"]
     },
     "baseUrl": "./",
-    "noUnusedLocals": false,
-    "noUnusedParameters": false
+    "noUnusedLocals": true,
+    "noUnusedParameters": true
   },
   "include": [
     "src/**/*.ts",

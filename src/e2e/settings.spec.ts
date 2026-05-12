@@ -37,7 +37,6 @@ test.describe('Settings Panel', () => {
   test('Selecting a preset updates detection threshold', async ({ page }) => {
     await switchTab(page, 'settings')
     const presetSelect = page.locator('#preset-select')
-    const thresholdBefore = await page.locator('#set-threshold').inputValue()
     await presetSelect.selectOption({ index: 2 })
     await page.waitForTimeout(200)
     const thresholdAfter = await page.locator('#set-threshold').inputValue()

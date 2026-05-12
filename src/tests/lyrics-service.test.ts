@@ -4,7 +4,6 @@
 
 import { describe, expect, it, vi } from 'vitest'
 import type { LrcLine } from '@/lib/lyrics-service'
-import type { LyricsSearchMatch } from '@/lib/lyrics-service'
 import { extractTitle, fetchLyricsById, getCurrentLineIndex, getCurrentLrcIndex, parseArtistTitle, parseLrcFile, parseTextLyrics, searchLyrics, searchLyricsMulti, } from '@/lib/lyrics-service'
 
 // ── REQ-UV-029: LRC Parsing ──────────────────────────────────
@@ -290,15 +289,6 @@ describe('searchLyrics', () => {
 // ── searchLyricsMulti ──────────────────────────────────────────
 
 describe('searchLyricsMulti', () => {
-  const _makeMatch = (
-    overrides: Partial<LyricsSearchMatch> = {},
-  ): LyricsSearchMatch => ({
-    id: 1,
-    artist: 'Test Artist',
-    title: 'Test Song',
-    ...overrides,
-  })
-
   it('returns deduplicated results from LRCLIB search', async () => {
     vi.spyOn(global, 'fetch').mockResolvedValue({
       ok: true,

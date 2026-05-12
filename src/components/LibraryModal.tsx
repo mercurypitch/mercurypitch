@@ -5,6 +5,7 @@
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
 import { IconCheckSolid, IconMusicNote, IconSheetMusic, } from '@/components/hidden-features-icons'
+import { usePlayback } from '@/contexts/PlaybackContext'
 import { TAB_COMPOSE } from '@/features/tabs/constants'
 import { setEditorView } from '@/stores'
 // Note: setActiveTab is aliased to setAppActiveTab to avoid collision
@@ -213,6 +214,8 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
   // 4. Regular functions - drag and drop
   // ===========================================
 
+  const { playSessionSequence } = usePlayback()
+
   const handlePlay = (melody: MelodyData) => {
     melodyStore.loadMelody(melody.id)
     setBpm(melody.bpm)
@@ -224,26 +227,13 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
   }
 
   const handlePlayPlaylist = (playlistId: string) => {
-    // v3: Drive playlist playback through the same session-sequence
-    // pipeline as Library "▶▶" so playback is real (audible), not just a
-    // 3-second melody-cycle stub. We:
-    //   1. Build a synthetic PlaybackSession from the playlist (so the
-    //      sidebar/Active Session UI updates and reflects the queue).
-    //   2. Set it as the active user session.
-    //   3. Trigger window.__pp.playSessionSequence(...) with the melody
-    //      ids — this is the same handler the LibraryTab uses.
     const synth = melodyStore.buildPlaylistAsSession(playlistId)
     if (synth !== null) {
       setActiveUserSession(synth)
     }
     const ids = melodyStore.getPlaylistMelodyIds(playlistId)
-    const win = window as unknown as {
-      __pp?: { playSessionSequence?: (melodyIds: string[]) => void }
-      __playSessionSequence?: (melodyIds: string[]) => void
-    }
-    const handler = win.__pp?.playSessionSequence ?? win.__playSessionSequence
-    if (handler !== undefined && ids.length > 0) {
-      handler(ids)
+    if (ids.length > 0) {
+      playSessionSequence(ids)
     }
     props.close()
   }
@@ -363,7 +353,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
 
   const _handleCreatePlaylist = () => {
     const name = renameInput().trim() || 'My Playlist'
-    const _playlistId = melodyStore.createPlaylist(name)
+    melodyStore.createPlaylist(name)
     setPlaylistEditing(null)
     setRenameInput('')
     showNotification(`Playlist "${name}" created`, 'success')
@@ -421,33 +411,6 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
     }
   }
 
-  const _handleAddMelodyToPlaylist = (melodyId: string) => {
-    const playlistEdit = playlistEditing()
-    if (
-      playlistEdit !== null &&
-      playlistEdit.mode === 'add-melody' &&
-      playlistEdit.playlistId !== null &&
-      playlistEdit.playlistId !== undefined
-    ) {
-      melodyStore.addMelodyToPlaylist(playlistEdit.playlistId, melodyId)
-      setSelectedMelodyKey(melodyId)
-      showNotification('Melody added to playlist', 'success')
-    }
-  }
-
-  const _handleRemoveMelodyFromPlaylist = (melodyId: string) => {
-    const playlistEdit = playlistEditing()
-    if (
-      playlistEdit !== null &&
-      playlistEdit.mode === 'add-melody' &&
-      playlistEdit.playlistId !== null &&
-      playlistEdit.playlistId !== undefined
-    ) {
-      melodyStore.removeMelodyFromPlaylist(playlistEdit.playlistId, melodyId)
-      showNotification('Melody removed from playlist', 'success')
-    }
-  }
-
   const startAddMelodyMode = (playlistId: string) => {
     setPlaylistEditing({
       mode: 'add-melody',
@@ -471,14 +434,6 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
     if (e.dataTransfer) {
       e.dataTransfer.effectAllowed = 'move'
       e.dataTransfer.setData('playlistId', playlistId)
-    }
-  }
-
-  const _handleDragStartSession = (e: DragEvent, sessionId: string) => {
-    setDragState({ type: 'session', sessionId })
-    if (e.dataTransfer) {
-      e.dataTransfer.effectAllowed = 'move'
-      e.dataTransfer.setData('sessionId', sessionId)
     }
   }
 

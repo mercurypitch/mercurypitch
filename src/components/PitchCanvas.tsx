@@ -6,6 +6,7 @@ import type { Component } from 'solid-js'
 import { createEffect, onCleanup, onMount } from 'solid-js'
 import type { ArcState } from '@/lib/arc-physics'
 import { BALL_RADIUS, buildPlayable, computeArcCy, computeArcEndBeat, computeBallPos, computeInitialArc, isBackwardsSeek, shouldAdvanceArc, } from '@/lib/arc-physics'
+import { eventBus } from '@/lib/event-bus'
 import { beatToHistoryX } from '@/lib/pitch-history-window'
 import { bpm, focusMode, micWaveVisible } from '@/stores'
 import { colorCodeNotes, flameMode, gridLinesVisible, showAccuracyPercent, showFocusBall, showPlaybackBall, } from '@/stores/settings-store'
@@ -185,11 +186,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     if (w <= 0) return
     const totalBeats = props.totalBeats()
     const seekBeat = Math.max(0, Math.min(totalBeats, (x / w) * totalBeats))
-    window.dispatchEvent(
-      new CustomEvent('pitchperfect:seekToBeat', {
-        detail: { beat: seekBeat },
-      }),
-    )
+    eventBus.dispatch('pitchperfect:seekToBeat', { beat: seekBeat })
   }
 
   const resizeCanvas = () => {

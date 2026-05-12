@@ -2,6 +2,7 @@
 // Community Share Service — DB-backed share/profile operations
 // ============================================================
 
+import { z } from 'zod/v4'
 import { getDb } from '@/db'
 import type { SharedMelody, SharedSession, UserProfile } from '@/db/entities'
 import { getUserId } from '@/db/seed'
@@ -30,6 +31,13 @@ export interface UserProfileView {
   bio?: string
   joinDate: number
 }
+
+const MelodyItemSchema = z.object({
+  midi: z.number().min(21).max(108),
+  startBeat: z.number().min(0),
+  duration: z.number().positive(),
+  freq: z.number().positive(),
+})
 
 export async function loadUserProfile(): Promise<UserProfileView | null> {
   try {
@@ -61,7 +69,7 @@ export async function loadSharedMelodies(): Promise<SharedMelodyView[]> {
     return items.map((m) => ({
       id: m.id,
       name: m.melodyName,
-      items: safeJsonParse(m.itemsJson),
+      items: z.array(MelodyItemSchema).parse(safeJsonParse(m.itemsJson)),
       author: m.author ?? 'Unknown',
       tags: m.tags ?? [],
       date: new Date(m.createdAt).getTime(),
@@ -85,7 +93,7 @@ export async function loadSharedSessions(): Promise<SharedSessionView[]> {
       name: s.sessionName,
       items: [],
       author: s.author ?? 'Unknown',
-      results: safeJsonParse(s.resultsJson) as number[],
+      results: z.array(z.number()).parse(safeJsonParse(s.resultsJson)),
       date: new Date(s.createdAt).getTime(),
     }))
   } catch {
