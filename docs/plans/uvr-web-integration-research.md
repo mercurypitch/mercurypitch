@@ -1,6 +1,6 @@
 # UVR Web Integration Research
 
-**Goal:** Integrate python-audio-separator (Ultimate Vocal Remover) into PitchPerfect web app
+**Goal:** Integrate python-audio-separator (Ultimate Vocal Remover) into MercuryPitch web app
 
 **Date:** 2026-05-03
 **Tool:** [python-audio-separator](https://github.com/nomadkaraoke/python-audio-separator) by nomadkaraoke
@@ -26,7 +26,7 @@ python-audio-separator is a CLI tool for separating audio into stems using UVR m
 
 **Architecture:**
 ```
-PitchPerfect Web App ← HTTP/WebSocket → Python Audio Separator (Docker)
+MercuryPitch Web App ← HTTP/WebSocket → Python Audio Separator (Docker)
                                            ↓
                                     Volume Storage
 ```
@@ -431,7 +431,7 @@ ONNX Runtime Web allows running ONNX models directly in the browser using WebGL 
 
 **Architecture:**
 ```
-PitchPerfect Web App → Browser → ONNX Runtime Web → Model (WASM)
+MercuryPitch Web App → Browser → ONNX Runtime Web → Model (WASM)
                           ↓
                       Web Audio API
 ```
@@ -536,7 +536,7 @@ docker run -d -p 8000:8000 \
   pitchperfect-uvr
 ```
 
-#### Phase 3: Integration with PitchPerfect
+#### Phase 3: Integration with MercuryPitch
 
 Update `UvrPanel.tsx` to use real API:
 
@@ -666,7 +666,7 @@ const handleProcessStart = async (sessionId: string) => {
 3. Test CLI locally with sample audio files
 4. Build and test Docker container
 5. Deploy to development server
-6. Integrate with PitchPerfect web app
+6. Integrate with MercuryPitch web app
 7. Test end-to-end workflow
 8. Deploy to production
 

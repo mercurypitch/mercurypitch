@@ -1,4 +1,4 @@
-# SolidJS Best Practices for PitchPerfect
+# SolidJS Best Practices for MercuryPitch
 
 ## Control-Flow Components
 

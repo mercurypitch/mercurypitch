@@ -695,7 +695,7 @@ test.describe('Critical Flows — GH #121', () => {
       await expect(page.locator('.settings-title')).toBeVisible()
 
       // About section
-      await expect(page.locator('.about-name')).toContainText('PitchPerfect')
+      await expect(page.locator('.about-name')).toContainText('MercuryPitch')
 
       // GitHub link
       await expect(page.locator('.about-link')).toHaveAttribute(

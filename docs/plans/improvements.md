@@ -1,4 +1,4 @@
-# PitchPerfect UI/UX & Code Quality Improvements Plan
+# MercuryPitch UI/UX & Code Quality Improvements Plan
 
 _Audit date: 2026-05-05 — Codebase snapshot from `dev` branch (8d8bf98)_
 

@@ -1,7 +1,7 @@
 # EARS Specification — UVR (Ultimate Vocal Remover) Features
 
 > **EARS** = Easy Approach to Requirements Syntax  
-> Version: 1.0 | Date: 2026-05-06 | Scope: All UVR features in PitchPerfect
+> Version: 1.0 | Date: 2026-05-06 | Scope: All UVR features in MercuryPitch
 
 ---
 

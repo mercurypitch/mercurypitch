@@ -8,7 +8,7 @@
 
 ## 1. Executive Summary
 
-PitchPerfect has four feature areas gated behind `IS_DEV` (`src/lib/defaults.ts`) and two runtime feature flags (`advancedFeaturesEnabled`, `devFeaturesEnabled` in `src/stores/app-store.ts`). Under `IS_DEV`, both flags default to `true`, making all hidden features visible.
+MercuryPitch has four feature areas gated behind `IS_DEV` (`src/lib/defaults.ts`) and two runtime feature flags (`advancedFeaturesEnabled`, `devFeaturesEnabled` in `src/stores/app-store.ts`). Under `IS_DEV`, both flags default to `true`, making all hidden features visible.
 
 **Key finding**: None of the hidden features are wired to a server, database, or remote API. All persistence is ad-hoc `localStorage`. Two components are 100% mock data. One is semi-wired with localStorage-backed progress. One derives analysis from session history (also localStorage). There is zero database abstraction — every component calls `localStorage` directly.
 

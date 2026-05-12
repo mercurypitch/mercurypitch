@@ -1,4 +1,4 @@
-# PitchPerfect Refactor Plan v3 — App.tsx Simplification & Controller Extraction
+# MercuryPitch Refactor Plan v3 — App.tsx Simplification & Controller Extraction
 
 ## Current State Summary
 

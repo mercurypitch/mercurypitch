@@ -247,7 +247,7 @@ test.describe('Settings Panel', () => {
     await switchTab(page, 'settings')
     const nameEl = page.locator('.about-name')
     await expect(nameEl).toBeVisible()
-    await expect(nameEl).toContainText('PitchPerfect')
+    await expect(nameEl).toContainText('MercuryPitch')
   })
 
   test('About section shows version', async ({ page }) => {

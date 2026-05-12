@@ -1,4 +1,4 @@
-# Claude Code Configuration for Pitch Perfect
+# Claude Code Configuration for MercuryPitch
 
 This document contains my Claude Code workflow preferences for this project.
 

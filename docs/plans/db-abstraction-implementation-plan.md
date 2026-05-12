@@ -2,7 +2,7 @@
 
 ## Context
 
-PitchPerfect has 4 hidden features gated behind `IS_DEV` (Community Share, Leaderboard, Challenges, Analysis) that are either 100% mock data or localStorage-only. There is no database abstraction layer — components call `localStorage` directly. This plan adds Dexie.js (IndexedDB wrapper) as the default adapter behind a swappable `DatabaseAdapter` interface, wires the hidden features through it with real sample data, and stubs a server/SQL adapter for future production use.
+MercuryPitch has 4 hidden features gated behind `IS_DEV` (Community Share, Leaderboard, Challenges, Analysis) that are either 100% mock data or localStorage-only. There is no database abstraction layer — components call `localStorage` directly. This plan adds Dexie.js (IndexedDB wrapper) as the default adapter behind a swappable `DatabaseAdapter` interface, wires the hidden features through it with real sample data, and stubs a server/SQL adapter for future production use.
 
 ## Design Decisions
 
@@ -77,7 +77,7 @@ PitchPerfect has 4 hidden features gated behind `IS_DEV` (Community Share, Leade
 2. `npm run test:run` — existing tests pass
 3. `npm run dev` — app loads, IndexedDB initializes in browser DevTools
 4. Navigate to each hidden feature tab — data loads from IndexedDB, not hardcoded arrays
-5. Open DevTools > Application > IndexedDB > PitchPerfectDB — all tables visible with seed data
+5. Open DevTools > Application > IndexedDB > MercuryPitchDB — all tables visible with seed data
 6. Complete a practice session — session record appears in IndexedDB
 7. Toggle feature flags — persisted in IndexedDB, survives page reload
 

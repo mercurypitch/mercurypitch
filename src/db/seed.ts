@@ -635,7 +635,7 @@ async function seedLeaderboardEntries(db: DatabaseAdapter): Promise<void> {
     },
     {
       userId: 'lb-u3',
-      displayName: 'PitchPerfectPro',
+      displayName: 'MercuryPitchPro',
       score: 1421000,
       rank: 3,
       streak: 52,

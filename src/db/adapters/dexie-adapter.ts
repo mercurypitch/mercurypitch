@@ -35,7 +35,7 @@ class DexieDatabase extends DexieDB {
   // and accessed through the base Dexie.table() method.
 
   constructor() {
-    super('PitchPerfectDB')
+    super('MercuryPitchDB')
     this.version(1).stores(STORE_SCHEMAS)
   }
 

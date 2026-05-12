@@ -73,7 +73,7 @@ This provisions:
 | Instance type     | `standard-4`                   |
 | Durable Object    | `UVR_SERVICE` binding          |
 
-> To tear down existing containers, delete the `UvrContainer` Durable Object from the Cloudflare dashboard under Workers & Pages > pitch-perfect-dev > Settings > Bindings.
+> To tear down existing containers, delete the `UvrContainer` Durable Object from the Cloudflare dashboard under Workers & Pages > mercury-pitch-dev > Settings > Bindings.
 
 ## Quality Checks
 

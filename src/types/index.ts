@@ -1,5 +1,5 @@
 // ============================================================
-// Shared Types for PitchPerfect
+// Shared Types for MercuryPitch
 // These are used across multiple modules
 // ============================================================
 
@@ -217,8 +217,8 @@ export interface SessionResult {
   rating?: AccuracyRating
 }
 
-/** PitchPerfectWindow extension */
-export interface PitchPerfectWindow extends Window {
+/** MercuryPitchWindow extension */
+export interface MercuryPitchWindow extends Window {
   pitchperfect: {
     toggleTheme: () => void
     toggleMicWaveVisible?: () => void

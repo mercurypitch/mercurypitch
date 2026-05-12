@@ -1,6 +1,6 @@
 # EARS Specification Tests
 
-This directory contains EARS (Requirements-Driven Development) specifications for all Pitch Perfect frontend features, along with corresponding Playwright E2E tests.
+This directory contains EARS (Requirements-Driven Development) specifications for all MercuryPitch frontend features, along with corresponding Playwright E2E tests.
 
 ## Structure
 

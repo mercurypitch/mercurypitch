@@ -1,4 +1,4 @@
-# PitchPerfect — Claude Code Instructions
+# MercuryPitch — Claude Code Instructions
 
 ## Git Workflow
 
@@ -38,4 +38,4 @@ pnpm run build       # Vite production build
 ```
 
 Live URL: https://mercurypitch.com
-Apache DocumentRoot: `pitch-perfect-repo/public/`
+Apache DocumentRoot: `mercury-pitch-repo/public/`
