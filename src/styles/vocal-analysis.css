@@ -3250,3 +3250,543 @@
 .settings-panel .info-list li {
   padding-left: 14px;
 }
+
+/* ============================================================
+   Phase 1: Vocal Analysis Cards (Intensity, Breathiness, Slides)
+   ============================================================ */
+
+.phase1-card {
+  margin-top: 16px;
+  padding: 16px;
+  background: var(--bg-secondary, #161b22);
+  border: 1px solid var(--border, #30363d);
+  border-radius: 8px;
+}
+
+.phase1-card h3 {
+  margin: 0 0 12px 0;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.phase1-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.phase1-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.phase1-label {
+  font-size: 0.7rem;
+  color: var(--text-muted, #8b949e);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.phase1-value {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.phase1-value--good {
+  color: #3fb950;
+}
+
+.phase1-value--warn {
+  color: #d29922;
+}
+
+.phase1-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.phase1-badge--resonant {
+  background: rgba(63, 185, 80, 0.15);
+  color: #3fb950;
+}
+
+.phase1-badge--normal {
+  background: rgba(88, 166, 255, 0.15);
+  color: #58a6ff;
+}
+
+.phase1-badge--pressed {
+  background: rgba(210, 153, 34, 0.15);
+  color: #d29922;
+}
+
+.phase1-badge--breathy {
+  background: rgba(248, 81, 73, 0.15);
+  color: #f85149;
+}
+
+.phase1-bar-container {
+  height: 6px;
+  background: var(--bg-tertiary, #21262d);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.phase1-bar {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+.phase1-bar-intensity {
+  background: linear-gradient(90deg, #58a6ff, #bc8cff);
+}
+
+.phase1-bar-breathiness {
+  background: linear-gradient(90deg, #f85149, #3fb950);
+}
+
+.phase1-bar-slides {
+  background: linear-gradient(90deg, #d29922, #3fb950);
+}
+
+.phase1-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted, #8b949e);
+  line-height: 1.4;
+}
+
+.phase1-slide-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.phase1-slide-item {
+  display: grid;
+  grid-template-columns: 20px 40px 70px 1fr;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  background: var(--bg-tertiary, #21262d);
+}
+
+.phase1-slide-dir {
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.phase1-slide-span {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+.phase1-slide-type {
+  text-transform: capitalize;
+  font-weight: 500;
+}
+
+.phase1-slide--clean .phase1-slide-type { color: #3fb950; }
+.phase1-slide--scoop .phase1-slide-type,
+.phase1-slide--fall .phase1-slide-type { color: #d29922; }
+.phase1-slide--overshoot .phase1-slide-type,
+.phase1-slide--wobble .phase1-slide-type { color: #f85149; }
+
+.phase1-slide-score {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+/* ============================================================
+   Phase 2: Vocal Analysis Cards (Vibrato, Harmonics, Resonance, Fatigue)
+   ============================================================ */
+
+.phase2-card {
+  margin-top: 16px;
+  padding: 16px;
+  background: var(--bg-secondary, #161b22);
+  border: 1px solid var(--border, #30363d);
+  border-radius: 8px;
+}
+
+.phase2-card h3 {
+  margin: 0 0 12px 0;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.phase2-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.phase2-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.phase2-label {
+  font-size: 0.7rem;
+  color: var(--text-muted, #8b949e);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.phase2-value {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.phase2-value--warn {
+  color: #d29922;
+}
+
+.phase2-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.phase2-badge--none,
+.phase2-badge--thin {
+  background: rgba(139, 148, 158, 0.15);
+  color: #8b949e;
+}
+
+.phase2-badge--natural,
+.phase2-badge--normal {
+  background: rgba(88, 166, 255, 0.15);
+  color: #58a6ff;
+}
+
+.phase2-badge--slow-operatic,
+.phase2-badge--rich {
+  background: rgba(188, 140, 255, 0.15);
+  color: #bc8cff;
+}
+
+.phase2-badge--nervous,
+.phase2-badge--wide {
+  background: rgba(248, 81, 73, 0.15);
+  color: #f85149;
+}
+
+.phase2-badge--very-rich {
+  background: rgba(63, 185, 80, 0.15);
+  color: #3fb950;
+}
+
+.phase2-badge--chest {
+  background: rgba(248, 81, 73, 0.15);
+  color: #f85149;
+}
+
+.phase2-badge--mask {
+  background: rgba(88, 166, 255, 0.15);
+  color: #58a6ff;
+}
+
+.phase2-badge--head {
+  background: rgba(188, 140, 255, 0.15);
+  color: #bc8cff;
+}
+
+.phase2-badge--mixed {
+  background: rgba(63, 185, 80, 0.15);
+  color: #3fb950;
+}
+
+.phase2-bar-container {
+  height: 6px;
+  background: var(--bg-tertiary, #21262d);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.phase2-bar {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+.phase2-bar-vibrato {
+  background: linear-gradient(90deg, #58a6ff, #bc8cff);
+}
+
+.phase2-bar-harmonics {
+  background: linear-gradient(90deg, #d29922, #3fb950);
+}
+
+.phase2-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted, #8b949e);
+  line-height: 1.4;
+}
+
+.phase2-alert {
+  padding: 10px 12px;
+  background: rgba(248, 81, 73, 0.1);
+  border: 1px solid rgba(248, 81, 73, 0.3);
+  border-radius: 6px;
+  color: #f85149;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  margin-top: 8px;
+}
+
+/* Resonance body map */
+.phase2-resonance-map {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.phase2-zone {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: var(--bg-tertiary, #21262d);
+  border: 1px solid var(--border, #30363d);
+  transition: all 0.3s ease;
+}
+
+.phase2-zone--active {
+  border-color: var(--accent, #58a6ff);
+  box-shadow: 0 0 8px rgba(88, 166, 255, 0.15);
+}
+
+.phase2-zone-head {
+  border-left: 3px solid #bc8cff;
+}
+
+.phase2-zone-mask {
+  border-left: 3px solid #58a6ff;
+}
+
+.phase2-zone-chest {
+  border-left: 3px solid #f85149;
+}
+
+.phase2-zone-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.phase2-zone-pct {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============================================================
+   Vocal Analysis — Mode Toggle, Live Mic & Demo Hint
+   ============================================================ */
+
+.vocal-header-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.mode-toggle {
+  display: flex;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--bg-tertiary);
+}
+
+.mode-toggle-btn {
+  padding: 6px 14px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mode-toggle-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+}
+
+.mode-toggle-btn.active {
+  background: var(--accent);
+  color: white;
+}
+
+/* Demo hint card */
+.demo-hint {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.demo-hint-icon {
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.demo-hint-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.demo-hint-text strong {
+  color: var(--text-primary);
+  font-size: 0.95rem;
+}
+
+.demo-hint-text p {
+  margin: 4px 0 0 0;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.demo-hint-dev {
+  color: var(--accent) !important;
+  font-size: 0.8rem !important;
+  margin-top: 6px !important;
+}
+
+.demo-hint-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.demo-btn {
+  padding: 8px 16px;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--accent);
+  font-weight: 500;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.demo-btn:hover {
+  background: var(--accent);
+  color: white;
+}
+
+.demo-btn--live {
+  border-color: var(--border);
+  color: var(--text-muted);
+}
+
+.demo-btn--live:hover {
+  border-color: var(--accent);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+/* Live mic controls */
+.live-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.live-start-btn {
+  background: #3fb950;
+}
+
+.live-start-btn:hover:not(:disabled) {
+  background: #3fb950;
+  opacity: 0.85;
+}
+
+.live-stop-btn {
+  background: #f85149;
+}
+
+.live-stop-btn:hover:not(:disabled) {
+  background: #f85149;
+  opacity: 0.85;
+}
+
+.live-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #3fb950;
+  animation: live-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes live-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* Live mic error */
+.live-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  margin-bottom: 16px;
+  background: rgba(248, 81, 73, 0.1);
+  border: 1px solid rgba(248, 81, 73, 0.3);
+  border-radius: 8px;
+  color: #f85149;
+  font-size: 0.85rem;
+}
+
+.live-error-icon {
+  flex-shrink: 0;
+  font-size: 1.1rem;
+}

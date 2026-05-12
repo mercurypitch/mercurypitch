@@ -27,3 +27,4 @@ export {
   isBlackKey,
   melodyMidiRange,
 } from './scale-data'
+export { generateMockSessions } from './vocal-analysis-mock'
