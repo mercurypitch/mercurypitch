@@ -223,6 +223,12 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   const [windowStart, setWindowStart] = createSignal(0)
   const PITCH_WINDOW_FILL_RATIO = 0.75
 
+  const lrclibSearchUrl = () => {
+    const title = extractTitle(props.songTitle ?? '')
+    if (!title) return undefined
+    return `https://lrclib.net/search/${encodeURIComponent(title)}`
+  }
+
   // ── Repeat blocks state ─────────────────────────────────────────
   interface LyricsBlock {
     id: string // unique ID: "chorus-1", "verse-2"
@@ -5039,6 +5045,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                     <LyricsUploader
                       onUpload={handleLyricsUpload}
                       suggestion={props.songTitle}
+                      searchUrl={lrclibSearchUrl()}
                     />
                   }
                 >
@@ -6013,6 +6020,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                         <LyricsUploader
                           onUpload={handleLyricsUpload}
                           suggestion={props.songTitle}
+                          searchUrl={lrclibSearchUrl()}
                         />
                       }
                     >
@@ -6525,7 +6533,7 @@ export const StemMixerStyles: string = `
   align-content: stretch;
   gap: 0.5rem;
   flex: 1;
-  overflow: hidden;
+  overflow: auto;
   padding: 0.5rem;
   min-height: 0;
 }
