@@ -1,6 +1,6 @@
 # GH Issues Skill
 
-Fetch and manage GitHub issues for the pitch-perfect project.
+Fetch and manage GitHub issues for the mercury-pitch project.
 
 ## Usage
 

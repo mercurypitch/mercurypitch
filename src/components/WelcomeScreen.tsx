@@ -71,7 +71,7 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
               d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"
             />
           </svg>
-          <h1 class="welcome-title">Welcome to PitchPerfect</h1>
+          <h1 class="welcome-title">Welcome to MercuryPitch</h1>
           <p class="welcome-subtitle">Your voice, visualized and refined</p>
         </div>
 
@@ -92,7 +92,7 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
           <div class="welcome-mic-text">
             <strong>Microphone Access</strong>
             <p>
-              PitchPerfect needs microphone access to detect your singing pitch
+              MercuryPitch needs microphone access to detect your singing pitch
               in real-time.
             </p>
           </div>

@@ -1,5 +1,5 @@
 // ============================================================
-// Scale Data — Music theory utilities for PitchPerfect
+// Scale Data — Music theory utilities for MercuryPitch
 // ============================================================
 
 import type { MelodyItem, MelodyNote, NoteName, ScaleDefinition, ScaleDegree, } from '@/types'

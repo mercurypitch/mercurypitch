@@ -1,6 +1,6 @@
-# PitchPerfect Feature Ideas
+# MercuryPitch Feature Ideas
 
-A living list of proposed features and improvements for PitchPerfect.
+A living list of proposed features and improvements for MercuryPitch.
 
 ---
 

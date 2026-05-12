@@ -1,6 +1,6 @@
 # SolidJS Architecture & Refactoring Plan
 
-This document outlines the systematic approach for auditing and refactoring the PitchPerfect codebase to adhere strictly to SolidJS best practices. The protocol enforces safe, test-driven modifications while eliminating common React-based anti-patterns.
+This document outlines the systematic approach for auditing and refactoring the MercuryPitch codebase to adhere strictly to SolidJS best practices. The protocol enforces safe, test-driven modifications while eliminating common React-based anti-patterns.
 
 ## Phase 1: Agent Initialization & Investigation Protocol (Read-Only)
 **Goal:** Build context and avoid hallucination by operating strictly in read-only/planning mode.

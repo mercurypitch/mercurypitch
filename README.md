@@ -1,4 +1,4 @@
-# PitchPerfect
+# MercuryPitch
 
 A browser-based vocal pitch practice tool with AI stem separation, community features, and real-time audio processing. Sing along with customizable melodies, get real-time feedback on your pitch accuracy, and track your progress over time.
 
@@ -8,9 +8,9 @@ Open [mercurypitch.com](https://mercurypitch.com) in a modern browser to try it 
 
 ## Showcase
 
-![PitchPerfect Singing Practice](assets/BasicMelodyPractice_Singing.jpg)
+![MercuryPitch Singing Practice](assets/BasicMelodyPractice_Singing.jpg)
 
-![PitchPerfect Piano Roll Editor](assets/BasicMelodyPractice_Piano.jpg)
+![MercuryPitch Piano Roll Editor](assets/BasicMelodyPractice_Piano.jpg)
 ## Features
 
 ### Core Practice

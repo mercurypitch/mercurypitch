@@ -953,7 +953,7 @@ export const SettingsPanel: Component = () => {
 
         {/* About Section */}
         <div class="settings-section">
-          <h3 class="settings-section-title">About PitchPerfect</h3>
+          <h3 class="settings-section-title">About MercuryPitch</h3>
           <div class="settings-divider" />
           <div class="about-content">
             <div class="about-logo">
@@ -975,7 +975,7 @@ export const SettingsPanel: Component = () => {
                 <circle cx="24" cy="32" r="4" fill="currentColor" />
               </svg>
             </div>
-            <p class="about-name">PitchPerfect</p>
+            <p class="about-name">MercuryPitch</p>
             <div
               class="about-version-container"
               style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-bottom: 1rem;"

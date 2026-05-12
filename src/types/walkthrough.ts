@@ -230,7 +230,7 @@ Scroll horizontally for longer melodies, vertically for multiple octaves. The pl
       title: 'Importing and Exporting MIDI',
       description: 'Workflow for working with MIDI files',
       content: `
-MIDI files are a universal format for sharing music between applications. PitchPerfect supports both import and export.
+MIDI files are a universal format for sharing music between applications. MercuryPitch supports both import and export.
 
 ## Exporting MIDI
 
@@ -351,7 +351,7 @@ Aligns notes to time divisions (1/4, 1/8, 1/16 note). Makes melodies rhythmicall
       id: 'settings-overview',
       tab: 'settings',
       title: 'Settings Overview',
-      description: 'Configure PitchPerfect for your practice environment',
+      description: 'Configure MercuryPitch for your practice environment',
       content: `
 Settings are organized into sections for easy navigation. Here's what each section controls:
 
@@ -585,7 +585,7 @@ Pitch is how high or low a sound is, measured in **hertz (Hz)**.
 - **Excellent** pitch is within +/- 25 cents
 - **Good** pitch is within +/- 50 cents
 
-> **Info:** In pitch-perfect practice, you'll match exact pitches to build accuracy. The smaller the cent deviation, the closer you are to the target note.
+> **Info:** In mercury-pitch practice, you'll match exact pitches to build accuracy. The smaller the cent deviation, the closer you are to the target note.
 
 ## Tonal Centers
 

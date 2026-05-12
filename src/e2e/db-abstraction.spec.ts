@@ -18,7 +18,7 @@ async function ensureDb(page: import('@playwright/test').Page): Promise<void> {
   })
 }
 
-/** Open PitchPerfectDB via raw IndexedDB and run a callback with the DB handle. */
+/** Open MercuryPitchDB via raw IndexedDB and run a callback with the DB handle. */
 async function withIndexedDB<T>(
   page: import('@playwright/test').Page,
   fn: string, // function body as a string that receives `db`
@@ -26,7 +26,7 @@ async function withIndexedDB<T>(
   return page.evaluate(async (fnBody) => {
     const fn = new Function('db', fnBody) as (db: IDBDatabase) => T | Promise<T>
     return new Promise<T>((resolve, reject) => {
-      const req = indexedDB.open('PitchPerfectDB')
+      const req = indexedDB.open('MercuryPitchDB')
       req.onsuccess = () => {
         const db = req.result
         try {
@@ -77,12 +77,12 @@ test.describe('Database Abstraction Layer', () => {
 
     const dbExists = await page.evaluate(async () => {
       const dbs = await indexedDB.databases()
-      return dbs.some((db) => db.name === 'PitchPerfectDB')
+      return dbs.some((db) => db.name === 'MercuryPitchDB')
     })
     expect(dbExists).toBe(true)
   })
 
-  test('PitchPerfectDB has expected object stores', async ({ page }) => {
+  test('MercuryPitchDB has expected object stores', async ({ page }) => {
     await ensureDb(page)
 
     const storeNames = await withIndexedDB<string[]>(
@@ -362,7 +362,7 @@ test.describe('Database Abstraction Layer', () => {
     // Write a record
     await page.evaluate(async (id) => {
       return new Promise<void>((resolve, reject) => {
-        const req = indexedDB.open('PitchPerfectDB')
+        const req = indexedDB.open('MercuryPitchDB')
         req.onsuccess = () => {
           const db = req.result
           const tx = db.transaction('sessionRecords', 'readwrite')
@@ -412,7 +412,7 @@ test.describe('Database Abstraction Layer', () => {
 
     const count = await page.evaluate(async (bid) => {
       return new Promise<number>((resolve, reject) => {
-        const req = indexedDB.open('PitchPerfectDB')
+        const req = indexedDB.open('MercuryPitchDB')
         req.onsuccess = () => {
           const db = req.result
           const tx = db.transaction('sessionRecords', 'readwrite')
@@ -538,7 +538,7 @@ test.describe('Database Abstraction Layer', () => {
     // Write setting
     await page.evaluate(async (id) => {
       return new Promise<void>((resolve, reject) => {
-        const req = indexedDB.open('PitchPerfectDB')
+        const req = indexedDB.open('MercuryPitchDB')
         req.onsuccess = () => {
           const db = req.result
           const tx = db.transaction('userSettings', 'readwrite')

@@ -49,7 +49,7 @@
 ### Backend Requirements
 **The backend API server needs to be running for real file processing:**
 ```bash
-cd /var/www/mercurypitch.com/pitch-perfect-repo/uvr-api
+cd /var/www/mercurypitch.com/mercury-pitch-repo/uvr-api
 docker build -t uvr-api .
 docker run -d --name uvr-api -p 8000:8000 uvr-api
 ```
@@ -121,7 +121,7 @@ docker run -d --name uvr-api -p 8000:8000 uvr-api
 ### Next Steps
 1. **Deploy the backend API server**:
    ```bash
-   cd /var/www/mercurypitch.com/pitch-perfect-repo/uvr-api
+   cd /var/www/mercurypitch.com/mercury-pitch-repo/uvr-api
    docker build -t uvr-api .
    docker run -d --name uvr-api -p 8000:8000 uvr-api
    ```
@@ -139,4 +139,4 @@ The `UvrProcessor` class in `src/lib/uvr-processor.ts` provides:
 - Web Audio API filter-based separation (for playback)
 - Frequency analysis using AnalyserNode
 - Real-time audio visualization support
-- **Use case**: User plays audio in PitchPerfect, and UVR filters can adjust vocal/instrumental balance in real-time during playback
+- **Use case**: User plays audio in MercuryPitch, and UVR filters can adjust vocal/instrumental balance in real-time during playback

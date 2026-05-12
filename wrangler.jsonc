@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "pitch-perfect",
+  "name": "mercury-pitch",
   "compatibility_date": "2026-04-30",
   "observability": {
     "enabled": false,
@@ -32,7 +32,7 @@
   ],
   "env": {
     "dev": {
-      "name": "pitch-perfect-dev",
+      "name": "mercury-pitch-dev",
       "routes": [
         { "pattern": "dev.mercurypitch.com", "custom_domain": true }
       ],

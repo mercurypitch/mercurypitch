@@ -896,7 +896,7 @@ const AppShell: Component<AppProps> = (props) => {
               onClick={() => void handleTabChange(TAB_SINGING)}
               title="Go to Practice"
             >
-              <h1 class="app-title">PitchPerfect</h1>
+              <h1 class="app-title">MercuryPitch</h1>
             </button>
             <p class="subtitle">Voice Pitch Practice</p>
           </div>

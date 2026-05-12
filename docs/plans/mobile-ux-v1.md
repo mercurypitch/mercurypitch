@@ -30,7 +30,7 @@
 
 ## 3. Fix Hamburger Button Occluding App Name
 
-**Problem**: At `≤768px`, `.sidebar-toggle-btn` is `position: fixed; top: 8px; left: 8px; z-index: 199` and overlays the header content. The app title "PitchPerfect" and subtitle are positioned at the header's natural left edge, so the hamburger covers them.
+**Problem**: At `≤768px`, `.sidebar-toggle-btn` is `position: fixed; top: 8px; left: 8px; z-index: 199` and overlays the header content. The app title "MercuryPitch" and subtitle are positioned at the header's natural left edge, so the hamburger covers them.
 
 **Fix**:
 - Add `padding-left: 56px` (hamburger width + gap) to `header` at `≤768px`

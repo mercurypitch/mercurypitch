@@ -1,4 +1,4 @@
-# PitchPerfect SolidJS Refactoring Audit
+# MercuryPitch SolidJS Refactoring Audit
 
 This audit evaluates the codebase against the established SolidJS Refactoring Plan, focusing on anti-patterns, modularity, and adherence to reactive best practices.
 
