@@ -352,6 +352,91 @@ export function parseLrcFile(content: string): LrcLine[] {
   return lines.sort((a, b) => a.time - b.time)
 }
 
+/** Per-word timings extracted from an LRC line. */
+export interface LrcWordTimings {
+  words: string[]
+  wordTimes: number[] // start time (seconds) for each word
+}
+
+/** Regex that matches a single LRC timestamp anywhere in text. */
+const LRC_TS_GLOBAL = /\[(\d{1,3}):(\d{2})(?:[.:](\d{2,3}))?\]/g
+
+/**
+ * Parse word-level timestamps from LRC line text.
+ *
+ * Standard LRC: `[00:12.00]First line of text`
+ *   → words: ["First","line","of","text"], no per-word timings → returns null
+ *
+ * Word-level LRC: `[00:22.00]First [00:22.35]word [00:22.70]here`
+ *   → `parseLrcFile` already captured the *first* timestamp as the line start
+ *   time, so `text` is `"First [00:22.35]word [00:22.70]here"`.
+ *   This function extracts the remaining timestamps from within the text.
+ *
+ * Returns null when there are no embedded timestamps (plain line).
+ */
+export function parseLrcWordTimings(
+  text: string,
+  lineStartTime: number,
+): LrcWordTimings | null {
+  // Collect all embedded timestamps
+  const times: number[] = []
+  const re = new RegExp(LRC_TS_GLOBAL)
+  let m: RegExpExecArray | null
+  while ((m = re.exec(text)) !== null) {
+    const mins = parseInt(m[1], 10)
+    const secs = parseInt(m[2], 10)
+    let ms = 0
+    if (m[3]) {
+      ms = parseInt(m[3], 10)
+      if (m[3].length === 2) ms *= 10
+    }
+    times.push(mins * 60 + secs + ms / 1000)
+  }
+
+  if (times.length === 0) return null
+
+  // Split text on timestamps to isolate word groups
+  const parts = text.split(LRC_TS_GLOBAL).filter((s) => s.trim().length > 0)
+  if (parts.length === 0) return null
+
+  // First word starts at lineStartTime, subsequent at each embedded timestamp
+  const words: string[] = []
+  const wordTimes: number[] = []
+  for (let i = 0; i < parts.length; i++) {
+    const chunk = parts[i].trim()
+    const chunkWords = chunk.split(/\s+/).filter((w) => w.length > 0)
+    if (chunkWords.length === 0) continue
+    // First chunk may contain multiple words (before the first embedded timestamp)
+    if (i === 0) {
+      // All words in first chunk share the line start time
+      for (const w of chunkWords) {
+        words.push(w)
+        wordTimes.push(lineStartTime)
+      }
+    } else {
+      // Subsequent chunks: first word gets the timestamp, remaining words are
+      // distributed between this timestamp and the next (or end of known times)
+      for (let j = 0; j < chunkWords.length; j++) {
+        words.push(chunkWords[j])
+        if (j === 0 && i - 1 < times.length) {
+          wordTimes.push(times[i - 1])
+        } else {
+          // Fallback: interpolate within the chunk
+          const t0 = i - 1 < times.length ? times[i - 1] : lineStartTime
+          const t1 =
+            i < times.length
+              ? times[i]
+              : t0 + chunkWords.length * 0.3
+          const frac = j / chunkWords.length
+          wordTimes.push(t0 + frac * (t1 - t0))
+        }
+      }
+    }
+  }
+
+  return words.length > 0 ? { words, wordTimes } : null
+}
+
 // ── Line Syncing ─────────────────────────────────────────────
 
 export function getCurrentLineIndex(

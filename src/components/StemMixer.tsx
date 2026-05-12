@@ -5,7 +5,7 @@
 import type { Component, JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import type { LrcLine, LyricsSearchMatch, LyricsSearchResult, } from '@/lib/lyrics-service'
-import { extractTitle, fetchLyricsById, getCurrentLineIndex, getCurrentLrcIndex, parseLrcFile, parseTextLyrics, searchLyrics, searchLyricsMulti, } from '@/lib/lyrics-service'
+import { extractTitle, fetchLyricsById, getCurrentLineIndex, getCurrentLrcIndex, parseLrcFile, parseLrcWordTimings, parseTextLyrics, searchLyrics, searchLyricsMulti, } from '@/lib/lyrics-service'
 import type { MergedNote, MidiNoteEvent, PitchDetection, } from '@/lib/midi-generator'
 import { buildMidiFile, DEFAULT_BPM, detectNotes, mergeConsecutiveNotes, MIDI_NOTE_RANGE, PITCH_DETECTOR_DEFAULTS, synthesizeMidiBuffer, TICKS_PER_BEAT, } from '@/lib/midi-generator'
 import type { DetectedPitch } from '@/lib/pitch-detector'
@@ -804,17 +804,40 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     startTime: number,
     endTime: number,
     elapsedTime: number,
+    wordTimes?: number[] | null,
   ): { activeUpTo: number; charProgress: number } => {
     if (words.length === 0) return { activeUpTo: -1, charProgress: 0 }
-    const lineDuration = Math.max(0.05, endTime - startTime)
-    const progress = (elapsedTime - startTime) / lineDuration
-    if (progress < 0) return { activeUpTo: -1, charProgress: 0 }
-    if (progress >= 1)
+    if (elapsedTime < startTime) return { activeUpTo: -1, charProgress: 0 }
+    if (elapsedTime >= endTime)
       return {
         activeUpTo: words.length - 1,
         charProgress: words[words.length - 1]?.length || 0,
       }
 
+    // ── Use explicit word timings when available ──────────────
+    if (wordTimes && wordTimes.length === words.length) {
+      let wi = 0
+      for (let i = words.length - 1; i >= 0; i--) {
+        if (wordTimes[i] <= elapsedTime) {
+          wi = i
+          break
+        }
+      }
+      const wordStart = wordTimes[wi]
+      const wordEnd =
+        wi + 1 < wordTimes.length ? wordTimes[wi + 1] : endTime
+      const wordDur = Math.max(0.05, wordEnd - wordStart)
+      const elapsedInWord = elapsedTime - wordStart
+      const charProgress = Math.min(
+        Math.floor((elapsedInWord / wordDur) * words[wi].length),
+        words[wi].length,
+      )
+      return { activeUpTo: wi - 1, charProgress }
+    }
+
+    // ── Fallback: equal distribution ─────────────────────────
+    const lineDuration = Math.max(0.05, endTime - startTime)
+    const progress = (elapsedTime - startTime) / lineDuration
     const wordDuration = lineDuration / words.length
     const currentWordIdx = Math.floor(progress * words.length)
     const activeUpTo = currentWordIdx - 1
@@ -830,6 +853,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     return { activeUpTo, charProgress }
   }
 
+  // Lines with >20s gap to the next line get their endTime capped.
+  // No sung line lasts that long — the gap is an instrumental break.
+  const MAX_LINE_GAP_S = 20
+
   const stableParsedLyrics = createMemo(() => {
     const dur = duration()
     const lrc = lrcLines()
@@ -837,14 +864,70 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
     const map = new Map<
       number,
-      { time: number; endTime: number; words: string[]; key: string }
+      {
+        time: number
+        endTime: number
+        words: string[]
+        wordTimes: number[] | null
+        key: string
+      }
     >()
 
     if (lrc.length > 0) {
+      // First pass: estimate average word duration from lines with
+      // reasonable gaps, so we can cap lines that have extreme gaps.
+      let avgWordDur = 0.4
+      {
+        let totalDur = 0
+        let totalWords = 0
+        for (let i = 0; i < lrc.length; i++) {
+          const end = i + 1 < lrc.length ? lrc[i + 1].time : dur
+          const gap = end - lrc[i].time
+          if (gap > 0 && gap < MAX_LINE_GAP_S) {
+            const n = lrc[i].text.split(/\s+/).filter((w) => w.length > 0).length
+            if (n > 0) {
+              totalDur += gap
+              totalWords += n
+            }
+          }
+        }
+        if (totalWords > 0) avgWordDur = totalDur / totalWords
+      }
+
       lrc.forEach((line, i) => {
-        const words = line.text.split(/\s+/).filter((w: string) => w.length > 0)
-        const endTime = i + 1 < lrc.length ? lrc[i + 1].time : dur
-        map.set(i, { key: `lrc-${i}`, time: line.time, endTime, words })
+        const rawWords = line.text
+          .split(/\s+/)
+          .filter((w: string) => w.length > 0)
+        const rawEndTime = i + 1 < lrc.length ? lrc[i + 1].time : dur
+
+        // Parse word-level timings from LRC text (e.g. "word1 [00:22.30] word2")
+        const parsedWt = parseLrcWordTimings(line.text, line.time)
+
+        let words: string[]
+        let wordTimes: number[] | null
+        let endTime: number
+
+        if (parsedWt) {
+          words = parsedWt.words
+          wordTimes = parsedWt.wordTimes
+          // Use the last word's time + estimated word duration as endTime,
+          // or fall back to the next line time, whichever is closer.
+          const lastWordTime = wordTimes[wordTimes.length - 1]
+          const estimatedEnd = lastWordTime + avgWordDur * 0.8
+          endTime = Math.min(rawEndTime, estimatedEnd)
+        } else {
+          words = rawWords
+          wordTimes = null
+          endTime = rawEndTime
+        }
+
+        // Cap endTime when the gap to the next line is extreme
+        if (rawEndTime - line.time > MAX_LINE_GAP_S) {
+          const estimated = line.time + words.length * avgWordDur
+          endTime = Math.min(endTime, estimated)
+        }
+
+        map.set(i, { key: `lrc-${i}`, time: line.time, endTime, words, wordTimes })
       })
       return map
     }
@@ -853,7 +936,13 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         const words = text.split(/\s+/).filter((w: string) => w.length > 0)
         const startTime = (i / txt.length) * dur
         const endTime = ((i + 1) / txt.length) * dur
-        map.set(i, { key: `txt-${i}`, time: startTime, endTime, words })
+        map.set(i, {
+          key: `txt-${i}`,
+          time: startTime,
+          endTime,
+          words,
+          wordTimes: null,
+        })
       })
       return map
     }
@@ -909,13 +998,31 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     const lrc = lrcLines()
 
     if (lrc.length > 0) {
-      // LRC — show rest markers for blank lines
-      return lrc.map((l, i) => ({
-        text: l.text,
-        isBlank: false,
-        isRest: l.text === '~Rest~',
-        lyricsIndex: i,
-      }))
+      // LRC — show rest markers for blank lines, and inject extra rest
+      // markers when the gap between consecutive lines exceeds 20s.
+      const result: DisplayLine[] = []
+      for (let i = 0; i < lrc.length; i++) {
+        result.push({
+          text: lrc[i].text,
+          isBlank: false,
+          isRest: lrc[i].text === '~Rest~',
+          lyricsIndex: i,
+        })
+        // Inject a rest marker when the next line is >20s away
+        const gap =
+          i + 1 < lrc.length
+            ? lrc[i + 1].time - lrc[i].time
+            : duration() - lrc[i].time
+        if (gap > MAX_LINE_GAP_S) {
+          result.push({
+            text: '~Rest~',
+            isBlank: false,
+            isRest: true,
+            lyricsIndex: -1,
+          })
+        }
+      }
+      return result
     }
     if (!raw || ll.length === 0) return []
 
@@ -4882,6 +4989,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                                 parsedLyric.time,
                                 parsedLyric.endTime,
                                 elapsed(),
+                                parsedLyric.wordTimes,
                               )
                             : { activeUpTo: -1, charProgress: 0 }
 
