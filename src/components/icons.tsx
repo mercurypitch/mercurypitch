@@ -562,6 +562,43 @@ export const Mic: Component = () => (
   </svg>
 )
 
+// FilePlus Icon (new session — document with plus badge)
+export const FilePlus: Component = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    width="24"
+    height="24"
+  >
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+    <polyline points="14 2 14 8 20 8" />
+    <line x1="12" y1="18" x2="12" y2="12" />
+    <line x1="9" y1="15" x2="15" y2="15" />
+  </svg>
+)
+
+// Sparkles Icon (magic/fresh-start)
+export const Sparkles: Component = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    width="24"
+    height="24"
+  >
+    <path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5z" />
+    <path d="M18 16l1 3 3 1-3 1-1 3-1-3-3-1 3-1z" />
+    <path d="M6 3l.5 1.5L8 5l-1.5.5L6 7l-.5-1.5L4 5l1.5-.5z" />
+  </svg>
+)
+
 // Ear Icon (solo)
 export const Ear: Component = () => (
   <svg
@@ -576,5 +613,187 @@ export const Ear: Component = () => (
   >
     <path d="M6 8.5a6.5 6.5 0 1 1 13 0c0 6-6 6-6 10a3.5 3.5 0 1 1-7 0" />
     <path d="M15 8.5a2.5 2.5 0 0 0-5 0v1a2 2 0 1 1 0 4" />
+  </svg>
+)
+
+// CPU Icon
+export const Cpu: Component = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    width="100%"
+    height="100%"
+  >
+    <rect x="4" y="4" width="16" height="16" rx="2" ry="2" />
+    <rect x="9" y="9" width="6" height="6" />
+    <line x1="9" y1="1" x2="9" y2="4" />
+    <line x1="15" y1="1" x2="15" y2="4" />
+    <line x1="9" y1="20" x2="9" y2="23" />
+    <line x1="15" y1="20" x2="15" y2="23" />
+    <line x1="20" y1="9" x2="23" y2="9" />
+    <line x1="20" y1="14" x2="23" y2="14" />
+    <line x1="1" y1="9" x2="4" y2="9" />
+    <line x1="1" y1="14" x2="4" y2="14" />
+  </svg>
+)
+
+// Zap Icon (Lightning)
+export const Zap: Component = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    width="100%"
+    height="100%"
+  >
+    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+  </svg>
+)
+
+// Server Icon
+export const Server: Component = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    width="100%"
+    height="100%"
+  >
+    <rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
+    <rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
+    <line x1="6" y1="6" x2="6.01" y2="6" />
+    <line x1="6" y1="18" x2="6.01" y2="18" />
+  </svg>
+)
+
+// Clock Icon
+export const Clock: Component = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    width="100%"
+    height="100%"
+  >
+    <circle cx="12" cy="12" r="10" />
+    <polyline points="12 6 12 12 16 14" />
+  </svg>
+)
+
+// Import File Icon (upload arrow into tray — from piano roll MIDI import)
+export const ImportFile: Component = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    width="24"
+    height="24"
+  >
+    <path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5z" />
+  </svg>
+)
+
+// Metronome Icon
+export const Metronome: Component = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    width="24"
+    height="24"
+  >
+    <path d="M12 2 8 22h8L12 2z" />
+    <path d="M12 7.5 14.5 17.5h-5z" />
+  </svg>
+)
+
+// Waveform Bars Icon (audio visualization)
+export const WaveformBars: Component = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    width="24"
+    height="24"
+  >
+    <path d="M3 9h2v6H3zM7 6h2v12H7zM11 12h2v3h-2zM15 9h2v6h-2zM19 7h2v10h-2z" />
+  </svg>
+)
+
+// Magnifying Glass Icon (search/zoom)
+export const MagnifyingGlass: Component = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    width="24"
+    height="24"
+  >
+    <circle cx="11" cy="11" r="8" />
+    <path d="m21 21-4.35-4.35" />
+  </svg>
+)
+
+// Eye Icon (visibility)
+export const Eye: Component = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    width="24"
+    height="24"
+  >
+    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+    <circle cx="12" cy="12" r="3" />
+  </svg>
+)
+
+// MIDI DIN Connector Icon
+export const MidiDin: Component = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    width="24"
+    height="24"
+  >
+    <circle cx="12" cy="12" r="10" />
+    <circle cx="12" cy="12" r="3" />
+    <circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none" />
+    <circle cx="18.7" cy="7.7" r="1.5" fill="currentColor" stroke="none" />
+    <circle cx="16.2" cy="16.2" r="1.5" fill="currentColor" stroke="none" />
+    <circle cx="7.8" cy="16.2" r="1.5" fill="currentColor" stroke="none" />
+    <circle cx="5.3" cy="7.7" r="1.5" fill="currentColor" stroke="none" />
   </svg>
 )

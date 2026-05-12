@@ -1,0 +1,11 @@
+#!/bin/bash
+
+# Auto-format staged source files with Prettier before commit
+STAGED=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx|css|js|json)$' | grep '^src/')
+
+if [ -n "$STAGED" ]; then
+  echo "$STAGED" | xargs npx prettier --write --no-error-on-unmatched-pattern
+  echo "$STAGED" | xargs git add
+fi
+
+exit 0

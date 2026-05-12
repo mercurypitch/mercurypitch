@@ -2,493 +2,17 @@
 // VocalChallenges — Practice challenges & achievements
 // ============================================================
 
-import type { Component } from 'solid-js'
+import type { Component, JSX } from 'solid-js'
 import { createMemo, createSignal, For, onMount, Show } from 'solid-js'
+import type { Achievement as DBAchievement, BadgeDefinition as DBBadgeDefinition, ChallengeDefinition as DBChallengeDefinition, ChallengeProgress as DBChallengeProgress, UserAchievement as DBUserAchievement, UserBadge as DBUserBadge, } from '@/db/entities'
+import { getUserId } from '@/db/seed'
+import { loadAchievementDefinitions, loadBadgeDefinitions, loadChallengeDefinitions, loadChallengeProgress, loadUserAchievements, loadUserBadges, saveChallengeProgress, } from '@/db/services/challenges-service'
+import { TAB_SINGING } from '@/features/tabs/constants'
 import { getSessionHistory } from '@/stores'
+import { setActiveTab } from '@/stores/ui-store'
+import { IconBadge, IconBoltChallenge, iconByName, IconChart, IconCheckSolid, IconCloseSimple, IconCrown, IconDiamond, IconEagle, IconFireChallenge, IconGuitarChallenge, IconKeyboardChallenge, IconLeaf, IconLockSimple, IconMicChallenge, IconMoon, IconMusicChallenge, IconPaper, IconRefreshSimple, IconRocket, IconSparkle, IconStarChallenge, IconStopwatch, IconTarget, IconVolume, renderIcon, } from './hidden-features-icons'
 
-// Alternative: directly render icon with casting
-const renderIcon = (icon: Component | string) => {
-  if (typeof icon === 'string') return icon
-  return icon({})
-}
-
-// ============================================================
-// SVG Icons
-// ============================================================
-
-const IconMicChallenge = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    class="icon-svg"
-  >
-    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
-    <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-    <line x1="12" x2="12" y1="19" y2="23" />
-    <line x1="8" x2="16" y1="23" y2="23" />
-  </svg>
-)
-
-const IconGuitarChallenge = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    class="icon-svg"
-  >
-    <path d="M9 18V5l12-2v13" />
-    <circle cx="6" cy="18" r="3" />
-    <circle cx="18" cy="16" r="3" />
-  </svg>
-)
-
-const IconBoltChallenge = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    class="icon-svg"
-  >
-    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-  </svg>
-)
-
-const IconTarget = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    class="icon-svg"
-  >
-    <circle cx="12" cy="12" r="10" />
-    <circle cx="12" cy="12" r="6" />
-    <circle cx="12" cy="12" r="2" />
-  </svg>
-)
-
-const IconChart = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    class="icon-svg"
-  >
-    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-  </svg>
-)
-
-const IconKeyboardChallenge = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    class="icon-svg"
-  >
-    <rect x="2" y="4" width="20" height="16" rx="2" />
-    <path d="M6 8h.01" />
-    <path d="M10 8h.01" />
-    <path d="M14 8h.01" />
-    <path d="M18 8h.01" />
-    <path d="M6 12h.01" />
-    <path d="M10 12h.01" />
-    <path d="M14 12h.01" />
-    <path d="M18 12h.01" />
-    <path d="M7 16h10" />
-  </svg>
-)
-
-const IconMoon = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    class="icon-svg"
-  >
-    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-  </svg>
-)
-
-const IconLeaf = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    class="icon-svg"
-  >
-    <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z" />
-    <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" />
-  </svg>
-)
-
-const IconFireChallenge = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    class="icon-svg"
-  >
-    <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.1.2-2.2.5-3.3.4.5.7 1.3 1 2.3z" />
-  </svg>
-)
-
-const IconRocket = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    class="icon-svg"
-  >
-    <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" />
-    <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" />
-    <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0" />
-    <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" />
-  </svg>
-)
-
-const IconVolume = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    class="icon-svg"
-    width="20"
-    height="20"
-  >
-    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
-    <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
-    <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
-  </svg>
-)
-
-const IconMusic = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    class="icon-svg"
-    width="20"
-    height="20"
-  >
-    <path d="M9 18V5l12-2v13" />
-    <circle cx="6" cy="18" r="3" />
-    <circle cx="18" cy="16" r="3" />
-  </svg>
-)
-
-const IconStopwatch = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    class="icon-svg"
-    width="20"
-    height="20"
-  >
-    <circle cx="12" cy="12" r="10" />
-    <polyline points="12 6 12 12 16 14" />
-  </svg>
-)
-
-const IconEagle = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    class="icon-svg"
-    width="20"
-    height="20"
-  >
-    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8Z" />
-  </svg>
-)
-
-const IconDiamond = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    class="icon-svg"
-    width="20"
-    height="20"
-  >
-    <path d="M6 3h12l4 6-10 13L2 9z" />
-    <path d="m15 14 3-3" />
-  </svg>
-)
-
-const IconStarChallenge = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    class="icon-svg"
-    width="20"
-    height="20"
-  >
-    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-  </svg>
-)
-
-const IconBadge = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    class="icon-svg"
-    width="20"
-    height="20"
-  >
-    <circle cx="12" cy="8" r="7" />
-    <path d="M8.21 13.89L7 23l5.25-3.75 5.25 3.75L14.79 13.9" />
-  </svg>
-)
-
-const IconCrown = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    class="icon-svg"
-    width="20"
-    height="20"
-  >
-    <path d="m4 7 4-4 4 4" />
-    <path d="m16 7 4-4 4 4" />
-    <path d="M2 19h20" />
-    <path d="M5 15l7 7 7-7" />
-    <path d="M2 13h20" />
-  </svg>
-)
-
-const IconSparkle = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    class="icon-svg"
-    width="20"
-    height="20"
-  >
-    <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
-  </svg>
-)
-
-const IconPaper = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    class="icon-svg"
-    width="20"
-    height="20"
-  >
-    <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
-    <polyline points="14 2 14 8 20 8" />
-    <line x1="16" x2="8" y1="13" y2="13" />
-    <line x1="16" x2="8" y1="17" y2="17" />
-    <line x1="10" x2="8" y1="9" y2="9" />
-  </svg>
-)
-
-const IconCheck2 = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    class="icon-svg"
-    width="20"
-    height="20"
-  >
-    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-    <polyline points="22 4 12 14.01 9 11.01" />
-  </svg>
-)
-
-const IconClose = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    class="icon-svg"
-    width="20"
-    height="20"
-  >
-    <line x1="18" x2="6" y1="6" y2="18" />
-    <line x1="6" x2="18" y1="6" y2="18" />
-  </svg>
-)
-
-const _IconCheckCircle = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    class="icon-svg"
-    width="20"
-    height="20"
-  >
-    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-    <polyline points="22 4 12 14.01 9 11.01" />
-  </svg>
-)
-
-const _IconWarning = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    class="icon-svg"
-    width="20"
-    height="20"
-  >
-    <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
-    <line x1="12" x2="12" y1="9" y2="13" />
-    <line x1="12" x2="12.01" y1="17" y2="17" />
-  </svg>
-)
-
-const IconRefresh = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    class="icon-svg"
-  >
-    <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
-    <path d="M21 3v5h-5" />
-    <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
-    <path d="M8 16H3v5" />
-  </svg>
-)
-
-const IconLock = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    class="icon-svg"
-  >
-    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-  </svg>
-)
-
-const _IconClipboard = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    class="icon-svg"
-    width="20"
-    height="20"
-  >
-    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
-    <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
-  </svg>
-)
-
-const _IconList = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    class="icon-svg"
-    width="20"
-    height="20"
-  >
-    <line x1="8" x2="21" y1="6" y2="6" />
-    <line x1="8" x2="21" y1="12" y2="12" />
-    <line x1="8" x2="21" y1="18" y2="18" />
-    <line x1="3" x2="3.01" y1="6" y2="6" />
-    <line x1="3" x2="3.01" y1="12" y2="12" />
-    <line x1="3" x2="3.01" y1="18" y2="18" />
-  </svg>
-)
+// (SVG icons imported from ./hidden-features-icons)
 
 // ============================================================
 // Types
@@ -580,11 +104,23 @@ export const [showChallengeModal, setShowChallengeModal] = createSignal(false)
 export const [selectedChallenge, setSelectedChallenge] =
   createSignal<ChallengeProgress | null>(null)
 
+interface ResultModalState {
+  title: string
+  message: string
+  icon: () => JSX.Element
+  actionLabel?: string
+  onAction?: () => void
+}
+
+const [resultModal, setResultModal] = createSignal<ResultModalState | null>(
+  null,
+)
+
 export const VocalChallenges: Component = () => {
   const [activeCategory, setActiveCategory] =
     createSignal<ChallengeType>('high-notes')
 
-  // Update challenge progress
+  // Update challenge progress (also saves to DB)
   function updateChallengeProgress(
     challengeId: string,
     score: number,
@@ -628,6 +164,21 @@ export const VocalChallenges: Component = () => {
 
     progress[progressKey] = saved
     saveProgress(progress)
+
+    // Also save to DB
+    const def = dbChallengeDefs().find((d) => d.id === challengeId)
+    if (def) {
+      saveChallengeProgress({
+        userId: getUserId(),
+        challengeId,
+        progress: saved.progress,
+        currentScore: saved.currentScore,
+        bestScore: Math.max(...(saved.actualScores ?? [saved.currentScore])),
+        status: saved.status === 'completed' ? 'completed' : 'active',
+        completed: saved.status === 'completed',
+        attempts: saved.actualScores?.length ?? 1,
+      })
+    }
   }
 
   // Start challenge handler
@@ -636,9 +187,12 @@ export const VocalChallenges: Component = () => {
 
     if (challenge.status === 'completed') {
       const completedScore = challenge.actualScores?.[0] ?? 0
-      alert(
-        `"${challenge.name}" completed!\nYour score: ${completedScore}%\n${challenge.actualScores?.length ?? 1} session(s) played`,
-      )
+      setResultModal({
+        title: 'Challenge Completed!',
+        message: `"${challenge.name}" was completed with a score of ${completedScore}%. ${challenge.actualScores?.length ?? 1} session(s) played.`,
+        icon: () => <IconSparkle />,
+        actionLabel: 'Close',
+      })
       return
     }
 
@@ -648,9 +202,16 @@ export const VocalChallenges: Component = () => {
         scores.length > 0
           ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
           : 0
-      alert(
-        `Continue "${challenge.name}"!\nCurrent progress: ${avgScore}%\n(${challenge.actualScores?.length ?? 0} session(s))`,
-      )
+      setResultModal({
+        title: 'Continue Challenge',
+        message: `"${challenge.name}" is in progress. Current average: ${avgScore}% (${challenge.actualScores?.length ?? 0} session(s)).`,
+        icon: () => <IconRefreshSimple />,
+        actionLabel: 'Continue Practice',
+        onAction: () => {
+          setSelectedChallenge(challenge)
+          setShowChallengeModal(true)
+        },
+      })
       return
     }
 
@@ -664,27 +225,38 @@ export const VocalChallenges: Component = () => {
           )
         : 0
 
-    // Show dialog to confirm starting the challenge
-    const confirmed = confirm(
-      `Starting "${challenge.name}"!\n\nYour recent average score: ${avgScore}%\n\nStart this challenge?`,
-    )
-
-    if (confirmed) {
-      // If we have scores, show the modal directly
-      if (avgScore > 0) {
+    setResultModal({
+      title: challenge.name,
+      message: `Your recent average score: ${avgScore}%. Start this challenge?`,
+      icon: () => renderIcon(challenge.icon),
+      actionLabel: 'Start',
+      onAction: () => {
         setSelectedChallenge(challenge)
         setShowChallengeModal(true)
-      } else {
-        setSelectedChallenge(challenge)
-        setShowChallengeModal(true)
-      }
-    }
+      },
+    })
   }
 
   // Load session history for real progress tracking
   const sessionHistory = createMemo(() => getSessionHistory())
 
-  // Challenge progress stored in localStorage
+  // DB-backed data signals
+  const [dbChallengeDefs, setDbChallengeDefs] = createSignal<
+    DBChallengeDefinition[]
+  >([])
+  const [dbChallengeProg, setDbChallengeProg] = createSignal<
+    DBChallengeProgress[]
+  >([])
+  const [dbBadgeDefs, setDbBadgeDefs] = createSignal<DBBadgeDefinition[]>([])
+  const [dbUserBadges, setDbUserBadges] = createSignal<DBUserBadge[]>([])
+  const [dbAchievementDefs, setDbAchievementDefs] = createSignal<
+    DBAchievement[]
+  >([])
+  const [dbUserAchievements, setDbUserAchievements] = createSignal<
+    DBUserAchievement[]
+  >([])
+
+  // Challenge progress stored in localStorage (legacy fallback)
   const [userProgress, setUserProgress] =
     createSignal<UserChallengeProgress | null>(null)
 
@@ -717,19 +289,39 @@ export const VocalChallenges: Component = () => {
     }))
   })
 
-  // Load user progress from localStorage
+  // Load data from DB (with legacy localStorage fallback)
   onMount(() => {
-    try {
-      const stored = localStorage.getItem('pp_challenge_progress')
-      if (stored !== null) {
-        setUserProgress(JSON.parse(stored))
+    void (async () => {
+      // Load challenge definitions & progress from DB
+      const [defs, prog, badgeDefs, userBadges, achDefs, userAchs] =
+        await Promise.all([
+          loadChallengeDefinitions(),
+          loadChallengeProgress(),
+          loadBadgeDefinitions(),
+          loadUserBadges(),
+          loadAchievementDefinitions(),
+          loadUserAchievements(),
+        ])
+      setDbChallengeDefs(defs)
+      setDbChallengeProg(prog)
+      setDbBadgeDefs(badgeDefs)
+      setDbUserBadges(userBadges)
+      setDbAchievementDefs(achDefs)
+      setDbUserAchievements(userAchs)
+
+      // Legacy localStorage fallback
+      try {
+        const stored = localStorage.getItem('pp_challenge_progress')
+        if (stored !== null) {
+          setUserProgress(JSON.parse(stored))
+        }
+      } catch {
+        /* localStorage not available */
       }
-    } catch {
-      /* localStorage not available */
-    }
+    })()
   })
 
-  // Save user progress to localStorage
+  // Save user progress to localStorage + DB
   const saveProgress = (progress: UserChallengeProgress | null) => {
     setUserProgress(progress)
     if (progress) {
@@ -763,12 +355,51 @@ export const VocalChallenges: Component = () => {
     return streak
   }
 
+  // Map icon name strings (from DB) to SVG components
+  function iconForName(name: string): Component | string {
+    return iconByName(name)
+  }
+
+  function mapDbStatus(status: string): ChallengeProgress['status'] {
+    if (status === 'completed') return 'completed'
+    if (status === 'active') return 'in-progress'
+    return 'not-started'
+  }
+
   // Challenges data (merged with real progress)
   function getChallengesForCategory(
     category: ChallengeType,
   ): ChallengeProgress[] {
-    let challenges: ChallengeProgress[] = []
+    const defs = dbChallengeDefs()
+    const progress = userProgress()
 
+    if (defs.length > 0) {
+      return defs
+        .filter((d) => d.category === category)
+        .map((d) => {
+          const dbProg = dbChallengeProg().find((p) => p.challengeId === d.id)
+          const localProg = progress?.[`ch-${d.id}`]
+          return {
+            id: d.id,
+            type: d.category,
+            name: d.title,
+            description: d.description,
+            icon: iconForName(d.icon),
+            targetScore: d.targetScore,
+            currentScore: dbProg?.currentScore ?? localProg?.currentScore ?? 0,
+            progress: dbProg?.progress ?? localProg?.progress ?? 0,
+            status: dbProg
+              ? mapDbStatus(dbProg.status)
+              : (localProg?.status ?? 'not-started'),
+            unlockedDate: localProg?.unlockedDate,
+            completedDate: localProg?.completedDate,
+            actualScores: localProg?.actualScores ?? [],
+          }
+        })
+    }
+
+    // Fall back to mock data, merged with localStorage progress
+    let challenges: ChallengeProgress[] = []
     switch (category) {
       case 'high-notes':
         challenges = mockChallenges.filter((c) => c.type === 'high-notes')
@@ -787,13 +418,9 @@ export const VocalChallenges: Component = () => {
         break
     }
 
-    // Merge real progress with mock challenge data
     return challenges.map((c) => {
-      const challengeKey = `ch-${c.id}`
-      const storedProgress = (userProgress() || {})[challengeKey]
-      if (storedProgress !== undefined) {
-        return storedProgress
-      }
+      const storedProgress = (progress || {})[`ch-${c.id}`]
+      if (storedProgress !== undefined) return storedProgress
       return c
     })
   }
@@ -803,8 +430,25 @@ export const VocalChallenges: Component = () => {
     getChallengesForCategory(activeCategory()),
   )
 
-  // Calculate user badges from session history
+  // Calculate user badges (DB-backed with mock fallback)
   function getBadges(): UserBadge[] {
+    const badgeDefs = dbBadgeDefs()
+    if (badgeDefs.length > 0) {
+      return badgeDefs.map((def) => {
+        const userBadge = dbUserBadges().find((ub) => ub.badgeId === def.id)
+        return {
+          id: def.id,
+          name: def.name,
+          description: def.description,
+          icon: iconForName(def.icon),
+          tier: def.tier,
+          earned: !!userBadge,
+          earnedDate: userBadge ? new Date(userBadge.earnedAt).getTime() : 0,
+        }
+      })
+    }
+
+    // Fall back to mock data with session-based computation
     const sessions = sessionHistory()
     const totalSessions = sessions.length
     const bestScore =
@@ -871,8 +515,32 @@ export const VocalChallenges: Component = () => {
     })
   }
 
-  // Calculate user achievements from session history
+  // Calculate user achievements (DB-backed with mock fallback)
   function getAchievements(): UserAchievement[] {
+    const achDefs = dbAchievementDefs()
+    if (achDefs.length > 0) {
+      return achDefs.map((def) => {
+        const userAch = dbUserAchievements().find(
+          (ua) => ua.achievementId === def.id,
+        )
+        return {
+          id: def.id,
+          name: def.name,
+          description: def.description,
+          icon: iconForName(def.icon),
+          points: def.points,
+          unlocked: userAch?.unlocked ?? false,
+          unlockedDate:
+            userAch?.unlockedAt !== undefined
+              ? new Date(userAch.unlockedAt).getTime()
+              : undefined,
+          progress: userAch?.progress ?? 0,
+          required: def.required,
+        }
+      })
+    }
+
+    // Fall back to mock data with session-based computation
     const sessions = sessionHistory()
     const totalSessions = sessions.length
     const bestScore =
@@ -994,7 +662,11 @@ export const VocalChallenges: Component = () => {
                 <span class="cat-icon">{renderIcon(cat.icon)}</span>
                 <span class="cat-name">{cat.name}</span>
                 <span class="cat-count">{cat.count}</span>
-                {locked && <span class="cat-locked">🔒</span>}
+                {locked && (
+                  <span class="cat-locked">
+                    <IconLockSimple />
+                  </span>
+                )}
               </button>
             )
           }}
@@ -1015,9 +687,9 @@ export const VocalChallenges: Component = () => {
                   {renderIcon(challenge.icon)}
                 </div>
                 <div class="challenge-status">
-                  {challenge.status === 'completed' && <IconCheck2 />}
-                  {challenge.status === 'in-progress' && <IconRefresh />}
-                  {challenge.status === 'locked' && <IconLock />}
+                  {challenge.status === 'completed' && <IconCheckSolid />}
+                  {challenge.status === 'in-progress' && <IconRefreshSimple />}
+                  {challenge.status === 'locked' && <IconLockSimple />}
                 </div>
               </div>
 
@@ -1088,7 +760,7 @@ export const VocalChallenges: Component = () => {
                 </div>
                 {badge.earned && (
                   <span class="badge-check">
-                    <IconCheck2 />
+                    <IconCheckSolid />
                   </span>
                 )}
               </div>
@@ -1136,7 +808,7 @@ export const VocalChallenges: Component = () => {
                 </div>
                 {ach.unlocked && (
                   <span class="achievement-locked">
-                    <IconCheck2 />
+                    <IconCheckSolid />
                   </span>
                 )}
               </div>
@@ -1157,9 +829,50 @@ export const VocalChallenges: Component = () => {
           onComplete={() => {
             setShowChallengeModal(false)
             setSelectedChallenge(null)
-            alert('<IconSparkle /> Challenge completed! Keep it up!')
+            setResultModal({
+              title: 'Challenge Completed!',
+              message: 'Great job! Keep it up!',
+              icon: () => <IconSparkle />,
+              actionLabel: 'Close',
+            })
           }}
         />
+      </Show>
+
+      {/* Result Modal */}
+      <Show when={resultModal()}>
+        <div class="challenge-modal">
+          <div class="modal-backdrop" onClick={() => setResultModal(null)} />
+          <div class="modal-content">
+            <button class="modal-close" onClick={() => setResultModal(null)}>
+              <IconCloseSimple />
+            </button>
+            <div class="modal-header">
+              <span class="modal-icon">{resultModal()!.icon()}</span>
+              <h2 class="modal-title">{resultModal()!.title}</h2>
+              <p class="modal-desc">{resultModal()!.message}</p>
+            </div>
+            <div class="modal-actions">
+              {resultModal()!.onAction && (
+                <button
+                  class="modal-btn primary"
+                  onClick={() => {
+                    resultModal()!.onAction!()
+                    setResultModal(null)
+                  }}
+                >
+                  {resultModal()!.actionLabel ?? 'OK'}
+                </button>
+              )}
+              <button
+                class={`modal-btn ${resultModal()!.onAction ? 'secondary' : 'primary'}`}
+                onClick={() => setResultModal(null)}
+              >
+                {resultModal()!.onAction ? 'Cancel' : 'Close'}
+              </button>
+            </div>
+          </div>
+        </div>
       </Show>
     </div>
   )
@@ -1207,7 +920,7 @@ const ChallengeModal: Component<ChallengeModalProps> = (props) => {
       <div class="modal-backdrop" onClick={() => props.onClose?.()} />
       <div class="modal-content">
         <button class="modal-close" onClick={() => props.onClose?.()}>
-          <IconClose />
+          <IconCloseSimple />
         </button>
 
         <div class="modal-header">
@@ -1292,7 +1005,10 @@ const ChallengeModal: Component<ChallengeModalProps> = (props) => {
               </button>
               <button
                 class="modal-btn primary"
-                onClick={() => setIsPracticing(true)}
+                onClick={() => {
+                  setActiveTab(TAB_SINGING)
+                  props.onClose()
+                }}
               >
                 Start Practice
               </button>
@@ -1323,7 +1039,7 @@ const challengeCategories = () => [
   },
   { id: 'speed' as const, name: 'Speed', icon: IconBoltChallenge, count: 3 },
   { id: 'perfect' as const, name: 'Perfect Pitch', icon: IconTarget, count: 2 },
-  { id: 'scales' as const, name: 'Scales', icon: IconMusic, count: 2 },
+  { id: 'scales' as const, name: 'Scales', icon: IconMusicChallenge, count: 2 },
 ]
 
 const mockChallenges: ChallengeProgress[] = [
@@ -1523,7 +1239,7 @@ const mockBadges: UserBadge[] = [
     id: 'b6',
     name: 'Scale Scholar',
     description: 'Complete a scale challenge',
-    icon: IconMusic,
+    icon: IconMusicChallenge,
     tier: 'bronze',
     earnedDate: Date.now() - 1000 * 60 * 60 * 24 * 15,
     earned: true,
@@ -1613,29 +1329,13 @@ const mockAchievements: UserAchievement[] = [
     id: 'a7',
     name: 'Scale Explorer',
     description: 'Practice 20 different scales',
-    icon: IconMusic,
+    icon: IconMusicChallenge,
     points: 25,
     unlocked: false,
     progress: 8,
     required: 20,
   },
 ]
-
-function _generateMockChallenges(): ChallengeProgress[] {
-  return mockChallenges
-}
-
-function _generateMockBadges(): UserBadge[] {
-  return mockBadges
-}
-
-function _generateMockAchievements(): UserAchievement[] {
-  return mockAchievements
-}
-
-function _generateMockProgress(): ChallengeProgress[] {
-  return mockChallenges
-}
 
 function getChallengeProgressColor(progress: number): string {
   if (progress >= 100) return 'var(--green)'

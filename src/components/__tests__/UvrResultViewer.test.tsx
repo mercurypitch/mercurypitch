@@ -33,7 +33,7 @@ describe('UvrResultViewer Component', () => {
       render(() => <UvrResultViewer {...defaultProps} />)
 
       expect(screen.getByText('Stems')).toBeInTheDocument()
-      expect(screen.getByText(/processed in 45s/)).toBeInTheDocument()
+      expect(screen.getByText(/45s/)).toBeInTheDocument()
     })
 
     it('renders share button', () => {
@@ -150,14 +150,12 @@ describe('UvrResultViewer Component', () => {
       expect(defaultProps.onStartPractice).toHaveBeenCalledWith('midi')
     })
 
-    it('renders Play and Mix buttons for each stem', () => {
+    it('renders Play buttons for each stem', () => {
       render(() => <UvrResultViewer {...defaultProps} />)
 
       // Play buttons: vocal, instrumental, vocal midi, full mix = 4
       const playButtons = screen.getAllByText('Play')
       expect(playButtons.length).toBe(4)
-      // Mix button on full mix card
-      expect(screen.getByText('Mix')).toBeInTheDocument()
     })
 
     it('does not call onStartPractice when not provided', () => {

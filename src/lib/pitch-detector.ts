@@ -5,7 +5,7 @@
 import type { DetectorMetrics, DetectorSettings, PitchDetectionResult, } from '@/types/pitch-algorithms'
 import { adjustedThreshold, mpmPickThreshold, parabolicInterpolation, parabolicInterpolationMax, } from './pitch-detector-internals'
 import { freqToNote } from './scale-data'
-import type { SwiftF0Detector } from './swift-f0-detector'
+import { SwiftF0Detector } from './swift-f0-detector'
 
 /** Supported pitch detection algorithms */
 export type PitchAlgorithm = 'yin' | 'mpm' | 'swift'
@@ -96,7 +96,6 @@ export class PitchDetector {
       return this.swiftDetector?.isInitialized() ?? false
 
     try {
-      const { SwiftF0Detector } = await import('./swift-f0-detector')
       this.swiftDetector = new SwiftF0Detector({
         sampleRate: 16000,
         modelPath: '/models/swiftf0.onnx',
@@ -623,8 +622,8 @@ export class PitchDetector {
 
   /** Set minimum amplitude (RMS) threshold (0-1) */
   setMinAmplitude(value: number): void {
-    // Convert 1-10 scale to 0.01-0.20 range
-    this.minAmplitude = Math.max(0.01, Math.min(0.2, (value / 10) * 0.2))
+    // Convert 1-10 scale to 0.005-0.05 range (much more sensitive)
+    this.minAmplitude = Math.max(0.005, Math.min(0.05, (value / 10) * 0.05))
   }
 
   /** Set the pitch detection algorithm at runtime */

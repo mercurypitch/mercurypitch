@@ -1,8 +1,9 @@
 /* ===== Notification Container ===== */
 .notificationContainer {
   position: fixed;
-  top: 60px;
-  right: 16px;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 1000;
   display: flex;
   flex-direction: column;
@@ -32,11 +33,11 @@
 
 @keyframes slideIn {
   from {
-    transform: translateX(400px);
+    transform: translateY(50px);
     opacity: 0;
   }
   to {
-    transform: translateX(0);
+    transform: translateY(0);
     opacity: 1;
   }
 }

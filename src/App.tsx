@@ -5,6 +5,7 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
+import { lazy } from 'solid-js'
 import { VocalAnalysis, VocalChallenges } from '@/components'
 import { AppSidebar } from '@/components/AppSidebar'
 import { CommunityLeaderboard } from '@/components/CommunityLeaderboard'
@@ -14,9 +15,18 @@ import { HistoryCanvas } from '@/components/HistoryCanvas'
 import { LibraryModal } from '@/components/LibraryModal'
 import { Notifications } from '@/components/Notifications'
 import { PianoRollCanvas } from '@/components/PianoRollCanvas'
-import { PitchAlgorithmTester } from '@/components/PitchAlgorithmTester'
 import { PitchCanvas } from '@/components/PitchCanvas'
-import { PitchTestingTab } from '@/components/PitchTestingTab'
+
+const PitchAlgorithmTester = lazy(async () =>
+  import('@/components/PitchAlgorithmTester').then((m) => ({
+    default: m.PitchAlgorithmTester,
+  })),
+)
+const PitchTestingTab = lazy(async () =>
+  import('@/components/PitchTestingTab').then((m) => ({
+    default: m.PitchTestingTab,
+  })),
+)
 import { ScaleBuilder } from '@/components/ScaleBuilder'
 import { SessionBrowser } from '@/components/SessionBrowser'
 import { SessionEditor } from '@/components/SessionEditor'
@@ -47,7 +57,7 @@ import { melodyIndexAtBeat, melodyTotalBeats } from '@/lib/scale-data'
 import { buildScaleMelody, buildSessionPlaybackMelody, } from '@/lib/session-builder'
 import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
 import { openWalkthroughChapter, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPlaybackSpeed, setScaleType, showSelection, walkthroughModalOpen, } from '@/stores'
-import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, toggleMicWaveVisible, } from '@/stores'
+import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, showNotification, showPlayhead, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, toggleMicWaveVisible, } from '@/stores'
 import { advancedFeaturesEnabled, devFeaturesEnabled } from '@/stores/app-store'
 import { melodyStore } from '@/stores/melody-store'
 import { getSession, templateToSession } from '@/stores/session-store'
@@ -176,7 +186,7 @@ const AppShell: Component<AppProps> = (props) => {
     string | null
   >(null)
   const [initialUvrView, setInitialUvrView] = createSignal<
-    'upload' | 'history' | 'results' | 'mixer' | null
+    'upload' | 'results' | 'mixer' | null
   >(null)
   const [activeUvrSessionId, setActiveUvrSessionId] = createSignal<
     string | null
@@ -643,9 +653,6 @@ const AppShell: Component<AppProps> = (props) => {
     } else if (initialRoute.type === 'uvr-upload') {
       setActiveTab(TAB_KARAOKE)
       setInitialUvrView('upload')
-    } else if (initialRoute.type === 'uvr-history') {
-      setActiveTab(TAB_KARAOKE)
-      setInitialUvrView('history')
     } else if (initialRoute.type === 'uvr-session') {
       setActiveTab(TAB_KARAOKE)
       setInitialUvrSessionId(initialRoute.sessionId)
@@ -676,10 +683,6 @@ const AppShell: Component<AppProps> = (props) => {
       } else if (route.type === 'uvr-upload') {
         setActiveTab(TAB_KARAOKE)
         setInitialUvrView('upload')
-        setActiveUvrSessionId(null)
-      } else if (route.type === 'uvr-history') {
-        setActiveTab(TAB_KARAOKE)
-        setInitialUvrView('history')
         setActiveUvrSessionId(null)
       } else if (route.type === 'uvr-session') {
         setActiveTab(TAB_KARAOKE)
@@ -804,8 +807,6 @@ const AppShell: Component<AppProps> = (props) => {
       route = { type: 'uvr-session', sessionId }
     } else if (view === 'mixer' && sessionId !== null) {
       route = { type: 'uvr-session-mixer', sessionId }
-    } else if (view === 'history') {
-      route = { type: 'uvr-history' }
     } else {
       route = { type: 'uvr-upload' }
     }
@@ -1252,7 +1253,7 @@ const AppShell: Component<AppProps> = (props) => {
                     id="playhead"
                     style={{
                       display:
-                        (isPlaying() || isPaused()) && appStore.showPlayhead()
+                        (isPlaying() || isPaused()) && showPlayhead()
                           ? 'block'
                           : 'none',
                       left: `${playheadPosition()}%`,

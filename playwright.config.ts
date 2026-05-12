@@ -8,8 +8,8 @@ export default defineConfig({
   workers: process.env.CI !== undefined ? 4 : undefined,
   reporter: 'html',
   use: {
-    // Use production build served on port 3001 (no SSL needed)
-    baseURL: 'http://localhost:3001',
+    // Use production build served on e2e port (default 3001)
+    baseURL: `http://localhost:${process.env.VITE_E2E_PORT || 3001}`,
     trace: 'on-first-retry',
   },
   projects: [
@@ -19,8 +19,8 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npm run build && npx serve dist -l 3001',
-    url: 'http://localhost:3001',
+    command: `pnpm run build && pnpm dlx serve dist -l ${process.env.VITE_E2E_PORT || 3001}`,
+    url: `http://localhost:${process.env.VITE_E2E_PORT || 3001}`,
     reuseExistingServer: true,
     timeout: 120000,
   },

@@ -40,7 +40,7 @@ const setupGlobalErrorHandler = () => {
     exposeForE2E('__globalError', err)
     setAppErrorSignal({
       error: err,
-      time: performance.now(),
+      time: Date.now(),
     })
   }
 

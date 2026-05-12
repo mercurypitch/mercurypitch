@@ -9,6 +9,7 @@ import { UvrUploadControl } from '../UvrUploadControl'
 // Mock icons
 vi.mock('../icons', () => ({
   FileUpload: () => <span data-testid="file-upload-icon">FileUpload</span>,
+  ImportFile: () => <span data-testid="import-file-icon">ImportFile</span>,
   MusicNote: () => <span data-testid="music-note-icon">MusicNote</span>,
 }))
 
@@ -229,7 +230,7 @@ describe('UvrUploadControl Component', () => {
       render(() => <UvrUploadControl {...defaultProps} />)
       selectFileViaInput(testFile)
 
-      const processButton = screen.getByText('Process with UVR')
+      const processButton = screen.getByText('Process')
       fireEvent.click(processButton)
 
       expect(defaultProps.onProcessStart).toHaveBeenCalled()
@@ -239,7 +240,7 @@ describe('UvrUploadControl Component', () => {
       render(() => <UvrUploadControl {...defaultProps} />)
 
       // Button only renders after a file is selected
-      expect(screen.queryByText('Process with UVR')).not.toBeInTheDocument()
+      expect(screen.queryByText('Process')).not.toBeInTheDocument()
     })
 
     it('replaces button with processing indicator when processing', () => {
@@ -248,7 +249,7 @@ describe('UvrUploadControl Component', () => {
       render(() => <UvrUploadControl {...defaultProps} processing={true} />)
       selectFileViaInput(testFile)
 
-      const processButton = screen.queryByText('Process with UVR')
+      const processButton = screen.queryByText('Process')
       expect(processButton).not.toBeInTheDocument()
     })
 
@@ -258,7 +259,7 @@ describe('UvrUploadControl Component', () => {
       render(() => <UvrUploadControl {...defaultProps} />)
       selectFileViaInput(testFile)
 
-      const processButton = screen.getByText('Process with UVR')
+      const processButton = screen.getByText('Process')
       expect(processButton).not.toBeDisabled()
     })
   })

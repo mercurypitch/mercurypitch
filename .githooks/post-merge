@@ -1,8 +1,0 @@
-#!/bin/bash
-# Post-merge hook: auto-deploy after git pull on the live server.
-# Apache serves directly from pitch-perfect-repo/public/, so changes go live immediately.
-# Run syntax checks to catch errors before they reach users.
-echo "[deploy] Post-merge: running syntax checks..."
-cd "$(dirname "$0")/.."
-./deploy.sh --check-only
-echo "[deploy] Post-merge complete. Site updated to $(git rev-parse --short HEAD)"

@@ -4,12 +4,14 @@
 
 import type { Component } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
+import { deleteUvrSessionFromDb } from '@/db/services/uvr-service'
 import { deleteUvrSession, getUvrSession } from '@/stores/app-store'
 import type { UvrSession, UvrStatus } from '@/types/uvr'
-import { Box, Calendar, CheckCircle, Headphones, Loader2, Midi, Music, Play, Share, SlidersHorizontal, Trash2, Voice, XCircle, } from './icons'
+import { Box, Calendar, CheckCircle, Cpu, Headphones, Loader2, Midi, Music, Play, RotateCcw, Server, Share, SlidersHorizontal, Trash2, Voice, X, XCircle, Zap, } from './icons'
 
 interface SessionResultProps {
   sessionId: string
+  disabled?: boolean
   onView?: (sessionId: string) => void
   onExport?: (
     sessionId: string,
@@ -19,6 +21,7 @@ interface SessionResultProps {
     sessionId: string,
     stems?: { vocal?: boolean; instrumental?: boolean; midi?: boolean },
   ) => void
+  onRetry?: (sessionId: string) => void
   onClose?: () => void
 }
 
@@ -76,6 +79,7 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
 
   const confirmDelete = () => {
     deleteUvrSession(props.sessionId)
+    void deleteUvrSessionFromDb(props.sessionId)
     setShowDeleteConfirm(false)
     if (props.onClose) props.onClose()
     setToastMessage('Session deleted')
@@ -89,6 +93,7 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
   }
 
   const toggleStemSelection = (stem: string) => {
+    if (props.disabled === true && session()?.status !== 'processing') return
     setSelectedStems((prev) => {
       const next = new Set(prev)
       if (next.has(stem)) next.delete(stem)
@@ -115,6 +120,8 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
         return 'var(--success)'
       case 'error':
         return 'var(--error)'
+      case 'cancelled':
+        return 'var(--fg-secondary)'
       case 'processing':
         return 'var(--accent)'
       default:
@@ -128,15 +135,57 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
         return <CheckCircle />
       case 'error':
         return <XCircle />
-      case 'processing':
-        return <Loader2 />
+      case 'cancelled':
+        return <X />
+      case 'processing': {
+        const progress = session()?.progress ?? 0
+        const radius = 9
+        const circumference = 2 * Math.PI * radius
+        const offset = circumference - (progress / 100) * circumference
+        return (
+          <svg
+            viewBox="0 0 24 24"
+            width="1em"
+            height="1em"
+            style={{ transform: 'rotate(-90deg)' }}
+          >
+            <circle
+              cx="12"
+              cy="12"
+              r={radius}
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-opacity="0.2"
+            />
+            <circle
+              cx="12"
+              cy="12"
+              r={radius}
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-dasharray={circumference.toString()}
+              stroke-dashoffset={offset.toString()}
+              stroke-linecap="round"
+              style={{ transition: 'stroke-dashoffset 0.3s ease' }}
+            />
+          </svg>
+        )
+      }
       default:
         return <Loader2 />
     }
   }
 
   return (
-    <div class="uvr-session-result">
+    <div
+      class={`uvr-session-result ${
+        props.disabled === true && session()?.status !== 'processing'
+          ? 'disabled'
+          : ''
+      }`}
+    >
       {/* Header */}
       <div class="session-header">
         <div class="session-icon-wrapper">
@@ -171,6 +220,7 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
           class="session-delete-btn"
           onClick={handleDelete}
           aria-label="Delete session"
+          disabled={props.disabled}
         >
           <Trash2 />
         </button>
@@ -180,6 +230,7 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
             void handleCopyLink(e)
           }}
           title="Copy share link"
+          disabled={props.disabled}
         >
           <Share />
         </button>
@@ -201,7 +252,7 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
             : session()?.status === 'completed'
               ? 'Completed'
               : session()?.status === 'processing'
-                ? 'Processing...'
+                ? `Processing... ${Math.round(session()?.progress ?? 0)}%`
                 : (session()?.status ?? 'Idle')}
         </span>
         <span class="status-time">
@@ -212,6 +263,29 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
               : ''
           })()}
         </span>
+        <Show
+          when={session()?.processingMode === 'server' || session()?.provider}
+        >
+          <div class="status-provider">
+            <span
+              class="provider-icon"
+              classList={{ 'provider-gpu': session()?.provider === 'webgpu' }}
+            >
+              {session()?.processingMode === 'server' ? (
+                <Server />
+              ) : session()?.provider === 'webgpu' ? (
+                <Zap />
+              ) : (
+                <Cpu />
+              )}
+            </span>
+            {session()?.processingMode === 'server'
+              ? 'Cloud Server'
+              : session()?.provider === 'webgpu'
+                ? 'GPU (WebGPU)'
+                : 'CPU (WASM)'}
+          </div>
+        </Show>
         <Show when={!session()}>
           <span class="status-time">Idle</span>
         </Show>
@@ -315,20 +389,67 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
       </Show>
 
       {/* Actions */}
-      <Show when={session()?.status === 'completed'}>
+      <Show
+        when={
+          session()?.status === 'completed' ||
+          session()?.status === 'error' ||
+          session()?.status === 'processing'
+        }
+      >
         <div class="session-result-actions">
-          <button
-            class="session-result-btn session-result-btn-primary"
-            onClick={() => props.onView?.(props.sessionId)}
+          <Show
+            when={
+              session()?.status === 'completed' ||
+              session()?.status === 'processing'
+            }
           >
-            <Play /> View Results
-          </button>
-          <Show when={hasSelection()}>
             <button
-              class="session-result-btn session-result-btn-mixer"
-              onClick={handleMixSelected}
+              class="session-result-btn session-result-btn-primary"
+              disabled={
+                props.disabled === true && session()?.status !== 'processing'
+              }
+              onClick={() => props.onView?.(props.sessionId)}
             >
-              <SlidersHorizontal /> Mix Selected
+              <Show
+                when={session()?.status === 'processing'}
+                fallback={
+                  <>
+                    <Play /> View Results
+                  </>
+                }
+              >
+                <span
+                  style={{
+                    animation: 'spin 1.5s linear infinite',
+                    display: 'inline-flex',
+                    'align-items': 'center',
+                  }}
+                >
+                  <Loader2 />
+                </span>{' '}
+                View Progress
+              </Show>
+            </button>
+            <Show when={session()?.status === 'completed' && hasSelection()}>
+              <button
+                class="session-result-btn session-result-btn-mixer"
+                disabled={props.disabled}
+                onClick={handleMixSelected}
+              >
+                <SlidersHorizontal /> Mix Selected
+              </button>
+            </Show>
+          </Show>
+          <Show when={session()?.status === 'error' && session()?.originalFile}>
+            <button
+              class="session-result-btn session-result-btn-primary"
+              disabled={props.disabled}
+              onClick={(e) => {
+                e.stopPropagation()
+                props.onRetry?.(props.sessionId)
+              }}
+            >
+              <RotateCcw /> Retry
             </button>
           </Show>
         </div>

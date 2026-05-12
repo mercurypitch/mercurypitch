@@ -8,7 +8,6 @@ import type { ActiveTab } from '@/stores'
 export type HashRoute =
   | { type: 'tab'; tab: ActiveTab }
   | { type: 'uvr-upload' }
-  | { type: 'uvr-history' }
   | { type: 'uvr-session'; sessionId: string }
   | { type: 'uvr-session-mixer'; sessionId: string }
   | { type: 'share'; shareType: string; shareId: string }
@@ -70,11 +69,6 @@ export function parseHash(rawHash: string): HashRoute {
     return { type: 'uvr-session', sessionId: uvrMatch[1] }
   }
 
-  // Match: /uvr/history
-  if (hash === '/uvr/history') {
-    return { type: 'uvr-history' }
-  }
-
   // Match: /uvr/upload or bare /uvr
   if (hash === '/uvr/upload' || hash === '/uvr') {
     return { type: 'uvr-upload' }
@@ -131,8 +125,6 @@ export function buildHash(route: HashRoute): string {
       return `/${route.tab}`
     case 'uvr-upload':
       return '/uvr'
-    case 'uvr-history':
-      return '/uvr/history'
     case 'uvr-session':
       return `/uvr/session/${route.sessionId}`
     case 'uvr-session-mixer':

@@ -2,7 +2,7 @@ import { test } from '@playwright/test'
 import { dismissOverlays } from '@/e2e/helpers/ui'
 
 test('debug settings panel mounting', async ({ page }) => {
-  await page.goto('http://localhost:4173/')
+  await page.goto('/')
   await page.waitForSelector('#app-tabs', { timeout: 10000 })
   await dismissOverlays(page)
 
