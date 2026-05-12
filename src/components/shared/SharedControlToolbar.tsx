@@ -9,8 +9,7 @@ import { MicButton } from '@/components'
 import { PrecCountButton } from '@/components/PrecCountButton'
 import { Tooltip } from '@/components/Tooltip'
 import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_COMPOSE, TAB_PIANO, TAB_SINGING, } from '@/features/tabs/constants'
-import { appStore } from '@/stores'
-import { bpm, micActive, micWaveVisible, playbackSpeed, setBpm, setPlaybackSpeed, setSensitivity, settings, toggleMicWaveVisible, } from '@/stores'
+import { bpm, enterFocusMode, micActive, micWaveVisible, playbackSpeed, setBpm, setPlaybackSpeed, setSensitivity, settings, toggleMicWaveVisible, } from '@/stores'
 import type { PlaybackMode, SpacedRestMode } from '@/types'
 import { ControlGroup } from './ControlGroup'
 
@@ -357,7 +356,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
           <button
             class="ctrl-btn focus-btn"
             onClick={() => {
-              appStore.enterFocusMode()
+              enterFocusMode()
             }}
             title="Enter Focus Mode (minimal UI)"
           >

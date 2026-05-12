@@ -48,7 +48,14 @@ export async function waitForTabs(page: Page) {
 
 export async function switchTab(
   page: Page,
-  tabName: 'compose' | 'singing' | 'settings',
+  tabName:
+    | 'compose'
+    | 'singing'
+    | 'settings'
+    | 'challenges'
+    | 'leaderboard'
+    | 'community'
+    | 'analysis',
 ) {
   await page.evaluate((name) => {
     const store =

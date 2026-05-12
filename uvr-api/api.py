@@ -12,11 +12,8 @@ import logging
 import time
 from typing import Optional, List, Dict, Any
 import threading
-from audio_separator.separator import Separator
 import subprocess
 import json
-from fastapi import HTTPException
-import onnxruntime as ort
 
 # Setup logging
 logging.basicConfig(
@@ -33,41 +30,45 @@ app = FastAPI(
 )
 
 # CORS configuration
+CORS_ORIGINS = os.getenv("CORS_ORIGINS", "https://mercurypitch.com,https://dev.mercurypitch.com").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://pitchperfect.clodhost.com",
-        "http://localhost:5173",
-        "http://localhost:3000",
-    ],
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# --- START AMD ROCm OVERRIDE ---
-# 1. Trick the library into passing the "Is CUDA installed?" check
-original_get_providers = ort.get_available_providers
-def rocm_get_providers():
-    providers = original_get_providers()
-    if "ROCMExecutionProvider" in providers and "CUDAExecutionProvider" not in providers:
-        providers.append("CUDAExecutionProvider")
-    return providers
+# --- AMD ROCm OVERRIDE (applied lazily before first use) ---
+_rocm_patched = False
 
-ort.get_available_providers = rocm_get_providers
+def _apply_rocm_patch():
+    """Apply ROCm ONNX provider override once, on first use."""
+    global _rocm_patched
+    if _rocm_patched:
+        return
+    _rocm_patched = True
+    import onnxruntime as ort
+    _providers = ort.get_available_providers()
+    if "ROCMExecutionProvider" not in _providers:
+        return
+    original_get_providers = ort.get_available_providers
+    def _rocm_get_providers():
+        providers = original_get_providers()
+        if "ROCMExecutionProvider" in providers and "CUDAExecutionProvider" not in providers:
+            providers.append("CUDAExecutionProvider")
+        return providers
+    ort.get_available_providers = _rocm_get_providers
 
-# 2. Silently swap the NVIDIA provider for the AMD one when the model loads
-original_session = ort.InferenceSession
-def rocm_inference_session(*args, **kwargs):
-    if "providers" in kwargs:
-        kwargs["providers"] = [
-            "ROCMExecutionProvider" if p == "CUDAExecutionProvider" else p
-            for p in kwargs["providers"]
-        ]
-    return original_session(*args, **kwargs)
-
-ort.InferenceSession = rocm_inference_session
-# --- END AMD ROCm OVERRIDE ---
+    original_session = ort.InferenceSession
+    def _rocm_inference_session(*args, **kwargs):
+        if "providers" in kwargs:
+            kwargs["providers"] = [
+                "ROCMExecutionProvider" if p == "CUDAExecutionProvider" else p
+                for p in kwargs["providers"]
+            ]
+        return original_session(*args, **kwargs)
+    ort.InferenceSession = _rocm_inference_session
 
 # Configure paths
 OUTPUT_DIR = "/app/output"
@@ -94,7 +95,8 @@ def get_audio_duration(file_path: str) -> float:
 
 def write_progress(session_dir: str, progress: float, status: str,
                    duration: float = 0.0, started_at: float = 0.0,
-                   estimated_total: float = 0.0, cpu_profile: str = 'high'):
+                   estimated_total: float = 0.0, cpu_profile: str = 'high',
+                   error_msg: Optional[str] = None):
     """Write progress data to session directory."""
     progress_file = os.path.join(session_dir, "progress.json")
     data = {
@@ -106,6 +108,8 @@ def write_progress(session_dir: str, progress: float, status: str,
         "cpu_profile": cpu_profile,
         "updated_at": time.time(),
     }
+    if error_msg:
+        data["error"] = error_msg
     with open(progress_file, 'w') as f:
         json.dump(data, f)
 
@@ -278,6 +282,10 @@ async def process_audio(
         try:
             logger.info(f"Starting processing for session {session_id}")
 
+            # Lazy-load heavy deps so uvicorn starts fast
+            _apply_rocm_patch()
+            from audio_separator.separator import Separator
+
             # Get audio duration and file size for progress estimation
             file_size = os.path.getsize(input_path)
             duration = get_audio_duration(input_path)
@@ -342,7 +350,7 @@ async def process_audio(
         except Exception as e:
             logger.error(f"Processing error for session {session_id}: {e}")
             try:
-                write_progress(session_output_dir, 0.0, "error", 0, 0)
+                write_progress(session_output_dir, 0.0, "error", 0, 0, error_msg=str(e))
             except Exception:
                 pass
 
@@ -374,6 +382,7 @@ async def get_status(session_id: str):
 
     # Read progress file for real progress data
     progress = None
+    pdata = {}
     progress_file = os.path.join(session_output_dir, "progress.json")
     if os.path.exists(progress_file):
         try:
@@ -384,10 +393,8 @@ async def get_status(session_id: str):
             pass
 
     # If processing is ongoing, calculate live progress from elapsed time
-    if not is_done and progress is not None and progress < 100:
+    if not is_done and progress is not None and progress < 100 and pdata.get("status") != "error":
         try:
-            with open(progress_file) as f:
-                pdata = json.load(f)
             started = pdata.get("started_at", 0)
             estimated = pdata.get("estimated_total_secs", 0)
             if started > 0 and estimated > 0:
@@ -439,10 +446,15 @@ async def get_status(session_id: str):
             })
 
     # Determine status and message
+    error_msg = None
     if is_done:
          status = "completed"
          message = "Processing completed successfully"
          progress = 100
+    elif pdata.get("status") == "error":
+         status = "error"
+         message = "Processing failed"
+         error_msg = pdata.get("error", "An internal error occurred during processing.")
     elif progress is not None:
          status = "processing"
          message = "Processing in progress..."
@@ -461,7 +473,8 @@ async def get_status(session_id: str):
         status=status,
         progress=progress,
         files=files,
-        message=message
+        message=message,
+        error=error_msg
     )
 
 
@@ -529,7 +542,7 @@ if __name__ == "__main__":
 
     uvicorn.run(
         "api:app",
-        host="0.0.0.0",
-        port=8000,
+        host=os.getenv("UVR_API_HOST", "0.0.0.0"),
+        port=int(os.getenv("UVR_API_PORT", "8080")),
         reload=True
     )

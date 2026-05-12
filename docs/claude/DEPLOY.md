@@ -37,7 +37,7 @@ The main repo has a deploy script that handles everything:
 
 ```bash
 # Run from repo root (not App/)
-cd /var/www/pitchperfect.clodhost.com/pitch-perfect-repo
+cd /var/www/mercurypitch.com/pitch-perfect-repo
 ./deploy.sh
 ```
 

@@ -5,7 +5,7 @@
 import type { Component } from 'solid-js'
 import { createSignal } from 'solid-js'
 import { TierSelector } from '@/components/TierSelector'
-import { appStore } from '@/stores'
+import { dismissWelcome } from '@/stores'
 
 interface WelcomeScreenProps {
   onTakeTour?: () => void
@@ -31,11 +31,11 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
   }
 
   const handleClose = () => {
-    appStore.dismissWelcome()
+    dismissWelcome()
   }
 
   const handleTakeTour = () => {
-    appStore.dismissWelcome()
+    dismissWelcome()
     if (props.onTakeTour) {
       props.onTakeTour()
     }

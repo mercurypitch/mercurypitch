@@ -5,6 +5,7 @@
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, onMount, Show } from 'solid-js'
 import type { SharedMelody, SharedSession } from '@/components/CommunityShare'
+import { IconAlertTriangle, IconArrowLeft, IconBooks, IconDownload, IconLink, IconMusicNote, } from '@/components/hidden-features-icons'
 import type { MelodyItem } from '@/types'
 
 export const SharePage: Component = () => {
@@ -66,14 +67,16 @@ export const SharePage: Component = () => {
       <div class="share-container">
         <Show when={error()}>
           <div class="error-state">
-            <span class="error-icon">⚠️</span>
+            <span class="error-icon">
+              <IconAlertTriangle />
+            </span>
             <h2>Share Link Not Found</h2>
             <p>{error()}</p>
             <button
               class="back-btn"
               onClick={() => (window.location.href = '/')}
             >
-              ← Back to Home
+              <IconArrowLeft /> Back to Home
             </button>
           </div>
         </Show>
@@ -133,7 +136,12 @@ const MelodyShareContent: Component<MelodyShareProps> = (props) => {
   return (
     <div class="share-content">
       <div class="share-header">
-        <h1>🎵 {props.content.name}</h1>
+        <h1>
+          <span class="share-header-icon">
+            <IconMusicNote />
+          </span>
+          {props.content.name}
+        </h1>
         <p class="share-subtitle">Shared by {props.content.author}</p>
       </div>
 
@@ -221,7 +229,7 @@ const MelodyShareContent: Component<MelodyShareProps> = (props) => {
           class="share-btn"
           onClick={() => props.onShare('melody', props.content.id)}
         >
-          <span>🔗</span> Share Again
+          <IconLink /> Share Again
         </button>
         <button
           class="load-btn"
@@ -229,7 +237,7 @@ const MelodyShareContent: Component<MelodyShareProps> = (props) => {
           loaded-type="melody"
           data-melody-id={props.content.id}
         >
-          <span>📥</span> Load in App
+          <IconDownload /> Load in App
         </button>
       </div>
     </div>
@@ -249,7 +257,12 @@ const SessionShareContent: Component<SessionShareProps> = (props) => {
   return (
     <div class="share-content">
       <div class="share-header">
-        <h1>📚 {props.content.name}</h1>
+        <h1>
+          <span class="share-header-icon">
+            <IconBooks />
+          </span>
+          {props.content.name}
+        </h1>
         <p class="share-subtitle">Shared by {props.content.author}</p>
       </div>
 
@@ -319,7 +332,7 @@ const SessionShareContent: Component<SessionShareProps> = (props) => {
           class="share-btn"
           onClick={() => props.onShare('session', props.content.id)}
         >
-          <span>🔗</span> Share Again
+          <IconLink /> Share Again
         </button>
         <button
           class="load-btn"
@@ -327,7 +340,7 @@ const SessionShareContent: Component<SessionShareProps> = (props) => {
           loaded-type="session"
           data-session-id={props.content.id}
         >
-          <span>📥</span> Load in App
+          <IconDownload /> Load in App
         </button>
       </div>
     </div>

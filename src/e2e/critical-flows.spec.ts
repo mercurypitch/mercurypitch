@@ -3,6 +3,9 @@ import { dismissOverlays } from '@/e2e/helpers/ui'
 
 test.describe('Critical Flows — GH #121', () => {
   test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      ;(window as any).E2E_TEST_MODE = true
+    })
     await page.goto('/')
     await page.waitForSelector('#app-tabs', { timeout: 10000 })
     await dismissOverlays(page)
@@ -112,32 +115,19 @@ test.describe('Critical Flows — GH #121', () => {
       await page.locator('body').click()
       await page.waitForTimeout(300)
 
-      // Get initial speed from store
+      // Get initial speed from store via e2e bridge
       const initialSpeed = await page.evaluate(() => {
-        return (
-          (
-            window as unknown as {
-              __appStore?: { playbackSpeed: () => number }
-            }
-          ).__appStore?.playbackSpeed() ?? 1.0
-        )
+        const pp = (window as any).__pp
+        return pp?.appStore?.playbackSpeed?.() ?? 1.0
       })
 
       // Press ArrowUp (faster)
       await page.keyboard.press('ArrowUp')
-      // Wait a bit for state to update
-      await page.waitForTimeout(100)
-      // Allow the speed change to propagate
-      await page.waitForTimeout(100)
+      await page.waitForTimeout(300)
 
       const speedAfterUp = await page.evaluate(() => {
-        return (
-          (
-            window as unknown as {
-              __appStore?: { playbackSpeed: () => number }
-            }
-          ).__appStore?.playbackSpeed() ?? 1.0
-        )
+        const pp = (window as any).__pp
+        return pp?.appStore?.playbackSpeed?.() ?? 1.0
       })
 
       // Speed should have increased
@@ -145,17 +135,11 @@ test.describe('Critical Flows — GH #121', () => {
 
       // Press ArrowDown (slower)
       await page.keyboard.press('ArrowDown')
-      await page.waitForTimeout(100)
-      await page.waitForTimeout(100)
+      await page.waitForTimeout(300)
 
       const speedAfterDown = await page.evaluate(() => {
-        return (
-          (
-            window as unknown as {
-              __appStore?: { playbackSpeed: () => number }
-            }
-          ).__appStore?.playbackSpeed() ?? 1.0
-        )
+        const pp = (window as any).__pp
+        return pp?.appStore?.playbackSpeed?.() ?? 1.0
       })
 
       // Speed should decrease back
@@ -170,14 +154,11 @@ test.describe('Critical Flows — GH #121', () => {
       await expect(tempoSlider).toBeVisible()
       await expect(tempoValue).toBeVisible()
 
-      const initialBpm = await tempoValue.textContent()
-      expect(initialBpm).not.toBeNull()
-
       // Adjust BPM slider
       await tempoSlider.fill('160')
       await page.waitForTimeout(300)
 
-      const newBpm = await tempoValue.textContent()
+      const newBpm = await tempoValue.inputValue()
       expect(newBpm).toBe('160')
     })
 
@@ -189,13 +170,8 @@ test.describe('Critical Flows — GH #121', () => {
       await page.waitForTimeout(200)
 
       const storeSpeed = await page.evaluate(() => {
-        return (
-          (
-            window as unknown as {
-              __appStore?: { playbackSpeed: () => number }
-            }
-          ).__appStore?.playbackSpeed() ?? 1.0
-        )
+        const pp = (window as any).__pp
+        return pp?.appStore?.playbackSpeed?.() ?? 1.0
       })
       expect(storeSpeed).toBe(0.5)
 
@@ -203,13 +179,8 @@ test.describe('Critical Flows — GH #121', () => {
       await page.waitForTimeout(200)
 
       const storeSpeed2 = await page.evaluate(() => {
-        return (
-          (
-            window as unknown as {
-              __appStore?: { playbackSpeed: () => number }
-            }
-          ).__appStore?.playbackSpeed() ?? 1.0
-        )
+        const pp = (window as any).__pp
+        return pp?.appStore?.playbackSpeed?.() ?? 1.0
       })
       expect(storeSpeed2).toBe(2.0)
     })
@@ -318,16 +289,9 @@ test.describe('Critical Flows — GH #121', () => {
     })
 
     test('Ctrl+Z undo and Ctrl+Y redo keyboard shortcuts', async ({ page }) => {
-      // Navigate to Editor tab first
-      await page.evaluate(() => {
-        const store = (
-          window as unknown as {
-            __appStore?: { setActiveTab: (tab: string) => void }
-          }
-        ).__appStore
-        if (store !== null && store !== undefined) store.setActiveTab('compose')
-      })
-      await page.waitForTimeout(300)
+      // Navigate to Editor tab first via UI click
+      await page.locator('#tab-compose').click()
+      await page.waitForTimeout(1000)
 
       // Place a note first
       await page.locator('.roll-tool-btn[data-tool="place"]').click()
@@ -471,34 +435,32 @@ test.describe('Critical Flows — GH #121', () => {
   // ============================================================
 
   test.describe('Practice Mode', () => {
-    test('Practice mode shows cycle counter', async ({ page }) => {
-      // Switch to Practice mode
-      const practiceBtn = page.locator('#btn-practice')
-      await practiceBtn.click()
+    test('Repeat mode shows cycle progress', async ({ page }) => {
+      await page.locator('#tab-singing').click()
+      await page.waitForTimeout(500)
+
+      // Click Repeat mode button to reveal cycle info
+      await page.locator('#btn-repeat').click()
       await page.waitForTimeout(300)
 
-      // When in practice mode, cycle counter should show
-      const cycleCounter = page.locator('#cycle-counter')
-      await expect(cycleCounter).toBeVisible()
-
-      // Cycle count should show C1/N format
-      const text = await cycleCounter.textContent()
-      expect(text).toMatch(/C\d+\/\d+/)
+      // Cycle progress pill should be visible
+      const cyclePill = page.locator('.cycle-progress-value')
+      await expect(cyclePill).toBeVisible()
     })
 
-    test('Practice mode cycles input accepts valid values', async ({
-      page,
-    }) => {
-      // Switch to Practice mode
-      await page.locator('#btn-practice').click()
+    test('Repeat mode cycles input accepts valid values', async ({ page }) => {
+      await page.locator('#tab-singing').click()
+      await page.waitForTimeout(500)
+
+      // Click Repeat mode button to reveal cycles input
+      await page.locator('#btn-repeat').click()
       await page.waitForTimeout(300)
 
       const cyclesInput = page.locator('#cycles')
-      if ((await cyclesInput.count()) > 0) {
-        await cyclesInput.fill('10')
-        await page.waitForTimeout(200)
-        await expect(cyclesInput).toHaveValue('10')
-      }
+      await expect(cyclesInput).toBeVisible()
+      await cyclesInput.fill('10')
+      await page.waitForTimeout(200)
+      await expect(cyclesInput).toHaveValue('10')
     })
 
     test('Precount button toggles between off and on (4 beats)', async ({
@@ -518,19 +480,16 @@ test.describe('Critical Flows — GH #121', () => {
       await expect(precountBtn).not.toHaveClass(/active/)
     })
 
-    test('Practice sub-mode select exists in practice mode', async ({
-      page,
-    }) => {
-      await page.locator('#btn-practice').click()
+    test('Session mode shows practice sub-mode selector', async ({ page }) => {
+      await page.locator('#tab-singing').click()
+      await page.waitForTimeout(500)
+
+      // Click Session mode button to reveal sub-mode selector
+      await page.locator('#btn-session').click()
       await page.waitForTimeout(300)
 
       const subModeSelect = page.locator('#practice-sub-mode')
-      if ((await subModeSelect.count()) > 0) {
-        await expect(subModeSelect).toBeVisible()
-
-        // Note: The sub-mode select may or may not have options visible depending on state
-        // Just verify the select element exists and can be interacted with
-      }
+      await expect(subModeSelect).toBeVisible()
     })
 
     test('Mic toggle button changes state', async ({ page }) => {
@@ -878,14 +837,14 @@ test.describe('Critical Flows — GH #121', () => {
       await expect(tempoSlider).toBeVisible()
       await expect(tempoValue).toBeVisible()
 
-      const initialBpm = await tempoValue.textContent()
+      const initialBpm = await tempoValue.inputValue()
       expect(initialBpm).not.toBeNull()
 
       // Adjust BPM slider - should update display immediately
       await tempoSlider.fill('160')
       await page.waitForTimeout(300)
 
-      const newBpm = await tempoValue.textContent()
+      const newBpm = await tempoValue.inputValue()
       expect(newBpm).toBe('160')
     })
 
@@ -926,7 +885,7 @@ test.describe('Critical Flows — GH #121', () => {
       await page.waitForTimeout(300)
 
       // Verify it was set
-      const bpm = await tempoValue.textContent()
+      const bpm = await tempoValue.inputValue()
       expect(bpm).toBe('150')
 
       // Play should start with the new BPM

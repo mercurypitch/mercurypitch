@@ -5,8 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.2.0] - 2026-05-09
+## [0.3.0] - 2026-05-11
+
 ### Added
+
+- Database abstraction layer for persistent storage using Dexie.js
+- Dexie-based stem persistence for UVR results, ensuring separated audio survives page reloads
+- Support for WASM-based ONNX inference as fallback for Firefox (WebGPU compatibility)
+- Local browser-side processing mode as the default for UVR separation
+
+### Fixed
+
+- Lyric service stability and fallback handling for missing data
+- Vocal stem instrumental bleed in client-side UVR using STFT-domain subtraction
+- Audio playback issues in stem mixer when switching sessions
+- Mic sensitivity option persistence in settings
+- Playwright E2E test reliability and GitHub Actions workflow configuration
+- Unit test failure for UVR session status display
+
+### Changed
+
+- Redesigned UVR user interface with better processing status indicators and progress bars
+- Improved stem mixer MIDI integration for practice sessions
+- Optimized local UVR processing pipeline for better performance
+
+## [0.2.0] - 2026-05-09
+
+### Added
+
 - Basic piano practice mode with black key visual feedback
 - UVR (Ultimate Vocal Remover) integration for audio separation
 - SwiftF0 integration for pitch detection improvements
@@ -15,9 +41,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Score modal optional setting
 
 ### Changed
+
 - Optimized piano-roll move loop for better performance
 
 ### Fixed
+
 - BPM safe setter and audio timing at keyboard
 - Dropdown reactivity and visual visibility for judged notes
 - whiteIndexToMidi octave offset
@@ -28,14 +56,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Metronome icon alignment and duplicate divider removed
 
 ## [0.1.2] - 2026-05-06
+
 ### Added
+
 - Perfect pitch deviance presets
 - McLeod pitch detection algorithm and settings
 
 ### Changed
+
 - Redesigned the note and accuracy score displays
 
 ### Fixed
+
 - Yin algorithm failure when McLeod is set to 4K buffer size
 - Playback and stop behavior on ESC key
 - Session play issues and sequence REST getting stuck
@@ -43,7 +75,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - UI styles for dropdowns, sidebar, and header
 
 ## [0.1.1] - 2026-05-03
+
 ### Added
+
 - Initial PitchPerfect voice practice application release
 - Extend BPM range to 280
 - Organize sidebar notes by melody and add accuracy color-coding
@@ -61,11 +95,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Playback speed control
 
 ### Changed
+
 - Playhead drag resumes from position with audio effects (vibrato LFO, slides, ease)
 - Sync layout, instrument sounds, octave/rows/mode controls, and effects
 - Extract AppHeader and AppSidebar for shared layout shell
 
 ### Fixed
+
 - Default melody initialization in piano roll editor
 - Clip pitch trail to visible canvas area during auto-scroll
 - z-index layering so grid stacks correctly and piano keys are positioned properly

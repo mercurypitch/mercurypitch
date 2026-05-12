@@ -6,8 +6,8 @@
 //
 // Visual contract:
 //   - One pill per session item, in order.
-//   - Melody items show: 🎵 + melody name (or fallback label).
-//   - Rest items show: ⏸ + duration (e.g. "2s").
+//   - Melody items show: music-note icon + melody name (or fallback label).
+//   - Rest items show: pause icon + duration (e.g. "2s").
 //   - Pills wrap on narrow screens; horizontal-scrolls on wide.
 //
 // Why a separate component instead of reusing SessionEditorTimeline?
@@ -19,6 +19,7 @@
 
 import type { Component } from 'solid-js'
 import { For, Show } from 'solid-js'
+import { IconMusicNote, IconPause } from '@/components/hidden-features-icons'
 import { melodyStore } from '@/stores'
 import type { PlaybackSession, SessionItem } from '@/types'
 
@@ -77,7 +78,7 @@ export const SessionMiniTimeline: Component<SessionMiniTimelineProps> = (
                 title={`${index() + 1}. ${labelFor(item)}`}
               >
                 <span class="session-mini-pill-icon" aria-hidden="true">
-                  {isRest ? '⏸' : '🎵'}
+                  {isRest ? <IconPause /> : <IconMusicNote />}
                 </span>
                 <span class="session-mini-pill-label">{labelFor(item)}</span>
               </div>

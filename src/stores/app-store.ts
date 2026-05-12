@@ -1,7 +1,9 @@
 import { createSignal } from 'solid-js'
+import type { FeatureFlag } from '@/db'
+import { getDb } from '@/db'
 import { TAB_COMPOSE, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
 import { AudioEngine } from '@/lib/audio-engine'
-import { IS_DEV } from '@/lib/defaults'
+import { getUvrApiBase, IS_DEV } from '@/lib/defaults'
 import { getCompletedCount, getRemainingWalkthroughs, } from '@/stores/walkthrough-store'
 import type { ActiveTab } from './ui-store'
 
@@ -16,6 +18,8 @@ export type InstrumentType = 'sine' | 'piano' | 'organ' | 'strings' | 'synth'
 // ── UVR (Vocal Separation) ─────────────────────────────────────
 
 export type UvrMode = 'separate' | 'instrumental' | 'vocal' | 'duo'
+
+export type UvrProcessingMode = 'server' | 'local'
 
 export interface UvrSettings {
   mode: UvrMode
@@ -57,6 +61,23 @@ export const [uvrVocalIntensity, _setUvrVocalIntensity] = createSignal(70)
 export const [uvrInstrumentalIntensity, _setUvrInstrumentalIntensity] =
   createSignal(70)
 export const [uvrSmoothing, _setUvrSmoothing] = createSignal(0.3)
+
+// Processing mode (server vs local/browser)
+const DEFAULT_PROCESSING_MODE: UvrProcessingMode = 'local'
+
+export function getUvrProcessingMode(): UvrProcessingMode {
+  const saved = localStorage.getItem('pitchperfect_uvr-processing-mode')
+  if (saved === 'local') return 'local'
+  return DEFAULT_PROCESSING_MODE
+}
+
+export function setUvrProcessingMode(mode: UvrProcessingMode): void {
+  localStorage.setItem('pitchperfect_uvr-processing-mode', mode)
+  _setUvrProcessingMode(mode)
+}
+
+export const [uvrProcessingMode, _setUvrProcessingMode] =
+  createSignal<UvrProcessingMode>(getUvrProcessingMode())
 
 // Export for direct usage in components (internal setters that also persist)
 export const setUvrVocalIntensity = (intensity: number): void => {
@@ -101,6 +122,7 @@ export interface UvrSession {
   indeterminate?: boolean
   processingTime?: number
   error?: string
+  fileHash?: string
   originalFile?: {
     name: string
     size: number
@@ -113,6 +135,9 @@ export interface UvrSession {
     instrumentalMidi?: string
   }
   stemMeta?: Record<string, { duration?: number; size?: number }>
+  processingMode?: UvrProcessingMode
+  provider?: string
+  numChunks?: number
   createdAt: number
 }
 
@@ -139,6 +164,14 @@ export function getUvrSession(sessionId: string): UvrSession | undefined {
   return sessions.find((s) => s.sessionId === sessionId)
 }
 
+/** Find a completed session by file hash */
+export function getUvrSessionByHash(fileHash: string): UvrSession | undefined {
+  const sessions = getAllUvrSessions()
+  return sessions.find(
+    (s) => s.fileHash === fileHash && s.status === 'completed',
+  )
+}
+
 /** Get all sessions */
 export function getAllUvrSessions(): UvrSession[] {
   const saved = localStorage.getItem('pitchperfect_uvr_sessions')
@@ -163,6 +196,8 @@ export function startUvrSession(
   fileSize: number,
   mimeType: string,
   _mode: UvrMode = 'separate',
+  processingMode?: UvrProcessingMode,
+  fileHash?: string,
 ): string {
   const sessionId = `uvr-session-${Date.now()}`
   const now = Date.now()
@@ -171,7 +206,9 @@ export function startUvrSession(
     sessionId,
     status: 'idle',
     progress: 0,
+    fileHash,
     originalFile: { name: fileName, size: fileSize, mimeType },
+    processingMode: processingMode ?? getUvrProcessingMode(),
     createdAt: now,
   }
 
@@ -214,6 +251,21 @@ export function setUvrSessionApiId(
   const session = sessions.find((s) => s.sessionId === sessionId)
   if (session) {
     session.apiSessionId = apiSessionId
+    saveAllUvrSessions(sessions)
+    bumpSessions()
+    setCurrentUvrSession({ ...session })
+  }
+}
+
+/** Set the provider (WebGPU/WASM) on a local session */
+export function setUvrSessionProvider(
+  sessionId: string,
+  provider: string,
+): void {
+  const sessions = getAllUvrSessions()
+  const session = sessions.find((s) => s.sessionId === sessionId)
+  if (session) {
+    session.provider = provider
     saveAllUvrSessions(sessions)
     bumpSessions()
     setCurrentUvrSession({ ...session })
@@ -265,6 +317,22 @@ export function cancelUvrSession(sessionId: string): void {
   }
 }
 
+/** Reset a failed/cancelled session for retry */
+export function retryUvrSession(sessionId: string): void {
+  const sessions = getAllUvrSessions()
+  const idx = sessions.findIndex((s) => s.sessionId === sessionId)
+  if (idx === -1) return
+  sessions[idx].status = 'processing'
+  sessions[idx].progress = 0
+  sessions[idx].error = undefined
+  sessions[idx].processingTime = 0
+  sessions[idx].indeterminate = true
+  sessions[idx].apiSessionId = undefined
+  saveAllUvrSessions(sessions)
+  bumpSessions()
+  setCurrentUvrSession({ ...sessions[idx] })
+}
+
 /** Delete UVR session */
 export function deleteUvrSession(sessionId: string): void {
   const sessions = getAllUvrSessions().filter((s) => s.sessionId !== sessionId)
@@ -298,6 +366,46 @@ export function getUvrSessionStats(): {
       .filter((s) => s.processingTime !== undefined)
       .reduce((sum, s) => sum + (s.processingTime ?? 0), 0),
   }
+}
+
+// Auto-cleanup stale sessions on module load
+export function cleanupStaleUvrSessions(): void {
+  if (typeof window === 'undefined') return
+  const sessions = getAllUvrSessions()
+  let changed = false
+  for (const session of sessions) {
+    if (session.status === 'processing' || session.status === 'uploading') {
+      session.status = 'error'
+      session.error = 'Session interrupted by page reload or closure.'
+      changed = true
+    }
+  }
+  if (changed) {
+    saveAllUvrSessions(sessions)
+  }
+}
+
+// Run cleanup immediately
+cleanupStaleUvrSessions()
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', () => {
+    const sessions = getAllUvrSessions()
+    const API_BASE = getUvrApiBase()
+
+    for (const session of sessions) {
+      if (
+        (session.status === 'processing' || session.status === 'uploading') &&
+        session.apiSessionId !== undefined &&
+        session.apiSessionId !== ''
+      ) {
+        fetch(`${API_BASE}/session/${session.apiSessionId}`, {
+          method: 'DELETE',
+          keepalive: true,
+        }).catch(() => {})
+      }
+    }
+  })
 }
 
 /** Refresh session output files from API data */
@@ -796,51 +904,70 @@ export function endWalkthrough(): void {
 
 // ── Feature Flags ───────────────────────────────────────────────────
 
-function loadBooleanFlag(key: string, defaultValue: boolean): boolean {
-  try {
-    const val = localStorage.getItem(key)
-    if (val !== null) return val === 'true'
-  } catch {
-    /* empty */
-  }
-  return defaultValue
-}
-
-function saveBooleanFlag(key: string, value: boolean): void {
-  try {
-    localStorage.setItem(key, value ? 'true' : 'false')
-  } catch {
-    /* empty */
-  }
-}
-
 const ADVANCED_FEATURES_KEY = 'pitchperfect_advanced_features'
+const DEV_FEATURES_KEY = 'pitchperfect_dev_features'
+
+// Initialize to IS_DEV defaults — initFeatureFlagsFromDb() overrides
+// with persisted DB values on startup, eliminating the localStorage race.
 const initialAdvanced = IS_DEV
-  ? true
-  : loadBooleanFlag(ADVANCED_FEATURES_KEY, false)
+const initialDev = IS_DEV
+
 const [advancedFeaturesEnabledState, setAdvancedFeaturesEnabledState] =
   createSignal(initialAdvanced)
-if (IS_DEV) saveBooleanFlag(ADVANCED_FEATURES_KEY, true)
+const [devFeaturesEnabledState, setDevFeaturesEnabledState] =
+  createSignal(initialDev)
 
 export const advancedFeaturesEnabled = (): boolean =>
   advancedFeaturesEnabledState()
 
-export const setAdvancedFeaturesEnabled = (enabled: boolean): void => {
-  setAdvancedFeaturesEnabledState(enabled)
-  saveBooleanFlag(ADVANCED_FEATURES_KEY, enabled)
+export const devFeaturesEnabled = (): boolean => devFeaturesEnabledState()
+
+/** Persist a feature flag to the database layer (falls back to localStorage). */
+async function persistFeatureFlag(key: string, value: boolean): Promise<void> {
+  try {
+    const db = await getDb()
+    const repo = db.getRepository<FeatureFlag>('featureFlags')
+    const existing = await repo.findAll({
+      where: { key } as Partial<FeatureFlag>,
+    })
+    if (existing.length > 0) {
+      await repo.update(existing[0].id, { value })
+    } else {
+      await repo.create({ key, value })
+    }
+  } catch {
+    try {
+      localStorage.setItem(key, String(value))
+    } catch {
+      /* empty */
+    }
+  }
 }
 
-const DEV_FEATURES_KEY = 'pitchperfect_dev_features'
-const initialDev = IS_DEV ? true : loadBooleanFlag(DEV_FEATURES_KEY, false)
-const [devFeaturesEnabledState, setDevFeaturesEnabledState] =
-  createSignal(initialDev)
-if (IS_DEV) saveBooleanFlag(DEV_FEATURES_KEY, true)
-
-export const devFeaturesEnabled = (): boolean => devFeaturesEnabledState()
+export const setAdvancedFeaturesEnabled = (enabled: boolean): void => {
+  setAdvancedFeaturesEnabledState(enabled)
+  persistFeatureFlag(ADVANCED_FEATURES_KEY, enabled)
+}
 
 export const setDevFeaturesEnabled = (enabled: boolean): void => {
   setDevFeaturesEnabledState(enabled)
-  saveBooleanFlag(DEV_FEATURES_KEY, enabled)
+  persistFeatureFlag(DEV_FEATURES_KEY, enabled)
+}
+
+/** Sync feature flags from DB on startup. Call once after DB is ready. */
+export async function initFeatureFlagsFromDb(): Promise<void> {
+  try {
+    const db = await getDb()
+    const repo = db.getRepository<FeatureFlag>('featureFlags')
+    const flags = await repo.findAll()
+    for (const flag of flags) {
+      if (flag.key === ADVANCED_FEATURES_KEY)
+        setAdvancedFeaturesEnabledState(flag.value)
+      if (flag.key === DEV_FEATURES_KEY) setDevFeaturesEnabledState(flag.value)
+    }
+  } catch {
+    // DB not available, keep current signal values
+  }
 }
 
 // ── App Crash / Error Handling ────────────────────────────────────────

@@ -6,7 +6,7 @@ import type { Component } from 'solid-js'
 import { createEffect, onCleanup, onMount } from 'solid-js'
 import type { ArcState } from '@/lib/arc-physics'
 import { BALL_RADIUS, buildPlayable, computeArcCy, computeArcEndBeat, computeBallPos, computeInitialArc, isBackwardsSeek, shouldAdvanceArc, } from '@/lib/arc-physics'
-import { appStore, bpm, focusMode } from '@/stores'
+import { bpm, focusMode, micWaveVisible } from '@/stores'
 import { colorCodeNotes, flameMode, gridLinesVisible, showAccuracyPercent, showFocusBall, showPlaybackBall, } from '@/stores/settings-store'
 import type { MelodyItem, NoteResult, PitchSample, ScaleDegree } from '@/types'
 
@@ -201,6 +201,9 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     canvasRef.style.width = `${w}px`
     canvasRef.style.height = `${h}px`
     ctx?.setTransform(dpr, 0, 0, dpr, 0, 0)
+
+    // Force arc physics to re-evaluate physical coordinates so it doesn't land on the lower/wrong edge due to a stale `h` value!
+    arcState.initialized = false
   }
 
   const startLoop = () => {
@@ -424,7 +427,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     )
 
     if (props.getWaveform) {
-      if (appStore.micWaveVisible()) {
+      if (micWaveVisible()) {
         const waveform = props.getWaveform()
         if (waveform && waveform.length > 0) {
           ctx.save()

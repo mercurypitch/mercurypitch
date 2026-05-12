@@ -114,10 +114,6 @@ describe('parseHash', () => {
     expect(parseHash('#/uvr/upload')).toEqual({ type: 'uvr-upload' })
   })
 
-  it('parses UVR history route', () => {
-    expect(parseHash('#/uvr/history')).toEqual({ type: 'uvr-history' })
-  })
-
   it('parses UVR session route with session ID', () => {
     const result = parseHash('#/uvr/session/abc123-def')
     expect(result).toEqual({ type: 'uvr-session', sessionId: 'abc123-def' })
@@ -219,10 +215,6 @@ describe('buildHash', () => {
     expect(buildHash({ type: 'uvr-upload' })).toBe('/uvr')
   })
 
-  it('builds UVR history hash', () => {
-    expect(buildHash({ type: 'uvr-history' })).toBe('/uvr/history')
-  })
-
   it('builds UVR session hash', () => {
     expect(buildHash({ type: 'uvr-session', sessionId: 'abc123' })).toBe(
       '/uvr/session/abc123',
@@ -279,7 +271,6 @@ describe('parseHash ↔ buildHash round-trip', () => {
     '#/singing',
     '#/settings',
     '#/uvr',
-    '#/uvr/history',
     '#/uvr/session/sess-123',
     '#/uvr/session/sess-123/mixer',
     '#/share?type=melody&id=share-456',

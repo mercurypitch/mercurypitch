@@ -13,7 +13,7 @@ import { chromium } from 'playwright';
   });
   page.on('pageerror', err => errors.push(err.message));
 
-  await page.goto('https://pitchperfect.clodhost.com', { waitUntil: 'networkidle', timeout: 30000 });
+  await page.goto('https://mercurypitch.com', { waitUntil: 'networkidle', timeout: 30000 });
 
   // Open session browser
   const sessionsBtn = await page.$('button:has-text("Sessions")');

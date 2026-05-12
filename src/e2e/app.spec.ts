@@ -3,6 +3,9 @@ import { dismissOverlays } from '@/e2e/helpers/ui'
 
 test.describe('PitchPerfect App', () => {
   test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      ;(window as any).E2E_TEST_MODE = true
+    })
     await page.goto('/')
     // Wait for app to initialize
     await page.waitForSelector('#app-tabs', { timeout: 10000 })
@@ -21,7 +24,7 @@ test.describe('PitchPerfect App', () => {
     await page.waitForTimeout(300)
   })
 
-  test('loads without console errors', async ({ page }) => {
+  test('loads without console errors @smoke', async ({ page }) => {
     const errors: string[] = []
     page.on('console', (msg) => {
       if (msg.type() === 'error') {
@@ -53,38 +56,25 @@ test.describe('PitchPerfect App', () => {
     await expect(practiceTab).toHaveClass(/active/)
   })
 
-  test('tab navigation switches content', async ({ page }) => {
+  test('tab navigation switches content @smoke', async ({ page }) => {
     await dismissOverlays(page)
-    // Use __pp.appStore (always available) or __appStore fallback
-    await page.evaluate(() => {
-      const w = window as any
-      const store = w.__pp?.appStore ?? w.__appStore
-      if (store) store.setActiveTab('editor')
-    })
+    // Click Editor tab and verify its content
+    await page.locator('#tab-compose').click()
     await page.waitForTimeout(500)
-    // Check that editor content is visible (piano roll toolbar)
     await expect(page.locator('.roll-toolbar')).toBeVisible({ timeout: 5000 })
 
-    await page.evaluate(() => {
-      const w = window as any
-      const store = w.__pp?.appStore ?? w.__appStore
-      if (store) store.setActiveTab('settings')
-    })
+    // Click Settings tab and verify its content
+    await page.locator('#tab-settings').click()
     await page.waitForTimeout(500)
-    // Check that Settings content is visible (ADSR section)
     await expect(
       page.locator(
         'h3.settings-section-title:has-text("Tone Envelope (ADSR)")',
       ),
     ).toBeVisible({ timeout: 5000 })
 
-    await page.evaluate(() => {
-      const w = window as any
-      const store = w.__pp?.appStore ?? w.__appStore
-      if (store) store.setActiveTab('practice')
-    })
+    // Click Practice tab and verify its content
+    await page.locator('#tab-singing').click()
     await page.waitForTimeout(500)
-    // Check that Practice content is visible (BPM control)
     await expect(page.locator('.tempo-group')).toBeVisible({ timeout: 5000 })
   })
 
@@ -267,7 +257,7 @@ test.describe('PitchPerfect App', () => {
     }
   })
 
-  test('can place a note on the piano roll', async ({ page }) => {
+  test('can place a note on the piano roll @smoke', async ({ page }) => {
     await page.locator('#tab-compose').click()
     await page.waitForTimeout(2000)
 

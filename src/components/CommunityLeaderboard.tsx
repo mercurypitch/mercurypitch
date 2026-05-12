@@ -4,8 +4,11 @@
 
 import type { Component } from 'solid-js'
 import type { JSX } from 'solid-js'
-import { createMemo, createSignal, For, Show } from 'solid-js'
+import { createMemo, createSignal, For, onMount, Show } from 'solid-js'
+import type { LeaderboardCategory as DBLeaderboardCategory, LeaderboardPeriod, } from '@/db/entities'
+import { loadLeaderboard } from '@/db/services/leaderboard-service'
 import type { LeaderboardCategory, LeaderboardUser, LeaderboardView, WeeklyChallengeResult, } from '@/types'
+import { IconCloseSimple, IconFilter } from './hidden-features-icons'
 
 // ============================================================
 // SVG Icons (Classy, minimal style)
@@ -427,19 +430,73 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
     null,
   )
 
+  // DB-backed leaderboard data
+  const [dbLeaderboardUsers, setDbLeaderboardUsers] = createSignal<
+    LeaderboardUser[]
+  >([])
+
+  onMount(() => {
+    void (async () => {
+      const dbUsers = await loadLeaderboard(
+        activeCategory() as DBLeaderboardCategory,
+        'all-time' as LeaderboardPeriod,
+      )
+      if (dbUsers.length > 0) {
+        setDbLeaderboardUsers(
+          dbUsers.map((u) => ({
+            userId: u.userId,
+            displayName: u.displayName,
+            avatar: IconUser,
+            score: u.score,
+            rank: u.rank,
+            streak: u.streak,
+            totalSessions: u.totalSessions,
+            bestScore: u.bestScore,
+            accuracy: u.accuracy,
+            joinDate: 0,
+          })),
+        )
+      }
+    })()
+  })
+
+  // Unified user list: DB data when available, mock fallback
+  const allLeaderboardUsers = createMemo(() => {
+    const db = dbLeaderboardUsers()
+    return db.length > 0 ? db : mockLeaderboardUsers
+  })
+
   // Current user's data
   const _currentUser = createMemo(() => {
-    return mockLeaderboardUsers.find((u) => u.userId === 'me') || null
+    return allLeaderboardUsers().find((u) => u.userId === 'me') || null
   })
 
   // Filter users based on search
   const filteredUsers = createMemo(() => {
     const query = searchQuery().toLowerCase()
-    return mockLeaderboardUsers.filter(
+    return allLeaderboardUsers().filter(
       (u) =>
         u.displayName.toLowerCase().includes(query) ||
         `#${u.userId}`.includes(query),
     )
+  })
+
+  // Podium: top 3 from the unified list
+  const podiumData = createMemo(() => {
+    const users = allLeaderboardUsers()
+    const fallback = {
+      userId: '',
+      displayName: '—',
+      avatar: '',
+      score: 0,
+      rank: 0,
+      streak: 0,
+      totalSessions: 0,
+      bestScore: 0,
+      accuracy: 0,
+      joinDate: 0,
+    } satisfies LeaderboardUser
+    return [users[0] ?? fallback, users[1] ?? fallback, users[2] ?? fallback]
   })
 
   return (
@@ -463,8 +520,8 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
           <IconSearch />
           <span class="tab-name">Global</span>
           <span class="tab-count">
-            {Math.floor(mockLeaderboardUsers.length / 1000)}.$
-            {Math.floor(mockLeaderboardUsers.length / 100) % 10}
+            {Math.floor(allLeaderboardUsers().length / 1000)}.$
+            {Math.floor(allLeaderboardUsers().length / 100) % 10}
           </span>
         </button>
         <button
@@ -525,7 +582,7 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
           onInput={(e) => setSearchQuery(e.currentTarget.value)}
         />
         <button class="filter-btn">
-          <span>⚙️</span> Filter
+          <IconFilter /> Filter
         </button>
       </div>
 
@@ -593,7 +650,7 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
         <div class="leaderboard-content">
           {/* Top 3 Podium */}
           <div class="podium-section">
-            <For each={getPodiumData()}>
+            <For each={podiumData()}>
               {(user, index) => (
                 <div class={`podium-item podium-${index() + 1}`}>
                   <div class="podium-rank">
@@ -709,7 +766,7 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
               class="profile-modal-close"
               onClick={() => setSelectedUser(null)}
             >
-              ✕
+              <IconCloseSimple />
             </button>
 
             <div class="profile-header">
@@ -800,47 +857,6 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
 interface LeaderboardProps {
   view?: LeaderboardView
   category?: LeaderboardCategory
-}
-
-function getPodiumData(): LeaderboardUser[] {
-  return [
-    mockLeaderboardUsers[0] ?? {
-      userId: '',
-      displayName: '—',
-      avatar: '',
-      score: 0,
-      rank: 0,
-      streak: 0,
-      totalSessions: 0,
-      bestScore: 0,
-      accuracy: 0,
-      joinDate: 0,
-    },
-    mockLeaderboardUsers[1] ?? {
-      userId: '',
-      displayName: '—',
-      avatar: '',
-      score: 0,
-      rank: 0,
-      streak: 0,
-      totalSessions: 0,
-      bestScore: 0,
-      accuracy: 0,
-      joinDate: 0,
-    },
-    mockLeaderboardUsers[2] ?? {
-      userId: '',
-      displayName: '—',
-      avatar: '',
-      score: 0,
-      rank: 0,
-      streak: 0,
-      totalSessions: 0,
-      bestScore: 0,
-      accuracy: 0,
-      joinDate: 0,
-    },
-  ]
 }
 
 function getScoreColor(score: number): string {

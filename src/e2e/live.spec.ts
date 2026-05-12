@@ -3,7 +3,7 @@ import { dismissOverlays } from '@/e2e/helpers/ui'
 
 test.skip('live site settings', async ({ page }) => {
   // Skip live site test - external URL not accessible from test environment
-  await page.goto('https://pitchperfect.clodhost.com/')
+  await page.goto('https://mercurypitch.com/')
   await page.waitForSelector('#app-tabs', { timeout: 15000 })
   await dismissOverlays(page)
 

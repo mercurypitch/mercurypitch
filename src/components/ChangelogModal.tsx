@@ -72,7 +72,7 @@ export const ChangelogModal: Component<ChangelogModalProps> = (props) => {
             <For each={changelog}>
               {(entry, i) => (
                 <>
-                  {i() > 0 && <div class="changelog-divider" />}
+                  {i() > 0 && <div class="fancy-divider" />}
                   <div class="changelog-version">
                     <div class="changelog-version-header">
                       <span class="changelog-version-tag">
