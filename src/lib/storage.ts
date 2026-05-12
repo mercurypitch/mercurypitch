@@ -27,7 +27,7 @@ export function createPersistedSignal<T>(
   let initialValue = defaultValue
   try {
     const item = localStorage.getItem(key)
-    if (item !== null && item !== undefined && item !== '') {
+    if (item != null && item !== '') {
       const parsed = deserialize(item)
       if (!options?.validator || options.validator(parsed)) {
         initialValue = parsed

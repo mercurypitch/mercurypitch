@@ -21,7 +21,7 @@ test('debug settings tab click - detailed', async ({ page }) => {
   // Click via native click()
   const clicked = await page.evaluate(() => {
     const btn = document.getElementById('tab-settings')
-    if (btn === null || btn === undefined) return 'no button'
+    if (btn == null) return 'no button'
     btn.click()
     return 'clicked'
   })
@@ -39,14 +39,14 @@ test('debug settings tab click - detailed', async ({ page }) => {
   // Check DOM state - active tab button
   const activeBtn = await page.evaluate(() => {
     const btn = document.querySelector('.app-tab.active')
-    return btn !== null && btn !== undefined ? btn.id : 'no active'
+    return btn != null ? btn.id : 'no active'
   })
   console.info('Active tab button:', activeBtn)
 
   // Check settings panel
   const settingsPanel = await page.evaluate(() => {
     const el = document.getElementById('settings-panel')
-    if (el === null || el === undefined) return 'not found'
+    if (el == null) return 'not found'
     const parent = el.parentElement
     const grandparent = parent?.parentElement
     return {
@@ -64,7 +64,7 @@ test('debug settings tab click - detailed', async ({ page }) => {
   // Check main-content children
   const mainContent = await page.evaluate(() => {
     const el = document.querySelector('.main-content')
-    if (el === null || el === undefined) return 'not found'
+    if (el == null) return 'not found'
     return Array.from(el.children).map((c) => ({
       tag: c.tagName,
       id: c.id,

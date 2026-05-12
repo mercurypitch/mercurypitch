@@ -10,6 +10,7 @@ describe('encodeMelodyToURL', () => {
   it('encodes single note correctly', () => {
     const melody: MelodyItem[] = [
       {
+        id: 0,
         note: { midi: 60, name: 'C', octave: 4, freq: 261 },
         startBeat: 0,
         duration: 2,
@@ -22,16 +23,19 @@ describe('encodeMelodyToURL', () => {
   it('encodes multiple notes correctly', () => {
     const melody: MelodyItem[] = [
       {
+        id: 0,
         note: { midi: 60, name: 'C', octave: 4, freq: 261 },
         startBeat: 0,
         duration: 2,
       },
       {
+        id: 0,
         note: { midi: 64, name: 'E', octave: 4, freq: 329 },
         startBeat: 2,
         duration: 2,
       },
       {
+        id: 0,
         note: { midi: 67, name: 'G', octave: 4, freq: 392 },
         startBeat: 4,
         duration: 2,
@@ -46,6 +50,7 @@ describe('encodeMelodyToURL', () => {
   it('includes optional parameters when provided', () => {
     const melody: MelodyItem[] = [
       {
+        id: 0,
         note: { midi: 60, name: 'C', octave: 4, freq: 261 },
         startBeat: 0,
         duration: 2,
@@ -61,6 +66,7 @@ describe('encodeMelodyToURL', () => {
   it('excludes optional parameters when not provided', () => {
     const melody: MelodyItem[] = [
       {
+        id: 0,
         note: { midi: 60, name: 'C', octave: 4, freq: 261 },
         startBeat: 0,
         duration: 2,
@@ -74,6 +80,7 @@ describe('encodeMelodyToURL', () => {
   it('handles fractional beat positions', () => {
     const melody: MelodyItem[] = [
       {
+        id: 0,
         note: { midi: 60, name: 'C', octave: 4, freq: 261 },
         startBeat: 1.5,
         duration: 0.5,
@@ -185,6 +192,7 @@ describe('generateShareURL', () => {
   it('generates URL with query parameters', () => {
     const melody: MelodyItem[] = [
       {
+        id: 0,
         note: { midi: 60, name: 'C', octave: 4, freq: 261 },
         startBeat: 0,
         duration: 2,
@@ -200,6 +208,7 @@ describe('generateShareURL', () => {
   it('includes origin in URL', () => {
     const melody: MelodyItem[] = [
       {
+        id: 0,
         note: { midi: 60, name: 'C', octave: 4, freq: 261 },
         startBeat: 0,
         duration: 2,
@@ -249,16 +258,19 @@ describe('round-trip encoding/decoding', () => {
   it('preserves melody data through encode/decode cycle', () => {
     const original: MelodyItem[] = [
       {
+        id: 0,
         note: { midi: 60, name: 'C', octave: 4, freq: 261 },
         startBeat: 0,
         duration: 2,
       },
       {
+        id: 0,
         note: { midi: 64, name: 'E', octave: 4, freq: 329 },
         startBeat: 2,
         duration: 3,
       },
       {
+        id: 0,
         note: { midi: 67, name: 'G', octave: 4, freq: 392 },
         startBeat: 5,
         duration: 1,
@@ -282,6 +294,7 @@ describe('round-trip encoding/decoding', () => {
   it('preserves optional parameters through encode/decode', () => {
     const melody: MelodyItem[] = [
       {
+        id: 0,
         note: { midi: 60, name: 'C', octave: 4, freq: 261 },
         startBeat: 0,
         duration: 2,

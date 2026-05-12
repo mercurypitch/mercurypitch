@@ -380,7 +380,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
 
   const drawTargetPitch = (h: number) => {
     const target = props.targetPitch?.()
-    if (target === null || target === undefined || target <= 0) return
+    if (target == null || target <= 0) return
     const ty = freqToY(target, h)
 
     const centsBand = 0.1
@@ -537,8 +537,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       // (the one currently being sung) keeps its blue "active" tint
       // instead of immediately snapping to the played-state color.
       const playedRecord = props.noteResults?.()[resultIndex]
-      const isPlayed =
-        playedRecord !== undefined && playedRecord !== null && !isActive
+      const isPlayed = playedRecord != null && !isActive
 
       if (bw > 2) {
         const boxH = 22
@@ -816,12 +815,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       ctx.beginPath()
       let started = false
       for (const pt of history) {
-        if (
-          pt.freq === null ||
-          pt.freq === undefined ||
-          pt.freq === 0 ||
-          pt.cents === undefined
-        ) {
+        if (pt.freq === null || pt.freq === 0) {
           started = false
           continue
         }
@@ -836,12 +830,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       ctx.stroke()
 
       const last = history[history.length - 1]
-      if (
-        last.cents !== undefined &&
-        last.freq !== null &&
-        last.freq !== undefined &&
-        last.freq > 0
-      ) {
+      if (last.freq !== null && last.freq > 0) {
         const ly = freqToY(last.freq, h)
         const lx = beatToX(last.time, w)
         const grad = ctx.createRadialGradient(lx, ly, 0, lx, ly, 12)

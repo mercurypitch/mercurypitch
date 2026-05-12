@@ -1271,7 +1271,7 @@ export class AudioEngine {
 
     // Release envelope (GH #130 fix: guard for voices with no/null gains, e.g. metronome)
     const firstGain = voice.gains[0]
-    if (firstGain !== null && firstGain !== undefined) {
+    if (firstGain != null) {
       try {
         firstGain.gain.cancelScheduledValues(now)
         firstGain.gain.setValueAtTime(firstGain.gain.value, now)
@@ -1307,7 +1307,7 @@ export class AudioEngine {
         }
       })
       // Only disconnect if gains exist (GH #130 fix)
-      if (firstGain !== null && firstGain !== undefined) {
+      if (firstGain != null) {
         try {
           firstGain.disconnect()
         } catch {
@@ -1389,8 +1389,7 @@ export class AudioEngine {
     bpm: number,
     instrument?: InstrumentType,
   ): Promise<Blob | null> {
-    if (melody === null || melody === undefined || melody.length === 0)
-      return null
+    if (melody == null || melody.length === 0) return null
 
     const sampleRate = 44100
     const beatDuration = 60 / bpm // seconds per beat

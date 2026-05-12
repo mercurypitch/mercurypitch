@@ -23,7 +23,7 @@ const STORAGE_KEY = 'pitchperfect_walkthroughs'
 /** Get all available walkthroughs for a given tab */
 export function getWalkthroughsForTab(tab: WalkthroughTab) {
   const walkthroughs = WALKTHROUGHS[tab]
-  return walkthroughs !== null && walkthroughs !== undefined ? walkthroughs : []
+  return walkthroughs != null ? walkthroughs : []
 }
 
 /** Get a specific walkthrough by ID */

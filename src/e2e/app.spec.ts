@@ -226,7 +226,7 @@ test.describe('PitchPerfect App', () => {
     const hasStop = await recordBtn.textContent()
     const _hasRecordingClass = await recordBtn.getAttribute('class')
     // After clicking (mic start may fail in test env), click again to reset
-    if (hasStop !== null && hasStop !== undefined && hasStop.includes('Stop')) {
+    if (hasStop != null && hasStop.includes('Stop')) {
       await recordBtn.click()
     }
   })

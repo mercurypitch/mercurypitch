@@ -36,7 +36,7 @@ export const MelodyPillList: Component<MelodyPillListProps> = (props) => {
   }
 
   const handleDragStart = (e: DragEvent, melodyId: string) => {
-    if (e.dataTransfer === null || e.dataTransfer === undefined) return
+    if (e.dataTransfer == null) return
     e.dataTransfer.setData('text/plain', melodyId)
     e.dataTransfer.effectAllowed = 'copy'
   }
