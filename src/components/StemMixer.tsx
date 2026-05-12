@@ -221,6 +221,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     createSignal<WordTimingsMap>({})
   const [windowDuration, setWindowDuration] = createSignal(30) // seconds, range 10-150
   const [windowStart, setWindowStart] = createSignal(0)
+  const PITCH_WINDOW_FILL_RATIO = 0.75
 
   // ── Repeat blocks state ─────────────────────────────────────────
   interface LyricsBlock {
@@ -1078,7 +1079,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }
     if (targetTime === null) return
     seekTo(targetTime)
-    setWindowStart(Math.max(0, targetTime - windowDuration() * 0.3))
+    setWindowStart(
+      Math.max(0, targetTime - windowDuration() * PITCH_WINDOW_FILL_RATIO),
+    )
   }
 
   // ── Edit mode helpers ─────────────────────────────────────────
@@ -2246,7 +2249,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
     const target = ratio * duration()
     seekTo(target)
-    setWindowStart(Math.max(0, target - windowDuration() * 0.3))
+    setWindowStart(
+      Math.max(0, target - windowDuration() * PITCH_WINDOW_FILL_RATIO),
+    )
   }
 
   const seekTo = (time: number) => {
@@ -2277,7 +2282,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     const winStart = windowStart()
     const newTime = winStart + ratio * windowDuration()
     seekTo(newTime)
-    setWindowStart(Math.max(0, newTime - windowDuration() * 0.3))
+    setWindowStart(
+      Math.max(0, newTime - windowDuration() * PITCH_WINDOW_FILL_RATIO),
+    )
   }
 
   const handleCanvasWheel = (e: WheelEvent) => {
@@ -2594,7 +2601,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       }
 
       // Continuous-scroll time window: keep playhead at 30% from left
-      const newStart = elapsedTime - windowDuration() * 0.3
+      const newStart = elapsedTime - windowDuration() * PITCH_WINDOW_FILL_RATIO
       setWindowStart(Math.max(0, newStart))
 
       syncCanvasSizes()
