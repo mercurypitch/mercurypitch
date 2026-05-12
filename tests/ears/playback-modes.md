@@ -1,7 +1,7 @@
 # Playback Modes Specification (EARS)
 
 ## 1. PURPOSE
-Define the expected behavior of three distinct playback modes: 'once', 'repeat', and 'session' (formerly 'practice') in the Pitch Perfect application.
+Define the expected behavior of three distinct playback modes: 'once', 'repeat', and 'session' (formerly 'practice') in the MercuryPitch application.
 
 ## 2. SCOPE
 This specification covers:

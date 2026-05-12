@@ -1,4 +1,4 @@
-# PitchPerfect Refactor Plan v2
+# MercuryPitch Refactor Plan v2
 
 ## Why v1 is insufficient
 

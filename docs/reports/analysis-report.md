@@ -1,4 +1,4 @@
-# Static Analysis Report for PitchPerfect
+# Static Analysis Report for MercuryPitch
 **Generated**: 2026-04-21
 **Branch**: feat/analysis-improvements
 **Base**: main
@@ -236,7 +236,7 @@ Existing test (`loads without console errors`) attempts to check browser console
 
 ## Conclusion
 
-The PitchPerfect codebase demonstrates solid engineering practices with:
+The MercuryPitch codebase demonstrates solid engineering practices with:
 - Proper TypeScript strict mode configuration
 - Comprehensive test coverage
 - Good error handling and resource cleanup

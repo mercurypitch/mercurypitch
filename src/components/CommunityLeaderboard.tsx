@@ -278,7 +278,7 @@ const mockLeaderboardUsers: LeaderboardUser[] = [
   },
   {
     userId: 'u3',
-    displayName: 'PitchPerfectPro',
+    displayName: 'MercuryPitchPro',
     avatar: IconUser,
     score: 1421000,
     rank: 3,

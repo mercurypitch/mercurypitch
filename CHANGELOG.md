@@ -78,7 +78,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Initial PitchPerfect voice practice application release
+- Initial MercuryPitch voice practice application release
 - Extend BPM range to 280
 - Organize sidebar notes by melody and add accuracy color-coding
 - Support 1-3 octaves in piano roll based on available vertical space

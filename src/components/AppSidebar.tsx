@@ -133,7 +133,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
         <button
           class="walkthrough-control-btn"
           onClick={() => props.onOpenLearn?.()}
-          title="View PitchPerfect walkthroughs"
+          title="View MercuryPitch walkthroughs"
         >
           <svg viewBox="0 0 24 24" width="18" height="18">
             <path

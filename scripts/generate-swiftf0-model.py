@@ -126,7 +126,7 @@ opset_imports = [helper.make_opsetid('', 13)]
 
 model = helper.make_model(
     graph,
-    producer_name='pitch-perfect-v2',
+    producer_name='mercury-pitch-v2',
     opset_imports=opset_imports,
 )
 

@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document provides a comprehensive comparison of the pitch detection algorithms implemented in Pitch Perfect v2, along with recommendations for use cases.
+This document provides a comprehensive comparison of the pitch detection algorithms implemented in MercuryPitch v2, along with recommendations for use cases.
 
 ---
 

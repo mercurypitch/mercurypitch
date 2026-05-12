@@ -1,13 +1,13 @@
-# Contributing to PitchPerfect
+# Contributing to MercuryPitch
 
-Thanks for contributing! PitchPerfect is a browser-based vocal pitch practice tool with UVR stem separation, community features, and real-time audio processing.
+Thanks for contributing! MercuryPitch is a browser-based vocal pitch practice tool with UVR stem separation, community features, and real-time audio processing.
 
 ## Development Setup
 
 ```bash
 # Clone and install
 git clone <repo-url>
-cd pitch-perfect-repo
+cd mercury-pitch-repo
 pnpm install
 
 # Install git hooks (auto-format on commit, blocks direct pushes to main)

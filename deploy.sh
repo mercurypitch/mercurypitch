@@ -1,12 +1,12 @@
 #!/bin/bash
 #==============================================================================
-# PitchPerfect Deploy Script
+# MercuryPitch Deploy Script
 # Usage: ./deploy.sh [--check-only]
 #
 # --check-only : Run syntax checks and verify public files, but don't pull.
 # Without flags : pull latest main + syntax check + verify + deploy.
 #
-# The Apache DocumentRoot points to pitch-perfect-repo/public/, so files are
+# The Apache DocumentRoot points to mercury-pitch-repo/public/, so files are
 # served immediately after git pull. No extra copy step needed.
 #==============================================================================
 
@@ -207,7 +207,7 @@ write_deploy_marker() {
 main() {
     echo ""
     info "============================================"
-    info " PitchPerfect Deploy"
+    info " MercuryPitch Deploy"
     info "============================================"
     echo ""
 
