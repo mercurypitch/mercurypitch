@@ -203,6 +203,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   const [lyricsFontSize, setLyricsFontSize] = createSignal(1.3) // rem
   const [lyricsColumns, setLyricsColumns] = createSignal<1 | 2>(1)
   const [editMode, setEditMode] = createSignal(false)
+  const [userScrolled, setUserScrolled] = createSignal(false)
   type WordTimingsMap = Record<number, number[]> // line idx → word start times (seconds)
   const [wordTimings, setWordTimings] = createSignal<WordTimingsMap>({})
   // Unsaved edit buffer — merged into wordTimings on save
@@ -366,6 +367,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   let fixedResizeStartY = 0
   let fixedResizeStartHeight = 0
 
+  const LYRICS_CONTAINER_SELECTOR =
+    '.sm-lyrics-lines:not(.sm-lyrics-gen-lines):not(.sm-lyrics-lines-edit)'
+
   // ── Refs ─────────────────────────────────────────────────────
   let audioCtx: AudioContext | null = null
   let mainGain: GainNode | null = null
@@ -375,6 +379,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   let startTime = 0
   let pauseOffset = 0
   let pitchHistory: PitchNote[] = []
+  let lyricsScrollContainer: HTMLElement | null = null
+  let isAutoScrolling = false
+  let lyricsScrollTimeout: ReturnType<typeof setTimeout> | null = null
 
   // Mic pitch comparison refs (not signals — no reactivity needed in RAF loop)
   let micStream: MediaStream | null = null
@@ -1080,6 +1087,32 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     setWindowStart(
       Math.max(0, targetTime - windowDuration() * PITCH_WINDOW_FILL_RATIO),
     )
+
+    // Scroll lyrics container to show the clicked line at 35% from top
+    const container = document.querySelector(
+      LYRICS_CONTAINER_SELECTOR,
+    ) as HTMLElement | null
+    if (!container) return
+    const lines = container.querySelectorAll('.sm-lyrics-line')
+    if (idx < lines.length) {
+      const line = lines[idx] as HTMLElement
+      const containerRect = container.getBoundingClientRect()
+      const lineRect = line.getBoundingClientRect()
+      const scrollTarget =
+        container.scrollTop +
+        (lineRect.top - containerRect.top) -
+        containerRect.height * 0.35
+      isAutoScrolling = true
+      container.scrollTo({ top: scrollTarget, behavior: 'smooth' })
+      const resetAutoScroll = () => {
+        isAutoScrolling = false
+      }
+      container.addEventListener('scrollend', resetAutoScroll, { once: true })
+      setTimeout(() => {
+        container.removeEventListener('scrollend', resetAutoScroll)
+        isAutoScrolling = false
+      }, 500)
+    }
   }
 
   // ── Edit mode helpers ─────────────────────────────────────────
@@ -2142,6 +2175,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     createSources(pauseOffset)
     startTime = audioCtx!.currentTime - pauseOffset
     setPlaying(true)
+    setUserScrolled(false)
     pitchHistory = []
     micPitchHistory = []
     pitchDetector?.resetHistory()
@@ -2170,6 +2204,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     pauseOffset = 0
     disconnectSources()
     setPlaying(false)
+    setUserScrolled(false)
     setElapsed(0)
     setCurrentPitch(null)
     pitchHistory = []
@@ -3224,11 +3259,67 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }
   })
 
+  // ── Lyric scroll: user-scroll detection ────────────────────────
+
+  const onLyricsScroll = () => {
+    if (isAutoScrolling) return
+    setUserScrolled(true)
+    if (lyricsScrollTimeout) {
+      clearTimeout(lyricsScrollTimeout)
+      lyricsScrollTimeout = null
+    }
+    lyricsScrollTimeout = setTimeout(() => {
+      const container = document.querySelector(
+        LYRICS_CONTAINER_SELECTOR,
+      ) as HTMLElement | null
+      if (!container) return
+      const idx = currentLineIdx()
+      if (idx < 0) return
+      const lines = container.querySelectorAll('.sm-lyrics-line')
+      if (idx < lines.length) {
+        const activeLine = lines[idx] as HTMLElement
+        const containerRect = container.getBoundingClientRect()
+        const lineRect = activeLine.getBoundingClientRect()
+        // Reset userScrolled if active line is in the top 60% of viewport
+        if (lineRect.top - containerRect.top < containerRect.height * 0.6) {
+          setUserScrolled(false)
+        }
+      }
+      lyricsScrollTimeout = null
+    }, 800)
+  }
+
+  const attachScrollListener = () => {
+    const container = document.querySelector(
+      LYRICS_CONTAINER_SELECTOR,
+    ) as HTMLElement | null
+    if (container !== lyricsScrollContainer) {
+      if (lyricsScrollContainer) {
+        lyricsScrollContainer.removeEventListener('scroll', onLyricsScroll)
+      }
+      lyricsScrollContainer = container
+      if (container) {
+        container.addEventListener('scroll', onLyricsScroll, { passive: true })
+      }
+    }
+  }
+
+  createEffect(() => {
+    const _lyrics = lyricsSource()
+    const _edit = editMode()
+    const _lrcGen = lrcGenMode()
+    void _lyrics
+    void _edit
+    void _lrcGen
+    setTimeout(() => attachScrollListener(), 0)
+  })
+
   createEffect(() => {
     const idx = currentLineIdx()
     if (!playing() || idx < 0) return
+    if (userScrolled()) return
     const container = document.querySelector(
-      '.sm-lyrics-lines:not(.sm-lyrics-gen-lines):not(.sm-lyrics-lines-edit)',
+      LYRICS_CONTAINER_SELECTOR,
     ) as HTMLElement | null
     if (!container) return
     const lines = container.querySelectorAll('.sm-lyrics-line')
@@ -3236,13 +3327,22 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       const activeLine = lines[idx] as HTMLElement
       const containerRect = container.getBoundingClientRect()
       const lineRect = activeLine.getBoundingClientRect()
-      const halfVisible = containerRect.top + containerRect.height / 2
-      if (lineRect.bottom > halfVisible) {
+      const threshold = containerRect.top + containerRect.height * 0.57
+      if (lineRect.bottom > threshold) {
         const scrollTarget =
           container.scrollTop +
           (lineRect.top - containerRect.top) -
-          containerRect.height * 0.3
+          containerRect.height * 0.35
+        isAutoScrolling = true
         container.scrollTo({ top: scrollTarget, behavior: 'smooth' })
+        const resetAutoScroll = () => {
+          isAutoScrolling = false
+        }
+        container.addEventListener('scrollend', resetAutoScroll, { once: true })
+        setTimeout(() => {
+          container.removeEventListener('scrollend', resetAutoScroll)
+          isAutoScrolling = false
+        }, 500)
       }
     }
   })
@@ -3250,6 +3350,15 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   onCleanup(() => {
     disconnectSources()
     cancelAnimationFrame(rafId)
+    if (lyricsScrollContainer) {
+      lyricsScrollContainer.removeEventListener('scroll', onLyricsScroll)
+      lyricsScrollContainer = null
+    }
+    if (lyricsScrollTimeout) {
+      clearTimeout(lyricsScrollTimeout)
+      lyricsScrollTimeout = null
+    }
+    isAutoScrolling = false
     resizeObserver?.disconnect()
     const smWin = window as unknown as SmWindow
     if (smWin.__smKeydown !== undefined) {
