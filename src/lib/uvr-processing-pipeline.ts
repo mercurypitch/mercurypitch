@@ -8,9 +8,9 @@ import { saveStemBlob } from '@/db/services/uvr-service'
 import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
 import { getAllUvrSessions, saveAllUvrSessions, setUvrSessionApiId, setUvrSessionProvider, updateUvrSessionProgress, } from '@/stores/app-store'
 import { computeChunkRanges, UVR_CHUNK_CONFIG } from './audio-chunker'
+import { UVR_MODEL_PATH } from './defaults'
 import type { OutputFile } from './uvr-api'
 import { deleteSession, getOutputFile, pollForCompletion, processAudio, } from './uvr-api'
-import { MODEL_PATH } from './uvr-model-config'
 import { VocalSeparator } from './vocal-separator'
 
 // ---------------------------------------------------------------------------
@@ -37,7 +37,7 @@ let separator: VocalSeparator | null = null
 async function getSeparator(): Promise<VocalSeparator> {
   if (separator !== null && separator.isReady()) return separator
   separator = new VocalSeparator()
-  await separator.initialize(MODEL_PATH)
+  await separator.initialize(UVR_MODEL_PATH)
   return separator
 }
 

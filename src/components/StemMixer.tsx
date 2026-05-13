@@ -824,8 +824,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         }
       }
       const wordStart = wordTimes[wi]
-      const wordEnd =
-        wi + 1 < wordTimes.length ? wordTimes[wi + 1] : endTime
+      const wordEnd = wi + 1 < wordTimes.length ? wordTimes[wi + 1] : endTime
       const wordDur = Math.max(0.05, wordEnd - wordStart)
       const elapsedInWord = elapsedTime - wordStart
       const charProgress = Math.min(
@@ -884,7 +883,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           const end = i + 1 < lrc.length ? lrc[i + 1].time : dur
           const gap = end - lrc[i].time
           if (gap > 0 && gap < MAX_LINE_GAP_S) {
-            const n = lrc[i].text.split(/\s+/).filter((w) => w.length > 0).length
+            const n = lrc[i].text
+              .split(/\s+/)
+              .filter((w) => w.length > 0).length
             if (n > 0) {
               totalDur += gap
               totalWords += n
@@ -927,7 +928,13 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           endTime = Math.min(endTime, estimated)
         }
 
-        map.set(i, { key: `lrc-${i}`, time: line.time, endTime, words, wordTimes })
+        map.set(i, {
+          key: `lrc-${i}`,
+          time: line.time,
+          endTime,
+          words,
+          wordTimes,
+        })
       })
       return map
     }

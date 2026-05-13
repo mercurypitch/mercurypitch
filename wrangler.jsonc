@@ -32,7 +32,7 @@
   ],
   "env": {
     "dev": {
-      "name": "pitch-perfect-dev",
+      "name": "mercury-pitch-dev",
       "routes": [
         { "pattern": "dev.mercurypitch.com", "custom_domain": true }
       ],
