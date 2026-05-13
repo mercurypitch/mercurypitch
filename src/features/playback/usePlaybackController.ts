@@ -129,7 +129,14 @@ export function usePlaybackController(
   const playheadPosition = createMemo(() => {
     const beats = currentBeat()
     const total = totalBeatsMemo()
-    return total > 0 ? (beats / total) * 100 : 0
+    const ci = countIn()
+    if (total <= 0) return 0
+    // During count-in, beats are negative (-countIn to 0). Offset them
+    // so the playhead sweeps from 0% to (countInBeats/total)*100%.
+    if (ci > 0 && beats < 0) {
+      return ((ci + beats) / ci) * (ci / total) * 100
+    }
+    return (beats / total) * 100
   })
 
   const [editorPlaybackState, setEditorPlaybackState] =
@@ -328,13 +335,28 @@ export function usePlaybackController(
     setIsPaused(false)
     playback.startPlayback()
 
-    if (settings().tonicAnchor === true) {
-      const tonicFreq = keyTonicFreq(keyName(), melodyStore.getCurrentOctave())
-      const tonicDuration = Math.round(60000 / bpm())
-      audioEngine.playTone(tonicFreq, tonicDuration)
+    // Issue #31: When both anchor note and precount are enabled,
+    // sequence them: anchor tone first → then count-in → then playback.
+    // This avoids the audio collision caused by playing them simultaneously.
+    // NOTE: playTone() is async but resolves after scheduling, not after
+    // the tone finishes — so we use a setTimeout keyed to the actual
+    // tone duration instead of chaining .then().
+    const doStart = () => {
+      playbackRuntime.start(countIn())
     }
 
-    playbackRuntime.start(countIn())
+    if (settings().tonicAnchor === true) {
+      const melody = melodyStore.getCurrentMelody()
+      const firstNote = melody?.items?.[0]?.note
+      const tonicFreq =
+        firstNote?.freq ??
+        keyTonicFreq(keyName(), melodyStore.getCurrentOctave())
+      const tonicDuration = Math.round(60000 / bpm())
+      audioEngine.playTone(tonicFreq, tonicDuration)
+      setTimeout(doStart, tonicDuration)
+    } else {
+      doStart()
+    }
   }
 
   const handlePause = () => {

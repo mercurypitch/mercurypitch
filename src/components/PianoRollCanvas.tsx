@@ -19,6 +19,7 @@ interface PianoRollCanvasProps {
   playbackState: () => PlaybackState
   currentNoteIndex: () => number
   currentBeat: () => number
+  countInBeats?: () => number
   onMelodyChange: (melody: MelodyItem[]) => void
   onInstrumentChange?: (instrument: string) => void
   /** Called when the editor's internal playback state changes */
@@ -125,6 +126,19 @@ export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
     editor?.setCurrentNote(props.currentNoteIndex())
   })
 
+  // Propagate count-in beats for precount visualization.
+  // During count-in, the playhead is offset so it sweeps from the left
+  // edge into the grid before playback starts.
+  createEffect(() => {
+    const ci = props.countInBeats?.() ?? 0
+    // Only set during external playback when count-in is active
+    if (props.playbackState() === 'playing') {
+      editor?.setCountInBeats(ci)
+    } else {
+      editor?.setCountInBeats(0)
+    }
+  })
+
   // Propagate current beat for playhead drawing + active-note highlight.
   // This is THE driver of the editor's playhead — when currentBeat
   // updates from playbackController.on('beat'), updatePlaybackPosition
@@ -132,9 +146,7 @@ export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
   // with the new playhead position and the active note in green.
   createEffect(() => {
     const beat = props.currentBeat()
-    if (beat >= 0) {
-      editor?.updatePlaybackPosition(beat)
-    }
+    editor?.updatePlaybackPosition(beat)
   })
 
   // Propagate waveform props for recording visualization

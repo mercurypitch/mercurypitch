@@ -627,7 +627,7 @@ All Western music is based on 12 notes within an octave:
           title: 'Use Anchor Tone',
           description: 'Practice with a reference pitch',
           action: 'Enable tonic anchor',
-          target: '#tonic-anchor',
+          target: '#set-tonic-anchor',
         },
       ],
       thumbnail: 'music',

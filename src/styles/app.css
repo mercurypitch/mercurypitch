@@ -2559,6 +2559,21 @@ header h1 {
   color: #fff;
 }
 
+#btn-anchor-tone {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+#btn-anchor-tone svg {
+  flex-shrink: 0;
+}
+
+#btn-anchor-tone.active {
+  background: var(--accent);
+  color: #fff;
+}
+
 /* ===== Utility ===== */
 .hidden {
   display: none !important;
