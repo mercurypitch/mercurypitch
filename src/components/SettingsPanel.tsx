@@ -1074,7 +1074,7 @@ export const SettingsPanel: Component = () => {
             <p class="about-credits">Vocal Pitch Practice — Redefined.</p>
             <div class="about-links">
               <a
-                href="https://github.com/Komediruzecki/pitch-perfect"
+                href="https://github.com/mercurypitch/mercurypitch"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="about-link"
