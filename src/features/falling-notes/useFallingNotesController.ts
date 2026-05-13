@@ -103,17 +103,23 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
       }
       // MIDI mode: pitch is set synchronously by midiEngine callbacks
 
-      // Advance playhead if playing
-      if (gameState() === 'playing') {
+      // Advance playhead if playing or counting in
+      if (gameState() === 'playing' || gameState() === 'countdown') {
         const now = performance.now()
         const elapsedMs = now - gameStartTime
         const bps = beatsPerSecond() * speed()
         const elapsedBeats = (elapsedMs / 1000) * bps
-        const newBeat = elapsedBeats
+
+        // During countdown, the playhead starts at -countIn() and moves towards 0
+        const newBeat =
+          gameState() === 'countdown' ? elapsedBeats - countIn() : elapsedBeats
+
         setPlayheadBeat(newBeat)
 
-        // Check hits/misses
-        checkHits(newBeat)
+        // Check hits/misses (only while playing)
+        if (gameState() === 'playing') {
+          checkHits(newBeat)
+        }
       }
 
       animFrameId = requestAnimationFrame(loop)
@@ -332,6 +338,7 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
       setGameState('countdown')
       setPlayheadBeat(-countInBeats)
       setIsCountingIn(true)
+      gameStartTime = performance.now()
 
       const bps = beatsPerSecond() * speed()
       const beatMs = (1 / bps) * 1000
@@ -345,7 +352,7 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
           // First beat of count-in is the downbeat (higher pitch)
           audioEngine.playMetronomeClick(currentBeat === countInBeats)
           setCountInBeatTracker(currentBeat)
-          setPlayheadBeat(-currentBeat)
+          // Playhead is handled smoothly by startLoop
         }
         if (currentBeat <= 0) {
           setIsCountingIn(false)
@@ -442,12 +449,14 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
   }
 
   const setSpeedSafe = (newSpeed: number) => {
-    // When speed changes during playback, rebase gameStartTime
+    // When speed changes during playback or countdown, rebase gameStartTime
     // to maintain beat continuity
-    if (gameState() === 'playing') {
-      const currentBeat = playheadBeat()
+    if (gameState() === 'playing' || gameState() === 'countdown') {
+      const currentBeatValue = playheadBeat()
+      const offset = gameState() === 'countdown' ? -countIn() : 0
       const newBps = beatsPerSecond() * newSpeed
-      gameStartTime = performance.now() - (currentBeat / newBps) * 1000
+      gameStartTime =
+        performance.now() - ((currentBeatValue - offset) * 1000) / newBps
     }
     setSpeed(newSpeed)
   }
@@ -455,10 +464,12 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
   const setBpmSafe = (newBpm: number) => {
     setCurrentSongBpm(newBpm)
     // Rebase gameStartTime so playhead doesn't jump
-    if (gameState() === 'playing') {
-      const currentBeat = playheadBeat()
+    if (gameState() === 'playing' || gameState() === 'countdown') {
+      const currentBeatValue = playheadBeat()
+      const offset = gameState() === 'countdown' ? -countIn() : 0
       const newBps = (newBpm / 60) * speed()
-      gameStartTime = performance.now() - (currentBeat / newBps) * 1000
+      gameStartTime =
+        performance.now() - ((currentBeatValue - offset) * 1000) / newBps
     }
   }
 

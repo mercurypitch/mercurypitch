@@ -53,7 +53,7 @@
   display: grid;
   grid-template-columns: 320px 1fr;
   gap: 24px;
-  height: calc(100% - 80px);
+  min-height: calc(100% - 80px);
 }
 
 .vocal-column-left {
@@ -66,8 +66,14 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  height: 100%;
-  overflow-y: auto;
+  min-width: 0;
+}
+
+.live-dashboard,
+.vocal-techniques,
+.spectrogram-display,
+.pitch-history {
+  flex-shrink: 0;
 }
 
 .stat-card {
