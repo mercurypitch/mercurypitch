@@ -437,6 +437,10 @@ export class PlaybackRuntime {
           }
         }
 
+        // Emit continuous negative beat value on every frame during count-in
+        // so the piano roll playhead smoothly approaches from the left (Issue #31).
+        this._emit({ type: 'beat', beat: elapsedBeats - countIn })
+
         // Play metronome click during count-in (4, 3, 2, 1)
         // Precount is a metronome feature - always play regardless of metronome setting
         const isDownbeat = currentInt % 4 === 0

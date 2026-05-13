@@ -10,6 +10,7 @@ import { PrecCountButton } from '@/components/PrecCountButton'
 import { Tooltip } from '@/components/Tooltip'
 import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_COMPOSE, TAB_PIANO, TAB_SINGING, } from '@/features/tabs/constants'
 import { bpm, enterFocusMode, micActive, micWaveVisible, playbackSpeed, setBpm, setPlaybackSpeed, setSensitivity, settings, toggleMicWaveVisible, } from '@/stores'
+import { setTonicAnchor } from '@/stores/settings-store'
 import type { PlaybackMode, SpacedRestMode } from '@/types'
 import { ControlGroup } from './ControlGroup'
 
@@ -370,10 +371,35 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
           </button>
         </Show>
 
-        {/* Precount + Metronome */}
+        {/* Precount + Anchor Tone + Metronome */}
         <div class="app-header-sep" />
         <div class="control-group">
           <PrecCountButton />
+          <Tooltip text="Anchor Tone">
+            <button
+              id="btn-anchor-tone"
+              class={`ctrl-btn anchor-tone-btn ${settings().tonicAnchor === true ? 'active' : ''}`}
+              onClick={() => setTonicAnchor(settings().tonicAnchor !== true)}
+              title={
+                settings().tonicAnchor === true
+                  ? 'Anchor Tone: On'
+                  : 'Anchor Tone: Off'
+              }
+              aria-label={
+                settings().tonicAnchor === true
+                  ? 'Anchor Tone: On'
+                  : 'Anchor Tone: Off'
+              }
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16">
+                <path
+                  fill="currentColor"
+                  d="M12 3l-8 13h16L12 3zm0 3.5L17.5 13h-11L12 6.5z"
+                />
+                <circle cx="12" cy="14" r="1" fill="currentColor" />
+              </svg>
+            </button>
+          </Tooltip>
         </div>
         <button
           class={`ctrl-btn metronome-btn ${props.metronomeEnabled() ? 'active' : ''}`}

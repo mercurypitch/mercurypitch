@@ -1333,6 +1333,7 @@ const AppShell: Component<AppProps> = (props) => {
                       playbackState={editorPlaybackState}
                       currentNoteIndex={() => melodyStore.currentNoteIndex()}
                       currentBeat={currentBeat}
+                      countInBeats={() => countIn()}
                       isPlaying={editorIsPlaying}
                       isPaused={editorIsPaused}
                       isScrolling={() => false}

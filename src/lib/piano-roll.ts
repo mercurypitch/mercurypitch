@@ -479,6 +479,7 @@ export class PianoRollEditor {
   private playbackAnimationId: number | null = null
   private playStartTime: number = 0
   private isCountingIn = false
+  private _countInBeats = 0
   // Remote beat comes from PlaybackRuntime events (external playback)
   // For internal editor playback, beat is calculated locally
   private remoteBeat = 0
@@ -879,6 +880,13 @@ export class PianoRollEditor {
     }
   }
 
+  /** Set count-in beats for precount visualization.
+   *  During count-in, the playhead is offset so it sweeps from the left
+   *  edge to countInBeats*beatWidth pixels into the grid. */
+  setCountInBeats(beats: number): void {
+    this._countInBeats = Math.max(0, beats)
+  }
+
   setPlaybackState(state: PlaybackState): void {
     this.playbackState = state
 
@@ -914,6 +922,7 @@ export class PianoRollEditor {
       this.stopPlayback()
       this.remoteBeat = 0
       this.editorBeat = 0
+      this._countInBeats = 0
       this.startedNoteIds.clear()
       this.currentNoteRow = -1
       this.playbackState = 'stopped'
@@ -2505,7 +2514,11 @@ export class PianoRollEditor {
     if (this.useBallPhysics && this.ballState && this.ballCtx) {
       const ballCtx = this.ballCtx
       const ballCanvas = this.ballCanvas
-      const playheadX = beat * this.beatWidth
+      const countInOffset =
+        this._countInBeats > 0 && beat <= 0
+          ? this._countInBeats * this.beatWidth
+          : 0
+      const playheadX = countInOffset + beat * this.beatWidth
 
       const ballConfig: BallPhysicsConfig = {
         notes: this.ballNotes,
@@ -2879,8 +2892,14 @@ export class PianoRollEditor {
     ctx.lineTo(rulerWidth, this.rulerHeight - 1)
     ctx.stroke()
 
-    // Playhead triangle
-    const playheadX = this.pianoWidth + this.getCurrentBeat() * this.beatWidth
+    // Playhead triangle — offset during count-in so it's visible
+    const currentBeat = this.getCurrentBeat()
+    const countInOffset =
+      this._countInBeats > 0 && currentBeat <= 0
+        ? this._countInBeats * this.beatWidth
+        : 0
+    const playheadX =
+      this.pianoWidth + countInOffset + currentBeat * this.beatWidth
     ctx.save()
     ctx.fillStyle = '#58a6ff'
     ctx.shadowColor = 'rgba(88, 166, 255, 0.5)'
@@ -3016,7 +3035,14 @@ export class PianoRollEditor {
     // GH #198: Playhead should be visible during count-in too (even if at 0)
     // Show playhead regardless of currentBeat value so users see continuous playback
     const currentBeat = this.getCurrentBeat()
-    const playheadX = currentBeat * this.beatWidth
+    // During count-in, beats are negative (e.g., -4 to 0). Offset the
+    // playhead rightwards so it sweeps from the left edge into the grid,
+    // giving a visual countdown before the melody starts.
+    const countInOffset =
+      this._countInBeats > 0 && currentBeat <= 0
+        ? this._countInBeats * this.beatWidth
+        : 0
+    const playheadX = countInOffset + currentBeat * this.beatWidth
 
     // Playhead line — always drawn during playback (including count-in)
     ctx.save()
