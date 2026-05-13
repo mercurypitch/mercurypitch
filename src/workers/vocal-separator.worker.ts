@@ -6,10 +6,13 @@
 
 import type * as OrtModule from 'onnxruntime-web'
 import type { InferenceSession, Tensor } from 'onnxruntime-web'
+import mjsUrl from 'onnxruntime-web/ort-wasm-simd-threaded.jsep.mjs?url'
+import wasmUrl from 'onnxruntime-web/ort-wasm-simd-threaded.jsep.wasm?url'
+import mjsUrlCpu from 'onnxruntime-web/ort-wasm-simd-threaded.mjs?url'
+import wasmUrlCpu from 'onnxruntime-web/ort-wasm-simd-threaded.wasm?url'
 import { computeChunkRanges, overlapAdd, UVR_CHUNK_CONFIG, } from '../lib/audio-chunker'
 import { getCachedModel, setCachedModel } from '../lib/model-cache'
 import { stftForward, stftInverse } from '../lib/stft-engine'
-
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -120,6 +123,12 @@ async function loadModel(modelPath: string): Promise<void> {
   if (!ort) {
     ort = await import('onnxruntime-web')
     ort.env.wasm.numThreads = navigator.hardwareConcurrency || 4
+    ort.env.wasm.wasmPaths = {
+      'ort-wasm-simd-threaded.jsep.wasm': wasmUrl,
+      'ort-wasm-simd-threaded.jsep.mjs': mjsUrl,
+      'ort-wasm-simd-threaded.wasm': wasmUrlCpu,
+      'ort-wasm-simd-threaded.mjs': mjsUrlCpu,
+    } as Record<string, string>
   }
 
   // If activeProviders is already set to wasm (due to fallback), don't reset it
@@ -136,8 +145,7 @@ async function loadModel(modelPath: string): Promise<void> {
     const isLinuxFirefox =
       /Firefox/i.test(navigator.userAgent) &&
       /Linux/i.test(navigator.platform || navigator.userAgent)
-    const isMobile =
-      /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent)
+    const isMobile = /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent)
     if (!isLinuxFirefox && !isMobile) {
       try {
         if ('gpu' in navigator) {

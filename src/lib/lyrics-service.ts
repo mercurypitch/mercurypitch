@@ -423,10 +423,7 @@ export function parseLrcWordTimings(
         } else {
           // Fallback: interpolate within the chunk
           const t0 = i - 1 < times.length ? times[i - 1] : lineStartTime
-          const t1 =
-            i < times.length
-              ? times[i]
-              : t0 + chunkWords.length * 0.3
+          const t1 = i < times.length ? times[i] : t0 + chunkWords.length * 0.3
           const frac = j / chunkWords.length
           wordTimes.push(t0 + frac * (t1 - t0))
         }
