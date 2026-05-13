@@ -5,6 +5,7 @@ on:
     branches: [main, dev]
   push:
     branches: [main, dev]
+    tags: ['v*']
 
 jobs:
   build-and-deploy:
@@ -54,9 +55,9 @@ jobs:
           command: deploy --env dev
           packageManager: 'pnpm'
 
-      # Deploys to mercurypitch.com when pushing to the main branch
+      # Deploys to mercurypitch.com when pushing a tag starting with 'v'
       - name: Deploy to Production Environment
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        if: startsWith(github.ref, 'refs/tags/v') && github.event_name == 'push'
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}

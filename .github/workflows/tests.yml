@@ -5,6 +5,7 @@ on:
     branches: [main]
   push:
     branches: [main]
+    tags: ['v*']
 
 jobs:
   test:
@@ -67,5 +68,5 @@ jobs:
         run: pnpm run test:e2e --grep @smoke
 
       - name: Run E2E tests (Full)
-        if: github.event_name == 'push'
+        if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.event_name == 'push'
         run: pnpm run test:e2e
