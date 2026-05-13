@@ -1233,6 +1233,7 @@ const AppShell: Component<AppProps> = (props) => {
                           audioEngine?.getWaveformData() ?? null
                         }
                         noteResults={noteResults}
+                        countInBeats={() => countIn()}
                       />
                       <div
                         id="playhead"
