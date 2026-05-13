@@ -28,6 +28,11 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
       'audio/mp3',
       'audio/wave',
       'audio/x-wav',
+      'audio/flac',
+      'audio/x-flac',
+      '.mp3',
+      '.wav',
+      '.flac',
     ]
 
   const formatFileSize = (bytes: number): string => {

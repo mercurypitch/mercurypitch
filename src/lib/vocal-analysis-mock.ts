@@ -120,7 +120,7 @@ export function generateMockSessions(): SessionResult[] {
 
   return MELODY_TEMPLATES.map((template, idx) => {
     const completedAt = now - (4 - idx) * DAY - randomAround(3600000, 1800000)
-    const score = Math.round(randomAround(72 + idx * 5, 10))
+    const score = Math.min(100, Math.round(randomAround(72 + idx * 5, 10)))
     const practiceResults = [
       generatePracticeResult(template.name, template.midis, score, completedAt),
     ]
