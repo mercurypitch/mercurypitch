@@ -2541,7 +2541,7 @@ export class PianoRollEditor {
         this.ballState.y * this.rowHeight +
         this.rowHeight / 2 +
         this.rowHeight / 2
-      const pixelX = this.ballState.x * this.beatWidth
+      const ballPixelX = countInOffset + this.ballState.x * this.beatWidth
 
       // Draw ball with glowing effect
       if (ballCanvas) {
@@ -2554,12 +2554,12 @@ export class PianoRollEditor {
       ballCtx.shadowBlur = 12
       ballCtx.fillStyle = '#3fb950'
       ballCtx.beginPath()
-      ballCtx.arc(pixelX, pixelY, this.ballRadius, 0, Math.PI * 2)
+      ballCtx.arc(ballPixelX, pixelY, this.ballRadius, 0, Math.PI * 2)
       ballCtx.fill()
       // White core for extra glow
       ballCtx.fillStyle = 'rgba(255, 255, 255, 0.7)'
       ballCtx.beginPath()
-      ballCtx.arc(pixelX, pixelY, this.ballRadius * 0.5, 0, Math.PI * 2)
+      ballCtx.arc(ballPixelX, pixelY, this.ballRadius * 0.5, 0, Math.PI * 2)
       ballCtx.fill()
       ballCtx.restore()
 
@@ -2859,8 +2859,15 @@ export class PianoRollEditor {
     ctx.fillStyle = '#161b22'
     ctx.fillRect(0, 0, rulerWidth, this.rulerHeight)
 
+    // GH #198 / #31: Count-in offset for ruler beat lines and playhead
+    const currentBeat = this.getCurrentBeat()
+    const countInOffset =
+      this._countInBeats > 0 && currentBeat <= 0
+        ? this._countInBeats * this.beatWidth
+        : 0
+
     for (let b = 0; b <= this.totalBeats; b++) {
-      const x = this.pianoWidth + b * this.beatWidth
+      const x = this.pianoWidth + countInOffset + b * this.beatWidth
       const isBar = b % this.config.beatsPerBar === 0
 
       ctx.strokeStyle = isBar ? '#484f58' : '#30363d'
@@ -2893,11 +2900,6 @@ export class PianoRollEditor {
     ctx.stroke()
 
     // Playhead triangle — offset during count-in so it's visible
-    const currentBeat = this.getCurrentBeat()
-    const countInOffset =
-      this._countInBeats > 0 && currentBeat <= 0
-        ? this._countInBeats * this.beatWidth
-        : 0
     const playheadX =
       this.pianoWidth + countInOffset + currentBeat * this.beatWidth
     ctx.save()
@@ -3012,10 +3014,18 @@ export class PianoRollEditor {
       }
     }
 
-    // Vertical lines (only when grid is visible)
+    // GH #198 / #31: During count-in, shift the entire grid right so the
+    // playhead sweeps through empty runway space before the first note.
+    const currentBeat = this.getCurrentBeat()
+    const countInOffset =
+      this._countInBeats > 0 && currentBeat <= 0
+        ? this._countInBeats * this.beatWidth
+        : 0
+
+    // Vertical lines (only when grid is visible) — offset during count-in
     if (this.showGrid) {
       for (let b = 0; b <= this.totalBeats; b++) {
-        const x = b * this.beatWidth
+        const x = countInOffset + b * this.beatWidth
         const isBar = b % this.config.beatsPerBar === 0
         ctx.strokeStyle = isBar ? '#30363d' : '#21262d'
         ctx.lineWidth = isBar ? 1 : 0.5
@@ -3032,16 +3042,6 @@ export class PianoRollEditor {
     // Note blocks with active highlight
     this.drawNoteBlocks(ctx, true)
 
-    // GH #198: Playhead should be visible during count-in too (even if at 0)
-    // Show playhead regardless of currentBeat value so users see continuous playback
-    const currentBeat = this.getCurrentBeat()
-    // During count-in, beats are negative (e.g., -4 to 0). Offset the
-    // playhead rightwards so it sweeps from the left edge into the grid,
-    // giving a visual countdown before the melody starts.
-    const countInOffset =
-      this._countInBeats > 0 && currentBeat <= 0
-        ? this._countInBeats * this.beatWidth
-        : 0
     const playheadX = countInOffset + currentBeat * this.beatWidth
 
     // Playhead line — always drawn during playback (including count-in)
@@ -3145,10 +3145,14 @@ export class PianoRollEditor {
 
   /** Draw connection lines between linked notes (slides/ease effects) */
   private drawNoteConnections(ctx: CanvasRenderingContext2D): void {
+    const countInOffset =
+      this._countInBeats > 0 && this.getCurrentBeat() <= 0
+        ? this._countInBeats * this.beatWidth
+        : 0
     for (const note of this.melody) {
       if (!note.linkedTo || note.linkedTo.length === 0) continue
 
-      const fromX = note.startBeat * this.beatWidth
+      const fromX = countInOffset + note.startBeat * this.beatWidth
       const fromRow = this.midiToRow(note.note.midi)
       const fromY = fromRow * this.rowHeight + this.rowHeight / 2
       const fromW = note.duration * this.beatWidth
@@ -3157,7 +3161,7 @@ export class PianoRollEditor {
         const target = this.melody.find((n) => n.id === targetId)
         if (!target) continue
 
-        const toX = target.startBeat * this.beatWidth
+        const toX = countInOffset + target.startBeat * this.beatWidth
         const toRow = this.midiToRow(target.note.midi)
         const toY = toRow * this.rowHeight + this.rowHeight / 2
         const startX = fromX + fromW
@@ -3200,11 +3204,15 @@ export class PianoRollEditor {
     ctx: CanvasRenderingContext2D,
     highlightActive: boolean,
   ): void {
+    const countInOffset =
+      this._countInBeats > 0 && this.getCurrentBeat() <= 0
+        ? this._countInBeats * this.beatWidth
+        : 0
     for (const note of this.melody) {
       const rowIdx = this.midiToRow(note.note.midi)
       if (rowIdx < 0) continue
 
-      const x = note.startBeat * this.beatWidth
+      const x = countInOffset + note.startBeat * this.beatWidth
       const y = rowIdx * this.rowHeight
       const w = note.duration * this.beatWidth
       const h = this.rowHeight - 2

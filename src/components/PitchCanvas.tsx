@@ -29,6 +29,9 @@ interface PitchCanvasProps {
   /** Per-played-note results, in playback order. Used to color-code
    *  played notes by accuracy rating (when colorCodeNotes setting is on). */
   noteResults?: () => NoteResult[]
+  /** Number of count-in beats (0 = no count-in). During count-in the
+   *  canvas shifts right so the playhead sweeps through a visible runway. */
+  countInBeats?: () => number
 }
 
 /** Map a per-note rating to (fill, stroke, text) triple for the
@@ -218,6 +221,10 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     const melody = props.melody()
     const beat = props.currentBeat()
     if (!props.isPlaying?.() || props.isPaused?.()) return
+    // During count-in (negative beats), skip arc initialization so the
+    // ball doesn't lock onto a note's offset position before the canvas
+    // shift collapses at beat 0.
+    if (beat < 0) return
     if (!canvasRef) return
     const w = canvasRef.clientWidth
     const h = canvasRef.clientHeight
@@ -350,7 +357,10 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
 
   const beatToX = (beat: number, w: number): number => {
     if (!Number.isFinite(beat) || !Number.isFinite(w)) return 0
-    const x = (beat / Math.max(1, props.totalBeats())) * w
+    const ci = props.countInBeats?.() ?? 0
+    const cBeat = props.currentBeat()
+    const offset = ci > 0 && cBeat <= 0 ? ci : 0
+    const x = ((beat + offset) / Math.max(1, props.totalBeats())) * w
     return Number.isFinite(x) ? x : 0
   }
 
