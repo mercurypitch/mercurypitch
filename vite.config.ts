@@ -1,5 +1,5 @@
 import ssl from '@vitejs/plugin-basic-ssl'
-import { copyFileSync, existsSync, rmSync } from 'node:fs'
+import { existsSync, rmSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { Plugin } from 'vite'
@@ -19,25 +19,6 @@ try {
   console.warn('Failed to get git commit sha', e)
 }
 
-/** Copy ORT companion files to dist during production build */
-function copyOrtWorkerPlugin(): Plugin {
-  return {
-    name: 'copy-ort-worker',
-    apply: 'build',
-    writeBundle() {
-      const src = resolve(
-        __dirname,
-        'node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.jsep.mjs',
-      )
-      const dest = resolve(
-        __dirname,
-        'dist/assets/ort-wasm-simd-threaded.jsep.mjs',
-      )
-      copyFileSync(src, dest)
-    },
-  }
-}
-
 /** Remove large UVR model from dist to avoid Cloudflare size limits */
 function removeLargeUvrModelPlugin(): Plugin {
   return {
@@ -45,7 +26,10 @@ function removeLargeUvrModelPlugin(): Plugin {
     apply: 'build',
     closeBundle() {
       // FIXME: Stop copying the 63mb model to dist until we need it for client-side processing
-      const modelPath = resolve(__dirname, 'dist/models/UVR-MDX-NET-Inst_HQ_3.onnx')
+      const modelPath = resolve(
+        __dirname,
+        'dist/models/UVR-MDX-NET-Inst_HQ_3.onnx',
+      )
       if (existsSync(modelPath)) {
         rmSync(modelPath)
         console.log('Removed large UVR model from dist/')
@@ -55,7 +39,11 @@ function removeLargeUvrModelPlugin(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [isDev ? ssl() : [], solidPlugin(), copyOrtWorkerPlugin(), removeLargeUvrModelPlugin()],
+  plugins: [
+    isDev ? ssl() : [],
+    solidPlugin(),
+    // removeLargeUvrModelPlugin(), // Disabled to allow same-origin model serving
+  ],
   base: './',
   resolve: {
     alias: {
@@ -75,6 +63,23 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/uvr/, ''), // Removes prefix before sending to API
       },
+      // Proxy the large model to bypass CORS during development
+      '/models/UVR-MDX-NET-Inst_HQ_3.onnx': {
+        target: 'https://pub-2aafe9bb91454abb998beb378a16d44a.r2.dev',
+        changeOrigin: true,
+      },
+    },
+  },
+  preview: {
+    headers: {
+      'Cross-Origin-Opener-Policy': 'same-origin',
+      'Cross-Origin-Embedder-Policy': 'credentialless',
+    },
+    proxy: {
+      '/models/UVR-MDX-NET-Inst_HQ_3.onnx': {
+        target: 'https://pub-2aafe9bb91454abb998beb378a16d44a.r2.dev',
+        changeOrigin: true,
+      },
     },
   },
   build: {
@@ -87,10 +92,27 @@ export default defineConfig({
             if (id.includes('onnxruntime')) return undefined
             return 'vendor'
           }
-          if (id.includes('CommunityShare') || id.includes('CommunityLeaderboard')) return 'community'
-          if (id.includes('PitchTestingTab') || id.includes('PitchAlgorithmTester') || id.includes('VocalChallenges') || id.includes('VocalAnalysis')) return 'vocal'
-          if (id.includes('UvrPanel') || id.includes('UvrGuide') || id.includes('uvr-api') || id.includes('StemMixer')) return 'uvr'
-          if (id.includes('LibraryModal') || id.includes('SessionLibraryModal')) return 'library'
+          if (
+            id.includes('CommunityShare') ||
+            id.includes('CommunityLeaderboard')
+          )
+            return 'community'
+          if (
+            id.includes('PitchTestingTab') ||
+            id.includes('PitchAlgorithmTester') ||
+            id.includes('VocalChallenges') ||
+            id.includes('VocalAnalysis')
+          )
+            return 'vocal'
+          if (
+            id.includes('UvrPanel') ||
+            id.includes('UvrGuide') ||
+            id.includes('uvr-api') ||
+            id.includes('StemMixer')
+          )
+            return 'uvr'
+          if (id.includes('LibraryModal') || id.includes('SessionLibraryModal'))
+            return 'library'
         },
       },
     },
