@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2026-05-13
+
+### Fixed
+
+- Piano practice precount synchronization and "teleporting" notes effect
+- Analysis tab UI layout collapse and component shrinking
+- Karaoke tab WAV file upload validation across different browsers
+- Vocal separator state persistence and worker re-initialization during tab navigation
+- E2E test reliability by switching to hash-based navigation
+- Various lint and typecheck errors across the codebase
+
+### Changed
+
+- Production deployments now trigger only on git tags (`v*`) instead of every push to main
+- Optimized vocal separator recovery after cancellation to avoid model reloads
+
 ## [0.3.0] - 2026-05-11
 
 ### Added
