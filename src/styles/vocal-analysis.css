@@ -139,8 +139,9 @@
 .chart-bar {
   flex: 1;
   min-height: 24px;
+  min-width: 4px;
   border-radius: 4px;
-  transition: height 0.3s ease;
+  transition: width 0.3s ease;
 }
 
 .chart-label {

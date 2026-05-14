@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { dismissOverlays } from '@/e2e/helpers/ui'
+import { dismissOverlays, switchTab } from '@/e2e/helpers/ui'
 
 test.describe('Critical Flows — GH #121', () => {
   test.beforeEach(async ({ page }) => {

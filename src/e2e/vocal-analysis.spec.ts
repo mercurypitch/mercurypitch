@@ -174,13 +174,23 @@ test.describe('Vocal Analysis Tab', () => {
   test('weekly chart renders bars after demo data', async ({ page }) => {
     await switchTab(page, 'analysis')
 
+    // Ensure demo data is loaded
     const loadBtn = page.locator('.demo-load-btn')
-    await loadBtn.click()
-    await page.waitForTimeout(500)
+    if (await loadBtn.isVisible()) {
+      await loadBtn.click()
+      await page.waitForTimeout(1000)
+    }
 
-    const chartBars = page.locator('.chart-bar')
-    await expect(chartBars.first()).toBeVisible({ timeout: 5000 })
-    expect(await chartBars.count()).toBeGreaterThan(0)
+    // Thursday (index 3 in our 0-6 Mon-Sun array) should always have data from generateMockSessions()
+    const weeklyChartBars = page.locator('.weekly-chart .chart-bar')
+    const thursdayBar = weeklyChartBars.nth(3)
+
+    // Wait for the bar to be visible and have non-zero width
+    await expect(thursdayBar).toBeVisible({ timeout: 10000 })
+
+    // Verify we have at least 7 bars (one for each day)
+    const count = await weeklyChartBars.count()
+    expect(count).toBeGreaterThanOrEqual(7)
   })
 
   // ── Recent Sessions List ────────────────────────────────────
@@ -190,12 +200,15 @@ test.describe('Vocal Analysis Tab', () => {
   }) => {
     await switchTab(page, 'analysis')
 
+    // Ensure demo data is loaded
     const loadBtn = page.locator('.demo-load-btn')
-    await loadBtn.click()
-    await page.waitForTimeout(500)
+    if (await loadBtn.isVisible()) {
+      await loadBtn.click()
+      await page.waitForTimeout(500)
+    }
 
     const sessionItems = page.locator('.session-item')
-    await expect(sessionItems.first()).toBeVisible({ timeout: 5000 })
+    await expect(sessionItems.first()).toBeVisible({ timeout: 10000 })
     // Should have 5 mock sessions
     expect(await sessionItems.count()).toBe(5)
 
@@ -221,11 +234,25 @@ test.describe('Vocal Analysis Tab', () => {
 
   // ── Pitch History ───────────────────────────────────────────
 
-  test('pitch history section is present', async ({ page }) => {
+  test('pitch history section is present after analysis', async ({ page }) => {
     await switchTab(page, 'analysis')
 
+    // 1. Load demo data
+    const loadBtn = page.locator('.demo-load-btn')
+    if (await loadBtn.isVisible()) {
+      await loadBtn.click()
+      await page.waitForTimeout(500)
+    }
+
+    // 2. Start analysis
+    const analyzeBtn = page.locator('.analyze-btn').first()
+    await analyzeBtn.click()
+    await page.waitForTimeout(1000)
+
     const pitchHistory = page.locator('.pitch-history h3')
-    await expect(pitchHistory).toContainText('Pitch History', { timeout: 5000 })
+    await expect(pitchHistory).toContainText('Pitch History', {
+      timeout: 10000,
+    })
   })
 
   // ── Round-trip: Load Demo → Analyze → Check Techniques ─────

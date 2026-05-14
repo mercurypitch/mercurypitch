@@ -4,7 +4,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createMemo, createSignal, For, onCleanup, onMount, Show, Suspense, } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, on, onCleanup, onMount, Show, Suspense, } from 'solid-js'
 import { lazy } from 'solid-js'
 import { AppSidebar } from '@/components/AppSidebar'
 
@@ -467,14 +467,34 @@ const AppShell: Component<AppProps> = (props) => {
   onCleanup(() => sessionSequencer.destroy())
 
   // ── Tab change handler with audio cleanup ──────────────────
-  const handleTabChange = async (newTab: ActiveTab) => {
-    const currentTab = activeTab()
-    if (currentTab === TAB_SINGING || currentTab === TAB_COMPOSE) {
-      await resetPlaybackState()
-    }
-    if (currentTab === TAB_PIANO && fallingNotes.isMicActive()) {
-      fallingNotes.stopMic()
-    }
+  // ── Tab-change cleanup ──────────────────────────────────────
+  // We use an effect to ensure cleanup runs whenever activeTab changes,
+  // regardless of whether it was triggered by a UI click, hash router,
+  // or an E2E bridge call.
+  createEffect(
+    on(
+      activeTab,
+      (_newTab, prevTab) => {
+        if (prevTab === undefined) return // Initial mount
+
+        // 1. Stop singing/compose playback
+        if (prevTab === TAB_SINGING || prevTab === TAB_COMPOSE) {
+          void resetPlaybackState()
+        }
+
+        // 2. Stop piano mic if active
+        if (prevTab === TAB_PIANO && fallingNotes.isMicActive()) {
+          fallingNotes.stopMic()
+        }
+
+        // 3. Clear any active walkthroughs if switching away from study-related tabs
+        // (Optional, based on UX needs)
+      },
+      { defer: true },
+    ),
+  )
+
+  const handleTabChange = (newTab: ActiveTab) => {
     setActiveTab(newTab)
   }
 
