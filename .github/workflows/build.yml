@@ -4,7 +4,6 @@ on:
   pull_request:
     branches:
       - main
-      - dev
     types:
       - opened
       - synchronize
@@ -12,7 +11,6 @@ on:
   push:
     branches:
       - main
-      - dev
     tags:
       - 'v*'
   workflow_dispatch:
@@ -67,7 +65,7 @@ jobs:
             else
               pnpm run build
             fi
-          elif [[ "${{ github.ref }}" == "refs/heads/dev" ]]; then
+          elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
             pnpm run build:dev
           elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
             pnpm run build:dev
@@ -92,9 +90,9 @@ jobs:
           command: deploy --env ${{ github.event.inputs.environment }}
           packageManager: 'pnpm'
 
-      # Deploys to dev.mercurypitch.com when pushing to the dev branch
+      # Deploys to dev.mercurypitch.com when pushing to the main branch
       - name: Deploy to Dev Environment
-        if: github.ref == 'refs/heads/dev' && github.event_name == 'push'
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
