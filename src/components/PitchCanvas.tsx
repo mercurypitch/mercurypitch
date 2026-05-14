@@ -306,11 +306,9 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
         })
       } else {
         const startX = beatToX(first.startBeat, w)
-        const rightX = beatToX(first.startBeat + first.duration, w)
         const init = computeInitialArc(
           { startBeat: first.startBeat, duration: first.duration },
           startX,
-          rightX,
           topY,
         )
         Object.assign(arcState, init, {
@@ -364,7 +362,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
           targetY = freqToY(nextItem.note.freq, h) - boxHalf
         }
 
-        const targetX = beatToX(nextItem.startBeat + nextItem.duration, w)
+        const targetX = beatToX(nextItem.startBeat, w)
 
         arcState.noteIndex = nextIdx
         arcState.sx = src.x
@@ -881,14 +879,6 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
         }
       }
 
-      if (gridLinesVisible()) {
-        ctx.strokeStyle = 'rgba(48,54,61,0.35)'
-        ctx.lineWidth = 1
-        ctx.beginPath()
-        ctx.moveTo(x1, 0)
-        ctx.lineTo(x1, h)
-        ctx.stroke()
-      }
     }
 
     const history = props.pitchHistory()
@@ -1106,19 +1096,21 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     const firstBeat = Math.ceil(windowStart)
     const lastBeat = Math.floor(windowEnd)
 
-    // Vertical beat grid lines (faint, span full height)
-    for (let b = firstBeat; b <= lastBeat; b++) {
-      const bx = ((b - windowStart) / windowBeats) * w
-      if (!Number.isFinite(bx) || bx < 0 || bx > w) continue
-      const isMajorBeat = b % 4 === 0
-      ctx.strokeStyle = isMajorBeat
-        ? 'rgba(48,54,61,0.28)'
-        : 'rgba(48,54,61,0.13)'
-      ctx.lineWidth = isMajorBeat ? 1 : 0.5
-      ctx.beginPath()
-      ctx.moveTo(bx, 0)
-      ctx.lineTo(bx, rulerY)
-      ctx.stroke()
+    // Vertical beat grid lines (faint, span full height, gated on gridLinesVisible)
+    if (gridLinesVisible()) {
+      for (let b = firstBeat; b <= lastBeat; b++) {
+        const bx = ((b - windowStart) / windowBeats) * w
+        if (!Number.isFinite(bx) || bx < 0 || bx > w) continue
+        const isMajorBeat = b % 4 === 0
+        ctx.strokeStyle = isMajorBeat
+          ? 'rgba(48,54,61,0.28)'
+          : 'rgba(48,54,61,0.13)'
+        ctx.lineWidth = isMajorBeat ? 1 : 0.5
+        ctx.beginPath()
+        ctx.moveTo(bx, 0)
+        ctx.lineTo(bx, rulerY)
+        ctx.stroke()
+      }
     }
 
     // Beat labels and tick marks on the ruler
