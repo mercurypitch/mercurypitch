@@ -878,7 +878,6 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
           ctx.textBaseline = 'alphabetic'
         }
       }
-
     }
 
     const history = props.pitchHistory()
