@@ -100,7 +100,7 @@ jobs:
           command: deploy --env dev
           packageManager: 'pnpm'
 
-      # Deploys to mercurypitch-preview.workers.dev on PRs
+      # Deploys to mercurypitch-pr-{number}.workers.dev on PRs
       - name: Deploy PR Preview
         id: deploy-preview
         if: github.event_name == 'pull_request'
@@ -108,7 +108,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: deploy --env preview
+          command: deploy --env preview --name mercurypitch-pr-${{ github.event.number }}
           packageManager: 'pnpm'
 
       # Post or update PR comment with preview link from template
