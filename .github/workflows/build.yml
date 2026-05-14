@@ -2,10 +2,19 @@ name: Build & Deploy
 
 on:
   pull_request:
-    branches: [main, dev]
+    branches:
+      - main
+      - dev
+    types:
+      - opened
+      - synchronize
+      - reopened
   push:
-    branches: [main, dev]
-    tags: ['v*']
+    branches:
+      - main
+      - dev
+    tags:
+      - 'v*'
   workflow_dispatch:
     inputs:
       environment:
@@ -17,17 +26,24 @@ on:
           - dev
           - prod
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   build-and-deploy:
     name: Build & Deploy App
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Debug Info
+        run: |
+          echo "Event: ${{ github.event_name }}"
+          echo "Ref: ${{ github.ref }}"
+          echo "Target Branch: ${{ github.base_ref }}"
 
       - uses: pnpm/action-setup@v4
         with:
@@ -43,6 +59,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build app
+        shell: bash
         run: |
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             if [[ "${{ github.event.inputs.environment }}" == "dev" ]]; then
@@ -114,7 +131,7 @@ The latest updates on your project.
 
 | Status | Name | Latest Commit | Preview URL | Updated (UTC) |
 | :--- | :--- | :--- | :--- | :--- |
-| Deployment successful!<br>[View logs](${logsUrl}) | mercurypitch | [\`${commit}\`](${commitUrl}) | [Preview URL](${url}) | ${updated} |`;
+| Deployment successful!<br>[View logs](${logsUrl}) | mercurypitch | [${commit}](${commitUrl}) | [Preview URL](${url}) | ${updated} |`;
             
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
