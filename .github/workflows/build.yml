@@ -6,6 +6,16 @@ on:
   push:
     branches: [main, dev]
     tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - prod
 
 jobs:
   build-and-deploy:
@@ -29,10 +39,17 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-
       - name: Build app
         run: |
-          if [ "${{ github.ref }}" = "refs/heads/dev" ]; then
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            if [[ "${{ github.event.inputs.environment }}" == "dev" ]]; then
+              pnpm run build:dev
+            else
+              pnpm run build
+            fi
+          elif [[ "${{ github.ref }}" == "refs/heads/dev" ]]; then
+            pnpm run build:dev
+          elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
             pnpm run build:dev
           else
             pnpm run build
@@ -45,6 +62,16 @@ jobs:
           ls dist/assets/*.css >/dev/null 2>&1 || exit 1
           echo "Build artifacts verified"
 
+      # Manual Deploy via workflow_dispatch
+      - name: Manual Deploy
+        if: github.event_name == 'workflow_dispatch'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy --env ${{ github.event.inputs.environment }}
+          packageManager: 'pnpm'
+
       # Deploys to dev.mercurypitch.com when pushing to the dev branch
       - name: Deploy to Dev Environment
         if: github.ref == 'refs/heads/dev' && github.event_name == 'push'
@@ -55,6 +82,16 @@ jobs:
           command: deploy --env dev
           packageManager: 'pnpm'
 
+      # Deploys to mercurypitch-preview.workers.dev on PRs
+      - name: Deploy PR Preview
+        if: github.event_name == 'pull_request'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy --env preview
+          packageManager: 'pnpm'
+
       # Deploys to mercurypitch.com when pushing a tag starting with 'v'
       - name: Deploy to Production Environment
         if: startsWith(github.ref, 'refs/tags/v') && github.event_name == 'push'
@@ -62,5 +99,5 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: deploy
+          command: deploy --env prod
           packageManager: 'pnpm'

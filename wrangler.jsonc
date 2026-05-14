@@ -27,17 +27,26 @@
   "compatibility_flags": [
     "nodejs_compat"
   ],
-  "routes": [
-    { "pattern": "mercurypitch.com", "custom_domain": true }
-  ],
   "env": {
+    "prod": {
+      "name": "mercurypitch",
+      "routes": [
+        { "pattern": "mercurypitch.com", "custom_domain": true }
+      ]
+    },
     "dev": {
-      "name": "mercury-pitch-dev",
+      "name": "mercurypitch-dev",
       "routes": [
         { "pattern": "dev.mercurypitch.com", "custom_domain": true }
       ],
       "build": {
         "command": "pnpm run build:dev"
+      }
+    },
+    "preview": {
+      "name": "mercurypitch-preview",
+      "vars": {
+        "ENVIRONMENT": "preview"
       }
     }
   }
