@@ -16,8 +16,9 @@ export function PlaybackProvider(props: {
   return (
     <PlaybackContext.Provider
       value={{
-        playSessionSequence: () => props.playSessionSequence,
-        loadAndPlayMelodyForSession: () => props.loadAndPlayMelodyForSession,
+        playSessionSequence: (ids: string[]) => props.playSessionSequence(ids),
+        loadAndPlayMelodyForSession: (id: string) =>
+          props.loadAndPlayMelodyForSession(id),
       }}
     >
       {props.children}

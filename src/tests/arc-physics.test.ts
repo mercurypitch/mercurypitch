@@ -137,14 +137,14 @@ describe('computeArcCy', () => {
 // computeArcEndBeat
 // ---------------------------------------------------------------------------
 describe('computeArcEndBeat', () => {
-  it('ends at the end of the target note (full duration)', () => {
+  it('ends at the start of the target note', () => {
     const note: PlayableNote = { startBeat: 8, duration: 4 }
-    expect(computeArcEndBeat(note)).toBeCloseTo(12, 5)
+    expect(computeArcEndBeat(note)).toBeCloseTo(8, 5)
   })
 
   it('handles very short notes', () => {
     const note: PlayableNote = { startBeat: 2, duration: 0.1 }
-    expect(computeArcEndBeat(note)).toBeCloseTo(2.1, 5)
+    expect(computeArcEndBeat(note)).toBeCloseTo(2, 5)
   })
 })
 
@@ -155,40 +155,38 @@ describe('shouldAdvanceArc', () => {
   const cur: PlayableNote = { startBeat: 0, duration: 2 }
   const next: PlayableNote = { startBeat: 2, duration: 2 }
 
-  it('does not advance when beat is inside current note', () => {
-    expect(shouldAdvanceArc(cur, next, 1)).toBe(false)
+  it('does not advance when beat is well before next note', () => {
+    // ARC_LOOK_AHEAD = 1, so advance zone starts at next.startBeat - 1 = 1
+    expect(shouldAdvanceArc(cur, next, 0.5)).toBe(false)
+  })
+
+  it('advances 1 beat before next note start (ARC_LOOK_AHEAD)', () => {
+    expect(shouldAdvanceArc(cur, next, 1)).toBe(true)
   })
 
   it('advances when beat reaches the next note start', () => {
     expect(shouldAdvanceArc(cur, next, 2)).toBe(true)
   })
 
-  it('advances when beat is past current note end (gap case)', () => {
+  it('does not advance mid-gap — waits until near next note', () => {
     const gapNext: PlayableNote = { startBeat: 8, duration: 2 }
-    // beat=4: past cur end (0+2=2), before next.startBeat (8), and < next.startBeat+duration (8+2=10)
-    expect(shouldAdvanceArc(cur, gapNext, 4)).toBe(true)
-    // beat=9: past next.startBeat, so also true
+    // beat=4 is well before ARC_LOOK_AHEAD zone (starts at 7)
+    expect(shouldAdvanceArc(cur, gapNext, 4)).toBe(false)
+    // beat=7: at the look-ahead boundary
+    expect(shouldAdvanceArc(cur, gapNext, 7)).toBe(true)
+    // beat=9: past next.startBeat
     expect(shouldAdvanceArc(cur, gapNext, 9)).toBe(true)
   })
 
-  it('does not advance when beat is after next note ends', () => {
-    // beat=12: past next.startBeat + next.duration (8+2=10)
-    // Should still advance because beat >= next.startBeat
+  it('advances when beat is past next note', () => {
     expect(shouldAdvanceArc(cur, { startBeat: 8, duration: 2 }, 12)).toBe(true)
   })
 
-  it('advances exactly at cur.startBeat + cur.duration (boundary)', () => {
-    expect(shouldAdvanceArc(cur, next, 2)).toBe(true)
-  })
-
-  it('advances one beat before cur.startBeat + cur.duration (should be false)', () => {
-    expect(shouldAdvanceArc(cur, next, 1.999)).toBe(false)
-  })
-
-  it('advances for consecutive notes (no gap)', () => {
+  it('advances for consecutive notes at look-ahead boundary', () => {
     const c: PlayableNote = { startBeat: 0, duration: 2 }
     const n: PlayableNote = { startBeat: 2, duration: 2 }
-    expect(shouldAdvanceArc(c, n, 1)).toBe(false)
+    expect(shouldAdvanceArc(c, n, 0.5)).toBe(false)
+    expect(shouldAdvanceArc(c, n, 1)).toBe(true) // ARC_LOOK_AHEAD
     expect(shouldAdvanceArc(c, n, 2)).toBe(true)
     expect(shouldAdvanceArc(c, n, 3)).toBe(true)
   })
@@ -253,11 +251,11 @@ describe('buildPlayable', () => {
 // computeInitialArc
 // ---------------------------------------------------------------------------
 describe('computeInitialArc', () => {
-  it('arcs diagonally from above note start to top-right corner', () => {
+  it('arcs from above down to note start position', () => {
     const note: PlayableNote = { startBeat: 0, duration: 2 }
-    const arc = computeInitialArc(note, 50, 200, 200)
-    expect(arc.sx).toBe(50) // start at note start X
-    expect(arc.ex).toBe(200) // end at note end X (top-right corner)
+    const arc = computeInitialArc(note, 50, 200)
+    expect(arc.sx).toBe(50) // start above note
+    expect(arc.ex).toBe(50) // end at note start X
     expect(arc.sy).toBe(100) // 200 - 100 = above target
     expect(arc.ey).toBe(200)
     expect(arc.cy).toBe(40) // 200 - 160
@@ -266,17 +264,17 @@ describe('computeInitialArc', () => {
 
   it('starts arc at max(0, note.startBeat - 0.5)', () => {
     const early: PlayableNote = { startBeat: 8, duration: 2 }
-    const arc = computeInitialArc(early, 60, 200, 200)
+    const arc = computeInitialArc(early, 60, 200)
     expect(arc.startBeat).toBe(7.5) // 8 - 0.5
 
     const atZero: PlayableNote = { startBeat: 0.2, duration: 2 }
-    const arc2 = computeInitialArc(atZero, 60, 200, 200)
+    const arc2 = computeInitialArc(atZero, 60, 200)
     expect(arc2.startBeat).toBe(0) // max(0, 0.2 - 0.5) = max(0, -0.3) = 0
   })
 
   it('ends at the first note end (full duration)', () => {
     const note: PlayableNote = { startBeat: 4, duration: 3 }
-    const arc = computeInitialArc(note, 100, 200, 300)
+    const arc = computeInitialArc(note, 100, 300)
     expect(arc.endBeat).toBeCloseTo(7, 5) // 4 + 3
   })
 })
@@ -329,7 +327,7 @@ describe('Arc state transitions (integration)', () => {
   ) => {
     // Use computeInitialArc for first note
     const first = notes[0]
-    const initial = computeInitialArc(first, 100, 200, 200)
+    const initial = computeInitialArc(first, 100, 200)
     const state: ArcState = {
       ...initial,
       initialized: true,
@@ -340,6 +338,14 @@ describe('Arc state transitions (integration)', () => {
     const visited: number[] = [] // note indices visited
 
     for (const beat of sampleBeats) {
+      // Record current note index BEFORE advance (so we capture every note)
+      if (
+        visited.length === 0 ||
+        visited[visited.length - 1] !== state.noteIndex
+      ) {
+        visited.push(state.noteIndex)
+      }
+
       // Backwards seek detection
       if (isBackwardsSeek(beat, prevBeat)) {
         state.initialized = false
@@ -356,7 +362,6 @@ describe('Arc state transitions (integration)', () => {
           const src = computeBallPos(beat, state)
           state.sx = src.x
           state.sy = src.y
-          // target position — just use dummy values since we test noteIndex progression
           state.ex = 100 + nextIdx * 50
           state.ey = 200
           state.cy = computeArcCy(src.y, 200, bpm)
@@ -367,14 +372,6 @@ describe('Arc state transitions (integration)', () => {
           }
           state.noteIndex = nextIdx
         }
-      }
-
-      // Record current note index
-      if (
-        visited.length === 0 ||
-        visited[visited.length - 1] !== state.noteIndex
-      ) {
-        visited.push(state.noteIndex)
       }
     }
 
@@ -504,7 +501,7 @@ describe('Arc state transitions (integration)', () => {
       ey: 300,
       cy: 50,
       startBeat: 0,
-      endBeat: computeArcEndBeat(first), // 0 + 4 = 4
+      endBeat: first.startBeat + first.duration, // 0 + 4 = 4
       noteIndex: 0,
       initialized: true,
       isRest: false,
@@ -528,7 +525,7 @@ describe('Arc state transitions (integration)', () => {
       ey: 100,
       cy: computeArcCy(ballAtStartOfNote.y, 100, 120),
       startBeat: 4,
-      endBeat: computeArcEndBeat(second), // 4 + 4 = 8
+      endBeat: second.startBeat + second.duration, // 4 + 4 = 8
       noteIndex: 1,
       initialized: true,
       isRest: false,
@@ -558,7 +555,7 @@ describe('Arc state transitions (integration)', () => {
       ey: 150,
       cy: computeArcCy(400, 150, 120),
       startBeat: 2,
-      endBeat: computeArcEndBeat(note), // 2 + 3 = 5
+      endBeat: note.startBeat + note.duration, // 2 + 3 = 5
       noteIndex: 0,
       initialized: true,
       isRest: false,
@@ -615,7 +612,7 @@ describe('Arc state transitions (integration)', () => {
       ey: 300,
       cy: 50,
       startBeat: 0,
-      endBeat: computeArcEndBeat(notes[0]), // 2
+      endBeat: notes[0].startBeat + notes[0].duration, // 2
       noteIndex: 0,
       initialized: true,
       isRest: false,
@@ -624,7 +621,7 @@ describe('Arc state transitions (integration)', () => {
     // At beat 2 (end of note 0), advance fires. Ball position at beat 2:
     const ballAtAdvance = computeBallPos(2, firstArc)
 
-    // New arc from beat 2 to beat 10 (note 1's end)
+    // New arc from beat 2 to beat 8 (note 1's start)
     const restArc: ArcState = {
       sx: ballAtAdvance.x,
       sy: ballAtAdvance.y,
@@ -632,7 +629,7 @@ describe('Arc state transitions (integration)', () => {
       ey: 100,
       cy: computeArcCy(ballAtAdvance.y, 100, 120),
       startBeat: 2,
-      endBeat: computeArcEndBeat(notes[1]), // 8 + 2 = 10
+      endBeat: computeArcEndBeat(notes[1]), // 8 (note 1 startBeat)
       noteIndex: 1,
       initialized: true,
       isRest: false,
@@ -640,20 +637,18 @@ describe('Arc state transitions (integration)', () => {
 
     // During rest (beat 5): ball is mid-flight
     const midRest = computeBallPos(5, restArc)
-    const t_mid = (5 - 2) / (10 - 2) // 0.375
+    const t_mid = (5 - 2) / (8 - 2) // 0.5
     expect(t_mid).toBeGreaterThan(0)
     expect(t_mid).toBeLessThan(1)
-    // Ball should NOT be at target corner yet
     expect(midRest.x).not.toBeCloseTo(400, 1)
 
-    // At note 1's startBeat (8): ball is still mid-flight
+    // At note 1's startBeat (8): ball arrives at corner (landing on start)
     const atNote1Start = computeBallPos(8, restArc)
-    const t_start = (8 - 2) / (10 - 2) // 0.75
-    expect(t_start).toBeGreaterThan(0)
-    expect(t_start).toBeLessThan(1)
-    expect(atNote1Start.x).not.toBeCloseTo(400, 1)
+    const t_start = (8 - 2) / (8 - 2) // 1.0
+    expect(t_start).toBeCloseTo(1, 5)
+    expect(atNote1Start.x).toBeCloseTo(400, 1)
 
-    // At note 1's end (10): ball reaches corner
+    // At note 1's end (10): ball still at corner (t clamped to 1)
     const atNote1End = computeBallPos(10, restArc)
     expect(atNote1End.x).toBeCloseTo(400, 1)
     expect(atNote1End.y).toBeCloseTo(100, 1)

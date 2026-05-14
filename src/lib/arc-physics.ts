@@ -68,26 +68,25 @@ export const computeArcCy = (
   return Math.min(srcY, targetY) - height
 }
 
-/** Compute when the arc should end (beat value). */
+/** Compute when the arc should end — the ball arrives at the note's start. */
 export const computeArcEndBeat = (targetNote: PlayableNote): number => {
-  return targetNote.startBeat + targetNote.duration
+  return targetNote.startBeat
 }
+
+/** Ball begins arcing toward the next note this many beats before its start. */
+const ARC_LOOK_AHEAD = 1
 
 /**
  * Whether the arc should advance from `cur` to `next` at the given beat.
- * Returns true when the playhead has passed the current note's end OR
- * has entered the next note's range.
+ * Waits until the playhead is within `ARC_LOOK_AHEAD` beats of the next
+ * note's start so the ball doesn't drift across long gaps.
  */
 export const shouldAdvanceArc = (
-  cur: PlayableNote,
+  _cur: PlayableNote,
   next: PlayableNote,
   beat: number,
 ): boolean => {
-  return (
-    beat >= next.startBeat ||
-    (beat >= cur.startBeat + cur.duration &&
-      beat < next.startBeat + next.duration)
-  )
+  return beat >= next.startBeat - ARC_LOOK_AHEAD
 }
 
 /**
@@ -106,12 +105,11 @@ export const buildPlayable = <T extends { isRest?: boolean }>(
 
 /**
  * Compute initial arc: ball appears above the first note and arcs down to
- * its top-right corner.
+ * its start position.
  */
 export const computeInitialArc = (
   firstNote: PlayableNote,
   startX: number,
-  targetX: number,
   targetY: number,
 ): Pick<
   ArcState,
@@ -129,7 +127,7 @@ export const computeInitialArc = (
   return {
     sx: startX,
     sy: aboveY,
-    ex: targetX,
+    ex: startX,
     ey: targetY,
     cy: targetY - 160,
     startBeat: Math.max(0, firstNote.startBeat - 0.5),
