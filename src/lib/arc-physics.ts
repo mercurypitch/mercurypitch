@@ -68,9 +68,9 @@ export const computeArcCy = (
   return Math.min(srcY, targetY) - height
 }
 
-/** Compute when the arc should end — the ball arrives at the note's start. */
+/** Compute when the arc should end — the ball arrives at the note's end. */
 export const computeArcEndBeat = (targetNote: PlayableNote): number => {
-  return targetNote.startBeat
+  return targetNote.startBeat + targetNote.duration
 }
 
 /** Ball begins arcing toward the next note this many beats before its start. */

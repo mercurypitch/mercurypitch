@@ -267,6 +267,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     if (!canvasRef) return
     const w = canvasRef.clientWidth
     const h = canvasRef.clientHeight
+    syncArcPixelX(w)
     const boxHalf = 11
 
     const playable = buildPlayable(melody)
@@ -305,7 +306,9 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
           isRest: false,
         })
       } else {
-        const startX = beatToX(first.startBeat, w)
+        // Use startBeat-consistent X so syncArcPixelX works correctly
+        const initStartBeat = Math.max(0, first.startBeat - 0.5)
+        const startX = beatToX(initStartBeat, w)
         const init = computeInitialArc(
           { startBeat: first.startBeat, duration: first.duration },
           startX,
@@ -362,7 +365,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
           targetY = freqToY(nextItem.note.freq, h) - boxHalf
         }
 
-        const targetX = beatToX(nextItem.startBeat, w)
+        const targetX = beatToX(nextItem.startBeat + nextItem.duration, w)
 
         arcState.noteIndex = nextIdx
         arcState.sx = src.x
@@ -437,6 +440,13 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     )
     const x = ((beat - windowStart) / windowBeats) * w
     return Number.isFinite(x) ? x : 0
+  }
+
+  // Keep arc pixel X coords in sync with the sliding window.
+  const syncArcPixelX = (w: number) => {
+    if (!arcState.initialized) return
+    arcState.sx = beatToX(arcState.startBeat, w)
+    arcState.ex = beatToX(arcState.endBeat, w)
   }
 
   const drawAccuracyHeatmap = (h: number) => {
@@ -942,6 +952,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       (props.isPlaying() || props.isPaused()) &&
       arcState.noteIndex >= 0
     ) {
+      syncArcPixelX(w)
       const beat = props.currentBeat()
       const pos = computeBallPos(beat, arcState)
       const ballX = pos.x

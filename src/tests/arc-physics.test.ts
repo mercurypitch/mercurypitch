@@ -137,14 +137,14 @@ describe('computeArcCy', () => {
 // computeArcEndBeat
 // ---------------------------------------------------------------------------
 describe('computeArcEndBeat', () => {
-  it('ends at the start of the target note', () => {
+  it('ends at the end of the target note (full duration)', () => {
     const note: PlayableNote = { startBeat: 8, duration: 4 }
-    expect(computeArcEndBeat(note)).toBeCloseTo(8, 5)
+    expect(computeArcEndBeat(note)).toBeCloseTo(12, 5)
   })
 
   it('handles very short notes', () => {
     const note: PlayableNote = { startBeat: 2, duration: 0.1 }
-    expect(computeArcEndBeat(note)).toBeCloseTo(2, 5)
+    expect(computeArcEndBeat(note)).toBeCloseTo(2.1, 5)
   })
 })
 
@@ -621,7 +621,7 @@ describe('Arc state transitions (integration)', () => {
     // At beat 2 (end of note 0), advance fires. Ball position at beat 2:
     const ballAtAdvance = computeBallPos(2, firstArc)
 
-    // New arc from beat 2 to beat 8 (note 1's start)
+    // New arc from beat 2 to beat 10 (note 1's end)
     const restArc: ArcState = {
       sx: ballAtAdvance.x,
       sy: ballAtAdvance.y,
@@ -629,7 +629,7 @@ describe('Arc state transitions (integration)', () => {
       ey: 100,
       cy: computeArcCy(ballAtAdvance.y, 100, 120),
       startBeat: 2,
-      endBeat: computeArcEndBeat(notes[1]), // 8 (note 1 startBeat)
+      endBeat: computeArcEndBeat(notes[1]), // 8 + 2 = 10
       noteIndex: 1,
       initialized: true,
       isRest: false,
@@ -637,18 +637,19 @@ describe('Arc state transitions (integration)', () => {
 
     // During rest (beat 5): ball is mid-flight
     const midRest = computeBallPos(5, restArc)
-    const t_mid = (5 - 2) / (8 - 2) // 0.5
+    const t_mid = (5 - 2) / (10 - 2) // 0.375
     expect(t_mid).toBeGreaterThan(0)
     expect(t_mid).toBeLessThan(1)
     expect(midRest.x).not.toBeCloseTo(400, 1)
 
-    // At note 1's startBeat (8): ball arrives at corner (landing on start)
+    // At note 1's startBeat (8): ball is still mid-flight (lands at end)
     const atNote1Start = computeBallPos(8, restArc)
-    const t_start = (8 - 2) / (8 - 2) // 1.0
-    expect(t_start).toBeCloseTo(1, 5)
-    expect(atNote1Start.x).toBeCloseTo(400, 1)
+    const t_start = (8 - 2) / (10 - 2) // 0.75
+    expect(t_start).toBeGreaterThan(0)
+    expect(t_start).toBeLessThan(1)
+    expect(atNote1Start.x).not.toBeCloseTo(400, 1)
 
-    // At note 1's end (10): ball still at corner (t clamped to 1)
+    // At note 1's end (10): ball reaches corner
     const atNote1End = computeBallPos(10, restArc)
     expect(atNote1End.x).toBeCloseTo(400, 1)
     expect(atNote1End.y).toBeCloseTo(100, 1)
