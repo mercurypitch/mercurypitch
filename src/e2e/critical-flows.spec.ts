@@ -9,6 +9,14 @@ test.describe('Critical Flows — GH #121', () => {
     await page.goto('/')
     await page.waitForSelector('#app-tabs', { timeout: 10000 })
     await dismissOverlays(page)
+
+    // Enable advanced features so all tabs are visible
+    await page.evaluate(() => {
+      const pp = (window as any).__pp
+      if (pp?.appStore?.setAdvancedFeaturesEnabled) {
+        pp.appStore.setAdvancedFeaturesEnabled(true)
+      }
+    })
   })
 
   // ============================================================
@@ -191,7 +199,7 @@ test.describe('Critical Flows — GH #121', () => {
 
   test.describe('Piano Roll — Note Entry', () => {
     test.beforeEach(async ({ page }) => {
-      await page.locator('#tab-compose').click()
+      await switchTab(page, 'compose')
       await page.waitForTimeout(2000)
     })
 
@@ -289,7 +297,7 @@ test.describe('Critical Flows — GH #121', () => {
 
     test('Ctrl+Z undo and Ctrl+Y redo keyboard shortcuts', async ({ page }) => {
       // Navigate to Editor tab first via UI click
-      await page.locator('#tab-compose').click()
+      await switchTab(page, 'compose')
       await page.waitForTimeout(1000)
 
       // Place a note first
@@ -435,7 +443,7 @@ test.describe('Critical Flows — GH #121', () => {
 
   test.describe('Practice Mode', () => {
     test('Repeat mode shows cycle progress', async ({ page }) => {
-      await page.locator('#tab-singing').click()
+      await switchTab(page, 'singing')
       await page.waitForTimeout(500)
 
       // Click Repeat mode button to reveal cycle info
@@ -448,7 +456,7 @@ test.describe('Critical Flows — GH #121', () => {
     })
 
     test('Repeat mode cycles input accepts valid values', async ({ page }) => {
-      await page.locator('#tab-singing').click()
+      await switchTab(page, 'singing')
       await page.waitForTimeout(500)
 
       // Click Repeat mode button to reveal cycles input
@@ -480,7 +488,7 @@ test.describe('Critical Flows — GH #121', () => {
     })
 
     test('Session mode shows practice sub-mode selector', async ({ page }) => {
-      await page.locator('#tab-singing').click()
+      await switchTab(page, 'singing')
       await page.waitForTimeout(500)
 
       // Click Session mode button to reveal sub-mode selector
@@ -508,7 +516,7 @@ test.describe('Critical Flows — GH #121', () => {
 
   test.describe('Settings Persistence', () => {
     test('ADSR sliders change values and persist', async ({ page }) => {
-      await page.locator('#tab-settings').click()
+      await switchTab(page, 'settings')
       await page.waitForTimeout(3000)
 
       const attack = page.locator('#adsr-attack')
@@ -540,7 +548,7 @@ test.describe('Critical Flows — GH #121', () => {
     })
 
     test('Reverb controls change settings', async ({ page }) => {
-      await page.locator('#tab-settings').click()
+      await switchTab(page, 'settings')
       await page.waitForTimeout(3000)
 
       const reverbType = page.locator('#reverb-type')
@@ -564,7 +572,7 @@ test.describe('Critical Flows — GH #121', () => {
     test('Sensitivity preset changes affect sensitivity value', async ({
       page,
     }) => {
-      await page.locator('#tab-settings').click()
+      await switchTab(page, 'settings')
       await page.waitForTimeout(3000)
 
       const sensitivitySlider = page.locator('#sensitivity')
@@ -583,7 +591,7 @@ test.describe('Critical Flows — GH #121', () => {
 
     test('Settings values persist after page reload', async ({ page }) => {
       // Set specific ADSR values
-      await page.locator('#tab-settings').click()
+      await switchTab(page, 'settings')
       await page.waitForTimeout(3000)
 
       await page.locator('#adsr-attack').fill('750')
@@ -597,7 +605,7 @@ test.describe('Critical Flows — GH #121', () => {
       await dismissOverlays(page)
 
       // Go to settings
-      await page.locator('#tab-settings').click()
+      await switchTab(page, 'settings')
       await page.waitForTimeout(3000)
 
       // Values should be persisted
@@ -614,7 +622,7 @@ test.describe('Critical Flows — GH #121', () => {
   test.describe('Tab Navigation', () => {
     test('tab switch stops audio from Practice tab', async ({ page }) => {
       // Go to Practice tab
-      await page.locator('#tab-singing').click()
+      await switchTab(page, 'singing')
       await page.waitForTimeout(1000)
 
       // Start playback
@@ -628,7 +636,7 @@ test.describe('Critical Flows — GH #121', () => {
       })
 
       // Switch to Editor tab - this should stop audio
-      await page.locator('#tab-compose').click()
+      await switchTab(page, 'compose')
       await page.waitForTimeout(1000)
 
       // Audio should have stopped - pause button should not be visible
@@ -640,7 +648,7 @@ test.describe('Critical Flows — GH #121', () => {
 
     test('tab switch stops audio from Editor tab', async ({ page }) => {
       // Go to Editor tab
-      await page.locator('#tab-compose').click()
+      await switchTab(page, 'compose')
       await page.waitForTimeout(1000)
 
       // Click Play button - this should start playback in Editor
@@ -653,7 +661,7 @@ test.describe('Critical Flows — GH #121', () => {
       ).toBeVisible({ timeout: 2000 })
 
       // Switch to Practice tab - audio should stop
-      await page.locator('#tab-singing').click()
+      await switchTab(page, 'singing')
       await page.waitForTimeout(2000)
 
       // The Play button should be visible (audio stopped)
@@ -663,22 +671,20 @@ test.describe('Critical Flows — GH #121', () => {
     })
 
     test('all tabs are accessible', async ({ page }) => {
-      const tabs = [
-        { id: '#tab-singing', name: 'Practice' },
-        { id: '#tab-compose', name: 'Editor' },
-        { id: '#tab-settings', name: 'Settings' },
+      const tabs: Array<'singing' | 'compose' | 'settings'> = [
+        'singing',
+        'compose',
+        'settings',
       ]
 
       for (const tab of tabs) {
-        await page.locator(tab.id).click()
-        await page.waitForTimeout(1000)
-        const tabEl = page.locator(tab.id)
-        await expect(tabEl).toHaveClass(/active/)
+        await switchTab(page, tab)
+        await page.waitForTimeout(500)
       }
     })
 
     test('settings panel renders correctly', async ({ page }) => {
-      await page.locator('#tab-settings').click()
+      await switchTab(page, 'settings')
       await page.waitForTimeout(3000)
 
       // Settings panel should be the main content
@@ -844,7 +850,7 @@ test.describe('Critical Flows — GH #121', () => {
     })
 
     test('Editor tab play button starts audio correctly', async ({ page }) => {
-      await page.locator('#tab-compose').click()
+      await switchTab(page, 'compose')
       await page.waitForTimeout(1000)
 
       // Verify play button exists
@@ -869,7 +875,7 @@ test.describe('Critical Flows — GH #121', () => {
     })
 
     test('PlaybackRuntime BPM syncs correctly', async ({ page }) => {
-      await page.locator('#tab-singing').click()
+      await switchTab(page, 'singing')
       await page.waitForTimeout(300)
 
       const tempoSlider = page.locator('#tempo')
