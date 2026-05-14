@@ -328,7 +328,9 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
               type="checkbox"
               checked={showPlaybackBall()}
               onChange={(e) => {
-                setShowPlaybackBall(e.currentTarget.checked)
+                const v = e.currentTarget.checked
+                setShowPlaybackBall(v)
+                if (!v && !showPlayhead()) setShowPlayhead(true)
               }}
             />
             <span class="settings-slider" />
@@ -341,7 +343,9 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
               type="checkbox"
               checked={showPlayhead()}
               onChange={(e) => {
-                setShowPlayhead(e.currentTarget.checked)
+                const v = e.currentTarget.checked
+                setShowPlayhead(v)
+                if (!v && !showPlaybackBall()) setShowPlaybackBall(true)
               }}
             />
             <span class="settings-slider" />
