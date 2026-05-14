@@ -92,6 +92,14 @@ function ratingColors(rating: NoteResult['rating']): {
 
 const GLOW_RADIUS = 20
 
+// Sliding window: show only a portion of the melody at a time so long
+// melodies don't get condensed. Pattern matches beatToHistoryX.
+const WINDOW_BEATS_DEFAULT = 16
+const WINDOW_FILL_RATIO = 0.65
+const WINDOW_MIN = 4
+const WINDOW_MAX = 32
+let visibleBeatWindow = WINDOW_BEATS_DEFAULT
+
 // Extended arc state with render-only fields
 interface RenderArcState extends ArcState {
   trail: { x: number; y: number; alpha: number; time: number }[]
@@ -139,6 +147,17 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     document.addEventListener('mouseup', () => {
       isSeeking = false
     })
+
+    // Ctrl+scroll to zoom visible beat window
+    canvasRef.addEventListener('wheel', (e) => {
+      if (!e.ctrlKey && !e.metaKey) return
+      e.preventDefault()
+      const step = e.deltaY > 0 ? 2 : -2
+      visibleBeatWindow = Math.max(
+        WINDOW_MIN,
+        Math.min(WINDOW_MAX, visibleBeatWindow + step),
+      )
+    }, { passive: false })
 
     const ro = new ResizeObserver(() => {
       resizeCanvas()
@@ -188,7 +207,20 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     const w = canvasRef.clientWidth
     if (w <= 0) return
     const totalBeats = props.totalBeats()
-    const seekBeat = Math.max(0, Math.min(totalBeats, (x / w) * totalBeats))
+    const ci = props.countInBeats?.() ?? 0
+    // Map pixel position back to a beat in the current window
+    let seekBeat: number
+    if (totalBeats <= visibleBeatWindow) {
+      const denom = totalBeats + (ci > 0 ? ci : 0)
+      seekBeat = (x / w) * denom - (ci > 0 ? ci : 0)
+    } else {
+      const cBeat = props.currentBeat()
+      const wb = Math.min(visibleBeatWindow, totalBeats + ci)
+      let ws = cBeat - wb * WINDOW_FILL_RATIO
+      ws = Math.max(-ci, Math.min(ws, totalBeats - wb))
+      seekBeat = (x / w) * wb + ws
+    }
+    seekBeat = Math.max(0, Math.min(totalBeats, seekBeat))
     eventBus.dispatch('pitchperfect:seekToBeat', { beat: seekBeat })
   }
 
@@ -221,10 +253,8 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     const melody = props.melody()
     const beat = props.currentBeat()
     if (!props.isPlaying?.() || props.isPaused?.()) return
-    // During count-in (negative beats), skip arc initialization so the
-    // ball doesn't lock onto a note's offset position before the canvas
-    // shift collapses at beat 0.
-    if (beat < 0) return
+    // Count-in arc: ball sweeps from left edge toward first note
+    // so the user sees time passing during the count-in runway.
     if (!canvasRef) return
     const w = canvasRef.clientWidth
     const h = canvasRef.clientHeight
@@ -246,19 +276,38 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       }
       const first = playable[startIdx].item
       const topY = freqToY(first.note.freq, h) - boxHalf
-      const startX = beatToX(first.startBeat, w)
-      const rightX = beatToX(first.startBeat + first.duration, w)
-      const init = computeInitialArc(
-        { startBeat: first.startBeat, duration: first.duration },
-        startX,
-        rightX,
-        topY,
-      )
-      Object.assign(arcState, init, {
-        trail: [],
-        initialized: true,
-        noteIndex: startIdx,
-      })
+
+      if (beat < 0) {
+        // Count-in arc: sweep from left edge toward first note
+        const ci = props.countInBeats?.() ?? 1
+        const startX = beatToX(-ci, w)
+        const endX = beatToX(first.startBeat, w)
+        Object.assign(arcState, {
+          sx: startX, sy: topY,
+          ex: endX, ey: topY,
+          cy: topY - 100,
+          startBeat: -ci,
+          endBeat: first.startBeat,
+          trail: [],
+          initialized: true,
+          noteIndex: startIdx,
+          isRest: false,
+        })
+      } else {
+        const startX = beatToX(first.startBeat, w)
+        const rightX = beatToX(first.startBeat + first.duration, w)
+        const init = computeInitialArc(
+          { startBeat: first.startBeat, duration: first.duration },
+          startX,
+          rightX,
+          topY,
+        )
+        Object.assign(arcState, init, {
+          trail: [],
+          initialized: true,
+          noteIndex: startIdx,
+        })
+      }
       _prevBeat = beat
       return
     }
@@ -359,8 +408,37 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     if (!Number.isFinite(beat) || !Number.isFinite(w)) return 0
     const ci = props.countInBeats?.() ?? 0
     const cBeat = props.currentBeat()
-    const offset = ci > 0 && cBeat <= 0 ? ci : 0
-    const x = ((beat + offset) / Math.max(1, props.totalBeats())) * w
+    const totalBeats = Math.max(1, props.totalBeats())
+
+    // Smooth count-in offset: easeOutCubic across a ±0.5 beat zone
+    // so notes glide from their count-in positions to final positions.
+    const TRANSITION_ZONE = 0.5
+    let countInOffset = 0
+    if (ci > 0) {
+      if (cBeat <= -TRANSITION_ZONE) {
+        countInOffset = ci
+      } else if (cBeat >= TRANSITION_ZONE) {
+        countInOffset = 0
+      } else {
+        const t = (cBeat + TRANSITION_ZONE) / (2 * TRANSITION_ZONE)
+        const eased = 1 - Math.pow(1 - t, 3)
+        countInOffset = ci * (1 - eased)
+      }
+    }
+
+    // Sliding window: when melody > visible window, show a portion
+    // and scroll with the playhead at 65% fill ratio.
+    const windowBeats = Math.min(visibleBeatWindow, totalBeats + ci)
+    if (totalBeats <= visibleBeatWindow) {
+      const denom = totalBeats + countInOffset
+      const x = ((beat + countInOffset) / Math.max(1, denom)) * w
+      return Number.isFinite(x) ? x : 0
+    }
+
+    let windowStart = cBeat - windowBeats * WINDOW_FILL_RATIO
+    windowStart = Math.max(-ci, Math.min(windowStart, totalBeats - windowBeats))
+
+    const x = ((beat - windowStart) / windowBeats) * w
     return Number.isFinite(x) ? x : 0
   }
 
@@ -967,6 +1045,87 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     }
 
     ctx.restore()
+
+    // Playhead: vertical line at current beat position, always on top
+    // and not affected by the scroll transform. Drawn on canvas so it
+    // aligns with the sliding window (the DOM playhead uses totalBeats-
+    // based percentage and would be misaligned when window is active).
+    if (props.isPlaying() || props.isPaused()) {
+      const px = beatToX(props.currentBeat(), w)
+      if (Number.isFinite(px) && px >= 0 && px <= w) {
+        // Glow
+        const playheadGrad = ctx.createLinearGradient(px, 0, px, 0)
+        ctx.save()
+        ctx.shadowColor = 'rgba(88,166,255,0.5)'
+        ctx.shadowBlur = 8
+        ctx.strokeStyle = 'rgba(88,166,255,0.85)'
+        ctx.lineWidth = 2
+        ctx.beginPath()
+        ctx.moveTo(px, 0)
+        ctx.lineTo(px, h)
+        ctx.stroke()
+        ctx.restore()
+
+        // Triangle marker on top (same style as DOM #playhead::after)
+        const triSize = 8
+        ctx.fillStyle = '#58a6ff'
+        ctx.beginPath()
+        ctx.moveTo(px, 0)
+        ctx.lineTo(px - triSize, -triSize)
+        ctx.lineTo(px + triSize, -triSize)
+        ctx.closePath()
+        ctx.fill()
+      }
+    }
+
+    // Beat ruler at the bottom
+    const rulerY = h - 14
+    const rulerH = 14
+    ctx.fillStyle = 'rgba(22,27,34,0.85)'
+    ctx.fillRect(0, rulerY, w, rulerH)
+    ctx.strokeStyle = 'rgba(48,54,61,0.6)'
+    ctx.lineWidth = 1
+    ctx.beginPath()
+    ctx.moveTo(0, rulerY)
+    ctx.lineTo(w, rulerY)
+    ctx.stroke()
+
+    const totalBeats = props.totalBeats()
+    const ci = props.countInBeats?.() ?? 0
+    const cBeat = props.currentBeat()
+    const windowBeats = Math.min(visibleBeatWindow, totalBeats + ci)
+    let windowStart: number
+    if (totalBeats <= visibleBeatWindow) {
+      windowStart = -ci
+    } else {
+      windowStart = cBeat - windowBeats * WINDOW_FILL_RATIO
+      windowStart = Math.max(-ci, Math.min(windowStart, totalBeats - windowBeats))
+    }
+    const windowEnd = windowStart + windowBeats
+    const firstBeat = Math.ceil(windowStart)
+    const lastBeat = Math.floor(windowEnd)
+
+    ctx.fillStyle = 'rgba(139,148,158,0.6)'
+    ctx.font = '9px sans-serif'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'top'
+    for (let b = firstBeat; b <= lastBeat; b++) {
+      const bx = ((b - windowStart) / windowBeats) * w
+      if (!Number.isFinite(bx) || bx < 0 || bx > w) continue
+      const isMajorBeat = b % 4 === 0
+      const tickH = isMajorBeat ? rulerH * 0.6 : rulerH * 0.35
+      ctx.strokeStyle = isMajorBeat
+        ? 'rgba(139,148,158,0.6)'
+        : 'rgba(139,148,158,0.3)'
+      ctx.lineWidth = isMajorBeat ? 1 : 0.5
+      ctx.beginPath()
+      ctx.moveTo(bx, rulerY)
+      ctx.lineTo(bx, rulerY + tickH)
+      ctx.stroke()
+      if (isMajorBeat) {
+        ctx.fillText(String(b), bx, rulerY + tickH + 1)
+      }
+    }
   }
 
   createEffect(() => {
