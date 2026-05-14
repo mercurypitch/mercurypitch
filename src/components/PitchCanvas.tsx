@@ -1074,12 +1074,12 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       }
     }
 
-    // Beat ruler at the bottom
-    const rulerY = h - 14
-    const rulerH = 14
-    ctx.fillStyle = 'rgba(22,27,34,0.85)'
+    // Beat ruler at the bottom — timeline with beat numbers and vertical grid
+    const rulerH = 22
+    const rulerY = h - rulerH
+    ctx.fillStyle = 'rgba(22,27,34,0.92)'
     ctx.fillRect(0, rulerY, w, rulerH)
-    ctx.strokeStyle = 'rgba(48,54,61,0.6)'
+    ctx.strokeStyle = 'rgba(48,54,61,0.7)'
     ctx.lineWidth = 1
     ctx.beginPath()
     ctx.moveTo(0, rulerY)
@@ -1106,26 +1106,40 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     const firstBeat = Math.ceil(windowStart)
     const lastBeat = Math.floor(windowEnd)
 
-    ctx.fillStyle = 'rgba(139,148,158,0.6)'
-    ctx.font = '9px sans-serif'
+    // Vertical beat grid lines (faint, span full height)
+    for (let b = firstBeat; b <= lastBeat; b++) {
+      const bx = ((b - windowStart) / windowBeats) * w
+      if (!Number.isFinite(bx) || bx < 0 || bx > w) continue
+      const isMajorBeat = b % 4 === 0
+      ctx.strokeStyle = isMajorBeat
+        ? 'rgba(48,54,61,0.28)'
+        : 'rgba(48,54,61,0.13)'
+      ctx.lineWidth = isMajorBeat ? 1 : 0.5
+      ctx.beginPath()
+      ctx.moveTo(bx, 0)
+      ctx.lineTo(bx, rulerY)
+      ctx.stroke()
+    }
+
+    // Beat labels and tick marks on the ruler
+    ctx.fillStyle = 'rgba(201,209,217,0.75)'
+    ctx.font = '10px sans-serif'
     ctx.textAlign = 'center'
     ctx.textBaseline = 'top'
     for (let b = firstBeat; b <= lastBeat; b++) {
       const bx = ((b - windowStart) / windowBeats) * w
       if (!Number.isFinite(bx) || bx < 0 || bx > w) continue
       const isMajorBeat = b % 4 === 0
-      const tickH = isMajorBeat ? rulerH * 0.6 : rulerH * 0.35
+      const tickH = isMajorBeat ? rulerH * 0.45 : rulerH * 0.25
       ctx.strokeStyle = isMajorBeat
-        ? 'rgba(139,148,158,0.6)'
-        : 'rgba(139,148,158,0.3)'
+        ? 'rgba(139,148,158,0.55)'
+        : 'rgba(139,148,158,0.25)'
       ctx.lineWidth = isMajorBeat ? 1 : 0.5
       ctx.beginPath()
       ctx.moveTo(bx, rulerY)
       ctx.lineTo(bx, rulerY + tickH)
       ctx.stroke()
-      if (isMajorBeat) {
-        ctx.fillText(String(b), bx, rulerY + tickH + 1)
-      }
+      ctx.fillText(String(b), bx, rulerY + tickH + 2)
     }
   }
 
