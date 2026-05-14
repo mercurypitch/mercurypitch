@@ -21,6 +21,9 @@ jobs:
   build-and-deploy:
     name: Build & Deploy App
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
 
     steps:
       - name: Checkout code
@@ -84,6 +87,7 @@ jobs:
 
       # Deploys to mercurypitch-preview.workers.dev on PRs
       - name: Deploy PR Preview
+        id: deploy-preview
         if: github.event_name == 'pull_request'
         uses: cloudflare/wrangler-action@v3
         with:
@@ -91,6 +95,52 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: deploy --env preview
           packageManager: 'pnpm'
+
+      # Post or update PR comment with preview link
+      - name: Post Preview Link
+        if: github.event_name == 'pull_request' && steps.deploy-preview.outputs.deployment-url != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const url = '${{ steps.deploy-preview.outputs.deployment-url }}';
+            const commit = context.sha.substring(0, 7);
+            const commitUrl = `${context.server_url}/${context.repo.owner}/${context.repo.repo}/commit/${context.sha}`;
+            const logsUrl = `${context.server_url}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const updated = new Date().toUTCString();
+            
+            const body = `### Deploying with Cloudflare Workers
+
+The latest updates on your project.
+
+| Status | Name | Latest Commit | Preview URL | Updated (UTC) |
+| :--- | :--- | :--- | :--- | :--- |
+| Deployment successful!<br>[View logs](${logsUrl}) | mercurypitch | [\`${commit}\`](${commitUrl}) | [Preview URL](${url}) | ${updated} |`;
+            
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(comment => 
+              comment.user.type === 'Bot' && comment.body.includes('Deploying with Cloudflare Workers')
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: body
+              });
+            }
 
       # Deploys to mercurypitch.com when pushing a tag starting with 'v'
       - name: Deploy to Production Environment
