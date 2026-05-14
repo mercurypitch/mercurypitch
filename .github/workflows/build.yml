@@ -111,25 +111,30 @@ jobs:
           command: deploy --env preview
           packageManager: 'pnpm'
 
-      # Post or update PR comment with preview link
+      # Post or update PR comment with preview link from template
       - name: Post Preview Link
         if: github.event_name == 'pull_request' && steps.deploy-preview.outputs.deployment-url != ''
         uses: actions/github-script@v7
         with:
           script: |
+            const fs = require('fs');
+            const path = require('path');
+            
+            const templatePath = path.join(process.env.GITHUB_WORKSPACE, '.github/workflows/pr-deployment-table.md');
+            let body = fs.readFileSync(templatePath, 'utf8');
+            
             const url = '${{ steps.deploy-preview.outputs.deployment-url }}';
             const commit = context.sha.substring(0, 7);
             const commitUrl = `${context.server_url}/${context.repo.owner}/${context.repo.repo}/commit/${context.sha}`;
             const logsUrl = `${context.server_url}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
             const updated = new Date().toUTCString();
             
-            const body = `### Deploying with Cloudflare Workers
-
-The latest updates on your project.
-
-| Status | Name | Latest Commit | Preview URL | Updated (UTC) |
-| :--- | :--- | :--- | :--- | :--- |
-| Deployment successful!<br>[View logs](${logsUrl}) | mercurypitch | [${commit}](${commitUrl}) | [Preview URL](${url}) | ${updated} |`;
+            body = body
+              .replace('LOGS_URL', logsUrl)
+              .replace('COMMIT_SHA', commit)
+              .replace('COMMIT_URL', commitUrl)
+              .replace('PREVIEW_URL', url)
+              .replace('UPDATED_TIME', updated);
             
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
