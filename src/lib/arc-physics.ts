@@ -9,10 +9,15 @@ export interface PlayableNote {
 }
 
 export interface ArcState {
+  /** Beat-space source X (mapped to pixels via beatToX at render time). */
   sx: number
+  /** Pixel-space source Y (derived from note frequency). */
   sy: number
+  /** Beat-space target X. */
   ex: number
+  /** Pixel-space target Y. */
   ey: number
+  /** Pixel-space control-point Y (below the arc for the jump effect). */
   cy: number
   startBeat: number
   endBeat: number
@@ -25,35 +30,36 @@ export const BALL_RADIUS = 8
 
 /**
  * Quadratic Bezier position at a given beat.
- * Returns the source position if `startBeat >= endBeat` (degenerate arc).
+ * Returns `beatX` in beat-space (map to pixels via beatToX at render time)
+ * and `y` in pixel-space. Returns the source position if degenerate.
  */
 export const computeBallPos = (
   beat: number,
   s: ArcState,
-): { x: number; y: number } => {
+): { beatX: number; y: number } => {
   if (s.startBeat < s.endBeat) {
     const t = Math.max(
       0,
       Math.min(1, (beat - s.startBeat) / (s.endBeat - s.startBeat)),
     )
     if (s.isRest) {
-      const x = (1 - t) * s.sx + t * s.ex
-      // Sine wave effect: completes some cycles over the duration
-      // The duration in beats determines how many cycles to make it look nice
-      const beats = s.endBeat - s.startBeat
-      const cycles = Math.max(1, Math.round(beats))
+      const beatX = (1 - t) * s.sx + t * s.ex
+      const durBeats = s.endBeat - s.startBeat
+      const cycles = Math.max(1, Math.round(durBeats))
       const sineVal = Math.sin(t * Math.PI * 2 * cycles) * 40
       const y = (1 - t) * s.sy + t * s.ey + sineVal
-      return { x, y }
+      return { beatX, y }
     } else {
       const midX = (s.sx + s.ex) / 2
       return {
-        x: (1 - t) * (1 - t) * s.sx + 2 * (1 - t) * t * midX + t * t * s.ex,
-        y: (1 - t) * (1 - t) * s.sy + 2 * (1 - t) * t * s.cy + t * t * s.ey,
+        beatX:
+          (1 - t) * (1 - t) * s.sx + 2 * (1 - t) * t * midX + t * t * s.ex,
+        y:
+          (1 - t) * (1 - t) * s.sy + 2 * (1 - t) * t * s.cy + t * t * s.ey,
       }
     }
   }
-  return { x: s.sx, y: s.sy }
+  return { beatX: s.sx, y: s.sy }
 }
 
 /** Compute arc control-point Y based on vertical distance and BPM. */
@@ -105,11 +111,12 @@ export const buildPlayable = <T extends { isRest?: boolean }>(
 
 /**
  * Compute initial arc: ball appears above the first note and arcs down to
- * its start position.
+ * its end position (top-right corner).  All X coordinates are beat-space;
+ * callers map to pixels via beatToX.
  */
 export const computeInitialArc = (
   firstNote: PlayableNote,
-  startX: number,
+  startBeatX: number,
   targetY: number,
 ): Pick<
   ArcState,
@@ -125,9 +132,9 @@ export const computeInitialArc = (
 > => {
   const aboveY = targetY - 100
   return {
-    sx: startX,
+    sx: startBeatX,
     sy: aboveY,
-    ex: startX,
+    ex: firstNote.startBeat + firstNote.duration,
     ey: targetY,
     cy: targetY - 160,
     startBeat: Math.max(0, firstNote.startBeat - 0.5),

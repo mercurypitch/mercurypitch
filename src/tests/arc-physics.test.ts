@@ -25,25 +25,25 @@ describe('computeBallPos', () => {
 
   it('returns source position at t=0 (start of arc)', () => {
     const pos = computeBallPos(0, base)
-    expect(pos.x).toBeCloseTo(100, 1)
+    expect(pos.beatX).toBeCloseTo(100, 1)
     expect(pos.y).toBeCloseTo(300, 1)
   })
 
   it('returns target position at t=1 (end of arc)', () => {
     const pos = computeBallPos(1, base)
-    expect(pos.x).toBeCloseTo(300, 1)
+    expect(pos.beatX).toBeCloseTo(300, 1)
     expect(pos.y).toBeCloseTo(100, 1)
   })
 
   it('returns target position when beat > endBeat', () => {
     const pos = computeBallPos(2, base)
-    expect(pos.x).toBeCloseTo(300, 1)
+    expect(pos.beatX).toBeCloseTo(300, 1)
     expect(pos.y).toBeCloseTo(100, 1)
   })
 
   it('returns source position when beat < startBeat', () => {
     const pos = computeBallPos(-1, base)
-    expect(pos.x).toBeCloseTo(100, 1)
+    expect(pos.beatX).toBeCloseTo(100, 1)
     expect(pos.y).toBeCloseTo(300, 1)
   })
 
@@ -53,22 +53,22 @@ describe('computeBallPos', () => {
     // The curve is pulled toward the control point (cy=50) but doesn't pass through it
     expect(pos.y).toBeCloseTo(125, 0)
     expect(pos.y).toBeLessThan(base.sy) // above source (ascended from 300)
-    expect(pos.x).toBeCloseTo(200, 1) // midX = 200
+    expect(pos.beatX).toBeCloseTo(200, 1) // midX = 200
   })
 
   it('handles degenerate arc (startBeat >= endBeat)', () => {
     const deg: ArcState = { ...base, startBeat: 1, endBeat: 1 }
     const pos = computeBallPos(1, deg)
-    expect(pos.x).toBe(base.sx)
+    expect(pos.beatX).toBe(base.sx)
     expect(pos.y).toBe(base.sy)
   })
 
   it('handles negative start/end beats', () => {
     const neg: ArcState = { ...base, startBeat: -2, endBeat: -1 }
     const start = computeBallPos(-2, neg)
-    expect(start.x).toBeCloseTo(100, 1)
+    expect(start.beatX).toBeCloseTo(100, 1)
     const end = computeBallPos(-1, neg)
-    expect(end.x).toBeCloseTo(300, 1)
+    expect(end.beatX).toBeCloseTo(300, 1)
   })
 
   it('vertical-only arc (same X, different Y) produces no horizontal movement', () => {
@@ -81,11 +81,11 @@ describe('computeBallPos', () => {
       cy: 50,
     }
     const start = computeBallPos(0, vert)
-    expect(start.x).toBeCloseTo(200, 1)
+    expect(start.beatX).toBeCloseTo(200, 1)
     const mid = computeBallPos(0.5, vert)
-    expect(mid.x).toBeCloseTo(200, 1)
+    expect(mid.beatX).toBeCloseTo(200, 1)
     const end = computeBallPos(1, vert)
-    expect(end.x).toBeCloseTo(200, 1)
+    expect(end.beatX).toBeCloseTo(200, 1)
   })
 })
 
@@ -251,11 +251,11 @@ describe('buildPlayable', () => {
 // computeInitialArc
 // ---------------------------------------------------------------------------
 describe('computeInitialArc', () => {
-  it('arcs from above down to note start position', () => {
+  it('arcs from above down to note end position', () => {
     const note: PlayableNote = { startBeat: 0, duration: 2 }
-    const arc = computeInitialArc(note, 50, 200)
-    expect(arc.sx).toBe(50) // start above note
-    expect(arc.ex).toBe(50) // end at note start X
+    const arc = computeInitialArc(note, 0, 200)
+    expect(arc.sx).toBe(0) // start beat
+    expect(arc.ex).toBe(2) // end beat = startBeat + duration (top-right corner)
     expect(arc.sy).toBe(100) // 200 - 100 = above target
     expect(arc.ey).toBe(200)
     expect(arc.cy).toBe(40) // 200 - 160
@@ -360,9 +360,9 @@ describe('Arc state transitions (integration)', () => {
         const next = notes[nextIdx]
         if (shouldAdvanceArc(cur, next, beat)) {
           const src = computeBallPos(beat, state)
-          state.sx = src.x
+          state.sx = src.beatX
           state.sy = src.y
-          state.ex = 100 + nextIdx * 50
+          state.ex = next.startBeat + next.duration
           state.ey = 200
           state.cy = computeArcCy(src.y, 200, bpm)
           state.startBeat = beat
@@ -512,14 +512,14 @@ describe('Arc state transitions (integration)', () => {
     const ballAtStartOfNote = computeBallPos(4, firstArc)
 
     // Ball should be at the target corner by beat 4 (t=1)
-    expect(ballAtStartOfNote.x).toBeCloseTo(300, 1)
+    expect(ballAtStartOfNote.beatX).toBeCloseTo(300, 1)
     expect(ballAtStartOfNote.y).toBeCloseTo(300, 1)
 
     // After advancing, new arc starts at beat 4 and ends at beat 8.
     // At beat 4 (t=0), ball should be at source = old end position (in the air).
     const second: PlayableNote = { startBeat: 4, duration: 4 }
     const newArc: ArcState = {
-      sx: ballAtStartOfNote.x,
+      sx: ballAtStartOfNote.beatX,
       sy: ballAtStartOfNote.y,
       ex: 500,
       ey: 100,
@@ -533,16 +533,16 @@ describe('Arc state transitions (integration)', () => {
 
     // At beat 4 (t=0): ball at source
     const atStart = computeBallPos(4, newArc)
-    expect(atStart.x).toBeCloseTo(300, 1)
+    expect(atStart.beatX).toBeCloseTo(300, 1)
 
     // At beat 5 (t=0.25): ball is mid-flight, NOT at corner
     const midFlight = computeBallPos(5, newArc)
-    expect(midFlight.x).not.toBeCloseTo(500, 1)
+    expect(midFlight.beatX).not.toBeCloseTo(500, 1)
     expect(midFlight.y).not.toBeCloseTo(100, 1)
 
     // At beat 8 (t=1): ball at corner
     const atEnd = computeBallPos(8, newArc)
-    expect(atEnd.x).toBeCloseTo(500, 1)
+    expect(atEnd.beatX).toBeCloseTo(500, 1)
     expect(atEnd.y).toBeCloseTo(100, 1)
   })
 
@@ -563,12 +563,12 @@ describe('Arc state transitions (integration)', () => {
 
     // 80% through the note — ball should NOT be at corner
     const beforeEnd = computeBallPos(4.8, arc)
-    expect(beforeEnd.x).not.toBeCloseTo(200, 1)
+    expect(beforeEnd.beatX).not.toBeCloseTo(200, 1)
     expect(beforeEnd.y).not.toBeCloseTo(150, 1)
 
     // At exact end beat — ball IS at corner
     const atEnd = computeBallPos(5, arc)
-    expect(atEnd.x).toBeCloseTo(200, 1)
+    expect(atEnd.beatX).toBeCloseTo(200, 1)
     expect(atEnd.y).toBeCloseTo(150, 1)
   })
 
@@ -623,7 +623,7 @@ describe('Arc state transitions (integration)', () => {
 
     // New arc from beat 2 to beat 10 (note 1's end)
     const restArc: ArcState = {
-      sx: ballAtAdvance.x,
+      sx: ballAtAdvance.beatX,
       sy: ballAtAdvance.y,
       ex: 400,
       ey: 100,
@@ -640,18 +640,18 @@ describe('Arc state transitions (integration)', () => {
     const t_mid = (5 - 2) / (10 - 2) // 0.375
     expect(t_mid).toBeGreaterThan(0)
     expect(t_mid).toBeLessThan(1)
-    expect(midRest.x).not.toBeCloseTo(400, 1)
+    expect(midRest.beatX).not.toBeCloseTo(400, 1)
 
     // At note 1's startBeat (8): ball is still mid-flight (lands at end)
     const atNote1Start = computeBallPos(8, restArc)
     const t_start = (8 - 2) / (10 - 2) // 0.75
     expect(t_start).toBeGreaterThan(0)
     expect(t_start).toBeLessThan(1)
-    expect(atNote1Start.x).not.toBeCloseTo(400, 1)
+    expect(atNote1Start.beatX).not.toBeCloseTo(400, 1)
 
     // At note 1's end (10): ball reaches corner
     const atNote1End = computeBallPos(10, restArc)
-    expect(atNote1End.x).toBeCloseTo(400, 1)
+    expect(atNote1End.beatX).toBeCloseTo(400, 1)
     expect(atNote1End.y).toBeCloseTo(100, 1)
   })
 

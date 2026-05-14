@@ -267,7 +267,6 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     if (!canvasRef) return
     const w = canvasRef.clientWidth
     const h = canvasRef.clientHeight
-    syncArcPixelX(w)
     const boxHalf = 11
 
     const playable = buildPlayable(melody)
@@ -288,14 +287,13 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       const topY = freqToY(first.note.freq, h) - boxHalf
 
       if (beat < 0) {
-        // Count-in arc: sweep from left edge toward first note
+        // Count-in arc: sweep from left edge toward first note.
+        // sx/ex are beat-space (mapped to pixels via beatToX at render).
         const ci = props.countInBeats?.() ?? 1
-        const startX = beatToX(-ci, w)
-        const endX = beatToX(first.startBeat, w)
         Object.assign(arcState, {
-          sx: startX,
+          sx: -ci,
           sy: topY,
-          ex: endX,
+          ex: first.startBeat,
           ey: topY,
           cy: topY - 100,
           startBeat: -ci,
@@ -306,12 +304,10 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
           isRest: false,
         })
       } else {
-        // Use startBeat-consistent X so syncArcPixelX works correctly
         const initStartBeat = Math.max(0, first.startBeat - 0.5)
-        const startX = beatToX(initStartBeat, w)
         const init = computeInitialArc(
           { startBeat: first.startBeat, duration: first.duration },
-          startX,
+          initStartBeat,
           topY,
         )
         Object.assign(arcState, init, {
@@ -365,12 +361,11 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
           targetY = freqToY(nextItem.note.freq, h) - boxHalf
         }
 
-        const targetX = beatToX(nextItem.startBeat + nextItem.duration, w)
-
         arcState.noteIndex = nextIdx
-        arcState.sx = src.x
+        arcState.sx = src.beatX
         arcState.sy = src.y
-        arcState.ex = targetX
+        // Target top-right corner of the next note (beat-space).
+        arcState.ex = next.startBeat + next.duration
         arcState.ey = targetY
         arcState.cy = computeArcCy(src.y, targetY, bpm())
         arcState.startBeat = beat
@@ -396,7 +391,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       )
       if (t > 0 && t < 1) {
         const pos = computeBallPos(beat, arcState)
-        arcState.trail.push({ x: pos.x, y: pos.y, alpha: 0.6, time: now })
+        arcState.trail.push({ beatX: pos.beatX, y: pos.y, alpha: 0.6, time: now })
       }
       arcState.trail = arcState.trail.filter((pt) => now - pt.time < 80)
     }
@@ -440,13 +435,6 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     )
     const x = ((beat - windowStart) / windowBeats) * w
     return Number.isFinite(x) ? x : 0
-  }
-
-  // Keep arc pixel X coords in sync with the sliding window.
-  const syncArcPixelX = (w: number) => {
-    if (!arcState.initialized) return
-    arcState.sx = beatToX(arcState.startBeat, w)
-    arcState.ex = beatToX(arcState.endBeat, w)
   }
 
   const drawAccuracyHeatmap = (h: number) => {
@@ -952,10 +940,10 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       (props.isPlaying() || props.isPaused()) &&
       arcState.noteIndex >= 0
     ) {
-      syncArcPixelX(w)
       const beat = props.currentBeat()
       const pos = computeBallPos(beat, arcState)
-      const ballX = pos.x
+      // Map beat-space X to pixel-space via the sliding-window transform.
+      const ballX = beatToX(pos.beatX, w)
       const ballY = pos.y
 
       // Store position for next frame's continuous chaining
@@ -972,13 +960,14 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
         const age = (performance.now() - pt.time) / 80
         const alpha = Math.max(0, 0.3 * (1 - age))
         if (alpha > 0.01) {
-          if (!Number.isFinite(pt.x) || !Number.isFinite(pt.y)) continue
-          const grad = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, 12)
+          const tx = beatToX(pt.beatX, w)
+          if (!Number.isFinite(tx) || !Number.isFinite(pt.y)) continue
+          const grad = ctx.createRadialGradient(tx, pt.y, 0, tx, pt.y, 12)
           grad.addColorStop(0, `rgba(200,220,255,${alpha})`)
           grad.addColorStop(1, 'rgba(200,220,255,0)')
           ctx.fillStyle = grad
           ctx.beginPath()
-          ctx.arc(pt.x, pt.y, 12, 0, Math.PI * 2)
+          ctx.arc(tx, pt.y, 12, 0, Math.PI * 2)
           ctx.fill()
         }
       }
