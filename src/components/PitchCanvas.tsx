@@ -9,7 +9,7 @@ import { BALL_RADIUS, buildPlayable, computeArcCy, computeArcEndBeat, computeBal
 import { eventBus } from '@/lib/event-bus'
 import { beatToHistoryX } from '@/lib/pitch-history-window'
 import { bpm, focusMode, micWaveVisible } from '@/stores'
-import { colorCodeNotes, flameMode, gridLinesVisible, showAccuracyPercent, showFocusBall, showPlaybackBall, } from '@/stores/settings-store'
+import { colorCodeNotes, flameMode, gridLinesVisible, showAccuracyPercent, showFocusBall, showPlaybackBall, showPlayhead, } from '@/stores/settings-store'
 import type { MelodyItem, NoteResult, PitchSample, ScaleDegree } from '@/types'
 
 interface PitchCanvasProps {
@@ -149,15 +149,19 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     })
 
     // Ctrl+scroll to zoom visible beat window
-    canvasRef.addEventListener('wheel', (e) => {
-      if (!e.ctrlKey && !e.metaKey) return
-      e.preventDefault()
-      const step = e.deltaY > 0 ? 2 : -2
-      visibleBeatWindow = Math.max(
-        WINDOW_MIN,
-        Math.min(WINDOW_MAX, visibleBeatWindow + step),
-      )
-    }, { passive: false })
+    canvasRef.addEventListener(
+      'wheel',
+      (e) => {
+        if (!e.ctrlKey && !e.metaKey) return
+        e.preventDefault()
+        const step = e.deltaY > 0 ? 2 : -2
+        visibleBeatWindow = Math.max(
+          WINDOW_MIN,
+          Math.min(WINDOW_MAX, visibleBeatWindow + step),
+        )
+      },
+      { passive: false },
+    )
 
     const ro = new ResizeObserver(() => {
       resizeCanvas()
@@ -208,19 +212,24 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     if (w <= 0) return
     const totalBeats = props.totalBeats()
     const ci = props.countInBeats?.() ?? 0
-    // Map pixel position back to a beat in the current window
-    let seekBeat: number
-    if (totalBeats <= visibleBeatWindow) {
-      const denom = totalBeats + (ci > 0 ? ci : 0)
-      seekBeat = (x / w) * denom - (ci > 0 ? ci : 0)
+    const rangeStart = -ci
+    const rangeBeats = totalBeats - rangeStart
+    const windowBeats = Math.min(visibleBeatWindow, rangeBeats)
+    let windowStart: number
+    if (rangeBeats <= visibleBeatWindow) {
+      windowStart = rangeStart
     } else {
       const cBeat = props.currentBeat()
-      const wb = Math.min(visibleBeatWindow, totalBeats + ci)
-      let ws = cBeat - wb * WINDOW_FILL_RATIO
-      ws = Math.max(-ci, Math.min(ws, totalBeats - wb))
-      seekBeat = (x / w) * wb + ws
+      windowStart = cBeat - windowBeats * WINDOW_FILL_RATIO
+      windowStart = Math.max(
+        rangeStart,
+        Math.min(windowStart, totalBeats - windowBeats),
+      )
     }
-    seekBeat = Math.max(0, Math.min(totalBeats, seekBeat))
+    const seekBeat = Math.max(
+      0,
+      Math.min(totalBeats, (x / w) * windowBeats + windowStart),
+    )
     eventBus.dispatch('pitchperfect:seekToBeat', { beat: seekBeat })
   }
 
@@ -283,8 +292,10 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
         const startX = beatToX(-ci, w)
         const endX = beatToX(first.startBeat, w)
         Object.assign(arcState, {
-          sx: startX, sy: topY,
-          ex: endX, ey: topY,
+          sx: startX,
+          sy: topY,
+          ex: endX,
+          ey: topY,
           cy: topY - 100,
           startBeat: -ci,
           endBeat: first.startBeat,
@@ -409,35 +420,23 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     const ci = props.countInBeats?.() ?? 0
     const cBeat = props.currentBeat()
     const totalBeats = Math.max(1, props.totalBeats())
+    // Count-in beats live in negative space; the full range is [-ci, totalBeats].
+    const rangeStart = -ci
+    const rangeBeats = totalBeats - rangeStart
 
-    // Smooth count-in offset: easeOutCubic across a ±0.5 beat zone
-    // so notes glide from their count-in positions to final positions.
-    const TRANSITION_ZONE = 0.5
-    let countInOffset = 0
-    if (ci > 0) {
-      if (cBeat <= -TRANSITION_ZONE) {
-        countInOffset = ci
-      } else if (cBeat >= TRANSITION_ZONE) {
-        countInOffset = 0
-      } else {
-        const t = (cBeat + TRANSITION_ZONE) / (2 * TRANSITION_ZONE)
-        const eased = 1 - Math.pow(1 - t, 3)
-        countInOffset = ci * (1 - eased)
-      }
-    }
-
-    // Sliding window: when melody > visible window, show a portion
-    // and scroll with the playhead at 65% fill ratio.
-    const windowBeats = Math.min(visibleBeatWindow, totalBeats + ci)
-    if (totalBeats <= visibleBeatWindow) {
-      const denom = totalBeats + countInOffset
-      const x = ((beat + countInOffset) / Math.max(1, denom)) * w
+    // When the full range fits, show everything (no scrolling).
+    const windowBeats = Math.min(visibleBeatWindow, rangeBeats)
+    if (rangeBeats <= visibleBeatWindow) {
+      const x = ((beat - rangeStart) / Math.max(1, rangeBeats)) * w
       return Number.isFinite(x) ? x : 0
     }
 
+    // Sliding window: scroll with the playhead at 65% fill ratio.
     let windowStart = cBeat - windowBeats * WINDOW_FILL_RATIO
-    windowStart = Math.max(-ci, Math.min(windowStart, totalBeats - windowBeats))
-
+    windowStart = Math.max(
+      rangeStart,
+      Math.min(windowStart, totalBeats - windowBeats),
+    )
     const x = ((beat - windowStart) / windowBeats) * w
     return Number.isFinite(x) ? x : 0
   }
@@ -1048,13 +1047,10 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
 
     // Playhead: vertical line at current beat position, always on top
     // and not affected by the scroll transform. Drawn on canvas so it
-    // aligns with the sliding window (the DOM playhead uses totalBeats-
-    // based percentage and would be misaligned when window is active).
-    if (props.isPlaying() || props.isPaused()) {
+    // aligns with the sliding window.
+    if ((props.isPlaying() || props.isPaused()) && showPlayhead()) {
       const px = beatToX(props.currentBeat(), w)
       if (Number.isFinite(px) && px >= 0 && px <= w) {
-        // Glow
-        const playheadGrad = ctx.createLinearGradient(px, 0, px, 0)
         ctx.save()
         ctx.shadowColor = 'rgba(88,166,255,0.5)'
         ctx.shadowBlur = 8
@@ -1093,13 +1089,18 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     const totalBeats = props.totalBeats()
     const ci = props.countInBeats?.() ?? 0
     const cBeat = props.currentBeat()
-    const windowBeats = Math.min(visibleBeatWindow, totalBeats + ci)
+    const rangeStart = -ci
+    const rangeBeats = totalBeats - rangeStart
+    const windowBeats = Math.min(visibleBeatWindow, rangeBeats)
     let windowStart: number
-    if (totalBeats <= visibleBeatWindow) {
-      windowStart = -ci
+    if (rangeBeats <= visibleBeatWindow) {
+      windowStart = rangeStart
     } else {
       windowStart = cBeat - windowBeats * WINDOW_FILL_RATIO
-      windowStart = Math.max(-ci, Math.min(windowStart, totalBeats - windowBeats))
+      windowStart = Math.max(
+        rangeStart,
+        Math.min(windowStart, totalBeats - windowBeats),
+      )
     }
     const windowEnd = windowStart + windowBeats
     const firstBeat = Math.ceil(windowStart)

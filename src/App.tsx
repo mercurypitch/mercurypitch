@@ -88,7 +88,7 @@ import { buildScaleMelody, buildSessionPlaybackMelody, } from '@/lib/session-bui
 import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
 import { storageGet } from '@/lib/storage'
 import { openWalkthroughChapter, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPlaybackSpeed, setScaleType, showSelection, walkthroughModalOpen, } from '@/stores'
-import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, showNotification, showPlayhead, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, toggleMicWaveVisible, } from '@/stores'
+import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, toggleMicWaveVisible, } from '@/stores'
 import { advancedFeaturesEnabled, devFeaturesEnabled } from '@/stores/app-store'
 import { melodyStore } from '@/stores/melody-store'
 import { getSession, templateToSession } from '@/stores/session-store'
@@ -304,7 +304,6 @@ const AppShell: Component<AppProps> = (props) => {
     currentNoteIndex,
     activePlaybackItems,
     totalBeats,
-    playheadPosition,
     handlePlay,
     handlePause,
     handleResume,
@@ -583,10 +582,6 @@ const AppShell: Component<AppProps> = (props) => {
     if (pr.score >= 50) return 'Okay!'
     return 'Needs Work'
   })
-
-  const playheadVisible = createMemo(
-    () => (isPlaying() || isPaused()) && showPlayhead(),
-  )
 
   const closeScoreOverlay = () => {
     setPracticeResult(null)
@@ -1235,15 +1230,6 @@ const AppShell: Component<AppProps> = (props) => {
                         noteResults={noteResults}
                         countInBeats={() => countIn()}
                       />
-                      <div
-                        id="playhead"
-                        style={{
-                          display: playheadVisible() ? 'block' : 'none',
-                          left: `${playheadPosition()}%`,
-                        }}
-                      >
-                        <div class="playhead-marker" style={{ left: '0' }} />
-                      </div>
                     </div>
 
                     <div id="history-container">

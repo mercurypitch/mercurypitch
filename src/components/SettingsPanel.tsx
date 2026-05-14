@@ -560,15 +560,14 @@ export const SettingsPanel: Component = () => {
                 id="vis-playback-ball"
                 checked={showPlaybackBall()}
                 onChange={(e) => {
-                  setShowPlaybackBall(e.currentTarget.checked)
+                  const v = e.currentTarget.checked
+                  setShowPlaybackBall(v)
+                  if (!v && !showPlayhead()) setShowPlayhead(true)
                 }}
               />
               <span class="settings-slider" />
             </label>
-            <small>
-              Show the animated jumping ball during playback mode. Off by
-              default.
-            </small>
+            <small>Show the animated jumping ball during playback mode.</small>
           </div>
 
           <div class="settings-row">
@@ -597,7 +596,9 @@ export const SettingsPanel: Component = () => {
                 id="vis-playhead"
                 checked={showPlayhead()}
                 onChange={(e) => {
-                  setShowPlayhead(e.currentTarget.checked)
+                  const v = e.currentTarget.checked
+                  setShowPlayhead(v)
+                  if (!v && !showPlaybackBall()) setShowPlaybackBall(true)
                 }}
               />
               <span class="settings-slider" />
