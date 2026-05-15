@@ -58,7 +58,7 @@ If a branch or PR already exists for the issue, **continue work on it** rather t
 
 ### 1.3 Create a Feature Branch
 
-If no existing work is found, create a new branch from `<default-branch>` (typically `dev`; fallback to `main` if the repo has no `dev`):
+If no existing work is found, create a new branch from `<default-branch>` (typically `main`):
 
 ```bash
 git fetch origin <default-branch>
@@ -67,10 +67,10 @@ git checkout -b <branch-name> origin/<default-branch>
 
 **Branch naming conventions:**
 
-| Type | Pattern | Example |
-|------|---------|---------|
+| Type    | Pattern                                  | Example                                 |
+| ------- | ---------------------------------------- | --------------------------------------- |
 | Feature | `feat/issue-<issue-number>-<short-desc>` | `feat/issue-234-add-sensitivity-slider` |
-| Bug fix | `fix/issue-<issue-number>-<short-desc>` | `fix/issue-235-null-pointer-on-startup` |
+| Bug fix | `fix/issue-<issue-number>-<short-desc>`  | `fix/issue-235-null-pointer-on-startup` |
 
 - The `<short-desc>` is 2–4 kebab-case words from the issue title
 - **Never branch from or push to `<default-branch>` directly.** Git hooks reject direct commits/pushes to protected branches.
@@ -119,6 +119,7 @@ be misdetected as ~65 Hz. Replace with plain sum/r0 normalization.
 ```
 
 **Rules:**
+
 - `<issue-id>` starts with the project's issue prefix (e.g., `GH-234`, `#234`)
 - `<commit-title>` is a short, imperative-mood summary ("Fix X", "Add Y", "Remove Z")
 - `<commit-body>` explains **what** changed and **why** — not how
@@ -226,21 +227,21 @@ After completing one issue, move to the next relevant one. This keeps work align
 
 ## Quick Reference
 
-| Action | Command |
-|--------|---------|
-| View issue | `gh issue view <issue-number> --repo <repo>` |
-| View issue comments | `gh issue view <issue-number> --repo <repo> --comments` |
-| List open issues | `gh issue list --repo <repo> --state open --limit 10` |
-| List open PRs | `gh pr list --repo <repo> --state open` |
-| View PR | `gh pr view <pr-number> --repo <repo>` |
-| View PR comments | `gh pr view <pr-number> --repo <repo> --comments` |
-| List review comments | `gh api repos/<repo>/pulls/<pr-number>/comments` |
-| Create feature branch | `git checkout -b <branch-name> origin/<default-branch>` |
-| Commit | `git add -A && git commit -m "<issue-id>: <commit-title>"` |
-| Push | `git push origin <branch-name>` |
-| Create PR | `gh pr create --repo <repo> --base <default-branch> --head <branch-name>` |
-| Rebase on default branch | `git rebase origin <default-branch>` |
-| Authenticate GH CLI | `export GITHUB_TOKEN=<token> && gh auth login --with-token` |
+| Action                   | Command                                                                   |
+| ------------------------ | ------------------------------------------------------------------------- |
+| View issue               | `gh issue view <issue-number> --repo <repo>`                              |
+| View issue comments      | `gh issue view <issue-number> --repo <repo> --comments`                   |
+| List open issues         | `gh issue list --repo <repo> --state open --limit 10`                     |
+| List open PRs            | `gh pr list --repo <repo> --state open`                                   |
+| View PR                  | `gh pr view <pr-number> --repo <repo>`                                    |
+| View PR comments         | `gh pr view <pr-number> --repo <repo> --comments`                         |
+| List review comments     | `gh api repos/<repo>/pulls/<pr-number>/comments`                          |
+| Create feature branch    | `git checkout -b <branch-name> origin/<default-branch>`                   |
+| Commit                   | `git add -A && git commit -m "<issue-id>: <commit-title>"`                |
+| Push                     | `git push origin <branch-name>`                                           |
+| Create PR                | `gh pr create --repo <repo> --base <default-branch> --head <branch-name>` |
+| Rebase on default branch | `git rebase origin <default-branch>`                                      |
+| Authenticate GH CLI      | `export GITHUB_TOKEN=<token> && gh auth login --with-token`               |
 
 ---
 
@@ -264,18 +265,18 @@ After completing one issue, move to the next relevant one. This keeps work align
 
 These placeholders appear throughout the guide. Substitute them with actual values at runtime.
 
-| Variable | Description | How to determine |
-|----------|-------------|------------------|
-| `<repo>` | The repository in `owner/name` format | Ask user for repo link, or run `gh repo view --json nameWithOwner -q .nameWithOwner` |
-| `<issue-number>` | The GitHub issue number (digits only) | Extracted from the issue URL or the issue title the user provides |
-| `<issue-id>` | The formatted issue ID for commits (e.g., `GH-234`, `#234`) | Prefix from project convention + issue number |
-| `<issue-number-or-keyword>` | Issue number or search keyword for branch lookup | Same as `<issue-number>`, or a partial branch name |
-| `<default-branch>` | The base branch for all work (e.g., `dev`) | Check with `git branch -a`: look for `dev`; fallback to `main` |
-| `<branch-name>` | Full feature branch name | `feat/issue-<issue-number>-<short-desc>` or `fix/issue-<issue-number>-<short-desc>` |
-| `<short-desc>` | 2–4 kebab-case words from the issue title | Derived from issue title (e.g., "Fix autocorrelation normalization bias" → `fix-autocorr-norm`) |
-| `<commit-title>` | Short imperative-mood summary | Written by you based on what changed |
-| `<commit-body>` | Paragraph explaining what and why | Written by you — describe the change and the reason |
-| `<pr-number>` | The pull request number (digits only) | Available after PR creation, or from GitHub |
-| `<pr-title>` | Descriptive PR title | Written by you, matching commit style |
-| `<pr-body>` | Full PR description with Summary, Changes, Testing sections | Written by you following the template in section 4.2 |
-| `<token>` | GitHub Personal Access Token (classic or fine-grained) | Ask the user if `gh` is not authenticated |
+| Variable                    | Description                                                 | How to determine                                                                                |
+| --------------------------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `<repo>`                    | The repository in `owner/name` format                       | Ask user for repo link, or run `gh repo view --json nameWithOwner -q .nameWithOwner`            |
+| `<issue-number>`            | The GitHub issue number (digits only)                       | Extracted from the issue URL or the issue title the user provides                               |
+| `<issue-id>`                | The formatted issue ID for commits (e.g., `GH-234`, `#234`) | Prefix from project convention + issue number                                                   |
+| `<issue-number-or-keyword>` | Issue number or search keyword for branch lookup            | Same as `<issue-number>`, or a partial branch name                                              |
+| `<default-branch>`          | The base branch for all work (e.g., `main`)                 | Check with `git branch -a`: look for `main`                                                     |
+| `<branch-name>`             | Full feature branch name                                    | `feat/issue-<issue-number>-<short-desc>` or `fix/issue-<issue-number>-<short-desc>`             |
+| `<short-desc>`              | 2–4 kebab-case words from the issue title                   | Derived from issue title (e.g., "Fix autocorrelation normalization bias" → `fix-autocorr-norm`) |
+| `<commit-title>`            | Short imperative-mood summary                               | Written by you based on what changed                                                            |
+| `<commit-body>`             | Paragraph explaining what and why                           | Written by you — describe the change and the reason                                             |
+| `<pr-number>`               | The pull request number (digits only)                       | Available after PR creation, or from GitHub                                                     |
+| `<pr-title>`                | Descriptive PR title                                        | Written by you, matching commit style                                                           |
+| `<pr-body>`                 | Full PR description with Summary, Changes, Testing sections | Written by you following the template in section 4.2                                            |
+| `<token>`                   | GitHub Personal Access Token (classic or fine-grained)      | Ask the user if `gh` is not authenticated                                                       |
