@@ -3,8 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { onCleanup } from 'solid-js'
-import { createMemo, createSignal, For, onMount, Show } from 'solid-js'
+import { onCleanup, createMemo, createSignal, For, onMount, Show } from 'solid-js'
 import { IconPlay } from '@/components/hidden-features-icons'
 import { useEngines } from '@/contexts/EngineContext'
 import { IS_DEV } from '@/lib/defaults'

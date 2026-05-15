@@ -1,12 +1,11 @@
 import type { PlaybackMode } from '@/features/tabs/constants'
-import type { MelodyItem, MelodyNote, NoteResult, PracticeResult, SessionResult, } from '@/types'
-// ── Helpers ──────────────────────────────────────────────────
-import type { AccuracyRating, NoteName } from '@/types'
+import type { AccuracyRating, MelodyItem, MelodyNote, NoteName, NoteResult, PracticeResult, SessionResult } from '@/types'
 
-let _idCounter = 1000
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+let _idCounter = 1000
 
 function nextId(): number {
   return _idCounter++
@@ -62,7 +61,6 @@ function makeMelodyItem(
   }
 }
 
-// ── Melody Templates ─────────────────────────────────────────
 // ---------------------------------------------------------------------------
 // Melody patterns (MIDI note sequences)
 // ---------------------------------------------------------------------------
