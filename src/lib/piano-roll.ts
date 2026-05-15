@@ -3587,8 +3587,9 @@ export class PianoRollEditor {
     } else {
       // Slides and ease need 2 selected notes
       if (selected.length !== 2) {
-        this.hintEl.textContent =
-          'Slides require exactly 2 notes selected (order by time). Vibrato works on 1 or more notes.'
+        if (this.hintEl)
+          this.hintEl.textContent =
+            'Slides require exactly 2 notes selected (order by time). Vibrato works on 1 or more notes.'
         return
       }
 
@@ -3599,21 +3600,24 @@ export class PianoRollEditor {
 
       // Validation based on effect type
       if (type === 'slide-up' && second.note.midi <= first.note.midi) {
-        this.hintEl.textContent =
-          'Ascending slide requires the second note to be higher than the first.'
+        if (this.hintEl)
+          this.hintEl.textContent =
+            'Ascending slide requires the second note to be higher than the first.'
         return
       }
       if (type === 'slide-down' && second.note.midi >= first.note.midi) {
-        this.hintEl.textContent =
-          'Descending slide requires the second note to be lower than the first.'
+        if (this.hintEl)
+          this.hintEl.textContent =
+            'Descending slide requires the second note to be lower than the first.'
         return
       }
       if (
         (type === 'ease-in' || type === 'ease-out') &&
         second.note.midi === first.note.midi
       ) {
-        this.hintEl.textContent =
-          'Ease In/Out requires two notes at different pitches.'
+        if (this.hintEl)
+          this.hintEl.textContent =
+            'Ease In/Out requires two notes at different pitches.'
         return
       }
 
@@ -3626,8 +3630,9 @@ export class PianoRollEditor {
           n.startBeat < second.startBeat,
       )
       if (intervening.length > 0) {
-        this.hintEl.textContent =
-          'Cannot link notes: there are other notes between them.'
+        if (this.hintEl)
+          this.hintEl.textContent =
+            'Cannot link notes: there are other notes between them.'
         return
       }
 
