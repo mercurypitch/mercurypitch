@@ -1,5 +1,5 @@
 import type { PlaybackMode } from '@/features/tabs/constants'
-import type { AccuracyRating, MelodyItem, MelodyNote, NoteName, NoteResult, PracticeResult, SessionResult } from '@/types'
+import type { AccuracyRating, MelodyItem, MelodyNote, NoteName, NoteResult, PracticeResult, SessionResult, } from '@/types'
 
 // ---------------------------------------------------------------------------
 // Helpers

@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { onCleanup, createMemo, createSignal, For, onMount, Show } from 'solid-js'
+import { createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import { IconPlay } from '@/components/hidden-features-icons'
 import { useEngines } from '@/contexts/EngineContext'
 import { IS_DEV } from '@/lib/defaults'
@@ -1374,409 +1374,102 @@ export const VocalAnalysis: Component = () => {
             </Show>
           </div>
 
-          {/* Phase 1: Intensity Profile */}
-          <Show when={intensityProfile()}>
-            <div class="stat-card phase1-card">
-              <h3>Intensity Profile</h3>
-              <div class="phase1-metrics">
-                <div class="phase1-metric">
-                  <span class="phase1-label">Avg Level</span>
-                  <span class="phase1-value">
-                    {intensityProfile()!.avgDb.toFixed(1)} dB
-                  </span>
-                </div>
-                <div class="phase1-metric">
-                  <span class="phase1-label">Peak</span>
-                  <span class="phase1-value">
-                    {intensityProfile()!.peakDb.toFixed(1)} dB
-                  </span>
-                </div>
-                <div class="phase1-metric">
-                  <span class="phase1-label">Dynamic Range</span>
-                  <span class="phase1-value">
-                    {intensityProfile()!.dynamicRange.toFixed(1)} dB
-                  </span>
-                </div>
-              </div>
-              <div class="phase1-bar-container">
-                <div
-                  class="phase1-bar phase1-bar-intensity"
-                  style={{
-                    width: `${Math.min(100, Math.max(0, (intensityProfile()!.dynamicRange / 40) * 100))}%`,
-                  }}
-                />
-              </div>
-              <div class="phase1-hint">
-                {intensityProfile()!.dynamicRange > 20
-                  ? 'Good dynamic range — expressive singing'
-                  : 'Limited dynamic range — try varying your volume more'}
-              </div>
-            </div>
-          </Show>
-
-          {/* Phase 1: Breathiness Meter */}
-          <Show when={breathiness()}>
-            <div class="stat-card phase1-card">
-              <h3>Breathiness Efficiency</h3>
-              <div class="phase1-metrics">
-                <div class="phase1-metric">
-                  <span class="phase1-label">HNR</span>
-                  <span class="phase1-value">{breathiness()!.hnrDb} dB</span>
-                </div>
-                <div class="phase1-metric">
-                  <span class="phase1-label">Quality</span>
-                  <span
-                    class={`phase1-badge phase1-badge--${breathiness()!.quality}`}
-                  >
-                    {breathiness()!.quality}
-                  </span>
-                </div>
-                <div class="phase1-metric">
-                  <span class="phase1-label">Efficiency</span>
-                  <span class="phase1-value">{breathiness()!.efficiency}%</span>
-                </div>
-              </div>
-              <div class="phase1-bar-container">
-                <div
-                  class="phase1-bar phase1-bar-breathiness"
-                  style={{
-                    width: `${breathiness()!.efficiency}%`,
-                  }}
-                />
-              </div>
-              <div class="phase1-hint">
-                {breathiness()!.quality === 'resonant'
-                  ? 'Clean, efficient tone — great breath support'
-                  : breathiness()!.quality === 'pressed'
-                    ? 'Very tight tone — try relaxing slightly'
-                    : breathiness()!.quality === 'breathy'
-                      ? 'Airy tone — work on breath support exercises'
-                      : 'Decent tone — keep working on resonance'}
-              </div>
-            </div>
-          </Show>
-
-          {/* Phase 1: Slide Tracking */}
-          <Show when={slideTracking()}>
-            <div class="stat-card phase1-card">
-              <h3>Slide & Transition Analysis</h3>
-              <div class="phase1-metrics">
-                <div class="phase1-metric">
-                  <span class="phase1-label">Transitions</span>
-                  <span class="phase1-value">
-                    {slideTracking()!.totalTransitions}
-                  </span>
-                </div>
-                <div class="phase1-metric">
-                  <span class="phase1-label">Clean</span>
-                  <span class="phase1-value phase1-value--good">
-                    {slideTracking()!.cleanCount}
-                  </span>
-                </div>
-                <div class="phase1-metric">
-                  <span class="phase1-label">Scoops</span>
-                  <span class="phase1-value phase1-value--warn">
-                    {slideTracking()!.scoopCount}
-                  </span>
-                </div>
-                <div class="phase1-metric">
-                  <span class="phase1-label">Overall</span>
-                  <span class="phase1-value">
-                    {slideTracking()!.overallScore}%
-                  </span>
-                </div>
-              </div>
-              <div class="phase1-bar-container">
-                <div
-                  class="phase1-bar phase1-bar-slides"
-                  style={{
-                    width: `${slideTracking()!.overallScore}%`,
-                  }}
-                />
-              </div>
-              <Show when={slideTracking()!.slides.length > 0}>
-                <div class="phase1-slide-list">
-                  <For each={slideTracking()!.slides.slice(0, 5)}>
-                    {(slide) => (
-                      <div
-                        class={`phase1-slide-item phase1-slide--${slide.type}`}
-                      >
-                        <span class="phase1-slide-dir">
-                          {slide.direction === 'ascending' ? '↑' : '↓'}
-                        </span>
-                        <span class="phase1-slide-span">
-                          {slide.semitoneSpan.toFixed(1)} st
-                        </span>
-                        <span class="phase1-slide-type">{slide.type}</span>
-                        <span class="phase1-slide-score">{slide.score}%</span>
-                      </div>
-                    )}
-                  </For>
-                </div>
-              </Show>
-              <Show when={slideTracking()!.slides.length === 0}>
-                <div class="phase1-hint">
-                  Not enough note transitions detected. Try singing a melody
-                  with more note changes.
-                </div>
-              </Show>
-            </div>
-          </Show>
-
-          {/* Phase 2.1: Vibrato Oscilloscope */}
-          <Show when={vibratoAnalysis()}>
-            <div class="stat-card phase2-card">
-              <h3>Vibrato Detection</h3>
-              <div class="phase2-metrics">
-                <div class="phase2-metric">
-                  <span class="phase2-label">Rate</span>
-                  <span class="phase2-value">
-                    {vibratoAnalysis()!.detected
-                      ? `${vibratoAnalysis()!.rateHz.toFixed(1)} Hz`
-                      : '—'}
-                  </span>
-                </div>
-                <div class="phase2-metric">
-                  <span class="phase2-label">Depth</span>
-                  <span class="phase2-value">
-                    {vibratoAnalysis()!.detected
-                      ? `${vibratoAnalysis()!.depthCents}¢`
-                      : '—'}
-                  </span>
-                </div>
-                <div class="phase2-metric">
-                  <span class="phase2-label">Type</span>
-                  <span
-                    class={`phase2-badge phase2-badge--${vibratoAnalysis()!.classification}`}
-                  >
-                    {vibratoAnalysis()!.classification === 'none'
-                      ? 'None'
-                      : vibratoAnalysis()!.classification === 'slow-operatic'
-                        ? 'Operatic'
-                        : vibratoAnalysis()!.classification === 'natural'
-                          ? 'Natural'
-                          : vibratoAnalysis()!.classification === 'nervous'
-                            ? 'Nervous'
-                            : 'Wide'}
-                  </span>
-                </div>
-                <div class="phase2-metric">
-                  <span class="phase2-label">Confidence</span>
-                  <span class="phase2-value">
-                    {vibratoAnalysis()!.confidence}%
-                  </span>
-                </div>
-              </div>
-              <div class="phase2-bar-container">
-                <div
-                  class="phase2-bar phase2-bar-vibrato"
-                  style={{
-                    width: `${vibratoAnalysis()!.confidence}%`,
-                  }}
-                />
-              </div>
-              <div class="phase2-hint">
-                <Show
-                  when={vibratoAnalysis()!.detected}
-                  fallback="No vibrato detected — try sustaining a note with gentle pitch wobble"
-                >
-                  {vibratoAnalysis()!.classification === 'natural'
-                    ? 'Natural, musical vibrato — excellent control'
-                    : vibratoAnalysis()!.classification === 'slow-operatic'
-                      ? 'Slow, operatic vibrato — dramatic and controlled'
-                      : vibratoAnalysis()!.classification === 'nervous'
-                        ? 'Fast, nervous vibrato — try slowing it down'
-                        : 'Wide vibrato — consider tightening pitch control'}
-                </Show>
-              </div>
-            </div>
-          </Show>
-
-          {/* Phase 2.2: Harmonic Richness Score */}
-          <Show when={harmonicRichness()}>
-            <div class="stat-card phase2-card">
-              <h3>Harmonic Richness</h3>
-              <div class="phase2-metrics">
-                <div class="phase2-metric">
-                  <span class="phase2-label">Score</span>
-                  <span class="phase2-value">
-                    {harmonicRichness()!.richnessScore}
-                  </span>
-                </div>
-                <div class="phase2-metric">
-                  <span class="phase2-label">Harmonics</span>
-                  <span class="phase2-value">
-                    {harmonicRichness()!.harmonicCount}
-                  </span>
-                </div>
-                <div class="phase2-metric">
-                  <span class="phase2-label">Quality</span>
-                  <span
-                    class={`phase2-badge phase2-badge--${harmonicRichness()!.quality}`}
-                  >
-                    {harmonicRichness()!.quality === 'thin'
-                      ? 'Thin'
-                      : harmonicRichness()!.quality === 'normal'
-                        ? 'Normal'
-                        : harmonicRichness()!.quality === 'rich'
-                          ? 'Rich'
-                          : 'Very Rich'}
-                  </span>
-                </div>
-              </div>
-              <div class="phase2-bar-container">
-                <div
-                  class="phase2-bar phase2-bar-harmonics"
-                  style={{
-                    width: `${harmonicRichness()!.richnessScore}%`,
-                  }}
-                />
-              </div>
-              <div class="phase2-hint">
-                {harmonicRichness()!.quality === 'very-rich'
-                  ? 'Exceptionally rich tone — full harmonic spectrum'
-                  : harmonicRichness()!.quality === 'rich'
-                    ? 'Rich, full tone with strong overtones'
-                    : harmonicRichness()!.quality === 'normal'
-                      ? 'Decent harmonic presence — room for more resonance'
-                      : 'Thin tone — try opening your throat for more resonance'}
-              </div>
-            </div>
-          </Show>
-
-          {/* Phase 2.3: Resonance Zone Detection */}
-          <Show when={resonanceData()}>
-            <div class="stat-card phase2-card">
-              <h3>Resonance Zone</h3>
-              <div class="phase2-resonance-map">
-                <div
-                  class="phase2-zone phase2-zone-head"
-                  classList={{
-                    'phase2-zone--active':
-                      resonanceData()!.dominantZone === 'head' ||
-                      resonanceData()!.dominantZone === 'mixed',
-                  }}
-                  style={{
-                    opacity: Math.max(0.3, resonanceData()!.headRatio * 2),
-                  }}
-                >
-                  <span class="phase2-zone-label">Head</span>
-                  <span class="phase2-zone-pct">
-                    {(resonanceData()!.headRatio * 100).toFixed(0)}%
-                  </span>
-                </div>
-                <div
-                  class="phase2-zone phase2-zone-mask"
-                  classList={{
-                    'phase2-zone--active':
-                      resonanceData()!.dominantZone === 'mask' ||
-                      resonanceData()!.dominantZone === 'mixed',
-                  }}
-                  style={{
-                    opacity: Math.max(0.3, resonanceData()!.maskRatio * 2),
-                  }}
-                >
-                  <span class="phase2-zone-label">Mask</span>
-                  <span class="phase2-zone-pct">
-                    {(resonanceData()!.maskRatio * 100).toFixed(0)}%
-                  </span>
-                </div>
-                <div
-                  class="phase2-zone phase2-zone-chest"
-                  classList={{
-                    'phase2-zone--active':
-                      resonanceData()!.dominantZone === 'chest' ||
-                      resonanceData()!.dominantZone === 'mixed',
-                  }}
-                  style={{
-                    opacity: Math.max(0.3, resonanceData()!.chestRatio * 2),
-                  }}
-                >
-                  <span class="phase2-zone-label">Chest</span>
-                  <span class="phase2-zone-pct">
-                    {(resonanceData()!.chestRatio * 100).toFixed(0)}%
-                  </span>
-                </div>
-              </div>
-              <div class="phase2-metrics">
-                <div class="phase2-metric">
-                  <span class="phase2-label">Dominant</span>
-                  <span
-                    class={`phase2-badge phase2-badge--${resonanceData()!.dominantZone}`}
-                  >
-                    {resonanceData()!.dominantZone === 'chest'
-                      ? 'Chest'
-                      : resonanceData()!.dominantZone === 'mask'
-                        ? 'Mask'
-                        : resonanceData()!.dominantZone === 'head'
-                          ? 'Head'
-                          : 'Mixed'}
-                  </span>
-                </div>
-                <div class="phase2-metric">
-                  <span class="phase2-label">Centroid</span>
-                  <span class="phase2-value">
-                    {resonanceData()!.spectralCentroid} Hz
-                  </span>
-                </div>
-              </div>
-              <div class="phase2-hint">
-                {resonanceData()!.dominantZone === 'mixed'
-                  ? 'Balanced mixed voice — smooth blend of registers'
-                  : resonanceData()!.dominantZone === 'chest'
-                    ? 'Strong chest resonance — powerful lower register'
-                    : resonanceData()!.dominantZone === 'mask'
-                      ? 'Forward mask resonance — bright, projected tone'
-                      : 'Head voice dominant — light, airy upper register'}
-              </div>
-            </div>
-          </Show>
-
-          {/* Phase 2.4: Vocal Fatigue Tracker */}
-          <Show when={fatigueData()}>
-            <div class="stat-card phase2-card">
-              <h3>Vocal Fatigue Tracker</h3>
-              <div class="phase2-metrics">
-                <div class="phase2-metric">
-                  <span class="phase2-label">Breath</span>
-                  <span
-                    class={`phase2-value ${fatigueData()!.trends.hnrTrend < -5 ? 'phase2-value--warn' : ''}`}
-                  >
-                    {fatigueData()!.trends.hnrTrend > 0 ? '+' : ''}
-                    {fatigueData()!.trends.hnrTrend}%
-                  </span>
-                </div>
-                <div class="phase2-metric">
-                  <span class="phase2-label">Harmonics</span>
-                  <span
-                    class={`phase2-value ${fatigueData()!.trends.richnessTrend < -5 ? 'phase2-value--warn' : ''}`}
-                  >
-                    {fatigueData()!.trends.richnessTrend > 0 ? '+' : ''}
-                    {fatigueData()!.trends.richnessTrend}%
-                  </span>
-                </div>
-                <div class="phase2-metric">
-                  <span class="phase2-label">Stability</span>
-                  <span
-                    class={`phase2-value ${fatigueData()!.trends.stabilityTrend < -5 ? 'phase2-value--warn' : ''}`}
-                  >
-                    {fatigueData()!.trends.stabilityTrend > 0 ? '+' : ''}
-                    {fatigueData()!.trends.stabilityTrend}%
-                  </span>
-                </div>
-              </div>
-              <Show when={fatigueData()!.fatigued}>
-                <div class="phase2-alert">{fatigueData()!.alert}</div>
-              </Show>
-              <Show when={!fatigueData()!.fatigued}>
-                <div class="phase2-hint">
-                  {fatigueData()!.checkpoints.length < 3
-                    ? 'Need more session data to track fatigue trends'
-                    : 'Voice metrics are stable — no fatigue detected'}
-                </div>
-              </Show>
-            </div>
-          </Show>
+          {/* Phase 1 & 2 History Analysis Grid */}
+          <div class="live-cards-grid analysis-results-grid">
+            <Show when={intensityProfile()}>
+              <LiveMetricCard
+                label="Intensity"
+                value={`${intensityProfile()!.avgDb.toFixed(1)} dB`}
+                detail={`Peak ${intensityProfile()!.peakDb.toFixed(1)} dB (Range ${intensityProfile()!.dynamicRange.toFixed(1)} dB)`}
+                highlight={intensityProfile()!.dynamicRange > 20}
+                icon={IconBolt}
+                color="#f85149"
+              />
+            </Show>
+            <Show when={breathiness()}>
+              <LiveMetricCard
+                label="Breathiness"
+                value={breathiness()!.quality}
+                detail={`HNR: ${breathiness()!.hnrDb} dB (Eff. ${breathiness()!.efficiency}%)`}
+                highlight={breathiness()!.quality === 'resonant'}
+                icon={IconWind}
+                color="#58a6ff"
+              />
+            </Show>
+            <Show when={slideTracking()}>
+              <LiveMetricCard
+                label="Slides & Transitions"
+                value={`${slideTracking()!.totalTransitions} detected`}
+                detail={`Clean: ${slideTracking()!.cleanCount} | Score: ${slideTracking()!.overallScore}%`}
+                highlight={slideTracking()!.overallScore >= 80}
+                icon={IconChartLine}
+                color="#d29922"
+              />
+            </Show>
+            <Show when={vibratoAnalysis()}>
+              <LiveMetricCard
+                label="Vibrato"
+                value={
+                  vibratoAnalysis()!.detected
+                    ? `${vibratoAnalysis()!.rateHz.toFixed(1)} Hz`
+                    : 'None'
+                }
+                detail={
+                  vibratoAnalysis()!.detected
+                    ? `${vibratoAnalysis()!.classification} (Depth ${vibratoAnalysis()!.depthCents}¢)`
+                    : 'No vibrato detected'
+                }
+                highlight={vibratoAnalysis()!.classification === 'natural'}
+                icon={IconChartBar}
+                color="#bc8cff"
+              />
+            </Show>
+            <Show when={harmonicRichness()}>
+              <LiveMetricCard
+                label="Harmonics"
+                value={harmonicRichness()!.quality}
+                detail={`Score: ${harmonicRichness()!.richnessScore}/100 (~${harmonicRichness()!.harmonicCount} harmonics)`}
+                highlight={
+                  harmonicRichness()!.quality === 'rich' ||
+                  harmonicRichness()!.quality === 'very-rich'
+                }
+                icon={IconGuitar}
+                color="#3fb950"
+              />
+            </Show>
+            <Show when={resonanceData()}>
+              <LiveMetricCard
+                label="Resonance"
+                value={resonanceData()!.dominantZone}
+                detail={`Centroid: ${resonanceData()!.spectralCentroid.toFixed(0)} Hz`}
+                highlight={
+                  resonanceData()!.dominantZone === 'mixed' ||
+                  resonanceData()!.dominantZone === 'mask'
+                }
+                icon={IconKeyboard}
+                color="#2dd4bf"
+              />
+            </Show>
+            <Show when={fatigueData()}>
+              <LiveMetricCard
+                label="Fatigue Tracker"
+                value={fatigueData()!.fatigued ? 'Fatigued' : 'Stable'}
+                detail={
+                  fatigueData()!.fatigued
+                    ? (fatigueData()!.alert ?? 'Fatigue detected')
+                    : fatigueData()!.checkpoints.length < 3
+                      ? 'Need more data'
+                      : 'No fatigue detected'
+                }
+                highlight={
+                  !fatigueData()!.fatigued &&
+                  fatigueData()!.checkpoints.length >= 3
+                }
+                icon={IconFire}
+                color={fatigueData()!.fatigued ? '#f85149' : '#3fb950'}
+              />
+            </Show>
+          </div>
 
           {/* Spectrogram Display */}
           <div class="spectrogram-display">
