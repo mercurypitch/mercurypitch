@@ -99,14 +99,11 @@ export const shouldAdvanceArc = (
  * Filter melody items into a playable list (excludes rests).
  * `idx` is the original melody index; items are in playback order.
  */
-export const buildPlayable = <T extends { isRest?: boolean }>(
+export const buildPlayable = <T extends { isRest?: boolean; startBeat: number }>(
   melody: T[],
 ): { idx: number; item: T }[] => {
-  const out: { idx: number; item: T }[] = []
-  for (let i = 0; i < melody.length; i++) {
-    out.push({ idx: i, item: melody[i] })
-  }
-  return out
+  const sorted = [...melody].sort((a, b) => a.startBeat - b.startBeat)
+  return sorted.map((item, i) => ({ idx: i, item }))
 }
 
 /**

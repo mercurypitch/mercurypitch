@@ -214,9 +214,9 @@ describe('buildPlayable', () => {
     ]
     const playable = buildPlayable(melody)
     expect(playable).toHaveLength(3)
-    expect(playable[0].idx).toBe(0)
-    expect(playable[1].idx).toBe(1)
-    expect(playable[2].idx).toBe(2)
+    expect(playable[0].item.startBeat).toBe(0)
+    expect(playable[1].item.startBeat).toBe(1)
+    expect(playable[2].item.startBeat).toBe(2)
   })
 
   it('returns all rests for all-rest melody', () => {
@@ -227,15 +227,28 @@ describe('buildPlayable', () => {
     expect(buildPlayable(melody)).toHaveLength(2)
   })
 
-  it('preserves original index', () => {
+  it('sorts by startBeat so playback follows left-to-right order', () => {
+    // Melody out of chronological order — simulates inserting a note
+    // between existing notes (ID order ≠ time order).
     const melody = [
-      { startBeat: 0, duration: 1, isRest: true },
-      { startBeat: 1, duration: 1, isRest: true },
+      { startBeat: 4, duration: 1, isRest: false },
+      { startBeat: 0, duration: 1, isRest: false },
       { startBeat: 2, duration: 1, isRest: false },
     ]
     const playable = buildPlayable(melody)
-    expect(playable[0].idx).toBe(0)
-    expect(playable[2].idx).toBe(2)
+    expect(playable.map((p) => p.item.startBeat)).toEqual([0, 2, 4])
+  })
+
+  it('sorts by startBeat: note placed farther first, then note at beginning (user scenario)', () => {
+    // User creates note at beat 4 (id=1), then note at beat 0 (id=2).
+    // The melody array is [beat4, beat0] but playback must follow [beat0, beat4].
+    const melody = [
+      { startBeat: 4, duration: 1, isRest: false },
+      { startBeat: 0, duration: 1, isRest: false },
+    ]
+    const playable = buildPlayable(melody)
+    expect(playable[0].item.startBeat).toBe(0)
+    expect(playable[1].item.startBeat).toBe(4)
   })
 
   it('items without isRest are included', () => {
