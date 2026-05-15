@@ -3649,7 +3649,9 @@ export class PianoRollEditor {
   }
 
   /** Update effect button active states to reflect the pre-selected effect. */
-  private _updateEffectBtnStates(container: HTMLElement = this.container): void {
+  private _updateEffectBtnStates(
+    container: HTMLElement = this.container,
+  ): void {
     const ids = [
       'roll-action-slide-up',
       'roll-action-slide-down',

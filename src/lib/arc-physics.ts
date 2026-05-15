@@ -52,10 +52,8 @@ export const computeBallPos = (
     } else {
       const midX = (s.sx + s.ex) / 2
       return {
-        beatX:
-          (1 - t) * (1 - t) * s.sx + 2 * (1 - t) * t * midX + t * t * s.ex,
-        y:
-          (1 - t) * (1 - t) * s.sy + 2 * (1 - t) * t * s.cy + t * t * s.ey,
+        beatX: (1 - t) * (1 - t) * s.sx + 2 * (1 - t) * t * midX + t * t * s.ex,
+        y: (1 - t) * (1 - t) * s.sy + 2 * (1 - t) * t * s.cy + t * t * s.ey,
       }
     }
   }
@@ -99,7 +97,9 @@ export const shouldAdvanceArc = (
  * Filter melody items into a playable list (excludes rests).
  * `idx` is the original melody index; items are in playback order.
  */
-export const buildPlayable = <T extends { isRest?: boolean; startBeat: number }>(
+export const buildPlayable = <
+  T extends { isRest?: boolean; startBeat: number },
+>(
   melody: T[],
 ): { idx: number; item: T }[] => {
   const sorted = [...melody].sort((a, b) => a.startBeat - b.startBeat)

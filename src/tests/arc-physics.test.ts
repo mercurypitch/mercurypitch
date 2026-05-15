@@ -366,23 +366,33 @@ describe('Arc state transitions (integration)', () => {
       }
       prevBeat = beat
 
-      // Advance when current arc finishes — ensures ball reaches
-      // each note's top-right corner before arcing to the next.
-      const nextIdx = state.noteIndex + 1
-      if (nextIdx < notes.length && beat >= state.endBeat) {
-        const next = notes[nextIdx]
-        const src = computeBallPos(beat, state)
-        state.sx = beat
-        state.sy = src.y
-        state.ex = next.startBeat + next.duration
-        state.ey = 200
-        state.cy = computeArcCy(src.y, 200, bpm)
-        state.startBeat = beat
-        state.endBeat = computeArcEndBeat(next)
-        if (state.endBeat <= state.startBeat) {
-          state.endBeat = state.startBeat + 0.5
+      // Advance when current arc finishes — skip notes that share
+      // the same start beat as the note just visited.
+      if (beat >= state.endBeat) {
+        const SKIP_EPSILON = 0.001
+        const prevNoteStart = notes[state.noteIndex]?.startBeat ?? -1
+        let nextIdx = state.noteIndex + 1
+        while (
+          nextIdx < notes.length &&
+          Math.abs(notes[nextIdx].startBeat - prevNoteStart) < SKIP_EPSILON
+        ) {
+          nextIdx++
         }
-        state.noteIndex = nextIdx
+        if (nextIdx < notes.length) {
+          const next = notes[nextIdx]
+          const src = computeBallPos(beat, state)
+          state.sx = beat
+          state.sy = src.y
+          state.ex = next.startBeat + next.duration
+          state.ey = 200
+          state.cy = computeArcCy(src.y, 200, bpm)
+          state.startBeat = beat
+          state.endBeat = computeArcEndBeat(next)
+          if (state.endBeat <= state.startBeat) {
+            state.endBeat = state.startBeat + 0.5
+          }
+          state.noteIndex = nextIdx
+        }
       }
     }
 
@@ -687,6 +697,32 @@ describe('Arc state transitions (integration)', () => {
     expect(visited).toEqual([0, 1, 2, 3, 4, 5, 6])
   })
 
+  it('skips notes with same start beat — picks one, does not rapid-fire', () => {
+    // Two notes at beat 0 (same start), one at beat 2, one at beat 4.
+    // Ball should visit only one of the beat-0 notes, then beat 2, then beat 4.
+    const notes: PlayableNote[] = [
+      { startBeat: 0, duration: 2 },
+      { startBeat: 0, duration: 2 }, // same start beat — must be skipped
+      { startBeat: 2, duration: 2 },
+      { startBeat: 2, duration: 2 }, // same start beat — must be skipped
+      { startBeat: 4, duration: 2 },
+    ]
+
+    const sampleBeats: number[] = []
+    for (let b = 0; b <= 6; b += 0.05) sampleBeats.push(b)
+
+    const { visited } = simulateMelody(notes, 120, sampleBeats)
+
+    // Should visit 3 notes (one at each unique start beat), not 5
+    expect(visited.length).toBe(3)
+    // beat-0 notes both at index 0,1 — ball picks 0 (first), skips 1
+    expect(visited[0]).toBe(0)
+    // After skipping same-beat notes, next unique start is beat 2 (index 2)
+    expect(visited[1]).toBe(2)
+    // Then beat 4 (index 4)
+    expect(visited[2]).toBe(4)
+  })
+
   it('visits all 7 notes with rests between some', () => {
     const notes: PlayableNote[] = [
       { startBeat: 0, duration: 2 },
@@ -741,14 +777,23 @@ describe('Ball trajectory and continuity', () => {
     noteYs: number[],
   ) => {
     const first = notes[0]
-    const initial = computeInitialArc(first, Math.max(0, first.startBeat - 0.5), noteYs[0] ?? 200)
+    const initial = computeInitialArc(
+      first,
+      Math.max(0, first.startBeat - 0.5),
+      noteYs[0] ?? 200,
+    )
     const state: ArcState = {
       ...initial,
       initialized: true,
       isRest: false,
     }
 
-    const positions: { beat: number; beatX: number; y: number; noteIndex: number }[] = []
+    const positions: {
+      beat: number
+      beatX: number
+      y: number
+      noteIndex: number
+    }[] = []
     let prevBeat = sampleBeats[0]
 
     for (const beat of sampleBeats) {
@@ -758,21 +803,31 @@ describe('Ball trajectory and continuity', () => {
       }
       prevBeat = beat
 
-      const nextIdx = state.noteIndex + 1
-      if (nextIdx < notes.length && beat >= state.endBeat) {
-        const next = notes[nextIdx]
-        const src = computeBallPos(beat, state)
-        state.sx = beat
-        state.sy = src.y
-        state.ex = next.startBeat + next.duration
-        state.ey = noteYs[nextIdx] ?? 200
-        state.cy = computeArcCy(src.y, noteYs[nextIdx] ?? 200, bpm)
-        state.startBeat = beat
-        state.endBeat = computeArcEndBeat(next)
-        if (state.endBeat <= state.startBeat) {
-          state.endBeat = state.startBeat + 0.5
+      if (beat >= state.endBeat) {
+        const SKIP_EPSILON = 0.001
+        const prevNoteStart = notes[state.noteIndex]?.startBeat ?? -1
+        let nextIdx = state.noteIndex + 1
+        while (
+          nextIdx < notes.length &&
+          Math.abs(notes[nextIdx].startBeat - prevNoteStart) < SKIP_EPSILON
+        ) {
+          nextIdx++
         }
-        state.noteIndex = nextIdx
+        if (nextIdx < notes.length) {
+          const next = notes[nextIdx]
+          const src = computeBallPos(beat, state)
+          state.sx = beat
+          state.sy = src.y
+          state.ex = next.startBeat + next.duration
+          state.ey = noteYs[nextIdx] ?? 200
+          state.cy = computeArcCy(src.y, noteYs[nextIdx] ?? 200, bpm)
+          state.startBeat = beat
+          state.endBeat = computeArcEndBeat(next)
+          if (state.endBeat <= state.startBeat) {
+            state.endBeat = state.startBeat + 0.5
+          }
+          state.noteIndex = nextIdx
+        }
       }
 
       const pos = computeBallPos(beat, state)
@@ -803,32 +858,52 @@ describe('Ball trajectory and continuity', () => {
     const startBeatX = Math.max(0, firstNote.startBeat - 0.5)
     const initial = computeInitialArc(firstNote, startBeatX, 300)
     const state: ArcState = { ...initial, initialized: true, isRest: false }
-    const positions: { beat: number; beatX: number; y: number; noteIndex: number }[] = []
+    const positions: {
+      beat: number
+      beatX: number
+      y: number
+      noteIndex: number
+    }[] = []
     let prevBeat = sampleBeats[0]
 
     for (const beat of sampleBeats) {
       if (isBackwardsSeek(beat, prevBeat)) break
       prevBeat = beat
 
-      const nextIdx = state.noteIndex + 1
-      if (nextIdx < notes.length && beat >= state.endBeat) {
-        const next = notes[nextIdx]
-        const src = computeBallPos(beat, state)
-        state.sx = beat
-        state.sy = src.y
-        state.ex = next.startBeat + next.duration
-        state.ey = nextIdx === 1 ? 100 : 300
-        state.cy = computeArcCy(src.y, nextIdx === 1 ? 100 : 300, 120)
-        state.startBeat = beat
-        state.endBeat = computeArcEndBeat(next)
-        if (state.endBeat <= state.startBeat) {
-          state.endBeat = state.startBeat + 0.5
+      if (beat >= state.endBeat) {
+        const SKIP_EPSILON = 0.001
+        const prevNoteStart = notes[state.noteIndex].startBeat
+        let nextIdx = state.noteIndex + 1
+        while (
+          nextIdx < notes.length &&
+          Math.abs(notes[nextIdx].startBeat - prevNoteStart) < SKIP_EPSILON
+        ) {
+          nextIdx++
         }
-        state.noteIndex = nextIdx
+        if (nextIdx < notes.length) {
+          const next = notes[nextIdx]
+          const src = computeBallPos(beat, state)
+          state.sx = beat
+          state.sy = src.y
+          state.ex = next.startBeat + next.duration
+          state.ey = nextIdx === 1 ? 100 : 300
+          state.cy = computeArcCy(src.y, nextIdx === 1 ? 100 : 300, 120)
+          state.startBeat = beat
+          state.endBeat = computeArcEndBeat(next)
+          if (state.endBeat <= state.startBeat) {
+            state.endBeat = state.startBeat + 0.5
+          }
+          state.noteIndex = nextIdx
+        }
       }
 
       const pos = computeBallPos(beat, state)
-      positions.push({ beat, beatX: pos.beatX, y: pos.y, noteIndex: state.noteIndex })
+      positions.push({
+        beat,
+        beatX: pos.beatX,
+        y: pos.y,
+        noteIndex: state.noteIndex,
+      })
     }
 
     for (const p of positions) {
@@ -885,7 +960,7 @@ describe('Ball trajectory and continuity', () => {
 
     // Simulate advance
     const src = computeBallPos(2, state)
-    state.sx = 2  // beat at boundary equals endBeat, so sx=startBeat=2
+    state.sx = 2 // beat at boundary equals endBeat, so sx=startBeat=2
     state.sy = src.y
     state.ex = notes[1].startBeat + notes[1].duration
     state.ey = noteYs[1]
@@ -925,9 +1000,7 @@ describe('Ball trajectory and continuity', () => {
     expect(firstNote1!.beat).toBeLessThan(1.2)
 
     // During the gap (beat 3-7), ball should be mid-flight
-    const midGap = positions.find(
-      (p) => Math.abs(p.beat - 5) < 0.001,
-    )
+    const midGap = positions.find((p) => Math.abs(p.beat - 5) < 0.001)
     expect(midGap).toBeDefined()
     expect(midGap!.noteIndex).toBe(1)
     // Ball Y should NOT be at note 0's Y (300) or note 1's Y (100)
@@ -953,23 +1026,17 @@ describe('Ball trajectory and continuity', () => {
 
     // At each note's endBeat, ball should be at correct Y
     // Note 0 ends at beat 1
-    const atNote0End = positions.find(
-      (p) => Math.abs(p.beat - 1) < 0.001,
-    )
+    const atNote0End = positions.find((p) => Math.abs(p.beat - 1) < 0.001)
     expect(atNote0End).toBeDefined()
     expect(atNote0End!.y).toBeCloseTo(400, 1)
 
     // Note 1 ends at beat 2
-    const atNote1End = positions.find(
-      (p) => Math.abs(p.beat - 2) < 0.001,
-    )
+    const atNote1End = positions.find((p) => Math.abs(p.beat - 2) < 0.001)
     expect(atNote1End).toBeDefined()
     expect(atNote1End!.y).toBeCloseTo(350, 1)
 
     // Note 2 ends at beat 3
-    const atNote2End = positions.find(
-      (p) => Math.abs(p.beat - 3) < 0.001,
-    )
+    const atNote2End = positions.find((p) => Math.abs(p.beat - 3) < 0.001)
     expect(atNote2End).toBeDefined()
     expect(atNote2End!.y).toBeCloseTo(300, 1)
   })
@@ -988,14 +1055,10 @@ describe('Ball trajectory and continuity', () => {
 
     const { positions } = simulateWithPositions(notes, 120, sampleBeats, noteYs)
 
-    const atNote0End = positions.find(
-      (p) => Math.abs(p.beat - 1) < 0.001,
-    )
+    const atNote0End = positions.find((p) => Math.abs(p.beat - 1) < 0.001)
     expect(atNote0End!.y).toBeCloseTo(100, 1)
 
-    const atNote2End = positions.find(
-      (p) => Math.abs(p.beat - 3) < 0.001,
-    )
+    const atNote2End = positions.find((p) => Math.abs(p.beat - 3) < 0.001)
     expect(atNote2End!.y).toBeCloseTo(400, 1)
   })
 
@@ -1041,12 +1104,8 @@ describe('Ball trajectory and continuity', () => {
 
     // After advancing (beat >= 2), the second arc uses computeArcCy which
     // depends on BPM. Lower BPM → larger height → lower cy → lower mid-Y.
-    const slowMid = slow.positions.find(
-      (p) => Math.abs(p.beat - 3) < 0.01,
-    )
-    const fastMid = fast.positions.find(
-      (p) => Math.abs(p.beat - 3) < 0.01,
-    )
+    const slowMid = slow.positions.find((p) => Math.abs(p.beat - 3) < 0.01)
+    const fastMid = fast.positions.find((p) => Math.abs(p.beat - 3) < 0.01)
 
     expect(slowMid).toBeDefined()
     expect(fastMid).toBeDefined()
@@ -1158,21 +1217,31 @@ describe('Ball trajectory and continuity', () => {
 
     const sampleA = [0, 0.1, 0.2, 0.3, 0.4, 0.5]
     for (const beat of sampleA) {
-      const nextIdx = state.noteIndex + 1
-      if (nextIdx < notes.length && beat >= state.endBeat) {
-        const next = notes[nextIdx]
-        const src = computeBallPos(beat, state)
-        state.sx = beat
-        state.sy = src.y
-        state.ex = next.startBeat + next.duration
-        state.ey = noteYs[nextIdx]
-        state.cy = computeArcCy(src.y, noteYs[nextIdx], 120)
-        state.startBeat = beat
-        state.endBeat = computeArcEndBeat(next)
-        if (state.endBeat <= state.startBeat) {
-          state.endBeat = state.startBeat + 0.5
+      if (beat >= state.endBeat) {
+        const SKIP_EPSILON = 0.001
+        const prevNoteStart = notes[state.noteIndex].startBeat
+        let nextIdx = state.noteIndex + 1
+        while (
+          nextIdx < notes.length &&
+          Math.abs(notes[nextIdx].startBeat - prevNoteStart) < SKIP_EPSILON
+        ) {
+          nextIdx++
         }
-        state.noteIndex = nextIdx
+        if (nextIdx < notes.length) {
+          const next = notes[nextIdx]
+          const src = computeBallPos(beat, state)
+          state.sx = beat
+          state.sy = src.y
+          state.ex = next.startBeat + next.duration
+          state.ey = noteYs[nextIdx]
+          state.cy = computeArcCy(src.y, noteYs[nextIdx], 120)
+          state.startBeat = beat
+          state.endBeat = computeArcEndBeat(next)
+          if (state.endBeat <= state.startBeat) {
+            state.endBeat = state.startBeat + 0.5
+          }
+          state.noteIndex = nextIdx
+        }
       }
     }
 
@@ -1180,14 +1249,21 @@ describe('Ball trajectory and continuity', () => {
     state.initialized = false
     let startIdx = 0
     for (let i = notes.length - 1; i >= 0; i--) {
-      if (5 >= notes[i].startBeat) { startIdx = i; break }
+      if (5 >= notes[i].startBeat) {
+        startIdx = i
+        break
+      }
     }
     const reinit = computeInitialArc(
       notes[startIdx],
       Math.max(0, notes[startIdx].startBeat - 0.5),
       noteYs[startIdx],
     )
-    Object.assign(state, reinit, { initialized: true, isRest: false, noteIndex: startIdx })
+    Object.assign(state, reinit, {
+      initialized: true,
+      isRest: false,
+      noteIndex: startIdx,
+    })
 
     // After seek, ball X must equal beat (no backward teleport)
     const posAfterSeek = computeBallPos(5, state)
