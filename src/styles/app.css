@@ -5938,50 +5938,22 @@ input:checked + .settings-slider:before {
   overflow: hidden;
 }
 
-/* Playhead for Focus Mode */
+/* Invisible positioning container for the glowing pitch dot */
 .focus-playhead {
   position: absolute;
   top: 0;
   left: 0;
-  width: 3px;
+  width: 0px;
   height: 100%;
-  background: var(--accent);
-  box-shadow:
-    0 0 8px var(--accent-glow),
-    0 0 16px var(--accent-glow);
-  border-radius: 2px;
   pointer-events: none;
   display: none;
   z-index: 10;
 }
 
-.focus-playhead::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -7px;
-  width: 17px;
-  height: 9px;
-  background: var(--accent);
-  border-radius: 0 0 4px 4px;
-  clip-path: polygon(0 0, 100% 0, 50% 100%);
-}
-
-.focus-playhead .playhead-marker {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 50%;
-  background: var(--accent-glow);
-  border-radius: 0 0 2px 2px;
-  transition: left 0.1s linear;
-}
-
 /* Glowing pitch dot that follows the current note vertically */
 .focus-pitch-dot {
   position: absolute;
-  left: 2px;
+  left: -2.5px;
   width: 5px;
   height: 5px;
   background: var(--accent);

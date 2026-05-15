@@ -5,9 +5,12 @@
 import type { Component } from 'solid-js'
 import { createMemo, Show } from 'solid-js'
 import { PitchCanvas } from '@/components/PitchCanvas'
+import { PrecCountButton } from '@/components/PrecCountButton'
+import { Tooltip } from '@/components/Tooltip'
 import { melodyTotalBeats } from '@/lib/scale-data'
-import { currentSessionItemRepeat, exitFocusMode, keyName, playbackSpeed, scaleType, sessionActive, sessionItemIndex, setPlaybackSpeed, } from '@/stores'
+import { countIn, currentSessionItemRepeat, exitFocusMode, keyName, playbackSpeed, scaleType, sessionActive, sessionItemIndex, setPlaybackSpeed, settings, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
+import { setTonicAnchor } from '@/stores/settings-store'
 import type { MelodyItem, PitchSample } from '@/types'
 import type { NoteResult, PitchResult, PracticeResult } from '@/types'
 
@@ -50,9 +53,30 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
 
   // Reactive playhead position to ensure smooth updates during playback
   const playheadPosition = createMemo(() => {
-    const beats = props.currentBeat()
-    const total = totalBeats()
-    return total > 0 ? (beats / total) * 100 : 0
+    const total = Math.max(1, totalBeats())
+    const cBeat = props.currentBeat()
+    const ci = countIn()
+
+    // Same smooth count-in transition as PitchCanvas beatToX
+    const TRANSITION_ZONE = 0.5
+    let effectiveCi = ci
+    if (ci > 0) {
+      if (cBeat <= -TRANSITION_ZONE) {
+        effectiveCi = ci
+      } else if (cBeat >= TRANSITION_ZONE) {
+        effectiveCi = 0
+      } else {
+        const t = (cBeat + TRANSITION_ZONE) / (2 * TRANSITION_ZONE)
+        const eased = 1 - Math.pow(1 - t, 3)
+        effectiveCi = ci * (1 - eased)
+      }
+    }
+
+    const rangeStart = -effectiveCi
+    const rangeBeats = total - rangeStart
+    const xPct = ((cBeat - rangeStart) / Math.max(1, rangeBeats)) * 100
+
+    return Math.max(0, Math.min(100, xPct))
   })
 
   // Session info
@@ -156,6 +180,7 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
           isPlaying={props.isPlaying}
           isPaused={props.isPaused}
           isScrolling={() => false}
+          countInBeats={() => countIn()}
           targetPitch={() => {
             const idx = props.currentNoteIndex?.() ?? 0
             const items = props.melody()
@@ -173,7 +198,6 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
             left: `${playheadPosition()}%`,
           }}
         >
-          <div class="playhead-marker" style={{ left: '0' }} />
           {/* Glowing pitch dot with dynamic vertical position */}
           <div
             class="focus-pitch-dot"
@@ -240,6 +264,44 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
             </svg>
           </button>
         </Show>
+
+        {/* Precount + Anchor Tone */}
+        <div
+          class="focus-toggles"
+          style={{
+            display: 'flex',
+            gap: '0.5rem',
+            'align-items': 'center',
+            'margin-left': '1rem',
+            'margin-right': 'auto',
+          }}
+        >
+          <PrecCountButton />
+          <Tooltip text="Anchor Tone">
+            <button
+              class={`ctrl-btn anchor-tone-btn ${settings().tonicAnchor === true ? 'active' : ''}`}
+              onClick={() => setTonicAnchor(settings().tonicAnchor !== true)}
+              title={
+                settings().tonicAnchor === true
+                  ? 'Anchor Tone: On'
+                  : 'Anchor Tone: Off'
+              }
+              aria-label={
+                settings().tonicAnchor === true
+                  ? 'Anchor Tone: On'
+                  : 'Anchor Tone: Off'
+              }
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16">
+                <path
+                  fill="currentColor"
+                  d="M12 3l-8 13h16L12 3zm0 3.5L17.5 13h-11L12 6.5z"
+                />
+                <circle cx="12" cy="14" r="1" fill="currentColor" />
+              </svg>
+            </button>
+          </Tooltip>
+        </div>
 
         {/* Playback speed controls */}
         <div class="focus-speed-controls">
