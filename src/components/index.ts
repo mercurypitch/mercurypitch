@@ -46,6 +46,12 @@ export { UvrPanel } from './UvrPanel'
 
 export { StemMixer } from './StemMixer'
 export { StemMixerStyles } from './StemMixer'
+export { StemMixerTransport } from './StemMixerTransport'
+export { StemMixerStemControls } from './StemMixerStemControls'
+export { StemMixerGridWorkspace } from './StemMixerGridWorkspace'
+export { StemMixerFixedWorkspace } from './StemMixerFixedWorkspace'
+export { StemMixerScoreModal } from './StemMixerScoreModal'
+export { StemMixerLyricsPanelBody } from './StemMixerLyricsPanelBody'
 export { LyricsUploader } from './LyricsUploader'
 export { LyricsUploaderStyles } from './LyricsUploader'
 export {
