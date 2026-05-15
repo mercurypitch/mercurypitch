@@ -349,20 +349,28 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       arcState.initialized = false
       return
     }
-    // ---- Advance at most 1 note per frame to never skip ------------
-    const nextIdx = arcState.noteIndex + 1
-    if (nextIdx < playable.length) {
-      const nextItem = playable[nextIdx].item
-      const next: { startBeat: number; duration: number } = {
-        startBeat: nextItem.startBeat,
-        duration: nextItem.duration,
+    // ---- Advance when the current arc has finished ------------------
+    if (beat >= arcState.endBeat) {
+      // Skip notes that share the same start beat as a note we just
+      // visited — pick one and don't rapid-fire through the others.
+      const SKIP_EPSILON = 0.001
+      const prevNoteStart = playable[arcState.noteIndex]?.item.startBeat ?? -1
+      let nextIdx = arcState.noteIndex + 1
+      while (
+        nextIdx < playable.length &&
+        Math.abs(playable[nextIdx].item.startBeat - prevNoteStart) <
+          SKIP_EPSILON
+      ) {
+        nextIdx++
       }
 
-      // Advance when the current arc has finished — the ball must
-      // reach the top-right corner of the current note before
-      // starting the next arc.  This keeps arcs seamless and
-      // ensures the ball touches every note (no skipping or waiting).
-      if (beat >= arcState.endBeat) {
+      if (nextIdx < playable.length) {
+        const nextItem = playable[nextIdx].item
+        const next: { startBeat: number; duration: number } = {
+          startBeat: nextItem.startBeat,
+          duration: nextItem.duration,
+        }
+
         const src = computeBallPos(beat, arcState)
         let targetY = h / 2
         if (
@@ -391,6 +399,9 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
         }
 
         arcState.trail = []
+      } else {
+        // No more notes — reset so we can re-init if melody changes.
+        arcState.initialized = false
       }
     }
 
