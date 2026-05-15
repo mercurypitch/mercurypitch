@@ -600,6 +600,25 @@ export class PianoRollEditor {
       id: item.id,
     }))
 
+    // Re-sync nextNoteId so future placements never produce duplicate IDs.
+    const maxId = this.melody.reduce((max, n) => Math.max(max, n.id), 0)
+    if (this.nextNoteId <= maxId) {
+      this.nextNoteId = maxId + 1
+    }
+
+    // Warn if any two notes share the same ID — this indicates a bug
+    // upstream (recording, MIDI import, etc.) that should be fixed.
+    const seen = new Set<number>()
+    for (const n of this.melody) {
+      if (seen.has(n.id)) {
+        console.warn(
+          `[PianoRollEditor] Duplicate note ID ${n.id} detected in setMelody — ` +
+          `this will cause selection/deletion bugs. Check upstream ID generation.`,
+        )
+      }
+      seen.add(n.id)
+    }
+
     // Initialize ball physics with new melody
     this.initializeBallPhysics()
 
@@ -2317,7 +2336,15 @@ export class PianoRollEditor {
     // floating between half-beat positions.
     const snapUnit = duration >= 1 ? 1 : 0.5
     const snappedBeat = Math.round(beat / snapUnit) * snapUnit
-    const id = this.nextNoteId++
+    let id = this.nextNoteId++
+    // Belt-and-suspenders: if the counter somehow produces a duplicate ID
+    // (e.g. after a setMelody that didn't resync), skip past all existing IDs.
+    while (this.melody.some((n) => n.id === id)) {
+      console.warn(
+        `[PianoRollEditor] ID collision for ${id} — skipping to next available`,
+      )
+      id = this.nextNoteId++
+    }
 
     const item: MelodyItem = {
       id,

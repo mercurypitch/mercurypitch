@@ -154,4 +154,90 @@ describe('PianoRollEditor', () => {
     expect(editor.canRedo()).toBe(false)
     expect(editor.getMelody()[0].note?.midi).toBe(72)
   })
+
+  describe('Note ID uniqueness', () => {
+    it('warns when setMelody receives notes with duplicate IDs', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      editor.setMelody([
+        {
+          id: 1,
+          note: { midi: 60, freq: 261.63, name: 'C' as const, octave: 4 },
+          startBeat: 0,
+          duration: 1,
+        },
+        {
+          id: 1, // duplicate!
+          note: { midi: 62, freq: 293.66, name: 'D' as const, octave: 4 },
+          startBeat: 1,
+          duration: 1,
+        },
+      ])
+
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Duplicate note ID 1'),
+      )
+      warnSpy.mockRestore()
+    })
+
+    it('does not warn when setMelody receives notes with unique IDs', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      editor.setMelody([
+        {
+          id: 1,
+          note: { midi: 60, freq: 261.63, name: 'C' as const, octave: 4 },
+          startBeat: 0,
+          duration: 1,
+        },
+        {
+          id: 2,
+          note: { midi: 62, freq: 293.66, name: 'D' as const, octave: 4 },
+          startBeat: 1,
+          duration: 1,
+        },
+        {
+          id: 3,
+          note: { midi: 64, freq: 329.63, name: 'E' as const, octave: 4 },
+          startBeat: 2,
+          duration: 1,
+        },
+      ])
+
+      expect(
+        warnSpy.mock.calls.filter((c) =>
+          (c[0] as string).includes('Duplicate note ID'),
+        ),
+      ).toHaveLength(0)
+      warnSpy.mockRestore()
+    })
+
+    it('getMelody returns notes with all unique IDs after setMelody', () => {
+      editor.setMelody([
+        {
+          id: 5,
+          note: { midi: 60, freq: 261.63, name: 'C' as const, octave: 4 },
+          startBeat: 0,
+          duration: 1,
+        },
+        {
+          id: 10,
+          note: { midi: 62, freq: 293.66, name: 'D' as const, octave: 4 },
+          startBeat: 1,
+          duration: 1,
+        },
+        {
+          id: 7,
+          note: { midi: 64, freq: 329.63, name: 'E' as const, octave: 4 },
+          startBeat: 2,
+          duration: 1,
+        },
+      ])
+
+      const melody = editor.getMelody()
+      const ids = melody.map((n) => n.id)
+      const uniqueIds = new Set(ids)
+      expect(uniqueIds.size).toBe(ids.length)
+    })
+  })
 })
