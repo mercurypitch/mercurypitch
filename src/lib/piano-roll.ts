@@ -2111,7 +2111,7 @@ export class PianoRollEditor {
         for (let i = 0; i < this.selectedNotesCache.length; i++) {
           const note = this.selectedNotesCache[i]
           const offset = this.dragOffsets[i]
-          if (!offset) continue
+          if (offset == null) continue
           const newStartBeat = Math.max(
             0,
             this.dragStartBeat + deltaBeat + offset.beat,
