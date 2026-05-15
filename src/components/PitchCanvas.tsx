@@ -466,9 +466,9 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     const rangeStart = -effectiveCi
     const rangeBeats = totalBeats - rangeStart
 
-    // When the full range fits, show everything (no scrolling).
+    // When the full range fits, or scrolling is disabled, show everything.
     const windowBeats = Math.min(visibleBeatWindow, rangeBeats)
-    if (rangeBeats <= visibleBeatWindow) {
+    if (!props.isScrolling() || rangeBeats <= visibleBeatWindow) {
       const x = ((beat - rangeStart) / Math.max(1, rangeBeats)) * w
       return Number.isFinite(x) ? x : 0
     }
@@ -1144,7 +1144,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     const rangeBeats = totalBeats - rangeStart
     const windowBeats = Math.min(visibleBeatWindow, rangeBeats)
     let windowStart: number
-    if (rangeBeats <= visibleBeatWindow) {
+    if (!props.isScrolling() || rangeBeats <= visibleBeatWindow) {
       windowStart = rangeStart
     } else {
       windowStart = cBeat - windowBeats * WINDOW_FILL_RATIO
@@ -1153,6 +1153,10 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
         Math.min(windowStart, totalBeats - windowBeats),
       )
     }
+    const effectiveWindowBeats =
+      !props.isScrolling() || rangeBeats <= visibleBeatWindow
+        ? rangeBeats
+        : windowBeats
     const windowEnd = windowStart + windowBeats
     const firstBeat = Math.ceil(windowStart)
     const lastBeat = Math.floor(windowEnd)
@@ -1160,7 +1164,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     // Vertical beat grid lines (faint, span full height, gated on gridLinesVisible)
     if (gridLinesVisible()) {
       for (let b = firstBeat; b <= lastBeat; b++) {
-        const bx = ((b - windowStart) / windowBeats) * w
+        const bx = ((b - windowStart) / effectiveWindowBeats) * w
         if (!Number.isFinite(bx) || bx < 0 || bx > w) continue
         const isMajorBeat = b % 4 === 0
         ctx.strokeStyle = isMajorBeat
@@ -1180,7 +1184,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     ctx.textAlign = 'center'
     ctx.textBaseline = 'top'
     for (let b = firstBeat; b <= lastBeat; b++) {
-      const bx = ((b - windowStart) / windowBeats) * w
+      const bx = ((b - windowStart) / effectiveWindowBeats) * w
       if (!Number.isFinite(bx) || bx < 0 || bx > w) continue
       const isMajorBeat = b % 4 === 0
       const tickH = isMajorBeat ? rulerH * 0.45 : rulerH * 0.25
