@@ -73,7 +73,7 @@ export const StemMixerFixedWorkspace: Component<
             </div>
             <div
               class="sm-workspace-panel"
-              style={{ flex: '1', 'min-height': '120px' }}
+              style={{ flex: '1', 'min-height': '0' }}
             >
               <div class="sm-panel-header">
                 Lyrics

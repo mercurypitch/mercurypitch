@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Setter } from 'solid-js'
-import { createEffect, createMemo, createSignal } from 'solid-js'
+import { createEffect, createMemo, createSignal, onCleanup } from 'solid-js'
 import type { LrcLine, LyricsSearchMatch, LyricsSearchResult, } from '@/lib/lyrics-service'
 import { extractTitle, fetchLyricsById, getCurrentLineIndex, getCurrentLrcIndex, parseLrcFile, parseTextLyrics, searchLyrics, searchLyricsMulti, } from '@/lib/lyrics-service'
 import type { BlockInstancesMap, BlockStartsInfo, DisplayLine, EditPopover, GenViewLine, LyricsBlock, LyricsSource, LyricsUploadResult, WordTimingsMap, } from './types'
@@ -72,6 +72,8 @@ export interface StemMixerLyricsController {
   setShowBlockForm: Setter<boolean>
   blockEditTarget: () => string | null
   setBlockEditTarget: Setter<string | null>
+  userScrolled: () => boolean
+  setUserScrolled: Setter<boolean>
 
   // Memos
   stableParsedLyrics: () => Map<
@@ -238,6 +240,13 @@ export function useStemMixerLyricsController(
   const storageKey = () => `lyrics_v1_${deps.sessionId}`
   const genKey = () => `lyrics_gen_v1_${deps.sessionId}`
 
+  const LYRICS_CONTAINER_SELECTOR =
+    '.sm-lyrics-lines:not(.sm-lyrics-gen-lines):not(.sm-lyrics-lines-edit)'
+
+  let lyricsScrollContainer: HTMLElement | null = null
+  let isAutoScrolling = false
+  let lyricsScrollTimeout: ReturnType<typeof setTimeout> | null = null
+
   // ── Signals ────────────────────────────────────────────────────
   const [lyricsLines, setLyricsLines] = createSignal<string[]>([])
   const [lrcLines, setLrcLines] = createSignal<LrcLine[]>([])
@@ -271,6 +280,7 @@ export function useStemMixerLyricsController(
   const [blockEditTarget, setBlockEditTarget] = createSignal<string | null>(
     null,
   )
+  const [userScrolled, setUserScrolled] = createSignal(false)
 
   // ── Persistence ──────────────────────────────────────────────────
 
@@ -537,6 +547,31 @@ export function useStemMixerLyricsController(
     if (targetTime === null) return
     deps.seekTo(targetTime)
     deps.setWindowStart(Math.max(0, targetTime - deps.windowDuration() * 0.3))
+
+    const container = document.querySelector(
+      LYRICS_CONTAINER_SELECTOR,
+    ) as HTMLElement | null
+    if (!container) return
+    const lines = container.querySelectorAll('.sm-lyrics-line')
+    if (idx < lines.length) {
+      const line = lines[idx] as HTMLElement
+      const containerRect = container.getBoundingClientRect()
+      const lineRect = line.getBoundingClientRect()
+      const scrollTarget =
+        container.scrollTop +
+        (lineRect.top - containerRect.top) -
+        containerRect.height * 0.35
+      isAutoScrolling = true
+      container.scrollTo({ top: scrollTarget, behavior: 'smooth' })
+      const resetAutoScroll = () => {
+        isAutoScrolling = false
+      }
+      container.addEventListener('scrollend', resetAutoScroll, { once: true })
+      setTimeout(() => {
+        container.removeEventListener('scrollend', resetAutoScroll)
+        isAutoScrolling = false
+      }, 500)
+    }
   }
 
   // ── Edit mode helpers ─────────────────────────────────────────────
@@ -1461,13 +1496,68 @@ export function useStemMixerLyricsController(
     })
   })
 
+  // ── Lyric scroll: user-scroll detection ────────────────────────
+
+  const onLyricsScroll = () => {
+    if (isAutoScrolling) return
+    setUserScrolled(true)
+    if (lyricsScrollTimeout) {
+      clearTimeout(lyricsScrollTimeout)
+      lyricsScrollTimeout = null
+    }
+    lyricsScrollTimeout = setTimeout(() => {
+      const container = document.querySelector(
+        LYRICS_CONTAINER_SELECTOR,
+      ) as HTMLElement | null
+      if (!container) return
+      const idx = currentLineIdx()
+      if (idx < 0) return
+      const lines = container.querySelectorAll('.sm-lyrics-line')
+      if (idx < lines.length) {
+        const activeLine = lines[idx] as HTMLElement
+        const containerRect = container.getBoundingClientRect()
+        const lineRect = activeLine.getBoundingClientRect()
+        if (lineRect.top - containerRect.top < containerRect.height * 0.6) {
+          setUserScrolled(false)
+        }
+      }
+      lyricsScrollTimeout = null
+    }, 800)
+  }
+
+  const attachScrollListener = () => {
+    const container = document.querySelector(
+      LYRICS_CONTAINER_SELECTOR,
+    ) as HTMLElement | null
+    if (container !== lyricsScrollContainer) {
+      if (lyricsScrollContainer) {
+        lyricsScrollContainer.removeEventListener('scroll', onLyricsScroll)
+      }
+      lyricsScrollContainer = container
+      if (container) {
+        container.addEventListener('scroll', onLyricsScroll, { passive: true })
+      }
+    }
+  }
+
+  createEffect(() => {
+    const _lyrics = lyricsSource()
+    const _edit = editMode()
+    const _lrcGen = lrcGenMode()
+    void _lyrics
+    void _edit
+    void _lrcGen
+    setTimeout(() => attachScrollListener(), 0)
+  })
+
   // ── Auto-scroll effect ────────────────────────────────────────────
 
   createEffect(() => {
     const idx = currentLineIdx()
     if (!deps.playing() || idx < 0) return
+    if (userScrolled()) return
     const container = document.querySelector(
-      '.sm-lyrics-lines:not(.sm-lyrics-gen-lines):not(.sm-lyrics-lines-edit)',
+      LYRICS_CONTAINER_SELECTOR,
     ) as HTMLElement | null
     if (!container) return
     const lines = container.querySelectorAll('.sm-lyrics-line')
@@ -1475,15 +1565,38 @@ export function useStemMixerLyricsController(
       const activeLine = lines[idx] as HTMLElement
       const containerRect = container.getBoundingClientRect()
       const lineRect = activeLine.getBoundingClientRect()
-      const halfVisible = containerRect.top + containerRect.height / 2
-      if (lineRect.bottom > halfVisible) {
+      const threshold = containerRect.top + containerRect.height * 0.57
+      if (lineRect.bottom > threshold) {
         const scrollTarget =
           container.scrollTop +
           (lineRect.top - containerRect.top) -
-          containerRect.height * 0.3
+          containerRect.height * 0.35
+        isAutoScrolling = true
         container.scrollTo({ top: scrollTarget, behavior: 'smooth' })
+        const resetAutoScroll = () => {
+          isAutoScrolling = false
+        }
+        container.addEventListener('scrollend', resetAutoScroll, { once: true })
+        setTimeout(() => {
+          container.removeEventListener('scrollend', resetAutoScroll)
+          isAutoScrolling = false
+        }, 500)
       }
     }
+  })
+
+  // ── Cleanup ───────────────────────────────────────────────────────
+
+  onCleanup(() => {
+    if (lyricsScrollContainer) {
+      lyricsScrollContainer.removeEventListener('scroll', onLyricsScroll)
+      lyricsScrollContainer = null
+    }
+    if (lyricsScrollTimeout) {
+      clearTimeout(lyricsScrollTimeout)
+      lyricsScrollTimeout = null
+    }
+    isAutoScrolling = false
   })
 
   // ── Return ────────────────────────────────────────────────────────
@@ -1537,6 +1650,8 @@ export function useStemMixerLyricsController(
     setShowBlockForm,
     blockEditTarget,
     setBlockEditTarget,
+    userScrolled,
+    setUserScrolled,
 
     // Memos
     stableParsedLyrics,
