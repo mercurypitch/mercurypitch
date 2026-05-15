@@ -28,6 +28,8 @@ describe('PianoRollEditor', () => {
       createLinearGradient: vi.fn().mockReturnValue({
         addColorStop: vi.fn(),
       }),
+      roundRect: vi.fn(),
+      rect: vi.fn(),
     }) as unknown as typeof HTMLCanvasElement.prototype.getContext
 
     container = document.createElement('div')

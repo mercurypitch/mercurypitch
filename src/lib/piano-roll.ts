@@ -520,11 +520,14 @@ export class PianoRollEditor {
   private dragStartX = 0
   private dragStartY = 0
   private dragStartBeat = 0
+  /** Per-note offset from dragStartBeat/Row, populated at drag start. */
+  private dragOffsets: { beat: number; row: number }[] = []
   private selectedDuration = 1
   private nextNoteId = 1
   private isBoxSelecting = false
   private boxStartX = 0
   private boxStartY = 0
+  private dragDidPushHistory = false
   private boxEndX = 0
   private boxEndY = 0
   private dragStartRow = 0
@@ -942,9 +945,11 @@ export class PianoRollEditor {
   }
 
   addBeats(count: number): void {
+    this.pushHistory()
     this.totalBeats += count
     this.buildCanvases()
     this.draw()
+    this.updateUndoRedoButtons()
   }
 
   removeBeats(count: number): void {
@@ -1011,7 +1016,12 @@ export class PianoRollEditor {
         this.hintEl.textContent = `${this.selectedNoteIds.size} notes selected | Shift+click to toggle | Drag to multi-move | Del to delete | Action buttons create slides`
       }
     } else if (this.activeTool === 'place') {
-      this.hintEl.textContent = `Click to place a ${this.selectedDuration}b note | Right-click to delete`
+      let msg = `Click to place a ${this.selectedDuration}b note`
+      if (this.selectedEffect) {
+        msg += ` [Effect: ${this.selectedEffect}]`
+      }
+      msg += ' | Right-click to delete'
+      this.hintEl.textContent = msg
     } else if (this.activeTool === 'erase') {
       this.hintEl.textContent = 'Click on a note to erase it'
     } else {
@@ -1540,32 +1550,32 @@ export class PianoRollEditor {
       })
     })
 
-    // Effect action buttons
-    container
-      .querySelector('#roll-action-slide-up')
-      ?.addEventListener('click', () => {
-        this._applyEffect('slide-up')
+    // Effect action buttons — apply to selected notes, or pre-select for
+    // the next placed note when nothing is selected.
+    const setupEffectBtn = (id: string, effect: EffectType) => {
+      container.querySelector(id)?.addEventListener('click', () => {
+        if (this.selectedNoteIds.size === 0) {
+          // Toggle pre-select: clicking the same effect clears it.
+          if (this.selectedEffect === effect) {
+            this.selectedEffect = null
+          } else {
+            this.selectedEffect = effect
+          }
+          this._updateEffectBtnStates(container)
+          this._updateHint()
+          return
+        }
+        // Notes are selected — apply the effect directly.
+        this.selectedEffect = null
+        this._updateEffectBtnStates(container)
+        this._applyEffect(effect)
       })
-    container
-      .querySelector('#roll-action-slide-down')
-      ?.addEventListener('click', () => {
-        this._applyEffect('slide-down')
-      })
-    container
-      .querySelector('#roll-action-ease-in')
-      ?.addEventListener('click', () => {
-        this._applyEffect('ease-in')
-      })
-    container
-      .querySelector('#roll-action-ease-out')
-      ?.addEventListener('click', () => {
-        this._applyEffect('ease-out')
-      })
-    container
-      .querySelector('#roll-action-vibrato')
-      ?.addEventListener('click', () => {
-        this._applyEffect('vibrato')
-      })
+    }
+    setupEffectBtn('#roll-action-slide-up', 'slide-up')
+    setupEffectBtn('#roll-action-slide-down', 'slide-down')
+    setupEffectBtn('#roll-action-ease-in', 'ease-in')
+    setupEffectBtn('#roll-action-ease-out', 'ease-out')
+    setupEffectBtn('#roll-action-vibrato', 'vibrato')
 
     // Clear
     container
@@ -1928,11 +1938,17 @@ export class PianoRollEditor {
     const beat = x / this.beatWidth
     const row = Math.floor(y / this.rowHeight)
 
-    // Capture history for potential drag/resize operations
+    // Defer history push to first modification (mousemove) so a click
+    // without dragging doesn't waste an undo level.
+    this.dragDidPushHistory = false
     if (this.activeTool === 'place' || this.activeTool === 'select') {
       const existingNote = this.findNoteAt(beat, row)
       if (existingNote) {
-        this.pushHistory()
+        // Clear pre-selected effect when interacting with existing notes.
+        if (this.selectedEffect) {
+          this.selectedEffect = null
+          this._updateEffectBtnStates()
+        }
       }
     }
 
@@ -1964,6 +1980,11 @@ export class PianoRollEditor {
         this.selectedNotesCache = this.melody.filter(
           (n) => n.id === noteId || this.selectedNoteIds.has(n.id),
         )
+        // Store per-note offsets so multi-note drag preserves relative positions.
+        this.dragOffsets = this.selectedNotesCache.map((n) => ({
+          beat: n.startBeat - this.dragStartBeat,
+          row: this.midiToRow(n.note.midi) - this.dragStartRow,
+        }))
       } else {
         // Empty space — start box selection for area-select, or place note on click
         this.isBoxSelecting = true
@@ -2013,6 +2034,11 @@ export class PianoRollEditor {
         this.selectedNotesCache = this.melody.filter(
           (n) => n.id === noteId || this.selectedNoteIds.has(n.id),
         )
+        // Store per-note offsets so multi-note drag preserves relative positions.
+        this.dragOffsets = this.selectedNotesCache.map((n) => ({
+          beat: n.startBeat - this.dragStartBeat,
+          row: this.midiToRow(n.note.midi) - this.dragStartRow,
+        }))
         const first = this.melody.find((n) => this.selectedNoteIds.has(n.id))
         this.onNoteSelect?.(first ?? null)
       } else {
@@ -2078,11 +2104,24 @@ export class PianoRollEditor {
         dragSnapUnit
       const deltaRow = Math.round((y - this.dragStartY) / this.rowHeight)
       if (deltaBeat !== 0 || deltaRow !== 0) {
-        for (const note of this.selectedNotesCache) {
-          const newStartBeat = Math.max(0, this.dragStartBeat + deltaBeat)
+        if (!this.dragDidPushHistory) {
+          this.pushHistory()
+          this.dragDidPushHistory = true
+        }
+        for (let i = 0; i < this.selectedNotesCache.length; i++) {
+          const note = this.selectedNotesCache[i]
+          const offset = this.dragOffsets[i]
+          if (!offset) continue
+          const newStartBeat = Math.max(
+            0,
+            this.dragStartBeat + deltaBeat + offset.beat,
+          )
           const newRow = Math.max(
             0,
-            Math.min(this.totalRows - 1, this.dragStartRow + deltaRow),
+            Math.min(
+              this.totalRows - 1,
+              this.dragStartRow + deltaRow + offset.row,
+            ),
           )
           const newScaleNote = this.scale[newRow]
           if (newScaleNote == null) continue
@@ -2096,6 +2135,10 @@ export class PianoRollEditor {
         this.draw()
       }
     } else if (this.isResizing && this.selectedNotesCache.length > 0) {
+      if (!this.dragDidPushHistory) {
+        this.pushHistory()
+        this.dragDidPushHistory = true
+      }
       for (const note of this.selectedNotesCache) {
         if (this.resizeHandle === 'right') {
           const endBeat = Math.round(x / this.beatWidth)
@@ -2141,6 +2184,7 @@ export class PianoRollEditor {
     this.isResizing = false
     this.selectedNotesCache = []
     this.resizeHandle = null
+    this.dragDidPushHistory = false
   }
 
   private onGridMouseLeave(_e: MouseEvent): void {
@@ -2151,6 +2195,7 @@ export class PianoRollEditor {
     this.isResizing = false
     this.selectedNotesCache = []
     this.resizeHandle = null
+    this.dragDidPushHistory = false
     // Reset cursor
     if (this.gridCanvas) {
       this.gridCanvas.style.cursor =
@@ -2255,6 +2300,8 @@ export class PianoRollEditor {
       }
     } else if (e.key === 'Escape') {
       this.selectedNoteIds.clear()
+      this.selectedEffect = null
+      this._updateEffectBtnStates()
       this.onNoteSelect?.(null)
       this.draw()
       this._updateHint()
@@ -2357,6 +2404,16 @@ export class PianoRollEditor {
     this.melody.push(item)
     this.selectedNoteIds.add(id)
     this.onNoteSelect?.(item)
+
+    // Auto-expand canvas if the note lands beyond the current beat range so the
+    // user sees the note immediately instead of waiting for the reactive loop.
+    const noteEnd = snappedBeat + duration
+    if (noteEnd > this.totalBeats) {
+      const barBeats = this.config.beatsPerBar
+      this.totalBeats = Math.ceil(noteEnd / barBeats) * barBeats
+      this.buildCanvases()
+    }
+
     this.emitMelodyChange()
     this.draw()
     this._updateHint()
@@ -3222,10 +3279,13 @@ export class PianoRollEditor {
         : 0
     for (const note of this.melody) {
       const rowIdx = this.midiToRow(note.note.midi)
-      if (rowIdx < 0) continue
+      const offScale = rowIdx < 0
+      // Clamp off-scale notes to the nearest visible edge so they remain
+      // selectable, draggable, and erasable rather than silently invisible.
+      const visibleRow = offScale ? 0 : rowIdx
 
       const x = countInOffset + note.startBeat * this.beatWidth
-      const y = rowIdx * this.rowHeight
+      const y = visibleRow * this.rowHeight
       const w = note.duration * this.beatWidth
       const h = this.rowHeight - 2
       const ry = y + 1
@@ -3239,9 +3299,11 @@ export class PianoRollEditor {
         this.getCurrentBeat() < note.startBeat + note.duration
       const cornerRadius = 4
 
-      // Diagonal rendering for slide notes
+      // Diagonal rendering for slide notes (skip for off-scale —
+      // without a real row position the skew direction is meaningless).
       let diagY = 0
       if (
+        !offScale &&
         !isActive &&
         note.effectType &&
         (note.effectType === 'slide-up' || note.effectType === 'slide-down') &&
@@ -3330,11 +3392,37 @@ export class PianoRollEditor {
         strokeWidth = 1.5
       }
 
+      // Off-scale notes get reduced opacity + hatch overlay so the user can
+      // see they're outside the current scale and still select/erase them.
+      if (offScale) {
+        fillColor = fillColor.replace('0.85', '0.4').replace('1)', '0.4)')
+        if (fillColor === this.config.noteColors.normal) {
+          fillColor = 'rgba(120,120,120,0.4)'
+        }
+      }
+
       ctx.fillStyle = fillColor
       ctx.strokeStyle = strokeColor
       ctx.lineWidth = strokeWidth
       ctx.fill()
       ctx.stroke()
+
+      // Hatch pattern for off-scale notes
+      if (offScale && w > 10) {
+        ctx.save()
+        ctx.beginPath()
+        ctx.rect(x, ry, w, h)
+        ctx.clip()
+        ctx.strokeStyle = 'rgba(255,255,255,0.3)'
+        ctx.lineWidth = 1
+        for (let hx = x; hx < x + w + h; hx += 6) {
+          ctx.beginPath()
+          ctx.moveTo(hx, ry)
+          ctx.lineTo(hx - h, ry + h)
+          ctx.stroke()
+        }
+        ctx.restore()
+      }
 
       // Reset shadow
       ctx.shadowColor = 'transparent'
@@ -3499,9 +3587,8 @@ export class PianoRollEditor {
     } else {
       // Slides and ease need 2 selected notes
       if (selected.length !== 2) {
-        window.alert(
-          'Slides require exactly 2 notes selected (order by time). Vibrato works on 1 or more notes.',
-        )
+        this.hintEl.textContent =
+          'Slides require exactly 2 notes selected (order by time). Vibrato works on 1 or more notes.'
         return
       }
 
@@ -3512,22 +3599,35 @@ export class PianoRollEditor {
 
       // Validation based on effect type
       if (type === 'slide-up' && second.note.midi <= first.note.midi) {
-        window.alert(
-          'Ascending slide requires the second note to be higher than the first.',
-        )
+        this.hintEl.textContent =
+          'Ascending slide requires the second note to be higher than the first.'
         return
       }
       if (type === 'slide-down' && second.note.midi >= first.note.midi) {
-        window.alert(
-          'Descending slide requires the second note to be lower than the first.',
-        )
+        this.hintEl.textContent =
+          'Descending slide requires the second note to be lower than the first.'
         return
       }
       if (
         (type === 'ease-in' || type === 'ease-out') &&
         second.note.midi === first.note.midi
       ) {
-        window.alert('Ease In/Out requires two notes at different pitches.')
+        this.hintEl.textContent =
+          'Ease In/Out requires two notes at different pitches.'
+        return
+      }
+
+      // Reject if notes exist between first and second that would be overlapped
+      const intervening = this.melody.filter(
+        (n) =>
+          n.id !== first.id &&
+          n.id !== second.id &&
+          n.startBeat > first.startBeat &&
+          n.startBeat < second.startBeat,
+      )
+      if (intervening.length > 0) {
+        this.hintEl.textContent =
+          'Cannot link notes: there are other notes between them.'
         return
       }
 
@@ -3540,6 +3640,32 @@ export class PianoRollEditor {
       )
       this.emitMelodyChange()
       this.draw()
+    }
+  }
+
+  /** Update effect button active states to reflect the pre-selected effect. */
+  private _updateEffectBtnStates(container: HTMLElement = this.container): void {
+    const ids = [
+      'roll-action-slide-up',
+      'roll-action-slide-down',
+      'roll-action-ease-in',
+      'roll-action-ease-out',
+      'roll-action-vibrato',
+    ]
+    for (const id of ids) {
+      container.querySelector(`#${id}`)?.classList.remove('active')
+    }
+    if (this.selectedEffect) {
+      const map: Record<EffectType, string> = {
+        'slide-up': 'roll-action-slide-up',
+        'slide-down': 'roll-action-slide-down',
+        'ease-in': 'roll-action-ease-in',
+        'ease-out': 'roll-action-ease-out',
+        vibrato: 'roll-action-vibrato',
+      }
+      const activeId = map[this.selectedEffect]
+      if (activeId)
+        container.querySelector(`#${activeId}`)?.classList.add('active')
     }
   }
 }
