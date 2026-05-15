@@ -5,7 +5,7 @@
 import type { Component } from 'solid-js'
 import { createEffect, onCleanup, onMount } from 'solid-js'
 import type { ArcState } from '@/lib/arc-physics'
-import { BALL_RADIUS, buildPlayable, computeArcCy, computeArcEndBeat, computeBallPos, computeInitialArc, isBackwardsSeek, shouldAdvanceArc, } from '@/lib/arc-physics'
+import { BALL_RADIUS, buildPlayable, computeArcCy, computeArcEndBeat, computeBallPos, computeInitialArc, isBackwardsSeek, } from '@/lib/arc-physics'
 import { eventBus } from '@/lib/event-bus'
 import { beatToHistoryX } from '@/lib/pitch-history-window'
 import { bpm, focusMode, micWaveVisible } from '@/stores'
@@ -212,14 +212,30 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     if (w <= 0) return
     const totalBeats = props.totalBeats()
     const ci = props.countInBeats?.() ?? 0
-    const rangeStart = -ci
+    const cBeat = props.currentBeat()
+
+    // Smooth count-in transition (same as beatToX)
+    const TRANSITION_ZONE = 0.5
+    let effectiveCi = ci
+    if (ci > 0) {
+      if (cBeat <= -TRANSITION_ZONE) {
+        effectiveCi = ci
+      } else if (cBeat >= TRANSITION_ZONE) {
+        effectiveCi = 0
+      } else {
+        const t = (cBeat + TRANSITION_ZONE) / (2 * TRANSITION_ZONE)
+        const eased = 1 - Math.pow(1 - t, 3)
+        effectiveCi = ci * (1 - eased)
+      }
+    }
+
+    const rangeStart = -effectiveCi
     const rangeBeats = totalBeats - rangeStart
     const windowBeats = Math.min(visibleBeatWindow, rangeBeats)
     let windowStart: number
     if (rangeBeats <= visibleBeatWindow) {
       windowStart = rangeStart
     } else {
-      const cBeat = props.currentBeat()
       windowStart = cBeat - windowBeats * WINDOW_FILL_RATIO
       windowStart = Math.max(
         rangeStart,
@@ -265,7 +281,6 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     // Count-in arc: ball sweeps from left edge toward first note
     // so the user sees time passing during the count-in runway.
     if (!canvasRef) return
-    const w = canvasRef.clientWidth
     const h = canvasRef.clientHeight
     const boxHalf = 11
 
@@ -334,11 +349,6 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       arcState.initialized = false
       return
     }
-    const cur: { startBeat: number; duration: number } = {
-      startBeat: curItem.startBeat,
-      duration: curItem.duration,
-    }
-
     // ---- Advance at most 1 note per frame to never skip ------------
     const nextIdx = arcState.noteIndex + 1
     if (nextIdx < playable.length) {
@@ -348,7 +358,11 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
         duration: nextItem.duration,
       }
 
-      if (shouldAdvanceArc(cur, next, beat)) {
+      // Advance when the current arc has finished — the ball must
+      // reach the top-right corner of the current note before
+      // starting the next arc.  This keeps arcs seamless and
+      // ensures the ball touches every note (no skipping or waiting).
+      if (beat >= arcState.endBeat) {
         const src = computeBallPos(beat, arcState)
         let targetY = h / 2
         if (
@@ -391,7 +405,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       )
       if (t > 0 && t < 1) {
         const pos = computeBallPos(beat, arcState)
-        arcState.trail.push({ beatX: pos.beatX, y: pos.y, alpha: 0.6, time: now })
+        arcState.trail.push({ x: pos.beatX, y: pos.y, alpha: 0.6, time: now })
       }
       arcState.trail = arcState.trail.filter((pt) => now - pt.time < 80)
     }
@@ -416,8 +430,29 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     const ci = props.countInBeats?.() ?? 0
     const cBeat = props.currentBeat()
     const totalBeats = Math.max(1, props.totalBeats())
-    // Count-in beats live in negative space; the full range is [-ci, totalBeats].
-    const rangeStart = -ci
+
+    // Smooth count-in transition: when beat crosses from negative to
+    // positive, ease the count-in offset from ci down to 0 so notes
+    // glide from their shifted positions to their final positions
+    // instead of snapping.  After the transition zone the count-in
+    // runway is gone and the full range is [0, totalBeats].
+    const TRANSITION_ZONE = 0.5
+    let effectiveCi = ci
+    if (ci > 0) {
+      if (cBeat <= -TRANSITION_ZONE) {
+        effectiveCi = ci
+      } else if (cBeat >= TRANSITION_ZONE) {
+        effectiveCi = 0
+      } else {
+        const t = (cBeat + TRANSITION_ZONE) / (2 * TRANSITION_ZONE)
+        const eased = 1 - Math.pow(1 - t, 3) // easeOutCubic
+        effectiveCi = ci * (1 - eased)
+      }
+    }
+
+    // During count-in the range includes the negative runway; after
+    // the transition the range is simply [0, totalBeats].
+    const rangeStart = -effectiveCi
     const rangeBeats = totalBeats - rangeStart
 
     // When the full range fits, show everything (no scrolling).
@@ -960,7 +995,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
         const age = (performance.now() - pt.time) / 80
         const alpha = Math.max(0, 0.3 * (1 - age))
         if (alpha > 0.01) {
-          const tx = beatToX(pt.beatX, w)
+          const tx = beatToX(pt.x, w)
           if (!Number.isFinite(tx) || !Number.isFinite(pt.y)) continue
           const grad = ctx.createRadialGradient(tx, pt.y, 0, tx, pt.y, 12)
           grad.addColorStop(0, `rgba(200,220,255,${alpha})`)
@@ -1078,7 +1113,23 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     const totalBeats = props.totalBeats()
     const ci = props.countInBeats?.() ?? 0
     const cBeat = props.currentBeat()
-    const rangeStart = -ci
+
+    // Same smooth count-in transition as beatToX
+    const TRANSITION_ZONE = 0.5
+    let effectiveCi = ci
+    if (ci > 0) {
+      if (cBeat <= -TRANSITION_ZONE) {
+        effectiveCi = ci
+      } else if (cBeat >= TRANSITION_ZONE) {
+        effectiveCi = 0
+      } else {
+        const t = (cBeat + TRANSITION_ZONE) / (2 * TRANSITION_ZONE)
+        const eased = 1 - Math.pow(1 - t, 3)
+        effectiveCi = ci * (1 - eased)
+      }
+    }
+
+    const rangeStart = -effectiveCi
     const rangeBeats = totalBeats - rangeStart
     const windowBeats = Math.min(visibleBeatWindow, rangeBeats)
     let windowStart: number
