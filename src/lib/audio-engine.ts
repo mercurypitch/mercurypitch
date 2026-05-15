@@ -19,6 +19,7 @@ export type InstrumentType = 'sine' | 'piano' | 'organ' | 'strings' | 'synth'
 export class AudioEngine {
   private audioCtx: AudioContext | null = null
   private mainGain: GainNode | null = null
+  private metronomeGain: GainNode | null = null
   private uvrOutput: GainNode | null = null
   // Microphone
   private micStream: MediaStream | null = null
@@ -104,6 +105,11 @@ export class AudioEngine {
     this.mainGain = this.audioCtx.createGain()
     this.mainGain.gain.value = this.volume
 
+    // Dedicated metronome/precount gain — bypasses mainGain so
+    // click volume stays audible regardless of the note volume slider.
+    this.metronomeGain = this.audioCtx.createGain()
+    this.metronomeGain.gain.value = 0.8
+
     // Reverb send/return gain nodes for dry/wet mix
     this.reverbSendGain = this.audioCtx.createGain()
     this.reverbReturnGain = this.audioCtx.createGain()
@@ -128,6 +134,12 @@ export class AudioEngine {
       this.uvrOutput.connect(this.playbackAnalyser)
       // Wet send for reverb: mainGain → reverbSendGain (separate from UVR)
       this.mainGain.connect(this.reverbSendGain)
+
+      // Metronome/precount bypasses mainGain so click volume is
+      // independent of the note volume slider.
+      if (this.metronomeGain !== null) {
+        this.metronomeGain.connect(this.playbackAnalyser)
+      }
     }
 
     // Create shared analyser for mic input and pitch detection (mirrors old JS)
@@ -288,6 +300,18 @@ export class AudioEngine {
     if (this.mainGain) {
       this.mainGain.gain.value = this.volume
     }
+  }
+
+  /** Set metronome/precount click volume (0-1), independent of note volume */
+  setMetronomeVolume(value: number): void {
+    const clamped = Math.max(0, Math.min(1, value))
+    if (this.metronomeGain !== null) {
+      this.metronomeGain.gain.value = clamped
+    }
+  }
+
+  getMetronomeVolume(): number {
+    return this.metronomeGain?.gain.value ?? 0.8
   }
 
   // ============================================================
@@ -517,7 +541,7 @@ export class AudioEngine {
    * Play a short click sound for count-in beat
    */
   playClick(): void {
-    if (!this.audioCtx || !this.mainGain) return
+    if (!this.audioCtx || this.metronomeGain === null) return
     // Ensure AudioContext is ready
     this.resume().catch((err) =>
       console.warn('AudioContext resume failed:', err),
@@ -538,7 +562,7 @@ export class AudioEngine {
     )
 
     osc.connect(gain)
-    gain.connect(this.mainGain)
+    gain.connect(this.metronomeGain)
 
     osc.start(this.audioCtx.currentTime)
     osc.stop(this.audioCtx.currentTime + 0.05)
@@ -548,7 +572,7 @@ export class AudioEngine {
    * Play metronome click - high frequency for downbeat, lower for other beats
    */
   playMetronomeClick(isDownbeat: boolean): void {
-    if (!this.audioCtx || !this.mainGain) return
+    if (!this.audioCtx || this.metronomeGain === null) return
     this.resume().catch((err) =>
       console.warn('AudioContext resume failed:', err),
     )
@@ -557,7 +581,7 @@ export class AudioEngine {
     const gain = this.audioCtx.createGain()
 
     osc.type = 'triangle'
-    // Downbeat gets a higher pitch (440Hz = A4), other beats lower (220Hz = A3)
+    // Downbeat gets a higher pitch (880Hz = A5), other beats lower (440Hz = A4)
     osc.frequency.value = isDownbeat ? 880 : 440
 
     const now = this.audioCtx.currentTime
@@ -566,12 +590,7 @@ export class AudioEngine {
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08)
 
     osc.connect(gain)
-
-    // Apply UVR processing if enabled
-    const processedNodes = this._applyUvrProcessing(gain)
-    processedNodes.forEach((node) =>
-      node.connect(this.uvrMainGain ?? this.mainGain!),
-    )
+    gain.connect(this.metronomeGain)
 
     osc.start(this.audioCtx.currentTime)
     osc.stop(this.audioCtx.currentTime + 0.08)
@@ -1357,6 +1376,7 @@ export class AudioEngine {
       this.audioCtx.close()
       this.audioCtx = null
     }
+    this.metronomeGain = null
     this.mainGain = null
     this.reverbNode = null
     this.reverbSendGain = null
