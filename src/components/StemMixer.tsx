@@ -195,6 +195,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     drawMidiCanvas: () => {},
   }
   let updateCurrentLineForAudio = () => {}
+  let setUserScrolledForAudio = (_v: boolean) => {}
 
   // ── Audio controller ─────────────────────────────────────────
   const audio = useStemMixerAudioController({
@@ -211,6 +212,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     setMidiNotes,
     canvas: canvasForAudio,
     updateCurrentLine: () => updateCurrentLineForAudio(),
+    setUserScrolled: setUserScrolledForAudio,
     micActive: mic.micActive,
     getMicAnalyserNode: mic.getMicAnalyserNode,
     getMicPitchDetector: mic.getMicPitchDetector,
@@ -277,6 +279,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     setMarkEndLine,
     blockEditTarget,
     setBlockEditTarget,
+    setUserScrolled,
 
     // Memos
     stableParsedLyrics,
@@ -341,6 +344,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     windowDuration: audio.windowDuration,
     setWindowStart: audio.setWindowStart,
   })
+
+  // Backfill holder refs that audio controller needs
+  setUserScrolledForAudio = setUserScrolled
 
   // ── Canvas controller ──────────────────────────────────────────
   const canvas = useStemMixerCanvasController({
