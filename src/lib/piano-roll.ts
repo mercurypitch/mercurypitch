@@ -595,29 +595,14 @@ export class PianoRollEditor {
       return
     }
     this.clearHistory()
+
+    // Always regenerate IDs so external sources (MIDI import, recording,
+    // copy-paste, etc.) can never introduce collisions. Incoming IDs are
+    // discarded — only position, note data, and effect metadata are kept.
     this.melody = melody.map((item) => ({
       ...item,
-      id: item.id,
+      id: this.nextNoteId++,
     }))
-
-    // Re-sync nextNoteId so future placements never produce duplicate IDs.
-    const maxId = this.melody.reduce((max, n) => Math.max(max, n.id), 0)
-    if (this.nextNoteId <= maxId) {
-      this.nextNoteId = maxId + 1
-    }
-
-    // Warn if any two notes share the same ID — this indicates a bug
-    // upstream (recording, MIDI import, etc.) that should be fixed.
-    const seen = new Set<number>()
-    for (const n of this.melody) {
-      if (seen.has(n.id)) {
-        console.warn(
-          `[PianoRollEditor] Duplicate note ID ${n.id} detected in setMelody — ` +
-          `this will cause selection/deletion bugs. Check upstream ID generation.`,
-        )
-      }
-      seen.add(n.id)
-    }
 
     // Initialize ball physics with new melody
     this.initializeBallPhysics()

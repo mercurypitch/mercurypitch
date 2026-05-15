@@ -156,9 +156,10 @@ describe('PianoRollEditor', () => {
   })
 
   describe('Note ID uniqueness', () => {
-    it('warns when setMelody receives notes with duplicate IDs', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-
+    it('setMelody regenerates IDs so external collisions cannot leak in', () => {
+      // Simulate a MIDI import that always produces IDs starting from 1.
+      // The editor must regenerate IDs so they never collide with existing
+      // notes or across successive imports.
       editor.setMelody([
         {
           id: 1,
@@ -167,52 +168,50 @@ describe('PianoRollEditor', () => {
           duration: 1,
         },
         {
-          id: 1, // duplicate!
+          id: 1, // duplicate ID from a buggy source — must not matter
           note: { midi: 62, freq: 293.66, name: 'D' as const, octave: 4 },
           startBeat: 1,
           duration: 1,
         },
       ])
 
-      expect(warnSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Duplicate note ID 1'),
-      )
-      warnSpy.mockRestore()
+      const ids = editor.getMelody().map((n) => n.id)
+      const uniqueIds = new Set(ids)
+      expect(uniqueIds.size).toBe(ids.length)
+      // IDs should be regenerated starting from the editor's counter,
+      // not from the incoming values.
+      expect(ids[0]).not.toBe(ids[1])
     })
 
-    it('does not warn when setMelody receives notes with unique IDs', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-
+    it('successive setMelody calls never produce overlapping IDs', () => {
+      // First melody
       editor.setMelody([
         {
-          id: 1,
+          id: 99,
           note: { midi: 60, freq: 261.63, name: 'C' as const, octave: 4 },
           startBeat: 0,
           duration: 1,
         },
+      ])
+      const firstIds = editor.getMelody().map((n) => n.id)
+
+      // Second melody (simulating loading a different song)
+      editor.setMelody([
         {
-          id: 2,
-          note: { midi: 62, freq: 293.66, name: 'D' as const, octave: 4 },
-          startBeat: 1,
-          duration: 1,
-        },
-        {
-          id: 3,
+          id: 99,
           note: { midi: 64, freq: 329.63, name: 'E' as const, octave: 4 },
-          startBeat: 2,
+          startBeat: 0,
           duration: 1,
         },
       ])
+      const secondIds = editor.getMelody().map((n) => n.id)
 
-      expect(
-        warnSpy.mock.calls.filter((c) =>
-          (c[0] as string).includes('Duplicate note ID'),
-        ),
-      ).toHaveLength(0)
-      warnSpy.mockRestore()
+      // No overlap between first and second melody IDs
+      const allIds = new Set([...firstIds, ...secondIds])
+      expect(allIds.size).toBe(firstIds.length + secondIds.length)
     })
 
-    it('getMelody returns notes with all unique IDs after setMelody', () => {
+    it('getMelody returns all unique IDs after setMelody', () => {
       editor.setMelody([
         {
           id: 5,
