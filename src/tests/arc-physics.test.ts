@@ -353,25 +353,23 @@ describe('Arc state transitions (integration)', () => {
       }
       prevBeat = beat
 
-      // Advance logic
+      // Advance when current arc finishes — ensures ball reaches
+      // each note's top-right corner before arcing to the next.
       const nextIdx = state.noteIndex + 1
-      if (nextIdx < notes.length) {
-        const cur = notes[state.noteIndex]
+      if (nextIdx < notes.length && beat >= state.endBeat) {
         const next = notes[nextIdx]
-        if (shouldAdvanceArc(cur, next, beat)) {
-          const src = computeBallPos(beat, state)
-          state.sx = src.beatX
-          state.sy = src.y
-          state.ex = next.startBeat + next.duration
-          state.ey = 200
-          state.cy = computeArcCy(src.y, 200, bpm)
-          state.startBeat = beat
-          state.endBeat = computeArcEndBeat(next)
-          if (state.endBeat <= state.startBeat) {
-            state.endBeat = state.startBeat + 0.5
-          }
-          state.noteIndex = nextIdx
+        const src = computeBallPos(beat, state)
+        state.sx = src.beatX
+        state.sy = src.y
+        state.ex = next.startBeat + next.duration
+        state.ey = 200
+        state.cy = computeArcCy(src.y, 200, bpm)
+        state.startBeat = beat
+        state.endBeat = computeArcEndBeat(next)
+        if (state.endBeat <= state.startBeat) {
+          state.endBeat = state.startBeat + 0.5
         }
+        state.noteIndex = nextIdx
       }
     }
 
@@ -448,25 +446,23 @@ describe('Arc state transitions (integration)', () => {
   })
 
   it('advances exactly 1 note per frame (never skips)', () => {
+    // With beat >= endBeat advance: ball reaches note end, then advances.
+    // Simulate normal forward playback (small steps) through 5 short notes.
     const notes: PlayableNote[] = [
-      { startBeat: 0, duration: 1 },
-      { startBeat: 1, duration: 1 },
-      { startBeat: 2, duration: 1 },
-      { startBeat: 3, duration: 1 },
-      { startBeat: 4, duration: 1 },
+      { startBeat: 0, duration: 0.5 },
+      { startBeat: 0.5, duration: 0.5 },
+      { startBeat: 1, duration: 0.5 },
+      { startBeat: 1.5, duration: 0.5 },
+      { startBeat: 2, duration: 0.5 },
     ]
 
-    // Jump straight to beat 10 (way past all notes)
-    const sampleBeats = [0, 10, 10.1, 10.2, 10.3, 10.4, 10.5]
+    const sampleBeats: number[] = []
+    for (let b = 0; b <= 3; b += 0.02) sampleBeats.push(b)
 
     const { visited } = simulateMelody(notes, 120, sampleBeats)
 
-    // With "advance at most 1 per frame", we should see no gaps in visited
-    for (let i = 1; i < visited.length; i++) {
-      expect(visited[i]).toBe(visited[i - 1] + 1)
-    }
-    // Should eventually reach the last note
-    expect(visited[visited.length - 1]).toBe(notes.length - 1)
+    // Should visit all notes in order, no gaps
+    expect(visited).toEqual([0, 1, 2, 3, 4])
   })
 
   it('single playable note — arc stays on that note', () => {
@@ -717,5 +713,351 @@ describe('Arc state transitions (integration)', () => {
     expect(visited).toContain(1)
     // No reset back to 0
     expect(visited.filter((v) => v === 0)).toHaveLength(1)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Comprehensive ball behavior tests — trajectory, continuity, gaps
+// ---------------------------------------------------------------------------
+describe('Ball trajectory and continuity', () => {
+  /** Full state machine simulation returning positions at each sample. */
+  const simulateWithPositions = (
+    notes: PlayableNote[],
+    bpm: number,
+    sampleBeats: number[],
+    noteYs: number[],
+  ) => {
+    const first = notes[0]
+    const initial = computeInitialArc(first, 100, noteYs[0] ?? 200)
+    const state: ArcState = {
+      ...initial,
+      initialized: true,
+      isRest: false,
+    }
+
+    const positions: { beat: number; beatX: number; y: number; noteIndex: number }[] = []
+    let prevBeat = sampleBeats[0]
+
+    for (const beat of sampleBeats) {
+      if (isBackwardsSeek(beat, prevBeat)) {
+        state.initialized = false
+        break
+      }
+      prevBeat = beat
+
+      const nextIdx = state.noteIndex + 1
+      if (nextIdx < notes.length && beat >= state.endBeat) {
+        const next = notes[nextIdx]
+        const src = computeBallPos(beat, state)
+        state.sx = src.beatX
+        state.sy = src.y
+        state.ex = next.startBeat + next.duration
+        state.ey = noteYs[nextIdx] ?? 200
+        state.cy = computeArcCy(src.y, noteYs[nextIdx] ?? 200, bpm)
+        state.startBeat = beat
+        state.endBeat = computeArcEndBeat(next)
+        if (state.endBeat <= state.startBeat) {
+          state.endBeat = state.startBeat + 0.5
+        }
+        state.noteIndex = nextIdx
+      }
+
+      const pos = computeBallPos(beat, state)
+      positions.push({
+        beat,
+        beatX: pos.beatX,
+        y: pos.y,
+        noteIndex: state.noteIndex,
+      })
+    }
+
+    return { state, positions }
+  }
+
+  it('ball X tracks beat linearly (1:1 with playhead)', () => {
+    // Bezier X is linear: beatX = (1-t)*sx + t*ex, and t = (beat-start)/(end-start),
+    // so beatX = beat.  Ball moves exactly with the playhead.
+    const notes: PlayableNote[] = [
+      { startBeat: 0, duration: 4 },
+      { startBeat: 4, duration: 4 },
+    ]
+    const sampleBeats: number[] = []
+    for (let b = 0; b <= 8; b += 0.1) sampleBeats.push(b)
+
+    // sx must equal startBeat for beatX=beat to hold (and it does in
+    // computeInitialArc: sx=startBeatX, startBeat=Math.max(0, first.startBeat-0.5)).
+    const firstNote = notes[0]
+    const startBeatX = Math.max(0, firstNote.startBeat - 0.5)
+    const initial = computeInitialArc(firstNote, startBeatX, 300)
+    const state: ArcState = { ...initial, initialized: true, isRest: false }
+    const positions: { beat: number; beatX: number; y: number; noteIndex: number }[] = []
+    let prevBeat = sampleBeats[0]
+
+    for (const beat of sampleBeats) {
+      if (isBackwardsSeek(beat, prevBeat)) break
+      prevBeat = beat
+
+      const nextIdx = state.noteIndex + 1
+      if (nextIdx < notes.length && beat >= state.endBeat) {
+        const next = notes[nextIdx]
+        const src = computeBallPos(beat, state)
+        state.sx = src.beatX
+        state.sy = src.y
+        state.ex = next.startBeat + next.duration
+        state.ey = nextIdx === 1 ? 100 : 300
+        state.cy = computeArcCy(src.y, nextIdx === 1 ? 100 : 300, 120)
+        state.startBeat = beat
+        state.endBeat = computeArcEndBeat(next)
+        if (state.endBeat <= state.startBeat) {
+          state.endBeat = state.startBeat + 0.5
+        }
+        state.noteIndex = nextIdx
+      }
+
+      const pos = computeBallPos(beat, state)
+      positions.push({ beat, beatX: pos.beatX, y: pos.y, noteIndex: state.noteIndex })
+    }
+
+    for (const p of positions) {
+      if (p.noteIndex < notes.length) {
+        expect(Math.abs(p.beatX - p.beat)).toBeLessThan(0.001)
+      }
+    }
+  })
+
+  it('ball reaches top-right corner at each arc endBeat', () => {
+    // For each note, the ball's Y should equal the note's Y at the arc endBeat.
+    const notes: PlayableNote[] = [
+      { startBeat: 0, duration: 2 },
+      { startBeat: 2, duration: 2 },
+      { startBeat: 4, duration: 2 },
+    ]
+    const noteYs = [300, 150, 80]
+
+    const sampleBeats: number[] = []
+    for (let b = 0; b <= 6.2; b += 0.05) sampleBeats.push(b)
+
+    const { positions } = simulateWithPositions(notes, 120, sampleBeats, noteYs)
+
+    // At each note's endBeat, ball should be at that note's Y
+    const noteEnds = [2, 4, 6]
+    for (let i = 0; i < noteEnds.length; i++) {
+      const atEnd = positions.find(
+        (p) => Math.abs(p.beat - noteEnds[i]) < 0.001,
+      )
+      expect(atEnd).toBeDefined()
+      expect(atEnd!.y).toBeCloseTo(noteYs[i], 1)
+    }
+  })
+
+  it('ball position is continuous at arc boundaries (no jumps)', () => {
+    // When advancing from one arc to the next, the ball's position
+    // at the boundary beat should be the same before and after advancing.
+    const notes: PlayableNote[] = [
+      { startBeat: 0, duration: 2 },
+      { startBeat: 2, duration: 2 },
+    ]
+    const noteYs = [300, 100]
+
+    const first = notes[0]
+    const initial = computeInitialArc(first, 100, noteYs[0])
+    const state: ArcState = {
+      ...initial,
+      initialized: true,
+      isRest: false,
+    }
+
+    // At beat 2 (endBeat), get position BEFORE advance
+    const posBefore = computeBallPos(2, state)
+
+    // Simulate advance
+    const src = computeBallPos(2, state)
+    state.sx = src.beatX
+    state.sy = src.y
+    state.ex = notes[1].startBeat + notes[1].duration
+    state.ey = noteYs[1]
+    state.cy = computeArcCy(src.y, noteYs[1], 120)
+    state.startBeat = 2
+    state.endBeat = computeArcEndBeat(notes[1])
+    state.noteIndex = 1
+
+    // At same beat (2), get position AFTER advance
+    const posAfter = computeBallPos(2, state)
+
+    // Should be the same position (t=0 of new arc = end of old arc)
+    expect(posAfter.beatX).toBeCloseTo(posBefore.beatX, 1)
+    expect(posAfter.y).toBeCloseTo(posBefore.y, 1)
+  })
+
+  it('ball arcs seamlessly through long gaps without waiting', () => {
+    // Note 0: beats 0-1. Gap: beats 1-8. Note 1: beats 8-10.
+    // Ball should start arcing to note 1 at beat 1 (right when note 0 ends),
+    // NOT wait until beat 7 (old ARC_LOOK_AHEAD=1 behavior).
+    const notes: PlayableNote[] = [
+      { startBeat: 0, duration: 1 },
+      { startBeat: 8, duration: 2 },
+    ]
+    const noteYs = [300, 100]
+
+    const sampleBeats: number[] = []
+    for (let b = 0; b <= 10.2; b += 0.1) sampleBeats.push(b)
+
+    const { positions } = simulateWithPositions(notes, 120, sampleBeats, noteYs)
+
+    // Ball should advance from note 0 to note 1 near beat 1 (end of note 0)
+    // Find first position where noteIndex becomes 1
+    const firstNote1 = positions.find((p) => p.noteIndex === 1)
+    expect(firstNote1).toBeDefined()
+    // Should advance at or very close to beat 1 (no waiting)
+    expect(firstNote1!.beat).toBeLessThan(1.2)
+
+    // During the gap (beat 3-7), ball should be mid-flight
+    const midGap = positions.find(
+      (p) => Math.abs(p.beat - 5) < 0.001,
+    )
+    expect(midGap).toBeDefined()
+    expect(midGap!.noteIndex).toBe(1)
+    // Ball Y should NOT be at note 0's Y (300) or note 1's Y (100)
+    // It should be somewhere in between
+    expect(midGap!.y).toBeLessThan(300)
+    expect(midGap!.y).toBeGreaterThan(100)
+  })
+
+  it('ascending notes produce correct arc trajectory (ball goes up)', () => {
+    // Ascending scale: C4 (y=400) → D4 (y=350) → E4 (y=300)
+    const notes: PlayableNote[] = [
+      { startBeat: 0, duration: 1 },
+      { startBeat: 1, duration: 1 },
+      { startBeat: 2, duration: 1 },
+    ]
+    // Y decreases as pitch goes up (higher freq = smaller Y on canvas)
+    const noteYs = [400, 350, 300]
+
+    const sampleBeats: number[] = []
+    for (let b = 0; b <= 3.1; b += 0.05) sampleBeats.push(b)
+
+    const { positions } = simulateWithPositions(notes, 120, sampleBeats, noteYs)
+
+    // At each note's endBeat, ball should be at correct Y
+    // Note 0 ends at beat 1
+    const atNote0End = positions.find(
+      (p) => Math.abs(p.beat - 1) < 0.001,
+    )
+    expect(atNote0End).toBeDefined()
+    expect(atNote0End!.y).toBeCloseTo(400, 1)
+
+    // Note 1 ends at beat 2
+    const atNote1End = positions.find(
+      (p) => Math.abs(p.beat - 2) < 0.001,
+    )
+    expect(atNote1End).toBeDefined()
+    expect(atNote1End!.y).toBeCloseTo(350, 1)
+
+    // Note 2 ends at beat 3
+    const atNote2End = positions.find(
+      (p) => Math.abs(p.beat - 3) < 0.001,
+    )
+    expect(atNote2End).toBeDefined()
+    expect(atNote2End!.y).toBeCloseTo(300, 1)
+  })
+
+  it('descending notes produce correct arc trajectory (ball goes down)', () => {
+    // Descending: high (y=100) → mid (y=250) → low (y=400)
+    const notes: PlayableNote[] = [
+      { startBeat: 0, duration: 1 },
+      { startBeat: 1, duration: 1 },
+      { startBeat: 2, duration: 1 },
+    ]
+    const noteYs = [100, 250, 400]
+
+    const sampleBeats: number[] = []
+    for (let b = 0; b <= 3.1; b += 0.05) sampleBeats.push(b)
+
+    const { positions } = simulateWithPositions(notes, 120, sampleBeats, noteYs)
+
+    const atNote0End = positions.find(
+      (p) => Math.abs(p.beat - 1) < 0.001,
+    )
+    expect(atNote0End!.y).toBeCloseTo(100, 1)
+
+    const atNote2End = positions.find(
+      (p) => Math.abs(p.beat - 3) < 0.001,
+    )
+    expect(atNote2End!.y).toBeCloseTo(400, 1)
+  })
+
+  it('rest notes produce sine wave oscillation', () => {
+    // Manually construct an arc with isRest=true
+    const restArc: ArcState = {
+      sx: 100,
+      sy: 200,
+      ex: 300,
+      ey: 200,
+      cy: 40,
+      startBeat: 2,
+      endBeat: 4,
+      noteIndex: 1,
+      initialized: true,
+      isRest: true,
+    }
+
+    // At t=0.125 (beat 2.25), sin(π/2)*40 = 40 — ball should oscillate up
+    const quarterRest = computeBallPos(2.25, restArc)
+    expect(Math.abs(quarterRest.y - 240)).toBeLessThan(1)
+
+    // At start and end, ball should be at source/target
+    const atStart = computeBallPos(2, restArc)
+    expect(atStart.y).toBeCloseTo(200, 1)
+
+    const atEnd = computeBallPos(4, restArc)
+    expect(atEnd.y).toBeCloseTo(200, 1)
+  })
+
+  it('ball arcs correctly with different BPM values', () => {
+    // Two notes so computeArcCy runs at advance time. Lower BPM = bigger arc.
+    const notes: PlayableNote[] = [
+      { startBeat: 0, duration: 2 },
+      { startBeat: 2, duration: 2 },
+    ]
+    const noteYs = [300, 100]
+    const sampleBeats: number[] = []
+    for (let b = 0; b <= 4.1; b += 0.05) sampleBeats.push(b)
+
+    const slow = simulateWithPositions(notes, 60, sampleBeats, noteYs)
+    const fast = simulateWithPositions(notes, 180, sampleBeats, noteYs)
+
+    // After advancing (beat >= 2), the second arc uses computeArcCy which
+    // depends on BPM. Lower BPM → larger height → lower cy → lower mid-Y.
+    const slowMid = slow.positions.find(
+      (p) => Math.abs(p.beat - 3) < 0.01,
+    )
+    const fastMid = fast.positions.find(
+      (p) => Math.abs(p.beat - 3) < 0.01,
+    )
+
+    expect(slowMid).toBeDefined()
+    expect(fastMid).toBeDefined()
+    expect(slowMid!.y).toBeLessThan(fastMid!.y)
+  })
+
+  it('single note melody — ball arcs to its top-right only', () => {
+    const notes: PlayableNote[] = [{ startBeat: 2, duration: 3 }]
+    const noteYs = [250]
+
+    const sampleBeats: number[] = []
+    for (let b = 0; b <= 6; b += 0.1) sampleBeats.push(b)
+
+    const { positions } = simulateWithPositions(notes, 120, sampleBeats, noteYs)
+
+    // Ball reaches note Y at endBeat=5
+    const atEnd = positions.find((p) => Math.abs(p.beat - 5) < 0.001)
+    expect(atEnd).toBeDefined()
+    expect(atEnd!.y).toBeCloseTo(250, 1)
+
+    // Ball should start above the note
+    const atStart = positions.find((p) => Math.abs(p.beat - 1.5) < 0.001)
+    expect(atStart).toBeDefined()
+    // initial sy = 250 - 100 = 150, which is above (smaller Y)
+    expect(atStart!.y).toBeLessThan(250)
   })
 })
