@@ -308,11 +308,11 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
         Object.assign(arcState, {
           sx: -ci,
           sy: topY,
-          ex: first.startBeat,
+          ex: first.startBeat + first.duration,
           ey: topY,
           cy: topY - 100,
           startBeat: -ci,
-          endBeat: first.startBeat,
+          endBeat: first.startBeat + first.duration,
           trail: [],
           initialized: true,
           noteIndex: startIdx,
@@ -376,7 +376,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
         }
 
         arcState.noteIndex = nextIdx
-        arcState.sx = src.beatX
+        arcState.sx = beat
         arcState.sy = src.y
         // Target top-right corner of the next note (beat-space).
         arcState.ex = next.startBeat + next.duration
