@@ -188,7 +188,7 @@
   gap: 2px;
 }
 
-.session-name {
+.session-item .session-name {
   font-size: 0.875rem;
   font-weight: 500;
   color: var(--text-primary);
@@ -598,7 +598,7 @@
   margin-bottom: 12px;
 }
 
-.session-name {
+.session-card .session-name {
   margin: 0 0 4px 0;
   font-size: 1.1rem;
   color: var(--text-primary);
