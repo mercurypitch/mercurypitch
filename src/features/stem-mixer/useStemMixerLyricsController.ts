@@ -886,7 +886,7 @@ export function useStemMixerLyricsController(
   // ── LRC gen helpers ───────────────────────────────────────────────
 
   const getGenLines = (): string[] => {
-    if (lrcLines().length > 0) return lrcLines().map((l) => l.text)
+    if (lrcLines().length > 0) return canonicalLrcLines().map((e) => e.text)
     return lyricsLines()
   }
 
