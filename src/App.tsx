@@ -87,7 +87,7 @@ import { melodyIndexAtBeat, melodyTotalBeats } from '@/lib/scale-data'
 import { buildScaleMelody, buildSessionPlaybackMelody, } from '@/lib/session-builder'
 import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
 import { storageGet } from '@/lib/storage'
-import { openWalkthroughChapter, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPlaybackSpeed, setScaleType, showSelection, walkthroughModalOpen, } from '@/stores'
+import { dismissWelcome, openWalkthroughChapter, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPlaybackSpeed, setScaleType, showSelection, walkthroughModalOpen, } from '@/stores'
 import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, toggleMicWaveVisible, } from '@/stores'
 import { advancedFeaturesEnabled, devFeaturesEnabled } from '@/stores/app-store'
 import { melodyStore } from '@/stores/melody-store'
@@ -102,6 +102,7 @@ import { FallingNotesCanvas } from './components/FallingNotesCanvas'
 import { FallingNotesSongPicker } from './components/FallingNotesSongPicker'
 import { GuideSelection } from './components/GuideSelection'
 import { JamPanel } from './components/JamPanel'
+import { setJamRoomToJoin } from '@/stores/jam-store'
 import { TabErrorBoundary } from './components/TabErrorBoundary'
 import { _UvrGuideStyles } from './components/UvrGuide'
 import { WelcomeScreen } from './components/WelcomeScreen'
@@ -243,6 +244,8 @@ const AppShell: Component<AppProps> = (props) => {
     openWalkthroughChapter,
     startWalkthrough,
     setShowGuideSelection,
+    setJamRoomToJoin,
+    dismissWelcome,
     activeTab,
     activeUvrView,
     activeUvrSessionId,

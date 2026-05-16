@@ -2,7 +2,7 @@ import type { Accessor, Setter } from 'solid-js'
 import { createEffect, onCleanup, onMount } from 'solid-js'
 import type { UvrView } from '@/components/UvrPanel'
 import type { ActiveTab } from '@/features/tabs/constants'
-import { TAB_KARAOKE } from '@/features/tabs/constants'
+import { TAB_JAM, TAB_KARAOKE } from '@/features/tabs/constants'
 import type { HashRoute } from '@/lib/hash-router'
 import { buildHash, parseHash, replaceHash } from '@/lib/hash-router'
 
@@ -16,6 +16,8 @@ export interface UseHashRouterDeps {
   openWalkthroughChapter: (id: string) => void
   startWalkthrough: (sectionIds?: string[]) => void
   setShowGuideSelection: Setter<boolean>
+  setJamRoomToJoin: Setter<string | null>
+  dismissWelcome: () => void
 
   // State signals (state → hash)
   activeTab: Accessor<ActiveTab>
@@ -55,6 +57,10 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
       deps.openWalkthroughChapter(route.chapterId)
     } else if (route.type === 'guide') {
       deps.setShowGuideSelection(true)
+    } else if (route.type === 'jam-room') {
+      deps.dismissWelcome()
+      deps.setActiveTab(TAB_JAM)
+      deps.setJamRoomToJoin(route.roomId)
     } else if (route.type === 'guide-start') {
       const sectionIds =
         route.sectionId === 'all' ? undefined : [route.sectionId]

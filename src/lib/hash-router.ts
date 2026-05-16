@@ -7,6 +7,7 @@ import type { ActiveTab } from '@/stores'
 
 export type HashRoute =
   | { type: 'tab'; tab: ActiveTab }
+  | { type: 'jam-room'; roomId: string }
   | { type: 'uvr-upload' }
   | { type: 'uvr-session'; sessionId: string }
   | { type: 'uvr-session-mixer'; sessionId: string }
@@ -56,6 +57,12 @@ export function parseHash(rawHash: string): HashRoute {
 
   if (!hash || hash === '/') {
     return { type: 'unknown' }
+  }
+
+  // Match: /jam:roomId
+  const jamMatch = hash.match(/^\/jam:(.+)$/)
+  if (jamMatch) {
+    return { type: 'jam-room', roomId: jamMatch[1] }
   }
 
   // Match: /uvr/session/:sessionId/mixer
@@ -124,6 +131,8 @@ export function buildHash(route: HashRoute): string {
   switch (route.type) {
     case 'tab':
       return `/${route.tab}`
+    case 'jam-room':
+      return `/jam:${route.roomId}`
     case 'uvr-upload':
       return '/uvr'
     case 'uvr-session':

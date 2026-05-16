@@ -2,8 +2,8 @@
 // Main jam session UI — create/join rooms, view peers, controls.
 
 import type { Component } from 'solid-js'
-import { createSignal, Show } from 'solid-js'
-import { createJamRoom, jamConnectedPeers, jamError, jamIsMuted, jamPeers, jamRoomId, jamState, joinJamRoom, leaveJamRoom, toggleJamMute, } from '@/stores/jam-store'
+import { createSignal, onMount, Show } from 'solid-js'
+import { createJamRoom, jamConnectedPeers, jamError, jamIsMuted, jamPeers, jamRoomId, jamRoomToJoin, jamState, joinJamRoom, leaveJamRoom, setJamRoomToJoin, toggleJamMute, } from '@/stores/jam-store'
 import { JamInviteModal } from './JamInviteModal'
 import { JamPeerList } from './JamPeerList'
 
@@ -17,6 +17,21 @@ export const JamPanel: Component = () => {
     const name = displayName().trim() || 'Anonymous'
     createJamRoom(name).catch(() => {})
   }
+
+  const autoJoin = (roomId: string) => {
+    setJoinRoomId(roomId)
+    setJoining(true)
+    const name = displayName().trim() || 'Anonymous'
+    joinJamRoom(roomId, name).finally(() => {
+      setJoining(false)
+      setJamRoomToJoin(null)
+    })
+  }
+
+  onMount(() => {
+    const roomId = jamRoomToJoin()
+    if (roomId) autoJoin(roomId)
+  })
 
   const handleJoin = () => {
     const roomId = joinRoomId().trim()
