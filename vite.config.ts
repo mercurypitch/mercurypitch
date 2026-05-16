@@ -12,9 +12,26 @@ const isDev = process.env.NODE_ENV !== 'production'
 let commitSha = 'unknown'
 try {
   const { execSync } = await import('node:child_process')
-  commitSha = execSync('git rev-parse --short HEAD').toString().trim()
+  commitSha = execSync('git rev-parse --short HEAD', {
+    stdio: ['ignore', 'pipe', 'ignore'],
+  })
+    .toString()
+    .trim()
 } catch (e) {
-  console.warn('Failed to get git commit sha', e)
+  // Fallback to environment variables if git command fails (common in CI/CD like Deno Deploy)
+  const envSha =
+    process.env.VITE_COMMIT_SHA ||
+    process.env.GITHUB_SHA ||
+    process.env.COMMIT_SHA ||
+    process.env.GIT_SHA ||
+    process.env.DENO_DEPLOYMENT_ID ||
+    process.env.DENO_DEPLOY_BUILD_ID ||
+    process.env.VERCEL_GIT_COMMIT_SHA ||
+    process.env.CF_PAGES_COMMIT_SHA
+
+  if (envSha) {
+    commitSha = envSha.substring(0, 7)
+  }
 }
 
 export default defineConfig({
