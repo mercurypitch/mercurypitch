@@ -162,6 +162,7 @@ export interface StemMixerLyricsPanelBodyProps {
     words: string[],
     lineTime: number,
     endTime: number,
+    wordTimes: number[] | undefined,
     elapsed: number,
   ) => { activeUpTo: number; charProgress: number }
   getGenLines: () => string[]
@@ -748,6 +749,7 @@ export const StemMixerLyricsPanelBody: Component<
                         parsedLyric.words,
                         parsedLyric.time,
                         parsedLyric.endTime,
+                        parsedLyric.wordTimes,
                         props.elapsed(),
                       )
                     : { activeUpTo: -1, charProgress: 0 }

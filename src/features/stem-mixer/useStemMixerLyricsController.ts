@@ -5,7 +5,7 @@
 import type { Setter } from 'solid-js'
 import { createEffect, createMemo, createSignal, onCleanup } from 'solid-js'
 import type { LrcLine, LyricsSearchMatch, LyricsSearchResult, } from '@/lib/lyrics-service'
-import { extractTitle, fetchLyricsById, getCurrentLineIndex, getCurrentLrcIndex, parseLrcFile, parseTextLyrics, searchLyrics, searchLyricsMulti, } from '@/lib/lyrics-service'
+import { extractTitle, fetchLyricsById, getCurrentLineIndex, getCurrentLrcIndex, parseLrcFile, parseLrcWordTimings, parseTextLyrics, searchLyrics, searchLyricsMulti, } from '@/lib/lyrics-service'
 import type { BlockInstancesMap, BlockStartsInfo, DisplayLine, EditPopover, GenViewLine, LyricsBlock, LyricsSource, LyricsUploadResult, WordTimingsMap, } from './types'
 
 // ── Deps ──────────────────────────────────────────────────────────
@@ -78,7 +78,13 @@ export interface StemMixerLyricsController {
   // Memos
   stableParsedLyrics: () => Map<
     number,
-    { time: number; endTime: number; words: string[]; key: string }
+    {
+      time: number
+      endTime: number
+      words: string[]
+      key: string
+      wordTimes?: number[]
+    }
   >
   blockStarts: () => Map<number, BlockStartsInfo>
   displayLines: () => DisplayLine[]
@@ -99,6 +105,7 @@ export interface StemMixerLyricsController {
     words: string[],
     startTime: number,
     endTime: number,
+    wordTimes: number[] | undefined,
     elapsedTime: number,
   ) => { activeUpTo: number; charProgress: number }
 
@@ -206,9 +213,37 @@ const computeActiveWord = (
   words: string[],
   startTime: number,
   endTime: number,
+  wordTimes: number[] | undefined,
   elapsedTime: number,
 ): { activeUpTo: number; charProgress: number } => {
   if (words.length === 0) return { activeUpTo: -1, charProgress: 0 }
+
+  // Per-word LRC timings — use actual word timestamps for interpolation
+  if (wordTimes && wordTimes.length === words.length) {
+    let wordIdx = -1
+    for (let i = words.length - 1; i >= 0; i--) {
+      if (elapsedTime >= wordTimes[i]) {
+        wordIdx = i
+        break
+      }
+    }
+    if (wordIdx < 0) return { activeUpTo: -1, charProgress: 0 }
+
+    const activeUpTo = wordIdx - 1
+    const wordStart = wordTimes[wordIdx]
+    const wordEnd =
+      wordIdx + 1 < wordTimes.length ? wordTimes[wordIdx + 1] : endTime
+    const wordDuration = Math.max(0.01, wordEnd - wordStart)
+    const elapsedInWord = elapsedTime - wordStart
+    const currentWord = words[wordIdx]
+    const charProgress = Math.min(
+      Math.floor((elapsedInWord / wordDuration) * currentWord.length),
+      currentWord.length,
+    )
+    return { activeUpTo, charProgress }
+  }
+
+  // Fallback: evenly divide line duration among words
   const lineDuration = Math.max(0.05, endTime - startTime)
   const progress = (elapsedTime - startTime) / lineDuration
   if (progress < 0) return { activeUpTo: -1, charProgress: 0 }
@@ -1351,14 +1386,36 @@ export function useStemMixerLyricsController(
 
     const map = new Map<
       number,
-      { time: number; endTime: number; words: string[]; key: string }
+      {
+        time: number
+        endTime: number
+        words: string[]
+        key: string
+        wordTimes?: number[]
+      }
     >()
 
     if (lrc.length > 0) {
+      const REST_THRESHOLD = 20
+      const result: { time: number; text: string }[] = []
       lrc.forEach((line, i) => {
-        const words = line.text.split(/\s+/).filter((w: string) => w.length > 0)
-        const endTime = i + 1 < lrc.length ? lrc[i + 1].time : dur
-        map.set(i, { key: `lrc-${i}`, time: line.time, endTime, words })
+        const gap = i > 0 ? line.time - lrc[i - 1].time : 0
+        if (gap > REST_THRESHOLD) {
+          result.push({ time: lrc[i - 1].time + 1, text: '~Rest~' })
+        }
+        result.push({ time: line.time, text: line.text })
+      })
+      result.forEach((item, i) => {
+        const words = item.text.split(/\s+/).filter((w: string) => w.length > 0)
+        const endTime = i + 1 < result.length ? result[i + 1].time : dur
+        const wordTimings = parseLrcWordTimings(item.text, item.time)
+        map.set(i, {
+          key: `lrc-${i}`,
+          time: item.time,
+          endTime,
+          words,
+          wordTimes: wordTimings?.wordTimes,
+        })
       })
       return map
     }
