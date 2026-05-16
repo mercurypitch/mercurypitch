@@ -102,6 +102,15 @@ export function createSignalingClient(callbacks: JamCallbacks) {
 
       case 'room-joined':
         currentPeerId = msg.peerId
+        // Initiate connections to all peers already in the room
+        for (const p of msg.peers) {
+          callbacks.onPeerJoined({
+            id: p.id,
+            displayName: p.displayName,
+            connectionState: 'connecting',
+            latency: 0,
+          })
+        }
         break
 
       case 'peer-joined':

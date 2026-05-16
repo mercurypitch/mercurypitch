@@ -17,6 +17,7 @@ export const [jamError, setJamError] = createSignal<string | null>(null)
 export const [jamState, setJamState] = createSignal<
   'idle' | 'connecting' | 'active'
 >('idle')
+export const [jamRoomToJoin, setJamRoomToJoin] = createSignal<string | null>(null)
 
 // ── Derived ─────────────────────────────────────────────────────────
 
