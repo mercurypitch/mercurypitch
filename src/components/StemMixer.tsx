@@ -225,10 +225,12 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     setScore: mic.setScore,
     setShowScore: mic.setShowScore,
     resetScore: mic.resetScore,
+    /* eslint-disable solid/reactivity */
     stems: props.stems,
     practiceMode: props.practiceMode,
     requestedStems: props.requestedStems,
     songTitle: props.songTitle,
+    /* eslint-enable solid/reactivity */
     showNotification,
   })
 
@@ -335,8 +337,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     // Helpers
     hasMultipleSections,
   } = useStemMixerLyricsController({
+    /* eslint-disable solid/reactivity */
     sessionId: props.sessionId,
     songTitle: props.songTitle,
+    /* eslint-enable solid/reactivity */
     duration: audio.duration,
     playing: audio.playing,
     elapsed: audio.elapsed,
@@ -463,6 +467,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     handlePlay: audio.handlePlay,
     handlePause: audio.handlePause,
     formatTime: canvas.formatTime,
+    // eslint-disable-next-line solid/reactivity
     songTitle: props.songTitle,
     lrclibSearchUrl,
   }
@@ -546,8 +551,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     toggleMute,
     setTrackVolume,
     handleDownload: audio.handleDownload,
+    /* eslint-disable solid/reactivity */
     practiceMode: props.practiceMode,
     requestedStems: props.requestedStems,
+    /* eslint-enable solid/reactivity */
   }
 
   onMount(() => {
@@ -940,7 +947,7 @@ export const StemMixerStyles: string = `
 /* Workspace grid */
 .sm-workspace {
   display: grid;
-  grid-auto-rows: minmax(120px, 1fr);
+  grid-auto-rows: auto;
   align-content: stretch;
   gap: 0.5rem;
   flex: 1;

@@ -55,7 +55,7 @@ interface StemMixerGridWorkspaceProps {
 export const StemMixerGridWorkspace: Component<StemMixerGridWorkspaceProps> = (
   props,
 ) => {
-  const lp = props.lyricsPanel
+  const lp = () => props.lyricsPanel
   return (
     <Show when={props.workspaceLayout() !== 'fixed-2col'}>
       <div
@@ -65,7 +65,7 @@ export const StemMixerGridWorkspace: Component<StemMixerGridWorkspaceProps> = (
           'grid-template-columns':
             props.workspaceLayout() === 'auto-1col' ? '1fr' : '1fr 1fr',
         }}
-        onWheel={props.onWorkspaceWheel}
+        onWheel={(e) => props.onWorkspaceWheel(e)}
       >
         {/* Panel: Waveform Overview */}
         <div
@@ -82,9 +82,9 @@ export const StemMixerGridWorkspace: Component<StemMixerGridWorkspaceProps> = (
                 e,
               )
             }
-            onPointerMove={props.handlePanelDragMove}
-            onPointerUp={props.handlePanelDragEnd}
-            onPointerCancel={props.handlePanelDragEnd}
+            onPointerMove={(e) => props.handlePanelDragMove(e)}
+            onPointerUp={(e) => props.handlePanelDragEnd(e)}
+            onPointerCancel={(e) => props.handlePanelDragEnd(e)}
           >
             <svg
               viewBox="0 0 24 24"
@@ -99,8 +99,8 @@ export const StemMixerGridWorkspace: Component<StemMixerGridWorkspaceProps> = (
           <canvas
             ref={props.setCanvasRef('overview')}
             class="sm-canvas sm-canvas-overview"
-            onClick={props.handleWaveformClick}
-            onWheel={props.handleCanvasWheel}
+            onClick={(e) => props.handleWaveformClick(e)}
+            onWheel={(e) => props.handleCanvasWheel(e)}
           />
           <div
             class="sm-resize-handle"
@@ -123,9 +123,9 @@ export const StemMixerGridWorkspace: Component<StemMixerGridWorkspaceProps> = (
                 e,
               )
             }
-            onPointerMove={props.handlePanelDragMove}
-            onPointerUp={props.handlePanelDragEnd}
-            onPointerCancel={props.handlePanelDragEnd}
+            onPointerMove={(e) => props.handlePanelDragMove(e)}
+            onPointerUp={(e) => props.handlePanelDragEnd(e)}
+            onPointerCancel={(e) => props.handlePanelDragEnd(e)}
           >
             <svg
               viewBox="0 0 24 24"
@@ -140,7 +140,7 @@ export const StemMixerGridWorkspace: Component<StemMixerGridWorkspaceProps> = (
           <canvas
             ref={props.setCanvasRef('live')}
             class="sm-canvas sm-canvas-live"
-            onWheel={props.handleCanvasWheel}
+            onWheel={(e) => props.handleCanvasWheel(e)}
           />
           <div
             class="sm-resize-handle"
@@ -163,9 +163,9 @@ export const StemMixerGridWorkspace: Component<StemMixerGridWorkspaceProps> = (
                 e,
               )
             }
-            onPointerMove={props.handlePanelDragMove}
-            onPointerUp={props.handlePanelDragEnd}
-            onPointerCancel={props.handlePanelDragEnd}
+            onPointerMove={(e) => props.handlePanelDragMove(e)}
+            onPointerUp={(e) => props.handlePanelDragEnd(e)}
+            onPointerCancel={(e) => props.handlePanelDragEnd(e)}
           >
             <svg
               viewBox="0 0 24 24"
@@ -180,7 +180,7 @@ export const StemMixerGridWorkspace: Component<StemMixerGridWorkspaceProps> = (
           <canvas
             ref={props.setCanvasRef('pitch')}
             class="sm-canvas sm-canvas-pitch"
-            onWheel={props.handleCanvasWheel}
+            onWheel={(e) => props.handleCanvasWheel(e)}
           />
           <div
             class="sm-resize-handle"
@@ -204,9 +204,9 @@ export const StemMixerGridWorkspace: Component<StemMixerGridWorkspaceProps> = (
                   e,
                 )
               }
-              onPointerMove={props.handlePanelDragMove}
-              onPointerUp={props.handlePanelDragEnd}
-              onPointerCancel={props.handlePanelDragEnd}
+              onPointerMove={(e) => props.handlePanelDragMove(e)}
+              onPointerUp={(e) => props.handlePanelDragEnd(e)}
+              onPointerCancel={(e) => props.handlePanelDragEnd(e)}
             >
               <svg
                 viewBox="0 0 24 24"
@@ -221,7 +221,7 @@ export const StemMixerGridWorkspace: Component<StemMixerGridWorkspaceProps> = (
             <canvas
               ref={props.setCanvasRef('midi')}
               class="sm-canvas sm-canvas-midi"
-              onWheel={props.handleCanvasWheel}
+              onWheel={(e) => props.handleCanvasWheel(e)}
             />
             <div
               class="sm-resize-handle"
@@ -245,9 +245,9 @@ export const StemMixerGridWorkspace: Component<StemMixerGridWorkspaceProps> = (
                 e,
               )
             }
-            onPointerMove={props.handlePanelDragMove}
-            onPointerUp={props.handlePanelDragEnd}
-            onPointerCancel={props.handlePanelDragEnd}
+            onPointerMove={(e) => props.handlePanelDragMove(e)}
+            onPointerUp={(e) => props.handlePanelDragEnd(e)}
+            onPointerCancel={(e) => props.handlePanelDragEnd(e)}
           >
             <svg
               viewBox="0 0 24 24"
@@ -281,9 +281,9 @@ export const StemMixerGridWorkspace: Component<StemMixerGridWorkspaceProps> = (
                 e,
               )
             }
-            onPointerMove={props.handlePanelDragMove}
-            onPointerUp={props.handlePanelDragEnd}
-            onPointerCancel={props.handlePanelDragEnd}
+            onPointerMove={(e) => props.handlePanelDragMove(e)}
+            onPointerUp={(e) => props.handlePanelDragEnd(e)}
+            onPointerCancel={(e) => props.handlePanelDragEnd(e)}
           >
             <svg
               viewBox="0 0 24 24"
@@ -294,18 +294,18 @@ export const StemMixerGridWorkspace: Component<StemMixerGridWorkspaceProps> = (
               <path fill="currentColor" d="M20 9H4v2h16V9zM4 15h16v-2H4v2z" />
             </svg>
             Lyrics
-            <Show when={lp.lyricsSource() === 'api'}>
+            <Show when={lp().lyricsSource() === 'api'}>
               <span class="sm-lyrics-source">found</span>
             </Show>
-            <Show when={lp.lyricsSource() === 'upload'}>
+            <Show when={lp().lyricsSource() === 'upload'}>
               <span class="sm-lyrics-source sm-lyrics-source-upload">
                 uploaded
               </span>
             </Show>
             <Show
               when={
-                (lp.lyricsSource() === 'upload' && !lp.editMode()) ||
-                (lp.lyricsSource() === 'api' && !lp.editMode())
+                (lp().lyricsSource() === 'upload' && !lp().editMode()) ||
+                (lp().lyricsSource() === 'api' && !lp().editMode())
               }
             >
               <button
@@ -342,9 +342,9 @@ export const StemMixerGridWorkspace: Component<StemMixerGridWorkspaceProps> = (
             </Show>
             <Show
               when={
-                lp.lyricsSource() !== 'none' &&
-                !lp.editMode() &&
-                !lp.lrcGenMode()
+                lp().lyricsSource() !== 'none' &&
+                !lp().editMode() &&
+                !lp().lrcGenMode()
               }
             >
               <button
@@ -363,26 +363,26 @@ export const StemMixerGridWorkspace: Component<StemMixerGridWorkspaceProps> = (
                 </svg>
               </button>
             </Show>
-            <Show when={lp.lrcGenMode()}>
+            <Show when={lp().lrcGenMode()}>
               <span class="sm-lyrics-gen-label">LRC Gen</span>
             </Show>
             <Show
               when={
-                lp.lyricsSource() !== 'none' &&
-                !lp.editMode() &&
-                !lp.lrcGenMode()
+                lp().lyricsSource() !== 'none' &&
+                !lp().editMode() &&
+                !lp().lrcGenMode()
               }
             >
               <button
-                class={`sm-lyrics-markmode-btn${lp.blockMarkMode() ? ' sm-lyrics-markmode-btn--active' : ''}`}
+                class={`sm-lyrics-markmode-btn${lp().blockMarkMode() ? ' sm-lyrics-markmode-btn--active' : ''}`}
                 onClick={(e) => {
                   e.stopPropagation()
-                  lp.setBlockMarkMode((prev) => !prev)
-                  lp.setMarkStartLine(null)
-                  lp.setMarkEndLine(null)
+                  lp().setBlockMarkMode((prev) => !prev)
+                  lp().setMarkStartLine(null)
+                  lp().setMarkEndLine(null)
                 }}
                 title={
-                  lp.blockMarkMode() ? 'Exit mark mode' : 'Mark repeat blocks'
+                  lp().blockMarkMode() ? 'Exit mark mode' : 'Mark repeat blocks'
                 }
               >
                 <svg viewBox="0 0 24 24" width="11" height="11">
@@ -393,7 +393,7 @@ export const StemMixerGridWorkspace: Component<StemMixerGridWorkspaceProps> = (
                 </svg>
               </button>
             </Show>
-            <Show when={lp.lyricsSource() !== 'none' && !lp.editMode()}>
+            <Show when={lp().lyricsSource() !== 'none' && !lp().editMode()}>
               <button
                 class="sm-lyrics-download-btn"
                 onClick={(e) => {
@@ -410,7 +410,7 @@ export const StemMixerGridWorkspace: Component<StemMixerGridWorkspaceProps> = (
                 </svg>
               </button>
             </Show>
-            <Show when={lp.lyricsSource() === 'upload' && !lp.editMode()}>
+            <Show when={lp().lyricsSource() === 'upload' && !lp().editMode()}>
               <button
                 class="sm-lyrics-change-btn"
                 onClick={(e) => {
@@ -432,14 +432,14 @@ export const StemMixerGridWorkspace: Component<StemMixerGridWorkspaceProps> = (
               accept=".txt,.lrc"
               ref={props.lyricsFileInputRef}
               hidden
-              onChange={props.handleLyricsChange}
+              onChange={(e) => props.handleLyricsChange(e)}
             />
             <div class="sm-lyrics-toolbar">
               <div class="sm-lyrics-zoom">
                 <button
                   class="sm-lyrics-zoom-btn"
                   onClick={() =>
-                    lp.setLyricsFontSize((prev) =>
+                    lp().setLyricsFontSize((prev) =>
                       Math.max(0.45, +(prev - 0.1).toFixed(2)),
                     )
                   }
@@ -450,7 +450,7 @@ export const StemMixerGridWorkspace: Component<StemMixerGridWorkspaceProps> = (
                 <button
                   class="sm-lyrics-zoom-btn"
                   onClick={() =>
-                    lp.setLyricsFontSize((prev) =>
+                    lp().setLyricsFontSize((prev) =>
                       Math.min(1.5, +(prev + 0.1).toFixed(2)),
                     )
                   }
@@ -459,11 +459,11 @@ export const StemMixerGridWorkspace: Component<StemMixerGridWorkspaceProps> = (
                   A+
                 </button>
               </div>
-              <Show when={lp.hasMultipleSections()}>
+              <Show when={lp().hasMultipleSections()}>
                 <div class="sm-lyrics-col-toggle">
                   <button
-                    class={`sm-lyrics-col-btn${lp.lyricsColumns() === 1 ? ' sm-lyrics-col-active' : ''}`}
-                    onClick={() => lp.setLyricsColumns(1)}
+                    class={`sm-lyrics-col-btn${lp().lyricsColumns() === 1 ? ' sm-lyrics-col-active' : ''}`}
+                    onClick={() => lp().setLyricsColumns(1)}
                     title="Single column"
                   >
                     <svg viewBox="0 0 24 24" width="10" height="10">
@@ -478,8 +478,8 @@ export const StemMixerGridWorkspace: Component<StemMixerGridWorkspaceProps> = (
                     </svg>
                   </button>
                   <button
-                    class={`sm-lyrics-col-btn${lp.lyricsColumns() === 2 ? ' sm-lyrics-col-active' : ''}`}
-                    onClick={() => lp.setLyricsColumns(2)}
+                    class={`sm-lyrics-col-btn${lp().lyricsColumns() === 2 ? ' sm-lyrics-col-active' : ''}`}
+                    onClick={() => lp().setLyricsColumns(2)}
                     title="Two columns"
                   >
                     <svg viewBox="0 0 24 24" width="10" height="10">
@@ -505,7 +505,7 @@ export const StemMixerGridWorkspace: Component<StemMixerGridWorkspaceProps> = (
               </Show>
             </div>
           </div>
-          <StemMixerLyricsPanelBody {...lp} />
+          <StemMixerLyricsPanelBody {...lp()} />
           <div
             class="sm-resize-handle"
             onPointerDown={(e) => props.handleResizeStart('lyrics', e)}

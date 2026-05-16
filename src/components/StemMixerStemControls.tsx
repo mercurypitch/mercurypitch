@@ -48,36 +48,36 @@ const StemStrip: Component<{
   handleDownload: (track: StemTrack) => Promise<void>
   downloadTitle?: string
 }> = (props) => {
-  const t = props.track
+  const track = () => props.track()
   return (
     <div class="sm-stem-strip">
       <div class="sm-stem-header">
-        <span class="sm-stem-dot" style={{ background: t().color }} />
-        <span class="sm-stem-label">{t().label}</span>
+        <span class="sm-stem-dot" style={{ background: track().color }} />
+        <span class="sm-stem-label">{track().label}</span>
         <span class="sm-stem-vol-pct">
-          {calcVolPct(t(), props.anySoloed())}%
+          {calcVolPct(track(), props.anySoloed())}%
         </span>
       </div>
       <div class="sm-stem-actions">
         <button
-          class={`sm-action-btn ${t().soloed ? 'sm-active' : ''}`}
+          class={`sm-action-btn ${track().soloed ? 'sm-active' : ''}`}
           onClick={() => props.toggleSolo(props.label)}
           title="Solo"
-          style={{ color: t().soloed ? t().color : '' }}
+          style={{ color: track().soloed ? track().color : '' }}
         >
           <Ear />
         </button>
         <button
-          class={`sm-action-btn ${t().muted ? 'sm-muted' : ''}`}
+          class={`sm-action-btn ${track().muted ? 'sm-muted' : ''}`}
           onClick={() => props.toggleMute(props.label)}
           title="Mute"
         >
-          {t().muted ? <VolumeX /> : <Volume2 />}
+          {track().muted ? <VolumeX /> : <Volume2 />}
         </button>
         <button
           class="sm-action-btn"
           onClick={() => {
-            void props.handleDownload(t())
+            void props.handleDownload(track())
           }}
           title={props.downloadTitle ?? 'Download'}
         >
@@ -89,7 +89,7 @@ const StemStrip: Component<{
         class="sm-volume-slider"
         min="0"
         max="100"
-        value={Math.round(t().volume * 100)}
+        value={Math.round(track().volume * 100)}
         onInput={(e) =>
           props.setTrackVolume(
             props.label,
