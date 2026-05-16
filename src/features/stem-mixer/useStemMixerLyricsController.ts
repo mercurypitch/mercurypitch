@@ -187,18 +187,25 @@ const BLOCK_COLORS = [
 
 const parseTimeInput = (input: string): number | null => {
   const trimmed = input.trim()
-  const match = trimmed.match(/^(\d{1,2}):(\d{2})$/)
+  const match = trimmed.match(/^(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?$/)
   if (!match) return null
   const mins = parseInt(match[1], 10)
   const secs = parseInt(match[2], 10)
   if (secs >= 60) return null
-  return mins * 60 + secs
+  let ms = 0
+  if (match[3]) {
+    ms = parseInt(match[3].padEnd(3, '0'), 10) / 1000
+  }
+  return mins * 60 + secs + ms
 }
 
 const formatTimeMs = (secs: number): string => {
   const m = Math.min(99, Math.floor(secs / 60))
-  const s = Math.min(59, Math.round(secs % 60))
-  return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
+  const wholeSecs = Math.floor(secs % 60)
+  const hundredths = Math.round((secs % 1) * 100)
+  const s = wholeSecs.toString().padStart(2, '0')
+  const h = hundredths.toString().padStart(2, '0')
+  return `${m.toString().padStart(2, '0')}:${s}.${h}`
 }
 
 const formatTimeLrcWord = (secs: number): string => {
@@ -1339,25 +1346,44 @@ export function useStemMixerLyricsController(
         .filter((l: string) => l !== '')
         .join('\n')
     } else if (lrcLines().length > 0) {
+      const wt = wordTimings()
+      const hasWt = Object.keys(wt).length > 0
       lrcText = lrcLines()
-        .map((l) => `[${formatTimeLrcWord(l.time)}] ${l.text}`)
+        .map((l, i) => {
+          const words = l.text.split(/\s+/).filter((w: string) => w.length > 0)
+          if (hasWt) {
+            const lineWt = wt[i]
+            if (lineWt !== undefined && lineWt.length > 0 && words.length > 0) {
+              return words
+                .map((w: string, wi: number) => {
+                  const t = lineWt[wi]
+                  return t !== undefined ? `[${formatTimeLrcWord(t)}] ${w}` : w
+                })
+                .join(' ')
+            }
+          }
+          return `[${formatTimeLrcWord(l.time)}] ${l.text}`
+        })
         .join('\n')
     } else if (lyricsLines().length > 0) {
       const wt = wordTimings()
-      const hasTimings = Object.keys(wt).length > 0
-      const lineTimes = hasTimings
-        ? lyricsLines().map((_, i) => {
-            const words = wt[i]
-            return words !== undefined && words.length > 0
-              ? words[0]
-              : undefined
-          })
-        : lyricsLines().map(() => undefined)
+      const hasWt = Object.keys(wt).length > 0
       lrcText = lyricsLines()
         .map((line, i) => {
           if (!line.trim()) return ''
-          const lt = lineTimes[i]
-          return lt !== undefined ? `[${formatTimeLrcWord(lt)}] ${line}` : line
+          if (hasWt) {
+            const lineWt = wt[i]
+            const words = line.split(/\s+/).filter((w: string) => w.length > 0)
+            if (lineWt !== undefined && lineWt.length > 0 && words.length > 0) {
+              return words
+                .map((w: string, wi: number) => {
+                  const t = lineWt[wi]
+                  return t !== undefined ? `[${formatTimeLrcWord(t)}] ${w}` : w
+                })
+                .join(' ')
+            }
+          }
+          return `[00:00.00] ${line}`
         })
         .join('\n')
     }
@@ -1401,7 +1427,7 @@ export function useStemMixerLyricsController(
       lrc.forEach((line, i) => {
         const gap = i > 0 ? line.time - lrc[i - 1].time : 0
         if (gap > REST_THRESHOLD) {
-          result.push({ time: lrc[i - 1].time + 1, text: '~Rest~' })
+          result.push({ time: lrc[i - 1].time + gap / 2, text: '~Rest~' })
         }
         result.push({ time: line.time, text: line.text })
       })
