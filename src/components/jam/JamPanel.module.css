@@ -1,0 +1,102 @@
+/* JamPanel — Room header, tabs, and exercise picker styles */
+
+.roomIdRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.roomLinkRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.roomLink {
+  flex: 1;
+  padding: 4px 8px;
+  font-size: 0.72rem;
+  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+  color: var(--accent);
+  background: var(--bg-primary, #0d1117);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  user-select: all;
+}
+
+.tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.tab {
+  padding: 8px 16px;
+  font-size: 0.85rem;
+  color: var(--text-secondary, #8b949e);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  font-family: inherit;
+  margin-bottom: -1px;
+}
+
+.tab:hover {
+  color: var(--text-primary);
+}
+
+.tabActive {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.tabContent {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.exercisePicker {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.pickItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  font-family: inherit;
+  text-align: left;
+  background: var(--bg-primary, #0d1117);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: border-color 0.12s ease;
+}
+
+.pickItem:hover {
+  border-color: var(--accent);
+}
+
+.pickName {
+  font-size: 0.85rem;
+  color: var(--text-primary);
+}
+
+.pickMeta {
+  font-size: 0.72rem;
+  color: var(--text-secondary, #8b949e);
+}

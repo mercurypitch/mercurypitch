@@ -13,6 +13,7 @@ import {
   jamPlaybackPlay,
   jamPlaybackStop,
 } from '@/stores/jam-store'
+import styles from './JamExerciseControls.module.css'
 
 interface JamExerciseControlsProps {
   onSelectExercise: () => void
@@ -23,11 +24,10 @@ export const JamExerciseControls: Component<JamExerciseControlsProps> = (
 ) => {
   return (
     <Show when={jamIsHost()}>
-      <div class="jam-exercise-controls">
+      <div class={styles.controls}>
         <button
-          class="jam-ex-btn"
+          class={styles.btn}
           onClick={props.onSelectExercise}
-          disabled={false}
         >
           Select Exercise
         </button>
@@ -36,21 +36,21 @@ export const JamExerciseControls: Component<JamExerciseControlsProps> = (
             when={jamExercisePlaying() && !jamExercisePaused()}
             fallback={
               <button
-                class="jam-ex-btn jam-ex-play"
+                class={`${styles.btn} ${styles.play}`}
                 onClick={() => jamPlaybackPlay()}
               >
                 Play
               </button>
             }
           >
-            <button class="jam-ex-btn jam-ex-pause" onClick={jamPlaybackPause}>
+            <button class={`${styles.btn} ${styles.pause}`} onClick={jamPlaybackPause}>
               Pause
             </button>
           </Show>
-          <button class="jam-ex-btn jam-ex-stop" onClick={jamPlaybackStop}>
+          <button class={`${styles.btn} ${styles.stop}`} onClick={jamPlaybackStop}>
             Stop
           </button>
-          <button class="jam-ex-btn jam-ex-clear" onClick={clearJamExercise}>
+          <button class={`${styles.btn} ${styles.clear}`} onClick={clearJamExercise}>
             Clear
           </button>
         </Show>

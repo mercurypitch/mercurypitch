@@ -1,0 +1,59 @@
+/* JamExerciseControls — Host-only transport bar for shared exercise */
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.btn {
+  padding: 6px 14px;
+  font-size: 0.82rem;
+  font-family: inherit;
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.btn:hover {
+  filter: brightness(1.15);
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.play {
+  background: var(--green, #3fb950);
+  border-color: var(--green, #3fb950);
+  color: #fff;
+}
+
+.pause {
+  background: #d29922;
+  border-color: #d29922;
+  color: #fff;
+}
+
+.stop {
+  border-color: var(--red, #f85149);
+  color: var(--red, #f85149);
+}
+
+.stop:hover {
+  background: var(--red, #f85149);
+  color: #fff;
+}
+
+.clear {
+  border-color: var(--text-secondary, #8b949e);
+  color: var(--text-secondary, #8b949e);
+}
