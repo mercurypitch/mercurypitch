@@ -106,8 +106,10 @@ const CamChip: Component<CamChipProps> = (props) => {
 export const JamCameraWidget: Component = () => {
   const myId = jamPeerId
 
-  // Default: top-right, 20px margin. Stored as top/right offset.
-  const [pos, setPos] = createSignal({ x: window.innerWidth - 110, y: 80 })
+  // Default position: top-right with enough room for chip expansion (220px chip + margin)
+  const EXPANDED_W = 250 // max chip width when expanded + margin
+  const initX = Math.max(0, window.innerWidth - EXPANDED_W - 20)
+  const [pos, setPos] = createSignal({ x: initX, y: 80 })
   let dragging = false
   let dragStart = { x: 0, y: 0, px: 0, py: 0 }
   let trayRef: HTMLDivElement | undefined
@@ -119,8 +121,19 @@ export const JamCameraWidget: Component = () => {
 
   const myColor = () => colorMap()[myId() ?? ''] ?? '#58a6ff'
 
+  /** Clamp pos so the tray (at its current rendered size) stays fully in viewport. */
+  const clamp = (px: number, py: number) => {
+    const vw = window.innerWidth
+    const vh = window.innerHeight
+    const tw = trayRef?.offsetWidth ?? EXPANDED_W
+    const th = trayRef?.offsetHeight ?? 200
+    return {
+      x: Math.max(0, Math.min(vw - tw, px)),
+      y: Math.max(0, Math.min(vh - th, py)),
+    }
+  }
+
   const onPointerDown = (e: PointerEvent) => {
-    // Only drag on the handle element
     const target = e.target as HTMLElement
     if (!target.closest(`.${styles.dragHandle}`)) return
     dragging = true
@@ -133,30 +146,29 @@ export const JamCameraWidget: Component = () => {
     if (!dragging) return
     const dx = e.clientX - dragStart.x
     const dy = e.clientY - dragStart.y
-    const vw = window.innerWidth
-    const vh = window.innerHeight
-    const tw = trayRef?.offsetWidth ?? 100
-    const th = trayRef?.offsetHeight ?? 200
-    setPos({
-      x: Math.max(0, Math.min(vw - tw, dragStart.px + dx)),
-      y: Math.max(0, Math.min(vh - th, dragStart.py + dy)),
-    })
+    setPos(clamp(dragStart.px + dx, dragStart.py + dy))
   }
 
   const onPointerUp = () => {
     dragging = false
+    // Re-clamp after drag ends in case tray grew during the drag
+    setPos((p) => clamp(p.x, p.y))
   }
 
   onMount(() => {
-    // Re-clamp on resize
-    const onResize = () => {
-      setPos((p) => ({
-        x: Math.min(p.x, window.innerWidth - (trayRef?.offsetWidth ?? 100)),
-        y: Math.min(p.y, window.innerHeight - (trayRef?.offsetHeight ?? 200)),
-      }))
-    }
+    // Re-clamp whenever tray size changes (chip expand/collapse) or window resizes
+    const ro = new ResizeObserver(() => {
+      if (!dragging) setPos((p) => clamp(p.x, p.y))
+    })
+    if (trayRef) ro.observe(trayRef)
+
+    const onResize = () => setPos((p) => clamp(p.x, p.y))
     window.addEventListener('resize', onResize, { passive: true })
-    onCleanup(() => window.removeEventListener('resize', onResize))
+
+    onCleanup(() => {
+      ro.disconnect()
+      window.removeEventListener('resize', onResize)
+    })
   })
 
   return (

@@ -3,7 +3,7 @@
 
 import type { Component } from 'solid-js'
 import { Show } from 'solid-js'
-import { clearJamExercise, jamExerciseMelody, jamExercisePaused, jamExercisePlaying, jamIsHost, jamPlaybackPause, jamPlaybackPlay, jamPlaybackStop, } from '@/stores/jam-store'
+import { clearJamExercise, jamExerciseMelody, jamExercisePaused, jamExercisePlaying, jamIsHost, jamPlaybackPause, jamPlaybackPlay, jamPlaybackResume, jamPlaybackStop, } from '@/stores/jam-store'
 import styles from './JamExerciseControls.module.css'
 
 interface JamExerciseControlsProps {
@@ -15,6 +15,11 @@ interface JamExerciseControlsProps {
 export const JamExerciseControls: Component<JamExerciseControlsProps> = (
   props,
 ) => {
+  // Derived: is the exercise actively running (playing, not paused)?
+  const isRunning = () => jamExercisePlaying() && !jamExercisePaused()
+  const isPaused = () => jamExercisePlaying() && jamExercisePaused()
+  const isStopped = () => !jamExercisePlaying()
+
   return (
     <Show when={jamIsHost()}>
       <div class={styles.bar}>
@@ -44,14 +49,20 @@ export const JamExerciseControls: Component<JamExerciseControlsProps> = (
         <Show when={jamExerciseMelody()}>
           <div class={styles.divider} />
 
-          {/* Play / Pause toggle */}
+          {/* Play (when stopped or paused) / Pause (when running) */}
           <Show
-            when={jamExercisePlaying() && !jamExercisePaused()}
+            when={isRunning()}
             fallback={
               <button
-                class={`${styles.btn} ${styles.btnPlay}`}
-                onClick={() => jamPlaybackPlay()}
-                title="Start playback for all peers"
+                class={`${styles.btn} ${isPaused() ? styles.btnResume : styles.btnPlay}`}
+                onClick={() =>
+                  isPaused() ? jamPlaybackResume() : jamPlaybackPlay()
+                }
+                title={
+                  isPaused()
+                    ? 'Resume playback'
+                    : 'Start playback for all peers'
+                }
               >
                 <svg
                   width="15"
@@ -61,7 +72,7 @@ export const JamExerciseControls: Component<JamExerciseControlsProps> = (
                 >
                   <polygon points="5 3 19 12 5 21 5 3" />
                 </svg>
-                <span>Play</span>
+                <span>{isPaused() ? 'Resume' : 'Play'}</span>
               </button>
             }
           >
@@ -83,11 +94,12 @@ export const JamExerciseControls: Component<JamExerciseControlsProps> = (
             </button>
           </Show>
 
-          {/* Stop */}
+          {/* Stop — disabled when already stopped */}
           <button
-            class={`${styles.btn} ${styles.btnStop}`}
+            class={`${styles.btn} ${isStopped() ? styles.btnStopIdle : styles.btnStop}`}
+            disabled={isStopped()}
             onClick={jamPlaybackStop}
-            title="Stop and reset playback"
+            title={isStopped() ? 'Not playing' : 'Stop and reset playback'}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
               <rect x="4" y="4" width="16" height="16" rx="2" />

@@ -56,6 +56,8 @@ export const [jamExerciseBeat, setJamExerciseBeat] = createSignal(0)
 export const [jamExerciseNoteIndex, setJamExerciseNoteIndex] = createSignal(-1)
 export const [jamExerciseTotalBeats, setJamExerciseTotalBeats] = createSignal(0)
 export const [jamExerciseLoop, setJamExerciseLoop] = createSignal(false)
+/** Host-overridden BPM; initialised from melody.bpm on selectJamExercise. */
+export const [jamExerciseBpm, setJamExerciseBpm] = createSignal(120)
 // eslint-disable-next-line solid/reactivity
 const _jamUnreadChatCount = createSignal(0)
 export const jamUnreadChatCount = _jamUnreadChatCount[0]
@@ -337,10 +339,16 @@ export function startJamPitchDetection(): void {
   if (!stream) return
 
   pitchDetector = new JamPitchDetector()
+
+  // Track when the last live pitch detection happened so the network interval
+  // does not keep broadcasting stale frequency after the mic goes quiet.
+  let lastPitchTime = 0
+
   pitchDetector.onPitch = (pitch) => {
     // YIN/MPM paths in PitchDetector do not set midi — compute it from freq
     const midi =
       pitch.midi ?? Math.round(69 + 12 * Math.log2(pitch.frequency / 440))
+    lastPitchTime = Date.now()
     setJamLocalPitch({
       frequency: pitch.frequency,
       noteName: pitch.noteName,
@@ -351,10 +359,14 @@ export function startJamPitchDetection(): void {
   }
   pitchDetector.start(stream)
 
-  // Throttled network sends at ~20 Hz
+  // Throttled network sends at ~20 Hz.
+  // Only sends when a fresh pitch was detected within the last 150 ms so that
+  // the stale last-detected frequency is not broadcast indefinitely after the
+  // mic goes quiet.
   pitchNetworkInterval = setInterval(() => {
     const p = jamLocalPitch()
-    if (p && p.frequency > 0) {
+    const age = Date.now() - lastPitchTime
+    if (p && p.frequency > 0 && age < 150) {
       jamService?.sendPitch(p)
 
       const myId = jamPeerId()
@@ -390,6 +402,7 @@ export function stopJamPitchDetection(): void {
 export function selectJamExercise(melody: MelodyData): void {
   // Update local state immediately (DataChannel only sends to remotes)
   setJamExerciseMelody(melody)
+  setJamExerciseBpm(melody.bpm) // seed BPM override from melody default
   const total = melody.items.reduce(
     (max, item) => Math.max(max, item.startBeat + item.duration),
     0,
@@ -432,6 +445,13 @@ export function jamPlaybackPause(): void {
   jamService?.sendPlaybackCommand('pause', jamExerciseBeat())
 }
 
+export function jamPlaybackResume(): void {
+  if (!jamExercisePlaying() || !jamExercisePaused()) return
+  setJamExercisePaused(false)
+  startPlaybackTimer()
+  jamService?.sendPlaybackCommand('play', jamExerciseBeat())
+}
+
 export function jamPlaybackStop(): void {
   setJamExercisePlaying(false)
   setJamExercisePaused(false)
@@ -463,7 +483,8 @@ function startPlaybackTimer(): void {
     const delta = now - playbackLastTick
     playbackLastTick = now
 
-    const bpm = melody.bpm
+    // Use the reactive BPM override so speed changes take effect immediately
+    const bpm = jamExerciseBpm()
     const beatDelta = (bpm / 60) * (delta / 1000)
     const newBeat = jamExerciseBeat() + beatDelta
     const totalBeats = jamExerciseTotalBeats()
