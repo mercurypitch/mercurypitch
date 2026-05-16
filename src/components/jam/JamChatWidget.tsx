@@ -1,6 +1,8 @@
 import type { Component } from 'solid-js'
-import { createEffect, createSignal, For, Show } from 'solid-js'
-import { jamChatMessages, jamPeerId, jamUnreadChatCount, sendJamChatMessage, setJamUnreadChatCount, } from '@/stores/jam-store'
+import { createEffect, createMemo, createSignal, For, Show } from 'solid-js'
+import { buildPeerColorMap } from '@/lib/jam/peer-colors'
+import { jamChatMessages, jamPeerId, jamPeers, jamPitchHistory, jamUnreadChatCount, sendJamChatMessage, setJamUnreadChatCount, } from '@/stores/jam-store'
+import { selectedCharacter } from '@/stores/settings-store'
 import styles from './JamChatWidget.module.css'
 
 export const JamChatWidget: Component = () => {
@@ -8,8 +10,15 @@ export const JamChatWidget: Component = () => {
   const [chatText, setChatText] = createSignal('')
   let scrollEl: HTMLDivElement | undefined
 
+  // Peer color map keyed by peerId (same palette as canvases/camera)
+  const colorMap = createMemo(() => {
+    const ids = Object.keys(jamPitchHistory())
+    // Also include all known peers even without pitch data yet
+    const peerIds = [...new Set([...ids, ...jamPeers().map((p) => p.id)])]
+    return buildPeerColorMap(peerIds)
+  })
+
   createEffect(() => {
-    // Auto-scroll to bottom on new message if open
     jamChatMessages()
     if (isOpen() && scrollEl) {
       scrollEl.scrollTop = scrollEl.scrollHeight
@@ -17,8 +26,7 @@ export const JamChatWidget: Component = () => {
   })
 
   createEffect(() => {
-    // If user opens the chat widget or a new message arrives while open, clear unread count
-    jamChatMessages() // Depend on messages to clear when new ones arrive
+    jamChatMessages()
     if (isOpen()) {
       setJamUnreadChatCount(0)
     }
@@ -35,14 +43,6 @@ export const JamChatWidget: Component = () => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       handleSend()
-    }
-  }
-
-  const toggleOpen = () => {
-    if (!isOpen()) {
-      setIsOpen(true)
-    } else {
-      setIsOpen(false)
     }
   }
 
@@ -63,8 +63,8 @@ export const JamChatWidget: Component = () => {
                 stroke-linecap="round"
                 stroke-linejoin="round"
               >
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
               </svg>
             </button>
           </div>
@@ -73,18 +73,65 @@ export const JamChatWidget: Component = () => {
             <For each={jamChatMessages()}>
               {(msg) => {
                 const isOwn = msg.peerId === jamPeerId()
+                const peerColor = () => colorMap()[msg.peerId] ?? '#58a6ff'
+                const initial = () => msg.displayName.charAt(0).toUpperCase()
+
                 return (
-                  <div class={`${styles.msg} ${isOwn ? styles.msgOwn : ''}`}>
-                    <Show when={!isOwn}>
-                      <span class={styles.author}>{msg.displayName}</span>
-                    </Show>
-                    <span class={styles.text}>{msg.text}</span>
-                    <span class={styles.time}>
-                      {new Date(msg.timestamp).toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </span>
+                  <div
+                    class={`${styles.msgRow} ${isOwn ? styles.msgRowOwn : ''}`}
+                  >
+                    {/* Avatar — character SVG for self, colored initial for peers */}
+                    <div
+                      class={styles.avatar}
+                      style={
+                        isOwn
+                          ? { background: 'transparent', border: 'none' }
+                          : {
+                              background: `${peerColor()}22`,
+                              border: `1px solid ${peerColor()}66`,
+                              color: peerColor(),
+                            }
+                      }
+                    >
+                      <Show
+                        when={isOwn}
+                        fallback={
+                          <span class={styles.avatarInitial}>{initial()}</span>
+                        }
+                      >
+                        <img
+                          src={`characters/${selectedCharacter()}_idle.svg`}
+                          alt={selectedCharacter()}
+                          class={styles.avatarChar}
+                        />
+                      </Show>
+                    </div>
+
+                    {/* Bubble */}
+                    <div
+                      class={`${styles.msg} ${isOwn ? styles.msgOwn : ''}`}
+                      style={
+                        !isOwn
+                          ? { 'border-color': `${peerColor()}44` }
+                          : undefined
+                      }
+                    >
+                      <Show when={!isOwn}>
+                        <span
+                          class={styles.author}
+                          style={{ color: peerColor() }}
+                        >
+                          {msg.displayName}
+                        </span>
+                      </Show>
+                      <span class={styles.text}>{msg.text}</span>
+                      <span class={styles.time}>
+                        {new Date(msg.timestamp).toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </span>
+                    </div>
                   </div>
                 )
               }}
@@ -113,7 +160,7 @@ export const JamChatWidget: Component = () => {
       </Show>
 
       <Show when={!isOpen()}>
-        <button class={styles.bubbleBtn} onClick={toggleOpen}>
+        <button class={styles.bubbleBtn} onClick={() => setIsOpen(true)}>
           <svg
             width="24"
             height="24"
@@ -124,7 +171,7 @@ export const JamChatWidget: Component = () => {
             stroke-linecap="round"
             stroke-linejoin="round"
           >
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
           </svg>
           <Show when={jamUnreadChatCount() > 0}>
             <span class={styles.badge}>

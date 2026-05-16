@@ -4,18 +4,8 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, onCleanup, onMount } from 'solid-js'
-import { jamExerciseBeat, jamExerciseMelody, jamExercisePlaying, jamExerciseTotalBeats, jamPitchHistory, } from '@/stores/jam-store'
-
-const PEER_COLORS = [
-  '#58a6ff',
-  '#f0883e',
-  '#3fb950',
-  '#d2a8ff',
-  '#f778ba',
-  '#ffa657',
-  '#7ee787',
-  '#a5d6ff',
-]
+import { buildPeerColorMap } from '@/lib/jam/peer-colors'
+import { jamExerciseBeat, jamExerciseMelody, jamExercisePlaying, jamExerciseTotalBeats, jamPeers, jamPitchHistory, } from '@/stores/jam-store'
 
 const MARGIN_LEFT = 40
 const MARGIN_RIGHT = 20
@@ -23,6 +13,8 @@ const MARGIN_TOP = 16
 const MARGIN_BOTTOM = 20
 const DOT_RADIUS = 2.5
 const GLOW_RADIUS = 14
+// Playhead pinned at this fraction of the drawable width
+const PLAYHEAD_PCT = 0.6
 
 interface JamExerciseCanvasProps {
   myPeerId: () => string | null
@@ -37,11 +29,7 @@ export const JamExerciseCanvas: Component<JamExerciseCanvasProps> = (props) => {
   const peerColorMap = createMemo(() => {
     const history = jamPitchHistory()
     const peerIds = Object.keys(history)
-    const map: Record<string, string> = {}
-    peerIds.forEach((id, i) => {
-      map[id] = PEER_COLORS[i % PEER_COLORS.length]!
-    })
-    return map
+    return buildPeerColorMap(peerIds)
   })
 
   const melodyNotes = createMemo(() => {
@@ -112,10 +100,16 @@ export const JamExerciseCanvas: Component<JamExerciseCanvasProps> = (props) => {
     return h - MARGIN_BOTTOM - pct * (h - MARGIN_TOP - MARGIN_BOTTOM)
   }
 
-  const beatToX = (beat: number, w: number, totalBeats: number) => {
-    const x =
-      MARGIN_LEFT + (beat / totalBeats) * (w - MARGIN_LEFT - MARGIN_RIGHT)
-    return x
+  const beatToX = (
+    beat: number,
+    w: number,
+    totalBeats: number,
+    currentBeat: number,
+  ) => {
+    const drawW = w - MARGIN_LEFT - MARGIN_RIGHT
+    const playheadX = MARGIN_LEFT + drawW * PLAYHEAD_PCT
+    const pxPerBeat = drawW / Math.max(totalBeats, 16)
+    return playheadX + (beat - currentBeat) * pxPerBeat
   }
 
   const startDrawLoop = () => {
@@ -128,20 +122,31 @@ export const JamExerciseCanvas: Component<JamExerciseCanvasProps> = (props) => {
       ctx.fillStyle = '#0d1117'
       ctx.fillRect(0, 0, w, h)
 
+      // Read all signals once per frame (rAF runs outside reactive graph)
       const { min, max, totalBeats } = midiRange()
+      const currentBeat = jamExerciseBeat()
 
-      drawGrid(w, h, min, max)
-      drawMelodyNotes(w, h, min, max, totalBeats)
-      drawPlayhead(w, h, min, max, totalBeats)
-      drawPeerPitchDots(w, h, min, max, totalBeats)
-      drawPrecount(w, h)
+      drawGrid(w, h, min, max, totalBeats, currentBeat)
+      drawMelodyNotes(w, h, min, max, totalBeats, currentBeat)
+      drawAllPeerPitchTrails(w, h, min, max, totalBeats, currentBeat)
+      drawPlayhead(w, h, min, max, totalBeats, currentBeat)
+      drawScoreboard(w, h, min, max, totalBeats, currentBeat)
+      drawPeerLegend(w, h)
+      drawPrecount(w, h, currentBeat)
 
       animFrameId = requestAnimationFrame(draw)
     }
     animFrameId = requestAnimationFrame(draw)
   }
 
-  const drawGrid = (w: number, h: number, minMidi: number, maxMidi: number) => {
+  const drawGrid = (
+    w: number,
+    h: number,
+    minMidi: number,
+    maxMidi: number,
+    _totalBeats: number,
+    _currentBeat: number,
+  ) => {
     if (!ctx) return
 
     // MIDI grid lines (every 2 semitones)
@@ -189,6 +194,7 @@ export const JamExerciseCanvas: Component<JamExerciseCanvasProps> = (props) => {
     minMidi: number,
     maxMidi: number,
     totalBeats: number,
+    currentBeat: number,
   ) => {
     if (!ctx) return
     const notes = melodyNotes()
@@ -198,11 +204,11 @@ export const JamExerciseCanvas: Component<JamExerciseCanvasProps> = (props) => {
       ((h - MARGIN_TOP - MARGIN_BOTTOM) / (maxMidi - minMidi)) * 0.7
 
     for (const note of notes) {
-      const x = beatToX(note.startBeat, w, totalBeats)
+      const x = beatToX(note.startBeat, w, totalBeats, currentBeat)
       const width = Math.max(
         2,
-        ((note.endBeat - note.startBeat) / totalBeats) *
-          (w - MARGIN_LEFT - MARGIN_RIGHT),
+        ((note.endBeat - note.startBeat) * (w - MARGIN_LEFT - MARGIN_RIGHT)) /
+          Math.max(totalBeats, 16),
       )
       const boxH = Math.max(16, noteHeight)
       const boxHalf = boxH / 2
@@ -246,13 +252,13 @@ export const JamExerciseCanvas: Component<JamExerciseCanvasProps> = (props) => {
     _minMidi: number,
     _maxMidi: number,
     totalBeats: number,
+    currentBeat: number,
   ) => {
     if (!ctx) return
-    const beat = jamExerciseBeat()
     const playing = jamExercisePlaying()
-    if (beat === 0 && !playing) return
+    if (currentBeat === 0 && !playing) return
 
-    const x = beatToX(beat, w, totalBeats)
+    const x = beatToX(currentBeat, w, totalBeats, currentBeat)
     if (x < MARGIN_LEFT || x > w - MARGIN_RIGHT) return
 
     ctx.strokeStyle = 'rgba(255,255,255,0.6)'
@@ -269,15 +275,17 @@ export const JamExerciseCanvas: Component<JamExerciseCanvasProps> = (props) => {
     ctx.font = '10px sans-serif'
     ctx.textAlign = 'center'
     ctx.textBaseline = 'bottom'
-    ctx.fillText(`${beat.toFixed(1)}`, x, h - 4)
+    ctx.fillText(`${currentBeat.toFixed(1)}`, x, h - 4)
   }
 
-  const drawPeerPitchDots = (
+  // ── Draw pitch trails for ALL peers (own + remote) ──────────────────
+  const drawAllPeerPitchTrails = (
     w: number,
     h: number,
     minMidi: number,
     maxMidi: number,
     totalBeats: number,
+    currentBeat: number,
   ) => {
     if (!ctx) return
 
@@ -285,48 +293,49 @@ export const JamExerciseCanvas: Component<JamExerciseCanvasProps> = (props) => {
     const colors = peerColorMap()
     const myId = props.myPeerId()
     const now = Date.now()
-    const playheadX = beatToX(jamExerciseBeat(), w, totalBeats)
+    const melody = jamExerciseMelody()
+    const bpm = melody?.bpm ?? 120
 
+    // Draw remote peers first so own pitch renders on top
     for (const [peerId, samples] of Object.entries(history)) {
-      const color = colors[peerId] ?? PEER_COLORS[0]!
-      const isOwn = peerId === myId
+      if (peerId === myId) continue
+      const color = colors[peerId] ?? '#58a6ff'
+      drawPitchTrail(
+        w,
+        h,
+        minMidi,
+        maxMidi,
+        samples,
+        color,
+        now,
+        currentBeat,
+        bpm,
+        totalBeats,
+        false,
+      )
+    }
 
-      if (isOwn) {
-        drawOwnPitchTrail(
-          w,
-          h,
-          minMidi,
-          maxMidi,
-          samples,
-          color,
-          now,
-          playheadX,
-        )
-      } else {
-        // Remote peers: small dots near playhead
-        for (let i = 0; i < samples.length; i++) {
-          const s = samples[i]!
-          if (now - s.timestamp > 2000) continue
-          if (s.frequency <= 0 || s.midi <= 0) continue
-
-          const age = (now - s.timestamp) / 2000
-          const dotX = playheadX - age * 30
-          const y = midiToY(s.midi, h, minMidi, maxMidi)
-
-          if (dotX < MARGIN_LEFT || y < MARGIN_TOP || y > h - MARGIN_BOTTOM)
-            continue
-
-          const alpha = 0.12 + s.clarity * 0.4
-          ctx.fillStyle = hexToRgba(color, alpha)
-          ctx.beginPath()
-          ctx.arc(dotX, y, DOT_RADIUS, 0, Math.PI * 2)
-          ctx.fill()
-        }
-      }
+    // Draw own pitch on top
+    if (myId !== null && myId in history) {
+      const color = colors[myId] ?? '#58a6ff'
+      drawPitchTrail(
+        w,
+        h,
+        minMidi,
+        maxMidi,
+        history[myId]!,
+        color,
+        now,
+        currentBeat,
+        bpm,
+        totalBeats,
+        true,
+      )
     }
   }
 
-  const drawOwnPitchTrail = (
+  // ── Pitch trail for any peer ──────────────────────────────────────
+  const drawPitchTrail = (
     w: number,
     h: number,
     minMidi: number,
@@ -341,29 +350,46 @@ export const JamExerciseCanvas: Component<JamExerciseCanvasProps> = (props) => {
     }>,
     color: string,
     now: number,
-    playheadX: number,
+    currentBeat: number,
+    bpm: number,
+    totalBeats: number,
+    isOwn: boolean,
   ) => {
     if (!ctx) return
 
-    // Filter recent valid samples (last 2 seconds)
+    // Keep last 4 seconds of samples
+    const windowMs = 4000
     const recent = samples.filter(
-      (s) => now - s.timestamp <= 2000 && s.frequency > 0 && s.midi > 0,
+      (s) => now - s.timestamp <= windowMs && s.frequency > 0 && s.midi > 0,
     )
     if (recent.length === 0) return
 
-    // ── Pitch trail line ──
-    ctx.lineWidth = 2
-    ctx.strokeStyle = hexToRgba(color, 0.55)
+    // Convert timestamp → beat position on canvas
+    // A sample taken T ms ago was at beat (currentBeat - T/1000 * bpm/60)
+    const beatsPerMs = bpm / 60 / 1000
+    const sampleToX = (s: { timestamp: number }) => {
+      const ageMs = now - s.timestamp
+      const beatPos = currentBeat - ageMs * beatsPerMs
+      return beatToX(beatPos, w, totalBeats, currentBeat)
+    }
+
+    // ── Trail line ──
+    ctx.lineWidth = isOwn ? 2.5 : 1.8
+    ctx.strokeStyle = hexToRgba(color, isOwn ? 0.75 : 0.5)
     ctx.lineJoin = 'round'
     ctx.lineCap = 'round'
     ctx.beginPath()
     let started = false
-    for (let i = 0; i < recent.length - 1; i++) {
+    for (let i = 0; i < recent.length; i++) {
       const s = recent[i]!
-      const age = (now - s.timestamp) / 2000
-      const x = playheadX - age * 30
+      const x = sampleToX(s)
       const y = midiToY(s.midi, h, minMidi, maxMidi)
-      if (x < MARGIN_LEFT || y < MARGIN_TOP || y > h - MARGIN_BOTTOM) {
+      if (
+        x < MARGIN_LEFT ||
+        x > w - MARGIN_RIGHT ||
+        y < MARGIN_TOP ||
+        y > h - MARGIN_BOTTOM
+      ) {
         started = false
         continue
       }
@@ -376,69 +402,291 @@ export const JamExerciseCanvas: Component<JamExerciseCanvasProps> = (props) => {
     }
     ctx.stroke()
 
-    // ── Latest point: glow + dot + note pill ──
+    // ── Latest dot + glow at playhead position ──
     const latest = recent[recent.length - 1]!
+    const latestAgeMs = now - latest.timestamp
+    if (latestAgeMs > 600) return // stale — don't render dot if not recently singing
+
+    const lx = beatToX(currentBeat, w, totalBeats, currentBeat)
     const ly = midiToY(latest.midi, h, minMidi, maxMidi)
-    // Latest point always at playhead
-    const lx = playheadX
 
     if (lx < MARGIN_LEFT || ly < MARGIN_TOP || ly > h - MARGIN_BOTTOM) return
 
     // Glow
-    const glowAlpha = 0.2 + latest.clarity * 0.3
-    const glowGrad = ctx.createRadialGradient(lx, ly, 0, lx, ly, GLOW_RADIUS)
+    const glowR = isOwn ? GLOW_RADIUS : GLOW_RADIUS * 0.7
+    const glowAlpha = (isOwn ? 0.28 : 0.18) + latest.clarity * 0.22
+    const glowGrad = ctx.createRadialGradient(lx, ly, 0, lx, ly, glowR)
     glowGrad.addColorStop(0, hexToRgba(color, glowAlpha))
     glowGrad.addColorStop(1, hexToRgba(color, 0))
     ctx.fillStyle = glowGrad
     ctx.beginPath()
-    ctx.arc(lx, ly, GLOW_RADIUS, 0, Math.PI * 2)
+    ctx.arc(lx, ly, glowR, 0, Math.PI * 2)
     ctx.fill()
 
-    // Inner dot
+    // Dot
+    const dotSize = isOwn ? DOT_RADIUS + 2 : DOT_RADIUS + 1
     ctx.fillStyle = color
     ctx.beginPath()
-    ctx.arc(lx, ly, DOT_RADIUS + 2, 0, Math.PI * 2)
+    ctx.arc(lx, ly, dotSize, 0, Math.PI * 2)
     ctx.fill()
-    ctx.fillStyle = '#fff'
+    ctx.fillStyle = isOwn ? '#fff' : hexToRgba('#ffffff', 0.75)
     ctx.beginPath()
-    ctx.arc(lx, ly, DOT_RADIUS - 1, 0, Math.PI * 2)
+    ctx.arc(lx, ly, dotSize - 1.5, 0, Math.PI * 2)
     ctx.fill()
 
-    // Note name pill
-    const label = `${latest.noteName}`
-    ctx.font = 'bold 11px sans-serif'
-    const tw = ctx.measureText(label).width
-    const pillPad = 5
-    const pillW = tw + pillPad * 2
-    const pillH = 18
-    const pillX = lx + 10
-    const pillY = ly - pillH / 2
+    // Note pill
+    if (isOwn || latest.clarity > 0.6) {
+      const label = `${latest.noteName}`
+      ctx.font = `${isOwn ? 'bold' : ''} 11px sans-serif`
+      const tw = ctx.measureText(label).width
+      const pillPad = 5
+      const pillW = tw + pillPad * 2
+      const pillH = 18
+      const pillX = lx + 10
+      const pillY = ly - pillH / 2
 
-    // Keep pill in bounds
-    let adjPillX = pillX
-    if (adjPillX + pillW > w - MARGIN_RIGHT) adjPillX = lx - pillW - 10
+      let adjPillX = pillX
+      if (adjPillX + pillW > w - MARGIN_RIGHT) adjPillX = lx - pillW - 10
 
-    ctx.beginPath()
-    ctx.roundRect(adjPillX, pillY, pillW, pillH, pillH / 2)
-    ctx.fillStyle = hexToRgba(color, 0.6)
-    ctx.fill()
-    ctx.strokeStyle = hexToRgba(color, 0.85)
-    ctx.lineWidth = 1
-    ctx.stroke()
+      ctx.beginPath()
+      ctx.roundRect(adjPillX, pillY, pillW, pillH, pillH / 2)
+      ctx.fillStyle = hexToRgba(color, isOwn ? 0.75 : 0.55)
+      ctx.fill()
+      ctx.strokeStyle = hexToRgba(color, 0.9)
+      ctx.lineWidth = 1
+      ctx.stroke()
 
-    ctx.fillStyle = '#fff'
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'middle'
-    ctx.fillText(label, adjPillX + pillW / 2, pillY + pillH / 2 + 0.5)
+      ctx.fillStyle = '#fff'
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      ctx.fillText(label, adjPillX + pillW / 2, pillY + pillH / 2 + 0.5)
+      ctx.textBaseline = 'alphabetic'
+    }
+  }
+
+  // ── Peer legend ──────────────────────────────────────────────────────
+  const drawPeerLegend = (w: number, _h: number) => {
+    if (!ctx) return
+    const history = jamPitchHistory()
+    const colors = peerColorMap()
+    const myId = props.myPeerId()
+    const peers = jamPeers()
+    const ids = Object.keys(history)
+    if (ids.length === 0) return
+
+    const dotR = 5
+    const rowH = 18
+    const padX = 8
+    const padY = 6
+    const startY = MARGIN_TOP + padY
+
+    ctx.font = '10px sans-serif'
+
+    let offsetX = MARGIN_LEFT + padX
+
+    for (const id of ids) {
+      const color = colors[id] ?? '#58a6ff'
+      const isOwn = id === myId
+      const name = isOwn
+        ? 'You'
+        : (peers.find((p) => p.id === id)?.displayName ?? id.slice(0, 6))
+
+      // Dot
+      ctx.fillStyle = color
+      ctx.beginPath()
+      ctx.arc(offsetX + dotR, startY + rowH / 2, dotR, 0, Math.PI * 2)
+      ctx.fill()
+
+      // Name
+      const labelX = offsetX + dotR * 2 + 4
+      const nameW = ctx.measureText(name).width
+
+      // Background pill
+      ctx.fillStyle = 'rgba(13,17,23,0.7)'
+      ctx.beginPath()
+      ctx.roundRect(labelX - 2, startY + 2, nameW + 4, rowH - 4, 3)
+      ctx.fill()
+
+      ctx.fillStyle = isOwn ? color : 'rgba(200,210,220,0.85)'
+      ctx.textAlign = 'left'
+      ctx.textBaseline = 'middle'
+      ctx.fillText(name, labelX, startY + rowH / 2)
+
+      offsetX += dotR * 2 + nameW + 16
+      if (offsetX > w - MARGIN_RIGHT - 40) break // avoid overflow
+    }
     ctx.textBaseline = 'alphabetic'
   }
 
-  const drawPrecount = (w: number, h: number) => {
+  // ── Per-peer scoring overlay ──────────────────────────────────────────
+  // Computes how accurately each peer hit the target notes.
+  // A pitch sample is counted as a "hit" if it is within 50 cents of the
+  // note that was active at that timestamp.
+  const drawScoreboard = (
+    w: number,
+    _h: number,
+    _minMidi: number,
+    _maxMidi: number,
+    totalBeats: number,
+    currentBeat: number,
+  ) => {
     if (!ctx) return
-    const beat = jamExerciseBeat()
-    if (beat >= 0) return
+    const c = ctx
+    const playing = jamExercisePlaying()
+    if (!playing && currentBeat === 0) return // idle
 
-    const num = Math.ceil(Math.abs(beat))
+    const history = jamPitchHistory()
+    const colors = peerColorMap()
+    const myId = props.myPeerId()
+    const peers = jamPeers()
+    const notes = melodyNotes()
+    const melody = jamExerciseMelody()
+    const bpm = melody?.bpm ?? 120
+    const ids = Object.keys(history)
+    if (ids.length === 0 || notes.length === 0) return
+
+    // Build a sorted note array for fast lookup
+    const sortedNotes = [...notes].sort((a, b) => a.startBeat - b.startBeat)
+
+    const getNoteAtBeat = (beat: number) => {
+      for (const note of sortedNotes) {
+        if (beat >= note.startBeat && beat < note.endBeat) return note
+      }
+      return null
+    }
+
+    const beatsPerMs = bpm / 60 / 1000
+
+    interface Score {
+      name: string
+      hits: number
+      total: number
+      color: string
+    }
+
+    const scores: Score[] = []
+
+    for (const id of ids) {
+      const samples = history[id] ?? []
+      const color = colors[id] ?? '#58a6ff'
+      const isOwn = id === myId
+      const name = isOwn
+        ? 'You'
+        : (peers.find((p) => p.id === id)?.displayName ?? id.slice(0, 6))
+
+      let hits = 0
+      let total = 0
+
+      for (const s of samples) {
+        if (s.frequency <= 0 || s.midi <= 0) continue
+        // Estimate what beat this sample corresponds to
+        const ageMs = Date.now() - s.timestamp
+        const sampleBeat = currentBeat - ageMs * beatsPerMs
+        if (sampleBeat < 0 || sampleBeat > totalBeats) continue
+
+        const note = getNoteAtBeat(sampleBeat)
+        if (!note) continue
+
+        total++
+        const centsDiff = Math.abs((s.midi - note.midi) * 100 + s.cents)
+        if (centsDiff <= 50) hits++
+      }
+
+      scores.push({ name, hits, total, color })
+    }
+
+    if (scores.length === 0) return
+
+    // Sort by accuracy descending
+    scores.sort((a, b) => {
+      const aRate = a.total === 0 ? 0 : a.hits / a.total
+      const bRate = b.total === 0 ? 0 : b.hits / b.total
+      return bRate - aRate
+    })
+
+    // Draw scoreboard panel — right edge of canvas
+    const rowH = 22
+    const panelW = 130
+    const panelPad = 8
+    const panelX = w - MARGIN_RIGHT - panelW
+    const panelY = MARGIN_TOP + 2
+    const panelH = scores.length * rowH + panelPad * 2
+
+    // Panel background
+    ctx.fillStyle = 'rgba(13,17,23,0.78)'
+    ctx.beginPath()
+    ctx.roundRect(panelX, panelY, panelW, panelH, 6)
+    ctx.fill()
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)'
+    ctx.lineWidth = 1
+    ctx.stroke()
+
+    c.font = '10px sans-serif'
+
+    scores.forEach((score, i) => {
+      const rowY = panelY + panelPad + i * rowH
+      const accuracy = score.total === 0 ? 0 : score.hits / score.total
+      const pct = Math.round(accuracy * 100)
+
+      // Color dot
+      const dotR = 4
+      c.fillStyle = score.color
+      c.beginPath()
+      c.arc(panelX + panelPad + dotR, rowY + rowH / 2, dotR, 0, Math.PI * 2)
+      c.fill()
+
+      // Name
+      c.fillStyle = 'rgba(200,210,220,0.85)'
+      c.textAlign = 'left'
+      c.textBaseline = 'middle'
+      const maxNameW = 52
+      let name = score.name
+      if (c.measureText(name).width > maxNameW) {
+        while (
+          c.measureText(`${name}\u2026`).width > maxNameW &&
+          name.length > 0
+        ) {
+          name = name.slice(0, -1)
+        }
+        name += '\u2026'
+      }
+      c.fillText(name, panelX + panelPad + dotR * 2 + 4, rowY + rowH / 2)
+
+      // Bar background
+      const barX = panelX + panelPad + dotR * 2 + 4 + maxNameW + 2
+      const barW = panelW - panelPad - (barX - panelX) - panelPad
+      const barH = 6
+      const barY = rowY + rowH / 2 - barH / 2
+
+      c.fillStyle = 'rgba(255,255,255,0.08)'
+      c.beginPath()
+      c.roundRect(barX, barY, barW, barH, 3)
+      c.fill()
+
+      // Bar fill — green > 80%, amber > 50%, red below
+      const fillColor =
+        pct >= 80 ? '#3fb950' : pct >= 50 ? '#e3a221' : '#f85149'
+      c.fillStyle = hexToRgba(fillColor, 0.85)
+      c.beginPath()
+      c.roundRect(barX, barY, Math.max(4, barW * accuracy), barH, 3)
+      c.fill()
+
+      // Pct text
+      c.fillStyle = 'rgba(200,210,220,0.7)'
+      c.font = 'bold 9px sans-serif'
+      c.textAlign = 'right'
+      c.fillText(`${pct}%`, panelX + panelW - panelPad, rowY + rowH / 2)
+      c.font = '10px sans-serif'
+    })
+
+    ctx.textBaseline = 'alphabetic'
+  }
+
+  const drawPrecount = (w: number, h: number, currentBeat: number) => {
+    if (!ctx) return
+    if (currentBeat >= 0) return
+
+    const num = Math.ceil(Math.abs(currentBeat))
     if (num <= 0) return
 
     ctx.fillStyle = 'rgba(13, 17, 23, 0.6)'
@@ -450,7 +698,7 @@ export const JamExerciseCanvas: Component<JamExerciseCanvasProps> = (props) => {
     ctx.textBaseline = 'middle'
 
     // Pulse animation based on fractional beat
-    const fract = Math.abs(beat) % 1
+    const fract = Math.abs(currentBeat) % 1
     const scale = 1 + (1 - fract) * 0.2
 
     ctx.save()

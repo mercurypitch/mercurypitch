@@ -1,10 +1,12 @@
 // ── JamCameraWidget ──────────────────────────────────────────────────
 // Floating camera tray — compact thumbnails at bottom-right.
 // Click any chip to expand/collapse that person's feed.
+// Border color matches the peer's assigned pitch-trail color.
 
 import type { Component } from 'solid-js'
-import { createSignal, For, Show } from 'solid-js'
-import { jamLocalStream, jamPeers, jamRemoteStreams, jamVideoEnabled, } from '@/stores/jam-store'
+import { createMemo, createSignal, For, Show } from 'solid-js'
+import { buildPeerColorMap } from '@/lib/jam/peer-colors'
+import { jamLocalStream, jamPeerId, jamPeers, jamPitchHistory, jamRemoteStreams, jamVideoEnabled, } from '@/stores/jam-store'
 import styles from './JamCameraWidget.module.css'
 
 // ── Individual camera chip ───────────────────────────────────────────
@@ -14,10 +16,18 @@ interface CamChipProps {
   name: string
   isLocal?: boolean
   videoOn?: boolean
+  color?: string
 }
 
 const CamChip: Component<CamChipProps> = (props) => {
   const [expanded, setExpanded] = createSignal(false)
+  const borderColor = () => props.color ?? 'var(--border)'
+  const borderStyle = () =>
+    `1px solid ${expanded() ? borderColor() : 'var(--border)'}`
+  const glowStyle = () =>
+    expanded()
+      ? `0 0 12px ${borderColor()}55, 0 4px 16px rgba(0,0,0,0.5)`
+      : undefined
 
   return (
     <div
@@ -25,7 +35,13 @@ const CamChip: Component<CamChipProps> = (props) => {
       onClick={() => setExpanded((v) => !v)}
       title={expanded() ? 'Click to collapse' : 'Click to expand'}
     >
-      <div class={styles.thumb}>
+      <div
+        class={styles.thumb}
+        style={{
+          border: borderStyle(),
+          'box-shadow': glowStyle(),
+        }}
+      >
         <Show when={props.stream !== null && props.videoOn !== false}>
           <video
             ref={(el) => {
@@ -60,7 +76,13 @@ const CamChip: Component<CamChipProps> = (props) => {
         </Show>
 
         <Show when={props.isLocal === true}>
-          <div class={styles.youDot} />
+          <div
+            class={styles.youDot}
+            style={{
+              background: borderColor(),
+              'box-shadow': `0 0 4px ${borderColor()}`,
+            }}
+          />
         </Show>
 
         <span class={styles.expandHint}>
@@ -68,7 +90,10 @@ const CamChip: Component<CamChipProps> = (props) => {
         </span>
       </div>
 
-      <span class={styles.name}>
+      <span
+        class={styles.name}
+        style={{ color: expanded() ? borderColor() : undefined }}
+      >
         {props.isLocal === true ? 'You' : props.name}
       </span>
     </div>
@@ -78,6 +103,16 @@ const CamChip: Component<CamChipProps> = (props) => {
 // ── Widget root ──────────────────────────────────────────────────────
 
 export const JamCameraWidget: Component = () => {
+  const myId = jamPeerId
+
+  // Derive color map from all peers in pitch history (same keys as canvases)
+  const colorMap = createMemo(() => {
+    const ids = Object.keys(jamPitchHistory())
+    return buildPeerColorMap(ids)
+  })
+
+  const myColor = () => colorMap()[myId() ?? ''] ?? '#58a6ff'
+
   return (
     <div class={styles.tray}>
       {/* Local camera */}
@@ -86,17 +121,20 @@ export const JamCameraWidget: Component = () => {
         name="You"
         isLocal
         videoOn={jamVideoEnabled()}
+        color={myColor()}
       />
 
       {/* Remote cameras */}
       <For each={Object.entries(jamRemoteStreams())}>
         {([peerId, stream]) => {
           const peer = () => jamPeers().find((p) => p.id === peerId)
+          const color = () => colorMap()[peerId] ?? '#f0883e'
           return (
             <CamChip
               stream={stream}
               name={peer()?.displayName ?? peerId.slice(0, 8)}
               videoOn={peer()?.hasVideo !== false}
+              color={color()}
             />
           )
         }}

@@ -55,6 +55,7 @@ export const [jamExercisePaused, setJamExercisePaused] = createSignal(false)
 export const [jamExerciseBeat, setJamExerciseBeat] = createSignal(0)
 export const [jamExerciseNoteIndex, setJamExerciseNoteIndex] = createSignal(-1)
 export const [jamExerciseTotalBeats, setJamExerciseTotalBeats] = createSignal(0)
+export const [jamExerciseLoop, setJamExerciseLoop] = createSignal(false)
 // eslint-disable-next-line solid/reactivity
 const _jamUnreadChatCount = createSignal(0)
 export const jamUnreadChatCount = _jamUnreadChatCount[0]
@@ -337,12 +338,15 @@ export function startJamPitchDetection(): void {
 
   pitchDetector = new JamPitchDetector()
   pitchDetector.onPitch = (pitch) => {
+    // YIN/MPM paths in PitchDetector do not set midi — compute it from freq
+    const midi =
+      pitch.midi ?? Math.round(69 + 12 * Math.log2(pitch.frequency / 440))
     setJamLocalPitch({
       frequency: pitch.frequency,
       noteName: pitch.noteName,
       cents: pitch.cents,
       clarity: pitch.clarity,
-      midi: pitch.midi ?? 0,
+      midi,
     })
   }
   pitchDetector.start(stream)
@@ -465,11 +469,22 @@ function startPlaybackTimer(): void {
     const totalBeats = jamExerciseTotalBeats()
 
     if (newBeat >= totalBeats) {
-      // Finished — stop at end
-      setJamExerciseBeat(totalBeats)
-      setJamExercisePlaying(false)
-      setJamExercisePaused(false)
-      stopPlaybackTimer()
+      if (jamExerciseLoop()) {
+        // Loop back to start
+        setJamExerciseBeat(0)
+        setJamExerciseNoteIndex(-1)
+        playbackLastTick = now
+        jamService?.sendPlaybackCommand('seek', 0)
+        playbackTimerId = requestAnimationFrame(tick)
+      } else {
+        // Finished — reset to start and broadcast
+        setJamExercisePlaying(false)
+        setJamExercisePaused(false)
+        setJamExerciseBeat(0)
+        setJamExerciseNoteIndex(-1)
+        stopPlaybackTimer()
+        jamService?.sendPlaybackCommand('stop', 0)
+      }
       return
     }
 

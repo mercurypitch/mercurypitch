@@ -1,4 +1,6 @@
-/* JamPanel — Room header, tabs, and exercise picker styles */
+/* JamPanel — Tabless session layout with collapsible sidebar */
+
+/* ── Room header shared helpers ────────────────────────────────────── */
 
 .roomIdRow {
   display: flex;
@@ -28,39 +30,151 @@
   user-select: all;
 }
 
-.tabs {
+/* ── Session layout — fills parent jam-panel fully ────────────────── */
+
+.sessionLayout {
   display: flex;
-  gap: 0;
-  border-bottom: 1px solid var(--border);
+  flex: 1;
+  min-height: 0; /* critical: allow flex child to shrink below content size */
+  height: 100%;
+  overflow: hidden;
 }
 
-.tab {
-  padding: 8px 16px;
-  font-size: 0.85rem;
-  color: var(--text-secondary, #8b949e);
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  cursor: pointer;
-  transition: all 0.12s ease;
-  font-family: inherit;
-  margin-bottom: -1px;
+/* ── Collapsible sidebar ──────────────────────────────────────────── */
+
+.sidebar {
+  width: 0;
+  overflow: hidden;
+  flex-shrink: 0;
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  border-right: 0 solid var(--border);
 }
 
-.tab:hover {
-  color: var(--text-primary);
+.sidebarOpen {
+  width: 240px;
+  border-right-width: 1px;
 }
 
-.tabActive {
-  color: var(--accent);
-  border-bottom-color: var(--accent);
-}
-
-.tabContent {
+.sidebarInner {
+  width: 240px;
+  height: 100%;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 12px;
+  padding: 12px;
 }
+
+/* ── Main content area — flex column, full height ─────────────────── */
+
+.mainArea {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  overflow: hidden; /* prevents the area itself from scrolling */
+}
+
+/* ── Exercise transport bar row ───────────────────────────────────── */
+
+.exerciseBar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+/* ── Canvas area — takes all remaining height ─────────────────────── */
+
+.canvasArea {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow: hidden;
+}
+
+/* Exercise canvas wrapper — grows to fill available space */
+.exerciseCanvas {
+  flex: 1;
+  min-height: 0;
+  /* The inner .container will be sized by this wrapper */
+}
+
+/* Override the hardcoded height in JamExerciseCanvas.module.css */
+.exerciseCanvas > div {
+  height: 100% !important;
+}
+
+/* ── Shared pitch strip — fixed portion at the bottom ─────────────── */
+
+.pitchStrip {
+  flex-shrink: 0;
+  height: 140px;
+  min-height: 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-top: 1px solid var(--border);
+  padding-top: 6px;
+}
+
+/* Override the hardcoded height in JamSharedPitchCanvas.module.css */
+.pitchStrip > div:last-child {
+  flex: 1;
+  min-height: 0;
+}
+
+.pitchStrip > div:last-child > div {
+  height: 100% !important;
+}
+
+.pitchStripLabel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+  padding: 0 4px;
+  flex-shrink: 0;
+}
+
+/* Collapsed state — just the label row, no canvas */
+.pitchStripCollapsed {
+  height: auto;
+  min-height: 0;
+}
+
+.pitchToggleBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+  flex-shrink: 0;
+}
+
+.pitchToggleBtn:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+/* ── Exercise picker dropdown ─────────────────────────────────────── */
 
 .exercisePicker {
   display: flex;
@@ -70,8 +184,21 @@
   background: var(--bg-tertiary);
   border: 1px solid var(--border);
   border-radius: 6px;
-  max-height: 240px;
+  max-height: 200px;
   overflow-y: auto;
+  flex-shrink: 0;
+  animation: fadeDown 0.15s ease-out;
+}
+
+@keyframes fadeDown {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .pickItem {

@@ -1,59 +1,158 @@
-/* JamExerciseControls — Host-only transport bar for shared exercise */
+/* ── JamExerciseControls — host transport bar ───────────────────── */
 
-.controls {
+.bar {
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
   gap: 6px;
+  padding: 6px 8px;
+  background: rgba(13, 17, 23, 0.6);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  backdrop-filter: blur(8px);
+  width: fit-content;
 }
+
+/* ── Base button ─────────────────────────────────────────────────── */
 
 .btn {
-  padding: 6px 14px;
-  font-size: 0.82rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
   font-family: inherit;
-  color: var(--text-primary);
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 7px;
+  border: 1px solid transparent;
   cursor: pointer;
-  transition: all 0.12s ease;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.1s ease,
+    box-shadow 0.15s ease;
+  white-space: nowrap;
 }
 
-.btn:hover {
-  filter: brightness(1.15);
+.btn svg {
+  flex-shrink: 0;
+  pointer-events: none;
 }
 
 .btn:active {
-  transform: scale(0.97);
+  transform: scale(0.95);
 }
 
 .btn:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
+  transform: none;
 }
 
-.play {
-  background: var(--green, #3fb950);
+/* ── Select exercise ────────────────────────────────────────────── */
+
+.btnSelect {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--border);
+  color: var(--text-secondary);
+}
+
+.btnSelect:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+/* ── Play ───────────────────────────────────────────────────────── */
+
+.btnPlay {
+  background: rgba(63, 185, 80, 0.15);
+  border-color: rgba(63, 185, 80, 0.4);
+  color: var(--green, #3fb950);
+}
+
+.btnPlay:hover {
+  background: rgba(63, 185, 80, 0.28);
   border-color: var(--green, #3fb950);
-  color: #fff;
+  box-shadow: 0 0 10px rgba(63, 185, 80, 0.3);
 }
 
-.pause {
-  background: #d29922;
-  border-color: #d29922;
-  color: #fff;
+/* ── Pause ──────────────────────────────────────────────────────── */
+
+.btnPause {
+  background: rgba(210, 153, 34, 0.15);
+  border-color: rgba(210, 153, 34, 0.4);
+  color: #e3a221;
 }
 
-.stop {
-  border-color: var(--red, #f85149);
+.btnPause:hover {
+  background: rgba(210, 153, 34, 0.28);
+  border-color: #e3a221;
+  box-shadow: 0 0 10px rgba(210, 153, 34, 0.3);
+}
+
+/* ── Stop ───────────────────────────────────────────────────────── */
+
+.btnStop {
+  background: rgba(248, 81, 73, 0.1);
+  border-color: rgba(248, 81, 73, 0.35);
   color: var(--red, #f85149);
 }
 
-.stop:hover {
-  background: var(--red, #f85149);
-  color: #fff;
+.btnStop:hover {
+  background: rgba(248, 81, 73, 0.22);
+  border-color: var(--red, #f85149);
+  box-shadow: 0 0 10px rgba(248, 81, 73, 0.25);
 }
 
-.clear {
-  border-color: var(--text-secondary, #8b949e);
-  color: var(--text-secondary, #8b949e);
+/* ── Clear (icon-only, less prominent) ─────────────────────────── */
+
+.btnClear {
+  padding: 6px 8px;
+  background: transparent;
+  border-color: transparent;
+  color: var(--text-secondary);
+}
+
+.btnClear:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--border);
+  color: var(--text-primary);
+}
+
+/* ── Loop — on ──────────────────────────────────────────────────── */
+
+.btnLoopOn {
+  background: rgba(210, 168, 255, 0.15);
+  border-color: rgba(210, 168, 255, 0.45);
+  color: #d2a8ff;
+}
+
+.btnLoopOn:hover {
+  background: rgba(210, 168, 255, 0.26);
+  border-color: #d2a8ff;
+  box-shadow: 0 0 8px rgba(210, 168, 255, 0.25);
+}
+
+/* ── Loop — off (subdued) ───────────────────────────────────────── */
+
+.btnLoopOff {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--border);
+  color: var(--text-secondary);
+}
+
+.btnLoopOff:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(210, 168, 255, 0.35);
+  color: #d2a8ff;
+}
+
+/* ── Divider between select and transport controls ─────────────── */
+
+.divider {
+  width: 1px;
+  height: 22px;
+  background: var(--border);
+  flex-shrink: 0;
+  border-radius: 1px;
 }
