@@ -3,7 +3,7 @@
 
 import type { Component } from 'solid-js'
 import { For, Show } from 'solid-js'
-import type { JamPeer } from '@/lib/jam-types'
+import type { JamPeer } from '@/lib/jam/types'
 
 interface JamPeerListProps {
   peers: JamPeer[]

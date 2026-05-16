@@ -3,8 +3,17 @@
 // Wires together jam-service callbacks with SolidJS signals.
 
 import { createMemo, createSignal } from 'solid-js'
-import { createJamService } from '@/lib/jam-service'
-import type { JamChatMessage, JamPeer } from '@/lib/jam-types'
+import { createJamService } from '@/lib/jam/service'
+import type {
+  JamChatMessage,
+  JamMelodyMessage,
+  JamPeer,
+  JamPlaybackMessage,
+  JamPitchMessage,
+  TimeStampedPitchSample,
+} from '@/lib/jam/types'
+import { JamPitchDetector } from '@/lib/jam/jam-pitch-detector'
+import type { MelodyData } from '@/types'
 
 // ── Signals ─────────────────────────────────────────────────────────
 
@@ -28,6 +37,36 @@ export const [jamChatMessages, setJamChatMessages] = createSignal<JamChatMessage
   [],
 )
 
+// ── Pitch ────────────────────────────────────────────────────────────
+
+export const [jamLocalPitch, setJamLocalPitch] = createSignal<{
+  frequency: number
+  noteName: string
+  cents: number
+  clarity: number
+  midi: number
+} | null>(null)
+
+export const [jamPitchHistory, setJamPitchHistory] = createSignal<
+  Record<string, TimeStampedPitchSample[]>
+>({})
+
+// ── Exercise ─────────────────────────────────────────────────────────
+
+export const [jamExerciseMelody, setJamExerciseMelody] =
+  createSignal<MelodyData | null>(null)
+export const [jamExercisePlaying, setJamExercisePlaying] = createSignal(false)
+export const [jamExercisePaused, setJamExercisePaused] = createSignal(false)
+export const [jamExerciseBeat, setJamExerciseBeat] = createSignal(0)
+export const [jamExerciseNoteIndex, setJamExerciseNoteIndex] = createSignal(-1)
+export const [jamExerciseTotalBeats, setJamExerciseTotalBeats] = createSignal(0)
+
+// ── Tab ──────────────────────────────────────────────────────────────
+
+export const [jamPitchTab, setJamPitchTab] = createSignal<
+  'pitch' | 'exercise' | 'chat'
+>('pitch')
+
 // ── Derived ─────────────────────────────────────────────────────────
 
 export const jamPeerCount = createMemo(() => jamPeers().length)
@@ -42,6 +81,8 @@ export const jamHasActiveRoom = createMemo(() => jamRoomId() !== null)
 let jamService: ReturnType<typeof createJamService> | null = null
 const remoteAudioNodes = new Map<string, MediaStreamAudioSourceNode>()
 let audioContext: AudioContext | null = null
+let pitchDetector: JamPitchDetector | null = null
+let pitchNetworkInterval: ReturnType<typeof setInterval> | null = null
 
 function getAudioContext(): AudioContext {
   if (!audioContext) {
@@ -71,6 +112,12 @@ export function initJam() {
         delete next[peerId]
         return next
       })
+      // Clean up pitch history
+      setJamPitchHistory((prev) => {
+        const next = { ...prev }
+        delete next[peerId]
+        return next
+      })
     },
     onPeerStream: (peerId, stream) => {
       const ctx = getAudioContext()
@@ -94,6 +141,71 @@ export function initJam() {
       setJamPeers((prev) =>
         prev.map((p) => (p.id === peerId ? { ...p, latency } : p)),
       )
+    },
+    onPitchMessage: (msg: JamPitchMessage) => {
+      setJamPitchHistory((prev) => {
+        const next = { ...prev }
+        const arr = next[msg.peerId] || []
+        arr.push({
+          frequency: msg.frequency,
+          noteName: msg.noteName,
+          cents: msg.cents,
+          clarity: msg.clarity,
+          midi: msg.midi,
+          timestamp: msg.timestamp,
+        })
+        // Cap at 600 samples (~30s at 20Hz)
+        if (arr.length > 600) arr.splice(0, arr.length - 600)
+        next[msg.peerId] = arr
+        return next
+      })
+    },
+    onMelodyMessage: (msg: JamMelodyMessage) => {
+      if (msg.action === 'clear') {
+        setJamExerciseMelody(null)
+        setJamExerciseTotalBeats(0)
+        setJamExercisePlaying(false)
+        setJamExercisePaused(false)
+        setJamExerciseBeat(0)
+        setJamExerciseNoteIndex(-1)
+      } else if (msg.melody) {
+        setJamExerciseMelody(msg.melody)
+        const total = msg.melody.items.reduce(
+          (max, item) =>
+            Math.max(max, item.startBeat + item.duration),
+          0,
+        )
+        setJamExerciseTotalBeats(total)
+        setJamExerciseBeat(0)
+        setJamExerciseNoteIndex(-1)
+        setJamExercisePlaying(false)
+        setJamExercisePaused(false)
+      }
+    },
+    onPlaybackMessage: (msg: JamPlaybackMessage) => {
+      switch (msg.action) {
+        case 'play':
+          setJamExercisePlaying(true)
+          setJamExercisePaused(false)
+          if (msg.currentBeat !== undefined) {
+            setJamExerciseBeat(msg.currentBeat)
+          }
+          break
+        case 'pause':
+          setJamExercisePaused(true)
+          break
+        case 'stop':
+          setJamExercisePlaying(false)
+          setJamExercisePaused(false)
+          setJamExerciseBeat(0)
+          setJamExerciseNoteIndex(-1)
+          break
+        case 'seek':
+          if (msg.currentBeat !== undefined) {
+            setJamExerciseBeat(msg.currentBeat)
+          }
+          break
+      }
     },
     onRoomClosed: () => {
       cleanupJam()
@@ -178,6 +290,70 @@ export function sendJamChatMessage(text: string): void {
   jamService.sendChat(text)
 }
 
+// ── Pitch detection ──────────────────────────────────────────────────
+
+export function startJamPitchDetection(): void {
+  if (pitchDetector) return
+  const stream = jamService?.getLocalStream()
+  if (!stream) return
+
+  pitchDetector = new JamPitchDetector()
+  pitchDetector.onPitch = (pitch) => {
+    setJamLocalPitch({
+      frequency: pitch.frequency,
+      noteName: pitch.noteName,
+      cents: pitch.cents,
+      clarity: pitch.clarity,
+      midi: pitch.midi ?? 0,
+    })
+  }
+  pitchDetector.start(stream)
+
+  // Throttled network sends at ~20 Hz
+  pitchNetworkInterval = setInterval(() => {
+    const p = jamLocalPitch()
+    if (p && p.frequency > 0) {
+      jamService?.sendPitch(p)
+    }
+  }, 50)
+}
+
+export function stopJamPitchDetection(): void {
+  pitchDetector?.stop()
+  pitchDetector = null
+  if (pitchNetworkInterval) {
+    clearInterval(pitchNetworkInterval)
+    pitchNetworkInterval = null
+  }
+  setJamLocalPitch(null)
+}
+
+// ── Exercise actions ─────────────────────────────────────────────────
+
+export function selectJamExercise(melody: MelodyData): void {
+  jamService?.sendMelody(melody)
+}
+
+export function clearJamExercise(): void {
+  jamService?.sendClearMelody()
+}
+
+export function jamPlaybackPlay(startBeat?: number): void {
+  jamService?.sendPlaybackCommand('play', startBeat ?? jamExerciseBeat())
+}
+
+export function jamPlaybackPause(): void {
+  jamService?.sendPlaybackCommand('pause', jamExerciseBeat())
+}
+
+export function jamPlaybackStop(): void {
+  jamService?.sendPlaybackCommand('stop', 0)
+}
+
+export function jamPlaybackSeek(beat: number): void {
+  jamService?.sendPlaybackCommand('seek', beat)
+}
+
 export function disposeJam(): void {
   jamService?.dispose()
   jamService = null
@@ -185,6 +361,7 @@ export function disposeJam(): void {
 }
 
 function cleanupJam(): void {
+  stopJamPitchDetection()
   for (const [, source] of remoteAudioNodes) {
     source.disconnect()
   }
@@ -201,6 +378,14 @@ function cleanupJam(): void {
   setJamLocalStream(null)
   setJamChatMessages([])
   setJamVideoEnabled(true)
+  setJamPitchHistory({})
+  setJamLocalPitch(null)
+  setJamExerciseMelody(null)
+  setJamExercisePlaying(false)
+  setJamExercisePaused(false)
+  setJamExerciseBeat(0)
+  setJamExerciseNoteIndex(-1)
+  setJamExerciseTotalBeats(0)
 }
 
 function waitForRoomId(): Promise<string> {

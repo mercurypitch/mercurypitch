@@ -1,5 +1,7 @@
 // ── Jam session type definitions ────────────────────────────────────
 
+import type { MelodyData } from '@/types'
+
 export interface JamPeer {
   id: string
   displayName: string
@@ -60,6 +62,49 @@ export interface JamChatMessage {
   timestamp: number
 }
 
+// ── DataChannel messages (extended beyond chat) ──────────────────────
+
+export interface JamPitchMessage {
+  type: 'pitch'
+  peerId: string
+  frequency: number
+  noteName: string
+  cents: number
+  clarity: number
+  midi: number
+  timestamp: number
+}
+
+export interface JamMelodyMessage {
+  type: 'melody'
+  action: 'set' | 'clear'
+  melody?: MelodyData
+}
+
+export interface JamPlaybackMessage {
+  type: 'playback'
+  action: 'play' | 'pause' | 'stop' | 'seek'
+  currentBeat?: number
+  timestamp: number
+}
+
+export type JamDataMessage =
+  | JamChatMessage
+  | JamPitchMessage
+  | JamMelodyMessage
+  | JamPlaybackMessage
+
+// ── State helpers ────────────────────────────────────────────────────
+
+export interface TimeStampedPitchSample {
+  frequency: number
+  noteName: string
+  cents: number
+  clarity: number
+  midi: number
+  timestamp: number
+}
+
 // ── Service callbacks ────────────────────────────────────────────────
 
 export interface JamCallbacks {
@@ -74,8 +119,12 @@ export interface JamCallbacks {
   onChatMessage: (message: JamChatMessage) => void
   onRoomClosed: () => void
   onError: (message: string) => void
-  // Signaling events from jam-signaling (from = sender peerId)
+  // Signaling events from signaling (from = sender peerId)
   onOffer?: (from: string, sdp: string) => void
   onAnswer?: (from: string, sdp: string) => void
   onIceCandidate?: (from: string, candidate: string) => void
+  // DataChannel events
+  onPitchMessage?: (msg: JamPitchMessage) => void
+  onMelodyMessage?: (msg: JamMelodyMessage) => void
+  onPlaybackMessage?: (msg: JamPlaybackMessage) => void
 }

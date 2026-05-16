@@ -3,8 +3,9 @@
 // Handles RTCPeerConnection lifecycle, Opus codec configuration,
 // camera/mic capture, and track management.
 
-import { createSignalingClient } from './jam-signaling'
-import type { JamCallbacks, JamPeer } from './jam-types'
+import { createSignalingClient } from './signaling'
+import type { JamCallbacks, JamPeer } from './types'
+import type { MelodyData } from '@/types'
 
 const ICE_SERVERS: RTCIceServer[] = [
   { urls: 'stun:stun.l.google.com:19302' },
@@ -306,36 +307,88 @@ export function createJamService(callbacks: JamCallbacks) {
     }
   }
 
-  // ── Chat via DataChannel ─────────────────────────────────────────
+  // ── DataChannel dispatch ─────────────────────────────────────────
 
   function setupDataChannel(dc: RTCDataChannel, peerId: string): void {
     dataChannels.set(peerId, dc)
     dc.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data)
-        if (data.type === 'chat') {
-          callbacks.onChatMessage({
-            id: data.id,
-            peerId,
-            displayName: data.displayName,
-            text: data.text,
-            timestamp: data.timestamp,
-          })
+        switch (data.type) {
+          case 'chat':
+            callbacks.onChatMessage({
+              id: data.id,
+              peerId,
+              displayName: data.displayName,
+              text: data.text,
+              timestamp: data.timestamp,
+            })
+            break
+          case 'pitch':
+            callbacks.onPitchMessage?.(data)
+            break
+          case 'melody':
+            callbacks.onMelodyMessage?.(data)
+            break
+          case 'playback':
+            callbacks.onPlaybackMessage?.(data)
+            break
         }
       } catch {
-        // Ignore malformed chat messages
+        // Ignore malformed messages
       }
     }
   }
 
   function sendChat(text: string): void {
     const msg = {
-      type: 'chat',
+      type: 'chat' as const,
       id: crypto.randomUUID(),
       text,
       displayName: localDisplayName,
       timestamp: Date.now(),
     }
+    broadcastData(msg)
+  }
+
+  function sendPitch(pitch: {
+    frequency: number
+    noteName: string
+    cents: number
+    clarity: number
+    midi: number
+  }): void {
+    const peerId = signaling.getPeerId()
+    if (!peerId) return
+    broadcastData({
+      type: 'pitch' as const,
+      peerId,
+      ...pitch,
+      timestamp: Date.now(),
+    })
+  }
+
+  function sendMelody(melody: MelodyData): void {
+    broadcastData({ type: 'melody' as const, action: 'set', melody })
+  }
+
+  function sendClearMelody(): void {
+    broadcastData({ type: 'melody' as const, action: 'clear' })
+  }
+
+  function sendPlaybackCommand(
+    action: 'play' | 'pause' | 'stop' | 'seek',
+    currentBeat?: number,
+  ): void {
+    broadcastData({
+      type: 'playback' as const,
+      action,
+      currentBeat,
+      timestamp: Date.now(),
+    })
+  }
+
+  function broadcastData(msg: object): void {
     const raw = JSON.stringify(msg)
     for (const [, dc] of dataChannels) {
       if (dc.readyState === 'open') {
@@ -410,6 +463,10 @@ export function createJamService(callbacks: JamCallbacks) {
     startLocalVideo,
     stopLocalVideo,
     sendChat,
+    sendPitch,
+    sendMelody,
+    sendClearMelody,
+    sendPlaybackCommand,
     getLocalStream,
     getRoomId,
     getPeerId,

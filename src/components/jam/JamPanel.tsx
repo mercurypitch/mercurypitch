@@ -2,10 +2,39 @@
 // Main jam session UI — create/join rooms, view peers, controls.
 
 import { For, type Component } from 'solid-js'
-import { createSignal, onMount, Show } from 'solid-js'
-import { createJamRoom, jamChatMessages, jamConnectedPeers, jamError, jamIsMuted, jamLocalStream, jamPeerId, jamPeers, jamRemoteStreams, jamRoomId, jamRoomToJoin, jamState, jamVideoEnabled, joinJamRoom, leaveJamRoom, sendJamChatMessage, setJamRoomToJoin, toggleJamMute, toggleJamVideo, } from '@/stores/jam-store'
+import { createEffect, createMemo, createSignal, onMount, Show } from 'solid-js'
+import {
+  createJamRoom,
+  jamChatMessages,
+  jamConnectedPeers,
+  jamError,
+  jamIsMuted,
+  jamLocalStream,
+  jamPeerId,
+  jamPeers,
+  jamPitchTab,
+  jamRemoteStreams,
+  jamRoomId,
+  jamRoomToJoin,
+  jamState,
+  jamVideoEnabled,
+  joinJamRoom,
+  leaveJamRoom,
+  selectJamExercise,
+  sendJamChatMessage,
+  setJamPitchTab,
+  setJamRoomToJoin,
+  startJamPitchDetection,
+  toggleJamMute,
+  toggleJamVideo,
+} from '@/stores/jam-store'
+import { getMelodyLibrarySignal } from '@/stores/melody-store'
 import { JamInviteModal } from './JamInviteModal'
 import { JamPeerList } from './JamPeerList'
+import { JamPitchDisplay } from './JamPitchDisplay'
+import { JamSharedPitchCanvas } from './JamSharedPitchCanvas'
+import { JamExerciseCanvas } from './JamExerciseCanvas'
+import { JamExerciseControls } from './JamExerciseControls'
 
 export const JamPanel: Component = () => {
   const [displayName, setDisplayName] = createSignal('')
@@ -13,7 +42,13 @@ export const JamPanel: Component = () => {
   const [showInvite, setShowInvite] = createSignal(false)
   const [joining, setJoining] = createSignal(false)
   const [chatText, setChatText] = createSignal('')
+  const [showExercisePicker, setShowExercisePicker] = createSignal(false)
   let chatScrollEl: HTMLDivElement | undefined
+
+  const melodyOptions = createMemo(() => {
+    const lib = getMelodyLibrarySignal()()
+    return Object.values(lib.melodies)
+  })
 
   const handleSendChat = () => {
     const text = chatText().trim()
@@ -51,6 +86,12 @@ export const JamPanel: Component = () => {
   onMount(() => {
     const roomId = jamRoomToJoin()
     if (roomId) autoJoin(roomId)
+  })
+
+  createEffect(() => {
+    if (jamState() === 'active') {
+      startJamPitchDetection()
+    }
   })
 
   const handleJoin = () => {
@@ -176,8 +217,8 @@ export const JamPanel: Component = () => {
             </Show>
           </div>
 
-{/* Video grid */}
-          <div class="jam-video-grid">
+<div class="jam-video-grid">
+            {/* Video grid unchanged */}
             <div class="jam-video-tile jam-video-local">
               <video
                 ref={(el) => {
@@ -212,43 +253,115 @@ export const JamPanel: Component = () => {
             </For>
           </div>
 
-          <JamPeerList peers={jamPeers()} />
+          {/* Pitch display — always visible */}
+          <JamPitchDisplay />
 
-{/* Chat */}
-          <div class="jam-chat">
-            <div class="jam-chat-messages" ref={(el) => (chatScrollEl = el)}>
-              <For each={jamChatMessages()}>
-                {(msg) => (
-                  <div
-                    class={`jam-chat-msg ${msg.peerId === jamPeerId() ? 'jam-chat-msg-own' : ''}`}
-                  >
-                    <span class="jam-chat-author">{msg.displayName}</span>
-                    <span class="jam-chat-text">{msg.text}</span>
-                    <span class="jam-chat-time">
-                      {new Date(msg.timestamp).toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </span>
-                  </div>
-                )}
-              </For>
-            </div>
-            <div class="jam-chat-input">
-              <input
-                type="text"
-                class="jam-input"
-                value={chatText()}
-                onInput={(e) => setChatText(e.currentTarget.value)}
-                onKeyDown={handleChatKey}
-                placeholder="Type a message..."
-                maxLength={500}
-              />
-              <button class="jam-btn jam-btn-sm" onClick={handleSendChat}>
-                Send
-              </button>
-            </div>
+          {/* Tab bar */}
+          <div class="jam-tabs">
+            <button
+              class={`jam-tab ${jamPitchTab() === 'pitch' ? 'jam-tab-active' : ''}`}
+              onClick={() => setJamPitchTab('pitch')}
+            >
+              Shared Pitch
+            </button>
+            <button
+              class={`jam-tab ${jamPitchTab() === 'exercise' ? 'jam-tab-active' : ''}`}
+              onClick={() => setJamPitchTab('exercise')}
+            >
+              Exercise
+            </button>
+            <button
+              class={`jam-tab ${jamPitchTab() === 'chat' ? 'jam-tab-active' : ''}`}
+              onClick={() => setJamPitchTab('chat')}
+            >
+              Chat
+            </button>
           </div>
+
+          {/* Tab content */}
+          <Show when={jamPitchTab() === 'pitch'}>
+            <div class="jam-tab-content">
+              <JamPeerList peers={jamPeers()} />
+              <div class="jam-shared-pitch-canvas">
+                <JamSharedPitchCanvas myPeerId={jamPeerId} />
+              </div>
+            </div>
+          </Show>
+
+          <Show when={jamPitchTab() === 'exercise'}>
+            <div class="jam-tab-content">
+              <JamExerciseControls
+                onSelectExercise={() =>
+                  setShowExercisePicker(!showExercisePicker())
+                }
+              />
+              <Show when={showExercisePicker()}>
+                <div class="jam-exercise-picker">
+                  <For each={melodyOptions()}>
+                    {(melody) => (
+                      <button
+                        class="jam-ex-pick-item"
+                        onClick={() => {
+                          selectJamExercise(melody)
+                          setShowExercisePicker(false)
+                        }}
+                      >
+                        <span class="jam-ex-pick-name">{melody.name}</span>
+                        <span class="jam-ex-pick-meta">
+                          {melody.bpm} bpm · {melody.key} {melody.scaleType}
+                        </span>
+                      </button>
+                    )}
+                  </For>
+                </div>
+              </Show>
+              <div class="jam-exercise-canvas">
+                <JamExerciseCanvas myPeerId={jamPeerId} />
+              </div>
+            </div>
+          </Show>
+
+          <Show when={jamPitchTab() === 'chat'}>
+            <div class="jam-tab-content">
+              <div class="jam-chat">
+                <div
+                  class="jam-chat-messages"
+                  ref={(el) => (chatScrollEl = el)}
+                >
+                  <For each={jamChatMessages()}>
+                    {(msg) => (
+                      <div
+                        class={`jam-chat-msg ${msg.peerId === jamPeerId() ? 'jam-chat-msg-own' : ''}`}
+                      >
+                        <span class="jam-chat-author">{msg.displayName}</span>
+                        <span class="jam-chat-text">{msg.text}</span>
+                        <span class="jam-chat-time">
+                          {new Date(msg.timestamp).toLocaleTimeString([], {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </span>
+                      </div>
+                    )}
+                  </For>
+                </div>
+                <div class="jam-chat-input">
+                  <input
+                    type="text"
+                    class="jam-input"
+                    value={chatText()}
+                    onInput={(e) => setChatText(e.currentTarget.value)}
+                    onKeyDown={handleChatKey}
+                    placeholder="Type a message..."
+                    maxLength={500}
+                  />
+                  <button class="jam-btn jam-btn-sm" onClick={handleSendChat}>
+                    Send
+                  </button>
+                </div>
+              </div>
+            </div>
+          </Show>
 
           <Show when={jamError()}>
             <p class="jam-error">{jamError()}</p>
