@@ -1,9 +1,9 @@
 // ── JamPanel ────────────────────────────────────────────────────────
 // Main jam session UI — create/join rooms, view peers, controls.
 
-import type { Component } from 'solid-js'
+import { For, type Component } from 'solid-js'
 import { createSignal, onMount, Show } from 'solid-js'
-import { createJamRoom, jamConnectedPeers, jamError, jamIsMuted, jamPeers, jamRoomId, jamRoomToJoin, jamState, joinJamRoom, leaveJamRoom, setJamRoomToJoin, toggleJamMute, } from '@/stores/jam-store'
+import { createJamRoom, jamChatMessages, jamConnectedPeers, jamError, jamIsMuted, jamLocalStream, jamPeerId, jamPeers, jamRemoteStreams, jamRoomId, jamRoomToJoin, jamState, jamVideoEnabled, joinJamRoom, leaveJamRoom, sendJamChatMessage, setJamRoomToJoin, toggleJamMute, toggleJamVideo, } from '@/stores/jam-store'
 import { JamInviteModal } from './JamInviteModal'
 import { JamPeerList } from './JamPeerList'
 
@@ -12,6 +12,26 @@ export const JamPanel: Component = () => {
   const [joinRoomId, setJoinRoomId] = createSignal('')
   const [showInvite, setShowInvite] = createSignal(false)
   const [joining, setJoining] = createSignal(false)
+  const [chatText, setChatText] = createSignal('')
+  let chatScrollEl: HTMLDivElement | undefined
+
+  const handleSendChat = () => {
+    const text = chatText().trim()
+    if (!text) return
+    sendJamChatMessage(text)
+    setChatText('')
+    // Scroll to bottom after render
+    setTimeout(() => {
+      chatScrollEl?.scrollTo({ top: chatScrollEl.scrollHeight, behavior: 'smooth' })
+    }, 50)
+  }
+
+  const handleChatKey = (e: KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleSendChat()
+    }
+  }
 
   const handleCreate = () => {
     const name = displayName().trim() || 'Anonymous'
@@ -131,6 +151,12 @@ export const JamPanel: Component = () => {
                 {jamIsMuted() ? 'Unmute' : 'Mute'}
               </button>
               <button
+                class={`jam-btn jam-btn-sm ${!jamVideoEnabled() ? 'jam-btn-muted' : ''}`}
+                onClick={toggleJamVideo}
+              >
+                {jamVideoEnabled() ? 'Cam Off' : 'Cam On'}
+              </button>
+              <button
                 class="jam-btn jam-btn-sm jam-btn-danger"
                 onClick={leaveJamRoom}
               >
@@ -150,7 +176,79 @@ export const JamPanel: Component = () => {
             </Show>
           </div>
 
+{/* Video grid */}
+          <div class="jam-video-grid">
+            <div class="jam-video-tile jam-video-local">
+              <video
+                ref={(el) => {
+                  el.srcObject = jamLocalStream()
+                }}
+                autoplay
+                muted
+                playsinline
+                class="jam-video-feed"
+              />
+              <span class="jam-video-label">You</span>
+              <Show when={!jamVideoEnabled()}>
+                <div class="jam-video-off">Camera off</div>
+              </Show>
+            </div>
+            <For each={Object.entries(jamRemoteStreams())}>
+              {([peerId, stream]) => (
+                <div class="jam-video-tile jam-video-remote">
+                  <video
+                    ref={(el) => {
+                      el.srcObject = stream
+                    }}
+                    autoplay
+                    playsinline
+                    class="jam-video-feed"
+                  />
+                  <span class="jam-video-label">
+                    {jamPeers().find((p) => p.id === peerId)?.displayName ?? peerId}
+                  </span>
+                </div>
+              )}
+            </For>
+          </div>
+
           <JamPeerList peers={jamPeers()} />
+
+{/* Chat */}
+          <div class="jam-chat">
+            <div class="jam-chat-messages" ref={(el) => (chatScrollEl = el)}>
+              <For each={jamChatMessages()}>
+                {(msg) => (
+                  <div
+                    class={`jam-chat-msg ${msg.peerId === jamPeerId() ? 'jam-chat-msg-own' : ''}`}
+                  >
+                    <span class="jam-chat-author">{msg.displayName}</span>
+                    <span class="jam-chat-text">{msg.text}</span>
+                    <span class="jam-chat-time">
+                      {new Date(msg.timestamp).toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </span>
+                  </div>
+                )}
+              </For>
+            </div>
+            <div class="jam-chat-input">
+              <input
+                type="text"
+                class="jam-input"
+                value={chatText()}
+                onInput={(e) => setChatText(e.currentTarget.value)}
+                onKeyDown={handleChatKey}
+                placeholder="Type a message..."
+                maxLength={500}
+              />
+              <button class="jam-btn jam-btn-sm" onClick={handleSendChat}>
+                Send
+              </button>
+            </div>
+          </div>
 
           <Show when={jamError()}>
             <p class="jam-error">{jamError()}</p>

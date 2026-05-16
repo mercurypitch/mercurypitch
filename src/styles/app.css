@@ -12646,3 +12646,123 @@ input:checked + .settings-slider:before {
 .jam-invite-link {
   font-size: 0.78rem;
 }
+
+/* ── Video Grid ─────────────────────────────────────────────────────── */
+
+.jam-video-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.jam-video-tile {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  background: var(--bg-primary, #0d1117);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.jam-video-feed {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.jam-video-label {
+  position: absolute;
+  bottom: 4px;
+  left: 4px;
+  padding: 2px 6px;
+  font-size: 0.72rem;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 3px;
+  pointer-events: none;
+}
+
+.jam-video-off {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary, #8b949e);
+  font-size: 0.8rem;
+  background: var(--bg-primary, #0d1117);
+}
+
+.jam-video-local .jam-video-feed {
+  transform: scaleX(-1);
+}
+
+/* ── Chat ────────────────────────────────────────────────────────────── */
+
+.jam-chat {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-tertiary);
+  overflow: hidden;
+}
+
+.jam-chat-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  max-height: 200px;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+}
+
+.jam-chat-msg {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: baseline;
+  padding: 4px 0;
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.jam-chat-msg-own .jam-chat-author {
+  color: var(--accent);
+}
+
+.jam-chat-author {
+  font-weight: 600;
+  color: var(--green, #3fb950);
+  flex-shrink: 0;
+}
+
+.jam-chat-text {
+  color: var(--text-primary);
+  word-break: break-word;
+  flex: 1;
+}
+
+.jam-chat-time {
+  font-size: 0.7rem;
+  color: var(--text-secondary, #8b949e);
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.jam-chat-input {
+  display: flex;
+  gap: 6px;
+  padding: 8px 10px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-primary, #0d1117);
+}
+
+.jam-chat-input .jam-input {
+  flex: 1;
+  background: var(--bg-tertiary);
+}

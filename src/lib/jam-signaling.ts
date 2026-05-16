@@ -109,6 +109,8 @@ export function createSignalingClient(callbacks: JamCallbacks) {
             displayName: p.displayName,
             connectionState: 'connecting',
             latency: 0,
+            hasVideo: false,
+            hasAudio: true,
           })
         }
         break
@@ -119,6 +121,8 @@ export function createSignalingClient(callbacks: JamCallbacks) {
           displayName: msg.displayName,
           connectionState: 'connecting',
           latency: 0,
+          hasVideo: false,
+          hasAudio: true,
         })
         break
 
