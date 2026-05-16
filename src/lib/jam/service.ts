@@ -20,11 +20,6 @@ const ICE_SERVERS: RTCIceServer[] = [
     username: 'openrelayproject',
     credential: 'openrelayproject',
   },
-  {
-    urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-    username: 'openrelayproject',
-    credential: 'openrelayproject',
-  },
 ]
 
 // Audio constraints optimized for music — disable all processing
@@ -198,6 +193,7 @@ export function createJamService(callbacks: JamCallbacks) {
   async function initiateNewPeer(peer: JamPeer): Promise<void> {
     if (disposed || peerConnections.has(peer.id)) return
 
+    console.debug('[jam:service] initiating connection to', peer.id)
     const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS })
 
     // Add local audio track
@@ -209,6 +205,7 @@ export function createJamService(callbacks: JamCallbacks) {
 
     // Handle remote audio track
     pc.ontrack = (event) => {
+      console.debug('[jam:service] ontrack from', peer.id, 'streams:', event.streams.length)
       const remoteStream = event.streams[0]
       if (remoteStream !== undefined) {
         callbacks.onPeerStream(peer.id, remoteStream)
@@ -216,11 +213,13 @@ export function createJamService(callbacks: JamCallbacks) {
     }
 
     pc.onconnectionstatechange = () => {
+      console.debug('[jam:service] connection state', peer.id, pc.connectionState)
       const state = mapConnectionState(pc.connectionState)
       callbacks.onConnectionStateChange(peer.id, state)
     }
 
     pc.oniceconnectionstatechange = () => {
+      console.debug('[jam:service] ICE state', peer.id, pc.iceConnectionState)
       // Measure RTT via stats when ICE connects
       if (pc.iceConnectionState === 'connected') {
         measureLatency(peer.id, pc)
@@ -243,6 +242,7 @@ export function createJamService(callbacks: JamCallbacks) {
     peerConnections.set(peer.id, pc)
 
     // Create and send offer
+    console.debug('[jam:service] sending offer to', peer.id)
     const offer = await pc.createOffer()
     await pc.setLocalDescription(offer)
     signaling.sendOffer(peer.id, JSON.stringify(offer))
@@ -261,6 +261,20 @@ export function createJamService(callbacks: JamCallbacks) {
       }
       setupPeerHandlers(pc, from)
       peerConnections.set(from, pc)
+    } else {
+      // Glare detection — both peers sent offers at the same time.
+      // The "polite" peer (lexicographically smaller ID) rolls back and
+      // accepts the incoming offer. The "impolite" peer ignores it.
+      const myId = signaling.getPeerId()
+      if (myId && myId < from) {
+        // We are polite — roll back our local offer and handle the remote
+        console.debug('[jam] glare: rolling back local offer for polite peer', myId, '<', from)
+        await pc.setLocalDescription({ type: 'rollback' })
+      } else {
+        // We are impolite — ignore the incoming offer (ours wins)
+        console.debug('[jam] glare: ignoring incoming offer from polite peer', from)
+        return
+      }
     }
 
     await pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(sdp)))
@@ -272,6 +286,7 @@ export function createJamService(callbacks: JamCallbacks) {
   async function handleAnswer(from: string, sdp: string): Promise<void> {
     const pc = peerConnections.get(from)
     if (!pc || disposed) return
+    console.debug('[jam:service] received answer from', from)
     await pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(sdp)))
   }
 
@@ -290,24 +305,28 @@ export function createJamService(callbacks: JamCallbacks) {
 
   function setupPeerHandlers(pc: RTCPeerConnection, peerId: string): void {
     pc.ontrack = (event) => {
+      console.debug('[jam:service] ontrack from', peerId, 'streams:', event.streams.length)
       const remoteStream = event.streams[0]
       if (remoteStream !== undefined) {
         callbacks.onPeerStream(peerId, remoteStream)
       }
     }
     pc.ondatachannel = (event) => {
+      console.debug('[jam:service] received DataChannel from', peerId)
       const dc = event.channel
       if (dc.label === 'chat') {
         setupDataChannel(dc, peerId)
       }
     }
     pc.onconnectionstatechange = () => {
+      console.debug('[jam:service] connection state', peerId, pc.connectionState)
       callbacks.onConnectionStateChange(
         peerId,
         mapConnectionState(pc.connectionState),
       )
     }
     pc.oniceconnectionstatechange = () => {
+      console.debug('[jam:service] ICE state', peerId, pc.iceConnectionState)
       if (pc.iceConnectionState === 'connected') {
         measureLatency(peerId, pc)
       }
@@ -326,9 +345,19 @@ export function createJamService(callbacks: JamCallbacks) {
 
   function setupDataChannel(dc: RTCDataChannel, peerId: string): void {
     dataChannels.set(peerId, dc)
+    dc.onopen = () => {
+      console.debug('[jam:service] DataChannel open to', peerId)
+    }
+    dc.onclose = () => {
+      console.debug('[jam:service] DataChannel closed to', peerId)
+    }
+    dc.onerror = (event) => {
+      console.debug('[jam:service] DataChannel error to', peerId, event)
+    }
     dc.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data)
+        console.debug('[jam:service] DataChannel recv', data.type, 'from', peerId)
         switch (data.type) {
           case 'chat':
             callbacks.onChatMessage({

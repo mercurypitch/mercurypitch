@@ -83,6 +83,8 @@ const remoteAudioNodes = new Map<string, MediaStreamAudioSourceNode>()
 let audioContext: AudioContext | null = null
 let pitchDetector: JamPitchDetector | null = null
 let pitchNetworkInterval: ReturnType<typeof setInterval> | null = null
+let playbackTimerId: ReturnType<typeof requestAnimationFrame> | null = null
+let playbackLastTick = 0
 
 function getAudioContext(): AudioContext {
   if (!audioContext) {
@@ -168,6 +170,7 @@ export function initJam() {
         setJamExercisePaused(false)
         setJamExerciseBeat(0)
         setJamExerciseNoteIndex(-1)
+        stopPlaybackTimer()
       } else if (msg.melody) {
         setJamExerciseMelody(msg.melody)
         const total = msg.melody.items.reduce(
@@ -180,6 +183,7 @@ export function initJam() {
         setJamExerciseNoteIndex(-1)
         setJamExercisePlaying(false)
         setJamExercisePaused(false)
+        stopPlaybackTimer()
       }
     },
     onPlaybackMessage: (msg: JamPlaybackMessage) => {
@@ -190,15 +194,18 @@ export function initJam() {
           if (msg.currentBeat !== undefined) {
             setJamExerciseBeat(msg.currentBeat)
           }
+          startPlaybackTimer()
           break
         case 'pause':
           setJamExercisePaused(true)
+          stopPlaybackTimer()
           break
         case 'stop':
           setJamExercisePlaying(false)
           setJamExercisePaused(false)
           setJamExerciseBeat(0)
           setJamExerciseNoteIndex(-1)
+          stopPlaybackTimer()
           break
         case 'seek':
           if (msg.currentBeat !== undefined) {
@@ -354,6 +361,7 @@ export function selectJamExercise(melody: MelodyData): void {
   setJamExerciseNoteIndex(-1)
   setJamExercisePlaying(false)
   setJamExercisePaused(false)
+  stopPlaybackTimer()
   jamService?.sendMelody(melody)
 }
 
@@ -364,6 +372,7 @@ export function clearJamExercise(): void {
   setJamExercisePaused(false)
   setJamExerciseBeat(0)
   setJamExerciseNoteIndex(-1)
+  stopPlaybackTimer()
   jamService?.sendClearMelody()
 }
 
@@ -371,11 +380,13 @@ export function jamPlaybackPlay(startBeat?: number): void {
   setJamExercisePlaying(true)
   setJamExercisePaused(false)
   if (startBeat !== undefined) setJamExerciseBeat(startBeat)
+  startPlaybackTimer()
   jamService?.sendPlaybackCommand('play', startBeat ?? jamExerciseBeat())
 }
 
 export function jamPlaybackPause(): void {
   setJamExercisePaused(true)
+  stopPlaybackTimer()
   jamService?.sendPlaybackCommand('pause', jamExerciseBeat())
 }
 
@@ -384,12 +395,57 @@ export function jamPlaybackStop(): void {
   setJamExercisePaused(false)
   setJamExerciseBeat(0)
   setJamExerciseNoteIndex(-1)
+  stopPlaybackTimer()
   jamService?.sendPlaybackCommand('stop', 0)
 }
 
 export function jamPlaybackSeek(beat: number): void {
   setJamExerciseBeat(beat)
   jamService?.sendPlaybackCommand('seek', beat)
+}
+
+// ── Playback timer ───────────────────────────────────────────────────
+
+function startPlaybackTimer(): void {
+  stopPlaybackTimer()
+  playbackLastTick = performance.now()
+  const melody = jamExerciseMelody()
+  if (!melody) return
+
+  const tick = () => {
+    if (!jamExercisePlaying() || jamExercisePaused()) {
+      playbackTimerId = null
+      return
+    }
+    const now = performance.now()
+    const delta = now - playbackLastTick
+    playbackLastTick = now
+
+    const bpm = melody.bpm
+    const beatDelta = (bpm / 60) * (delta / 1000)
+    const newBeat = jamExerciseBeat() + beatDelta
+    const totalBeats = jamExerciseTotalBeats()
+
+    if (newBeat >= totalBeats) {
+      // Finished — stop at end
+      setJamExerciseBeat(totalBeats)
+      setJamExercisePlaying(false)
+      setJamExercisePaused(false)
+      stopPlaybackTimer()
+      return
+    }
+
+    setJamExerciseBeat(newBeat)
+    playbackTimerId = requestAnimationFrame(tick)
+  }
+  playbackTimerId = requestAnimationFrame(tick)
+}
+
+function stopPlaybackTimer(): void {
+  if (playbackTimerId !== null) {
+    cancelAnimationFrame(playbackTimerId)
+    playbackTimerId = null
+  }
 }
 
 export function disposeJam(): void {
@@ -400,6 +456,7 @@ export function disposeJam(): void {
 
 function cleanupJam(): void {
   stopJamPitchDetection()
+  stopPlaybackTimer()
   for (const [, source] of remoteAudioNodes) {
     source.disconnect()
   }
