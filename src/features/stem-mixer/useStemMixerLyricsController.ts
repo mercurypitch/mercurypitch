@@ -524,8 +524,9 @@ export function useStemMixerLyricsController(
 
   const handleLyricLineClick = (idx: number) => {
     let targetTime: number | null = null
-    if (lrcLines().length > 0 && idx < lrcLines().length) {
-      targetTime = lrcLines()[idx].time
+    const canonical = canonicalLrcLines()
+    if (canonical.length > 0 && idx < canonical.length) {
+      targetTime = canonical[idx].time
     } else if (lyricsLines().length > 0 && deps.duration() > 0) {
       targetTime = (idx / lyricsLines().length) * deps.duration()
     }
@@ -1506,11 +1507,12 @@ export function useStemMixerLyricsController(
     const lrc = lrcLines()
 
     if (lrc.length > 0) {
-      return lrc.map((l, i) => ({
-        text: l.text,
+      const canonical = canonicalLrcLines()
+      return canonical.map((entry) => ({
+        text: entry.text,
         isBlank: false,
-        isRest: l.text === '~Rest~',
-        lyricsIndex: i,
+        isRest: entry.type === 'rest',
+        lyricsIndex: entry.canonicalIndex,
       }))
     }
     if (!raw || ll.length === 0) return []
