@@ -1450,7 +1450,17 @@ export function useStemMixerLyricsController(
 
     if (canonical.length > 0) {
       canonical.forEach((entry, i) => {
-        const endTime = i + 1 < canonical.length ? canonical[i + 1].time : dur
+        // Find endTime by looking ahead to the next real line, skipping ~Rest~
+        // entries. If we don't skip rests, a rest at the same timestamp as the
+        // current line collapses lineDuration to ~0, killing word-by-word
+        // progressive highlighting.
+        let endTime = dur
+        for (let j = i + 1; j < canonical.length; j++) {
+          if (canonical[j].type !== 'rest') {
+            endTime = canonical[j].time
+            break
+          }
+        }
         map.set(i, {
           key: `lrc-${i}`,
           time: entry.time,
