@@ -212,6 +212,10 @@ export function initJam() {
     },
     onError: (message) => {
       setJamError(message)
+      // If we haven't reached active state yet, reset to idle
+      if (jamState() === 'connecting') {
+        setJamState('idle')
+      }
     },
   })
 }
@@ -246,9 +250,17 @@ export async function joinJamRoom(
   setJamState('connecting')
   setJamRoomId(roomId)
   setJamIsHost(false)
+  setJamError(null)
   try {
     await jamService!.joinRoom(roomId, displayName)
-    setJamPeerId(jamService!.getPeerId())
+    // Wait for signaling handshake — peer ID arrives via room-joined
+    const peerId = await waitForPeerId()
+    if (!peerId) {
+      setJamError('Failed to join room — no response from server')
+      setJamState('idle')
+      return false
+    }
+    setJamPeerId(peerId)
     setJamLocalStream(jamService!.getLocalStream())
     setJamState('active')
     return true
@@ -400,6 +412,23 @@ function waitForRoomId(): Promise<string> {
       } else if (attempts > 20) {
         clearInterval(interval)
         reject(new Error('Timeout waiting for room ID'))
+      }
+    }, 250)
+  })
+}
+
+function waitForPeerId(): Promise<string | null> {
+  return new Promise((resolve) => {
+    let attempts = 0
+    const interval = setInterval(() => {
+      attempts++
+      const id = jamService?.getPeerId()
+      if (id) {
+        clearInterval(interval)
+        resolve(id)
+      } else if (attempts > 20) {
+        clearInterval(interval)
+        resolve(null)
       }
     }, 250)
   })
