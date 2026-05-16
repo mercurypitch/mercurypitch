@@ -48,14 +48,14 @@ export function createJamService(callbacks: JamCallbacks) {
       }
       callbacks.onPeerLeft(peerId)
     },
-    onOffer: (target, sdp) => {
-      handleOffer(target, sdp).catch(() => {})
+    onOffer: (from, sdp) => {
+      handleOffer(from, sdp).catch(() => {})
     },
-    onAnswer: (target, sdp) => {
-      handleAnswer(target, sdp).catch(() => {})
+    onAnswer: (from, sdp) => {
+      handleAnswer(from, sdp).catch(() => {})
     },
-    onIceCandidate: (target, candidate) => {
-      handleIceCandidate(target, candidate).catch(() => {})
+    onIceCandidate: (from, candidate) => {
+      handleIceCandidate(from, candidate).catch(() => {})
     },
   })
 
@@ -232,10 +232,10 @@ export function createJamService(callbacks: JamCallbacks) {
     signaling.sendOffer(peer.id, JSON.stringify(offer))
   }
 
-  async function handleOffer(target: string, sdp: string): Promise<void> {
+  async function handleOffer(from: string, sdp: string): Promise<void> {
     if (disposed) return
 
-    let pc = peerConnections.get(target)
+    let pc = peerConnections.get(from)
     if (!pc) {
       pc = new RTCPeerConnection({ iceServers: ICE_SERVERS })
       if (localStream) {
@@ -243,27 +243,27 @@ export function createJamService(callbacks: JamCallbacks) {
           pc!.addTrack(t, localStream!)
         })
       }
-      setupPeerHandlers(pc, target)
-      peerConnections.set(target, pc)
+      setupPeerHandlers(pc, from)
+      peerConnections.set(from, pc)
     }
 
     await pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(sdp)))
     const answer = await pc.createAnswer()
     await pc.setLocalDescription(answer)
-    signaling.sendAnswer(target, JSON.stringify(answer))
+    signaling.sendAnswer(from, JSON.stringify(answer))
   }
 
-  async function handleAnswer(target: string, sdp: string): Promise<void> {
-    const pc = peerConnections.get(target)
+  async function handleAnswer(from: string, sdp: string): Promise<void> {
+    const pc = peerConnections.get(from)
     if (!pc || disposed) return
     await pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(sdp)))
   }
 
   async function handleIceCandidate(
-    target: string,
+    from: string,
     candidate: string,
   ): Promise<void> {
-    const pc = peerConnections.get(target)
+    const pc = peerConnections.get(from)
     if (!pc || disposed) return
     try {
       await pc.addIceCandidate(new RTCIceCandidate(JSON.parse(candidate)))
