@@ -18,7 +18,7 @@ import type { MelodyItem, NoteResult, PitchSample, ScaleDegree } from '@/types'
 // Click-to-play settings (GH #230)
 const QUICK_CLICK_THRESHOLD = 500 // ms
 const TRILL_CLICKS = 3
-const TRILL_NOTE_PLAYS = 5
+const TRILL_NOTE_PLAYS = 4
 const TRILL_BAR_REST = 4 // beats between each play
 
 interface PitchCanvasProps {
@@ -347,7 +347,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
   }
 
   /**
-   * Plays a trill: plays the note 5 times with ~1 bar rest between each.
+   * Plays a trill: plays the note 4 times with ~1 bar rest between each.
    * Called when the same note is clicked 3 times quickly.
    */
   const playNoteTrill = (freq: number, durationBeats: number = 0.25): void => {
@@ -366,7 +366,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     // First play immediately
     engine.playNote(freq, durationBeats * beatDurationMs)
 
-    // Play 4 more times with 1 bar rest between each
+    // Play 3 more times with 1 bar rest between each
     for (let i = 1; i < TRILL_NOTE_PLAYS; i++) {
       const delay = TRILL_BAR_REST * beatDurationMs
       setTimeout(() => {
