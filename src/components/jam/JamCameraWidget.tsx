@@ -1,10 +1,11 @@
 // ── JamCameraWidget ──────────────────────────────────────────────────
-// Floating camera tray — compact thumbnails at bottom-right.
+// Floating camera tray — compact thumbnails, draggable anywhere on screen.
+// Default position: top-right (above the pitch strip area).
 // Click any chip to expand/collapse that person's feed.
 // Border color matches the peer's assigned pitch-trail color.
 
 import type { Component } from 'solid-js'
-import { createMemo, createSignal, For, Show } from 'solid-js'
+import { createMemo, createSignal, For, Index, onCleanup, onMount, Show, } from 'solid-js'
 import { buildPeerColorMap } from '@/lib/jam/peer-colors'
 import { jamLocalStream, jamPeerId, jamPeers, jamPitchHistory, jamRemoteStreams, jamVideoEnabled, } from '@/stores/jam-store'
 import styles from './JamCameraWidget.module.css'
@@ -100,12 +101,17 @@ const CamChip: Component<CamChipProps> = (props) => {
   )
 }
 
-// ── Widget root ──────────────────────────────────────────────────────
+// ── Draggable tray ────────────────────────────────────────────────────
 
 export const JamCameraWidget: Component = () => {
   const myId = jamPeerId
 
-  // Derive color map from all peers in pitch history (same keys as canvases)
+  // Default: top-right, 20px margin. Stored as top/right offset.
+  const [pos, setPos] = createSignal({ x: window.innerWidth - 110, y: 80 })
+  let dragging = false
+  let dragStart = { x: 0, y: 0, px: 0, py: 0 }
+  let trayRef: HTMLDivElement | undefined
+
   const colorMap = createMemo(() => {
     const ids = Object.keys(jamPitchHistory())
     return buildPeerColorMap(ids)
@@ -113,8 +119,69 @@ export const JamCameraWidget: Component = () => {
 
   const myColor = () => colorMap()[myId() ?? ''] ?? '#58a6ff'
 
+  const onPointerDown = (e: PointerEvent) => {
+    // Only drag on the handle element
+    const target = e.target as HTMLElement
+    if (!target.closest(`.${styles.dragHandle}`)) return
+    dragging = true
+    dragStart = { x: e.clientX, y: e.clientY, px: pos().x, py: pos().y }
+    ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+    e.preventDefault()
+  }
+
+  const onPointerMove = (e: PointerEvent) => {
+    if (!dragging) return
+    const dx = e.clientX - dragStart.x
+    const dy = e.clientY - dragStart.y
+    const vw = window.innerWidth
+    const vh = window.innerHeight
+    const tw = trayRef?.offsetWidth ?? 100
+    const th = trayRef?.offsetHeight ?? 200
+    setPos({
+      x: Math.max(0, Math.min(vw - tw, dragStart.px + dx)),
+      y: Math.max(0, Math.min(vh - th, dragStart.py + dy)),
+    })
+  }
+
+  const onPointerUp = () => {
+    dragging = false
+  }
+
+  onMount(() => {
+    // Re-clamp on resize
+    const onResize = () => {
+      setPos((p) => ({
+        x: Math.min(p.x, window.innerWidth - (trayRef?.offsetWidth ?? 100)),
+        y: Math.min(p.y, window.innerHeight - (trayRef?.offsetHeight ?? 200)),
+      }))
+    }
+    window.addEventListener('resize', onResize, { passive: true })
+    onCleanup(() => window.removeEventListener('resize', onResize))
+  })
+
   return (
-    <div class={styles.tray}>
+    <div
+      ref={trayRef}
+      class={styles.tray}
+      style={{
+        left: `${pos().x}px`,
+        top: `${pos().y}px`,
+        right: 'auto',
+        bottom: 'auto',
+      }}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+    >
+      {/* Drag handle */}
+      <div class={styles.dragHandle} title="Drag to reposition">
+        <div class={styles.dragDots}>
+          <Index each={[0, 1, 2, 3, 4, 5]}>
+            {() => <div class={styles.dragDot} />}
+          </Index>
+        </div>
+      </div>
+
       {/* Local camera */}
       <CamChip
         stream={jamLocalStream()}

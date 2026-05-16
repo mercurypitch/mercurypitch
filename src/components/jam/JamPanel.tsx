@@ -376,8 +376,36 @@ export const JamPanel: Component = () => {
               </div>
             </div>
 
-            {/* ── Exercise controls (host only) ─────────────────── */}
+            {/* ── Exercise controls + live pitch toggle ─────────── */}
             <div class={panelStyles.exerciseBar}>
+              {/* Live pitch toggle — always reachable on the left */}
+              <button
+                class={panelStyles.pitchToggleBtn}
+                classList={{
+                  [panelStyles.pitchToggleBtnActive]: showLivePitch(),
+                }}
+                onClick={() => setShowLivePitch((v) => !v)}
+                title={
+                  showLivePitch()
+                    ? 'Hide live pitch monitor'
+                    : 'Show live pitch monitor'
+                }
+              >
+                <svg
+                  viewBox="0 0 16 16"
+                  width="13"
+                  height="13"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                >
+                  <path
+                    d="M2 8h2l2-4 2 8 2-5 2 3h2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </button>
               <JamExerciseControls
                 onSelectExercise={() =>
                   setShowExercisePicker(!showExercisePicker())
@@ -425,48 +453,10 @@ export const JamPanel: Component = () => {
                   [panelStyles.pitchStripCollapsed]: !showLivePitch(),
                 }}
               >
-                <div class={panelStyles.pitchStripLabel}>
-                  <span>Live Pitch</span>
-                  <button
-                    class={panelStyles.pitchToggleBtn}
-                    onClick={() => setShowLivePitch((v) => !v)}
-                    title={
-                      showLivePitch()
-                        ? 'Hide live pitch monitor'
-                        : 'Show live pitch monitor'
-                    }
-                  >
-                    <svg
-                      viewBox="0 0 16 16"
-                      width="12"
-                      height="12"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="1.8"
-                    >
-                      <Show
-                        when={showLivePitch()}
-                        fallback={
-                          <>
-                            <path
-                              d="M2 8h2l2-4 2 8 2-5 2 3h2"
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                            />
-                          </>
-                        }
-                      >
-                        <path d="M2 8h12M8 2v12" opacity="0.4" />
-                        <path
-                          d="M2 8h2l2-4 2 8 2-5 2 3h2"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                        />
-                      </Show>
-                    </svg>
-                  </button>
-                </div>
                 <Show when={showLivePitch()}>
+                  <div class={panelStyles.pitchStripLabel}>
+                    Live Pitch Monitor
+                  </div>
                   <div class={pitchCanvasStyles.container}>
                     <JamSharedPitchCanvas myPeerId={jamPeerId} />
                   </div>
