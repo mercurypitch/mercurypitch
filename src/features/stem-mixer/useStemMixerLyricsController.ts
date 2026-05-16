@@ -5,7 +5,7 @@
 import type { Setter } from 'solid-js'
 import { createEffect, createMemo, createSignal, onCleanup } from 'solid-js'
 import type { LrcLine, LyricsSearchMatch, LyricsSearchResult, } from '@/lib/lyrics-service'
-import { computeActiveWord, extractTitle, fetchLyricsById, getCurrentLineIndex, getCurrentLrcIndex, parseLrcFile, parseLrcWordTimings, parseTextLyrics, searchLyrics, searchLyricsMulti, } from '@/lib/lyrics-service'
+import { computeActiveWord, extractTitle, fetchLyricsById, getCurrentLineIndex, parseLrcFile, parseLrcWordTimings, parseTextLyrics, searchLyrics, searchLyricsMulti, } from '@/lib/lyrics-service'
 import type { BlockInstancesMap, BlockStartsInfo, CanonicalLrcEntry, DisplayLine, EditPopover, GenViewLine, LyricsBlock, LyricsSource, LyricsUploadResult, WordTimingsMap, } from './types'
 
 // ── Deps ──────────────────────────────────────────────────────────
@@ -507,8 +507,15 @@ export function useStemMixerLyricsController(
   // ── Playback tracking ─────────────────────────────────────────────
 
   const updateCurrentLine = () => {
-    if (lrcLines().length > 0) {
-      setCurrentLineIdx(getCurrentLrcIndex(lrcLines(), deps.elapsed()))
+    const canonical = canonicalLrcLines()
+    if (canonical.length > 0) {
+      const elapsed = deps.elapsed()
+      let idx = -1
+      for (let i = 0; i < canonical.length; i++) {
+        if (canonical[i].time <= elapsed) idx = canonical[i].canonicalIndex
+        else break
+      }
+      setCurrentLineIdx(idx)
     } else if (lyricsLines().length > 0 && deps.duration() > 0) {
       setCurrentLineIdx(
         getCurrentLineIndex(
