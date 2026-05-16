@@ -14,6 +14,8 @@ export interface StemMixerPitchAnalysisPanelProps {
   setMinAmplitude: (a: number) => void
   isAnalyzing: boolean
   progress: number
+  pitchSourceMode: 'realtime' | 'offline'
+  setPitchSourceMode: (m: 'realtime' | 'offline') => void
   runAnalysis: () => void
   onClose: () => void
 }
@@ -117,6 +119,41 @@ export const StemMixerPitchAnalysisPanel: Component<
               ? `Analyzing... ${props.progress}%`
               : 'Run Offline Denoising'}
           </button>
+
+          <div
+            style={{
+              display: 'flex',
+              'flex-direction': 'column',
+              gap: '0.5rem',
+              'margin-top': '1rem',
+            }}
+          >
+            <span
+              style={{
+                'font-size': '0.85rem',
+                'font-weight': '500',
+                color: 'var(--fg-primary, #c9d1d9)',
+              }}
+            >
+              Canvas Pitch Display Mode
+            </span>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button
+                class={`sm-btn ${props.pitchSourceMode === 'realtime' ? 'sm-btn-primary' : 'sm-btn-secondary'}`}
+                style={{ flex: '1' }}
+                onClick={() => props.setPitchSourceMode('realtime')}
+              >
+                Realtime
+              </button>
+              <button
+                class={`sm-btn ${props.pitchSourceMode === 'offline' ? 'sm-btn-primary' : 'sm-btn-secondary'}`}
+                style={{ flex: '1' }}
+                onClick={() => props.setPitchSourceMode('offline')}
+              >
+                Offline Denoised
+              </button>
+            </div>
+          </div>
         </div>
 
         <div

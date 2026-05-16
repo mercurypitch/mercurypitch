@@ -110,6 +110,7 @@ export interface StemMixerAudioController {
   loadProgress: Accessor<number>
   midiGenerating: Accessor<boolean>
   midiProgress: Accessor<number>
+  midiPhase: Accessor<'detecting' | 'synthesizing' | 'rendering'>
   playing: Accessor<boolean>
   elapsed: Accessor<number>
   duration: Accessor<number>
@@ -162,6 +163,9 @@ export const useStemMixerAudioController = (
   const [loadProgress, setLoadProgressLocal] = createSignal(0)
   const [midiGenerating, setMidiGeneratingLocal] = createSignal(false)
   const [midiProgress, setMidiProgressLocal] = createSignal(0)
+  const [midiPhase, setMidiPhaseLocal] = createSignal<
+    'detecting' | 'synthesizing' | 'rendering'
+  >('detecting')
   const [playing, setPlayingLocal] = createSignal(false)
   const [elapsed, setElapsed] = createSignal(0)
   const [duration, setDuration] = createSignal(0)
@@ -265,6 +269,7 @@ export const useStemMixerAudioController = (
         deps.practiceMode === 'midi' || deps.requestedStems?.midi === true
       if (needsMidi && deps.vocal().buffer) {
         setMidiGeneratingLocal(true)
+        setMidiPhaseLocal('detecting')
         setMidiProgressLocal(0)
         try {
           const vocalBuf = deps.vocal().buffer!
@@ -276,13 +281,17 @@ export const useStemMixerAudioController = (
           deps.setMidiNotes(notes)
           if (notes.length > 0) {
             // Reset progress for synthesis phase so user sees activity
+            setMidiPhaseLocal('synthesizing')
             setMidiProgressLocal(0)
             const midiBuf = await synthesizeMidiBuffer(
               notes,
               DEFAULT_BPM,
               sampleRate,
               vocalBuf.duration,
-              (pct) => setMidiProgressLocal(pct),
+              (pct) => {
+                setMidiProgressLocal(pct)
+                if (pct >= 100) setMidiPhaseLocal('rendering')
+              },
             )
             deps.setMidi((prev) => ({ ...prev, buffer: midiBuf }))
           }
@@ -676,6 +685,7 @@ export const useStemMixerAudioController = (
     loadProgress,
     midiGenerating,
     midiProgress,
+    midiPhase,
     playing,
     elapsed,
     duration,
