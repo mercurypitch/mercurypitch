@@ -54,6 +54,11 @@ export default defineConfig({
       'Cross-Origin-Embedder-Policy': 'credentialless',
     },
     proxy: {
+      '/api/jam': {
+        target: 'http://localhost:8787',
+        changeOrigin: true,
+        ws: true,
+      },
       '/api/uvr': {
         target: `http://localhost:${Number(process.env.VITE_UVR_PROXY_PORT) || 8000}`,
         changeOrigin: true,
