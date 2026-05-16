@@ -9,12 +9,14 @@ import { useStemMixerCanvasController } from '@/features/stem-mixer/useStemMixer
 import { useStemMixerLayoutController } from '@/features/stem-mixer/useStemMixerLayoutController'
 import { useStemMixerLyricsController } from '@/features/stem-mixer/useStemMixerLyricsController'
 import { useStemMixerMicController } from '@/features/stem-mixer/useStemMixerMicController'
+import { useStemMixerPitchAnalysisController } from '@/features/stem-mixer/useStemMixerPitchAnalysisController'
 import { extractTitle } from '@/lib/lyrics-service'
 import type { MidiNoteEvent } from '@/lib/midi-generator'
 import { showNotification } from '@/stores/notifications-store'
 import { ChevronLeft, Share } from './icons'
 import { StemMixerFixedWorkspace } from './StemMixerFixedWorkspace'
 import { StemMixerGridWorkspace } from './StemMixerGridWorkspace'
+import { StemMixerPitchAnalysisPanel } from './StemMixerPitchAnalysisPanel'
 import { StemMixerScoreModal } from './StemMixerScoreModal'
 import { StemMixerTransport } from './StemMixerTransport'
 
@@ -382,6 +384,17 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   })
   updateCurrentLineForAudio = updateCurrentLine
 
+  // ── Pitch Analysis controller ──────────────────────────────────
+  const pitchAnalysis = useStemMixerPitchAnalysisController({
+    vocalBuffer: () => vocal().buffer,
+    sampleRate: () => audio.getAudioCtx()?.sampleRate ?? 44100,
+    setPitchHistory: (h) => {
+      audio.setPitchHistory(h)
+      canvas.queueCanvasRedraw()
+    },
+    showNotification,
+  })
+
   // ── Layout Management ──────────────────────────────────────────
   const layout = useStemMixerLayoutController({
     getWorkspaceRef: () => workspaceRef,
@@ -658,20 +671,32 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             karaoke-session-{props.sessionId.replace(/^.*-session-/, '')}
           </span>
         </div>
-        <button
-          class="sm-share-btn"
-          classList={{ 'sm-share-btn--copied': shareToast() !== '' }}
-          onClick={() => {
-            const url = `${window.location.origin}/#/uvr/session/${props.sessionId}/mixer`
-            void navigator.clipboard.writeText(url).then(() => {
-              setShareToast('Link copied to clipboard!')
-              setTimeout(() => setShareToast(''), 2500)
-            })
-          }}
-          title="Copy share link"
+        <div
+          class="sm-header-actions"
+          style={{ display: 'flex', gap: '0.5rem' }}
         >
-          <Share /> {shareToast() || 'Share'}
-        </button>
+          <button
+            class="sm-btn sm-btn-secondary"
+            onClick={() => pitchAnalysis.setPanelOpen((prev) => !prev)}
+            title="Toggle Pitch Analysis Debug Panel"
+          >
+            Debug Pitch
+          </button>
+          <button
+            class="sm-share-btn"
+            classList={{ 'sm-share-btn--copied': shareToast() !== '' }}
+            onClick={() => {
+              const url = `${window.location.origin}/#/uvr/session/${props.sessionId}/mixer`
+              void navigator.clipboard.writeText(url).then(() => {
+                setShareToast('Link copied to clipboard!')
+                setTimeout(() => setShareToast(''), 2500)
+              })
+            }}
+            title="Copy share link"
+          >
+            <Share /> {shareToast() || 'Share'}
+          </button>
+        </div>
       </div>
 
       {/* Loading / Error */}
@@ -785,6 +810,25 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         score={mic.score}
         onClose={() => mic.setShowScore(false)}
       />
+
+      <Show when={pitchAnalysis.panelOpen()}>
+        <StemMixerPitchAnalysisPanel
+          algorithm={pitchAnalysis.algorithm()}
+          setAlgorithm={pitchAnalysis.setAlgorithm}
+          bufferSize={pitchAnalysis.bufferSize()}
+          setBufferSize={pitchAnalysis.setBufferSize}
+          sensitivity={pitchAnalysis.sensitivity()}
+          setSensitivity={pitchAnalysis.setSensitivity}
+          minConfidence={pitchAnalysis.minConfidence()}
+          setMinConfidence={pitchAnalysis.setMinConfidence}
+          minAmplitude={pitchAnalysis.minAmplitude()}
+          setMinAmplitude={pitchAnalysis.setMinAmplitude}
+          isAnalyzing={pitchAnalysis.isAnalyzing()}
+          progress={pitchAnalysis.progress()}
+          runAnalysis={() => void pitchAnalysis.runAnalysis()}
+          onClose={() => pitchAnalysis.setPanelOpen(false)}
+        />
+      </Show>
     </div>
   )
 }
