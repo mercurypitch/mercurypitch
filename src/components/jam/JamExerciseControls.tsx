@@ -3,16 +3,7 @@
 
 import type { Component } from 'solid-js'
 import { Show } from 'solid-js'
-import {
-  clearJamExercise,
-  jamExerciseMelody,
-  jamExercisePlaying,
-  jamExercisePaused,
-  jamIsHost,
-  jamPlaybackPause,
-  jamPlaybackPlay,
-  jamPlaybackStop,
-} from '@/stores/jam-store'
+import { clearJamExercise, jamExerciseMelody, jamExercisePaused, jamExercisePlaying, jamIsHost, jamPlaybackPause, jamPlaybackPlay, jamPlaybackStop, } from '@/stores/jam-store'
 import styles from './JamExerciseControls.module.css'
 
 interface JamExerciseControlsProps {
@@ -25,10 +16,7 @@ export const JamExerciseControls: Component<JamExerciseControlsProps> = (
   return (
     <Show when={jamIsHost()}>
       <div class={styles.controls}>
-        <button
-          class={styles.btn}
-          onClick={props.onSelectExercise}
-        >
+        <button class={styles.btn} onClick={() => props.onSelectExercise()}>
           Select Exercise
         </button>
         <Show when={jamExerciseMelody()}>
@@ -43,14 +31,23 @@ export const JamExerciseControls: Component<JamExerciseControlsProps> = (
               </button>
             }
           >
-            <button class={`${styles.btn} ${styles.pause}`} onClick={jamPlaybackPause}>
+            <button
+              class={`${styles.btn} ${styles.pause}`}
+              onClick={jamPlaybackPause}
+            >
               Pause
             </button>
           </Show>
-          <button class={`${styles.btn} ${styles.stop}`} onClick={jamPlaybackStop}>
+          <button
+            class={`${styles.btn} ${styles.stop}`}
+            onClick={jamPlaybackStop}
+          >
             Stop
           </button>
-          <button class={`${styles.btn} ${styles.clear}`} onClick={clearJamExercise}>
+          <button
+            class={`${styles.btn} ${styles.clear}`}
+            onClick={clearJamExercise}
+          >
             Clear
           </button>
         </Show>

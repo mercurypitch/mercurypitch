@@ -4,13 +4,8 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, onCleanup, onMount } from 'solid-js'
-import {
-  jamExerciseBeat,
-  jamExerciseMelody,
-  jamExercisePlaying,
-  jamExerciseTotalBeats,
-  jamPitchHistory,
-} from '@/stores/jam-store'
+import { jamExerciseBeat, jamExerciseMelody, jamExercisePlaying, jamExerciseTotalBeats, jamPitchHistory, } from '@/stores/jam-store'
+
 const PEER_COLORS = [
   '#58a6ff',
   '#f0883e',
@@ -33,9 +28,7 @@ interface JamExerciseCanvasProps {
   myPeerId: () => string | null
 }
 
-export const JamExerciseCanvas: Component<JamExerciseCanvasProps> = (
-  props,
-) => {
+export const JamExerciseCanvas: Component<JamExerciseCanvasProps> = (props) => {
   let canvasRef: HTMLCanvasElement | undefined
   let ctx: CanvasRenderingContext2D | null = null
   let animFrameId: number | null = null
@@ -55,7 +48,7 @@ export const JamExerciseCanvas: Component<JamExerciseCanvasProps> = (
     const melody = jamExerciseMelody()
     if (!melody) return []
     return melody.items
-      .filter((item) => !item.isRest)
+      .filter((item) => item.isRest !== true)
       .map((item) => ({
         startBeat: item.startBeat,
         endBeat: item.startBeat + item.duration,
@@ -108,14 +101,20 @@ export const JamExerciseCanvas: Component<JamExerciseCanvasProps> = (
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
   }
 
-  const midiToY = (midi: number, h: number, minMidi: number, maxMidi: number) => {
+  const midiToY = (
+    midi: number,
+    h: number,
+    minMidi: number,
+    maxMidi: number,
+  ) => {
     const range = maxMidi - minMidi
     const pct = (midi - minMidi) / range
     return h - MARGIN_BOTTOM - pct * (h - MARGIN_TOP - MARGIN_BOTTOM)
   }
 
   const beatToX = (beat: number, w: number, totalBeats: number) => {
-    const x = MARGIN_LEFT + (beat / totalBeats) * (w - MARGIN_LEFT - MARGIN_RIGHT)
+    const x =
+      MARGIN_LEFT + (beat / totalBeats) * (w - MARGIN_LEFT - MARGIN_RIGHT)
     return x
   }
 
@@ -135,18 +134,14 @@ export const JamExerciseCanvas: Component<JamExerciseCanvasProps> = (
       drawMelodyNotes(w, h, min, max, totalBeats)
       drawPlayhead(w, h, min, max, totalBeats)
       drawPeerPitchDots(w, h, min, max, totalBeats)
+      drawPrecount(w, h)
 
       animFrameId = requestAnimationFrame(draw)
     }
     animFrameId = requestAnimationFrame(draw)
   }
 
-  const drawGrid = (
-    w: number,
-    h: number,
-    minMidi: number,
-    maxMidi: number,
-  ) => {
+  const drawGrid = (w: number, h: number, minMidi: number, maxMidi: number) => {
     if (!ctx) return
 
     // MIDI grid lines (every 2 semitones)
@@ -161,7 +156,20 @@ export const JamExerciseCanvas: Component<JamExerciseCanvasProps> = (
     }
 
     // MIDI labels (every octave)
-    const midiNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+    const midiNames = [
+      'C',
+      'C#',
+      'D',
+      'D#',
+      'E',
+      'F',
+      'F#',
+      'G',
+      'G#',
+      'A',
+      'A#',
+      'B',
+    ]
     for (let midi = minMidi; midi <= maxMidi; midi++) {
       if (midi % 12 !== 0) continue
       const y = midiToY(midi, h, minMidi, maxMidi)
@@ -187,7 +195,7 @@ export const JamExerciseCanvas: Component<JamExerciseCanvasProps> = (
     if (notes.length === 0) return
 
     const noteHeight =
-      (h - MARGIN_TOP - MARGIN_BOTTOM) / (maxMidi - minMidi) * 0.7
+      ((h - MARGIN_TOP - MARGIN_BOTTOM) / (maxMidi - minMidi)) * 0.7
 
     for (const note of notes) {
       const x = beatToX(note.startBeat, w, totalBeats)
@@ -196,15 +204,39 @@ export const JamExerciseCanvas: Component<JamExerciseCanvasProps> = (
         ((note.endBeat - note.startBeat) / totalBeats) *
           (w - MARGIN_LEFT - MARGIN_RIGHT),
       )
-      const y = midiToY(note.midi + 0.5, h, minMidi, maxMidi) - noteHeight / 2
+      const boxH = Math.max(16, noteHeight)
+      const boxHalf = boxH / 2
+      const r = 5 // corner radius
+      const yy = midiToY(note.midi + 0.5, h, minMidi, maxMidi) - boxHalf
 
-      ctx.fillStyle = 'rgba(88,166,255,0.25)'
-      ctx.strokeStyle = 'rgba(88,166,255,0.4)'
-      ctx.lineWidth = 1
+      // Solid dark base
       ctx.beginPath()
-      ctx.roundRect(x, y, width, noteHeight, 2)
+      ctx.roundRect(x, yy, width, boxH, r)
+      ctx.fillStyle = 'rgba(13,17,23,0.92)'
       ctx.fill()
+
+      // Gradient fill
+      const fillGrad = ctx.createLinearGradient(0, yy, 0, yy + boxH)
+      fillGrad.addColorStop(0, 'rgba(60,110,190,0.75)')
+      fillGrad.addColorStop(1, 'rgba(35,70,130,0.6)')
+      ctx.fillStyle = fillGrad
+      ctx.fill()
+
+      // Outer stroke
+      ctx.strokeStyle = 'rgba(88,166,255,0.65)'
+      ctx.lineWidth = 1
       ctx.stroke()
+
+      // Note label if space permits
+      if (width >= 24) {
+        ctx.fillStyle = 'rgba(220,235,255,0.92)'
+        ctx.font = 'bold 10px sans-serif'
+        ctx.textAlign = 'left'
+        ctx.textBaseline = 'middle'
+        const label = `${note.noteName}${note.octave}`
+        ctx.fillText(label, x + 6, yy + boxHalf + 0.5)
+        ctx.textBaseline = 'alphabetic'
+      }
     }
   }
 
@@ -260,7 +292,16 @@ export const JamExerciseCanvas: Component<JamExerciseCanvasProps> = (
       const isOwn = peerId === myId
 
       if (isOwn) {
-        drawOwnPitchTrail(w, h, minMidi, maxMidi, samples, color, now, playheadX)
+        drawOwnPitchTrail(
+          w,
+          h,
+          minMidi,
+          maxMidi,
+          samples,
+          color,
+          now,
+          playheadX,
+        )
       } else {
         // Remote peers: small dots near playhead
         for (let i = 0; i < samples.length; i++) {
@@ -290,7 +331,14 @@ export const JamExerciseCanvas: Component<JamExerciseCanvasProps> = (
     h: number,
     minMidi: number,
     maxMidi: number,
-    samples: Array<{ frequency: number; midi: number; cents: number; clarity: number; noteName: string; timestamp: number }>,
+    samples: Array<{
+      frequency: number
+      midi: number
+      cents: number
+      clarity: number
+      noteName: string
+      timestamp: number
+    }>,
     color: string,
     now: number,
     playheadX: number,
@@ -383,6 +431,33 @@ export const JamExerciseCanvas: Component<JamExerciseCanvasProps> = (
     ctx.textBaseline = 'middle'
     ctx.fillText(label, adjPillX + pillW / 2, pillY + pillH / 2 + 0.5)
     ctx.textBaseline = 'alphabetic'
+  }
+
+  const drawPrecount = (w: number, h: number) => {
+    if (!ctx) return
+    const beat = jamExerciseBeat()
+    if (beat >= 0) return
+
+    const num = Math.ceil(Math.abs(beat))
+    if (num <= 0) return
+
+    ctx.fillStyle = 'rgba(13, 17, 23, 0.6)'
+    ctx.fillRect(0, 0, w, h)
+
+    ctx.fillStyle = '#ffffff'
+    ctx.font = 'bold 80px sans-serif'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+
+    // Pulse animation based on fractional beat
+    const fract = Math.abs(beat) % 1
+    const scale = 1 + (1 - fract) * 0.2
+
+    ctx.save()
+    ctx.translate(w / 2, h / 2)
+    ctx.scale(scale, scale)
+    ctx.fillText(num.toString(), 0, 0)
+    ctx.restore()
   }
 
   return <canvas ref={canvasRef} />

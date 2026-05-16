@@ -90,6 +90,7 @@ import { storageGet } from '@/lib/storage'
 import { dismissWelcome, openWalkthroughChapter, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPlaybackSpeed, setScaleType, showSelection, walkthroughModalOpen, } from '@/stores'
 import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, toggleMicWaveVisible, } from '@/stores'
 import { advancedFeaturesEnabled, devFeaturesEnabled } from '@/stores/app-store'
+import { setJamRoomToJoin } from '@/stores/jam-store'
 import { melodyStore } from '@/stores/melody-store'
 import { getSession, templateToSession } from '@/stores/session-store'
 import { selectedCharacter, showPracticeResultPopup, } from '@/stores/settings-store'
@@ -102,7 +103,6 @@ import { FallingNotesCanvas } from './components/FallingNotesCanvas'
 import { FallingNotesSongPicker } from './components/FallingNotesSongPicker'
 import { GuideSelection } from './components/GuideSelection'
 import { JamPanel } from './components/jam/JamPanel'
-import { setJamRoomToJoin } from '@/stores/jam-store'
 import { TabErrorBoundary } from './components/TabErrorBoundary'
 import { _UvrGuideStyles } from './components/UvrGuide'
 import { WelcomeScreen } from './components/WelcomeScreen'
@@ -1065,29 +1065,31 @@ const AppShell: Component<AppProps> = (props) => {
                     </svg>
                     {tabLabel(TAB_CHALLENGES)}
                   </button>
-                  <button
-                    id="tab-jam"
-                    class={`app-tab ${activeTab() === TAB_JAM ? 'active' : ''}`}
-                    onClick={() => void handleTabChange(TAB_JAM)}
-                    aria-label="Jam session"
-                  >
-                    <svg
-                      class="tab-icon"
-                      viewBox="0 0 24 24"
-                      width="14"
-                      height="14"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
+                  <Show when={devFeaturesEnabled()}>
+                    <button
+                      id="tab-jam"
+                      class={`app-tab ${activeTab() === TAB_JAM ? 'active' : ''}`}
+                      onClick={() => void handleTabChange(TAB_JAM)}
+                      aria-label="Jam session"
                     >
-                      <path d="M9 18V5l12-2v13" />
-                      <circle cx="6" cy="18" r="3" />
-                      <circle cx="18" cy="16" r="3" />
-                    </svg>
-                    {tabLabel(TAB_JAM)}
-                  </button>
+                      <svg
+                        class="tab-icon"
+                        viewBox="0 0 24 24"
+                        width="14"
+                        height="14"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <path d="M9 18V5l12-2v13" />
+                        <circle cx="6" cy="18" r="3" />
+                        <circle cx="18" cy="16" r="3" />
+                      </svg>
+                      {tabLabel(TAB_JAM)}
+                    </button>
+                  </Show>
                 </div>
               </Show>
 

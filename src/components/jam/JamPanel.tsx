@@ -1,97 +1,66 @@
 // ── JamPanel ────────────────────────────────────────────────────────
 // Main jam session UI — create/join rooms, view peers, controls.
 
-import { For, type Component } from 'solid-js'
+import type { Component } from 'solid-js'
+import { For } from 'solid-js'
 import { createEffect, createMemo, createSignal, onMount, Show } from 'solid-js'
-import {
-  createJamRoom,
-  jamChatMessages,
-  jamConnectedPeers,
-  jamError,
-  jamIsMuted,
-  jamLocalStream,
-  jamPeerId,
-  jamPeers,
-  jamPitchTab,
-  jamRemoteStreams,
-  jamRoomId,
-  jamRoomToJoin,
-  jamState,
-  jamVideoEnabled,
-  joinJamRoom,
-  leaveJamRoom,
-  selectJamExercise,
-  sendJamChatMessage,
-  setJamPitchTab,
-  setJamRoomToJoin,
-  startJamPitchDetection,
-  toggleJamMute,
-  toggleJamVideo,
-} from '@/stores/jam-store'
+import { createJamRoom, jamConnectedPeers, jamError, jamIsMuted, jamPeerId, jamPeers, jamPitchTab, jamRoomId, jamRoomToJoin, jamState, jamVideoEnabled, joinJamRoom, leaveJamRoom, selectJamExercise, setJamPitchTab, setJamRoomToJoin, startJamPitchDetection, toggleJamMute, toggleJamVideo, } from '@/stores/jam-store'
 import { getMelodyLibrarySignal } from '@/stores/melody-store'
+import { JamCameraWidget } from './JamCameraWidget'
+import { JamChatWidget } from './JamChatWidget'
+import { JamExerciseCanvas } from './JamExerciseCanvas'
+import exerciseCanvasStyles from './JamExerciseCanvas.module.css'
+import { JamExerciseControls } from './JamExerciseControls'
 import { JamInviteModal } from './JamInviteModal'
+import panelStyles from './JamPanel.module.css'
 import { JamPeerList } from './JamPeerList'
 import { JamPitchDisplay } from './JamPitchDisplay'
 import { JamSharedPitchCanvas } from './JamSharedPitchCanvas'
-import { JamExerciseCanvas } from './JamExerciseCanvas'
-import { JamExerciseControls } from './JamExerciseControls'
-import panelStyles from './JamPanel.module.css'
 import pitchCanvasStyles from './JamSharedPitchCanvas.module.css'
-import exerciseCanvasStyles from './JamExerciseCanvas.module.css'
 
 export const JamPanel: Component = () => {
   const [displayName, setDisplayName] = createSignal('')
   const [joinRoomId, setJoinRoomId] = createSignal('')
   const [showInvite, setShowInvite] = createSignal(false)
   const [joining, setJoining] = createSignal(false)
-  const [chatText, setChatText] = createSignal('')
   const [showExercisePicker, setShowExercisePicker] = createSignal(false)
   const [roomCopied, setRoomCopied] = createSignal(false)
   const [linkCopied, setLinkCopied] = createSignal(false)
-  let chatScrollEl: HTMLDivElement | undefined
 
-  const roomLink = createMemo(() => `${window.location.origin}/#/jam:${jamRoomId() ?? ''}`)
+  const roomLink = createMemo(
+    () => `${window.location.origin}/#/jam:${jamRoomId() ?? ''}`,
+  )
+
+  createEffect(() => {
+    // Sync URL if active
+    if (jamState() === 'active') {
+      window.history.replaceState(null, '', `/#/jam:${jamRoomId()}`)
+    } else if (jamState() === 'idle') {
+      window.history.replaceState(null, '', '/#/jam')
+    }
+  })
+
+  // Default to pitch subtab on mount
+  onMount(() => {
+    setJamPitchTab('pitch')
+  })
 
   const melodyOptions = createMemo(() => {
     const lib = getMelodyLibrarySignal()()
     return Object.values(lib.melodies)
   })
 
-  const handleSendChat = () => {
-    const text = chatText().trim()
-    if (!text) return
-    sendJamChatMessage(text)
-    setChatText('')
-    setTimeout(() => {
-      chatScrollEl?.scrollTo({ top: chatScrollEl.scrollHeight, behavior: 'smooth' })
-    }, 50)
-  }
-
-  const handleChatKey = (e: KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      handleSendChat()
-    }
-  }
-
   const handleCreate = () => {
     const name = displayName().trim() || 'Anonymous'
     createJamRoom(name).catch(() => {})
   }
 
-  const autoJoin = (roomId: string) => {
-    setJoinRoomId(roomId)
-    setJoining(true)
-    const name = displayName().trim() || 'Anonymous'
-    joinJamRoom(roomId, name).finally(() => {
-      setJoining(false)
-      setJamRoomToJoin(null)
-    })
-  }
-
   onMount(() => {
     const roomId = jamRoomToJoin()
-    if (roomId) autoJoin(roomId)
+    if (roomId !== null) {
+      setJoinRoomId(roomId.toUpperCase())
+      setJamRoomToJoin(null)
+    }
   })
 
   createEffect(() => {
@@ -101,7 +70,7 @@ export const JamPanel: Component = () => {
   })
 
   const handleJoin = () => {
-    const roomId = joinRoomId().trim()
+    const roomId = joinRoomId().trim().toUpperCase()
     if (!roomId) return
     setJoining(true)
     const name = displayName().trim() || 'Anonymous'
@@ -119,7 +88,7 @@ export const JamPanel: Component = () => {
 
           <div class="jam-field">
             <label class="jam-label" for="jam-display-name">
-              Your name
+              Display Name (used for creating & joining)
             </label>
             <input
               id="jam-display-name"
@@ -187,7 +156,9 @@ export const JamPanel: Component = () => {
                 <button
                   class="jam-btn jam-btn-sm"
                   onClick={() => {
-                    navigator.clipboard.writeText(jamRoomId() ?? '').catch(() => {})
+                    navigator.clipboard
+                      .writeText(jamRoomId() ?? '')
+                      .catch(() => {})
                     setRoomCopied(true)
                     setTimeout(() => setRoomCopied(false), 2000)
                   }}
@@ -210,23 +181,138 @@ export const JamPanel: Component = () => {
               </div>
             </div>
             <div class="jam-room-actions">
+              {/* Microphone toggle */}
               <button
-                class={`jam-btn jam-btn-sm ${jamIsMuted() ? 'jam-btn-muted' : ''}`}
+                class={`jam-icon-btn ${jamIsMuted() ? 'jam-icon-btn-off' : 'jam-icon-btn-on'}`}
                 onClick={toggleJamMute}
+                title={jamIsMuted() ? 'Unmute microphone' : 'Mute microphone'}
               >
-                {jamIsMuted() ? 'Unmute' : 'Mute'}
+                <Show
+                  when={!jamIsMuted()}
+                  fallback={
+                    /* Mic off — crossed */
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <line x1="1" y1="1" x2="23" y2="23" />
+                      <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6" />
+                      <path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23" />
+                      <line x1="12" y1="19" x2="12" y2="23" />
+                      <line x1="8" y1="23" x2="16" y2="23" />
+                    </svg>
+                  }
+                >
+                  {/* Mic on */}
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                    <line x1="12" y1="19" x2="12" y2="23" />
+                    <line x1="8" y1="23" x2="16" y2="23" />
+                  </svg>
+                </Show>
               </button>
+
+              {/* Camera toggle */}
               <button
-                class={`jam-btn jam-btn-sm ${!jamVideoEnabled() ? 'jam-btn-muted' : ''}`}
-                onClick={toggleJamVideo}
+                class={`jam-icon-btn ${jamVideoEnabled() ? 'jam-icon-btn-on' : 'jam-icon-btn-off'}`}
+                onClick={() => void toggleJamVideo()}
+                title={jamVideoEnabled() ? 'Turn camera off' : 'Turn camera on'}
               >
-                {jamVideoEnabled() ? 'Cam Off' : 'Cam On'}
+                <Show
+                  when={jamVideoEnabled()}
+                  fallback={
+                    /* Camera off — crossed */
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <line x1="1" y1="1" x2="23" y2="23" />
+                      <path d="M21 21H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3m3-3h6l2 3h4a2 2 0 0 1 2 2v9.34m-7.72-2.06A4 4 0 1 1 7.72 7.72" />
+                    </svg>
+                  }
+                >
+                  {/* Camera on */}
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <polygon points="23 7 16 12 23 17 23 7" />
+                    <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+                  </svg>
+                </Show>
               </button>
+
+              {/* Invite */}
               <button
-                class="jam-btn jam-btn-sm jam-btn-danger"
+                class="jam-icon-btn jam-icon-btn-neutral"
+                onClick={() => setShowInvite(true)}
+                title="Invite people"
+              >
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <line x1="19" y1="8" x2="19" y2="14" />
+                  <line x1="22" y1="11" x2="16" y2="11" />
+                </svg>
+              </button>
+
+              {/* Leave */}
+              <button
+                class="jam-icon-btn jam-icon-btn-danger"
                 onClick={leaveJamRoom}
+                title="Leave room"
               >
-                Leave
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                  <polyline points="16 17 21 12 16 7" />
+                  <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
               </button>
             </div>
           </div>
@@ -240,41 +326,6 @@ export const JamPanel: Component = () => {
             <Show when={jamIsMuted()}>
               <span class="jam-muted-indicator">(muted)</span>
             </Show>
-          </div>
-
-<div class="jam-video-grid">
-            <div class="jam-video-tile jam-video-local">
-              <video
-                ref={(el) => {
-                  el.srcObject = jamLocalStream()
-                }}
-                autoplay
-                muted
-                playsinline
-                class="jam-video-feed"
-              />
-              <span class="jam-video-label">You</span>
-              <Show when={!jamVideoEnabled()}>
-                <div class="jam-video-off">Camera off</div>
-              </Show>
-            </div>
-            <For each={Object.entries(jamRemoteStreams())}>
-              {([peerId, stream]) => (
-                <div class="jam-video-tile jam-video-remote">
-                  <video
-                    ref={(el) => {
-                      el.srcObject = stream
-                    }}
-                    autoplay
-                    playsinline
-                    class="jam-video-feed"
-                  />
-                  <span class="jam-video-label">
-                    {jamPeers().find((p) => p.id === peerId)?.displayName ?? peerId}
-                  </span>
-                </div>
-              )}
-            </For>
           </div>
 
           {/* Pitch display — always visible */}
@@ -293,12 +344,6 @@ export const JamPanel: Component = () => {
               onClick={() => setJamPitchTab('exercise')}
             >
               Exercise
-            </button>
-            <button
-              class={`${panelStyles.tab} ${jamPitchTab() === 'chat' ? panelStyles.tabActive : ''}`}
-              onClick={() => setJamPitchTab('chat')}
-            >
-              Chat
             </button>
           </div>
 
@@ -345,48 +390,6 @@ export const JamPanel: Component = () => {
             </div>
           </Show>
 
-          <Show when={jamPitchTab() === 'chat'}>
-            <div class={panelStyles.tabContent}>
-              <div class="jam-chat">
-                <div
-                  class="jam-chat-messages"
-                  ref={(el) => (chatScrollEl = el)}
-                >
-                  <For each={jamChatMessages()}>
-                    {(msg) => (
-                      <div
-                        class={`jam-chat-msg ${msg.peerId === jamPeerId() ? 'jam-chat-msg-own' : ''}`}
-                      >
-                        <span class="jam-chat-author">{msg.displayName}</span>
-                        <span class="jam-chat-text">{msg.text}</span>
-                        <span class="jam-chat-time">
-                          {new Date(msg.timestamp).toLocaleTimeString([], {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </span>
-                      </div>
-                    )}
-                  </For>
-                </div>
-                <div class="jam-chat-input">
-                  <input
-                    type="text"
-                    class="jam-input"
-                    value={chatText()}
-                    onInput={(e) => setChatText(e.currentTarget.value)}
-                    onKeyDown={handleChatKey}
-                    placeholder="Type a message..."
-                    maxLength={500}
-                  />
-                  <button class="jam-btn jam-btn-sm" onClick={handleSendChat}>
-                    Send
-                  </button>
-                </div>
-              </div>
-            </div>
-          </Show>
-
           <Show when={jamError()}>
             <p class="jam-error">{jamError()}</p>
           </Show>
@@ -398,6 +401,11 @@ export const JamPanel: Component = () => {
           roomId={jamRoomId() ?? ''}
           onClose={() => setShowInvite(false)}
         />
+      </Show>
+
+      <Show when={jamState() === 'active'}>
+        <JamCameraWidget />
+        <JamChatWidget />
       </Show>
     </div>
   )

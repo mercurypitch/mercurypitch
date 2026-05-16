@@ -3,16 +3,9 @@
 // Wires together jam-service callbacks with SolidJS signals.
 
 import { createMemo, createRoot, createSignal } from 'solid-js'
-import { createJamService } from '@/lib/jam/service'
-import type {
-  JamChatMessage,
-  JamMelodyMessage,
-  JamPeer,
-  JamPlaybackMessage,
-  JamPitchMessage,
-  TimeStampedPitchSample,
-} from '@/lib/jam/types'
 import { JamPitchDetector } from '@/lib/jam/jam-pitch-detector'
+import { createJamService } from '@/lib/jam/service'
+import type { JamChatMessage, JamMelodyMessage, JamPeer, JamPitchMessage, JamPlaybackMessage, TimeStampedPitchSample, } from '@/lib/jam/types'
 import type { MelodyData } from '@/types'
 
 // ── Signals ─────────────────────────────────────────────────────────
@@ -26,16 +19,18 @@ export const [jamError, setJamError] = createSignal<string | null>(null)
 export const [jamState, setJamState] = createSignal<
   'idle' | 'connecting' | 'active'
 >('idle')
-export const [jamRoomToJoin, setJamRoomToJoin] = createSignal<string | null>(null)
+export const [jamRoomToJoin, setJamRoomToJoin] = createSignal<string | null>(
+  null,
+)
 export const [jamLocalStream, setJamLocalStream] =
   createSignal<MediaStream | null>(null)
 export const [jamRemoteStreams, setJamRemoteStreams] = createSignal<
   Record<string, MediaStream>
 >({})
 export const [jamVideoEnabled, setJamVideoEnabled] = createSignal(true)
-export const [jamChatMessages, setJamChatMessages] = createSignal<JamChatMessage[]>(
-  [],
-)
+export const [jamChatMessages, setJamChatMessages] = createSignal<
+  JamChatMessage[]
+>([])
 
 // ── Pitch ────────────────────────────────────────────────────────────
 
@@ -60,26 +55,34 @@ export const [jamExercisePaused, setJamExercisePaused] = createSignal(false)
 export const [jamExerciseBeat, setJamExerciseBeat] = createSignal(0)
 export const [jamExerciseNoteIndex, setJamExerciseNoteIndex] = createSignal(-1)
 export const [jamExerciseTotalBeats, setJamExerciseTotalBeats] = createSignal(0)
+// eslint-disable-next-line solid/reactivity
+const _jamUnreadChatCount = createSignal(0)
+export const jamUnreadChatCount = _jamUnreadChatCount[0]
+export const setJamUnreadChatCount = _jamUnreadChatCount[1]
 
 // ── Tab ──────────────────────────────────────────────────────────────
 
-export const [jamPitchTab, setJamPitchTab] = createSignal<
-  'pitch' | 'exercise' | 'chat'
->('pitch')
+// eslint-disable-next-line solid/reactivity
+const _jamPitchTab = createSignal<'pitch' | 'exercise'>('pitch')
+export const jamPitchTab = _jamPitchTab[0]
+export const setJamPitchTab = _jamPitchTab[1]
 
 // ── Derived ─────────────────────────────────────────────────────────
 
-export const jamPeerCount = createRoot(() =>
-  createMemo(() => jamPeers().length),
-)
-export const jamConnectedPeers = createRoot(() =>
-  createMemo(() =>
+export const jamPeerCount = createRoot(() => {
+  const memo = createMemo(() => jamPeers().length)
+  return memo
+})
+export const jamConnectedPeers = createRoot(() => {
+  const memo = createMemo(() =>
     jamPeers().filter((p) => p.connectionState === 'connected'),
-  ),
-)
-export const jamHasActiveRoom = createRoot(() =>
-  createMemo(() => jamRoomId() !== null),
-)
+  )
+  return memo
+})
+export const jamHasActiveRoom = createRoot(() => {
+  const memo = createMemo(() => jamRoomId() !== null)
+  return memo
+})
 
 // ── Service instance ────────────────────────────────────────────────
 // Created once per session and wired to store signals.
@@ -104,6 +107,7 @@ export function initJam() {
 
   jamService = createJamService({
     onPeerJoined: (peer) => {
+      console.info('[jam:store] onPeerJoined', peer.id, peer.displayName)
       setJamPeers((prev) => [...prev, peer])
     },
     onPeerLeft: (peerId) => {
@@ -137,8 +141,15 @@ export function initJam() {
     },
     onChatMessage: (msg) => {
       setJamChatMessages((prev) => [...prev, msg])
+      setJamUnreadChatCount((prev) => prev + 1)
     },
     onConnectionStateChange: (peerId, state) => {
+      console.info(
+        '[jam:store] connection state change for',
+        peerId,
+        '=>',
+        state,
+      )
       setJamPeers((prev) =>
         prev.map((p) =>
           p.id === peerId ? { ...p, connectionState: state } : p,
@@ -153,7 +164,7 @@ export function initJam() {
     onPitchMessage: (msg: JamPitchMessage) => {
       setJamPitchHistory((prev) => {
         const next = { ...prev }
-        const arr = next[msg.peerId] || []
+        const arr = next[msg.peerId] ?? []
         arr.push({
           frequency: msg.frequency,
           noteName: msg.noteName,
@@ -180,8 +191,7 @@ export function initJam() {
       } else if (msg.melody) {
         setJamExerciseMelody(msg.melody)
         const total = msg.melody.items.reduce(
-          (max, item) =>
-            Math.max(max, item.startBeat + item.duration),
+          (max, item) => Math.max(max, item.startBeat + item.duration),
           0,
         )
         setJamExerciseTotalBeats(total)
@@ -190,6 +200,7 @@ export function initJam() {
         setJamExercisePlaying(false)
         setJamExercisePaused(false)
         stopPlaybackTimer()
+        setJamPitchTab('exercise')
       }
     },
     onPlaybackMessage: (msg: JamPlaybackMessage) => {
@@ -201,6 +212,7 @@ export function initJam() {
             setJamExerciseBeat(msg.currentBeat)
           }
           startPlaybackTimer()
+          setJamPitchTab('exercise')
           break
         case 'pause':
           setJamExercisePaused(true)
@@ -224,6 +236,7 @@ export function initJam() {
       cleanupJam()
     },
     onError: (message) => {
+      console.error('[jam:store] error:', message)
       setJamError(message)
       // If we haven't reached active state yet, reset to idle
       if (jamState() === 'connecting') {
@@ -268,7 +281,7 @@ export async function joinJamRoom(
     await jamService!.joinRoom(roomId, displayName)
     // Wait for signaling handshake — peer ID arrives via room-joined
     const peerId = await waitForPeerId()
-    if (!peerId) {
+    if (peerId === null || peerId === '') {
       setJamError('Failed to join room — no response from server')
       setJamState('idle')
       return false
@@ -302,10 +315,10 @@ export async function toggleJamVideo(): Promise<void> {
 }
 
 export function sendJamChatMessage(text: string): void {
-  if (!jamService || !jamPeerId()) return
+  if (jamService === null || jamPeerId() === null) return
   // Local echo
   const msg: JamChatMessage = {
-    id: crypto.randomUUID(),
+    id: globalThis.crypto.randomUUID(),
     peerId: jamPeerId()!,
     displayName: 'You',
     text,
@@ -339,6 +352,21 @@ export function startJamPitchDetection(): void {
     const p = jamLocalPitch()
     if (p && p.frequency > 0) {
       jamService?.sendPitch(p)
+
+      const myId = jamPeerId()
+      if (myId !== null && myId !== '') {
+        setJamPitchHistory((prev) => {
+          const next = { ...prev }
+          const arr = next[myId] ?? []
+          arr.push({
+            ...p,
+            timestamp: Date.now(),
+          })
+          if (arr.length > 600) arr.splice(0, arr.length - 600)
+          next[myId] = arr
+          return next
+        })
+      }
     }
   }, 50)
 }
@@ -369,6 +397,7 @@ export function selectJamExercise(melody: MelodyData): void {
   setJamExercisePaused(false)
   stopPlaybackTimer()
   jamService?.sendMelody(melody)
+  setJamPitchTab('exercise')
 }
 
 export function clearJamExercise(): void {
@@ -383,11 +412,14 @@ export function clearJamExercise(): void {
 }
 
 export function jamPlaybackPlay(startBeat?: number): void {
+  const ci = 4 // 4 beats count-in
+  const actualStart = startBeat ?? -ci
+  setJamExerciseBeat(actualStart)
   setJamExercisePlaying(true)
   setJamExercisePaused(false)
-  if (startBeat !== undefined) setJamExerciseBeat(startBeat)
   startPlaybackTimer()
-  jamService?.sendPlaybackCommand('play', startBeat ?? jamExerciseBeat())
+  jamService?.sendPlaybackCommand('play', actualStart)
+  setJamPitchTab('exercise')
 }
 
 export function jamPlaybackPause(): void {
@@ -487,6 +519,7 @@ function cleanupJam(): void {
   setJamExerciseBeat(0)
   setJamExerciseNoteIndex(-1)
   setJamExerciseTotalBeats(0)
+  setJamUnreadChatCount(0)
 }
 
 function waitForRoomId(): Promise<string> {
@@ -512,7 +545,7 @@ function waitForPeerId(): Promise<string | null> {
     const interval = setInterval(() => {
       attempts++
       const id = jamService?.getPeerId()
-      if (id) {
+      if (id !== undefined && id !== null && id !== '') {
         clearInterval(interval)
         resolve(id)
       } else if (attempts > 20) {

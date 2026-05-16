@@ -16,7 +16,8 @@
   flex: 1;
   padding: 4px 8px;
   font-size: 0.72rem;
-  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+  font-family:
+    ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
   color: var(--accent);
   background: var(--bg-primary, #0d1117);
   border: 1px solid var(--border);

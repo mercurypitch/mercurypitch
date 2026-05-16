@@ -1,0 +1,164 @@
+/* ── JamCameraWidget ─────────────────────────────────────────────────
+   Floating camera tray — small video thumbnails in bottom-right corner.
+   Click any thumbnail to expand it. Names shown below each avatar.
+   ─────────────────────────────────────────────────────────────────── */
+
+.tray {
+  position: fixed;
+  bottom: 90px; /* sit above the chat bubble */
+  right: 20px;
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+/* ── Single camera chip ─────────────────────────────────────────────── */
+
+.chip {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.thumb {
+  position: relative;
+  width: 72px;
+  height: 54px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(13, 17, 23, 0.9);
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  transition:
+    transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+  flex-shrink: 0;
+}
+
+.chip:hover .thumb {
+  transform: scale(1.06);
+  border-color: var(--accent);
+  box-shadow: 0 6px 20px rgba(88, 166, 255, 0.3);
+}
+
+.chip.expanded .thumb {
+  width: 220px;
+  height: 165px;
+  border-color: var(--accent);
+  box-shadow: 0 8px 32px rgba(88, 166, 255, 0.4);
+}
+
+.video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Camera-off placeholder */
+.camOff {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: rgba(13, 17, 23, 0.95);
+  color: var(--fg-tertiary);
+  font-size: 0.6rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.camOff svg {
+  opacity: 0.5;
+}
+
+/* "You" indicator dot */
+.youDot {
+  position: absolute;
+  top: 5px;
+  left: 6px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 4px var(--accent);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+/* ── Name label under chip ──────────────────────────────────────────── */
+
+.name {
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: var(--fg-secondary);
+  white-space: nowrap;
+  max-width: 88px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+  padding: 0 2px;
+  background: rgba(13, 17, 23, 0.75);
+  border-radius: 4px;
+  padding: 1px 6px;
+  backdrop-filter: blur(4px);
+}
+
+.chip.expanded .name {
+  max-width: 220px;
+}
+
+/* ── Expand label tooltip ────────────────────────────────────────────── */
+.expandHint {
+  position: absolute;
+  bottom: 4px;
+  right: 5px;
+  font-size: 0.55rem;
+  color: rgba(255, 255, 255, 0.5);
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 3px;
+  padding: 1px 4px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.chip:hover .expandHint {
+  opacity: 1;
+}
+
+/* ── Animation ──────────────────────────────────────────────────────── */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.chip {
+  animation: fadeIn 0.25s ease-out;
+}
