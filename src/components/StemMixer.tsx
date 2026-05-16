@@ -13,7 +13,7 @@ import { useStemMixerPitchAnalysisController } from '@/features/stem-mixer/useSt
 import { extractTitle } from '@/lib/lyrics-service'
 import type { MidiNoteEvent } from '@/lib/midi-generator'
 import { showNotification } from '@/stores/notifications-store'
-import { ChevronLeft, Share } from './icons'
+import { ChevronLeft, Settings, Share } from './icons'
 import { StemMixerFixedWorkspace } from './StemMixerFixedWorkspace'
 import { StemMixerGridWorkspace } from './StemMixerGridWorkspace'
 import { StemMixerPitchAnalysisPanel } from './StemMixerPitchAnalysisPanel'
@@ -355,6 +355,16 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   // Backfill holder refs that audio controller needs
   setUserScrolledForAudio = setUserScrolled
 
+  // ── Pitch Analysis controller ──────────────────────────────────
+  const pitchAnalysis = useStemMixerPitchAnalysisController({
+    vocalBuffer: () => vocal().buffer,
+    sampleRate: () => audio.getAudioCtx()?.sampleRate ?? 44100,
+    setPitchHistory: (h) => {
+      audio.setPitchHistory(h)
+    },
+    showNotification,
+  })
+
   // ── Canvas controller ──────────────────────────────────────────
   const canvas = useStemMixerCanvasController({
     duration: audio.duration,
@@ -363,7 +373,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     windowDuration: audio.windowDuration,
     tracks,
     vocal,
-    getPitchHistory: audio.getPitchHistory,
+    getPitchHistory: () =>
+      pitchAnalysis.pitchSourceMode() === 'offline'
+        ? pitchAnalysis.offlinePitchHistory()
+        : audio.getPitchHistory(),
     getMicPitchHistory: mic.getMicPitchHistory,
     micActive: mic.micActive,
     currentPitch: audio.currentPitch,
@@ -383,17 +396,6 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     drawMidiCanvas: canvas.drawMidiCanvas,
   })
   updateCurrentLineForAudio = updateCurrentLine
-
-  // ── Pitch Analysis controller ──────────────────────────────────
-  const pitchAnalysis = useStemMixerPitchAnalysisController({
-    vocalBuffer: () => vocal().buffer,
-    sampleRate: () => audio.getAudioCtx()?.sampleRate ?? 44100,
-    setPitchHistory: (h) => {
-      audio.setPitchHistory(h)
-      canvas.queueCanvasRedraw()
-    },
-    showNotification,
-  })
 
   // ── Layout Management ──────────────────────────────────────────
   const layout = useStemMixerLayoutController({
@@ -676,11 +678,12 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           style={{ display: 'flex', gap: '0.5rem' }}
         >
           <button
-            class="sm-btn sm-btn-secondary"
+            class="sm-btn sm-btn-secondary sm-pitch-debug-btn"
             onClick={() => pitchAnalysis.setPanelOpen((prev) => !prev)}
-            title="Toggle Pitch Analysis Debug Panel"
+            title="Pitch Analysis & Settings"
+            style={{ gap: '0.4rem' }}
           >
-            Debug Pitch
+            <Settings /> Pitch
           </button>
           <button
             class="sm-share-btn"
@@ -710,7 +713,11 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           </Show>
           <span>
             {audio.midiGenerating()
-              ? `Generating MIDI melody... ${audio.midiProgress()}%`
+              ? audio.midiPhase() === 'rendering'
+                ? 'Rendering MIDI audio...'
+                : audio.midiPhase() === 'synthesizing'
+                  ? `Building MIDI graph... ${audio.midiProgress()}%`
+                  : `Detecting pitches... ${audio.midiProgress()}%`
               : `Loading stems... ${audio.loadProgress()}%`}
           </span>
         </div>
@@ -825,6 +832,11 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           setMinAmplitude={pitchAnalysis.setMinAmplitude}
           isAnalyzing={pitchAnalysis.isAnalyzing()}
           progress={pitchAnalysis.progress()}
+          pitchSourceMode={pitchAnalysis.pitchSourceMode()}
+          setPitchSourceMode={(mode) => {
+            pitchAnalysis.setPitchSourceMode(mode)
+            canvas.queueCanvasRedraw()
+          }}
           runAnalysis={() => void pitchAnalysis.runAnalysis()}
           onClose={() => pitchAnalysis.setPanelOpen(false)}
         />
@@ -2813,6 +2825,50 @@ export const StemMixerStyles: string = `
 
 .sm-song-picker-upload-link:hover {
   color: var(--accent, #58a6ff);
+}
+
+/* Standard Buttons */
+.sm-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.4rem 0.8rem;
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.15s;
+}
+
+.sm-btn-secondary {
+  background: var(--bg-tertiary, #21262d);
+  border-color: var(--border, #30363d);
+  color: var(--fg-secondary, #8b949e);
+}
+
+.sm-btn-secondary:hover {
+  background: var(--bg-hover, #30363d);
+  color: var(--fg-primary, #c9d1d9);
+}
+
+.sm-pitch-debug-btn svg {
+  width: 0.8rem;
+  height: 0.8rem;
+}
+
+.sm-btn-primary {
+  background: var(--accent, #58a6ff);
+  color: #fff;
+}
+
+.sm-btn-primary:hover:not(:disabled) {
+  background: var(--accent-hover, #79c0ff);
+}
+
+.sm-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* Pitch Analysis Panel (Debug Modal) */

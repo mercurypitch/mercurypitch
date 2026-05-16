@@ -253,11 +253,12 @@ export async function synthesizeMidiBuffer(
   totalDurationSec: number,
   onProgress?: (pct: number) => void,
 ): Promise<AudioBuffer> {
-  const ctx = new OfflineAudioContext(
-    2,
-    Math.ceil(sampleRate * totalDurationSec),
-    sampleRate,
-  )
+  const numSamples = Math.ceil(sampleRate * totalDurationSec)
+  const ctx = new OfflineAudioContext(2, numSamples, sampleRate)
+  const buffer = ctx.createBuffer(2, numSamples, sampleRate)
+  const left = buffer.getChannelData(0)
+  const right = buffer.getChannelData(1)
+
   const beatsPerSec = bpm / 60
   const ticksPerSec = TICKS_PER_BEAT * beatsPerSec
 
@@ -270,33 +271,47 @@ export async function synthesizeMidiBuffer(
     if (duration <= 0) continue
 
     const freq = midiToFreq(note.midi)
+    const startSample = Math.floor(startSec * sampleRate)
+    const endSample = Math.floor(endSec * sampleRate)
 
-    const osc = ctx.createOscillator()
-    osc.type = 'sine'
-    osc.frequency.value = freq
+    const fadeInSamples = Math.floor(Math.min(0.008, duration / 4) * sampleRate)
+    const fadeOutSamples = Math.floor(
+      Math.min(0.015, duration / 4) * sampleRate,
+    )
+    const totalNoteSamples = endSample - startSample
 
-    const gain = ctx.createGain()
-    const fadeIn = Math.min(0.008, duration / 4)
-    const fadeOut = Math.min(0.015, duration / 4)
-    gain.gain.setValueAtTime(0, startSec)
-    gain.gain.linearRampToValueAtTime(0.35, startSec + fadeIn)
-    gain.gain.setValueAtTime(0.35, endSec - fadeOut)
-    gain.gain.linearRampToValueAtTime(0, endSec)
+    let phase = 0
+    const phaseInc = (2 * Math.PI * freq) / sampleRate
 
-    osc.connect(gain)
-    gain.connect(ctx.destination)
-    osc.start(startSec)
-    osc.stop(endSec)
+    for (let s = 0; s < totalNoteSamples; s++) {
+      const idx = startSample + s
+      if (idx >= numSamples) break
 
-    // Yield every 80 notes to avoid freezing the main thread
-    if (i % 80 === 0 && i > 0) {
+      let amp = 0.35
+      if (s < fadeInSamples) {
+        amp = 0.35 * (s / fadeInSamples)
+      } else if (s > totalNoteSamples - fadeOutSamples) {
+        amp =
+          0.35 *
+          (1 - (s - (totalNoteSamples - fadeOutSamples)) / fadeOutSamples)
+      }
+
+      const sampleValue = Math.sin(phase) * amp
+      left[idx] += sampleValue
+      right[idx] += sampleValue
+
+      phase += phaseInc
+    }
+
+    // Yield every 1000 notes to avoid freezing the main thread while remaining fast
+    if (i % 1000 === 0 && i > 0) {
       onProgress?.(Math.round((i / total) * 100))
       await new Promise((r) => setTimeout(r, 0))
     }
   }
 
   onProgress?.(100)
-  return ctx.startRendering()
+  return buffer
 }
 
 const YIELD_BATCH_SIZE = 80
