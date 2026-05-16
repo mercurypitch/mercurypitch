@@ -361,6 +361,9 @@ export interface LrcWordTimings {
 /** Regex that matches a single LRC timestamp anywhere in text. */
 const LRC_TS_GLOBAL = /\[(\d{1,3}):(\d{2})(?:[.:](\d{2,3}))?\]/g
 
+/** Non-capturing variant for splitting text on timestamp boundaries. */
+const LRC_TS_SPLIT = /\[\d{1,3}:\d{2}(?:[.:]\d{2,3})?\]/g
+
 /**
  * Parse word-level timestamps from LRC line text.
  *
@@ -395,8 +398,10 @@ export function parseLrcWordTimings(
 
   if (times.length === 0) return null
 
-  // Split text on timestamps to isolate word groups
-  const parts = text.split(LRC_TS_GLOBAL).filter((s) => s.trim().length > 0)
+  // Split text on timestamps to isolate word groups.
+  // Use non-capturing regex so String.split doesn't include timestamp digits
+  // as separate array elements.
+  const parts = text.split(LRC_TS_SPLIT).filter((s) => s.trim().length > 0)
   if (parts.length === 0) return null
 
   // First word starts at lineStartTime, subsequent at each embedded timestamp
@@ -453,4 +458,102 @@ export function getCurrentLrcIndex(lines: LrcLine[], elapsed: number): number {
     else break
   }
   return idx
+}
+
+// ── Word-Level Interpolation ───────────────────────────────────
+
+/**
+ * Determine which word is active (highlighted) at a given elapsed time.
+ *
+ * Two code paths:
+ * 1. **Per-word timings:** When `wordTimes` is provided and its length matches
+ *    `words`, uses actual word timestamps for precise interpolation. The
+ *    elapsed time is matched against word boundaries, and character progress
+ *    is computed within the current word.
+ * 2. **Even-division fallback:** When no per-word timings are available,
+ *    divides the line duration evenly among all words.
+ *
+ * @returns `activeUpTo` — index of the last fully-highlighted word (-1 if none
+ *          are fully done), and `charProgress` — how many characters of the
+ *          current word are revealed.
+ */
+export function computeActiveWord(
+  words: string[],
+  startTime: number,
+  endTime: number,
+  wordTimes: number[] | undefined,
+  elapsedTime: number,
+): { activeUpTo: number; charProgress: number } {
+  if (words.length === 0) return { activeUpTo: -1, charProgress: 0 }
+
+  // Per-word LRC timings — use actual word timestamps for interpolation
+  if (wordTimes && wordTimes.length === words.length) {
+    let wordIdx = -1
+    for (let i = words.length - 1; i >= 0; i--) {
+      if (elapsedTime >= wordTimes[i]) {
+        wordIdx = i
+        break
+      }
+    }
+    if (wordIdx < 0) return { activeUpTo: -1, charProgress: 0 }
+
+    const wordStart = wordTimes[wordIdx]
+    let wordEnd: number
+    if (wordIdx + 1 < wordTimes.length) {
+      wordEnd = wordTimes[wordIdx + 1]
+    } else {
+      // Estimate last word's duration from the average of known word gaps,
+      // rather than stretching it to endTime (which may include long rests).
+      const gaps: number[] = []
+      for (let i = 1; i < wordTimes.length; i++) {
+        gaps.push(wordTimes[i] - wordTimes[i - 1])
+      }
+      const avgGap =
+        gaps.length > 0
+          ? gaps.reduce((a, b) => a + b, 0) / gaps.length
+          : 0.5
+      wordEnd = wordStart + avgGap
+    }
+    const wordDuration = Math.max(0.01, wordEnd - wordStart)
+    const elapsedInWord = elapsedTime - wordStart
+
+    // When past the estimated end of the last word, all words are done
+    if (elapsedTime >= wordEnd && wordIdx === words.length - 1) {
+      return {
+        activeUpTo: words.length - 1,
+        charProgress: words[wordIdx].length,
+      }
+    }
+
+    const activeUpTo = wordIdx - 1
+    const currentWord = words[wordIdx]
+    const charProgress = Math.min(
+      Math.floor((elapsedInWord / wordDuration) * currentWord.length),
+      currentWord.length,
+    )
+    return { activeUpTo, charProgress }
+  }
+
+  // Fallback: evenly divide line duration among words
+  const lineDuration = Math.max(0.05, endTime - startTime)
+  const progress = (elapsedTime - startTime) / lineDuration
+  if (progress < 0) return { activeUpTo: -1, charProgress: 0 }
+  if (progress >= 1)
+    return {
+      activeUpTo: words.length - 1,
+      charProgress: words[words.length - 1]?.length || 0,
+    }
+
+  const wordDuration = lineDuration / words.length
+  const currentWordIdx = Math.floor(progress * words.length)
+  const activeUpTo = currentWordIdx - 1
+
+  const elapsedInWord = elapsedTime - startTime - currentWordIdx * wordDuration
+  const currentWord = words[currentWordIdx]
+  const charProgress = Math.min(
+    Math.floor((elapsedInWord / wordDuration) * currentWord.length),
+    currentWord.length,
+  )
+
+  return { activeUpTo, charProgress }
 }

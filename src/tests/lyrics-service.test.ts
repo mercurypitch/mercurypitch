@@ -4,7 +4,7 @@
 
 import { describe, expect, it, vi } from 'vitest'
 import type { LrcLine } from '@/lib/lyrics-service'
-import { extractTitle, fetchLyricsById, getCurrentLineIndex, getCurrentLrcIndex, parseArtistTitle, parseLrcFile, parseTextLyrics, searchLyrics, searchLyricsMulti, } from '@/lib/lyrics-service'
+import { computeActiveWord, extractTitle, fetchLyricsById, getCurrentLineIndex, getCurrentLrcIndex, parseArtistTitle, parseLrcFile, parseLrcWordTimings, parseTextLyrics, searchLyrics, searchLyricsMulti, } from '@/lib/lyrics-service'
 
 // ── REQ-UV-029: LRC Parsing ──────────────────────────────────
 
@@ -520,5 +520,414 @@ describe('fetchLyricsById', () => {
       'https://lrclib.net/api/get/789',
       expect.objectContaining({ signal: expect.any(AbortSignal) }),
     )
+  })
+})
+
+// ── parseLrcWordTimings — Embedded Timestamp Extraction ─────────
+
+describe('parseLrcWordTimings', () => {
+  it('returns null for plain text with no embedded timestamps', () => {
+    expect(parseLrcWordTimings('First line of text', 10)).toBeNull()
+    expect(parseLrcWordTimings('Another line here', 0)).toBeNull()
+  })
+
+  it('extracts per-word timings from word-level LRC text', () => {
+    // Input: parseLrcFile captures [00:22.00] as line start time,
+    // remaining embedded timestamps stay in the text.
+    const text = 'First [00:22.35]word [00:22.70]here'
+    const result = parseLrcWordTimings(text, 22.0)
+    expect(result).not.toBeNull()
+    expect(result!.words).toEqual(['First', 'word', 'here'])
+    // First word starts at lineStartTime (22.0),
+    // subsequent words get their embedded timestamps
+    expect(result!.wordTimes).toHaveLength(3)
+    expect(result!.wordTimes[0]).toBe(22.0)  // First word at line start
+    expect(result!.wordTimes[1]).toBe(22.35) // "word" timestamp
+    expect(result!.wordTimes[2]).toBe(22.7)  // "here" timestamp
+  })
+
+  it('handles multiple words before first embedded timestamp', () => {
+    // "Como esta amigo" all come before the next timestamp
+    const text = 'Como esta [00:10.29]amigo'
+    const result = parseLrcWordTimings(text, 7.3)
+    expect(result).not.toBeNull()
+    expect(result!.words).toEqual(['Como', 'esta', 'amigo'])
+    // First two words share the line start time
+    expect(result!.wordTimes[0]).toBe(7.3)
+    expect(result!.wordTimes[1]).toBe(7.3)
+    expect(result!.wordTimes[2]).toBe(10.29)
+  })
+
+  it('handles LRC text from the Iron Maiden test file', () => {
+    // Line 1: "Como [00:08.77]esta [00:10.29]amigo"
+    const text1 = 'Como [00:08.77]esta [00:10.29]amigo'
+    const result1 = parseLrcWordTimings(text1, 7.3)
+    expect(result1).not.toBeNull()
+    expect(result1!.words).toEqual(['Como', 'esta', 'amigo'])
+    expect(result1!.wordTimes).toEqual([7.3, 8.77, 10.29])
+
+    // Line 22: "Amigos [02:32.00]no [02:32.37]more [02:32.99]tears"
+    const text22 = 'Amigos [02:32.00]no [02:32.37]more [02:32.99]tears'
+    const result22 = parseLrcWordTimings(text22, 150.6) // 02:30.60
+    expect(result22).not.toBeNull()
+    expect(result22!.words).toEqual(['Amigos', 'no', 'more', 'tears'])
+    expect(result22!.wordTimes[0]).toBe(150.6)
+    expect(result22!.wordTimes[1]).toBe(152.0)  // 02:32.00
+    expect(result22!.wordTimes[2]).toBe(152.37) // 02:32.37
+    expect(result22!.wordTimes[3]).toBe(152.99) // 02:32.99
+  })
+
+  it('returns null when text has timestamps but no actual words', () => {
+    expect(parseLrcWordTimings('[00:05.00][00:10.00]', 0)).toBeNull()
+  })
+
+  it('handles 3-digit milliseconds', () => {
+    const text = 'Start [00:05.123]word'
+    const result = parseLrcWordTimings(text, 0.0)
+    expect(result).not.toBeNull()
+    expect(result!.wordTimes[1]).toBeCloseTo(5.123, 3)
+  })
+
+  it('handles timestamps with colon separator (MM:SS:xx)', () => {
+    const text = 'First [01:30:50]second'
+    const result = parseLrcWordTimings(text, 5.0)
+    expect(result).not.toBeNull()
+    // 1*60 + 30 + 0.5 = 90.5
+    expect(result!.wordTimes[1]).toBeCloseTo(90.5, 1)
+  })
+})
+
+// ── computeActiveWord — Per-Word Timing Interpolation ───────────
+
+describe('computeActiveWord — per-word timings', () => {
+  const words = ['Amigos', 'no', 'more', 'tears']
+  const wordTimes = [150.6, 152.0, 152.37, 152.99]
+  const startTime = 150.6
+  const endTime = 237.26 // next line at 03:57.26 (~87s gap)
+
+  it('returns no active word before first word timestamp', () => {
+    const result = computeActiveWord(words, startTime, endTime, wordTimes, 149.0)
+    expect(result.activeUpTo).toBe(-1)
+    expect(result.charProgress).toBe(0)
+  })
+
+  it('highlights first word at its start time', () => {
+    const result = computeActiveWord(words, startTime, endTime, wordTimes, 150.6)
+    expect(result.activeUpTo).toBe(-1) // no fully-highlighted words
+    // charProgress should be 0 since we're exactly at the start
+    expect(result.charProgress).toBe(0)
+  })
+
+  it('partially reveals characters within first word', () => {
+    // Midway through "Amigos" (duration from 150.6 to 152.0 = 1.4s)
+    // At 151.3, we're 0.7s into the word = 50% progress
+    const result = computeActiveWord(words, startTime, endTime, wordTimes, 151.3)
+    expect(result.activeUpTo).toBe(-1) // no word fully done
+    // 0.7 / 1.4 = 0.5, 0.5 * 6 chars = 3
+    expect(result.charProgress).toBe(3)
+  })
+
+  it('fully highlights first word at second word boundary', () => {
+    // At 152.0, "Amigos" is done, "no" begins
+    const result = computeActiveWord(words, startTime, endTime, wordTimes, 152.0)
+    expect(result.activeUpTo).toBe(0) // "Amigos" fully highlighted
+    expect(result.charProgress).toBe(0) // "no" just started
+  })
+
+  it('highlights second word during its window', () => {
+    // At 2:32.5 (152.5s), "no" (2:32.00-2:32.37) should be fully done
+    const result = computeActiveWord(words, startTime, endTime, wordTimes, 152.5)
+    expect(result.activeUpTo).toBe(1) // "no" fully highlighted
+  })
+
+  it('highlights third word during its window', () => {
+    // At 2:32.8 (152.8s), between "more" (2:32.37) and "tears" (2:32.99)
+    const result = computeActiveWord(words, startTime, endTime, wordTimes, 152.8)
+    // wordIdx=2 ("more"), activeUpTo=1 ("Amigos" and "no" fully done)
+    expect(result.activeUpTo).toBe(1)
+  })
+
+  it('highlights all words after the last word timestamp', () => {
+    // After 2:32.99, the last word "tears" is estimated to end at
+    // 152.99 + avgGap(0.80) = 153.79. At 160s all words are fully done.
+    const result = computeActiveWord(words, startTime, endTime, wordTimes, 160.0)
+    expect(result.activeUpTo).toBe(3)
+    expect(result.charProgress).toBe(5)
+  })
+
+  it('does NOT stretch highlighting to next line — uses word boundaries', () => {
+    // KEY TEST: At 2:31.8 (151.8s), which is between "Amigos" (150.6) and "no" (152.0)
+    // With even-division, this would be stretched across 87 seconds (to 237.26)
+    // With per-word timing, "Amigos" should still be the active word
+    const result = computeActiveWord(words, startTime, endTime, wordTimes, 151.8)
+    // activeUpTo = -1 (Amigos not fully done yet)
+    expect(result.activeUpTo).toBe(-1)
+    // charProgress should be through most of "Amigos"
+    // elapsed 1.2s into Amigos's 1.4s window, 1.2/1.4 * 6 ≈ 5 chars
+    expect(result.charProgress).toBeGreaterThanOrEqual(4)
+  })
+
+  it('interpolates within first word when elapsed is between first and second word times', () => {
+    // Checking that word highlighting happens between word boundaries,
+    // not stretched across the line-to-next-line interval
+    // At 152.7 (between "more" at 152.37 and "tears" at 152.99)
+    const result = computeActiveWord(words, startTime, endTime, wordTimes, 152.7)
+    // "Amigos" and "no" should be fully done (activeUpTo = 1)
+    // "more" should be partially revealed
+    expect(result.activeUpTo).toBe(1) // first 2 words fully highlighted
+    expect(result.charProgress).toBeGreaterThan(0)
+  })
+})
+
+// ── computeActiveWord — Even-Division Fallback ──────────────────
+
+describe('computeActiveWord — fallback even-division', () => {
+  const words = ['First', 'line', 'of', 'lyrics']
+  const startTime = 10.0
+  const endTime = 14.0 // 4-second line
+
+  it('returns -1 before line start', () => {
+    const result = computeActiveWord(words, startTime, endTime, undefined, 5.0)
+    expect(result.activeUpTo).toBe(-1)
+  })
+
+  it('evenly divides duration among words', () => {
+    // 4 words ("First","line","of","lyrics") over 4 seconds = 1s per word
+    const result = computeActiveWord(words, startTime, endTime, undefined, 11.5)
+    // 1.5s into the line: wordIndex = floor(0.375*4) = 1 ("line")
+    // activeUpTo = 0 ("First" fully done)
+    expect(result.activeUpTo).toBe(0)
+    // 0.5s into "line" (4 chars): 0.5/1 * 4 = 2 chars revealed
+    expect(result.charProgress).toBe(2)
+  })
+
+  it('returns all words highlighted after line end', () => {
+    const result = computeActiveWord(words, startTime, endTime, undefined, 20.0)
+    expect(result.activeUpTo).toBe(3)
+    expect(result.charProgress).toBe(6) // "lyrics" full
+  })
+
+  it('handles single word', () => {
+    const result = computeActiveWord(['solo'], 0, 2, undefined, 1.0)
+    expect(result.activeUpTo).toBe(-1)
+    expect(result.charProgress).toBe(2) // halfway through "solo" = 2 chars
+  })
+})
+
+// ── computeActiveWord — Edge Cases ──────────────────────────────
+
+describe('computeActiveWord — edge cases', () => {
+  it('returns -1 for empty words array', () => {
+    const result = computeActiveWord([], 0, 10, undefined, 5)
+    expect(result.activeUpTo).toBe(-1)
+    expect(result.charProgress).toBe(0)
+  })
+
+  it('handles elapsed before start when per-word timings provided', () => {
+    const result = computeActiveWord(
+      ['a', 'b'],
+      10,
+      20,
+      [10, 15],
+      5,
+    )
+    expect(result.activeUpTo).toBe(-1)
+    expect(result.charProgress).toBe(0)
+  })
+
+  it('handles exact word boundary (elapsed === word time)', () => {
+    const result = computeActiveWord(
+      ['hello', 'world'],
+      0,
+      10,
+      [0, 5],
+      5,
+    )
+    expect(result.activeUpTo).toBe(0) // "hello" fully done
+    expect(result.charProgress).toBe(0) // "world" just starting
+  })
+
+  it('handles wordTimes length mismatch (falls back to even division)', () => {
+    // words.length=3 but wordTimes.length=2 → fallback path
+    const result = computeActiveWord(
+      ['one', 'two', 'three'],
+      0,
+      9,
+      [0, 3], // mismatched!
+      4.5, // halfway through 0-9
+    )
+    // Even-division: 3s per word. At 4.5s, index = floor(4.5/3) = 1
+    expect(result.activeUpTo).toBe(0) // "one" done
+    expect(result.charProgress).toBe(1) // halfway into "two" (3 chars / 3s = 0.5 → 1 char)
+  })
+
+  it('handles wordTimes present but empty', () => {
+    const result = computeActiveWord(['a', 'b'], 0, 2, [], 1)
+    // [] !== undefined, but length 0 !== words.length 2 → fallback
+    expect(result.activeUpTo).toBe(0) // 50% into line
+  })
+})
+
+// ── parseLrcWordTimings + computeActiveWord Integration ─────────
+// Simulates the full pipeline from LRC text through word parsing
+// to active-word determination at specific elapsed times.
+
+describe('LRC word timing integration — Iron Maiden scenario', () => {
+  // Simulate parseLrcFile output for the two lines with ~87s gap
+  const lrcLines: LrcLine[] = [
+    { time: 150.6, text: 'Amigos [02:32.00]no [02:32.37]more [02:32.99]tears' },
+    { time: 237.26, text: 'Inside [03:57.79]the [03:58.89]scream [03:59.60]is [04:00.25]silence' },
+  ]
+
+  // Build the stableParsedLyrics-equivalent map
+  function buildMap(lines: LrcLine[], duration: number) {
+    const REST_THRESHOLD = 20
+    const result: { time: number; text: string }[] = []
+    lines.forEach((line, i) => {
+      const gap = i > 0 ? line.time - lines[i - 1].time : 0
+      if (gap > REST_THRESHOLD) {
+        result.push({ time: lines[i - 1].time + gap / 2, text: '~Rest~' })
+      }
+      result.push({ time: line.time, text: line.text })
+    })
+
+    const map = new Map<number, {
+      time: number; endTime: number; words: string[]; key: string; wordTimes?: number[]
+    }>()
+
+    result.forEach((item, i) => {
+      const endTime = i + 1 < result.length ? result[i + 1].time : duration
+      const wt = parseLrcWordTimings(item.text, item.time)
+      const words = wt ? wt.words : item.text.split(/\s+/).filter((w) => w.length > 0)
+      map.set(i, {
+        key: `lrc-${i}`,
+        time: item.time,
+        endTime,
+        words,
+        wordTimes: wt?.wordTimes,
+      })
+    })
+    return map
+  }
+
+  const duration = 300 // 5 minutes
+  const map = buildMap(lrcLines, duration)
+
+  it('inserts ~Rest~ for gap > 20 seconds', () => {
+    // Order: index 0 = Amigos (150.6), index 1 = ~Rest~ (193.93), index 2 = Inside (237.26)
+    expect(map.get(0)!.words).toEqual(['Amigos', 'no', 'more', 'tears'])
+    expect(map.get(1)!.words).toEqual(['~Rest~'])
+    expect(map.get(1)!.time).toBeCloseTo(150.6 + (237.26 - 150.6) / 2, 0)
+    expect(map.get(2)!.words).toEqual(['Inside', 'the', 'scream', 'is', 'silence'])
+  })
+
+  it('uses clean words from parseLrcWordTimings (no timestamp brackets)', () => {
+    const amigosLine = map.get(0)!
+    // words must NOT contain "[02:32.00]" etc.
+    expect(amigosLine.words).not.toContain('[02:32.00]')
+    expect(amigosLine.words).toEqual(['Amigos', 'no', 'more', 'tears'])
+    // wordTimes length must match words length for per-word path
+    expect(amigosLine.wordTimes).toHaveLength(amigosLine.words.length)
+  })
+
+  it('at 2:32.5 (152.5s), "no" is the active word, NOT stretched from 2:30', () => {
+    // This is the critical bug test: at elapsed 152.5s,
+    // the user should see "Amigos" fully highlighted and "no" being revealed.
+    // Before the fix, the highlighting stretched evenly across 87 seconds.
+    const line = map.get(0)! // Amigos line — index 0
+    const result = computeActiveWord(
+      line.words,
+      line.time,
+      line.endTime,
+      line.wordTimes,
+      152.5,
+    )
+    // "no" is fully done (it's at 152.0-152.37, and we're past 152.37)
+    // "more" is partially done
+    expect(result.activeUpTo).toBeGreaterThanOrEqual(1)
+  })
+
+  it('at 2:31.0 (151.0s), first word "Amigos" is partially revealed', () => {
+    const line = map.get(0)!
+    const result = computeActiveWord(
+      line.words,
+      line.time,
+      line.endTime,
+      line.wordTimes,
+      151.0,
+    )
+    // Still within "Amigos" (150.6 to 152.0)
+    expect(result.activeUpTo).toBe(-1)
+  })
+
+  it('at 2:40 (160s), all 4 words of the line are fully highlighted', () => {
+    const line = map.get(0)!
+    const result = computeActiveWord(
+      line.words,
+      line.time,
+      line.endTime,
+      line.wordTimes,
+      160,
+    )
+    expect(result.activeUpTo).toBe(3)
+    expect(result.charProgress).toBe(5) // "tears" = 5 chars
+  })
+
+  it('~Rest~ line has no per-word timings (falls back to even division)', () => {
+    const restLine = map.get(1)! // ~Rest~ is at index 1
+    expect(restLine.wordTimes).toBeUndefined()
+    expect(restLine.words).toEqual(['~Rest~'])
+  })
+
+  it('at ~Rest~ midpoint, the rest word is partially revealed', () => {
+    const restLine = map.get(1)! // ~Rest~ at index 1, time ~193.93, endTime ~237.26
+    const result = computeActiveWord(
+      restLine.words,
+      restLine.time,
+      restLine.endTime,
+      restLine.wordTimes,
+      restLine.time + (restLine.endTime - restLine.time) / 2,
+    )
+    // At midpoint of rest line, should be partially revealed
+    expect(result.activeUpTo).toBe(-1)
+    expect(result.charProgress).toBeGreaterThan(0)
+  })
+})
+
+// ── Text lyrics: no per-word timings ────────────────────────────
+
+describe('LRC word timing — no per-word timings (text lyrics)', () => {
+  it('even-division is used when lines have no embedded timestamps', () => {
+    const words = ['Shall', 'we', 'kneel', 'and', 'say', 'a', 'prayer']
+    const startTime = 25.18
+    const endTime = 31.13 // next line
+
+    // At halfway point (28.155), should be roughly halfway through words
+    const result = computeActiveWord(words, startTime, endTime, undefined, 28.155)
+    // 4 words * 0.5 = floor(3.5) = index 3, activeUpTo = 2
+    expect(result.activeUpTo).toBe(2)
+  })
+})
+
+// ── parseLrcFile with per-word timings ──────────────────────────
+
+describe('parseLrcFile preserves embedded timestamps for word-level parsing', () => {
+  it('keeps embedded timestamps in text for later word-level parsing', () => {
+    const content = '[02:30.60]Amigos [02:32.00]no [02:32.37]more [02:32.99]tears'
+    const result = parseLrcFile(content)
+    expect(result).toHaveLength(1)
+    // First timestamp extracted as line time
+    expect(result[0].time).toBe(150.6)
+    // Remaining timestamps stay in text for parseLrcWordTimings to handle
+    expect(result[0].text).toBe('Amigos [02:32.00]no [02:32.37]more [02:32.99]tears')
+  })
+
+  it('sorts multiple per-word lines correctly', () => {
+    const content = `[04:12.83]Only [04:13.28]horror, [04:13.95]only [04:14.38]pain
+[03:57.26]Inside [03:57.79]the [03:58.89]scream [03:59.60]is [04:00.25]silence`
+    const result = parseLrcFile(content)
+    expect(result).toHaveLength(2)
+    expect(result[0].time).toBe(237.26) // 03:57.26
+    expect(result[1].time).toBe(252.83) // 04:12.83
   })
 })
