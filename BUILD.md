@@ -65,13 +65,13 @@ wrangler deploy --env dev --config wrangler.containers.jsonc
 
 This provisions:
 
-| Resource          | Value                          |
-|-------------------|--------------------------------|
-| Container class   | `UvrContainer`                 |
-| Image             | `./uvr-api/Dockerfile`         |
-| Max instances     | 3                              |
-| Instance type     | `standard-4`                   |
-| Durable Object    | `UVR_SERVICE` binding          |
+| Resource        | Value                  |
+| --------------- | ---------------------- |
+| Container class | `UvrContainer`         |
+| Image           | `./uvr-api/Dockerfile` |
+| Max instances   | 3                      |
+| Instance type   | `standard-4`           |
+| Durable Object  | `UVR_SERVICE` binding  |
 
 > To tear down existing containers, delete the `UvrContainer` Durable Object from the Cloudflare dashboard under Workers & Pages > mercury-pitch-dev > Settings > Bindings.
 

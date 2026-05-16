@@ -11,6 +11,7 @@ Open [mercurypitch.com](https://mercurypitch.com) in a modern browser to try it 
 ![MercuryPitch Singing Practice](assets/BasicMelodyPractice_Singing.jpg)
 
 ![MercuryPitch Piano Roll Editor](assets/BasicMelodyPractice_Piano.jpg)
+
 ## Features
 
 ### Core Practice

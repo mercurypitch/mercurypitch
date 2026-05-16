@@ -22,6 +22,7 @@
     "lint:fix": "eslint src --fix",
     "lines": "cloc src --exclude-dir=node_modules,dist --by-file-by-lang --not-match-f='(.*[.]d[.]ts|.*[.]stories[.].*|.*[.]test[.].*|.*[.]json)'",
     "check:syntax": "run-s typecheck lint fmt",
+    "check:fix:all": "run-s typecheck lint:fix fmt:write",
     "deploy:dev": "pnpm exec wrangler deploy --env dev",
     "deploy:prod": "pnpm exec wrangler deploy --env prod",
     "size": "vite build && du -sh dist/assets/*.js dist/assets/*.css dist/assets/*.wasm 2>/dev/null | sort -rh"
