@@ -188,8 +188,13 @@ export function createSignalingClient(callbacks: JamCallbacks) {
   function leaveRoom(): void {
     sendSignal({ type: 'leave-room' })
     clearReconnect()
-    ws?.close()
-    ws = null
+    if (ws) {
+      ws.onclose = null
+      ws.onerror = null
+      ws.onmessage = null
+      ws.close()
+      ws = null
+    }
     currentRoomId = null
     currentPeerId = null
     currentDisplayName = null
@@ -204,8 +209,13 @@ export function createSignalingClient(callbacks: JamCallbacks) {
 
   function disconnect(): void {
     clearReconnect()
-    ws?.close()
-    ws = null
+    if (ws) {
+      ws.onclose = null
+      ws.onerror = null
+      ws.onmessage = null
+      ws.close()
+      ws = null
+    }
     currentRoomId = null
     currentPeerId = null
     currentDisplayName = null
