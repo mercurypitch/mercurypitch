@@ -955,7 +955,6 @@ export class AudioEngine {
     }
 
     for (const osc of oscillators) {
-      osc.connect(mainGain)
       osc.start(now)
       osc.stop(now + durationMs / 1000 + 0.1)
     }

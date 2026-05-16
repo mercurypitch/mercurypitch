@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createEffect, onCleanup, onMount } from 'solid-js'
+import { createEffect, createSignal, onCleanup, onMount } from 'solid-js'
 import type { ArcState } from '@/lib/arc-physics'
 import { BALL_RADIUS, buildPlayable, computeArcCy, computeArcEndBeat, computeBallPos, computeInitialArc, isBackwardsSeek, } from '@/lib/arc-physics'
 import { AudioEngine } from '@/lib/audio-engine'
@@ -16,9 +16,8 @@ import { colorCodeNotes, flameMode, gridLinesVisible, showAccuracyPercent, showF
 import type { MelodyItem, NoteResult, PitchSample, ScaleDegree } from '@/types'
 
 // Click-to-play settings (GH #230)
-const QUICK_CLICK_THRESHOLD = 500 // ms
-const TRILL_CLICKS = 3
-const TRILL_NOTE_PLAYS = 4
+const DOUBLE_CLICK_DELAY = 300 // ms — max gap for double-click detection
+const TRILL_NOTE_PLAYS = 3 // number of note plays on double-click
 const TRILL_BAR_REST = 4 // beats between each play
 
 interface PitchCanvasProps {
@@ -122,7 +121,16 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
   let animFrameId: number | null = null
   let isSeeking = false
   let audioEngine: AudioEngine | null = null
-  const noteClickMap = new Map<number, number[]>() // noteMidi -> timestamps
+  // Double-click detection + trill visual feedback
+  let clickTimer: ReturnType<typeof setTimeout> | null = null
+  const [trillActive, setTrillActive] = createSignal(false)
+  const [trillNoteInfo, setTrillNoteInfo] = createSignal<{
+    freq: number
+    midi: number
+    x: number
+    y: number
+  } | null>(null)
+  const trillTimerIds: ReturnType<typeof setTimeout>[] = []
 
   // Yousician jumping-ball arc state
   const arcState: RenderArcState = {
@@ -149,18 +157,15 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
 
     // Initialize audio engine for click-to-play
     audioEngine = new AudioEngine()
+    audioEngine.init()
     audioRegistry.register(audioEngine)
     // Expose for click-to-play handlers
     ;(
       window as unknown as { pitchCanvasAudioEngine: typeof audioEngine }
     ).pitchCanvasAudioEngine = audioEngine
 
-    // Mouse handlers for dragging the playhead and clicking notes
+    // Mouse handlers for dragging the playhead
     canvasRef.addEventListener('mousedown', (e) => {
-      // Only handle note clicks when not seeking and playback is paused/stopped
-      if (!isSeeking && !props.isPlaying() && !props.isPaused()) {
-        handleNoteClick(e)
-      }
       isSeeking = true
       handleSeek(e)
     })
@@ -169,6 +174,18 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     })
     document.addEventListener('mouseup', () => {
       isSeeking = false
+    })
+
+    // Click-to-play: single-click plays the note, double-click plays a trill.
+    canvasRef.addEventListener('click', (e) => {
+      if (props.isPlaying() || props.isPaused()) return
+      if (trillActive()) return
+      handleNoteSingleClick(e)
+    })
+    canvasRef.addEventListener('dblclick', (e) => {
+      if (props.isPlaying() || props.isPaused()) return
+      if (trillActive()) return
+      handleNoteDoubleClick(e)
     })
 
     // Ctrl+scroll to zoom visible beat window
@@ -196,6 +213,11 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     onCleanup(() => {
       ro.disconnect()
       if (animFrameId !== null) cancelAnimationFrame(animFrameId)
+      if (clickTimer !== null) clearTimeout(clickTimer)
+      trillTimerIds.forEach((id) => clearTimeout(id))
+      trillTimerIds.length = 0
+      setTrillActive(false)
+      setTrillNoteInfo(null)
       if (audioEngine) {
         audioRegistry.unregister(audioEngine)
         audioEngine.destroy()
@@ -279,11 +301,19 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
   }
 
   /**
-   * Click-to-play for practice mode (GH #230).
-   * Plays a note when paused/stopped, with trill detection for 3 quick clicks.
+   * Resolve note info from a click event on the canvas.
+   * Returns null when the click is outside the scale area.
    */
-  const handleNoteClick = (e: MouseEvent): void => {
-    if (!canvasRef || !audioEngine) return
+  const resolveNoteFromClick = (
+    e: MouseEvent,
+  ): {
+    freq: number
+    midi: number
+    x: number
+    y: number
+    durationBeats: number
+  } | null => {
+    if (!canvasRef) return null
 
     const rect = canvasRef.getBoundingClientRect()
     const x = e.clientX - rect.left
@@ -291,37 +321,73 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     const w = canvasRef.clientWidth
     const h = canvasRef.clientHeight
 
-    // Determine beat from x position
     const totalBeats = props.totalBeats()
     const beat = Math.max(0, Math.min(totalBeats, (x / w) * totalBeats))
 
-    // Determine which note in the scale was clicked
     const scale = props.scale()
-    const scaleY = h - 20 // Account for top padding in freqToY
+    const scaleY = h - 20
     const noteIndex = Math.floor(y / (scaleY / (scale.length - 1)))
 
-    if (noteIndex >= 0 && noteIndex < scale.length) {
-      const clickedNote = scale[noteIndex]
-      const freq = clickedNote.freq
-      const midi = clickedNote.midi
+    if (noteIndex < 0 || noteIndex >= scale.length) return null
 
-      // Find the melody item at this beat to get its actual duration
-      const melody = props.melody()
-      const melodyNoteIndex = melodyIndexAtBeat(melody, beat)
-      let durationBeats = 0.25 // Default quarter note if not found
-
-      if (melodyNoteIndex >= 0 && melody[melodyNoteIndex] !== undefined) {
-        durationBeats = melody[melodyNoteIndex].duration
-      }
-
-      // Track click and detect trill
-      const isTrill = trackNoteClick(midi)
-      if (isTrill) {
-        playNoteTrill(freq, durationBeats)
-      } else {
-        playNoteFrequency(freq, durationBeats)
-      }
+    const clickedNote = scale[noteIndex]
+    const melody = props.melody()
+    const melodyNoteIndex = melodyIndexAtBeat(melody, beat)
+    let durationBeats = 0.25
+    if (melodyNoteIndex >= 0 && melody[melodyNoteIndex] !== undefined) {
+      durationBeats = melody[melodyNoteIndex].duration
     }
+
+    return {
+      freq: clickedNote.freq,
+      midi: clickedNote.midi,
+      x,
+      y,
+      durationBeats,
+    }
+  }
+
+  /**
+   * Single click — play the note once.
+   * Delayed by DOUBLE_CLICK_DELAY so a fast second click (double-click)
+   * can cancel it in favor of a trill.
+   */
+  const handleNoteSingleClick = (e: MouseEvent): void => {
+    const info = resolveNoteFromClick(e)
+    if (!info) return
+
+    // Cancel any pending single-click timer
+    if (clickTimer !== null) {
+      clearTimeout(clickTimer)
+      clickTimer = null
+    }
+
+    // Delay single-note playback to give double-click a chance
+    clickTimer = setTimeout(() => {
+      clickTimer = null
+      if (!trillActive()) {
+        playNoteFrequency(info.freq, info.durationBeats)
+      }
+    }, DOUBLE_CLICK_DELAY)
+  }
+
+  /**
+   * Double click — play the note 3 times with 1 bar rest between each.
+   * Blocks further clicks and shows a visual indicator while playing.
+   */
+  const handleNoteDoubleClick = (e: MouseEvent): void => {
+    // Cancel any pending single-click
+    if (clickTimer !== null) {
+      clearTimeout(clickTimer)
+      clickTimer = null
+    }
+
+    const info = resolveNoteFromClick(e)
+    if (!info) return
+
+    setTrillNoteInfo({ freq: info.freq, midi: info.midi, x: info.x, y: info.y })
+    setTrillActive(true)
+    playNoteTrill(info.freq, info.durationBeats)
   }
 
   /**
@@ -342,13 +408,12 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     if (!engine?.playNote) return
 
     const beatDurationMs = 60000 / bpm()
-
     engine.playNote(freq, durationBeats * beatDurationMs)
   }
 
   /**
-   * Plays a trill: plays the note 4 times with ~1 bar rest between each.
-   * Called when the same note is clicked 3 times quickly.
+   * Plays a trill: plays the note 3 times with ~1 bar rest between each.
+   * Called on double-click.
    */
   const playNoteTrill = (freq: number, durationBeats: number = 0.25): void => {
     const engine = (
@@ -366,37 +431,22 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     // First play immediately
     engine.playNote(freq, durationBeats * beatDurationMs)
 
-    // Play 3 more times with 1 bar rest between each
+    // Play remaining notes with 1 bar rest between each
     for (let i = 1; i < TRILL_NOTE_PLAYS; i++) {
       const delay = TRILL_BAR_REST * beatDurationMs
-      setTimeout(() => {
-        ;(
-          engine as { playNote: (freq: number, durationMs: number) => void }
-        ).playNote(freq, durationBeats * beatDurationMs)
+      const tid = setTimeout(() => {
+        engine.playNote(freq, durationBeats * beatDurationMs)
       }, delay * i)
-    }
-  }
-
-  /**
-   * Tracks click timing for trill detection.
-   * Returns true if 3 quick clicks were detected on the same note.
-   */
-  const trackNoteClick = (midi: number): boolean => {
-    const now = performance.now()
-    const timestamps = noteClickMap.get(midi) || []
-
-    // Remove timestamps older than threshold
-    const filtered = timestamps.filter((t) => now - t < QUICK_CLICK_THRESHOLD)
-    noteClickMap.set(midi, filtered)
-    filtered.push(now)
-
-    // Check for trill condition (3 quick clicks)
-    if (filtered.length >= TRILL_CLICKS) {
-      noteClickMap.set(midi, [])
-      return true
+      trillTimerIds.push(tid)
     }
 
-    return false
+    // Clear trill active state and visual indicator after all plays complete
+    const totalDuration = TRILL_NOTE_PLAYS * TRILL_BAR_REST * beatDurationMs
+    const endTid = setTimeout(() => {
+      setTrillActive(false)
+      setTrillNoteInfo(null)
+    }, totalDuration)
+    trillTimerIds.push(endTid)
   }
 
   const resizeCanvas = () => {
@@ -1347,6 +1397,27 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       ctx.lineTo(bx, rulerY + tickH)
       ctx.stroke()
       ctx.fillText(String(b), bx, rulerY + tickH + 2)
+    }
+
+    // Trill visual indicator — pulsing ring around the double-clicked note
+    const tni = trillNoteInfo()
+    if (tni && trillActive()) {
+      const now = performance.now()
+      const pulse = 0.55 + 0.45 * Math.sin(now * 0.008)
+      const radius = 16 + 6 * Math.sin(now * 0.006)
+      ctx.save()
+      ctx.beginPath()
+      ctx.arc(tni.x, tni.y, radius, 0, Math.PI * 2)
+      ctx.strokeStyle = `rgba(88, 166, 255, ${pulse.toFixed(2)})`
+      ctx.lineWidth = 2.5
+      ctx.shadowColor = 'rgba(88, 166, 255, 0.6)'
+      ctx.shadowBlur = 12
+      ctx.stroke()
+      ctx.beginPath()
+      ctx.arc(tni.x, tni.y, 4, 0, Math.PI * 2)
+      ctx.fillStyle = `rgba(88, 166, 255, ${(pulse * 0.8).toFixed(2)})`
+      ctx.fill()
+      ctx.restore()
     }
   }
 
