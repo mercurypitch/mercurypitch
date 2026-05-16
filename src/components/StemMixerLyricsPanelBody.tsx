@@ -462,14 +462,9 @@ export const StemMixerLyricsPanelBody: Component<
                     <input
                       class="sm-lyrics-time-input"
                       type="text"
-                      value={props.formatTimeMs(
-                        props.getEditLineTime(lineIdx),
-                      )}
+                      value={props.formatTimeMs(props.getEditLineTime(lineIdx))}
                       onChange={(e) =>
-                        props.handleLineTimeEdit(
-                          lineIdx,
-                          e.currentTarget.value,
-                        )
+                        props.handleLineTimeEdit(lineIdx, e.currentTarget.value)
                       }
                     />
                     <For each={entry.words}>

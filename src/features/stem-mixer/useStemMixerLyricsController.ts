@@ -689,8 +689,7 @@ export function useStemMixerLyricsController(
             const lineTime = merged[entry.lrcIndex]?.[0] ?? entry.time
             return `[${formatTimeLrcWord(lineTime)}] ~Rest~`
           }
-          const lineTime =
-            merged[entry.lrcIndex]?.[0] ?? entry.time
+          const lineTime = merged[entry.lrcIndex]?.[0] ?? entry.time
           return `[${formatTimeLrcWord(lineTime)}] ${entry.text}`
         })
         .filter((l) => l !== '')
@@ -1313,7 +1312,11 @@ export function useStemMixerLyricsController(
           const i = entry.lrcIndex
           if (hasWt) {
             const lineWt = wt[i]
-            if (lineWt !== undefined && lineWt.length > 0 && entry.words.length > 0) {
+            if (
+              lineWt !== undefined &&
+              lineWt.length > 0 &&
+              entry.words.length > 0
+            ) {
               return entry.words
                 .map((w: string, wi: number) => {
                   const t = lineWt[wi]
