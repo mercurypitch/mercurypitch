@@ -12187,3 +12187,462 @@ input:checked + .settings-slider:before {
 .tab-loading {
   min-height: 200px;
 }
+
+/* ── Jam Panel ────────────────────────────────────────────────────── */
+
+.jam-panel {
+  display: flex;
+  flex-direction: column;
+  padding: 20px 24px;
+  min-height: 400px;
+  animation: fadeIn 0.25s ease;
+  gap: 16px;
+}
+
+.jam-connect {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 400px;
+}
+
+.jam-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.jam-desc {
+  font-size: 0.875rem;
+  color: var(--text-secondary, #8b949e);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.jam-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.jam-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-secondary, #8b949e);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.jam-input {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.jam-input:focus {
+  border-color: var(--accent);
+}
+
+.jam-input-mono {
+  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+}
+
+.jam-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.jam-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 8px 16px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  white-space: nowrap;
+}
+
+.jam-btn:hover {
+  filter: brightness(1.15);
+}
+
+.jam-btn:active {
+  transform: scale(0.98);
+}
+
+.jam-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.jam-btn-primary {
+  background: var(--green, #3fb950);
+  border-color: var(--green, #3fb950);
+  color: #fff;
+}
+
+.jam-btn-primary:hover {
+  background: #46c756;
+}
+
+.jam-btn-secondary {
+  width: 100%;
+}
+
+.jam-btn-sm {
+  padding: 5px 10px;
+  font-size: 0.8rem;
+}
+
+.jam-btn-muted {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.jam-btn-danger {
+  border-color: var(--red, #f85149);
+  color: var(--red, #f85149);
+}
+
+.jam-btn-danger:hover {
+  background: var(--red, #f85149);
+  color: #fff;
+}
+
+.jam-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-secondary, #8b949e);
+  font-size: 0.8rem;
+}
+
+.jam-divider::before,
+.jam-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.jam-error {
+  font-size: 0.85rem;
+  color: var(--red, #f85149);
+  margin: 0;
+  padding: 8px 12px;
+  background: rgba(248, 81, 73, 0.1);
+  border: 1px solid rgba(248, 81, 73, 0.25);
+  border-radius: 6px;
+}
+
+.jam-connecting {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 48px 24px;
+  color: var(--text-secondary, #8b949e);
+  font-size: 0.9rem;
+}
+
+/* ── Active Session ───────────────────────────────────────────────── */
+
+.jam-active {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.jam-room-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.jam-room-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.jam-room-id-badge {
+  padding: 3px 10px;
+  font-size: 0.75rem;
+  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+  color: var(--accent);
+  background: rgba(88, 166, 255, 0.1);
+  border: 1px solid rgba(88, 166, 255, 0.2);
+  border-radius: 4px;
+}
+
+.jam-room-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.jam-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--text-secondary, #8b949e);
+  padding: 8px 12px;
+  background: var(--bg-tertiary);
+  border-radius: 6px;
+}
+
+.jam-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+.jam-status-dot-active {
+  background: var(--green, #3fb950);
+}
+
+.jam-status-dot-active::after {
+  content: '';
+  display: block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--green, #3fb950);
+  animation: jam-pulse 2s ease-out infinite;
+}
+
+.jam-muted-indicator {
+  color: var(--red, #f85149);
+  font-weight: 500;
+}
+
+@keyframes jam-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+
+/* ── Peer List ────────────────────────────────────────────────────── */
+
+.jam-peer-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.jam-peer-empty {
+  color: var(--text-secondary, #8b949e);
+  font-size: 0.875rem;
+  font-style: italic;
+  text-align: center;
+  padding: 24px;
+  margin: 0;
+}
+
+.jam-peer-heading {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 4px;
+}
+
+.jam-peer-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  transition: border-color 0.2s ease;
+}
+
+.jam-peer-item.jam-peer-connected {
+  border-color: rgba(63, 185, 80, 0.25);
+}
+
+.jam-peer-item.jam-peer-connecting {
+  border-color: rgba(210, 153, 34, 0.25);
+}
+
+.jam-peer-item.jam-peer-disconnected {
+  opacity: 0.55;
+}
+
+.jam-peer-item.jam-peer-failed {
+  border-color: rgba(248, 81, 73, 0.25);
+}
+
+.jam-peer-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.jam-peer-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+.jam-peer-dot-connected {
+  background: var(--green, #3fb950);
+}
+
+.jam-peer-dot-connecting {
+  background: #d29922;
+  animation: jam-pulse 1s ease-out infinite;
+}
+
+.jam-peer-dot-disconnected {
+  background: var(--text-secondary, #8b949e);
+}
+
+.jam-peer-dot-failed {
+  background: var(--red, #f85149);
+}
+
+.jam-peer-name {
+  font-size: 0.875rem;
+  color: var(--text-primary);
+}
+
+.jam-peer-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.jam-peer-state {
+  font-size: 0.78rem;
+  color: var(--text-secondary, #8b949e);
+}
+
+.jam-peer-latency {
+  font-size: 0.78rem;
+  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+  color: var(--accent);
+  background: rgba(88, 166, 255, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* ── Invite Modal ─────────────────────────────────────────────────── */
+
+.jam-modal-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 100;
+  animation: fadeIn 0.15s ease;
+}
+
+.jam-modal {
+  background: var(--bg-secondary, #161b22);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  width: 90%;
+  max-width: 420px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.jam-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.jam-modal-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.jam-modal-close {
+  background: none;
+  border: none;
+  color: var(--text-secondary, #8b949e);
+  font-size: 1.3rem;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+  transition: color 0.12s ease;
+}
+
+.jam-modal-close:hover {
+  color: var(--text-primary);
+}
+
+.jam-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 20px;
+}
+
+.jam-invite-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.jam-invite-code-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.jam-invite-code {
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+  color: var(--accent);
+  background: var(--bg-primary, #0d1117);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  user-select: all;
+}
+
+.jam-invite-link {
+  font-size: 0.78rem;
+}
