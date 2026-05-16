@@ -5,6 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.3] - 2026-05-17
+
+### Added
+
+- **Jam Session (new feature)**: real-time P2P music practice rooms powered by WebRTC and a Cloudflare Worker signaling server
+  - Create or join a room via room code; shareable `#/jam:ROOMID` deep links auto-join on load
+  - Shared melody exercise canvas with scrolling piano-roll, peer pitch trails, and a live scoreboard
+  - Live pitch monitor strip showing all participants' pitch over time with per-peer color coding
+  - Video and audio streaming with per-peer camera thumbnails (expandable, draggable tray)
+  - In-room text chat widget
+  - Host transport controls: Play, Pause, Resume, Stop, Loop, exercise picker, and live BPM override
+  - TURN server support for NAT traversal
+  - Auto-preloads first melody when room becomes active
+- **Vocal Analysis**: offline pitch tracking panel with denoised pitch data and a toggleable offline/real-time mode
+- **Practice Mode**: click-to-play and trill feature (GH #230)
+- **StemMixer**: fully modularized — main component reduced from 8,500 to 776 lines via 5 controllers and 5 sub-components
+
+### Fixed
+
+- **Jam Session**: pitch trails invisible on exercise canvas — YIN/MPM detector omits `midi`; now derived from frequency at storage time
+- **Jam Session**: ghost pitch trail persisted after mic went quiet — interval now guards on 150 ms pitch recency; canvas skips peers with samples older than 600 ms
+- **Jam Session**: Pause acted as Stop — added `jamPlaybackResume()` to continue from current beat; button label updates correctly
+- **Jam Session**: Stop button glowed red when nothing was playing — disabled and dimmed when exercise is idle
+- **Jam Session**: camera tray expansion went off-screen — `ResizeObserver` re-clamps position on chip resize
+- **Jam Session**: camera denial blocked microphone capture — audio and video streams are now acquired independently
+- **LRC / Lyrics**: canonical line ordering mismatches causing incorrect active-line tracking, LRC download timings, and lyric-click seeking
+- **LRC / Lyrics**: per-word timing interpolation regex and `parseLrcWordTimings` integration fixed
+- **MIDI Synthesis**: progress stall at 100% — added yielding loop to `synthesizeMidiBuffer` to avoid UI hang
+- **Piano Roll**: drag/move behavior corrected
+- **Pitch Debug Panel**: missing CSS causing layout collapse
+
+### Changed
+
+- Default workspace layout is now fixed 2-column
+- StemMixer SolidJS reactivity warnings resolved across all controllers
+
 ## [0.3.2] - 2026-05-15
 
 ### Added
