@@ -251,6 +251,7 @@ export async function synthesizeMidiBuffer(
   bpm: number,
   sampleRate: number,
   totalDurationSec: number,
+  onProgress?: (pct: number) => void,
 ): Promise<AudioBuffer> {
   const ctx = new OfflineAudioContext(
     2,
@@ -260,7 +261,9 @@ export async function synthesizeMidiBuffer(
   const beatsPerSec = bpm / 60
   const ticksPerSec = TICKS_PER_BEAT * beatsPerSec
 
-  for (const note of notes) {
+  const total = notes.length
+  for (let i = 0; i < total; i++) {
+    const note = notes[i]
     const startSec = note.tickOn / ticksPerSec
     const endSec = note.tickOff / ticksPerSec
     const duration = endSec - startSec
@@ -284,8 +287,15 @@ export async function synthesizeMidiBuffer(
     gain.connect(ctx.destination)
     osc.start(startSec)
     osc.stop(endSec)
+
+    // Yield every 80 notes to avoid freezing the main thread
+    if (i % 80 === 0 && i > 0) {
+      onProgress?.(Math.round((i / total) * 100))
+      await new Promise((r) => setTimeout(r, 0))
+    }
   }
 
+  onProgress?.(100)
   return ctx.startRendering()
 }
 
