@@ -4,18 +4,8 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, onCleanup, onMount } from 'solid-js'
+import { buildPeerColorMap } from '@/lib/jam/peer-colors'
 import { jamPitchHistory } from '@/stores/jam-store'
-
-const PEER_COLORS = [
-  '#58a6ff', // blue
-  '#f0883e', // orange
-  '#3fb950', // green
-  '#d2a8ff', // purple
-  '#f778ba', // pink
-  '#ffa657', // warm orange
-  '#7ee787', // mint
-  '#a5d6ff', // light blue
-]
 
 const Y_AXIS_NOTES = [
   { label: 'C2', freq: 65.41 },
@@ -47,15 +37,10 @@ export const JamSharedPitchCanvas: Component<JamSharedPitchCanvasProps> = (
   let animFrameId: number | null = null
   let resizeObserver: ResizeObserver | null = null
 
-  // Assign stable colors to peer IDs
   const peerColorMap = createMemo(() => {
     const history = jamPitchHistory()
     const peerIds = Object.keys(history)
-    const map: Record<string, string> = {}
-    peerIds.forEach((id, i) => {
-      map[id] = PEER_COLORS[i % PEER_COLORS.length]!
-    })
-    return map
+    return buildPeerColorMap(peerIds)
   })
 
   onMount(() => {
@@ -142,7 +127,11 @@ export const JamSharedPitchCanvas: Component<JamSharedPitchCanvasProps> = (
 
     const now = Date.now()
     const windowSec = 10
-    const windowStart = (now - windowSec * 1000) / 1000
+    // Anchor: "now" is at 60% of drawable width
+    const ANCHOR_PCT = 0.6
+    const drawW = w - MARGIN * 2
+    const anchorX = MARGIN + drawW * ANCHOR_PCT
+    const pxPerMs = (drawW * ANCHOR_PCT) / (windowSec * 1000)
 
     ctx.fillStyle = '#484f58'
     ctx.font = '10px sans-serif'
@@ -150,9 +139,12 @@ export const JamSharedPitchCanvas: Component<JamSharedPitchCanvasProps> = (
     ctx.textBaseline = 'top'
 
     const tickY = h - MARGIN + 8
-    const endSec = Math.ceil(now / 1000)
-    for (let sec = Math.floor(windowStart); sec <= endSec; sec++) {
-      const x = MARGIN + ((sec - windowStart) / windowSec) * (w - MARGIN * 2)
+    const windowStartMs = now - (drawW * ANCHOR_PCT) / pxPerMs
+    const windowEndMs = now + (drawW * (1 - ANCHOR_PCT)) / pxPerMs
+    const startSec = Math.floor(windowStartMs / 1000)
+    const endSec = Math.ceil(windowEndMs / 1000)
+    for (let sec = startSec; sec <= endSec; sec++) {
+      const x = anchorX + (sec * 1000 - now) * pxPerMs
       if (x < MARGIN || x > w - MARGIN) continue
 
       ctx.strokeStyle = 'rgba(48,54,61,0.5)'
@@ -165,6 +157,16 @@ export const JamSharedPitchCanvas: Component<JamSharedPitchCanvasProps> = (
       const displaySec = (sec % 60).toString().padStart(2, '0')
       ctx.fillText(`:${displaySec}`, x, tickY + 4)
     }
+
+    // Draw "now" cursor
+    ctx.strokeStyle = 'rgba(88,166,255,0.25)'
+    ctx.lineWidth = 1
+    ctx.setLineDash([4, 4])
+    ctx.beginPath()
+    ctx.moveTo(anchorX, MARGIN)
+    ctx.lineTo(anchorX, h - MARGIN)
+    ctx.stroke()
+    ctx.setLineDash([])
   }
 
   const drawPeerSamples = (w: number, h: number) => {
@@ -174,8 +176,13 @@ export const JamSharedPitchCanvas: Component<JamSharedPitchCanvasProps> = (
     const colors = peerColorMap()
     const myId = props.myPeerId()
     const now = Date.now()
+    // Anchor: "now" maps to 60% of drawable width
+    const ANCHOR_PCT = 0.6
+    const drawW = w - MARGIN * 2
+    const anchorX = MARGIN + drawW * ANCHOR_PCT
+    // Total visible time window
     const windowMs = 10000
-    const windowStart = now - windowMs
+    const pxPerMs = (drawW * ANCHOR_PCT) / windowMs
 
     for (const [peerId, samples] of Object.entries(history)) {
       const color = colors[peerId] ?? '#58a6ff'
@@ -186,8 +193,7 @@ export const JamSharedPitchCanvas: Component<JamSharedPitchCanvasProps> = (
 
       for (let i = 0; i < samples.length; i++) {
         const s = samples[i]!
-        const x =
-          MARGIN + ((s.timestamp - windowStart) / windowMs) * (w - MARGIN * 2)
+        const x = anchorX + (s.timestamp - now) * pxPerMs
         if (x < -10 || x > w + 10) continue
 
         if (s.frequency > 0) {
@@ -219,8 +225,11 @@ export const JamSharedPitchCanvas: Component<JamSharedPitchCanvasProps> = (
         ctx.fill()
       }
 
-      // Glow + pill on latest point for own peer
-      if (isOwn && points.length > 0) {
+      // Glow + pill on latest point — only if the sample is fresh
+      const latestSample = samples[samples.length - 1]
+      const isFresh =
+        latestSample !== undefined && now - latestSample.timestamp < 400
+      if (isFresh && points.length > 0) {
         const latest = points[points.length - 1]!
         const grad = ctx.createRadialGradient(
           latest.x,
@@ -242,9 +251,8 @@ export const JamSharedPitchCanvas: Component<JamSharedPitchCanvasProps> = (
         ctx.arc(latest.x, latest.y, DOT_RADIUS + 1.5, 0, Math.PI * 2)
         ctx.fill()
 
-        // Note pill
-        const latestSample = samples[samples.length - 1]
-        const noteName = latestSample?.noteName
+        // Note pill — only show if sample is fresh
+        const noteName = latestSample.noteName
         if (noteName) {
           const nearRight = latest.x > w - 70
           const labelX = nearRight ? latest.x - 14 : latest.x + 14
