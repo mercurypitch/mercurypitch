@@ -1961,7 +1961,6 @@ export class PianoRollEditor {
         this.selectedNoteIds.clear()
         this.selectedNoteIds.add(noteId)
         this.onNoteSelect?.(existingNote)
-        this.isDragging = true
         this.dragStartX = x
         this.dragStartY = y
         this.dragStartBeat = existingNote.startBeat
@@ -1970,10 +1969,15 @@ export class PianoRollEditor {
         const noteW = existingNote.duration * this.beatWidth
         if (x - noteX < 8) {
           this.isResizing = true
+          this.isDragging = false
           this.resizeHandle = 'left'
         } else if (noteX + noteW - x < 8) {
           this.isResizing = true
+          this.isDragging = false
           this.resizeHandle = 'right'
+        } else {
+          this.isResizing = false
+          this.isDragging = true
         }
 
         // Initialize cache for all selected notes (drag or resize)
@@ -2015,19 +2019,23 @@ export class PianoRollEditor {
           this.selectedNoteIds.add(noteId)
         }
         // Enable drag for selected notes
-        this.isDragging = true
         this.dragStartX = x
         this.dragStartY = y
         this.dragStartBeat = note.startBeat
         this.dragStartRow = this.midiToRow(note.note.midi)
         const noteX = note.startBeat * this.beatWidth
         const noteW = note.duration * this.beatWidth
-        if (x - noteX < 6) {
+        if (x - noteX < 8) {
           this.isResizing = true
+          this.isDragging = false
           this.resizeHandle = 'left'
-        } else if (noteX + noteW - x < 6) {
+        } else if (noteX + noteW - x < 8) {
           this.isResizing = true
+          this.isDragging = false
           this.resizeHandle = 'right'
+        } else {
+          this.isResizing = false
+          this.isDragging = true
         }
 
         // Initialize cache for all selected notes (drag or resize)
