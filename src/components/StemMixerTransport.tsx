@@ -43,14 +43,18 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
   return (
     <div class="sm-transport">
       <div class="sm-transport-controls">
-        <button class="sm-transport-btn" onClick={props.onStop} title="Stop">
+        <button
+          class="sm-transport-btn"
+          onClick={() => props.onStop()}
+          title="Stop"
+        >
           <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
             <rect x="4" y="4" width="16" height="16" rx="2" />
           </svg>
         </button>
         <button
           class="sm-transport-btn"
-          onClick={props.onRestart}
+          onClick={() => props.onRestart()}
           title="Restart (play from beginning)"
         >
           <SkipBack />
@@ -196,7 +200,7 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
 
       <div class="sm-progress-area">
         <span class="sm-time">{props.formatTime(props.elapsed())}</span>
-        <div class="sm-progress-bar" onClick={props.onSeek}>
+        <div class="sm-progress-bar" onClick={(e) => props.onSeek(e)}>
           <div
             class="sm-progress-fill"
             style={{

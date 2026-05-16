@@ -187,7 +187,7 @@ export interface StemMixerLyricsPanelBodyProps {
 export const StemMixerLyricsPanelBody: Component<
   StemMixerLyricsPanelBodyProps
 > = (props) => {
-  const sfx = props.idSuffix ?? ''
+  const sfx = () => props.idSuffix ?? ''
   return (
     <>
       <Show when={props.lyricsLoading()}>
@@ -201,7 +201,7 @@ export const StemMixerLyricsPanelBody: Component<
             <Show when={!props.playing()}>
               <button
                 class="sm-lyrics-gen-play-btn"
-                onClick={props.handlePlay}
+                onClick={() => props.handlePlay()}
                 title="Play"
               >
                 <svg viewBox="0 0 24 24" width="12" height="12">
@@ -212,7 +212,7 @@ export const StemMixerLyricsPanelBody: Component<
             <Show when={props.playing()}>
               <button
                 class="sm-lyrics-gen-pause-btn"
-                onClick={props.handlePause}
+                onClick={() => props.handlePause()}
                 title="Pause"
               >
                 <svg viewBox="0 0 24 24" width="12" height="12">
@@ -264,28 +264,28 @@ export const StemMixerLyricsPanelBody: Component<
             })()}
             <button
               class="sm-lyrics-gen-nextword-btn"
-              onClick={props.handleNextWord}
+              onClick={() => props.handleNextWord()}
               title="Mark next word time [W]"
             >
               Next Word
             </button>
             <button
               class="sm-lyrics-gen-nextline-btn"
-              onClick={props.handleNextLine}
+              onClick={() => props.handleNextLine()}
               title="Mark next line time [L]"
             >
               Next Line
             </button>
             <button
               class="sm-lyrics-gen-finish-btn"
-              onClick={props.handleLrcGenFinish}
+              onClick={() => props.handleLrcGenFinish()}
               title="Save LRC"
             >
               Finish
             </button>
             <button
               class="sm-lyrics-gen-reset-btn"
-              onClick={props.handleLrcGenReset}
+              onClick={() => props.handleLrcGenReset()}
               title="Reset all timings"
             >
               Reset
@@ -406,7 +406,10 @@ export const StemMixerLyricsPanelBody: Component<
         {/* ── Edit mode toolbar ────────────────────────── */}
         <Show when={props.editMode()}>
           <div class="sm-lyrics-edit-toolbar">
-            <button class="sm-lyrics-save-btn" onClick={props.handleSaveEdits}>
+            <button
+              class="sm-lyrics-save-btn"
+              onClick={() => props.handleSaveEdits()}
+            >
               Save
             </button>
             <button
@@ -479,7 +482,7 @@ export const StemMixerLyricsPanelBody: Component<
           <Show when={props.editPopover() !== null}>
             <div
               class="sm-lyrics-popover-backdrop"
-              onClick={props.closeWordPopover}
+              onClick={() => props.closeWordPopover()}
             >
               <div
                 class="sm-lyrics-popover-card"
@@ -535,7 +538,7 @@ export const StemMixerLyricsPanelBody: Component<
                       type="text"
                       class="sm-lyrics-block-form-label"
                       value={b.label}
-                      id={`block-edit-label-input${sfx}`}
+                      id={`block-edit-label-input${sfx()}`}
                     />
                     <input
                       type="number"
@@ -543,7 +546,7 @@ export const StemMixerLyricsPanelBody: Component<
                       value={b.repeatCount}
                       min="1"
                       max="20"
-                      id={`block-edit-repeat-input${sfx}`}
+                      id={`block-edit-repeat-input${sfx()}`}
                       title="Repeat count"
                     />
                     <button
@@ -552,13 +555,13 @@ export const StemMixerLyricsPanelBody: Component<
                         const label =
                           (
                             document.getElementById(
-                              `block-edit-label-input${sfx}`,
+                              `block-edit-label-input${sfx()}`,
                             ) as HTMLInputElement
                           )?.value?.trim() || b.label
                         const repeat = parseInt(
                           (
                             document.getElementById(
-                              `block-edit-repeat-input${sfx}`,
+                              `block-edit-repeat-input${sfx()}`,
                             ) as HTMLInputElement
                           )?.value || '1',
                           10,
@@ -612,7 +615,7 @@ export const StemMixerLyricsPanelBody: Component<
                     type="text"
                     class="sm-lyrics-block-form-label"
                     placeholder="Chorus, Verse 1..."
-                    id={`block-label-input${sfx}`}
+                    id={`block-label-input${sfx()}`}
                   />
                   <input
                     type="number"
@@ -620,7 +623,7 @@ export const StemMixerLyricsPanelBody: Component<
                     value="1"
                     min="1"
                     max="20"
-                    id={`block-repeat-input${sfx}`}
+                    id={`block-repeat-input${sfx()}`}
                     title="Repeat count"
                   />
                   <button
@@ -629,13 +632,13 @@ export const StemMixerLyricsPanelBody: Component<
                       const label =
                         (
                           document.getElementById(
-                            `block-label-input${sfx}`,
+                            `block-label-input${sfx()}`,
                           ) as HTMLInputElement
                         )?.value?.trim() || 'Block'
                       const repeat = parseInt(
                         (
                           document.getElementById(
-                            `block-repeat-input${sfx}`,
+                            `block-repeat-input${sfx()}`,
                           ) as HTMLInputElement
                         )?.value || '1',
                         10,
