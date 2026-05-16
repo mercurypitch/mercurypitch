@@ -49,6 +49,7 @@ export function createJamService(callbacks: JamCallbacks) {
   const signaling = createSignalingClient({
     ...callbacks,
     onPeerJoined: (peer: JamPeer) => {
+      callbacks.onPeerJoined(peer)
       initiateNewPeer(peer)
     },
     onPeerLeft: (peerId: string) => {
@@ -232,6 +233,14 @@ export function createJamService(callbacks: JamCallbacks) {
           peer.id,
           JSON.stringify(event.candidate.toJSON()),
         )
+      }
+    }
+
+    pc.ondatachannel = (event) => {
+      console.debug('[jam:service] received DataChannel from', peer.id)
+      const dc = event.channel
+      if (dc.label === 'chat') {
+        setupDataChannel(dc, peer.id)
       }
     }
 

@@ -27,6 +27,7 @@ const MARGIN_RIGHT = 20
 const MARGIN_TOP = 16
 const MARGIN_BOTTOM = 20
 const DOT_RADIUS = 2.5
+const GLOW_RADIUS = 14
 
 interface JamExerciseCanvasProps {
   myPeerId: () => string | null
@@ -252,45 +253,136 @@ export const JamExerciseCanvas: Component<JamExerciseCanvasProps> = (
     const colors = peerColorMap()
     const myId = props.myPeerId()
     const now = Date.now()
+    const playheadX = beatToX(jamExerciseBeat(), w, totalBeats)
 
     for (const [peerId, samples] of Object.entries(history)) {
       const color = colors[peerId] ?? PEER_COLORS[0]!
       const isOwn = peerId === myId
 
-      for (let i = 0; i < samples.length; i++) {
-        const s = samples[i]!
-        // Only show samples from the last 2 seconds (recent pitch near playhead)
-        if (now - s.timestamp > 2000) continue
+      if (isOwn) {
+        drawOwnPitchTrail(w, h, minMidi, maxMidi, samples, color, now, playheadX)
+      } else {
+        // Remote peers: small dots near playhead
+        for (let i = 0; i < samples.length; i++) {
+          const s = samples[i]!
+          if (now - s.timestamp > 2000) continue
+          if (s.frequency <= 0 || s.midi <= 0) continue
 
-        if (s.frequency <= 0 || s.midi <= 0) continue
-        const x = beatToX(jamExerciseBeat(), w, totalBeats)
-        // Show dots clustered near the playhead on the X axis
-        // We don't have beat-attached samples, so show recent dots
-        // horizontally distributed by time recency
-        const age = (now - s.timestamp) / 2000 // 0 = now, 1 = 2s ago
-        const dotX = x - age * 30
-        const y = midiToY(s.midi, h, minMidi, maxMidi)
+          const age = (now - s.timestamp) / 2000
+          const dotX = playheadX - age * 30
+          const y = midiToY(s.midi, h, minMidi, maxMidi)
 
-        if (dotX < MARGIN_LEFT || y < MARGIN_TOP || y > h - MARGIN_BOTTOM)
-          continue
+          if (dotX < MARGIN_LEFT || y < MARGIN_TOP || y > h - MARGIN_BOTTOM)
+            continue
 
-        const alpha = isOwn
-          ? 0.25 + s.clarity * 0.6
-          : 0.12 + s.clarity * 0.4
-        ctx.fillStyle = hexToRgba(color, alpha)
-        ctx.beginPath()
-        ctx.arc(dotX, y, isOwn ? DOT_RADIUS + 1 : DOT_RADIUS, 0, Math.PI * 2)
-        ctx.fill()
-
-        // Glow for own dots
-        if (isOwn && s.clarity > 0.5) {
-          ctx.fillStyle = hexToRgba(color, 0.15)
+          const alpha = 0.12 + s.clarity * 0.4
+          ctx.fillStyle = hexToRgba(color, alpha)
           ctx.beginPath()
-          ctx.arc(dotX, y, DOT_RADIUS + 4, 0, Math.PI * 2)
+          ctx.arc(dotX, y, DOT_RADIUS, 0, Math.PI * 2)
           ctx.fill()
         }
       }
     }
+  }
+
+  const drawOwnPitchTrail = (
+    w: number,
+    h: number,
+    minMidi: number,
+    maxMidi: number,
+    samples: Array<{ frequency: number; midi: number; cents: number; clarity: number; noteName: string; timestamp: number }>,
+    color: string,
+    now: number,
+    playheadX: number,
+  ) => {
+    if (!ctx) return
+
+    // Filter recent valid samples (last 2 seconds)
+    const recent = samples.filter(
+      (s) => now - s.timestamp <= 2000 && s.frequency > 0 && s.midi > 0,
+    )
+    if (recent.length === 0) return
+
+    // ── Pitch trail line ──
+    ctx.lineWidth = 2
+    ctx.strokeStyle = hexToRgba(color, 0.55)
+    ctx.lineJoin = 'round'
+    ctx.lineCap = 'round'
+    ctx.beginPath()
+    let started = false
+    for (let i = 0; i < recent.length - 1; i++) {
+      const s = recent[i]!
+      const age = (now - s.timestamp) / 2000
+      const x = playheadX - age * 30
+      const y = midiToY(s.midi, h, minMidi, maxMidi)
+      if (x < MARGIN_LEFT || y < MARGIN_TOP || y > h - MARGIN_BOTTOM) {
+        started = false
+        continue
+      }
+      if (!started) {
+        ctx.moveTo(x, y)
+        started = true
+      } else {
+        ctx.lineTo(x, y)
+      }
+    }
+    ctx.stroke()
+
+    // ── Latest point: glow + dot + note pill ──
+    const latest = recent[recent.length - 1]!
+    const ly = midiToY(latest.midi, h, minMidi, maxMidi)
+    // Latest point always at playhead
+    const lx = playheadX
+
+    if (lx < MARGIN_LEFT || ly < MARGIN_TOP || ly > h - MARGIN_BOTTOM) return
+
+    // Glow
+    const glowAlpha = 0.2 + latest.clarity * 0.3
+    const glowGrad = ctx.createRadialGradient(lx, ly, 0, lx, ly, GLOW_RADIUS)
+    glowGrad.addColorStop(0, hexToRgba(color, glowAlpha))
+    glowGrad.addColorStop(1, hexToRgba(color, 0))
+    ctx.fillStyle = glowGrad
+    ctx.beginPath()
+    ctx.arc(lx, ly, GLOW_RADIUS, 0, Math.PI * 2)
+    ctx.fill()
+
+    // Inner dot
+    ctx.fillStyle = color
+    ctx.beginPath()
+    ctx.arc(lx, ly, DOT_RADIUS + 2, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.fillStyle = '#fff'
+    ctx.beginPath()
+    ctx.arc(lx, ly, DOT_RADIUS - 1, 0, Math.PI * 2)
+    ctx.fill()
+
+    // Note name pill
+    const label = `${latest.noteName}`
+    ctx.font = 'bold 11px sans-serif'
+    const tw = ctx.measureText(label).width
+    const pillPad = 5
+    const pillW = tw + pillPad * 2
+    const pillH = 18
+    const pillX = lx + 10
+    const pillY = ly - pillH / 2
+
+    // Keep pill in bounds
+    let adjPillX = pillX
+    if (adjPillX + pillW > w - MARGIN_RIGHT) adjPillX = lx - pillW - 10
+
+    ctx.beginPath()
+    ctx.roundRect(adjPillX, pillY, pillW, pillH, pillH / 2)
+    ctx.fillStyle = hexToRgba(color, 0.6)
+    ctx.fill()
+    ctx.strokeStyle = hexToRgba(color, 0.85)
+    ctx.lineWidth = 1
+    ctx.stroke()
+
+    ctx.fillStyle = '#fff'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText(label, adjPillX + pillW / 2, pillY + pillH / 2 + 0.5)
+    ctx.textBaseline = 'alphabetic'
   }
 
   return <canvas ref={canvasRef} />
