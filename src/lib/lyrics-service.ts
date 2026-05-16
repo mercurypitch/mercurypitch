@@ -509,9 +509,7 @@ export function computeActiveWord(
         gaps.push(wordTimes[i] - wordTimes[i - 1])
       }
       const avgGap =
-        gaps.length > 0
-          ? gaps.reduce((a, b) => a + b, 0) / gaps.length
-          : 0.5
+        gaps.length > 0 ? gaps.reduce((a, b) => a + b, 0) / gaps.length : 0.5
       wordEnd = wordStart + avgGap
     }
     const wordDuration = Math.max(0.01, wordEnd - wordStart)
