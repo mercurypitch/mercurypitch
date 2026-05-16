@@ -2,7 +2,7 @@
 // WebSocket client that connects to the Cloudflare Durable Object
 // signaling relay for SDP/ICE exchange and room lifecycle.
 
-import type { JamCallbacks, SignalingMessage } from './jam-types'
+import type { JamCallbacks, SignalingMessage } from './types'
 
 const SIGNALING_URL = import.meta.env.VITE_JAM_SIGNALING_URL ?? '/api/jam'
 
