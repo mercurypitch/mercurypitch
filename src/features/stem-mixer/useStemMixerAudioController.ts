@@ -274,11 +274,14 @@ export const useStemMixerAudioController = (
           )
           deps.setMidiNotes(notes)
           if (notes.length > 0) {
+            // Reset progress for synthesis phase so user sees activity
+            setMidiProgressLocal(0)
             const midiBuf = await synthesizeMidiBuffer(
               notes,
               DEFAULT_BPM,
               sampleRate,
               vocalBuf.duration,
+              (pct) => setMidiProgressLocal(pct),
             )
             deps.setMidi((prev) => ({ ...prev, buffer: midiBuf }))
           }
