@@ -18,19 +18,19 @@ git config core.hooksPath .githooks
 
 ## Development Commands
 
-| Command | Description |
-|---------|-------------|
-| `pnpm run dev` | Start Vite dev server with HMR |
-| `pnpm run build` | Production build to `dist/` |
-| `pnpm run typecheck` | TypeScript check (`tsc --noEmit`) |
-| `pnpm test` | Run Vitest in watch mode |
-| `pnpm run test:run` | Run Vitest once (CI mode) |
-| `pnpm run test:ui` | Run Vitest with browser UI |
-| `pnpm run test:e2e` | Run Playwright E2E tests |
-| `pnpm run lint` | ESLint check |
-| `pnpm run lint:fix` | ESLint auto-fix |
-| `pnpm run fmt` | Prettier check |
-| `pnpm run fmt:write` | Prettier auto-format |
+| Command                 | Description                             |
+| ----------------------- | --------------------------------------- |
+| `pnpm run dev`          | Start Vite dev server with HMR          |
+| `pnpm run build`        | Production build to `dist/`             |
+| `pnpm run typecheck`    | TypeScript check (`tsc --noEmit`)       |
+| `pnpm test`             | Run Vitest in watch mode                |
+| `pnpm run test:run`     | Run Vitest once (CI mode)               |
+| `pnpm run test:ui`      | Run Vitest with browser UI              |
+| `pnpm run test:e2e`     | Run Playwright E2E tests                |
+| `pnpm run lint`         | ESLint check                            |
+| `pnpm run lint:fix`     | ESLint auto-fix                         |
+| `pnpm run fmt`          | Prettier check                          |
+| `pnpm run fmt:write`    | Prettier auto-format                    |
 | `pnpm run check:syntax` | Run all checks (typecheck + lint + fmt) |
 
 ## Git Workflow
@@ -41,6 +41,7 @@ git config core.hooksPath .githooks
 - Commit and push after each completed task
 
 ### Branch naming convention
+
 `feat/<description>`, `fix/<description>`, `docs/<description>`
 
 ## Project Structure
