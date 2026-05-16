@@ -2815,4 +2815,91 @@ export const StemMixerStyles: string = `
   color: var(--accent, #58a6ff);
 }
 
+/* Pitch Analysis Panel (Debug Modal) */
+.sm-pitch-analysis-panel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--bg-tertiary, #161b22);
+  border: 1px solid var(--border, #30363d);
+  border-radius: 0.5rem;
+  padding: 1.25rem;
+  width: 400px;
+  max-width: 90vw;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.sm-pitch-analysis-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border, #30363d);
+  padding-bottom: 0.75rem;
+}
+
+.sm-pitch-analysis-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--fg-primary, #c9d1d9);
+}
+
+.sm-pitch-analysis-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.sm-pitch-analysis-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.sm-pitch-analysis-controls label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  color: var(--fg-primary, #c9d1d9);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.sm-pitch-analysis-controls select,
+.sm-pitch-analysis-controls input[type="range"] {
+  background: var(--bg-primary, #0d1117);
+  border: 1px solid var(--border, #30363d);
+  color: var(--fg-primary, #c9d1d9);
+  border-radius: 0.25rem;
+  padding: 0.4rem;
+  outline: none;
+}
+
+.sm-pitch-analysis-controls input[type="range"] {
+  padding: 0;
+  height: 6px;
+  -webkit-appearance: none;
+  background: var(--bg-primary, #0d1117);
+}
+
+.sm-pitch-analysis-controls input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: 14px;
+  width: 14px;
+  border-radius: 50%;
+  background: var(--accent, #58a6ff);
+  cursor: pointer;
+}
+
+.sm-pitch-analysis-info {
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--fg-muted, #8b949e);
+  margin-top: 1rem;
+}
+
 `
