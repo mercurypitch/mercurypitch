@@ -138,6 +138,7 @@ export interface StemMixerAudioController {
 
   // Pitch history (read by canvas)
   getPitchHistory: () => PitchNote[]
+  setPitchHistory: (history: PitchNote[]) => void
 
   // Ref accessors (for onCleanup)
   getAudioCtx: () => AudioContext | null
@@ -693,6 +694,9 @@ export const useStemMixerAudioController = (
     seekTo,
     handleDownload,
     getPitchHistory: () => pitchHistory,
+    setPitchHistory: (h: PitchNote[]) => {
+      pitchHistory = h
+    },
     getAudioCtx: () => audioCtx,
     getRafId: () => rafId,
   }
