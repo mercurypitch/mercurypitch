@@ -5,7 +5,7 @@
 import type { Setter } from 'solid-js'
 import { createEffect, createMemo, createSignal, onCleanup } from 'solid-js'
 import type { LrcLine, LyricsSearchMatch, LyricsSearchResult, } from '@/lib/lyrics-service'
-import { extractTitle, fetchLyricsById, getCurrentLineIndex, getCurrentLrcIndex, parseLrcFile, parseLrcWordTimings, parseTextLyrics, searchLyrics, searchLyricsMulti, } from '@/lib/lyrics-service'
+import { computeActiveWord, extractTitle, fetchLyricsById, getCurrentLineIndex, getCurrentLrcIndex, parseLrcFile, parseLrcWordTimings, parseTextLyrics, searchLyrics, searchLyricsMulti, } from '@/lib/lyrics-service'
 import type { BlockInstancesMap, BlockStartsInfo, DisplayLine, EditPopover, GenViewLine, LyricsBlock, LyricsSource, LyricsUploadResult, WordTimingsMap, } from './types'
 
 // ── Deps ──────────────────────────────────────────────────────────
@@ -214,64 +214,6 @@ const formatTimeLrcWord = (secs: number): string => {
     .padStart(2, '0')
   const s = (secs % 60).toFixed(2).padStart(5, '0')
   return `${m}:${s}`
-}
-
-const computeActiveWord = (
-  words: string[],
-  startTime: number,
-  endTime: number,
-  wordTimes: number[] | undefined,
-  elapsedTime: number,
-): { activeUpTo: number; charProgress: number } => {
-  if (words.length === 0) return { activeUpTo: -1, charProgress: 0 }
-
-  // Per-word LRC timings — use actual word timestamps for interpolation
-  if (wordTimes && wordTimes.length === words.length) {
-    let wordIdx = -1
-    for (let i = words.length - 1; i >= 0; i--) {
-      if (elapsedTime >= wordTimes[i]) {
-        wordIdx = i
-        break
-      }
-    }
-    if (wordIdx < 0) return { activeUpTo: -1, charProgress: 0 }
-
-    const activeUpTo = wordIdx - 1
-    const wordStart = wordTimes[wordIdx]
-    const wordEnd =
-      wordIdx + 1 < wordTimes.length ? wordTimes[wordIdx + 1] : endTime
-    const wordDuration = Math.max(0.01, wordEnd - wordStart)
-    const elapsedInWord = elapsedTime - wordStart
-    const currentWord = words[wordIdx]
-    const charProgress = Math.min(
-      Math.floor((elapsedInWord / wordDuration) * currentWord.length),
-      currentWord.length,
-    )
-    return { activeUpTo, charProgress }
-  }
-
-  // Fallback: evenly divide line duration among words
-  const lineDuration = Math.max(0.05, endTime - startTime)
-  const progress = (elapsedTime - startTime) / lineDuration
-  if (progress < 0) return { activeUpTo: -1, charProgress: 0 }
-  if (progress >= 1)
-    return {
-      activeUpTo: words.length - 1,
-      charProgress: words[words.length - 1]?.length || 0,
-    }
-
-  const wordDuration = lineDuration / words.length
-  const currentWordIdx = Math.floor(progress * words.length)
-  const activeUpTo = currentWordIdx - 1
-
-  const elapsedInWord = elapsedTime - startTime - currentWordIdx * wordDuration
-  const currentWord = words[currentWordIdx]
-  const charProgress = Math.min(
-    Math.floor((elapsedInWord / wordDuration) * currentWord.length),
-    currentWord.length,
-  )
-
-  return { activeUpTo, charProgress }
 }
 
 // ── Controller factory ─────────────────────────────────────────────
@@ -1432,9 +1374,15 @@ export function useStemMixerLyricsController(
         result.push({ time: line.time, text: line.text })
       })
       result.forEach((item, i) => {
-        const words = item.text.split(/\s+/).filter((w: string) => w.length > 0)
         const endTime = i + 1 < result.length ? result[i + 1].time : dur
         const wordTimings = parseLrcWordTimings(item.text, item.time)
+        // Use wordTimings.words when available so wordTimes and words arrays
+        // have matching lengths for per-word interpolation in computeActiveWord.
+        // Raw text still contains embedded [MM:SS] timestamps which would be
+        // split into spurious "words", breaking the length match.
+        const words = wordTimings
+          ? wordTimings.words
+          : item.text.split(/\s+/).filter((w: string) => w.length > 0)
         map.set(i, {
           key: `lrc-${i}`,
           time: item.time,
