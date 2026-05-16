@@ -343,26 +343,52 @@ export function stopJamPitchDetection(): void {
 // ── Exercise actions ─────────────────────────────────────────────────
 
 export function selectJamExercise(melody: MelodyData): void {
+  // Update local state immediately (DataChannel only sends to remotes)
+  setJamExerciseMelody(melody)
+  const total = melody.items.reduce(
+    (max, item) => Math.max(max, item.startBeat + item.duration),
+    0,
+  )
+  setJamExerciseTotalBeats(total)
+  setJamExerciseBeat(0)
+  setJamExerciseNoteIndex(-1)
+  setJamExercisePlaying(false)
+  setJamExercisePaused(false)
   jamService?.sendMelody(melody)
 }
 
 export function clearJamExercise(): void {
+  setJamExerciseMelody(null)
+  setJamExerciseTotalBeats(0)
+  setJamExercisePlaying(false)
+  setJamExercisePaused(false)
+  setJamExerciseBeat(0)
+  setJamExerciseNoteIndex(-1)
   jamService?.sendClearMelody()
 }
 
 export function jamPlaybackPlay(startBeat?: number): void {
+  setJamExercisePlaying(true)
+  setJamExercisePaused(false)
+  if (startBeat !== undefined) setJamExerciseBeat(startBeat)
   jamService?.sendPlaybackCommand('play', startBeat ?? jamExerciseBeat())
 }
 
 export function jamPlaybackPause(): void {
+  setJamExercisePaused(true)
   jamService?.sendPlaybackCommand('pause', jamExerciseBeat())
 }
 
 export function jamPlaybackStop(): void {
+  setJamExercisePlaying(false)
+  setJamExercisePaused(false)
+  setJamExerciseBeat(0)
+  setJamExerciseNoteIndex(-1)
   jamService?.sendPlaybackCommand('stop', 0)
 }
 
 export function jamPlaybackSeek(beat: number): void {
+  setJamExerciseBeat(beat)
   jamService?.sendPlaybackCommand('seek', beat)
 }
 
