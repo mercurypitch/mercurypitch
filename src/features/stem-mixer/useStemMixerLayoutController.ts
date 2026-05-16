@@ -99,7 +99,7 @@ export const useStemMixerLayoutController = (
 
   // ── Signals ───────────────────────────────────────────────────
   const [workspaceLayout, setWorkspaceLayout] = createSignal<WorkspaceLayout>(
-    (savedPrefs?.layout as WorkspaceLayout) ?? 'auto-2col',
+    (savedPrefs?.layout as WorkspaceLayout) ?? 'fixed-2col',
   )
   const [sidebarHidden, setSidebarHidden] = createSignal<boolean>(
     (savedPrefs?.sidebarHidden as boolean | undefined) ?? false,
