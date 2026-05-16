@@ -58,7 +58,7 @@ export class JamRoom extends DurableObject<JamEnv> {
       case 'offer':
       case 'answer':
       case 'ice-candidate':
-        this.relayToPeer(msg as { type: string; target?: string })
+        this.relayToPeer(ws, msg as { type: string; target?: string })
         break
       case 'leave-room':
         this.handleLeave(ws)
@@ -137,15 +137,16 @@ export class JamRoom extends DurableObject<JamEnv> {
 
   // ── Message relay ─────────────────────────────────────────────────
 
-  private relayToPeer(msg: { target?: string }): void {
+  private relayToPeer(sender: WebSocket, msg: { type: string; target?: string }): void {
     if (!msg.target) return
     const peer = this.peers.get(msg.target)
-    if (peer?.ws.readyState === 1) {
-      try {
-        peer.ws.send(JSON.stringify(msg))
-      } catch {
-        // cleanup on close
-      }
+    if (peer?.ws.readyState !== 1) return
+    const senderId = this.wsToPeerId.get(sender)
+    const enriched = { ...msg, from: senderId ?? '' }
+    try {
+      peer.ws.send(JSON.stringify(enriched))
+    } catch {
+      // cleanup on close
     }
   }
 

@@ -31,9 +31,9 @@ export type SignalingMessage =
     }
   | { type: 'peer-joined'; peerId: string; displayName: string }
   | { type: 'peer-left'; peerId: string }
-  | { type: 'offer'; target: string; sdp: string }
-  | { type: 'answer'; target: string; sdp: string }
-  | { type: 'ice-candidate'; target: string; candidate: string }
+  | { type: 'offer'; target: string; from: string; sdp: string }
+  | { type: 'answer'; target: string; from: string; sdp: string }
+  | { type: 'ice-candidate'; target: string; from: string; candidate: string }
   | { type: 'leave-room' }
   | { type: 'error'; message: string }
   | { type: 'room-closed' }
@@ -74,8 +74,8 @@ export interface JamCallbacks {
   onChatMessage: (message: JamChatMessage) => void
   onRoomClosed: () => void
   onError: (message: string) => void
-  // Signaling events from jam-signaling
-  onOffer?: (target: string, sdp: string) => void
-  onAnswer?: (target: string, sdp: string) => void
-  onIceCandidate?: (target: string, candidate: string) => void
+  // Signaling events from jam-signaling (from = sender peerId)
+  onOffer?: (from: string, sdp: string) => void
+  onAnswer?: (from: string, sdp: string) => void
+  onIceCandidate?: (from: string, candidate: string) => void
 }

@@ -131,15 +131,15 @@ export function createSignalingClient(callbacks: JamCallbacks) {
         break
 
       case 'offer':
-        callbacks.onOffer?.(msg.target, msg.sdp)
+        callbacks.onOffer?.(msg.from, msg.sdp)
         break
 
       case 'answer':
-        callbacks.onAnswer?.(msg.target, msg.sdp)
+        callbacks.onAnswer?.(msg.from, msg.sdp)
         break
 
       case 'ice-candidate':
-        callbacks.onIceCandidate?.(msg.target, msg.candidate)
+        callbacks.onIceCandidate?.(msg.from, msg.candidate)
         break
 
       case 'room-closed':
@@ -159,15 +159,15 @@ export function createSignalingClient(callbacks: JamCallbacks) {
   }
 
   function sendOffer(target: string, sdp: string): void {
-    sendSignal({ type: 'offer', target, sdp })
+    sendSignal({ type: 'offer', target, from: currentPeerId ?? '', sdp })
   }
 
   function sendAnswer(target: string, sdp: string): void {
-    sendSignal({ type: 'answer', target, sdp })
+    sendSignal({ type: 'answer', target, from: currentPeerId ?? '', sdp })
   }
 
   function sendIceCandidate(target: string, candidate: string): void {
-    sendSignal({ type: 'ice-candidate', target, candidate })
+    sendSignal({ type: 'ice-candidate', target, from: currentPeerId ?? '', candidate })
   }
 
   function leaveRoom(): void {
