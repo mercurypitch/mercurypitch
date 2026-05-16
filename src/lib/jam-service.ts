@@ -91,18 +91,30 @@ export function createJamService(callbacks: JamCallbacks) {
 
   async function startLocalStream(): Promise<void> {
     if (localStream) return
+    // Request audio first — always required
     try {
       localStream = await navigator.mediaDevices.getUserMedia({
         audio: AUDIO_CONSTRAINTS,
-        video: videoEnabled ? VIDEO_CONSTRAINTS : false,
+        video: false,
       })
-      if (videoEnabled) {
-        const vt = localStream.getVideoTracks()[0]
-        if (vt) localVideo = vt
-      }
     } catch (err) {
       callbacks.onError('Microphone access denied or unavailable')
       throw err
+    }
+    // Request video separately — failure is non-fatal
+    if (videoEnabled) {
+      try {
+        const videoStream = await navigator.mediaDevices.getUserMedia({
+          video: VIDEO_CONSTRAINTS,
+        })
+        const vt = videoStream.getVideoTracks()[0]
+        if (vt) {
+          localVideo = vt
+          localStream.addTrack(vt)
+        }
+      } catch {
+        videoEnabled = false
+      }
     }
   }
 
