@@ -20,6 +20,10 @@ export interface StemMixerPitchAnalysisController {
   panelOpen: Accessor<boolean>
   setPanelOpen: Setter<boolean>
 
+  pitchSourceMode: Accessor<'realtime' | 'offline'>
+  setPitchSourceMode: Setter<'realtime' | 'offline'>
+  offlinePitchHistory: Accessor<PitchNote[]>
+
   algorithm: Accessor<PitchAlgorithm>
   setAlgorithm: Setter<PitchAlgorithm>
 
@@ -45,6 +49,13 @@ export const useStemMixerPitchAnalysisController = (
   deps: StemMixerPitchAnalysisDeps,
 ): StemMixerPitchAnalysisController => {
   const [panelOpen, setPanelOpen] = createSignal(false)
+  const [pitchSourceMode, setPitchSourceMode] = createSignal<
+    'realtime' | 'offline'
+  >('realtime')
+  const [offlinePitchHistory, setOfflinePitchHistory] = createSignal<
+    PitchNote[]
+  >([])
+
   const [algorithm, setAlgorithm] = createSignal<PitchAlgorithm>('yin')
   const [bufferSize, setBufferSize] = createSignal(1024)
   const [sensitivity, setSensitivity] = createSignal(7)
@@ -149,6 +160,8 @@ export const useStemMixerPitchAnalysisController = (
         }
       }
 
+      setOfflinePitchHistory(newHistory)
+      setPitchSourceMode('offline')
       deps.setPitchHistory(newHistory)
       deps.showNotification('Pitch analysis complete', 'success')
     } catch (e) {
@@ -165,6 +178,9 @@ export const useStemMixerPitchAnalysisController = (
   return {
     panelOpen,
     setPanelOpen,
+    pitchSourceMode,
+    setPitchSourceMode,
+    offlinePitchHistory,
     algorithm,
     setAlgorithm,
     bufferSize,

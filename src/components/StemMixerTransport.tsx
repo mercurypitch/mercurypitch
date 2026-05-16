@@ -164,9 +164,10 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
         <div class="sm-zoom-control">
           <button
             class="sm-zoom-btn"
-            onClick={() =>
+            onClick={() => {
               props.setWindowDuration((prev) => Math.max(10, prev - 5))
-            }
+              props.onQueueRedraw()
+            }}
             title="Zoom in (shorter window)"
           >
             −
@@ -174,9 +175,10 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
           <span class="sm-zoom-value">{props.windowDuration()}s</span>
           <button
             class="sm-zoom-btn"
-            onClick={() =>
+            onClick={() => {
               props.setWindowDuration((prev) => Math.min(150, prev + 5))
-            }
+              props.onQueueRedraw()
+            }}
             title="Zoom out (longer window)"
           >
             +
