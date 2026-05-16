@@ -15,11 +15,14 @@ export function createSignalingClient(callbacks: JamCallbacks) {
   let connecting = false
 
   function connect(roomId: string, displayName: string): void {
-    if (
-      ws?.readyState === WebSocket.OPEN ||
-      ws?.readyState === WebSocket.CONNECTING
-    ) {
-      return
+    // Close any stale connection before opening a new one
+    if (ws) {
+      clearReconnect()
+      ws.onclose = null
+      ws.onerror = null
+      ws.onmessage = null
+      ws.close()
+      ws = null
     }
 
     currentRoomId = roomId
@@ -59,11 +62,14 @@ export function createSignalingClient(callbacks: JamCallbacks) {
   }
 
   function createRoom(displayName: string): void {
-    if (
-      ws?.readyState === WebSocket.OPEN ||
-      ws?.readyState === WebSocket.CONNECTING
-    ) {
-      return
+    // Close any stale connection before opening a new one
+    if (ws) {
+      clearReconnect()
+      ws.onclose = null
+      ws.onerror = null
+      ws.onmessage = null
+      ws.close()
+      ws = null
     }
 
     currentDisplayName = displayName
