@@ -3,6 +3,7 @@
 
 import type { Component } from 'solid-js'
 import { createSignal } from 'solid-js'
+import styles from './JamInviteModal.module.css'
 
 interface JamInviteModalProps {
   roomId: string
@@ -10,48 +11,49 @@ interface JamInviteModalProps {
 }
 
 export const JamInviteModal: Component<JamInviteModalProps> = (props) => {
-  const [copied, setCopied] = createSignal(false)
-  const roomLink = () => `${window.location.origin}/#jam:${props.roomId}`
+  const [roomCopied, setRoomCopied] = createSignal(false)
+  const [linkCopied, setLinkCopied] = createSignal(false)
+  const roomLink = () => `${window.location.origin}/#/jam:${props.roomId}`
 
   const handleCopyRoomId = () => {
     navigator.clipboard.writeText(props.roomId).catch(() => {})
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    setRoomCopied(true)
+    setTimeout(() => setRoomCopied(false), 2000)
   }
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(roomLink()).catch(() => {})
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    setLinkCopied(true)
+    setTimeout(() => setLinkCopied(false), 2000)
   }
 
   return (
-    <div class="jam-modal-overlay" onClick={() => props.onClose()}>
-      <div class="jam-modal" onClick={(e) => e.stopPropagation()}>
-        <div class="jam-modal-header">
+    <div class={styles.overlay} onClick={() => props.onClose()}>
+      <div class={styles.modal} onClick={(e) => e.stopPropagation()}>
+        <div class={styles.header}>
           <h3>Invite Peers</h3>
-          <button class="jam-modal-close" onClick={() => props.onClose()}>
+          <button class={styles.close} onClick={() => props.onClose()}>
             &times;
           </button>
         </div>
 
-        <div class="jam-modal-body">
-          <div class="jam-invite-section">
+        <div class={styles.body}>
+          <div class={styles.section}>
             <label class="jam-label">Room Code</label>
-            <div class="jam-invite-code-row">
-              <code class="jam-invite-code">{props.roomId}</code>
+            <div class={styles.codeRow}>
+              <code class={styles.code}>{props.roomId}</code>
               <button class="jam-btn jam-btn-sm" onClick={handleCopyRoomId}>
-                {copied() ? 'Copied!' : 'Copy'}
+                {roomCopied() ? 'Copied!' : 'Copy'}
               </button>
             </div>
           </div>
 
-          <div class="jam-invite-section">
+          <div class={styles.section}>
             <label class="jam-label">Share Link</label>
-            <div class="jam-invite-code-row">
-              <code class="jam-invite-code jam-invite-link">{roomLink()}</code>
+            <div class={styles.codeRow}>
+              <code class={`${styles.code} ${styles.link}`}>{roomLink()}</code>
               <button class="jam-btn jam-btn-sm" onClick={handleCopyLink}>
-                {copied() ? 'Copied!' : 'Copy'}
+                {linkCopied() ? 'Copied!' : 'Copy'}
               </button>
             </div>
           </div>

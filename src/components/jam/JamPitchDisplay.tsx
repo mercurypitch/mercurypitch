@@ -5,12 +5,7 @@
 import type { Component } from 'solid-js'
 import { createMemo, Show } from 'solid-js'
 import { jamLocalPitch } from '@/stores/jam-store'
-
-function centsClass(cents: number): string {
-  const abs = Math.abs(cents)
-  if (abs <= 10) return 'in-tune'
-  return cents > 0 ? 'sharp' : 'flat'
-}
+import styles from './JamPitchDisplay.module.css'
 
 export const JamPitchDisplay: Component = () => {
   const noteLabel = createMemo(() => {
@@ -31,19 +26,22 @@ export const JamPitchDisplay: Component = () => {
 
   const markerClass = createMemo(() => {
     const p = jamLocalPitch()
-    return p && p.frequency > 0 ? centsClass(p.cents) : ''
+    if (!p || p.frequency === 0) return ''
+    const abs = Math.abs(p.cents)
+    if (abs <= 10) return styles.inTune
+    return p.cents > 0 ? styles.sharp : styles.flat
   })
 
   return (
-    <div class="jam-pitch-display">
-      <Show when={jamLocalPitch()} fallback={<span class="jam-pitch-waiting">Listening...</span>}>
-        <span class="jam-pitch-note">{noteLabel()}</span>
-        <span class="jam-pitch-freq">{freqLabel()}</span>
-        <div class="jam-cents-bar">
-          <div class={`jam-cents-marker ${markerClass()}`} style={{ left: markerLeft() }} />
-          <div class="jam-cents-center" />
+    <div class={styles.pitchDisplay}>
+      <Show when={jamLocalPitch()} fallback={<span class={styles.waiting}>Listening...</span>}>
+        <span class={styles.note}>{noteLabel()}</span>
+        <span class={styles.freq}>{freqLabel()}</span>
+        <div class={styles.centsBar}>
+          <div class={`${styles.centsMarker} ${markerClass()}`} style={{ left: markerLeft() }} />
+          <div class={styles.centsCenter} />
         </div>
-        <div class="jam-cents-labels">
+        <div class={styles.centsLabels}>
           <span>-50</span>
           <span>0</span>
           <span>+50</span>

@@ -35,6 +35,9 @@ import { JamPitchDisplay } from './JamPitchDisplay'
 import { JamSharedPitchCanvas } from './JamSharedPitchCanvas'
 import { JamExerciseCanvas } from './JamExerciseCanvas'
 import { JamExerciseControls } from './JamExerciseControls'
+import panelStyles from './JamPanel.module.css'
+import pitchCanvasStyles from './JamSharedPitchCanvas.module.css'
+import exerciseCanvasStyles from './JamExerciseCanvas.module.css'
 
 export const JamPanel: Component = () => {
   const [displayName, setDisplayName] = createSignal('')
@@ -43,7 +46,11 @@ export const JamPanel: Component = () => {
   const [joining, setJoining] = createSignal(false)
   const [chatText, setChatText] = createSignal('')
   const [showExercisePicker, setShowExercisePicker] = createSignal(false)
+  const [roomCopied, setRoomCopied] = createSignal(false)
+  const [linkCopied, setLinkCopied] = createSignal(false)
   let chatScrollEl: HTMLDivElement | undefined
+
+  const roomLink = createMemo(() => `${window.location.origin}/#/jam:${jamRoomId() ?? ''}`)
 
   const melodyOptions = createMemo(() => {
     const lib = getMelodyLibrarySignal()()
@@ -55,7 +62,6 @@ export const JamPanel: Component = () => {
     if (!text) return
     sendJamChatMessage(text)
     setChatText('')
-    // Scroll to bottom after render
     setTimeout(() => {
       chatScrollEl?.scrollTo({ top: chatScrollEl.scrollHeight, behavior: 'smooth' })
     }, 50)
@@ -176,15 +182,34 @@ export const JamPanel: Component = () => {
           <div class="jam-room-header">
             <div class="jam-room-info">
               <h2 class="jam-title">Jam Room</h2>
-              <span class="jam-room-id-badge">{jamRoomId()}</span>
+              <div class={panelStyles.roomIdRow}>
+                <span class="jam-room-id-badge">{jamRoomId()}</span>
+                <button
+                  class="jam-btn jam-btn-sm"
+                  onClick={() => {
+                    navigator.clipboard.writeText(jamRoomId() ?? '').catch(() => {})
+                    setRoomCopied(true)
+                    setTimeout(() => setRoomCopied(false), 2000)
+                  }}
+                >
+                  {roomCopied() ? 'Copied!' : 'Copy'}
+                </button>
+              </div>
+              <div class={panelStyles.roomLinkRow}>
+                <code class={panelStyles.roomLink}>{roomLink()}</code>
+                <button
+                  class="jam-btn jam-btn-sm"
+                  onClick={() => {
+                    navigator.clipboard.writeText(roomLink()).catch(() => {})
+                    setLinkCopied(true)
+                    setTimeout(() => setLinkCopied(false), 2000)
+                  }}
+                >
+                  {linkCopied() ? 'Copied!' : 'Copy Link'}
+                </button>
+              </div>
             </div>
             <div class="jam-room-actions">
-              <button
-                class="jam-btn jam-btn-sm"
-                onClick={() => setShowInvite(true)}
-              >
-                Invite
-              </button>
               <button
                 class={`jam-btn jam-btn-sm ${jamIsMuted() ? 'jam-btn-muted' : ''}`}
                 onClick={toggleJamMute}
@@ -218,7 +243,6 @@ export const JamPanel: Component = () => {
           </div>
 
 <div class="jam-video-grid">
-            {/* Video grid unchanged */}
             <div class="jam-video-tile jam-video-local">
               <video
                 ref={(el) => {
@@ -257,21 +281,21 @@ export const JamPanel: Component = () => {
           <JamPitchDisplay />
 
           {/* Tab bar */}
-          <div class="jam-tabs">
+          <div class={panelStyles.tabs}>
             <button
-              class={`jam-tab ${jamPitchTab() === 'pitch' ? 'jam-tab-active' : ''}`}
+              class={`${panelStyles.tab} ${jamPitchTab() === 'pitch' ? panelStyles.tabActive : ''}`}
               onClick={() => setJamPitchTab('pitch')}
             >
               Shared Pitch
             </button>
             <button
-              class={`jam-tab ${jamPitchTab() === 'exercise' ? 'jam-tab-active' : ''}`}
+              class={`${panelStyles.tab} ${jamPitchTab() === 'exercise' ? panelStyles.tabActive : ''}`}
               onClick={() => setJamPitchTab('exercise')}
             >
               Exercise
             </button>
             <button
-              class={`jam-tab ${jamPitchTab() === 'chat' ? 'jam-tab-active' : ''}`}
+              class={`${panelStyles.tab} ${jamPitchTab() === 'chat' ? panelStyles.tabActive : ''}`}
               onClick={() => setJamPitchTab('chat')}
             >
               Chat
@@ -280,34 +304,34 @@ export const JamPanel: Component = () => {
 
           {/* Tab content */}
           <Show when={jamPitchTab() === 'pitch'}>
-            <div class="jam-tab-content">
+            <div class={panelStyles.tabContent}>
               <JamPeerList peers={jamPeers()} />
-              <div class="jam-shared-pitch-canvas">
+              <div class={pitchCanvasStyles.container}>
                 <JamSharedPitchCanvas myPeerId={jamPeerId} />
               </div>
             </div>
           </Show>
 
           <Show when={jamPitchTab() === 'exercise'}>
-            <div class="jam-tab-content">
+            <div class={panelStyles.tabContent}>
               <JamExerciseControls
                 onSelectExercise={() =>
                   setShowExercisePicker(!showExercisePicker())
                 }
               />
               <Show when={showExercisePicker()}>
-                <div class="jam-exercise-picker">
+                <div class={panelStyles.exercisePicker}>
                   <For each={melodyOptions()}>
                     {(melody) => (
                       <button
-                        class="jam-ex-pick-item"
+                        class={panelStyles.pickItem}
                         onClick={() => {
                           selectJamExercise(melody)
                           setShowExercisePicker(false)
                         }}
                       >
-                        <span class="jam-ex-pick-name">{melody.name}</span>
-                        <span class="jam-ex-pick-meta">
+                        <span class={panelStyles.pickName}>{melody.name}</span>
+                        <span class={panelStyles.pickMeta}>
                           {melody.bpm} bpm · {melody.key} {melody.scaleType}
                         </span>
                       </button>
@@ -315,14 +339,14 @@ export const JamPanel: Component = () => {
                   </For>
                 </div>
               </Show>
-              <div class="jam-exercise-canvas">
+              <div class={exerciseCanvasStyles.container}>
                 <JamExerciseCanvas myPeerId={jamPeerId} />
               </div>
             </div>
           </Show>
 
           <Show when={jamPitchTab() === 'chat'}>
-            <div class="jam-tab-content">
+            <div class={panelStyles.tabContent}>
               <div class="jam-chat">
                 <div
                   class="jam-chat-messages"
