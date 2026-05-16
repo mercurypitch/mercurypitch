@@ -310,12 +310,12 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       const melodyNoteIndex = melodyIndexAtBeat(melody, beat)
       let durationBeats = 0.25 // Default quarter note if not found
 
-      if (melodyNoteIndex >= 0 && melody[melodyNoteIndex]) {
+      if (melodyNoteIndex >= 0 && melody[melodyNoteIndex] !== undefined) {
         durationBeats = melody[melodyNoteIndex].duration
       }
 
       // Track click and detect trill
-      const isTrill = trackNoteClick(midi, freq)
+      const isTrill = trackNoteClick(midi)
       if (isTrill) {
         playNoteTrill(freq, durationBeats)
       } else {
@@ -341,8 +341,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
 
     if (!engine?.playNote) return
 
-    const bpm = appStore.bpm()
-    const beatDurationMs = 60000 / bpm
+    const beatDurationMs = 60000 / bpm()
 
     engine.playNote(freq, durationBeats * beatDurationMs)
   }
@@ -362,16 +361,14 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
 
     if (!engine?.playNote) return
 
-    const bpm = appStore.bpm()
-    const beatDurationMs = 60000 / bpm
-    const oneBarBeats = 4
+    const beatDurationMs = 60000 / bpm()
 
     // First play immediately
     engine.playNote(freq, durationBeats * beatDurationMs)
 
     // Play 4 more times with 1 bar rest between each
     for (let i = 1; i < TRILL_NOTE_PLAYS; i++) {
-      const delay = oneBarBeats * beatDurationMs
+      const delay = TRILL_BAR_REST * beatDurationMs
       setTimeout(() => {
         ;(
           engine as { playNote: (freq: number, durationMs: number) => void }
@@ -384,7 +381,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
    * Tracks click timing for trill detection.
    * Returns true if 3 quick clicks were detected on the same note.
    */
-  const trackNoteClick = (midi: number, freq: number): boolean => {
+  const trackNoteClick = (midi: number): boolean => {
     const now = performance.now()
     const timestamps = noteClickMap.get(midi) || []
 
