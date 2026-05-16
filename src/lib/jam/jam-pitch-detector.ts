@@ -2,8 +2,8 @@
 // Lightweight pitch detector for P2P jam sessions.
 // Own AudioContext + AnalyserNode, separate from the main app's audio engine.
 
-import { PitchDetector } from '../pitch-detector'
 import type { DetectedPitch } from '../pitch-detector'
+import { PitchDetector } from '../pitch-detector'
 
 export type JamPitchCallback = (pitch: DetectedPitch) => void
 
@@ -62,7 +62,9 @@ export class JamPitchDetector {
 
   private loop = (): void => {
     if (!this.running || !this.analyser) return
-    this.analyser.getFloatTimeDomainData(this.timeData as Float32Array<ArrayBuffer>)
+    this.analyser.getFloatTimeDomainData(
+      this.timeData as Float32Array<ArrayBuffer>,
+    )
     const pitch = this.detector.detect(this.timeData)
     if (pitch.frequency > 0) {
       this.onPitch?.(pitch)

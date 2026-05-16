@@ -3,9 +3,9 @@
 // Handles RTCPeerConnection lifecycle, Opus codec configuration,
 // camera/mic capture, and track management.
 
+import type { MelodyData } from '@/types'
 import { createSignalingClient } from './signaling'
 import type { JamCallbacks, JamPeer } from './types'
-import type { MelodyData } from '@/types'
 
 const ICE_SERVERS: RTCIceServer[] = [
   { urls: 'stun:stun.l.google.com:19302' },
@@ -42,6 +42,7 @@ export function createJamService(callbacks: JamCallbacks) {
   let localVideo: MediaStreamTrack | null = null
   const peerConnections = new Map<string, RTCPeerConnection>()
   const dataChannels = new Map<string, RTCDataChannel>()
+  const pendingCandidates = new Map<string, string[]>()
   let disposed = false
   let videoEnabled = true
   let localDisplayName = ''
@@ -50,7 +51,29 @@ export function createJamService(callbacks: JamCallbacks) {
     ...callbacks,
     onPeerJoined: (peer: JamPeer) => {
       callbacks.onPeerJoined(peer)
-      initiateNewPeer(peer)
+      // Only initiate connection if our ID > peer ID to prevent glare.
+      // If our ID is not yet known, always initiate — handleOffer will resolve glare.
+      const myId = signaling.getPeerId()
+      console.info(
+        '[jam:service] onPeerJoined',
+        peer.id,
+        'myId=',
+        myId,
+        'will initiate=',
+        myId === null || myId === '' || myId > peer.id,
+      )
+      if (myId === null || myId === '' || myId > peer.id) {
+        console.info('[jam:service] initiating connection to', peer.id)
+        initiateNewPeer(peer).catch((err) =>
+          console.error('[jam:service] initiateNewPeer failed', err),
+        )
+      } else {
+        console.info(
+          '[jam:service] waiting for peer',
+          peer.id,
+          'to initiate (their ID is greater)',
+        )
+      }
     },
     onPeerLeft: (peerId: string) => {
       const pc = peerConnections.get(peerId)
@@ -120,7 +143,7 @@ export function createJamService(callbacks: JamCallbacks) {
           video: VIDEO_CONSTRAINTS,
         })
         const vt = videoStream.getVideoTracks()[0]
-        if (vt) {
+        if (vt !== undefined) {
           localVideo = vt
           localStream.addTrack(vt)
         }
@@ -137,7 +160,7 @@ export function createJamService(callbacks: JamCallbacks) {
         video: VIDEO_CONSTRAINTS,
       })
       const vt = videoStream.getVideoTracks()[0]
-      if (vt) {
+      if (vt !== undefined) {
         localVideo = vt
         localStream?.addTrack(vt)
         for (const [, pc] of peerConnections) {
@@ -194,7 +217,7 @@ export function createJamService(callbacks: JamCallbacks) {
   async function initiateNewPeer(peer: JamPeer): Promise<void> {
     if (disposed || peerConnections.has(peer.id)) return
 
-    console.debug('[jam:service] initiating connection to', peer.id)
+    console.info('[jam:service] initiating connection to', peer.id)
     const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS })
 
     // Add local audio track
@@ -206,7 +229,12 @@ export function createJamService(callbacks: JamCallbacks) {
 
     // Handle remote audio track
     pc.ontrack = (event) => {
-      console.debug('[jam:service] ontrack from', peer.id, 'streams:', event.streams.length)
+      console.info(
+        '[jam:service] ontrack from',
+        peer.id,
+        'streams:',
+        event.streams.length,
+      )
       const remoteStream = event.streams[0]
       if (remoteStream !== undefined) {
         callbacks.onPeerStream(peer.id, remoteStream)
@@ -214,13 +242,17 @@ export function createJamService(callbacks: JamCallbacks) {
     }
 
     pc.onconnectionstatechange = () => {
-      console.debug('[jam:service] connection state', peer.id, pc.connectionState)
+      console.info(
+        '[jam:service] connection state',
+        peer.id,
+        pc.connectionState,
+      )
       const state = mapConnectionState(pc.connectionState)
       callbacks.onConnectionStateChange(peer.id, state)
     }
 
     pc.oniceconnectionstatechange = () => {
-      console.debug('[jam:service] ICE state', peer.id, pc.iceConnectionState)
+      console.info('[jam:service] ICE state', peer.id, pc.iceConnectionState)
       // Measure RTT via stats when ICE connects
       if (pc.iceConnectionState === 'connected') {
         measureLatency(peer.id, pc)
@@ -237,7 +269,7 @@ export function createJamService(callbacks: JamCallbacks) {
     }
 
     pc.ondatachannel = (event) => {
-      console.debug('[jam:service] received DataChannel from', peer.id)
+      console.info('[jam:service] received DataChannel from', peer.id)
       const dc = event.channel
       if (dc.label === 'chat') {
         setupDataChannel(dc, peer.id)
@@ -251,7 +283,7 @@ export function createJamService(callbacks: JamCallbacks) {
     peerConnections.set(peer.id, pc)
 
     // Create and send offer
-    console.debug('[jam:service] sending offer to', peer.id)
+    console.info('[jam:service] sending offer to', peer.id)
     const offer = await pc.createOffer()
     await pc.setLocalDescription(offer)
     signaling.sendOffer(peer.id, JSON.stringify(offer))
@@ -270,23 +302,45 @@ export function createJamService(callbacks: JamCallbacks) {
       }
       setupPeerHandlers(pc, from)
       peerConnections.set(from, pc)
-    } else {
+    } else if (pc.signalingState === 'have-local-offer') {
       // Glare detection — both peers sent offers at the same time.
       // The "polite" peer (lexicographically smaller ID) rolls back and
       // accepts the incoming offer. The "impolite" peer ignores it.
       const myId = signaling.getPeerId()
-      if (myId && myId < from) {
+      if (myId !== null && myId !== '' && myId < from) {
         // We are polite — roll back our local offer and handle the remote
-        console.debug('[jam] glare: rolling back local offer for polite peer', myId, '<', from)
+        console.info(
+          '[jam] glare: rolling back local offer for polite peer',
+          myId,
+          '<',
+          from,
+        )
         await pc.setLocalDescription({ type: 'rollback' })
       } else {
         // We are impolite — ignore the incoming offer (ours wins)
-        console.debug('[jam] glare: ignoring incoming offer from polite peer', from)
+        console.info(
+          '[jam] glare: ignoring incoming offer from polite peer',
+          from,
+        )
         return
       }
     }
 
     await pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(sdp)))
+
+    // Process any buffered ICE candidates
+    const pending = pendingCandidates.get(from)
+    if (pending) {
+      for (const candidate of pending) {
+        try {
+          await pc.addIceCandidate(new RTCIceCandidate(JSON.parse(candidate)))
+        } catch (_e) {
+          // Ignore candidate errors
+        }
+      }
+      pendingCandidates.delete(from)
+    }
+
     const answer = await pc.createAnswer()
     await pc.setLocalDescription(answer)
     signaling.sendAnswer(from, JSON.stringify(answer))
@@ -295,8 +349,24 @@ export function createJamService(callbacks: JamCallbacks) {
   async function handleAnswer(from: string, sdp: string): Promise<void> {
     const pc = peerConnections.get(from)
     if (!pc || disposed) return
-    console.debug('[jam:service] received answer from', from)
+    console.info('[jam:service] received answer from', from)
     await pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(sdp)))
+
+    // Process any buffered ICE candidates
+    const pending = pendingCandidates.get(from)
+    if (pending) {
+      for (const candidate of pending) {
+        try {
+          await pc.addIceCandidate(new RTCIceCandidate(JSON.parse(candidate)))
+        } catch (err) {
+          console.warn(
+            '[jam:service] failed to add buffered ICE candidate',
+            err,
+          )
+        }
+      }
+      pendingCandidates.delete(from)
+    }
   }
 
   async function handleIceCandidate(
@@ -304,38 +374,54 @@ export function createJamService(callbacks: JamCallbacks) {
     candidate: string,
   ): Promise<void> {
     const pc = peerConnections.get(from)
-    if (!pc || disposed) return
+
+    // Buffer candidate if pc doesn't exist OR remote description is not set yet
+    if (!pc || !pc.remoteDescription || disposed) {
+      if (!disposed) {
+        const pending = pendingCandidates.get(from) || []
+        pending.push(candidate)
+        pendingCandidates.set(from, pending)
+        console.info(`[jam:service] buffered ICE candidate from ${from}`)
+      }
+      return
+    }
+
     try {
       await pc.addIceCandidate(new RTCIceCandidate(JSON.parse(candidate)))
-    } catch {
-      // Ignore malformed candidates
+    } catch (err) {
+      console.warn('[jam:service] failed to add ICE candidate', err)
     }
   }
 
   function setupPeerHandlers(pc: RTCPeerConnection, peerId: string): void {
     pc.ontrack = (event) => {
-      console.debug('[jam:service] ontrack from', peerId, 'streams:', event.streams.length)
+      console.info(
+        '[jam:service] ontrack from',
+        peerId,
+        'streams:',
+        event.streams.length,
+      )
       const remoteStream = event.streams[0]
       if (remoteStream !== undefined) {
         callbacks.onPeerStream(peerId, remoteStream)
       }
     }
     pc.ondatachannel = (event) => {
-      console.debug('[jam:service] received DataChannel from', peerId)
+      console.info('[jam:service] received DataChannel from', peerId)
       const dc = event.channel
       if (dc.label === 'chat') {
         setupDataChannel(dc, peerId)
       }
     }
     pc.onconnectionstatechange = () => {
-      console.debug('[jam:service] connection state', peerId, pc.connectionState)
+      console.info('[jam:service] connection state', peerId, pc.connectionState)
       callbacks.onConnectionStateChange(
         peerId,
         mapConnectionState(pc.connectionState),
       )
     }
     pc.oniceconnectionstatechange = () => {
-      console.debug('[jam:service] ICE state', peerId, pc.iceConnectionState)
+      console.info('[jam:service] ICE state', peerId, pc.iceConnectionState)
       if (pc.iceConnectionState === 'connected') {
         measureLatency(peerId, pc)
       }
@@ -355,18 +441,23 @@ export function createJamService(callbacks: JamCallbacks) {
   function setupDataChannel(dc: RTCDataChannel, peerId: string): void {
     dataChannels.set(peerId, dc)
     dc.onopen = () => {
-      console.debug('[jam:service] DataChannel open to', peerId)
+      console.info('[jam:service] DataChannel open to', peerId)
     }
     dc.onclose = () => {
-      console.debug('[jam:service] DataChannel closed to', peerId)
+      console.info('[jam:service] DataChannel closed to', peerId)
     }
     dc.onerror = (event) => {
-      console.debug('[jam:service] DataChannel error to', peerId, event)
+      console.info('[jam:service] DataChannel error to', peerId, event)
     }
     dc.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data)
-        console.debug('[jam:service] DataChannel recv', data.type, 'from', peerId)
+        console.info(
+          '[jam:service] DataChannel recv',
+          data.type,
+          'from',
+          peerId,
+        )
         switch (data.type) {
           case 'chat':
             callbacks.onChatMessage({
@@ -387,7 +478,7 @@ export function createJamService(callbacks: JamCallbacks) {
             callbacks.onPlaybackMessage?.(data)
             break
         }
-      } catch {
+      } catch (_e) {
         // Ignore malformed messages
       }
     }
@@ -396,7 +487,7 @@ export function createJamService(callbacks: JamCallbacks) {
   function sendChat(text: string): void {
     const msg = {
       type: 'chat' as const,
-      id: crypto.randomUUID(),
+      id: globalThis.crypto.randomUUID(),
       text,
       displayName: localDisplayName,
       timestamp: Date.now(),
@@ -412,7 +503,7 @@ export function createJamService(callbacks: JamCallbacks) {
     midi: number
   }): void {
     const peerId = signaling.getPeerId()
-    if (!peerId) return
+    if (peerId === null || peerId === '') return
     broadcastData({
       type: 'pitch' as const,
       peerId,

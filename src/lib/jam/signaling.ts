@@ -6,6 +6,22 @@ import type { JamCallbacks, SignalingMessage } from './types'
 
 const SIGNALING_URL = import.meta.env.VITE_JAM_SIGNALING_URL ?? '/api/jam'
 
+function getWsUrl(path: string): string {
+  if (path.startsWith('ws://') || path.startsWith('wss://')) {
+    return path
+  }
+  if (path.startsWith('http://')) {
+    return path.replace('http://', 'ws://')
+  }
+  if (path.startsWith('https://')) {
+    return path.replace('https://', 'wss://')
+  }
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+  const host = window.location.host
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`
+  return `${protocol}//${host}${normalizedPath}`
+}
+
 export function createSignalingClient(callbacks: JamCallbacks) {
   let ws: WebSocket | null = null
   let reconnectTimer: ReturnType<typeof setTimeout> | null = null
@@ -29,7 +45,7 @@ export function createSignalingClient(callbacks: JamCallbacks) {
     currentDisplayName = displayName
     connecting = true
 
-    const url = `${SIGNALING_URL}/rooms/${roomId}/signal`
+    const url = getWsUrl(`${SIGNALING_URL}/rooms/${roomId}/signal`)
     ws = new WebSocket(url)
 
     ws.onopen = () => {
@@ -75,7 +91,7 @@ export function createSignalingClient(callbacks: JamCallbacks) {
     currentDisplayName = displayName
     connecting = true
 
-    const url = `${SIGNALING_URL}/rooms/new`
+    const url = getWsUrl(`${SIGNALING_URL}/rooms/new`)
     ws = new WebSocket(url)
 
     ws.onopen = () => {
@@ -100,17 +116,27 @@ export function createSignalingClient(callbacks: JamCallbacks) {
   }
 
   function handleMessage(msg: SignalingMessage): void {
-    console.debug('[jam:signaling] recv', msg.type)
+    console.info('[jam:signaling] recv', msg.type)
     switch (msg.type) {
       case 'room-created':
         currentRoomId = msg.roomId
         currentPeerId = msg.peerId
-        console.debug('[jam:signaling] room created', msg.roomId, 'peer', msg.peerId)
+        console.info(
+          '[jam:signaling] room created',
+          msg.roomId,
+          'peer',
+          msg.peerId,
+        )
         break
 
       case 'room-joined':
         currentPeerId = msg.peerId
-        console.debug('[jam:signaling] room joined, peer', msg.peerId, 'peers in room:', msg.peers.length)
+        console.info(
+          '[jam:signaling] room joined, peer',
+          msg.peerId,
+          'peers in room:',
+          msg.peers.length,
+        )
         // Initiate connections to all peers already in the room
         for (const p of msg.peers) {
           callbacks.onPeerJoined({
@@ -125,7 +151,7 @@ export function createSignalingClient(callbacks: JamCallbacks) {
         break
 
       case 'peer-joined':
-        console.debug('[jam:signaling] peer joined', msg.peerId)
+        console.info('[jam:signaling] peer joined', msg.peerId)
         callbacks.onPeerJoined({
           id: msg.peerId,
           displayName: msg.displayName,
@@ -137,17 +163,17 @@ export function createSignalingClient(callbacks: JamCallbacks) {
         break
 
       case 'peer-left':
-        console.debug('[jam:signaling] peer left', msg.peerId)
+        console.info('[jam:signaling] peer left', msg.peerId)
         callbacks.onPeerLeft(msg.peerId)
         break
 
       case 'offer':
-        console.debug('[jam:signaling] offer from', msg.from)
+        console.info('[jam:signaling] offer from', msg.from)
         callbacks.onOffer?.(msg.from, msg.sdp)
         break
 
       case 'answer':
-        console.debug('[jam:signaling] answer from', msg.from)
+        console.info('[jam:signaling] answer from', msg.from)
         callbacks.onAnswer?.(msg.from, msg.sdp)
         break
 
@@ -156,12 +182,12 @@ export function createSignalingClient(callbacks: JamCallbacks) {
         break
 
       case 'room-closed':
-        console.debug('[jam:signaling] room closed')
+        console.info('[jam:signaling] room closed')
         callbacks.onRoomClosed()
         break
 
       case 'error':
-        console.debug('[jam:signaling] error', msg.message)
+        console.info('[jam:signaling] error', msg.message)
         callbacks.onError(msg.message)
         break
     }
@@ -182,7 +208,12 @@ export function createSignalingClient(callbacks: JamCallbacks) {
   }
 
   function sendIceCandidate(target: string, candidate: string): void {
-    sendSignal({ type: 'ice-candidate', target, from: currentPeerId ?? '', candidate })
+    sendSignal({
+      type: 'ice-candidate',
+      target,
+      from: currentPeerId ?? '',
+      candidate,
+    })
   }
 
   function leaveRoom(): void {

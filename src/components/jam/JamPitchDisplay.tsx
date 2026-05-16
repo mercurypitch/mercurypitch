@@ -34,11 +34,17 @@ export const JamPitchDisplay: Component = () => {
 
   return (
     <div class={styles.pitchDisplay}>
-      <Show when={jamLocalPitch()} fallback={<span class={styles.waiting}>Listening...</span>}>
+      <Show
+        when={jamLocalPitch()}
+        fallback={<span class={styles.waiting}>Listening...</span>}
+      >
         <span class={styles.note}>{noteLabel()}</span>
         <span class={styles.freq}>{freqLabel()}</span>
         <div class={styles.centsBar}>
-          <div class={`${styles.centsMarker} ${markerClass()}`} style={{ left: markerLeft() }} />
+          <div
+            class={`${styles.centsMarker} ${markerClass()}`}
+            style={{ left: markerLeft() }}
+          />
           <div class={styles.centsCenter} />
         </div>
         <div class={styles.centsLabels}>

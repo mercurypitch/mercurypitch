@@ -44,7 +44,7 @@ export default {
       if (request.headers.get('Upgrade') !== 'websocket') {
         return respond({ error: 'WebSocket upgrade required' }, { status: 426 })
       }
-      const roomId = crypto.randomUUID().slice(0, 8)
+      const roomId = Math.random().toString(36).substring(2, 6).toUpperCase()
       const doId = env.JAM_ROOM.idFromName(roomId)
       const stub = env.JAM_ROOM.get(doId)
 
@@ -70,7 +70,7 @@ export default {
 
     // ── REST: Create room ─────────────────────────────────────────
     if (url.pathname === '/api/jam/rooms' && request.method === 'POST') {
-      const roomId = crypto.randomUUID().slice(0, 8)
+      const roomId = Math.random().toString(36).substring(2, 6).toUpperCase()
       env.JAM_ROOM.idFromName(roomId) // initialize DO
       return respond({ roomId })
     }

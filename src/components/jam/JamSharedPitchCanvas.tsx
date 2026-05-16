@@ -6,7 +6,6 @@ import type { Component } from 'solid-js'
 import { createMemo, onCleanup, onMount } from 'solid-js'
 import { jamPitchHistory } from '@/stores/jam-store'
 
-
 const PEER_COLORS = [
   '#58a6ff', // blue
   '#f0883e', // orange
@@ -163,7 +162,8 @@ export const JamSharedPitchCanvas: Component<JamSharedPitchCanvasProps> = (
       ctx.lineTo(x, tickY + 4)
       ctx.stroke()
 
-      ctx.fillText(`${sec.toString().padStart(2, '0')}s`, x, tickY + 4)
+      const displaySec = (sec % 60).toString().padStart(2, '0')
+      ctx.fillText(`:${displaySec}`, x, tickY + 4)
     }
   }
 
@@ -200,9 +200,7 @@ export const JamSharedPitchCanvas: Component<JamSharedPitchCanvasProps> = (
       if (points.length === 0) continue
 
       // Polyline
-      ctx.strokeStyle = isOwn
-        ? hexToRgba(color, 0.6)
-        : hexToRgba(color, 0.35)
+      ctx.strokeStyle = isOwn ? hexToRgba(color, 0.6) : hexToRgba(color, 0.35)
       ctx.lineWidth = isOwn ? 2 : 1.2
       ctx.lineJoin = 'round'
       ctx.beginPath()
@@ -214,9 +212,7 @@ export const JamSharedPitchCanvas: Component<JamSharedPitchCanvasProps> = (
 
       // Dots
       for (const p of points) {
-        const alpha = isOwn
-          ? 0.2 + p.clarity * 0.7
-          : 0.1 + p.clarity * 0.5
+        const alpha = isOwn ? 0.2 + p.clarity * 0.7 : 0.1 + p.clarity * 0.5
         ctx.fillStyle = hexToRgba(color, alpha)
         ctx.beginPath()
         ctx.arc(p.x, p.y, DOT_RADIUS, 0, Math.PI * 2)
