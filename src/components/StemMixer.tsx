@@ -284,6 +284,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     setUserScrolled,
 
     // Memos
+    canonicalLrcLines,
     stableParsedLyrics,
     blockStarts,
     displayLines,
@@ -431,6 +432,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     setMarkEndLine,
     blockEditTarget,
     setBlockEditTarget,
+    canonicalLrcLines,
     stableParsedLyrics,
     blockStarts,
     displayLines,

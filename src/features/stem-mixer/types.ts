@@ -13,6 +13,16 @@ export interface LyricsBlock {
 
 export type BlockInstancesMap = Record<string, number[][]>
 
+export interface CanonicalLrcEntry {
+  type: 'line' | 'rest'
+  lrcIndex: number
+  canonicalIndex: number
+  time: number
+  text: string
+  words: string[]
+  wordTimes?: number[]
+}
+
 export interface DisplayLine {
   text: string
   isBlank: boolean

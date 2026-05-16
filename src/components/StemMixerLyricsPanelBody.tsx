@@ -4,7 +4,7 @@
 
 import type { Accessor, Component, JSX, Setter } from 'solid-js'
 import { For, Show } from 'solid-js'
-import type { BlockInfo, BlockInstancesMap, BlockStartsInfo, DisplayLine, GenViewLine, LyricsBlock, WordTimingsMap, } from '@/features/stem-mixer/types'
+import type { BlockInfo, BlockInstancesMap, BlockStartsInfo, CanonicalLrcEntry, DisplayLine, GenViewLine, LyricsBlock, WordTimingsMap, } from '@/features/stem-mixer/types'
 import type { LyricsSearchMatch } from '@/lib/lyrics-service'
 import type { LyricsUploadResult } from './LyricsUploader'
 import { LyricsUploader } from './LyricsUploader'
@@ -121,6 +121,7 @@ export interface StemMixerLyricsPanelBodyProps {
   lrcLines: Accessor<{ text: string; time: number }[]>
 
   // Memos
+  canonicalLrcLines: Accessor<CanonicalLrcEntry[]>
   stableParsedLyrics: Accessor<Map<number, ParsedLyric>>
   blockStarts: Accessor<Map<number, BlockStartsInfo>>
   displayLines: Accessor<DisplayLine[]>
@@ -443,31 +444,46 @@ export const StemMixerLyricsPanelBody: Component<
               }
             }}
           >
-            <For each={Array.from(props.stableParsedLyrics().values())}>
-              {(rl) => {
-                const idx = parseInt(rl.key.split('-')[1])
+            <For each={props.canonicalLrcLines()}>
+              {(entry) => {
+                if (entry.type === 'rest') {
+                  return (
+                    <div class="sm-lyrics-line-edit sm-lyrics-line-rest">
+                      <span class="sm-lyrics-time-input sm-time-display">
+                        {props.formatTimeMs(entry.time)}
+                      </span>
+                      <span class="sm-lyrics-rest-label">~Rest~</span>
+                    </div>
+                  )
+                }
+                const lineIdx = entry.lrcIndex
                 return (
                   <div class="sm-lyrics-line-edit">
                     <input
                       class="sm-lyrics-time-input"
                       type="text"
-                      value={props.formatTimeMs(props.getEditLineTime(idx))}
+                      value={props.formatTimeMs(
+                        props.getEditLineTime(lineIdx),
+                      )}
                       onChange={(e) =>
-                        props.handleLineTimeEdit(idx, e.currentTarget.value)
+                        props.handleLineTimeEdit(
+                          lineIdx,
+                          e.currentTarget.value,
+                        )
                       }
                     />
-                    <For each={rl.words}>
+                    <For each={entry.words}>
                       {(word, wi) => (
                         <span class="sm-lyrics-word-edit">
                           <span class="sm-lyrics-word-text">{word}</span>
                           <span
                             class="sm-lyrics-word-time-label"
                             onClick={(e) =>
-                              props.openWordPopover(idx, wi(), word, e)
+                              props.openWordPopover(lineIdx, wi(), word, e)
                             }
                           >
                             {props.formatTimeMs(
-                              props.getEditWordTime(idx, wi()),
+                              props.getEditWordTime(lineIdx, wi()),
                             )}
                           </span>
                         </span>

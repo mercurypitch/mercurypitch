@@ -6,7 +6,7 @@ import type { Setter } from 'solid-js'
 import { createEffect, createMemo, createSignal, onCleanup } from 'solid-js'
 import type { LrcLine, LyricsSearchMatch, LyricsSearchResult, } from '@/lib/lyrics-service'
 import { computeActiveWord, extractTitle, fetchLyricsById, getCurrentLineIndex, getCurrentLrcIndex, parseLrcFile, parseLrcWordTimings, parseTextLyrics, searchLyrics, searchLyricsMulti, } from '@/lib/lyrics-service'
-import type { BlockInstancesMap, BlockStartsInfo, DisplayLine, EditPopover, GenViewLine, LyricsBlock, LyricsSource, LyricsUploadResult, WordTimingsMap, } from './types'
+import type { BlockInstancesMap, BlockStartsInfo, CanonicalLrcEntry, DisplayLine, EditPopover, GenViewLine, LyricsBlock, LyricsSource, LyricsUploadResult, WordTimingsMap, } from './types'
 
 // ── Deps ──────────────────────────────────────────────────────────
 
@@ -76,6 +76,7 @@ export interface StemMixerLyricsController {
   setUserScrolled: Setter<boolean>
 
   // Memos
+  canonicalLrcLines: () => CanonicalLrcEntry[]
   stableParsedLyrics: () => Map<
     number,
     {
@@ -676,15 +677,23 @@ export function useStemMixerLyricsController(
     setWordTimings(merged)
 
     const filename = loadPersistedLyrics()?.filename ?? 'edited.lrc'
-    const hasLrc = lrcLines().length > 0
+    const canonical = canonicalLrcLines()
+    const hasCanonical = canonical.length > 0
 
     let text: string
-    if (hasLrc) {
-      text = lrcLines()
-        .map((l, i) => {
-          const lineTime = merged[i]?.[0] ?? l.time
-          return `[${formatTimeLrcWord(lineTime)}] ${l.text}`
+    if (hasCanonical) {
+      text = canonical
+        .map((entry) => {
+          if (entry.type === 'rest') {
+            if (entry.lrcIndex === -1) return ''
+            const lineTime = merged[entry.lrcIndex]?.[0] ?? entry.time
+            return `[${formatTimeLrcWord(lineTime)}] ~Rest~`
+          }
+          const lineTime =
+            merged[entry.lrcIndex]?.[0] ?? entry.time
+          return `[${formatTimeLrcWord(lineTime)}] ${entry.text}`
         })
+        .filter((l) => l !== '')
         .join('\n')
     } else {
       text = lyricsLines()
@@ -1037,7 +1046,11 @@ export function useStemMixerLyricsController(
 
   const advancePastBlankLine = (fromIdx: number, lines: string[]) => {
     let next = fromIdx + 1
-    while (next < lines.length && !lines[next].trim()) next++
+    while (
+      next < lines.length &&
+      (!lines[next].trim() || lines[next].trim() === '~Rest~')
+    )
+      next++
     if (next >= lines.length) {
       setLrcGenLineIdx(lines.length)
       setLrcGenWordIdx(0)
@@ -1055,7 +1068,7 @@ export function useStemMixerLyricsController(
     const idx = lrcGenLineIdx()
     if (idx >= lines.length) return
 
-    if (!lines[idx].trim()) {
+    if (!lines[idx].trim() || lines[idx].trim() === '~Rest~') {
       advancePastBlankLine(idx, lines)
       return
     }
@@ -1124,7 +1137,7 @@ export function useStemMixerLyricsController(
     const lineIdx = lrcGenLineIdx()
     if (lineIdx >= lines.length) return
 
-    if (!lines[lineIdx].trim()) {
+    if (!lines[lineIdx].trim() || lines[lineIdx].trim() === '~Rest~') {
       advancePastBlankLine(lineIdx, lines)
       return
     }
@@ -1288,15 +1301,20 @@ export function useStemMixerLyricsController(
         .filter((l: string) => l !== '')
         .join('\n')
     } else if (lrcLines().length > 0) {
+      const canonical = canonicalLrcLines()
       const wt = wordTimings()
       const hasWt = Object.keys(wt).length > 0
-      lrcText = lrcLines()
-        .map((l, i) => {
-          const words = l.text.split(/\s+/).filter((w: string) => w.length > 0)
+      lrcText = canonical
+        .map((entry) => {
+          if (entry.type === 'rest') {
+            if (entry.lrcIndex === -1) return ''
+            return `[${formatTimeLrcWord(entry.time)}] ~Rest~`
+          }
+          const i = entry.lrcIndex
           if (hasWt) {
             const lineWt = wt[i]
-            if (lineWt !== undefined && lineWt.length > 0 && words.length > 0) {
-              return words
+            if (lineWt !== undefined && lineWt.length > 0 && entry.words.length > 0) {
+              return entry.words
                 .map((w: string, wi: number) => {
                   const t = lineWt[wi]
                   return t !== undefined ? `[${formatTimeLrcWord(t)}] ${w}` : w
@@ -1304,8 +1322,9 @@ export function useStemMixerLyricsController(
                 .join(' ')
             }
           }
-          return `[${formatTimeLrcWord(l.time)}] ${l.text}`
+          return `[${formatTimeLrcWord(entry.time)}] ${entry.text}`
         })
+        .filter((l: string) => l !== '')
         .join('\n')
     } else if (lyricsLines().length > 0) {
       const wt = wordTimings()
@@ -1347,9 +1366,64 @@ export function useStemMixerLyricsController(
 
   // ── Memos ────────────────────────────────────────────────────────
 
+  const canonicalLrcLines = createMemo<CanonicalLrcEntry[]>(() => {
+    const lrc = lrcLines()
+    if (lrc.length === 0) return []
+
+    const REST_THRESHOLD = 20
+    const result: CanonicalLrcEntry[] = []
+
+    for (let i = 0; i < lrc.length; i++) {
+      const line = lrc[i]
+      const gap = i > 0 ? line.time - lrc[i - 1].time : 0
+
+      // Insert synthetic ~Rest~ for large gaps (only when prev line wasn't already ~Rest~)
+      if (gap > REST_THRESHOLD) {
+        result.push({
+          type: 'rest',
+          lrcIndex: -1,
+          canonicalIndex: result.length,
+          time: lrc[i - 1].time + gap / 2,
+          text: '~Rest~',
+          words: [],
+        })
+      }
+
+      // If lrcLine itself is ~Rest~, treat it as type rest with real lrcIndex
+      if (line.text === '~Rest~') {
+        result.push({
+          type: 'rest',
+          lrcIndex: i,
+          canonicalIndex: result.length,
+          time: line.time,
+          text: '~Rest~',
+          words: [],
+        })
+        continue
+      }
+
+      const parsedWt = parseLrcWordTimings(line.text, line.time)
+      const words = parsedWt
+        ? parsedWt.words
+        : line.text.split(/\s+/).filter((w: string) => w.length > 0)
+
+      result.push({
+        type: 'line',
+        lrcIndex: i,
+        canonicalIndex: result.length,
+        time: line.time,
+        text: line.text,
+        words,
+        wordTimes: parsedWt?.wordTimes,
+      })
+    }
+
+    return result
+  })
+
   const stableParsedLyrics = createMemo(() => {
     const dur = deps.duration()
-    const lrc = lrcLines()
+    const canonical = canonicalLrcLines()
     const txt = lyricsLines()
 
     const map = new Map<
@@ -1363,32 +1437,15 @@ export function useStemMixerLyricsController(
       }
     >()
 
-    if (lrc.length > 0) {
-      const REST_THRESHOLD = 20
-      const result: { time: number; text: string }[] = []
-      lrc.forEach((line, i) => {
-        const gap = i > 0 ? line.time - lrc[i - 1].time : 0
-        if (gap > REST_THRESHOLD) {
-          result.push({ time: lrc[i - 1].time + gap / 2, text: '~Rest~' })
-        }
-        result.push({ time: line.time, text: line.text })
-      })
-      result.forEach((item, i) => {
-        const endTime = i + 1 < result.length ? result[i + 1].time : dur
-        const wordTimings = parseLrcWordTimings(item.text, item.time)
-        // Use wordTimings.words when available so wordTimes and words arrays
-        // have matching lengths for per-word interpolation in computeActiveWord.
-        // Raw text still contains embedded [MM:SS] timestamps which would be
-        // split into spurious "words", breaking the length match.
-        const words = wordTimings
-          ? wordTimings.words
-          : item.text.split(/\s+/).filter((w: string) => w.length > 0)
+    if (canonical.length > 0) {
+      canonical.forEach((entry, i) => {
+        const endTime = i + 1 < canonical.length ? canonical[i + 1].time : dur
         map.set(i, {
           key: `lrc-${i}`,
-          time: item.time,
+          time: entry.time,
           endTime,
-          words,
-          wordTimes: wordTimings?.wordTimes,
+          words: entry.words,
+          wordTimes: entry.wordTimes,
         })
       })
       return map
@@ -1685,6 +1742,7 @@ export function useStemMixerLyricsController(
     setUserScrolled,
 
     // Memos
+    canonicalLrcLines,
     stableParsedLyrics,
     blockStarts,
     displayLines,

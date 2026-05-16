@@ -931,3 +931,59 @@ describe('parseLrcFile preserves embedded timestamps for word-level parsing', ()
     expect(result[1].time).toBe(252.83) // 04:12.83
   })
 })
+
+// ── Canonical ordering: ~Rest~ handling ─────────────────────────
+
+describe('~Rest~ entry handling for canonical line ordering', () => {
+  it('preserves ~Rest~ text in parsed LRC lines', () => {
+    const content = `[00:10.00]First line
+[00:25.00]~Rest~
+[00:30.00]After rest`
+    const result = parseLrcFile(content)
+    expect(result).toHaveLength(3)
+    expect(result[0]).toEqual({ time: 10, text: 'First line' })
+    expect(result[1]).toEqual({ time: 25, text: '~Rest~' })
+    expect(result[2]).toEqual({ time: 30, text: 'After rest' })
+  })
+
+  it('keeps ~Rest~ lines in sorted position', () => {
+    const content = `[00:30.00]After rest
+[00:10.00]First line
+[00:25.00]~Rest~`
+    const result = parseLrcFile(content)
+    expect(result.map((l) => l.text)).toEqual(['First line', '~Rest~', 'After rest'])
+    expect(result.map((l) => l.time)).toEqual([10, 25, 30])
+  })
+
+  it('parseLrcWordTimings skips ~Rest~ text (no embedded timestamps)', () => {
+    const result = parseLrcWordTimings('~Rest~', 25)
+    expect(result).toBeNull()
+  })
+})
+
+// ── Index reconciliation after ~Rest~ insertions ─────────────────
+
+describe('line index reconciliation through ~Rest~ entries', () => {
+  it('parseLrcFile preserves line index order through rests for word-level parsing', () => {
+    // Lines with ~Rest~ between them — indices after rest are offset in lrcLines
+    const content = `[00:10.00]First line
+[00:25.00]~Rest~
+[00:30.00]Line after rest`
+    const result = parseLrcFile(content)
+    // Index 2 (lrcLines) = "Line after rest", which was originally line 2 in the raw text
+    expect(result[2].text).toBe('Line after rest')
+    expect(result[2].time).toBe(30)
+  })
+
+  it('handles consecutive ~Rest~ lines from API data', () => {
+    const content = `[00:10.00]Intro
+[00:15.00]~Rest~
+[00:45.00]~Rest~
+[01:00.00]Vocal returns`
+    const result = parseLrcFile(content)
+    expect(result).toHaveLength(4)
+    expect(result.map((l) => l.text)).toEqual([
+      'Intro', '~Rest~', '~Rest~', 'Vocal returns',
+    ])
+  })
+})
