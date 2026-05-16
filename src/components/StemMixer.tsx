@@ -2596,7 +2596,7 @@ export const StemMixerStyles: string = `
   gap: 0.5rem;
   padding: 0.5rem;
   overflow: hidden;
-  min-height: 550px;
+  min-height: 0;
 }
 
 .sm-fixed-col {
