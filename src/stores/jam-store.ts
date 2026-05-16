@@ -4,7 +4,7 @@
 
 import { createMemo, createSignal } from 'solid-js'
 import { createJamService } from '@/lib/jam-service'
-import type { JamPeer } from '@/lib/jam-types'
+import type { JamChatMessage, JamPeer } from '@/lib/jam-types'
 
 // ── Signals ─────────────────────────────────────────────────────────
 
@@ -18,6 +18,15 @@ export const [jamState, setJamState] = createSignal<
   'idle' | 'connecting' | 'active'
 >('idle')
 export const [jamRoomToJoin, setJamRoomToJoin] = createSignal<string | null>(null)
+export const [jamLocalStream, setJamLocalStream] =
+  createSignal<MediaStream | null>(null)
+export const [jamRemoteStreams, setJamRemoteStreams] = createSignal<
+  Record<string, MediaStream>
+>({})
+export const [jamVideoEnabled, setJamVideoEnabled] = createSignal(true)
+export const [jamChatMessages, setJamChatMessages] = createSignal<JamChatMessage[]>(
+  [],
+)
 
 // ── Derived ─────────────────────────────────────────────────────────
 
@@ -56,12 +65,23 @@ export function initJam() {
         source.disconnect()
         remoteAudioNodes.delete(peerId)
       }
+      // Clean up remote stream
+      setJamRemoteStreams((prev) => {
+        const next = { ...prev }
+        delete next[peerId]
+        return next
+      })
     },
     onPeerStream: (peerId, stream) => {
       const ctx = getAudioContext()
       const source = ctx.createMediaStreamSource(stream)
       source.connect(ctx.destination)
       remoteAudioNodes.set(peerId, source)
+      // Store remote stream for video display
+      setJamRemoteStreams((prev) => ({ ...prev, [peerId]: stream }))
+    },
+    onChatMessage: (msg) => {
+      setJamChatMessages((prev) => [...prev, msg])
     },
     onConnectionStateChange: (peerId, state) => {
       setJamPeers((prev) =>
@@ -96,6 +116,7 @@ export async function createJamRoom(
     const roomId = await waitForRoomId()
     setJamRoomId(roomId)
     setJamPeerId(jamService!.getPeerId())
+    setJamLocalStream(jamService!.getLocalStream())
     setJamState('active')
     return roomId
   } catch (_err) {
@@ -116,6 +137,7 @@ export async function joinJamRoom(
   try {
     await jamService!.joinRoom(roomId, displayName)
     setJamPeerId(jamService!.getPeerId())
+    setJamLocalStream(jamService!.getLocalStream())
     setJamState('active')
     return true
   } catch (_err) {
@@ -134,6 +156,26 @@ export function toggleJamMute(): void {
   const muted = !jamIsMuted()
   setJamIsMuted(muted)
   jamService?.setMuted(muted)
+}
+
+export async function toggleJamVideo(): Promise<void> {
+  const enabled = !jamVideoEnabled()
+  setJamVideoEnabled(enabled)
+  await jamService?.setVideoEnabled(enabled)
+}
+
+export function sendJamChatMessage(text: string): void {
+  if (!jamService || !jamPeerId()) return
+  // Local echo
+  const msg: JamChatMessage = {
+    id: crypto.randomUUID(),
+    peerId: jamPeerId()!,
+    displayName: 'You',
+    text,
+    timestamp: Date.now(),
+  }
+  setJamChatMessages((prev) => [...prev, msg])
+  jamService.sendChat(text)
 }
 
 export function disposeJam(): void {
@@ -155,6 +197,10 @@ function cleanupJam(): void {
   setJamPeers([])
   setJamError(null)
   setJamState('idle')
+  setJamRemoteStreams({})
+  setJamLocalStream(null)
+  setJamChatMessages([])
+  setJamVideoEnabled(true)
 }
 
 function waitForRoomId(): Promise<string> {

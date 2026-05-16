@@ -165,17 +165,16 @@ Target: sub-50ms for same-region peers, acceptable up to 100ms cross-region.
 ```
 src/
 ├── components/
-│   ├── JamPanel.tsx              # Main jam UI (create, join, session)
-│   ├── JamRoomControls.tsx       # Room management (invite, mute, leave)
+│   ├── JamPanel.tsx              # Main jam UI (create, join, session, video, chat)
 │   ├── JamPeerList.tsx           # Connected peers with status indicators
-│   ├── JamChat.tsx               # Optional: text chat via DataChannel
-│   └── JamInviteModal.tsx        # Share room link / code
+│   ├── JamInviteModal.tsx        # Share room link / code
+│   └── index.ts                  # Export all jam components
 ├── lib/
-│   ├── jam-service.ts            # WebRTC peer connection management
+│   ├── jam-service.ts            # WebRTC: peer connections, video, DataChannel chat
 │   ├── jam-signaling.ts          # WebSocket signaling client
-│   └── jam-types.ts              # Type definitions for jam sessions
+│   └── jam-types.ts              # Type definitions (JamPeer, JamChatMessage, callbacks)
 ├── stores/
-│   └── jam-store.ts              # Jam session state management
+│   └── jam-store.ts              # Reactive state: peers, streams, chat messages, video
 ```
 
 ### Modified Files
@@ -216,8 +215,17 @@ interface JamPeer {
   id: string
   displayName: string
   connectionState: 'connecting' | 'connected' | 'disconnected' | 'failed'
-  audioTrack: MediaStreamTrack | null
   latency: number
+  hasVideo: boolean
+  hasAudio: boolean
+}
+
+interface JamChatMessage {
+  id: string
+  peerId: string
+  displayName: string
+  text: string
+  timestamp: number
 }
 ```
 
@@ -264,6 +272,26 @@ interface JamPeer {
      - Solo/mute per peer
 ```
 
+### Phase 2.5: Video + Chat (Week 3-4)
+
+**Goal**: Participants can see each other via webcam and exchange text messages.
+
+```
+2.5.1 Video stream support
+       - Camera capture alongside microphone (640x480, 15fps)
+       - Video track added to existing RTCPeerConnection media streams
+       - Per-peer video tiles in a responsive grid layout
+       - Camera on/off toggle with track replacement (no renegotiation)
+       - Local video mirror preview
+
+2.5.2 Text chat via DataChannel
+       - Dedicated 'chat' DataChannel per peer connection
+       - JSON message protocol: { type: 'chat', id, text, displayName, timestamp }
+       - Chat history within session (ephemeral, not persisted)
+       - Own-message styling distinction (accent vs green)
+       - Auto-scroll to latest message
+```
+
 ### Phase 3: Musical Context (Week 5-6)
 
 ```
@@ -272,13 +300,17 @@ interface JamPeer {
      - Peers see same piano roll / falling notes
      - "Play along" mode synchronized to host playback
 
-3.2 Text chat via DataChannel
-     - Simple text messaging between peers
-     - Chat history within session
+3.2 Shared practice tools
+     - Host selects a singing melody or piano exercise
+     - Pitch canvas: real-time pitch visualization shared across peers
+     - Practice mode: sing the melody together, see each other's pitch
+     - Piano practice: shared MIDI keyboard view with note highlighting
+     - Exercise library: curated vocal warm-ups, interval training, sight-reading
 
 3.3 Persistent room settings
      - Room name, description
      - BPM sync for metronome
+     - Skill level and genre tags for discovery
 ```
 
 ### Phase 4: Advanced (Future)
@@ -336,3 +368,29 @@ No server audio processing costs — all audio is P2P.
 ✅ Each user can mute their own microphone
 ✅ Signaling server runs on Cloudflare Workers (no additional VPS)
 ✅ Integration feels native within PitchPerfect UI (sidebar tab)
+✅ Hash routing: `#jam:ROOMID` links auto-join rooms (welcome screen dismissed)
+
+### Video + Chat (Phase 2.5)
+
+✅ Camera capture and P2P video streaming (640x480, 15fps)
+✅ Video toggle on/off without renegotiation (track replacement)
+✅ Responsive video grid with local mirror + remote tiles
+✅ Text chat via WebRTC DataChannel (per-peer, JSON protocol)
+✅ Chat message display with own/other styling and timestamps
+
+## Implementation Status (2026-05-16)
+
+| Phase | Feature | Status |
+|-------|---------|--------|
+| 1 | Signaling server (Worker + DO) | ✅ Complete |
+| 1 | WebRTC audio (Opus, echo off) | ✅ Complete |
+| 1 | Room create/join UI | ✅ Complete |
+| 1 | Invite modal with links | ✅ Complete |
+| 1 | Hash routing for jam links | ✅ Complete |
+| 2 | Multi-peer mesh topology | ✅ Complete |
+| 2.5 | Video streaming | ✅ Complete |
+| 2.5 | Text chat via DataChannel | ✅ Complete |
+| 3.1 | Shared melody viewing | Planned |
+| 3.2 | Shared practice (pitch canvas) | Planned |
+| 3.3 | Room settings (name, BPM) | Planned |
+| 4 | SFU, recording, discovery | Future |

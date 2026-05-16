@@ -5,6 +5,8 @@ export interface JamPeer {
   displayName: string
   connectionState: 'connecting' | 'connected' | 'disconnected' | 'failed'
   latency: number // ms, last measured RTT
+  hasVideo: boolean
+  hasAudio: boolean
 }
 
 export interface JamRoom {
@@ -48,6 +50,16 @@ export interface JamState {
   latency: Record<string, number> // peerId → ms
 }
 
+// ── Chat ─────────────────────────────────────────────────────────────
+
+export interface JamChatMessage {
+  id: string
+  peerId: string
+  displayName: string
+  text: string
+  timestamp: number
+}
+
 // ── Service callbacks ────────────────────────────────────────────────
 
 export interface JamCallbacks {
@@ -59,6 +71,7 @@ export interface JamCallbacks {
     state: JamPeer['connectionState'],
   ) => void
   onLatencyUpdate: (peerId: string, latency: number) => void
+  onChatMessage: (message: JamChatMessage) => void
   onRoomClosed: () => void
   onError: (message: string) => void
   // Signaling events from jam-signaling
