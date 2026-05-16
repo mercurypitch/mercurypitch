@@ -1,6 +1,6 @@
 {
   "$schema": "../../node_modules/wrangler/config-schema.json",
-  "name": "pitch-perfect-jam",
+  "name": "mercury-pitch-jam",
   "main": "src/index.ts",
   "compatibility_date": "2026-04-30",
   "compatibility_flags": ["nodejs_compat"],
@@ -25,6 +25,37 @@
       "head_sampling_rate": 1,
       "persist": true,
       "invocation_logs": true
+    }
+  },
+  "env": {
+    "dev": {
+      // Deployed as a separate Worker that handles /api/jam/* on the dev domain
+      "name": "mercury-pitch-jam-dev",
+      "routes": [
+        { "pattern": "dev.mercurypitch.com/api/jam*", "zone_name": "mercurypitch.com" }
+      ],
+      "durable_objects": {
+        "bindings": [
+          { "name": "JAM_ROOM", "class_name": "JamRoom" }
+        ]
+      },
+      "migrations": [
+        { "tag": "v1", "new_classes": ["JamRoom"] }
+      ]
+    },
+    "prod": {
+      "name": "mercury-pitch-jam",
+      "routes": [
+        { "pattern": "mercurypitch.com/api/jam*", "zone_name": "mercurypitch.com" }
+      ],
+      "durable_objects": {
+        "bindings": [
+          { "name": "JAM_ROOM", "class_name": "JamRoom" }
+        ]
+      },
+      "migrations": [
+        { "tag": "v1", "new_classes": ["JamRoom"] }
+      ]
     }
   }
 }
