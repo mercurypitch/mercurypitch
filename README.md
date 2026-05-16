@@ -63,6 +63,7 @@ Open [mercurypitch.com](https://mercurypitch.com) in a modern browser to try it 
 | Community      | Browse shared melodies and sessions                              |
 | Leaderboard    | Top performers across challenges                                 |
 | Challenges     | Timed pitch accuracy challenges                                  |
+| Jam            | P2P music jam — play together in real-time via WebRTC            |
 | Pitch Analysis | Analyze and compare pitch detection algorithms                   |
 | Pitch Test     | Test pitch detection with live microphone input                  |
 | Settings       | App settings, keyboard shortcuts, theme, about                   |
@@ -137,6 +138,30 @@ pnpm run serve
 # Run E2E tests
 pnpm run test:e2e
 ```
+
+### Jam Service (P2P)
+
+The Jam feature requires a **local signaling server** in addition to the Vite dev server.
+Open two terminals:
+
+**Terminal 1 — Vite dev server:**
+```bash
+pnpm run dev
+```
+
+**Terminal 2 — Signaling worker (Cloudflare Workers dev):**
+```bash
+cd workers/jam-worker && npx wrangler dev --port 8787
+```
+
+The Vite dev server proxies `/api/jam` WebSocket traffic to `localhost:8787`.
+Both must be running for Create/Join Room to work.
+
+To deploy the signaling worker to production:
+```bash
+cd workers/jam-worker && npx wrangler deploy
+```
+Then set `VITE_JAM_SIGNALING_URL` to your deployed worker URL in production.
 
 ## Architecture
 
