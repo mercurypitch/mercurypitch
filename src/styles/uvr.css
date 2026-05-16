@@ -6,6 +6,15 @@
 // Panel Layout (UvrPanel)
 // ============================================================ */
 
+/* Constrain #uvr-panel to the main-content height so page scroll
+   never appears; overflow is handled by StemMixer's internal panels. */
+#uvr-panel {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
 .uvr-panel {
   display: flex;
   flex-direction: column;
@@ -267,7 +276,7 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  overflow: auto;
+  overflow: hidden;
 }
 
 .section-header {
