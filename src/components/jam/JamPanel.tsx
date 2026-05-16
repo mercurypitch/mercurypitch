@@ -3,7 +3,7 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onMount, Show, } from 'solid-js'
-import { createJamRoom, jamConnectedPeers, jamError, jamExerciseLoop, jamIsMuted, jamPeerId, jamPeers, jamRoomId, jamRoomToJoin, jamState, jamVideoEnabled, joinJamRoom, leaveJamRoom, selectJamExercise, setJamExerciseLoop, setJamRoomToJoin, startJamPitchDetection, toggleJamMute, toggleJamVideo, } from '@/stores/jam-store'
+import { createJamRoom, jamConnectedPeers, jamError, jamExerciseBpm, jamExerciseLoop, jamExerciseMelody, jamIsMuted, jamPeerId, jamPeers, jamRoomId, jamRoomToJoin, jamState, jamVideoEnabled, joinJamRoom, leaveJamRoom, selectJamExercise, setJamExerciseBpm, setJamExerciseLoop, setJamRoomToJoin, startJamPitchDetection, toggleJamMute, toggleJamVideo, } from '@/stores/jam-store'
 import { getMelodyLibrarySignal } from '@/stores/melody-store'
 import { JamCameraWidget } from './JamCameraWidget'
 import { JamChatWidget } from './JamChatWidget'
@@ -51,6 +51,11 @@ export const JamPanel: Component = () => {
   createEffect(() => {
     if (jamState() === 'active') {
       startJamPitchDetection()
+      // Auto-select the first available melody if none is loaded yet
+      if (jamExerciseMelody() === null) {
+        const first = melodyOptions()[0]
+        if (first !== undefined) selectJamExercise(first)
+      }
     }
   })
 
@@ -413,6 +418,57 @@ export const JamPanel: Component = () => {
                 loopEnabled={jamExerciseLoop()}
                 onToggleLoop={() => setJamExerciseLoop((v) => !v)}
               />
+              {/* BPM control — host only, shown when melody loaded */}
+              <Show when={jamExerciseMelody()}>
+                <div class={panelStyles.bpmControl}>
+                  <button
+                    class={panelStyles.bpmStep}
+                    onClick={() =>
+                      setJamExerciseBpm((v) => Math.max(40, v - 5))
+                    }
+                    title="Decrease BPM by 5"
+                  >
+                    <svg
+                      viewBox="0 0 12 12"
+                      width="10"
+                      height="10"
+                      fill="currentColor"
+                    >
+                      <rect x="2" y="5.5" width="8" height="1.5" rx="0.75" />
+                    </svg>
+                  </button>
+                  <input
+                    class={panelStyles.bpmInput}
+                    type="number"
+                    min="20"
+                    max="300"
+                    value={jamExerciseBpm()}
+                    onInput={(e) => {
+                      const v = parseInt(e.currentTarget.value, 10)
+                      if (!isNaN(v) && v >= 20 && v <= 300) setJamExerciseBpm(v)
+                    }}
+                    title="Playback BPM"
+                  />
+                  <button
+                    class={panelStyles.bpmStep}
+                    onClick={() =>
+                      setJamExerciseBpm((v) => Math.min(300, v + 5))
+                    }
+                    title="Increase BPM by 5"
+                  >
+                    <svg
+                      viewBox="0 0 12 12"
+                      width="10"
+                      height="10"
+                      fill="currentColor"
+                    >
+                      <rect x="2" y="5.5" width="8" height="1.5" rx="0.75" />
+                      <rect x="5.25" y="2" width="1.5" height="8" rx="0.75" />
+                    </svg>
+                  </button>
+                  <span class={panelStyles.bpmLabel}>bpm</span>
+                </div>
+              </Show>
             </div>
 
             {/* Exercise picker dropdown */}

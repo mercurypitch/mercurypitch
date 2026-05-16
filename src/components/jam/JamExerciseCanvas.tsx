@@ -47,17 +47,18 @@ export const JamExerciseCanvas: Component<JamExerciseCanvasProps> = (props) => {
       }))
   })
 
-  // MIDI range for display — find min/max from melody, pad by one octave
+  // MIDI range for display — find min/max from melody, pad by one full octave
+  // so pitch trails are never clipped when singing slightly off the target notes.
   const midiRange = createMemo(() => {
     const notes = melodyNotes()
     const totalBeats = jamExerciseTotalBeats()
     if (notes.length === 0)
-      return { min: 48, max: 72, totalBeats: Math.max(totalBeats, 16) }
+      return { min: 48, max: 84, totalBeats: Math.max(totalBeats, 16) }
     const min = Math.min(...notes.map((n) => n.midi))
     const max = Math.max(...notes.map((n) => n.midi))
     return {
-      min: Math.max(24, min - 6),
-      max: Math.min(108, max + 6),
+      min: Math.max(24, min - 12),
+      max: Math.min(108, max + 12),
       totalBeats: Math.max(totalBeats, 16),
     }
   })
@@ -364,6 +365,12 @@ export const JamExerciseCanvas: Component<JamExerciseCanvasProps> = (props) => {
     )
     if (recent.length === 0) return
 
+    // If the newest sample is older than 600 ms the mic is silent — skip
+    // drawing entirely so no ghost trail remains on screen.
+    const latest = recent[recent.length - 1]!
+    const latestAgeMs = now - latest.timestamp
+    if (latestAgeMs > 600) return
+
     // Convert timestamp → beat position on canvas
     // A sample taken T ms ago was at beat (currentBeat - T/1000 * bpm/60)
     const beatsPerMs = bpm / 60 / 1000
@@ -403,9 +410,6 @@ export const JamExerciseCanvas: Component<JamExerciseCanvasProps> = (props) => {
     ctx.stroke()
 
     // ── Latest dot + glow at playhead position ──
-    const latest = recent[recent.length - 1]!
-    const latestAgeMs = now - latest.timestamp
-    if (latestAgeMs > 600) return // stale — don't render dot if not recently singing
 
     const lx = beatToX(currentBeat, w, totalBeats, currentBeat)
     const ly = midiToY(latest.midi, h, minMidi, maxMidi)

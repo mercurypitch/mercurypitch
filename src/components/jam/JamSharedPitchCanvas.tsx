@@ -205,6 +205,11 @@ export const JamSharedPitchCanvas: Component<JamSharedPitchCanvasProps> = (
 
       if (points.length === 0) continue
 
+      // Skip entirely if the newest sample is stale (>600 ms) — mic is silent
+      const newestSample = samples[samples.length - 1]
+      if (newestSample === undefined || now - newestSample.timestamp > 600)
+        continue
+
       // Polyline
       ctx.strokeStyle = isOwn ? hexToRgba(color, 0.6) : hexToRgba(color, 0.35)
       ctx.lineWidth = isOwn ? 2 : 1.2

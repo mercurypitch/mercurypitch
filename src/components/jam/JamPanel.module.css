@@ -85,6 +85,72 @@
   align-items: center;
   gap: 10px;
   flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+/* ── BPM control ─────────────────────────────────────────────────── */
+
+.bpmControl {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: rgba(13, 17, 23, 0.6);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  backdrop-filter: blur(8px);
+}
+
+.bpmStep {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    background 0.12s,
+    color 0.12s;
+  flex-shrink: 0;
+}
+
+.bpmStep:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.bpmInput {
+  width: 46px;
+  padding: 2px 4px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  font-family: inherit;
+  text-align: center;
+  color: var(--text-primary);
+  background: transparent;
+  border: none;
+  outline: none;
+  /* Hide browser number spinners */
+  -moz-appearance: textfield;
+}
+
+.bpmInput::-webkit-outer-spin-button,
+.bpmInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.bpmLabel {
+  font-size: 0.65rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  user-select: none;
 }
 
 /* ── Canvas area — takes all remaining height ─────────────────────── */
