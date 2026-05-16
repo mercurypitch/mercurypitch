@@ -2,7 +2,7 @@
 // Reactive state management for P2P jam sessions.
 // Wires together jam-service callbacks with SolidJS signals.
 
-import { createMemo, createSignal } from 'solid-js'
+import { createMemo, createRoot, createSignal } from 'solid-js'
 import { createJamService } from '@/lib/jam/service'
 import type {
   JamChatMessage,
@@ -69,11 +69,17 @@ export const [jamPitchTab, setJamPitchTab] = createSignal<
 
 // ── Derived ─────────────────────────────────────────────────────────
 
-export const jamPeerCount = createMemo(() => jamPeers().length)
-export const jamConnectedPeers = createMemo(() =>
-  jamPeers().filter((p) => p.connectionState === 'connected'),
+export const jamPeerCount = createRoot(() =>
+  createMemo(() => jamPeers().length),
 )
-export const jamHasActiveRoom = createMemo(() => jamRoomId() !== null)
+export const jamConnectedPeers = createRoot(() =>
+  createMemo(() =>
+    jamPeers().filter((p) => p.connectionState === 'connected'),
+  ),
+)
+export const jamHasActiveRoom = createRoot(() =>
+  createMemo(() => jamRoomId() !== null),
+)
 
 // ── Service instance ────────────────────────────────────────────────
 // Created once per session and wired to store signals.
