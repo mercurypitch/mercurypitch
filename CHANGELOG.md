@@ -24,12 +24,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- **Jam Session**: pitch trails invisible on exercise canvas — YIN/MPM detector omits `midi`; now derived from frequency at storage time
-- **Jam Session**: ghost pitch trail persisted after mic went quiet — interval now guards on 150 ms pitch recency; canvas skips peers with samples older than 600 ms
-- **Jam Session**: Pause acted as Stop — added `jamPlaybackResume()` to continue from current beat; button label updates correctly
-- **Jam Session**: Stop button glowed red when nothing was playing — disabled and dimmed when exercise is idle
-- **Jam Session**: camera tray expansion went off-screen — `ResizeObserver` re-clamps position on chip resize
-- **Jam Session**: camera denial blocked microphone capture — audio and video streams are now acquired independently
 - **LRC / Lyrics**: canonical line ordering mismatches causing incorrect active-line tracking, LRC download timings, and lyric-click seeking
 - **LRC / Lyrics**: per-word timing interpolation regex and `parseLrcWordTimings` integration fixed
 - **MIDI Synthesis**: progress stall at 100% — added yielding loop to `synthesizeMidiBuffer` to avoid UI hang
