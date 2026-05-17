@@ -1429,12 +1429,14 @@ export class PianoRollEditor {
           </div>
           <canvas class="roll-piano"></canvas>
           <div class="roll-grid-container">
-            <canvas class="roll-grid"></canvas>
+            <div class="roll-grid-layer" style="position:relative">
+              <canvas class="roll-grid"></canvas>
+              <canvas id="roll-ball-canvas" class="roll-ball" style="display:none;position:absolute;top:0;left:0;pointer-events:none;z-index:3"></canvas>
+            </div>
           </div>
         </div>
       </div>
       <canvas id="roll-pitch-track-canvas" class="roll-pitch-track" style="display:none"></canvas>
-      <canvas id="roll-ball-canvas" class="roll-ball" style="display:none"></canvas>
       <div class="roll-status">
         <span id="roll-note-info">Click on the grid to place notes</span>
         <span id="roll-timeline-info">Bar 1/${Math.ceil(this.totalBeats / PIANO_ROLL_CONFIG.beatsPerBar)} | Beat 1</span>
@@ -1790,13 +1792,13 @@ export class PianoRollEditor {
         // Disable rows controls — all octaves are visible
         const rowsGroup = this.container.querySelector('.roll-octaves-group')
         if (rowsGroup) rowsGroup.classList.add('disabled')
-        const gridWrapper = this.container.querySelector('.roll-grid-wrapper')
-        if (gridWrapper) gridWrapper.classList.add('piano-roll-scrollable')
+        const gridContainer = this.container.querySelector('.roll-grid-container')
+        if (gridContainer) gridContainer.classList.add('piano-roll-scrollable')
       } else {
         const rowsGroup = this.container.querySelector('.roll-octaves-group')
         if (rowsGroup) rowsGroup.classList.remove('disabled')
-        const gridWrapper = this.container.querySelector('.roll-grid-wrapper')
-        if (gridWrapper) gridWrapper.classList.remove('piano-roll-scrollable')
+        const gridContainer = this.container.querySelector('.roll-grid-container')
+        if (gridContainer) gridContainer.classList.remove('piano-roll-scrollable')
       }
       this._rebuildScale()
       this.buildCanvases()

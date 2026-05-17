@@ -3756,7 +3756,7 @@ Keeps your existing styles, only adjusts layout
 }
 
 /* Scrollable piano roll — full 7-octave view with vertical scroll */
-.roll-grid-wrapper.piano-roll-scrollable {
+.roll-grid-container.piano-roll-scrollable {
   overflow-y: auto;
 }
 
