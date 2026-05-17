@@ -30,9 +30,7 @@ test.describe('Playback', () => {
     // Play button visible initially (no playback active)
   })
 
-  test('Practice tab play button starts playback', async ({
-    page,
-  }) => {
+  test('Practice tab play button starts playback', async ({ page }) => {
     await switchTab(page, 'singing')
     await page.waitForTimeout(500)
 
