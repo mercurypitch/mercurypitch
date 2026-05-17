@@ -200,20 +200,17 @@ describe('PianoRollEditor', () => {
     expect(editor.getMelody()[0].note?.octave).toBe(9)
   })
 
-  it('setNumOctaves accepts values up to 7', () => {
+  it('setNumOctaves accepts values without upper limit', () => {
     const plusBtn = container.querySelector(
       '#roll-octaves-plus',
     ) as HTMLButtonElement
-    // Click 6 times (from 2 to 7, cap at 7)
+    // Click 6 times (from 2 to 8)
     for (let i = 0; i < 6; i++) plusBtn.click()
 
     const octavesSpan = container.querySelector(
       '#roll-octaves-value',
     ) as HTMLSpanElement
-    expect(octavesSpan.textContent).toBe('7')
-    // One more click should stay at 7
-    plusBtn.click()
-    expect(octavesSpan.textContent).toBe('7')
+    expect(octavesSpan.textContent).toBe('8')
   })
 
   it('scrollable mode toggle exists and toggles active class on main area', () => {

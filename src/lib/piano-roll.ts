@@ -631,11 +631,8 @@ export class PianoRollEditor {
       if (Number.isFinite(minMidi) && Number.isFinite(maxMidi)) {
         const span = Math.ceil((maxMidi - minMidi + 1) / 12)
         const needed = Math.max(2, span)
-        // Cap at max octave rows to keep the grid usable on small
-        // screens. Wider melodies can use scrollable mode.
-        const target = Math.min(7, needed)
-        if (target > this.numOctaves) {
-          this.setNumOctaves(target)
+        if (needed > this.numOctaves) {
+          this.setNumOctaves(needed)
         }
       }
     }
@@ -1776,20 +1773,27 @@ export class PianoRollEditor {
         this._shiftOctave(-1)
       })
 
-    // Rows (numOctaves) controls
+    // Rows (numOctaves) controls — add rows on top, remove from bottom
     container
       .querySelector('#roll-octaves-plus')
       ?.addEventListener('click', () => {
+        if (this.octave > 1) this.octave -= 1
         this.setNumOctaves(this.numOctaves + 1)
-        const display = container.querySelector('#roll-octaves-value')
-        if (display) display.textContent = String(this.numOctaves)
+        const octDisplay = container.querySelector('#roll-octave-value')
+        if (octDisplay) octDisplay.textContent = String(this.octave)
+        const rowsDisplay = container.querySelector('#roll-octaves-value')
+        if (rowsDisplay) rowsDisplay.textContent = String(this.numOctaves)
       })
     container
       .querySelector('#roll-octaves-minus')
       ?.addEventListener('click', () => {
+        if (this.numOctaves <= 1) return
+        this.octave += 1
         this.setNumOctaves(this.numOctaves - 1)
-        const display = container.querySelector('#roll-octaves-value')
-        if (display) display.textContent = String(this.numOctaves)
+        const octDisplay = container.querySelector('#roll-octave-value')
+        if (octDisplay) octDisplay.textContent = String(this.octave)
+        const rowsDisplay = container.querySelector('#roll-octaves-value')
+        if (rowsDisplay) rowsDisplay.textContent = String(this.numOctaves)
       })
 
     // Scroll toggle
@@ -3580,7 +3584,7 @@ export class PianoRollEditor {
    * Set the number of octave rows displayed (1-7).
    */
   setNumOctaves(n: number): void {
-    n = Math.max(1, Math.min(7, Math.round(n)))
+    n = Math.max(1, Math.round(n))
     if (n === this.numOctaves) return
     this.numOctaves = n
 
