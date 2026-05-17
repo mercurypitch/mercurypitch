@@ -14,14 +14,6 @@ test.describe('Playback', () => {
     await page.goto('/')
     await page.waitForSelector('#app-tabs', { timeout: 10000 })
     await dismissOverlays(page)
-
-    // Enable showPlayhead so the playhead is visible during playback
-    await page.evaluate(() => {
-      localStorage.setItem('pitchperfect_show_playhead', 'true')
-    })
-    await page.reload()
-    await page.waitForSelector('#app-tabs', { timeout: 10000 })
-    await dismissOverlays(page)
   })
 
   test('Practice tab has default melody loaded on first tab switch', async ({
@@ -38,7 +30,7 @@ test.describe('Playback', () => {
     // Play button visible initially (no playback active)
   })
 
-  test('Practice tab play button starts playback and shows playhead', async ({
+  test('Practice tab play button starts playback', async ({
     page,
   }) => {
     await switchTab(page, 'singing')

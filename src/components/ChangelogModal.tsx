@@ -8,7 +8,11 @@ interface VersionEntry {
   sections: { label: string; items: string[] }[]
 }
 
-const parseChangelog = (md: string): VersionEntry[] => {
+type TextSegment = { text: string; bold: boolean }
+
+const BOLD_REGEX = /\*\*(.*?)\*\*/g
+
+function parseChangelog(md: string): VersionEntry[] {
   const versions: VersionEntry[] = []
   const lines = md.split('\n')
   let currentVersion: VersionEntry | null = null
@@ -44,16 +48,13 @@ const parseChangelog = (md: string): VersionEntry[] => {
   return versions
 }
 
-const changelog = parseChangelog(rawChangelog)
-
-type TextSegment = { text: string; bold: boolean }
-
 function parseMarkdownBold(text: string): TextSegment[] {
+  // Reset lastIndex since BOLD_REGEX is shared at module scope
+  BOLD_REGEX.lastIndex = 0
   const segments: TextSegment[] = []
-  const regex = /\*\*(.*?)\*\*/g
   let lastIndex = 0
   let match: RegExpExecArray | null
-  while ((match = regex.exec(text)) !== null) {
+  while ((match = BOLD_REGEX.exec(text)) !== null) {
     if (match.index > lastIndex) {
       segments.push({ text: text.slice(lastIndex, match.index), bold: false })
     }
@@ -66,6 +67,8 @@ function parseMarkdownBold(text: string): TextSegment[] {
   return segments
 }
 
+const changelog = parseChangelog(rawChangelog)
+
 const ChangelogItem = (props: { item: string }) => (
   <li class="changelog-entry">
     <For each={parseMarkdownBold(props.item)}>
@@ -74,7 +77,7 @@ const ChangelogItem = (props: { item: string }) => (
   </li>
 )
 
-const sectionBadgeClass = (label: string): string => {
+function sectionBadgeClass(label: string): string {
   if (label === 'Added') return 'changelog-badge badge-added'
   if (label === 'Changed') return 'changelog-badge badge-changed'
   return 'changelog-badge badge-fixed'

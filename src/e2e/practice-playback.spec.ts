@@ -14,14 +14,6 @@ test.describe('Practice Playback', () => {
     await page.goto('/')
     await page.waitForSelector('#app-tabs', { timeout: 10000 })
     await dismissOverlays(page)
-
-    // Enable showPlayhead so the playhead is visible during playback
-    await page.evaluate(() => {
-      localStorage.setItem('pitchperfect_show_playhead', 'true')
-    })
-    await page.reload()
-    await page.waitForSelector('#app-tabs', { timeout: 10000 })
-    await dismissOverlays(page)
   })
 
   test('Practice tab loads with play button visible', async ({ page }) => {
@@ -36,7 +28,7 @@ test.describe('Practice Playback', () => {
     await expect(practicePanel).toBeVisible()
   })
 
-  test('Practice tab Play button moves playhead', async ({ page }) => {
+  test('Practice tab Play button starts canvas playback', async ({ page }) => {
     await switchTab(page, 'singing')
     await page.waitForTimeout(500)
 
@@ -80,7 +72,7 @@ test.describe('Practice Playback', () => {
     await expect(continueBtn).toBeVisible()
   })
 
-  test('Playhead visible during playback and pause', async ({ page }) => {
+  test('Canvas visible during playback and pause', async ({ page }) => {
     await switchTab(page, 'singing')
     await page.waitForTimeout(500)
 
