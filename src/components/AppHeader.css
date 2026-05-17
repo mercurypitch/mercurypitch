@@ -1,5 +1,10 @@
-/* Extracted from: Header */
+/* ============================================================
+   AppHeader — Global styles for header, toolbar, and tab bars
+   All selectors use :global() because these target raw DOM
+   classes/elements rendered by App.tsx and SharedControlToolbar.tsx
+   ============================================================ */
 
+/* Header */
 header {
   padding: 10px 24px;
   background: var(--bg-secondary);
@@ -25,7 +30,7 @@ header h1 {
   color: var(--text-secondary);
 }
 
-/* Logo button in header — makes title clickable to navigate home */
+/* Logo button in header */
 .logo-btn {
   background: none;
   border: none;
@@ -50,8 +55,7 @@ header h1 {
   opacity: 0.7;
 }
 
-/* Extracted from: Shared Header Bar */
-
+/* Shared Header Bar */
 .app-header-bar {
   display: flex;
   align-items: center;
@@ -66,8 +70,7 @@ header h1 {
   flex-shrink: 0;
 }
 
-/* Extracted from: Practice Tab Header (second header bar) */
-
+/* Practice Tab Header (second header bar) */
 .practice-header-bar {
   display: flex;
   align-items: center;
@@ -76,6 +79,8 @@ header h1 {
   background: var(--bg-tertiary);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
+  min-height: 44px;
+  flex-wrap: wrap;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
@@ -91,8 +96,22 @@ header h1 {
   flex-shrink: 0;
 }
 
-/* Extracted from: Editor Tab Header (second header bar) */
+.practice-header-bar .essential-controls > * {
+  flex-shrink: 0;
+}
 
+.practice-header-bar .essential-control-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.practice-header-bar .secondary-control-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Editor Tab Header (second header bar) */
 .editor-header-bar {
   display: flex;
   align-items: center;
@@ -115,13 +134,11 @@ header h1 {
   gap: 6px;
   flex-shrink: 0;
 }
-.practice-header-bar .essential-control-group,
 .editor-header-bar .essential-control-group {
   display: flex;
   align-items: center;
   gap: 6px;
 }
-.practice-header-bar .secondary-control-group,
 .editor-header-bar .secondary-control-group {
   display: flex;
   align-items: center;
@@ -156,6 +173,7 @@ header h1 {
 .mode-group {
   display: flex;
   gap: 4px;
+  flex-shrink: 0;
 }
 
 .cycles-input {
@@ -184,4 +202,47 @@ header h1 {
   font-weight: 700;
   color: var(--green);
   font-size: 0.9rem;
+}
+
+/* App tabs */
+.app-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.app-tab:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.app-tab.active {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+.tab-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  opacity: 0.75;
+}
+
+.app-tab.active .tab-icon {
+  opacity: 1;
+}
+
+.header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }

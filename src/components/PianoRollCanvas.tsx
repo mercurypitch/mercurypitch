@@ -4,6 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, onCleanup, onMount } from 'solid-js'
+import './PianoRollEditor.css'
 import { AudioEngine } from '@/lib/audio-engine'
 import { audioRegistry } from '@/lib/audio-registry'
 import type { PlaybackState } from '@/lib/piano-roll'

@@ -67,6 +67,8 @@ import type { UvrView } from '@/components/UvrPanel'
 const UvrPanel = lazy(async () =>
   import('@/components/UvrPanel').then((m) => ({ default: m.UvrPanel })),
 )
+import './components/AppHeader.css'
+import './components/HeaderControls.css'
 import { EngineProvider, useEngines } from '@/contexts/EngineContext'
 import { PlaybackProvider } from '@/contexts/PlaybackContext'
 import { useEditorController } from '@/features/editor/useEditorController'

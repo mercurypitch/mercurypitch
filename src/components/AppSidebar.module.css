@@ -15,6 +15,17 @@
   overflow-y: auto;
 }
 
+:global(.app-sidebar.collapsed) {
+  width: 40px;
+  min-width: 40px;
+  padding: 8px 4px;
+  align-items: center;
+}
+
+:global(.app-sidebar.collapsed) > *:not(.sidebar-collapse-btn) {
+  display: none;
+}
+
 .sidebarCloseBtn {
   display: none;
   background: none;
