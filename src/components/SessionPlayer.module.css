@@ -50,6 +50,19 @@
   color: var(--text-secondary);
 }
 
+.session-player-item:global(.is-rest) {
+  opacity: 0.5;
+}
+
+.session-player-item:global(.is-rest) .session-item-label {
+  font-style: italic;
+  color: var(--text-muted, #9aa3b2);
+}
+
+.session-player-item:global(.is-rest) .session-item-icon {
+  color: var(--accent-muted, #777);
+}
+
 .session-player-timer {
   margin-left: auto;
 }

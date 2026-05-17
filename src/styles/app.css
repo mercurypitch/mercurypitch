@@ -753,15 +753,6 @@ select option:disabled {
   flex: 1;
 }
 
-/* SessionPlayer — Rest item indicator */
-.session-player-item.is-rest .session-item-label {
-  font-style: italic;
-  color: var(--text-muted, #9aa3b2);
-}
-.session-player-item.is-rest .session-item-icon {
-  color: var(--accent-muted, #777);
-}
-
 /* Sidebar session pills — disabled while playback is running */
 .session-item-pill.pill-disabled {
   opacity: 0.45;
@@ -802,10 +793,6 @@ select option:disabled {
 .library-modal-tab.active {
   border-bottom: 2px solid var(--accent);
   color: var(--accent);
-}
-
-.session-player-item.is-rest {
-  opacity: 0.5;
 }
 
 .ctrl-btn.active {
