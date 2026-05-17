@@ -76,12 +76,27 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
 
   const displayTime = createMemo(() => {
     if (props.status !== 'processing') return 0
-    // When a progress event arrives, props.processingTime jumps forward.
-    // Between events, the local tick counter fills the gaps smoothly.
-    // Use the larger of the two to avoid regressing during render cycles.
     const local = tick() * 200
     return Math.max(props.processingTime ?? 0, local)
   })
+
+  const estimatedRemaining = createMemo(() => {
+    if (props.progress <= 0 || props.indeterminate) return 0
+    return Math.max(
+      0,
+      (displayTime() * (100 - props.progress)) / props.progress,
+    )
+  })
+
+  const currentChunk = createMemo(() =>
+    Math.max(
+      1,
+      Math.min(
+        props.numChunks ?? 1,
+        Math.ceil((props.progress / 100) * (props.numChunks ?? 1)),
+      ),
+    ),
+  )
 
   const getProcessStage = () => {
     switch (props.status) {
@@ -202,28 +217,29 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
               }}
             />
           </div>
-          <div class="progress-text">
-            {(props.indeterminate ?? false)
-              ? 'Estimating...'
-              : formatPercentage(props.progress)}{' '}
-            • {formatTime(displayTime())}
-          </div>
           <Show
-            when={
-              isLocal() && props.numChunks !== undefined && props.numChunks > 1
+            when={props.indeterminate ?? false}
+            fallback={
+              <div class="progress-row">
+                <span class="progress-pct">
+                  {formatPercentage(props.progress)}
+                </span>
+                <span class="progress-times">
+                  <span>{formatTime(displayTime())}</span>
+                  <span class="progress-sep">/</span>
+                  <span class="progress-estimate">
+                    ~{formatTime(estimatedRemaining())}
+                  </span>
+                </span>
+                <Show when={isLocal() && (props.numChunks ?? 0) > 1}>
+                  <span class="progress-chunks">
+                    Chunk {currentChunk()} of {props.numChunks}
+                  </span>
+                </Show>
+              </div>
             }
           >
-            <div class="progress-chunk-info">
-              Chunk{' '}
-              {Math.max(
-                1,
-                Math.min(
-                  props.numChunks ?? 1,
-                  Math.ceil((props.progress / 100) * (props.numChunks ?? 1)),
-                ),
-              )}{' '}
-              of {props.numChunks}
-            </div>
+            <div class="progress-text">Estimating...</div>
           </Show>
         </div>
       </Show>

@@ -240,14 +240,6 @@
   line-height: 1;
 }
 
-/* Chunk Progress Info */
-.progress-chunk-info {
-  margin-top: 0.35rem;
-  font-size: 0.78rem;
-  color: var(--fg-tertiary);
-  text-align: center;
-}
-
 .panel-content {
   flex: 1;
   overflow-y: auto;
@@ -1086,10 +1078,43 @@
 }
 
 .progress-text {
-  display: flex;
-  justify-content: space-between;
+  text-align: center;
   font-size: 0.85rem;
   color: var(--fg-secondary);
+}
+
+.progress-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.82rem;
+  color: var(--fg-secondary);
+}
+
+.progress-pct {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--fg-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.progress-times {
+  font-variant-numeric: tabular-nums;
+  display: flex;
+  gap: 0.25rem;
+}
+
+.progress-sep {
+  color: var(--fg-tertiary);
+}
+
+.progress-estimate {
+  color: var(--fg-tertiary);
+}
+
+.progress-chunks {
+  color: var(--fg-tertiary);
+  font-size: 0.75rem;
 }
 
 .stage-indicators {
