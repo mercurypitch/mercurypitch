@@ -106,6 +106,7 @@ import { JamPanel } from './components/jam/JamPanel'
 import { TabErrorBoundary } from './components/TabErrorBoundary'
 import { _UvrGuideStyles } from './components/UvrGuide'
 import { WelcomeScreen } from './components/WelcomeScreen'
+import styles from './@/components/App.module.css'
 
 // ============================================================
 // Tab type
@@ -1164,7 +1165,7 @@ const AppShell: Component<AppProps> = (props) => {
           </header>
 
           {/* Main layout: sidebar + content */}
-          <div class="main-layout" id="main-layout">
+          <div class={styles.mainLayout} id="main-layout">
             {/* Shared sidebar — with mobile open class */}
             <AppSidebar
               class={sidebarOpen() === true ? 'open' : ''}
@@ -1312,7 +1313,7 @@ const AppShell: Component<AppProps> = (props) => {
                     onWaveToggle={toggleMicWaveVisible}
                   />
 
-                  <div class="editor-view-toggle">
+                  <div class={styles.editorViewToggle}>
                     <button
                       class={`view-btn ${editorView() === 'piano-roll' ? 'active' : ''}`}
                       onClick={() => setEditorView('piano-roll')}
@@ -1328,7 +1329,7 @@ const AppShell: Component<AppProps> = (props) => {
                   </div>
 
                   <Show when={editorView() === 'session-editor'}>
-                    <div class="session-editor-container">
+                    <div class={styles.sessionEditorContainer}>
                       <Suspense fallback={<div class="tab-loading" />}>
                         <SessionEditor />
                       </Suspense>
@@ -1708,7 +1709,7 @@ const AppShell: Component<AppProps> = (props) => {
                 e.stopPropagation()
               }}
             >
-              <button class="overlay-close" onClick={closeScoreOverlay}>
+              <button class={styles.overlayClose} onClick={closeScoreOverlay}>
                 &times;
               </button>
               <h2 id="score-title">Run Complete!</h2>
@@ -1721,57 +1722,57 @@ const AppShell: Component<AppProps> = (props) => {
                 {practiceResult()!.avgCents.toFixed(1)}¢ avg
               </div>
               <div id="score-stats">
-                <div class="score-stat score-stat-perfect">
-                  <div class="score-stat-value">
+                <div class={styles.scoreStatPerfect}>
+                  <div class={styles.scoreStatValue}>
                     {
                       (noteResults() ?? []).filter(
                         (r) => r.rating === 'perfect',
                       ).length
                     }
                   </div>
-                  <div class="score-stat-label">Perfect</div>
+                  <div class={styles.scoreStatLabel}>Perfect</div>
                 </div>
-                <div class="score-stat score-stat-excellent">
-                  <div class="score-stat-value">
+                <div class={styles.scoreStatExcellent}>
+                  <div class={styles.scoreStatValue}>
                     {
                       (noteResults() ?? []).filter(
                         (r) => r.rating === 'excellent',
                       ).length
                     }
                   </div>
-                  <div class="score-stat-label">Excellent</div>
+                  <div class={styles.scoreStatLabel}>Excellent</div>
                 </div>
-                <div class="score-stat score-stat-good">
-                  <div class="score-stat-value">
+                <div class={styles.scoreStatGood}>
+                  <div class={styles.scoreStatValue}>
                     {
                       (noteResults() ?? []).filter((r) => r.rating === 'good')
                         .length
                     }
                   </div>
-                  <div class="score-stat-label">Good</div>
+                  <div class={styles.scoreStatLabel}>Good</div>
                 </div>
-                <div class="score-stat score-stat-okay">
-                  <div class="score-stat-value">
+                <div class={styles.scoreStatOkay}>
+                  <div class={styles.scoreStatValue}>
                     {
                       (noteResults() ?? []).filter((r) => r.rating === 'okay')
                         .length
                     }
                   </div>
-                  <div class="score-stat-label">Okay</div>
+                  <div class={styles.scoreStatLabel}>Okay</div>
                 </div>
-                <div class="score-stat score-stat-off">
-                  <div class="score-stat-value">
+                <div class={styles.scoreStatOff}>
+                  <div class={styles.scoreStatValue}>
                     {
                       (noteResults() ?? []).filter((r) => r.rating === 'off')
                         .length
                     }
                   </div>
-                  <div class="score-stat-label">Off</div>
+                  <div class={styles.scoreStatLabel}>Off</div>
                 </div>
               </div>
               <div id="score-actions">
                 <button
-                  class="overlay-btn primary"
+                  class={[styles.overlayBtn, 'primary'].join(' ')}
                   onClick={() => {
                     closeScoreOverlay()
                     handleReset()
@@ -1780,19 +1781,19 @@ const AppShell: Component<AppProps> = (props) => {
                 >
                   Try Again
                 </button>
-                <button class="overlay-btn" onClick={closeScoreOverlay}>
+                <button class={styles.overlayBtn} onClick={closeScoreOverlay}>
                   Close
                 </button>
               </div>
 
               <Show when={getSessionHistory().length > 1}>
                 <div id="score-history">
-                  <h3 class="history-title">Recent Progress</h3>
-                  <div class="history-chart">
+                  <h3 class={styles.historyTitle}>Recent Progress</h3>
+                  <div class={styles.historyChart}>
                     <For each={getSessionHistory().slice(0, 10)}>
                       {(session) => (
                         <div
-                          class="history-bar"
+                          class={styles.historyBar}
                           style={{ height: `${session.score}%` }}
                           title={`Score: ${session.score}%`}
                         />
@@ -1819,7 +1820,7 @@ const AppShell: Component<AppProps> = (props) => {
               }}
             >
               <button
-                class="overlay-close"
+                class={styles.overlayClose}
                 onClick={() => setSessionSummary(null)}
               >
                 &times;
@@ -1832,7 +1833,7 @@ const AppShell: Component<AppProps> = (props) => {
               </div>
               <div id="score-actions">
                 <button
-                  class="overlay-btn primary"
+                  class={[styles.overlayBtn, 'primary'].join(' ')}
                   onClick={() => {
                     setSessionSummary(null)
                     showSessionPresetsLibrary()
@@ -1841,7 +1842,7 @@ const AppShell: Component<AppProps> = (props) => {
                   New Session
                 </button>
                 <button
-                  class="overlay-btn"
+                  class={styles.overlayBtn}
                   onClick={() => setSessionSummary(null)}
                 >
                   Close

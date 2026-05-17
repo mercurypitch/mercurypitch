@@ -51,6 +51,7 @@ export const SCALE_TYPES = [
 
 export type PracticeSubMode = 'all' | 'random' | 'focus' | 'reverse'
 import type { ActiveTab } from '@/types'
+import styles from './@/components/HeaderControls.module.css'
 
 interface SharedControlToolbarProps {
   // Tab identification
@@ -299,7 +300,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
         {/* Playback controls - based on state */}
         {isStopped() && (
           <button
-            class="ctrl-btn play-btn"
+            class={[styles.ctrlBtn, 'play-btn'].join(' ')}
             onClick={() => void props.onPlay()}
             title="Play"
           >
@@ -312,7 +313,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
 
         <Show when={props.isPlaying()}>
           <button
-            class="ctrl-btn stop-btn"
+            class={[styles.ctrlBtn, 'stop-btn'].join(' ')}
             onClick={() => void props.onPause()}
             title="Pause"
           >
@@ -325,7 +326,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
 
         <Show when={props.isPaused()}>
           <button
-            class="ctrl-btn play-btn"
+            class={[styles.ctrlBtn, 'play-btn'].join(' ')}
             onClick={() => void props.onResume()}
             title="Continue"
           >
@@ -355,7 +356,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
         <Show when={isPracticeTab()}>
           <div class="app-header-sep" />
           <button
-            class="ctrl-btn focus-btn"
+            class={[styles.ctrlBtn, 'focus-btn'].join(' ')}
             onClick={() => {
               enterFocusMode()
             }}
@@ -426,7 +427,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
 
         {/* Count-in badge */}
         <Show when={props.isCountingIn()}>
-          <div id="countin-display" class="countin-badge">
+          <div id="countin-display" class={styles.countinBadge}>
             {props.countInBeat()}
           </div>
         </Show>
@@ -480,7 +481,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
           }
         >
           <div class="secondary-control-group cycles-control-group">
-            <label class="opt-label cycles-label">Cycles</label>
+            <label class={[styles.optLabel, 'cycles-label'].join(' ')}>Cycles</label>
             <input
               type="number"
               id="cycles"
@@ -495,7 +496,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
                   ),
                 )
               }}
-              class="cycles-input"
+              class={styles.cyclesInput}
             />
             <span class="cycle-progress-pill" title="Current repeat cycle">
               <span class="cycle-progress-label">Run</span>
@@ -511,7 +512,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
           when={isPracticeTab() && props.playMode() === PLAYBACK_MODE_SESSION}
         >
           <div class="secondary-control-group practice-mode-control-group">
-            <label class="opt-label practice-mode-label">Mode</label>
+            <label class={[styles.optLabel, 'practice-mode-label'].join(' ')}>Mode</label>
             <select
               id="practice-sub-mode"
               value={props.practiceSubMode()}
@@ -533,7 +534,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
         {/* Spaced mode selector — once-through playback with optional rests inserted between notes. */}
         <Show when={isPracticeTab() && props.playMode() === PLAYBACK_MODE_ONCE}>
           <div class="secondary-control-group practice-mode-control-group spaced-mode-control-group">
-            <label class="opt-label practice-mode-label">Rest</label>
+            <label class={[styles.optLabel, 'practice-mode-label'].join(' ')}>Rest</label>
             <select
               id="spaced-rest-mode"
               value={props.spacedRestMode?.() ?? 'none'}
@@ -564,7 +565,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
         <div class="inline-controls-row">
           {/* BPM */}
           <Show when={!isPianoTab() || (props.bpmValue && props.onBpmChange)}>
-            <div class="tempo-group inline-control" title="Tempo (BPM)">
+            <div class={[styles.tempoGroup, 'inline-control'].join(' ')} title="Tempo (BPM)">
               <span class="inline-control-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" width="14" height="14">
                   <path
@@ -581,7 +582,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
                 value={
                   isPianoTab() && props.bpmValue ? props.bpmValue() : bpm()
                 }
-                class="bpm-number-input"
+                class={styles.bpmNumberInput}
                 aria-label="BPM"
                 onInput={(e) => {
                   const value = parseInt(e.currentTarget.value)
@@ -602,7 +603,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
                 value={
                   isPianoTab() && props.bpmValue ? props.bpmValue() : bpm()
                 }
-                class="tempo-slider"
+                class={styles.tempoSlider}
                 aria-label="BPM slider"
                 onInput={(e) => {
                   const val = parseInt(e.currentTarget.value) || 80
@@ -617,7 +618,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
           </Show>
 
           {/* Volume */}
-          <div class="volume-group inline-control" title="Volume">
+          <div class={['volume-group', styles.inlineControl].join(' ')} title="Volume">
             <span class="inline-control-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" width="14" height="14">
                 <path
@@ -632,7 +633,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
               min="0"
               max="80"
               value={props.volume()}
-              class="vol-number-input"
+              class={styles.volNumberInput}
               aria-label="Volume"
               onInput={(e) => {
                 const vol = parseInt(e.currentTarget.value)
@@ -647,7 +648,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
               min="0"
               max="80"
               value={props.volume()}
-              class="volume-slider"
+              class={styles.volumeSlider}
               aria-label="Volume"
               onInput={(e) => {
                 const vol = parseInt(e.currentTarget.value)
@@ -663,7 +664,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
               of a stray label-slider pair tucked at the right edge. */}
           <Show when={!isPianoTab()}>
             <div
-              class="sensitivity-group inline-control"
+              class={['sensitivity-group', styles.inlineControl].join(' ')}
               title="Mic sensitivity (1 = quiet rooms, 10 = noisy)"
             >
               <span class="inline-control-icon" aria-hidden="true">
@@ -681,7 +682,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
                 min="1"
                 max="10"
                 value={settings().sensitivity}
-                class="sens-number-input"
+                class={styles.sensNumberInput}
                 aria-label="Sensitivity"
                 onInput={(e) => {
                   const val = parseInt(e.currentTarget.value)
@@ -696,7 +697,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
                 min="1"
                 max="10"
                 value={settings().sensitivity}
-                class="sensitivity-slider"
+                class={styles.sensitivitySlider}
                 aria-label="Sensitivity slider"
                 onInput={(e) => {
                   const val = parseInt(e.currentTarget.value) || 5
@@ -707,7 +708,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
           </Show>
 
           {/* Speed */}
-          <div class="speed-group inline-control" title="Playback speed">
+          <div class={['speed-group', styles.inlineControl].join(' ')} title="Playback speed">
             <span class="inline-control-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" width="14" height="14">
                 <path fill="currentColor" d="M4 5v14l8-7zM14 5v14l8-7z" />
@@ -716,7 +717,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
             <select
               id="speed-select"
               value={playbackSpeed().toString()}
-              class="speed-select"
+              class={styles.speedSelect}
               aria-label="Playback speed"
               onChange={(e) => {
                 const speed = parseFloat(e.currentTarget.value)
@@ -743,7 +744,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
               props.onZoomOut
             }
           >
-            <div class="zoom-group inline-control" title="Zoom level">
+            <div class={['zoom-group', styles.inlineControl].join(' ')} title="Zoom level">
               <span class="inline-control-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" width="14" height="14">
                   <path
@@ -779,7 +780,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
             }
           >
             <div
-              class="label-toggle-group inline-control"
+              class={['label-toggle-group', styles.inlineControl].join(' ')}
               title="Toggle note labels"
             >
               <button
@@ -802,7 +803,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
         {/* Save Melody — editor tab only */}
         <Show when={isEditorTab() && props.onSaveMelody}>
           <ControlGroup>
-            <div class="save-melody-group">
+            <div class={styles.saveMelodyGroup}>
               <button
                 id="save-melody-btn"
                 class={`save-melody-btn ${props.onSaveMelodyLabel != null && props.onSaveMelodyLabel.length > 0 ? 'with-label' : ''}`}

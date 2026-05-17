@@ -1,0 +1,335 @@
+/* Extracted from: Notes Panel (Legacy — kept for NoteList component) */
+
+#notes-panel {
+  width: 270px;
+  min-width: 270px;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+}
+
+.panel-title {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+#scale-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.key-label,
+.octave-label,
+.preset-label {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+#key-select,
+#preset-select {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 3px 7px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  outline: none;
+}
+
+#key-select:focus,
+#preset-select:focus {
+  border-color: var(--accent);
+}
+
+/* Octave control (UP/DOWN arrows + value display) */
+.octave-ctrl {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 2px 3px;
+}
+
+.octave-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.12s ease;
+  padding: 0;
+}
+
+.octave-btn:hover {
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+.octave-btn:active {
+  transform: scale(0.88);
+}
+
+.octave-value {
+  min-width: 16px;
+  text-align: center;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--accent);
+  padding: 0 2px;
+}
+
+#preset-select {
+  max-width: 140px;
+}
+
+#share-preset {
+  padding: 6px 12px;
+  display: flex;
+  align-items: center;
+}
+
+.share-btn {
+  padding: 5px 10px;
+  border: 1px solid var(--green);
+  border-radius: 5px;
+  background: transparent;
+  color: var(--green);
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.share-btn:hover {
+  background: var(--green);
+  color: #fff;
+}
+
+.ctrl-btn.small {
+  padding: 3px 8px;
+  font-size: 0.75rem;
+}
+
+.ctrl-btn.small span {
+  font-size: 0.75rem;
+}
+
+/* Note list */
+#note-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.note-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: var(--bg-tertiary);
+  border: 1px solid transparent;
+  transition: all 0.12s ease;
+  cursor: default;
+}
+
+.note-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  flex-shrink: 0;
+  transition: background 0.12s ease;
+}
+
+.note-item.hit .note-dot {
+  background: var(--green);
+}
+
+/* Accuracy band coloring */
+.note-item.band-perfect {
+  background: rgba(63, 185, 80, 0.2);
+  border-color: var(--green);
+  box-shadow: 0 0 6px rgba(63, 185, 80, 0.4);
+}
+.note-item.band-excellent {
+  background: var(--accent-glow);
+  border-color: var(--accent);
+  box-shadow: 0 0 6px var(--accent-glow);
+}
+.note-item.band-good {
+  background: rgba(45, 212, 191, 0.2);
+  border-color: #2dd4bf;
+  box-shadow: 0 0 6px rgba(45, 212, 191, 0.4);
+}
+.note-item.band-okay {
+  background: rgba(210, 153, 34, 0.2);
+  border-color: #d29922;
+  box-shadow: 0 0 6px rgba(210, 153, 34, 0.4);
+}
+.note-item.band-off {
+  background: rgba(248, 81, 73, 0.2);
+  border-color: #f85149;
+  box-shadow: 0 0 6px rgba(248, 81, 73, 0.4);
+}
+
+/* Active + hit glow (overrides band color during playback) */
+.note-item.active {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+.note-item.active .note-dot {
+  background: var(--accent);
+}
+.note-item.hit {
+  border-color: var(--green);
+  box-shadow: 0 0 12px var(--green-glow);
+}
+.note-item.hit .note-dot {
+  background: var(--green);
+}
+
+.note-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  min-width: 30px;
+}
+
+.note-freq {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  margin-left: auto;
+}
+
+.note-accuracy-pct {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  margin-left: 6px;
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text-primary);
+  min-width: 28px;
+  text-align: right;
+}
+
+/* Pitch reference */
+#pitch-reference {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+#pitch-reference h3 {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 4px;
+}
+
+#detected-note {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1.1;
+}
+
+#detected-freq {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+#cents-display {
+  margin-top: 4px;
+}
+
+#cents-bar {
+  height: 6px;
+  background: var(--bg-tertiary);
+  border-radius: 3px;
+  position: relative;
+  overflow: visible;
+}
+
+.cents-center {
+  position: absolute;
+  left: 50%;
+  top: -2px;
+  width: 2px;
+  height: 10px;
+  background: var(--text-muted);
+  transform: translateX(-50%);
+}
+
+#cents-marker {
+  position: absolute;
+  top: -3px;
+  width: 12px;
+  height: 12px;
+  background: var(--accent);
+  border-radius: 50%;
+  transform: translateX(-50%);
+  left: 50%;
+  transition:
+    left 0.06s ease,
+    background 0.12s ease;
+  box-shadow: 0 0 6px var(--accent-glow);
+}
+
+#cents-marker.sharp {
+  background: var(--orange);
+  box-shadow: 0 0 6px rgba(219, 109, 40, 0.4);
+}
+#cents-marker.flat {
+  background: var(--yellow);
+  box-shadow: 0 0 6px rgba(210, 153, 34, 0.4);
+}
+#cents-marker.in-tune {
+  background: var(--green);
+  box-shadow: 0 0 8px var(--green-glow);
+}
+
+.cents-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+
+
+.panel-title {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 0;
+  padding: 8px 12px;
+}

@@ -20,6 +20,7 @@ import { melodyStore } from '@/stores/melody-store'
 import { setShowSidebarNoteList, showSidebarNoteList, } from '@/stores/settings-store'
 import { customScales as customScalesMap, customScaleTypeId, } from '@/stores/settings-store'
 import type { MelodyItem, NoteResult, PitchResult } from '@/types'
+import styles from './AppSidebar.module.css'
 
 interface AppSidebarProps {
   /** Called when a preset is loaded */
@@ -115,7 +116,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
 
       {/* Mobile close button */}
       <button
-        class="sidebar-close-btn"
+        class={styles.sidebarCloseBtn}
         onClick={() => props.onClose?.()}
         title="Close menu"
         aria-label="Close menu"
@@ -164,8 +165,8 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
 
       {/* Playback Setup section */}
       <Show when={showPlaybackSetupInfo()}>
-        <div class="sidebar-section">
-          <h2 class="panel-title">Playback Setup</h2>
+        <div class={styles.sidebarSection}>
+          <h2 class={styles['panel-title']}>Playback Setup</h2>
 
           <div id="scale-info">
             <select
@@ -320,7 +321,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
       </Show>
 
       {/* Quick visibility toggles — compact 2x3 grid */}
-      <div class="sidebar-section sidebar-vis-grid">
+      <div class={[styles.sidebarSection, 'sidebar-vis-grid'].join(' ')}>
         <div class="vis-grid-cell">
           <span class="vis-grid-label">Ball</span>
           <label class="settings-toggle vis-grid-toggle">
@@ -407,13 +408,13 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
       <div class="fancy-divider" />
 
       {/* Library */}
-      <div class="sidebar-section">
+      <div class={styles.sidebarSection}>
         <LibraryTab />
       </div>
 
       {/* Stats panel */}
       <Show when={isPracticeOrSettingsTab() && showStats()}>
-        <div class="sidebar-section">
+        <div class={styles.sidebarSection}>
           <div id="stats-panel">
             <h3>Accuracy</h3>
             <StatsBars noteResults={props.noteResults} />
@@ -452,7 +453,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
 
       {/* Note list (bottom-anchored) */}
       <Show when={isPracticeOrSettingsTab() && showSidebarNoteList()}>
-        <div class="sidebar-section sidebar-notes-bottom">
+        <div class={[styles.sidebarSection, 'sidebar-notes-bottom'].join(' ')}>
           <NoteList
             melody={props.melody}
             currentNoteIndex={props.currentNoteIndex}
@@ -464,7 +465,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
 
       {/* Pitch display (bottom-anchored) */}
       <Show when={isPracticeOrSettingsTab() && showPitchDisplay()}>
-        <div class="sidebar-section sidebar-notes-bottom">
+        <div class={[styles.sidebarSection, 'sidebar-notes-bottom'].join(' ')}>
           <PitchDisplay pitch={props.pitch} targetNote={props.targetNoteName} />
         </div>
       </Show>

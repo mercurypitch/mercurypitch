@@ -1,0 +1,75 @@
+/* Extracted from: Shared Sidebar */
+
+.app-sidebar {
+  width: 300px;
+  min-width: 300px;
+  flex-shrink: 0;
+  min-height: 0;
+  height: 100%;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+}
+
+/* Sidebar close button — shown on mobile when sidebar is open */
+.sidebar-close-btn {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  align-self: flex-end;
+  padding: 4px;
+  border-radius: 4px;
+  opacity: 0.6;
+  transition: opacity 0.15s;
+}
+.sidebar-close-btn:hover {
+  opacity: 1;
+}
+
+/* Sidebar toggle FAB — hidden on desktop by default */
+.sidebar-toggle-btn {
+  display: none;
+}
+
+/* ==========================================
+   PRESET UI REMOVED - replaced by melody library
+   Kept as comment for reference
+   ==========================================
+/* Preset Selector Grid - REMOVED */
+/* .preset-selector {
+  ...
+} */
+
+/* Sidebar Sections */
+.sidebar-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Bottom-anchored sections in sidebar */
+.sidebar-section.sidebar-notes-bottom {
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+}
+
+
+
+.panel-title {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 0;
+  padding: 8px 12px;
+}

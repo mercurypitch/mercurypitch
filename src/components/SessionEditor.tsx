@@ -11,6 +11,7 @@ import { addItemToSession, deleteSessionItem, insertItemInSession, } from '@/sto
 import type { PlaybackSession, SessionItem } from '@/types'
 import { MelodyPillList } from './MelodyPillList'
 import { SessionEditorTimeline } from './SessionEditorTimeline'
+import styles from './SessionEditor.module.css'
 
 interface SessionEditorProps {
   currentSession?: SessionItem[]
@@ -215,12 +216,12 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
   }
 
   return (
-    <div class="session-editor">
+    <div class={styles.sessionEditor}>
       <div
-        class="session-editor-header"
+        class={styles.sessionEditorHeader}
         onClick={() => setExpanded(!expanded())}
       >
-        <div class="session-editor-title">
+        <div class={styles.sessionEditorTitle}>
           <svg viewBox="0 0 24 24" width="20" height="20">
             <path
               fill="currentColor"
@@ -275,7 +276,7 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
               }}
             />
           </div>
-          <button class="toggle-btn" aria-label="Toggle rest settings">
+          <button class={styles.toggleBtn} aria-label="Toggle rest settings">
             <svg
               viewBox="0 0 24 24"
               width="20"
@@ -292,9 +293,9 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
       </div>
 
       <Show when={expanded()}>
-        <div class="session-editor-content">
-          <div class="melody-library-section">
-            <h4 class="section-title">Melody Library</h4>
+        <div class={styles.sessionEditorContent}>
+          <div class={styles.melodyLibrarySection}>
+            <h4 class={styles.sectionTitle}>Melody Library</h4>
             <MelodyPillList
               selectedMelodyIds={selectedMelodyIds()}
               onMelodySelect={handleMelodySelect}
@@ -303,10 +304,10 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
           </div>
 
           <div class="timeline-section">
-            <div class="section-header">
-              <h4 class="section-title">Session Timeline</h4>
+            <div class={styles.sectionHeader}>
+              <h4 class={styles.sectionTitle}>Session Timeline</h4>
               {sessionItems().length > 0 && (
-                <span class="item-count">{sessionItems().length} items</span>
+                <span class={styles.itemCount}>{sessionItems().length} items</span>
               )}
             </div>
             <SessionEditorTimeline
