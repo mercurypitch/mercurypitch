@@ -3690,6 +3690,11 @@ Keeps your existing styles, only adjusts layout
   gap: 3px;
 }
 
+.roll-octaves-group.disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
 .octaves-label {
   font-size: 0.72rem;
   color: var(--text-secondary);
@@ -3752,7 +3757,6 @@ Keeps your existing styles, only adjusts layout
 
 /* Scrollable piano roll — full 7-octave view with vertical scroll */
 .roll-main-area.piano-roll-scrollable {
-  max-height: 600px;
   overflow-y: auto;
 }
 

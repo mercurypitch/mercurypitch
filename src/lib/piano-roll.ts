@@ -1787,14 +1787,14 @@ export class PianoRollEditor {
         scrollToggle.classList.toggle('active', this.scrollableMode)
       }
       if (this.scrollableMode) {
-        // Hide rows controls — all octaves are visible
+        // Disable rows controls — all octaves are visible
         const rowsGroup = this.container.querySelector('.roll-octaves-group')
-        if (rowsGroup) (rowsGroup as HTMLElement).style.display = 'none'
+        if (rowsGroup) rowsGroup.classList.add('disabled')
         const mainArea = this.container.querySelector('.roll-main-area')
         if (mainArea) mainArea.classList.add('piano-roll-scrollable')
       } else {
         const rowsGroup = this.container.querySelector('.roll-octaves-group')
-        if (rowsGroup) (rowsGroup as HTMLElement).style.display = ''
+        if (rowsGroup) rowsGroup.classList.remove('disabled')
         const mainArea = this.container.querySelector('.roll-main-area')
         if (mainArea) mainArea.classList.remove('piano-roll-scrollable')
       }

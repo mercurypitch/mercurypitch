@@ -223,18 +223,21 @@ describe('PianoRollEditor', () => {
     expect(scrollToggle).toBeDefined()
     expect(scrollToggle.classList.contains('active')).toBe(false)
 
-    // Toggle on — class should be on .roll-main-area, not wrapper
+    // Toggle on — class should be on .roll-main-area, rows group disabled
     scrollToggle.click()
     expect(scrollToggle.classList.contains('active')).toBe(true)
     const mainArea = container.querySelector('.roll-main-area')
     expect(mainArea?.classList.contains('piano-roll-scrollable')).toBe(true)
     expect(editor.isScrollable()).toBe(true)
+    const rowsGroup = container.querySelector('.roll-octaves-group')
+    expect(rowsGroup?.classList.contains('disabled')).toBe(true)
 
-    // Toggle off
+    // Toggle off — rows group re-enabled
     scrollToggle.click()
     expect(scrollToggle.classList.contains('active')).toBe(false)
     expect(mainArea?.classList.contains('piano-roll-scrollable')).toBe(false)
     expect(editor.isScrollable()).toBe(false)
+    expect(rowsGroup?.classList.contains('disabled')).toBe(false)
   })
 
   describe('Note ID uniqueness', () => {
