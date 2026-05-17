@@ -1038,7 +1038,7 @@ export function refreshScale(
  * rebuild against the tracked `_scaleKey` / `_scaleType`.
  */
 export function setNumOctaves(num: number): void {
-  _numOctaves = Math.max(1, Math.min(3, Math.round(num)))
+  _numOctaves = Math.max(1, Math.min(7, Math.round(num)))
   setCurrentScale(
     buildMultiOctaveScale(_scaleKey, _octave, _numOctaves, _scaleType),
   )

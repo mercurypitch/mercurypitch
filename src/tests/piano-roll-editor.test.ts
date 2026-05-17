@@ -86,7 +86,7 @@ describe('PianoRollEditor', () => {
     const octaveSpan = container.querySelector(
       '#roll-octave-value',
     ) as HTMLSpanElement
-    expect(octaveSpan.textContent).toBe('5') // Assuming default is 4
+    expect(octaveSpan.textContent).toBe('4') // Default octave is 3, +1 = 4
   })
 
   it('changes duration on duration button click', () => {
@@ -157,6 +157,62 @@ describe('PianoRollEditor', () => {
     expect(editor.canUndo()).toBe(true)
     expect(editor.canRedo()).toBe(false)
     expect(editor.getMelody()[0].note?.midi).toBe(72)
+  })
+
+  it('respects octave lower bound of 1', () => {
+    // Default octave is 3. Click octave down 3 times — should stop at 1,
+    // not go to 0 or negative.
+    const downBtn = container.querySelector(
+      '#roll-octave-down',
+    ) as HTMLButtonElement
+    for (let i = 0; i < 5; i++) downBtn.click()
+
+    const octaveSpan = container.querySelector(
+      '#roll-octave-value',
+    ) as HTMLSpanElement
+    expect(octaveSpan.textContent).toBe('1')
+  })
+
+  it('respects octave upper bound of 7', () => {
+    const upBtn = container.querySelector(
+      '#roll-octave-up',
+    ) as HTMLButtonElement
+    for (let i = 0; i < 10; i++) upBtn.click()
+
+    const octaveSpan = container.querySelector(
+      '#roll-octave-value',
+    ) as HTMLSpanElement
+    expect(octaveSpan.textContent).toBe('7')
+  })
+
+  it('setNumOctaves accepts values up to 7', () => {
+    const plusBtn = container.querySelector(
+      '#roll-octaves-plus',
+    ) as HTMLButtonElement
+    // Click 6 times (from 2 to 7, cap at 7)
+    for (let i = 0; i < 6; i++) plusBtn.click()
+
+    const octavesSpan = container.querySelector(
+      '#roll-octaves-value',
+    ) as HTMLSpanElement
+    expect(octavesSpan.textContent).toBe('7')
+    // One more click should stay at 7
+    plusBtn.click()
+    expect(octavesSpan.textContent).toBe('7')
+  })
+
+  it('scrollable mode toggle exists and toggles active class', () => {
+    const scrollToggle = container.querySelector(
+      '#roll-scroll-toggle',
+    ) as HTMLButtonElement
+    expect(scrollToggle).toBeDefined()
+    expect(scrollToggle.classList.contains('active')).toBe(false)
+
+    scrollToggle.click()
+    expect(scrollToggle.classList.contains('active')).toBe(true)
+
+    scrollToggle.click()
+    expect(scrollToggle.classList.contains('active')).toBe(false)
   })
 
   describe('Note ID uniqueness', () => {

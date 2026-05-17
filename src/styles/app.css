@@ -3729,6 +3729,48 @@ Keeps your existing styles, only adjusts layout
   color: var(--accent);
 }
 
+/* Group labels ("Rows", "Oct", etc.) in toolbar */
+.roll-group-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  padding: 0 2px;
+  user-select: none;
+}
+
+/* Scroll toggle button in toolbar */
+.roll-scroll-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.roll-scroll-btn:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.roll-scroll-btn.active {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+/* Scrollable piano roll — full 7-octave view with vertical scroll */
+.piano-roll-scrollable {
+  max-height: 600px;
+  overflow-y: auto;
+}
+
 /* Scale mode select */
 .roll-mode-group {
   display: flex;
