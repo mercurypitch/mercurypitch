@@ -139,11 +139,6 @@ select option:disabled {
   letter-spacing: 0.04em;
 }
 
-/* Custom scale options — slightly brighter to distinguish */
-select option.custom-scale-option {
-  color: rgba(56, 189, 248, 0.9);
-}
-
 /* ===== Main Content Area ===== */
 .main-content {
   flex: 1;
@@ -1036,61 +1031,6 @@ select option.custom-scale-option {
   }
 }
 
-/* ===== Session History (sidebar) ===== */
-#session-history-panel {
-  margin-top: 10px;
-  padding-top: 8px;
-  border-top: 1px solid var(--border);
-}
-
-#session-history-panel h3 {
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  margin: 0 0 5px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-#session-history-list {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.session-history-entry {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 3px 5px;
-  background: var(--bg-tertiary);
-  border-radius: 4px;
-  font-size: 0.7rem;
-}
-
-.session-history-name {
-  color: var(--text-secondary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 90px;
-}
-
-.session-history-score {
-  font-weight: 600;
-  font-size: 0.7rem;
-}
-
-.session-history-score.score-high {
-  color: var(--green);
-}
-.session-history-score.score-mid {
-  color: var(--yellow);
-}
-.session-history-score.score-low {
-  color: var(--red);
-}
-
 /* ===== Difficulty Badge for Session Items ===== */
 .difficulty-badge {
   font-size: 0.68rem;
@@ -1269,52 +1209,6 @@ select option.custom-scale-option {
   filter: brightness(1.1);
 }
 
-
-/* Walkthrough control button - aligned with tabs */
-.walkthrough-control-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--text-primary);
-  cursor: pointer;
-  font-size: 0.85rem;
-  font-weight: 500;
-  height: 32px;
-  line-height: 32px;
-  white-space: nowrap;
-  transition: all 0.2s;
-}
-
-.walkthrough-control-btn:hover {
-  background: var(--bg-card);
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
-.walkthrough-control-btn:active {
-  transform: scale(0.98);
-}
-
-.walkthrough-control-text {
-  font-size: 0.85rem;
-}
-
-/* Guide button - subtle variant */
-.walkthrough-control-btn-guide {
-  background: var(--surface-dim, var(--surface));
-  border-color: var(--border-muted, var(--border));
-  opacity: 0.85;
-}
-
-.walkthrough-control-btn-guide:hover {
-  opacity: 1;
-  border-color: var(--accent);
-  color: var(--accent);
-}
 
 /* Walkthrough / Learn Selection Overlay */
 .walkthrough-selection-overlay {
@@ -2867,66 +2761,6 @@ select option.custom-scale-option {
   line-height: 1.4;
 }
 
-/* Playback Setup sidebar redesign */
-.app-sidebar #scale-info {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 8px;
-  align-items: center;
-  padding: 10px;
-  border: 1px solid var(--accent-dim);
-  border-radius: 14px;
-  background: linear-gradient(180deg, var(--bg-secondary), var(--bg-primary));
-}
-
-.app-sidebar #scale-info #key-select,
-.app-sidebar #scale-info #scale-select {
-  min-height: 36px;
-  border-radius: 10px;
-  border: 1px solid var(--accent-dim);
-  background-color: var(--bg-secondary) !important;
-  color: var(--text-primary);
-  font-weight: 700;
-}
-
-.app-sidebar #scale-info #key-select {
-  width: 100%;
-}
-
-.app-sidebar #scale-info #scale-select {
-  grid-column: 1 / -1;
-  width: 100%;
-}
-
-.app-sidebar #scale-info .octave-ctrl {
-  height: 36px;
-  padding: 3px 6px;
-  border-radius: 999px;
-  border-color: var(--accent-dim);
-  background: var(--accent-dim);
-}
-
-.app-sidebar #scale-info .octave-btn {
-  width: 26px;
-  height: 26px;
-  border-radius: 999px;
-}
-
-.app-sidebar #scale-info .octave-value {
-  min-width: 24px;
-  color: #7ee787;
-  font-weight: 800;
-  text-align: center;
-}
-
-.app-sidebar #open-scale-builder {
-  grid-column: 1 / -1;
-  justify-content: center;
-  width: 100%;
-  min-height: 34px;
-  border-radius: 10px;
-}
-
 #note-list .note-item.rest-item {
   border-style: dashed;
   border-color: rgba(139, 148, 158, 0.45);
@@ -3370,19 +3204,6 @@ select option.custom-scale-option {
 .library-modal-tab.active {
   border-bottom: 2px solid var(--accent);
   color: var(--accent);
-}
-
-.session-history-score {
-  font-weight: bold;
-}
-.score-high {
-  color: var(--green);
-}
-.score-mid {
-  color: var(--yellow);
-}
-.score-low {
-  color: var(--red);
 }
 
 .session-player-item.is-rest {
