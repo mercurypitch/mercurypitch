@@ -520,7 +520,7 @@ const AppShell: Component<AppProps> = (props) => {
   // ── Octave shift ──────────────────────────────────────────
   const handleOctaveShift = (delta: number) => {
     const newOctave = melodyStore.getCurrentOctave() + delta
-    if (newOctave < 1 || newOctave > 6) return
+    if (newOctave < 1) return
 
     const keyName = keyNameSignal()
     const scaleType = scaleTypeSignal()
