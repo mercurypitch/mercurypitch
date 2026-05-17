@@ -146,9 +146,15 @@ async function loadModel(modelPath: string): Promise<void> {
       /Linux/i.test(navigator.platform || navigator.userAgent)
     // Modern iPadOS 13+ reports a desktop Mac user-agent without "iPad".
     // Detect it via multi-touch capability combined with Macintosh UA.
+    // Samsung tablets in Chrome "Desktop site" mode also spoof a desktop
+    // Linux UA — navigator.userAgentData.mobile reveals the truth.
+    const uaData = (navigator as unknown as Record<string, unknown>).userAgentData as
+      | { mobile?: boolean }
+      | undefined
     const isMobile =
       /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
-      (/Macintosh/i.test(navigator.userAgent) && navigator.maxTouchPoints > 1)
+      (/Macintosh/i.test(navigator.userAgent) && navigator.maxTouchPoints > 1) ||
+      uaData?.mobile === true
     if (!isLinuxFirefox && !isMobile) {
       try {
         if ('gpu' in navigator) {
@@ -159,6 +165,14 @@ async function loadModel(modelPath: string): Promise<void> {
       }
     }
     activeProviders.push('wasm')
+    console.log('[vocal-separator] provider detection:', {
+      uaPrefix: navigator.userAgent.slice(0, 80),
+      maxTouchPoints: navigator.maxTouchPoints,
+      userAgentDataMobile: uaData?.mobile,
+      isLinuxFirefox,
+      isMobile,
+      providers: activeProviders.join(','),
+    })
   }
 
   session = await ort.InferenceSession.create(buffer, {
