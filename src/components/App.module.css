@@ -296,3 +296,100 @@
   color: var(--text-muted);
   margin-bottom: 20px;
 }
+
+/* Extracted from: Melody indicator pill */
+
+.melodyIndicatorPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 14px 4px 10px;
+  border: 1px solid rgba(88, 166, 255, 0.25);
+  border-radius: 12px;
+  background: linear-gradient(
+    135deg,
+    rgba(88, 166, 255, 0.12),
+    rgba(130, 80, 220, 0.1)
+  );
+  color: var(--accent);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  max-width: 220px;
+  overflow: hidden;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.melodyIndicatorPill:hover {
+  background: linear-gradient(
+    135deg,
+    rgba(88, 166, 255, 0.22),
+    rgba(130, 80, 220, 0.18)
+  );
+  border-color: rgba(88, 166, 255, 0.45);
+  box-shadow: 0 0 12px rgba(88, 166, 255, 0.15);
+  transform: translateY(-1px);
+}
+
+.melodyIndicatorPill:active {
+  transform: translateY(0);
+}
+
+.melodyIndicatorIcon {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.melodyIndicatorInfo {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  line-height: 1.2;
+}
+
+.melodyIndicatorName {
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.melodyIndicatorCharacter {
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-transform: capitalize;
+  opacity: 0.75;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:global([data-theme='light']) .melodyIndicatorPill {
+  background: linear-gradient(
+    135deg,
+    rgba(88, 166, 255, 0.1),
+    rgba(130, 80, 220, 0.08)
+  );
+  border-color: rgba(88, 166, 255, 0.3);
+  color: var(--accent);
+}
+
+:global([data-theme='light']) .melodyIndicatorPill:hover {
+  background: linear-gradient(
+    135deg,
+    rgba(88, 166, 255, 0.18),
+    rgba(130, 80, 220, 0.14)
+  );
+  border-color: rgba(88, 166, 255, 0.5);
+  box-shadow: 0 0 12px rgba(88, 166, 255, 0.12);
+}
+
+@media (max-width: 600px) {
+  .melodyIndicatorPill {
+    display: none;
+  }
+}

@@ -877,12 +877,12 @@ const AppShell: Component<AppProps> = (props) => {
               {/* Current melody indicator pill */}
               <Show when={melodyStore.getCurrentMelody()}>
                 <button
-                  class="melody-indicator-pill"
+                  class={styles.melodyIndicatorPill}
                   onClick={() => void handleTabChange(TAB_SINGING)}
                   title={`Now loaded: ${melodyStore.getCurrentMelody()?.name ?? 'Untitled'}`}
                 >
                   <svg
-                    class="melody-indicator-icon"
+                    class={styles.melodyIndicatorIcon}
                     width="16"
                     height="16"
                     viewBox="0 0 24 24"
@@ -896,11 +896,11 @@ const AppShell: Component<AppProps> = (props) => {
                     <circle cx="6" cy="18" r="3" />
                     <circle cx="18" cy="16" r="3" />
                   </svg>
-                  <span class="melody-indicator-info">
-                    <span class="melody-indicator-name">
+                  <span class={styles.melodyIndicatorInfo}>
+                    <span class={styles.melodyIndicatorName}>
                       {melodyStore.getCurrentMelody()?.name ?? 'Untitled'}
                     </span>
-                    <span class="melody-indicator-character">
+                    <span class={styles.melodyIndicatorCharacter}>
                       {selectedCharacter()}
                     </span>
                   </span>

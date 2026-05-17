@@ -500,10 +500,6 @@ select option:disabled {
   .subtitle {
     display: none;
   }
-  .melody-indicator-pill {
-    display: none;
-  }
-
   /* Count-in badge: smaller — match circular toolbar style */
   .countin-badge {
     width: 28px;
@@ -1215,90 +1211,6 @@ select option:disabled {
   display: flex;
   align-items: center;
   gap: 8px;
-}
-
-/* Melody indicator pill — shows current melody name in the header */
-.melody-indicator-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 14px 4px 10px;
-  border: 1px solid rgba(88, 166, 255, 0.25);
-  border-radius: 12px;
-  background: linear-gradient(
-    135deg,
-    rgba(88, 166, 255, 0.12),
-    rgba(130, 80, 220, 0.1)
-  );
-  color: var(--accent);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  white-space: nowrap;
-  max-width: 220px;
-  overflow: hidden;
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-}
-.melody-indicator-pill:hover {
-  background: linear-gradient(
-    135deg,
-    rgba(88, 166, 255, 0.22),
-    rgba(130, 80, 220, 0.18)
-  );
-  border-color: rgba(88, 166, 255, 0.45);
-  box-shadow: 0 0 12px rgba(88, 166, 255, 0.15);
-  transform: translateY(-1px);
-}
-.melody-indicator-pill:active {
-  transform: translateY(0);
-}
-.melody-indicator-icon {
-  flex-shrink: 0;
-  opacity: 0.7;
-}
-.melody-indicator-info {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  line-height: 1.2;
-}
-.melody-indicator-name {
-  font-size: 0.78rem;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.melody-indicator-character {
-  font-size: 0.65rem;
-  font-weight: 500;
-  color: var(--text-secondary);
-  text-transform: capitalize;
-  opacity: 0.75;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* Light theme */
-[data-theme='light'] .melody-indicator-pill {
-  background: linear-gradient(
-    135deg,
-    rgba(88, 166, 255, 0.1),
-    rgba(130, 80, 220, 0.08)
-  );
-  border-color: rgba(88, 166, 255, 0.3);
-  color: var(--accent);
-}
-[data-theme='light'] .melody-indicator-pill:hover {
-  background: linear-gradient(
-    135deg,
-    rgba(88, 166, 255, 0.18),
-    rgba(130, 80, 220, 0.14)
-  );
-  border-color: rgba(88, 166, 255, 0.5);
-  box-shadow: 0 0 12px rgba(88, 166, 255, 0.12);
 }
 
 /* =====================================================================
