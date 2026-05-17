@@ -315,8 +315,3 @@
   color: var(--text-primary);
 }
 
-#app {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-}
