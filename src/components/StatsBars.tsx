@@ -41,54 +41,54 @@ export const StatsBars: Component<StatsBarsProps> = (props) => {
   return (
     <div id="stats-bars">
       <div class={styles.statRow} data-band="100">
-        <span class={styles.statLabel}>Perfect</span>
+        <span class={styles.statLabel} data-testid="stat-label">Perfect</span>
         <div class={styles.statBarBg}>
           <div
-            class={styles.statBar}
+            class={styles.statBar} data-testid="stat-bar"
             style={{ width: `${statsPercentages().perfect}%` }}
           />
         </div>
-        <span class={styles.statCount}>{statsCounts().perfect}</span>
+        <span class={styles.statCount} data-testid="stat-count">{statsCounts().perfect}</span>
       </div>
       <div class={styles.statRow} data-band="90">
-        <span class={styles.statLabel}>Excellent</span>
+        <span class={styles.statLabel} data-testid="stat-label">Excellent</span>
         <div class={styles.statBarBg}>
           <div
-            class={styles.statBar}
+            class={styles.statBar} data-testid="stat-bar"
             style={{ width: `${statsPercentages().excellent}%` }}
           />
         </div>
-        <span class={styles.statCount}>{statsCounts().excellent}</span>
+        <span class={styles.statCount} data-testid="stat-count">{statsCounts().excellent}</span>
       </div>
       <div class={styles.statRow} data-band="75">
-        <span class={styles.statLabel}>Good</span>
+        <span class={styles.statLabel} data-testid="stat-label">Good</span>
         <div class={styles.statBarBg}>
           <div
-            class={styles.statBar}
+            class={styles.statBar} data-testid="stat-bar"
             style={{ width: `${statsPercentages().good}%` }}
           />
         </div>
-        <span class={styles.statCount}>{statsCounts().good}</span>
+        <span class={styles.statCount} data-testid="stat-count">{statsCounts().good}</span>
       </div>
       <div class={styles.statRow} data-band="50">
-        <span class={styles.statLabel}>Okay</span>
+        <span class={styles.statLabel} data-testid="stat-label">Okay</span>
         <div class={styles.statBarBg}>
           <div
-            class={styles.statBar}
+            class={styles.statBar} data-testid="stat-bar"
             style={{ width: `${statsPercentages().okay}%` }}
           />
         </div>
-        <span class={styles.statCount}>{statsCounts().okay}</span>
+        <span class={styles.statCount} data-testid="stat-count">{statsCounts().okay}</span>
       </div>
       <div class={styles.statRow} data-band="0">
-        <span class={styles.statLabel}>Off</span>
+        <span class={styles.statLabel} data-testid="stat-label">Off</span>
         <div class={styles.statBarBg}>
           <div
-            class={styles.statBar}
+            class={styles.statBar} data-testid="stat-bar"
             style={{ width: `${statsPercentages().off}%` }}
           />
         </div>
-        <span class={styles.statCount}>{statsCounts().off}</span>
+        <span class={styles.statCount} data-testid="stat-count">{statsCounts().off}</span>
       </div>
     </div>
   )

@@ -1,6 +1,6 @@
 /* Extracted from: Session Player */
 
-.session-player {
+.sessionPlayer {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -15,13 +15,13 @@
   flex-wrap: wrap;
 }
 
-.session-player-header {
+.sessionPlayerHeader {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.session-player-title {
+.sessionPlayerTitle {
   display: flex;
   align-items: center;
   gap: 5px;
@@ -30,51 +30,51 @@
   color: var(--green);
 }
 
-.session-player-progress {
+.sessionPlayerProgress {
   font-size: 0.78rem;
   color: var(--text-secondary);
 }
 
-.session-player-item {
+.sessionPlayerItem {
   display: flex;
   align-items: center;
   gap: 4px;
 }
 
-.session-item-icon {
+.sessionItemIcon {
   color: var(--text-muted);
 }
 
-.session-item-label {
+.sessionItemLabel {
   font-size: 0.78rem;
   color: var(--text-secondary);
 }
 
-.session-player-item:global(.is-rest) {
+.sessionPlayerItem:global(.isRest) {
   opacity: 0.5;
 }
 
-.session-player-item:global(.is-rest) .session-item-label {
+.sessionPlayerItem:global(.isRest) .sessionItemLabel {
   font-style: italic;
   color: var(--text-muted, #9aa3b2);
 }
 
-.session-player-item:global(.is-rest) .session-item-icon {
+.sessionPlayerItem:global(.isRest) .sessionItemIcon {
   color: var(--accent-muted, #777);
 }
 
-.session-player-timer {
+.sessionPlayerTimer {
   margin-left: auto;
 }
 
-.session-elapsed {
+.sessionElapsed {
   font-size: 0.82rem;
   font-weight: 600;
   color: var(--text-secondary);
   font-variant-numeric: tabular-nums;
 }
 
-.session-player-controls {
+.sessionPlayerControls {
   display: flex;
   gap: 6px;
 }

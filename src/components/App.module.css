@@ -1,6 +1,6 @@
 /* Extracted from: Main Layout */
 
-.main-layout {
+.mainLayout {
   display: flex;
   flex: 1;
   min-height: 0;
@@ -10,7 +10,7 @@
 
 /* Extracted from: Editor View Toggle */
 
-.editor-view-toggle {
+.editorViewToggle {
   display: flex;
   align-items: center;
   padding: 8px 12px;
@@ -42,7 +42,7 @@
   color: var(--bg-primary);
 }
 
-.session-editor-container {
+.sessionEditorContainer {
   min-height: 400px;
 }
 
@@ -73,7 +73,7 @@
   position: relative;
 }
 
-.overlay-close {
+.overlayClose {
   position: absolute;
   top: 12px;
   right: 14px;
@@ -92,7 +92,7 @@
   line-height: 1;
 }
 
-.overlay-close:hover {
+.overlayClose:hover {
   background: var(--bg-tertiary);
   color: var(--text-secondary);
 }
@@ -113,31 +113,31 @@
   margin-bottom: 16px;
 }
 
-#score-grade.grade-perfect {
+#score-grade.gradePerfect {
   background: linear-gradient(135deg, var(--green), #7ee8a0);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
-#score-grade.grade-excellent {
+#score-grade.gradeExcellent {
   background: linear-gradient(135deg, var(--accent), var(--purple));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
-#score-grade.grade-good {
+#score-grade.gradeGood {
   background: linear-gradient(135deg, var(--teal), var(--accent));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
-#score-grade.grade-okay {
+#score-grade.gradeOkay {
   background: linear-gradient(135deg, var(--yellow), var(--orange));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
-#score-grade.grade-needs-work {
+#score-grade.gradeNeedsWork {
   color: var(--red);
 }
 
@@ -164,35 +164,35 @@
   border-radius: 8px;
 }
 
-.score-stat {
+.scoreStat {
   text-align: center;
 }
 
-.score-stat-value {
+.scoreStatValue {
   font-size: 1.4rem;
   font-weight: 700;
 }
 
-.score-stat-label {
+.scoreStatLabel {
   font-size: 0.65rem;
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
-.score-stat-perfect .score-stat-value {
+.scoreStatPerfect .scoreStatValue {
   color: var(--green);
 }
-.score-stat-excellent .score-stat-value {
+.scoreStatExcellent .scoreStatValue {
   color: var(--accent);
 }
-.score-stat-good .score-stat-value {
+.scoreStatGood .scoreStatValue {
   color: var(--teal);
 }
-.score-stat-okay .score-stat-value {
+.scoreStatOkay .scoreStatValue {
   color: var(--yellow);
 }
-.score-stat-off .score-stat-value {
+.scoreStatOff .scoreStatValue {
   color: var(--red);
 }
 
@@ -202,7 +202,7 @@
   justify-content: center;
 }
 
-.overlay-btn {
+.overlayBtn {
   padding: 10px 24px;
   border-radius: 8px;
   border: 1px solid var(--border);
@@ -213,11 +213,11 @@
   transition: all 0.15s ease;
 }
 
-.overlay-btn:hover {
+.overlayBtn:hover {
   border-color: var(--text-secondary);
 }
 
-.overlay-btn.primary {
+.overlayBtn.primary {
   border-color: var(--accent);
   background: var(--accent-dim);
   color: var(--accent);
@@ -229,14 +229,14 @@
   border-top: 1px solid var(--border);
 }
 
-.history-title {
+.historyTitle {
   font-size: 0.75rem;
   color: var(--text-muted);
   text-align: center;
   margin-bottom: 10px;
 }
 
-.history-chart {
+.historyChart {
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -244,7 +244,7 @@
   height: 60px;
 }
 
-.history-bar {
+.historyBar {
   width: 16px;
   min-height: 4px;
   border-radius: 3px 3px 0 0;
@@ -252,11 +252,11 @@
   transition: height 0.3s ease;
 }
 
-.history-bar:first-child {
+.historyBar:first-child {
   background: var(--green);
 }
 
-.overlay-btn.primary:hover {
+.overlayBtn.primary:hover {
   background: var(--accent);
   color: white;
 }

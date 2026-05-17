@@ -1,6 +1,6 @@
 /* Extracted from: Focus Mode — full-screen minimal practice UI */
 
-.focus-mode {
+.focusMode {
   position: fixed;
   inset: 0;
   z-index: 500;
@@ -10,7 +10,7 @@
 }
 
 /* Top stats bar */
-.focus-topbar {
+.focusTopbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -22,13 +22,13 @@
   gap: 16px;
   min-height: 48px;
 }
-.focus-topbar-left {
+.focusTopbarLeft {
   display: flex;
   align-items: center;
   gap: 10px;
   flex-shrink: 0;
 }
-.focus-key-badge {
+.focusKeyBadge {
   font-size: 0.8rem;
   font-weight: 600;
   color: var(--accent);
@@ -38,7 +38,7 @@
   border-radius: 20px;
   white-space: nowrap;
 }
-.focus-session-badge {
+.focusSessionBadge {
   font-size: 0.78rem;
   color: var(--text-secondary);
   background: var(--bg-tertiary);
@@ -47,21 +47,21 @@
   border-radius: 20px;
   white-space: nowrap;
 }
-.focus-repeat-count {
+.focusRepeatCount {
   color: var(--accent);
 }
-.focus-topbar-center {
+.focusTopbarCenter {
   flex: 1;
   max-width: 360px;
   margin: 0 auto;
 }
-.focus-progress-container {
+.focusProgressContainer {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
 }
-.focus-progress-bar {
+.focusProgressBar {
   width: 100%;
   height: 6px;
   background: var(--bg-secondary);
@@ -69,35 +69,35 @@
   overflow: hidden;
   border: 1px solid var(--border);
 }
-.focus-progress-fill {
+.focusProgressFill {
   height: 100%;
   background: linear-gradient(90deg, var(--accent) 0%, var(--green) 100%);
   border-radius: 3px;
   transition: width 0.3s ease;
   min-width: 0;
 }
-.focus-progress-label {
+.focusProgressLabel {
   font-size: 0.7rem;
   color: var(--text-muted);
   letter-spacing: 0.05em;
 }
-.focus-topbar-right {
+.focusTopbarRight {
   flex-shrink: 0;
   min-width: 60px;
   text-align: right;
 }
-.focus-score {
+.focusScore {
   font-size: 1.1rem;
   font-weight: bold;
   color: var(--accent);
 }
-.focus-score-unit {
+.focusScoreUnit {
   font-size: 0.65rem;
   color: var(--text-muted);
   margin-left: 2px;
 }
 
-.focus-canvas {
+.focusCanvas {
   flex: 1;
   min-height: 0;
   position: relative;
@@ -105,7 +105,7 @@
 }
 
 /* Playhead for Focus Mode */
-.focus-playhead {
+.focusPlayhead {
   position: absolute;
   top: 0;
   left: 0;
@@ -121,7 +121,7 @@
   z-index: 10;
 }
 
-.focus-playhead::after {
+.focusPlayhead::after {
   content: '';
   position: absolute;
   top: 0;
@@ -133,7 +133,7 @@
   clip-path: polygon(0 0, 100% 0, 50% 100%);
 }
 
-.focus-playhead .playhead-marker {
+.focusPlayhead .playheadMarker {
   position: absolute;
   bottom: 0;
   left: 0;
@@ -145,7 +145,7 @@
 }
 
 /* Glowing pitch dot that follows the current note vertically */
-.focus-pitch-dot {
+.focusPitchDot {
   position: absolute;
   left: 2px;
   width: 5px;
@@ -158,10 +158,10 @@
     0 0 12px var(--accent-glow),
     0 0 16px var(--accent-glow);
   transform: translateY(calc(var(--pitch-position, 50%) * -100%));
-  animation: pitch-dot-pulse 1.5s ease-in-out infinite;
+  animation: pitchDotPulse 1.5s ease-in-out infinite;
 }
 
-@keyframes pitch-dot-pulse {
+@keyframes pitchDotPulse {
   0%,
   100% {
     opacity: 1;
@@ -181,13 +181,13 @@
   }
 }
 
-.focus-history {
+.focusHistory {
   height: 56px;
   flex-shrink: 0;
   border-bottom: 1px solid var(--border);
 }
 
-.focus-toolbar {
+.focusToolbar {
   position: absolute;
   bottom: 24px;
   left: 50%;
@@ -202,7 +202,7 @@
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
 }
 
-.focus-exit {
+.focusExit {
   background: none;
   border: none;
   color: var(--text-primary);
@@ -218,11 +218,11 @@
   opacity: 0.7;
   transition: opacity 0.15s;
 }
-.focus-exit:hover {
+.focusExit:hover {
   opacity: 1;
 }
 
-.focus-play {
+.focusPlay {
   background: var(--accent);
   border: none;
   color: #fff;
@@ -237,15 +237,15 @@
   min-height: 56px;
   transition: background 0.15s;
 }
-.focus-play:hover {
+.focusPlay:hover {
   filter: brightness(1.15);
 }
-.focus-play svg {
+.focusPlay svg {
   width: 24px;
   height: 24px;
 }
 
-.focus-info {
+.focusInfo {
   font-size: 0.9rem;
   font-weight: 600;
   color: var(--text-primary);
@@ -253,19 +253,19 @@
   text-align: center;
 }
 
-.focus-key-hint {
+.focusKeyHint {
   font-size: 0.75rem;
   color: var(--text-muted);
   text-align: center;
 }
 
-.focus-speed-controls {
+.focusSpeedControls {
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
-.focus-speed-btn {
+.focusSpeedBtn {
   background: var(--bg-tertiary);
   border: 1px solid var(--border);
   color: var(--text-primary);
@@ -278,17 +278,17 @@
   transition: background 0.15s;
 }
 
-.focus-speed-btn:hover:not(:disabled) {
+.focusSpeedBtn:hover:not(:disabled) {
   background: var(--accent);
   color: #fff;
 }
 
-.focus-speed-btn:disabled {
+.focusSpeedBtn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
 
-.focus-speed-label {
+.focusSpeedLabel {
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--text-primary);
@@ -297,63 +297,63 @@
 }
 
 @media (max-width: 480px) {
-  .focus-topbar {
+  .focusTopbar {
     padding: 8px 12px;
     min-height: 44px;
   }
-  .focus-topbar-left {
+  .focusTopbarLeft {
     gap: 6px;
   }
-  .focus-key-badge,
-  .focus-session-badge {
+  .focusKeyBadge,
+  .focusSessionBadge {
     font-size: 0.7rem;
     padding: 2px 8px;
   }
-  .focus-topbar-center {
+  .focusTopbarCenter {
     max-width: 200px;
   }
-  .focus-progress-bar {
+  .focusProgressBar {
     height: 5px;
   }
-  .focus-toolbar {
+  .focusToolbar {
     bottom: 16px;
     padding: 8px 16px;
     gap: 8px;
   }
 }
 
-.session-player-progress {
+.sessionPlayerProgress {
   font-size: 0.78rem;
   color: var(--text-secondary);
 }
 
-.session-player-item {
+.sessionPlayerItem {
   display: flex;
   align-items: center;
   gap: 4px;
 }
 
-.session-item-icon {
+.sessionItemIcon {
   color: var(--text-muted);
 }
 
-.session-item-label {
+.sessionItemLabel {
   font-size: 0.78rem;
   color: var(--text-primary);
 }
 
-.session-player-timer {
+.sessionPlayerTimer {
   margin-left: auto;
 }
 
-.session-elapsed {
+.sessionElapsed {
   font-size: 0.82rem;
   font-weight: 600;
   color: var(--text-secondary);
   font-variant-numeric: tabular-nums;
 }
 
-.session-player-controls {
+.sessionPlayerControls {
   display: flex;
   gap: 6px;
 }

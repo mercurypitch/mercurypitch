@@ -22,20 +22,20 @@
   gap: 5px;
 }
 
-.stat-row {
+.statRow {
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
-.stat-label {
+.statLabel {
   font-size: 0.7rem;
   color: var(--text-secondary);
   width: 68px;
   flex-shrink: 0;
 }
 
-.stat-bar-bg {
+.statBarBg {
   flex: 1;
   height: 5px;
   background: var(--bg-tertiary);
@@ -43,30 +43,30 @@
   overflow: hidden;
 }
 
-.stat-bar {
+.statBar {
   height: 100%;
   border-radius: 3px;
   transition: width 0.3s ease;
   width: 0%;
 }
 
-.stat-row[data-band='100'] .stat-bar {
+.statRow[data-band='100'] .statBar {
   background: var(--green);
 }
-.stat-row[data-band='90'] .stat-bar {
+.statRow[data-band='90'] .statBar {
   background: var(--accent);
 }
-.stat-row[data-band='75'] .stat-bar {
+.statRow[data-band='75'] .statBar {
   background: var(--teal);
 }
-.stat-row[data-band='50'] .stat-bar {
+.statRow[data-band='50'] .statBar {
   background: var(--yellow);
 }
-.stat-row[data-band='0'] .stat-bar {
+.statRow[data-band='0'] .statBar {
   background: var(--red);
 }
 
-.stat-count {
+.statCount {
   font-size: 0.72rem;
   font-weight: 600;
   min-width: 16px;

@@ -1,6 +1,6 @@
 /* Extracted from: Library Tab (sidebar) */
 
-.library-tab {
+.libraryTab {
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -9,13 +9,13 @@
   border-right: 1px solid var(--border);
 }
 
-.tab-header {
+.tabHeader {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.tab-header h3 {
+.tabHeader h3 {
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--text-secondary);
@@ -24,12 +24,12 @@
   letter-spacing: 0.08em;
 }
 
-.tab-actions {
+.tabActions {
   display: flex;
   gap: 4px;
 }
 
-.tab-action-btn {
+.tabActionBtn {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -44,26 +44,26 @@
 }
 
 @media (hover: hover) {
-  .tab-action-btn:hover {
+  .tabActionBtn:hover {
     background: var(--accent-dim);
     border-color: var(--accent);
     color: var(--accent);
   }
 }
 
-.recent-section {
+.recentSection {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-.section-label {
+.sectionLabel {
   font-size: 0.7rem;
   color: var(--text-muted);
   margin: 0;
 }
 
-.empty-tip {
+.emptyTip {
   font-size: 0.75rem;
   color: var(--text-muted);
   text-align: center;
@@ -71,7 +71,7 @@
   font-style: italic;
 }
 
-.recent-item {
+.recentItem {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -82,28 +82,28 @@
   transition: background 0.15s;
 }
 
-.recent-item:hover {
+.recentItem:hover {
   background: var(--bg-card);
 }
 
-.recent-name {
+.recentName {
   font-size: 0.8rem;
   font-weight: 500;
 }
 
-.recent-meta {
+.recentMeta {
   font-size: 0.7rem;
   color: var(--text-muted);
 }
 
-.recent-tags {
+.recentTags {
   display: flex;
   gap: 4px;
   margin-top: 4px;
   flex-wrap: wrap;
 }
 
-.recent-tag {
+.recentTag {
   font-size: 0.6rem;
   padding: 2px 6px;
   background: var(--accent-dim);
@@ -112,18 +112,18 @@
   font-weight: 500;
 }
 
-.recent-tag.more {
+.recentTag.more {
   font-size: 0.55rem;
   padding: 2px 5px;
 }
 
-.quick-actions {
+.quickActions {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-.quick-action-btn {
+.quickActionBtn {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -138,7 +138,7 @@
 }
 
 @media (hover: hover) {
-  .quick-action-btn:hover {
+  .quickActionBtn:hover {
     background: var(--accent-dim);
     border-color: var(--accent);
     color: var(--accent);
@@ -147,7 +147,7 @@
 
 /* Extracted from: Library Tab (sidebar) */
 
-.library-tab {
+.libraryTab {
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -157,13 +157,13 @@
   background: linear-gradient(180deg, var(--bg-secondary), var(--bg-primary));
 }
 
-.tab-header {
+.tabHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.tab-header h3 {
+.tabHeader h3 {
   font-size: 0.8rem;
   font-weight: 600;
   color: var(--text-muted);
@@ -172,7 +172,7 @@
 }
 
 /* Session Items Section */
-.session-items-section {
+.sessionItemsSection {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -183,7 +183,7 @@
 }
 
 /* Light theme: Library Tab */
-[data-theme='light'] .library-tab {
+[data-theme='light'] .libraryTab {
   background: linear-gradient(
     180deg,
     rgba(255, 255, 255, 0.85),
@@ -191,19 +191,19 @@
   );
   border-color: var(--accent-dim);
 }
-[data-theme='light'] .session-items-section {
+[data-theme='light'] .sessionItemsSection {
   background: rgba(246, 248, 250, 0.6);
   border-color: rgba(208, 215, 222, 0.5);
 }
 
 /* Session Items Display (Practice tab sidebar) */
-.session-items-display {
+.sessionItemsDisplay {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.session-items-display h3 {
+.sessionItemsDisplay h3 {
   font-size: 0.7rem;
   font-weight: 600;
   color: var(--text-muted);
@@ -212,7 +212,7 @@
   padding: 0 2px;
 }
 
-.session-item-entry {
+.sessionItemEntry {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -223,20 +223,20 @@
   font-size: 0.75rem;
 }
 
-.session-item-label {
+.sessionItemLabel {
   flex: 1;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.session-item-type {
+.sessionItemType {
   display: flex;
   align-items: center;
   font-size: 0.7rem;
 }
 
-.session-empty-tip {
+.sessionEmptyTip {
   font-size: 0.7rem;
   color: var(--text-muted);
   font-style: italic;
@@ -244,14 +244,14 @@
   text-align: center;
 }
 
-.session-header {
+.sessionHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 4px;
 }
 
-.active-session-summary {
+.activeSessionSummary {
   display: flex;
   flex: 1;
   min-width: 0;
@@ -259,13 +259,13 @@
   gap: 5px;
 }
 
-.active-session-summary .section-label {
+.activeSessionSummary .sectionLabel {
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
-.sidebar-session-select {
+.sidebarSessionSelect {
   width: 100%;
   min-width: 0;
   padding: 7px 30px 7px 10px;
@@ -295,35 +295,35 @@
     box-shadow 0.15s ease;
 }
 
-.sidebar-session-select:hover {
+.sidebarSessionSelect:hover {
   background-color: var(--bg-secondary);
   border-color: var(--accent);
 }
 
-.sidebar-session-select:focus {
+.sidebarSessionSelect:focus {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 2px var(--accent-dim);
 }
 
-.sidebar-session-select option {
+.sidebarSessionSelect option {
   background: var(--bg-secondary);
   color: var(--text-primary);
 }
 
-.section-meta {
+.sectionMeta {
   color: var(--text-muted);
   font-size: 0.65rem;
 }
 
-.session-actions {
+.sessionActions {
   display: flex;
   flex-shrink: 0;
   align-self: flex-start;
   gap: 4px;
 }
 
-.pill-action-btn {
+.pillActionBtn {
   padding: 2px 6px;
   background: var(--accent-dim);
   border: 1px solid var(--border);
@@ -335,19 +335,19 @@
 }
 
 @media (hover: hover) {
-  .pill-action-btn:hover {
+  .pillActionBtn:hover {
     background: var(--accent);
     color: var(--bg-primary);
   }
 }
 
-.session-items-pills {
+.sessionItemsPills {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
 }
 
-.session-item-pill {
+.sessionItemPill {
   display: flex;
   align-items: center;
   gap: 4px;
@@ -360,37 +360,37 @@
   transition: all 0.15s;
 }
 
-.session-item-pill.active {
+.sessionItemPill.active {
   background: var(--accent-dim);
   border-color: var(--accent);
   color: var(--accent);
 }
 
-.melody-pill {
+.melodyPill {
   cursor: pointer;
 }
 
 @media (hover: hover) {
-  .melody-pill:hover {
+  .melodyPill:hover {
     background: var(--bg-tertiary);
     border-color: var(--green);
   }
 }
 
-.melody-pill.selected {
+.melodyPill.selected {
   background: var(--green-dim);
   border-color: var(--green);
   color: var(--green);
 }
 
-.pill-tags {
+.pillTags {
   display: flex;
   gap: 2px;
   margin-left: 4px;
   flex-wrap: wrap;
 }
 
-.pill-tag {
+.pillTag {
   font-size: 0.55rem;
   padding: 1px 4px;
   background: var(--accent-dim);
@@ -399,23 +399,23 @@
   font-weight: 500;
 }
 
-.pill-tag.more {
+.pillTag.more {
   font-size: 0.5rem;
   padding: 1px 3px;
 }
 
-.pill-icon {
+.pillIcon {
   font-size: 0.7rem;
 }
 
-.pill-label {
+.pillLabel {
   max-width: 60px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.pill-repeat {
+.pillRepeat {
   font-size: 0.6rem;
   color: var(--text-muted);
   padding: 1px 4px;
@@ -423,12 +423,12 @@
   border-radius: 8px;
 }
 
-.tab-stats {
+.tabStats {
   display: flex;
   gap: 8px;
 }
 
-.stat-badge {
+.statBadge {
   padding: 2px 8px;
   background: var(--bg-tertiary);
   border-radius: 10px;
@@ -436,26 +436,26 @@
   color: var(--text-secondary);
 }
 
-.recent-list {
+.recentList {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-.section-label {
+.sectionLabel {
   font-size: 0.7rem;
   color: var(--text-muted);
   margin: 0;
 }
 
-.empty-tip {
+.emptyTip {
   font-size: 0.8rem;
   color: var(--text-muted);
   text-align: center;
   font-style: italic;
 }
 
-.recent-item {
+.recentItem {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -466,28 +466,28 @@
   transition: background 0.15s;
 }
 
-.recent-item:hover {
+.recentItem:hover {
   background: var(--bg-card);
 }
 
-.recent-name {
+.recentName {
   font-size: 0.85rem;
   font-weight: 500;
 }
 
-.recent-meta {
+.recentMeta {
   font-size: 0.72rem;
   color: var(--text-muted);
 }
 
-.recent-tags {
+.recentTags {
   display: flex;
   gap: 4px;
   margin-top: 4px;
   flex-wrap: wrap;
 }
 
-.recent-tag {
+.recentTag {
   font-size: 0.55rem;
   padding: 1px 5px;
   background: var(--accent-dim);
@@ -496,12 +496,12 @@
   font-weight: 500;
 }
 
-.recent-tag.more {
+.recentTag.more {
   font-size: 0.5rem;
   padding: 1px 4px;
 }
 
-.library-tab-btn {
+.libraryTabBtn {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -516,7 +516,7 @@
   transition: all 0.15s;
 }
 
-.library-tab-btn:hover {
+.libraryTabBtn:hover {
   border-color: var(--accent);
   background: var(--bg-card);
 }

@@ -61,27 +61,25 @@ test.describe('MercuryPitch App', () => {
     // Click Editor tab and verify its content
     await page.locator('#tab-compose').click()
     await page.waitForTimeout(500)
-    await expect(page.locator('.roll-toolbar')).toBeVisible({ timeout: 5000 })
+    await expect(page.locator('#roll-instrument-select')).toBeVisible({ timeout: 5000 })
 
     // Click Settings tab and verify its content
     await page.locator('#tab-settings').click()
     await page.waitForTimeout(500)
     await expect(
-      page.locator(
-        'h3.settings-section-title:has-text("Tone Envelope (ADSR)")',
-      ),
+      page.locator('h3:has-text("Tone Envelope (ADSR)")'),
     ).toBeVisible({ timeout: 5000 })
 
     // Click Practice tab and verify its content
     await page.locator('#tab-singing').click()
     await page.waitForTimeout(500)
-    await expect(page.locator('.tempo-group')).toBeVisible({ timeout: 5000 })
+    await expect(page.locator('[data-testid="tempo-group"]')).toBeVisible({ timeout: 5000 })
   })
 
   test('sidebar scale controls are visible', async ({ page }) => {
     await expect(page.locator('#key-select')).toBeVisible()
     await expect(page.locator('#scale-select')).toBeVisible()
-    await expect(page.locator('.octave-ctrl')).toBeVisible()
+    await expect(page.locator('[data-testid="octave-ctrl"]')).toBeVisible()
   })
 
   test('key selector changes the value', async ({ page }) => {
@@ -310,15 +308,15 @@ test.describe('MercuryPitch App', () => {
 
   test('app shows BPM control', async ({ page }) => {
     // BPM control is in the practice tab content area
-    await expect(page.locator('.tempo-group')).toBeVisible()
+    await expect(page.locator('[data-testid="tempo-group"]')).toBeVisible()
     await expect(page.locator('#tempo')).toBeVisible()
     await expect(page.locator('#bpm-input')).toBeVisible()
   })
 
   test('octave shift buttons change octave value', async ({ page }) => {
-    const octaveDisplay = page.locator('.octave-value')
+    const octaveDisplay = page.locator('[data-testid="octave-value"]')
     const initialOctave = await octaveDisplay.textContent()
-    const higherBtn = page.locator('.octave-btn').last()
+    const higherBtn = page.locator('[data-testid="octave-btn-up"]')
     await higherBtn.click()
     const newOctave = await octaveDisplay.textContent()
     expect(newOctave).not.toBe(initialOctave)
@@ -349,11 +347,9 @@ test.describe('MercuryPitch App', () => {
     await page.waitForTimeout(3000) // Wait longer for SolidJS to re-render
     // Check for settings-specific content
     await expect(
-      page.locator(
-        'h3.settings-section-title:has-text("Tone Envelope (ADSR)")',
-      ),
+      page.locator('h3:has-text("Tone Envelope (ADSR)")'),
     ).toBeVisible({ timeout: 10000 })
-    await expect(page.locator('.about-name')).toContainText('MercuryPitch')
+    await expect(page.locator('[data-testid="about-name"]')).toContainText('MercuryPitch')
   })
 
   test('Settings panel shows GitHub link in About section', async ({
@@ -361,7 +357,7 @@ test.describe('MercuryPitch App', () => {
   }) => {
     await page.locator('#tab-settings').click({ force: true })
     await page.waitForTimeout(3000)
-    const githubLink = page.locator('.about-link')
+    const githubLink = page.locator('[data-testid="about-link"]')
     await expect(githubLink).toBeVisible({ timeout: 10000 })
     await expect(githubLink).toContainText('View on GitHub')
     await expect(githubLink).toHaveAttribute('href', /github\.com/)

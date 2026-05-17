@@ -7,19 +7,19 @@
   background: var(--bg-primary);
 }
 
-.settings-panel {
+.settingsPanel {
   width: 100%;
   height: 100%;
   padding: 20px;
   overflow-y: auto;
 }
 
-.settings-content {
+.settingsContent {
   max-width: 600px;
   margin: 0 auto;
 }
 
-.settings-title {
+.settingsTitle {
   font-size: 1.2rem;
   color: var(--text-primary);
   margin: 0 0 20px 0;
@@ -27,11 +27,11 @@
   border-bottom: 1px solid var(--border);
 }
 
-.settings-section {
+.settingsSection {
   margin-bottom: 30px;
 }
 
-.settings-section-title {
+.settingsSectionTitle {
   font-size: 0.9rem;
   font-weight: 600;
   color: var(--text-primary);
@@ -40,7 +40,7 @@
   letter-spacing: 0.06em;
 }
 
-.settings-divider {
+.settingsDivider {
   height: 4px;
   width: 100%;
   background: linear-gradient(
@@ -54,7 +54,7 @@
   border-radius: 2px;
 }
 
-.settings-desc {
+.settingsDesc {
   font-size: 0.8rem;
   color: var(--text-muted);
   margin: -8px 0 12px 0;
@@ -64,14 +64,14 @@
    Keymap Table (GH #147)
    ============================================================ */
 
-.keymap-table {
+.keymapTable {
   display: flex;
   flex-direction: column;
   gap: 10px;
   margin-top: 12px;
 }
 
-.keymap-row {
+.keymapRow {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -79,11 +79,11 @@
   color: var(--text-primary);
 }
 
-.keymap-action {
+.keymapAction {
   flex: 1;
 }
 
-.keymap-row kbd {
+.keymapRow kbd {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -99,13 +99,13 @@
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
-.keymap-row kbd.ctrl-kbd {
+.keymapRow kbd.ctrlKbd {
   background: var(--bg-tertiary);
   color: var(--text-muted);
   font-size: 0.68rem;
 }
 
-.keymap-row kbd + kbd {
+.keymapRow kbd + kbd {
   margin-left: 4px;
 }
 
@@ -113,7 +113,7 @@
    Tooltip System (GH #150)
    ============================================================ */
 
-.tooltip-wrapper {
+.tooltipWrapper {
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -133,39 +133,39 @@
   line-height: 1.4;
 }
 
-.tooltip-top {
+.tooltipTop {
   bottom: calc(100% + 6px);
   left: 50%;
   transform: translateX(-50%);
 }
 
-.tooltip-bottom {
+.tooltipBottom {
   top: calc(100% + 6px);
   left: 50%;
   transform: translateX(-50%);
 }
 
-.tooltip-left {
+.tooltipLeft {
   right: calc(100% + 6px);
   top: 50%;
   transform: translateY(-50%);
 }
 
-.tooltip-right {
+.tooltipRight {
   left: calc(100% + 6px);
   top: 50%;
   transform: translateY(-50%);
 }
 
 /* Keyboard shortcuts table */
-.keymap-table {
+.keymapTable {
   border: 1px solid var(--border);
   border-radius: 8px;
   overflow: hidden;
   margin-top: 8px;
 }
 
-.keymap-row {
+.keymapRow {
   display: flex;
   align-items: center;
   gap: 16px;
@@ -173,11 +173,11 @@
   border-bottom: 1px solid var(--border);
 }
 
-.keymap-row:last-child {
+.keymapRow:last-child {
   border-bottom: none;
 }
 
-.keymap-row.keymap-header {
+.keymapRow.keymapHeader {
   background: var(--bg-secondary);
   font-size: 0.72rem;
   font-weight: 600;
@@ -187,7 +187,7 @@
   padding: 6px 14px;
 }
 
-.keymap-row kbd {
+.keymapRow kbd {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -202,12 +202,12 @@
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
 }
 
-.keymap-row span:last-child {
+.keymapRow span:last-child {
   font-size: 0.82rem;
   color: var(--text-secondary);
 }
 
-.settings-row {
+.settingsRow {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -216,7 +216,7 @@
   max-width: 500px; /* Keep everything compact and on the left */
 }
 
-.settings-row label {
+.settingsRow label {
   min-width: 160px;
   width: auto;
   font-size: 0.85rem;
@@ -227,14 +227,14 @@
   cursor: default;
 }
 
-.settings-row input[type='range'] {
+.settingsRow input[type='range'] {
   flex: 1;
   max-width: 200px; /* Restrict range slider width */
   min-width: 120px;
   accent-color: var(--accent);
 }
 
-.settings-row input[type='number'] {
+.settingsRow input[type='number'] {
   width: 60px;
   padding: 6px 8px;
   background: var(--bg-tertiary);
@@ -247,20 +247,20 @@
   transition: border-color 0.2s;
 }
 
-.settings-row input[type='number']:focus {
+.settingsRow input[type='number']:focus {
   border-color: var(--accent);
 }
 
 /* Darker spin buttons for number inputs in settings */
-.settings-row input[type='number']::-webkit-inner-spin-button,
-.settings-row input[type='number']::-webkit-outer-spin-button {
+.settingsRow input[type='number']::-webkit-inner-spin-button,
+.settingsRow input[type='number']::-webkit-outer-spin-button {
   opacity: 0.7;
   filter: invert(65%) sepia(44%) saturate(711%) hue-rotate(179deg)
     brightness(96%) contrast(95%);
   cursor: pointer;
 }
 
-.settings-row select {
+.settingsRow select {
   padding: 8px 12px;
   background: var(--bg-secondary);
   border: 1px solid var(--border);
@@ -273,14 +273,14 @@
   max-width: 280px;
 }
 
-.settings-val {
+.settingsVal {
   min-width: 40px;
   text-align: left;
   font-size: 0.85rem;
   color: var(--accent);
 }
 
-.settings-row small {
+.settingsRow small {
   width: 100%;
   font-size: 0.72rem;
   color: var(--text-muted);
@@ -288,7 +288,7 @@
 }
 
 /* Toggle Switch Styling */
-.settings-toggle {
+.settingsToggle {
   position: relative;
   display: inline-block;
   width: 42px !important; /* Strictly enforce width */
@@ -297,14 +297,14 @@
   cursor: pointer;
 }
 
-.settings-toggle input {
+.settingsToggle input {
   opacity: 0;
   width: 0;
   height: 0;
   position: absolute;
 }
 
-.settings-slider {
+.settingsSlider {
   position: absolute;
   cursor: pointer;
   top: 0;
@@ -318,7 +318,7 @@
   width: 42px; /* Match parent width */
 }
 
-.settings-slider:before {
+.settingsSlider:before {
   position: absolute;
   content: '';
   height: 16px;
@@ -330,17 +330,17 @@
   border-radius: 50%;
 }
 
-input:checked + .settings-slider {
+input:checked + .settingsSlider {
   background-color: var(--accent-dim);
   border-color: var(--accent);
 }
 
-input:checked + .settings-slider:before {
+input:checked + .settingsSlider:before {
   transform: translateX(20px);
   background-color: var(--accent);
 }
 
-.settings-row input[type='number'] {
+.settingsRow input[type='number'] {
   width: 60px;
   padding: 6px 8px;
   background: var(--bg-tertiary);
@@ -353,20 +353,20 @@ input:checked + .settings-slider:before {
   transition: border-color 0.2s;
 }
 
-.settings-row input[type='number']:focus {
+.settingsRow input[type='number']:focus {
   border-color: var(--accent);
 }
 
 /* Darker spin buttons for number inputs in settings */
-.settings-row input[type='number']::-webkit-inner-spin-button,
-.settings-row input[type='number']::-webkit-outer-spin-button {
+.settingsRow input[type='number']::-webkit-inner-spin-button,
+.settingsRow input[type='number']::-webkit-outer-spin-button {
   opacity: 0.7;
   filter: invert(65%) sepia(44%) saturate(711%) hue-rotate(179deg)
     brightness(96%) contrast(95%);
   cursor: pointer;
 }
 
-.settings-info {
+.settingsInfo {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
@@ -377,12 +377,12 @@ input:checked + .settings-slider:before {
   color: var(--text-secondary);
 }
 
-.settings-info span {
+.settingsInfo span {
   color: var(--accent);
   font-weight: bold;
 }
 
-.danger-row {
+.dangerRow {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -390,11 +390,11 @@ input:checked + .settings-slider:before {
   margin-top: 12px;
 }
 
-.danger-content {
+.dangerContent {
   flex: 1;
 }
 
-.danger-label {
+.dangerLabel {
   display: block;
   font-size: 0.85rem;
   font-weight: 600;
@@ -402,7 +402,7 @@ input:checked + .settings-slider:before {
   margin-bottom: 4px;
 }
 
-.danger-desc {
+.dangerDesc {
   display: block;
   font-size: 0.75rem;
 }
@@ -749,25 +749,25 @@ input:checked + .settings-slider:before {
 .settingsTierSelector {
 }
 
-.settingsTierSelector .welcome-tier-buttons {
+.settingsTierSelector .welcomeTierButtons {
   gap: 8px;
 }
 
-.settingsTierSelector .welcome-tier-btn {
+.settingsTierSelector .welcomeTierBtn {
   padding: 10px 12px;
   min-width: 0;
   flex: 1;
 }
 
-.settingsTierSelector .tier-icon-wrap svg {
+.settingsTierSelector .tierIconWrap svg {
   width: 18px;
   height: 18px;
 }
 
-.settingsTierSelector .tier-name {
+.settingsTierSelector .tierName {
   font-size: 0.8rem;
 }
 
-.settingsTierSelector .tier-desc {
+.settingsTierSelector .tierDesc {
   font-size: 0.65rem;
 }

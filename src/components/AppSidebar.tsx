@@ -227,9 +227,10 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
               <option value="Bb">Bb</option>
             </select>
 
-            <div class={styles.octaveCtrl}>
+            <div class={styles.octaveCtrl} data-testid="octave-ctrl">
               <button
                 class={styles.octaveBtn}
+                data-testid="octave-btn-down"
                 title="Lower octave"
                 aria-label="Lower octave"
                 onClick={() => handleViewOctaveShift(-1)}
@@ -241,9 +242,10 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
                   />
                 </svg>
               </button>
-              <span class={styles.octaveValue}>{viewOctave()}</span>
+              <span class={styles.octaveValue} data-testid="octave-value">{viewOctave()}</span>
               <button
                 class={styles.octaveBtn}
+                data-testid="octave-btn-up"
                 title="Higher octave"
                 aria-label="Higher octave"
                 onClick={() => handleViewOctaveShift(1)}
@@ -425,9 +427,9 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
           <div class={styles.statsPanel}>
             <h3>Accuracy</h3>
             <StatsBars noteResults={props.noteResults} />
-            <div class={styles.scoreDisplay}>
-              <span class={styles.scoreLabel}>Score:</span>
-              <span class={styles.scoreValue}>
+            <div class={styles.scoreDisplay} data-testid="score-display">
+              <span class={styles.scoreLabel} data-testid="score-label">Score:</span>
+              <span class={styles.scoreValue} data-testid="score-value">
                 {liveScore() !== null ? `${liveScore()}%` : '--'}
               </span>
             </div>
@@ -445,7 +447,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
                 >
                   <For each={sessionResults()}>
                     {(entry) => (
-                      <div class={styles.sessionHistoryEntry}>
+                      <div class={styles.sessionHistoryEntry} data-testid="session-history-entry">
                         <span class={styles.sessionHistoryName}>
                           {entry.sessionName}
                         </span>

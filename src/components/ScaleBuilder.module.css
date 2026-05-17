@@ -1,19 +1,19 @@
 /* Extracted from: Scale Builder */
 
-.scale-builder .scale-desc {
+.scaleBuilder .scaleDesc {
   font-size: 0.85rem;
   color: var(--text-secondary);
   margin-bottom: 16px;
 }
 
-.scale-notes-grid {
+.scaleNotesGrid {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
   gap: 8px;
   margin-bottom: 16px;
 }
 
-.scale-note-btn {
+.scaleNoteBtn {
   padding: 12px 8px;
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -24,62 +24,62 @@
   transition: all 0.15s ease;
 }
 
-.scale-note-btn:hover {
+.scaleNoteBtn:hover {
   background: var(--bg-tertiary);
   border-color: var(--accent);
 }
 
-.scale-note-btn.active {
+.scaleNoteBtn.active {
   background: var(--accent-dim);
   border-color: var(--accent);
   color: var(--accent);
 }
 
-.scale-note-btn.white-key {
+.scaleNoteBtn.whiteKey {
   background: var(--bg-tertiary);
 }
 
-.scale-note-btn.black-key {
+.scaleNoteBtn.blackKey {
   background: var(--bg-secondary);
   color: var(--text-secondary);
 }
 
-.scale-note-btn.black-key.active {
+.scaleNoteBtn.blackKey.active {
   background: var(--accent-dim);
   color: var(--accent);
 }
 
-.scale-quick-actions {
+.scaleQuickActions {
   display: flex;
   gap: 8px;
   margin-bottom: 16px;
 }
 
-.scale-quick-actions button {
+.scaleQuickActions button {
   padding: 6px 12px;
   font-size: 0.8rem;
 }
 
-.scale-preview {
+.scalePreview {
   background: var(--bg-secondary);
   border-radius: 6px;
   padding: 12px;
   margin-bottom: 16px;
 }
 
-.scale-preview h4 {
+.scalePreview h4 {
   font-size: 0.85rem;
   color: var(--text-secondary);
   margin-bottom: 8px;
 }
 
-.scale-preview-notes {
+.scalePreviewNotes {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
 }
 
-.preview-note {
+.previewNote {
   padding: 4px 10px;
   background: var(--accent-dim);
   border-radius: 4px;
@@ -87,25 +87,25 @@
   color: var(--accent);
 }
 
-.no-notes {
+.noNotes {
   color: var(--text-muted);
   font-size: 0.85rem;
   font-style: italic;
 }
 
-.scale-name-row {
+.scaleNameRow {
   display: flex;
   align-items: center;
   gap: 12px;
   margin-bottom: 16px;
 }
 
-.scale-name-row label {
+.scaleNameRow label {
   font-size: 0.85rem;
   color: var(--text-secondary);
 }
 
-.scale-name-input {
+.scaleNameInput {
   flex: 1;
   padding: 8px 12px;
   background: var(--bg-secondary);
@@ -115,30 +115,30 @@
   font-size: 0.85rem;
 }
 
-.saved-scales {
+.savedScales {
   border-top: 1px solid var(--border);
   padding-top: 16px;
 }
 
-.saved-scales h4 {
+.savedScales h4 {
   font-size: 0.85rem;
   color: var(--text-secondary);
   margin-bottom: 8px;
 }
 
-.saved-scales-list {
+.savedScalesList {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
-.saved-scale-item {
+.savedScaleItem {
   display: flex;
   align-items: center;
   gap: 4px;
 }
 
-.btn-small {
+.btnSmall {
   padding: 4px 8px;
   font-size: 0.8rem;
   background: var(--bg-secondary);
@@ -148,12 +148,12 @@
   cursor: pointer;
 }
 
-.btn-small:hover {
+.btnSmall:hover {
   background: var(--accent-dim);
   border-color: var(--accent);
 }
 
-.btn-delete {
+.btnDelete {
   background: none;
   border: none;
   color: var(--red);
@@ -162,12 +162,12 @@
   padding: 2px 4px;
 }
 
-.btn-delete:hover {
+.btnDelete:hover {
   color: #ff6b6b;
 }
 
 /* Common button styles */
-.btn-primary {
+.btnPrimary {
   padding: 8px 16px;
   background: var(--accent);
   color: #fff;
@@ -177,17 +177,17 @@
   font-size: 0.9rem;
 }
 
-.btn-primary:hover {
+.btnPrimary:hover {
   background: #4090e0;
 }
 
-.btn-primary:disabled {
+.btnPrimary:disabled {
   background: var(--bg-tertiary);
   color: var(--text-muted);
   cursor: not-allowed;
 }
 
-.btn-secondary {
+.btnSecondary {
   padding: 8px 16px;
   background: var(--bg-secondary);
   color: var(--text-primary);
@@ -197,11 +197,11 @@
   font-size: 0.9rem;
 }
 
-.btn-secondary:hover {
+.btnSecondary:hover {
   background: var(--bg-tertiary);
 }
 
-.btn-secondary:disabled {
+.btnSecondary:disabled {
   color: var(--text-muted);
   cursor: not-allowed;
 }

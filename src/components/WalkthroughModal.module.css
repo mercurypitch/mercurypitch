@@ -105,7 +105,7 @@
   overscroll-behavior: contain;
 }
 
-.walkthroughText :global(.md-paragraph) {
+.walkthroughText :global(.mdParagraph) {
   text-align: left;
   margin: 0 0 12px 0;
   line-height: 1.7;
@@ -113,7 +113,7 @@
   font-size: 0.92rem;
 }
 
-.walkthroughText :global(.md-h2) {
+.walkthroughText :global(.mdH2) {
   font-size: 1.15rem;
   font-weight: 700;
   margin: 24px 0 10px 0;
@@ -123,11 +123,11 @@
   letter-spacing: -0.01em;
 }
 
-.walkthroughText :global(.md-h2):first-child {
+.walkthroughText :global(.mdH2):first-child {
   margin-top: 0;
 }
 
-.walkthroughText :global(.md-h3) {
+.walkthroughText :global(.mdH3) {
   font-size: 1rem;
   font-weight: 600;
   margin: 18px 0 8px 0;
@@ -144,14 +144,14 @@
   color: var(--text-secondary, var(--text-muted));
 }
 
-.walkthroughText :global(.md-list) {
+.walkthroughText :global(.mdList) {
   margin: 0 0 14px 0;
   padding-left: 22px;
   list-style: none;
   counter-reset: md-list-counter;
 }
 
-.walkthroughText :global(.md-list) li {
+.walkthroughText :global(.mdList) li {
   position: relative;
   margin: 0 0 6px 0;
   padding-left: 4px;
@@ -160,7 +160,7 @@
   color: var(--text-primary);
 }
 
-.walkthroughText :global(.md-list) li::before {
+.walkthroughText :global(.mdList) li::before {
   position: absolute;
   left: -18px;
   top: 2px;
@@ -172,16 +172,16 @@
   content: '';
 }
 
-.walkthroughText :global(.md-list-ordered) {
+.walkthroughText :global(.mdListOrdered) {
   counter-reset: md-list-counter;
 }
 
-.walkthroughText :global(.md-list-ordered) li {
+.walkthroughText :global(.mdListOrdered) li {
   counter-increment: md-list-counter;
   list-style: none;
 }
 
-.walkthroughText :global(.md-list-ordered) li::before {
+.walkthroughText :global(.mdListOrdered) li::before {
   content: counter(md-list-counter) '.';
   background: none;
   width: auto;
@@ -194,7 +194,7 @@
   border-radius: 0;
 }
 
-.walkthroughText :global(.md-admonition) {
+.walkthroughText :global(.mdAdmonition) {
   display: flex;
   gap: 12px;
   margin: 16px 0;
@@ -206,16 +206,16 @@
   line-height: 1.6;
 }
 
-.walkthroughText :global(.md-admonition) p {
+.walkthroughText :global(.mdAdmonition) p {
   margin: 0 0 6px 0;
   color: var(--text-primary);
 }
 
-.walkthroughText :global(.md-admonition) p:last-child {
+.walkthroughText :global(.mdAdmonition) p:last-child {
   margin-bottom: 0;
 }
 
-.walkthroughText :global(.md-admonition-icon) {
+.walkthroughText :global(.mdAdmonitionIcon) {
   flex-shrink: 0;
   width: 20px;
   height: 20px;
@@ -229,12 +229,12 @@
   color: white;
 }
 
-.walkthroughText :global(.md-admonition-content) {
+.walkthroughText :global(.mdAdmonitionContent) {
   flex: 1;
   min-width: 0;
 }
 
-.walkthroughText :global(.md-admonition-label) {
+.walkthroughText :global(.mdAdmonitionLabel) {
   display: block;
   font-size: 0.78rem;
   font-weight: 700;
@@ -245,56 +245,56 @@
 }
 
 /* Admonition variants */
-.walkthroughText :global(.md-admonition-note) {
+.walkthroughText :global(.mdAdmonitionNote) {
   border-left-color: #3b82f6;
   background: rgba(59, 130, 246, 0.08);
 }
-.walkthroughText :global(.md-admonition-note) :global(.md-admonition-icon) {
+.walkthroughText :global(.mdAdmonitionNote) :global(.mdAdmonitionIcon) {
   background: #3b82f6;
 }
 
-.walkthroughText :global(.md-admonition-tip) {
+.walkthroughText :global(.mdAdmonitionTip) {
   border-left-color: #22c55e;
   background: rgba(34, 197, 94, 0.08);
 }
-.walkthroughText :global(.md-admonition-tip) :global(.md-admonition-icon) {
+.walkthroughText :global(.mdAdmonitionTip) :global(.mdAdmonitionIcon) {
   background: #22c55e;
 }
 
-.walkthroughText :global(.md-admonition-warning) {
+.walkthroughText :global(.mdAdmonitionWarning) {
   border-left-color: #f59e0b;
   background: rgba(245, 158, 11, 0.08);
 }
-.walkthroughText :global(.md-admonition-warning) :global(.md-admonition-icon) {
+.walkthroughText :global(.mdAdmonitionWarning) :global(.mdAdmonitionIcon) {
   background: #f59e0b;
 }
 
-.walkthroughText :global(.md-admonition-info) {
+.walkthroughText :global(.mdAdmonitionInfo) {
   border-left-color: #8b5cf6;
   background: rgba(139, 92, 246, 0.08);
 }
-.walkthroughText :global(.md-admonition-info) :global(.md-admonition-icon) {
+.walkthroughText :global(.mdAdmonitionInfo) :global(.mdAdmonitionIcon) {
   background: #8b5cf6;
 }
 
 .walkthroughText
-  :global(.md-admonition-note)
-  :global(.md-admonition-icon)::before {
+  :global(.mdAdmonitionNote)
+  :global(.mdAdmonitionIcon)::before {
   content: 'N';
 }
 .walkthroughText
-  :global(.md-admonition-tip)
-  :global(.md-admonition-icon)::before {
+  :global(.mdAdmonitionTip)
+  :global(.mdAdmonitionIcon)::before {
   content: 'T';
 }
 .walkthroughText
-  :global(.md-admonition-warning)
-  :global(.md-admonition-icon)::before {
+  :global(.mdAdmonitionWarning)
+  :global(.mdAdmonitionIcon)::before {
   content: '!';
 }
 .walkthroughText
-  :global(.md-admonition-info)
-  :global(.md-admonition-icon)::before {
+  :global(.mdAdmonitionInfo)
+  :global(.mdAdmonitionIcon)::before {
   content: 'i';
 }
 

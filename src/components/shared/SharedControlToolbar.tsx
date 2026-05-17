@@ -575,6 +575,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
           <Show when={!isPianoTab() || (props.bpmValue && props.onBpmChange)}>
             <div
               class={`${styles.tempoGroup} ${styles.inlineControl}`}
+              data-testid="tempo-group"
               title="Tempo (BPM)"
             >
               <span class={styles.inlineControlIcon} aria-hidden="true">

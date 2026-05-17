@@ -12,7 +12,7 @@
   overflow-y: auto;
 }
 
-.panel-title {
+.panelTitle {
   font-size: 0.7rem;
   font-weight: 600;
   color: var(--text-muted);
@@ -27,9 +27,9 @@
   align-items: center;
 }
 
-.key-label,
-.octave-label,
-.preset-label {
+.keyLabel,
+.octaveLabel,
+.presetLabel {
   font-size: 0.78rem;
   color: var(--text-secondary);
 }
@@ -52,7 +52,7 @@
 }
 
 /* Octave control (UP/DOWN arrows + value display) */
-.octave-ctrl {
+.octaveCtrl {
   display: flex;
   align-items: center;
   gap: 2px;
@@ -62,7 +62,7 @@
   padding: 2px 3px;
 }
 
-.octave-btn {
+.octaveBtn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -77,16 +77,16 @@
   padding: 0;
 }
 
-.octave-btn:hover {
+.octaveBtn:hover {
   background: var(--accent-dim);
   color: var(--accent);
 }
 
-.octave-btn:active {
+.octaveBtn:active {
   transform: scale(0.88);
 }
 
-.octave-value {
+.octaveValue {
   min-width: 16px;
   text-align: center;
   font-size: 0.82rem;
@@ -105,7 +105,7 @@
   align-items: center;
 }
 
-.share-btn {
+.shareBtn {
   padding: 5px 10px;
   border: 1px solid var(--green);
   border-radius: 5px;
@@ -116,17 +116,17 @@
   transition: all 0.12s ease;
 }
 
-.share-btn:hover {
+.shareBtn:hover {
   background: var(--green);
   color: #fff;
 }
 
-.ctrl-btn.small {
+.ctrlBtn.small {
   padding: 3px 8px;
   font-size: 0.75rem;
 }
 
-.ctrl-btn.small span {
+.ctrlBtn.small span {
   font-size: 0.75rem;
 }
 
@@ -140,7 +140,7 @@
   overflow-y: auto;
 }
 
-.note-item {
+.noteItem {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -152,7 +152,7 @@
   cursor: default;
 }
 
-.note-dot {
+.noteDot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
@@ -161,79 +161,79 @@
   transition: background 0.12s ease;
 }
 
-.note-item.hit .note-dot {
+.noteItem.hit .noteDot {
   background: var(--green);
 }
 
 /* Accuracy band coloring */
-.note-item.band-perfect {
+.noteItem.bandPerfect {
   background: rgba(63, 185, 80, 0.2);
   border-color: var(--green);
   box-shadow: 0 0 6px rgba(63, 185, 80, 0.4);
 }
-.note-item.band-excellent {
+.noteItem.bandExcellent {
   background: var(--accent-glow);
   border-color: var(--accent);
   box-shadow: 0 0 6px var(--accent-glow);
 }
-.note-item.band-good {
+.noteItem.bandGood {
   background: rgba(45, 212, 191, 0.2);
   border-color: #2dd4bf;
   box-shadow: 0 0 6px rgba(45, 212, 191, 0.4);
 }
-.note-item.band-okay {
+.noteItem.bandOkay {
   background: rgba(210, 153, 34, 0.2);
   border-color: #d29922;
   box-shadow: 0 0 6px rgba(210, 153, 34, 0.4);
 }
-.note-item.band-off {
+.noteItem.bandOff {
   background: rgba(248, 81, 73, 0.2);
   border-color: #f85149;
   box-shadow: 0 0 6px rgba(248, 81, 73, 0.4);
 }
 
 /* Active + hit glow (overrides band color during playback) */
-.note-item.active {
+.noteItem.active {
   background: var(--accent-dim);
   border-color: var(--accent);
   box-shadow: 0 0 12px var(--accent-glow);
 }
-.note-item.active .note-dot {
+.noteItem.active .noteDot {
   background: var(--accent);
 }
-.note-item.hit {
+.noteItem.hit {
   border-color: var(--green);
   box-shadow: 0 0 12px var(--green-glow);
 }
-.note-item.hit .note-dot {
+.noteItem.hit .noteDot {
   background: var(--green);
 }
 
-:global(#note-list .note-item.rest-item) {
+:global(#note-list .noteItem.restItem) {
   border-style: dashed;
   border-color: rgba(139, 148, 158, 0.45);
   background: rgba(139, 148, 158, 0.1);
   color: var(--text-secondary);
 }
 
-:global(#note-list .note-item.rest-item .note-dot) {
+:global(#note-list .noteItem.restItem .noteDot) {
   background: transparent;
   border: 1px dashed rgba(139, 148, 158, 0.65);
 }
 
-.note-name {
+.noteName {
   font-size: 0.9rem;
   font-weight: 600;
   min-width: 30px;
 }
 
-.note-freq {
+.noteFreq {
   font-size: 0.7rem;
   color: var(--text-secondary);
   margin-left: auto;
 }
 
-.note-accuracy-pct {
+.noteAccuracyPct {
   font-size: 0.75rem;
   font-weight: 700;
   padding: 1px 5px;
@@ -288,7 +288,7 @@
   overflow: visible;
 }
 
-.cents-center {
+.centsCenter {
   position: absolute;
   left: 50%;
   top: -2px;
@@ -321,12 +321,12 @@
   background: var(--yellow);
   box-shadow: 0 0 6px rgba(210, 153, 34, 0.4);
 }
-#cents-marker.in-tune {
+#cents-marker.inTune {
   background: var(--green);
   box-shadow: 0 0 8px var(--green-glow);
 }
 
-.cents-labels {
+.centsLabels {
   display: flex;
   justify-content: space-between;
   font-size: 0.6rem;
@@ -334,7 +334,7 @@
   margin-top: 2px;
 }
 
-.panel-title {
+.panelTitle {
   font-size: 0.7rem;
   font-weight: 600;
   color: var(--text-muted);

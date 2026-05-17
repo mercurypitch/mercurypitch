@@ -1,6 +1,6 @@
 /* Extracted from: Notification Toast */
 
-.notification-toast {
+.notificationToast {
   position: fixed;
   bottom: 20px;
   right: 20px;
@@ -21,46 +21,46 @@
   max-width: 350px;
 }
 
-.notification-toast--info {
+.notificationToast--info {
   border-left: 4px solid var(--accent);
 }
 
-.notification-toast--success {
+.notificationToast--success {
   border-left: 4px solid var(--green);
 }
 
-.notification-toast--warning {
+.notificationToast--warning {
   border-left: 4px solid var(--yellow);
 }
 
-.notification-toast--error {
+.notificationToast--error {
   border-left: 4px solid var(--red);
 }
 
-.notification-toast-icon {
+.notificationToastIcon {
   font-size: 1.1rem;
   font-weight: bold;
   display: flex;
   align-items: center;
 }
 
-.notification-toast--info .notification-toast-icon {
+.notificationToast--info .notificationToastIcon {
   color: var(--accent);
 }
 
-.notification-toast--success .notification-toast-icon {
+.notificationToast--success .notificationToastIcon {
   color: var(--green);
 }
 
-.notification-toast--warning .notification-toast-icon {
+.notificationToast--warning .notificationToastIcon {
   color: var(--yellow);
 }
 
-.notification-toast--error .notification-toast-icon {
+.notificationToast--error .notificationToastIcon {
   color: var(--red);
 }
 
-.notification-toast-message {
+.notificationToastMessage {
   flex: 1;
 }
 

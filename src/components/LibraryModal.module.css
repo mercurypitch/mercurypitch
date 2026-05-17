@@ -14,18 +14,18 @@
   color: var(--text-primary);
 }
 
-.playlistEditForm :global(.form-group) {
+.playlistEditForm :global(.formGroup) {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-.playlistEditForm :global(.form-group) label {
+.playlistEditForm :global(.formGroup) label {
   font-size: 0.85rem;
   color: var(--text-secondary);
 }
 
-.playlistEditForm :global(.search-input) {
+.playlistEditForm :global(.searchInput) {
   width: 100%;
   padding: 9px 12px;
   border-radius: 10px;
@@ -39,12 +39,12 @@
     box-shadow 120ms ease;
 }
 
-.playlistEditForm :global(.search-input)::placeholder {
+.playlistEditForm :global(.searchInput)::placeholder {
   color: var(--text-secondary);
   opacity: 0.7;
 }
 
-.playlistEditForm :global(.search-input):focus {
+.playlistEditForm :global(.searchInput):focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-dim);
 }
@@ -193,7 +193,7 @@
   border: 1px dashed rgba(255, 255, 255, 0.08);
 }
 
-.playlistEditForm :global(.form-actions) {
+.playlistEditForm :global(.formActions) {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
@@ -201,8 +201,8 @@
   border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-.playlistEditForm :global(.form-actions) :global(.cancel-btn),
-.playlistEditForm :global(.form-actions) :global(.save-btn) {
+.playlistEditForm :global(.formActions) :global(.cancelBtn),
+.playlistEditForm :global(.formActions) :global(.saveBtn) {
   padding: 9px 16px;
   border-radius: 10px;
   font-weight: 600;
@@ -214,27 +214,27 @@
     transform 80ms ease;
 }
 
-.playlistEditForm :global(.form-actions) :global(.cancel-btn) {
+.playlistEditForm :global(.formActions) :global(.cancelBtn) {
   background: rgba(255, 255, 255, 0.04);
   border-color: rgba(255, 255, 255, 0.1);
   color: var(--text-primary);
 }
 
-.playlistEditForm :global(.form-actions) :global(.cancel-btn):hover {
+.playlistEditForm :global(.formActions) :global(.cancelBtn):hover {
   background: rgba(255, 255, 255, 0.08);
 }
 
-.playlistEditForm :global(.form-actions) :global(.save-btn) {
+.playlistEditForm :global(.formActions) :global(.saveBtn) {
   background: var(--accent-color, #4a9eff);
   color: #fff;
 }
 
-.playlistEditForm :global(.form-actions) :global(.save-btn):hover {
+.playlistEditForm :global(.formActions) :global(.saveBtn):hover {
   filter: brightness(1.08);
 }
 
-.playlistEditForm :global(.form-actions) :global(.save-btn):active,
-.playlistEditForm :global(.form-actions) :global(.cancel-btn):active {
+.playlistEditForm :global(.formActions) :global(.saveBtn):active,
+.playlistEditForm :global(.formActions) :global(.cancelBtn):active {
   transform: translateY(1px);
 }
 

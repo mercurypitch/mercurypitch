@@ -1,6 +1,6 @@
 /* Extracted from: Shared Sidebar */
 
-:global(.app-sidebar) {
+:global(.appSidebar) {
   position: relative;
   width: 300px;
   min-width: 300px;
@@ -16,7 +16,7 @@
   overflow-y: auto;
 }
 
-:global(.app-sidebar.collapsed) {
+:global(.appSidebar.collapsed) {
   width: 40px;
   min-width: 40px;
   padding: 8px 4px;
@@ -91,7 +91,7 @@
   z-index: 1;
 }
 
-:global(.app-sidebar:hover) .sidebarCollapseBtn {
+:global(.appSidebar:hover) .sidebarCollapseBtn {
   opacity: 1;
 }
 

@@ -1,12 +1,12 @@
 /* Extracted from: Melody Pill List */
 
-.melody-pill-list {
+.melodyPillList {
   border: 1px solid var(--border);
   border-radius: 6px;
   overflow: hidden;
 }
 
-.pill-list-header {
+.pillListHeader {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -16,7 +16,7 @@
   flex-wrap: wrap;
 }
 
-.search-input {
+.searchInput {
   flex: 1;
   min-width: 150px;
   padding: 6px 10px;
@@ -27,13 +27,13 @@
   color: var(--text-primary);
 }
 
-.search-input:focus {
+.searchInput:focus {
   outline: none;
   border-color: var(--accent);
 }
 
-.select-all-btn,
-.clear-selection-btn {
+.selectAllBtn,
+.clearSelectionBtn {
   padding: 6px 12px;
   background: transparent;
   border: 1px solid var(--border);
@@ -44,35 +44,35 @@
   transition: all 0.2s;
 }
 
-.select-all-btn:hover,
-.clear-selection-btn:hover {
+.selectAllBtn:hover,
+.clearSelectionBtn:hover {
   background: var(--bg-secondary);
   color: var(--text-primary);
 }
 
-.pill-list-items {
+.pillListItems {
   max-height: 300px;
   overflow-y: auto;
 }
 
-.pill-list-items::-webkit-scrollbar {
+.pillListItems::-webkit-scrollbar {
   width: 6px;
 }
 
-.pill-list-items::-webkit-scrollbar-track {
+.pillListItems::-webkit-scrollbar-track {
   background: var(--bg-secondary);
 }
 
-.pill-list-items::-webkit-scrollbar-thumb {
+.pillListItems::-webkit-scrollbar-thumb {
   background: var(--border);
   border-radius: 3px;
 }
 
-.pill-list-items::-webkit-scrollbar-thumb:hover {
+.pillListItems::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
 }
 
-.melody-pill {
+.melodyPill {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -83,20 +83,20 @@
   gap: 8px;
 }
 
-.melody-pill:last-child {
+.melodyPill:last-child {
   border-bottom: none;
 }
 
-.melody-pill:hover {
+.melodyPill:hover {
   background: var(--bg-secondary);
 }
 
-.melody-pill.selected {
+.melodyPill.selected {
   background: var(--accent-dim);
   border-color: var(--accent);
 }
 
-.pill-name {
+.pillName {
   flex: 1;
   font-size: 13px;
   color: var(--text-primary);
@@ -105,7 +105,7 @@
   text-overflow: ellipsis;
 }
 
-.pill-bpm {
+.pillBpm {
   font-size: 11px;
   color: var(--text-secondary);
   font-weight: 500;
@@ -115,7 +115,7 @@
   white-space: nowrap;
 }
 
-.empty-state {
+.emptyState {
   padding: 20px;
   text-align: center;
   color: var(--text-secondary);
@@ -123,8 +123,8 @@
 }
 
 /* Session Editor Save/Load Buttons */
-.save-btn,
-.load-btn {
+.saveBtn,
+.loadBtn {
   padding: 6px 12px;
   background: var(--accent);
   border: none;
@@ -136,12 +136,12 @@
   transition: background 0.2s;
 }
 
-.save-btn:hover,
-.load-btn:hover {
+.saveBtn:hover,
+.loadBtn:hover {
   background: var(--accent);
 }
 
-.item-count {
+.itemCount {
   font-size: 13px;
   color: var(--text-secondary);
 }

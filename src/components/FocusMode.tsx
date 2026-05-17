@@ -127,9 +127,9 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
   }
 
   return (
-    <div class={styles.focusMode}>
+    <div class={styles.focusMode} data-testid="focus-mode">
       {/* Top stats bar */}
-      <div class={styles.focusTopbar}>
+      <div class={styles.focusTopbar} data-testid="focus-topbar">
         <div class={styles.focusTopbarLeft}>
           <span class={styles.focusKeyBadge}>{keyDisplay()}</span>
           <Show when={isSession()}>
@@ -215,6 +215,7 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
         {/* Exit button */}
         <button
           class={styles.focusExit}
+          data-testid="focus-exit"
           onClick={() => {
             exitFocusMode()
           }}
@@ -233,6 +234,7 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
         <Show when={!props.isPlaying() && !props.isPaused()}>
           <button
             class={styles.focusPlay}
+            data-testid="focus-play"
             onClick={() => props.onPlay()}
             title="Play"
             aria-label="Play"
@@ -246,6 +248,7 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
         <Show when={props.isPlaying()}>
           <button
             class={styles.focusPlay}
+            data-testid="focus-pause"
             onClick={() => props.onPause()}
             title="Pause"
             aria-label="Pause"
@@ -259,6 +262,7 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
         <Show when={props.isPaused()}>
           <button
             class={styles.focusPlay}
+            data-testid="focus-resume"
             onClick={() => props.onResume()}
             title="Continue"
             aria-label="Continue"
@@ -311,6 +315,7 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
         <div class={styles.focusSpeedControls}>
           <button
             class={styles.focusSpeedBtn}
+            data-testid="focus-speed-up"
             onClick={speedUp}
             disabled={currentSpeedIndex() === SPEED_STEPS.length - 1}
             title="Faster"
@@ -323,11 +328,12 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
               />
             </svg>
           </button>
-          <span class={styles.focusSpeedLabel}>
+          <span class={styles.focusSpeedLabel} data-testid="focus-speed-label">
             {playbackSpeed().toFixed(2)}x
           </span>
           <button
             class={styles.focusSpeedBtn}
+            data-testid="focus-speed-down"
             onClick={speedDown}
             disabled={currentSpeedIndex() === 0}
             title="Slower"

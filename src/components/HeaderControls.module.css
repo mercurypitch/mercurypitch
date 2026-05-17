@@ -323,7 +323,7 @@
 
 /* Extracted from: Practice Mode Badge */
 
-.practice-mode-badge {
+.practiceModeBadge {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -331,11 +331,11 @@
   color: var(--accent);
 }
 
-.practice-mode-badge .mode-label {
+.practiceModeBadge .modeLabel {
   color: var(--text-secondary);
 }
 
-.practice-mode-badge .mode-value {
+.practiceModeBadge .modeValue {
   font-weight: 600;
   min-width: 60px;
   text-align: left;
@@ -343,13 +343,13 @@
 
 /* Extracted from: Save Melody Button */
 
-.save-melody-group {
+.saveMelodyGroup {
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
-.save-melody-btn {
+.saveMelodyBtn {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -365,22 +365,22 @@
   white-space: nowrap;
 }
 
-.save-melody-btn:hover:not(:disabled) {
+.saveMelodyBtn:hover:not(:disabled) {
   border-color: var(--accent);
   background: var(--accent-dim);
   color: var(--accent);
 }
 
-.save-melody-btn:active:not(:disabled) {
+.saveMelodyBtn:active:not(:disabled) {
   transform: translateY(1px);
 }
 
-.save-melody-btn:disabled {
+.saveMelodyBtn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
 
-.save-melody-btn.with-label span {
+.saveMelodyBtn.withLabel span {
   font-size: 0.78rem;
 }
 
@@ -392,13 +392,13 @@
   gap: 8px;
 }
 
-#practice-options .opt-label {
+#practice-options .optLabel {
   font-size: 0.78rem;
   color: var(--text-secondary);
   white-space: nowrap;
 }
 
-.cycles-input {
+.cyclesInput {
   width: 52px;
   background: var(--bg-tertiary);
   border: 1px solid var(--border);
@@ -410,26 +410,26 @@
   outline: none;
 }
 
-.cycles-input:focus {
+.cyclesInput:focus {
   border-color: var(--accent);
 }
 
 /* Extracted from: Tempo */
 
-.tempo-group {
+.tempoGroup {
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
-.tempo-group .opt-label {
+.tempoGroup .optLabel {
   font-size: 0.78rem;
   color: var(--text-secondary);
 }
 
-.bpm-number-input,
-.vol-number-input,
-.sens-number-input {
+.bpmNumberInput,
+.volNumberInput,
+.sensNumberInput {
   width: 50px;
   padding: 2px 4px;
   font-size: 0.8rem;
@@ -445,27 +445,27 @@
 /* Sens-input is narrower (1–10 range) so it doesn't waste horizontal
    space in the inline-controls-row alongside BPM/Volume which need
    3-digit width. */
-.sens-number-input {
+.sensNumberInput {
   width: 38px;
 }
 
-.bpm-number-input::-webkit-inner-spin-button,
-.bpm-number-input::-webkit-outer-spin-button,
-.vol-number-input::-webkit-inner-spin-button,
-.vol-number-input::-webkit-outer-spin-button,
-.sens-number-input::-webkit-inner-spin-button,
-.sens-number-input::-webkit-outer-spin-button {
+.bpmNumberInput::-webkit-inner-spin-button,
+.bpmNumberInput::-webkit-outer-spin-button,
+.volNumberInput::-webkit-inner-spin-button,
+.volNumberInput::-webkit-outer-spin-button,
+.sensNumberInput::-webkit-inner-spin-button,
+.sensNumberInput::-webkit-outer-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
 
-.bpm-number-input:focus,
-.vol-number-input:focus,
-.sens-number-input:focus {
+.bpmNumberInput:focus,
+.volNumberInput:focus,
+.sensNumberInput:focus {
   border-color: var(--accent);
 }
 
-.tempo-slider {
+.tempoSlider {
   width: 80px;
   accent-color: var(--accent);
 }
@@ -479,18 +479,18 @@
 
 /* Extracted from: Sensitivity Slider */
 
-.sensitivity-group {
+.sensitivityGroup {
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
-.sensitivity-group .opt-label {
+.sensitivityGroup .optLabel {
   font-size: 0.78rem;
   color: var(--text-secondary);
 }
 
-.sensitivity-slider {
+.sensitivitySlider {
   width: 60px;
   accent-color: var(--yellow);
 }
@@ -499,7 +499,7 @@
    (BPM / Volume / Sensitivity / Speed), match the slider footprint of
    its neighbours so the cluster reads as one cohesive unit rather
    than three sliders of different widths. */
-.inline-control.sensitivity-group .sensitivity-slider {
+.inlineControl.sensitivityGroup .sensitivitySlider {
   width: 80px;
 }
 
@@ -512,38 +512,38 @@
 
 /* Extracted from: Theme Toggle */
 
-.theme-toggle-btn {
+.themeToggleBtn {
   padding: 6px 10px;
   border-radius: 6px;
   transition: all 0.2s ease;
 }
 
-.theme-toggle-btn.dark {
+.themeToggleBtn.dark {
   background: var(--bg-tertiary);
   color: var(--text-primary);
   border: 1px solid var(--border);
 }
 
-.theme-toggle-btn.dark:hover {
+.themeToggleBtn.dark:hover {
   background: var(--accent-dim);
   color: var(--accent);
   border-color: var(--accent);
 }
 
-.theme-toggle-btn.light {
+.themeToggleBtn.light {
   background: var(--accent-dim);
   color: var(--accent);
   border: 1px solid var(--accent);
 }
 
-.theme-toggle-btn.light:hover {
+.themeToggleBtn.light:hover {
   background: var(--accent);
   color: white;
 }
 
 /* Extracted from: Snap to Grid Toggle */
 
-.roll-snap-btn {
+.rollSnapBtn {
   padding: 4px 8px;
   border-radius: 4px;
   font-size: 0.75rem;
@@ -554,25 +554,25 @@
   transition: all 0.15s ease;
 }
 
-.roll-snap-btn:hover {
+.rollSnapBtn:hover {
   color: var(--text-primary);
   border-color: var(--text-secondary);
 }
 
 /* Extracted from: Speed Select */
 
-.speed-group {
+.speedGroup {
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
-.speed-group .opt-label {
+.speedGroup .optLabel {
   font-size: 0.78rem;
   color: var(--text-secondary);
 }
 
-.speed-select {
+.speedSelect {
   background: var(--bg-tertiary);
   border: 1px solid var(--border);
   border-radius: 4px;
@@ -582,29 +582,29 @@
   cursor: pointer;
 }
 
-.speed-select:hover {
+.speedSelect:hover {
   border-color: var(--accent);
 }
 
-.speed-select option {
+.speedSelect option {
   background: var(--bg-secondary);
   color: var(--text-primary);
 }
 
 /* Extracted from: Preset Select */
 
-.preset-group {
+.presetGroup {
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
-.preset-group .opt-label {
+.presetGroup .optLabel {
   font-size: 0.78rem;
   color: var(--text-secondary);
 }
 
-.preset-select {
+.presetSelect {
   background: var(--bg-tertiary);
   border: 1px solid var(--border);
   border-radius: 4px;
@@ -614,29 +614,29 @@
   cursor: pointer;
 }
 
-.preset-select:hover {
+.presetSelect:hover {
   border-color: var(--accent);
 }
 
-.preset-select option {
+.presetSelect option {
   background: var(--bg-secondary);
   color: var(--text-primary);
 }
 
 /* Extracted from: Volume Slider */
 
-.volume-group {
+.volumeGroup {
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
-.volume-group .opt-label {
+.volumeGroup .optLabel {
   font-size: 0.78rem;
   color: var(--text-secondary);
 }
 
-.volume-slider {
+.volumeSlider {
   width: 60px;
   accent-color: var(--green);
 }
@@ -668,13 +668,13 @@
 
 /* Extracted from: Cycles Input */
 
-.cycles-group {
+.cyclesGroup {
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
-.cycles-input {
+.cyclesInput {
   width: 50px;
   padding: 3px 6px;
   background: var(--bg-tertiary);
@@ -685,12 +685,12 @@
   text-align: center;
 }
 
-.cycles-input::-webkit-inner-spin-button,
-.cycles-input::-webkit-outer-spin-button {
+.cyclesInput::-webkit-inner-spin-button,
+.cyclesInput::-webkit-outer-spin-button {
   width: 14px;
 }
 
-.repeat-cycles-input {
+.repeatCyclesInput {
   width: 52px;
   padding: 3px 6px;
   background: var(--bg-secondary);
@@ -892,7 +892,7 @@
   text-align: right;
 }
 
-.inlineControl :global(.opt-label) {
+.inlineControl :global(.optLabel) {
   display: none;
 }
 

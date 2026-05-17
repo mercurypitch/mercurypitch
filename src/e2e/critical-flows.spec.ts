@@ -694,13 +694,15 @@ test.describe('Critical Flows — GH #121', () => {
       })
 
       // Title should be visible
-      await expect(page.locator('.settings-title')).toBeVisible()
+      await expect(page.locator('[data-testid="settings-title"]')).toBeVisible()
 
       // About section
-      await expect(page.locator('.about-name')).toContainText('MercuryPitch')
+      await expect(page.locator('[data-testid="about-name"]')).toContainText(
+        'MercuryPitch',
+      )
 
       // GitHub link
-      await expect(page.locator('.about-link')).toHaveAttribute(
+      await expect(page.locator('[data-testid="about-link"]')).toHaveAttribute(
         'href',
         /github\.com/,
       )
@@ -714,11 +716,13 @@ test.describe('Critical Flows — GH #121', () => {
       await page.waitForTimeout(500)
 
       // Focus mode elements should be visible
-      await expect(page.locator('.focus-mode')).toBeVisible({ timeout: 3000 })
-      await expect(page.locator('.focus-topbar')).toBeVisible()
+      await expect(
+        page.locator('[data-testid="focus-mode"]'),
+      ).toBeVisible({ timeout: 3000 })
+      await expect(page.locator('[data-testid="focus-topbar"]')).toBeVisible()
 
       // Exit focus mode
-      const exitBtn = page.locator('.focus-exit')
+      const exitBtn = page.locator('[data-testid="focus-exit"]')
       await expect(exitBtn).toBeVisible()
       await exitBtn.click()
       await page.waitForTimeout(500)
@@ -733,7 +737,9 @@ test.describe('Critical Flows — GH #121', () => {
       // Enter focus mode
       await page.locator('.focus-btn').click()
       await page.waitForTimeout(500)
-      await expect(page.locator('.focus-mode')).toBeVisible({ timeout: 3000 })
+      await expect(
+        page.locator('[data-testid="focus-mode"]'),
+      ).toBeVisible({ timeout: 3000 })
 
       // Press Escape to exit
       await page.keyboard.press('Escape')
@@ -759,7 +765,7 @@ test.describe('Critical Flows — GH #121', () => {
       await expect(scaleSelect).toHaveValue('dorian')
 
       // Octave controls
-      const octaveBtns = page.locator('.octave-btn')
+      const octaveBtns = page.locator('[data-testid^="octave-btn"]')
       await expect(octaveBtns.first()).toBeVisible()
     })
   })
@@ -781,7 +787,7 @@ test.describe('Critical Flows — GH #121', () => {
       await page.waitForTimeout(500)
 
       // Play button should be visible
-      const focusPlay = page.locator('.focus-play')
+      const focusPlay = page.locator('[data-testid="focus-play"]')
       await expect(focusPlay).toBeVisible({ timeout: 3000 })
 
       // Click play
@@ -789,33 +795,33 @@ test.describe('Critical Flows — GH #121', () => {
       await page.waitForTimeout(500)
 
       // Should now show pause button
-      await expect(page.locator('.focus-play[title="Pause"]')).toBeVisible({
+      await expect(page.locator('[data-testid="focus-pause"]')).toBeVisible({
         timeout: 3000,
       })
 
       // Pause
-      await page.locator('.focus-play[title="Pause"]').click()
+      await page.locator('[data-testid="focus-pause"]').click()
       await page.waitForTimeout(500)
 
       // Should show resume
-      await expect(page.locator('.focus-play[title="Continue"]')).toBeVisible({
+      await expect(page.locator('[data-testid="focus-resume"]')).toBeVisible({
         timeout: 3000,
       })
 
       // Exit
-      await page.locator('.focus-exit').click()
+      await page.locator('[data-testid="focus-exit"]').click()
     })
 
     test('Focus Mode speed controls change speed', async ({ page }) => {
       await page.locator('.focus-btn').click()
       await page.waitForTimeout(500)
 
-      const speedLabel = page.locator('.focus-speed-label')
+      const speedLabel = page.locator('[data-testid="focus-speed-label"]')
       await expect(speedLabel).toBeVisible()
       const initialSpeed = await speedLabel.textContent()
 
       // Speed up
-      const speedUp = page.locator('.focus-speed-btn').first()
+      const speedUp = page.locator('[data-testid="focus-speed-up"]')
       await speedUp.click()
       await page.waitForTimeout(200)
 
@@ -823,7 +829,7 @@ test.describe('Critical Flows — GH #121', () => {
       expect(newSpeed).not.toBe(initialSpeed)
 
       // Exit
-      await page.locator('.focus-exit').click()
+      await page.locator('[data-testid="focus-exit"]').click()
     })
   })
 
