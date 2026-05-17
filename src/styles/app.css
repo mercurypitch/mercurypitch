@@ -854,7 +854,15 @@ select option.custom-scale-option {
 #app {
   display: flex;
   flex-direction: column;
+  /* dvh (dynamic viewport height) shrinks as browser chrome (URL bar,
+     navigation bar) appears, keeping the bottom of the app visible.
+     Falls back to 100vh for browsers that don't yet support dvh. */
   height: 100vh;
+  height: 100dvh;
+  /* Safe-area padding for notched / rounded-corner tablets and phones.
+     Has no effect on devices without a safe area. */
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  box-sizing: border-box;
 }
 
 /* ===== Header ===== */
@@ -2990,7 +2998,7 @@ header h1 {
     border-bottom: none;
     flex-direction: column;
     overflow-y: auto;
-    max-height: 100vh;
+    max-height: 100dvh;
   }
   .app-sidebar.open {
     transform: translateX(0);
@@ -3357,8 +3365,15 @@ header h1 {
 /* Piano roll container — fills wrapper */
 .piano-roll-container {
   flex: 1;
+  display: flex;
+  flex-direction: column;
   min-height: 0;
   overflow: auto;
+}
+
+/* In scrollable mode, prevent wrapper scroll — only grid canvas scrolls */
+.piano-roll-container.piano-roll-scrollable-container {
+  overflow: hidden;
 }
 
 /* Tab bar */
@@ -3654,21 +3669,6 @@ Keeps your existing styles, only adjusts layout
   color: var(--text-primary);
 }
 
-.roll-octave-value {
-  font-size: 0.72rem;
-  color: var(--accent);
-  min-width: 20px;
-  text-align: center;
-  font-weight: 600;
-}
-.roll-octave-value {
-  font-size: 0.72rem;
-  color: var(--accent);
-  min-width: 20px;
-  text-align: center;
-  font-weight: 600;
-}
-
 .dur-label {
   font-size: 0.72rem;
   color: var(--text-secondary);
@@ -3705,6 +3705,11 @@ Keeps your existing styles, only adjusts layout
   gap: 3px;
 }
 
+.roll-octaves-group.disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
 .octaves-label {
   font-size: 0.72rem;
   color: var(--text-secondary);
@@ -3727,6 +3732,48 @@ Keeps your existing styles, only adjusts layout
 .octave-btn:hover {
   border-color: var(--accent);
   color: var(--accent);
+}
+
+/* Group labels ("Rows", "Oct", etc.) in toolbar */
+.roll-group-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  padding: 0 2px;
+  user-select: none;
+}
+
+/* Scroll toggle button in toolbar */
+.roll-scroll-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.roll-scroll-btn:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.roll-scroll-btn.active {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+/* Scrollable piano roll — vertical scroll is handled by .roll-grid-body;
+   grid-container only scrolls horizontally. */
+.roll-grid-container.piano-roll-scrollable {
+  overflow-y: hidden;
 }
 
 /* Scale mode select */
@@ -4324,23 +4371,32 @@ Keeps your existing styles, only adjusts layout
   position: relative;
 }
 
-/* Grid wrapper: CSS Grid layout — ruler + piano keys + grid */
+/* Grid wrapper: flex column — fills main-area, ruler pinned, body scrolls, status anchored at bottom */
 .roll-grid-wrapper {
   flex: 1;
-  display: grid;
-  /* Columns: piano keys | grid area (scrollable) */
-  /* Rows: ruler | grid rows */
-  grid-template-columns: var(--piano-width, 62px) 1fr;
-  grid-template-rows: var(--ruler-height, 28px) 1fr;
   min-height: 0;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
   position: relative;
 }
 
-/* Ruler spans full width at top */
+/* Grid body: the one and only vertical scroll container.
+   flex:1 + min-height:0 gives it a constrained height (wrapper minus ruler
+   minus status). overflow-y:auto scrolls when canvas is taller than that. */
+.roll-grid-body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: var(--piano-width, 62px) 1fr;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Ruler spans full width at top — pinned, never scrolls */
 .roll-ruler-container {
-  grid-column: 1 / -1;
-  grid-row: 1;
+  flex-shrink: 0;
+  height: var(--ruler-height, 28px);
   overflow: hidden;
   position: relative;
   background: var(--bg-secondary);
@@ -4350,8 +4406,8 @@ Keeps your existing styles, only adjusts layout
 /* Piano keys column */
 .roll-piano {
   grid-column: 1;
-  grid-row: 2;
-  align-self: stretch;
+  grid-row: 1;
+  align-self: start;
   background: var(--bg-secondary);
   border-right: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
@@ -4363,9 +4419,12 @@ Keeps your existing styles, only adjusts layout
 /* Grid container fills remaining space */
 .roll-grid-container {
   grid-column: 2;
-  grid-row: 2;
+  grid-row: 1;
   overflow-x: auto;
-  overflow-y: hidden;
+  /* clip (not hidden) so the horizontal scrollbar track does not reduce the
+     vertical clipping boundary — canvas renders flush with the container box
+     bottom, keeping .roll-status visually adjacent to the grid rows. */
+  overflow-y: clip;
   position: relative;
   background: var(--bg-primary);
   z-index: 2;
@@ -4599,7 +4658,7 @@ Keeps your existing styles, only adjusts layout
     font-size: 0.68rem;
   }
   /* Piano keys narrower on mobile */
-  .roll-grid-wrapper {
+  .roll-grid-body {
     grid-template-columns: 44px 1fr;
   }
   /* Smaller piano labels on mobile */

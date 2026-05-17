@@ -332,21 +332,22 @@ test.describe('Critical Flows — GH #121', () => {
       await expect(modeSelect).toHaveValue('pentatonic-major')
     })
 
-    test('octave shift changes octave display', async ({ page }) => {
+    test('shift buttons exist and octave value display removed', async ({
+      page,
+    }) => {
       const octaveUp = page.locator('#roll-octave-up')
       const octaveDown = page.locator('#roll-octave-down')
       const octaveValue = page.locator('#roll-octave-value')
 
-      await expect(octaveValue).toBeVisible()
-      const initialOctave = await octaveValue.textContent()
+      // Octave number display should no longer exist
+      await expect(octaveValue).toHaveCount(0)
 
-      // Shift up
+      // Shift buttons still exist and are clickable
+      await expect(octaveUp).toBeVisible()
+      await expect(octaveDown).toBeVisible()
+
       await octaveUp.click()
       await page.waitForTimeout(200)
-      const newOctave = await octaveValue.textContent()
-      expect(newOctave).not.toBe(initialOctave)
-
-      // Shift down
       await octaveDown.click()
       await page.waitForTimeout(200)
     })
