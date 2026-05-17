@@ -854,7 +854,15 @@ select option.custom-scale-option {
 #app {
   display: flex;
   flex-direction: column;
+  /* dvh (dynamic viewport height) shrinks as browser chrome (URL bar,
+     navigation bar) appears, keeping the bottom of the app visible.
+     Falls back to 100vh for browsers that don't yet support dvh. */
   height: 100vh;
+  height: 100dvh;
+  /* Safe-area padding for notched / rounded-corner tablets and phones.
+     Has no effect on devices without a safe area. */
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  box-sizing: border-box;
 }
 
 /* ===== Header ===== */
@@ -2990,7 +2998,7 @@ header h1 {
     border-bottom: none;
     flex-direction: column;
     overflow-y: auto;
-    max-height: 100vh;
+    max-height: 100dvh;
   }
   .app-sidebar.open {
     transform: translateX(0);
@@ -4413,7 +4421,10 @@ Keeps your existing styles, only adjusts layout
   grid-column: 2;
   grid-row: 1;
   overflow-x: auto;
-  overflow-y: hidden;
+  /* clip (not hidden) so the horizontal scrollbar track does not reduce the
+     vertical clipping boundary — canvas renders flush with the container box
+     bottom, keeping .roll-status visually adjacent to the grid rows. */
+  overflow-y: clip;
   position: relative;
   background: var(--bg-primary);
   z-index: 2;
