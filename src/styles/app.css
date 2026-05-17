@@ -836,3 +836,224 @@ select option:disabled {
   background: var(--accent);
   color: #fff;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   Tab Groups — app-wide tab navigation
+   ═══════════════════════════════════════════════════════════════ */
+.tab-group {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 4px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-secondary);
+}
+
+.tab-group-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  padding: 0 5px;
+  user-select: none;
+}
+
+.tab-loading {
+  min-height: 200px;
+}
+
+/* App title in header */
+.app-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Community / Leaderboard / Challenges panels
+   ═══════════════════════════════════════════════════════════════ */
+.community-panel,
+.leaderboard-panel,
+.vocal-challenges-panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+  min-height: 400px;
+  text-align: center;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.vocal-challenges-panel {
+  justify-content: flex-start;
+  align-items: stretch;
+  padding: 1.5rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Analysis tab layout
+   ═══════════════════════════════════════════════════════════════ */
+.analysis-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+}
+
+.analysis-tabs {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+}
+
+.analysis-content {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+.vocal-analysis-panel {
+  width: 100%;
+  height: 100%;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Falling Notes — Synthesia-style piano practice
+   ═══════════════════════════════════════════════════════════════ */
+.fn-btn {
+  padding: 8px 16px;
+  background: #21262d;
+  color: #c9d1d9;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.fn-btn:hover:not(:disabled) {
+  background: #30363d;
+}
+
+.fn-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.fn-btn-play {
+  background: #238636;
+  border-color: #2ea043;
+}
+.fn-btn-play:hover:not(:disabled) {
+  background: #2ea043;
+}
+
+.fn-btn-pause {
+  background: #9e6a03;
+  border-color: #bb8009;
+}
+.fn-btn-pause:hover:not(:disabled) {
+  background: #bb8009;
+}
+
+.fn-btn-reset {
+  background: #da3633;
+  border-color: #f85149;
+}
+.fn-btn-reset:hover:not(:disabled) {
+  background: #f85149;
+}
+
+.fn-btn-mic {
+  background: #1f6feb;
+  border-color: #388bfd;
+}
+.fn-btn-mic:hover:not(:disabled) {
+  background: #388bfd;
+}
+
+.fn-btn-close {
+  background: #30363d;
+  color: #8b949e;
+  border: 1px solid #484f58;
+  border-radius: 6px;
+  padding: 8px 24px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.fn-btn-close:hover {
+  background: #484f58;
+  color: #c9d1d9;
+}
+
+.fn-score-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 100;
+  border-radius: 6px;
+}
+
+.fn-score-card {
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 12px;
+  padding: 32px 48px;
+  text-align: center;
+  color: #c9d1d9;
+}
+
+.fn-score-card h2 {
+  font-size: 24px;
+  margin-bottom: 12px;
+  color: #f0f6fc;
+}
+
+.fn-score-grade {
+  font-size: 32px;
+  font-weight: bold;
+  margin-bottom: 8px;
+  color: #3fb950;
+}
+
+.fn-score-pct {
+  font-size: 48px;
+  font-weight: bold;
+  color: #f0f6fc;
+  margin-bottom: 8px;
+}
+
+.fn-score-detail {
+  font-size: 14px;
+  color: #8b949e;
+  margin-bottom: 20px;
+}
+
+.fn-score-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.fn-score-card .fn-btn {
+  padding: 10px 32px;
+  font-size: 16px;
+}
