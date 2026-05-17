@@ -120,7 +120,7 @@ export const SettingsPanel: Component = () => {
             specified number of cents of the target note.
           </p>
 
-          <TierSelector class="settings-tier-selector" />
+          <TierSelector class={styles.settingsTierSelector} />
         </div>
 
         {/* Pitch Algorithm Section */}
@@ -150,11 +150,11 @@ export const SettingsPanel: Component = () => {
           <Show when={pitchAlgorithm() === 'mpm'}>
             <div class={styles.settingsRow}>
               <label>Buffer Size</label>
-              <div class="pitch-buffer-pills">
+              <div class={styles.pitchBufferPills}>
                 <For each={PITCH_BUFFER_SIZES}>
                   {(size) => (
                     <button
-                      class={`pitch-buffer-pill${pitchBufferSize() === size ? ' pitch-buffer-pill-active' : ''}`}
+                      class={pitchBufferSize() === size ? [styles.pitchBufferPill, styles.pitchBufferPillActive].join(' ') : styles.pitchBufferPill}
                       onClick={() =>
                         setPitchBufferSize(size as PitchBufferSize)
                       }
@@ -839,14 +839,14 @@ export const SettingsPanel: Component = () => {
         </div>
 
         {/* Danger Zone Section */}
-        <div class={[styles.settingsSection, 'settings-danger-zone'].join(' ')}>
+        <div class={[styles.settingsSection, styles.settingsDangerZone].join(' ')}>
           <h3 class={styles.settingsSectionTitle}>Danger Zone</h3>
-          <div class={[styles.settingsDivider, 'danger-divider'].join(' ')} />
+          <div class={[styles.settingsDivider, styles.dangerDivider].join(' ')} />
           <p class={styles.settingsDesc}>
             Irreversible actions that affect all your data.
           </p>
 
-          <div class={[styles.settingsRow, 'danger-row'].join(' ')}>
+          <div class={[styles.settingsRow, styles.dangerRow].join(' ')}>
             <div class={styles.dangerContent}>
               <label class={styles.dangerLabel}>Reset to Factory Defaults</label>
               <small class={styles.dangerDesc}>
@@ -854,7 +854,7 @@ export const SettingsPanel: Component = () => {
               </small>
             </div>
             <button
-              class="danger-btn"
+              class={styles.dangerBtn}
               onClick={() => setShowResetConfirm(true)}
             >
               Reset
@@ -863,23 +863,23 @@ export const SettingsPanel: Component = () => {
 
           {/* Reset Confirmation Modal */}
           <Show when={showResetConfirm()}>
-            <div class="danger-confirm-overlay">
-              <div class="danger-confirm-box">
-                <h4 class="danger-confirm-title">Confirm Reset</h4>
-                <p class="danger-confirm-text">
+            <div class={styles.dangerConfirmOverlay}>
+              <div class={styles.dangerConfirmBox}>
+                <h4 class={styles.dangerConfirmTitle}>Confirm Reset</h4>
+                <p class={styles.dangerConfirmText}>
                   Are you sure you want to reset all data? This will clear all
                   stored melodies, presets, sessions, and settings. This action
                   cannot be undone.
                 </p>
-                <div class="danger-confirm-actions">
+                <div class={styles.dangerConfirmActions}>
                   <button
-                    class="danger-btn-secondary"
+                    class={styles.dangerBtnSecondary}
                     onClick={() => setShowResetConfirm(false)}
                   >
                     Cancel
                   </button>
                   <button
-                    class="danger-btn-primary"
+                    class={styles.dangerBtnPrimary}
                     onClick={() => {
                       void handleResetStorage()
                     }}
@@ -898,7 +898,7 @@ export const SettingsPanel: Component = () => {
             (() => {
               throw new Error('Dev mode injected render crash')
             })()}
-          <div class={[styles.settingsSection, 'settings-danger-zone'].join(' ')}>
+          <div class={[styles.settingsSection, styles.settingsDangerZone].join(' ')}>
             <h3 class={styles.settingsSectionTitle} style="color: var(--yellow);">
               Developer Tools
             </h3>
@@ -908,7 +908,7 @@ export const SettingsPanel: Component = () => {
             />
             <p class={styles.settingsDesc}>Development-only tools for debugging.</p>
 
-            <div class={[styles.settingsRow, 'danger-row'].join(' ')}>
+            <div class={[styles.settingsRow, styles.dangerRow].join(' ')}>
               <div class={styles.dangerContent}>
                 <label class={styles.dangerLabel} style="color: var(--yellow);">
                   Test Crash Screen
@@ -919,7 +919,7 @@ export const SettingsPanel: Component = () => {
                 </small>
               </div>
               <button
-                class="danger-btn"
+                class={styles.dangerBtn}
                 style="background: rgba(220, 160, 0, 0.1); color: var(--yellow); border-color: var(--yellow);"
                 onClick={() => setTestCrash(true)}
               >
@@ -927,7 +927,7 @@ export const SettingsPanel: Component = () => {
               </button>
             </div>
 
-            <div class={[styles.settingsRow, 'danger-row'].join(' ')}>
+            <div class={[styles.settingsRow, styles.dangerRow].join(' ')}>
               <div class={styles.dangerContent}>
                 <label class={styles.dangerLabel} style="color: var(--yellow);">
                   Developer Console Log
@@ -937,13 +937,13 @@ export const SettingsPanel: Component = () => {
                   intercept and view errors/warnings on mobile.
                 </small>
               </div>
-              <label class="toggle-switch">
+              <label class={styles.settingsToggle}>
                 <input
                   type="checkbox"
                   checked={showConsoleLog()}
                   onChange={() => toggleConsoleLog()}
                 />
-                <span class="toggle-slider"></span>
+                <span class={styles.settingsSlider}></span>
               </label>
             </div>
 
@@ -957,8 +957,8 @@ export const SettingsPanel: Component = () => {
         <div class={styles.settingsSection}>
           <h3 class={styles.settingsSectionTitle}>About MercuryPitch</h3>
           <div class={styles.settingsDivider} />
-          <div class="about-content">
-            <div class="about-logo">
+          <div class={styles.aboutContent}>
+            <div class={styles.aboutLogo}>
               <svg viewBox="0 0 48 48" width="40" height="40">
                 <circle
                   cx="24"
@@ -977,17 +977,16 @@ export const SettingsPanel: Component = () => {
                 <circle cx="24" cy="32" r="4" fill="currentColor" />
               </svg>
             </div>
-            <p class="about-name">MercuryPitch</p>
+            <p class={styles.aboutName}>MercuryPitch</p>
             <div
-              class="about-version-container"
               style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-bottom: 1rem;"
             >
-              <p class="about-version" style="margin: 0;">
+              <p class={styles.aboutVersion} style="margin: 0;">
                 v{APP_VERSION}-{COMMIT_SHA}
               </p>
               <Show when={IS_DEV}>
                 <span
-                  class="feature-pill pill-detection"
+                  class={[styles.featurePill, styles.pillDetection].join(' ')}
                   style="padding: 2px 6px; font-size: 0.7rem; font-weight: bold; background: var(--purple); color: white; border-radius: 4px; display: inline-flex; align-items: center;"
                 >
                   DEV
@@ -995,7 +994,7 @@ export const SettingsPanel: Component = () => {
               </Show>
             </div>
             <button
-              class="whats-new-btn"
+              class={styles.whatsNewBtn}
               onClick={() => setShowChangelog(true)}
             >
               <svg viewBox="0 0 24 24" width="14" height="14">
@@ -1006,14 +1005,14 @@ export const SettingsPanel: Component = () => {
               </svg>
               What's New
             </button>
-            <p class="about-desc">
+            <p class={styles.aboutDesc}>
               A web-based vocal pitch practice tool. Sing into your microphone
               and see your accuracy on the pitch canvas. Use the piano roll
               editor to compose melodies, then practice singing them with
               real-time feedback.
             </p>
-            <div class="about-features">
-              <span class="feature-pill pill-detection">
+            <div class={styles.aboutFeatures}>
+              <span class={[styles.featurePill, styles.pillDetection].join(' ')}>
                 <svg viewBox="0 0 24 24" width="14" height="14">
                   <path
                     fill="currentColor"
@@ -1022,7 +1021,7 @@ export const SettingsPanel: Component = () => {
                 </svg>
                 Real-time pitch detection
               </span>
-              <span class="feature-pill pill-editor">
+              <span class={[styles.featurePill, styles.pillEditor].join(' ')}>
                 <svg viewBox="0 0 24 24" width="14" height="14">
                   <path
                     fill="currentColor"
@@ -1031,7 +1030,7 @@ export const SettingsPanel: Component = () => {
                 </svg>
                 Piano roll editor
               </span>
-              <span class="feature-pill pill-progress">
+              <span class={[styles.featurePill, styles.pillProgress].join(' ')}>
                 <svg viewBox="0 0 24 24" width="14" height="14">
                   <path
                     fill="currentColor"
@@ -1040,7 +1039,7 @@ export const SettingsPanel: Component = () => {
                 </svg>
                 Progress tracking
               </span>
-              <span class="feature-pill pill-midi">
+              <span class={[styles.featurePill, styles.pillMidi].join(' ')}>
                 <svg viewBox="0 0 24 24" width="14" height="14">
                   <path
                     fill="currentColor"
@@ -1049,7 +1048,7 @@ export const SettingsPanel: Component = () => {
                 </svg>
                 MIDI import/export
               </span>
-              <span class="feature-pill pill-adsr">
+              <span class={[styles.featurePill, styles.pillAdsr].join(' ')}>
                 <svg viewBox="0 0 24 24" width="14" height="14">
                   <path
                     fill="currentColor"
@@ -1058,7 +1057,7 @@ export const SettingsPanel: Component = () => {
                 </svg>
                 ADSR envelope
               </span>
-              <span class="feature-pill pill-reverb">
+              <span class={[styles.featurePill, styles.pillReverb].join(' ')}>
                 <svg viewBox="0 0 24 24" width="14" height="14">
                   <path
                     fill="currentColor"
@@ -1073,13 +1072,13 @@ export const SettingsPanel: Component = () => {
               open={showChangelog()}
               onClose={() => setShowChangelog(false)}
             />
-            <p class="about-credits">Vocal Pitch Practice — Redefined.</p>
-            <div class="about-links">
+            <p class={styles.aboutCredits}>Vocal Pitch Practice — Redefined.</p>
+            <div class={styles.aboutLinks}>
               <a
                 href="https://github.com/mercurypitch/mercurypitch"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="about-link"
+                class={styles.aboutLink}
               >
                 <svg viewBox="0 0 24 24" width="16" height="16">
                   <path

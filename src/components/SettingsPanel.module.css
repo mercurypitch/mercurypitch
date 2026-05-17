@@ -408,3 +408,368 @@ input:checked + .settings-slider:before {
   display: block;
   font-size: 0.75rem;
 }
+
+.settingsDangerZone {
+  border: 1px solid rgba(255, 59, 48, 0.3);
+  border-radius: 8px;
+  padding: 16px;
+  background: rgba(255, 59, 48, 0.02);
+}
+
+.dangerDivider {
+  background: linear-gradient(
+    90deg,
+    var(--border) 0%,
+    var(--border) 60%,
+    rgba(255, 59, 48, 0.6) 60%,
+    rgba(255, 59, 48, 0.6) 100%
+  );
+}
+
+.dangerBtn {
+  padding: 8px 16px;
+  background: rgba(255, 59, 48, 0.1);
+  border: 1px solid rgba(255, 59, 48, 0.3);
+  border-radius: 6px;
+  color: #ff3b30;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.dangerBtn:hover {
+  background: rgba(255, 59, 48, 0.2);
+  border-color: rgba(255, 59, 48, 0.5);
+}
+
+.dangerConfirmOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.dangerConfirmBox {
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 400px;
+  width: 100%;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.dangerConfirmTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 12px 0;
+}
+
+.dangerConfirmText {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+.dangerConfirmActions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.dangerBtnSecondary {
+  padding: 8px 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dangerBtnSecondary:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--text-muted);
+}
+
+.dangerBtnPrimary {
+  padding: 8px 16px;
+  background: #ff3b30;
+  border: 1px solid #ff3b30;
+  border-radius: 6px;
+  color: white;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dangerBtnPrimary:hover {
+  background: #e62e24;
+  border-color: #e62e24;
+}
+
+/* About Section */
+.aboutContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 8px 16px 16px;
+  gap: 8px;
+}
+.aboutLogo {
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+.aboutName {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: var(--text-primary);
+  margin: 0;
+}
+.aboutVersion {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+.aboutDesc {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  max-width: 340px;
+  line-height: 1.5;
+  margin: 0;
+}
+.aboutFeatures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  font-size: 0.8rem;
+}
+
+.featurePill {
+  background: var(--bg-tertiary);
+  padding: 6px 12px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  transition: all 0.2s ease;
+}
+
+.featurePill svg {
+  flex-shrink: 0;
+}
+
+.featurePill:hover {
+  background: var(--bg-card);
+  border-color: var(--accent-glow);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+}
+
+.pillDetection svg {
+  color: var(--accent);
+}
+.pillEditor svg {
+  color: var(--purple);
+}
+.pillProgress svg {
+  color: var(--green);
+}
+.pillMidi svg {
+  color: var(--orange);
+}
+.pillAdsr svg {
+  color: var(--teal);
+}
+.pillReverb svg {
+  color: var(--yellow);
+}
+
+.aboutCredits {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin: 4px 0 0;
+}
+.whatsNewBtn {
+  padding: 6px 14px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+
+.whatsNewBtn:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--accent);
+}
+
+.aboutLinks {
+  display: flex;
+  justify-content: center;
+  margin-top: 12px;
+}
+.aboutLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 0.82rem;
+  padding: 6px 12px;
+  border-radius: 4px;
+  border: 1px solid var(--accent);
+  transition:
+    background 0.2s,
+    color 0.2s;
+}
+.aboutLink:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* Pitch Buffer Pills */
+.pitchBufferPills {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.pitchBufferPill {
+  flex: 1;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-family: 'Inter', 'SF Mono', monospace;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+@media (hover: hover) {
+  .pitchBufferPill:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.7);
+  }
+}
+
+.pitchBufferPillActive {
+  background: linear-gradient(
+    135deg,
+    rgba(56, 189, 248, 0.2),
+    rgba(139, 92, 246, 0.2)
+  );
+  color: #fff;
+  box-shadow:
+    0 0 8px rgba(56, 189, 248, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+}
+
+@media (hover: hover) {
+  .pitchBufferPillActive:hover {
+    background: linear-gradient(
+      135deg,
+      rgba(56, 189, 248, 0.3),
+      rgba(139, 92, 246, 0.3)
+    );
+  }
+}
+
+/* Compact settings selects */
+.settingsSelect {
+  min-height: 34px;
+  height: 34px;
+  padding: 0 32px 0 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  line-height: 34px;
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--text-muted) 50%),
+    linear-gradient(135deg, var(--text-muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 16px) 14px,
+    calc(100% - 11px) 14px;
+  background-size:
+    5px 5px,
+    5px 5px;
+  background-repeat: no-repeat;
+}
+
+.settingsSelect:hover {
+  border-color: var(--accent-glow);
+  background-color: var(--bg-card);
+}
+
+.settingsSelect:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+
+.settingsSelectOption {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+/* Settings tier selector */
+.settingsTierSelector {
+}
+
+.settingsTierSelector .welcome-tier-buttons {
+  gap: 8px;
+}
+
+.settingsTierSelector .welcome-tier-btn {
+  padding: 10px 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.settingsTierSelector .tier-icon-wrap svg {
+  width: 18px;
+  height: 18px;
+}
+
+.settingsTierSelector .tier-name {
+  font-size: 0.8rem;
+}
+
+.settingsTierSelector .tier-desc {
+  font-size: 0.65rem;
+}
