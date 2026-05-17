@@ -3358,7 +3358,7 @@ header h1 {
 .piano-roll-container {
   flex: 1;
   min-height: 0;
-  overflow: auto;
+  overflow: hidden;
 }
 
 /* Tab bar */
