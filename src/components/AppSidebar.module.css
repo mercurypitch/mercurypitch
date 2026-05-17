@@ -1,6 +1,7 @@
 /* Extracted from: Shared Sidebar */
 
 :global(.app-sidebar) {
+  position: relative;
   width: 300px;
   min-width: 300px;
   flex-shrink: 0;
@@ -20,10 +21,7 @@
   min-width: 40px;
   padding: 8px 4px;
   align-items: center;
-}
-
-:global(.app-sidebar.collapsed) > *:not(.sidebar-collapse-btn) {
-  display: none;
+  overflow: hidden;
 }
 
 .sidebarCloseBtn {
