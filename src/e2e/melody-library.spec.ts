@@ -24,8 +24,8 @@ test.describe('Melody Library', () => {
     await page.waitForTimeout(300)
 
     // "Browse" and "Sessions" action buttons in toolbar
-    const browseBtn = page.locator('.tab-action-btn:has-text("Browse")')
-    const sessionsBtn = page.locator('.tab-action-btn:has-text("Sessions")')
+    const browseBtn = page.locator('[data-testid="browse-btn"]')
+    const sessionsBtn = page.locator('[data-testid="sessions-btn"]')
 
     await expect(browseBtn).toBeVisible()
     await expect(sessionsBtn).toBeVisible()
@@ -35,9 +35,9 @@ test.describe('Melody Library', () => {
     await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
-    await expect(page.locator('.quick-actions')).toBeVisible()
+    await expect(page.locator('[data-testid="quick-actions"]')).toBeVisible()
     await expect(
-      page.locator('.quick-action-btn:has-text("Sessions")'),
+      page.locator('[data-testid="sessions-quick-btn"]'),
     ).toBeVisible()
   })
 
@@ -46,7 +46,7 @@ test.describe('Melody Library', () => {
     await page.waitForTimeout(300)
 
     const newSessionBtn = page.locator(
-      '.quick-action-btn:has-text("New Session")',
+      '[data-testid="new-session-btn"]',
     )
     await expect(newSessionBtn).toBeVisible()
   })
@@ -56,7 +56,7 @@ test.describe('Melody Library', () => {
     await page.waitForTimeout(300)
 
     const quickStartBtn = page.locator(
-      '.quick-action-btn:has-text("Quick Start")',
+      '[data-testid="quick-start-btn"]',
     )
     const count = await quickStartBtn.count()
     expect(count).toBeGreaterThanOrEqual(0)
@@ -66,7 +66,7 @@ test.describe('Melody Library', () => {
     await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
-    const sessionsBtn = page.locator('.quick-action-btn:has-text("Sessions")')
+    const sessionsBtn = page.locator('[data-testid="sessions-quick-btn"]')
     await sessionsBtn.click()
     await page.waitForTimeout(300)
 
@@ -80,7 +80,7 @@ test.describe('Melody Library', () => {
     await page.waitForTimeout(300)
 
     const newSessionBtn = page.locator(
-      '.quick-action-btn:has-text("New Session")',
+      '[data-testid="new-session-btn"]',
     )
     const count = await newSessionBtn.count()
     expect(count).toBeGreaterThanOrEqual(1)
@@ -108,7 +108,7 @@ test.describe('Melody Library', () => {
     await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
-    const browseBtn = page.locator('.tab-action-btn:has-text("Browse")')
+    const browseBtn = page.locator('[data-testid="browse-btn"]')
     await browseBtn.click()
     await page.waitForTimeout(300)
 
@@ -120,7 +120,7 @@ test.describe('Melody Library', () => {
     await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
-    const sessionsBtn = page.locator('.tab-action-btn:has-text("Sessions")')
+    const sessionsBtn = page.locator('[data-testid="sessions-btn"]')
     await sessionsBtn.click()
     await page.waitForTimeout(300)
 
@@ -147,7 +147,7 @@ test.describe('Melody Library', () => {
     await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
-    const browseBtn = page.locator('.tab-action-btn:has-text("Browse")')
+    const browseBtn = page.locator('[data-testid="browse-btn"]')
     await browseBtn.click()
     await page.waitForTimeout(300)
 
@@ -613,7 +613,7 @@ test.describe('Melody Library', () => {
     await page.waitForTimeout(300)
 
     // Quick action "Sessions" button opens SessionLibraryModal (.library-modal)
-    const sessionsBtn = page.locator('.quick-action-btn:has-text("Sessions")')
+    const sessionsBtn = page.locator('[data-testid="sessions-quick-btn"]')
     await sessionsBtn.click()
     await page.waitForTimeout(300)
 
@@ -799,7 +799,7 @@ test.describe('Melody Library', () => {
     await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
-    const sessionsBtn = page.locator('.quick-action-btn:has-text("Sessions")')
+    const sessionsBtn = page.locator('[data-testid="sessions-quick-btn"]')
     await sessionsBtn.click()
     await page.waitForTimeout(300)
 
@@ -883,7 +883,7 @@ test.describe('Melody Library', () => {
     await page.waitForTimeout(300)
 
     // Click Browse
-    const browseBtn = page.locator('.tab-action-btn:has-text("Browse")')
+    const browseBtn = page.locator('[data-testid="browse-btn"]')
     await browseBtn.click()
     await page.waitForTimeout(300)
 
@@ -896,7 +896,7 @@ test.describe('Melody Library', () => {
     await page.waitForTimeout(300)
 
     // Click Sessions — toolbar button opens SessionBrowser, not LibraryModal
-    const sessionsBtn = page.locator('.tab-action-btn:has-text("Sessions")')
+    const sessionsBtn = page.locator('[data-testid="sessions-btn"]')
     await sessionsBtn.click()
     await page.waitForTimeout(300)
 

@@ -555,10 +555,8 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
 
               {/* Create Melody Form */}
               {editingMelodyKey() === null && (
-                <div
-                  class={styles.editMelodyForm}
-                  data-testid="edit-melody-form"
-                >
+                <div class={styles.editMelodyForm}>
+                  <div data-testid="edit-melody-form">
                   <div class={styles.createHeader}>
                     <h3>Create New Melody</h3>
                     <button
@@ -684,15 +682,14 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                       Create
                     </button>
                   </div>
+                  </div>
                 </div>
               )}
 
               {/* Edit Melody Form */}
               {editingMelodyKey() !== null && (
-                <div
-                  class={styles.editMelodyForm}
-                  data-testid="edit-melody-form"
-                >
+                <div class={styles.editMelodyForm}>
+                  <div data-testid="edit-melody-form">
                   <h3>Edit Melody</h3>
 
                   <div class="form-group">
@@ -783,6 +780,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                     <button class="save-btn" onClick={handleSaveMelody}>
                       Save
                     </button>
+                  </div>
                   </div>
                 </div>
               )}

@@ -276,6 +276,7 @@ export const LibraryTab: Component = () => {
         <div class={styles.tabActions}>
           <button
             class={styles.tabActionBtn}
+            data-testid="browse-btn"
             onClick={openLibrary}
             title="Open Library"
           >
@@ -289,6 +290,7 @@ export const LibraryTab: Component = () => {
           </button>
           <button
             class={styles.tabActionBtn}
+            data-testid="sessions-btn"
             onClick={showSessionPresetsLibrary}
             title="Browse Sessions"
           >
@@ -655,14 +657,14 @@ export const LibraryTab: Component = () => {
       {/*</div>*/}
 
       {/* Quick Actions */}
-      <div class={styles.quickActions}>
-        <button class={styles.quickActionBtn} onClick={handleNewSession}>
+      <div class={styles.quickActions} data-testid="quick-actions">
+        <button class={styles.quickActionBtn} data-testid="new-session-btn" onClick={handleNewSession}>
           <svg viewBox="0 0 24 24" width="14" height="14">
             <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
           </svg>
           New Session
         </button>
-        <button class={styles.quickActionBtn} onClick={handleQuickNewMelody}>
+        <button class={styles.quickActionBtn} data-testid="quick-start-btn" onClick={handleQuickNewMelody}>
           <svg viewBox="0 0 24 24" width="14" height="14">
             <path
               fill="currentColor"
@@ -671,7 +673,7 @@ export const LibraryTab: Component = () => {
           </svg>
           New Melody
         </button>
-        <button class={styles.quickActionBtn} onClick={openSessionLibrary}>
+        <button class={styles.quickActionBtn} data-testid="sessions-quick-btn" onClick={openSessionLibrary}>
           <svg viewBox="0 0 24 24" width="14" height="14">
             <path
               fill="currentColor"

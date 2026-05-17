@@ -198,8 +198,8 @@ export const WelcomeScreen: Component<WelcomeScreenProps> = (props) => {
         </div>
 
         {/* Quick Accuracy Tier Select */}
-        <div class={styles.welcomeTierSelect}>
-          <p class={styles.welcomeTierLabel}>Choose your accuracy level:</p>
+        <div class="welcome-tier-select">
+          <p class="welcome-tier-label">Choose your accuracy level:</p>
           <TierSelector />
         </div>
       </div>

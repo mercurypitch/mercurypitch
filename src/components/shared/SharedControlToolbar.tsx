@@ -502,11 +502,10 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
             />
             <span class={styles.cycleProgressPill} title="Current repeat cycle">
               <span class={styles.cycleProgressLabel}>Run</span>
-              <span
-                class={styles.cycleProgressValue}
-                data-testid="cycle-progress-value"
-              >
-                {props.currentCycle()}/{props.practiceCycles()}
+              <span class={styles.cycleProgressValue}>
+                <span data-testid="cycle-progress-value">
+                  {props.currentCycle()}/{props.practiceCycles()}
+                </span>
               </span>
             </span>
           </div>
