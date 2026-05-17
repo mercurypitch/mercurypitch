@@ -3512,7 +3512,10 @@ export class PianoRollEditor {
     const MIDI_OCTAVE_SHIFT = 12
     for (const note of this.melody) {
       note.note.midi += delta * MIDI_OCTAVE_SHIFT
-      note.note.freq = 440 * Math.pow(2, (note.note.midi - 69) / 12)
+      const { name, octave } = midiToNote(note.note.midi)
+      note.note.name = name
+      note.note.octave = octave
+      note.note.freq = midiToFreq(note.note.midi)
     }
 
     // Rebuild scale with new octave

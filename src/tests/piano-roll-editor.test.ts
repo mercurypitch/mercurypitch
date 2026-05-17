@@ -80,6 +80,8 @@ describe('PianoRollEditor', () => {
 
     const newMelody = editor.getMelody()
     expect(newMelody[0].note?.midi).toBe(72) // 60 + 12
+    expect(newMelody[0].note?.name).toBe('C')
+    expect(newMelody[0].note?.octave).toBe(5)
 
     const octaveSpan = container.querySelector(
       '#roll-octave-value',
