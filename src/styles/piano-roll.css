@@ -1,0 +1,455 @@
+/* =====================================================================
+ * Piano Roll Styles
+ * Extracted from app.css — these are used by the dynamically-generated
+ * HTML in src/lib/piano-roll.ts which sets raw class names.
+ * ===================================================================== */
+
+/* ===== Copy/Cut/Paste Buttons ===== */
+.roll-clipboard-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.roll-clipboard-group .roll-ctrl-btn {
+  padding: 4px 6px;
+  border-radius: 4px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+
+.roll-clipboard-group .roll-ctrl-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--text-secondary);
+}
+
+/* Preset controls */
+.roll-preset-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.roll-preset-select {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text-primary);
+  padding: 4px 8px;
+  font-size: 0.72rem;
+  max-width: 140px;
+  outline: none;
+}
+
+.roll-preset-select:focus {
+  border-color: var(--accent);
+}
+
+.roll-preset-name {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text-primary);
+  padding: 4px 8px;
+  font-size: 0.72rem;
+  width: 120px;
+  outline: none;
+}
+
+.roll-preset-name:focus {
+  border-color: var(--accent);
+}
+
+.roll-new-btn {
+  padding: 5px 10px;
+  border: 1px solid var(--green);
+  border-radius: 5px;
+  background: var(--green-dim);
+  color: var(--green);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  min-width: 30px;
+}
+
+.roll-new-btn:hover {
+  background: var(--green);
+  color: #fff;
+}
+
+.roll-save-btn {
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--accent-dim);
+  color: var(--accent);
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.roll-save-btn:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* Play controls in toolbar */
+.roll-play-group {
+  display: flex;
+  gap: 4px;
+}
+
+.roll-play-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 12px;
+  border: 1px solid var(--green);
+  border-radius: 5px;
+  background: var(--green-dim);
+  color: var(--green);
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.roll-play-btn:hover {
+  background: var(--green);
+  color: #fff;
+}
+
+.roll-reset-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.roll-reset-btn:hover:not(:disabled) {
+  border-color: var(--red);
+  color: var(--red);
+}
+
+.roll-reset-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* Piano roll main area */
+.roll-main-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Grid wrapper: CSS Grid layout — ruler + piano keys + grid */
+.roll-grid-wrapper {
+  flex: 1;
+  display: grid;
+  /* Columns: piano keys | grid area (scrollable) */
+  /* Rows: ruler | grid rows */
+  grid-template-columns: var(--piano-width, 62px) 1fr;
+  grid-template-rows: var(--ruler-height, 28px) 1fr;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Ruler spans full width at top */
+.roll-ruler-container {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  overflow: hidden;
+  position: relative;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+}
+
+/* Piano keys column */
+.roll-piano {
+  grid-column: 1;
+  grid-row: 2;
+  align-self: stretch;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  z-index: 1;
+  position: sticky;
+  left: 0;
+}
+
+/* Grid container fills remaining space */
+.roll-grid-container {
+  grid-column: 2;
+  grid-row: 2;
+  overflow-x: auto;
+  overflow-y: hidden;
+  position: relative;
+  background: var(--bg-primary);
+  z-index: 2;
+}
+
+/* Ruler canvas */
+.roll-ruler {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: block;
+}
+
+.roll-grid {
+  display: block;
+}
+
+/* Status bar */
+.roll-status {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 14px;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border);
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+/* Pitch track button */
+.roll-pitch-track-btn {
+  padding: 5px 10px;
+  font-size: 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.12s ease;
+  flex-shrink: 0;
+}
+.roll-pitch-track-btn:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+.roll-pitch-track-btn.active {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+/* Export/Import buttons */
+.roll-export-btn {
+  padding: 5px 10px;
+  font-size: 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.12s ease;
+  flex-shrink: 0;
+}
+
+.roll-export-btn:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.roll-export-btn:active {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* Pitch track canvas */
+.roll-pitch-track {
+  width: 100%;
+  height: 80px;
+  display: block;
+  border-top: 1px solid var(--border);
+  background: #0d1117;
+}
+
+/* Roll snap button active state */
+.roll-snap-btn.active {
+  background: var(--accent-dim);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* ===== Mobile Piano Roll ===== */
+@media (max-width: 768px) {
+  .roll-toolbar {
+    display: grid; /* Ensure grid is active */
+    grid-auto-flow: column;
+    /* This ensures columns only take up as much space as their content and NO LESS */
+    grid-auto-columns: min-content;
+
+    padding: 6px 8px;
+    gap: 3px;
+    overflow-x: auto;
+    overflow-y: hidden;
+
+    /* This is the magic line for Grid scrolling */
+    width: 100%;
+
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  /* For the children */
+  .roll-group,
+  .roll-durations {
+    /* flex-shrink only works if the parent is display: flex */
+    /* Since you're using Grid, use this instead to prevent shrinking: */
+    min-width: max-content;
+  }
+
+  .roll-toolbar::-webkit-scrollbar {
+    display: none;
+  }
+  .roll-tool-btn {
+    padding: 4px 7px;
+    font-size: 0.68rem;
+  }
+  .roll-tool-btn svg {
+    width: 12px;
+    height: 12px;
+  }
+  .roll-durations {
+    flex-shrink: 0;
+    gap: 2px;
+  }
+  .dur-label {
+    font-size: 0.65rem;
+  }
+  .dur-btn {
+    padding: 3px 5px;
+    font-size: 0.65rem;
+  }
+  .octave-label,
+  .octaves-label {
+    font-size: 0.65rem;
+  }
+  .octave-btn {
+    padding: 3px 6px;
+    font-size: 0.7rem;
+  }
+  .octave-value {
+    font-size: 0.68rem;
+    min-width: 16px;
+  }
+  .roll-snap-btn {
+    padding: 3px 7px;
+    font-size: 0.65rem;
+  }
+  .mode-label {
+    font-size: 0.65rem;
+  }
+  .roll-mode-select {
+    max-width: 100px;
+    font-size: 0.68rem;
+    padding: 3px 6px;
+  }
+  .roll-custom-scale {
+    max-width: 160px;
+  }
+  .scale-note-btn {
+    width: 20px;
+    height: 20px;
+    font-size: 0.55rem;
+  }
+  .roll-bars-btn {
+    padding: 3px 6px;
+    font-size: 0.65rem;
+  }
+  .roll-zoom-btn {
+    padding: 3px 6px;
+    font-size: 0.65rem;
+  }
+  .zoom-value {
+    font-size: 0.65rem;
+    min-width: 32px;
+  }
+  .roll-undo-btn,
+  .roll-redo-btn,
+  .roll-ctrl-btn {
+    padding: 4px 6px;
+  }
+  .roll-ctrl-btn svg {
+    width: 12px;
+    height: 12px;
+  }
+  .roll-effects-label {
+    font-size: 0.65rem;
+  }
+  .roll-action-btn {
+    padding: 3px 6px;
+    font-size: 0.65rem;
+  }
+  .roll-action-btn svg {
+    width: 12px;
+    height: 12px;
+  }
+  .roll-preset-select {
+    max-width: 90px;
+    font-size: 0.68rem;
+  }
+  .roll-preset-name {
+    width: 80px;
+    font-size: 0.68rem;
+  }
+  .roll-sep {
+    display: none;
+  }
+  .roll-play-btn {
+    padding: 4px 10px;
+    font-size: 0.72rem;
+  }
+  .roll-reset-btn {
+    padding: 4px 8px;
+    font-size: 0.68rem;
+  }
+  .roll-instrument-select {
+    max-width: 90px;
+    font-size: 0.68rem;
+  }
+  /* Piano keys narrower on mobile */
+  .roll-grid-wrapper {
+    grid-template-columns: 44px 1fr;
+  }
+  /* Smaller piano labels on mobile */
+  .roll-piano canvas {
+    width: 44px !important;
+  }
+  /* Ruler and grid canvas scale appropriately */
+  .roll-ruler-container {
+    height: 24px;
+  }
+  /* Status bar smaller text */
+  .roll-status {
+    padding: 4px 10px;
+    font-size: 0.65rem;
+  }
+  /* Effect text labels smaller on mobile */
+  .roll-action-btn span {
+    font-size: 0.6rem;
+  }
+  /* Hide pitch track on very small screens */
+  .roll-pitch-track {
+    height: 60px;
+  }
+  .roll-pitch-track-btn {
+    padding: 3px 8px;
+    font-size: 0.65rem;
+  }
+}
