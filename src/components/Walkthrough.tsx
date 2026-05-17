@@ -10,6 +10,7 @@ import { walkthroughStep } from '@/stores/app-store'
 import { tourSteps, walkthroughActive } from '@/stores/app-store'
 import { endWalkthrough, GUIDE_SECTIONS, nextWalkthroughStep, prevWalkthroughStep, skipSection, } from '@/stores/app-store'
 import { activeTab, setActiveTab } from '@/stores/ui-store'
+import styles from './Walkthrough.module.css'
 
 type Placement = 'top' | 'bottom' | 'left' | 'right'
 
@@ -309,12 +310,12 @@ export const Walkthrough: Component = () => {
 
   return (
     <Show when={walkthroughActive()}>
-      <div class="walkthrough-overlay" onClick={endWalkthrough}>
-        <div ref={highlightRef} class="walkthrough-highlight" />
+      <div class={styles.walkthroughOverlay} onClick={endWalkthrough}>
+        <div ref={highlightRef} class={styles.walkthroughHighlight} />
 
         <div
           ref={tooltipRef}
-          class="walkthrough-tooltip"
+          class={styles.walkthroughTooltip}
           onClick={(e) => {
             e.stopPropagation()
           }}
@@ -322,38 +323,38 @@ export const Walkthrough: Component = () => {
           {/* Section header */}
           <Show when={currentSection()}>
             {(sec) => (
-              <div class="walkthrough-section-header">
-                <span class="walkthrough-section-title">{sec().title}</span>
-                <span class="walkthrough-section-steps">
+              <div class={styles.walkthroughSectionHeader}>
+                <span class={styles.walkthroughSectionTitle}>{sec().title}</span>
+                <span class={styles.walkthroughSectionSteps}>
                   {sectionStepCount().current} / {sectionStepCount().total}
                 </span>
               </div>
             )}
           </Show>
 
-          <h3 class="walkthrough-step-title">{currentStep()?.title}</h3>
-          <p class="walkthrough-step-desc">{currentStep()?.description}</p>
-          <div class="walkthrough-actions">
-            <button class="walkthrough-skip" onClick={endWalkthrough}>
+          <h3 class={styles.walkthroughStepTitle}>{currentStep()?.title}</h3>
+          <p class={styles.walkthroughStepDesc}>{currentStep()?.description}</p>
+          <div class={styles.walkthroughActions}>
+            <button class={styles.walkthroughSkip} onClick={endWalkthrough}>
               Skip Tour
             </button>
-            <div class="walkthrough-actions-center">
+            <div class={styles.walkthroughActionsCenter}>
               <button
-                class="walkthrough-prev"
+                class={styles.walkthroughPrev}
                 onClick={prevWalkthroughStep}
                 disabled={isFirst()}
               >
                 <IconArrowLeft /> Back
               </button>
               <button
-                class="walkthrough-skip-section"
+                class={styles.walkthroughSkipSection}
                 onClick={skipSection}
                 title={`Skip ${currentSection()?.title} section`}
               >
                 Skip Section
               </button>
               <button
-                class="walkthrough-next"
+                class={styles.walkthroughNext}
                 onClick={isLast() ? endWalkthrough : nextWalkthroughStep}
               >
                 {isLast() ? (

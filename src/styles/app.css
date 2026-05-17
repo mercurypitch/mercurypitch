@@ -1590,65 +1590,6 @@ select option:disabled {
 }
 
 /* ============================================================
-   Walkthrough Tour — Section Header & Actions (GH #199)
-   ============================================================ */
-
-.walkthrough-section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--border);
-}
-
-.walkthrough-section-title {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--accent);
-}
-
-.walkthrough-section-steps {
-  font-size: 11px;
-  color: var(--text-muted);
-  font-weight: 600;
-}
-
-/* Actions layout: skip left, center group, next right */
-.walkthrough-actions {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.walkthrough-actions-center {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
-
-.walkthrough-skip-section {
-  font-size: 11px;
-  color: var(--text-muted);
-  background: none;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  cursor: pointer;
-  padding: 4px 8px;
-  transition:
-    background 0.15s,
-    color 0.15s;
-}
-
-.walkthrough-skip-section:hover {
-  color: var(--text-secondary);
-  background: var(--bg-tertiary);
-}
-
-/* ============================================================
    Guide Selection Dialog (GH #199)
    ============================================================ */
 
