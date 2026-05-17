@@ -769,6 +769,11 @@ export class PianoRollEditor {
     return this.redoStack.length > 0
   }
 
+  /** Whether scrollable mode is active (all 7 octaves visible) */
+  isScrollable(): boolean {
+    return this.scrollableMode
+  }
+
   /** Clear all history (call on preset load or melody clear) */
   clearHistory(): void {
     this.historyStack = []
@@ -789,6 +794,7 @@ export class PianoRollEditor {
   }
 
   setScale(scale: ScaleDegree[]): void {
+    if (this.scrollableMode) return
     this.scale = scale
     // Ensure minimum 2 rows (one octave) to prevent 0-height canvas
     this.totalRows = Math.max(scale.length, 2)
@@ -1282,6 +1288,10 @@ export class PianoRollEditor {
         <svg viewBox="0 0 24 24" width="12" height="12"><path fill="currentColor" d="M15 3l2.3 2.3-2.89 2.87 1.42 1.42L18.7 6.7 21 9V3zM3 9l2.3-2.3 2.87 2.89 1.42-1.42L6.7 5.3 9 3H3zm6 12l-2.3-2.3 2.89-2.87-1.42-1.42L5.3 17.3 3 15v6zm12-6l-2.3 2.3-2.87-2.89-1.42 1.42 2.89 2.87L15 21h6z"/></svg>
         <span>Fit</span>
       </button>
+      <button id="roll-scroll-toggle" class="roll-scroll-btn" title="Toggle scrollable view" aria-label="Toggle scrollable view">
+        <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M12 5.83L15.17 9l1.41-1.41L12 3 7.41 7.59 8.83 9 12 5.83zm0 12.34L8.83 15l-1.41 1.41L12 21l4.59-4.59L15.17 15 12 18.17z"/></svg>
+        <span>Scroll</span>
+      </button>
           </div>
     </div>
 
@@ -1310,18 +1320,12 @@ export class PianoRollEditor {
        </button>
     </div>
 
-    <!-- Scroll toggle — switch between fixed-N-octaves and all-octaves scrollable -->
-    <button id="roll-scroll-toggle" class="roll-scroll-btn" title="Toggle scrollable view" aria-label="Toggle scrollable view">
-      <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M7 10l5 5 5-5z"/></svg>
-    </button>
-
-    <!-- Octave -->
+    <!-- Shift -->
     <div class="roll-octave-group">
-      <span class="roll-group-label">Oct</span>
+      <span class="roll-group-label">Shift</span>
       <button id="roll-octave-up" class="octave-btn" title="Shift melody up one octave" aria-label="Shift melody up one octave">
         <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
       </button>
-            <span id="roll-octave-value" class="octave-value">${this.octave}</span>
       <button id="roll-octave-down" class="octave-btn" title="Shift melody down one octave" aria-label="Shift melody down one octave">
         <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M19 13H5v-2h14v2z"/></svg>
       </button>
@@ -1786,13 +1790,13 @@ export class PianoRollEditor {
         // Hide rows controls — all octaves are visible
         const rowsGroup = this.container.querySelector('.roll-octaves-group')
         if (rowsGroup) (rowsGroup as HTMLElement).style.display = 'none'
-        const wrapper = this.container.closest('.piano-roll-wrapper')
-        if (wrapper) wrapper.classList.add('piano-roll-scrollable')
+        const mainArea = this.container.querySelector('.roll-main-area')
+        if (mainArea) mainArea.classList.add('piano-roll-scrollable')
       } else {
         const rowsGroup = this.container.querySelector('.roll-octaves-group')
         if (rowsGroup) (rowsGroup as HTMLElement).style.display = ''
-        const wrapper = this.container.closest('.piano-roll-wrapper')
-        if (wrapper) wrapper.classList.remove('piano-roll-scrollable')
+        const mainArea = this.container.querySelector('.roll-main-area')
+        if (mainArea) mainArea.classList.remove('piano-roll-scrollable')
       }
       this._rebuildScale()
       this.buildCanvases()
@@ -3527,16 +3531,11 @@ export class PianoRollEditor {
   // ============================================================
 
   /**
-   * Shift all notes by an octave and rebuild the scale.
+   * Shift all notes by an octave without changing the view.
+   * The visible scale stays fixed — notes outside the range are
+   * rendered as dimmed indicators at the nearest edge.
    */
   private _shiftOctave(delta: number): void {
-    const newOctave = this.octave + delta
-    if (newOctave < 1 || newOctave > 7) return
-    this.octave = newOctave
-
-    const display = this.container.querySelector('#roll-octave-value')
-    if (display) display.textContent = String(this.octave)
-
     // Push history before transposing notes
     this.pushHistory()
 
@@ -3550,14 +3549,9 @@ export class PianoRollEditor {
       note.note.freq = midiToFreq(note.note.midi)
     }
 
-    // Rebuild our own scale before drawing so notes stay aligned with
-    // visible rows. Also dispatch for external listeners (melodyStore, etc.)
-    this._rebuildScale()
-    eventBus.dispatch('pitchperfect:octaveChange', {
-      octave: this.octave,
-      numOctaves: this.numOctaves,
-    })
-
+    // Redraw — the view (which octaves are visible) stays fixed.
+    // Notes that move outside the visible range are rendered as
+    // gray indicators at the edge (existing off-scale rendering).
     this.buildCanvases()
     this.draw()
     this.onMelodyChange?.(this.melody)

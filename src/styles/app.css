@@ -3654,21 +3654,6 @@ Keeps your existing styles, only adjusts layout
   color: var(--text-primary);
 }
 
-.roll-octave-value {
-  font-size: 0.72rem;
-  color: var(--accent);
-  min-width: 20px;
-  text-align: center;
-  font-weight: 600;
-}
-.roll-octave-value {
-  font-size: 0.72rem;
-  color: var(--accent);
-  min-width: 20px;
-  text-align: center;
-  font-weight: 600;
-}
-
 .dur-label {
   font-size: 0.72rem;
   color: var(--text-secondary);
@@ -3766,7 +3751,7 @@ Keeps your existing styles, only adjusts layout
 }
 
 /* Scrollable piano roll — full 7-octave view with vertical scroll */
-.piano-roll-scrollable {
+.roll-main-area.piano-roll-scrollable {
   max-height: 600px;
   overflow-y: auto;
 }
