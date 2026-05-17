@@ -7,6 +7,7 @@ import '@/styles/app.css'
 import '@/styles/piano-roll.css'
 import '@/styles/vocal-analysis.css'
 import '@/styles/uvr.css'
+import '@/components/Modal.css'
 import { App } from './App'
 
 import { initGlobalErrorHandlers } from '@/lib/global-error-handler'
