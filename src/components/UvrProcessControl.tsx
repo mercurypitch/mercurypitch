@@ -81,7 +81,7 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
   })
 
   const estimatedRemaining = createMemo(() => {
-    if (props.progress <= 0 || props.indeterminate) return 0
+    if (props.progress <= 0 || (props.indeterminate ?? false)) return 0
     return Math.max(
       0,
       (displayTime() * (100 - props.progress)) / props.progress,
