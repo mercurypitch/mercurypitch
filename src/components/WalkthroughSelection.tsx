@@ -93,7 +93,10 @@ export const WalkthroughSelection: Component<WalkthroughSelectionProps> = (
           <div class={styles.wsChapters}>
             <For each={remaining()}>
               {(w) => (
-                <button class={styles.wsChapterItem} onClick={() => handleView(w)}>
+                <button
+                  class={styles.wsChapterItem}
+                  onClick={() => handleView(w)}
+                >
                   <span class={styles.wsChapterIcon}>
                     <svg viewBox="0 0 24 24" width="18" height="18">
                       <path
@@ -114,10 +117,17 @@ export const WalkthroughSelection: Component<WalkthroughSelectionProps> = (
                 <For each={completed()}>
                   {(w) => (
                     <button
-                      class={[styles.wsChapterItem, styles.wsChapterDone].join(' ')}
+                      class={[styles.wsChapterItem, styles.wsChapterDone].join(
+                        ' ',
+                      )}
                       onClick={() => handleView(w)}
                     >
-                      <span class={[styles.wsChapterIcon, styles.wsChapterIconDone].join(' ')}>
+                      <span
+                        class={[
+                          styles.wsChapterIcon,
+                          styles.wsChapterIconDone,
+                        ].join(' ')}
+                      >
                         <svg viewBox="0 0 24 24" width="18" height="18">
                           <path
                             fill="currentColor"
@@ -135,7 +145,10 @@ export const WalkthroughSelection: Component<WalkthroughSelectionProps> = (
 
           {/* Footer */}
           <div class={styles.wsFooter}>
-            <button class={styles.wsCloseFooter} onClick={() => props.onClose()}>
+            <button
+              class={styles.wsCloseFooter}
+              onClick={() => props.onClose()}
+            >
               Got it
             </button>
           </div>

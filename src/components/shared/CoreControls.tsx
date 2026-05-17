@@ -5,7 +5,7 @@
 import type { Component } from 'solid-js'
 import { Show } from 'solid-js'
 import type { PlayButtonLabel } from '@/stores/playback-store'
-import styles from './@/components/HeaderControls.module.css'
+import styles from '../HeaderControls.module.css'
 
 interface CoreControlsProps {
   isPlaying: () => boolean

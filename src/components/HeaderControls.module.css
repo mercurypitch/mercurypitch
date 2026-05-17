@@ -378,7 +378,6 @@
   cursor: not-allowed;
 }
 
-
 .ctrl-btn.recording {
   border-color: var(--red);
   background: rgba(248, 81, 73, 0.3);
@@ -386,7 +385,6 @@
   animation: pulse-rec 0.4s ease-in-out infinite;
   box-shadow: 0 0 15px rgba(248, 81, 73, 0.4);
 }
-
 
 .record-text {
   font-weight: 700;
@@ -411,8 +409,6 @@
   position: relative;
 }
 
-
-
 .ctrl-sep {
   width: 1px;
   height: 22px;
@@ -420,7 +416,6 @@
   margin: 0 4px;
   flex-shrink: 0;
 }
-
 
 /* Extracted from: Mode Toggle Buttons */
 
@@ -445,8 +440,6 @@
   color: var(--text-primary);
 }
 
-
-
 /* Extracted from: Practice Mode Badge */
 
 .practice-mode-badge {
@@ -466,7 +459,6 @@
   min-width: 60px;
   text-align: left;
 }
-
 
 /* Extracted from: Save Melody Button */
 
@@ -511,7 +503,6 @@
   font-size: 0.78rem;
 }
 
-
 /* Extracted from: Practice Options (top bar) */
 
 #practice-options {
@@ -541,7 +532,6 @@
 .cycles-input:focus {
   border-color: var(--accent);
 }
-
 
 /* Extracted from: Tempo */
 
@@ -606,7 +596,6 @@
   font-weight: 600;
 }
 
-
 /* Extracted from: Sensitivity Slider */
 
 .sensitivity-group {
@@ -640,7 +629,6 @@
   font-weight: 600;
 }
 
-
 /* Extracted from: Theme Toggle */
 
 .theme-toggle-btn {
@@ -672,7 +660,6 @@
   color: white;
 }
 
-
 /* Extracted from: Snap to Grid Toggle */
 
 .roll-snap-btn {
@@ -690,8 +677,6 @@
   color: var(--text-primary);
   border-color: var(--text-secondary);
 }
-
-
 
 /* Extracted from: Speed Select */
 
@@ -725,7 +710,6 @@
   color: var(--text-primary);
 }
 
-
 /* Extracted from: Preset Select */
 
 .preset-group {
@@ -758,7 +742,6 @@
   color: var(--text-primary);
 }
 
-
 /* Extracted from: Volume Slider */
 
 .volume-group {
@@ -784,7 +767,6 @@
   font-weight: 600;
 }
 
-
 /* Extracted from: Precount Button */
 
 #btn-precount {
@@ -797,14 +779,11 @@
   flex-shrink: 0;
 }
 
-
-
 /* Extracted from: Utility */
 
 .hidden {
   display: none !important;
 }
-
 
 /* Extracted from: Cycles Input */
 
@@ -844,7 +823,6 @@
   color: var(--text-muted);
 }
 
-
 /* Extracted from: Count-in Display */
 
 .countin-badge {
@@ -876,7 +854,6 @@
     opacity: 1;
   }
 }
-
 
 /* Extracted from: Repeat Cycles Control Group */
 
@@ -958,7 +935,6 @@
   text-shadow: 0 0 10px var(--green-dim);
 }
 
-
 /* Extracted from: Practice Sub-Mode Selector */
 
 .practiceModeControlGroup {
@@ -1029,7 +1005,6 @@
   color: var(--text-primary) !important;
   border-color: var(--accent-glow) !important;
 }
-
 
 /* Extracted from: Inline Transport Controls */
 

@@ -58,7 +58,10 @@ export const MelodyPillList: Component<MelodyPillListProps> = (props) => {
           </button>
         )}
         {props.onClearSelection && (
-          <button class={styles.clearSelectionBtn} onClick={props.onClearSelection}>
+          <button
+            class={styles.clearSelectionBtn}
+            onClick={props.onClearSelection}
+          >
             Clear
           </button>
         )}

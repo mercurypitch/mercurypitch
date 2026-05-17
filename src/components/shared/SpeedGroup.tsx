@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import styles from './@/components/HeaderControls.module.css'
+import styles from '../HeaderControls.module.css'
 
 interface SpeedGroupProps {
   speed: number

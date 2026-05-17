@@ -50,7 +50,6 @@ header h1 {
   opacity: 0.7;
 }
 
-
 /* Extracted from: Shared Header Bar */
 
 .app-header-bar {
@@ -66,7 +65,6 @@ header h1 {
   background: var(--border);
   flex-shrink: 0;
 }
-
 
 /* Extracted from: Practice Tab Header (second header bar) */
 
@@ -92,7 +90,6 @@ header h1 {
   gap: 6px;
   flex-shrink: 0;
 }
-
 
 /* Extracted from: Editor Tab Header (second header bar) */
 

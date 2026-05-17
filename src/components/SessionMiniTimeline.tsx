@@ -62,7 +62,11 @@ export const SessionMiniTimeline: Component<SessionMiniTimelineProps> = (
   props,
 ) => {
   return (
-    <div class={styles.sessionMiniTimeline} role="list" aria-label="Session items">
+    <div
+      class={styles.sessionMiniTimeline}
+      role="list"
+      aria-label="Session items"
+    >
       <Show
         when={props.session.items.length > 0}
         fallback={
@@ -81,7 +85,9 @@ export const SessionMiniTimeline: Component<SessionMiniTimelineProps> = (
                 <span class={styles.sessionMiniPillIcon} aria-hidden="true">
                   {isRest ? <IconPause /> : <IconMusicNote />}
                 </span>
-                <span class={styles.sessionMiniPillLabel}>{labelFor(item)}</span>
+                <span class={styles.sessionMiniPillLabel}>
+                  {labelFor(item)}
+                </span>
               </div>
             )
           }}

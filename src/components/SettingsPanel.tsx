@@ -91,7 +91,9 @@ export const SettingsPanel: Component = () => {
         <div class={styles.settingsSection}>
           <h3 class={styles.settingsSectionTitle}>Sensitivity Presets</h3>
           <div class={styles.settingsDivider} />
-          <p class={styles.settingsDesc}>Quick presets for different environments.</p>
+          <p class={styles.settingsDesc}>
+            Quick presets for different environments.
+          </p>
 
           <div class={styles.settingsRow}>
             <label for="preset-select">Environment</label>
@@ -154,7 +156,14 @@ export const SettingsPanel: Component = () => {
                 <For each={PITCH_BUFFER_SIZES}>
                   {(size) => (
                     <button
-                      class={pitchBufferSize() === size ? [styles.pitchBufferPill, styles.pitchBufferPillActive].join(' ') : styles.pitchBufferPill}
+                      class={
+                        pitchBufferSize() === size
+                          ? [
+                              styles.pitchBufferPill,
+                              styles.pitchBufferPillActive,
+                            ].join(' ')
+                          : styles.pitchBufferPill
+                      }
                       onClick={() =>
                         setPitchBufferSize(size as PitchBufferSize)
                       }
@@ -738,7 +747,9 @@ export const SettingsPanel: Component = () => {
                 setPlaybackSpeed(parseInt(e.currentTarget.value) / 100)
               }}
             />
-            <span class={styles.settingsVal}>{playbackSpeed().toFixed(2)}x</span>
+            <span class={styles.settingsVal}>
+              {playbackSpeed().toFixed(2)}x
+            </span>
             <small>0.25x = slowest, 2.0x = fastest</small>
           </div>
         </div>
@@ -839,16 +850,22 @@ export const SettingsPanel: Component = () => {
         </div>
 
         {/* Danger Zone Section */}
-        <div class={[styles.settingsSection, styles.settingsDangerZone].join(' ')}>
+        <div
+          class={[styles.settingsSection, styles.settingsDangerZone].join(' ')}
+        >
           <h3 class={styles.settingsSectionTitle}>Danger Zone</h3>
-          <div class={[styles.settingsDivider, styles.dangerDivider].join(' ')} />
+          <div
+            class={[styles.settingsDivider, styles.dangerDivider].join(' ')}
+          />
           <p class={styles.settingsDesc}>
             Irreversible actions that affect all your data.
           </p>
 
           <div class={[styles.settingsRow, styles.dangerRow].join(' ')}>
             <div class={styles.dangerContent}>
-              <label class={styles.dangerLabel}>Reset to Factory Defaults</label>
+              <label class={styles.dangerLabel}>
+                Reset to Factory Defaults
+              </label>
               <small class={styles.dangerDesc}>
                 Clear all stored data and reload the app with initial defaults.
               </small>
@@ -898,15 +915,24 @@ export const SettingsPanel: Component = () => {
             (() => {
               throw new Error('Dev mode injected render crash')
             })()}
-          <div class={[styles.settingsSection, styles.settingsDangerZone].join(' ')}>
-            <h3 class={styles.settingsSectionTitle} style="color: var(--yellow);">
+          <div
+            class={[styles.settingsSection, styles.settingsDangerZone].join(
+              ' ',
+            )}
+          >
+            <h3
+              class={styles.settingsSectionTitle}
+              style="color: var(--yellow);"
+            >
               Developer Tools
             </h3>
             <div
               class={styles.settingsDivider}
               style="background: linear-gradient(90deg, var(--yellow), transparent);"
             />
-            <p class={styles.settingsDesc}>Development-only tools for debugging.</p>
+            <p class={styles.settingsDesc}>
+              Development-only tools for debugging.
+            </p>
 
             <div class={[styles.settingsRow, styles.dangerRow].join(' ')}>
               <div class={styles.dangerContent}>
@@ -978,9 +1004,7 @@ export const SettingsPanel: Component = () => {
               </svg>
             </div>
             <p class={styles.aboutName}>MercuryPitch</p>
-            <div
-              style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-bottom: 1rem;"
-            >
+            <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-bottom: 1rem;">
               <p class={styles.aboutVersion} style="margin: 0;">
                 v{APP_VERSION}-{COMMIT_SHA}
               </p>
@@ -1012,7 +1036,9 @@ export const SettingsPanel: Component = () => {
               real-time feedback.
             </p>
             <div class={styles.aboutFeatures}>
-              <span class={[styles.featurePill, styles.pillDetection].join(' ')}>
+              <span
+                class={[styles.featurePill, styles.pillDetection].join(' ')}
+              >
                 <svg viewBox="0 0 24 24" width="14" height="14">
                   <path
                     fill="currentColor"

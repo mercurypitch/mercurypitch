@@ -673,7 +673,6 @@ select option:disabled {
   filter: brightness(1.1);
 }
 
-
 /* Add header-right class if needed */
 .header-right {
   display: flex;

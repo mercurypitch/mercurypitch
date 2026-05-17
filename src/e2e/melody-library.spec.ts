@@ -246,7 +246,9 @@ test.describe('Melody Library', () => {
     })
     await page.waitForTimeout(500)
 
-    const selectEl = page.locator('[data-testid="edit-melody-form"] select').first()
+    const selectEl = page
+      .locator('[data-testid="edit-melody-form"] select')
+      .first()
     const count = await selectEl.count()
     expect(count).toBeGreaterThanOrEqual(0)
   })

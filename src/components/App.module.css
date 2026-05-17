@@ -8,7 +8,6 @@
   height: 100%;
 }
 
-
 /* Extracted from: Editor View Toggle */
 
 .editor-view-toggle {
@@ -46,7 +45,6 @@
 .session-editor-container {
   min-height: 400px;
 }
-
 
 /* Extracted from: Score Overlay */
 
@@ -262,7 +260,6 @@
   background: var(--accent);
   color: white;
 }
-
 
 /* Extracted from: Session Summary */
 

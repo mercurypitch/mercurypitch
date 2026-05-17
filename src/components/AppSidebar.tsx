@@ -145,7 +145,10 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
           <span class={styles.walkthroughControlText}>Learn</span>
         </button>
         <button
-          class={[styles.walkthroughControlBtn, styles.walkthroughControlBtnGuide].join(' ')}
+          class={[
+            styles.walkthroughControlBtn,
+            styles.walkthroughControlBtnGuide,
+          ].join(' ')}
           onClick={() => props.onOpenGuide?.()}
           title="Interactive guide tours"
         >
@@ -299,7 +302,11 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
             </select>
             <button
               id="open-scale-builder"
-              class={['ctrl-btn', 'roll-ctrl-btn', styles.openScaleBuilder].join(' ')}
+              class={[
+                'ctrl-btn',
+                'roll-ctrl-btn',
+                styles.openScaleBuilder,
+              ].join(' ')}
               title="Build custom scale"
               onClick={() => props.onOpenScaleBuilder?.()}
             >
@@ -427,9 +434,15 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
 
             {/* Session history — practice tab only */}
             <Show when={sessionResults().length > 0}>
-              <div id="session-history-panel" class={styles.sessionHistoryPanel}>
+              <div
+                id="session-history-panel"
+                class={styles.sessionHistoryPanel}
+              >
                 <h3>Sessions</h3>
-                <div id="session-history-list" class={styles.sessionHistoryList}>
+                <div
+                  id="session-history-list"
+                  class={styles.sessionHistoryList}
+                >
                   <For each={sessionResults()}>
                     {(entry) => (
                       <div class={styles.sessionHistoryEntry}>
@@ -437,7 +450,14 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
                           {entry.sessionName}
                         </span>
                         <span
-                          class={[styles.sessionHistoryScore, entry.score >= 80 ? styles.scoreHigh : entry.score >= 50 ? styles.scoreMid : styles.scoreLow].join(' ')}
+                          class={[
+                            styles.sessionHistoryScore,
+                            entry.score >= 80
+                              ? styles.scoreHigh
+                              : entry.score >= 50
+                                ? styles.scoreMid
+                                : styles.scoreLow,
+                          ].join(' ')}
                         >
                           {entry.score}%
                         </span>
@@ -453,7 +473,9 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
 
       {/* Note list (bottom-anchored) */}
       <Show when={isPracticeOrSettingsTab() && showSidebarNoteList()}>
-        <div class={[styles.sidebarSection, styles.sidebarNotesBottom].join(' ')}>
+        <div
+          class={[styles.sidebarSection, styles.sidebarNotesBottom].join(' ')}
+        >
           <NoteList
             melody={props.melody}
             currentNoteIndex={props.currentNoteIndex}
@@ -465,7 +487,9 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
 
       {/* Pitch display (bottom-anchored) */}
       <Show when={isPracticeOrSettingsTab() && showPitchDisplay()}>
-        <div class={[styles.sidebarSection, styles.sidebarNotesBottom].join(' ')}>
+        <div
+          class={[styles.sidebarSection, styles.sidebarNotesBottom].join(' ')}
+        >
           <PitchDisplay pitch={props.pitch} targetNote={props.targetNoteName} />
         </div>
       </Show>

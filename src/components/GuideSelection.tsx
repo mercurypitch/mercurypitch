@@ -103,7 +103,11 @@ export const GuideSelection: Component<GuideSelectionProps> = (props) => {
                 const done = isGuideSectionCompleted(sec.id)
                 return (
                   <button
-                    class={done ? `${styles.guideSectionItem} ${styles.guideSectionItemCompleted}` : styles.guideSectionItem}
+                    class={
+                      done
+                        ? `${styles.guideSectionItem} ${styles.guideSectionItemCompleted}`
+                        : styles.guideSectionItem
+                    }
                     onClick={() => handleStartSection(sec.id)}
                   >
                     <span class={styles.guideSectionIcon}>
@@ -126,7 +130,9 @@ export const GuideSelection: Component<GuideSelectionProps> = (props) => {
                     </span>
                     <span class={styles.guideSectionText}>
                       <span class={styles.guideSectionName}>{sec.title}</span>
-                      <span class={styles.guideSectionDesc}>{sec.description}</span>
+                      <span class={styles.guideSectionDesc}>
+                        {sec.description}
+                      </span>
                     </span>
                   </button>
                 )

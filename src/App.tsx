@@ -97,6 +97,7 @@ import { selectedCharacter, showPracticeResultPopup, } from '@/stores/settings-s
 import type { ActiveTab, MelodyItem, PlaybackMode, SpacedRestMode, } from '@/types'
 import { Walkthrough, WalkthroughControl } from './components'
 import { LyricsUploaderStyles, StemMixerStyles } from './components'
+import styles from './components/App.module.css'
 import { AppErrorBoundary } from './components/AppErrorBoundary'
 import { CrashModal } from './components/CrashModal'
 import { FallingNotesCanvas } from './components/FallingNotesCanvas'
@@ -104,9 +105,7 @@ import { FallingNotesSongPicker } from './components/FallingNotesSongPicker'
 import { GuideSelection } from './components/GuideSelection'
 import { JamPanel } from './components/jam/JamPanel'
 import { TabErrorBoundary } from './components/TabErrorBoundary'
-
 import { WelcomeScreen } from './components/WelcomeScreen'
-import styles from './components/App.module.css'
 
 // ============================================================
 // Tab type
@@ -725,11 +724,7 @@ const AppShell: Component<AppProps> = (props) => {
     initTheme()
 
     // Inject UVR component styles
-    const styleElements = [
-      LyricsUploaderStyles,
-      StemMixerStyles,
-
-    ]
+    const styleElements = [LyricsUploaderStyles, StemMixerStyles]
 
     styleElements.forEach((styleString) => {
       if (typeof styleString === 'string' && styleString.trim()) {

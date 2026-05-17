@@ -310,7 +310,9 @@ export const LibraryTab: Component = () => {
             <div class={styles.activeSessionSummary}>
               <p class={styles.sectionLabel}>Active Session</p>
               <select
-                class={['session-select', styles.sidebarSessionSelect].join(' ')}
+                class={['session-select', styles.sidebarSessionSelect].join(
+                  ' ',
+                )}
                 onChange={handleSessionChange}
                 title="Choose active session"
               >

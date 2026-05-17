@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Accessor, Component } from 'solid-js'
-import styles from './@/components/HeaderControls.module.css'
+import styles from '../HeaderControls.module.css'
 
 interface VolumeGroupProps {
   volume: Accessor<number>

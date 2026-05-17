@@ -8,8 +8,8 @@ import { TAB_COMPOSE, TAB_SETTINGS, TAB_SINGING, WALKTHROUGH_TAB_STUDY, } from '
 import { renderMarkdownToHtml } from '@/lib/render-markdown'
 import type { WalkthroughTab } from '@/stores/walkthrough-store'
 import { completeWalkthrough, getWalkthrough, getWalkthroughsForTab, isWalkthroughCompleted, viewWalkthrough, } from '@/stores/walkthrough-store'
-import styles from './WalkthroughModal.module.css'
 import type { WalkthroughContent } from '@/types/walkthrough'
+import styles from './WalkthroughModal.module.css'
 
 interface WalkthroughModalProps {
   isOpen: boolean
@@ -186,7 +186,10 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
               <p class={styles.walkthroughCompleteDesc}>
                 You've completed this walkthrough.
               </p>
-              <button class={styles.walkthroughCompleteBtn} onClick={handleContinue}>
+              <button
+                class={styles.walkthroughCompleteBtn}
+                onClick={handleContinue}
+              >
                 Continue
               </button>
               <button
@@ -212,7 +215,10 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
           {/* Reading state */}
           <Show when={!isCompleted()} keyed>
             <div class={styles.walkthroughContent}>
-              <button class={styles.walkthroughBackBtn} onClick={handleBackToList}>
+              <button
+                class={styles.walkthroughBackBtn}
+                onClick={handleBackToList}
+              >
                 <svg
                   viewBox="0 0 24 24"
                   width="14"
@@ -247,7 +253,12 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
                     <For each={currentWalkthrough()?.steps ?? []}>
                       {(step, index) => (
                         <Show when={index() === currentStepIndex()}>
-                          <div class={[styles.walkthroughStepItem, styles.walkthroughStepItemActive].join(' ')}>
+                          <div
+                            class={[
+                              styles.walkthroughStepItem,
+                              styles.walkthroughStepItemActive,
+                            ].join(' ')}
+                          >
                             <span class={styles.walkthroughStepNumber}>
                               {index() + 1}
                             </span>
@@ -292,7 +303,10 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
 
                 {currentStepIndex() < currentWalkthrough()!.steps.length - 1 ? (
                   <button
-                    class={[styles.walkthroughNavBtn, styles.walkthroughNavBtnNext].join(' ')}
+                    class={[
+                      styles.walkthroughNavBtn,
+                      styles.walkthroughNavBtnNext,
+                    ].join(' ')}
                     onClick={nextStep}
                   >
                     Next

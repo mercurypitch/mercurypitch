@@ -51,7 +51,7 @@ export const SCALE_TYPES = [
 
 export type PracticeSubMode = 'all' | 'random' | 'focus' | 'reverse'
 import type { ActiveTab } from '@/types'
-import styles from './@/components/HeaderControls.module.css'
+import styles from '../HeaderControls.module.css'
 
 interface SharedControlToolbarProps {
   // Tab identification
@@ -481,7 +481,9 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
           }
         >
           <div class={styles.cyclesControlGroup}>
-            <label class={`${styles.optLabel} ${styles.cyclesLabel}`}>Cycles</label>
+            <label class={`${styles.optLabel} ${styles.cyclesLabel}`}>
+              Cycles
+            </label>
             <input
               type="number"
               id="cycles"
@@ -500,7 +502,10 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
             />
             <span class={styles.cycleProgressPill} title="Current repeat cycle">
               <span class={styles.cycleProgressLabel}>Run</span>
-              <span class={styles.cycleProgressValue} data-testid="cycle-progress-value">
+              <span
+                class={styles.cycleProgressValue}
+                data-testid="cycle-progress-value"
+              >
                 {props.currentCycle()}/{props.practiceCycles()}
               </span>
             </span>
@@ -512,7 +517,9 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
           when={isPracticeTab() && props.playMode() === PLAYBACK_MODE_SESSION}
         >
           <div class={styles.practiceModeControlGroup}>
-            <label class={`${styles.optLabel} ${styles.practiceModeLabel}`}>Mode</label>
+            <label class={`${styles.optLabel} ${styles.practiceModeLabel}`}>
+              Mode
+            </label>
             <select
               id="practice-sub-mode"
               value={props.practiceSubMode()}
@@ -534,7 +541,9 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
         {/* Spaced mode selector — once-through playback with optional rests inserted between notes. */}
         <Show when={isPracticeTab() && props.playMode() === PLAYBACK_MODE_ONCE}>
           <div class={styles.practiceModeControlGroup}>
-            <label class={`${styles.optLabel} ${styles.practiceModeLabel}`}>Rest</label>
+            <label class={`${styles.optLabel} ${styles.practiceModeLabel}`}>
+              Rest
+            </label>
             <select
               id="spaced-rest-mode"
               value={props.spacedRestMode?.() ?? 'none'}
@@ -565,7 +574,10 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
         <div class={styles.inlineControlsRow}>
           {/* BPM */}
           <Show when={!isPianoTab() || (props.bpmValue && props.onBpmChange)}>
-            <div class={`${styles.tempoGroup} ${styles.inlineControl}`} title="Tempo (BPM)">
+            <div
+              class={`${styles.tempoGroup} ${styles.inlineControl}`}
+              title="Tempo (BPM)"
+            >
               <span class={styles.inlineControlIcon} aria-hidden="true">
                 <svg viewBox="0 0 24 24" width="14" height="14">
                   <path
@@ -744,7 +756,10 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
               props.onZoomOut
             }
           >
-            <div class={['zoom-group', styles.inlineControl].join(' ')} title="Zoom level">
+            <div
+              class={['zoom-group', styles.inlineControl].join(' ')}
+              title="Zoom level"
+            >
               <span class={styles.inlineControlIcon} aria-hidden="true">
                 <svg viewBox="0 0 24 24" width="14" height="14">
                   <path

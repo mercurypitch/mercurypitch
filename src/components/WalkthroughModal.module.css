@@ -277,16 +277,24 @@
   background: #8b5cf6;
 }
 
-.walkthroughText :global(.md-admonition-note) :global(.md-admonition-icon)::before {
+.walkthroughText
+  :global(.md-admonition-note)
+  :global(.md-admonition-icon)::before {
   content: 'N';
 }
-.walkthroughText :global(.md-admonition-tip) :global(.md-admonition-icon)::before {
+.walkthroughText
+  :global(.md-admonition-tip)
+  :global(.md-admonition-icon)::before {
   content: 'T';
 }
-.walkthroughText :global(.md-admonition-warning) :global(.md-admonition-icon)::before {
+.walkthroughText
+  :global(.md-admonition-warning)
+  :global(.md-admonition-icon)::before {
   content: '!';
 }
-.walkthroughText :global(.md-admonition-info) :global(.md-admonition-icon)::before {
+.walkthroughText
+  :global(.md-admonition-info)
+  :global(.md-admonition-icon)::before {
   content: 'i';
 }
 

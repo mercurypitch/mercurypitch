@@ -141,7 +141,9 @@ export const CrashModal: Component = () => {
               </div>
               <div class={styles.crashStacktraceWrapper}>
                 <div class="crash-stacktrace-header">
-                  <pre class={styles.crashStacktraceContent}>{errorStack()}</pre>
+                  <pre class={styles.crashStacktraceContent}>
+                    {errorStack()}
+                  </pre>
                   <button
                     classList={{
                       'crash-copy-btn': true,
@@ -218,10 +220,7 @@ export const CrashModal: Component = () => {
                 {showLogs() ? 'Hide Logs' : 'View Logs'}
               </button>
 
-              <button
-                onClick={handleReload}
-                class={styles.crashBtnPrimary}
-              >
+              <button onClick={handleReload} class={styles.crashBtnPrimary}>
                 <svg
                   viewBox="0 0 24 24"
                   width="16"
@@ -262,7 +261,9 @@ export const CrashModal: Component = () => {
                 <span class={styles.crashActionDivider}>•</span>
                 <button
                   onClick={handleClearStorage}
-                  class={[styles.crashActionLink, 'crash-danger-link'].join(' ')}
+                  class={[styles.crashActionLink, 'crash-danger-link'].join(
+                    ' ',
+                  )}
                 >
                   <svg
                     viewBox="0 0 24 24"

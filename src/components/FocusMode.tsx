@@ -136,7 +136,10 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
             <span class={styles.focusSessionBadge}>
               Run {sessionItem() + 1}
               <Show when={sessionRepeat() > 0}>
-                <span class={styles.focusRepeatCount}> ×{sessionRepeat() + 1}</span>
+                <span class={styles.focusRepeatCount}>
+                  {' '}
+                  ×{sessionRepeat() + 1}
+                </span>
               </Show>
             </span>
           </Show>
@@ -320,7 +323,9 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
               />
             </svg>
           </button>
-          <span class={styles.focusSpeedLabel}>{playbackSpeed().toFixed(2)}x</span>
+          <span class={styles.focusSpeedLabel}>
+            {playbackSpeed().toFixed(2)}x
+          </span>
           <button
             class={styles.focusSpeedBtn}
             onClick={speedDown}

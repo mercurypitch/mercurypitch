@@ -382,8 +382,6 @@ input:checked + .settings-slider:before {
   font-weight: bold;
 }
 
-
-
 .danger-row {
   display: flex;
   justify-content: space-between;

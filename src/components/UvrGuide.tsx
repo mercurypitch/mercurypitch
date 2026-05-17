@@ -53,7 +53,9 @@ export const UvrGuide: Component<UvrGuideProps> = (props) => {
       title: 'Separation Modes',
       content: (
         <div class={styles.guideSection}>
-          <p class={styles.guideText}>Choose a mode that fits your practice goals:</p>
+          <p class={styles.guideText}>
+            Choose a mode that fits your practice goals:
+          </p>
           <div class={styles.guideModeCards}>
             <div class={`${styles.modeCard} ${styles.guideMode}`}>
               <div class={styles.modeIcon}>
@@ -144,11 +146,15 @@ export const UvrGuide: Component<UvrGuideProps> = (props) => {
               </span>
             </div>
             <div class={styles.smoothItem}>
-              <div class={`${styles.smoothToggle} ${styles.smoothToggleActive}`}>
+              <div
+                class={`${styles.smoothToggle} ${styles.smoothToggleActive}`}
+              >
                 <span class={styles.toggleLabel}>Medium</span>
                 <span class={styles.toggleValue}>30%</span>
               </div>
-              <span class={styles.smoothResult}>Balanced — smooth but distinct</span>
+              <span class={styles.smoothResult}>
+                Balanced — smooth but distinct
+              </span>
             </div>
             <div class={styles.smoothItem}>
               <div class={styles.smoothToggle}>
@@ -319,7 +325,11 @@ export const UvrGuide: Component<UvrGuideProps> = (props) => {
         <For each={steps}>
           {(_, i) => (
             <button
-              class={activeStep() === i() ? `${styles.guideStepDot} ${styles.guideStepDotActive}` : styles.guideStepDot}
+              class={
+                activeStep() === i()
+                  ? `${styles.guideStepDot} ${styles.guideStepDotActive}`
+                  : styles.guideStepDot
+              }
               onClick={() => setActiveStep(i())}
               aria-label={`Go to step ${i() + 1}`}
             />

@@ -222,7 +222,9 @@ export const ScaleBuilder: Component<ScaleBuilderProps> = (props) => {
               <div class={styles.scalePreviewNotes}>
                 <For
                   each={previewScale()}
-                  fallback={<span class={styles.noNotes}>No notes selected</span>}
+                  fallback={
+                    <span class={styles.noNotes}>No notes selected</span>
+                  }
                 >
                   {(note) => <span class={styles.previewNote}>{note}</span>}
                 </For>

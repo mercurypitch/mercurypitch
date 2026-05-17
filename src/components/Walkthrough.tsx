@@ -324,7 +324,9 @@ export const Walkthrough: Component = () => {
           <Show when={currentSection()}>
             {(sec) => (
               <div class={styles.walkthroughSectionHeader}>
-                <span class={styles.walkthroughSectionTitle}>{sec().title}</span>
+                <span class={styles.walkthroughSectionTitle}>
+                  {sec().title}
+                </span>
                 <span class={styles.walkthroughSectionSteps}>
                   {sectionStepCount().current} / {sectionStepCount().total}
                 </span>
