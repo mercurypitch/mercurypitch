@@ -148,12 +148,12 @@ async function loadModel(modelPath: string): Promise<void> {
     // Detect it via multi-touch capability combined with Macintosh UA.
     // Samsung tablets in Chrome "Desktop site" mode also spoof a desktop
     // Linux UA — navigator.userAgentData.mobile reveals the truth.
-    const uaData = (navigator as unknown as Record<string, unknown>).userAgentData as
-      | { mobile?: boolean }
-      | undefined
+    const uaData = (navigator as unknown as Record<string, unknown>)
+      .userAgentData as { mobile?: boolean } | undefined
     const isMobile =
       /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
-      (/Macintosh/i.test(navigator.userAgent) && navigator.maxTouchPoints > 1) ||
+      (/Macintosh/i.test(navigator.userAgent) &&
+        navigator.maxTouchPoints > 1) ||
       uaData?.mobile === true
     if (!isLinuxFirefox && !isMobile) {
       try {
