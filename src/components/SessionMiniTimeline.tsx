@@ -22,6 +22,7 @@ import { For, Show } from 'solid-js'
 import { IconMusicNote, IconPause } from '@/components/hidden-features-icons'
 import { melodyStore } from '@/stores'
 import type { PlaybackSession, SessionItem } from '@/types'
+import styles from './SessionMiniTimeline.module.css'
 
 interface SessionMiniTimelineProps {
   session: PlaybackSession
@@ -61,11 +62,11 @@ export const SessionMiniTimeline: Component<SessionMiniTimelineProps> = (
   props,
 ) => {
   return (
-    <div class="session-mini-timeline" role="list" aria-label="Session items">
+    <div class={styles.sessionMiniTimeline} role="list" aria-label="Session items">
       <Show
         when={props.session.items.length > 0}
         fallback={
-          <span class="session-mini-empty">No items in this session</span>
+          <span class={styles.sessionMiniEmpty}>No items in this session</span>
         }
       >
         <For each={props.session.items}>
@@ -73,14 +74,14 @@ export const SessionMiniTimeline: Component<SessionMiniTimelineProps> = (
             const isRest = item.type === 'rest'
             return (
               <div
-                class={`session-mini-pill ${isRest ? 'is-rest' : 'is-melody'}`}
+                class={`${styles.sessionMiniPill} ${isRest ? styles.isRest : styles.isMelody}`}
                 role="listitem"
                 title={`${index() + 1}. ${labelFor(item)}`}
               >
-                <span class="session-mini-pill-icon" aria-hidden="true">
+                <span class={styles.sessionMiniPillIcon} aria-hidden="true">
                   {isRest ? <IconPause /> : <IconMusicNote />}
                 </span>
-                <span class="session-mini-pill-label">{labelFor(item)}</span>
+                <span class={styles.sessionMiniPillLabel}>{labelFor(item)}</span>
               </div>
             )
           }}

@@ -1,0 +1,54 @@
+/* SessionMiniTimeline — compact read-only session item pills */
+
+.sessionMiniTimeline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+  max-height: 64px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.sessionMiniPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  background: var(--surface-2, rgba(255, 255, 255, 0.06));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text, #ddd);
+  white-space: nowrap;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.isMelody {
+  background: var(--accent-dim);
+  border: 1px solid var(--accent);
+}
+
+.isRest {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+}
+
+.sessionMiniPillIcon {
+  font-size: 0.75rem;
+  flex: 0 0 auto;
+}
+
+.sessionMiniPillLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sessionMiniEmpty {
+  font-size: 0.75rem;
+  color: var(--text-muted, #888);
+  font-style: italic;
+}

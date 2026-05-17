@@ -13,6 +13,7 @@ import { setEditorView } from '@/stores'
 import { setActiveTab as setAppActiveTab, setActiveUserSession, setBpm, setKeyName, setScaleType, showNotification, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import type { MelodyData, NoteName } from '@/types'
+import styles from './LibraryModal.module.css'
 
 type DebouncedSetter<T> = (value: T, immediate?: boolean) => void
 
@@ -978,7 +979,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
             <div class="library-content">
               {/* Add melody mode */}
               <Show when={playlistEditing()?.mode === 'add-melody'}>
-                <div class="playlist-edit-form">
+                <div class={styles.playlistEditForm}>
                   <h3>Add Melody to Playlist</h3>
 
                   <div class="form-group">
@@ -992,38 +993,38 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                     />
                   </div>
 
-                  <div class="melody-select-list">
+                  <div class={styles.melodySelectList}>
                     <For each={availableForPlaylist()}>
                       {(item) => {
                         const edit = playlistEditing()
                         const playlistId = edit?.playlistId ?? ''
-                        const selected =
+                        const sel =
                           item.type === 'session'
                             ? isSessionInPlaylist(playlistId, item.id)
                             : isMelodyInPlaylist(playlistId, item.id)
                         return (
                           <button
                             type="button"
-                            class={`melody-select-item playlist-picker-pill ${selected ? 'selected' : ''}`}
+                            class={`${styles.playlistPickerPill} ${sel ? styles.selected : ''}`}
                             onClick={() =>
                               handleTogglePlaylistItem(playlistId, item)
                             }
                           >
-                            <span class="playlist-picker-icon">
+                            <span class={styles.playlistPickerIcon}>
                               {item.type === 'session' ? (
                                 <IconSheetMusic />
                               ) : (
                                 <IconMusicNote />
                               )}
                             </span>
-                            <span class="playlist-picker-copy">
-                              <span class="select-item-title">
+                            <span class={styles.playlistPickerCopy}>
+                              <span class={styles.selectItemTitle}>
                                 {item.title}
                               </span>
-                              <span class="select-item-meta">{item.meta}</span>
+                              <span class={styles.selectItemMeta}>{item.meta}</span>
                             </span>
-                            <span class="playlist-picker-check">
-                              {selected ? <IconCheckSolid /> : '+'}
+                            <span class={styles.playlistPickerCheck}>
+                              {sel ? <IconCheckSolid /> : '+'}
                             </span>
                           </button>
                         )
@@ -1031,7 +1032,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                     </For>
 
                     {availableForPlaylist().length === 0 && (
-                      <div class="empty-state">
+                      <div class={styles.emptyState}>
                         <p>No matching sessions or melodies found.</p>
                       </div>
                     )}
@@ -1059,7 +1060,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
 
               {/* Create mode (for new playlists) */}
               <Show when={playlistEditing()?.mode === 'create'}>
-                <div class="playlist-edit-form">
+                <div class={styles.playlistEditForm}>
                   <h3>Create New Playlist</h3>
 
                   <div class="form-group">
@@ -1092,7 +1093,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                   playlistEditing()?.playlistId
                 }
               >
-                <div class="playlist-edit-form">
+                <div class={styles.playlistEditForm}>
                   <h3>Rename Playlist</h3>
 
                   <div class="form-group">
@@ -1120,7 +1121,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
 
               {/* Delete mode */}
               <Show when={playlistEditing()?.mode === 'delete'}>
-                <div class="playlist-edit-form">
+                <div class={styles.playlistEditForm}>
                   <h3>Delete Playlist</h3>
                   <p>
                     Are you sure you want to delete this playlist? This action
