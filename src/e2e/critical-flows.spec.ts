@@ -452,7 +452,7 @@ test.describe('Critical Flows — GH #121', () => {
       await page.waitForTimeout(300)
 
       // Cycle progress pill should be visible
-      const cyclePill = page.locator('.cycle-progress-value')
+      const cyclePill = page.locator('[data-testid="cycle-progress-value"]')
       await expect(cyclePill).toBeVisible()
     })
 

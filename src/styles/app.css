@@ -374,15 +374,6 @@ select option:disabled {
     font-size: 0.72rem;
     min-height: 44px;
   }
-  .cycles-input {
-    width: 44px;
-    padding: 2px 5px;
-    font-size: 0.68rem;
-  }
-  .practice-sub-mode-select {
-    font-size: 0.68rem;
-    padding: 2px 5px;
-  }
   .countin-badge {
     width: 30px;
     height: 30px;
@@ -1289,172 +1280,13 @@ select option:disabled {
   filter: drop-shadow(0 0 4px var(--accent-glow, rgba(76, 175, 80, 0.6)));
 }
 
-/* Repeat cycles control — polished inline counter next to the input */
-.cycles-control-group {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 8px;
-  border: 1px solid var(--accent-dim);
-  border-radius: 999px;
-  background: linear-gradient(180deg, var(--bg-secondary), var(--bg-primary));
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.04),
-    0 0 0 1px rgba(0, 0, 0, 0.08);
-}
-
-.cycles-label {
-  margin: 0;
-  color: var(--text-secondary);
-  font-size: 0.72rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.cycles-control-group .cycles-input {
-  width: 54px;
-  min-width: 54px;
-  height: 28px;
-  padding: 0 8px;
-  border-radius: 999px;
-  border: 1px solid var(--accent-glow);
-  background: var(--accent-dim);
-  color: var(--text-primary);
-  font-weight: 700;
-  text-align: center;
-  outline: none;
-}
-
-.cycles-control-group .cycles-input:focus {
-  border-color: var(--accent);
-  box-shadow:
-    0 0 0 3px var(--accent-dim),
-    0 0 18px var(--accent-dim);
-}
-
-.cycle-progress-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  height: 28px;
-  padding: 0 10px;
-  border-radius: 999px;
-  border: 1px solid var(--green-dim);
-  background: linear-gradient(135deg, var(--green-dim), var(--accent-dim));
-  color: var(--text-primary);
-  font-size: 0.78rem;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.cycle-progress-label {
-  color: var(--text-secondary);
-  font-size: 0.68rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.cycle-progress-value {
-  color: var(--green);
-  text-shadow: 0 0 10px var(--green-dim);
-}
-
-/* Sidebar scale select: reuse session-select chrome, sized for the scale row. */
-.sidebar-scale-select {
-  width: 100%;
-  max-width: 100%;
-  min-height: 34px;
-  margin-top: 4px;
-}
-
 /* Number input spinner styling — avoid default white spin button chrome. */
-.cycles-control-group .cycles-input::-webkit-inner-spin-button,
-.cycles-control-group .cycles-input::-webkit-outer-spin-button,
 #bpm-input::-webkit-inner-spin-button,
 #bpm-input::-webkit-outer-spin-button {
   opacity: 1;
   filter: invert(65%) sepia(44%) saturate(711%) hue-rotate(179deg)
     brightness(96%) contrast(95%);
   cursor: pointer;
-}
-
-.cycles-control-group .cycles-input[type='number'],
-#bpm-input[type='number'] {
-}
-
-.settings-row input[type='number'] {
-}
-
-/* Practice sub-mode selector — same polished capsule language as Repeat cycles. */
-.practice-mode-control-group {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 8px;
-  border: 1px solid var(--accent-dim);
-  border-radius: 999px;
-  background: linear-gradient(180deg, var(--bg-secondary), var(--bg-primary));
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.04),
-    0 0 0 1px rgba(0, 0, 0, 0.08);
-}
-
-.practice-mode-label {
-  margin: 0;
-  color: var(--text-secondary);
-  font-size: 0.72rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.practice-mode-control-group .practice-sub-mode-select {
-  height: 28px;
-  min-width: 132px;
-  padding: 0 30px 0 10px;
-  border-radius: 999px;
-  border: 1px solid var(--accent-glow);
-  background: var(--accent-dim);
-  color: var(--text-primary);
-  font-weight: 700;
-  outline: none;
-  cursor: pointer;
-  appearance: none;
-  background-image:
-    linear-gradient(45deg, transparent 50%, var(--text-muted) 50%),
-    linear-gradient(135deg, var(--text-muted) 50%, transparent 50%);
-  background-position:
-    calc(100% - 16px) 11px,
-    calc(100% - 11px) 11px;
-  background-size:
-    5px 5px,
-    5px 5px;
-  background-repeat: no-repeat;
-}
-
-.practice-mode-control-group .practice-sub-mode-select:hover {
-  border-color: var(--accent-glow);
-  background-color: var(--bg-card);
-}
-
-.practice-mode-control-group .practice-sub-mode-select:focus {
-  border-color: var(--accent);
-  box-shadow:
-    0 0 0 3px var(--accent-dim),
-    0 0 18px var(--accent-dim);
-}
-
-.practice-mode-control-group .practice-sub-mode-select option {
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-}
-
-/* Stronger override: practice mode dropdown must stay dark (not browser white). */
-.practice-mode-control-group select.practice-sub-mode-select,
-.practice-mode-control-group .practice-sub-mode-select {
-  background-color: var(--bg-secondary) !important;
-  color: var(--text-primary) !important;
-  border-color: var(--accent-glow) !important;
 }
 
 /* Compact Settings selects/buttons — match app control density. */
@@ -1513,66 +1345,11 @@ select option:disabled {
   border: 1px dashed rgba(139, 148, 158, 0.65);
 }
 
-/* ───────────────────────────────────────────────────────────────
-   Inline transport controls (BPM / Volume / Speed)
-   ───────────────────────────────────────────────────────────────
-   Replaces the older "label : input : slider : number" stacked
-   layout with compact icon-prefixed controls. The cluster is
-   wrapped in `.inline-controls-row` so on narrow viewports
-   (<600px) it wraps onto a second row underneath the playback
-   buttons (Play/Pause/Stop), instead of horizontal-scrolling.
-   ─────────────────────────────────────────────────────────────── */
-.inline-controls-row {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-  /* Take a full row when wrapped so children align cleanly */
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.inline-control {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 2px 6px;
-  border-radius: 6px;
-  background: var(--surface-2, rgba(255, 255, 255, 0.04));
-  white-space: nowrap;
-}
-
-.inline-control-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-muted, #aaa);
-  flex: 0 0 auto;
-}
-
-.inline-control-value {
-  font-variant-numeric: tabular-nums;
-  font-size: 0.8rem;
-  color: var(--text, #ddd);
-  min-width: 2ch;
-  text-align: right;
-}
-
-/* Hide redundant text labels inside inline controls (icon replaces them) */
-.inline-control .opt-label {
-  display: none;
-}
-
 /* On narrow viewports break the row into a second toolbar row */
 @media (max-width: 600px) {
   .practice-header-bar,
   .editor-header-bar {
     flex-wrap: wrap;
-  }
-  .inline-controls-row {
-    width: 100%;
-    order: 99; /* push below the primary controls */
-    justify-content: flex-start;
   }
 }
 

@@ -876,3 +876,206 @@
     opacity: 1;
   }
 }
+
+
+/* Extracted from: Repeat Cycles Control Group */
+
+.cyclesControlGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border: 1px solid var(--accent-dim);
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--bg-secondary), var(--bg-primary));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+.cyclesLabel {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.cyclesControlGroup .cyclesInput {
+  width: 54px;
+  min-width: 54px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 999px;
+  border: 1px solid var(--accent-glow);
+  background: var(--accent-dim);
+  color: var(--text-primary);
+  font-weight: 700;
+  text-align: center;
+  outline: none;
+}
+
+.cyclesControlGroup .cyclesInput:focus {
+  border-color: var(--accent);
+  box-shadow:
+    0 0 0 3px var(--accent-dim),
+    0 0 18px var(--accent-dim);
+}
+
+.cyclesControlGroup .cyclesInput::-webkit-inner-spin-button,
+.cyclesControlGroup .cyclesInput::-webkit-outer-spin-button {
+  opacity: 1;
+  filter: invert(65%) sepia(44%) saturate(711%) hue-rotate(179deg)
+    brightness(96%) contrast(95%);
+  cursor: pointer;
+}
+
+.cycleProgressPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid var(--green-dim);
+  background: linear-gradient(135deg, var(--green-dim), var(--accent-dim));
+  color: var(--text-primary);
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.cycleProgressLabel {
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.cycleProgressValue {
+  color: var(--green);
+  text-shadow: 0 0 10px var(--green-dim);
+}
+
+
+/* Extracted from: Practice Sub-Mode Selector */
+
+.practiceModeControlGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border: 1px solid var(--accent-dim);
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--bg-secondary), var(--bg-primary));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+.practiceModeLabel {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.practiceSubModeSelect {
+  height: 28px;
+  min-width: 132px;
+  padding: 0 30px 0 10px;
+  border-radius: 999px;
+  border: 1px solid var(--accent-glow);
+  background: var(--accent-dim);
+  color: var(--text-primary);
+  font-weight: 700;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--text-muted) 50%),
+    linear-gradient(135deg, var(--text-muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 16px) 11px,
+    calc(100% - 11px) 11px;
+  background-size:
+    5px 5px,
+    5px 5px;
+  background-repeat: no-repeat;
+}
+
+.practiceSubModeSelect:hover {
+  border-color: var(--accent-glow);
+  background-color: var(--bg-card);
+}
+
+.practiceSubModeSelect:focus {
+  border-color: var(--accent);
+  box-shadow:
+    0 0 0 3px var(--accent-dim),
+    0 0 18px var(--accent-dim);
+}
+
+.practiceSubModeSelect option {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.practiceModeControlGroup select.practiceSubModeSelect,
+.practiceModeControlGroup .practiceSubModeSelect {
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--accent-glow) !important;
+}
+
+
+/* Extracted from: Inline Transport Controls */
+
+.inlineControlsRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.inlineControl {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: var(--surface-2, rgba(255, 255, 255, 0.04));
+  white-space: nowrap;
+}
+
+.inlineControlIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted, #aaa);
+  flex: 0 0 auto;
+}
+
+.inlineControlValue {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.8rem;
+  color: var(--text, #ddd);
+  min-width: 2ch;
+  text-align: right;
+}
+
+.inlineControl :global(.opt-label) {
+  display: none;
+}
+
+@media (max-width: 600px) {
+  .inlineControlsRow {
+    width: 100%;
+    order: 99;
+    justify-content: flex-start;
+  }
+}

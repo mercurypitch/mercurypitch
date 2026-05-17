@@ -480,8 +480,8 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
             props.playMode() === PLAYBACK_MODE_REPEAT
           }
         >
-          <div class="secondary-control-group cycles-control-group">
-            <label class={[styles.optLabel, 'cycles-label'].join(' ')}>Cycles</label>
+          <div class={styles.cyclesControlGroup}>
+            <label class={`${styles.optLabel} ${styles.cyclesLabel}`}>Cycles</label>
             <input
               type="number"
               id="cycles"
@@ -498,9 +498,9 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
               }}
               class={styles.cyclesInput}
             />
-            <span class="cycle-progress-pill" title="Current repeat cycle">
-              <span class="cycle-progress-label">Run</span>
-              <span class="cycle-progress-value">
+            <span class={styles.cycleProgressPill} title="Current repeat cycle">
+              <span class={styles.cycleProgressLabel}>Run</span>
+              <span class={styles.cycleProgressValue} data-testid="cycle-progress-value">
                 {props.currentCycle()}/{props.practiceCycles()}
               </span>
             </span>
@@ -511,8 +511,8 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
         <Show
           when={isPracticeTab() && props.playMode() === PLAYBACK_MODE_SESSION}
         >
-          <div class="secondary-control-group practice-mode-control-group">
-            <label class={[styles.optLabel, 'practice-mode-label'].join(' ')}>Mode</label>
+          <div class={styles.practiceModeControlGroup}>
+            <label class={`${styles.optLabel} ${styles.practiceModeLabel}`}>Mode</label>
             <select
               id="practice-sub-mode"
               value={props.practiceSubMode()}
@@ -521,7 +521,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
                   e.currentTarget.value as PracticeSubMode,
                 )
               }}
-              class="practice-sub-mode-select"
+              class={styles.practiceSubModeSelect}
             >
               <option value="all">All Notes</option>
               <option value="random">Random (50%)</option>
@@ -533,8 +533,8 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
 
         {/* Spaced mode selector — once-through playback with optional rests inserted between notes. */}
         <Show when={isPracticeTab() && props.playMode() === PLAYBACK_MODE_ONCE}>
-          <div class="secondary-control-group practice-mode-control-group spaced-mode-control-group">
-            <label class={[styles.optLabel, 'practice-mode-label'].join(' ')}>Rest</label>
+          <div class={styles.practiceModeControlGroup}>
+            <label class={`${styles.optLabel} ${styles.practiceModeLabel}`}>Rest</label>
             <select
               id="spaced-rest-mode"
               value={props.spacedRestMode?.() ?? 'none'}
@@ -562,11 +562,11 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
           instead of "label : value : slider : number" stacked text.
           See app.css `.inline-controls-row`.
         */}
-        <div class="inline-controls-row">
+        <div class={styles.inlineControlsRow}>
           {/* BPM */}
           <Show when={!isPianoTab() || (props.bpmValue && props.onBpmChange)}>
-            <div class={[styles.tempoGroup, 'inline-control'].join(' ')} title="Tempo (BPM)">
-              <span class="inline-control-icon" aria-hidden="true">
+            <div class={`${styles.tempoGroup} ${styles.inlineControl}`} title="Tempo (BPM)">
+              <span class={styles.inlineControlIcon} aria-hidden="true">
                 <svg viewBox="0 0 24 24" width="14" height="14">
                   <path
                     fill="currentColor"
@@ -618,8 +618,8 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
           </Show>
 
           {/* Volume */}
-          <div class={['volume-group', styles.inlineControl].join(' ')} title="Volume">
-            <span class="inline-control-icon" aria-hidden="true">
+          <div class={styles.inlineControl} title="Volume">
+            <span class={styles.inlineControlIcon} aria-hidden="true">
               <svg viewBox="0 0 24 24" width="14" height="14">
                 <path
                   fill="currentColor"
@@ -664,10 +664,10 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
               of a stray label-slider pair tucked at the right edge. */}
           <Show when={!isPianoTab()}>
             <div
-              class={['sensitivity-group', styles.inlineControl].join(' ')}
+              class={styles.inlineControl}
               title="Mic sensitivity (1 = quiet rooms, 10 = noisy)"
             >
-              <span class="inline-control-icon" aria-hidden="true">
+              <span class={styles.inlineControlIcon} aria-hidden="true">
                 {/* Mic icon */}
                 <svg viewBox="0 0 24 24" width="14" height="14">
                   <path
@@ -708,8 +708,8 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
           </Show>
 
           {/* Speed */}
-          <div class={['speed-group', styles.inlineControl].join(' ')} title="Playback speed">
-            <span class="inline-control-icon" aria-hidden="true">
+          <div class={styles.inlineControl} title="Playback speed">
+            <span class={styles.inlineControlIcon} aria-hidden="true">
               <svg viewBox="0 0 24 24" width="14" height="14">
                 <path fill="currentColor" d="M4 5v14l8-7zM14 5v14l8-7z" />
               </svg>
@@ -745,7 +745,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
             }
           >
             <div class={['zoom-group', styles.inlineControl].join(' ')} title="Zoom level">
-              <span class="inline-control-icon" aria-hidden="true">
+              <span class={styles.inlineControlIcon} aria-hidden="true">
                 <svg viewBox="0 0 24 24" width="14" height="14">
                   <path
                     fill="currentColor"
