@@ -1790,13 +1790,13 @@ export class PianoRollEditor {
         // Disable rows controls — all octaves are visible
         const rowsGroup = this.container.querySelector('.roll-octaves-group')
         if (rowsGroup) rowsGroup.classList.add('disabled')
-        const mainArea = this.container.querySelector('.roll-main-area')
-        if (mainArea) mainArea.classList.add('piano-roll-scrollable')
+        const gridWrapper = this.container.querySelector('.roll-grid-wrapper')
+        if (gridWrapper) gridWrapper.classList.add('piano-roll-scrollable')
       } else {
         const rowsGroup = this.container.querySelector('.roll-octaves-group')
         if (rowsGroup) rowsGroup.classList.remove('disabled')
-        const mainArea = this.container.querySelector('.roll-main-area')
-        if (mainArea) mainArea.classList.remove('piano-roll-scrollable')
+        const gridWrapper = this.container.querySelector('.roll-grid-wrapper')
+        if (gridWrapper) gridWrapper.classList.remove('piano-roll-scrollable')
       }
       this._rebuildScale()
       this.buildCanvases()

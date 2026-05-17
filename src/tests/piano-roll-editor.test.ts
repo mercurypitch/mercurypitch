@@ -223,11 +223,11 @@ describe('PianoRollEditor', () => {
     expect(scrollToggle).toBeDefined()
     expect(scrollToggle.classList.contains('active')).toBe(false)
 
-    // Toggle on — class should be on .roll-main-area, rows group disabled
+    // Toggle on — class should be on .roll-grid-wrapper, rows group disabled
     scrollToggle.click()
     expect(scrollToggle.classList.contains('active')).toBe(true)
-    const mainArea = container.querySelector('.roll-main-area')
-    expect(mainArea?.classList.contains('piano-roll-scrollable')).toBe(true)
+    const gridWrapper = container.querySelector('.roll-grid-wrapper')
+    expect(gridWrapper?.classList.contains('piano-roll-scrollable')).toBe(true)
     expect(editor.isScrollable()).toBe(true)
     const rowsGroup = container.querySelector('.roll-octaves-group')
     expect(rowsGroup?.classList.contains('disabled')).toBe(true)
@@ -235,7 +235,7 @@ describe('PianoRollEditor', () => {
     // Toggle off — rows group re-enabled
     scrollToggle.click()
     expect(scrollToggle.classList.contains('active')).toBe(false)
-    expect(mainArea?.classList.contains('piano-roll-scrollable')).toBe(false)
+    expect(gridWrapper?.classList.contains('piano-roll-scrollable')).toBe(false)
     expect(editor.isScrollable()).toBe(false)
     expect(rowsGroup?.classList.contains('disabled')).toBe(false)
   })
