@@ -3591,6 +3591,8 @@ Keeps your existing styles, only adjusts layout
   font-size: 0.72rem;
   cursor: pointer;
   transition: all 0.12s ease;
+  min-height: 44px;
+  min-width: 44px;
 }
 
 .roll-tool-btn:hover {
@@ -3710,6 +3712,17 @@ Keeps your existing styles, only adjusts layout
   pointer-events: none;
 }
 
+.roll-mode-group.disabled,
+.roll-instrument-group.disabled {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+.roll-toolbar-disabled {
+  pointer-events: none;
+  opacity: 0.35;
+}
+
 .octaves-label {
   font-size: 0.72rem;
   color: var(--text-secondary);
@@ -3797,6 +3810,7 @@ Keeps your existing styles, only adjusts layout
   font-size: 0.72rem;
   max-width: 140px;
   outline: none;
+  min-height: 44px;
 }
 
 .roll-mode-select:focus {
@@ -3963,6 +3977,7 @@ Keeps your existing styles, only adjusts layout
   padding: 4px 8px;
   font-size: 0.72rem;
   max-width: 100px;
+  min-height: 44px;
   outline: none;
 }
 

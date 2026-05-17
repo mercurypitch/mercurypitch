@@ -434,6 +434,7 @@ export interface PianoRollOptions {
 }
 
 export type PlaybackState = 'stopped' | 'playing' | 'paused'
+const MAX_OCTAVE_ROWS = 11
 export type ActiveTool = 'place' | 'erase' | 'select'
 export type EffectType =
   | 'slide-up'
@@ -514,6 +515,7 @@ export class PianoRollEditor {
   private selectedNoteIds: Set<number> = new Set()
   private selectedNotesCache: MelodyItem[] = []
   private activeTool: ActiveTool = 'place'
+  private previewMode = false
   private isDragging = false
   private isResizing = false
   private resizeHandle: 'left' | 'right' | null = null
@@ -581,6 +583,7 @@ export class PianoRollEditor {
 
     this.buildDOM()
     this.attachEventListeners()
+    this._updateSelectionControls()
     this.updateUndoRedoButtons()
     this.draw()
   }
@@ -630,7 +633,7 @@ export class PianoRollEditor {
       }
       if (Number.isFinite(minMidi) && Number.isFinite(maxMidi)) {
         const span = Math.ceil((maxMidi - minMidi + 1) / 12)
-        const needed = Math.max(2, span)
+        const needed = Math.min(MAX_OCTAVE_ROWS, Math.max(2, span))
         if (needed > this.numOctaves) {
           this.setNumOctaves(needed)
         }
@@ -1034,6 +1037,36 @@ export class PianoRollEditor {
     }
   }
 
+  private _updateSelectionControls(): void {
+    const modeGroup = this.container.querySelector(
+      '.roll-mode-group',
+    ) as HTMLElement | null
+    const instrGroup = this.container.querySelector(
+      '.roll-instrument-group',
+    ) as HTMLElement | null
+    const show = this.activeTool === 'select'
+    if (modeGroup) modeGroup.classList.toggle('disabled', !show)
+    if (instrGroup) instrGroup.classList.toggle('disabled', !show)
+  }
+
+  private _updatePreviewModeUI(): void {
+    const editGroup = this.container.querySelector(
+      '.roll-group[data-name="Edit"]',
+    ) as HTMLElement | null
+    const effectsGroup = this.container.querySelector(
+      '.roll-group[data-name="Effects"]',
+    ) as HTMLElement | null
+    const ioGroup = this.container.querySelector(
+      '.roll-group[data-name="I/O"]',
+    ) as HTMLElement | null
+    if (editGroup)
+      editGroup.classList.toggle('roll-toolbar-disabled', this.previewMode)
+    if (effectsGroup)
+      effectsGroup.classList.toggle('roll-toolbar-disabled', this.previewMode)
+    if (ioGroup)
+      ioGroup.classList.toggle('roll-toolbar-disabled', this.previewMode)
+  }
+
   private _updateTimelineInfo(beat: number): void {
     if (!this.timelineInfoEl) return
     const totalBars = Math.ceil(this.totalBeats / PIANO_ROLL_CONFIG.beatsPerBar)
@@ -1288,6 +1321,10 @@ export class PianoRollEditor {
       <button id="roll-scroll-toggle" class="roll-scroll-btn" title="Toggle scrollable view" aria-label="Toggle scrollable view">
         <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M12 5.83L15.17 9l1.41-1.41L12 3 7.41 7.59 8.83 9 12 5.83zm0 12.34L8.83 15l-1.41 1.41L12 21l4.59-4.59L15.17 15 12 18.17z"/></svg>
         <span>Scroll</span>
+      </button>
+      <button id="roll-browse-toggle" class="roll-browse-btn" title="Browse mode (read-only, touch-scroll friendly)" aria-label="Browse mode">
+        <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+        <span>Browse</span>
       </button>
           </div>
     </div>
@@ -1553,6 +1590,7 @@ export class PianoRollEditor {
         })
         btn.classList.add('active')
         this.selectedNoteIds.clear()
+        this._updateSelectionControls()
         this.draw()
         this._updateHint()
       })
@@ -1638,10 +1676,12 @@ export class PianoRollEditor {
       this.onRightClick(e)
     })
 
-    // Touch events (mobile support — delegates to mouse handlers)
+    // Touch events (mobile support — delegates to mouse handlers;
+    // in preview mode, let events pass through for native touch-scroll).
     this.gridCanvas?.addEventListener(
       'touchstart',
       (e) => {
+        if (this.previewMode) return
         e.preventDefault()
         const touch = e.touches[0]
         this.onGridMouseDown({
@@ -1655,6 +1695,7 @@ export class PianoRollEditor {
     this.gridCanvas?.addEventListener(
       'touchmove',
       (e) => {
+        if (this.previewMode) return
         e.preventDefault()
         const touch = e.touches[0]
         this.onGridMouseMove({
@@ -1668,6 +1709,7 @@ export class PianoRollEditor {
     this.gridCanvas?.addEventListener(
       'touchend',
       (e) => {
+        if (this.previewMode) return
         e.preventDefault()
         this.onGridMouseUp({} as MouseEvent)
       },
@@ -1777,6 +1819,7 @@ export class PianoRollEditor {
     container
       .querySelector('#roll-octaves-plus')
       ?.addEventListener('click', () => {
+        if (this.numOctaves >= MAX_OCTAVE_ROWS) return
         if (this.octave > 1) this.octave -= 1
         this.setNumOctaves(this.numOctaves + 1)
         const octDisplay = container.querySelector('#roll-octave-value')
@@ -1788,8 +1831,38 @@ export class PianoRollEditor {
       .querySelector('#roll-octaves-minus')
       ?.addEventListener('click', () => {
         if (this.numOctaves <= 1) return
-        this.octave += 1
-        this.setNumOctaves(this.numOctaves - 1)
+        const newCount = this.numOctaves - 1
+
+        // Smart reduction: trim empty octaves from top first (higher
+        // octaves above the melody), then from bottom, so notes stay
+        // visible as long as they fit within the reduced row count.
+        const melody = this.melody
+        if (melody.length > 0) {
+          let minOct = Infinity
+          let maxOct = -Infinity
+          for (const item of melody) {
+            const midi = item.note?.midi
+            if (typeof midi !== 'number') continue
+            // C4 = MIDI 60 → octave = floor(60/12) - 1 = 4
+            const oct = Math.floor(midi / 12) - 1
+            if (oct < minOct) minOct = oct
+            if (oct > maxOct) maxOct = oct
+          }
+          if (Number.isFinite(minOct) && Number.isFinite(maxOct)) {
+            // Align window so max-note octave sits at the top row,
+            // trimming empty octaves from above first.
+            let newStartOct = maxOct - newCount + 1
+            if (newStartOct > minOct) newStartOct = minOct
+            newStartOct = Math.max(1, newStartOct)
+            this.octave = newStartOct
+          } else {
+            this.octave += 1
+          }
+        } else {
+          this.octave += 1
+        }
+
+        this.setNumOctaves(newCount)
         const octDisplay = container.querySelector('#roll-octave-value')
         if (octDisplay) octDisplay.textContent = String(this.octave)
         const rowsDisplay = container.querySelector('#roll-octaves-value')
@@ -1824,6 +1897,15 @@ export class PianoRollEditor {
       this._rebuildScale()
       this.buildCanvases()
       this.draw()
+    })
+
+    // Browse / preview mode toggle
+    const browseToggle = container.querySelector('#roll-browse-toggle')
+    browseToggle?.addEventListener('click', () => {
+      this.previewMode = !this.previewMode
+      browseToggle.classList.toggle('active', this.previewMode)
+      this._updatePreviewModeUI()
+      this._updateHint()
     })
 
     // Scale mode select
@@ -1996,6 +2078,21 @@ export class PianoRollEditor {
     const y = e.clientY - rect.top
     const beat = x / this.beatWidth
     const row = Math.floor(y / this.rowHeight)
+
+    // In preview mode, only allow selecting existing notes — no editing.
+    if (this.previewMode) {
+      const note = this.findNoteAt(beat, row)
+      if (note) {
+        this.selectedNoteIds.clear()
+        this.selectedNoteIds.add(note.id)
+        this.onNoteSelect?.(note)
+      } else if (!e.shiftKey) {
+        this.selectedNoteIds.clear()
+        this.onNoteSelect?.(null)
+      }
+      this.draw()
+      return
+    }
 
     // Defer history push to first modification (mousemove) so a click
     // without dragging doesn't waste an undo level.
@@ -3584,7 +3681,7 @@ export class PianoRollEditor {
    * Set the number of octave rows displayed (1-7).
    */
   setNumOctaves(n: number): void {
-    n = Math.max(1, Math.round(n))
+    n = Math.max(1, Math.min(MAX_OCTAVE_ROWS, Math.round(n)))
     if (n === this.numOctaves) return
     this.numOctaves = n
 

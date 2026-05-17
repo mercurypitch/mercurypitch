@@ -121,6 +121,55 @@ describe('PianoRollEditor', () => {
     expect(octavesSpan.textContent).toBe('1')
   })
 
+  it('reduces rows intelligently, trimming empty octaves from top first', () => {
+    const plusBtn = container.querySelector(
+      '#roll-octaves-plus',
+    ) as HTMLButtonElement
+    const minusBtn = container.querySelector(
+      '#roll-octaves-minus',
+    ) as HTMLButtonElement
+    const octavesSpan = container.querySelector(
+      '#roll-octaves-value',
+    ) as HTMLSpanElement
+
+    // Expand to 4 octaves starting at octave 1 (covers octaves 1-4)
+    plusBtn.click() // octave=2, rows=3
+    plusBtn.click() // octave=1, rows=4
+    expect(octavesSpan.textContent).toBe('4')
+
+    // Place a melody with notes only in octave 2 (C2=36, D2=38)
+    editor.setMelody([
+      {
+        id: 1,
+        note: { midi: 36, freq: 65.41, name: 'C' as const, octave: 2 },
+        startBeat: 0,
+        duration: 1,
+      },
+      {
+        id: 2,
+        note: { midi: 38, freq: 73.42, name: 'D' as const, octave: 2 },
+        startBeat: 1,
+        duration: 1,
+      },
+    ])
+
+    // Reduce rows: should trim empty octave 4 from top -> rows=3
+    minusBtn.click()
+    expect(octavesSpan.textContent).toBe('3')
+
+    // Reduce again: should trim empty octave 3 from top -> rows=2
+    minusBtn.click()
+    expect(octavesSpan.textContent).toBe('2')
+
+    // Reduce again: only octave 2 has notes, window should shift
+    // so note-bearing octave 2 stays visible -> rows=1
+    minusBtn.click()
+    expect(octavesSpan.textContent).toBe('1')
+    const melody = editor.getMelody()
+    // Notes should still be present
+    expect(melody.length).toBe(2)
+  })
+
   it('handles undo and redo correctly', () => {
     const melody = [
       {
@@ -172,7 +221,7 @@ describe('PianoRollEditor', () => {
     const downBtn = container.querySelector(
       '#roll-octave-down',
     ) as HTMLButtonElement
-    // Click 3 times: MIDI 60 → 48 → 36 → 24
+    // Click 3 times: MIDI 60 -> 48 -> 36 -> 24
     for (let i = 0; i < 3; i++) downBtn.click()
 
     expect(editor.getMelody()[0].note?.midi).toBe(24) // 60 - 36
@@ -193,24 +242,29 @@ describe('PianoRollEditor', () => {
     const upBtn = container.querySelector(
       '#roll-octave-up',
     ) as HTMLButtonElement
-    // Click 5 times: MIDI 60 → 72 → 84 → 96 → 108 → 120
+    // Click 5 times: MIDI 60 -> 72 -> 84 -> 96 -> 108 -> 120
     for (let i = 0; i < 5; i++) upBtn.click()
 
     expect(editor.getMelody()[0].note?.midi).toBe(120) // 60 + 60
     expect(editor.getMelody()[0].note?.octave).toBe(9)
   })
 
-  it('setNumOctaves accepts values without upper limit', () => {
+  it('setNumOctaves caps at MAX_OCTAVE_ROWS (11)', () => {
     const plusBtn = container.querySelector(
       '#roll-octaves-plus',
     ) as HTMLButtonElement
-    // Click 6 times (from 2 to 8)
-    for (let i = 0; i < 6; i++) plusBtn.click()
+    // Click 10 times (from 2 to 11) - octave starts at 3, so 2 clicks
+    // bring it to 1, then 7 more increase rows to 11 (the cap)
+    for (let i = 0; i < 10; i++) plusBtn.click()
 
     const octavesSpan = container.querySelector(
       '#roll-octaves-value',
     ) as HTMLSpanElement
-    expect(octavesSpan.textContent).toBe('8')
+    expect(octavesSpan.textContent).toBe('11')
+
+    // One more click should not increase past the cap
+    plusBtn.click()
+    expect(octavesSpan.textContent).toBe('11')
   })
 
   it('scrollable mode toggle exists and toggles active class on main area', () => {
@@ -220,7 +274,7 @@ describe('PianoRollEditor', () => {
     expect(scrollToggle).toBeDefined()
     expect(scrollToggle.classList.contains('active')).toBe(false)
 
-    // Toggle on — container gets scrollable-container, grid gets scrollable, rows disabled
+    // Toggle on - container gets scrollable-container, grid gets scrollable, rows disabled
     scrollToggle.click()
     expect(scrollToggle.classList.contains('active')).toBe(true)
     expect(
@@ -234,7 +288,7 @@ describe('PianoRollEditor', () => {
     const rowsGroup = container.querySelector('.roll-octaves-group')
     expect(rowsGroup?.classList.contains('disabled')).toBe(true)
 
-    // Toggle off — rows group re-enabled
+    // Toggle off - rows group re-enabled
     scrollToggle.click()
     expect(scrollToggle.classList.contains('active')).toBe(false)
     expect(
@@ -260,7 +314,7 @@ describe('PianoRollEditor', () => {
           duration: 1,
         },
         {
-          id: 1, // duplicate ID from a buggy source — must not matter
+          id: 1, // duplicate ID from a buggy source - must not matter
           note: { midi: 62, freq: 293.66, name: 'D' as const, octave: 4 },
           startBeat: 1,
           duration: 1,
