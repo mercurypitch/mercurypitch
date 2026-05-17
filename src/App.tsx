@@ -106,7 +106,7 @@ import { JamPanel } from './components/jam/JamPanel'
 import { TabErrorBoundary } from './components/TabErrorBoundary'
 
 import { WelcomeScreen } from './components/WelcomeScreen'
-import styles from './@/components/App.module.css'
+import styles from './components/App.module.css'
 
 // ============================================================
 // Tab type
