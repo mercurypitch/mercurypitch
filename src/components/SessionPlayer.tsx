@@ -49,7 +49,10 @@ export const SessionPlayer: Component<SessionPlayerProps> = (props) => {
   return (
     <div class={styles.sessionPlayer} data-testid="session-player">
       <div class={styles.sessionPlayerHeader}>
-        <div class={styles.sessionPlayerTitle} data-testid="session-player-title">
+        <div
+          class={styles.sessionPlayerTitle}
+          data-testid="session-player-title"
+        >
           <svg viewBox="0 0 24 24" width="16" height="16">
             <path
               fill="currentColor"
@@ -61,7 +64,10 @@ export const SessionPlayer: Component<SessionPlayerProps> = (props) => {
             : (melodyStore.getCurrentMelody()?.name ?? 'Melody')}
         </div>
         <Show when={isSessionSequence() && session()}>
-          <span class={styles.sessionPlayerProgress} data-testid="session-player-progress">
+          <span
+            class={styles.sessionPlayerProgress}
+            data-testid="session-player-progress"
+          >
             Item {itemIndex() + 1} of {session()!.items.length}
           </span>
         </Show>
@@ -109,7 +115,9 @@ export const SessionPlayer: Component<SessionPlayerProps> = (props) => {
       </Show>
 
       <div class={styles.sessionPlayerTimer}>
-        <span class={styles.sessionElapsed} data-testid="session-elapsed">{formatTime(elapsed())}</span>
+        <span class={styles.sessionElapsed} data-testid="session-elapsed">
+          {formatTime(elapsed())}
+        </span>
       </div>
 
       <Show when={isSessionSequence()}>

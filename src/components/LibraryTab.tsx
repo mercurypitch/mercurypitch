@@ -658,13 +658,21 @@ export const LibraryTab: Component = () => {
 
       {/* Quick Actions */}
       <div class={styles.quickActions} data-testid="quick-actions">
-        <button class={styles.quickActionBtn} data-testid="new-session-btn" onClick={handleNewSession}>
+        <button
+          class={styles.quickActionBtn}
+          data-testid="new-session-btn"
+          onClick={handleNewSession}
+        >
           <svg viewBox="0 0 24 24" width="14" height="14">
             <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
           </svg>
           New Session
         </button>
-        <button class={styles.quickActionBtn} data-testid="quick-start-btn" onClick={handleQuickNewMelody}>
+        <button
+          class={styles.quickActionBtn}
+          data-testid="quick-start-btn"
+          onClick={handleQuickNewMelody}
+        >
           <svg viewBox="0 0 24 24" width="14" height="14">
             <path
               fill="currentColor"
@@ -673,7 +681,11 @@ export const LibraryTab: Component = () => {
           </svg>
           New Melody
         </button>
-        <button class={styles.quickActionBtn} data-testid="sessions-quick-btn" onClick={openSessionLibrary}>
+        <button
+          class={styles.quickActionBtn}
+          data-testid="sessions-quick-btn"
+          onClick={openSessionLibrary}
+        >
           <svg viewBox="0 0 24 24" width="14" height="14">
             <path
               fill="currentColor"

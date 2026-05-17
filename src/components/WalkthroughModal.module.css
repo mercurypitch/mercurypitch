@@ -277,14 +277,10 @@
   background: #8b5cf6;
 }
 
-.walkthroughText
-  :global(.mdAdmonitionNote)
-  :global(.mdAdmonitionIcon)::before {
+.walkthroughText :global(.mdAdmonitionNote) :global(.mdAdmonitionIcon)::before {
   content: 'N';
 }
-.walkthroughText
-  :global(.mdAdmonitionTip)
-  :global(.mdAdmonitionIcon)::before {
+.walkthroughText :global(.mdAdmonitionTip) :global(.mdAdmonitionIcon)::before {
   content: 'T';
 }
 .walkthroughText
@@ -292,9 +288,7 @@
   :global(.mdAdmonitionIcon)::before {
   content: '!';
 }
-.walkthroughText
-  :global(.mdAdmonitionInfo)
-  :global(.mdAdmonitionIcon)::before {
+.walkthroughText :global(.mdAdmonitionInfo) :global(.mdAdmonitionIcon)::before {
   content: 'i';
 }
 

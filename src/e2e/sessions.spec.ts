@@ -71,7 +71,9 @@ test.describe('Practice Sessions', () => {
     await page.waitForTimeout(300)
     await activateSessionPlayer(page)
 
-    await expect(page.locator('[data-testid="session-player-item"]')).toBeVisible()
+    await expect(
+      page.locator('[data-testid="session-player-item"]'),
+    ).toBeVisible()
   })
 
   test('SessionPlayer displays session name', async ({ page }) => {
@@ -89,7 +91,9 @@ test.describe('Practice Sessions', () => {
     await page.waitForTimeout(300)
     await activateSessionPlayer(page)
 
-    await expect(page.locator('[data-testid="session-player-progress"]')).toBeVisible()
+    await expect(
+      page.locator('[data-testid="session-player-progress"]'),
+    ).toBeVisible()
   })
 
   test('SessionPlayer shows skip button', async ({ page }) => {

@@ -61,7 +61,9 @@ test.describe('MercuryPitch App', () => {
     // Click Editor tab and verify its content
     await page.locator('#tab-compose').click()
     await page.waitForTimeout(500)
-    await expect(page.locator('#roll-instrument-select')).toBeVisible({ timeout: 5000 })
+    await expect(page.locator('#roll-instrument-select')).toBeVisible({
+      timeout: 5000,
+    })
 
     // Click Settings tab and verify its content
     await page.locator('#tab-settings').click()
@@ -73,7 +75,9 @@ test.describe('MercuryPitch App', () => {
     // Click Practice tab and verify its content
     await page.locator('#tab-singing').click()
     await page.waitForTimeout(500)
-    await expect(page.locator('[data-testid="tempo-group"]')).toBeVisible({ timeout: 5000 })
+    await expect(page.locator('[data-testid="tempo-group"]')).toBeVisible({
+      timeout: 5000,
+    })
   })
 
   test('sidebar scale controls are visible', async ({ page }) => {
@@ -349,7 +353,9 @@ test.describe('MercuryPitch App', () => {
     await expect(
       page.locator('h3:has-text("Tone Envelope (ADSR)")'),
     ).toBeVisible({ timeout: 10000 })
-    await expect(page.locator('[data-testid="about-name"]')).toContainText('MercuryPitch')
+    await expect(page.locator('[data-testid="about-name"]')).toContainText(
+      'MercuryPitch',
+    )
   })
 
   test('Settings panel shows GitHub link in About section', async ({

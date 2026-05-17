@@ -85,7 +85,9 @@ export const SettingsPanel: Component = () => {
   return (
     <div class={styles.settingsPanel}>
       <div class={styles.settingsContent}>
-        <h2 class={styles.settingsTitle} data-testid="settings-title">Settings</h2>
+        <h2 class={styles.settingsTitle} data-testid="settings-title">
+          Settings
+        </h2>
 
         {/* Sensitivity Presets Section */}
         <div class={styles.settingsSection}>
@@ -1003,7 +1005,9 @@ export const SettingsPanel: Component = () => {
                 <circle cx="24" cy="32" r="4" fill="currentColor" />
               </svg>
             </div>
-            <p class={styles.aboutName} data-testid="about-name">MercuryPitch</p>
+            <p class={styles.aboutName} data-testid="about-name">
+              MercuryPitch
+            </p>
             <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-bottom: 1rem;">
               <p class={styles.aboutVersion} style="margin: 0;">
                 v{APP_VERSION}-{COMMIT_SHA}

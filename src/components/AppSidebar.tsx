@@ -242,7 +242,9 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
                   />
                 </svg>
               </button>
-              <span class={styles.octaveValue} data-testid="octave-value">{viewOctave()}</span>
+              <span class={styles.octaveValue} data-testid="octave-value">
+                {viewOctave()}
+              </span>
               <button
                 class={styles.octaveBtn}
                 data-testid="octave-btn-up"
@@ -428,7 +430,9 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
             <h3>Accuracy</h3>
             <StatsBars noteResults={props.noteResults} />
             <div class={styles.scoreDisplay} data-testid="score-display">
-              <span class={styles.scoreLabel} data-testid="score-label">Score:</span>
+              <span class={styles.scoreLabel} data-testid="score-label">
+                Score:
+              </span>
               <span class={styles.scoreValue} data-testid="score-value">
                 {liveScore() !== null ? `${liveScore()}%` : '--'}
               </span>
@@ -447,7 +451,10 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
                 >
                   <For each={sessionResults()}>
                     {(entry) => (
-                      <div class={styles.sessionHistoryEntry} data-testid="session-history-entry">
+                      <div
+                        class={styles.sessionHistoryEntry}
+                        data-testid="session-history-entry"
+                      >
                         <span class={styles.sessionHistoryName}>
                           {entry.sessionName}
                         </span>

@@ -1315,14 +1315,19 @@ const AppShell: Component<AppProps> = (props) => {
                   <div class={styles.editorViewToggle}>
                     <button
                       class={styles.viewBtn}
-                      classList={{ [styles.activeViewBtn]: editorView() === 'piano-roll' }}
+                      classList={{
+                        [styles.activeViewBtn]: editorView() === 'piano-roll',
+                      }}
                       onClick={() => setEditorView('piano-roll')}
                     >
                       Piano Roll
                     </button>
                     <button
                       class={styles.viewBtn}
-                      classList={{ [styles.activeViewBtn]: editorView() === 'session-editor' }}
+                      classList={{
+                        [styles.activeViewBtn]:
+                          editorView() === 'session-editor',
+                      }}
                       onClick={() => setEditorView('session-editor')}
                     >
                       Session Editor
@@ -1401,7 +1406,9 @@ const AppShell: Component<AppProps> = (props) => {
                     >
                       <button
                         class={styles.viewBtn}
-                        classList={{ [styles.activeViewBtn]: analysisSubTab() === 'vocal' }}
+                        classList={{
+                          [styles.activeViewBtn]: analysisSubTab() === 'vocal',
+                        }}
                         onClick={() => setAnalysisSubTab('vocal')}
                       >
                         Vocal Analysis
@@ -1409,14 +1416,20 @@ const AppShell: Component<AppProps> = (props) => {
                       <Show when={devFeaturesEnabled()}>
                         <button
                           class={styles.viewBtn}
-                          classList={{ [styles.activeViewBtn]: analysisSubTab() === 'detection' }}
+                          classList={{
+                            [styles.activeViewBtn]:
+                              analysisSubTab() === 'detection',
+                          }}
                           onClick={() => setAnalysisSubTab('detection')}
                         >
                           Pitch Detection
                         </button>
                         <button
                           class={styles.viewBtn}
-                          classList={{ [styles.activeViewBtn]: analysisSubTab() === 'algorithms' }}
+                          classList={{
+                            [styles.activeViewBtn]:
+                              analysisSubTab() === 'algorithms',
+                          }}
                           onClick={() => setAnalysisSubTab('algorithms')}
                         >
                           Pitch Algorithms

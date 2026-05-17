@@ -716,9 +716,9 @@ test.describe('Critical Flows — GH #121', () => {
       await page.waitForTimeout(500)
 
       // Focus mode elements should be visible
-      await expect(
-        page.locator('[data-testid="focus-mode"]'),
-      ).toBeVisible({ timeout: 3000 })
+      await expect(page.locator('[data-testid="focus-mode"]')).toBeVisible({
+        timeout: 3000,
+      })
       await expect(page.locator('[data-testid="focus-topbar"]')).toBeVisible()
 
       // Exit focus mode
@@ -737,9 +737,9 @@ test.describe('Critical Flows — GH #121', () => {
       // Enter focus mode
       await page.locator('.focus-btn').click()
       await page.waitForTimeout(500)
-      await expect(
-        page.locator('[data-testid="focus-mode"]'),
-      ).toBeVisible({ timeout: 3000 })
+      await expect(page.locator('[data-testid="focus-mode"]')).toBeVisible({
+        timeout: 3000,
+      })
 
       // Press Escape to exit
       await page.keyboard.press('Escape')

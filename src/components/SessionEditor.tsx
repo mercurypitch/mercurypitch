@@ -282,10 +282,10 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
               width="20"
               height="20"
               class={styles.toggleIcon}
-            classList={{
-              [styles.toggleIconExpanded]: expanded(),
-              [styles.toggleIconCollapsed]: !expanded(),
-            }}
+              classList={{
+                [styles.toggleIconExpanded]: expanded(),
+                [styles.toggleIconCollapsed]: !expanded(),
+              }}
             >
               <path
                 fill="currentColor"

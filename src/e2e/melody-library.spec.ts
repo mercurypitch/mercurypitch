@@ -45,9 +45,7 @@ test.describe('Melody Library', () => {
     await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
-    const newSessionBtn = page.locator(
-      '[data-testid="new-session-btn"]',
-    )
+    const newSessionBtn = page.locator('[data-testid="new-session-btn"]')
     await expect(newSessionBtn).toBeVisible()
   })
 
@@ -55,9 +53,7 @@ test.describe('Melody Library', () => {
     await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
-    const quickStartBtn = page.locator(
-      '[data-testid="quick-start-btn"]',
-    )
+    const quickStartBtn = page.locator('[data-testid="quick-start-btn"]')
     const count = await quickStartBtn.count()
     expect(count).toBeGreaterThanOrEqual(0)
   })
@@ -79,9 +75,7 @@ test.describe('Melody Library', () => {
     await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
-    const newSessionBtn = page.locator(
-      '[data-testid="new-session-btn"]',
-    )
+    const newSessionBtn = page.locator('[data-testid="new-session-btn"]')
     const count = await newSessionBtn.count()
     expect(count).toBeGreaterThanOrEqual(1)
   })
