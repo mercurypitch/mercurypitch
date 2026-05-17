@@ -897,7 +897,7 @@ header h1 {
   cursor: pointer;
   text-align: left;
 }
-.logo-btn #app-title-text {
+.logo-btn .app-title {
   font-size: 1.3rem;
   font-weight: 700;
   background: linear-gradient(135deg, var(--accent), var(--purple));
@@ -907,10 +907,10 @@ header h1 {
   margin: 0;
   line-height: 1.2;
 }
-.logo-btn:hover #app-title-text {
+.logo-btn:hover .app-title {
   opacity: 0.85;
 }
-.logo-btn:active #app-title-text {
+.logo-btn:active .app-title {
   opacity: 0.7;
 }
 

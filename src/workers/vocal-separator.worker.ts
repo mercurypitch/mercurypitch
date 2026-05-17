@@ -144,7 +144,11 @@ async function loadModel(modelPath: string): Promise<void> {
     const isLinuxFirefox =
       /Firefox/i.test(navigator.userAgent) &&
       /Linux/i.test(navigator.platform || navigator.userAgent)
-    const isMobile = /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent)
+    // Modern iPadOS 13+ reports a desktop Mac user-agent without "iPad".
+    // Detect it via multi-touch capability combined with Macintosh UA.
+    const isMobile =
+      /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+      (/Macintosh/i.test(navigator.userAgent) && navigator.maxTouchPoints > 1)
     if (!isLinuxFirefox && !isMobile) {
       try {
         if ('gpu' in navigator) {
