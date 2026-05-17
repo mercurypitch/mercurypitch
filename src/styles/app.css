@@ -3762,9 +3762,10 @@ Keeps your existing styles, only adjusts layout
   color: var(--accent);
 }
 
-/* Scrollable piano roll — full 7-octave view with vertical scroll */
+/* Scrollable piano roll — vertical scroll is handled by .roll-grid-body;
+   grid-container only scrolls horizontally. */
 .roll-grid-container.piano-roll-scrollable {
-  overflow-y: auto;
+  overflow-y: hidden;
 }
 
 /* Scale mode select */
@@ -4362,23 +4363,32 @@ Keeps your existing styles, only adjusts layout
   position: relative;
 }
 
-/* Grid wrapper: CSS Grid layout — ruler + piano keys + grid */
+/* Grid wrapper: flex column — fills main-area, ruler pinned, body scrolls, status anchored at bottom */
 .roll-grid-wrapper {
   flex: 1;
-  display: grid;
-  /* Columns: piano keys | grid area (scrollable) */
-  /* Rows: ruler | grid rows */
-  grid-template-columns: var(--piano-width, 62px) 1fr;
-  grid-template-rows: var(--ruler-height, 28px) 1fr;
   min-height: 0;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
   position: relative;
 }
 
-/* Ruler spans full width at top */
+/* Grid body: the one and only vertical scroll container.
+   flex:1 + min-height:0 gives it a constrained height (wrapper minus ruler
+   minus status). overflow-y:auto scrolls when canvas is taller than that. */
+.roll-grid-body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: var(--piano-width, 62px) 1fr;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Ruler spans full width at top — pinned, never scrolls */
 .roll-ruler-container {
-  grid-column: 1 / -1;
-  grid-row: 1;
+  flex-shrink: 0;
+  height: var(--ruler-height, 28px);
   overflow: hidden;
   position: relative;
   background: var(--bg-secondary);
@@ -4388,8 +4398,8 @@ Keeps your existing styles, only adjusts layout
 /* Piano keys column */
 .roll-piano {
   grid-column: 1;
-  grid-row: 2;
-  align-self: stretch;
+  grid-row: 1;
+  align-self: start;
   background: var(--bg-secondary);
   border-right: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
@@ -4401,7 +4411,7 @@ Keeps your existing styles, only adjusts layout
 /* Grid container fills remaining space */
 .roll-grid-container {
   grid-column: 2;
-  grid-row: 2;
+  grid-row: 1;
   overflow-x: auto;
   overflow-y: hidden;
   position: relative;
@@ -4637,7 +4647,7 @@ Keeps your existing styles, only adjusts layout
     font-size: 0.68rem;
   }
   /* Piano keys narrower on mobile */
-  .roll-grid-wrapper {
+  .roll-grid-body {
     grid-template-columns: 44px 1fr;
   }
   /* Smaller piano labels on mobile */

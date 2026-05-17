@@ -1427,20 +1427,22 @@ export class PianoRollEditor {
           <div class="roll-ruler-container">
             <canvas class="roll-ruler"></canvas>
           </div>
-          <canvas class="roll-piano"></canvas>
-          <div class="roll-grid-container">
-            <div class="roll-grid-layer" style="position:relative">
-              <canvas class="roll-grid"></canvas>
-              <canvas id="roll-ball-canvas" class="roll-ball" style="display:none;position:absolute;top:0;left:0;pointer-events:none;z-index:3"></canvas>
+          <div class="roll-grid-body">
+            <canvas class="roll-piano"></canvas>
+            <div class="roll-grid-container">
+              <div class="roll-grid-layer" style="position:relative">
+                <canvas class="roll-grid"></canvas>
+                <canvas id="roll-ball-canvas" class="roll-ball" style="display:none;position:absolute;top:0;left:0;pointer-events:none;z-index:3"></canvas>
+              </div>
             </div>
           </div>
+          <canvas id="roll-pitch-track-canvas" class="roll-pitch-track" style="display:none"></canvas>
+          <div class="roll-status">
+            <span id="roll-note-info">Click on the grid to place notes</span>
+            <span id="roll-timeline-info">Bar 1/${Math.ceil(this.totalBeats / PIANO_ROLL_CONFIG.beatsPerBar)} | Beat 1</span>
+            <span id="roll-beat-info">${this.totalBeats} beats</span>
+          </div>
         </div>
-      </div>
-      <canvas id="roll-pitch-track-canvas" class="roll-pitch-track" style="display:none"></canvas>
-      <div class="roll-status">
-        <span id="roll-note-info">Click on the grid to place notes</span>
-        <span id="roll-timeline-info">Bar 1/${Math.ceil(this.totalBeats / PIANO_ROLL_CONFIG.beatsPerBar)} | Beat 1</span>
-        <span id="roll-beat-info">${this.totalBeats} beats</span>
       </div>
     `
 
@@ -1524,6 +1526,17 @@ export class PianoRollEditor {
     this.hintEl = this.container.querySelector('#roll-note-info')
     this.timelineInfoEl = this.container.querySelector('#roll-timeline-info')
     this.beatInfoEl = this.container.querySelector('#roll-beat-info')
+
+    // In normal mode, pin the grid body to the exact canvas height so
+    // .roll-status sits immediately below the last row with no gap.
+    // In scrollable mode, clear the inline style and let flex:1 fill the
+    // wrapper so the body has a constrained height for overflow-y:auto.
+    const gridBody = this.container.querySelector(
+      '.roll-grid-body',
+    ) as HTMLElement | null
+    if (gridBody) {
+      gridBody.style.height = this.scrollableMode ? '' : `${totalHeight}px`
+    }
   }
 
   // ============================================================
