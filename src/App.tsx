@@ -69,6 +69,8 @@ const UvrPanel = lazy(async () =>
 )
 import './components/AppHeader.css'
 import './components/HeaderControls.css'
+import './components/TierSelector.css'
+import './components/SessionEditorTimeline.css'
 import { EngineProvider, useEngines } from '@/contexts/EngineContext'
 import { PlaybackProvider } from '@/contexts/PlaybackContext'
 import { useEditorController } from '@/features/editor/useEditorController'
@@ -1312,13 +1314,15 @@ const AppShell: Component<AppProps> = (props) => {
 
                   <div class={styles.editorViewToggle}>
                     <button
-                      class={`view-btn ${editorView() === 'piano-roll' ? 'active' : ''}`}
+                      class={styles.viewBtn}
+                      classList={{ [styles.activeViewBtn]: editorView() === 'piano-roll' }}
                       onClick={() => setEditorView('piano-roll')}
                     >
                       Piano Roll
                     </button>
                     <button
-                      class={`view-btn ${editorView() === 'session-editor' ? 'active' : ''}`}
+                      class={styles.viewBtn}
+                      classList={{ [styles.activeViewBtn]: editorView() === 'session-editor' }}
                       onClick={() => setEditorView('session-editor')}
                     >
                       Session Editor
@@ -1396,20 +1400,23 @@ const AppShell: Component<AppProps> = (props) => {
                       style="display: flex; gap: 1rem; padding: 1rem; background: var(--bg-secondary); border-bottom: 1px solid var(--border-color);"
                     >
                       <button
-                        class={`view-btn ${analysisSubTab() === 'vocal' ? 'active' : ''}`}
+                        class={styles.viewBtn}
+                        classList={{ [styles.activeViewBtn]: analysisSubTab() === 'vocal' }}
                         onClick={() => setAnalysisSubTab('vocal')}
                       >
                         Vocal Analysis
                       </button>
                       <Show when={devFeaturesEnabled()}>
                         <button
-                          class={`view-btn ${analysisSubTab() === 'detection' ? 'active' : ''}`}
+                          class={styles.viewBtn}
+                          classList={{ [styles.activeViewBtn]: analysisSubTab() === 'detection' }}
                           onClick={() => setAnalysisSubTab('detection')}
                         >
                           Pitch Detection
                         </button>
                         <button
-                          class={`view-btn ${analysisSubTab() === 'algorithms' ? 'active' : ''}`}
+                          class={styles.viewBtn}
+                          classList={{ [styles.activeViewBtn]: analysisSubTab() === 'algorithms' }}
                           onClick={() => setAnalysisSubTab('algorithms')}
                         >
                           Pitch Algorithms
@@ -1699,7 +1706,7 @@ const AppShell: Component<AppProps> = (props) => {
 
         {/* Score overlay */}
         <Show when={showPracticeResultPopup() && practiceResult() !== null}>
-          <div class="overlay" onClick={closeScoreOverlay}>
+          <div class={styles.overlay} onClick={closeScoreOverlay}>
             <div
               id="score-card"
               onClick={(e) => {
@@ -1809,7 +1816,7 @@ const AppShell: Component<AppProps> = (props) => {
         />
 
         <Show when={showPracticeResultPopup() && sessionSummary() !== null}>
-          <div class="overlay" onClick={() => setSessionSummary(null)}>
+          <div class={styles.overlay} onClick={() => setSessionSummary(null)}>
             <div
               id="session-summary-card"
               onClick={(e) => {

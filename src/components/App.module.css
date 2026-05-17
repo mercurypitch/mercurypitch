@@ -19,7 +19,7 @@
   gap: 4px;
 }
 
-.view-btn {
+.viewBtn {
   padding: 6px 12px;
   background: transparent;
   border: 1px solid var(--border);
@@ -31,12 +31,12 @@
   transition: all 0.2s;
 }
 
-.view-btn:hover {
+.viewBtn:hover {
   background: var(--bg-secondary);
   color: var(--text-primary);
 }
 
-.view-btn.active {
+.activeViewBtn {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--bg-primary);
