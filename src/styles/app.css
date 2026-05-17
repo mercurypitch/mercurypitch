@@ -731,32 +731,6 @@ select option:disabled {
   padding-bottom: max(24px, env(safe-area-inset-bottom, 24px));
 }
 
-/* Editor playhead overlay (matches the practice playhead style). */
-.editor-playhead {
-  background: var(--accent, #4caf50);
-  box-shadow: 0 0 6px var(--accent-glow, rgba(76, 175, 80, 0.6));
-}
-
-/* Editor playhead — triangle marker on top of the vertical line.
- * Mirrors the practice tab's #playhead .playhead-marker style so users
- * see consistent playback indicators across both tabs. */
-.editor-playhead {
-  background: var(--accent, #4caf50);
-  box-shadow: 0 0 6px var(--accent-glow, rgba(76, 175, 80, 0.6));
-}
-
-.editor-playhead .editor-playhead-marker {
-  position: absolute;
-  top: -8px;
-  left: -6px;
-  width: 0;
-  height: 0;
-  border-left: 7px solid transparent;
-  border-right: 7px solid transparent;
-  border-top: 9px solid var(--accent, #4caf50);
-  filter: drop-shadow(0 0 4px var(--accent-glow, rgba(76, 175, 80, 0.6)));
-}
-
 /* Number input spinner styling — avoid default white spin button chrome. */
 #bpm-input::-webkit-inner-spin-button,
 #bpm-input::-webkit-outer-spin-button {
@@ -764,70 +738,6 @@ select option:disabled {
   filter: invert(65%) sepia(44%) saturate(711%) hue-rotate(179deg)
     brightness(96%) contrast(95%);
   cursor: pointer;
-}
-
-/* Compact Settings selects/buttons — match app control density. */
-.settings-panel .settings-row select,
-#settings-panel .settings-row select {
-  min-height: 34px;
-  height: 34px;
-  padding: 0 32px 0 12px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  background-color: var(--bg-secondary);
-  color: var(--text-primary);
-  font-size: 0.9rem;
-  line-height: 34px;
-  appearance: none;
-  background-image:
-    linear-gradient(45deg, transparent 50%, var(--text-muted) 50%),
-    linear-gradient(135deg, var(--text-muted) 50%, transparent 50%);
-  background-position:
-    calc(100% - 16px) 14px,
-    calc(100% - 11px) 14px;
-  background-size:
-    5px 5px,
-    5px 5px;
-  background-repeat: no-repeat;
-}
-
-.settings-panel .settings-row select:hover,
-#settings-panel .settings-row select:hover {
-  border-color: var(--accent-glow);
-  background-color: var(--bg-card);
-}
-
-.settings-panel .settings-row select:focus,
-#settings-panel .settings-row select:focus {
-  outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-dim);
-}
-
-.settings-panel .settings-row select option,
-#settings-panel .settings-row select option {
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-}
-
-#note-list .note-item.rest-item {
-  border-style: dashed;
-  border-color: rgba(139, 148, 158, 0.45);
-  background: rgba(139, 148, 158, 0.1);
-  color: var(--text-secondary);
-}
-
-#note-list .note-item.rest-item .note-dot {
-  background: transparent;
-  border: 1px dashed rgba(139, 148, 158, 0.65);
-}
-
-/* On narrow viewports break the row into a second toolbar row */
-@media (max-width: 600px) {
-  .practice-header-bar,
-  .editor-header-bar {
-    flex-wrap: wrap;
-  }
 }
 
 /* ───────────────────────────────────────────────────────────────

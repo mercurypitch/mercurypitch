@@ -209,6 +209,18 @@
   background: var(--green);
 }
 
+:global(#note-list .note-item.rest-item) {
+  border-style: dashed;
+  border-color: rgba(139, 148, 158, 0.45);
+  background: rgba(139, 148, 158, 0.1);
+  color: var(--text-secondary);
+}
+
+:global(#note-list .note-item.rest-item .note-dot) {
+  background: transparent;
+  border: 1px dashed rgba(139, 148, 158, 0.65);
+}
+
 .note-name {
   font-size: 0.9rem;
   font-weight: 600;
