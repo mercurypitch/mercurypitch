@@ -47,7 +47,7 @@ test.describe('Practice Playback', () => {
     await page.waitForTimeout(1000)
 
     // Playhead is drawn on the PitchCanvas, which should be visible
-    await expect(page.locator('canvas')).toBeVisible()
+    await expect(page.locator('#canvas-container canvas')).toBeVisible()
 
     // Stop playback
     const stopBtn = page.locator('.stop-btn').first()
@@ -89,14 +89,14 @@ test.describe('Practice Playback', () => {
     await page.waitForTimeout(800)
 
     // Canvas should be visible during playback (playhead drawn on it)
-    await expect(page.locator('canvas')).toBeVisible()
+    await expect(page.locator('#canvas-container canvas')).toBeVisible()
 
     // Click Pause (the .stop-btn is actually the pause button)
     await page.locator('.stop-btn').first().click()
     await page.waitForTimeout(500)
 
     // Canvas should still be visible when paused (playhead drawn on it)
-    await expect(page.locator('canvas')).toBeVisible()
+    await expect(page.locator('#canvas-container canvas')).toBeVisible()
   })
 
   test('Play button visible after stop', async ({ page }) => {

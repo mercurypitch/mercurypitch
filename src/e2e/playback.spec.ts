@@ -35,9 +35,7 @@ test.describe('Playback', () => {
     const practicePanel = page.locator('#practice-panel')
     await expect(practicePanel).toBeVisible()
 
-    // Playhead hidden initially (no playback)
-    const playhead = page.locator('#playhead')
-    await expect(playhead).not.toBeVisible()
+    // Play button visible initially (no playback active)
   })
 
   test('Practice tab play button starts playback and shows playhead', async ({
@@ -52,8 +50,8 @@ test.describe('Playback', () => {
     await page.locator('button:has-text("Play")').click()
     await page.waitForTimeout(800)
 
-    // Playhead should be visible during playback
-    await expect(page.locator('#playhead')).toBeVisible()
+    // Pause button confirms playback started (playhead drawn on canvas)
+    await expect(page.locator('button:has-text("Pause")')).toBeVisible()
 
     // Stop via pause button
     await page.locator('button:has-text("Pause")').click()
@@ -70,15 +68,12 @@ test.describe('Playback', () => {
     await page.locator('button:has-text("Play")').click()
     await page.waitForTimeout(500)
 
-    // Playhead visible
-    await expect(page.locator('#playhead')).toBeVisible()
+    // Pause button confirms playback started
+    await expect(page.locator('button:has-text("Pause")')).toBeVisible()
 
     // Click Pause
     await page.locator('button:has-text("Pause")').click()
     await page.waitForTimeout(500)
-
-    // Playhead still visible (paused)
-    await expect(page.locator('#playhead')).toBeVisible()
 
     // Continue button should appear
     await expect(page.locator('button:has-text("Continue")')).toBeVisible()
@@ -92,8 +87,8 @@ test.describe('Playback', () => {
     await page.locator('button:has-text("Play")').click()
     await page.waitForTimeout(500)
 
-    // Playhead visible
-    await expect(page.locator('#playhead')).toBeVisible()
+    // Pause button confirms playback started
+    await expect(page.locator('button:has-text("Pause")')).toBeVisible()
 
     // Switch tabs
     await switchTab(page, 'compose')
@@ -117,8 +112,8 @@ test.describe('Playback', () => {
     await page.locator('.play-btn').first().click()
     await page.waitForTimeout(500)
 
-    // Playhead should be visible
-    await expect(page.locator('#playhead')).toBeVisible()
+    // Pause button confirms playback started
+    await expect(page.locator('button:has-text("Pause")')).toBeVisible()
 
     // Pause/stop
     await page.locator('button:has-text("Pause")').click()

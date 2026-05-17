@@ -46,6 +46,34 @@ const parseChangelog = (md: string): VersionEntry[] => {
 
 const changelog = parseChangelog(rawChangelog)
 
+type TextSegment = { text: string; bold: boolean }
+
+function parseMarkdownBold(text: string): TextSegment[] {
+  const segments: TextSegment[] = []
+  const regex = /\*\*(.*?)\*\*/g
+  let lastIndex = 0
+  let match: RegExpExecArray | null
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      segments.push({ text: text.slice(lastIndex, match.index), bold: false })
+    }
+    segments.push({ text: match[1], bold: true })
+    lastIndex = match.index + match[0].length
+  }
+  if (lastIndex < text.length) {
+    segments.push({ text: text.slice(lastIndex), bold: false })
+  }
+  return segments
+}
+
+const ChangelogItem = (props: { item: string }) => (
+  <li class="changelog-entry">
+    <For each={parseMarkdownBold(props.item)}>
+      {(seg) => (seg.bold ? <strong>{seg.text}</strong> : seg.text)}
+    </For>
+  </li>
+)
+
 const sectionBadgeClass = (label: string): string => {
   if (label === 'Added') return 'changelog-badge badge-added'
   if (label === 'Changed') return 'changelog-badge badge-changed'
@@ -88,9 +116,7 @@ export const ChangelogModal: Component<ChangelogModalProps> = (props) => {
                           </span>
                           <ul class="changelog-entries">
                             <For each={section.items}>
-                              {(item) => (
-                                <li class="changelog-entry">{item}</li>
-                              )}
+                              {(item) => <ChangelogItem item={item} />}
                             </For>
                           </ul>
                         </div>
