@@ -3360,6 +3360,11 @@ header h1 {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  overflow: auto;
+}
+
+/* In scrollable mode, prevent wrapper scroll — only grid canvas scrolls */
+.piano-roll-container.piano-roll-scrollable-container {
   overflow: hidden;
 }
 

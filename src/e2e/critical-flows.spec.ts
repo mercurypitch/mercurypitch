@@ -332,7 +332,9 @@ test.describe('Critical Flows — GH #121', () => {
       await expect(modeSelect).toHaveValue('pentatonic-major')
     })
 
-    test('shift buttons exist and octave value display removed', async ({ page }) => {
+    test('shift buttons exist and octave value display removed', async ({
+      page,
+    }) => {
       const octaveUp = page.locator('#roll-octave-up')
       const octaveDown = page.locator('#roll-octave-down')
       const octaveValue = page.locator('#roll-octave-value')

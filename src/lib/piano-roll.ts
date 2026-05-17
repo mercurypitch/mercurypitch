@@ -1785,20 +1785,26 @@ export class PianoRollEditor {
     const scrollToggle = container.querySelector('#roll-scroll-toggle')
     scrollToggle?.addEventListener('click', () => {
       this.scrollableMode = !this.scrollableMode
-      if (scrollToggle) {
-        scrollToggle.classList.toggle('active', this.scrollableMode)
-      }
+      scrollToggle.classList.toggle('active', this.scrollableMode)
       if (this.scrollableMode) {
-        // Disable rows controls — all octaves are visible
+        // Prevent wrapper scroll — only grid canvas scrolls
+        this.container.classList.add('piano-roll-scrollable-container')
+        // Disable rows controls — all octaves are always visible
         const rowsGroup = this.container.querySelector('.roll-octaves-group')
         if (rowsGroup) rowsGroup.classList.add('disabled')
-        const gridContainer = this.container.querySelector('.roll-grid-container')
+        const gridContainer = this.container.querySelector(
+          '.roll-grid-container',
+        )
         if (gridContainer) gridContainer.classList.add('piano-roll-scrollable')
       } else {
+        this.container.classList.remove('piano-roll-scrollable-container')
         const rowsGroup = this.container.querySelector('.roll-octaves-group')
         if (rowsGroup) rowsGroup.classList.remove('disabled')
-        const gridContainer = this.container.querySelector('.roll-grid-container')
-        if (gridContainer) gridContainer.classList.remove('piano-roll-scrollable')
+        const gridContainer = this.container.querySelector(
+          '.roll-grid-container',
+        )
+        if (gridContainer)
+          gridContainer.classList.remove('piano-roll-scrollable')
       }
       this._rebuildScale()
       this.buildCanvases()
