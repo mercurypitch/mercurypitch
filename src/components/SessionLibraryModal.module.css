@@ -1,0 +1,25 @@
+/* Extracted from: Difficulty Badge */
+
+.difficultyBadge {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.beginner {
+  background: rgba(63, 185, 80, 0.15);
+  color: var(--green);
+}
+
+.intermediate {
+  background: rgba(210, 153, 34, 0.15);
+  color: var(--yellow);
+}
+
+.advanced {
+  background: rgba(248, 81, 73, 0.15);
+  color: var(--red);
+}

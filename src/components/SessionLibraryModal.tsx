@@ -10,6 +10,7 @@ import { loadSession, melodyStore, setActiveTab, setActiveUserSession, setEditor
 import { createSession, saveSession } from '@/stores/session-store'
 import type { PlaybackSession } from '@/types'
 import { SessionMiniTimeline } from './SessionMiniTimeline'
+import styles from './SessionLibraryModal.module.css'
 
 // Drag and drop state
 type DragState =
@@ -176,7 +177,7 @@ export const SessionLibraryModal: Component<SessionLibraryModalProps> = (
                     <div class="item-main">
                       <div class="item-title">{session.name}</div>
                       <div class="item-meta">
-                        <span class={`difficulty-badge ${session.difficulty}`}>
+                        <span class={`${styles.difficultyBadge} ${styles[session.difficulty as keyof typeof styles] || ''}`}>
                           {session.difficulty}
                         </span>
                         <span>•</span>

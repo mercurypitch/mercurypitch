@@ -555,11 +555,11 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
 
               {/* Create Melody Form */}
               {editingMelodyKey() === null && (
-                <div class="edit-melody-form">
-                  <div class="create-header">
+                <div class={styles.editMelodyForm} data-testid="edit-melody-form">
+                  <div class={styles.createHeader}>
                     <h3>Create New Melody</h3>
                     <button
-                      class="big-create-btn"
+                      class={styles.bigCreateBtn}
                       onClick={() => {
                         setCreateName('')
                         setCreateBpm(80)
@@ -589,7 +589,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                     />
                   </div>
 
-                  <div class="form-row">
+                  <div class={styles.formRow}>
                     <div class="form-group">
                       <label>BPM</label>
                       <input
@@ -686,7 +686,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
 
               {/* Edit Melody Form */}
               {editingMelodyKey() !== null && (
-                <div class="edit-melody-form">
+                <div class={styles.editMelodyForm} data-testid="edit-melody-form">
                   <h3>Edit Melody</h3>
 
                   <div class="form-group">
@@ -699,7 +699,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                     />
                   </div>
 
-                  <div class="form-row">
+                  <div class={styles.formRow}>
                     <div class="form-group">
                       <label>BPM</label>
                       <input
