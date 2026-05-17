@@ -1477,9 +1477,7 @@ export class PianoRollEditor {
     const minWidth = this.totalBeats * this.beatWidth * this.zoomLevel
     const containerWidth = this.gridContainer?.clientWidth ?? 0
     this.stretchedWidth =
-      containerWidth > 0
-        ? Math.max(minWidth, containerWidth)
-        : minWidth
+      containerWidth > 0 ? Math.max(minWidth, containerWidth) : minWidth
 
     // Piano canvas
     if (this.pianoCanvas) {
