@@ -104,7 +104,7 @@ import { FallingNotesSongPicker } from './components/FallingNotesSongPicker'
 import { GuideSelection } from './components/GuideSelection'
 import { JamPanel } from './components/jam/JamPanel'
 import { TabErrorBoundary } from './components/TabErrorBoundary'
-import { _UvrGuideStyles } from './components/UvrGuide'
+
 import { WelcomeScreen } from './components/WelcomeScreen'
 import styles from './@/components/App.module.css'
 
@@ -728,7 +728,7 @@ const AppShell: Component<AppProps> = (props) => {
     const styleElements = [
       LyricsUploaderStyles,
       StemMixerStyles,
-      _UvrGuideStyles,
+
     ]
 
     styleElements.forEach((styleString) => {
