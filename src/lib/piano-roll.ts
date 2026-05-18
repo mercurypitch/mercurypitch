@@ -2769,24 +2769,32 @@ export class PianoRollEditor {
   }
 
   /** Map any MIDI note to a Y pixel coordinate (center of its row).
-   *  Interpolates between scale degrees for notes not in the current
-   *  scale, then clamps to the visible area. */
+   *  Scale is ordered HIGH-to-LOW: index 0 = highest pitch (top of
+   *  canvas), index N-1 = lowest pitch (bottom).  Interpolates between
+   *  adjacent scale degrees for MIDI values not in the current scale. */
   private midiToY(midi: number): number {
     if (this.scale.length === 0) return this.rowHeight / 2
-    for (let i = 0; i < this.scale.length; i++) {
+    // Above the highest scale note → clamp to top
+    if (midi >= this.scale[0].midi)
+      return this.rowHeight / 2
+    // Below the lowest scale note → clamp to bottom
+    const last = this.scale.length - 1
+    if (midi <= this.scale[last].midi)
+      return last * this.rowHeight + this.rowHeight / 2
+    // Find the gap: scale[i].midi > targetMidi > scale[i+1].midi
+    for (let i = 0; i < last; i++) {
       if (this.scale[i].midi === midi)
         return i * this.rowHeight + this.rowHeight / 2
-      if (this.scale[i].midi > midi) {
-        if (i === 0) return this.rowHeight / 2
-        const loMidi = this.scale[i - 1].midi
+      if (this.scale[i].midi > midi && this.scale[i + 1].midi < midi) {
         const hiMidi = this.scale[i].midi
-        const loY = (i - 1) * this.rowHeight + this.rowHeight / 2
+        const loMidi = this.scale[i + 1].midi
         const hiY = i * this.rowHeight + this.rowHeight / 2
+        const loY = (i + 1) * this.rowHeight + this.rowHeight / 2
         const frac = (midi - loMidi) / (hiMidi - loMidi)
-        return loY + frac * (hiY - loY)
+        return loY - frac * (loY - hiY)
       }
     }
-    return (this.scale.length - 1) * this.rowHeight + this.rowHeight / 2
+    return last * this.rowHeight + this.rowHeight / 2
   }
 
   private emitMelodyChange(): void {
