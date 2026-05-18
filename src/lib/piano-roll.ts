@@ -556,6 +556,7 @@ export class PianoRollEditor {
   private vibratoAmplitude = 0.5
   private _intervalModalEl: HTMLElement | null = null
   private _intervalResolve: ((value: number | null) => void) | null = null
+  private _intervalBtns: Map<number, HTMLButtonElement> = new Map()
 
   // Undo/redo history
   private historyStack: MelodyItem[][] = []
@@ -1479,7 +1480,10 @@ export class PianoRollEditor {
     <div class="roll-interval-content">
       <h3 id="roll-interval-title">Slide Interval</h3>
       <div class="roll-interval-grid" id="roll-interval-grid"></div>
-      <button class="roll-interval-cancel" id="roll-interval-cancel">Cancel</button>
+      <div class="roll-interval-actions">
+        <button class="roll-interval-cancel" id="roll-interval-cancel">Cancel</button>
+        <button class="roll-interval-remove" id="roll-interval-remove" style="display:none">Remove effect</button>
+      </div>
     </div>
   </div>
 
@@ -1711,10 +1715,12 @@ export class PianoRollEditor {
     this._intervalModalEl = intervalModal
     // Build preset buttons: two rows of 7
     const intervals = [12, 7, 5, 4, 3, 2, 1, -1, -2, -3, -4, -5, -7, -12]
+    this._intervalBtns = new Map<number, HTMLButtonElement>()
     for (const iv of intervals) {
       const btn = document.createElement('button')
       btn.className = 'roll-interval-btn'
       btn.textContent = iv > 0 ? `+${iv}` : `${iv}`
+      btn.dataset.interval = String(iv)
       btn.addEventListener('click', () => {
         if (this._intervalResolve) {
           this._intervalResolve(iv)
@@ -1723,10 +1729,21 @@ export class PianoRollEditor {
         intervalModal.style.display = 'none'
       })
       intervalGrid.appendChild(btn)
+      this._intervalBtns.set(iv, btn)
     }
+    const intervalRemove = container.querySelector(
+      '#roll-interval-remove',
+    ) as HTMLElement
     intervalCancel.addEventListener('click', () => {
       if (this._intervalResolve) {
         this._intervalResolve(null)
+        this._intervalResolve = null
+      }
+      intervalModal.style.display = 'none'
+    })
+    intervalRemove.addEventListener('click', () => {
+      if (this._intervalResolve) {
+        this._intervalResolve(NaN) // sentinel: remove effect
         this._intervalResolve = null
       }
       intervalModal.style.display = 'none'
@@ -2751,6 +2768,27 @@ export class PianoRollEditor {
     return -1
   }
 
+  /** Map any MIDI note to a Y pixel coordinate (center of its row).
+   *  Interpolates between scale degrees for notes not in the current
+   *  scale, then clamps to the visible area. */
+  private midiToY(midi: number): number {
+    if (this.scale.length === 0) return this.rowHeight / 2
+    for (let i = 0; i < this.scale.length; i++) {
+      if (this.scale[i].midi === midi)
+        return i * this.rowHeight + this.rowHeight / 2
+      if (this.scale[i].midi > midi) {
+        if (i === 0) return this.rowHeight / 2
+        const loMidi = this.scale[i - 1].midi
+        const hiMidi = this.scale[i].midi
+        const loY = (i - 1) * this.rowHeight + this.rowHeight / 2
+        const hiY = i * this.rowHeight + this.rowHeight / 2
+        const frac = (midi - loMidi) / (hiMidi - loMidi)
+        return loY + frac * (hiY - loY)
+      }
+    }
+    return (this.scale.length - 1) * this.rowHeight + this.rowHeight / 2
+  }
+
   private emitMelodyChange(): void {
     this.onMelodyChange?.([...this.melody])
   }
@@ -3519,8 +3557,7 @@ export class PianoRollEditor {
         note.slideInterval !== undefined
       ) {
         const targetMidi = note.note.midi + note.slideInterval
-        const tgtRow = this.midiToRow(targetMidi)
-        tgtCY = tgtRow * this.rowHeight + this.rowHeight / 2
+        tgtCY = this.midiToY(targetMidi)
         drawSlideShape = true
       }
 
@@ -3690,8 +3727,11 @@ export class PianoRollEditor {
       if (isSelected && w > 12) {
         const handleW = 6
         ctx.fillStyle = 'rgba(255,255,255,0.5)'
+        // Left handle — always at source row Y
         ctx.fillRect(x + 1, ry + h / 2 - 4, handleW, 8)
-        ctx.fillRect(x + w - handleW - 1, ry + h / 2 - 4, handleW, 8)
+        // Right handle — at target pitch Y for slide notes, source Y otherwise
+        const rightHandleY = drawSlideShape ? tgtCY - 4 : ry + h / 2 - 4
+        ctx.fillRect(x + w - handleW - 1, rightHandleY, handleW, 8)
       }
     }
   }
@@ -3786,8 +3826,14 @@ export class PianoRollEditor {
     return this.melody.filter((n) => this.selectedNoteIds.has(n.id))
   }
 
-  /** Show the interval selector modal and return the chosen semitone offset. */
-  private _showIntervalModal(effect: EffectType): Promise<number | null> {
+  /** Show the interval selector modal and return the chosen semitone offset.
+   *  Pass `sourceMidi` to label each button with the resulting note name
+   *  (e.g. "E4 (+2)"). Pass `currentInterval` to highlight the active choice. */
+  private _showIntervalModal(
+    effect: EffectType,
+    sourceMidi?: number,
+    currentInterval?: number,
+  ): Promise<number | null> {
     return new Promise((resolve) => {
       this._intervalResolve = resolve
       const modal = this._intervalModalEl
@@ -3803,6 +3849,25 @@ export class PianoRollEditor {
         'ease-out': 'Ease Out Interval',
       }
       title.textContent = effectLabels[effect] ?? 'Interval'
+
+      // Re-label buttons with target note names when a source note is known
+      for (const [iv, btn] of this._intervalBtns) {
+        btn.classList.remove('current')
+        if (sourceMidi !== undefined) {
+          const { name, octave } = midiToNote(sourceMidi + iv)
+          btn.innerHTML = `${name}${octave}&nbsp;<small>(${iv > 0 ? '+' : ''}${iv})</small>`
+        } else {
+          btn.textContent = iv > 0 ? `+${iv}` : `${iv}`
+        }
+        if (currentInterval !== undefined && iv === currentInterval) {
+          btn.classList.add('current')
+        }
+      }
+      // Show Remove button only when changing an existing slide
+      const removeBtn = modal.querySelector('#roll-interval-remove')
+      if (removeBtn instanceof HTMLElement) {
+        removeBtn.style.display = currentInterval !== undefined ? '' : 'none'
+      }
       modal.style.display = 'flex'
     })
   }
@@ -3811,41 +3876,62 @@ export class PianoRollEditor {
     const selected = this._getSelectedNotes()
     if (selected.length === 0) return
 
-    // Toggle off: if the single selected note already has this effect, remove it
-    if (selected.length === 1 && selected[0].effectType === type) {
+    // Vibrato: toggle if same, apply immediately otherwise (no modal)
+    if (type === 'vibrato') {
       this.pushHistory()
-      selected[0].effectType = undefined
-      selected[0].slideInterval = undefined
-      selected[0].vibratoAmplitude = undefined
+      if (selected.length === 1 && selected[0].effectType === 'vibrato') {
+        selected[0].effectType = undefined
+        selected[0].vibratoAmplitude = undefined
+      } else {
+        selected.forEach((n: MelodyItem) => {
+          n.effectType = 'vibrato'
+          n.slideInterval = undefined
+          n.vibratoAmplitude = this.vibratoAmplitude
+        })
+      }
       this.emitMelodyChange()
       this.draw()
       return
     }
 
-    this.pushHistory()
+    // Slide/ease: work on the first selected note
+    const target = selected[0]
+    const isSameEffect = target.effectType === type
 
-    if (type === 'vibrato') {
-      // Apply vibrato to all selected notes (self-contained, no modal)
-      selected.forEach((n: MelodyItem) => {
-        n.effectType = 'vibrato'
-        n.slideInterval = undefined
-        n.vibratoAmplitude = this.vibratoAmplitude
-      })
-      this.emitMelodyChange()
-      this.draw()
-    } else {
-      // Slide/ease: work on the first selected note, ask for interval via modal
-      const target = selected[0]
-      void this._showIntervalModal(type).then((iv) => {
-        if (iv === null) return // cancelled
-        target.effectType = type
-        target.slideInterval = iv
-        target.vibratoAmplitude = undefined
+    // If the note already has this effect, re-open modal for change/removal
+    if (isSameEffect) {
+      void this._showIntervalModal(
+        type,
+        target.note.midi,
+        target.slideInterval,
+      ).then((iv) => {
+        if (iv === null) return // cancelled — keep existing
+        this.pushHistory()
+        if (Number.isNaN(iv)) {
+          // Remove effect
+          target.effectType = undefined
+          target.slideInterval = undefined
+        } else {
+          target.slideInterval = iv
+        }
         this._updateEffectBtnStates()
         this.emitMelodyChange()
         this.draw()
       })
+      return
     }
+
+    // New effect on a note without this type — open modal for fresh interval
+    void this._showIntervalModal(type, target.note.midi).then((iv) => {
+      if (iv === null) return // cancelled
+      this.pushHistory()
+      target.effectType = type
+      target.slideInterval = iv
+      target.vibratoAmplitude = undefined
+      this._updateEffectBtnStates()
+      this.emitMelodyChange()
+      this.draw()
+    })
   }
 
   /** Update effect button active states. Also checks the selected note's effectType. */
