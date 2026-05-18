@@ -453,6 +453,15 @@ const AppShell: Component<AppProps> = (props) => {
       showGuideSelection,
       closeGuideSelection,
     },
+    editor: {
+      isPlaying: () => editorIsPlaying(),
+      isPaused: () => editorIsPaused(),
+      play: async () => {
+        await handleEditorPlay()
+      },
+      pause: handleEditorPause,
+      resume: handleEditorResume,
+    },
   })
 
   usePianoRollEvents({

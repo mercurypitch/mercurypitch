@@ -1,7 +1,7 @@
 import type { Accessor, Setter } from 'solid-js'
 import { onCleanup, onMount } from 'solid-js'
 import type { ActiveTab } from '@/features/tabs/constants'
-import { TAB_KARAOKE, TAB_PIANO, TAB_SINGING } from '@/features/tabs/constants'
+import { TAB_COMPOSE, TAB_KARAOKE, TAB_PIANO, TAB_SINGING, } from '@/features/tabs/constants'
 import { PLAYBACK_MODE_SESSION } from '@/features/tabs/constants'
 import * as notifStore from '@/stores/notifications-store'
 import * as transportStore from '@/stores/transport-store'
@@ -43,6 +43,15 @@ interface KeyboardShortcutHandlers {
     closeScaleBuilder: () => void
     showGuideSelection: Accessor<boolean>
     closeGuideSelection: () => void
+  }
+
+  /** Editor (compose tab) piano roll playback handlers. */
+  editor?: {
+    isPlaying: () => boolean
+    isPaused: () => boolean
+    play: () => Promise<void>
+    pause: () => void
+    resume: () => void
   }
 }
 
@@ -128,6 +137,17 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers): void {
           handlers.resume()
         } else {
           handlers.play()
+        }
+      }
+
+      // Compose tab — play/pause editor piano roll
+      if (tab === TAB_COMPOSE && handlers.editor) {
+        if (handlers.editor.isPlaying()) {
+          handlers.editor.pause()
+        } else if (handlers.editor.isPaused()) {
+          handlers.editor.resume()
+        } else {
+          void handlers.editor.play()
         }
       }
     }
