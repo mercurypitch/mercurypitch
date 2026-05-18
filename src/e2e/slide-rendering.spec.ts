@@ -52,13 +52,21 @@ test.describe('Slide Note Rendering', () => {
         }
       })
 
-      return { isHighToLow, results, totalRows: pr.totalRows, rowHeight: pr.rowHeight }
+      return {
+        isHighToLow,
+        results,
+        totalRows: pr.totalRows,
+        rowHeight: pr.rowHeight,
+      }
     })
 
     expect(result.error).toBeUndefined()
     expect(result.isHighToLow).toBe(true)
     for (const r of result.results ?? []) {
-      expect(r.match, `midiToY(${r.midi}) = ${r.actualY}, expected ${r.expectedY} (row ${r.expectedRow})`).toBe(true)
+      expect(
+        r.match,
+        `midiToY(${r.midi}) = ${r.actualY}, expected ${r.expectedY} (row ${r.expectedRow})`,
+      ).toBe(true)
     }
   })
 
@@ -76,7 +84,12 @@ test.describe('Slide Note Rendering', () => {
       if (!scale || scale.length < 3) return { error: 'scale too small' }
 
       // Find two adjacent scale notes with MIDI gap > 1
-      let found: { loMidi: number; hiMidi: number; loRow: number; hiRow: number } | null = null
+      let found: {
+        loMidi: number
+        hiMidi: number
+        loRow: number
+        hiRow: number
+      } | null = null
       for (let i = 0; i < scale.length - 1; i++) {
         // Since scale is high-to-low, scale[i] is higher pitch (smaller row)
         if (scale[i].midi - scale[i + 1].midi > 1) {
@@ -98,7 +111,8 @@ test.describe('Slide Note Rendering', () => {
       const frac = (midMidi - found.loMidi) / (found.hiMidi - found.loMidi)
       // Expected: interpolate from loRow (larger y) toward hiRow (smaller y)
       const expectedY =
-        (found.loRow * rowHeight + rowHeight / 2) -
+        found.loRow * rowHeight +
+        rowHeight / 2 -
         frac *
           (found.loRow * rowHeight +
             rowHeight / 2 -
@@ -118,7 +132,10 @@ test.describe('Slide Note Rendering', () => {
     })
 
     expect(result.error).toBeUndefined()
-    expect(result.match, `Interpolation for MIDI ${result.midMidi}: got Y=${result.actualY}, expected ${result.expectedY}`).toBe(true)
+    expect(
+      result.match,
+      `Interpolation for MIDI ${result.midMidi}: got Y=${result.actualY}, expected ${result.expectedY}`,
+    ).toBe(true)
   })
 
   test('midiToY clamps above-highest MIDI to top row', async ({ page }) => {
@@ -145,7 +162,10 @@ test.describe('Slide Note Rendering', () => {
     })
 
     expect(result.error).toBeUndefined()
-    expect(result.match, `Above-range MIDI should clamp to top: got ${result.actualY}, expected ${result.expectedY}`).toBe(true)
+    expect(
+      result.match,
+      `Above-range MIDI should clamp to top: got ${result.actualY}, expected ${result.expectedY}`,
+    ).toBe(true)
   })
 
   test('midiToY clamps below-lowest MIDI to bottom row', async ({ page }) => {
@@ -173,7 +193,10 @@ test.describe('Slide Note Rendering', () => {
     })
 
     expect(result.error).toBeUndefined()
-    expect(result.match, `Below-range MIDI should clamp to bottom: got ${result.actualY}, expected ${result.expectedY}`).toBe(true)
+    expect(
+      result.match,
+      `Below-range MIDI should clamp to bottom: got ${result.actualY}, expected ${result.expectedY}`,
+    ).toBe(true)
   })
 
   test('slide note stores slideInterval and renders without crashing', async ({

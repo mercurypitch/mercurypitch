@@ -5,14 +5,9 @@
 import type { BallPhysicsConfig, BallPhysicsState, NoteBounds, } from '@/features/playback/yousician-ball-physics'
 import { createBallPhysics, getBallPhysics, } from '@/features/playback/yousician-ball-physics'
 import type { AudioEngine, InstrumentType } from '@/lib/audio-engine'
+import { drawEffectBadge, drawSlideProgress, slideShapePath, vibratoShapePath, } from '@/lib/effect-renderer'
 import { eventBus } from '@/lib/event-bus'
 import { PitchDetector } from '@/lib/pitch-detector'
-import {
-  drawEffectBadge,
-  drawSlideProgress,
-  drawVibratoWave,
-  slideShapePath,
-} from '@/lib/effect-renderer'
 import { buildMultiOctaveScale, midiToFreq, midiToNote } from '@/lib/scale-data'
 import type { MelodyItem, NoteName, PianoRollConfig, ScaleDegree, } from '@/types'
 
@@ -2221,7 +2216,11 @@ export class PianoRollEditor {
     // Defer history push to first modification (mousemove) so a click
     // without dragging doesn't waste an undo level.
     this.dragDidPushHistory = false
-    if (this.activeTool === 'place' || this.activeTool === 'select' || this.activeTool === 'browse') {
+    if (
+      this.activeTool === 'place' ||
+      this.activeTool === 'select' ||
+      this.activeTool === 'browse'
+    ) {
       const existingNote = this.findNoteAtExtended(beat, row, x)
       if (existingNote) {
         // Clear pre-selected effect when interacting with existing notes.
@@ -2400,9 +2399,11 @@ export class PianoRollEditor {
         this.gridCanvas.style.cursor = 'pointer'
       } else {
         this.gridCanvas.style.cursor =
-          this.activeTool === 'place' ? 'crosshair'
-          : this.activeTool === 'browse' ? 'pointer'
-          : 'default'
+          this.activeTool === 'place'
+            ? 'crosshair'
+            : this.activeTool === 'browse'
+              ? 'pointer'
+              : 'default'
       }
     }
 
@@ -2511,9 +2512,11 @@ export class PianoRollEditor {
     // Reset cursor
     if (this.gridCanvas) {
       this.gridCanvas.style.cursor =
-        this.activeTool === 'place' ? 'crosshair'
-        : this.activeTool === 'browse' ? 'pointer'
-        : 'default'
+        this.activeTool === 'place'
+          ? 'crosshair'
+          : this.activeTool === 'browse'
+            ? 'pointer'
+            : 'default'
     }
   }
 
@@ -2792,7 +2795,11 @@ export class PianoRollEditor {
 
   /** Like findNoteAt but also finds slide notes anywhere along their S-shape
    *  (between source and target rows), and at the right handle on the target row. */
-  private findNoteAtExtended(beat: number, row: number, _x: number): MelodyItem | null {
+  private findNoteAtExtended(
+    beat: number,
+    row: number,
+    _x: number,
+  ): MelodyItem | null {
     const note = this.findNoteAt(beat, row)
     if (note) return note
     for (const n of this.melody) {
@@ -2824,8 +2831,7 @@ export class PianoRollEditor {
   private midiToY(midi: number): number {
     if (this.scale.length === 0) return this.rowHeight / 2
     // Above the highest scale note → clamp to top
-    if (midi >= this.scale[0].midi)
-      return this.rowHeight / 2
+    if (midi >= this.scale[0].midi) return this.rowHeight / 2
     // Below the lowest scale note → clamp to bottom
     const last = this.scale.length - 1
     if (midi <= this.scale[last].midi)
@@ -3606,19 +3612,20 @@ export class PianoRollEditor {
 
       // S-shape ribbon rendering for slide/ease notes with a slideInterval
       let drawSlideShape = false
+      let drawVibratoShapeFlag = false
       let tgtCY = 0
       let srcCY = 0
       let halfH = 0
-      if (
-        !offScale &&
-        note.effectType &&
-        note.slideInterval !== undefined
-      ) {
+      if (!offScale && note.effectType && note.slideInterval !== undefined) {
         const targetMidi = note.note.midi + note.slideInterval
         tgtCY = this.midiToY(targetMidi)
         srcCY = rowIdx * this.rowHeight + this.rowHeight / 2
         halfH = h / 2
         drawSlideShape = true
+      } else if (!offScale && note.effectType === 'vibrato') {
+        srcCY = rowIdx * this.rowHeight + this.rowHeight / 2
+        halfH = h / 2
+        drawVibratoShapeFlag = true
       }
 
       // Shadow for active vs normal notes
@@ -3634,10 +3641,12 @@ export class PianoRollEditor {
         ctx.shadowOffsetY = 1
       }
 
-      // Draw note block — S-shape ribbon for slides, rounded rect for normal
+      // Draw note block — S-shape for slides, sine-wave ribbon for vibrato, rounded rect for normal
       ctx.beginPath()
       if (drawSlideShape) {
         slideShapePath(ctx, x, w, srcCY, tgtCY, halfH)
+      } else if (drawVibratoShapeFlag) {
+        vibratoShapePath(ctx, x, srcCY, w, halfH)
       } else if (w < 2 * cornerRadius) {
         ctx.roundRect(x, ry, 2 * cornerRadius, h, [
           cornerRadius,
@@ -3661,6 +3670,10 @@ export class PianoRollEditor {
       } else if (drawSlideShape) {
         fillColor = 'rgba(255, 170, 40, 0.88)'
         strokeColor = 'rgba(255, 200, 80, 0.75)'
+        strokeWidth = 1.25
+      } else if (drawVibratoShapeFlag) {
+        fillColor = 'rgba(255, 107, 107, 0.72)'
+        strokeColor = 'rgba(255, 140, 140, 0.8)'
         strokeWidth = 1.25
       } else if (isSelected) {
         fillColor = this.config.noteColors.selected
@@ -3687,10 +3700,7 @@ export class PianoRollEditor {
       if (isActive && drawSlideShape) {
         const progress = Math.max(
           0,
-          Math.min(
-            1,
-            (this.getCurrentBeat() - note.startBeat) / note.duration,
-          ),
+          Math.min(1, (this.getCurrentBeat() - note.startBeat) / note.duration),
         )
         drawSlideProgress({
           ctx,
@@ -3725,11 +3735,6 @@ export class PianoRollEditor {
       ctx.shadowColor = 'transparent'
       ctx.shadowBlur = 0
       ctx.shadowOffsetY = 0
-
-      // Wavy top edge for vibrato notes
-      if (note.effectType === 'vibrato') {
-        drawVibratoWave({ ctx, x, y: ry, w })
-      }
 
       // Effect badge on top-right of notes with effects
       if (note.effectType && w > 18) {

@@ -8,13 +8,8 @@ import type { ArcState } from '@/lib/arc-physics'
 import { BALL_RADIUS, buildPlayable, computeArcCy, computeArcEndBeat, computeBallPos, computeInitialArc, isBackwardsSeek, } from '@/lib/arc-physics'
 import { AudioEngine } from '@/lib/audio-engine'
 import { audioRegistry } from '@/lib/audio-registry'
+import { drawEffectBadge, drawSlideProgress, drawSlideShape, drawVibratoShape, } from '@/lib/effect-renderer'
 import { eventBus } from '@/lib/event-bus'
-import {
-  drawEffectBadge,
-  drawSlideShape,
-  drawSlideProgress,
-  drawVibratoWave,
-} from '@/lib/effect-renderer'
 import { beatToHistoryX } from '@/lib/pitch-history-window'
 import { melodyIndexAtBeat } from '@/lib/scale-data'
 import { bpm, focusMode, micWaveVisible } from '@/stores'
@@ -949,8 +944,19 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       if (bw > 2) {
         const boxH = 22
         const boxHalf = boxH / 2
-        ctx.beginPath()
-        ctx.roundRect(x1, y - boxHalf, bw, boxH, 5)
+
+        // Check whether this note has a slide/ease or vibrato effect.
+        // Effect notes render their own custom shape instead of the
+        // standard rounded rectangle.
+        const hasSlideEffect =
+          item.effectType !== undefined &&
+          item.slideInterval !== undefined &&
+          (item.effectType === 'slide-up' ||
+            item.effectType === 'slide-down' ||
+            item.effectType === 'ease-in' ||
+            item.effectType === 'ease-out')
+        const hasVibratoEffect = item.effectType === 'vibrato'
+        const hasEffect = hasSlideEffect || hasVibratoEffect
 
         // Played-note rating lookup. noteResults accumulates in
         // playback order, so the j-th played note's rating is at
@@ -987,74 +993,10 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
           }
         }
 
-        const r = 6 // corner radius
-
-        // Solid dark base so grid lines never bleed through
-        ctx.beginPath()
-        ctx.roundRect(x1, y - boxHalf, bw, boxH, r)
-        ctx.fillStyle = 'rgba(13,17,23,0.92)'
-        ctx.fill()
-
-        // Fill with gradient on top of the opaque base
-        ctx.beginPath()
-        ctx.roundRect(x1, y - boxHalf, bw, boxH, r)
-        const fillGrad = ctx.createLinearGradient(
-          0,
-          y - boxHalf,
-          0,
-          y + boxHalf,
-        )
-        fillGrad.addColorStop(0, palette.fillTop)
-        fillGrad.addColorStop(1, palette.fillBottom)
-        ctx.fillStyle = fillGrad
-        ctx.fill()
-
-        // Inner highlight — a thin inset rounded rect that follows the
-        // corners properly, drawn inside the top half only to create a
-        // subtle "glass lip" without the straight-line artifact.
-        ctx.save()
-        ctx.beginPath()
-        ctx.roundRect(x1, y - boxHalf, bw, boxH, r)
-        ctx.clip()
-        const inset = 1.5
-        const hlGrad = ctx.createLinearGradient(
-          0,
-          y - boxHalf,
-          0,
-          y - boxHalf + boxH * 0.45,
-        )
-        hlGrad.addColorStop(0, 'rgba(255,255,255,0.18)')
-        hlGrad.addColorStop(1, 'rgba(255,255,255,0)')
-        ctx.beginPath()
-        ctx.roundRect(
-          x1 + inset,
-          y - boxHalf + inset,
-          bw - inset * 2,
-          boxH * 0.45,
-          Math.max(1, r - inset),
-        )
-        ctx.fillStyle = hlGrad
-        ctx.fill()
-        ctx.restore()
-
-        // Outline
-        ctx.beginPath()
-        ctx.roundRect(x1, y - boxHalf, bw, boxH, r)
-        ctx.strokeStyle = palette.stroke
-        ctx.lineWidth = isActive ? 1.5 : 1
-        ctx.stroke()
-
-        // ── Effect visualisation (slide / ease / vibrato) ──
-        if (
-          item.effectType &&
-          item.slideInterval !== undefined &&
-          (item.effectType === 'slide-up' ||
-            item.effectType === 'slide-down' ||
-            item.effectType === 'ease-in' ||
-            item.effectType === 'ease-out')
-        ) {
+        // ── Effect shapes (slide / ease / vibrato) — replace the normal block ──
+        if (hasSlideEffect) {
           const targetFreq =
-            item.note.freq * Math.pow(2, item.slideInterval / 12)
+            item.note.freq * Math.pow(2, item.slideInterval! / 12)
           const tgtCY = freqToY(targetFreq, h)
           drawSlideShape({
             ctx,
@@ -1083,127 +1025,167 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
               clipHeight: h,
             })
           }
-        } else if (item.effectType === 'vibrato') {
-          drawVibratoWave({
+        } else if (hasVibratoEffect) {
+          drawVibratoShape({
             ctx,
             x: x1,
-            y: y - boxHalf,
+            y,
             w: bw,
+            halfH: boxHalf,
           })
+        } else {
+          // Normal rounded rectangle
+          const r = 6
+
+          // Solid dark base so grid lines never bleed through
+          ctx.beginPath()
+          ctx.roundRect(x1, y - boxHalf, bw, boxH, r)
+          ctx.fillStyle = 'rgba(13,17,23,0.92)'
+          ctx.fill()
+
+          // Fill with gradient on top of the opaque base
+          ctx.beginPath()
+          ctx.roundRect(x1, y - boxHalf, bw, boxH, r)
+          const fillGrad = ctx.createLinearGradient(
+            0,
+            y - boxHalf,
+            0,
+            y + boxHalf,
+          )
+          fillGrad.addColorStop(0, palette.fillTop)
+          fillGrad.addColorStop(1, palette.fillBottom)
+          ctx.fillStyle = fillGrad
+          ctx.fill()
+
+          // Inner highlight — a thin inset rounded rect that follows the
+          // corners properly, drawn inside the top half only to create a
+          // subtle "glass lip" without the straight-line artifact.
+          ctx.save()
+          ctx.beginPath()
+          ctx.roundRect(x1, y - boxHalf, bw, boxH, r)
+          ctx.clip()
+          const inset = 1.5
+          const hlGrad = ctx.createLinearGradient(
+            0,
+            y - boxHalf,
+            0,
+            y - boxHalf + boxH * 0.45,
+          )
+          hlGrad.addColorStop(0, 'rgba(255,255,255,0.18)')
+          hlGrad.addColorStop(1, 'rgba(255,255,255,0)')
+          ctx.beginPath()
+          ctx.roundRect(
+            x1 + inset,
+            y - boxHalf + inset,
+            bw - inset * 2,
+            boxH * 0.45,
+            Math.max(1, r - inset),
+          )
+          ctx.fillStyle = hlGrad
+          ctx.fill()
+          ctx.restore()
+
+          // Outline
+          ctx.beginPath()
+          ctx.roundRect(x1, y - boxHalf, bw, boxH, r)
+          ctx.strokeStyle = palette.stroke
+          ctx.lineWidth = isActive ? 1.5 : 1
+          ctx.stroke()
+
+          // ── Flame mode: progressive left→right burning fill ──
+          if (isActive && flameMode()) {
+            const progress = Math.max(
+              0,
+              Math.min(
+                1,
+                (props.currentBeat() - item.startBeat) / item.duration,
+              ),
+            )
+            const burnX = x1 + bw * progress
+            const time = performance.now() / 1000
+
+            ctx.save()
+            ctx.beginPath()
+            ctx.roundRect(x1, y - boxHalf, bw, boxH, 6)
+            ctx.clip()
+
+            const fillGradFire = ctx.createLinearGradient(x1, 0, burnX, 0)
+            fillGradFire.addColorStop(0, 'rgba(120,20,10,0.55)')
+            fillGradFire.addColorStop(0.4, 'rgba(220,80,20,0.6)')
+            fillGradFire.addColorStop(0.75, 'rgba(255,160,40,0.7)')
+            fillGradFire.addColorStop(1, 'rgba(255,255,200,0.8)')
+            ctx.fillStyle = fillGradFire
+            ctx.fillRect(x1, y - boxHalf, bw * progress, boxH)
+
+            const tongues = 6
+            for (let t = 0; t < tongues; t++) {
+              const px = x1 + bw * progress * ((t + 0.5) / tongues)
+              const phase = time * (4 + t * 1.3) + t
+              const jitterX = Math.sin(phase) * 3
+              const jitterY = Math.cos(phase * 1.4) * 2
+              const radius =
+                boxH * (0.7 + 0.3 * Math.abs(Math.sin(phase * 0.7)))
+              const grad = ctx.createRadialGradient(
+                px + jitterX,
+                y + jitterY,
+                0,
+                px + jitterX,
+                y + jitterY,
+                radius,
+              )
+              grad.addColorStop(0, 'rgba(255,250,200,0.55)')
+              grad.addColorStop(0.4, 'rgba(255,160,30,0.4)')
+              grad.addColorStop(0.8, 'rgba(220,40,10,0.18)')
+              grad.addColorStop(1, 'rgba(180,10,0,0)')
+              ctx.fillStyle = grad
+              ctx.beginPath()
+              ctx.arc(px + jitterX, y + jitterY, radius, 0, Math.PI * 2)
+              ctx.fill()
+            }
+
+            if (progress > 0 && progress < 1) {
+              const frontGrad = ctx.createLinearGradient(
+                burnX - 8,
+                0,
+                burnX + 8,
+                0,
+              )
+              frontGrad.addColorStop(0, 'rgba(255,200,60,0)')
+              frontGrad.addColorStop(0.5, 'rgba(255,255,230,0.95)')
+              frontGrad.addColorStop(1, 'rgba(255,140,40,0)')
+              ctx.fillStyle = frontGrad
+              ctx.fillRect(burnX - 8, y - boxHalf, 16, boxH)
+            }
+            ctx.restore()
+
+            ctx.save()
+            ctx.shadowColor = 'rgba(255,140,40,0.85)'
+            ctx.shadowBlur = 16
+            ctx.strokeStyle = 'rgba(255,200,80,0.95)'
+            ctx.lineWidth = 2
+            ctx.beginPath()
+            ctx.moveTo(x1 + 6, y - boxHalf)
+            ctx.lineTo(x1 + bw * progress, y - boxHalf)
+            ctx.moveTo(x1 + bw * progress, y + boxHalf)
+            ctx.lineTo(x1 + 6, y + boxHalf)
+            if (progress > 0.05) {
+              ctx.moveTo(x1, y - boxHalf + 6)
+              ctx.lineTo(x1, y + boxHalf - 6)
+            }
+            ctx.stroke()
+            ctx.restore()
+          }
         }
-        if (item.effectType && bw > 22) {
+
+        // Effect badge on top-right of effect notes
+        if (hasEffect && bw > 22) {
           drawEffectBadge({
             ctx,
             x: x1 + bw,
             y: y - boxHalf,
-            effectType: item.effectType,
+            effectType: item.effectType!,
             slideInterval: item.slideInterval,
           })
-        }
-
-        // ── Flame mode: progressive left→right burning fill. ──
-        // The fire fills the note's rectangle in lockstep with playback
-        // position: at the start of the note bar there's a small flame
-        // ember, mid-note the bar is half-engulfed, and as the playhead
-        // approaches the right edge the entire bar is burning. The fire
-        // front (bright vertical glow) sits exactly at the playhead's
-        // x-position within the bar. After the note ends, isPlayed
-        // takes over and renders the "completed" green tint.
-        if (isActive && flameMode()) {
-          // Progress inside this note: 0 at note start, 1 at note end.
-          const progress = Math.max(
-            0,
-            Math.min(1, (props.currentBeat() - item.startBeat) / item.duration),
-          )
-          const burnX = x1 + bw * progress // playhead-relative x
-          const time = performance.now() / 1000
-
-          ctx.save()
-          // Clip everything below to the note's rounded rectangle so the
-          // fire never bleeds outside the bar.
-          ctx.beginPath()
-          ctx.roundRect(x1, y - boxHalf, bw, boxH, 6)
-          ctx.clip()
-
-          // 1) Burned-zone background gradient (the part already burning).
-          //    Goes from a dark-red ember tail on the LEFT to a bright
-          //    yellow-white at the burn front on the RIGHT.
-          const fillGradFire = ctx.createLinearGradient(x1, 0, burnX, 0)
-          fillGradFire.addColorStop(0, 'rgba(120,20,10,0.55)')
-          fillGradFire.addColorStop(0.4, 'rgba(220,80,20,0.6)')
-          fillGradFire.addColorStop(0.75, 'rgba(255,160,40,0.7)')
-          fillGradFire.addColorStop(1, 'rgba(255,255,200,0.8)')
-          ctx.fillStyle = fillGradFire
-          ctx.fillRect(x1, y - boxHalf, bw * progress, boxH)
-
-          // 2) Flickering flame "tongues" rising from the burned zone.
-          //    Six gradients spaced across the burned region with
-          //    sin/cos-driven jitter so they shimmer organically.
-          const tongues = 6
-          for (let t = 0; t < tongues; t++) {
-            const px = x1 + bw * progress * ((t + 0.5) / tongues)
-            const phase = time * (4 + t * 1.3) + t
-            const jitterX = Math.sin(phase) * 3
-            const jitterY = Math.cos(phase * 1.4) * 2
-            const radius = boxH * (0.7 + 0.3 * Math.abs(Math.sin(phase * 0.7)))
-            const grad = ctx.createRadialGradient(
-              px + jitterX,
-              y + jitterY,
-              0,
-              px + jitterX,
-              y + jitterY,
-              radius,
-            )
-            grad.addColorStop(0, 'rgba(255,250,200,0.55)')
-            grad.addColorStop(0.4, 'rgba(255,160,30,0.4)')
-            grad.addColorStop(0.8, 'rgba(220,40,10,0.18)')
-            grad.addColorStop(1, 'rgba(180,10,0,0)')
-            ctx.fillStyle = grad
-            ctx.beginPath()
-            ctx.arc(px + jitterX, y + jitterY, radius, 0, Math.PI * 2)
-            ctx.fill()
-          }
-
-          // 3) The "burn front" — a bright vertical streak at the
-          //    playhead position inside the note. This is the leading
-          //    edge of the fire, where the unburned bar meets the burnt.
-          if (progress > 0 && progress < 1) {
-            const frontGrad = ctx.createLinearGradient(
-              burnX - 8,
-              0,
-              burnX + 8,
-              0,
-            )
-            frontGrad.addColorStop(0, 'rgba(255,200,60,0)')
-            frontGrad.addColorStop(0.5, 'rgba(255,255,230,0.95)')
-            frontGrad.addColorStop(1, 'rgba(255,140,40,0)')
-            ctx.fillStyle = frontGrad
-            ctx.fillRect(burnX - 8, y - boxHalf, 16, boxH)
-          }
-          ctx.restore() // end clip
-
-          // 4) Outer glow stroke — only the burned portion of the bar's
-          //    border is "on fire". Use shadowBlur for an outward halo.
-          ctx.save()
-          ctx.shadowColor = 'rgba(255,140,40,0.85)'
-          ctx.shadowBlur = 16
-          ctx.strokeStyle = 'rgba(255,200,80,0.95)'
-          ctx.lineWidth = 2
-          // Draw three horizontal stroke segments forming the burned-portion
-          // outline (top, bottom, and left cap) — leaving the right edge
-          // open so it doesn't draw a hard line at the burn front.
-          ctx.beginPath()
-          ctx.moveTo(x1 + 6, y - boxHalf) // skip left round corner
-          ctx.lineTo(x1 + bw * progress, y - boxHalf) // top
-          ctx.moveTo(x1 + bw * progress, y + boxHalf)
-          ctx.lineTo(x1 + 6, y + boxHalf) // bottom
-          // Left cap (rounded) — only on first half so it eases in
-          if (progress > 0.05) {
-            ctx.moveTo(x1, y - boxHalf + 6)
-            ctx.lineTo(x1, y + boxHalf - 6)
-          }
-          ctx.stroke()
-          ctx.restore()
         }
 
         // Text and badges
@@ -1212,14 +1194,12 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
         const centerName = bw >= 12 && !hasBadge
 
         if (hasBadge) {
-          // Note name left aligned
           ctx.fillStyle = palette.text
           ctx.font = `bold ${isActive ? 13 : 11}px sans-serif`
           ctx.textAlign = 'left'
           ctx.textBaseline = 'middle'
           ctx.fillText(item.note.name, x1 + 10, y + 0.5)
 
-          // Accuracy badge right aligned
           let pct = 0
           if (playedRecord.rating !== 'off') {
             pct = Math.round(Math.max(0, 100 - playedRecord.avgCents * 2))
@@ -1233,18 +1213,15 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
           const badgeX = x1 + bw - badgeW - 4
           const badgeY = y - badgeH / 2
 
-          // Draw badge pill
           ctx.beginPath()
           ctx.roundRect(badgeX, badgeY, badgeW, badgeH, badgeH / 2)
           ctx.fillStyle = palette.badgeBg
           ctx.fill()
 
-          // Badge outline
           ctx.strokeStyle = 'rgba(255,255,255,0.1)'
           ctx.lineWidth = 1
           ctx.stroke()
 
-          // Badge text
           ctx.fillStyle = 'rgba(255,255,255,0.9)'
           ctx.textAlign = 'center'
           ctx.textBaseline = 'middle'

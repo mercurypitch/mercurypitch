@@ -784,9 +784,9 @@ export class AudioEngine {
       node.connect(this.uvrMainGain ?? this.mainGain!),
     )
 
-    // Start every oscillator (and any LFO modulators).
+    // Start every oscillator. LFOs are already started inside
+    // _applyEffectModulation, so we only need to start oscillators here.
     for (const osc of voice.oscillators) osc.start(startTime)
-    for (const lfo of voice.lfos) lfo.start(startTime)
 
     // Track the primary oscillator/gain so stopTone() can release it.
     const primaryOsc = voice.oscillators[0] ?? null
