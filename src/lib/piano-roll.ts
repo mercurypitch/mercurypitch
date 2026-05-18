@@ -435,7 +435,7 @@ export interface PianoRollOptions {
 
 export type PlaybackState = 'stopped' | 'playing' | 'paused'
 const MAX_OCTAVE_ROWS = 11
-export type ActiveTool = 'place' | 'erase' | 'select'
+export type ActiveTool = 'place' | 'erase' | 'select' | 'browse'
 export type EffectType =
   | 'slide-up'
   | 'slide-down'
@@ -1037,6 +1037,9 @@ export class PianoRollEditor {
       this.hintEl.textContent = msg
     } else if (this.activeTool === 'erase') {
       this.hintEl.textContent = 'Click on a note to erase it'
+    } else if (this.activeTool === 'browse') {
+      this.hintEl.textContent =
+        'Click notes to select and edit effects | Shift+click to multi-select'
     } else {
       this.hintEl.textContent =
         'Click and drag note edges to resize | Del to delete selected'
@@ -1053,18 +1056,9 @@ export class PianoRollEditor {
         effect === 'slide-down' ||
         effect === 'ease-in' ||
         effect === 'ease-out') &&
-      n < 2
+      n === 0
     ) {
-      this.hintEl.textContent =
-        'Select 2 notes first (hold Shift to multi-select)'
-    } else if (
-      (effect === 'slide-up' ||
-        effect === 'slide-down' ||
-        effect === 'ease-in' ||
-        effect === 'ease-out') &&
-      n > 2
-    ) {
-      this.hintEl.textContent = 'Slides work with exactly 2 notes'
+      this.hintEl.textContent = 'Select a note first to apply slide/ease'
     }
   }
 
@@ -1075,7 +1069,7 @@ export class PianoRollEditor {
     const instrGroup = this.container.querySelector(
       '.roll-instrument-group',
     ) as HTMLElement | null
-    const show = this.activeTool === 'select'
+    const show = this.activeTool === 'select' || this.activeTool === 'browse'
     if (modeGroup) modeGroup.classList.toggle('disabled', !show)
     if (instrGroup) instrGroup.classList.toggle('disabled', !show)
   }
@@ -1306,6 +1300,9 @@ export class PianoRollEditor {
               </button>
               <button class="roll-tool-btn" data-tool="select" title="Select notes" aria-label="Select notes">
                 <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/></svg>
+              </button>
+              <button class="roll-tool-btn" data-tool="browse" title="Browse notes" aria-label="Browse notes">
+                <svg viewBox="0 0 24 24" width="14" height="14"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/><path fill="currentColor" d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5z" opacity="0.3"/></svg>
               </button>
   <!-- EDIT -->
     <div class="roll-undo-group">
@@ -2218,8 +2215,8 @@ export class PianoRollEditor {
     // Defer history push to first modification (mousemove) so a click
     // without dragging doesn't waste an undo level.
     this.dragDidPushHistory = false
-    if (this.activeTool === 'place' || this.activeTool === 'select') {
-      const existingNote = this.findNoteAt(beat, row)
+    if (this.activeTool === 'place' || this.activeTool === 'select' || this.activeTool === 'browse') {
+      const existingNote = this.findNoteAtExtended(beat, row, x)
       if (existingNote) {
         // Clear pre-selected effect when interacting with existing notes.
         if (this.selectedEffect) {
@@ -2231,7 +2228,7 @@ export class PianoRollEditor {
 
     if (this.activeTool === 'place') {
       // Place new note on empty space; clicking existing notes switches to select behavior for resize/drag
-      const existingNote = this.findNoteAt(beat, row)
+      const existingNote = this.findNoteAtExtended(beat, row, x)
       if (existingNote) {
         // Select the note and enable drag/resize — do NOT enter box-select mode
         const noteId = existingNote.id
@@ -2282,7 +2279,7 @@ export class PianoRollEditor {
         this.eraseNote(note)
       }
     } else if (this.activeTool === 'select') {
-      const note = this.findNoteAt(beat, row)
+      const note = this.findNoteAtExtended(beat, row, x)
       if (note) {
         const noteId = note.id
         if (e.shiftKey) {
@@ -2338,6 +2335,28 @@ export class PianoRollEditor {
         this.boxEndX = x
         this.boxEndY = y
       }
+    } else if (this.activeTool === 'browse') {
+      const note = this.findNoteAtExtended(beat, row, x)
+      if (note) {
+        const noteId = note.id
+        if (e.shiftKey) {
+          if (this.selectedNoteIds.has(noteId)) {
+            this.selectedNoteIds.delete(noteId)
+          } else {
+            this.selectedNoteIds.add(noteId)
+          }
+        } else {
+          this.selectedNoteIds.clear()
+          this.selectedNoteIds.add(noteId)
+        }
+        const first = this.melody.find((n) => this.selectedNoteIds.has(n.id))
+        this.onNoteSelect?.(first ?? null)
+      } else {
+        if (!e.shiftKey) {
+          this.selectedNoteIds.clear()
+          this.onNoteSelect?.(null)
+        }
+      }
     }
 
     this.draw()
@@ -2360,7 +2379,7 @@ export class PianoRollEditor {
     if (!this.isDragging && !this.isResizing) {
       const beat = x / this.beatWidth
       const row = Math.floor(y / this.rowHeight)
-      const note = this.findNoteAt(beat, row)
+      const note = this.findNoteAtExtended(beat, row, x)
       if (note && this.selectedNoteIds.has(note.id)) {
         const noteX = note.startBeat * this.beatWidth
         const noteW = note.duration * this.beatWidth
@@ -2375,7 +2394,9 @@ export class PianoRollEditor {
         this.gridCanvas.style.cursor = 'pointer'
       } else {
         this.gridCanvas.style.cursor =
-          this.activeTool === 'place' ? 'crosshair' : 'default'
+          this.activeTool === 'place' ? 'crosshair'
+          : this.activeTool === 'browse' ? 'pointer'
+          : 'default'
       }
     }
 
@@ -2473,18 +2494,20 @@ export class PianoRollEditor {
   }
 
   private onGridMouseLeave(_e: MouseEvent): void {
-    if (this.isBoxSelecting) {
-      this.isBoxSelecting = false
-    }
     this.isDragging = false
     this.isResizing = false
     this.selectedNotesCache = []
     this.resizeHandle = null
     this.dragDidPushHistory = false
+    // Do NOT clear isBoxSelecting here — the document-level mouseup
+    // handler finalizes box selection when the mouse is released
+    // outside the canvas.
     // Reset cursor
     if (this.gridCanvas) {
       this.gridCanvas.style.cursor =
-        this.activeTool === 'place' ? 'crosshair' : 'default'
+        this.activeTool === 'place' ? 'crosshair'
+        : this.activeTool === 'browse' ? 'pointer'
+        : 'default'
     }
   }
 
@@ -2757,6 +2780,24 @@ export class PianoRollEditor {
       ) {
         return note
       }
+    }
+    return null
+  }
+
+  /** Like findNoteAt but also finds slide notes by their right handle at the target row. */
+  private findNoteAtExtended(beat: number, row: number, x: number): MelodyItem | null {
+    const note = this.findNoteAt(beat, row)
+    if (note) return note
+    // Check slide notes — right handle is drawn at the target-pitch row
+    for (const n of this.melody) {
+      if (!n.effectType || n.slideInterval === undefined) continue
+      if (beat < n.startBeat || beat >= n.startBeat + n.duration) continue
+      const targetMidi = n.note.midi + n.slideInterval
+      const targetY = this.midiToY(targetMidi)
+      const targetRow = Math.round(targetY / this.rowHeight)
+      if (targetRow !== row) continue
+      const noteRightEdge = (n.startBeat + n.duration) * this.beatWidth
+      if (Math.abs(noteRightEdge - x) < 10) return n
     }
     return null
   }
@@ -3356,10 +3397,10 @@ export class PianoRollEditor {
       const bw = Math.abs(this.boxEndX - this.boxStartX)
       const bh = Math.abs(this.boxEndY - this.boxStartY)
       ctx.save()
-      ctx.fillStyle = 'rgba(88, 166, 255, 0.1)'
+      ctx.fillStyle = 'rgba(88, 166, 255, 0.15)'
       ctx.fillRect(bx, by, bw, bh)
-      ctx.strokeStyle = 'rgba(88, 166, 255, 0.5)'
-      ctx.lineWidth = 1
+      ctx.strokeStyle = 'rgba(88, 166, 255, 0.7)'
+      ctx.lineWidth = 1.5
       ctx.setLineDash([4, 3])
       ctx.strokeRect(bx, by, bw, bh)
       ctx.restore()
