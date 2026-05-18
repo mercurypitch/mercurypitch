@@ -254,9 +254,6 @@ test.describe('Slide Note Rendering', () => {
     await page.waitForTimeout(1000)
 
     const result = await page.evaluate(() => {
-      const pp = (window as any).__pp
-      const pr = pp?.pianoRoll
-
       // Simulate melody store round-trip: create note, serialize, parse, restore
       const item = {
         id: 88888,
