@@ -2268,6 +2268,7 @@ export class PianoRollEditor {
           beat: n.startBeat - this.dragStartBeat,
           row: this.midiToRow(n.note.midi) - this.dragStartRow,
         }))
+        this._updateEffectBtnStates()
       } else {
         // Empty space — start box selection for area-select, or place note on click
         this.isBoxSelecting = true
@@ -2328,6 +2329,7 @@ export class PianoRollEditor {
         }))
         const first = this.melody.find((n) => this.selectedNoteIds.has(n.id))
         this.onNoteSelect?.(first ?? null)
+        this._updateEffectBtnStates()
       } else {
         if (!e.shiftKey) {
           this.selectedNoteIds.clear()
@@ -3184,7 +3186,11 @@ export class PianoRollEditor {
       return this.remoteBeat
     }
     if (this.playbackState === 'stopped') {
-      return 0
+      // Return remoteBeat so ruler scrubbing (which sets remoteBeat then
+      // calls drawGridWithPlayhead) actually shows the playhead at the
+      // scrubbed position. remoteBeat is reset to 0 in stop(), so the
+      // initial-state playhead stays at beat 0.
+      return this.remoteBeat
     }
     // Local editor playback - calculate from playStartTime
     const elapsed = performance.now() - this.playStartTime
@@ -3749,19 +3755,30 @@ export class PianoRollEditor {
       ctx.shadowBlur = 0
       ctx.shadowOffsetY = 0
 
-      // Effect badge on top-right of notes with effects
-      if (note.effectType && w > 18) {
+      // Effect badge on top-right of vibrato notes only (slide notes use edge labels instead)
+      if (note.effectType === 'vibrato' && w > 18) {
         drawEffectBadge({
           ctx,
           x: x + w,
           y: ry,
           effectType: note.effectType,
-          slideInterval: note.slideInterval,
         })
       }
 
-      // Note name text (always show when wide enough, GH #129 fix)
-      if (w > 18) {
+      // Note name text — for slide notes show source at left edge, target at right edge
+      if (drawSlideShape && w > 28) {
+        const targetMidi = note.note.midi + note.slideInterval!
+        const { name: tgtName } = midiToNote(targetMidi)
+        ctx.fillStyle = 'rgba(255,255,255,0.85)'
+        ctx.font = 'bold 9px sans-serif'
+        ctx.textAlign = 'left'
+        ctx.textBaseline = 'middle'
+        ctx.fillText(note.note.name, x + 5, srcCY)
+        ctx.textAlign = 'right'
+        ctx.fillText(tgtName, x + w - 5, tgtCY)
+        ctx.textBaseline = 'alphabetic'
+      } else if (!drawSlideShape && w > 18) {
+        // Normal / vibrato notes: centered note name
         ctx.fillStyle = 'rgba(255,255,255,0.85)'
         ctx.font = 'bold 9px sans-serif'
         ctx.textAlign = 'center'
@@ -3996,7 +4013,16 @@ export class PianoRollEditor {
       container.querySelector(`#${id}`)?.classList.remove('active')
     }
     const selected = this._getSelectedNotes()
-    const activeEffect = selected.length === 1 ? selected[0].effectType : null
+    // Single note: show its effectType. Multiple notes: show if ALL share the same effectType.
+    let activeEffect: EffectType | null = null
+    if (selected.length === 1) {
+      activeEffect = selected[0].effectType ?? null
+    } else if (selected.length > 1) {
+      const first = selected[0].effectType
+      if (first && selected.every((n) => n.effectType === first)) {
+        activeEffect = first
+      }
+    }
     const highlight = this.selectedEffect ?? activeEffect
     if (highlight) {
       const map: Record<EffectType, string> = {
