@@ -507,6 +507,7 @@ export class PianoRollEditor {
   private isExternalPlayback = false
   private isSeeking = false
   private _lastScrubNoteId = -1
+  private _activeScrubNoteId: number | null = null
   // Track currently playing notes (for audio stacking prevention)
   private currentPlayingNoteIds = new Set<number>()
   // Waveform props for recording visualization
@@ -908,6 +909,12 @@ export class PianoRollEditor {
   }
 
   setPlaybackState(state: PlaybackState): void {
+    // When handleBeatUpdate detects melody-end it sets playbackState='stopped'
+    // and preserves remoteBeat at melodyEnd.  The SolidJS effect in
+    // PianoRollCanvas then re-fires setPlaybackState('stopped'), which would
+    // reset remoteBeat to 0 and cause the playhead to teleport.  Skip the
+    // re-entry so the first (correct) stop wins.
+    if (this.playbackState === state) return
     this.playbackState = state
 
     if (state === 'playing') {
@@ -1863,6 +1870,14 @@ export class PianoRollEditor {
     document.addEventListener('mouseup', () => {
       this.isSeeking = false
       this._lastScrubNoteId = -1
+      if (this._activeScrubNoteId !== null) {
+        ;(
+          window as Window & {
+            pianoRollAudioEngine?: { stopNote: (id: number) => void }
+          }
+        ).pianoRollAudioEngine?.stopNote(this._activeScrubNoteId)
+        this._activeScrubNoteId = null
+      }
       // Always finalize box selection regardless of where mouse was released
       if (this.isBoxSelecting) {
         const boxX1 = Math.min(this.boxStartX, this.boxEndX)
@@ -1885,6 +1900,16 @@ export class PianoRollEditor {
 
     // Touch support - finalize dragging/resizing when touch ends outside canvas
     document.addEventListener('touchend', () => {
+      this.isSeeking = false
+      this._lastScrubNoteId = -1
+      if (this._activeScrubNoteId !== null) {
+        ;(
+          window as Window & {
+            pianoRollAudioEngine?: { stopNote: (id: number) => void }
+          }
+        ).pianoRollAudioEngine?.stopNote(this._activeScrubNoteId)
+        this._activeScrubNoteId = null
+      }
       if (this.isBoxSelecting) {
         const boxX1 = Math.min(this.boxStartX, this.boxEndX)
         const boxY1 = Math.min(this.boxStartY, this.boxEndY)
@@ -3101,9 +3126,14 @@ export class PianoRollEditor {
       }
     }
     win.pianoRollAudioEngine?.stopAllNotes()
-    // Reset playhead position to 0 when stopping playback
-    this.remoteBeat = 0
-    this.editorBeat = 0
+    // Only reset playhead position for internal playback.  During external
+    // playback (App-level transport), the position is driven by the
+    // PlaybackRuntime — resetting here would teleport the playhead to 0
+    // when the user pauses or when end-detection fires stopPlayback.
+    if (!this.isExternalPlayback) {
+      this.remoteBeat = 0
+      this.editorBeat = 0
+    }
     // Clear tracking sets
     this.startedNoteIds.clear()
     this.currentPlayingNoteIds.clear()
@@ -3191,39 +3221,58 @@ export class PianoRollEditor {
   }
 
   /** Play a short preview of the note at the given scrub position.
-   *  Debounced by note ID to avoid retriggering on every pixel of mouse
-   *  movement over the same note. */
+   *  Debounced by melody note ID to avoid retriggering on every pixel
+   *  of mouse movement over the same note.  Each new scrub note stops
+   *  the previous one so overlapping notes don't pile up and create
+   *  pops/crackles. */
   private _scrubPreview(beat: number): void {
     const note = this._findNoteAtBeat(beat)
     const noteId = note?.id ?? -1
     if (noteId === this._lastScrubNoteId) return
     this._lastScrubNoteId = noteId
 
+    const win = window as Window & {
+      pianoRollAudioEngine?: {
+        playNote: (
+          freq: number,
+          durationMs: number,
+          effectType?: string,
+          targetFreq?: number,
+          vibratoAmplitude?: number,
+        ) => Promise<number | undefined>
+        stopNote: (noteId: number) => void
+      }
+    }
+
+    // Stop the previous scrub note so notes don't overlap during fast drags
+    if (this._activeScrubNoteId !== null) {
+      win.pianoRollAudioEngine?.stopNote(this._activeScrubNoteId)
+      this._activeScrubNoteId = null
+    }
+
     if (note && note.note?.freq) {
       const targetFreq =
         note.slideInterval !== undefined
           ? note.note.freq * Math.pow(2, note.slideInterval / 12)
           : undefined
-      const win = window as Window & {
-        pianoRollAudioEngine?: {
-          playNote: (
-            freq: number,
-            durationMs: number,
-            effectType?: string,
-            targetFreq?: number,
-            vibratoAmplitude?: number,
-          ) => void
-        }
-      }
-      // Short blip with full effect context so slides glide and vibrato
-      // warbles — otherwise it's just an unrecognisable pop.
-      win.pianoRollAudioEngine?.playNote(
-        note.note.freq,
-        120,
-        note.effectType,
-        targetFreq,
-        note.vibratoAmplitude,
-      )
+
+      // 250 ms gives the attack envelope time to settle so the ear can
+      // recognize the pitch.  At 120 ms most instruments are still in
+      // their attack transient — that's why the old code sounded like
+      // pops instead of musical notes.
+      win.pianoRollAudioEngine
+        ?.playNote(
+          note.note.freq,
+          250,
+          note.effectType,
+          targetFreq,
+          note.vibratoAmplitude,
+        )
+        .then((audioNoteId) => {
+          if (audioNoteId !== undefined) {
+            this._activeScrubNoteId = audioNoteId
+          }
+        })
     }
   }
 
