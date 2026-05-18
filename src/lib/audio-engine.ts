@@ -762,7 +762,13 @@ export class AudioEngine {
     // stop time; stopTone() can still cut the note early.
     const effectiveDurationMs =
       duration !== undefined && duration > 0 ? duration : 1000
-    const voice = this._createVoice(frequency, effectiveDurationMs, effectType, targetFreq, vibratoAmplitude)
+    const voice = this._createVoice(
+      frequency,
+      effectiveDurationMs,
+      effectType,
+      targetFreq,
+      vibratoAmplitude,
+    )
     const masterGain = voice.gain
 
     // Apply user volume on top of the per-instrument envelope by
@@ -955,7 +961,13 @@ export class AudioEngine {
       lfos,
       lfoGains,
       hasCustomEnvelope,
-    } = this._createVoice(frequency, durationMs, effectType, targetFreq, vibratoAmplitude)
+    } = this._createVoice(
+      frequency,
+      durationMs,
+      effectType,
+      targetFreq,
+      vibratoAmplitude,
+    )
 
     if (!hasCustomEnvelope) {
       mainGain.gain.setValueAtTime(0, now)
@@ -1225,7 +1237,8 @@ export class AudioEngine {
       case 'slide-down': {
         // Slide from source note to linked target note. Falls back to
         // a sensible default if targetFreq is missing.
-        const dest = targetFreq ?? (effectType === 'slide-up' ? freq * 1.5 : freq * 0.75)
+        const dest =
+          targetFreq ?? (effectType === 'slide-up' ? freq * 1.5 : freq * 0.75)
         osc.frequency.setValueAtTime(freq, now)
         osc.frequency.exponentialRampToValueAtTime(dest, now + dur)
         break
@@ -1454,9 +1467,8 @@ export class AudioEngine {
       const durationMs = item.duration * beatDuration * 1000
 
       let targetFreq: number | undefined
-      if (item.effectType && item.linkedTo?.length) {
-        const targetNote = melody.find((n) => n.id === item.linkedTo![0])
-        if (targetNote) targetFreq = targetNote.note.freq
+      if (item.effectType && item.slideInterval !== undefined) {
+        targetFreq = item.note.freq * Math.pow(2, item.slideInterval / 12)
       }
 
       // Render each note using the same voice creation logic
@@ -1672,7 +1684,8 @@ export class AudioEngine {
         lfo.start(now)
         lfo.stop(now + dur + 0.1)
       } else if (effectType === 'slide-up' || effectType === 'slide-down') {
-        const dest = targetFreq ?? (effectType === 'slide-up' ? freq * 1.5 : freq * 0.75)
+        const dest =
+          targetFreq ?? (effectType === 'slide-up' ? freq * 1.5 : freq * 0.75)
         oscillators[0].frequency.setValueAtTime(freq, now)
         oscillators[0].frequency.exponentialRampToValueAtTime(dest, now + dur)
       } else if (effectType === 'ease-in') {

@@ -76,8 +76,8 @@ export interface MelodyItem {
   velocity?: number
   /** Effect type applied to this note */
   effectType?: EffectType
-  /** IDs of linked notes (for slides/ease: next note; for vibrato: start note) */
-  linkedTo?: number[]
+  /** Signed semitone offset for slide/ease effects. Positive = up, negative = down. */
+  slideInterval?: number
   /** Vibrato amplitude in semitones (0.1–3.0). Default 0.5 when absent. */
   vibratoAmplitude?: number
   /** Visual/playback rest inserted for practice spacing. Not persisted as a real melody note. */

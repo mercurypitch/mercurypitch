@@ -13,7 +13,7 @@ import { beatToHistoryX } from '@/lib/pitch-history-window'
 import { melodyIndexAtBeat } from '@/lib/scale-data'
 import { bpm, focusMode, micWaveVisible } from '@/stores'
 import { colorCodeNotes, flameMode, gridLinesVisible, showAccuracyPercent, showFocusBall, showPlaybackBall, showPlayhead, } from '@/stores/settings-store'
-import type { MelodyItem, NoteResult, PitchSample, ScaleDegree } from '@/types'
+import type { EffectType, MelodyItem, NoteResult, PitchSample, ScaleDegree, } from '@/types'
 
 // Click-to-play settings (GH #230)
 const DOUBLE_CLICK_DELAY = 300 // ms — max gap for double-click detection
@@ -312,8 +312,9 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     x: number
     y: number
     durationBeats: number
-    effectType?: import('@/types').EffectType
+    effectType?: EffectType
     vibratoAmplitude?: number
+    slideInterval?: number
   } | null => {
     if (!canvasRef) return null
 
@@ -336,13 +337,15 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     const melody = props.melody()
     const melodyNoteIndex = melodyIndexAtBeat(melody, beat)
     let durationBeats = 0.25
-    let effectType: import('@/types').EffectType | undefined
+    let effectType: EffectType | undefined
     let vibratoAmplitude: number | undefined
+    let slideInterval: number | undefined
     if (melodyNoteIndex >= 0 && melody[melodyNoteIndex] !== undefined) {
       const item = melody[melodyNoteIndex]
       durationBeats = item.duration
       effectType = item.effectType
       vibratoAmplitude = item.vibratoAmplitude
+      slideInterval = item.slideInterval
     }
 
     return {
@@ -353,6 +356,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       durationBeats,
       effectType,
       vibratoAmplitude,
+      slideInterval,
     }
   }
 
@@ -380,6 +384,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
           info.durationBeats,
           info.effectType,
           info.vibratoAmplitude,
+          info.slideInterval,
         )
       }
     }, DOUBLE_CLICK_DELAY)
@@ -406,6 +411,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       info.durationBeats,
       info.effectType,
       info.vibratoAmplitude,
+      info.slideInterval,
     )
   }
 
@@ -417,6 +423,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     durationBeats: number = 0.25,
     effectType?: string,
     vibratoAmplitude?: number,
+    slideInterval?: number,
   ): void => {
     const engine = (
       window as unknown as {
@@ -434,12 +441,17 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
 
     if (!engine?.playNote) return
 
+    const targetFreq =
+      slideInterval !== undefined
+        ? freq * Math.pow(2, slideInterval / 12)
+        : undefined
+
     const beatDurationMs = 60000 / bpm()
     engine.playNote(
       freq,
       durationBeats * beatDurationMs,
       effectType,
-      undefined,
+      targetFreq,
       vibratoAmplitude,
     )
   }
@@ -453,6 +465,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     durationBeats: number = 0.25,
     effectType?: string,
     vibratoAmplitude?: number,
+    slideInterval?: number,
   ): void => {
     const engine = (
       window as unknown as {
@@ -470,6 +483,11 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
 
     if (!engine?.playNote) return
 
+    const targetFreq =
+      slideInterval !== undefined
+        ? freq * Math.pow(2, slideInterval / 12)
+        : undefined
+
     const beatDurationMs = 60000 / bpm()
 
     // First play immediately
@@ -477,7 +495,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       freq,
       durationBeats * beatDurationMs,
       effectType,
-      undefined,
+      targetFreq,
       vibratoAmplitude,
     )
 
@@ -489,7 +507,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
           freq,
           durationBeats * beatDurationMs,
           effectType,
-          undefined,
+          targetFreq,
           vibratoAmplitude,
         )
       }, delay * i)

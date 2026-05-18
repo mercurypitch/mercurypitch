@@ -3959,10 +3959,77 @@ Keeps your existing styles, only adjusts layout
   color: var(--text-secondary);
   padding: 2px 4px;
 }
-.roll-vibrato-amp input[type="range"] {
+.roll-vibrato-amp input[type='range'] {
   width: 50px;
   height: 4px;
   accent-color: var(--accent);
+}
+
+/* Interval selection modal for slide/ease effects */
+.roll-interval-modal {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+.roll-interval-content {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  max-width: 300px;
+  text-align: center;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+.roll-interval-content h3 {
+  margin: 0 0 10px 0;
+  font-size: 0.8rem;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+.roll-interval-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin: 10px 0;
+}
+.roll-interval-btn {
+  padding: 6px 0;
+  font-size: 0.7rem;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition:
+    background 0.1s,
+    color 0.1s;
+}
+.roll-interval-btn:hover {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.roll-interval-cancel {
+  margin-top: 8px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  padding: 4px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.7rem;
+}
+.roll-interval-cancel:hover {
+  color: var(--text-primary);
+  border-color: var(--text-secondary);
 }
 
 .roll-action-btn.slide-up:hover {
