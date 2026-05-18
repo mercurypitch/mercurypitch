@@ -728,7 +728,13 @@ export class AudioEngine {
   // ============================================================
 
   /** Play a tone at the given frequency */
-  async playTone(frequency: number, duration?: number): Promise<void> {
+  async playTone(
+    frequency: number,
+    duration?: number,
+    effectType?: EffectType,
+    targetFreq?: number,
+    vibratoAmplitude?: number,
+  ): Promise<void> {
     await this.init()
     await this.resume()
     if (!this.audioCtx || !this.mainGain) return
@@ -756,7 +762,7 @@ export class AudioEngine {
     // stop time; stopTone() can still cut the note early.
     const effectiveDurationMs =
       duration !== undefined && duration > 0 ? duration : 1000
-    const voice = this._createVoice(frequency, effectiveDurationMs)
+    const voice = this._createVoice(frequency, effectiveDurationMs, effectType, targetFreq, vibratoAmplitude)
     const masterGain = voice.gain
 
     // Apply user volume on top of the per-instrument envelope by
@@ -932,6 +938,8 @@ export class AudioEngine {
     frequency: number,
     durationMs: number,
     effectType?: EffectType,
+    targetFreq?: number,
+    vibratoAmplitude?: number,
   ): Promise<number | undefined> {
     await this.init()
     await this.resume()
@@ -947,7 +955,7 @@ export class AudioEngine {
       lfos,
       lfoGains,
       hasCustomEnvelope,
-    } = this._createVoice(frequency, durationMs, effectType)
+    } = this._createVoice(frequency, durationMs, effectType, targetFreq, vibratoAmplitude)
 
     if (!hasCustomEnvelope) {
       mainGain.gain.setValueAtTime(0, now)
@@ -988,6 +996,8 @@ export class AudioEngine {
     freq: number,
     durationMs: number,
     effectType?: EffectType,
+    targetFreq?: number,
+    vibratoAmplitude?: number,
   ): {
     oscillators: OscillatorNode[]
     gain: GainNode
@@ -1130,6 +1140,8 @@ export class AudioEngine {
         freq,
         durationMs,
         now,
+        targetFreq,
+        vibratoAmplitude,
       )
       if (result) {
         lfos = result.lfos
@@ -1181,6 +1193,8 @@ export class AudioEngine {
     freq: number,
     durationMs: number,
     now: number,
+    targetFreq?: number,
+    vibratoAmplitude?: number,
   ): { lfos: OscillatorNode[]; lfoGains: GainNode[] } | null {
     if (!effectType) return null
 
@@ -1190,12 +1204,15 @@ export class AudioEngine {
 
     switch (effectType) {
       case 'vibrato': {
-        // Vibrato: LFO modulates frequency ±5 cents for a wobble effect
+        // Vibrato: LFO modulates oscillator frequency for a wobble effect.
+        // amplitude is specified in semitones (default 0.5 ≈ 50 cents).
         const lfo = this.audioCtx!.createOscillator()
         const lfoGain = this.audioCtx!.createGain()
         lfo.type = 'sine'
-        lfo.frequency.value = 5 // 5 Hz wobble
-        lfoGain.gain.value = freq * 0.003 // ±0.3% pitch wobble (~5 cents)
+        lfo.frequency.value = 5
+        const ampSemitones = vibratoAmplitude ?? 0.5
+        const deviationFactor = Math.pow(2, ampSemitones / 12) - 1
+        lfoGain.gain.value = freq * deviationFactor
         lfo.connect(lfoGain)
         lfoGain.connect(osc.frequency)
         lfo.start(now)
@@ -1204,28 +1221,27 @@ export class AudioEngine {
         lfoGains.push(lfoGain)
         break
       }
-      case 'slide-up': {
-        // Slide up: frequency ramps from -1 octave to +0.5 octave over duration
-        osc.frequency.setValueAtTime(freq * 0.5, now)
-        osc.frequency.exponentialRampToValueAtTime(freq * 1.5, now + dur)
-        break
-      }
+      case 'slide-up':
       case 'slide-down': {
-        // Slide down: frequency ramps from +1 octave to -0.5 octave over duration
-        osc.frequency.setValueAtTime(freq * 2, now)
-        osc.frequency.exponentialRampToValueAtTime(freq * 0.75, now + dur)
+        // Slide from source note to linked target note. Falls back to
+        // a sensible default if targetFreq is missing.
+        const dest = targetFreq ?? (effectType === 'slide-up' ? freq * 1.5 : freq * 0.75)
+        osc.frequency.setValueAtTime(freq, now)
+        osc.frequency.exponentialRampToValueAtTime(dest, now + dur)
         break
       }
       case 'ease-in': {
-        // Ease in: start flat, slide up in the second half of the note
+        // Bend into the target note — start below source, ramp up to target
+        const dest = targetFreq ?? freq * 1.5
         osc.frequency.setValueAtTime(freq, now)
-        osc.frequency.exponentialRampToValueAtTime(freq * 1.25, now + dur)
+        osc.frequency.exponentialRampToValueAtTime(dest, now + dur)
         break
       }
       case 'ease-out': {
-        // Ease out: start at +0.5 octave, ease back to target frequency
-        osc.frequency.setValueAtTime(freq * 1.5, now)
-        osc.frequency.exponentialRampToValueAtTime(freq, now + dur)
+        // Bend out from source toward target
+        const dest = targetFreq ?? freq * 1.25
+        osc.frequency.setValueAtTime(freq, now)
+        osc.frequency.exponentialRampToValueAtTime(dest, now + dur)
         break
       }
     }
@@ -1437,6 +1453,12 @@ export class AudioEngine {
       const startTime = item.startBeat * beatDuration
       const durationMs = item.duration * beatDuration * 1000
 
+      let targetFreq: number | undefined
+      if (item.effectType && item.linkedTo?.length) {
+        const targetNote = melody.find((n) => n.id === item.linkedTo![0])
+        if (targetNote) targetFreq = targetNote.note.freq
+      }
+
       // Render each note using the same voice creation logic
       await this._renderNoteToContext(
         offlineCtx,
@@ -1444,6 +1466,9 @@ export class AudioEngine {
         freq,
         startTime,
         durationMs,
+        item.effectType,
+        targetFreq,
+        item.vibratoAmplitude,
       )
     }
 
@@ -1489,6 +1514,9 @@ export class AudioEngine {
     freq: number,
     startTime: number,
     durationMs: number,
+    effectType?: EffectType,
+    targetFreq?: number,
+    vibratoAmplitude?: number,
   ): Promise<void> {
     const dur = durationMs / 1000
     const now = startTime
@@ -1497,6 +1525,9 @@ export class AudioEngine {
       ctx,
       freq,
       durationMs,
+      effectType,
+      targetFreq,
+      vibratoAmplitude,
     )
 
     mainGain.connect(destination)
@@ -1514,6 +1545,9 @@ export class AudioEngine {
     ctx: OfflineAudioContext | AudioContext,
     freq: number,
     _durationMs: number,
+    effectType?: EffectType,
+    targetFreq?: number,
+    vibratoAmplitude?: number,
   ): { oscillators: OscillatorNode[]; gain: GainNode } {
     const now = ctx.currentTime
     // const dur = _durationMs / 1000
@@ -1619,6 +1653,36 @@ export class AudioEngine {
         mainGain.gain.setValueAtTime(0, now)
         mainGain.gain.linearRampToValueAtTime(0.8, now + 0.01)
         break
+      }
+    }
+
+    // Apply effect modulation for offline rendering
+    if (effectType && oscillators.length > 0) {
+      const dur = _durationMs / 1000
+      if (effectType === 'vibrato') {
+        const lfo = ctx.createOscillator()
+        const lfoGain = ctx.createGain()
+        lfo.type = 'sine'
+        lfo.frequency.value = 5
+        const ampSemitones = vibratoAmplitude ?? 0.5
+        const deviationFactor = Math.pow(2, ampSemitones / 12) - 1
+        lfoGain.gain.value = freq * deviationFactor
+        lfo.connect(lfoGain)
+        lfoGain.connect(oscillators[0].frequency)
+        lfo.start(now)
+        lfo.stop(now + dur + 0.1)
+      } else if (effectType === 'slide-up' || effectType === 'slide-down') {
+        const dest = targetFreq ?? (effectType === 'slide-up' ? freq * 1.5 : freq * 0.75)
+        oscillators[0].frequency.setValueAtTime(freq, now)
+        oscillators[0].frequency.exponentialRampToValueAtTime(dest, now + dur)
+      } else if (effectType === 'ease-in') {
+        const dest = targetFreq ?? freq * 1.5
+        oscillators[0].frequency.setValueAtTime(freq, now)
+        oscillators[0].frequency.exponentialRampToValueAtTime(dest, now + dur)
+      } else if (effectType === 'ease-out') {
+        const dest = targetFreq ?? freq * 1.25
+        oscillators[0].frequency.setValueAtTime(freq, now)
+        oscillators[0].frequency.exponentialRampToValueAtTime(dest, now + dur)
       }
     }
 

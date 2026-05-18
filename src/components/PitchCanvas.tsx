@@ -312,6 +312,8 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     x: number
     y: number
     durationBeats: number
+    effectType?: import('@/types').EffectType
+    vibratoAmplitude?: number
   } | null => {
     if (!canvasRef) return null
 
@@ -334,8 +336,13 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     const melody = props.melody()
     const melodyNoteIndex = melodyIndexAtBeat(melody, beat)
     let durationBeats = 0.25
+    let effectType: import('@/types').EffectType | undefined
+    let vibratoAmplitude: number | undefined
     if (melodyNoteIndex >= 0 && melody[melodyNoteIndex] !== undefined) {
-      durationBeats = melody[melodyNoteIndex].duration
+      const item = melody[melodyNoteIndex]
+      durationBeats = item.duration
+      effectType = item.effectType
+      vibratoAmplitude = item.vibratoAmplitude
     }
 
     return {
@@ -344,6 +351,8 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       x,
       y,
       durationBeats,
+      effectType,
+      vibratoAmplitude,
     }
   }
 
@@ -366,7 +375,12 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     clickTimer = setTimeout(() => {
       clickTimer = null
       if (!trillActive()) {
-        playNoteFrequency(info.freq, info.durationBeats)
+        playNoteFrequency(
+          info.freq,
+          info.durationBeats,
+          info.effectType,
+          info.vibratoAmplitude,
+        )
       }
     }, DOUBLE_CLICK_DELAY)
   }
@@ -387,7 +401,12 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
 
     setTrillNoteInfo({ freq: info.freq, midi: info.midi, x: info.x, y: info.y })
     setTrillActive(true)
-    playNoteTrill(info.freq, info.durationBeats)
+    playNoteTrill(
+      info.freq,
+      info.durationBeats,
+      info.effectType,
+      info.vibratoAmplitude,
+    )
   }
 
   /**
@@ -396,11 +415,19 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
   const playNoteFrequency = (
     freq: number,
     durationBeats: number = 0.25,
+    effectType?: string,
+    vibratoAmplitude?: number,
   ): void => {
     const engine = (
       window as unknown as {
         pitchCanvasAudioEngine?: {
-          playNote: (freq: number, durationMs: number) => void
+          playNote: (
+            freq: number,
+            durationMs: number,
+            effectType?: string,
+            _targetFreq?: number,
+            vibratoAmplitude?: number,
+          ) => void
         }
       }
     ).pitchCanvasAudioEngine
@@ -408,18 +435,35 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     if (!engine?.playNote) return
 
     const beatDurationMs = 60000 / bpm()
-    engine.playNote(freq, durationBeats * beatDurationMs)
+    engine.playNote(
+      freq,
+      durationBeats * beatDurationMs,
+      effectType,
+      undefined,
+      vibratoAmplitude,
+    )
   }
 
   /**
    * Plays a trill: plays the note 3 times with ~1 bar rest between each.
    * Called on double-click.
    */
-  const playNoteTrill = (freq: number, durationBeats: number = 0.25): void => {
+  const playNoteTrill = (
+    freq: number,
+    durationBeats: number = 0.25,
+    effectType?: string,
+    vibratoAmplitude?: number,
+  ): void => {
     const engine = (
       window as unknown as {
         pitchCanvasAudioEngine?: {
-          playNote: (freq: number, durationMs: number) => void
+          playNote: (
+            freq: number,
+            durationMs: number,
+            effectType?: string,
+            _targetFreq?: number,
+            vibratoAmplitude?: number,
+          ) => void
         }
       }
     ).pitchCanvasAudioEngine
@@ -429,13 +473,25 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     const beatDurationMs = 60000 / bpm()
 
     // First play immediately
-    engine.playNote(freq, durationBeats * beatDurationMs)
+    engine.playNote(
+      freq,
+      durationBeats * beatDurationMs,
+      effectType,
+      undefined,
+      vibratoAmplitude,
+    )
 
     // Play remaining notes with 1 bar rest between each
     for (let i = 1; i < TRILL_NOTE_PLAYS; i++) {
       const delay = TRILL_BAR_REST * beatDurationMs
       const tid = setTimeout(() => {
-        engine.playNote(freq, durationBeats * beatDurationMs)
+        engine.playNote(
+          freq,
+          durationBeats * beatDurationMs,
+          effectType,
+          undefined,
+          vibratoAmplitude,
+        )
       }, delay * i)
       trillTimerIds.push(tid)
     }

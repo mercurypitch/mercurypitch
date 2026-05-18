@@ -745,7 +745,15 @@ export function addMelodyNote(
   if (current == null) return 0
   const items = current.items ?? []
   const key = current.id
-  const newItem = { id: generateId(), note, startBeat, duration }
+  const newItem: MelodyItem = {
+    id: generateId(),
+    note,
+    startBeat,
+    duration,
+    effectType: undefined,
+    linkedTo: [],
+    vibratoAmplitude: undefined,
+  }
 
   setMelodyLibrary((prev) => ({
     ...prev,
@@ -789,7 +797,12 @@ export function removeMelodyNote(id: number): void {
 
 export function updateMelodyNote(
   id: number,
-  updates: Partial<Pick<MelodyItem, 'startBeat' | 'duration' | 'note'>>,
+  updates: Partial<
+    Pick<
+      MelodyItem,
+      'startBeat' | 'duration' | 'note' | 'effectType' | 'linkedTo' | 'vibratoAmplitude'
+    >
+  >,
 ): void {
   const current = currentMelody()
   if (current == null) return
