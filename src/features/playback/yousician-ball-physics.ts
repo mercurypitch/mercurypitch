@@ -189,10 +189,10 @@ export function getBallPhysics(
     vy = -vy * bounce * 0.3
   }
 
-  // Keep within bounds
-  const containerWidth = 1000
-  const minX = padding.left + radius
-  const maxX = containerWidth - padding.right - radius
+  // Keep within bounds (all values in beat-space, not pixels)
+  const melodyEndBeat = notes.length > 0 ? Math.max(...notes.map((n) => n.endBeat)) : 0
+  const minX = padding.left
+  const maxX = Math.max(melodyEndBeat, 100) - padding.right
 
   if (x < minX) {
     x = minX
@@ -259,7 +259,7 @@ export function createBallPhysics(
   } = options
 
   return {
-    x: radius + padding.left,
+    x: 0,
     y: radius + padding.top,
     vy: 0,
     vx: speed * timeScale,
@@ -267,7 +267,7 @@ export function createBallPhysics(
     bounce,
     isJumping: false,
     lastNote: null,
-    lastEndBeat: radius + padding.left,
+    lastEndBeat: 0,
   }
 }
 
