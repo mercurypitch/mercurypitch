@@ -2459,6 +2459,19 @@ export class PianoRollEditor {
             this.config.minDuration,
             endBeat - note.startBeat,
           )
+          // Vertical drag on slide note right handle → change slideInterval
+          if (
+            note.effectType &&
+            note.slideInterval !== undefined &&
+            (note.effectType === 'slide-up' ||
+              note.effectType === 'slide-down' ||
+              note.effectType === 'ease-in' ||
+              note.effectType === 'ease-out')
+          ) {
+            const row = Math.round(y / this.rowHeight)
+            const clamped = Math.max(0, Math.min(this.scale.length - 1, row))
+            note.slideInterval = this.scale[clamped].midi - note.note.midi
+          }
         } else if (this.resizeHandle === 'left') {
           const newStart = Math.round(x / this.beatWidth)
           const oldEnd = note.startBeat + note.duration
