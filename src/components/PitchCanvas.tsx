@@ -9,6 +9,12 @@ import { BALL_RADIUS, buildPlayable, computeArcCy, computeArcEndBeat, computeBal
 import { AudioEngine } from '@/lib/audio-engine'
 import { audioRegistry } from '@/lib/audio-registry'
 import { eventBus } from '@/lib/event-bus'
+import {
+  drawEffectBadge,
+  drawSlideShape,
+  drawSlideProgress,
+  drawVibratoWave,
+} from '@/lib/effect-renderer'
 import { beatToHistoryX } from '@/lib/pitch-history-window'
 import { melodyIndexAtBeat } from '@/lib/scale-data'
 import { bpm, focusMode, micWaveVisible } from '@/stores'
@@ -1037,6 +1043,63 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
         ctx.strokeStyle = palette.stroke
         ctx.lineWidth = isActive ? 1.5 : 1
         ctx.stroke()
+
+        // ── Effect visualisation (slide / ease / vibrato) ──
+        if (
+          item.effectType &&
+          item.slideInterval !== undefined &&
+          (item.effectType === 'slide-up' ||
+            item.effectType === 'slide-down' ||
+            item.effectType === 'ease-in' ||
+            item.effectType === 'ease-out')
+        ) {
+          const targetFreq =
+            item.note.freq * Math.pow(2, item.slideInterval / 12)
+          const tgtCY = freqToY(targetFreq, h)
+          drawSlideShape({
+            ctx,
+            x: x1,
+            srcCY: y,
+            tgtCY,
+            w: bw,
+            halfH: boxHalf,
+          })
+          if (isActive) {
+            const progress = Math.max(
+              0,
+              Math.min(
+                1,
+                (props.currentBeat() - item.startBeat) / item.duration,
+              ),
+            )
+            drawSlideProgress({
+              ctx,
+              x: x1,
+              srcCY: y,
+              tgtCY,
+              w: bw,
+              halfH: boxHalf,
+              progress,
+              clipHeight: h,
+            })
+          }
+        } else if (item.effectType === 'vibrato') {
+          drawVibratoWave({
+            ctx,
+            x: x1,
+            y: y - boxHalf,
+            w: bw,
+          })
+        }
+        if (item.effectType && bw > 22) {
+          drawEffectBadge({
+            ctx,
+            x: x1 + bw,
+            y: y - boxHalf,
+            effectType: item.effectType,
+            slideInterval: item.slideInterval,
+          })
+        }
 
         // ── Flame mode: progressive left→right burning fill. ──
         // The fire fills the note's rectangle in lockstep with playback

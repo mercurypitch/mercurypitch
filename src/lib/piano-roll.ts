@@ -7,6 +7,12 @@ import { createBallPhysics, getBallPhysics, } from '@/features/playback/yousicia
 import type { AudioEngine, InstrumentType } from '@/lib/audio-engine'
 import { eventBus } from '@/lib/event-bus'
 import { PitchDetector } from '@/lib/pitch-detector'
+import {
+  drawEffectBadge,
+  drawSlideProgress,
+  drawVibratoWave,
+  slideShapePath,
+} from '@/lib/effect-renderer'
 import { buildMultiOctaveScale, midiToFreq, midiToNote } from '@/lib/scale-data'
 import type { MelodyItem, NoteName, PianoRollConfig, ScaleDegree, } from '@/types'
 
@@ -2784,20 +2790,22 @@ export class PianoRollEditor {
     return null
   }
 
-  /** Like findNoteAt but also finds slide notes by their right handle at the target row. */
-  private findNoteAtExtended(beat: number, row: number, x: number): MelodyItem | null {
+  /** Like findNoteAt but also finds slide notes anywhere along their S-shape
+   *  (between source and target rows), and at the right handle on the target row. */
+  private findNoteAtExtended(beat: number, row: number, _x: number): MelodyItem | null {
     const note = this.findNoteAt(beat, row)
     if (note) return note
-    // Check slide notes — right handle is drawn at the target-pitch row
     for (const n of this.melody) {
       if (!n.effectType || n.slideInterval === undefined) continue
       if (beat < n.startBeat || beat >= n.startBeat + n.duration) continue
+      // Check whether the click row lies between source and target rows (inclusive)
+      const srcRow = this.midiToRow(n.note.midi)
       const targetMidi = n.note.midi + n.slideInterval
       const targetY = this.midiToY(targetMidi)
-      const targetRow = Math.round(targetY / this.rowHeight)
-      if (targetRow !== row) continue
-      const noteRightEdge = (n.startBeat + n.duration) * this.beatWidth
-      if (Math.abs(noteRightEdge - x) < 10) return n
+      const targetRow = Math.floor(targetY / this.rowHeight)
+      const rMin = Math.min(srcRow, targetRow)
+      const rMax = Math.max(srcRow, targetRow)
+      if (row >= rMin && row <= rMax) return n
     }
     return null
   }
@@ -3599,14 +3607,17 @@ export class PianoRollEditor {
       // S-shape ribbon rendering for slide/ease notes with a slideInterval
       let drawSlideShape = false
       let tgtCY = 0
+      let srcCY = 0
+      let halfH = 0
       if (
         !offScale &&
-        !isActive &&
         note.effectType &&
         note.slideInterval !== undefined
       ) {
         const targetMidi = note.note.midi + note.slideInterval
         tgtCY = this.midiToY(targetMidi)
+        srcCY = rowIdx * this.rowHeight + this.rowHeight / 2
+        halfH = h / 2
         drawSlideShape = true
       }
 
@@ -3626,32 +3637,7 @@ export class PianoRollEditor {
       // Draw note block — S-shape ribbon for slides, rounded rect for normal
       ctx.beginPath()
       if (drawSlideShape) {
-        const srcCY = rowIdx * this.rowHeight + this.rowHeight / 2
-        const halfH = h / 2
-        const cp1x = x + w * 0.3
-        const cp2x = x + w * 0.7
-        // Top edge — cubic bezier sweeping from source toward target pitch
-        ctx.moveTo(x, srcCY - halfH)
-        ctx.bezierCurveTo(
-          cp1x,
-          srcCY - halfH,
-          cp2x,
-          tgtCY - halfH,
-          x + w,
-          tgtCY - halfH,
-        )
-        // Right edge — short vertical at target pitch
-        ctx.lineTo(x + w, tgtCY + halfH)
-        // Bottom edge — mirror curve back to source
-        ctx.bezierCurveTo(
-          cp2x,
-          tgtCY + halfH,
-          cp1x,
-          srcCY + halfH,
-          x,
-          srcCY + halfH,
-        )
-        ctx.closePath()
+        slideShapePath(ctx, x, w, srcCY, tgtCY, halfH)
       } else if (w < 2 * cornerRadius) {
         ctx.roundRect(x, ry, 2 * cornerRadius, h, [
           cornerRadius,
@@ -3697,6 +3683,27 @@ export class PianoRollEditor {
       ctx.fill()
       ctx.stroke()
 
+      // Progress fill overlay for active slide notes — fills left→right
+      if (isActive && drawSlideShape) {
+        const progress = Math.max(
+          0,
+          Math.min(
+            1,
+            (this.getCurrentBeat() - note.startBeat) / note.duration,
+          ),
+        )
+        drawSlideProgress({
+          ctx,
+          x,
+          srcCY,
+          tgtCY,
+          w,
+          halfH,
+          progress,
+          clipHeight: this.totalRows * this.rowHeight,
+        })
+      }
+
       // Hatch pattern for off-scale notes
       if (offScale && w > 10) {
         ctx.save()
@@ -3720,46 +3727,19 @@ export class PianoRollEditor {
       ctx.shadowOffsetY = 0
 
       // Wavy top edge for vibrato notes
-      if (!isActive && note.effectType === 'vibrato' && w > 14) {
-        const waveAmp = 2.5
-        const wavePeriod = w / 3
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)'
-        ctx.lineWidth = 1.5
-        ctx.beginPath()
-        for (let wx = 0; wx <= w; wx++) {
-          const wy =
-            ry + 2 + Math.sin((wx / wavePeriod) * Math.PI * 2) * waveAmp
-          if (wx === 0) {
-            ctx.moveTo(x + wx, wy)
-          } else {
-            ctx.lineTo(x + wx, wy)
-          }
-        }
-        ctx.stroke()
+      if (note.effectType === 'vibrato') {
+        drawVibratoWave({ ctx, x, y: ry, w })
       }
 
       // Effect badge on top-right of notes with effects
       if (note.effectType && w > 18) {
-        const badgeColor =
-          note.effectType === 'vibrato'
-            ? '#ff6b6b'
-            : note.effectType === 'slide-up' || note.effectType === 'slide-down'
-              ? '#4ecdc4'
-              : '#ffe66d'
-        ctx.fillStyle = badgeColor
-        ctx.beginPath()
-        ctx.arc(x + w - 5, ry + 5, 3, 0, Math.PI * 2)
-        ctx.fill()
-
-        // Show interval text for slide/ease notes
-        if (note.slideInterval !== undefined) {
-          ctx.fillStyle = 'rgba(255,255,255,0.9)'
-          ctx.font = 'bold 7px sans-serif'
-          ctx.textAlign = 'right'
-          ctx.textBaseline = 'top'
-          const sign = note.slideInterval > 0 ? '+' : ''
-          ctx.fillText(sign + note.slideInterval, x + w - 9, ry + 2)
-        }
+        drawEffectBadge({
+          ctx,
+          x: x + w,
+          y: ry,
+          effectType: note.effectType,
+          slideInterval: note.slideInterval,
+        })
       }
 
       // Note name text (always show when wide enough, GH #129 fix)
