@@ -554,6 +554,7 @@ export class PianoRollEditor {
 
   // Effect state
   private selectedEffect: EffectType | null = null
+  private vibratoAmplitude = 0.5
 
   // Undo/redo history
   private historyStack: MelodyItem[][] = []
@@ -1007,6 +1008,7 @@ export class PianoRollEditor {
 
   private _updateHint(): void {
     if (!this.hintEl) return
+    this._updateVibratoSlider()
     this.hintEl.parentElement?.classList.remove('has-warning')
     if (this.selectedNoteIds.size > 0) {
       if (this.selectedNoteIds.size === 1) {
@@ -1474,6 +1476,11 @@ export class PianoRollEditor {
       <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M3 12c3-4 6 4 9 0s6 4 9 0"/></svg>
       <span>Vibrato</span>
     </button>
+    <div class="roll-vibrato-amp" id="roll-vibrato-amp-group" style="display:none">
+      <label for="roll-vibrato-amp-slider" title="Vibrato depth in semitones">Amp:</label>
+      <input type="range" id="roll-vibrato-amp-slider" min="0.1" max="3" step="0.1" value="0.5">
+      <span id="roll-vibrato-amp-value">0.5</span>
+    </div>
           </div>
 
   <!-- IO -->
@@ -1678,6 +1685,14 @@ export class PianoRollEditor {
     setupEffectBtn('#roll-action-ease-in', 'ease-in')
     setupEffectBtn('#roll-action-ease-out', 'ease-out')
     setupEffectBtn('#roll-action-vibrato', 'vibrato')
+
+    // Vibrato amplitude slider
+    const vibratoAmpSlider = container.querySelector('#roll-vibrato-amp-slider') as HTMLInputElement
+    const vibratoAmpValue = container.querySelector('#roll-vibrato-amp-value') as HTMLSpanElement
+    vibratoAmpSlider?.addEventListener('input', () => {
+      vibratoAmpValue.textContent = vibratoAmpSlider.value
+      this.vibratoAmplitude = parseFloat(vibratoAmpSlider.value)
+    })
 
     // Clear
     container
@@ -3810,6 +3825,7 @@ export class PianoRollEditor {
       selected.forEach((n: MelodyItem) => {
         n.effectType = 'vibrato'
         n.linkedTo = []
+        n.vibratoAmplitude = this.vibratoAmplitude
       })
       this.emitMelodyChange()
       this.draw()
@@ -3903,6 +3919,20 @@ export class PianoRollEditor {
       if (activeId)
         container.querySelector(`#${activeId}`)?.classList.add('active')
     }
+    this._updateVibratoSlider(container)
+  }
+
+  /** Show/hide vibrato amplitude slider based on context. */
+  private _updateVibratoSlider(container: HTMLElement = this.container): void {
+    const group = container.querySelector('#roll-vibrato-amp-group') as HTMLElement
+    if (!group) return
+    const hasSelectedVibrato =
+      this.selectedEffect === 'vibrato' ||
+      [...this.selectedNoteIds].some((id) => {
+        const note = this.melody.find((n) => n.id === id)
+        return note?.effectType === 'vibrato'
+      })
+    group.style.display = hasSelectedVibrato ? 'flex' : 'none'
   }
 
   /** Apply an effect via keyboard shortcut. Mirrors button-click logic. */

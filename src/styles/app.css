@@ -3951,6 +3951,20 @@ Keeps your existing styles, only adjusts layout
   color: var(--accent);
 }
 
+.roll-vibrato-amp {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+  padding: 2px 4px;
+}
+.roll-vibrato-amp input[type="range"] {
+  width: 50px;
+  height: 4px;
+  accent-color: var(--accent);
+}
+
 .roll-action-btn.slide-up:hover {
   border-color: var(--teal);
   color: var(--teal);

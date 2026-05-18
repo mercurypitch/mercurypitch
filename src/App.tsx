@@ -632,6 +632,11 @@ const AppShell: Component<AppProps> = (props) => {
   // Note: count-in events handled inside usePracticeController.
   // Sequencing events:
   const setupRuntimeEvents = () => {
+    // Slide/ease source notes extend their duration to cover the linked
+    // target.  When the runtime fires noteStart for the target we must
+    // skip its audio — the source already played it.
+    const slideTargetIds = new Set<number>()
+
     playbackRuntime.on('noteStart', (e) => {
       const { note: item, index } = e
       melodyStore.setCurrentNoteIndex(index)
@@ -655,30 +660,37 @@ const AppShell: Component<AppProps> = (props) => {
       }
 
       if (isRestItem) return
+
+      // Slide/ease target notes — audio is already covered by the source.
+      if (slideTargetIds.has(item.id)) {
+        slideTargetIds.delete(item.id)
+        return
+      }
+
       if (
         !recording.isRecording() &&
         (isPlaying() || editorPlaybackState() === 'playing')
       ) {
         const beatDurationMs = 60000 / bpm()
         const noteDurationMs = item.duration * beatDurationMs
-        // Pass the per-note effectType (vibrato/slide-up/etc) through to
-        // audioEngine so effects on session/editor playback are audible.
-        // We MUST call this as a method (audioEngine.playTone(...)) — extracting
-        // it into a local variable loses `this` binding and produces:
-        //   "TypeError: can't access property 'init', this is undefined"
-        // because playTone internally calls this.init() / this.audioCtx.
-        void (
-          audioEngine.playTone as unknown as (
-            this: typeof audioEngine,
-            freq: number,
-            duration?: number,
-            effectType?: string,
-          ) => Promise<void> | void
-        ).call(
-          audioEngine,
+
+        let targetFreq: number | undefined
+        if (item.effectType && item.linkedTo?.length) {
+          const targetNote = melodyStore.items().find(
+            (n) => n.id === item.linkedTo![0],
+          )
+          if (targetNote) {
+            targetFreq = targetNote.note.freq
+            slideTargetIds.add(targetNote.id)
+          }
+        }
+
+        void audioEngine.playTone(
           item.note.freq,
           noteDurationMs,
-          (item as { effectType?: string }).effectType,
+          item.effectType,
+          targetFreq,
+          item.vibratoAmplitude,
         )
       }
     })
