@@ -459,7 +459,6 @@ export class PianoRollEditor {
   private rulerCtx: CanvasRenderingContext2D | null = null
   private gridContainer: HTMLElement | null = null
   private hintEl: HTMLElement | null = null
-  private _warningTimer: ReturnType<typeof setTimeout> | null = null
   private timelineInfoEl: HTMLElement | null = null
   private beatInfoEl: HTMLElement | null = null
   private pitchTrackCanvas: HTMLCanvasElement | null = null
@@ -555,6 +554,8 @@ export class PianoRollEditor {
   // Effect state
   private selectedEffect: EffectType | null = null
   private vibratoAmplitude = 0.5
+  private _intervalModalEl: HTMLElement | null = null
+  private _intervalResolve: ((value: number | null) => void) | null = null
 
   // Undo/redo history
   private historyStack: MelodyItem[][] = []
@@ -1066,16 +1067,6 @@ export class PianoRollEditor {
     }
   }
 
-  private _setWarningHint(msg: string): void {
-    if (!this.hintEl) return
-    this.hintEl.textContent = msg
-    this.hintEl.parentElement?.classList.add('has-warning')
-    if (this._warningTimer) clearTimeout(this._warningTimer)
-    this._warningTimer = setTimeout(() => {
-      this._updateHint()
-    }, 4000)
-  }
-
   private _updateSelectionControls(): void {
     const modeGroup = this.container.querySelector(
       '.roll-mode-group',
@@ -1483,6 +1474,15 @@ export class PianoRollEditor {
     </div>
           </div>
 
+  <!-- INTERVAL MODAL -->
+  <div class="roll-interval-modal" id="roll-interval-modal" style="display:none">
+    <div class="roll-interval-content">
+      <h3 id="roll-interval-title">Slide Interval</h3>
+      <div class="roll-interval-grid" id="roll-interval-grid"></div>
+      <button class="roll-interval-cancel" id="roll-interval-cancel">Cancel</button>
+    </div>
+  </div>
+
   <!-- IO -->
   <div class="roll-group roll-group-2col" data-name="I/O">
     <button id="roll-import-midi" class="roll-export-btn" title="Import melody from MIDI file">
@@ -1687,11 +1687,58 @@ export class PianoRollEditor {
     setupEffectBtn('#roll-action-vibrato', 'vibrato')
 
     // Vibrato amplitude slider
-    const vibratoAmpSlider = container.querySelector('#roll-vibrato-amp-slider') as HTMLInputElement
-    const vibratoAmpValue = container.querySelector('#roll-vibrato-amp-value') as HTMLSpanElement
+    const vibratoAmpSlider = container.querySelector(
+      '#roll-vibrato-amp-slider',
+    ) as HTMLInputElement
+    const vibratoAmpValue = container.querySelector(
+      '#roll-vibrato-amp-value',
+    ) as HTMLSpanElement
     vibratoAmpSlider?.addEventListener('input', () => {
       vibratoAmpValue.textContent = vibratoAmpSlider.value
       this.vibratoAmplitude = parseFloat(vibratoAmpSlider.value)
+    })
+
+    // Interval modal — build preset grid and wire close events
+    const intervalModal = container.querySelector(
+      '#roll-interval-modal',
+    ) as HTMLElement
+    const intervalGrid = container.querySelector(
+      '#roll-interval-grid',
+    ) as HTMLElement
+    const intervalCancel = container.querySelector(
+      '#roll-interval-cancel',
+    ) as HTMLElement
+    this._intervalModalEl = intervalModal
+    // Build preset buttons: two rows of 7
+    const intervals = [12, 7, 5, 4, 3, 2, 1, -1, -2, -3, -4, -5, -7, -12]
+    for (const iv of intervals) {
+      const btn = document.createElement('button')
+      btn.className = 'roll-interval-btn'
+      btn.textContent = iv > 0 ? `+${iv}` : `${iv}`
+      btn.addEventListener('click', () => {
+        if (this._intervalResolve) {
+          this._intervalResolve(iv)
+          this._intervalResolve = null
+        }
+        intervalModal.style.display = 'none'
+      })
+      intervalGrid.appendChild(btn)
+    }
+    intervalCancel.addEventListener('click', () => {
+      if (this._intervalResolve) {
+        this._intervalResolve(null)
+        this._intervalResolve = null
+      }
+      intervalModal.style.display = 'none'
+    })
+    intervalModal.addEventListener('click', (e) => {
+      if (e.target === intervalModal) {
+        if (this._intervalResolve) {
+          this._intervalResolve(null)
+          this._intervalResolve = null
+        }
+        intervalModal.style.display = 'none'
+      }
     })
 
     // Clear
@@ -2632,15 +2679,10 @@ export class PianoRollEditor {
       startBeat: snappedBeat,
     }
 
-    // Apply effect if one is selected
+    // Apply effect if one is selected (vibrato is self-contained;
+    // slide/ease effects will need an interval picked later via S/E key)
     if (this.selectedEffect) {
       item.effectType = this.selectedEffect
-      if (
-        this.selectedEffect === 'slide-up' ||
-        this.selectedEffect === 'slide-down'
-      ) {
-        item.linkedTo = []
-      }
     }
 
     this.melody.push(item)
@@ -2666,13 +2708,6 @@ export class PianoRollEditor {
     this.pushHistory()
     const noteId = note.id
     if (noteId === undefined) return
-    // Remove from any linkedTo references in other notes (matches old app behavior)
-    for (const n of this.melody) {
-      if (n.linkedTo) {
-        const idx = n.linkedTo.indexOf(noteId)
-        if (idx !== -1) n.linkedTo.splice(idx, 1)
-      }
-    }
     const idx = this.melody.indexOf(note)
     if (idx !== -1) {
       this.melody.splice(idx, 1)
@@ -2689,12 +2724,6 @@ export class PianoRollEditor {
   private eraseNoteInternal(note: MelodyItem): void {
     const noteId = note.id
     if (noteId === undefined) return
-    for (const n of this.melody) {
-      if (n.linkedTo) {
-        const idx = n.linkedTo.indexOf(noteId)
-        if (idx !== -1) n.linkedTo.splice(idx, 1)
-      }
-    }
     const idx = this.melody.indexOf(note)
     if (idx !== -1) {
       this.melody.splice(idx, 1)
@@ -3272,7 +3301,6 @@ export class PianoRollEditor {
     }
 
     // Note blocks
-    this.drawNoteConnections(ctx)
     this.drawNoteBlocks(ctx, false)
 
     // Box selection rectangle
@@ -3346,9 +3374,6 @@ export class PianoRollEditor {
         ctx.stroke()
       }
     }
-
-    // Note connection lines (below note blocks)
-    this.drawNoteConnections(ctx)
 
     // Note blocks with active highlight
     this.drawNoteBlocks(ctx, true)
@@ -3454,63 +3479,6 @@ export class PianoRollEditor {
     ctx.restore()
   }
 
-  /** Draw connection lines between linked notes (slides/ease effects) */
-  private drawNoteConnections(ctx: CanvasRenderingContext2D): void {
-    const countInOffset =
-      this._countInBeats > 0 && this.getCurrentBeat() <= 0
-        ? this._countInBeats * this.beatWidth
-        : 0
-    for (const note of this.melody) {
-      if (!note.linkedTo || note.linkedTo.length === 0) continue
-
-      const fromX = countInOffset + note.startBeat * this.beatWidth
-      const fromRow = this.midiToRow(note.note.midi)
-      const fromY = fromRow * this.rowHeight + this.rowHeight / 2
-      const fromW = note.duration * this.beatWidth
-
-      for (const targetId of note.linkedTo) {
-        const target = this.melody.find((n) => n.id === targetId)
-        if (!target) continue
-
-        const toX = countInOffset + target.startBeat * this.beatWidth
-        const toRow = this.midiToRow(target.note.midi)
-        const toY = toRow * this.rowHeight + this.rowHeight / 2
-        const startX = fromX + fromW
-        const startY = fromY
-        const endX = toX
-        const endY = toY
-
-        ctx.save()
-        ctx.strokeStyle = 'rgba(255, 180, 50, 0.7)'
-        ctx.lineWidth = 3
-
-        if (
-          note.effectType === 'slide-up' ||
-          note.effectType === 'slide-down'
-        ) {
-          ctx.beginPath()
-          ctx.moveTo(startX, startY)
-          ctx.lineTo(endX, endY)
-          ctx.stroke()
-        } else if (note.effectType === 'ease-in') {
-          const ctrlX = (startX + endX) / 2
-          ctx.beginPath()
-          ctx.moveTo(startX, startY)
-          ctx.quadraticCurveTo(ctrlX, endY, endX, endY)
-          ctx.stroke()
-        } else if (note.effectType === 'ease-out') {
-          const ctrlX = (startX + endX) / 2
-          ctx.beginPath()
-          ctx.moveTo(startX, startY)
-          ctx.quadraticCurveTo(ctrlX, startY, endX, endY)
-          ctx.stroke()
-        }
-
-        ctx.restore()
-      }
-    }
-  }
-
   private drawNoteBlocks(
     ctx: CanvasRenderingContext2D,
     highlightActive: boolean,
@@ -3541,24 +3509,19 @@ export class PianoRollEditor {
         this.getCurrentBeat() < note.startBeat + note.duration
       const cornerRadius = 4
 
-      // Diagonal rendering for slide notes (skip for off-scale —
-      // without a real row position the skew direction is meaningless).
-      let diagY = 0
+      // S-shape ribbon rendering for slide/ease notes with a slideInterval
+      let drawSlideShape = false
+      let tgtCY = 0
       if (
         !offScale &&
         !isActive &&
         note.effectType &&
-        (note.effectType === 'slide-up' || note.effectType === 'slide-down') &&
-        note.linkedTo &&
-        note.linkedTo.length > 0
+        note.slideInterval !== undefined
       ) {
-        const targetId = note.linkedTo[0]
-        const target = this.melody.find((n) => n.id === targetId)
-        if (target) {
-          const targetRow = this.midiToRow(target.note.midi)
-          diagY = (targetRow - rowIdx) * this.rowHeight
-          diagY = Math.max(-h * 0.45, Math.min(h * 0.45, diagY))
-        }
+        const targetMidi = note.note.midi + note.slideInterval
+        const tgtRow = this.midiToRow(targetMidi)
+        tgtCY = tgtRow * this.rowHeight + this.rowHeight / 2
+        drawSlideShape = true
       }
 
       // Shadow for active vs normal notes
@@ -3574,38 +3537,33 @@ export class PianoRollEditor {
         ctx.shadowOffsetY = 1
       }
 
-      // Draw note block with diagonal skew for slides
+      // Draw note block — S-shape ribbon for slides, rounded rect for normal
       ctx.beginPath()
-      if (diagY !== 0) {
-        // Draw parallelogram shape for slides
-        ctx.moveTo(x + cornerRadius, ry + diagY / 2)
-        ctx.lineTo(x + w - cornerRadius, ry + diagY / 2)
-        ctx.quadraticCurveTo(
+      if (drawSlideShape) {
+        const srcCY = rowIdx * this.rowHeight + this.rowHeight / 2
+        const halfH = h / 2
+        const cp1x = x + w * 0.3
+        const cp2x = x + w * 0.7
+        // Top edge — cubic bezier sweeping from source toward target pitch
+        ctx.moveTo(x, srcCY - halfH)
+        ctx.bezierCurveTo(
+          cp1x,
+          srcCY - halfH,
+          cp2x,
+          tgtCY - halfH,
           x + w,
-          ry + diagY / 2,
-          x + w,
-          ry + diagY / 2 + cornerRadius,
+          tgtCY - halfH,
         )
-        ctx.lineTo(x + w, ry + h + diagY / 2 - cornerRadius)
-        ctx.quadraticCurveTo(
-          x + w,
-          ry + h + diagY / 2,
-          x + w - cornerRadius,
-          ry + h + diagY / 2,
-        )
-        ctx.lineTo(x + cornerRadius, ry + h + diagY / 2)
-        ctx.quadraticCurveTo(
+        // Right edge — short vertical at target pitch
+        ctx.lineTo(x + w, tgtCY + halfH)
+        // Bottom edge — mirror curve back to source
+        ctx.bezierCurveTo(
+          cp2x,
+          tgtCY + halfH,
+          cp1x,
+          srcCY + halfH,
           x,
-          ry + h + diagY / 2,
-          x,
-          ry + h + diagY / 2 - cornerRadius,
-        )
-        ctx.lineTo(x, ry + diagY / 2 + cornerRadius)
-        ctx.quadraticCurveTo(
-          x,
-          ry + diagY / 2,
-          x + cornerRadius,
-          ry + diagY / 2,
+          srcCY + halfH,
         )
         ctx.closePath()
       } else if (w < 2 * cornerRadius) {
@@ -3628,6 +3586,10 @@ export class PianoRollEditor {
         fillColor = this.config.noteColors.active
         strokeColor = 'rgba(63,185,80,0.9)'
         strokeWidth = 1.5
+      } else if (drawSlideShape) {
+        fillColor = 'rgba(255, 170, 40, 0.88)'
+        strokeColor = 'rgba(255, 200, 80, 0.75)'
+        strokeWidth = 1.25
       } else if (isSelected) {
         fillColor = this.config.noteColors.selected
         strokeColor = '#8fc9ff'
@@ -3702,6 +3664,16 @@ export class PianoRollEditor {
         ctx.beginPath()
         ctx.arc(x + w - 5, ry + 5, 3, 0, Math.PI * 2)
         ctx.fill()
+
+        // Show interval text for slide/ease notes
+        if (note.slideInterval !== undefined) {
+          ctx.fillStyle = 'rgba(255,255,255,0.9)'
+          ctx.font = 'bold 7px sans-serif'
+          ctx.textAlign = 'right'
+          ctx.textBaseline = 'top'
+          const sign = note.slideInterval > 0 ? '+' : ''
+          ctx.fillText(sign + note.slideInterval, x + w - 9, ry + 2)
+        }
       }
 
       // Note name text (always show when wide enough, GH #129 fix)
@@ -3814,86 +3786,69 @@ export class PianoRollEditor {
     return this.melody.filter((n) => this.selectedNoteIds.has(n.id))
   }
 
+  /** Show the interval selector modal and return the chosen semitone offset. */
+  private _showIntervalModal(effect: EffectType): Promise<number | null> {
+    return new Promise((resolve) => {
+      this._intervalResolve = resolve
+      const modal = this._intervalModalEl
+      if (!modal) {
+        resolve(null)
+        return
+      }
+      const title = modal.querySelector('#roll-interval-title')!
+      const effectLabels: Record<string, string> = {
+        'slide-up': 'Slide Up Interval',
+        'slide-down': 'Slide Down Interval',
+        'ease-in': 'Ease In Interval',
+        'ease-out': 'Ease Out Interval',
+      }
+      title.textContent = effectLabels[effect] ?? 'Interval'
+      modal.style.display = 'flex'
+    })
+  }
+
   private _applyEffect(type: EffectType): void {
     const selected = this._getSelectedNotes()
     if (selected.length === 0) return
 
+    // Toggle off: if the single selected note already has this effect, remove it
+    if (selected.length === 1 && selected[0].effectType === type) {
+      this.pushHistory()
+      selected[0].effectType = undefined
+      selected[0].slideInterval = undefined
+      selected[0].vibratoAmplitude = undefined
+      this.emitMelodyChange()
+      this.draw()
+      return
+    }
+
     this.pushHistory()
 
     if (type === 'vibrato') {
-      // Apply vibrato to all selected notes
+      // Apply vibrato to all selected notes (self-contained, no modal)
       selected.forEach((n: MelodyItem) => {
         n.effectType = 'vibrato'
-        n.linkedTo = []
+        n.slideInterval = undefined
         n.vibratoAmplitude = this.vibratoAmplitude
       })
       this.emitMelodyChange()
       this.draw()
     } else {
-      // Slides and ease need 2 selected notes
-      if (selected.length !== 2) {
-        this._setWarningHint(
-          'Slides require exactly 2 notes selected (order by time). Vibrato works on 1 or more notes.',
-        )
-        return
-      }
-
-      // Sort by start beat to determine direction
-      const sorted = [...selected].sort((a, b) => a.startBeat - b.startBeat)
-      const first = sorted[0]
-      const second = sorted[1]
-
-      // Validation based on effect type
-      if (type === 'slide-up' && second.note.midi <= first.note.midi) {
-        this._setWarningHint(
-          'Ascending slide requires the second note to be higher than the first.',
-        )
-        return
-      }
-      if (type === 'slide-down' && second.note.midi >= first.note.midi) {
-        this._setWarningHint(
-          'Descending slide requires the second note to be lower than the first.',
-        )
-        return
-      }
-      if (
-        (type === 'ease-in' || type === 'ease-out') &&
-        second.note.midi === first.note.midi
-      ) {
-        this._setWarningHint(
-          'Ease In/Out requires two notes at different pitches.',
-        )
-        return
-      }
-
-      // Reject if notes exist between first and second that would be overlapped
-      const intervening = this.melody.filter(
-        (n) =>
-          n.id !== first.id &&
-          n.id !== second.id &&
-          n.startBeat > first.startBeat &&
-          n.startBeat < second.startBeat,
-      )
-      if (intervening.length > 0) {
-        this._setWarningHint(
-          'Cannot link notes: there are other notes between them.',
-        )
-        return
-      }
-
-      // Apply effect and extend first note's duration to meet second note
-      first.effectType = type
-      first.linkedTo = [second.id!]
-      first.duration = Math.max(
-        first.duration,
-        second.startBeat - first.startBeat + 0.5,
-      )
-      this.emitMelodyChange()
-      this.draw()
+      // Slide/ease: work on the first selected note, ask for interval via modal
+      const target = selected[0]
+      void this._showIntervalModal(type).then((iv) => {
+        if (iv === null) return // cancelled
+        target.effectType = type
+        target.slideInterval = iv
+        target.vibratoAmplitude = undefined
+        this._updateEffectBtnStates()
+        this.emitMelodyChange()
+        this.draw()
+      })
     }
   }
 
-  /** Update effect button active states to reflect the pre-selected effect. */
+  /** Update effect button active states. Also checks the selected note's effectType. */
   private _updateEffectBtnStates(
     container: HTMLElement = this.container,
   ): void {
@@ -3907,7 +3862,10 @@ export class PianoRollEditor {
     for (const id of ids) {
       container.querySelector(`#${id}`)?.classList.remove('active')
     }
-    if (this.selectedEffect) {
+    const selected = this._getSelectedNotes()
+    const activeEffect = selected.length === 1 ? selected[0].effectType : null
+    const highlight = this.selectedEffect ?? activeEffect
+    if (highlight) {
       const map: Record<EffectType, string> = {
         'slide-up': 'roll-action-slide-up',
         'slide-down': 'roll-action-slide-down',
@@ -3915,7 +3873,7 @@ export class PianoRollEditor {
         'ease-out': 'roll-action-ease-out',
         vibrato: 'roll-action-vibrato',
       }
-      const activeId = map[this.selectedEffect]
+      const activeId = map[highlight]
       if (activeId)
         container.querySelector(`#${activeId}`)?.classList.add('active')
     }
@@ -3924,8 +3882,8 @@ export class PianoRollEditor {
 
   /** Show/hide vibrato amplitude slider based on context. */
   private _updateVibratoSlider(container: HTMLElement = this.container): void {
-    const group = container.querySelector('#roll-vibrato-amp-group') as HTMLElement
-    if (!group) return
+    const group = container.querySelector('#roll-vibrato-amp-group')
+    if (!(group instanceof HTMLElement)) return
     const hasSelectedVibrato =
       this.selectedEffect === 'vibrato' ||
       [...this.selectedNoteIds].some((id) => {

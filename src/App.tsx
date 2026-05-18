@@ -632,11 +632,6 @@ const AppShell: Component<AppProps> = (props) => {
   // Note: count-in events handled inside usePracticeController.
   // Sequencing events:
   const setupRuntimeEvents = () => {
-    // Slide/ease source notes extend their duration to cover the linked
-    // target.  When the runtime fires noteStart for the target we must
-    // skip its audio — the source already played it.
-    const slideTargetIds = new Set<number>()
-
     playbackRuntime.on('noteStart', (e) => {
       const { note: item, index } = e
       melodyStore.setCurrentNoteIndex(index)
@@ -661,12 +656,6 @@ const AppShell: Component<AppProps> = (props) => {
 
       if (isRestItem) return
 
-      // Slide/ease target notes — audio is already covered by the source.
-      if (slideTargetIds.has(item.id)) {
-        slideTargetIds.delete(item.id)
-        return
-      }
-
       if (
         !recording.isRecording() &&
         (isPlaying() || editorPlaybackState() === 'playing')
@@ -675,14 +664,8 @@ const AppShell: Component<AppProps> = (props) => {
         const noteDurationMs = item.duration * beatDurationMs
 
         let targetFreq: number | undefined
-        if (item.effectType && item.linkedTo?.length) {
-          const targetNote = melodyStore.items().find(
-            (n) => n.id === item.linkedTo![0],
-          )
-          if (targetNote) {
-            targetFreq = targetNote.note.freq
-            slideTargetIds.add(targetNote.id)
-          }
+        if (item.effectType && item.slideInterval !== undefined) {
+          targetFreq = item.note.freq * Math.pow(2, item.slideInterval / 12)
         }
 
         void audioEngine.playTone(

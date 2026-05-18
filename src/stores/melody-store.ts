@@ -751,7 +751,7 @@ export function addMelodyNote(
     startBeat,
     duration,
     effectType: undefined,
-    linkedTo: [],
+    slideInterval: undefined,
     vibratoAmplitude: undefined,
   }
 
@@ -800,7 +800,12 @@ export function updateMelodyNote(
   updates: Partial<
     Pick<
       MelodyItem,
-      'startBeat' | 'duration' | 'note' | 'effectType' | 'linkedTo' | 'vibratoAmplitude'
+      | 'startBeat'
+      | 'duration'
+      | 'note'
+      | 'effectType'
+      | 'slideInterval'
+      | 'vibratoAmplitude'
     >
   >,
 ): void {
