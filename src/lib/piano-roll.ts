@@ -3053,11 +3053,15 @@ export class PianoRollEditor {
 
     // Check if playback is done
     if (this.melody.length > 0) {
-      const sortedNotes = [...this.melody].sort(
-        (a, b) => a.startBeat - b.startBeat,
-      )
-      const lastNote = sortedNotes[sortedNotes.length - 1]
-      if (beat >= lastNote.startBeat + lastNote.duration) {
+      // Find the maximum end beat — a note that starts earlier but has a
+      // longer duration (e.g. a slide/vibrato effect note) can extend
+      // past the note with the latest startBeat.
+      let melodyEnd = 0
+      for (const item of this.melody) {
+        const end = item.startBeat + item.duration
+        if (end > melodyEnd) melodyEnd = end
+      }
+      if (beat >= melodyEnd) {
         this.stopPlayback()
         this.remoteBeat = 0
         this.startedNoteIds.clear()
