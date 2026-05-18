@@ -33,6 +33,10 @@ export const SLIDE_FILL = 'rgba(255, 170, 40, 0.88)'
 export const SLIDE_STROKE = 'rgba(255, 200, 80, 0.75)'
 export const SLIDE_PROGRESS_FILL = 'rgba(63, 185, 80, 0.45)'
 
+/** Default colors for vibrato shapes */
+export const VIBRATO_FILL = 'rgba(255, 107, 107, 0.72)'
+export const VIBRATO_STROKE = 'rgba(255, 140, 140, 0.8)'
+
 /** Build the S-shape bezier path. Does NOT call ctx.beginPath() first
  *  so callers can optionally clip or combine with other paths. */
 export function slideShapePath(
@@ -46,7 +50,14 @@ export function slideShapePath(
   const cp1x = x + w * 0.3
   const cp2x = x + w * 0.7
   ctx.moveTo(x, srcCY - halfH)
-  ctx.bezierCurveTo(cp1x, srcCY - halfH, cp2x, tgtCY - halfH, x + w, tgtCY - halfH)
+  ctx.bezierCurveTo(
+    cp1x,
+    srcCY - halfH,
+    cp2x,
+    tgtCY - halfH,
+    x + w,
+    tgtCY - halfH,
+  )
   ctx.lineTo(x + w, tgtCY + halfH)
   ctx.bezierCurveTo(cp2x, tgtCY + halfH, cp1x, srcCY + halfH, x, srcCY + halfH)
   ctx.closePath()
@@ -112,6 +123,76 @@ export function drawSlideProgress(params: SlideProgressParams): void {
   ctx.fillStyle = progressFill
   ctx.fill()
   ctx.restore()
+}
+
+export interface VibratoShapeParams {
+  ctx: CanvasRenderingContext2D
+  /** Left edge X */
+  x: number
+  /** Center Y of the note */
+  y: number
+  /** Width in pixels */
+  w: number
+  /** Half-height of the ribbon */
+  halfH: number
+  /** Fill color */
+  fillColor?: string
+  /** Stroke color */
+  strokeColor?: string
+  /** Stroke width */
+  strokeWidth?: number
+}
+
+/** Build a wavy sine-wave ribbon path for vibrato notes.
+ *  Does NOT call ctx.beginPath() first so callers can combine paths. */
+export function vibratoShapePath(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  halfH: number,
+): void {
+  if (w < 4) return
+  const amplitude = halfH * 0.65
+  const periods = Math.max(1, Math.floor(w / 22))
+  const periodPx = w / periods
+
+  // Top edge: sine wave
+  for (let i = 0; i <= w; i++) {
+    const wy = y - halfH + Math.sin((i / periodPx) * Math.PI * 2) * amplitude
+    if (i === 0) ctx.moveTo(x + i, wy)
+    else ctx.lineTo(x + i, wy)
+  }
+  // Bottom edge: sine wave (same phase as top)
+  for (let i = w; i >= 0; i--) {
+    const wy = y + halfH + Math.sin((i / periodPx) * Math.PI * 2) * amplitude
+    ctx.lineTo(x + i, wy)
+  }
+  ctx.closePath()
+}
+
+/** Draw a filled and stroked vibrato sine-wave ribbon. */
+export function drawVibratoShape(params: VibratoShapeParams): void {
+  const {
+    ctx,
+    x,
+    y,
+    w,
+    halfH,
+    fillColor = VIBRATO_FILL,
+    strokeColor = VIBRATO_STROKE,
+    strokeWidth = 1.25,
+  } = params
+
+  if (w < 4) return
+
+  ctx.beginPath()
+  vibratoShapePath(ctx, x, y, w, halfH)
+  ctx.fillStyle = fillColor
+  ctx.fill()
+  ctx.strokeStyle = strokeColor
+  ctx.lineWidth = strokeWidth
+  ctx.stroke()
 }
 
 export interface VibratoWaveParams {
