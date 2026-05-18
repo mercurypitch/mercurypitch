@@ -506,6 +506,7 @@ export class PianoRollEditor {
   // Track whether playback is external (from Practice tab) vs local (Editor tab)
   private isExternalPlayback = false
   private isSeeking = false
+  private _lastScrubNoteId = -1
   // Track currently playing notes (for audio stacking prevention)
   private currentPlayingNoteIds = new Set<number>()
   // Waveform props for recording visualization
@@ -1861,6 +1862,7 @@ export class PianoRollEditor {
 
     document.addEventListener('mouseup', () => {
       this.isSeeking = false
+      this._lastScrubNoteId = -1
       // Always finalize box selection regardless of where mouse was released
       if (this.isBoxSelecting) {
         const boxX1 = Math.min(this.boxStartX, this.boxEndX)
@@ -3051,8 +3053,11 @@ export class PianoRollEditor {
       this._updatePitchTrack()
     }
 
-    // Check if playback is done
-    if (this.melody.length > 0) {
+    // Check if playback is done — only during active playback.
+    // When paused or stopped, beat updates come from seeking/scrubbing
+    // and should NOT trigger an auto-stop (which resets remoteBeat=0,
+    // causing the playhead to teleport).
+    if (this.playbackState === 'playing' && this.melody.length > 0) {
       // Find the maximum end beat — a note that starts earlier but has a
       // longer duration (e.g. a slide/vibrato effect note) can extend
       // past the note with the latest startBeat.
@@ -3146,6 +3151,10 @@ export class PianoRollEditor {
     this.remoteBeat = beat
     this.drawGridWithPlayhead()
 
+    // Audio scrubbing: play a short preview of the note at the seeked
+    // position so the user can hear what they're scrubbing over.
+    this._scrubPreview(beat)
+
     if (this.playbackState === 'stopped') {
       // Rebase so a fresh start (setPlaybackState 'playing') picks up
       // the seeked position instead of starting from beat 0.
@@ -3175,6 +3184,41 @@ export class PianoRollEditor {
     } catch {
       // Non-browser environments — ignore.
     }
+  }
+
+  /** Play a short blip of the note at the given beat position so the user
+   *  hears what they're scrubbing over. Debounced by note ID to avoid
+   *  retriggering on every pixel of mouse movement over the same note. */
+  private _scrubPreview(beat: number): void {
+    const note = this._findNoteAtBeat(beat)
+    const noteId = note?.id ?? -1
+    if (noteId === this._lastScrubNoteId) return
+    this._lastScrubNoteId = noteId
+
+    if (note && note.note?.freq) {
+      const win = window as Window & {
+        pianoRollAudioEngine?: {
+          playNote: (
+            freq: number,
+            durationMs: number,
+            effectType?: string,
+          ) => void
+        }
+      }
+      // Short blip — long enough to hear the pitch, short enough to not
+      // overlap with the next scrub position.
+      win.pianoRollAudioEngine?.playNote(note.note.freq, 60)
+    }
+  }
+
+  /** Find the melody item that spans the given beat, or null. */
+  private _findNoteAtBeat(beat: number): MelodyItem | null {
+    for (const item of this.melody) {
+      if (beat >= item.startBeat && beat < item.startBeat + item.duration) {
+        return item
+      }
+    }
+    return null
   }
 
   /**
