@@ -11,7 +11,7 @@ import { audioRegistry } from '@/lib/audio-registry'
 import { drawEffectBadge, drawSlideProgress, drawSlideShape, drawVibratoShape, } from '@/lib/effect-renderer'
 import { eventBus } from '@/lib/event-bus'
 import { beatToHistoryX } from '@/lib/pitch-history-window'
-import { melodyIndexAtBeat } from '@/lib/scale-data'
+import { freqToNote, melodyIndexAtBeat } from '@/lib/scale-data'
 import { bpm, focusMode, micWaveVisible } from '@/stores'
 import { colorCodeNotes, flameMode, gridLinesVisible, showAccuracyPercent, showFocusBall, showPlaybackBall, showPlayhead, } from '@/stores/settings-store'
 import type { EffectType, MelodyItem, NoteResult, PitchSample, ScaleDegree, } from '@/types'
@@ -956,8 +956,6 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
             item.effectType === 'ease-in' ||
             item.effectType === 'ease-out')
         const hasVibratoEffect = item.effectType === 'vibrato'
-        const hasEffect = hasSlideEffect || hasVibratoEffect
-
         // Played-note rating lookup. noteResults accumulates in
         // playback order, so the j-th played note's rating is at
         // noteResults[j]. Only used when colorCodeNotes is on.
@@ -1177,14 +1175,13 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
           }
         }
 
-        // Effect badge on top-right of effect notes
-        if (hasEffect && bw > 22) {
+        // Effect badge on top-right of vibrato notes only (slide notes use edge labels instead)
+        if (hasVibratoEffect && bw > 22) {
           drawEffectBadge({
             ctx,
             x: x1 + bw,
             y: y - boxHalf,
             effectType: item.effectType!,
-            slideInterval: item.slideInterval,
           })
         }
 
@@ -1193,7 +1190,21 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
           showAccuracyPercent() && isPlayed && playedRecord !== null && bw > 65
         const centerName = bw >= 12 && !hasBadge
 
-        if (hasBadge) {
+        if (hasSlideEffect && bw > 32) {
+          // Slide notes: source label at left edge, target label at right edge
+          const targetFreq =
+            item.note.freq * Math.pow(2, item.slideInterval! / 12)
+          const { name: tgtName } = freqToNote(targetFreq)
+          const tgtCY = freqToY(targetFreq, h)
+          ctx.fillStyle = palette.text
+          ctx.font = 'bold 11px sans-serif'
+          ctx.textAlign = 'left'
+          ctx.textBaseline = 'middle'
+          ctx.fillText(item.note.name, x1 + 8, y)
+          ctx.textAlign = 'right'
+          ctx.fillText(tgtName, x1 + bw - 8, tgtCY)
+          ctx.textBaseline = 'alphabetic'
+        } else if (hasBadge) {
           ctx.fillStyle = palette.text
           ctx.font = `bold ${isActive ? 13 : 11}px sans-serif`
           ctx.textAlign = 'left'
