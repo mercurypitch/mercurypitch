@@ -3068,7 +3068,11 @@ export class PianoRollEditor {
       }
       if (beat >= melodyEnd) {
         this.stopPlayback()
-        this.remoteBeat = 0
+        // stopPlayback() resets remoteBeat to 0, which causes the playhead
+        // to teleport from the end position back to beat 0. Restore it so
+        // the playhead stays at the melody-end position.
+        this.remoteBeat = melodyEnd
+        this.editorBeat = melodyEnd
         this.startedNoteIds.clear()
         this.currentNoteRow = -1
         this.playbackState = 'stopped'
@@ -3186,9 +3190,9 @@ export class PianoRollEditor {
     }
   }
 
-  /** Play a short blip of the note at the given beat position so the user
-   *  hears what they're scrubbing over. Debounced by note ID to avoid
-   *  retriggering on every pixel of mouse movement over the same note. */
+  /** Play a short preview of the note at the given scrub position.
+   *  Debounced by note ID to avoid retriggering on every pixel of mouse
+   *  movement over the same note. */
   private _scrubPreview(beat: number): void {
     const note = this._findNoteAtBeat(beat)
     const noteId = note?.id ?? -1
@@ -3196,18 +3200,30 @@ export class PianoRollEditor {
     this._lastScrubNoteId = noteId
 
     if (note && note.note?.freq) {
+      const targetFreq =
+        note.slideInterval !== undefined
+          ? note.note.freq * Math.pow(2, note.slideInterval / 12)
+          : undefined
       const win = window as Window & {
         pianoRollAudioEngine?: {
           playNote: (
             freq: number,
             durationMs: number,
             effectType?: string,
+            targetFreq?: number,
+            vibratoAmplitude?: number,
           ) => void
         }
       }
-      // Short blip — long enough to hear the pitch, short enough to not
-      // overlap with the next scrub position.
-      win.pianoRollAudioEngine?.playNote(note.note.freq, 60)
+      // Short blip with full effect context so slides glide and vibrato
+      // warbles — otherwise it's just an unrecognisable pop.
+      win.pianoRollAudioEngine?.playNote(
+        note.note.freq,
+        120,
+        note.effectType,
+        targetFreq,
+        note.vibratoAmplitude,
+      )
     }
   }
 
