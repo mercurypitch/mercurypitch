@@ -577,6 +577,11 @@ export const GUIDE_SECTIONS: WalkthroughSection[] = [
     description: 'Build and edit melodies note by note',
   },
   {
+    id: 'effects',
+    title: 'Effects & Slides',
+    description: 'Create slides, vibrato, and note transitions',
+  },
+  {
     id: 'settings',
     title: 'Settings Tab',
     description: 'Pitch detection, accuracy bands, and theme',
@@ -747,6 +752,35 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
       'Change key, scale, BPM, and sensitivity directly from the editor toolbar before recording or editing.',
     placement: 'bottom',
     section: 'editor',
+    requiredTab: TAB_COMPOSE,
+  },
+
+  // ── Effects & Slides Section ──
+  {
+    title: 'Effect Tools',
+    targetSelector: '.roll-group[data-name="Effects"]',
+    description:
+      'Use effect buttons to add slides, ease, and vibrato to your notes. Hover over any button for a quick hint.',
+    placement: 'left',
+    section: 'effects',
+    requiredTab: TAB_COMPOSE,
+  },
+  {
+    title: 'How Effects Work',
+    targetSelector: '#roll-note-info',
+    description:
+      'The status bar hints guide you. Select 2 notes for slides/ease, or 1+ notes for vibrato. Press S, E, or V keys as shortcuts.',
+    placement: 'top',
+    section: 'effects',
+    requiredTab: TAB_COMPOSE,
+  },
+  {
+    title: 'Multi-Select for Effects',
+    targetSelector: '.roll-tool-btn[data-tool="select"]',
+    description:
+      'Click the Select tool, then click a note and Shift+click a second note to select both. Slides and ease effects work with exactly 2 selected notes.',
+    placement: 'bottom',
+    section: 'effects',
     requiredTab: TAB_COMPOSE,
   },
 

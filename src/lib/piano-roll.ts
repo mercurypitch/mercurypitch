@@ -459,6 +459,7 @@ export class PianoRollEditor {
   private rulerCtx: CanvasRenderingContext2D | null = null
   private gridContainer: HTMLElement | null = null
   private hintEl: HTMLElement | null = null
+  private _warningTimer: ReturnType<typeof setTimeout> | null = null
   private timelineInfoEl: HTMLElement | null = null
   private beatInfoEl: HTMLElement | null = null
   private pitchTrackCanvas: HTMLCanvasElement | null = null
@@ -1006,6 +1007,7 @@ export class PianoRollEditor {
 
   private _updateHint(): void {
     if (!this.hintEl) return
+    this.hintEl.parentElement?.classList.remove('has-warning')
     if (this.selectedNoteIds.size > 0) {
       if (this.selectedNoteIds.size === 1) {
         const id = [...this.selectedNoteIds][0]
@@ -1035,6 +1037,41 @@ export class PianoRollEditor {
       this.hintEl.textContent =
         'Click and drag note edges to resize | Del to delete selected'
     }
+  }
+
+  private _showEffectHoverHint(effect: EffectType): void {
+    if (!this.hintEl) return
+    const n = this.selectedNoteIds.size
+    if (effect === 'vibrato' && n === 0) {
+      this.hintEl.textContent = 'Select a note first, then press V for vibrato'
+    } else if (
+      (effect === 'slide-up' ||
+        effect === 'slide-down' ||
+        effect === 'ease-in' ||
+        effect === 'ease-out') &&
+      n < 2
+    ) {
+      this.hintEl.textContent =
+        'Select 2 notes first (hold Shift to multi-select)'
+    } else if (
+      (effect === 'slide-up' ||
+        effect === 'slide-down' ||
+        effect === 'ease-in' ||
+        effect === 'ease-out') &&
+      n > 2
+    ) {
+      this.hintEl.textContent = 'Slides work with exactly 2 notes'
+    }
+  }
+
+  private _setWarningHint(msg: string): void {
+    if (!this.hintEl) return
+    this.hintEl.textContent = msg
+    this.hintEl.parentElement?.classList.add('has-warning')
+    if (this._warningTimer) clearTimeout(this._warningTimer)
+    this._warningTimer = setTimeout(() => {
+      this._updateHint()
+    }, 4000)
   }
 
   private _updateSelectionControls(): void {
@@ -1417,23 +1454,23 @@ export class PianoRollEditor {
 
   <!-- EFFECTS -->
   <div class="roll-group roll-group-2col" data-name="Effects">
-    <button id="roll-action-slide-up" class="roll-action-btn slide-up" title="Create ascending slide between selected notes">
+    <button id="roll-action-slide-up" class="roll-action-btn slide-up" title="Create ascending slide between selected notes (S)">
       <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M4 20l8-16 8 16z"/></svg>
       <span>↑Slide</span>
     </button>
-    <button id="roll-action-slide-down" class="roll-action-btn slide-down" title="Create descending slide between selected notes">
+    <button id="roll-action-slide-down" class="roll-action-btn slide-down" title="Create descending slide between selected notes (Shift+S)">
       <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M4 4l8 16 8-16z"/></svg>
       <span>↓Slide</span>
     </button>
-    <button id="roll-action-ease-in" class="roll-action-btn ease-in" title="Create ease-in slide (starts level, slides down)">
+    <button id="roll-action-ease-in" class="roll-action-btn ease-in" title="Create ease-in slide (starts level, slides down) (E)">
       <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M4 12h4l4-6 8 10z"/></svg>
       <span>Ease In</span>
     </button>
-    <button id="roll-action-ease-out" class="roll-action-btn ease-out" title="Create ease-out slide (slides up, eases to level)">
+    <button id="roll-action-ease-out" class="roll-action-btn ease-out" title="Create ease-out slide (slides up, eases to level) (Shift+E)">
       <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M4 12l4-6 4 6h12z"/></svg>
       <span>Ease Out</span>
     </button>
-    <button id="roll-action-vibrato" class="roll-action-btn vibrato" title="Create vibrato on selected note">
+    <button id="roll-action-vibrato" class="roll-action-btn vibrato" title="Create vibrato on selected note (V)">
       <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M3 12c3-4 6 4 9 0s6 4 9 0"/></svg>
       <span>Vibrato</span>
     </button>
@@ -1613,9 +1650,9 @@ export class PianoRollEditor {
     // Effect action buttons — apply to selected notes, or pre-select for
     // the next placed note when nothing is selected.
     const setupEffectBtn = (id: string, effect: EffectType) => {
-      container.querySelector(id)?.addEventListener('click', () => {
+      const btn = container.querySelector(id)
+      btn?.addEventListener('click', () => {
         if (this.selectedNoteIds.size === 0) {
-          // Toggle pre-select: clicking the same effect clears it.
           if (this.selectedEffect === effect) {
             this.selectedEffect = null
           } else {
@@ -1625,10 +1662,15 @@ export class PianoRollEditor {
           this._updateHint()
           return
         }
-        // Notes are selected — apply the effect directly.
         this.selectedEffect = null
         this._updateEffectBtnStates(container)
         this._applyEffect(effect)
+      })
+      btn?.addEventListener('mouseenter', () => {
+        this._showEffectHoverHint(effect)
+      })
+      btn?.addEventListener('mouseleave', () => {
+        this._updateHint()
       })
     }
     setupEffectBtn('#roll-action-slide-up', 'slide-up')
@@ -2445,6 +2487,12 @@ export class PianoRollEditor {
       this._updateHint()
       return
     }
+
+    const isTyping = !!(e.target as Element | null)?.closest(
+      'input,textarea,select,[contenteditable]',
+    )
+    if (isTyping) return
+
     if (e.key === 'Delete' || e.key === 'Backspace') {
       if (this.selectedNoteIds.size > 0) {
         this.pushHistory()
@@ -2469,6 +2517,21 @@ export class PianoRollEditor {
       this.onNoteSelect?.(null)
       this.draw()
       this._updateHint()
+    } else if (e.key === 's' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+      e.preventDefault()
+      this._keyboardEffect('slide-up')
+    } else if (e.key === 'S' && e.shiftKey && !e.ctrlKey && !e.metaKey) {
+      e.preventDefault()
+      this._keyboardEffect('slide-down')
+    } else if (e.key === 'e' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+      e.preventDefault()
+      this._keyboardEffect('ease-in')
+    } else if (e.key === 'E' && e.shiftKey && !e.ctrlKey && !e.metaKey) {
+      e.preventDefault()
+      this._keyboardEffect('ease-out')
+    } else if (e.key === 'v' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+      e.preventDefault()
+      this._keyboardEffect('vibrato')
     } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
       e.preventDefault()
       const sortedNotes = [...this.melody].sort(
@@ -3753,9 +3816,9 @@ export class PianoRollEditor {
     } else {
       // Slides and ease need 2 selected notes
       if (selected.length !== 2) {
-        if (this.hintEl)
-          this.hintEl.textContent =
-            'Slides require exactly 2 notes selected (order by time). Vibrato works on 1 or more notes.'
+        this._setWarningHint(
+          'Slides require exactly 2 notes selected (order by time). Vibrato works on 1 or more notes.',
+        )
         return
       }
 
@@ -3766,24 +3829,24 @@ export class PianoRollEditor {
 
       // Validation based on effect type
       if (type === 'slide-up' && second.note.midi <= first.note.midi) {
-        if (this.hintEl)
-          this.hintEl.textContent =
-            'Ascending slide requires the second note to be higher than the first.'
+        this._setWarningHint(
+          'Ascending slide requires the second note to be higher than the first.',
+        )
         return
       }
       if (type === 'slide-down' && second.note.midi >= first.note.midi) {
-        if (this.hintEl)
-          this.hintEl.textContent =
-            'Descending slide requires the second note to be lower than the first.'
+        this._setWarningHint(
+          'Descending slide requires the second note to be lower than the first.',
+        )
         return
       }
       if (
         (type === 'ease-in' || type === 'ease-out') &&
         second.note.midi === first.note.midi
       ) {
-        if (this.hintEl)
-          this.hintEl.textContent =
-            'Ease In/Out requires two notes at different pitches.'
+        this._setWarningHint(
+          'Ease In/Out requires two notes at different pitches.',
+        )
         return
       }
 
@@ -3796,9 +3859,9 @@ export class PianoRollEditor {
           n.startBeat < second.startBeat,
       )
       if (intervening.length > 0) {
-        if (this.hintEl)
-          this.hintEl.textContent =
-            'Cannot link notes: there are other notes between them.'
+        this._setWarningHint(
+          'Cannot link notes: there are other notes between them.',
+        )
         return
       }
 
@@ -3840,5 +3903,23 @@ export class PianoRollEditor {
       if (activeId)
         container.querySelector(`#${activeId}`)?.classList.add('active')
     }
+  }
+
+  /** Apply an effect via keyboard shortcut. Mirrors button-click logic. */
+  private _keyboardEffect(effect: EffectType): void {
+    if (this.previewMode) return
+    if (this.selectedNoteIds.size === 0) {
+      if (this.selectedEffect === effect) {
+        this.selectedEffect = null
+      } else {
+        this.selectedEffect = effect
+      }
+      this._updateEffectBtnStates()
+      this._updateHint()
+      return
+    }
+    this.selectedEffect = null
+    this._updateEffectBtnStates()
+    this._applyEffect(effect)
   }
 }

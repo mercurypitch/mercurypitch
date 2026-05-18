@@ -3945,6 +3945,12 @@ Keeps your existing styles, only adjusts layout
   transform: scale(0.96);
 }
 
+.roll-action-btn.active {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
 .roll-action-btn.slide-up:hover {
   border-color: var(--teal);
   color: var(--teal);
@@ -4489,6 +4495,12 @@ Keeps your existing styles, only adjusts layout
   font-size: 0.7rem;
   color: var(--text-secondary);
   flex-shrink: 0;
+}
+
+.roll-status.has-warning {
+  background: rgba(219, 109, 40, 0.12);
+  border-top-color: var(--orange);
+  color: var(--orange);
 }
 
 /* Pitch track button */
