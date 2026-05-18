@@ -15,8 +15,7 @@ interface PianoRollEventsDeps {
 }
 
 export function usePianoRollEvents(deps: PianoRollEventsDeps): void {
-  const { audioEngine, playbackRuntime, isPlaying, isPaused, setCurrentBeat } =
-    deps
+  const { audioEngine, playbackRuntime, setCurrentBeat } = deps
 
   const handlePresetSaved = (detail: { name: string }) => {
     showNotification(`Preset "${detail.name}" saved`, 'success')
@@ -50,7 +49,6 @@ export function usePianoRollEvents(deps: PianoRollEventsDeps): void {
   }
 
   const handleSeek = (detail: { beat: number }) => {
-    if (!isPlaying() && !isPaused()) return
     const targetBeat = detail.beat as number
     playbackRuntime.seekTo(targetBeat)
     setCurrentBeat(targetBeat)
