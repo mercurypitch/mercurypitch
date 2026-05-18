@@ -3983,7 +3983,7 @@ Keeps your existing styles, only adjusts layout
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 16px 20px;
-  max-width: 300px;
+  max-width: 380px;
   text-align: center;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
 }
@@ -4000,7 +4000,7 @@ Keeps your existing styles, only adjusts layout
   margin: 10px 0;
 }
 .roll-interval-btn {
-  padding: 6px 0;
+  padding: 6px 2px;
   font-size: 0.7rem;
   font-weight: 600;
   border: 1px solid var(--border);
@@ -4011,14 +4011,36 @@ Keeps your existing styles, only adjusts layout
   transition:
     background 0.1s,
     color 0.1s;
+  line-height: 1.2;
+}
+.roll-interval-btn small {
+  font-size: 0.55rem;
+  font-weight: 400;
+  color: var(--text-secondary);
 }
 .roll-interval-btn:hover {
   background: var(--accent);
   color: #fff;
   border-color: var(--accent);
 }
+.roll-interval-btn:hover small {
+  color: rgba(255, 255, 255, 0.8);
+}
+.roll-interval-btn.current {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.roll-interval-btn.current small {
+  color: var(--accent);
+}
+.roll-interval-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  align-items: center;
+}
 .roll-interval-cancel {
-  margin-top: 8px;
   background: transparent;
   border: 1px solid var(--border);
   color: var(--text-secondary);
@@ -4030,6 +4052,19 @@ Keeps your existing styles, only adjusts layout
 .roll-interval-cancel:hover {
   color: var(--text-primary);
   border-color: var(--text-secondary);
+}
+.roll-interval-remove {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--red);
+  padding: 4px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.7rem;
+}
+.roll-interval-remove:hover {
+  background: rgba(248, 81, 73, 0.1);
+  border-color: var(--red);
 }
 
 .roll-action-btn.slide-up:hover {
