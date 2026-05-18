@@ -860,14 +860,17 @@ export class PianoRollEditor {
   }
 
   setCurrentNote(index: number): void {
-    if (index < 0) {
-      this.remoteBeat = 0
-    } else {
+    if (index >= 0) {
       const item = this.melody[index]
       if (item != null) {
         this.remoteBeat = item.startBeat
       }
     }
+    // NOTE: Do NOT reset remoteBeat to 0 when index < 0.
+    // The playhead position is driven by the playback controller, not by
+    // note selection state. Resetting here causes the playhead to teleport
+    // to beat 0 when the SolidJS effect fires setCurrentNote(-1) after
+    // handleBeatUpdate has already positioned it at the melody end.
     this.drawWithPlayhead()
   }
 
@@ -914,7 +917,9 @@ export class PianoRollEditor {
     // PianoRollCanvas then re-fires setPlaybackState('stopped'), which would
     // reset remoteBeat to 0 and cause the playhead to teleport.  Skip the
     // re-entry so the first (correct) stop wins.
-    if (this.playbackState === state) return
+    if (this.playbackState === state) {
+      return
+    }
     this.playbackState = state
 
     if (state === 'playing') {
@@ -3093,9 +3098,6 @@ export class PianoRollEditor {
       }
       if (beat >= melodyEnd) {
         this.stopPlayback()
-        // stopPlayback() resets remoteBeat to 0, which causes the playhead
-        // to teleport from the end position back to beat 0. Restore it so
-        // the playhead stays at the melody-end position.
         this.remoteBeat = melodyEnd
         this.editorBeat = melodyEnd
         this.startedNoteIds.clear()
@@ -3126,10 +3128,6 @@ export class PianoRollEditor {
       }
     }
     win.pianoRollAudioEngine?.stopAllNotes()
-    // Only reset playhead position for internal playback.  During external
-    // playback (App-level transport), the position is driven by the
-    // PlaybackRuntime — resetting here would teleport the playhead to 0
-    // when the user pauses or when end-detection fires stopPlayback.
     if (!this.isExternalPlayback) {
       this.remoteBeat = 0
       this.editorBeat = 0
