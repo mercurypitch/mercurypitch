@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.4] - 2026-05-19
+
+### Added
+
+- **Shazam Sing**: Real-time microphone listening for audio fingerprinting and identifying songs
+- Speech Recognition real-time feedback in ShazamListen component
+- E2E Test configuration allowing dynamic playwright timeouts via `.env.local`
+
+### Changed
+
+- Massive CSS Modules Refactoring (`.module.css`): transitioned global CSS legacy styles into isolated component-level styles
+- Rebased branch workflow to perfectly stabilize features into main branch
+
+### Fixed
+
+- Playwright UI test suite timeout failures resulting from CSS module class hashing (fixed 100+ failing tests)
+- Missing Walkthrough Tour markdown styles (restored correct kebab-case mapping for `:global()` classes)
+- Pause and Stop button interaction desyncs in transport controls and test environments
+- Playhead teleportation, starting position bugs, and audio quality scrub issues
+- Dynamic vs static import Vite build warnings for `uvr-service` and Shazam components
+
 ## [0.3.3] - 2026-05-17
 
 ### Added
