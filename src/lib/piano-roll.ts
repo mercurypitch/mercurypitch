@@ -491,7 +491,6 @@ export class PianoRollEditor {
   // Whether the editor was playing before switching to external playback
   private wasPlayingBeforeExternal = false
   private startedNoteIds = new Set<number>()
-  private currentNoteRow = -1 // GH #129: tracks current note row for glowing dot (deprecated in favor of ball physics)
   // Ball physics state for Yousician-like ball jumping through notes
   private ballCanvas: HTMLCanvasElement | null = null
   private ballCtx: CanvasRenderingContext2D | null = null
@@ -956,7 +955,6 @@ export class PianoRollEditor {
       this.editorBeat = 0
       this._countInBeats = 0
       this.startedNoteIds.clear()
-      this.currentNoteRow = -1
       this.playbackState = 'stopped'
       // Also reset external playback mode to ensure clean slate on tab switch
       this.isExternalPlayback = false
@@ -3061,18 +3059,6 @@ export class PianoRollEditor {
 
     // GH #129: Track the current note row for vertical glow dot (deprecated)
     // Keep this for backward compatibility
-    const sortedNotes = [...this.melody].sort(
-      (a, b) => a.startBeat - b.startBeat,
-    )
-    let foundRow = -1
-    for (const note of sortedNotes) {
-      if (note.startBeat <= beat && note.startBeat + note.duration > beat) {
-        foundRow = this.midiToRow(note.note.midi)
-        break
-      }
-    }
-    this.currentNoteRow = foundRow
-
     this.drawWithPlayhead()
 
     // Update timeline info during playback
@@ -3101,7 +3087,6 @@ export class PianoRollEditor {
         this.remoteBeat = melodyEnd
         this.editorBeat = melodyEnd
         this.startedNoteIds.clear()
-        this.currentNoteRow = -1
         this.playbackState = 'stopped'
         this.onPlaybackStateChange?.('stopped')
         this.draw()
@@ -3135,7 +3120,6 @@ export class PianoRollEditor {
     // Clear tracking sets
     this.startedNoteIds.clear()
     this.currentPlayingNoteIds.clear()
-    this.currentNoteRow = -1
     // Reset ball state
     this.useBallPhysics = false
     this.ballState = null
@@ -3635,36 +3619,6 @@ export class PianoRollEditor {
 
     // Draw ruler with playhead triangle (always show during playback)
     this.drawRulerWithPlayhead()
-
-    // GH #129: Draw glowing dot at current note row's Y position (vertical movement)
-    // DEPRECATED in favor of ball physics
-    if (!this.useBallPhysics && this.currentNoteRow >= 0) {
-      ctx.save()
-      ctx.shadowColor = 'rgba(63, 185, 80, 0.9)'
-      ctx.shadowBlur = 12
-      ctx.fillStyle = '#3fb950'
-      ctx.beginPath()
-      ctx.arc(
-        playheadX,
-        this.currentNoteRow * this.rowHeight + this.rowHeight / 2,
-        5,
-        0,
-        Math.PI * 2,
-      )
-      ctx.fill()
-      // White core for extra glow
-      ctx.fillStyle = 'rgba(255,255,255,0.7)'
-      ctx.beginPath()
-      ctx.arc(
-        playheadX,
-        this.currentNoteRow * this.rowHeight + this.rowHeight / 2,
-        2.5,
-        0,
-        Math.PI * 2,
-      )
-      ctx.fill()
-      ctx.restore()
-    }
 
     // GH #198: During count-in, still show ruler even if playhead is hidden
     // (The playhead is always visible now, so this is just for completeness)
