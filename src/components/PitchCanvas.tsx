@@ -844,7 +844,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     ctx!.font = 'bold 10px sans-serif'
     ctx!.textAlign = 'left'
     ctx!.textBaseline = 'middle'
-    const label = `♪ ${Math.round(target)} Hz`
+    const label = `${Math.round(target)} Hz`
     ctx!.fillText(label, 8, ty)
   }
 

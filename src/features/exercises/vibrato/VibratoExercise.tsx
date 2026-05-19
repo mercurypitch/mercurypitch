@@ -5,6 +5,7 @@ import { showCelebration } from '@/stores/ui-store'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { useBaseExercise } from '../use-base-exercise'
 import { useVibratoController } from './use-vibrato-controller'
+import { IconWave } from '@/components/exercise-icons'
 
 interface VibratoExerciseProps {
   audioEngine: AudioEngine
@@ -98,7 +99,7 @@ const VibratoExercise: Component<VibratoExerciseProps> = (props) => {
       <div class="exercise-canvas-area">
         {state.status === 'idle' && (
           <div style="text-align:center;color:var(--text-secondary)">
-            <p style="font-size:1.5rem;margin-bottom:8px">〰️</p>
+            <IconWave size={48} />
             <p>Sustain a note with vibrato. Aim for 4-7 Hz rate with 10-50 cents depth.</p>
           </div>
         )}

@@ -5,6 +5,7 @@ import { showCelebration } from '@/stores/ui-store'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { useBaseExercise } from '../use-base-exercise'
 import { usePitchPursuitController } from './use-pitch-pursuit-controller'
+import { IconGame, IconCheck, IconCross, IconMic } from '@/components/exercise-icons'
 
 interface PitchPursuitExerciseProps {
   audioEngine: AudioEngine
@@ -121,7 +122,7 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
       <div class="exercise-canvas-area" style="position:relative;overflow:hidden;background:var(--surface);border-radius:12px;min-height:320px">
         {state.status === 'idle' && (
           <div style="text-align:center;color:var(--text-secondary);display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;min-height:280px">
-            <p style="font-size:1.5rem;margin-bottom:8px">🎮</p>
+            <IconGame size={48} />
             <p>Notes fall from above. Sing the matching pitch before they reach the target line.</p>
             <p style="font-size:0.8rem;margin-top:8px;opacity:0.7">12 notes · Hit within ±50 cents</p>
           </div>
@@ -132,14 +133,14 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
             {/* Game HUD */}
             <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 16px;background:var(--surface-hover);border-bottom:1px solid var(--border)">
               <div style="display:flex;gap:16px;font-size:0.9rem">
-                <span>✅ {met.hits ?? 0}</span>
-                <span>❌ {met.misses ?? 0}</span>
+                <span><IconCheck size={14} /> {met.hits ?? 0}</span>
+                <span><IconCross size={14} /> {met.misses ?? 0}</span>
               </div>
               <div style="font-size:0.9rem;font-weight:600;color:var(--accent)">
                 Combo: {met.combo ?? 0}x
               </div>
               <div style="font-size:0.8rem;color:var(--text-secondary)">
-                {currentNote ? `🎤 ${currentNote.name}` : '...'}
+                {currentNote ? <><IconMic size={14} /> {currentNote.name}</> : '...'}
               </div>
             </div>
 

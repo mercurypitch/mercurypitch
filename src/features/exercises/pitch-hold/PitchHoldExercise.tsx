@@ -5,6 +5,7 @@ import { showCelebration } from '@/stores/ui-store'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { useBaseExercise } from '../use-base-exercise'
 import { usePitchHoldController } from './use-pitch-hold-controller'
+import { IconLock } from '@/components/exercise-icons'
 
 interface PitchHoldExerciseProps {
   audioEngine: AudioEngine
@@ -99,7 +100,7 @@ const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
       <div class="exercise-canvas-area">
         {state.status === 'idle' && (
           <div style="text-align:center;color:var(--text-secondary)">
-            <p style="font-size:1.5rem;margin-bottom:8px">🔒</p>
+            <IconLock size={48} />
             <p>Keep your pitch locked inside the target zone as it shrinks over time.</p>
           </div>
         )}

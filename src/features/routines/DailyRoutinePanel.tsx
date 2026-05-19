@@ -1,9 +1,11 @@
 import type { Component } from 'solid-js'
+import type { JSX } from 'solid-js/jsx-runtime'
 import { createSignal, For, Show } from 'solid-js'
 import { useDailyRoutine } from './use-daily-routine'
 import type { SegmentKind } from './types'
 import { startExercise } from '@/stores/ui-store'
 import type { ExerciseType } from '@/features/exercises/types'
+import { IconFire, IconTarget, IconTrophy, IconWater, IconCheck } from '@/components/exercise-icons'
 
 const segmentLabels: Record<SegmentKind, string> = {
   warmup: 'Warmup',
@@ -12,11 +14,11 @@ const segmentLabels: Record<SegmentKind, string> = {
   cooldown: 'Cool-down',
 }
 
-const segmentIcons: Record<SegmentKind, string> = {
-  warmup: '🔥',
-  exercise: '🎯',
-  'challenge-prep': '🏆',
-  cooldown: '🌊',
+const segmentIcons: Record<SegmentKind, () => JSX.Element> = {
+  warmup: () => <IconFire size={14} />,
+  exercise: () => <IconTarget size={14} />,
+  'challenge-prep': () => <IconTrophy size={14} />,
+  cooldown: () => <IconWater size={14} />,
 }
 
 const segmentExercise: Record<SegmentKind, ExerciseType> = {
@@ -105,7 +107,7 @@ export const DailyRoutinePanel: Component = () => {
                       class={`daily-routine-segment${done ? ' done' : ''}${current ? ' current' : ''}`}
                     >
                       <span class="daily-routine-segment-icon">
-                        {done ? '✅' : segmentIcons[seg.type]}
+                        {done ? <IconCheck size={13} /> : segmentIcons[seg.type]()}
                       </span>
                       <span class="daily-routine-segment-type">
                         {segmentLabels[seg.type]}
@@ -132,7 +134,7 @@ export const DailyRoutinePanel: Component = () => {
                           }}
                           title="Mark complete"
                         >
-                          ✓
+                          <IconCheck size={10} />
                         </button>
                       </Show>
                     </div>

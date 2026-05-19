@@ -6,6 +6,7 @@ import { showCelebration } from '@/stores/ui-store'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { useBaseExercise } from '../use-base-exercise'
 import { useMirrorMelodyController } from './use-mirror-melody-controller'
+import { IconMirror, IconMusic, IconMic } from '@/components/exercise-icons'
 
 interface MirrorMelodyExerciseProps {
   audioEngine: AudioEngine
@@ -105,7 +106,7 @@ const MirrorMelodyExercise: Component<MirrorMelodyExerciseProps> = (props) => {
       <div class="exercise-canvas-area">
         {state.status === 'idle' && (
           <div style="text-align:center;color:var(--text-secondary)">
-            <p style="font-size:1.5rem;margin-bottom:8px">🪞</p>
+            <IconMirror size={48} />
             <p>Listen to each note played, then sing it back. Match pitch and timing.</p>
           </div>
         )}
@@ -114,7 +115,7 @@ const MirrorMelodyExercise: Component<MirrorMelodyExerciseProps> = (props) => {
           <>
             <div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:16px">
               <div style="font-size:1.1rem;font-weight:600">
-                {phase === 1 ? '🎵 Listen...' : phase === 2 ? '🎤 Your turn!' : '...'}
+                {phase === 1 ? <><IconMusic size={16} /> Listen...</> : phase === 2 ? <><IconMic size={16} /> Your turn!</> : '...'}
               </div>
               {phase === 2 && (
                 <div style="font-size:1.8rem;font-weight:700;color:var(--accent)">

@@ -5,6 +5,7 @@ import { showCelebration } from '@/stores/ui-store'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { useBaseExercise } from '../use-base-exercise'
 import { useLongNoteController } from './use-long-note-controller'
+import { IconTarget } from '@/components/exercise-icons'
 
 interface LongNoteExerciseProps {
   audioEngine: AudioEngine
@@ -86,7 +87,7 @@ const LongNoteExercise: Component<LongNoteExerciseProps> = (props) => {
       <div class="exercise-canvas-area">
         {state.status === 'idle' && (
           <div style="text-align:center;color:var(--text-secondary)">
-            <p style="font-size:1.5rem;margin-bottom:8px">🎯</p>
+            <IconTarget size={48} />
             <p>Hold a steady pitch. The longer and steadier, the better.</p>
           </div>
         )}

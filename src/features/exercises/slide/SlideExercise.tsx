@@ -5,6 +5,7 @@ import { showCelebration } from '@/stores/ui-store'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { useBaseExercise } from '../use-base-exercise'
 import { useSlideController } from './use-slide-controller'
+import { IconSlide } from '@/components/exercise-icons'
 
 interface SlideExerciseProps {
   audioEngine: AudioEngine
@@ -89,7 +90,7 @@ const SlideExercise: Component<SlideExerciseProps> = (props) => {
       <div class="exercise-canvas-area">
         {state.status === 'idle' && (
           <div style="text-align:center;color:var(--text-secondary)">
-            <p style="font-size:1.5rem;margin-bottom:8px">↗️</p>
+            <IconSlide size={48} />
             <p>Slide cleanly from one note to another. No scooping, no overshoot.</p>
           </div>
         )}

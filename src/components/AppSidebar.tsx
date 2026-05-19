@@ -7,6 +7,7 @@
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
 import { CharacterIcons } from '@/components/CharacterIcons'
+import { IconDiamond } from '@/components/exercise-icons'
 import { DailyRoutinePanel } from '@/features/routines/DailyRoutinePanel'
 import { LibraryTab } from '@/components/LibraryTab'
 import { NoteList } from '@/components/NoteList'
@@ -341,7 +342,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
                       class={styles.customScaleOption}
                       value={customScaleTypeId(name, customScalesMap()[name])}
                     >
-                      {`◆ ${name}`}
+                      <IconDiamond size={12} /> {name}
                     </option>
                   )}
                 </For>
