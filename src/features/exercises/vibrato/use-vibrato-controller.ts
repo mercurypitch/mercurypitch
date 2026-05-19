@@ -7,6 +7,9 @@ const IDEAL_RATE_MIN = 4
 const IDEAL_RATE_MAX = 7
 const IDEAL_DEPTH_MIN = 10
 const IDEAL_DEPTH_MAX = 50
+const SCORE_RATE_WEIGHT = 0.4
+const SCORE_DEPTH_WEIGHT = 0.3
+const SCORE_CONSISTENCY_WEIGHT = 0.3
 
 export function useVibratoController(base: BaseExerciseController) {
   function computeResult(): ExerciseResult {
@@ -27,7 +30,8 @@ export function useVibratoController(base: BaseExerciseController) {
       midi: p.freq > 0 ? 12 * Math.log2(p.freq / 440) + 69 : 0,
     }))
 
-    const vibResult = detectVibrato(vibSamples, Math.round(history.length / (history[history.length - 1].time - history[0].time)))
+    const sampleRate = Math.round(history.length / ((history[history.length - 1].time - history[0].time) || 1))
+    const vibResult = detectVibrato(vibSamples, sampleRate)
 
     if (!vibResult.detected) {
       return {
@@ -67,7 +71,9 @@ export function useVibratoController(base: BaseExerciseController) {
     const consistencyScore = vibResult.confidence
 
     const score = Math.round(
-      rateScore * 0.4 + depthScore * 0.3 + consistencyScore * 0.3,
+      rateScore * SCORE_RATE_WEIGHT +
+        depthScore * SCORE_DEPTH_WEIGHT +
+        consistencyScore * SCORE_CONSISTENCY_WEIGHT,
     )
 
     // Map classification to numeric for metrics

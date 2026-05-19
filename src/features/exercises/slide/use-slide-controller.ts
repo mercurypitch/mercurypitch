@@ -3,12 +3,15 @@ import type { BaseExerciseController } from '../use-base-exercise'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_SLIDE } from '../types'
 
+const SCORE_SMOOTHNESS_WEIGHT = 0.4
+const SCORE_ARRIVAL_WEIGHT = 0.4
+const SCORE_SPEED_WEIGHT = 0.2
+const OPTIMAL_SLIDE_MS = 300
+
 export function useSlideController(base: BaseExerciseController) {
-  let targetStartMidi = 0
   let targetEndMidi = 0
 
-  function setTargets(fromMidi: number, toMidi: number): void {
-    targetStartMidi = fromMidi
+  function setTargets(_fromMidi: number, toMidi: number): void {
     targetEndMidi = toMidi
   }
 
@@ -38,8 +41,7 @@ export function useSlideController(base: BaseExerciseController) {
     const slideResult = detectSlides(samples)
 
     if (slideResult.slides.length === 0) {
-      // No slide detected — score based on whether user stayed on target
-      const score = targetStartMidi > 0 ? 50 : 0
+      const score = 0
       return {
         type: EXERCISE_SLIDE,
         score,
@@ -71,15 +73,14 @@ export function useSlideController(base: BaseExerciseController) {
     }
 
     // Speed score: faster slides score higher, but not too fast
-    const optimalMs = 300 // ~300ms is a clean slide
     const slideMs = primarySlide.durationMs
     let speedScore: number
     if (slideMs <= 0) {
       speedScore = 0
-    } else if (slideMs <= optimalMs) {
+    } else if (slideMs <= OPTIMAL_SLIDE_MS) {
       speedScore = 100
     } else {
-      speedScore = Math.max(0, 100 - (slideMs - optimalMs) * 0.15)
+      speedScore = Math.max(0, 100 - (slideMs - OPTIMAL_SLIDE_MS) * 0.15)
     }
 
     const classificationMap: Record<string, number> = {
@@ -91,7 +92,9 @@ export function useSlideController(base: BaseExerciseController) {
     }
 
     const score = Math.round(
-      smoothnessScore * 0.4 + arrivalScore * 0.4 + speedScore * 0.2,
+      smoothnessScore * SCORE_SMOOTHNESS_WEIGHT +
+        arrivalScore * SCORE_ARRIVAL_WEIGHT +
+        speedScore * SCORE_SPEED_WEIGHT,
     )
 
     return {

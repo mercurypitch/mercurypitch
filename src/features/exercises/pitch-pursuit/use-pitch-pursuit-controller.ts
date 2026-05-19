@@ -7,6 +7,10 @@ const FALL_DURATION_MS = 5000
 const SPAWN_INTERVAL_MS = 2200
 const TOTAL_NOTES = 12
 const TARGET_ZONE_FRAC = 0.88
+const SCORE_HIT_RATE_WEIGHT = 0.5
+const SCORE_ACCURACY_WEIGHT = 0.3
+const MAX_COMBO_BONUS = 25
+const COMBO_MULTIPLIER = 3
 
 interface FallingNote {
   id: number
@@ -166,8 +170,8 @@ export function usePitchPursuitController(base: BaseExerciseController) {
 
     const hitRate = (hits / total) * 100
     const avgAccuracy = hits > 0 ? Math.round(totalAccuracy / hits) : 0
-    const comboBonus = Math.min(25, maxCombo * 3)
-    const score = Math.round(hitRate * 0.5 + avgAccuracy * 0.3 + comboBonus)
+    const comboBonus = Math.min(MAX_COMBO_BONUS, maxCombo * COMBO_MULTIPLIER)
+    const score = Math.min(100, Math.round(hitRate * SCORE_HIT_RATE_WEIGHT + avgAccuracy * SCORE_ACCURACY_WEIGHT + comboBonus))
 
     return {
       type: EXERCISE_PITCH_PURSUIT,

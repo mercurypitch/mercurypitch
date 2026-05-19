@@ -7,6 +7,9 @@ const MIN_ZONE_CENTS = 10
 const SHRINK_INTERVAL_MS = 5000
 const SHRINK_AMOUNT = 5
 const SCORE_UPDATE_HZ = 10
+const SCORE_ZONE_WEIGHT = 0.6
+const SCORE_DURATION_WEIGHT = 0.4
+const TARGET_DURATION_SEC = 60
 
 export function usePitchHoldController(base: BaseExerciseController) {
   let targetMidi = 0
@@ -73,8 +76,8 @@ export function usePitchHoldController(base: BaseExerciseController) {
     }
 
     // Score: zone percentage weighted by duration
-    const durationScore = Math.min(100, (durationSec / 60) * 100) // 60s = 100
-    const score = Math.round(zonePct * 0.6 + durationScore * 0.4)
+    const durationScore = Math.min(100, (durationSec / TARGET_DURATION_SEC) * 100)
+    const score = Math.round(zonePct * SCORE_ZONE_WEIGHT + durationScore * SCORE_DURATION_WEIGHT)
 
     return {
       type: EXERCISE_PITCH_HOLD,

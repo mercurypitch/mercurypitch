@@ -4,6 +4,11 @@ import { EXERCISE_LONG_NOTE } from '../types'
 
 const STEADY_ZONE_THRESHOLD_CENTS = 15
 const SCORE_WINDOW_MS = 3000
+const SCORE_STABILITY_WEIGHT = 0.35
+const SCORE_DRIFT_WEIGHT = 0.2
+const SCORE_STEADY_WEIGHT = 0.3
+const SCORE_DURATION_WEIGHT = 0.15
+const TARGET_DURATION_SEC = 30
 
 export function useLongNoteController(base: BaseExerciseController) {
   let targetMidi = 0
@@ -59,17 +64,20 @@ export function useLongNoteController(base: BaseExerciseController) {
     const steadyCount = absDeviations.filter((d) => d <= STEADY_ZONE_THRESHOLD_CENTS).length
     const steadyPct = (steadyCount / deviations.length) * 100
 
-    // Volume consistency (approximate — using pitch clarity as proxy)
-    const volumeConsistency = 95 // placeholder; requires RMS data
+    // Volume consistency requires RMS data from the audio engine
+    const volumeConsistency = 0
 
     // Scoring
     const stabilityScore = Math.max(0, 100 - stabilityCents * 2) // 0¢ = 100, 50¢ = 0
     const driftScore = Math.max(0, 100 - maxDrift * 1.5) // 0¢ = 100, ~67¢ = 0
     const steadyScore = steadyPct // already 0-100
-    const durationScore = Math.min(100, (durationSec / 30) * 100) // 30s = 100
+    const durationScore = Math.min(100, (durationSec / TARGET_DURATION_SEC) * 100)
 
     const score = Math.round(
-      stabilityScore * 0.35 + driftScore * 0.2 + steadyScore * 0.3 + durationScore * 0.15,
+      stabilityScore * SCORE_STABILITY_WEIGHT +
+        driftScore * SCORE_DRIFT_WEIGHT +
+        steadyScore * SCORE_STEADY_WEIGHT +
+        durationScore * SCORE_DURATION_WEIGHT,
     )
 
     // Best window: sliding 3-second window with lowest deviation

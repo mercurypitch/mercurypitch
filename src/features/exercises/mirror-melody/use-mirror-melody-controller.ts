@@ -6,6 +6,9 @@ const MATCH_WINDOW_MS = 2500
 const TONE_DURATION_MS = 1200
 const GAP_BEFORE_MATCH_MS = 400
 const MELODY_LENGTH = 5
+const SCORE_ACCURACY_WEIGHT = 0.5
+const SCORE_BEST_NOTE_WEIGHT = 0.2
+const SCORE_CONSISTENCY_WEIGHT = 0.3
 
 function generateMelody(baseMidi: number, length: number): number[] {
   const pool = [-4, -2, 0, 2, 4, 7, 9]
@@ -130,7 +133,11 @@ export function useMirrorMelodyController(
       return Math.round(Math.max(0, 100 - Math.sqrt(variance) * 2))
     })()
 
-    const score = Math.round(avgAccuracy * 0.5 + bestNote * 0.2 + consistency * 0.3)
+    const score = Math.round(
+      avgAccuracy * SCORE_ACCURACY_WEIGHT +
+        bestNote * SCORE_BEST_NOTE_WEIGHT +
+        consistency * SCORE_CONSISTENCY_WEIGHT,
+    )
 
     return {
       type: EXERCISE_MIRROR_MELODY,
