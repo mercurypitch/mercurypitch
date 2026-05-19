@@ -79,6 +79,7 @@ export interface StemMixerAudioDeps {
   micActive: Accessor<boolean>
   getMicAnalyserNode: () => AnalyserNode | null
   getMicPitchDetector: () => PitchDetector | null
+  getMicPitchHistory: () => PitchNote[]
   setMicPitch: Setter<DetectedPitch | null>
   comparisonData: Accessor<ComparisonPoint[]>
   setComparisonData: Setter<ComparisonPoint[]>
@@ -591,7 +592,12 @@ export const useStemMixerAudioController = (
           if (mp.frequency > 0) {
             const midi = freqToMidi(mp.frequency)
             if (midi >= MIDI_NOTE_RANGE.min && midi <= MIDI_NOTE_RANGE.max) {
-              // Mic pitch history is managed by Phase 5a mic controller
+              deps.getMicPitchHistory().push({
+                time: elapsedTime,
+                noteName: mp.noteName,
+                frequency: mp.frequency,
+                octave: mp.octave,
+              })
             }
           }
           const vocalPitch = currentPitch()

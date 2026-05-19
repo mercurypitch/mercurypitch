@@ -45,6 +45,8 @@ export const JamPanel: Component = () => {
     if (roomId !== null) {
       setJoinRoomId(roomId.toUpperCase())
       setJamRoomToJoin(null)
+      // Auto-join if a room code was in the URL
+      handleJoin()
     }
   })
 

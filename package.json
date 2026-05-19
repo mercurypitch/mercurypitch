@@ -31,6 +31,7 @@
   },
   "dependencies": {
     "@cloudflare/containers": "^0.3.3",
+    "@huggingface/transformers": "^4.2.0",
     "dexie": "^4.4.2",
     "lightningcss": "^1.32.0",
     "midi-writer-js": "^3.2.1",
@@ -82,9 +83,10 @@
       "@parcel/watcher",
       "esbuild",
       "midi-writer-js",
+      "onnxruntime-node",
       "protobufjs",
-      "unrs-resolver",
       "sharp",
+      "unrs-resolver",
       "workerd"
     ]
   }

@@ -222,6 +222,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     micActive: mic.micActive,
     getMicAnalyserNode: mic.getMicAnalyserNode,
     getMicPitchDetector: mic.getMicPitchDetector,
+    getMicPitchHistory: mic.getMicPitchHistory,
     setMicPitch: mic.setMicPitch,
     comparisonData: mic.comparisonData,
     setComparisonData: mic.setComparisonData,

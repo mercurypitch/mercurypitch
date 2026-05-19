@@ -71,6 +71,8 @@ export class JamRoom extends DurableObject<JamEnv> {
   override webSocketClose(ws: WebSocket): void {
     const peerId = this.wsToPeerId.get(ws)
     if (peerId) {
+      const peer = this.peers.get(peerId)
+      console.log(`[JamRoom ${this.roomId}] ${peer?.displayName || 'Anonymous'} disconnected (${peerId}). Remaining peers: ${this.peers.size - 1}`)
       this.peers.delete(peerId)
       this.wsToPeerId.delete(ws)
       this.broadcast({ type: 'peer-left', peerId }, peerId)
@@ -96,6 +98,8 @@ export class JamRoom extends DurableObject<JamEnv> {
     this.wsToPeerId.set(ws, peerId)
     this.cancelDelete()
 
+    console.log(`[JamRoom ${this.roomId}] Room created by ${msg.displayName || 'Anonymous'} (${peerId})`)
+
     this.send(ws, { type: 'room-created', roomId: this.roomId, peerId })
   }
 
@@ -116,6 +120,8 @@ export class JamRoom extends DurableObject<JamEnv> {
       peers: existing,
     })
 
+    console.log(`[JamRoom ${this.roomId}] ${msg.displayName || 'Anonymous'} joined (${peerId}). Total peers: ${this.peers.size + 1}`)
+
     this.broadcast(
       { type: 'peer-joined', peerId, displayName: msg.displayName },
       peerId,
@@ -128,6 +134,8 @@ export class JamRoom extends DurableObject<JamEnv> {
   private handleLeave(ws: WebSocket): void {
     const peerId = this.wsToPeerId.get(ws)
     if (peerId) {
+      const peer = this.peers.get(peerId)
+      console.log(`[JamRoom ${this.roomId}] ${peer?.displayName || 'Anonymous'} left (${peerId}). Remaining peers: ${this.peers.size - 1}`)
       this.peers.delete(peerId)
       this.wsToPeerId.delete(ws)
       this.broadcast({ type: 'peer-left', peerId }, peerId)
