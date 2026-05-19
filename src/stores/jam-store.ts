@@ -112,9 +112,41 @@ export interface JamExerciseResult {
     accuracy: number
   }>
 }
-export const [jamExerciseHistory, setJamExerciseHistory] = createSignal<
+
+// Load persisted exercise history from sessionStorage
+function loadExerciseHistory(): JamExerciseResult[] {
+  try {
+    const raw = sessionStorage.getItem('jam:exerciseHistory')
+    if (raw !== null && raw !== '') return JSON.parse(raw) as JamExerciseResult[]
+  } catch { /* ignore */ }
+  return []
+}
+
+function saveExerciseHistory(history: JamExerciseResult[]): void {
+  try {
+    sessionStorage.setItem('jam:exerciseHistory', JSON.stringify(history))
+  } catch { /* storage full */ }
+}
+
+const [_jamExerciseHistory, _setJamExerciseHistory] = createSignal<
   JamExerciseResult[]
->([])
+>(loadExerciseHistory())
+
+export const jamExerciseHistory = _jamExerciseHistory
+export function setJamExerciseHistory(
+  updater: JamExerciseResult[] | ((prev: JamExerciseResult[]) => JamExerciseResult[]),
+): void {
+  if (typeof updater === 'function') {
+    _setJamExerciseHistory((prev) => {
+      const next = updater(prev)
+      saveExerciseHistory(next)
+      return next
+    })
+  } else {
+    _setJamExerciseHistory(updater)
+    saveExerciseHistory(updater)
+  }
+}
 
 // eslint-disable-next-line solid/reactivity
 const _jamUnreadChatCount = createSignal(0)
@@ -296,6 +328,10 @@ export function initJam() {
     onRoomClosed: () => {
       cleanupJam()
     },
+    onHostStatus: (isHost) => {
+      console.info('[jam:store] host status from server:', isHost)
+      setJamIsHost(isHost)
+    },
     onError: (message) => {
       console.error('[jam:store] error:', message)
       setJamError(message)
@@ -312,7 +348,6 @@ export async function createJamRoom(
 ): Promise<string | null> {
   initJam()
   setJamState('connecting')
-  setJamIsHost(true)
   try {
     await jamService!.createRoom(displayName)
     // Room ID is set shortly after via signaling; poll briefly
@@ -337,7 +372,6 @@ export async function joinJamRoom(
   initJam()
   setJamState('connecting')
   setJamRoomId(roomId)
-  setJamIsHost(false)
   setJamError(null)
   try {
     await jamService!.joinRoom(roomId, displayName)

@@ -129,6 +129,7 @@ export function createSignalingClient(callbacks: JamCallbacks) {
       case 'room-created':
         currentRoomId = msg.roomId
         currentPeerId = msg.peerId
+        callbacks.onHostStatus?.(msg.isHost)
         console.info(
           '[jam:signaling] room created',
           msg.roomId,
@@ -139,9 +140,12 @@ export function createSignalingClient(callbacks: JamCallbacks) {
 
       case 'room-joined':
         currentPeerId = msg.peerId
+        callbacks.onHostStatus?.(msg.isHost)
         console.info(
           '[jam:signaling] room joined, peer',
           msg.peerId,
+          'isHost:',
+          msg.isHost,
           'peers in room:',
           msg.peers.length,
         )

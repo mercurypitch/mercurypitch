@@ -21,6 +21,7 @@ export class JamRoom extends DurableObject<JamEnv> {
   private wsToPeerId: WeakMap<WebSocket, string> = new WeakMap()
   private roomId = ''
   private ownerId: string | null = null
+  private ownerName: string | null = null
   private deleteTimer: ReturnType<typeof setTimeout> | null = null
 
   // ── WebSocket upgrade ────────────────────────────────────────────
@@ -49,7 +50,7 @@ export class JamRoom extends DurableObject<JamEnv> {
         this.handleCreateRoom(ws, msg as { type: string; displayName: string })
         break
       case 'join-room':
-        this.handleJoinRoom(ws, msg as {
+        void this.handleJoinRoom(ws, msg as {
           type: string
           roomId: string
           displayName: string
@@ -93,6 +94,8 @@ export class JamRoom extends DurableObject<JamEnv> {
     const peerId = crypto.randomUUID()
 
     this.ownerId = peerId
+    this.ownerName = msg.displayName
+    void this.ctx.storage.put('ownerName', msg.displayName)
 
     this.peers.set(peerId, { id: peerId, displayName: msg.displayName, ws })
     this.wsToPeerId.set(ws, peerId)
@@ -100,23 +103,33 @@ export class JamRoom extends DurableObject<JamEnv> {
 
     console.log(`[JamRoom ${this.roomId}] Room created by ${msg.displayName || 'Anonymous'} (${peerId})`)
 
-    this.send(ws, { type: 'room-created', roomId: this.roomId, peerId })
+    this.send(ws, { type: 'room-created', roomId: this.roomId, peerId, isHost: true })
   }
 
-  private handleJoinRoom(
+  private async handleJoinRoom(
     ws: WebSocket,
     msg: { displayName: string },
-  ): void {
+  ): Promise<void> {
     const peerId = crypto.randomUUID()
 
     const existing = Array.from(this.peers.values()).map((p) => ({
       id: p.id,
       displayName: p.displayName,
     }))
+    // Grant host if the joiner's name matches the original creator.
+    // Load ownerName from storage in case DO was hibernated and lost in-memory state.
+    if (this.ownerName === null) {
+      const stored = await this.ctx.storage.get<string>('ownerName')
+      if (stored !== undefined) this.ownerName = stored
+    }
+    const isHost = this.ownerName !== null && msg.displayName === this.ownerName
+    if (isHost) this.ownerId = peerId
+    console.log(`[JamRoom ${this.roomId}] host check: ownerName="${this.ownerName}" incoming="${msg.displayName}" isHost=${isHost}`)
     this.send(ws, {
       type: 'room-joined',
       roomId: this.roomId,
       peerId,
+      isHost,
       peers: existing,
     })
 
