@@ -1,0 +1,93 @@
+/* Extracted from: Session Editor */
+
+.sessionEditor {
+  border-top: 1px solid var(--border);
+  background: var(--bg-secondary);
+}
+
+.sessionEditorHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  user-select: none;
+}
+
+.sessionEditorTitle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.toggleBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: transform 0.2s;
+}
+
+.toggleIcon {
+  transition: transform 0.2s;
+}
+
+.toggleIconExpanded {
+  transform: rotate(0deg);
+}
+
+.toggleIconCollapsed {
+  transform: rotate(-90deg);
+}
+
+.sessionEditorContent {
+  padding: 12px;
+  animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 500px;
+  }
+}
+
+.melodyLibrarySection {
+  margin-bottom: 16px;
+}
+
+.sectionTitle {
+  margin: 0 0 8px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.itemCount {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+/* Timeline styles moved to SessionEditorTimeline.css (global)
+   so they resolve for SessionEditorTimeline.tsx raw kebab-case classes. */

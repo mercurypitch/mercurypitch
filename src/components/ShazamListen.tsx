@@ -1,0 +1,628 @@
+// ============================================================
+// ShazamListen — Mic capture + live pitch visualization
+// Phase 4 of Shazam Sing
+//
+// User taps the mic button, sings/hums, and the captured pitch
+// contour is matched against the melody fingerprint index.
+// ============================================================
+
+import { createSignal, onCleanup, onMount, Show } from 'solid-js'
+import { AudioEngine } from '@/lib/audio-engine'
+import { audioRegistry } from '@/lib/audio-registry'
+import { IS_DEV } from '@/lib/defaults'
+import type { DetectedPitch } from '@/lib/pitch-detector'
+import { LivePitchBuffer } from '@/lib/shazam/live-pitch-buffer'
+import { matchPitchContourWithMeta } from '@/lib/shazam/melody-matcher'
+import type { LivePitchContour, MatchCandidate, TimestampedPitch, } from '@/lib/shazam/types'
+import type { SpeechRecognizer } from '@/lib/speech-recognition'
+import { createSpeechRecognizer } from '@/lib/speech-recognition'
+import { FingerprintInspector } from './FingerprintInspector'
+import { LivePitchDebug } from './LivePitchDebug'
+import styles from './ShazamListen.module.css'
+
+interface ShazamListenProps {
+  onMatch: (result: {
+    candidates: MatchCandidate[]
+    contour: LivePitchContour
+    hummingNormalized: boolean
+  }) => void
+  onAutoJump?: (candidate: MatchCandidate) => void
+  onCancel: () => void
+  onSwitchToUpload: () => void
+}
+
+type ListenState = 'idle' | 'listening' | 'processing' | 'error'
+
+export function ShazamListen(props: ShazamListenProps) {
+  let audioEngine: AudioEngine | null = null
+  let buffer: LivePitchBuffer | null = null
+  let canvasRef: HTMLCanvasElement | undefined
+  let ctx: CanvasRenderingContext2D | null = null
+  let rafId: number | null = null
+  let pitchHistory: Array<{ freq: number; clarity: number; time: number }> = []
+
+  const [listenState, setListenState] = createSignal<ListenState>('idle')
+  const [elapsed, setElapsed] = createSignal(0)
+  const [errorMessage, setErrorMessage] = createSignal('')
+  const [autoMode, setAutoMode] = createSignal(
+    localStorage.getItem('pitchperfect_shazam_auto') === 'true',
+  )
+  const [autoThreshold, setAutoThreshold] = createSignal(
+    Number(localStorage.getItem('pitchperfect_shazam_threshold')) || 85,
+  )
+  const [includeMelodies, setIncludeMelodies] = createSignal(
+    localStorage.getItem('pitchperfect_shazam_include_melodies') !== 'false',
+  )
+  const [includeStems, setIncludeStems] = createSignal(
+    localStorage.getItem('pitchperfect_shazam_include_stems') !== 'false',
+  )
+  const [latestFrame, setLatestFrame] = createSignal<DetectedPitch | null>(null)
+
+  const debugEnabled = (): boolean =>
+    IS_DEV || localStorage.getItem('pitchperfect_shazam_debug_force') === 'true'
+
+  const [showDebug, setShowDebug] = createSignal(
+    localStorage.getItem('pitchperfect_shazam_debug') === 'true',
+  )
+
+  function toggleDebug() {
+    setShowDebug((v) => {
+      const next = !v
+      localStorage.setItem('pitchperfect_shazam_debug', String(next))
+      return next
+    })
+  }
+
+  const [frameCount, setFrameCount] = createSignal(0)
+
+  const speechSupported = (() => {
+    const w = window as unknown as Record<string, unknown>
+    const SR = w.SpeechRecognition ?? w.webkitSpeechRecognition
+    return SR !== undefined
+  })()
+
+  const [speechEnabled, setSpeechEnabled] = createSignal(false)
+  const [speechText, setSpeechText] = createSignal('')
+  const [speechIsInterim, setSpeechIsInterim] = createSignal(false)
+  let speechRecognizer: SpeechRecognizer | null = null
+
+  function toggleSpeech() {
+    const next = !speechEnabled()
+    setSpeechEnabled(next)
+    setSpeechText('')
+    if (next && speechSupported && listenState() === 'listening') {
+      speechRecognizer = createSpeechRecognizer({
+        onResult: (text, isFinal) => {
+          setSpeechText(text)
+          setSpeechIsInterim(!isFinal)
+        },
+        onError: (err) => console.warn('[speech]', err),
+      })
+      speechRecognizer.start()
+    } else if (!next && speechRecognizer) {
+      speechRecognizer.stop()
+      speechRecognizer = null
+    }
+  }
+
+  onMount(() => {
+    audioEngine = new AudioEngine()
+    audioEngine.init()
+    audioRegistry.register(audioEngine)
+
+    if (canvasRef) {
+      ctx = canvasRef.getContext('2d')
+      resizeCanvas()
+      drawCanvas()
+      const observer = new ResizeObserver(() => {
+        resizeCanvas()
+        drawCanvas()
+      })
+      observer.observe(canvasRef)
+      onCleanup(() => observer.disconnect())
+    }
+  })
+
+  onCleanup(() => {
+    stopAll()
+    if (audioEngine) {
+      audioRegistry.unregister(audioEngine)
+      audioEngine.destroy()
+      audioEngine = null
+    }
+  })
+
+  function resizeCanvas() {
+    if (!canvasRef) return
+    const rect = canvasRef.getBoundingClientRect()
+    canvasRef.width = rect.width * window.devicePixelRatio
+    canvasRef.height = rect.height * window.devicePixelRatio
+    ctx = canvasRef.getContext('2d')
+    if (ctx) {
+      ctx.scale(window.devicePixelRatio, window.devicePixelRatio)
+    }
+  }
+
+  function stopAll() {
+    if (buffer) {
+      buffer.cancel()
+      buffer = null
+    }
+    cancelAnimationLoop()
+  }
+
+  function cancelAnimationLoop() {
+    if (rafId !== null) {
+      cancelAnimationFrame(rafId)
+      rafId = null
+    }
+  }
+
+  async function handleStart() {
+    if (!audioEngine || listenState() !== 'idle') return
+
+    buffer = new LivePitchBuffer(audioEngine, {
+      onFrame: handleFrame,
+      onStateChange: (_state) => {
+        // state changes handled by listenState signal
+      },
+      onAutoStop: () => {
+        handleStop()
+      },
+    })
+
+    const ok = await buffer.start()
+    if (!ok) {
+      buffer = null
+      setErrorMessage(
+        'Microphone access required. Please allow mic access in your browser settings and try again.',
+      )
+      setListenState('error')
+      return
+    }
+
+    setListenState('listening')
+    pitchHistory = []
+    setSpeechText('')
+    startAnimationLoop()
+
+    if (speechEnabled() && speechSupported) {
+      speechRecognizer = createSpeechRecognizer({
+        onResult: (text, isFinal) => {
+          setSpeechText(text)
+          setSpeechIsInterim(!isFinal)
+        },
+        onError: (err) => console.warn('[speech]', err),
+      })
+      speechRecognizer.start()
+    }
+  }
+
+  function handleFrame(frame: TimestampedPitch) {
+    pitchHistory.push({
+      freq: frame.pitch.frequency,
+      clarity: frame.pitch.clarity,
+      time: frame.time,
+    })
+    setFrameCount(pitchHistory.length)
+    setLatestFrame(
+      frame.pitch.frequency > 0 && frame.pitch.clarity > 0 ? frame.pitch : null,
+    )
+    // Keep last ~10 seconds of pitch history at ~60fps
+    if (pitchHistory.length > 600) {
+      pitchHistory = pitchHistory.slice(-600)
+    }
+  }
+
+  function handleStop() {
+    if (speechRecognizer) {
+      const spoken = speechRecognizer.stop()
+      speechRecognizer = null
+      setSpeechText(spoken || '(no speech detected)')
+      setSpeechIsInterim(false)
+    }
+    if (!buffer) return
+    const contour: LivePitchContour = buffer.stop()
+    buffer = null
+    cancelAnimationLoop()
+    setListenState('processing')
+
+    if (contour.noteSequence.length === 0) {
+      setErrorMessage('No melody detected. Try singing a few notes!')
+      setListenState('idle')
+      return
+    }
+
+    const sourceFilter = !includeMelodies()
+      ? 'stem'
+      : !includeStems()
+        ? 'melody'
+        : undefined
+    let candidates: MatchCandidate[]
+    let hummingNormalized: boolean
+    try {
+      const result = matchPitchContourWithMeta(contour, {
+        maxResults: 5,
+        sourceFilter,
+      })
+      candidates = result.candidates
+      hummingNormalized = result.hummingNormalized
+    } catch (err) {
+      console.error('[ShazamListen] match error:', err)
+      setErrorMessage(
+        'An error occurred while matching. Try singing a shorter phrase.',
+      )
+      setListenState('idle')
+      return
+    }
+    if (candidates.length === 0) {
+      setErrorMessage(
+        'No matches found. Try singing more clearly or a different melody.',
+      )
+      setListenState('idle')
+      return
+    }
+
+    // Auto-jump if auto-mode is on and top match meets threshold
+    if (autoMode() && candidates[0].confidence >= autoThreshold()) {
+      props.onAutoJump?.(candidates[0])
+      return
+    }
+
+    props.onMatch({ candidates, contour, hummingNormalized })
+  }
+
+  function handleCancel() {
+    if (speechRecognizer) {
+      speechRecognizer.stop()
+      speechRecognizer = null
+      setSpeechText('')
+    }
+    stopAll()
+    setListenState('idle')
+    setErrorMessage('')
+    pitchHistory = []
+    props.onCancel()
+  }
+
+  function handleRetry() {
+    setListenState('idle')
+    setErrorMessage('')
+  }
+
+  // ── Canvas animation loop ──────────────────────────────────
+
+  function startAnimationLoop() {
+    const tick = () => {
+      if (listenState() !== 'listening') return
+      drawCanvas()
+      setElapsed(buffer?.getElapsed() ?? 0)
+      rafId = requestAnimationFrame(tick)
+    }
+    rafId = requestAnimationFrame(tick)
+  }
+
+  function drawCanvas() {
+    if (!canvasRef || !ctx) return
+    const w = canvasRef.getBoundingClientRect().width
+    const h = canvasRef.getBoundingClientRect().height
+    ctx.clearRect(0, 0, w, h)
+
+    const midiLow = 40
+    const midiHigh = 84
+    const midiRange = midiHigh - midiLow
+    const topPad = 10
+    const bottomPad = 10
+    const plotH = h - topPad - bottomPad
+
+    const midiToY = (midi: number): number => {
+      const clamped = Math.max(midiLow, Math.min(midiHigh, midi))
+      return h - bottomPad - ((clamped - midiLow) / midiRange) * plotH
+    }
+
+    const toY = (freq: number): number => {
+      if (freq <= 0) return h - bottomPad
+      const midi = 12 * Math.log2(freq / 440) + 69
+      return midiToY(midi)
+    }
+
+    // ── Grid lines ──────────────────────────────────────────
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)'
+    ctx.lineWidth = 1
+    for (let midi = midiLow; midi <= midiHigh; midi++) {
+      const y = midiToY(midi)
+      const isOctave = midi % 12 === 0
+      if (isOctave) {
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)'
+      } else {
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)'
+      }
+      ctx.beginPath()
+      ctx.moveTo(0, y)
+      ctx.lineTo(w, y)
+      ctx.stroke()
+    }
+
+    // ── Octave labels ───────────────────────────────────────
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.25)'
+    ctx.font = '10px monospace'
+    ctx.textAlign = 'left'
+    ctx.textBaseline = 'middle'
+    for (let midi = midiLow - (midiLow % 12); midi <= midiHigh; midi += 12) {
+      if (midi < midiLow) continue
+      const y = midiToY(midi)
+      const octave = Math.floor(midi / 12) - 1
+      ctx.fillText(`C${octave}`, 4, y)
+    }
+
+    if (pitchHistory.length === 0) return
+
+    // ── Pitch line ──────────────────────────────────────────
+    ctx.lineWidth = 2
+    ctx.lineJoin = 'round'
+    ctx.lineCap = 'round'
+
+    const totalFrames = pitchHistory.length
+    let prevX = 0
+    let prevY = 0
+    let prevVoiced = false
+    for (let i = 0; i < totalFrames; i++) {
+      const x = (i / Math.max(1, totalFrames - 1)) * w
+      const point = pitchHistory[i]
+      const isVoiced = point.freq > 0 && point.clarity > 0
+      const y = isVoiced ? toY(point.freq) : h - bottomPad
+
+      if (i > 0) {
+        ctx.beginPath()
+        ctx.moveTo(prevX, prevY)
+        ctx.lineTo(x, y)
+        if (isVoiced && prevVoiced) {
+          const alpha = 0.3 + 0.7 * (i / totalFrames)
+          ctx.strokeStyle = `rgba(74, 222, 128, ${alpha.toFixed(2)})`
+        } else {
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)'
+        }
+        ctx.stroke()
+      }
+
+      prevX = x
+      prevY = y
+      prevVoiced = isVoiced
+    }
+  }
+
+  // ── Render helpers ─────────────────────────────────────────
+
+  function formatTime(sec: number): string {
+    const m = Math.floor(sec / 60)
+    const s = Math.floor(sec % 60)
+    return `${m}:${s.toString().padStart(2, '0')}`
+  }
+
+  return (
+    <div class={styles.container} data-testid="shazam-listen">
+      <div class={styles.headerRow}>
+        <h3 class={styles.heading}>Shazam Sing</h3>
+        <div class={styles.headerButtons}>
+          <Show when={debugEnabled()}>
+            <Show when={speechSupported}>
+              <button
+                class={styles.speechToggle}
+                classList={{ [styles.speechToggleOn!]: speechEnabled() }}
+                onClick={toggleSpeech}
+                data-testid="shazam-speech-toggle"
+              >
+                Speech
+              </button>
+            </Show>
+            <button
+              class={styles.debugToggle}
+              classList={{ [styles.debugToggleOn!]: showDebug() }}
+              onClick={toggleDebug}
+              data-testid="shazam-listen-debug-toggle"
+            >
+              Debug
+            </button>
+          </Show>
+        </div>
+      </div>
+
+      <button
+        class={styles.micButton}
+        classList={{ [styles.listening!]: listenState() === 'listening' }}
+        onClick={() => {
+          void handleStart()
+        }}
+        disabled={listenState() !== 'idle'}
+        data-testid="shazam-mic-btn"
+        aria-label="Start singing"
+      >
+        <MicIcon />
+      </button>
+
+      <p class={styles.hint}>
+        {listenState() === 'listening'
+          ? 'Singing...'
+          : 'Tap to start singing or humming'}
+      </p>
+
+      {/* Auto-mode toggle */}
+      <div class={styles.autoMode}>
+        <label class={styles.toggle}>
+          <input
+            type="checkbox"
+            checked={autoMode()}
+            onChange={(e) => {
+              const v = e.currentTarget.checked
+              setAutoMode(v)
+              localStorage.setItem('pitchperfect_shazam_auto', String(v))
+            }}
+            data-testid="shazam-auto-toggle"
+          />
+          <span class={styles.toggleLabel}>Auto-select best match</span>
+        </label>
+        <Show when={autoMode()}>
+          <div class={styles.thresholdRow}>
+            <label class={styles.thresholdLabel}>
+              Threshold: <strong>{autoThreshold()}%</strong>
+            </label>
+            <input
+              type="range"
+              class={styles.thresholdSlider}
+              min="60"
+              max="98"
+              value={autoThreshold()}
+              onInput={(e) => {
+                const v = parseInt(e.currentTarget.value)
+                setAutoThreshold(v)
+                localStorage.setItem('pitchperfect_shazam_threshold', String(v))
+              }}
+              data-testid="shazam-auto-threshold"
+            />
+          </div>
+        </Show>
+      </div>
+
+      {/* Source filter toggles */}
+      <div class={styles.sourceFilters}>
+        <label class={styles.toggle}>
+          <input
+            type="checkbox"
+            checked={includeMelodies()}
+            onChange={(e) => {
+              const v = e.currentTarget.checked
+              setIncludeMelodies(v)
+              localStorage.setItem(
+                'pitchperfect_shazam_include_melodies',
+                String(v),
+              )
+            }}
+            data-testid="shazam-include-melodies"
+          />
+          <span class={styles.toggleLabel}>Melodies</span>
+        </label>
+        <label class={styles.toggle}>
+          <input
+            type="checkbox"
+            checked={includeStems()}
+            onChange={(e) => {
+              const v = e.currentTarget.checked
+              setIncludeStems(v)
+              localStorage.setItem(
+                'pitchperfect_shazam_include_stems',
+                String(v),
+              )
+            }}
+            data-testid="shazam-include-stems"
+          />
+          <span class={styles.toggleLabel}>Stems</span>
+        </label>
+      </div>
+
+      <canvas
+        ref={canvasRef}
+        class={styles.canvas}
+        data-testid="shazam-canvas"
+      />
+
+      <Show when={latestFrame() && listenState() === 'listening'}>
+        <div class={styles.currentNote} data-testid="shazam-current-note">
+          {latestFrame()!.noteName}
+          {latestFrame()!.octave}
+        </div>
+      </Show>
+
+      <Show when={speechEnabled() && listenState() === 'listening'}>
+        <div class={styles.speechBox} data-testid="shazam-speech-text">
+          <span class={styles.speechLabel}>
+            {speechIsInterim() ? 'Hearing:' : 'Speech:'}
+          </span>
+          <span
+            style={
+              speechIsInterim()
+                ? { opacity: '0.7', 'font-style': 'italic' }
+                : undefined
+            }
+          >
+            {speechText() || 'Listening...'}
+          </span>
+        </div>
+      </Show>
+
+      <Show when={debugEnabled() && showDebug()}>
+        <div class={styles.debugPanels}>
+          <LivePitchDebug
+            latestFrame={latestFrame}
+            elapsed={elapsed}
+            frameCount={frameCount}
+          />
+          <FingerprintInspector />
+        </div>
+      </Show>
+
+      <div class={styles.elapsed} data-testid="shazam-elapsed">
+        {formatTime(elapsed())}
+      </div>
+
+      <Show when={listenState() === 'error'}>
+        <p class={styles.error}>{errorMessage()}</p>
+      </Show>
+
+      <div class={styles.controls}>
+        <button
+          class={styles.stopBtn}
+          onClick={handleStop}
+          disabled={listenState() !== 'listening'}
+          data-testid="shazam-stop-btn"
+        >
+          Stop & Match
+        </button>
+        <button
+          class={styles.cancelBtn}
+          onClick={handleCancel}
+          disabled={listenState() === 'processing'}
+          data-testid="shazam-cancel"
+        >
+          Cancel
+        </button>
+      </div>
+
+      <Show
+        when={
+          listenState() === 'error' && errorMessage().includes('Microphone')
+        }
+      >
+        <button class={styles.retryBtn} onClick={handleRetry}>
+          Try Again
+        </button>
+      </Show>
+
+      <button
+        class={styles.uploadLink}
+        onClick={() => props.onSwitchToUpload()}
+        data-testid="shazam-upload-link"
+      >
+        Upload audio instead
+      </button>
+    </div>
+  )
+}
+
+function MicIcon() {
+  return (
+    <svg
+      width="36"
+      height="36"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    >
+      <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+      <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+      <line x1="12" y1="19" x2="12" y2="22" />
+    </svg>
+  )
+}

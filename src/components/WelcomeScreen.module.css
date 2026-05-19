@@ -1,0 +1,340 @@
+/* Extracted from: Welcome Screen (GH #131) */
+
+.welcomeOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  backdrop-filter: blur(4px);
+  animation: welcome-fadein 0.3s ease;
+}
+
+@keyframes welcome-fadein {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.welcomeCard {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 32px 36px 28px;
+  text-align: center;
+  width: 420px;
+  max-width: 92vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  position: relative;
+  animation: welcome-slidein 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes welcome-slidein {
+  from {
+    transform: translateY(20px) scale(0.96);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+/* Close button */
+.welcomeClose {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.welcomeClose:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+/* Hero section */
+.welcomeHero {
+  margin-bottom: 24px;
+}
+
+.welcomeIcon {
+  color: var(--accent);
+  margin-bottom: 12px;
+  filter: drop-shadow(0 0 16px rgba(88, 166, 255, 0.4));
+}
+
+.welcomeTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 6px;
+  letter-spacing: -0.02em;
+}
+
+.welcomeSubtitle {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+/* Mic section */
+.welcomeMicSection {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  margin-bottom: 20px;
+  background: var(--bg-tertiary);
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  text-align: left;
+}
+
+.welcomeMicIcon {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  color: var(--accent);
+  border: 1px solid var(--border);
+}
+
+.welcomeMicText {
+  flex: 1;
+  min-width: 0;
+}
+
+.welcomeMicText strong {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.welcomeMicText p {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.3;
+}
+
+.welcomeMicBtn {
+  flex-shrink: 0;
+  padding: 8px 16px;
+  background: linear-gradient(
+    135deg,
+    rgba(88, 166, 255, 0.85),
+    rgba(100, 130, 255, 0.8)
+  );
+  color: #fff;
+  border: 1px solid rgba(120, 190, 255, 0.35);
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 10px rgba(88, 166, 255, 0.15);
+}
+
+@media (hover: hover) {
+  .welcomeMicBtn:hover {
+    background: linear-gradient(
+      135deg,
+      rgba(100, 180, 255, 0.95),
+      rgba(115, 145, 255, 0.9)
+    );
+    border-color: rgba(140, 200, 255, 0.5);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(88, 166, 255, 0.25);
+  }
+}
+
+.welcomeMicBtn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 6px rgba(88, 166, 255, 0.15);
+}
+
+.welcomeMicSuccess {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--green);
+  font-size: 0.78rem;
+  font-weight: 500;
+  padding: 6px 12px;
+  background: rgba(34, 197, 94, 0.1);
+  border-radius: 6px;
+}
+
+.welcomeMicError {
+  color: var(--red);
+  font-size: 0.75rem;
+  padding: 6px 10px;
+  background: rgba(248, 81, 73, 0.1);
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+/* Features */
+.welcomeFeatures {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 24px;
+  text-align: left;
+}
+
+.welcomeFeature {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--bg-tertiary);
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+
+.welcomeFeatureIcon {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+}
+
+.welcomeFeatureIconPractice {
+  color: #58a6ff;
+}
+
+.welcomeFeatureIconEditor {
+  color: #d2a8ff;
+}
+
+.welcomeFeatureIconImprove {
+  color: #7ee787;
+}
+
+.welcomeFeatureText {
+  flex: 1;
+  text-align: left;
+}
+
+.welcomeFeatureText strong {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--text-primary);
+  margin-bottom: 1px;
+}
+
+.welcomeFeatureText p {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.3;
+}
+
+/* Actions */
+.welcomeActions {
+  display: flex;
+  gap: 10px;
+}
+
+.welcomeCta {
+  flex: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: linear-gradient(
+    135deg,
+    rgba(88, 166, 255, 0.9),
+    rgba(100, 130, 255, 0.85)
+  );
+  color: #fff;
+  border: 1px solid rgba(120, 190, 255, 0.4);
+  border-radius: 10px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 16px rgba(88, 166, 255, 0.2);
+}
+
+@media (hover: hover) {
+  .welcomeCta:hover {
+    background: linear-gradient(
+      135deg,
+      rgba(100, 180, 255, 1),
+      rgba(115, 145, 255, 0.95)
+    );
+    border-color: rgba(140, 200, 255, 0.6);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 24px rgba(88, 166, 255, 0.3);
+  }
+}
+
+.welcomeCta:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 10px rgba(88, 166, 255, 0.2);
+}
+
+.welcomeTourBtn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: rgba(22, 27, 34, 0.5);
+  border: 1.5px solid rgba(48, 54, 61, 0.7);
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+@media (hover: hover) {
+  .welcomeTourBtn:hover {
+    background: rgba(30, 38, 48, 0.7);
+    border-color: rgba(88, 166, 255, 0.4);
+    color: var(--accent);
+    box-shadow: 0 0 12px rgba(88, 166, 255, 0.1);
+    transform: translateY(-1px);
+  }
+}
+
+.welcomeTourBtn:active {
+  transform: translateY(0);
+}
+
+/* Tier selection styles moved to TierSelector.css (global)
+   so they resolve for both WelcomeScreen and SettingsPanel. */

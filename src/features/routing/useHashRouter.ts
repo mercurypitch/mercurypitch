@@ -9,7 +9,7 @@ import { buildHash, parseHash, replaceHash } from '@/lib/hash-router'
 export interface UseHashRouterDeps {
   // Route handlers (hash → state)
   setActiveTab: Setter<ActiveTab>
-  setInitialUvrView: Setter<'upload' | 'results' | 'mixer' | null>
+  setInitialUvrView: Setter<UvrView | null>
   setInitialUvrSessionId: Setter<string | null>
   setActiveUvrSessionId: Setter<string | null>
   openLearningWalkthrough: () => void

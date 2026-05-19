@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "VITE_OVERRIDE_ONNX_MODE='' vite",
-    "dev:host": "VITE_OVERRIDE_ONNX_MODE='' vite --host",
+    "dev": "VITE_OVERRIDE_ONNX_MODEL='' vite",
+    "dev:host": "VITE_OVERRIDE_ONNX_MODEL='' vite --host",
     "dev:jam": "cd workers/jam-worker && npx wrangler dev --port 8787 --live-reload",
     "build": "vite build",
     "build:dev": "vite build --mode development",

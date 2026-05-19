@@ -1,0 +1,207 @@
+/* Extracted from: Scale Builder */
+
+.scaleBuilder .scaleDesc {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+}
+
+.scaleNotesGrid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.scaleNoteBtn {
+  padding: 12px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.scaleNoteBtn:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--accent);
+}
+
+.scaleNoteBtn.active {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.scaleNoteBtn.whiteKey {
+  background: var(--bg-tertiary);
+}
+
+.scaleNoteBtn.blackKey {
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+}
+
+.scaleNoteBtn.blackKey.active {
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+.scaleQuickActions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.scaleQuickActions button {
+  padding: 6px 12px;
+  font-size: 0.8rem;
+}
+
+.scalePreview {
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+
+.scalePreview h4 {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.scalePreviewNotes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.previewNote {
+  padding: 4px 10px;
+  background: var(--accent-dim);
+  border-radius: 4px;
+  font-size: 0.85rem;
+  color: var(--accent);
+}
+
+.noNotes {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+.scaleNameRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.scaleNameRow label {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.scaleNameInput {
+  flex: 1;
+  padding: 8px 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+}
+
+.savedScales {
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+}
+
+.savedScales h4 {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.savedScalesList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.savedScaleItem {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btnSmall {
+  padding: 4px 8px;
+  font-size: 0.8rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btnSmall:hover {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+}
+
+.btnDelete {
+  background: none;
+  border: none;
+  color: var(--red);
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 2px 4px;
+}
+
+.btnDelete:hover {
+  color: #ff6b6b;
+}
+
+/* Common button styles */
+.btnPrimary {
+  padding: 8px 16px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.btnPrimary:hover {
+  background: #4090e0;
+}
+
+.btnPrimary:disabled {
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+.btnSecondary {
+  padding: 8px 16px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.btnSecondary:hover {
+  background: var(--bg-tertiary);
+}
+
+.btnSecondary:disabled {
+  color: var(--text-muted);
+  cursor: not-allowed;
+}

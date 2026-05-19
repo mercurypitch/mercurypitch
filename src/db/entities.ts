@@ -256,3 +256,8 @@ export interface UvrStemBlob extends DbEntity {
   size: number // byte size
   fileName: string
 }
+
+export interface UvrStemFingerprint extends DbEntity {
+  sessionId: string // matches UvrSession.sessionId
+  fingerprintJson: string // JSON-serialized MelodyFingerprint
+}

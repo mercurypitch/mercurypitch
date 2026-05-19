@@ -5,6 +5,7 @@
 import type { Component } from 'solid-js'
 import { createMemo } from 'solid-js'
 import { playback } from '@/stores/playback-store'
+import styles from './HeaderControls.module.css'
 
 interface TransportControlsProps {
   onPlay: () => void
@@ -38,7 +39,7 @@ export const TransportControls: Component<TransportControlsProps> = (props) => {
     <>
       <button
         id="btn-play"
-        class="ctrl-btn"
+        class={styles.ctrlBtn}
         onClick={handlePlayClick}
         disabled={props.disabled}
         title={`${playLabel()} playback`}
@@ -56,7 +57,7 @@ export const TransportControls: Component<TransportControlsProps> = (props) => {
       </button>
       <button
         id="btn-reset"
-        class="ctrl-btn"
+        class={styles.ctrlBtn}
         onClick={handleResetClick}
         disabled={!resetEnabled() || props.disabled}
         title="Reset playback"

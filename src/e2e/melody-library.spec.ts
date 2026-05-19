@@ -24,8 +24,8 @@ test.describe('Melody Library', () => {
     await page.waitForTimeout(300)
 
     // "Browse" and "Sessions" action buttons in toolbar
-    const browseBtn = page.locator('.tab-action-btn:has-text("Browse")')
-    const sessionsBtn = page.locator('.tab-action-btn:has-text("Sessions")')
+    const browseBtn = page.locator('[data-testid="browse-btn"]')
+    const sessionsBtn = page.locator('[data-testid="sessions-btn"]')
 
     await expect(browseBtn).toBeVisible()
     await expect(sessionsBtn).toBeVisible()
@@ -35,9 +35,9 @@ test.describe('Melody Library', () => {
     await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
-    await expect(page.locator('.quick-actions')).toBeVisible()
+    await expect(page.locator('[data-testid="quick-actions"]')).toBeVisible()
     await expect(
-      page.locator('.quick-action-btn:has-text("Sessions")'),
+      page.locator('[data-testid="sessions-quick-btn"]'),
     ).toBeVisible()
   })
 
@@ -45,9 +45,7 @@ test.describe('Melody Library', () => {
     await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
-    const newSessionBtn = page.locator(
-      '.quick-action-btn:has-text("New Session")',
-    )
+    const newSessionBtn = page.locator('[data-testid="new-session-btn"]')
     await expect(newSessionBtn).toBeVisible()
   })
 
@@ -55,9 +53,7 @@ test.describe('Melody Library', () => {
     await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
-    const quickStartBtn = page.locator(
-      '.quick-action-btn:has-text("Quick Start")',
-    )
+    const quickStartBtn = page.locator('[data-testid="quick-start-btn"]')
     const count = await quickStartBtn.count()
     expect(count).toBeGreaterThanOrEqual(0)
   })
@@ -66,7 +62,7 @@ test.describe('Melody Library', () => {
     await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
-    const sessionsBtn = page.locator('.quick-action-btn:has-text("Sessions")')
+    const sessionsBtn = page.locator('[data-testid="sessions-quick-btn"]')
     await sessionsBtn.click()
     await page.waitForTimeout(300)
 
@@ -79,9 +75,7 @@ test.describe('Melody Library', () => {
     await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
-    const newSessionBtn = page.locator(
-      '.quick-action-btn:has-text("New Session")',
-    )
+    const newSessionBtn = page.locator('[data-testid="new-session-btn"]')
     const count = await newSessionBtn.count()
     expect(count).toBeGreaterThanOrEqual(1)
   })
@@ -108,7 +102,7 @@ test.describe('Melody Library', () => {
     await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
-    const browseBtn = page.locator('.tab-action-btn:has-text("Browse")')
+    const browseBtn = page.locator('[data-testid="browse-btn"]')
     await browseBtn.click()
     await page.waitForTimeout(300)
 
@@ -120,7 +114,7 @@ test.describe('Melody Library', () => {
     await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
-    const sessionsBtn = page.locator('.tab-action-btn:has-text("Sessions")')
+    const sessionsBtn = page.locator('[data-testid="sessions-btn"]')
     await sessionsBtn.click()
     await page.waitForTimeout(300)
 
@@ -147,7 +141,7 @@ test.describe('Melody Library', () => {
     await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
-    const browseBtn = page.locator('.tab-action-btn:has-text("Browse")')
+    const browseBtn = page.locator('[data-testid="browse-btn"]')
     await browseBtn.click()
     await page.waitForTimeout(300)
 
@@ -213,7 +207,7 @@ test.describe('Melody Library', () => {
     })
     await page.waitForTimeout(500)
 
-    const createForm = page.locator('.edit-melody-form')
+    const createForm = page.locator('[data-testid="edit-melody-form"]')
     const count = await createForm.count()
     expect(count).toBeGreaterThanOrEqual(0)
   })
@@ -225,7 +219,7 @@ test.describe('Melody Library', () => {
     await page.waitForTimeout(500)
 
     const nameInput = page
-      .locator('.edit-melody-form input[type="text"]')
+      .locator('[data-testid="edit-melody-form"] input[type="text"]')
       .first()
     await expect(nameInput).toBeVisible()
   })
@@ -246,7 +240,9 @@ test.describe('Melody Library', () => {
     })
     await page.waitForTimeout(500)
 
-    const selectEl = page.locator('.edit-melody-form select').first()
+    const selectEl = page
+      .locator('[data-testid="edit-melody-form"] select')
+      .first()
     const count = await selectEl.count()
     expect(count).toBeGreaterThanOrEqual(0)
   })
@@ -319,7 +315,7 @@ test.describe('Melody Library', () => {
     await page.waitForTimeout(500)
 
     const nameInput = page
-      .locator('.edit-melody-form input[type="text"]')
+      .locator('[data-testid="edit-melody-form"] input[type="text"]')
       .first()
     await nameInput.fill('E2E Created Melody')
     await page.waitForTimeout(200)
@@ -364,7 +360,7 @@ test.describe('Melody Library', () => {
     await page.waitForTimeout(500)
 
     const nameInput = page
-      .locator('.edit-melody-form input[type="text"]')
+      .locator('[data-testid="edit-melody-form"] input[type="text"]')
       .first()
     await nameInput.fill('E2E Editable Melody')
     await page.waitForTimeout(200)
@@ -386,7 +382,7 @@ test.describe('Melody Library', () => {
       await page.waitForTimeout(300)
 
       // Verify edit form is now visible
-      const editForm = page.locator('.edit-melody-form')
+      const editForm = page.locator('[data-testid="edit-melody-form"]')
       const count = await editForm.count()
       expect(count).toBeGreaterThanOrEqual(0)
     }
@@ -400,7 +396,7 @@ test.describe('Melody Library', () => {
     await page.waitForTimeout(500)
 
     const nameInput = page
-      .locator('.edit-melody-form input[type="text"]')
+      .locator('[data-testid="edit-melody-form"] input[type="text"]')
       .first()
     await nameInput.fill('E2E Saveable Melody')
     await page.waitForTimeout(200)
@@ -438,7 +434,7 @@ test.describe('Melody Library', () => {
     await page.waitForTimeout(500)
 
     const nameInput = page
-      .locator('.edit-melody-form input[type="text"]')
+      .locator('[data-testid="edit-melody-form"] input[type="text"]')
       .first()
     await nameInput.fill('E2E Deleteable Melody')
     await page.waitForTimeout(200)
@@ -611,7 +607,7 @@ test.describe('Melody Library', () => {
     await page.waitForTimeout(300)
 
     // Quick action "Sessions" button opens SessionLibraryModal (.library-modal)
-    const sessionsBtn = page.locator('.quick-action-btn:has-text("Sessions")')
+    const sessionsBtn = page.locator('[data-testid="sessions-quick-btn"]')
     await sessionsBtn.click()
     await page.waitForTimeout(300)
 
@@ -757,7 +753,7 @@ test.describe('Melody Library', () => {
 
     // Create new melody
     const nameInput = page
-      .locator('.edit-melody-form input[type="text"]')
+      .locator('[data-testid="edit-melody-form"] input[type="text"]')
       .first()
     await nameInput.fill('E2E Complete Flow Melody')
     await page.waitForTimeout(200)
@@ -797,7 +793,7 @@ test.describe('Melody Library', () => {
     await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
-    const sessionsBtn = page.locator('.quick-action-btn:has-text("Sessions")')
+    const sessionsBtn = page.locator('[data-testid="sessions-quick-btn"]')
     await sessionsBtn.click()
     await page.waitForTimeout(300)
 
@@ -820,7 +816,7 @@ test.describe('Melody Library', () => {
     await page.waitForTimeout(500)
 
     const nameInput = page
-      .locator('.edit-melody-form input[type="text"]')
+      .locator('[data-testid="edit-melody-form"] input[type="text"]')
       .first()
     await nameInput.fill('E2E Persistence Test')
     await page.waitForTimeout(200)
@@ -851,7 +847,7 @@ test.describe('Melody Library', () => {
       await page.waitForTimeout(500)
 
       const nameInput = page
-        .locator('.edit-melody-form input[type="text"]')
+        .locator('[data-testid="edit-melody-form"] input[type="text"]')
         .first()
       await nameInput.fill(`E2E Multi-Melody ${i + 1}`)
       await page.waitForTimeout(200)
@@ -881,7 +877,7 @@ test.describe('Melody Library', () => {
     await page.waitForTimeout(300)
 
     // Click Browse
-    const browseBtn = page.locator('.tab-action-btn:has-text("Browse")')
+    const browseBtn = page.locator('[data-testid="browse-btn"]')
     await browseBtn.click()
     await page.waitForTimeout(300)
 
@@ -894,7 +890,7 @@ test.describe('Melody Library', () => {
     await page.waitForTimeout(300)
 
     // Click Sessions — toolbar button opens SessionBrowser, not LibraryModal
-    const sessionsBtn = page.locator('.tab-action-btn:has-text("Sessions")')
+    const sessionsBtn = page.locator('[data-testid="sessions-btn"]')
     await sessionsBtn.click()
     await page.waitForTimeout(300)
 
@@ -927,7 +923,7 @@ test.describe('Melody Library', () => {
     await page.waitForTimeout(500)
 
     const nameInput = page
-      .locator('.edit-melody-form input[type="text"]')
+      .locator('[data-testid="edit-melody-form"] input[type="text"]')
       .first()
     await nameInput.fill('E2E BPM Persistence')
     await page.waitForTimeout(200)
@@ -976,7 +972,7 @@ test.describe('Melody Library', () => {
     await page.waitForTimeout(500)
 
     const nameInput = page
-      .locator('.edit-melody-form input[type="text"]')
+      .locator('[data-testid="edit-melody-form"] input[type="text"]')
       .first()
     await nameInput.fill('E2E Confirm Delete Test')
     await page.waitForTimeout(200)

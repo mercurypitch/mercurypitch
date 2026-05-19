@@ -3,8 +3,9 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createSignal, Show } from 'solid-js'
+import { createMemo, createSignal, Show } from 'solid-js'
 import { deleteUvrSessionFromDb } from '@/db/services/uvr-service'
+import { hasStemFingerprint } from '@/lib/shazam/melody-fingerprints'
 import { deleteUvrSession, getUvrSession } from '@/stores/app-store'
 import type { UvrSession, UvrStatus } from '@/types/uvr'
 import { Box, Calendar, CheckCircle, Cpu, Headphones, Loader2, Midi, Music, Play, RotateCcw, Server, Share, SlidersHorizontal, Trash2, Voice, X, XCircle, Zap, } from './icons'
@@ -23,13 +24,18 @@ interface SessionResultProps {
   ) => void
   onRetry?: (sessionId: string) => void
   onClose?: () => void
+  onReindexStem?: (sessionId: string) => void
 }
 
 export const UvrSessionResult: Component<SessionResultProps> = (props) => {
   const session = () => getUvrSession(props.sessionId)
+  const vocalFingerprinted = createMemo(() =>
+    hasStemFingerprint(props.sessionId),
+  )
   const [showDeleteConfirm, setShowDeleteConfirm] = createSignal(false)
   const [toastMessage, setToastMessage] = createSignal('')
   const [selectedStems, setSelectedStems] = createSignal<Set<string>>(new Set())
+  const [reindexing, setReindexing] = createSignal(false)
 
   const formatDate = (timestamp: number): string => {
     const date = new Date(timestamp)
@@ -104,6 +110,14 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
       instrumental: sel.has('instrumental'),
       midi: sel.has('vocal-midi'),
     })
+  }
+
+  const handleReindex = (e: Event) => {
+    e.stopPropagation()
+    if (reindexing()) return
+    setReindexing(true)
+    props.onReindexStem?.(props.sessionId)
+    setTimeout(() => setReindexing(false), 3000)
   }
 
   const hasSelection = () => selectedStems().size > 0
@@ -330,6 +344,43 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
               >
                 <Voice />
                 <span>Vocal</span>
+                <Show when={vocalFingerprinted()}>
+                  <span
+                    class="stem-pill-shazam"
+                    title="Included in Shazam Sing matching"
+                  >
+                    <svg
+                      width="10"
+                      height="10"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="3"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                    Shazam
+                  </span>
+                </Show>
+                <span
+                  class="stem-pill-reindex"
+                  classList={{ 'stem-pill-reindexing': reindexing() }}
+                  onClick={handleReindex}
+                  role="button"
+                  tabindex={
+                    reindexing() || props.disabled === true ? undefined : '0'
+                  }
+                  aria-disabled={reindexing() || props.disabled === true}
+                  title={
+                    vocalFingerprinted()
+                      ? 'Re-index vocal stem for Shazam matching'
+                      : 'Index vocal stem for Shazam matching'
+                  }
+                >
+                  <RotateCcw />
+                </span>
                 <Show
                   when={formatDuration(session()?.stemMeta?.vocal?.duration)}
                 >

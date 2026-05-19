@@ -170,8 +170,9 @@ export function noteToMidi(name: NoteName | string, octave: number): number {
 
 /** Convert MIDI number to note name and octave */
 export function midiToNote(midi: number): { name: NoteName; octave: number } {
-  const noteIndex = midi % 12
-  const octave = Math.floor(midi / 12) - 1
+  const rounded = Math.round(midi)
+  const noteIndex = rounded % 12
+  const octave = Math.floor(rounded / 12) - 1
   return { name: NOTE_NAMES[noteIndex], octave }
 }
 

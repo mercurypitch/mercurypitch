@@ -6,7 +6,7 @@ export async function dismissOverlays(page: Page) {
   await page.evaluate(() => {
     // Hide all overlays including focus mode in DOM immediately
     const overlays = document.querySelectorAll(
-      '.welcome-overlay, .walkthrough-overlay, .overlay, .focus-mode-backdrop, .welcome-screen',
+      '[class*="welcomeOverlay"], [class*="walkthroughOverlay"], [class*="welcome-overlay"], [class*="walkthrough-overlay"], .overlay, .focus-mode-backdrop, [class*="welcome-screen"]',
     )
     for (let i = 0; i < overlays.length; i++) {
       const el = overlays[i] as HTMLElement

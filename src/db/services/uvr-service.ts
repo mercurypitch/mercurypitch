@@ -95,6 +95,89 @@ export async function hydrateStemUrls(
   }
 }
 
+// ── Stem Fingerprint Operations ─────────────────────────────────
+
+import type { UvrStemFingerprint } from '@/db/entities'
+import type { MelodyFingerprint } from '@/lib/shazam/types'
+
+export async function saveStemFingerprintData(
+  sessionId: string,
+  fingerprint: MelodyFingerprint,
+): Promise<boolean> {
+  try {
+    const db = await getDb()
+    const repo = db.getRepository<UvrStemFingerprint>('uvrStemFingerprints')
+
+    // Upsert: delete existing entry for this session
+    const existing = await repo.findAll({
+      where: { sessionId } as Record<string, unknown>,
+      limit: 1,
+    })
+    for (const entry of existing) {
+      await repo.delete(entry.id)
+    }
+
+    await repo.create({
+      sessionId,
+      fingerprintJson: JSON.stringify(fingerprint),
+    })
+    return true
+  } catch {
+    return false
+  }
+}
+
+export async function getStemFingerprintData(
+  sessionId: string,
+): Promise<MelodyFingerprint | null> {
+  try {
+    const db = await getDb()
+    const repo = db.getRepository<UvrStemFingerprint>('uvrStemFingerprints')
+    const results = await repo.findAll({
+      where: { sessionId } as Record<string, unknown>,
+      orderBy: 'createdAt',
+      orderDir: 'desc',
+      limit: 1,
+    })
+    if (results.length === 0) return null
+    return JSON.parse(results[0].fingerprintJson) as MelodyFingerprint
+  } catch {
+    return null
+  }
+}
+
+export async function getAllStemFingerprintData(): Promise<
+  MelodyFingerprint[]
+> {
+  try {
+    const db = await getDb()
+    const repo = db.getRepository<UvrStemFingerprint>('uvrStemFingerprints')
+    const results = await repo.findAll({})
+    return results.map((entry) =>
+      JSON.parse(entry.fingerprintJson),
+    ) as MelodyFingerprint[]
+  } catch {
+    return []
+  }
+}
+
+export async function deleteStemFingerprintData(
+  sessionId: string,
+): Promise<void> {
+  try {
+    const db = await getDb()
+    const repo = db.getRepository<UvrStemFingerprint>('uvrStemFingerprints')
+    const existing = await repo.findAll({
+      where: { sessionId } as Record<string, unknown>,
+    })
+    for (const entry of existing) {
+      await repo.delete(entry.id)
+    }
+  } catch {
+    // Best-effort
+  }
+}
+
 // ── Session Record Operations ────────────────────────────────────
 
 export async function saveUvrSession(session: {
@@ -178,9 +261,11 @@ export async function deleteUvrSessionFromDb(sessionId: string): Promise<void> {
       where: { sessionId } as Record<string, unknown>,
     })
     for (const blob of blobs) {
-      // Revoke any active blob URLs created from this data
       await blobRepo.delete(blob.id)
     }
+
+    // Delete stem fingerprint
+    await deleteStemFingerprintData(sessionId)
 
     // Delete session record
     const repo = db.getRepository<UvrSessionRecord>('uvrSessions')
@@ -205,6 +290,13 @@ export async function deleteAllUvrSessionsFromDb(): Promise<void> {
     const blobs = await blobRepo.findAll({})
     for (const blob of blobs) {
       await blobRepo.delete(blob.id)
+    }
+
+    // Delete all stem fingerprints
+    const fpRepo = db.getRepository<UvrStemFingerprint>('uvrStemFingerprints')
+    const fpEntries = await fpRepo.findAll({})
+    for (const entry of fpEntries) {
+      await fpRepo.delete(entry.id)
     }
 
     // Delete all session records

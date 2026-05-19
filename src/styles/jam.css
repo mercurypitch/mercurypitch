@@ -1,0 +1,622 @@
+/* ── Jam Panel ────────────────────────────────────────────────────── */
+
+.jam-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  animation: fadeIn 0.25s ease;
+}
+
+.jam-connect {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 400px;
+  margin: auto;
+  justify-content: center;
+  align-self: center;
+  height: 100%;
+  padding: 24px;
+}
+
+.jam-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+  text-align: center;
+}
+
+.jam-desc {
+  font-size: 0.875rem;
+  color: var(--text-secondary, #8b949e);
+  margin: 0;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.jam-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.jam-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-secondary, #8b949e);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.jam-input {
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-family: inherit;
+  outline: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.jam-input:focus {
+  border-color: var(--accent);
+  box-shadow:
+    0 0 0 2px rgba(88, 166, 255, 0.2),
+    inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.jam-input-mono {
+  font-family:
+    ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+}
+
+.jam-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.jam-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(8px);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+}
+
+.jam-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.jam-btn:active {
+  transform: translateY(0);
+}
+
+.jam-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.jam-btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  box-shadow: 0 2px 8px var(--accent-glow, rgba(88, 166, 255, 0.3));
+}
+
+.jam-btn-primary:hover {
+  background: #79b8ff;
+  border-color: #79b8ff;
+  box-shadow: 0 4px 12px var(--accent-glow, rgba(88, 166, 255, 0.4));
+}
+
+.jam-btn-secondary {
+  width: 100%;
+}
+
+.jam-btn-sm {
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  border-radius: 6px;
+}
+
+.jam-btn-muted {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.jam-btn-danger {
+  border-color: var(--red, #f85149);
+  color: var(--red, #f85149);
+  background: rgba(248, 81, 73, 0.05);
+}
+
+.jam-btn-danger:hover {
+  background: rgba(248, 81, 73, 0.15);
+  border-color: var(--red, #f85149);
+}
+
+.jam-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1.5rem 0;
+}
+
+.jam-divider::before,
+.jam-divider::after {
+  content: '';
+  flex: 1;
+  height: 2px;
+  border-radius: 1px;
+}
+
+.jam-divider::before {
+  background: linear-gradient(
+    90deg,
+    var(--border) 0%,
+    var(--border) 50%,
+    var(--accent) 100%
+  );
+}
+
+.jam-divider::after {
+  background: linear-gradient(
+    90deg,
+    var(--accent) 0%,
+    var(--border) 50%,
+    var(--border) 100%
+  );
+}
+
+.jam-divider span {
+  font-size: 0.75rem;
+  color: var(--fg-tertiary, var(--text-secondary));
+  white-space: nowrap;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.jam-error {
+  font-size: 0.85rem;
+  color: var(--red, #f85149);
+  margin: 0;
+  padding: 8px 12px;
+  background: rgba(248, 81, 73, 0.1);
+  border: 1px solid rgba(248, 81, 73, 0.25);
+  border-radius: 6px;
+}
+
+.jam-connecting {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 48px 24px;
+  color: var(--text-secondary, #8b949e);
+  font-size: 0.9rem;
+}
+
+/* ── Active Session ───────────────────────────────────────────────── */
+
+.jam-active {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.jam-room-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.jam-room-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.jam-room-id-badge {
+  padding: 3px 10px;
+  font-size: 0.75rem;
+  font-family:
+    ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+  color: var(--accent);
+  background: rgba(88, 166, 255, 0.1);
+  border: 1px solid rgba(88, 166, 255, 0.2);
+  border-radius: 4px;
+}
+
+.jam-room-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+/* ── Icon buttons ───────────────────────────────────────────────────── */
+
+.jam-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
+  position: relative;
+}
+
+.jam-icon-btn:hover {
+  transform: scale(1.08);
+}
+
+.jam-icon-btn:active {
+  transform: scale(0.95);
+}
+
+/* Active / on state — subtle accent glow */
+.jam-icon-btn-on {
+  background: rgba(88, 166, 255, 0.12);
+  border: 1px solid rgba(88, 166, 255, 0.3);
+  color: var(--accent, #58a6ff);
+  box-shadow: 0 0 0 0 rgba(88, 166, 255, 0);
+}
+
+.jam-icon-btn-on:hover {
+  background: rgba(88, 166, 255, 0.2);
+  box-shadow: 0 0 8px rgba(88, 166, 255, 0.3);
+}
+
+/* Off / muted state — red tint with strike-through feel */
+.jam-icon-btn-off {
+  background: rgba(248, 81, 73, 0.12);
+  border: 1px solid rgba(248, 81, 73, 0.35);
+  color: var(--red, #f85149);
+}
+
+.jam-icon-btn-off:hover {
+  background: rgba(248, 81, 73, 0.22);
+  box-shadow: 0 0 8px rgba(248, 81, 73, 0.25);
+}
+
+/* Neutral — for invite, copy etc. */
+.jam-icon-btn-neutral {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border);
+  color: var(--fg-secondary);
+}
+
+.jam-icon-btn-neutral:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--fg-primary);
+  border-color: var(--accent);
+}
+
+/* Danger — leave room */
+.jam-icon-btn-danger {
+  background: rgba(248, 81, 73, 0.1);
+  border: 1px solid rgba(248, 81, 73, 0.25);
+  color: var(--red, #f85149);
+}
+
+.jam-icon-btn-danger:hover {
+  background: rgba(248, 81, 73, 0.22);
+  border-color: var(--red, #f85149);
+  box-shadow: 0 0 10px rgba(248, 81, 73, 0.3);
+}
+
+.jam-icon-btn svg {
+  pointer-events: none;
+  flex-shrink: 0;
+}
+
+.jam-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--text-secondary, #8b949e);
+  padding: 8px 12px;
+  background: var(--bg-tertiary);
+  border-radius: 6px;
+}
+
+.jam-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+.jam-status-dot-active {
+  background: var(--green, #3fb950);
+}
+
+.jam-status-dot-active::after {
+  content: '';
+  display: block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--green, #3fb950);
+  animation: jam-pulse 2s ease-out infinite;
+}
+
+.jam-muted-indicator {
+  color: var(--red, #f85149);
+  font-weight: 500;
+}
+
+@keyframes jam-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+
+/* ── Peer List ────────────────────────────────────────────────────── */
+
+.jam-peer-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.jam-peer-empty {
+  color: var(--text-secondary, #8b949e);
+  font-size: 0.875rem;
+  font-style: italic;
+  text-align: center;
+  padding: 24px;
+  margin: 0;
+}
+
+.jam-peer-heading {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 4px;
+}
+
+.jam-peer-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  transition: border-color 0.2s ease;
+}
+
+.jam-peer-item.jam-peer-connected {
+  border-color: rgba(63, 185, 80, 0.25);
+}
+
+.jam-peer-item.jam-peer-connecting {
+  border-color: rgba(210, 153, 34, 0.25);
+}
+
+.jam-peer-item.jam-peer-disconnected {
+  opacity: 0.55;
+}
+
+.jam-peer-item.jam-peer-failed {
+  border-color: rgba(248, 81, 73, 0.25);
+}
+
+.jam-peer-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.jam-peer-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+.jam-peer-dot-connected {
+  background: var(--green, #3fb950);
+}
+
+.jam-peer-dot-connecting {
+  background: #d29922;
+  animation: jam-pulse 1s ease-out infinite;
+}
+
+.jam-peer-dot-disconnected {
+  background: var(--text-secondary, #8b949e);
+}
+
+.jam-peer-dot-failed {
+  background: var(--red, #f85149);
+}
+
+.jam-peer-name {
+  font-size: 0.875rem;
+  color: var(--text-primary);
+}
+
+.jam-peer-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.jam-peer-state {
+  font-size: 0.78rem;
+  color: var(--text-secondary, #8b949e);
+}
+
+.jam-peer-latency {
+  font-size: 0.78rem;
+  font-family:
+    ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+  color: var(--accent);
+  background: rgba(88, 166, 255, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* ── Video Grid ─────────────────────────────────────────────────────── */
+
+.jam-video-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.jam-video-tile {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  background: var(--bg-primary, #0d1117);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.jam-video-feed {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.jam-video-label {
+  position: absolute;
+  bottom: 4px;
+  left: 4px;
+  padding: 2px 6px;
+  font-size: 0.72rem;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 3px;
+  pointer-events: none;
+}
+
+.jam-video-off {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary, #8b949e);
+  font-size: 0.8rem;
+  background: var(--bg-primary, #0d1117);
+}
+
+.jam-video-local .jam-video-feed {
+  transform: scaleX(-1);
+}
+
+/* ── Chat ────────────────────────────────────────────────────────────── */
+
+.jam-chat {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-tertiary);
+  overflow: hidden;
+}
+
+.jam-chat-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  max-height: 200px;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+}
+
+.jam-chat-msg {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: baseline;
+  padding: 4px 0;
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.jam-chat-msg-own .jam-chat-author {
+  color: var(--accent);
+}
+
+.jam-chat-author {
+  font-weight: 600;
+  color: var(--green, #3fb950);
+  flex-shrink: 0;
+}
+
+.jam-chat-text {
+  color: var(--text-primary);
+  word-break: break-word;
+  flex: 1;
+}
+
+.jam-chat-time {
+  font-size: 0.7rem;
+  color: var(--text-secondary, #8b949e);
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.jam-chat-input {
+  display: flex;
+  gap: 6px;
+  padding: 8px 10px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-primary, #0d1117);
+}
+
+.jam-chat-input .jam-input {
+  flex: 1;
+  background: var(--bg-tertiary);
+}

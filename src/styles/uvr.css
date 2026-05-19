@@ -1607,6 +1607,64 @@
   margin-left: 0.1rem;
 }
 
+.stem-pill-shazam {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: #818cf8;
+  background: rgba(99, 102, 241, 0.12);
+  border-radius: 3px;
+  padding: 1px 5px;
+  margin-left: 2px;
+  letter-spacing: 0.3px;
+}
+
+.stem-pill-shazam svg {
+  width: 9px;
+  height: 9px;
+  flex-shrink: 0;
+}
+
+.stem-pill-reindex {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  margin-left: 2px;
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 3px;
+  color: #818cf8;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+  flex-shrink: 0;
+}
+
+.stem-pill-reindex:hover {
+  background: rgba(99, 102, 241, 0.2);
+  color: #a5b4fc;
+}
+
+.stem-pill-reindex[aria-disabled='true'] {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.stem-pill-reindex svg {
+  width: 11px;
+  height: 11px;
+}
+
+.stem-pill-reindexing svg {
+  animation: spin 1s linear infinite;
+}
+
 .stem-pill-selected {
   outline: 2px solid currentColor;
   outline-offset: 1px;

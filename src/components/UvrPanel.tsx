@@ -3,19 +3,39 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createEffect, createSignal, For, Show } from 'solid-js'
-import { deleteAllUvrSessionsFromDb, deleteUvrSessionFromDb, findSessionByFileHash, getOriginalFileBlob, hydrateStemUrls, saveStemBlob, saveUvrSession, } from '@/db/services/uvr-service'
+import { createEffect, createSignal, For, lazy, Show, Suspense } from 'solid-js'
+import { deleteAllUvrSessionsFromDb, deleteUvrSessionFromDb, findSessionByFileHash, getOriginalFileBlob, getStemBlobUrl, hydrateStemUrls, saveStemBlob, saveStemFingerprintData, saveUvrSession, } from '@/db/services/uvr-service'
 import { computeFileHash } from '@/lib/file-hash'
 import { generateVocalMidi } from '@/lib/midi-generator'
+import { addStemFingerprint } from '@/lib/shazam/melody-fingerprints'
+import { extractStemFingerprint } from '@/lib/shazam/stem-fingerprinter'
+import type { LivePitchContour, MatchCandidate } from '@/lib/shazam/types'
 import { getProcessStatus } from '@/lib/uvr-api'
 import { cancelUvrPipeline, destroyPipeline, preInitModel, runUvrPipeline, } from '@/lib/uvr-processing-pipeline'
 import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
-import { cancelUvrSession, completeUvrSession, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, getAllUvrSessions, getAllUvrSessionsReactive, getUvrProcessingMode, getUvrSession, getUvrSessionByHash, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrProcessingMode, startUvrSession, updateUvrSessionOutputs, uvrModelError, uvrModelStatus, uvrProcessingMode, } from '@/stores/app-store'
+import { cancelUvrSession, completeUvrSession, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, devFeaturesEnabled, getAllUvrSessions, getAllUvrSessionsReactive, getUvrProcessingMode, getUvrSession, getUvrSessionByHash, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrProcessingMode, startUvrSession, updateUvrSessionOutputs, uvrModelError, uvrModelStatus, uvrProcessingMode, } from '@/stores/app-store'
 import { showNotification } from '@/stores/notifications-store'
 import { StemMixer, UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrSettings, UvrUploadControl, } from '.'
 import { CheckCircle, ImportFile, Music, Settings, Trash2, X } from './icons'
 
-export type UvrView = 'upload' | 'processing' | 'results' | 'mixer'
+const ShazamListen = lazy(async () =>
+  import('@/components/ShazamListen').then((m) => ({
+    default: m.ShazamListen,
+  })),
+)
+const ShazamResults = lazy(async () =>
+  import('@/components/ShazamResults').then((m) => ({
+    default: m.ShazamResults,
+  })),
+)
+
+export type UvrView =
+  | 'upload'
+  | 'processing'
+  | 'results'
+  | 'mixer'
+  | 'shazam-listen'
+  | 'shazam-results'
 
 interface UvrPanelProps {
   /** Initial view from hash route — only used on first mount */
@@ -36,11 +56,27 @@ interface UvrPanelProps {
   onSessionView?: (sessionId: string) => void
   /** Callback to close panel */
   onClose?: () => void
+  /** Callback when a melody is selected from Shazam results */
+  onSelectMelody?: (melodyId: string) => void
+  /** Callback when a stem match auto-jumps to Stem Mixer */
+  onOpenStemMixer?: (sessionId: string) => void
+  /** Auto-jump confidence threshold for stem matches (default 85) */
+  autoJumpThreshold?: number
 }
 
 export const UvrPanel: Component<UvrPanelProps> = (props) => {
   const [currentView, setCurrentView] = createSignal<UvrView>(
     props.initialView || 'upload',
+  )
+  const [matchCandidates, setMatchCandidates] = createSignal<MatchCandidate[]>(
+    [],
+  )
+  const [lastContour, setLastContour] = createSignal<LivePitchContour | null>(
+    null,
+  )
+  const [hummingNormalized, setHummingNormalized] = createSignal(false)
+  const [stemDenoise, setStemDenoise] = createSignal(
+    localStorage.getItem('pitchperfect_stem_denoise') !== 'false',
   )
   const [_onError, setOnError] = createSignal('')
 
@@ -49,12 +85,54 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     console.error(message)
     setOnError(message)
   }
+
+  // Extract and index stem fingerprint from vocal stem audio
+  const indexStemFingerprint = async (
+    sessionId: string,
+    originalFileName: string,
+  ) => {
+    setFingerprintingSession(sessionId)
+    try {
+      const vocalUrl = await getStemBlobUrl(sessionId, 'vocal')
+      if (vocalUrl === null) {
+        setFingerprintingSession('')
+        return
+      }
+
+      const response = await fetch(vocalUrl)
+      const arrayBuffer = await response.arrayBuffer()
+      const audioCtx = new AudioContext()
+      const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer)
+      await audioCtx.close()
+
+      const denoise = stemDenoise()
+      const fp = await extractStemFingerprint(
+        audioBuffer,
+        { sessionId, originalFileName },
+        denoise ? undefined : { maxGapSec: 0.3, minDurationSec: 0.04 },
+      )
+
+      if ('reason' in fp) {
+        console.warn('[shazam] stem fingerprint skipped:', fp.reason)
+        setFingerprintingSession('')
+        return
+      }
+
+      await saveStemFingerprintData(sessionId, fp)
+      addStemFingerprint(fp)
+    } catch (err) {
+      console.warn('[shazam] stem fingerprint extraction failed:', err)
+    } finally {
+      setFingerprintingSession('')
+    }
+  }
   const [showGuide, setShowGuide] = createSignal(false)
   const [showSettings, setShowSettings] = createSignal(false)
   const [showDeleteAllConfirm, setShowDeleteAllConfirm] = createSignal(false)
   const [showClearStorageConfirm, setShowClearStorageConfirm] =
     createSignal(false)
   const [deleteAllToast, setDeleteAllToast] = createSignal('')
+  const [fingerprintingSession, setFingerprintingSession] = createSignal('')
   const [midiExporting, setMidiExporting] = createSignal(false)
   const [midiExportProgress, setMidiExportProgress] = createSignal(0)
   const [selectedFile, setSelectedFile] = createSignal<File | null>(null)
@@ -241,6 +319,8 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
               processingTime: s.processingTime,
             })
           }
+          // Auto-extract stem fingerprint for Shazam matching
+          void indexStemFingerprint(sessionId, file.name)
           setCurrentView('results')
         },
         onError: (message) => {
@@ -611,12 +691,10 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
           </div>
         </div>
         <div class="header-actions">
-          <div
-            class="uvr-mode-toggle"
-            title={`Processing: ${uvrProcessingMode() === 'local' ? 'Browser' : 'Server'}`}
-          >
+          <div class="uvr-mode-toggle">
             <button
               class={`mode-toggle-btn mode-toggle-btn-disabled${uvrProcessingMode() === 'server' ? ' active' : ''}`}
+              title="Processing: Server"
               onClick={() =>
                 showNotification(
                   'Server-side processing not yet available.',
@@ -628,6 +706,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
             </button>
             <button
               class={`mode-toggle-btn${uvrProcessingMode() === 'local' ? ' active' : ''}`}
+              title="Processing: Browser"
               onClick={() => setUvrProcessingMode('local')}
             >
               Browser
@@ -659,10 +738,21 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
           <div class="uvr-view-tabs">
             <button
               class="view-tab"
-              classList={{ active: currentView() === 'upload' }}
+              classList={{
+                active:
+                  currentView() === 'upload' ||
+                  currentView() === 'shazam-listen',
+              }}
               onClick={() => {
-                setCurrentView('upload')
-                props.onViewChange?.('upload')
+                if (devFeaturesEnabled()) {
+                  const next =
+                    currentView() === 'upload' ? 'shazam-listen' : 'upload'
+                  setCurrentView(next)
+                  props.onViewChange?.(next)
+                } else {
+                  setCurrentView('upload')
+                  props.onViewChange?.('upload')
+                }
                 props.onSessionChange?.(null)
               }}
             >
@@ -717,7 +807,10 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                   <X />
                 </button>
               </div>
-              <UvrSettings />
+              <UvrSettings
+                stemDenoise={stemDenoise()}
+                onStemDenoiseChange={(v) => setStemDenoise(v)}
+              />
             </div>
           </div>
         )}
@@ -730,6 +823,24 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 <Music /> See Guide
               </button>
             </div>
+            <Show when={devFeaturesEnabled()}>
+              <div style="margin-bottom: 12px;">
+                <span
+                  role="button"
+                  tabindex="0"
+                  class="view-tab"
+                  style="cursor: pointer; font-size: 13px;"
+                  onClick={() => setCurrentView('shazam-listen')}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ')
+                      setCurrentView('shazam-listen')
+                  }}
+                  data-testid="shazam-switch-to-listen"
+                >
+                  Sing to find a melody instead
+                </span>
+              </div>
+            </Show>
             <UvrUploadControl
               onFileSelect={(file) => {
                 void handleFileSelect(file)
@@ -794,6 +905,12 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                           getUvrSession(sessionId)?.processingMode,
                         )
                       }}
+                      onReindexStem={(sessionId) => {
+                        const session = getUvrSession(sessionId)
+                        const fileName =
+                          session?.originalFile?.name ?? 'Unknown'
+                        void indexStemFingerprint(sessionId, fileName)
+                      }}
                     />
                   )}
                 </For>
@@ -843,6 +960,33 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 }}
               />
             )}
+            <Show when={fingerprintingSession() !== ''}>
+              <div
+                style={{
+                  display: 'flex',
+                  'align-items': 'center',
+                  gap: '8px',
+                  padding: '10px 14px',
+                  background: 'rgba(99, 102, 241, 0.08)',
+                  'border-radius': '8px',
+                  'font-size': '13px',
+                  color: 'var(--color-text-muted, #94a3b8)',
+                }}
+              >
+                <span
+                  style={{
+                    width: '14px',
+                    height: '14px',
+                    border: '2px solid var(--color-accent, #6366f1)',
+                    'border-top-color': 'transparent',
+                    'border-radius': '50%',
+                    animation: 'spin 0.8s linear infinite',
+                    display: 'inline-block',
+                  }}
+                />
+                Indexing vocal stem for Shazam matching...
+              </div>
+            </Show>
           </div>
         </Show>
 
@@ -890,6 +1034,72 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
               onBack={() => setCurrentView(prevView())}
             />
           </div>
+        </Show>
+
+        {/* Shazam Sing — Listen */}
+        <Show when={currentView() === 'shazam-listen'}>
+          <Suspense>
+            <ShazamListen
+              onMatch={({ candidates, contour, hummingNormalized: hn }) => {
+                setLastContour(contour)
+                setHummingNormalized(hn)
+                // Auto-jump: if top stem match exceeds threshold, skip results
+                const threshold = props.autoJumpThreshold ?? 85
+                const topMatch = candidates[0]
+                if (
+                  candidates.length > 0 &&
+                  topMatch.source === 'stem' &&
+                  topMatch.sessionId !== undefined &&
+                  topMatch.confidence >= threshold
+                ) {
+                  void handleOpenMixerFromHistory(topMatch.sessionId, {
+                    vocal: true,
+                  })
+                  props.onOpenStemMixer?.(topMatch.sessionId)
+                  return
+                }
+                setMatchCandidates(candidates)
+                setCurrentView('shazam-results')
+              }}
+              onAutoJump={(candidate) => {
+                if (
+                  candidate.source === 'stem' &&
+                  candidate.sessionId !== undefined
+                ) {
+                  void handleOpenMixerFromHistory(candidate.sessionId, {
+                    vocal: true,
+                  })
+                  props.onOpenStemMixer?.(candidate.sessionId)
+                } else {
+                  props.onSelectMelody?.(candidate.melodyId)
+                }
+              }}
+              onCancel={() => setCurrentView('upload')}
+              onSwitchToUpload={() => setCurrentView('upload')}
+            />
+          </Suspense>
+        </Show>
+
+        {/* Shazam Sing — Results */}
+        <Show when={currentView() === 'shazam-results'}>
+          <Suspense>
+            <ShazamResults
+              candidates={matchCandidates()}
+              liveContour={lastContour()}
+              hummingNormalized={hummingNormalized()}
+              onOpenMelody={(melodyId) => {
+                props.onSelectMelody?.(melodyId)
+              }}
+              onOpenStemMixer={(sessionId) => {
+                void handleOpenMixerFromHistory(sessionId, { vocal: true })
+                props.onOpenStemMixer?.(sessionId)
+              }}
+              onTryAgain={() => {
+                setMatchCandidates([])
+                setCurrentView('shazam-listen')
+              }}
+            />
+          </Suspense>
         </Show>
       </div>
 

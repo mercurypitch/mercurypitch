@@ -26,6 +26,7 @@ const STORE_SCHEMAS: Record<string, string> = {
   userSettings: 'id, userId, key',
   uvrSessions: 'id, appSessionId, userId, status, fileHash, createdAt',
   uvrStemBlobs: 'id, sessionId, stemType, createdAt',
+  uvrStemFingerprints: 'id, sessionId, createdAt',
 }
 
 // ── DexieDatabase class ─────────────────────────────────────────

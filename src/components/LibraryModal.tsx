@@ -13,6 +13,7 @@ import { setEditorView } from '@/stores'
 import { setActiveTab as setAppActiveTab, setActiveUserSession, setBpm, setKeyName, setScaleType, showNotification, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import type { MelodyData, NoteName } from '@/types'
+import styles from './LibraryModal.module.css'
 
 type DebouncedSetter<T> = (value: T, immediate?: boolean) => void
 
@@ -554,228 +555,234 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
 
               {/* Create Melody Form */}
               {editingMelodyKey() === null && (
-                <div class="edit-melody-form">
-                  <div class="create-header">
-                    <h3>Create New Melody</h3>
-                    <button
-                      class="big-create-btn"
-                      onClick={() => {
-                        setCreateName('')
-                        setCreateBpm(80)
-                        setCreateKey('C')
-                        setCreateScale('major')
-                        setCreateTags('')
-                        setCreateNotes('')
-                      }}
-                      aria-label="Reset form"
-                    >
-                      <svg viewBox="0 0 24 24" width="20" height="20">
-                        <path
-                          fill="currentColor"
-                          d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"
-                        />
-                      </svg>
-                    </button>
-                  </div>
-
-                  <div class="form-group">
-                    <label>Name</label>
-                    <input
-                      type="text"
-                      value={createName()}
-                      onInput={(e) => setCreateName(e.currentTarget.value)}
-                      placeholder="Melody name"
-                    />
-                  </div>
-
-                  <div class="form-row">
-                    <div class="form-group">
-                      <label>BPM</label>
-                      <input
-                        type="number"
-                        value={createBpm()}
-                        onInput={(e) => {
-                          const valStr = e.currentTarget.value
-                          if (!valStr) {
-                            // Empty string - reset to default
-                            setCreateBpm(80)
-                            return
-                          }
-                          const val = parseFloat(valStr)
-                          if (isNaN(val)) {
-                            // Invalid number - keep current value
-                            return
-                          }
-                          // Clamp between 20 and 280
-                          const clamped = Math.max(20, Math.min(280, val))
-                          debouncedCreateBpm(clamped)
+                <div class={styles.editMelodyForm}>
+                  <div data-testid="edit-melody-form">
+                    <div class={styles.createHeader}>
+                      <h3>Create New Melody</h3>
+                      <button
+                        class={styles.bigCreateBtn}
+                        onClick={() => {
+                          setCreateName('')
+                          setCreateBpm(80)
+                          setCreateKey('C')
+                          setCreateScale('major')
+                          setCreateTags('')
+                          setCreateNotes('')
                         }}
-                        min="20"
-                        max="280"
+                        aria-label="Reset form"
+                      >
+                        <svg viewBox="0 0 24 24" width="20" height="20">
+                          <path
+                            fill="currentColor"
+                            d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+
+                    <div class="form-group">
+                      <label>Name</label>
+                      <input
+                        type="text"
+                        value={createName()}
+                        onInput={(e) => setCreateName(e.currentTarget.value)}
+                        placeholder="Melody name"
+                      />
+                    </div>
+
+                    <div class={styles.formRow}>
+                      <div class="form-group">
+                        <label>BPM</label>
+                        <input
+                          type="number"
+                          value={createBpm()}
+                          onInput={(e) => {
+                            const valStr = e.currentTarget.value
+                            if (!valStr) {
+                              // Empty string - reset to default
+                              setCreateBpm(80)
+                              return
+                            }
+                            const val = parseFloat(valStr)
+                            if (isNaN(val)) {
+                              // Invalid number - keep current value
+                              return
+                            }
+                            // Clamp between 20 and 280
+                            const clamped = Math.max(20, Math.min(280, val))
+                            debouncedCreateBpm(clamped)
+                          }}
+                          min="20"
+                          max="280"
+                        />
+                      </div>
+
+                      <div class="form-group">
+                        <label>Key</label>
+                        <select
+                          value={createKey()}
+                          onChange={(e) =>
+                            setCreateKey(e.currentTarget.value as NoteName)
+                          }
+                        >
+                          <For each={keyNames}>
+                            {(k) => <option value={k}>{k}</option>}
+                          </For>
+                        </select>
+                      </div>
+
+                      <div class="form-group">
+                        <label>Scale</label>
+                        <select
+                          value={createScale()}
+                          onChange={(e) =>
+                            setCreateScale(e.currentTarget.value)
+                          }
+                        >
+                          <For each={scaleTypes}>
+                            {(s) => <option value={s.value}>{s.label}</option>}
+                          </For>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div class="form-group">
+                      <label>Tags (comma-separated)</label>
+                      <input
+                        type="text"
+                        value={createTags()}
+                        onInput={(e) => setCreateTags(e.currentTarget.value)}
+                        placeholder="jazz, blues, etc."
                       />
                     </div>
 
                     <div class="form-group">
-                      <label>Key</label>
-                      <select
-                        value={createKey()}
-                        onChange={(e) =>
-                          setCreateKey(e.currentTarget.value as NoteName)
-                        }
-                      >
-                        <For each={keyNames}>
-                          {(k) => <option value={k}>{k}</option>}
-                        </For>
-                      </select>
+                      <label>Notes</label>
+                      <textarea
+                        value={createNotes()}
+                        onInput={(e) => setCreateNotes(e.currentTarget.value)}
+                        placeholder="User notes about this melody..."
+                        rows={3}
+                      />
                     </div>
 
-                    <div class="form-group">
-                      <label>Scale</label>
-                      <select
-                        value={createScale()}
-                        onChange={(e) => setCreateScale(e.currentTarget.value)}
+                    <div class="form-actions">
+                      <button
+                        class="cancel-btn"
+                        onClick={() => {
+                          setCreateName('')
+                          setCreateBpm(80)
+                          setCreateKey('C')
+                          setCreateScale('major')
+                          setCreateTags('')
+                          setCreateNotes('')
+                        }}
                       >
-                        <For each={scaleTypes}>
-                          {(s) => <option value={s.value}>{s.label}</option>}
-                        </For>
-                      </select>
+                        Cancel
+                      </button>
+                      <button class="save-btn" onClick={handleCreateMelody}>
+                        Create
+                      </button>
                     </div>
-                  </div>
-
-                  <div class="form-group">
-                    <label>Tags (comma-separated)</label>
-                    <input
-                      type="text"
-                      value={createTags()}
-                      onInput={(e) => setCreateTags(e.currentTarget.value)}
-                      placeholder="jazz, blues, etc."
-                    />
-                  </div>
-
-                  <div class="form-group">
-                    <label>Notes</label>
-                    <textarea
-                      value={createNotes()}
-                      onInput={(e) => setCreateNotes(e.currentTarget.value)}
-                      placeholder="User notes about this melody..."
-                      rows={3}
-                    />
-                  </div>
-
-                  <div class="form-actions">
-                    <button
-                      class="cancel-btn"
-                      onClick={() => {
-                        setCreateName('')
-                        setCreateBpm(80)
-                        setCreateKey('C')
-                        setCreateScale('major')
-                        setCreateTags('')
-                        setCreateNotes('')
-                      }}
-                    >
-                      Cancel
-                    </button>
-                    <button class="save-btn" onClick={handleCreateMelody}>
-                      Create
-                    </button>
                   </div>
                 </div>
               )}
 
               {/* Edit Melody Form */}
               {editingMelodyKey() !== null && (
-                <div class="edit-melody-form">
-                  <h3>Edit Melody</h3>
+                <div class={styles.editMelodyForm}>
+                  <div data-testid="edit-melody-form">
+                    <h3>Edit Melody</h3>
 
-                  <div class="form-group">
-                    <label>Name</label>
-                    <input
-                      type="text"
-                      value={editName()}
-                      onInput={(e) => setEditName(e.currentTarget.value)}
-                      placeholder="Melody name"
-                    />
-                  </div>
-
-                  <div class="form-row">
                     <div class="form-group">
-                      <label>BPM</label>
+                      <label>Name</label>
                       <input
-                        type="number"
-                        value={editBpm()}
-                        onInput={(e) => {
-                          const valStr = e.currentTarget.value
-                          if (!valStr) {
-                            setEditBpm(80)
-                            return
+                        type="text"
+                        value={editName()}
+                        onInput={(e) => setEditName(e.currentTarget.value)}
+                        placeholder="Melody name"
+                      />
+                    </div>
+
+                    <div class={styles.formRow}>
+                      <div class="form-group">
+                        <label>BPM</label>
+                        <input
+                          type="number"
+                          value={editBpm()}
+                          onInput={(e) => {
+                            const valStr = e.currentTarget.value
+                            if (!valStr) {
+                              setEditBpm(80)
+                              return
+                            }
+                            const val = parseFloat(valStr)
+                            if (isNaN(val)) {
+                              return
+                            }
+                            const clamped = Math.max(20, Math.min(280, val))
+                            debouncedEditBpm(clamped)
+                          }}
+                          min="20"
+                          max="280"
+                        />
+                      </div>
+
+                      <div class="form-group">
+                        <label>Key</label>
+                        <select
+                          value={editKey()}
+                          onChange={(e) =>
+                            setEditKey(e.currentTarget.value as NoteName)
                           }
-                          const val = parseFloat(valStr)
-                          if (isNaN(val)) {
-                            return
-                          }
-                          const clamped = Math.max(20, Math.min(280, val))
-                          debouncedEditBpm(clamped)
-                        }}
-                        min="20"
-                        max="280"
+                        >
+                          <For each={keyNames}>
+                            {(k) => <option value={k}>{k}</option>}
+                          </For>
+                        </select>
+                      </div>
+
+                      <div class="form-group">
+                        <label>Scale</label>
+                        <select
+                          value={editScale()}
+                          onChange={(e) => setEditScale(e.currentTarget.value)}
+                        >
+                          <For each={scaleTypes}>
+                            {(s) => <option value={s.value}>{s.label}</option>}
+                          </For>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div class="form-group">
+                      <label>Tags (comma-separated)</label>
+                      <input
+                        type="text"
+                        value={editTags()}
+                        onInput={(e) => setEditTags(e.currentTarget.value)}
+                        placeholder="jazz, blues, etc."
                       />
                     </div>
 
                     <div class="form-group">
-                      <label>Key</label>
-                      <select
-                        value={editKey()}
-                        onChange={(e) =>
-                          setEditKey(e.currentTarget.value as NoteName)
-                        }
-                      >
-                        <For each={keyNames}>
-                          {(k) => <option value={k}>{k}</option>}
-                        </For>
-                      </select>
+                      <label>Notes</label>
+                      <textarea
+                        value={editNotes()}
+                        onInput={(e) => setEditNotes(e.currentTarget.value)}
+                        placeholder="User notes about this melody..."
+                        rows={3}
+                      />
                     </div>
 
-                    <div class="form-group">
-                      <label>Scale</label>
-                      <select
-                        value={editScale()}
-                        onChange={(e) => setEditScale(e.currentTarget.value)}
-                      >
-                        <For each={scaleTypes}>
-                          {(s) => <option value={s.value}>{s.label}</option>}
-                        </For>
-                      </select>
+                    <div class="form-actions">
+                      <button class="cancel-btn" onClick={cancelEdit}>
+                        Cancel
+                      </button>
+                      <button class="save-btn" onClick={handleSaveMelody}>
+                        Save
+                      </button>
                     </div>
-                  </div>
-
-                  <div class="form-group">
-                    <label>Tags (comma-separated)</label>
-                    <input
-                      type="text"
-                      value={editTags()}
-                      onInput={(e) => setEditTags(e.currentTarget.value)}
-                      placeholder="jazz, blues, etc."
-                    />
-                  </div>
-
-                  <div class="form-group">
-                    <label>Notes</label>
-                    <textarea
-                      value={editNotes()}
-                      onInput={(e) => setEditNotes(e.currentTarget.value)}
-                      placeholder="User notes about this melody..."
-                      rows={3}
-                    />
-                  </div>
-
-                  <div class="form-actions">
-                    <button class="cancel-btn" onClick={cancelEdit}>
-                      Cancel
-                    </button>
-                    <button class="save-btn" onClick={handleSaveMelody}>
-                      Save
-                    </button>
                   </div>
                 </div>
               )}
@@ -978,7 +985,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
             <div class="library-content">
               {/* Add melody mode */}
               <Show when={playlistEditing()?.mode === 'add-melody'}>
-                <div class="playlist-edit-form">
+                <div class={styles.playlistEditForm}>
                   <h3>Add Melody to Playlist</h3>
 
                   <div class="form-group">
@@ -992,38 +999,40 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                     />
                   </div>
 
-                  <div class="melody-select-list">
+                  <div class={styles.melodySelectList}>
                     <For each={availableForPlaylist()}>
                       {(item) => {
                         const edit = playlistEditing()
                         const playlistId = edit?.playlistId ?? ''
-                        const selected =
+                        const sel =
                           item.type === 'session'
                             ? isSessionInPlaylist(playlistId, item.id)
                             : isMelodyInPlaylist(playlistId, item.id)
                         return (
                           <button
                             type="button"
-                            class={`melody-select-item playlist-picker-pill ${selected ? 'selected' : ''}`}
+                            class={`${styles.playlistPickerPill} ${sel ? styles.selected : ''}`}
                             onClick={() =>
                               handleTogglePlaylistItem(playlistId, item)
                             }
                           >
-                            <span class="playlist-picker-icon">
+                            <span class={styles.playlistPickerIcon}>
                               {item.type === 'session' ? (
                                 <IconSheetMusic />
                               ) : (
                                 <IconMusicNote />
                               )}
                             </span>
-                            <span class="playlist-picker-copy">
-                              <span class="select-item-title">
+                            <span class={styles.playlistPickerCopy}>
+                              <span class={styles.selectItemTitle}>
                                 {item.title}
                               </span>
-                              <span class="select-item-meta">{item.meta}</span>
+                              <span class={styles.selectItemMeta}>
+                                {item.meta}
+                              </span>
                             </span>
-                            <span class="playlist-picker-check">
-                              {selected ? <IconCheckSolid /> : '+'}
+                            <span class={styles.playlistPickerCheck}>
+                              {sel ? <IconCheckSolid /> : '+'}
                             </span>
                           </button>
                         )
@@ -1031,7 +1040,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                     </For>
 
                     {availableForPlaylist().length === 0 && (
-                      <div class="empty-state">
+                      <div class={styles.emptyState}>
                         <p>No matching sessions or melodies found.</p>
                       </div>
                     )}
@@ -1059,7 +1068,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
 
               {/* Create mode (for new playlists) */}
               <Show when={playlistEditing()?.mode === 'create'}>
-                <div class="playlist-edit-form">
+                <div class={styles.playlistEditForm}>
                   <h3>Create New Playlist</h3>
 
                   <div class="form-group">
@@ -1092,7 +1101,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                   playlistEditing()?.playlistId
                 }
               >
-                <div class="playlist-edit-form">
+                <div class={styles.playlistEditForm}>
                   <h3>Rename Playlist</h3>
 
                   <div class="form-group">
@@ -1120,7 +1129,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
 
               {/* Delete mode */}
               <Show when={playlistEditing()?.mode === 'delete'}>
-                <div class="playlist-edit-form">
+                <div class={styles.playlistEditForm}>
                   <h3>Delete Playlist</h3>
                   <p>
                     Are you sure you want to delete this playlist? This action

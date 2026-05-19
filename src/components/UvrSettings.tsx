@@ -65,7 +65,10 @@ const IconInfo = () => (
 
 type UvrMode = 'separate' | 'instrumental' | 'vocal' | 'duo'
 
-export const UvrSettings: Component = () => {
+export const UvrSettings: Component<{
+  stemDenoise?: boolean
+  onStemDenoiseChange?: (value: boolean) => void
+}> = (props) => {
   const [mode, setMode] = createSignal<UvrMode>('separate')
   const [vocalIntensity, setVocalIntensity] = createSignal(70)
   const [instrumentalIntensity, setInstrumentalIntensity] = createSignal(70)
@@ -229,6 +232,38 @@ export const UvrSettings: Component = () => {
           }
         />
       </div>
+
+      {/* Stem Denoise Toggle */}
+      <Show when={props.onStemDenoiseChange}>
+        <div class="uvr-smoothing">
+          <div class="smoothing-header">
+            <span class="smoothing-label">
+              <IconWaveform />
+              Stem Denoise for Matching
+            </span>
+          </div>
+          <label
+            style={{
+              display: 'flex',
+              'align-items': 'center',
+              gap: '8px',
+              'margin-top': '8px',
+              cursor: 'pointer',
+              'font-size': '13px',
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={props.stemDenoise ?? true}
+              onChange={(e) => {
+                props.onStemDenoiseChange?.(e.currentTarget.checked)
+              }}
+              data-testid="stem-denoise-toggle"
+            />
+            Auto-denoise vocal stems for better Shazam matching
+          </label>
+        </div>
+      </Show>
 
       {/* Info Box */}
       <div class="uvr-info">

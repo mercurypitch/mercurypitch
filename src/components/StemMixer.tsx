@@ -2925,30 +2925,13 @@ export const StemMixerStyles: string = `
   font-weight: 500;
 }
 
-.sm-pitch-analysis-controls select,
-.sm-pitch-analysis-controls input[type="range"] {
+.sm-pitch-analysis-controls select {
   background: var(--bg-primary, #0d1117);
   border: 1px solid var(--border, #30363d);
   color: var(--fg-primary, #c9d1d9);
   border-radius: 0.25rem;
   padding: 0.4rem;
   outline: none;
-}
-
-.sm-pitch-analysis-controls input[type="range"] {
-  padding: 0;
-  height: 6px;
-  -webkit-appearance: none;
-  background: var(--bg-primary, #0d1117);
-}
-
-.sm-pitch-analysis-controls input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  height: 14px;
-  width: 14px;
-  border-radius: 50%;
-  background: var(--accent, #58a6ff);
-  cursor: pointer;
 }
 
 .sm-pitch-analysis-info {

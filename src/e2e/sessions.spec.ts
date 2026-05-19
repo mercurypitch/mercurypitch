@@ -55,7 +55,7 @@ test.describe('Practice Sessions', () => {
     await page.waitForTimeout(300)
     await activateSessionPlayer(page)
 
-    await expect(page.locator('.session-player')).toBeVisible()
+    await expect(page.locator('[data-testid="session-player"]')).toBeVisible()
   })
 
   test('SessionPlayer shows elapsed timer', async ({ page }) => {
@@ -63,7 +63,7 @@ test.describe('Practice Sessions', () => {
     await page.waitForTimeout(300)
     await activateSessionPlayer(page)
 
-    await expect(page.locator('.session-elapsed')).toBeVisible()
+    await expect(page.locator('[data-testid="session-elapsed"]')).toBeVisible()
   })
 
   test('SessionPlayer shows current item info', async ({ page }) => {
@@ -71,7 +71,9 @@ test.describe('Practice Sessions', () => {
     await page.waitForTimeout(300)
     await activateSessionPlayer(page)
 
-    await expect(page.locator('.session-player-item')).toBeVisible()
+    await expect(
+      page.locator('[data-testid="session-player-item"]'),
+    ).toBeVisible()
   })
 
   test('SessionPlayer displays session name', async ({ page }) => {
@@ -79,7 +81,7 @@ test.describe('Practice Sessions', () => {
     await page.waitForTimeout(300)
     await activateSessionPlayer(page)
 
-    const sessionName = page.locator('.session-player-title')
+    const sessionName = page.locator('[data-testid="session-player-title"]')
     await expect(sessionName).toBeVisible()
     await expect(sessionName).toContainText('E2E Test Session')
   })
@@ -89,7 +91,9 @@ test.describe('Practice Sessions', () => {
     await page.waitForTimeout(300)
     await activateSessionPlayer(page)
 
-    await expect(page.locator('.session-player-progress')).toBeVisible()
+    await expect(
+      page.locator('[data-testid="session-player-progress"]'),
+    ).toBeVisible()
   })
 
   test('SessionPlayer shows skip button', async ({ page }) => {
@@ -135,7 +139,7 @@ test.describe('Practice Sessions', () => {
     await page.waitForTimeout(300)
     await activateSessionPlayer(page)
 
-    const elapsedTime = page.locator('.session-elapsed')
+    const elapsedTime = page.locator('[data-testid="session-elapsed"]')
     const initialTime = await elapsedTime.textContent()
 
     if (initialTime) {
@@ -163,7 +167,7 @@ test.describe('Practice Sessions', () => {
     await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
-    const statLabels = page.locator('.stat-label')
+    const statLabels = page.locator('[data-testid="stat-label"]')
     const count = await statLabels.count()
     expect(count).toBeGreaterThanOrEqual(5) // 5 accuracy bands
   })
@@ -172,7 +176,7 @@ test.describe('Practice Sessions', () => {
     await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
-    const statBars = page.locator('.stat-bar')
+    const statBars = page.locator('[data-testid="stat-bar"]')
     const count = await statBars.count()
     expect(count).toBeGreaterThanOrEqual(5)
   })
@@ -181,7 +185,7 @@ test.describe('Practice Sessions', () => {
     await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
-    const statCounts = page.locator('.stat-count')
+    const statCounts = page.locator('[data-testid="stat-count"]')
     const count = await statCounts.count()
     expect(count).toBeGreaterThanOrEqual(5)
   })
@@ -190,7 +194,7 @@ test.describe('Practice Sessions', () => {
     await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
-    const scoreDisplay = page.locator('#score-display')
+    const scoreDisplay = page.locator('[data-testid="score-display"]')
     await expect(scoreDisplay).toBeVisible()
   })
 
@@ -198,7 +202,7 @@ test.describe('Practice Sessions', () => {
     await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
-    const scoreLabel = page.locator('#score-label')
+    const scoreLabel = page.locator('[data-testid="score-label"]')
     await expect(scoreLabel).toBeVisible()
   })
 
@@ -206,7 +210,7 @@ test.describe('Practice Sessions', () => {
     await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
-    const scoreValue = page.locator('#score-value')
+    const scoreValue = page.locator('[data-testid="score-value"]')
     await expect(scoreValue).toBeVisible()
   })
 
@@ -214,7 +218,7 @@ test.describe('Practice Sessions', () => {
     await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
-    const scoreValue = page.locator('#score-value')
+    const scoreValue = page.locator('[data-testid="score-value"]')
     const text = await scoreValue.textContent()
     if (text) {
       expect(text.trim()).toBe('--')
@@ -246,7 +250,7 @@ test.describe('Practice Sessions', () => {
     await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
-    const historyEntries = page.locator('.session-history-entry')
+    const historyEntries = page.locator('[data-testid="session-history-entry"]')
     const count = await historyEntries.count()
     expect(count).toBeGreaterThanOrEqual(0)
   })
@@ -265,7 +269,7 @@ test.describe('Practice Sessions', () => {
     await page.waitForTimeout(500)
 
     // After ending session, SessionPlayer should be gone
-    const sessionPlayer = page.locator('.session-player')
+    const sessionPlayer = page.locator('[data-testid="session-player"]')
     await expect(sessionPlayer).toHaveCount(0)
   })
 
@@ -335,7 +339,7 @@ test.describe('Practice Sessions', () => {
     await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
-    const entries = page.locator('.session-history-entry')
+    const entries = page.locator('[data-testid="session-history-entry"]')
     const count = await entries.count()
     expect(count).toBeGreaterThanOrEqual(0)
   })
@@ -452,7 +456,7 @@ test.describe('Practice Sessions', () => {
     await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
-    const tempoGroup = page.locator('.tempo-group')
+    const tempoGroup = page.locator('[data-testid="tempo-group"]')
     await expect(tempoGroup).toBeVisible()
   })
 

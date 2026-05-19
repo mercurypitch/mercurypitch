@@ -9,6 +9,7 @@ import { renderMarkdownToHtml } from '@/lib/render-markdown'
 import type { WalkthroughTab } from '@/stores/walkthrough-store'
 import { completeWalkthrough, getWalkthrough, getWalkthroughsForTab, isWalkthroughCompleted, viewWalkthrough, } from '@/stores/walkthrough-store'
 import type { WalkthroughContent } from '@/types/walkthrough'
+import styles from './WalkthroughModal.module.css'
 
 interface WalkthroughModalProps {
   isOpen: boolean
@@ -128,12 +129,12 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
 
   return (
     <Show when={props.isOpen && currentWalkthrough()}>
-      <div class="walkthrough-backdrop" onClick={closeOnBackdrop}>
-        <div class="walkthrough-modal">
+      <div class={styles.walkthroughBackdrop} onClick={closeOnBackdrop}>
+        <div class={styles.walkthroughModal}>
           {/* Completed state */}
           <Show when={isCompleted()} keyed>
-            <div class="walkthrough-complete">
-              <div class="walkthrough-complete-icon">
+            <div class={styles.walkthroughComplete}>
+              <div class={styles.walkthroughCompleteIcon}>
                 <svg viewBox="0 0 80 80" width="80" height="80" fill="none">
                   {/* Outer glow ring */}
                   <circle
@@ -159,7 +160,7 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
                     stroke-width="4"
                     stroke-linecap="round"
                     stroke-linejoin="round"
-                    class="walkthrough-check-path"
+                    class={styles.walkthroughCheckPath}
                   />
                   {/* Star accent top-right */}
                   <path
@@ -181,15 +182,18 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
                   </defs>
                 </svg>
               </div>
-              <h2 class="walkthrough-complete-title">Great Job!</h2>
-              <p class="walkthrough-complete-desc">
+              <h2 class={styles.walkthroughCompleteTitle}>Great Job!</h2>
+              <p class={styles.walkthroughCompleteDesc}>
                 You've completed this walkthrough.
               </p>
-              <button class="walkthrough-complete-btn" onClick={handleContinue}>
+              <button
+                class={styles.walkthroughCompleteBtn}
+                onClick={handleContinue}
+              >
                 Continue
               </button>
               <button
-                class="walkthrough-back-list-btn"
+                class={styles.walkthroughBackListBtn}
                 onClick={handleBackToList}
               >
                 <svg
@@ -210,8 +214,11 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
 
           {/* Reading state */}
           <Show when={!isCompleted()} keyed>
-            <div class="walkthrough-content">
-              <button class="walkthrough-back-btn" onClick={handleBackToList}>
+            <div class={styles.walkthroughContent}>
+              <button
+                class={styles.walkthroughBackBtn}
+                onClick={handleBackToList}
+              >
                 <svg
                   viewBox="0 0 24 24"
                   width="14"
@@ -225,39 +232,44 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
                 </svg>
                 Back to list
               </button>
-              <div class="walkthrough-body">
-                <h2 class="walkthrough-main-title">
+              <div class={styles.walkthroughBody}>
+                <h2 class={styles.walkthroughMainTitle}>
                   {currentWalkthrough()!.title}
                 </h2>
-                <p class="walkthrough-main-desc">
+                <p class={styles.walkthroughMainDesc}>
                   {currentWalkthrough()!.description}
                 </p>
 
                 <div
-                  class="walkthrough-text"
+                  class={styles.walkthroughText}
                   innerHTML={renderMarkdownToHtml(
                     currentWalkthrough()!.content,
                   )}
                 />
 
-                <div class="walkthrough-steps">
-                  <h3 class="walkthrough-steps-title">How to Use:</h3>
-                  <div class="walkthrough-steps-list">
+                <div class={styles.walkthroughSteps}>
+                  <h3 class={styles.walkthroughStepsTitle}>How to Use:</h3>
+                  <div class={styles.walkthroughStepsList}>
                     <For each={currentWalkthrough()?.steps ?? []}>
                       {(step, index) => (
                         <Show when={index() === currentStepIndex()}>
-                          <div class="walkthrough-step-item active">
-                            <span class="walkthrough-step-number">
+                          <div
+                            class={[
+                              styles.walkthroughStepItem,
+                              styles.walkthroughStepItemActive,
+                            ].join(' ')}
+                          >
+                            <span class={styles.walkthroughStepNumber}>
                               {index() + 1}
                             </span>
-                            <div class="walkthrough-step-details">
-                              <h4 class="walkthrough-step-title">
+                            <div class={styles.walkthroughStepDetails}>
+                              <h4 class={styles.walkthroughStepTitle}>
                                 {step.title}
                               </h4>
-                              <p class="walkthrough-step-desc">
+                              <p class={styles.walkthroughStepDesc}>
                                 {step.description}
                               </p>
-                              <span class="walkthrough-step-action">
+                              <span class={styles.walkthroughStepAction}>
                                 Action: {step.action}
                               </span>
                             </div>
@@ -269,9 +281,9 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
                 </div>
               </div>
 
-              <div class="walkthrough-controls">
+              <div class={styles.walkthroughControls}>
                 <button
-                  class="walkthrough-nav-btn"
+                  class={styles.walkthroughNavBtn}
                   onClick={prevStep}
                   disabled={currentStepIndex() === 0}
                 >
@@ -291,7 +303,10 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
 
                 {currentStepIndex() < currentWalkthrough()!.steps.length - 1 ? (
                   <button
-                    class="walkthrough-nav-btn walkthrough-nav-btn-next"
+                    class={[
+                      styles.walkthroughNavBtn,
+                      styles.walkthroughNavBtnNext,
+                    ].join(' ')}
                     onClick={nextStep}
                   >
                     Next
@@ -309,7 +324,7 @@ export const WalkthroughModal: Component<WalkthroughModalProps> = (props) => {
                   </button>
                 ) : (
                   <button
-                    class="walkthrough-complete-btn"
+                    class={styles.walkthroughCompleteBtn}
                     onClick={completeCurrentWalkthrough}
                   >
                     <svg

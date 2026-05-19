@@ -10,6 +10,7 @@ import { keyName, setScaleType, showNotification } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import { customScales, customScaleTypeId, deleteCustomScale, saveCustomScale, } from '@/stores/settings-store'
 import type { NoteName } from '@/types'
+import styles from './ScaleBuilder.module.css'
 
 interface ScaleBuilderProps {
   isOpen: boolean
@@ -166,7 +167,7 @@ export const ScaleBuilder: Component<ScaleBuilderProps> = (props) => {
         }}
       >
         <div
-          class="modal-content scale-builder"
+          class={['modal-content', styles.scaleBuilder].join(' ')}
           onClick={(e) => {
             e.stopPropagation()
           }}
@@ -184,13 +185,13 @@ export const ScaleBuilder: Component<ScaleBuilderProps> = (props) => {
           </div>
 
           <div class="modal-body">
-            <p class="scale-desc">
+            <p class={styles.scaleDesc}>
               Select the notes to include in your custom scale. Click the note
               buttons to toggle them on/off.
             </p>
 
             {/* Note buttons */}
-            <div class="scale-notes-grid">
+            <div class={styles.scaleNotesGrid}>
               <For each={baseNotes}>
                 {(note) => (
                   <button
@@ -206,30 +207,32 @@ export const ScaleBuilder: Component<ScaleBuilderProps> = (props) => {
             </div>
 
             {/* Quick actions */}
-            <div class="scale-quick-actions">
-              <button class="btn-secondary" onClick={selectNaturalNotes}>
+            <div class={styles.scaleQuickActions}>
+              <button class={styles.btnSecondary} onClick={selectNaturalNotes}>
                 Natural Notes (7)
               </button>
-              <button class="btn-secondary" onClick={clearAll}>
+              <button class={styles.btnSecondary} onClick={clearAll}>
                 Clear All
               </button>
             </div>
 
             {/* Preview */}
-            <div class="scale-preview">
+            <div class={styles.scalePreview}>
               <h4>Selected Notes ({customNotes().size})</h4>
-              <div class="scale-preview-notes">
+              <div class={styles.scalePreviewNotes}>
                 <For
                   each={previewScale()}
-                  fallback={<span class="no-notes">No notes selected</span>}
+                  fallback={
+                    <span class={styles.noNotes}>No notes selected</span>
+                  }
                 >
-                  {(note) => <span class="preview-note">{note}</span>}
+                  {(note) => <span class={styles.previewNote}>{note}</span>}
                 </For>
               </div>
             </div>
 
             {/* Scale name */}
-            <div class="scale-name-row">
+            <div class={styles.scaleNameRow}>
               <label for="scale-name-input">Scale Name:</label>
               <input
                 id="scale-name-input"
@@ -237,20 +240,20 @@ export const ScaleBuilder: Component<ScaleBuilderProps> = (props) => {
                 value={scaleName()}
                 onInput={(e) => setScaleName(e.currentTarget.value)}
                 placeholder="My Custom Scale"
-                class="scale-name-input"
+                class={styles.scaleNameInput}
               />
             </div>
 
             {/* Saved scales */}
             <Show when={Object.keys(customScales()).length > 0}>
-              <div class="saved-scales">
+              <div class={styles.savedScales}>
                 <h4>Saved Scales</h4>
-                <div class="saved-scales-list">
+                <div class={styles.savedScalesList}>
                   <For each={Object.keys(customScales()).sort()}>
                     {(name) => (
-                      <div class="saved-scale-item">
+                      <div class={styles.savedScaleItem}>
                         <button
-                          class="btn-small"
+                          class={styles.btnSmall}
                           onClick={() => {
                             loadScale(name)
                           }}
@@ -258,7 +261,7 @@ export const ScaleBuilder: Component<ScaleBuilderProps> = (props) => {
                           {name}
                         </button>
                         <button
-                          class="btn-delete"
+                          class={styles.btnDelete}
                           onClick={() => {
                             handleDeleteScale(name)
                           }}
@@ -276,14 +279,14 @@ export const ScaleBuilder: Component<ScaleBuilderProps> = (props) => {
 
           <div class="modal-footer">
             <button
-              class="btn-secondary"
+              class={styles.btnSecondary}
               onClick={saveScale}
               disabled={customNotes().size === 0}
             >
               Save Scale
             </button>
             <button
-              class="btn-primary"
+              class={styles.btnPrimary}
               onClick={applyScale}
               disabled={customNotes().size < 2}
             >
