@@ -7,11 +7,13 @@
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
 import { CharacterIcons } from '@/components/CharacterIcons'
+import { DailyRoutinePanel } from '@/features/routines/DailyRoutinePanel'
 import { LibraryTab } from '@/components/LibraryTab'
 import { NoteList } from '@/components/NoteList'
 import { PitchDisplay } from '@/components/PitchDisplay'
 import { SafeSelect } from '@/components/shared/SafeSelect'
 import { StatsBars } from '@/components/StatsBars'
+import { StreakCalendar } from '@/components/StreakCalendar'
 import { TAB_COMPOSE, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
 import { ratingToScore } from '@/lib/practice-engine'
 import { KEY_OFFSETS, midiToFreq, midiToNote } from '@/lib/scale-data'
@@ -462,6 +464,17 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
       {/* Library */}
       <div class={styles.sidebarSection}>
         <LibraryTab />
+      </div>
+
+      {/* Daily Routine */}
+      <div class={styles.sidebarSection}>
+        <DailyRoutinePanel />
+      </div>
+
+      {/* Streak Calendar */}
+      <div class={styles.sidebarSection}>
+        <h3 class={styles.panelTitle}>Activity</h3>
+        <StreakCalendar />
       </div>
 
       {/* Stats panel */}
