@@ -190,7 +190,8 @@ export function getBallPhysics(
   }
 
   // Keep within bounds (all values in beat-space, not pixels)
-  const melodyEndBeat = notes.length > 0 ? Math.max(...notes.map((n) => n.endBeat)) : 0
+  const melodyEndBeat =
+    notes.length > 0 ? Math.max(...notes.map((n) => n.endBeat)) : 0
   const minX = padding.left
   const maxX = Math.max(melodyEndBeat, 100) - padding.right
 
