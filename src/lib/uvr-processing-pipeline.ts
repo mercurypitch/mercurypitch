@@ -154,17 +154,17 @@ async function processLocal(
   const vocalBlob = float32ToWavBlob(result.vocals, result.sampleRate)
   const instrBlob = float32ToWavBlob(result.instrumental, result.sampleRate)
 
-  // Persist stems to IndexedDB (non-blocking, fire-and-forget)
-  const persistSessionId = sessionId
-  void Promise.all([
+  // Persist stems to IndexedDB — must complete before onComplete so that
+  // auto-fingerprint extraction can read the vocal blob immediately.
+  await Promise.all([
     saveStemBlob(
-      persistSessionId,
+      sessionId,
       'vocal',
       vocalBlob,
       `${file.name}_vocal.wav`,
     ),
     saveStemBlob(
-      persistSessionId,
+      sessionId,
       'instrumental',
       instrBlob,
       `${file.name}_instrumental.wav`,

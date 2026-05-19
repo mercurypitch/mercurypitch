@@ -31,9 +31,13 @@ interface StemMixerProps {
   sessionId: string
   songTitle: string
   practiceMode?: 'vocal' | 'instrumental' | 'full' | 'midi'
-  /** Which stems the user requested to see — only these appear in tracks().
+  /** Which stems the user requested to see -- only these appear in tracks().
    *  Undefined = show all loaded stems (backwards-compat). */
   requestedStems?: { vocal?: boolean; instrumental?: boolean; midi?: boolean }
+  /** Initial seek position in seconds (e.g. from Shazam match offset) */
+  initialSeekSec?: number
+  /** Auto-play after stems finish loading */
+  autoPlay?: boolean
   onBack?: () => void
 }
 
@@ -625,6 +629,33 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   createEffect(() => {
     if (!audio.loading()) {
       canvas.queueCanvasRedraw()
+    }
+  })
+
+  // Auto-seek + autoplay from Shazam match offset
+  let autoPlayHandled = false
+  createEffect(() => {
+    if (autoPlayHandled) return
+    if (audio.loading()) return
+    if (audio.midiGenerating()) return
+    if (audio.loadError()) return
+    autoPlayHandled = true
+
+    const seekSec = props.initialSeekSec
+    console.log('[StemMixer] Auto-play triggered. seekSec=', seekSec, 'autoPlay=', props.autoPlay, 'duration=', audio.duration())
+    
+    if (seekSec !== undefined && seekSec >= 0 && audio.duration() > 0) {
+      const target = Math.min(seekSec, audio.duration() - 0.5)
+      console.log(`[StemMixer] Seeking to match offset: ${target.toFixed(2)}s`)
+      audio.seekTo(target)
+    }
+    if (props.autoPlay === true) {
+      console.log('[StemMixer] Scheduling auto-play...')
+      // Small delay to let the seek settle before starting playback
+      setTimeout(() => {
+        console.log('[StemMixer] Executing auto-play handlePlay()')
+        audio.handlePlay()
+      }, 150)
     }
   })
 

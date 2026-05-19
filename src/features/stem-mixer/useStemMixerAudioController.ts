@@ -546,6 +546,7 @@ export const useStemMixerAudioController = (
       canvas.drawLiveWaveform()
       canvas.drawPitchCanvas()
       canvas.drawMidiCanvas()
+      deps.updateCurrentLine()
     })
   }
 

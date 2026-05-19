@@ -120,32 +120,60 @@
   align-items: center;
   gap: 0.375rem;
   padding: 0.35rem 0.65rem;
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: 0.375rem;
-  color: var(--fg-secondary);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 0.5rem;
+  color: var(--fg-tertiary);
   font-size: 0.75rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
 }
 
 .view-tab svg {
   width: 0.85rem;
   height: 0.85rem;
   flex-shrink: 0;
+  opacity: 0.7;
+  transition: opacity 0.2s;
 }
 
 .view-tab:hover {
-  background: var(--bg-primary);
+  background: rgba(255, 255, 255, 0.06);
   color: var(--fg-primary);
-  border-color: var(--fg-tertiary);
+  border-color: rgba(139, 92, 246, 0.25);
+}
+
+.view-tab:hover svg {
+  opacity: 1;
 }
 
 .view-tab.active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
+  background: rgba(139, 92, 246, 0.1);
+  border-color: rgba(139, 92, 246, 0.3);
+  color: var(--fg-primary);
+  box-shadow: 0 0 12px rgba(139, 92, 246, 0.1);
+}
+
+.view-tab.active svg {
+  opacity: 1;
+  color: #a78bfa;
+}
+
+/* Sing tab uses a distinct green accent to differentiate from upload */
+.view-tab-sing.active {
+  background: rgba(74, 222, 128, 0.08);
+  border-color: rgba(74, 222, 128, 0.25);
+  box-shadow: 0 0 12px rgba(74, 222, 128, 0.08);
+}
+
+.view-tab-sing.active svg {
+  color: #4ade80;
+}
+
+.view-tab-sing:hover:not(.active) {
+  border-color: rgba(74, 222, 128, 0.2);
 }
 
 /* Processing Mode Toggle */

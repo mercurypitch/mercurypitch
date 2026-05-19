@@ -6,13 +6,14 @@
 // contour is matched against the melody fingerprint index.
 // ============================================================
 
-import { createSignal, onCleanup, onMount, Show } from 'solid-js'
+import { createSignal, For, onCleanup, onMount, Show } from 'solid-js'
 import { AudioEngine } from '@/lib/audio-engine'
 import { audioRegistry } from '@/lib/audio-registry'
 import { IS_DEV } from '@/lib/defaults'
 import type { DetectedPitch } from '@/lib/pitch-detector'
 import { LivePitchBuffer } from '@/lib/shazam/live-pitch-buffer'
 import { matchPitchContourWithMeta } from '@/lib/shazam/melody-matcher'
+import { detectOnsets, segmentNotes } from '@/lib/shazam/onset-detector'
 import type { LivePitchContour, MatchCandidate, TimestampedPitch, } from '@/lib/shazam/types'
 import type { SpeechRecognizer } from '@/lib/speech-recognition'
 import { createSpeechRecognizer } from '@/lib/speech-recognition'
@@ -40,6 +41,7 @@ export function ShazamListen(props: ShazamListenProps) {
   let ctx: CanvasRenderingContext2D | null = null
   let rafId: number | null = null
   let pitchHistory: Array<{ freq: number; clarity: number; time: number }> = []
+  let liveMatchIntervalId: ReturnType<typeof setInterval> | null = null
 
   const [listenState, setListenState] = createSignal<ListenState>('idle')
   const [elapsed, setElapsed] = createSignal(0)
@@ -74,6 +76,13 @@ export function ShazamListen(props: ShazamListenProps) {
   }
 
   const [frameCount, setFrameCount] = createSignal(0)
+  const [liveMatches, setLiveMatches] = createSignal<Array<{
+    name: string
+    confidence: number
+    breakdown: { pitch: number; interval: number; chroma: number; rhythm: number }
+    notes: number
+  }>>([])
+  const [liveQueryNotes, setLiveQueryNotes] = createSignal(0)
 
   const speechSupported = (() => {
     const w = window as unknown as Record<string, unknown>
@@ -149,6 +158,7 @@ export function ShazamListen(props: ShazamListenProps) {
       buffer = null
     }
     cancelAnimationLoop()
+    stopLiveMatching()
   }
 
   function cancelAnimationLoop() {
@@ -184,9 +194,17 @@ export function ShazamListen(props: ShazamListenProps) {
     setListenState('listening')
     pitchHistory = []
     setSpeechText('')
+    setLiveMatches([])
     startAnimationLoop()
+    startLiveMatching()
 
     if (speechEnabled() && speechSupported) {
+      // Stop any existing recognizer to prevent leaked instances
+      // (e.g. if toggleSpeech was called before handleStart)
+      if (speechRecognizer) {
+        speechRecognizer.stop()
+        speechRecognizer = null
+      }
       speechRecognizer = createSpeechRecognizer({
         onResult: (text, isFinal) => {
           setSpeechText(text)
@@ -310,6 +328,89 @@ export function ShazamListen(props: ShazamListenProps) {
       rafId = requestAnimationFrame(tick)
     }
     rafId = requestAnimationFrame(tick)
+  }
+
+  // -- Live match preview (runs every ~2.5s during capture) ---
+
+  const LIVE_MATCH_INTERVAL_MS = 2500
+  const MIN_FRAMES_FOR_MATCH = 90 // ~1.5s at 60fps
+
+  function startLiveMatching() {
+    stopLiveMatching()
+    liveMatchIntervalId = setInterval(runLiveMatch, LIVE_MATCH_INTERVAL_MS)
+  }
+
+  function stopLiveMatching() {
+    if (liveMatchIntervalId !== null) {
+      clearInterval(liveMatchIntervalId)
+      liveMatchIntervalId = null
+    }
+  }
+
+  function runLiveMatch() {
+    if (listenState() !== 'listening' || !buffer) return
+
+    const frames = buffer.getCurrentFrames()
+    if (frames.length < MIN_FRAMES_FOR_MATCH) return
+
+    try {
+      const onsets = detectOnsets(frames)
+      if (onsets.length < 3) {
+        setLiveMatches([])
+        return
+      }
+      const segmented = segmentNotes(frames, onsets)
+      const durationSec = frames.length > 0 ? frames[frames.length - 1].time : 0
+
+      const contour: LivePitchContour = {
+        frames,
+        onsets,
+        durationSec,
+        noteSequence: segmented.noteSequence,
+        ioiSequence: segmented.ioiSequence,
+        noteDurations: segmented.noteDurations,
+      }
+
+      const sourceFilter = !includeMelodies()
+        ? ('stem' as const)
+        : !includeStems()
+          ? ('melody' as const)
+          : undefined
+
+      const result = matchPitchContourWithMeta(contour, {
+        maxResults: 3,
+        sourceFilter,
+      })
+
+      setLiveQueryNotes(contour.noteSequence.length)
+      setLiveMatches(
+        result.candidates.map((c) => ({
+          name: c.name,
+          confidence: c.confidence,
+          breakdown: {
+            pitch: Math.round((c.breakdown?.pitchScore ?? 0) * 100),
+            interval: Math.round((c.breakdown?.intervalScore ?? 0) * 100),
+            chroma: Math.round((c.breakdown?.chromaScore ?? 0) * 100),
+            rhythm: Math.round((c.breakdown?.rhythmScore ?? 0) * 100),
+          },
+          notes: Math.round((c.breakdown?.lengthBonus ?? 0) * 100),
+        })),
+      )
+
+      // Auto-jump during live matching if auto-mode is on and threshold is met
+      if (
+        autoMode() &&
+        result.candidates.length > 0 &&
+        result.candidates[0].confidence >= autoThreshold()
+      ) {
+        // Stop capturing immediately and jump
+        if (buffer !== null) buffer.cancel()
+        stopLiveMatching()
+        props.onAutoJump?.(result.candidates[0])
+      }
+    } catch {
+      // Silently ignore matching errors during live preview
+    }
   }
 
   // Note names for canvas label rendering
@@ -625,6 +726,24 @@ export function ShazamListen(props: ShazamListenProps) {
           />
           <FingerprintInspector />
         </div>
+        <Show when={liveMatches().length > 0 && listenState() === 'listening'}>
+          <div class={styles.liveMatchPanel} data-testid="shazam-live-matches">
+            <h4 class={styles.liveMatchHeading}>Live Matches ({liveQueryNotes()} notes detected)</h4>
+            <For each={liveMatches()}>
+              {(match) => (
+                <div>
+                  <div class={styles.liveMatchRow}>
+                    <span class={styles.liveMatchName}>{match.name}</span>
+                    <span class={styles.liveMatchConf}>{match.confidence}%</span>
+                  </div>
+                  <div class={styles.liveMatchDetail}>
+                    P:{match.breakdown.pitch} I:{match.breakdown.interval} C:{match.breakdown.chroma} R:{match.breakdown.rhythm} L:{match.notes}
+                  </div>
+                </div>
+              )}
+            </For>
+          </div>
+        </Show>
       </Show>
 
       <div class={styles.elapsed} data-testid="shazam-elapsed">

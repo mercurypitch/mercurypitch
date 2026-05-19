@@ -562,6 +562,28 @@ export const Mic: Component = () => (
   </svg>
 )
 
+// SingMic Icon — microphone with sound wave arcs (Shazam-style recognition)
+export const SingMic: Component = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    width="24"
+    height="24"
+  >
+    <path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" />
+    <path d="M18 9v2a6 6 0 0 1-12 0V9" />
+    <line x1="12" y1="17" x2="12" y2="20" />
+    <line x1="9" y1="20" x2="15" y2="20" />
+    {/* Sound wave arcs */}
+    <path d="M19 6a5.5 5.5 0 0 1 0 8" stroke-width="1.5" opacity="0.7" />
+    <path d="M21.5 4a9 9 0 0 1 0 12" stroke-width="1.5" opacity="0.45" />
+  </svg>
+)
+
 // FilePlus Icon (new session — document with plus badge)
 export const FilePlus: Component = () => (
   <svg

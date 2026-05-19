@@ -149,5 +149,6 @@ export async function extractStemFingerprint(
     key: 'C',
     durationSec,
     noteCount: merged.length,
+    firstNoteStartSec: merged.length > 0 ? merged[0].startSec : 0,
   }
 }
