@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.5] - 2026-05-19
+
+### Added
+
+- **Jam Session -- Session Persistence**: room ID and display name stored in `sessionStorage`; page reloads auto-rejoin the same room
+- **Jam Session -- Server-side Host Tracking**: `ownerName` persisted in Durable Object `ctx.storage`; reconnecting with the original display name restores host privileges
+- **Jam Session -- Activity Scoreboard**: per-user scoreboard overlay on the exercise canvas showing exercise name, timestamp, and individual accuracy badges
+- **Jam Session -- Exercise History Persistence**: completed exercise scores survive page reloads via `sessionStorage`
+- **Voice Type Detector**: vocal range analysis modal for determining singer classification (soprano, alto, tenor, bass)
+- **Vocal Range Presets**: predefined singing range presets that auto-configure default octave and exercise selection
+
+### Changed
+
+- **Jam Session -- Default Camera Off**: video disabled by default to reduce WebRTC handshake latency on room join
+- **Jam Session -- Random Codenames**: users who join without a display name receive a thematic one-word codename
+- **Jam Session -- Camera Widget**: repositioned to bottom-right horizontal row layout alongside chat widget
+- **Jam Session -- Signaling Protocol**: `room-created` and `room-joined` messages now include `isHost` flag from the server
+- **Compose Tab**: removed melody count badge for cleaner, consistent navigation
+- **Jam Panel**: replaced inspirational quote branding; cleaned up display name input UI
+
+### Fixed
+
+- **Shazam**: processing spinner and error state display on stop/match flow
+- **Shazam**: melody matching algorithm accuracy improvements
+- **Pitch Canvas**: scroll mode rendering after CSS module refactor
+- **Durable Object Hibernation**: `ownerName` lost after DO eviction -- now persisted in `ctx.storage`
+- **E2E Test**: removed assertion on deleted `.tab-badge` element
+
 ## [0.3.4] - 2026-05-19
 
 ### Added
