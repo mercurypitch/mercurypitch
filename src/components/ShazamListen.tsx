@@ -295,6 +295,9 @@ export function ShazamListen(props: ShazamListenProps) {
   function handleRetry() {
     setListenState('idle')
     setErrorMessage('')
+    pitchHistory = []
+    // Auto-start mic so the user can immediately sing again
+    void handleStart()
   }
 
   // ── Canvas animation loop ──────────────────────────────────
@@ -309,6 +312,9 @@ export function ShazamListen(props: ShazamListenProps) {
     rafId = requestAnimationFrame(tick)
   }
 
+  // Note names for canvas label rendering
+  const CANVAS_NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+
   function drawCanvas() {
     if (!canvasRef || !ctx) return
     const w = canvasRef.getBoundingClientRect().width
@@ -321,6 +327,10 @@ export function ShazamListen(props: ShazamListenProps) {
     const topPad = 10
     const bottomPad = 10
     const plotH = h - topPad - bottomPad
+
+    // Pitch trace fills 70% of canvas width; the remaining 30% is
+    // reserved for the current-note label at the head of the line.
+    const traceW = w * 0.7
 
     const midiToY = (midi: number): number => {
       const clamped = Math.max(midiLow, Math.min(midiHigh, midi))
@@ -373,8 +383,11 @@ export function ShazamListen(props: ShazamListenProps) {
     let prevX = 0
     let prevY = 0
     let prevVoiced = false
+    let lastVoicedX = 0
+    let lastVoicedY = 0
+    let lastVoicedFreq = 0
     for (let i = 0; i < totalFrames; i++) {
-      const x = (i / Math.max(1, totalFrames - 1)) * w
+      const x = (i / Math.max(1, totalFrames - 1)) * traceW
       const point = pitchHistory[i]
       const isVoiced = point.freq > 0 && point.clarity > 0
       const y = isVoiced ? toY(point.freq) : h - bottomPad
@@ -392,9 +405,59 @@ export function ShazamListen(props: ShazamListenProps) {
         ctx.stroke()
       }
 
+      if (isVoiced) {
+        lastVoicedX = x
+        lastVoicedY = y
+        lastVoicedFreq = point.freq
+      }
+
       prevX = x
       prevY = y
       prevVoiced = isVoiced
+    }
+
+    // ── Current note label at the head of the pitch line ───
+    if (lastVoicedFreq > 0) {
+      const midi = Math.round(12 * Math.log2(lastVoicedFreq / 440) + 69)
+      const noteIdx = ((midi % 12) + 12) % 12
+      const octave = Math.floor(midi / 12) - 1
+      const label = `${CANVAS_NOTE_NAMES[noteIdx]}${octave}`
+
+      // Glow dot at the line head
+      ctx.beginPath()
+      ctx.arc(lastVoicedX, lastVoicedY, 5, 0, Math.PI * 2)
+      ctx.fillStyle = 'rgba(74, 222, 128, 0.9)'
+      ctx.fill()
+      ctx.beginPath()
+      ctx.arc(lastVoicedX, lastVoicedY, 9, 0, Math.PI * 2)
+      ctx.fillStyle = 'rgba(74, 222, 128, 0.2)'
+      ctx.fill()
+
+      // Note label to the right of the dot
+      const labelX = lastVoicedX + 16
+      const labelY = lastVoicedY
+
+      // Background pill
+      ctx.font = 'bold 16px monospace'
+      ctx.textAlign = 'left'
+      ctx.textBaseline = 'middle'
+      const metrics = ctx.measureText(label)
+      const pillW = metrics.width + 14
+      const pillH = 24
+      const pillX = labelX - 7
+      const pillY = labelY - pillH / 2
+
+      ctx.beginPath()
+      ctx.roundRect(pillX, pillY, pillW, pillH, 6)
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.55)'
+      ctx.fill()
+      ctx.strokeStyle = 'rgba(74, 222, 128, 0.4)'
+      ctx.lineWidth = 1
+      ctx.stroke()
+
+      // Text
+      ctx.fillStyle = '#4ade80'
+      ctx.fillText(label, labelX, labelY)
     }
   }
 
@@ -534,12 +597,7 @@ export function ShazamListen(props: ShazamListenProps) {
         data-testid="shazam-canvas"
       />
 
-      <Show when={latestFrame() && listenState() === 'listening'}>
-        <div class={styles.currentNote} data-testid="shazam-current-note">
-          {latestFrame()!.noteName}
-          {latestFrame()!.octave}
-        </div>
-      </Show>
+
 
       <Show when={speechEnabled() && listenState() === 'listening'}>
         <div class={styles.speechBox} data-testid="shazam-speech-text">
