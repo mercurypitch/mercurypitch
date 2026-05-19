@@ -1665,10 +1665,13 @@ select option.custom-scale-option {
   min-height: 0;
   overflow: hidden;
   position: relative;
+  /* Align items to start so the wrapper doesn't stretch to fill the height */
+  align-items: stretch;
 }
 
 .roll-grid-wrapper {
-  flex: 1;
+  /* Do not grow beyond content, but shrink if needed */
+  flex: 0 1 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -1677,7 +1680,8 @@ select option.custom-scale-option {
 }
 
 .roll-grid-body {
-  flex: 1;
+  /* Do not grow beyond explicitly set height in normal mode */
+  flex: 0 1 auto;
   min-height: 0;
   display: grid;
   grid-template-columns: var(--piano-width, 62px) 1fr;

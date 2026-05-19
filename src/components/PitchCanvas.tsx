@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createEffect, createSignal, onCleanup, onMount } from 'solid-js'
+import { createEffect, createMemo, createSignal, onCleanup, onMount } from 'solid-js'
 import type { ArcState } from '@/lib/arc-physics'
 import { BALL_RADIUS, buildPlayable, computeArcCy, computeArcEndBeat, computeBallPos, computeInitialArc, isBackwardsSeek, } from '@/lib/arc-physics'
 import { AudioEngine } from '@/lib/audio-engine'
@@ -697,16 +697,47 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     }
   }
 
+  const verticalBounds = createMemo(() => {
+    const scale = props.scale()
+    const melody = props.melody()
+
+    let notesMidi: number[] = []
+    for (const note of scale) {
+      if (note.midi) notesMidi.push(note.midi)
+    }
+    for (const item of melody) {
+      if (item.isRest !== true && item.note !== undefined && item.note !== null && item.note.midi !== undefined) {
+        notesMidi.push(item.note.midi)
+      }
+    }
+    if (notesMidi.length === 0) notesMidi = [60] // fallback C4
+
+    let minMidi = Math.min(...notesMidi)
+    let maxMidi = Math.max(...notesMidi)
+
+    // Minimum span: 24 semitones (2 octaves)
+    if (maxMidi - minMidi < 24) {
+      const diff = 24 - (maxMidi - minMidi)
+      minMidi -= Math.floor(diff / 2)
+      maxMidi += Math.ceil(diff / 2)
+    }
+
+    // Absolute constraints: C1 (24) to C7 (96) max view
+    const VIEW_MIN = 24
+    const VIEW_MAX = 96
+    
+    // Add small padding (e.g., 2 semitones) so notes aren't flush against the absolute edge of the window
+    const viewMin = Math.max(VIEW_MIN, minMidi - 2)
+    const viewMax = Math.min(VIEW_MAX, maxMidi + 2)
+    
+    return { minMidi: viewMin, maxMidi: viewMax }
+  })
+
   const freqToY = (freq: number, h: number): number => {
     if (!Number.isFinite(freq) || freq <= 0) return h / 2
-    const scale = props.scale()
-    const allFreqs = scale.map((n) => n.freq)
-    if (allFreqs.length === 0) return h / 2
-    const minFreq = Math.min(...allFreqs) * 0.82
-    const maxFreq = Math.max(...allFreqs) * 1.22
-    const logMin = Math.log2(minFreq)
-    const logMax = Math.log2(maxFreq)
-    const pct = (Math.log2(freq) - logMin) / (logMax - logMin)
+    const bounds = verticalBounds()
+    const midi = 69 + 12 * Math.log2(freq / 440)
+    const pct = (midi - bounds.minMidi) / Math.max(1, bounds.maxMidi - bounds.minMidi)
     const y = h - pct * (h - 40) - 20
     return Number.isFinite(y) ? y : h / 2
   }
@@ -941,6 +972,74 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       if (bw > 2) {
         const boxH = 22
         const boxHalf = boxH / 2
+
+        let isOffscreen = false
+        let renderY = y
+        if (renderY - boxHalf < 0) {
+          renderY = boxHalf + 2
+          isOffscreen = true
+        } else if (renderY + boxHalf > h) {
+          renderY = h - boxHalf - 2
+          isOffscreen = true
+        }
+
+        if (isOffscreen) {
+          const r = 4
+          const ry = renderY - boxHalf
+          
+          ctx.beginPath()
+          ctx.roundRect(x1, ry, bw, boxH, r)
+          
+          // Same styling as piano roll offscale
+          ctx.fillStyle = 'rgba(120,120,120,0.4)'
+          ctx.fill()
+          ctx.strokeStyle = 'rgba(139,148,158,0.5)'
+          ctx.lineWidth = 1
+          ctx.stroke()
+          
+          // Hatch pattern
+          ctx.save()
+          ctx.beginPath()
+          ctx.roundRect(x1, ry, bw, boxH, r)
+          ctx.clip()
+          ctx.strokeStyle = 'rgba(255,255,255,0.3)'
+          ctx.lineWidth = 1
+          for (let hx = x1; hx < x1 + bw + boxH; hx += 6) {
+            ctx.beginPath()
+            ctx.moveTo(hx, ry)
+            ctx.lineTo(hx - boxH, ry + boxH)
+            ctx.stroke()
+          }
+          ctx.restore()
+
+          // Note name text
+          if (bw > 18) {
+            ctx.fillStyle = 'rgba(255,255,255,0.85)'
+            ctx.font = 'bold 9px sans-serif'
+            ctx.textAlign = 'center'
+            ctx.textBaseline = 'middle'
+            ctx.fillText(item.note.name, x1 + bw / 2, ry + boxH / 2)
+            ctx.textBaseline = 'alphabetic'
+          }
+          
+          // Small triangle indicator pointing offscreen
+          ctx.fillStyle = 'rgba(139,148,158,0.8)'
+          ctx.beginPath()
+          if (renderY < h / 2) {
+            // pointing up
+            ctx.moveTo(x1 + Math.min(bw / 2, 10), renderY - 8)
+            ctx.lineTo(x1 + Math.min(bw / 2, 10) - 4, renderY - 2)
+            ctx.lineTo(x1 + Math.min(bw / 2, 10) + 4, renderY - 2)
+          } else {
+            // pointing down
+            ctx.moveTo(x1 + Math.min(bw / 2, 10), renderY + 8)
+            ctx.lineTo(x1 + Math.min(bw / 2, 10) - 4, renderY + 2)
+            ctx.lineTo(x1 + Math.min(bw / 2, 10) + 4, renderY + 2)
+          }
+          ctx.fill()
+
+          continue
+        }
 
         // Check whether this note has a slide/ease or vibrato effect.
         // Effect notes render their own custom shape instead of the
