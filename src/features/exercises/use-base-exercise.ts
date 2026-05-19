@@ -50,39 +50,29 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
   })
 
   async function start(): Promise<void> {
-    console.log('[useBaseExercise] start() called')
     setState({
       status: 'count-in',
       currentScore: 0,
       elapsedMs: 0,
       metrics: {},
     })
-    console.log('[useBaseExercise] state set to count-in')
     setPitchHistory([])
     setCurrentPitch(null)
     setResult(null)
 
-    const micWasActive = practiceEngine.isMicActive()
-    console.log('[useBaseExercise] mic active?', micWasActive)
-    if (!micWasActive) {
-      console.log('[useBaseExercise] calling practiceEngine.startMic()...')
+    if (!practiceEngine.isMicActive()) {
       const ok = await practiceEngine.startMic()
-      console.log('[useBaseExercise] startMic returned:', ok)
       if (!ok) {
-        console.error('[useBaseExercise] startMic FAILED - setting error')
         setError('Microphone access denied. Please allow mic access and try again.')
         setState((s) => ({ ...s, status: 'idle' }))
         return
       }
     }
     setError(null)
-    console.log('[useBaseExercise] mic OK, transitioning to active')
 
     startTime = performance.now()
     running = true
     setState((s) => ({ ...s, status: 'active' }))
-    console.log('[useBaseExercise] state set to active, starting rAF loop, state=', JSON.stringify(state()))
-    alert('Exercise active! State status: ' + state().status)
 
     const loop = () => {
       if (!running) return

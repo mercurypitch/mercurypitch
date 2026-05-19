@@ -63,11 +63,9 @@ const LongNoteExercise: Component<LongNoteExerciseProps> = (props) => {
     }
   })
 
-  const state = base.state()
-  const result = base.result()
-  const isActive = state.status === 'active'
-  const isComplete = state.status === 'complete'
-  const elapsed = state.elapsedMs / 1000
+  const isActive = () => base.state().status === 'active'
+  const isComplete = () => base.state().status === 'complete'
+  const elapsed = () => base.state().elapsedMs / 1000
 
   const fillClass = (value: number, thresholds: [number, number]) =>
     value >= thresholds[0] ? 'good' : value >= thresholds[1] ? 'ok' : 'poor'
@@ -80,40 +78,40 @@ const LongNoteExercise: Component<LongNoteExerciseProps> = (props) => {
         </button>
         <h2 class="exercise-title">Long Note Practice</h2>
         <span class="exercise-score-display">
-          {state.status === 'idle' ? '—' : `${Math.round(state.currentScore)}%`}
+          {base.state().status === 'idle' ? '—' : `${Math.round(base.state().currentScore)}%`}
         </span>
       </div>
 
       <div class="exercise-canvas-area">
-        {state.status === 'idle' && (
+        {base.state().status === 'idle' && (
           <div style="text-align:center;color:var(--text-secondary)">
             <IconTarget size={48} />
             <p>Hold a steady pitch. The longer and steadier, the better.</p>
           </div>
         )}
 
-        {isActive && (
+        {isActive() && (
           <>
-            <div class="long-note-timer">{elapsed.toFixed(1)}s</div>
+            <div class="long-note-timer">{elapsed().toFixed(1)}s</div>
             <div class="long-note-metrics">
               <div class="long-note-metric">
                 <span class="long-note-metric-label">Stability</span>
                 <span class="long-note-metric-value">
-                  {state.metrics.pitchStabilityCents != null ? `${state.metrics.pitchStabilityCents}¢` : '—'}
+                  {base.state().metrics.pitchStabilityCents != null ? `${base.state().metrics.pitchStabilityCents}¢` : '—'}
                 </span>
                 <div class="long-note-metric-bar">
-                  <div class="long-note-metric-fill good" style={`width:${Math.max(0, 100 - (state.metrics.pitchStabilityCents || 0) * 2)}%`} />
+                  <div class="long-note-metric-fill good" style={`width:${Math.max(0, 100 - (base.state().metrics.pitchStabilityCents || 0) * 2)}%`} />
                 </div>
               </div>
               <div class="long-note-metric">
                 <span class="long-note-metric-label">Steady Zone</span>
                 <span class="long-note-metric-value">
-                  {state.metrics.steadyZonePct != null ? `${state.metrics.steadyZonePct}%` : '—'}
+                  {base.state().metrics.steadyZonePct != null ? `${base.state().metrics.steadyZonePct}%` : '—'}
                 </span>
                 <div class="long-note-metric-bar">
                   <div
-                    class={`long-note-metric-fill ${fillClass(state.metrics.steadyZonePct || 0, [80, 50])}`}
-                    style={`width:${state.metrics.steadyZonePct || 0}%`}
+                    class={`long-note-metric-fill ${fillClass(base.state().metrics.steadyZonePct || 0, [80, 50])}`}
+                    style={`width:${base.state().metrics.steadyZonePct || 0}%`}
                   />
                 </div>
               </div>
@@ -121,12 +119,12 @@ const LongNoteExercise: Component<LongNoteExerciseProps> = (props) => {
           </>
         )}
 
-        {isComplete && result && (
+        {isComplete() && base.result() && (
           <div class="exercise-result-overlay">
-            <div class="exercise-result-score" style={`color:${result.score >= 80 ? '#22c55e' : result.score >= 50 ? '#eab308' : '#ef4444'}`}>
-              {result.score}%
+            <div class="exercise-result-score" style={`color:${base.result()!.score >= 80 ? '#22c55e' : base.result()!.score >= 50 ? '#eab308' : '#ef4444'}`}>
+              {base.result()!.score}%
             </div>
-            <div class="exercise-result-label">Duration: {result.metrics.durationSec}s · Stability: {result.metrics.pitchStabilityCents}¢</div>
+            <div class="exercise-result-label">Duration: {base.result()!.metrics.durationSec}s · Stability: {base.result()!.metrics.pitchStabilityCents}¢</div>
             <button class="exercise-btn exercise-btn-primary" onClick={() => { base.reset(); void handleStart() }}>
               Try Again
             </button>
@@ -135,7 +133,7 @@ const LongNoteExercise: Component<LongNoteExerciseProps> = (props) => {
       </div>
 
       <div class="exercise-controls">
-        {state.status === 'idle' && (
+        {base.state().status === 'idle' && (
           <>
             <div class="exercise-target-selector">
               <label>Target:</label>
@@ -151,12 +149,12 @@ const LongNoteExercise: Component<LongNoteExerciseProps> = (props) => {
             </button>
           </>
         )}
-        {isActive && (
+        {isActive() && (
           <button class="exercise-btn exercise-btn-secondary" onClick={handleStop}>
             Stop & Score
           </button>
         )}
-        {isComplete && (
+        {isComplete() &&(
           <>
             <button class="exercise-btn exercise-btn-primary" onClick={() => { base.reset(); void handleStart() }}>
               Try Again

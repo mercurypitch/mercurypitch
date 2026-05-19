@@ -72,17 +72,15 @@ const VibratoExercise: Component<VibratoExerciseProps> = (props) => {
     }
   })
 
-  const state = base.state()
-  const result = base.result()
-  const isActive = state.status === 'active'
-  const isComplete = state.status === 'complete'
-  const metrics = state.metrics
+  const isActive = () => base.state().status === 'active'
+  const isComplete = () => base.state().status === 'complete'
+  const metrics = () => base.state().metrics
 
   // Orbiting dot position (center of viz)
-  const hasVibrato = metrics.rateHz > 0
-  const orbitRadius = hasVibrato ? Math.min(60, (metrics.depthCents || 0) * 1.2) : 10
-  const dotX = 50 + orbitRadius * Math.cos(vizPhase()) * (90 / 180)
-  const dotY = 50 + orbitRadius * Math.sin(vizPhase()) * (90 / 180)
+  const hasVibrato = () => metrics().rateHz > 0
+  const orbitRadius = () => hasVibrato() ? Math.min(60, (metrics().depthCents || 0) * 1.2) : 10
+  const dotX = () => 50 + orbitRadius() * Math.cos(vizPhase()) * (90 / 180)
+  const dotY = () => 50 + orbitRadius() * Math.sin(vizPhase()) * (90 / 180)
 
   return (
     <div class="exercise-runner">
@@ -92,49 +90,49 @@ const VibratoExercise: Component<VibratoExerciseProps> = (props) => {
         </button>
         <h2 class="exercise-title">Vibrato Practice</h2>
         <span class="exercise-score-display">
-          {state.status === 'idle' ? '—' : `${Math.round(state.currentScore)}%`}
+          {base.state().status === 'idle' ? '—' : `${Math.round(base.state().currentScore)}%`}
         </span>
       </div>
 
       <div class="exercise-canvas-area">
-        {state.status === 'idle' && (
+        {base.state().status === 'idle' && (
           <div style="text-align:center;color:var(--text-secondary)">
             <IconWave size={48} />
             <p>Sustain a note with vibrato. Aim for 4-7 Hz rate with 10-50 cents depth.</p>
           </div>
         )}
 
-        {isActive && (
+        {isActive() && (
           <>
             <div class="vibrato-viz">
               <div class="vibrato-outer-ring" />
               <div class="vibrato-inner-ring" />
               <div
                 class="vibrato-dot"
-                style={`left:${dotX}%;top:${dotY}%`}
+                style={`left:${dotX()}%;top:${dotY()}%`}
               />
               <div class="vibrato-center">
-                {hasVibrato ? `${(metrics.rateHz || 0).toFixed(1)} Hz` : '...'}
+                {hasVibrato() ? `${(metrics().rateHz || 0).toFixed(1)} Hz` : '...'}
               </div>
             </div>
             <div class="vibrato-metrics" style="margin-top:12px">
               <div class="vibrato-metric">
                 <span class="vibrato-metric-label">Rate</span>
                 <span class="vibrato-metric-value">
-                  {hasVibrato ? `${(metrics.rateHz || 0).toFixed(1)} Hz` : '—'}
+                  {hasVibrato() ? `${(metrics().rateHz || 0).toFixed(1)} Hz` : '—'}
                 </span>
               </div>
               <div class="vibrato-metric">
                 <span class="vibrato-metric-label">Depth</span>
                 <span class="vibrato-metric-value">
-                  {hasVibrato ? `${Math.round(metrics.depthCents || 0)}¢` : '—'}
+                  {hasVibrato() ? `${Math.round(metrics().depthCents || 0)}¢` : '—'}
                 </span>
               </div>
               <div class="vibrato-metric">
                 <span class="vibrato-metric-label">Style</span>
                 <span class="vibrato-metric-value" style="font-size:0.75rem">
-                  {hasVibrato
-                    ? (CLASSIFICATION_LABELS[Object.keys(CLASSIFICATION_LABELS)[metrics.classification || 0]] || '...')
+                  {hasVibrato()
+                    ? (CLASSIFICATION_LABELS[Object.keys(CLASSIFICATION_LABELS)[metrics().classification || 0]] || '...')
                     : '—'}
                 </span>
               </div>
@@ -142,13 +140,13 @@ const VibratoExercise: Component<VibratoExerciseProps> = (props) => {
           </>
         )}
 
-        {isComplete && result && (
+        {isComplete() && base.result() && (
           <div class="exercise-result-overlay">
-            <div class="exercise-result-score" style={`color:${result.score >= 80 ? '#22c55e' : result.score >= 50 ? '#eab308' : '#ef4444'}`}>
-              {result.score}%
+            <div class="exercise-result-score" style={`color:${base.result()!.score >= 80 ? '#22c55e' : base.result()!.score >= 50 ? '#eab308' : '#ef4444'}`}>
+              {base.result()!.score}%
             </div>
             <div class="exercise-result-label">
-              Rate: {result.metrics.rateHz} Hz · Depth: {result.metrics.depthCents}¢
+              Rate: {base.result()!.metrics.rateHz} Hz · Depth: {base.result()!.metrics.depthCents}¢
             </div>
             <button class="exercise-btn exercise-btn-primary" onClick={() => { base.reset(); void handleStart() }}>
               Try Again
@@ -158,7 +156,7 @@ const VibratoExercise: Component<VibratoExerciseProps> = (props) => {
       </div>
 
       <div class="exercise-controls">
-        {state.status === 'idle' && (
+        {base.state().status === 'idle' && (
           <>
             <div class="exercise-target-selector">
               <label>Target:</label>
@@ -174,12 +172,12 @@ const VibratoExercise: Component<VibratoExerciseProps> = (props) => {
             </button>
           </>
         )}
-        {isActive && (
+        {isActive() && (
           <button class="exercise-btn exercise-btn-secondary" onClick={handleStop}>
             Stop & Score
           </button>
         )}
-        {isComplete && (
+        {isComplete() && (
           <>
             <button class="exercise-btn exercise-btn-primary" onClick={() => { base.reset(); void handleStart() }}>
               Try Again

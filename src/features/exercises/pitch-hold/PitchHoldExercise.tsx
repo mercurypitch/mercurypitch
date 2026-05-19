@@ -62,28 +62,24 @@ const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
     }
   })
 
-  const state = base.state()
-  const result = base.result()
-  const isActive = state.status === 'active'
-  const isComplete = state.status === 'complete'
-  const elapsed = state.elapsedMs / 1000
+  const isActive = () => base.state().status === 'active'
+  const isComplete = () => base.state().status === 'complete'
+  const elapsed = () => base.state().elapsedMs / 1000
 
-  // Visualize current pitch position relative to target zone
-  const pitch = base.currentPitch()
-  const currentCents = (() => {
-    if (!pitch || pitch.freq <= 0) return 0
-    const midi = 12 * Math.log2(pitch.freq / 440) + 69
+  // Derived from signals for reactivity
+  const pitch = () => base.currentPitch()
+  const currentCents = () => {
+    const p = pitch()
+    if (!p || p.freq <= 0) return 0
+    const midi = 12 * Math.log2(p.freq / 440) + 69
     const targetMidi = noteToMidi(targetNote())
     return (midi - targetMidi) * 100
-  })()
-  const zoneRadius = state.metrics.zoneRadius ?? 50
-
-  // Map cents to position in the viz (0-100, 50 = center)
-  const maxVizCents = 100
-  const posY = 50 - (currentCents / maxVizCents) * 50
-  const zoneTop = 50 - (zoneRadius / maxVizCents) * 50
-  const zoneBottom = 50 + (zoneRadius / maxVizCents) * 50
-  const inZone = Math.abs(currentCents) <= zoneRadius
+  }
+  const zoneRadius = () => base.state().metrics.zoneRadius ?? 50
+  const posY = () => 50 - (currentCents() / 100) * 50
+  const zoneTop = () => 50 - (zoneRadius() / 100) * 50
+  const zoneBottom = () => 50 + (zoneRadius() / 100) * 50
+  const inZone = () => Math.abs(currentCents()) <= zoneRadius()
 
   return (
     <div class="exercise-runner">
@@ -93,40 +89,40 @@ const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
         </button>
         <h2 class="exercise-title">Pitch Hold</h2>
         <span class="exercise-score-display">
-          {state.status === 'idle' ? '—' : `${Math.round(state.currentScore)}%`}
+          {base.state().status === 'idle' ? '—' : `${Math.round(base.state().currentScore)}%`}
         </span>
       </div>
 
       <div class="exercise-canvas-area">
-        {state.status === 'idle' && (
+        {base.state().status === 'idle' && (
           <div style="text-align:center;color:var(--text-secondary)">
             <IconLock size={48} />
             <p>Keep your pitch locked inside the target zone as it shrinks over time.</p>
           </div>
         )}
 
-        {isActive && (
+        {isActive() && (
           <>
             <div style="display:flex;align-items:center;gap:12px;font-size:1.2rem;font-weight:700;margin-bottom:12px">
               <span>{targetNote()}</span>
               <span style="font-size:0.85rem;color:var(--text-secondary)">
-                Zone: ±{Math.round(zoneRadius)}¢
+                Zone: ±{Math.round(zoneRadius())}¢
               </span>
               <span style="font-size:0.9rem;color:var(--accent);margin-left:auto">
-                {elapsed.toFixed(1)}s
+                {elapsed().toFixed(1)}s
               </span>
             </div>
 
             <div class="pitch-hold-viz">
               <div
                 class="pitch-hold-zone"
-                style={`top:${zoneTop}%;height:${zoneBottom - zoneTop}%`}
+                style={`top:${zoneTop()}%;height:${zoneBottom() - zoneTop()}%`}
               />
               <div class="pitch-hold-center-line" />
               <div
                 class="pitch-hold-dot"
-                classList={{ 'pitch-hold-dot-in': inZone, 'pitch-hold-dot-out': !inZone && pitch != null && pitch.freq > 0 }}
-                style={`top:${Math.max(2, Math.min(98, posY))}%`}
+                classList={{ 'pitch-hold-dot-in': inZone(), 'pitch-hold-dot-out': !inZone() && pitch() != null && pitch()!.freq > 0 }}
+                style={`top:${Math.max(2, Math.min(98, posY()))}%`}
               />
               <div class="pitch-hold-target-label">{targetNote()}</div>
             </div>
@@ -135,26 +131,26 @@ const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
               <div class="pitch-hold-metric">
                 <span class="pitch-hold-metric-label">In Zone</span>
                 <span class="pitch-hold-metric-value">
-                  {state.metrics.zonePct != null ? `${state.metrics.zonePct}%` : '—'}
+                  {base.state().metrics.zonePct != null ? `${base.state().metrics.zonePct}%` : '—'}
                 </span>
               </div>
               <div class="pitch-hold-metric">
                 <span class="pitch-hold-metric-label">Zone Size</span>
                 <span class="pitch-hold-metric-value">
-                  {zoneRadius != null ? `±${Math.round(zoneRadius)}¢` : '—'}
+                  {zoneRadius() != null ? `±${Math.round(zoneRadius())}¢` : '—'}
                 </span>
               </div>
             </div>
           </>
         )}
 
-        {isComplete && result && (
+        {isComplete() && base.result() && (
           <div class="exercise-result-overlay">
-            <div class="exercise-result-score" style={`color:${result.score >= 80 ? '#22c55e' : result.score >= 50 ? '#eab308' : '#ef4444'}`}>
-              {result.score}%
+            <div class="exercise-result-score" style={`color:${base.result()!.score >= 80 ? '#22c55e' : base.result()!.score >= 50 ? '#eab308' : '#ef4444'}`}>
+              {base.result()!.score}%
             </div>
             <div class="exercise-result-label">
-              In Zone: {result.metrics.zonePct}% · Survived: {result.metrics.survivedSec}s
+              In Zone: {base.result()!.metrics.zonePct}% · Survived: {base.result()!.metrics.survivedSec}s
             </div>
             <button class="exercise-btn exercise-btn-primary" onClick={() => { base.reset(); void handleStart() }}>
               Try Again
@@ -164,7 +160,7 @@ const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
       </div>
 
       <div class="exercise-controls">
-        {state.status === 'idle' && (
+        {base.state().status === 'idle' && (
           <>
             <div class="exercise-target-selector">
               <label>Target:</label>
@@ -180,12 +176,12 @@ const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
             </button>
           </>
         )}
-        {isActive && (
+        {isActive() && (
           <button class="exercise-btn exercise-btn-secondary" onClick={handleStop}>
             Stop & Score
           </button>
         )}
-        {isComplete && (
+        {isComplete() && (
           <>
             <button class="exercise-btn exercise-btn-primary" onClick={() => { base.reset(); void handleStart() }}>
               Try Again

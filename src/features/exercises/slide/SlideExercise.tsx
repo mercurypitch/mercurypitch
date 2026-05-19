@@ -70,10 +70,8 @@ const SlideExercise: Component<SlideExerciseProps> = (props) => {
     }
   })
 
-  const state = base.state()
-  const result = base.result()
-  const isActive = state.status === 'active'
-  const isComplete = state.status === 'complete'
+  const isActive = () => base.state().status === 'active'
+  const isComplete = () => base.state().status === 'complete'
 
   return (
     <div class="exercise-runner">
@@ -83,19 +81,19 @@ const SlideExercise: Component<SlideExerciseProps> = (props) => {
         </button>
         <h2 class="exercise-title">Slide Practice</h2>
         <span class="exercise-score-display">
-          {state.status === 'idle' ? '—' : `${Math.round(state.currentScore)}%`}
+          {base.state().status === 'idle' ? '—' : `${Math.round(base.state().currentScore)}%`}
         </span>
       </div>
 
       <div class="exercise-canvas-area">
-        {state.status === 'idle' && (
+        {base.state().status === 'idle' && (
           <div style="text-align:center;color:var(--text-secondary)">
             <IconSlide size={48} />
             <p>Slide cleanly from one note to another. No scooping, no overshoot.</p>
           </div>
         )}
 
-        {isActive && (
+        {isActive() && (
           <>
             <div style="display:flex;align-items:center;gap:12px;font-size:1.2rem;font-weight:700;margin-bottom:8px">
               <span>{fromNote()}</span>
@@ -117,26 +115,26 @@ const SlideExercise: Component<SlideExerciseProps> = (props) => {
               <div class="slide-metric">
                 <span class="slide-metric-label">Smoothness</span>
                 <span class="slide-metric-value">
-                  {state.metrics.smoothness != null ? `${state.metrics.smoothness}%` : '—'}
+                  {base.state().metrics.smoothness != null ? `${base.state().metrics.smoothness}%` : '—'}
                 </span>
               </div>
               <div class="slide-metric">
                 <span class="slide-metric-label">Accuracy</span>
                 <span class="slide-metric-value">
-                  {state.metrics.arrivalAccuracy != null ? `${state.metrics.arrivalAccuracy}%` : '—'}
+                  {base.state().metrics.arrivalAccuracy != null ? `${base.state().metrics.arrivalAccuracy}%` : '—'}
                 </span>
               </div>
               <div class="slide-metric">
                 <span class="slide-metric-label">Time</span>
                 <span class="slide-metric-value">
-                  {state.metrics.slideTimeMs != null ? `${state.metrics.slideTimeMs}ms` : '—'}
+                  {base.state().metrics.slideTimeMs != null ? `${base.state().metrics.slideTimeMs}ms` : '—'}
                 </span>
               </div>
               <div class="slide-metric">
                 <span class="slide-metric-label">Rating</span>
                 <span class="slide-metric-value" style="font-size:0.78rem">
-                  {state.metrics.classification != null
-                    ? (CLASSIFICATION_LABELS[state.metrics.classification] || '...')
+                  {base.state().metrics.classification != null
+                    ? (CLASSIFICATION_LABELS[base.state().metrics.classification] || '...')
                     : '—'}
                 </span>
               </div>
@@ -144,13 +142,13 @@ const SlideExercise: Component<SlideExerciseProps> = (props) => {
           </>
         )}
 
-        {isComplete && result && (
+        {isComplete() && base.result() && (
           <div class="exercise-result-overlay">
-            <div class="exercise-result-score" style={`color:${result.score >= 80 ? '#22c55e' : result.score >= 50 ? '#eab308' : '#ef4444'}`}>
-              {result.score}%
+            <div class="exercise-result-score" style={`color:${base.result()!.score >= 80 ? '#22c55e' : base.result()!.score >= 50 ? '#eab308' : '#ef4444'}`}>
+              {base.result()!.score}%
             </div>
             <div class="exercise-result-label">
-              Smoothness: {result.metrics.smoothness}% · Accuracy: {result.metrics.arrivalAccuracy}%
+              Smoothness: {base.result()!.metrics.smoothness}% · Accuracy: {base.result()!.metrics.arrivalAccuracy}%
             </div>
             <button class="exercise-btn exercise-btn-primary" onClick={() => { base.reset(); void handleStart() }}>
               Try Again
@@ -160,7 +158,7 @@ const SlideExercise: Component<SlideExerciseProps> = (props) => {
       </div>
 
       <div class="exercise-controls">
-        {state.status === 'idle' && (
+        {base.state().status === 'idle' && (
           <>
             <div class="exercise-target-selector">
               <label>From:</label>
@@ -180,12 +178,12 @@ const SlideExercise: Component<SlideExerciseProps> = (props) => {
             </button>
           </>
         )}
-        {isActive && (
+        {isActive() && (
           <button class="exercise-btn exercise-btn-secondary" onClick={handleStop}>
             Stop & Score
           </button>
         )}
-        {isComplete && (
+        {isComplete() && (
           <>
             <button class="exercise-btn exercise-btn-primary" onClick={() => { base.reset(); void handleStart() }}>
               Try Again

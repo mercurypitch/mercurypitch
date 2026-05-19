@@ -70,26 +70,24 @@ const MirrorMelodyExercise: Component<MirrorMelodyExerciseProps> = (props) => {
     }
   })
 
-  const state = base.state()
-  const result = base.result()
-  const isActive = state.status === 'active'
-  const isComplete = state.status === 'complete'
-  const currentMidi = state.metrics.currentMidi ?? 0
-  const noteIndex = state.metrics.noteIndex ?? 0
-  const melodyLength = state.metrics.melodyLength ?? 5
-  const phase = state.metrics.phase ?? 0 // 1=playing, 2=matching, 3=complete
-  const lastNoteScore = state.metrics.lastNoteScore ?? 0
-  const notesCompleted = state.metrics.notesCompleted ?? 0
+  const isActive = () => base.state().status === 'active'
+  const isComplete = () => base.state().status === 'complete'
+  const currentMidi = () => base.state().metrics.currentMidi ?? 0
+  const noteIndex = () => base.state().metrics.noteIndex ?? 0
+  const melodyLength = () => base.state().metrics.melodyLength ?? 5
+  const phase = () => base.state().metrics.phase ?? 0 // 1=playing, 2=matching, 3=complete
+  const lastNoteScore = () => base.state().metrics.lastNoteScore ?? 0
+  const notesCompleted = () => base.state().metrics.notesCompleted ?? 0
 
-  const pitch = base.currentPitch()
-  const currentCents = (() => {
-    if (!pitch || pitch.freq <= 0 || currentMidi === 0) return 0
-    const midi = 12 * Math.log2(pitch.freq / 440) + 69
-    return (midi - currentMidi) * 100
-  })()
+  const pitch = () => base.currentPitch()
+  const currentCents = () => {
+    const p = pitch()
+    if (!p || p.freq <= 0 || currentMidi() === 0) return 0
+    const midi = 12 * Math.log2(p.freq / 440) + 69
+    return (midi - currentMidi()) * 100
+  }
 
-  const maxVizCents = 100
-  const posY = 50 - (currentCents / maxVizCents) * 50
+  const posY = () => 50 - (currentCents() / 100) * 50
 
   return (
     <div class="exercise-runner">
@@ -99,34 +97,34 @@ const MirrorMelodyExercise: Component<MirrorMelodyExerciseProps> = (props) => {
         </button>
         <h2 class="exercise-title">Mirror Melody</h2>
         <span class="exercise-score-display">
-          {state.status === 'idle' ? '—' : `${Math.round(state.currentScore)}%`}
+          {base.state().status === 'idle' ? '—' : `${Math.round(base.state().currentScore)}%`}
         </span>
       </div>
 
       <div class="exercise-canvas-area">
-        {state.status === 'idle' && (
+        {base.state().status === 'idle' && (
           <div style="text-align:center;color:var(--text-secondary)">
             <IconMirror size={48} />
             <p>Listen to each note played, then sing it back. Match pitch and timing.</p>
           </div>
         )}
 
-        {isActive && (
+        {isActive() && (
           <>
             <div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:16px">
               <div style="font-size:1.1rem;font-weight:600">
-                {phase === 1 ? <><IconMusic size={16} /> Listen...</> : phase === 2 ? <><IconMic size={16} /> Your turn!</> : '...'}
+                {phase() === 1 ? <><IconMusic size={16} /> Listen...</> : phase() === 2 ? <><IconMic size={16} /> Your turn!</> : '...'}
               </div>
-              {phase === 2 && (
+              {phase() === 2 && (
                 <div style="font-size:1.8rem;font-weight:700;color:var(--accent)">
-                  {midiToNoteName(currentMidi)}
+                  {midiToNoteName(currentMidi())}
                 </div>
               )}
             </div>
 
             {/* Progress dots */}
             <div style="display:flex;justify-content:center;gap:8px;margin-bottom:16px">
-              <For each={Array.from({ length: melodyLength })}>
+              <For each={Array.from({ length: melodyLength() })}>
                 {(_, i) => (
                   <div
                     style={{
@@ -134,16 +132,16 @@ const MirrorMelodyExercise: Component<MirrorMelodyExerciseProps> = (props) => {
                       height: '14px',
                       'border-radius': '50%',
                       background:
-                        i() < notesCompleted
-                          ? `hsl(${(lastNoteScore * 1.2)}, 70%, 50%)`
-                          : i() === noteIndex
+                        i() < notesCompleted()
+                          ? `hsl(${(lastNoteScore() * 1.2)}, 70%, 50%)`
+                          : i() === noteIndex()
                             ? 'var(--accent)'
                             : 'var(--surface-hover)',
                       border:
-                        i() === noteIndex
+                        i() === noteIndex()
                           ? '2px solid var(--accent)'
                           : '1px solid var(--border)',
-                      transform: i() === noteIndex ? 'scale(1.3)' : 'scale(1)',
+                      transform: i() === noteIndex() ? 'scale(1.3)' : 'scale(1)',
                       transition: 'all 0.2s',
                     }}
                   />
@@ -157,32 +155,32 @@ const MirrorMelodyExercise: Component<MirrorMelodyExerciseProps> = (props) => {
               <div
                 class="mirror-melody-dot"
                 classList={{
-                  'mirror-melody-dot-close': Math.abs(currentCents) <= 25,
-                  'mirror-melody-dot-far': Math.abs(currentCents) > 25 && pitch != null && pitch.freq > 0,
+                  'mirror-melody-dot-close': Math.abs(currentCents()) <= 25,
+                  'mirror-melody-dot-far': Math.abs(currentCents()) > 25 && pitch() != null && pitch()!.freq > 0,
                 }}
-                style={`top:${Math.max(2, Math.min(98, posY))}%`}
+                style={`top:${Math.max(2, Math.min(98, posY()))}%`}
               />
-              {phase === 2 && (
-                <div class="mirror-melody-target-label">{midiToNoteName(currentMidi)}</div>
+              {phase() === 2 && (
+                <div class="mirror-melody-target-label">{midiToNoteName(currentMidi())}</div>
               )}
             </div>
 
             {/* Note feedback */}
-            {notesCompleted > 0 && lastNoteScore > 0 && (
+            {notesCompleted() > 0 && lastNoteScore() > 0 && (
               <div style="text-align:center;margin-top:12px;font-size:0.9rem;color:var(--text-secondary)">
-                Last note: <span style="font-weight:600;color:var(--accent)">{lastNoteScore}%</span>
+                Last note: <span style="font-weight:600;color:var(--accent)">{lastNoteScore()}%</span>
               </div>
             )}
           </>
         )}
 
-        {isComplete && result && (
+        {isComplete() && base.result() && (
           <div class="exercise-result-overlay">
-            <div class="exercise-result-score" style={`color:${result.score >= 80 ? '#22c55e' : result.score >= 50 ? '#eab308' : '#ef4444'}`}>
-              {result.score}%
+            <div class="exercise-result-score" style={`color:${base.result()!.score >= 80 ? '#22c55e' : base.result()!.score >= 50 ? '#eab308' : '#ef4444'}`}>
+              {base.result()!.score}%
             </div>
             <div class="exercise-result-label">
-              Avg Accuracy: {result.metrics.avgAccuracy}% · Best: {result.metrics.bestNote}% · Notes: {result.metrics.notesCompleted}
+              Avg Accuracy: {base.result()!.metrics.avgAccuracy}% · Best: {base.result()!.metrics.bestNote}% · Notes: {base.result()!.metrics.notesCompleted}
             </div>
             <button class="exercise-btn exercise-btn-primary" onClick={() => { base.reset(); void handleStart() }}>
               Try Again
@@ -192,7 +190,7 @@ const MirrorMelodyExercise: Component<MirrorMelodyExerciseProps> = (props) => {
       </div>
 
       <div class="exercise-controls">
-        {state.status === 'idle' && (
+        {base.state().status === 'idle' && (
           <>
             <div class="exercise-target-selector">
               <label>Root Note:</label>
@@ -208,12 +206,12 @@ const MirrorMelodyExercise: Component<MirrorMelodyExerciseProps> = (props) => {
             </button>
           </>
         )}
-        {isActive && (
+        {isActive() && (
           <button class="exercise-btn exercise-btn-secondary" onClick={handleStop}>
             Stop
           </button>
         )}
-        {isComplete && (
+        {isComplete() && (
           <>
             <button class="exercise-btn exercise-btn-primary" onClick={() => { base.reset(); void handleStart() }}>
               Try Again
