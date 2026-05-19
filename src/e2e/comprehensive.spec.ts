@@ -609,12 +609,8 @@ test.describe('MercuryPitch App — Comprehensive Functionality Tests', () => {
     await editorTab.click()
     await page.waitForTimeout(500)
 
-    // Verify tab is active
+    // Verify tab is active (note count badge was removed for cleaner UI)
     await expect(editorTab).toHaveClass(/active/)
-
-    // Note count badge exists in tab header
-    const noteBadge = page.locator('.tab-badge')
-    await expect(noteBadge).toBeVisible()
   })
 
   test('scale mode select shows multiple options', async ({ page }) => {

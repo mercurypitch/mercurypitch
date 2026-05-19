@@ -117,15 +117,20 @@ export interface JamExerciseResult {
 function loadExerciseHistory(): JamExerciseResult[] {
   try {
     const raw = sessionStorage.getItem('jam:exerciseHistory')
-    if (raw !== null && raw !== '') return JSON.parse(raw) as JamExerciseResult[]
-  } catch { /* ignore */ }
+    if (raw !== null && raw !== '')
+      return JSON.parse(raw) as JamExerciseResult[]
+  } catch {
+    /* ignore */
+  }
   return []
 }
 
 function saveExerciseHistory(history: JamExerciseResult[]): void {
   try {
     sessionStorage.setItem('jam:exerciseHistory', JSON.stringify(history))
-  } catch { /* storage full */ }
+  } catch {
+    /* storage full */
+  }
 }
 
 const [_jamExerciseHistory, _setJamExerciseHistory] = createSignal<
@@ -134,7 +139,9 @@ const [_jamExerciseHistory, _setJamExerciseHistory] = createSignal<
 
 export const jamExerciseHistory = _jamExerciseHistory
 export function setJamExerciseHistory(
-  updater: JamExerciseResult[] | ((prev: JamExerciseResult[]) => JamExerciseResult[]),
+  updater:
+    | JamExerciseResult[]
+    | ((prev: JamExerciseResult[]) => JamExerciseResult[]),
 ): void {
   if (typeof updater === 'function') {
     _setJamExerciseHistory((prev) => {
