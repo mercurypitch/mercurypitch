@@ -363,14 +363,3 @@
   color: #4ade80;
   flex-shrink: 0;
 }
-
-.currentNote {
-  font-size: 22px;
-  font-weight: 700;
-  font-family: monospace;
-  color: var(--color-accent, #6366f1);
-  text-align: center;
-  min-height: 28px;
-  line-height: 28px;
-  letter-spacing: 0.05em;
-}
