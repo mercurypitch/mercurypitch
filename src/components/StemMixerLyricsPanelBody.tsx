@@ -75,7 +75,7 @@ const SongPicker = (p: SongPickerProps) => {
       </div>
       <div class="sm-song-picker-footer">
         <button class="sm-song-picker-upload-link" onClick={() => p.onUpload()}>
-          Or upload a .lrc/.txt file
+          Or upload a .lrc/.txt file (or click here to cancel)
         </button>
       </div>
     </div>
@@ -196,7 +196,13 @@ export const StemMixerLyricsPanelBody: Component<
         <div class="sm-lyrics-loading">Searching...</div>
       </Show>
 
-      <Show when={!props.lyricsLoading() && props.lyricsSource() !== 'none'}>
+      <Show
+        when={
+          !props.lyricsLoading() &&
+          props.lyricsSource() !== 'none' &&
+          !props.showSongPicker()
+        }
+      >
         {/* ── LRC Generator toolbar ─────────────────────── */}
         <Show when={props.lrcGenMode()}>
           <div class="sm-lyrics-gen-toolbar">
@@ -894,7 +900,12 @@ export const StemMixerLyricsPanelBody: Component<
         </Show>
       </Show>
 
-      <Show when={!props.lyricsLoading() && props.lyricsSource() === 'none'}>
+      <Show
+        when={
+          !props.lyricsLoading() &&
+          (props.lyricsSource() === 'none' || props.showSongPicker())
+        }
+      >
         <Show
           when={props.showSongPicker()}
           fallback={

@@ -400,18 +400,10 @@ export function useStemMixerLyricsController(
   }
 
   const handleForceSearch = async () => {
-    setLyricsLoading(true)
-    const title = extractTitle(deps.songTitle ?? deps.sessionId ?? '')
-    try {
-      const results = await searchLyricsMulti(title)
-      setSongMatches(results)
-      setSongPickerQuery(title)
-      setShowSongPicker(true)
-    } catch {
-      // keep existing
-    } finally {
-      setLyricsLoading(false)
-    }
+    // Just open the picker so the user can search for a new lyric file manually
+    setSongMatches([])
+    setSongPickerQuery('')
+    setShowSongPicker(true)
   }
 
   const loadLyrics = async () => {
@@ -1310,7 +1302,6 @@ export function useStemMixerLyricsController(
     } else if (lrcLines().length > 0) {
       const canonical = canonicalLrcLines()
       const wt = wordTimings()
-      const hasWt = Object.keys(wt).length > 0
       lrcText = canonical
         .map((entry) => {
           if (entry.type === 'rest') {
@@ -1318,20 +1309,18 @@ export function useStemMixerLyricsController(
             return `[${formatTimeLrcWord(entry.time)}] ~Rest~`
           }
           const i = entry.lrcIndex
-          if (hasWt) {
-            const lineWt = wt[i]
-            if (
-              lineWt !== undefined &&
-              lineWt.length > 0 &&
-              entry.words.length > 0
-            ) {
-              return entry.words
-                .map((w: string, wi: number) => {
-                  const t = lineWt[wi]
-                  return t !== undefined ? `[${formatTimeLrcWord(t)}] ${w}` : w
-                })
-                .join(' ')
-            }
+          const lineWt = wt[i] ?? entry.wordTimes
+          if (
+            lineWt !== undefined &&
+            lineWt.length > 0 &&
+            entry.words.length > 0
+          ) {
+            return entry.words
+              .map((w: string, wi: number) => {
+                const t = lineWt[wi]
+                return t !== undefined ? `[${formatTimeLrcWord(t)}] ${w}` : w
+              })
+              .join(' ')
           }
           return `[${formatTimeLrcWord(entry.time)}] ${entry.text}`
         })
