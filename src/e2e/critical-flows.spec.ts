@@ -73,9 +73,9 @@ test.describe('Critical Flows — GH #121', () => {
 
       // Should show play button again (back to stopped state after pause)
       // Note: clicking pause just pauses, doesn't stop — so we see resume again
-      await expect(
-        page.locator('[data-testid="resume-btn"]'),
-      ).toBeVisible({ timeout: 3000 })
+      await expect(page.locator('[data-testid="resume-btn"]')).toBeVisible({
+        timeout: 3000,
+      })
     })
 
     test('Stop button resets playback state', async ({ page }) => {

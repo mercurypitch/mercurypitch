@@ -821,12 +821,9 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     ctx.fillRect(0, 0, w, h)
 
     ctx.save()
-    ctx.translate(
-      -props.isScrolling()
-        ? props.currentBeat() * (w / Math.max(1, props.totalBeats())) * 0.3
-        : 0,
-      0,
-    )
+    // Sliding window translation is handled per-element via beatToX.
+    // Do not apply a global translation here, as it conflicts with beatToX
+    // and causes immediate scrolling instead of respecting WINDOW_FILL_RATIO.
 
     if (props.getWaveform) {
       if (micWaveVisible()) {

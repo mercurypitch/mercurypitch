@@ -28,9 +28,7 @@ test.describe('Session Editor', () => {
   })
 
   test('Session Editor is visible in editor tab', async ({ page }) => {
-    await expect(
-      page.locator('[data-testid="session-editor"]'),
-    ).toBeVisible()
+    await expect(page.locator('[data-testid="session-editor"]')).toBeVisible()
   })
 
   test('Session Editor header shows title', async ({ page }) => {
@@ -82,7 +80,9 @@ test.describe('Session Editor', () => {
   test('Timeline section shows section heading', async ({ page }) => {
     // Timeline section heading is within the session editor content
     await expect(
-      page.locator('[data-testid="session-editor-content"] h4:has-text("Session Timeline")'),
+      page.locator(
+        '[data-testid="session-editor-content"] h4:has-text("Session Timeline")',
+      ),
     ).toBeVisible()
   })
 
