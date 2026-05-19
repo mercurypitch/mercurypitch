@@ -43,25 +43,25 @@ export const JamPanel: Component = () => {
   })
 
   onMount(() => {
-    // 1. URL-based room join (highest priority)
+    // 1. SessionStorage auto-rejoin (highest priority -- preserves host)
+    const prev = getJamSessionInfo()
+    if (prev && jamState() === 'idle') {
+      setDisplayName(prev.displayName)
+      setJoinRoomId(prev.roomId)
+      setJoining(true)
+      joinJamRoom(prev.roomId, prev.displayName).finally(() =>
+        setJoining(false),
+      )
+      setJamRoomToJoin(null) // consume URL so it doesn't fire later
+      return
+    }
+
+    // 2. URL-based room join (fallback for shared invite links)
     const roomId = jamRoomToJoin()
     if (roomId !== null) {
       setJoinRoomId(roomId.toUpperCase())
       setJamRoomToJoin(null)
       handleJoin()
-      return
-    }
-    // 2. SessionStorage auto-rejoin on page reload
-    if (jamState() === 'idle') {
-      const prev = getJamSessionInfo()
-      if (prev) {
-        setDisplayName(prev.displayName)
-        setJoinRoomId(prev.roomId)
-        setJoining(true)
-        joinJamRoom(prev.roomId, prev.displayName).finally(() =>
-          setJoining(false),
-        )
-      }
     }
   })
 
@@ -570,7 +570,6 @@ export const JamPanel: Component = () => {
               {/* Exercise — takes most space */}
               <div
                 class={`${exerciseCanvasStyles.container} ${panelStyles.exerciseCanvas}`}
-                style={{ position: 'relative' }}
               >
                 <JamExerciseCanvas myPeerId={jamPeerId} />
                 <JamActivityHeatmap />

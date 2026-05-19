@@ -164,15 +164,16 @@
   overflow: hidden;
 }
 
-/* Exercise canvas wrapper — grows to fill available space */
+/* Exercise canvas wrapper -- grows to fill available space */
 .exerciseCanvas {
   flex: 1;
   min-height: 0;
-  /* The inner .container will be sized by this wrapper */
+  position: relative; /* anchor for the heatmap overlay */
 }
 
-/* Override the hardcoded height in JamExerciseCanvas.module.css */
-.exerciseCanvas > div {
+/* Override the hardcoded height in JamExerciseCanvas.module.css
+   Only target the first child (the canvas wrapper), not the heatmap */
+.exerciseCanvas > div:first-child {
   height: 100% !important;
 }
 

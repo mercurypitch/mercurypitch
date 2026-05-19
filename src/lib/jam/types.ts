@@ -23,12 +23,13 @@ export interface JamRoom {
 
 export type SignalingMessage =
   | { type: 'create-room'; displayName: string }
-  | { type: 'room-created'; roomId: string; peerId: string }
+  | { type: 'room-created'; roomId: string; peerId: string; isHost: boolean }
   | { type: 'join-room'; roomId: string; displayName: string }
   | {
       type: 'room-joined'
       roomId: string
       peerId: string
+      isHost: boolean
       peers: Array<{ id: string; displayName: string }>
     }
   | { type: 'peer-joined'; peerId: string; displayName: string }
@@ -118,6 +119,7 @@ export interface JamCallbacks {
   onLatencyUpdate: (peerId: string, latency: number) => void
   onChatMessage: (message: JamChatMessage) => void
   onRoomClosed: () => void
+  onHostStatus?: (isHost: boolean) => void
   onError: (message: string) => void
   // Signaling events from signaling (from = sender peerId)
   onOffer?: (from: string, sdp: string) => void
