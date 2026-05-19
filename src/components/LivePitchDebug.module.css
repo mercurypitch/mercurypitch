@@ -20,6 +20,10 @@
   gap: 6px;
 }
 
+.fullWidth {
+  grid-column: 1 / -1;
+}
+
 .row {
   display: flex;
   justify-content: space-between;
