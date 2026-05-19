@@ -77,6 +77,100 @@
   color: var(--text-accent);
 }
 
+/* ── Exercise Card Stats ──────────────────────────────────── */
+
+.exercise-card-stats {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-color);
+  font-size: 0.72rem;
+}
+
+.exercise-card-grade {
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-weight: 600;
+  font-size: 0.68rem;
+}
+
+.exercise-grade-elite {
+  background: rgba(99, 102, 241, 0.15);
+  color: #a78bfa;
+}
+
+.exercise-grade-great {
+  background: rgba(34, 197, 94, 0.12);
+  color: #4ade80;
+}
+
+.exercise-grade-good {
+  background: rgba(234, 179, 8, 0.12);
+  color: #facc15;
+}
+
+.exercise-grade-novice {
+  background: rgba(148, 163, 184, 0.1);
+  color: var(--text-secondary);
+}
+
+.exercise-card-best {
+  color: var(--text-secondary);
+}
+
+.exercise-card-plays {
+  margin-left: auto;
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+
+/* ── Recent Sessions ──────────────────────────────────────── */
+
+.exercise-recent {
+  margin-top: 24px;
+}
+
+.exercise-recent-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin: 0 0 10px;
+  color: var(--text-secondary);
+}
+
+.exercise-recent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.exercise-recent-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  font-size: 0.78rem;
+}
+
+.exercise-recent-type {
+  text-transform: capitalize;
+  color: var(--text-primary);
+}
+
+.exercise-recent-score {
+  font-weight: 700;
+}
+
+.exercise-recent-time {
+  margin-left: auto;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+}
+
 /* ── Exercise Runner (shared) ─────────────────────────────── */
 
 .exercise-runner {

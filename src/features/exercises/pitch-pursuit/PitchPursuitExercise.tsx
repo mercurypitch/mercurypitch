@@ -2,6 +2,7 @@ import { type Component, createEffect, createSignal, onCleanup, For } from 'soli
 import type { AudioEngine } from '@/lib/audio-engine'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { showCelebration } from '@/stores/ui-store'
+import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { useBaseExercise } from '../use-base-exercise'
 import { usePitchPursuitController } from './use-pitch-pursuit-controller'
 
@@ -57,6 +58,12 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
         score: r.score,
         exerciseType: r.type,
         metrics: r.metrics,
+      })
+      recordExerciseResult({
+        type: r.type,
+        score: r.score,
+        metrics: r.metrics,
+        completedAt: r.completedAt,
       })
     }
   })

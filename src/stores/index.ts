@@ -32,6 +32,7 @@ export * from './walkthrough-store'
 export * from './playback-state-store'
 export * from './falling-notes-store'
 export * from './session-store'
+export * from './exercise-history-store'
 export { getSessionHistory, sessionResults } from './practice-session-store'
 
 export { playback } from './playback-store'

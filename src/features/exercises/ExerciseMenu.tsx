@@ -1,4 +1,5 @@
 import type { Component } from 'solid-js'
+import { createMemo, For, Show } from 'solid-js'
 import type { ExerciseType } from './types'
 import {
   EXERCISE_LONG_NOTE,
@@ -8,6 +9,7 @@ import {
   EXERCISE_MIRROR_MELODY,
   EXERCISE_PITCH_HOLD,
 } from './types'
+import { getExerciseStats, exerciseHistory } from '@/stores/exercise-history-store'
 
 interface ExerciseMenuProps {
   onSelect: (type: ExerciseType) => void
@@ -73,7 +75,38 @@ const CARDS: ExerciseCardDef[] = [
   },
 ]
 
+function gradeLabel(score: number): string {
+  if (score >= 90) return '★ Elite'
+  if (score >= 80) return '◆ Great'
+  if (score >= 65) return '● Good'
+  if (score >= 50) return '◦ Novice'
+  return ''
+}
+
+function gradeClass(score: number): string {
+  if (score >= 90) return 'exercise-grade-elite'
+  if (score >= 80) return 'exercise-grade-great'
+  if (score >= 65) return 'exercise-grade-good'
+  return 'exercise-grade-novice'
+}
+
+function formatTime(ts: number): string {
+  if (!ts) return ''
+  const d = new Date(ts)
+  const now = new Date()
+  const diffMs = now.getTime() - d.getTime()
+  const diffMin = Math.floor(diffMs / 60000)
+  if (diffMin < 1) return 'just now'
+  if (diffMin < 60) return `${diffMin}m ago`
+  const diffHr = Math.floor(diffMin / 60)
+  if (diffHr < 24) return `${diffHr}h ago`
+  const diffDay = Math.floor(diffHr / 24)
+  return `${diffDay}d ago`
+}
+
 const ExerciseMenu: Component<ExerciseMenuProps> = (props) => {
+  const recentEntries = createMemo(() => exerciseHistory().slice(0, 5))
+
   return (
     <div class="exercises-panel">
       <div class="exercises-header">
@@ -84,24 +117,59 @@ const ExerciseMenu: Component<ExerciseMenuProps> = (props) => {
       </div>
 
       <div class="exercises-grid">
-        {CARDS.map((card) => (
-          <div
-            class="exercise-card"
-            classList={{ 'exercise-card-disabled': !card.available }}
-            onClick={() => card.available && props.onSelect(card.type)}
-            style={card.available ? {} : { opacity: 0.5, cursor: 'not-allowed' }}
-          >
-            <div class="exercise-card-icon">{card.icon}</div>
-            <h3>{card.title}</h3>
-            <p>{card.description}</p>
-            <div class="exercise-card-tags">
-              {card.tags.map((t) => (
-                <span>{t}</span>
-              ))}
+        {CARDS.map((card) => {
+          const stats = createMemo(() => getExerciseStats(card.type))
+          return (
+            <div
+              class="exercise-card"
+              classList={{ 'exercise-card-disabled': !card.available }}
+              onClick={() => card.available && props.onSelect(card.type)}
+              style={card.available ? {} : { opacity: 0.5, cursor: 'not-allowed' }}
+            >
+              <div class="exercise-card-icon">{card.icon}</div>
+              <h3>{card.title}</h3>
+              <p>{card.description}</p>
+              <div class="exercise-card-tags">
+                {card.tags.map((t) => (
+                  <span>{t}</span>
+                ))}
+              </div>
+              <Show when={stats().totalPlays > 0}>
+                <div class="exercise-card-stats">
+                  <span class={`exercise-card-grade ${gradeClass(stats().bestScore)}`}>
+                    {gradeLabel(stats().bestScore)}
+                  </span>
+                  <span class="exercise-card-best">
+                    Best: {stats().bestScore}%
+                  </span>
+                  <span class="exercise-card-plays">
+                    {stats().totalPlays}x
+                  </span>
+                </div>
+              </Show>
             </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
+
+      <Show when={recentEntries().length > 0}>
+        <div class="exercise-recent">
+          <h4 class="exercise-recent-title">Recent Sessions</h4>
+          <div class="exercise-recent-list">
+            <For each={recentEntries()}>
+              {(entry) => (
+                <div class="exercise-recent-item">
+                  <span class="exercise-recent-type">{entry.type}</span>
+                  <span class="exercise-recent-score" style={`color:${entry.score >= 80 ? '#22c55e' : entry.score >= 50 ? '#eab308' : '#ef4444'}`}>
+                    {entry.score}%
+                  </span>
+                  <span class="exercise-recent-time">{formatTime(entry.completedAt)}</span>
+                </div>
+              )}
+            </For>
+          </div>
+        </div>
+      </Show>
     </div>
   )
 }

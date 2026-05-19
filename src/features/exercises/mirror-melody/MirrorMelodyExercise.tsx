@@ -3,6 +3,7 @@ import { For } from 'solid-js'
 import type { AudioEngine } from '@/lib/audio-engine'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { showCelebration } from '@/stores/ui-store'
+import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { useBaseExercise } from '../use-base-exercise'
 import { useMirrorMelodyController } from './use-mirror-melody-controller'
 
@@ -58,6 +59,12 @@ const MirrorMelodyExercise: Component<MirrorMelodyExerciseProps> = (props) => {
         score: r.score,
         exerciseType: r.type,
         metrics: r.metrics,
+      })
+      recordExerciseResult({
+        type: r.type,
+        score: r.score,
+        metrics: r.metrics,
+        completedAt: r.completedAt,
       })
     }
   })
