@@ -213,9 +213,14 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
 
       <div class="exercise-controls">
         {state.status === 'idle' && (
-          <button class="exercise-btn exercise-btn-primary" onClick={() => void handleStart()}>
-            Start Game
-          </button>
+          <>
+            {base.error() && (
+              <div class="exercise-error">{base.error()}</div>
+            )}
+            <button class="exercise-btn exercise-btn-primary" onClick={() => void handleStart()}>
+              Start Game
+            </button>
+          </>
         )}
         {isActive && (
           <button class="exercise-btn exercise-btn-secondary" onClick={handleStop}>

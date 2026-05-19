@@ -2,6 +2,8 @@ import type { Component } from 'solid-js'
 import { createSignal, For, Show } from 'solid-js'
 import { useDailyRoutine } from './use-daily-routine'
 import type { SegmentKind } from './types'
+import { startExercise } from '@/stores/ui-store'
+import type { ExerciseType } from '@/features/exercises/types'
 
 const segmentLabels: Record<SegmentKind, string> = {
   warmup: 'Warmup',
@@ -15,6 +17,13 @@ const segmentIcons: Record<SegmentKind, string> = {
   exercise: '🎯',
   'challenge-prep': '🏆',
   cooldown: '🌊',
+}
+
+const segmentExercise: Record<SegmentKind, ExerciseType> = {
+  warmup: 'long-note',
+  exercise: 'vibrato',
+  'challenge-prep': 'pitch-pursuit',
+  cooldown: 'slide',
 }
 
 export const DailyRoutinePanel: Component = () => {
@@ -105,6 +114,16 @@ export const DailyRoutinePanel: Component = () => {
                         {Math.round(seg.durationSec / 60)}m
                       </span>
                       <Show when={current && !done}>
+                        <button
+                          class="daily-routine-segment-start-btn"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            startExercise(segmentExercise[seg.type])
+                          }}
+                          title="Start exercise"
+                        >
+                          ▶
+                        </button>
                         <button
                           class="daily-routine-segment-done-btn"
                           onClick={(e) => {

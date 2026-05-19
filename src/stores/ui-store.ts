@@ -109,6 +109,12 @@ export function launchDrill(drill: PendingDrill): void {
   setActiveTab(TAB_EXERCISES)
 }
 
+/** Launch an exercise directly (used by daily routine Start buttons) */
+export function startExercise(exercise: ExerciseType): void {
+  setPendingDrill({ exercise, notes: [], challengeName: '' })
+  setActiveTab(TAB_EXERCISES)
+}
+
 // ── Session Celebration ──────────────────────────────────────
 
 export interface CelebrationData {

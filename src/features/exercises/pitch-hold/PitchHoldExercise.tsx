@@ -171,6 +171,9 @@ const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
                 {NOTE_OPTIONS.map((n) => <option value={n}>{n}</option>)}
               </select>
             </div>
+            {base.error() && (
+              <div class="exercise-error">{base.error()}</div>
+            )}
             <button class="exercise-btn exercise-btn-primary" onClick={() => void handleStart()}>
               Start
             </button>

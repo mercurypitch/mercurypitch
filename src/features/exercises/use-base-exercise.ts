@@ -32,6 +32,7 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
   const [getTargetPitch, setTargetPitch] = createSignal<number | null>(null)
   const result = createSignal<ExerciseResult | null>(null)
   const [getResult, setResult] = result
+  const [getError, setError] = createSignal<string | null>(null)
 
   let animId = 0
   let startTime = 0
@@ -62,10 +63,12 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
     if (!practiceEngine.isMicActive()) {
       const ok = await practiceEngine.startMic()
       if (!ok) {
+        setError('Microphone access denied. Please allow mic access and try again.')
         setState((s) => ({ ...s, status: 'idle' }))
         return
       }
     }
+    setError(null)
 
     startTime = performance.now()
     running = true
@@ -145,6 +148,7 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
     currentPitch: getCurrentPitch,
     frequencyData: getFrequencyData,
     targetPitch: getTargetPitch,
+    error: getError,
     // Expose internals for exercise controllers
     _commitResult: commitResult,
     _updateScore: updateScore,

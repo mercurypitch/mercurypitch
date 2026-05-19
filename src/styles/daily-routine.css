@@ -183,6 +183,26 @@
   border-color: var(--success, #4caf50);
 }
 
+.daily-routine-segment-start-btn {
+  background: var(--accent, #7c4dff);
+  color: #fff;
+  border: 1px solid var(--accent, #7c4dff);
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  font-size: 9px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: background 0.15s;
+}
+.daily-routine-segment-start-btn:hover {
+  background: #fff;
+  color: var(--accent, #7c4dff);
+}
+
 .daily-routine-complete-msg {
   text-align: center;
   color: var(--success, #4caf50);
