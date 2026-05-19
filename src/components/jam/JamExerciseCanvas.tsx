@@ -5,7 +5,7 @@
 import type { Component } from 'solid-js'
 import { createMemo, onCleanup, onMount } from 'solid-js'
 import { buildPeerColorMap } from '@/lib/jam/peer-colors'
-import { jamExerciseBeat, jamExerciseMelody, jamExercisePlaying, jamExerciseTotalBeats, jamPeers, jamPitchHistory, } from '@/stores/jam-store'
+import { jamExerciseBeat, jamExerciseMelody, jamExercisePlaying, jamExerciseTotalBeats, jamPeers, jamPitchHistory, setJamExerciseHistory, } from '@/stores/jam-store'
 
 const MARGIN_LEFT = 40
 const MARGIN_RIGHT = 20
@@ -15,6 +15,16 @@ const DOT_RADIUS = 2.5
 const GLOW_RADIUS = 14
 // Playhead pinned at this fraction of the drawable width
 const PLAYHEAD_PCT = 0.6
+
+export interface InternalScore {
+  name: string
+  hits: number
+  total: number
+  color: string
+  peerId: string
+}
+let lastComputedScores: InternalScore[] = []
+let wasPlaying = false
 
 interface JamExerciseCanvasProps {
   myPeerId: () => string | null
@@ -134,6 +144,32 @@ export const JamExerciseCanvas: Component<JamExerciseCanvasProps> = (props) => {
       drawScoreboard(w, h, min, max, totalBeats, currentBeat)
       drawPeerLegend(w, h)
       drawPrecount(w, h, currentBeat)
+
+      const playing = jamExercisePlaying()
+      if (wasPlaying && !playing) {
+        // Exercise just stopped — record the last computed scores
+        if (lastComputedScores.length > 0) {
+          const melody = jamExerciseMelody()
+          if (melody) {
+            setJamExerciseHistory((prev) => [
+              {
+                id: Math.random().toString(36).slice(2),
+                melodyName: melody.name || 'Unknown Exercise',
+                timestamp: Date.now(),
+                scores: lastComputedScores.map((s) => ({
+                  peerId: s.peerId,
+                  name: s.name,
+                  color: s.color,
+                  accuracy: s.total > 0 ? s.hits / s.total : 0,
+                })),
+              },
+              ...prev,
+            ])
+          }
+          lastComputedScores = [] // reset
+        }
+      }
+      wasPlaying = playing
 
       animFrameId = requestAnimationFrame(draw)
     }
@@ -561,14 +597,7 @@ export const JamExerciseCanvas: Component<JamExerciseCanvasProps> = (props) => {
 
     const beatsPerMs = bpm / 60 / 1000
 
-    interface Score {
-      name: string
-      hits: number
-      total: number
-      color: string
-    }
-
-    const scores: Score[] = []
+    const scores: InternalScore[] = []
 
     for (const id of ids) {
       const samples = history[id] ?? []
@@ -596,7 +625,12 @@ export const JamExerciseCanvas: Component<JamExerciseCanvasProps> = (props) => {
         if (centsDiff <= 50) hits++
       }
 
-      scores.push({ name, hits, total, color })
+      scores.push({ name, hits, total, color, peerId: id })
+    }
+
+    // Store latest scores so we can save them when the exercise stops
+    if (scores.length > 0) {
+      lastComputedScores = scores
     }
 
     if (scores.length === 0) return

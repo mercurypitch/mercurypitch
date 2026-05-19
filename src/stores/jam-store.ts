@@ -8,6 +8,48 @@ import { createJamService } from '@/lib/jam/service'
 import type { JamChatMessage, JamMelodyMessage, JamPeer, JamPitchMessage, JamPlaybackMessage, TimeStampedPitchSample, } from '@/lib/jam/types'
 import type { MelodyData } from '@/types'
 
+// ── SessionStorage keys for auto-rejoin on page reload ──────────────
+const SS_ROOM_ID = 'jam:roomId'
+const SS_DISPLAY_NAME = 'jam:displayName'
+
+function saveJamSession(roomId: string, displayName: string): void {
+  try {
+    sessionStorage.setItem(SS_ROOM_ID, roomId)
+    sessionStorage.setItem(SS_DISPLAY_NAME, displayName)
+  } catch {
+    /* storage full or unavailable */
+  }
+}
+
+function clearJamSession(): void {
+  try {
+    sessionStorage.removeItem(SS_ROOM_ID)
+    sessionStorage.removeItem(SS_DISPLAY_NAME)
+  } catch {
+    /* ignore */
+  }
+}
+
+export function getJamSessionInfo(): {
+  roomId: string
+  displayName: string
+} | null {
+  try {
+    const roomId = sessionStorage.getItem(SS_ROOM_ID)
+    const displayName = sessionStorage.getItem(SS_DISPLAY_NAME)
+    if (
+      roomId !== null &&
+      roomId !== '' &&
+      displayName !== null &&
+      displayName !== ''
+    )
+      return { roomId, displayName }
+  } catch {
+    /* ignore */
+  }
+  return null
+}
+
 // ── Signals ─────────────────────────────────────────────────────────
 
 export const [jamRoomId, setJamRoomId] = createSignal<string | null>(null)
@@ -27,7 +69,7 @@ export const [jamLocalStream, setJamLocalStream] =
 export const [jamRemoteStreams, setJamRemoteStreams] = createSignal<
   Record<string, MediaStream>
 >({})
-export const [jamVideoEnabled, setJamVideoEnabled] = createSignal(true)
+export const [jamVideoEnabled, setJamVideoEnabled] = createSignal(false)
 export const [jamChatMessages, setJamChatMessages] = createSignal<
   JamChatMessage[]
 >([])
@@ -58,6 +100,22 @@ export const [jamExerciseTotalBeats, setJamExerciseTotalBeats] = createSignal(0)
 export const [jamExerciseLoop, setJamExerciseLoop] = createSignal(false)
 /** Host-overridden BPM; initialised from melody.bpm on selectJamExercise. */
 export const [jamExerciseBpm, setJamExerciseBpm] = createSignal(120)
+
+export interface JamExerciseResult {
+  id: string
+  melodyName: string
+  timestamp: number
+  scores: Array<{
+    peerId: string
+    name: string
+    color: string
+    accuracy: number
+  }>
+}
+export const [jamExerciseHistory, setJamExerciseHistory] = createSignal<
+  JamExerciseResult[]
+>([])
+
 // eslint-disable-next-line solid/reactivity
 const _jamUnreadChatCount = createSignal(0)
 export const jamUnreadChatCount = _jamUnreadChatCount[0]
@@ -263,6 +321,7 @@ export async function createJamRoom(
     setJamPeerId(jamService!.getPeerId())
     setJamLocalStream(jamService!.getLocalStream())
     setJamState('active')
+    saveJamSession(roomId, displayName)
     return roomId
   } catch (_err) {
     setJamError('Failed to create room')
@@ -292,6 +351,7 @@ export async function joinJamRoom(
     setJamPeerId(peerId)
     setJamLocalStream(jamService!.getLocalStream())
     setJamState('active')
+    saveJamSession(roomId, displayName)
     return true
   } catch (_err) {
     setJamError('Failed to join room')
@@ -531,6 +591,7 @@ export function disposeJam(): void {
 function cleanupJam(): void {
   stopJamPitchDetection()
   stopPlaybackTimer()
+  clearJamSession()
   for (const [, source] of remoteAudioNodes) {
     source.disconnect()
   }
@@ -546,7 +607,7 @@ function cleanupJam(): void {
   setJamRemoteStreams({})
   setJamLocalStream(null)
   setJamChatMessages([])
-  setJamVideoEnabled(true)
+  setJamVideoEnabled(false)
   setJamPitchHistory({})
   setJamLocalPitch(null)
   setJamExerciseMelody(null)
