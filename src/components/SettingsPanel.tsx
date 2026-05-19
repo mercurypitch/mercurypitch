@@ -883,7 +883,10 @@ export const SettingsPanel: Component = () => {
           {/* Reset Confirmation Modal */}
           <Show when={showResetConfirm()}>
             <div class={styles.dangerConfirmOverlay}>
-              <div class={styles.dangerConfirmBox} data-testid="danger-confirm-box">
+              <div
+                class={styles.dangerConfirmBox}
+                data-testid="danger-confirm-box"
+              >
                 <h4 class={styles.dangerConfirmTitle}>Confirm Reset</h4>
                 <p class={styles.dangerConfirmText}>
                   Are you sure you want to reset all data? This will clear all
@@ -1011,7 +1014,11 @@ export const SettingsPanel: Component = () => {
               MercuryPitch
             </p>
             <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-bottom: 1rem;">
-              <p class={styles.aboutVersion} style="margin: 0;" data-testid="about-version">
+              <p
+                class={styles.aboutVersion}
+                style="margin: 0;"
+                data-testid="about-version"
+              >
                 v{APP_VERSION}-{COMMIT_SHA}
               </p>
               <Show when={IS_DEV}>

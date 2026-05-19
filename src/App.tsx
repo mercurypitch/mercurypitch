@@ -1270,7 +1270,7 @@ const AppShell: Component<AppProps> = (props) => {
                         currentNoteIndex={currentNoteIndex}
                         isPlaying={isPlaying}
                         isPaused={isPaused}
-                        isScrolling={() => false}
+                        isScrolling={() => true}
                         targetPitch={targetPitch}
                         noteAccuracyMap={noteAccuracyMap}
                         isRecording={recording.isRecording}

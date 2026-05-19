@@ -72,13 +72,13 @@ test.describe('Focus Mode', () => {
     await page.waitForTimeout(500)
 
     // Ensure focus mode is fully rendered
-    await expect(
-      page.locator('[data-testid="focus-mode"]'),
-    ).toBeVisible({ timeout: 5000 })
+    await expect(page.locator('[data-testid="focus-mode"]')).toBeVisible({
+      timeout: 5000,
+    })
 
     // Focus mode top bar shows key badge
-    await expect(
-      page.locator('[data-testid="focus-key-badge"]'),
-    ).toBeVisible({ timeout: 3000 })
+    await expect(page.locator('[data-testid="focus-key-badge"]')).toBeVisible({
+      timeout: 3000,
+    })
   })
 })

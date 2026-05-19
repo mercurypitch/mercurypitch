@@ -159,7 +159,10 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   // Pre-initialize ONNX model when switching to browser mode
   // Skip in E2E test mode — model files are unavailable in test environments
   createEffect(() => {
-    if ((window as any).E2E_TEST_MODE) return
+    if (
+      (window as unknown as Record<string, unknown>)['E2E_TEST_MODE'] === true
+    )
+      return
     const mode = uvrProcessingMode()
     if (mode === 'local' && uvrModelStatus() === 'unloaded') {
       void preInitModel()
