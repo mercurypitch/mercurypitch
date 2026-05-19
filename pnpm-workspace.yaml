@@ -4,6 +4,7 @@ allowBuilds:
   '@parcel/watcher': true
   esbuild: true
   midi-writer-js: true
+  onnxruntime-node: true
   protobufjs: true
   sharp: true
   unrs-resolver: true
