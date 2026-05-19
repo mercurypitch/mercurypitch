@@ -856,6 +856,13 @@ test.describe('Melody Library', () => {
       await createBtn.click()
       await page.waitForTimeout(500)
 
+      // Close modal before navigating
+      const closeBtn = page.locator('.library-modal .close-btn').first()
+      if (await closeBtn.isVisible()) {
+        await closeBtn.click()
+        await page.waitForTimeout(300)
+      }
+
       // Navigate back
       await switchTab(page, 'singing')
       await page.waitForTimeout(300)
@@ -935,6 +942,13 @@ test.describe('Melody Library', () => {
     const createBtn = page.locator('button:has-text("Create")')
     await createBtn.click()
     await page.waitForTimeout(500)
+
+    // Close modal before navigating
+    const closeBtn = page.locator('.library-modal .close-btn').first()
+    if (await closeBtn.isVisible()) {
+      await closeBtn.click()
+      await page.waitForTimeout(300)
+    }
 
     // Verify app is still responsive
     await switchTab(page, 'singing')

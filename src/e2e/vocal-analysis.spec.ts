@@ -176,9 +176,12 @@ test.describe('Vocal Analysis Tab', () => {
 
     // Ensure demo data is loaded
     const loadBtn = page.locator('.demo-load-btn')
-    if (await loadBtn.isVisible()) {
+    try {
+      await loadBtn.waitFor({ state: 'visible', timeout: 3000 })
       await loadBtn.click()
       await page.waitForTimeout(1000)
+    } catch {
+      // Ignore if not found
     }
 
     // Thursday (index 3 in our 0-6 Mon-Sun array) should always have data from generateMockSessions()
@@ -202,9 +205,12 @@ test.describe('Vocal Analysis Tab', () => {
 
     // Ensure demo data is loaded
     const loadBtn = page.locator('.demo-load-btn')
-    if (await loadBtn.isVisible()) {
+    try {
+      await loadBtn.waitFor({ state: 'visible', timeout: 3000 })
       await loadBtn.click()
       await page.waitForTimeout(500)
+    } catch {
+      // Ignore if not found
     }
 
     const sessionItems = page.locator('.session-item')
@@ -239,9 +245,12 @@ test.describe('Vocal Analysis Tab', () => {
 
     // 1. Load demo data
     const loadBtn = page.locator('.demo-load-btn')
-    if (await loadBtn.isVisible()) {
+    try {
+      await loadBtn.waitFor({ state: 'visible', timeout: 3000 })
       await loadBtn.click()
       await page.waitForTimeout(500)
+    } catch {
+      // Ignore if not found
     }
 
     // 2. Start analysis
