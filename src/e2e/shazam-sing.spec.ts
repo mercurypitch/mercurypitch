@@ -33,9 +33,7 @@ test.describe.skip('Shazam Sing', () => {
     await expect(page.locator('[data-testid="uvr-upload"]')).toBeVisible({
       timeout: 10000,
     })
-    await expect(
-      page.locator('[data-testid="uvr-tab-sing"]'),
-    ).toBeVisible()
+    await expect(page.locator('[data-testid="uvr-tab-sing"]')).toBeVisible()
   })
 
   test('sing tab switches to shazam-listen view', async ({ page }) => {
@@ -53,9 +51,7 @@ test.describe.skip('Shazam Sing', () => {
     page,
   }) => {
     // First go to shazam-listen
-    await page
-      .locator('[data-testid="uvr-tab-sing"]')
-      .dispatchEvent('click')
+    await page.locator('[data-testid="uvr-tab-sing"]').dispatchEvent('click')
     await page.waitForSelector('[data-testid="shazam-listen"]', {
       timeout: 10000,
     })

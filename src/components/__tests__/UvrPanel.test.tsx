@@ -119,7 +119,7 @@ describe('UvrPanel Component', () => {
       render(() => <UvrPanel {...defaultProps} />)
       expect(screen.getByText('Guide')).toBeInTheDocument()
       expect(screen.getByText('Settings')).toBeInTheDocument()
-      expect(screen.getByText('Sessions')).toBeInTheDocument()
+      expect(screen.getByText('Upload')).toBeInTheDocument()
     })
 
     it('defaults to upload when initialView is not set', () => {

@@ -134,7 +134,10 @@ export function ShazamResults(props: ShazamResultsProps) {
                       <button
                         class={styles.openBtn}
                         onClick={() =>
-                          props.onOpenStemMixer?.(candidate.sessionId!, candidate.matchOffsetSec)
+                          props.onOpenStemMixer?.(
+                            candidate.sessionId!,
+                            candidate.matchOffsetSec,
+                          )
                         }
                       >
                         Open in Mixer

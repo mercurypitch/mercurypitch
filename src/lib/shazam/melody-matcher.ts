@@ -60,8 +60,21 @@ export function matchPitchContour(
   if (debug) {
     // eslint-disable-next-line no-console
     console.group('[Shazam Matcher] Matching contour')
-    console.log('Query notes:', noteSeq.length, 'IOIs:', ioiSeq.length, 'Duration:', `${contour.durationSec.toFixed(2)}s`)
-    console.log('Note sequence (MIDI):', `${noteSeq.slice(0, 20).map(n => n.toFixed(1)).join(', ')}${noteSeq.length > 20 ? '...' : ''}`)
+    console.log(
+      'Query notes:',
+      noteSeq.length,
+      'IOIs:',
+      ioiSeq.length,
+      'Duration:',
+      `${contour.durationSec.toFixed(2)}s`,
+    )
+    console.log(
+      'Note sequence (MIDI):',
+      `${noteSeq
+        .slice(0, 20)
+        .map((n) => n.toFixed(1))
+        .join(', ')}${noteSeq.length > 20 ? '...' : ''}`,
+    )
     console.log('Fingerprints to compare:', fingerprints.length)
   }
 
@@ -79,7 +92,10 @@ export function matchPitchContour(
       const noteRatio =
         Math.max(fp.noteCount, noteSeq.length) / Math.max(1, shorterLen)
       if (noteRatio > 3 && shorterLen < 20) {
-        if (debug) console.log(`  [SKIP] ${fp.name}: note ratio ${noteRatio.toFixed(1)}x (${fp.noteCount} vs ${noteSeq.length})`)
+        if (debug)
+          console.log(
+            `  [SKIP] ${fp.name}: note ratio ${noteRatio.toFixed(1)}x (${fp.noteCount} vs ${noteSeq.length})`,
+          )
         continue
       }
     }
@@ -112,7 +128,10 @@ export function matchPitchContour(
         contourIntervals.push(noteSeq[i] - noteSeq[i - 1])
       }
       if (contourIntervals.length > 0 && fp.intervalSequence.length > 0) {
-        intervalScore = bestMatchWithOffset(contourIntervals, fp.intervalSequence).score
+        intervalScore = bestMatchWithOffset(
+          contourIntervals,
+          fp.intervalSequence,
+        ).score
       }
     }
 
@@ -173,7 +192,9 @@ export function matchPitchContour(
     const isStem = fp.melodyId.startsWith('stem:')
 
     if (debug) {
-      console.log(`  [SCORE] ${fp.name}: pitch=${pitchScore.toFixed(3)} interval=${intervalScore.toFixed(3)} chroma=${chromaScore.toFixed(3)} rhythm=${rhythmScore.toFixed(3)} length=${lengthBonus.toFixed(3)} => ${confidence}%${hummingNormalized ? ' (humming adj)' : ''}`)
+      console.log(
+        `  [SCORE] ${fp.name}: pitch=${pitchScore.toFixed(3)} interval=${intervalScore.toFixed(3)} chroma=${chromaScore.toFixed(3)} rhythm=${rhythmScore.toFixed(3)} length=${lengthBonus.toFixed(3)} => ${confidence}%${hummingNormalized ? ' (humming adj)' : ''}`,
+      )
     }
 
     // Compute match time offset from subsequence DTW start index
@@ -181,18 +202,42 @@ export function matchPitchContour(
     if (pitchMatchStartIdx >= 0 && fp.ioiSequence.length > 0) {
       // Sum IOIs up to the start index to get the time offset
       let offsetSec = fp.firstNoteStartSec ?? 0
-      for (let i = 0; i < Math.min(pitchMatchStartIdx, fp.ioiSequence.length); i++) {
+      for (
+        let i = 0;
+        i < Math.min(pitchMatchStartIdx, fp.ioiSequence.length);
+        i++
+      ) {
         offsetSec += fp.ioiSequence[i]
       }
       matchOffsetSec = offsetSec
-      
+
       if (debug) {
-        console.log(`  [OFFSET] ${fp.name}: matchStartIdx=${pitchMatchStartIdx}, firstNoteStart=${fp.firstNoteStartSec ?? 0}, offsetSec=${offsetSec.toFixed(2)}s`)
+        console.log(
+          `  [OFFSET] ${fp.name}: matchStartIdx=${pitchMatchStartIdx}, firstNoteStart=${fp.firstNoteStartSec ?? 0}, offsetSec=${offsetSec.toFixed(2)}s`,
+        )
         if (pitchMatchPath.length > 0) {
-          const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
-          const toName = (m: number) => `${NOTE_NAMES[m % 12]}${Math.floor(m / 12) - 1}`
-          const queryNotes = pitchMatchPath.map(([q]) => toName(Math.round(noteSeq[q])))
-          const refNotes = pitchMatchPath.map(([, r]) => toName(Math.round(fp.pitchSequence[r])))
+          const NOTE_NAMES = [
+            'C',
+            'C#',
+            'D',
+            'D#',
+            'E',
+            'F',
+            'F#',
+            'G',
+            'G#',
+            'A',
+            'A#',
+            'B',
+          ]
+          const toName = (m: number) =>
+            `${NOTE_NAMES[m % 12]}${Math.floor(m / 12) - 1}`
+          const queryNotes = pitchMatchPath.map(([q]) =>
+            toName(Math.round(noteSeq[q])),
+          )
+          const refNotes = pitchMatchPath.map(([, r]) =>
+            toName(Math.round(fp.pitchSequence[r])),
+          )
           console.log(`  [NOTES] Query: ${queryNotes.join(' ')}`)
           console.log(`  [NOTES] Match: ${refNotes.join(' ')}`)
         }
@@ -218,7 +263,10 @@ export function matchPitchContour(
 
   if (debug) {
     if (result.length > 0) {
-      console.log('Top matches:', result.map(c => `${c.name} (${c.confidence}%)`).join(', '))
+      console.log(
+        'Top matches:',
+        result.map((c) => `${c.name} (${c.confidence}%)`).join(', '),
+      )
     } else {
       console.log('No matches above threshold')
     }

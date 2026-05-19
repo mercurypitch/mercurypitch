@@ -5,7 +5,7 @@ import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onMount, Show, } from 'solid-js'
 import { createJamRoom, jamConnectedPeers, jamError, jamExerciseBpm, jamExerciseLoop, jamExerciseMelody, jamIsMuted, jamPeerId, jamPeers, jamRoomId, jamRoomToJoin, jamState, jamVideoEnabled, joinJamRoom, leaveJamRoom, selectJamExercise, setJamExerciseBpm, setJamExerciseLoop, setJamRoomToJoin, startJamPitchDetection, toggleJamMute, toggleJamVideo, } from '@/stores/jam-store'
 import { getMelodyLibrarySignal } from '@/stores/melody-store'
-import { VOCAL_RANGES,vocalRangePreset } from '@/stores/settings-store'
+import { VOCAL_RANGES, vocalRangePreset } from '@/stores/settings-store'
 import { JamCameraWidget } from './JamCameraWidget'
 import { JamChatWidget } from './JamChatWidget'
 import { JamExerciseCanvas } from './JamExerciseCanvas'
@@ -59,7 +59,10 @@ export const JamPanel: Component = () => {
         const lib = getMelodyLibrarySignal()()
         const defaultOctave = VOCAL_RANGES[vocalRangePreset()].defaultOctave
         const defaultMelodyId = `scale-major-c${defaultOctave}`
-        const defaultMelody = lib.melodies[defaultMelodyId] ?? lib.melodies['scale-major-c3'] ?? melodyOptions()[0]
+        const defaultMelody =
+          lib.melodies[defaultMelodyId] ??
+          lib.melodies['scale-major-c3'] ??
+          melodyOptions()[0]
         if (defaultMelody !== undefined) selectJamExercise(defaultMelody)
       }
     }

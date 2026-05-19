@@ -157,12 +157,7 @@ async function processLocal(
   // Persist stems to IndexedDB — must complete before onComplete so that
   // auto-fingerprint extraction can read the vocal blob immediately.
   await Promise.all([
-    saveStemBlob(
-      sessionId,
-      'vocal',
-      vocalBlob,
-      `${file.name}_vocal.wav`,
-    ),
+    saveStemBlob(sessionId, 'vocal', vocalBlob, `${file.name}_vocal.wav`),
     saveStemBlob(
       sessionId,
       'instrumental',

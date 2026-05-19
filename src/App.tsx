@@ -96,8 +96,8 @@ import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPr
 import { advancedFeaturesEnabled, devFeaturesEnabled } from '@/stores/app-store'
 import { setJamRoomToJoin } from '@/stores/jam-store'
 import { melodyStore } from '@/stores/melody-store'
-import { getSession, setSelectedMelodyIds, templateToSession, userSession } from '@/stores/session-store'
-import { selectedCharacter, showPracticeResultPopup, VOCAL_RANGES,vocalRangePreset,  } from '@/stores/settings-store'
+import { getSession, setSelectedMelodyIds, templateToSession, userSession, } from '@/stores/session-store'
+import { selectedCharacter, showPracticeResultPopup, VOCAL_RANGES, vocalRangePreset, } from '@/stores/settings-store'
 import type { PlaybackSession } from '@/types'
 import type { ActiveTab, MelodyItem, PlaybackMode, SpacedRestMode, } from '@/types'
 import { Walkthrough, WalkthroughControl } from './components'
@@ -410,14 +410,20 @@ const AppShell: Component<AppProps> = (props) => {
       [vocalRangePreset, userSession],
       ([preset, sessionState]) => {
         const session = sessionState as PlaybackSession | null | undefined
-        if (session !== null && session !== undefined && session.id === 'default') {
+        if (
+          session !== null &&
+          session !== undefined &&
+          session.id === 'default'
+        ) {
           const defaultOctave = VOCAL_RANGES[preset].defaultOctave
           const targetMelodyId = `scale-major-c${defaultOctave}`
           const match = session.items.find(
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (item) => item.type === 'melody' && (item as any).melodyId === targetMelodyId
+            (item) =>
+              item.type === 'melody' &&
+              (item as any).melodyId === targetMelodyId,
           )
-          
+
           if (match !== undefined) {
             // Load it into the piano roll without starting playback
             loadAndPlayMelodyForSession(match.id)
@@ -426,8 +432,8 @@ const AppShell: Component<AppProps> = (props) => {
           }
         }
       },
-      { defer: false }
-    )
+      { defer: false },
+    ),
   )
 
   // ── Editor controller ──────────────────────────────────────

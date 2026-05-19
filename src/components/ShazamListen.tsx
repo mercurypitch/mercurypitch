@@ -77,12 +77,19 @@ export function ShazamListen(props: ShazamListenProps) {
   }
 
   const [frameCount, setFrameCount] = createSignal(0)
-  const [liveMatches, setLiveMatches] = createSignal<Array<{
-    name: string
-    confidence: number
-    breakdown: { pitch: number; interval: number; chroma: number; rhythm: number }
-    notes: number
-  }>>([])
+  const [liveMatches, setLiveMatches] = createSignal<
+    Array<{
+      name: string
+      confidence: number
+      breakdown: {
+        pitch: number
+        interval: number
+        chroma: number
+        rhythm: number
+      }
+      notes: number
+    }>
+  >([])
   const [liveQueryNotes, setLiveQueryNotes] = createSignal(0)
 
   const speechSupported = (() => {
@@ -96,7 +103,9 @@ export function ShazamListen(props: ShazamListenProps) {
   const [speechIsInterim, setSpeechIsInterim] = createSignal(false)
   let speechRecognizer: SpeechRecognizer | null = null
 
-  const [speechEngine, setSpeechEngine] = createSignal<'web' | 'whisper'>('whisper')
+  const [speechEngine, setSpeechEngine] = createSignal<'web' | 'whisper'>(
+    'whisper',
+  )
   const [whisperStatus, setWhisperStatus] = createSignal('idle')
   let whisperService: WhisperService | null = null
   let whisperIntervalId: ReturnType<typeof setInterval> | null = null
@@ -105,7 +114,7 @@ export function ShazamListen(props: ShazamListenProps) {
     const next = !speechEnabled()
     setSpeechEnabled(next)
     setSpeechText('')
-    
+
     if (next) {
       if (speechEngine() === 'whisper') {
         if (!whisperService) {
@@ -161,22 +170,24 @@ export function ShazamListen(props: ShazamListenProps) {
     stopWhisperRecording()
     const micStream = audioEngine?.getMicStream()
     if (!micStream) return
-    
+
     whisperAccumulated = new Float32Array(0)
-    
+
     // Browser automatically resamples to 16kHz
     whisperAudioCtx = new AudioContext({ sampleRate: 16000 })
     whisperSource = whisperAudioCtx.createMediaStreamSource(micStream)
     whisperScriptNode = whisperAudioCtx.createScriptProcessor(4096, 1, 1)
-    
+
     whisperScriptNode.onaudioprocess = (e) => {
       const input = e.inputBuffer.getChannelData(0)
-      const newBuffer = new Float32Array(whisperAccumulated.length + input.length)
+      const newBuffer = new Float32Array(
+        whisperAccumulated.length + input.length,
+      )
       newBuffer.set(whisperAccumulated, 0)
       newBuffer.set(input, whisperAccumulated.length)
       whisperAccumulated = newBuffer
     }
-    
+
     whisperSource.connect(whisperScriptNode)
     // Connect to destination to ensure onaudioprocess fires
     whisperScriptNode.connect(whisperAudioCtx.destination)
@@ -188,12 +199,17 @@ export function ShazamListen(props: ShazamListenProps) {
   }
 
   async function processWhisperChunks() {
-    if (whisperAccumulated.length === 0 || !whisperService || whisperStatus() !== 'ready') return
-    
+    if (
+      whisperAccumulated.length === 0 ||
+      !whisperService ||
+      whisperStatus() !== 'ready'
+    )
+      return
+
     try {
       // Copy the accumulated data so we can transcribe without blocking
       const audioData = new Float32Array(whisperAccumulated)
-      
+
       const result = await whisperService.transcribe(audioData)
       setSpeechText(result.text)
     } catch (err) {
@@ -514,7 +530,20 @@ export function ShazamListen(props: ShazamListenProps) {
   }
 
   // Note names for canvas label rendering
-  const CANVAS_NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+  const CANVAS_NOTE_NAMES = [
+    'C',
+    'C#',
+    'D',
+    'D#',
+    'E',
+    'F',
+    'F#',
+    'G',
+    'G#',
+    'A',
+    'A#',
+    'B',
+  ]
 
   function drawCanvas() {
     if (!canvasRef || !ctx) return
@@ -686,21 +715,28 @@ export function ShazamListen(props: ShazamListenProps) {
                 Speech
               </button>
               <Show when={speechEnabled()}>
-                <select 
-                   class={styles.engineSelect}
-                   value={speechEngine()}
-                   onChange={(e) => {
-                     setSpeechEngine(e.currentTarget.value as 'web' | 'whisper')
-                     toggleSpeech(); toggleSpeech(); // toggle off and on to reinit
-                   }}
+                <select
+                  class={styles.engineSelect}
+                  value={speechEngine()}
+                  onChange={(e) => {
+                    setSpeechEngine(e.currentTarget.value as 'web' | 'whisper')
+                    toggleSpeech()
+                    toggleSpeech() // toggle off and on to reinit
+                  }}
                 >
                   <Show when={speechSupported}>
                     <option value="web">Web Speech API</option>
                   </Show>
                   <option value="whisper">Whisper (Offline)</option>
                 </select>
-                <Show when={speechEngine() === 'whisper' && whisperStatus() !== 'ready'}>
-                  <span style={{ "font-size": "10px", "color": "#64748b" }}>{whisperStatus()}</span>
+                <Show
+                  when={
+                    speechEngine() === 'whisper' && whisperStatus() !== 'ready'
+                  }
+                >
+                  <span style={{ 'font-size': '10px', color: '#64748b' }}>
+                    {whisperStatus()}
+                  </span>
                 </Show>
               </Show>
             </div>
@@ -816,8 +852,6 @@ export function ShazamListen(props: ShazamListenProps) {
         data-testid="shazam-canvas"
       />
 
-
-
       <Show when={speechEnabled() && listenState() === 'listening'}>
         <div class={styles.speechBox} data-testid="shazam-speech-text">
           <span class={styles.speechLabel}>
@@ -846,16 +880,22 @@ export function ShazamListen(props: ShazamListenProps) {
         </div>
         <Show when={liveMatches().length > 0 && listenState() === 'listening'}>
           <div class={styles.liveMatchPanel} data-testid="shazam-live-matches">
-            <h4 class={styles.liveMatchHeading}>Live Matches ({liveQueryNotes()} notes detected)</h4>
+            <h4 class={styles.liveMatchHeading}>
+              Live Matches ({liveQueryNotes()} notes detected)
+            </h4>
             <For each={liveMatches()}>
               {(match) => (
                 <div>
                   <div class={styles.liveMatchRow}>
                     <span class={styles.liveMatchName}>{match.name}</span>
-                    <span class={styles.liveMatchConf}>{match.confidence}%</span>
+                    <span class={styles.liveMatchConf}>
+                      {match.confidence}%
+                    </span>
                   </div>
                   <div class={styles.liveMatchDetail}>
-                    P:{match.breakdown.pitch} I:{match.breakdown.interval} C:{match.breakdown.chroma} R:{match.breakdown.rhythm} L:{match.notes}
+                    P:{match.breakdown.pitch} I:{match.breakdown.interval} C:
+                    {match.breakdown.chroma} R:{match.breakdown.rhythm} L:
+                    {match.notes}
                   </div>
                 </div>
               )}
@@ -876,7 +916,9 @@ export function ShazamListen(props: ShazamListenProps) {
       </Show>
 
       <Show when={listenState() === 'error' && errorMessage() !== ''}>
-        <p class={styles.error} data-testid="shazam-error">{errorMessage()}</p>
+        <p class={styles.error} data-testid="shazam-error">
+          {errorMessage()}
+        </p>
       </Show>
 
       <div class={styles.controls}>
@@ -899,8 +941,11 @@ export function ShazamListen(props: ShazamListenProps) {
       </div>
 
       <Show when={listenState() === 'error'}>
-        <button class={styles.retryBtn} onClick={handleRetry}
-          data-testid="shazam-retry-btn">
+        <button
+          class={styles.retryBtn}
+          onClick={handleRetry}
+          data-testid="shazam-retry-btn"
+        >
           Try Again
         </button>
       </Show>
