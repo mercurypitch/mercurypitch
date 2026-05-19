@@ -107,6 +107,14 @@ export function createSignalingClient(callbacks: JamCallbacks) {
 
     ws.onclose = () => {
       connecting = false
+      if (currentRoomId !== null && currentDisplayName !== null) {
+        // Auto-reconnect to the created room via the signal endpoint
+        reconnectTimer = setTimeout(() => {
+          if (currentRoomId !== null && currentDisplayName !== null) {
+            connect(currentRoomId, currentDisplayName)
+          }
+        }, 2000)
+      }
     }
 
     ws.onerror = () => {

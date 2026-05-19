@@ -683,6 +683,10 @@ export class AudioEngine {
     return this.isRecording
   }
 
+  getMicStream(): MediaStream | null {
+    return this.micStream
+  }
+
   /** Get waveform data from microphone (for live visualization) */
   getWaveformData(): Float32Array {
     if (this.micAnalyser) {

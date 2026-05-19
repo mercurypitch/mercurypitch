@@ -17,6 +17,7 @@ import { detectOnsets, segmentNotes } from '@/lib/shazam/onset-detector'
 import type { LivePitchContour, MatchCandidate, TimestampedPitch, } from '@/lib/shazam/types'
 import type { SpeechRecognizer } from '@/lib/speech-recognition'
 import { createSpeechRecognizer } from '@/lib/speech-recognition'
+import { WhisperService } from '@/lib/whisper-service'
 import { FingerprintInspector } from './FingerprintInspector'
 import { LivePitchDebug } from './LivePitchDebug'
 import styles from './ShazamListen.module.css'
@@ -95,22 +96,108 @@ export function ShazamListen(props: ShazamListenProps) {
   const [speechIsInterim, setSpeechIsInterim] = createSignal(false)
   let speechRecognizer: SpeechRecognizer | null = null
 
+  const [speechEngine, setSpeechEngine] = createSignal<'web' | 'whisper'>('whisper')
+  const [whisperStatus, setWhisperStatus] = createSignal('idle')
+  let whisperService: WhisperService | null = null
+  let whisperIntervalId: ReturnType<typeof setInterval> | null = null
+
   function toggleSpeech() {
     const next = !speechEnabled()
     setSpeechEnabled(next)
     setSpeechText('')
-    if (next && speechSupported && listenState() === 'listening') {
-      speechRecognizer = createSpeechRecognizer({
-        onResult: (text, isFinal) => {
-          setSpeechText(text)
-          setSpeechIsInterim(!isFinal)
-        },
-        onError: (err) => console.warn('[speech]', err),
-      })
-      speechRecognizer.start()
-    } else if (!next && speechRecognizer) {
-      speechRecognizer.stop()
-      speechRecognizer = null
+    
+    if (next) {
+      if (speechEngine() === 'whisper') {
+        if (!whisperService) {
+          whisperService = new WhisperService()
+          whisperService.onStatusChange = setWhisperStatus
+          whisperService.init()
+        }
+      } else if (speechSupported && listenState() === 'listening') {
+        speechRecognizer = createSpeechRecognizer({
+          onResult: (text, isFinal) => {
+            setSpeechText(text)
+            setSpeechIsInterim(!isFinal)
+          },
+          onError: (err) => console.warn('[speech]', err),
+        })
+        speechRecognizer.start()
+      }
+    } else {
+      if (speechRecognizer) {
+        speechRecognizer.stop()
+        speechRecognizer = null
+      }
+      stopWhisperRecording()
+    }
+  }
+
+  let whisperAudioCtx: AudioContext | null = null
+  let whisperScriptNode: ScriptProcessorNode | null = null
+  let whisperSource: MediaStreamAudioSourceNode | null = null
+  let whisperAccumulated: Float32Array = new Float32Array(0)
+
+  function stopWhisperRecording() {
+    if (whisperScriptNode) {
+      whisperScriptNode.disconnect()
+      whisperScriptNode.onaudioprocess = null
+      whisperScriptNode = null
+    }
+    if (whisperSource) {
+      whisperSource.disconnect()
+      whisperSource = null
+    }
+    if (whisperAudioCtx) {
+      void whisperAudioCtx.close()
+      whisperAudioCtx = null
+    }
+    if (whisperIntervalId) {
+      clearInterval(whisperIntervalId)
+      whisperIntervalId = null
+    }
+  }
+
+  function startWhisperRecording() {
+    stopWhisperRecording()
+    const micStream = audioEngine?.getMicStream()
+    if (!micStream) return
+    
+    whisperAccumulated = new Float32Array(0)
+    
+    // Browser automatically resamples to 16kHz
+    whisperAudioCtx = new AudioContext({ sampleRate: 16000 })
+    whisperSource = whisperAudioCtx.createMediaStreamSource(micStream)
+    whisperScriptNode = whisperAudioCtx.createScriptProcessor(4096, 1, 1)
+    
+    whisperScriptNode.onaudioprocess = (e) => {
+      const input = e.inputBuffer.getChannelData(0)
+      const newBuffer = new Float32Array(whisperAccumulated.length + input.length)
+      newBuffer.set(whisperAccumulated, 0)
+      newBuffer.set(input, whisperAccumulated.length)
+      whisperAccumulated = newBuffer
+    }
+    
+    whisperSource.connect(whisperScriptNode)
+    // Connect to destination to ensure onaudioprocess fires
+    whisperScriptNode.connect(whisperAudioCtx.destination)
+
+    // Transcribe every 5 seconds
+    whisperIntervalId = setInterval(() => {
+      void processWhisperChunks()
+    }, 5000)
+  }
+
+  async function processWhisperChunks() {
+    if (whisperAccumulated.length === 0 || !whisperService || whisperStatus() !== 'ready') return
+    
+    try {
+      // Copy the accumulated data so we can transcribe without blocking
+      const audioData = new Float32Array(whisperAccumulated)
+      
+      const result = await whisperService.transcribe(audioData)
+      setSpeechText(result.text)
+    } catch (err) {
+      console.error('[Whisper] Transcribe error:', err)
     }
   }
 
@@ -134,6 +221,11 @@ export function ShazamListen(props: ShazamListenProps) {
 
   onCleanup(() => {
     stopAll()
+    stopWhisperRecording()
+    if (whisperService) {
+      whisperService.destroy()
+      whisperService = null
+    }
     if (audioEngine) {
       audioRegistry.unregister(audioEngine)
       audioEngine.destroy()
@@ -198,21 +290,25 @@ export function ShazamListen(props: ShazamListenProps) {
     startAnimationLoop()
     startLiveMatching()
 
-    if (speechEnabled() && speechSupported) {
-      // Stop any existing recognizer to prevent leaked instances
-      // (e.g. if toggleSpeech was called before handleStart)
-      if (speechRecognizer) {
-        speechRecognizer.stop()
-        speechRecognizer = null
+    if (speechEnabled()) {
+      if (speechEngine() === 'whisper') {
+        startWhisperRecording()
+      } else if (speechSupported) {
+        // Stop any existing recognizer to prevent leaked instances
+        // (e.g. if toggleSpeech was called before handleStart)
+        if (speechRecognizer) {
+          speechRecognizer.stop()
+          speechRecognizer = null
+        }
+        speechRecognizer = createSpeechRecognizer({
+          onResult: (text, isFinal) => {
+            setSpeechText(text)
+            setSpeechIsInterim(!isFinal)
+          },
+          onError: (err) => console.warn('[speech]', err),
+        })
+        speechRecognizer.start()
       }
-      speechRecognizer = createSpeechRecognizer({
-        onResult: (text, isFinal) => {
-          setSpeechText(text)
-          setSpeechIsInterim(!isFinal)
-        },
-        onError: (err) => console.warn('[speech]', err),
-      })
-      speechRecognizer.start()
     }
   }
 
@@ -238,6 +334,10 @@ export function ShazamListen(props: ShazamListenProps) {
       speechRecognizer = null
       setSpeechText(spoken || '(no speech detected)')
       setSpeechIsInterim(false)
+    }
+    if (speechEngine() === 'whisper') {
+      stopWhisperRecording()
+      void processWhisperChunks()
     }
     if (!buffer) return
     const contour: LivePitchContour = buffer.stop()
@@ -576,7 +676,7 @@ export function ShazamListen(props: ShazamListenProps) {
         <h3 class={styles.heading}>Shazam Sing</h3>
         <div class={styles.headerButtons}>
           <Show when={debugEnabled()}>
-            <Show when={speechSupported}>
+            <div class={styles.speechControls}>
               <button
                 class={styles.speechToggle}
                 classList={{ [styles.speechToggleOn!]: speechEnabled() }}
@@ -585,7 +685,25 @@ export function ShazamListen(props: ShazamListenProps) {
               >
                 Speech
               </button>
-            </Show>
+              <Show when={speechEnabled()}>
+                <select 
+                   class={styles.engineSelect}
+                   value={speechEngine()}
+                   onChange={(e) => {
+                     setSpeechEngine(e.currentTarget.value as 'web' | 'whisper')
+                     toggleSpeech(); toggleSpeech(); // toggle off and on to reinit
+                   }}
+                >
+                  <Show when={speechSupported}>
+                    <option value="web">Web Speech API</option>
+                  </Show>
+                  <option value="whisper">Whisper (Offline)</option>
+                </select>
+                <Show when={speechEngine() === 'whisper' && whisperStatus() !== 'ready'}>
+                  <span style={{ "font-size": "10px", "color": "#64748b" }}>{whisperStatus()}</span>
+                </Show>
+              </Show>
+            </div>
             <button
               class={styles.debugToggle}
               classList={{ [styles.debugToggleOn!]: showDebug() }}
