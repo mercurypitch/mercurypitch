@@ -81,5 +81,6 @@ export {
   WaveformBars,
   MagnifyingGlass,
   Eye,
-  MidiDin,
 } from './icons'
+
+export { VoiceTypeDetectorModal } from './VoiceTypeDetectorModal'
