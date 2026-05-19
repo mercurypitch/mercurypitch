@@ -51,7 +51,7 @@ export function ShazamListen(props: ShazamListenProps) {
     localStorage.getItem('pitchperfect_shazam_auto') === 'true',
   )
   const [autoThreshold, setAutoThreshold] = createSignal(
-    Number(localStorage.getItem('pitchperfect_shazam_threshold')) || 85,
+    Number(localStorage.getItem('pitchperfect_shazam_threshold')) || 95,
   )
   const [includeMelodies, setIncludeMelodies] = createSignal(
     localStorage.getItem('pitchperfect_shazam_include_melodies') !== 'false',
@@ -77,19 +77,19 @@ export function ShazamListen(props: ShazamListenProps) {
   }
 
   const [frameCount, setFrameCount] = createSignal(0)
-  const [liveMatches, setLiveMatches] = createSignal<
-    Array<{
-      name: string
-      confidence: number
-      breakdown: {
-        pitch: number
-        interval: number
-        chroma: number
-        rhythm: number
-      }
-      notes: number
-    }>
-  >([])
+  interface LiveMatchEntry {
+    candidate: MatchCandidate
+    name: string
+    confidence: number
+    breakdown: {
+      pitch: number
+      interval: number
+      chroma: number
+      rhythm: number
+    }
+    notes: number
+  }
+  const [liveMatches, setLiveMatches] = createSignal<LiveMatchEntry[]>([])
   const [liveQueryNotes, setLiveQueryNotes] = createSignal(0)
 
   const speechSupported = (() => {
@@ -142,15 +142,15 @@ export function ShazamListen(props: ShazamListenProps) {
   }
 
   let whisperAudioCtx: AudioContext | null = null
-  let whisperScriptNode: ScriptProcessorNode | null = null
+  let whisperWorkletNode: AudioWorkletNode | null = null
   let whisperSource: MediaStreamAudioSourceNode | null = null
   let whisperAccumulated: Float32Array = new Float32Array(0)
 
   function stopWhisperRecording() {
-    if (whisperScriptNode) {
-      whisperScriptNode.disconnect()
-      whisperScriptNode.onaudioprocess = null
-      whisperScriptNode = null
+    if (whisperWorkletNode) {
+      whisperWorkletNode.disconnect()
+      whisperWorkletNode.port.close()
+      whisperWorkletNode = null
     }
     if (whisperSource) {
       whisperSource.disconnect()
@@ -166,7 +166,7 @@ export function ShazamListen(props: ShazamListenProps) {
     }
   }
 
-  function startWhisperRecording() {
+  async function startWhisperRecording() {
     stopWhisperRecording()
     const micStream = audioEngine?.getMicStream()
     if (!micStream) return
@@ -175,11 +175,34 @@ export function ShazamListen(props: ShazamListenProps) {
 
     // Browser automatically resamples to 16kHz
     whisperAudioCtx = new AudioContext({ sampleRate: 16000 })
-    whisperSource = whisperAudioCtx.createMediaStreamSource(micStream)
-    whisperScriptNode = whisperAudioCtx.createScriptProcessor(4096, 1, 1)
 
-    whisperScriptNode.onaudioprocess = (e) => {
-      const input = e.inputBuffer.getChannelData(0)
+    // Register an inline AudioWorklet processor that forwards PCM to main thread
+    const workletCode = `
+      class WhisperCapture extends AudioWorkletProcessor {
+        process(inputs) {
+          const ch = inputs[0]?.[0];
+          if (ch && ch.length > 0) this.port.postMessage(ch);
+          return true;
+        }
+      }
+      registerProcessor('whisper-capture', WhisperCapture);
+    `
+    const blob = new Blob([workletCode], { type: 'application/javascript' })
+    const url = URL.createObjectURL(blob)
+    try {
+      await whisperAudioCtx.audioWorklet.addModule(url)
+    } finally {
+      URL.revokeObjectURL(url)
+    }
+
+    whisperSource = whisperAudioCtx.createMediaStreamSource(micStream)
+    whisperWorkletNode = new AudioWorkletNode(
+      whisperAudioCtx,
+      'whisper-capture',
+    )
+
+    whisperWorkletNode.port.onmessage = (e: MessageEvent<Float32Array>) => {
+      const input = e.data
       const newBuffer = new Float32Array(
         whisperAccumulated.length + input.length,
       )
@@ -188,9 +211,8 @@ export function ShazamListen(props: ShazamListenProps) {
       whisperAccumulated = newBuffer
     }
 
-    whisperSource.connect(whisperScriptNode)
-    // Connect to destination to ensure onaudioprocess fires
-    whisperScriptNode.connect(whisperAudioCtx.destination)
+    whisperSource.connect(whisperWorkletNode)
+    whisperWorkletNode.connect(whisperAudioCtx.destination)
 
     // Transcribe every 5 seconds
     whisperIntervalId = setInterval(() => {
@@ -308,7 +330,7 @@ export function ShazamListen(props: ShazamListenProps) {
 
     if (speechEnabled()) {
       if (speechEngine() === 'whisper') {
-        startWhisperRecording()
+        void startWhisperRecording()
       } else if (speechSupported) {
         // Stop any existing recognizer to prevent leaked instances
         // (e.g. if toggleSpeech was called before handleStart)
@@ -501,6 +523,7 @@ export function ShazamListen(props: ShazamListenProps) {
       setLiveQueryNotes(contour.noteSequence.length)
       setLiveMatches(
         result.candidates.map((c) => ({
+          candidate: c,
           name: c.name,
           confidence: c.confidence,
           breakdown: {
@@ -878,48 +901,44 @@ export function ShazamListen(props: ShazamListenProps) {
           />
           <FingerprintInspector />
         </div>
-        <Show when={liveMatches().length > 0 && listenState() === 'listening'}>
-          <div class={styles.liveMatchPanel} data-testid="shazam-live-matches">
-            <h4 class={styles.liveMatchHeading}>
-              Live Matches ({liveQueryNotes()} notes detected)
-            </h4>
-            <For each={liveMatches()}>
-              {(match) => (
-                <div>
-                  <div class={styles.liveMatchRow}>
-                    <span class={styles.liveMatchName}>{match.name}</span>
-                    <span class={styles.liveMatchConf}>
-                      {match.confidence}%
-                    </span>
-                  </div>
+      </Show>
+
+      <Show when={liveMatches().length > 0 && listenState() === 'listening'}>
+        <div class={styles.liveMatchPanel} data-testid="shazam-live-matches">
+          <h4 class={styles.liveMatchHeading}>
+            Live Matches ({liveQueryNotes()} notes)
+          </h4>
+          <For each={liveMatches()}>
+            {(match) => (
+              <button
+                class={styles.liveMatchItem}
+                onClick={() => {
+                  if (buffer !== null) buffer.cancel()
+                  stopLiveMatching()
+                  props.onAutoJump?.(match.candidate)
+                }}
+                title={`Open ${match.name} in stem mixer`}
+              >
+                <div class={styles.liveMatchRow}>
+                  <span class={styles.liveMatchName}>{match.name}</span>
+                  <span class={styles.liveMatchConf}>{match.confidence}%</span>
+                </div>
+                <Show when={debugEnabled() && showDebug()}>
                   <div class={styles.liveMatchDetail}>
                     P:{match.breakdown.pitch} I:{match.breakdown.interval} C:
                     {match.breakdown.chroma} R:{match.breakdown.rhythm} L:
                     {match.notes}
                   </div>
-                </div>
-              )}
-            </For>
-          </div>
-        </Show>
+                </Show>
+              </button>
+            )}
+          </For>
+        </div>
       </Show>
 
       <div class={styles.elapsed} data-testid="shazam-elapsed">
         {formatTime(elapsed())}
       </div>
-
-      <Show when={listenState() === 'processing'}>
-        <div class={styles.processingOverlay} data-testid="shazam-processing">
-          <div class={styles.spinner} />
-          <span>Matching your melody...</span>
-        </div>
-      </Show>
-
-      <Show when={listenState() === 'error' && errorMessage() !== ''}>
-        <p class={styles.error} data-testid="shazam-error">
-          {errorMessage()}
-        </p>
-      </Show>
 
       <div class={styles.controls}>
         <button
@@ -933,21 +952,59 @@ export function ShazamListen(props: ShazamListenProps) {
         <button
           class={styles.cancelBtn}
           onClick={handleCancel}
-          disabled={listenState() === 'processing'}
+          disabled={listenState() === 'processing' || listenState() === 'error'}
           data-testid="shazam-cancel"
         >
           Cancel
         </button>
       </div>
 
-      <Show when={listenState() === 'error'}>
-        <button
-          class={styles.retryBtn}
-          onClick={handleRetry}
-          data-testid="shazam-retry-btn"
-        >
-          Try Again
-        </button>
+      <Show when={listenState() === 'processing' || listenState() === 'error'}>
+        <div class={styles.resultOverlay} data-testid="shazam-result-overlay">
+          <div class={styles.resultCard}>
+            <Show when={listenState() === 'processing'}>
+              <div class={styles.spinner} />
+              <p class={styles.resultText}>Matching your melody...</p>
+            </Show>
+            <Show when={listenState() === 'error'}>
+              <svg
+                width="32"
+                height="32"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#f87171"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+              <p class={styles.resultText}>{errorMessage()}</p>
+              <div class={styles.resultActions}>
+                <button
+                  class={styles.retryBtn}
+                  onClick={handleRetry}
+                  data-testid="shazam-retry-btn"
+                >
+                  Try Again
+                </button>
+                <button
+                  class={styles.resultDismiss}
+                  onClick={() => {
+                    setListenState('idle')
+                    setErrorMessage('')
+                    pitchHistory = []
+                  }}
+                  data-testid="shazam-dismiss-btn"
+                >
+                  Cancel
+                </button>
+              </div>
+            </Show>
+          </div>
+        </div>
       </Show>
 
       <button
