@@ -3,15 +3,18 @@ import type { BaseExerciseController } from '../use-base-exercise'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_SLIDE } from '../types'
 
-const SCORE_SMOOTHNESS_WEIGHT = 0.4
-const SCORE_ARRIVAL_WEIGHT = 0.4
+const SCORE_SMOOTHNESS_WEIGHT = 0.3
+const SCORE_ARRIVAL_WEIGHT = 0.3
+const SCORE_DEPARTURE_WEIGHT = 0.2
 const SCORE_SPEED_WEIGHT = 0.2
 const OPTIMAL_SLIDE_MS = 300
 
 export function useSlideController(base: BaseExerciseController) {
+  let targetStartMidi = 0
   let targetEndMidi = 0
 
-  function setTargets(_fromMidi: number, toMidi: number): void {
+  function setTargets(fromMidi: number, toMidi: number): void {
+    targetStartMidi = fromMidi
     targetEndMidi = toMidi
   }
 
@@ -25,6 +28,7 @@ export function useSlideController(base: BaseExerciseController) {
         metrics: {
           smoothness: 0,
           arrivalAccuracy: 0,
+          departureAccuracy: 0,
           slideTimeMs: 0,
           classification: 0,
         },
@@ -48,6 +52,7 @@ export function useSlideController(base: BaseExerciseController) {
         metrics: {
           smoothness: 0,
           arrivalAccuracy: 0,
+          departureAccuracy: 0,
           slideTimeMs: 0,
           classification: -1,
         },
@@ -72,6 +77,15 @@ export function useSlideController(base: BaseExerciseController) {
       arrivalScore = primarySlide.score // fallback to analyzer score
     }
 
+    // Departure accuracy: how close the start pitch is to target
+    let departureScore = 0
+    if (targetStartMidi > 0) {
+      const startCentsOff = Math.abs(primarySlide.startMidi - targetStartMidi) * 100
+      departureScore = Math.max(0, 100 - startCentsOff * 0.8)
+    } else {
+      departureScore = 70 // neutral when no start target specified
+    }
+
     // Speed score: faster slides score higher, but not too fast
     const slideMs = primarySlide.durationMs
     let speedScore: number
@@ -94,6 +108,7 @@ export function useSlideController(base: BaseExerciseController) {
     const score = Math.round(
       smoothnessScore * SCORE_SMOOTHNESS_WEIGHT +
         arrivalScore * SCORE_ARRIVAL_WEIGHT +
+        departureScore * SCORE_DEPARTURE_WEIGHT +
         speedScore * SCORE_SPEED_WEIGHT,
     )
 
@@ -103,6 +118,7 @@ export function useSlideController(base: BaseExerciseController) {
       metrics: {
         smoothness: Math.round(smoothnessScore),
         arrivalAccuracy: Math.round(arrivalScore),
+        departureAccuracy: Math.round(departureScore),
         slideTimeMs: Math.round(slideMs),
         classification: classificationMap[primarySlide.type] ?? 0,
       },

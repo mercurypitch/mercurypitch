@@ -147,4 +147,41 @@ describe('useSlideController', () => {
 
     expect(result.metrics.classification).toBe(-1)
   })
+
+  it('penalizes slides that start from wrong note', () => {
+    const history: Array<{ freq: number; time: number; cents: number }> = []
+
+    // Stable at C4 (MIDI 60) for 10 samples — but target says start at D4 (MIDI 62)
+    for (let i = 0; i < 10; i++) {
+      history.push({ freq: midiToFreq(60), time: i * 0.05, cents: 0 })
+    }
+
+    // Slide from C4 to E4 (MIDI 60→64) over 5 samples
+    for (let i = 0; i < 5; i++) {
+      const t = i / 4
+      const midi = 60 + t * 4
+      history.push({ freq: midiToFreq(midi), time: (10 + i) * 0.05, cents: (midi - 60) * 100 })
+    }
+
+    // Stable at E4 for 10 samples
+    for (let i = 0; i < 10; i++) {
+      history.push({ freq: midiToFreq(64), time: (15 + i) * 0.05, cents: 400 })
+    }
+
+    // Correct targets: start C4 (60, matching actual start), end E4 (64)
+    const baseCorrect = createMockBase({ pitchHistory: () => history })
+    const ctrlCorrect = useSlideController(baseCorrect)
+    ctrlCorrect.setTargets(60, 64)
+    const correctResult = ctrlCorrect.computeResult()
+
+    // Wrong start target: D#4 (63, 3 semitones from actual start C4)
+    const baseWrong = createMockBase({ pitchHistory: () => history })
+    const ctrlWrong = useSlideController(baseWrong)
+    ctrlWrong.setTargets(63, 64)
+    const wrongResult = ctrlWrong.computeResult()
+
+    expect(correctResult.metrics.departureAccuracy).toBeDefined()
+    // The wrong-start slide should score lower due to departure penalty
+    expect(wrongResult.metrics.departureAccuracy).toBeLessThan(correctResult.metrics.departureAccuracy)
+  })
 })
