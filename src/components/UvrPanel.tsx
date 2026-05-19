@@ -157,7 +157,9 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   const allSessions = () => getAllUvrSessionsReactive()
 
   // Pre-initialize ONNX model when switching to browser mode
+  // Skip in E2E test mode — model files are unavailable in test environments
   createEffect(() => {
+    if ((window as any).E2E_TEST_MODE) return
     const mode = uvrProcessingMode()
     if (mode === 'local' && uvrModelStatus() === 'unloaded') {
       void preInitModel()
@@ -816,7 +818,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
         )}
 
         <Show when={currentView() === 'upload'}>
-          <div class="view-section upload-section">
+          <div class="view-section upload-section" data-testid="uvr-upload">
             <div class="section-header">
               <h4>Upload Audio</h4>
               <button class="guide-toggle" onClick={() => setShowGuide(true)}>

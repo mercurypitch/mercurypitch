@@ -21,7 +21,7 @@ test.describe('Practice Playback', () => {
     await page.waitForTimeout(500)
 
     // Play button should be visible
-    await expect(page.locator('.play-btn').first()).toBeVisible()
+    await expect(page.locator('[data-testid="play-btn"]')).toBeVisible()
 
     // Practice panel should be visible
     const practicePanel = page.locator('#practice-panel')
@@ -33,7 +33,7 @@ test.describe('Practice Playback', () => {
     await page.waitForTimeout(500)
 
     // Click Play
-    const playBtn = page.locator('.play-btn').first()
+    const playBtn = page.locator('[data-testid="play-btn"]')
     await expect(playBtn).toBeVisible()
     await playBtn.click()
     await page.waitForTimeout(1000)
@@ -42,7 +42,7 @@ test.describe('Practice Playback', () => {
     await expect(page.locator('#canvas-container canvas')).toBeVisible()
 
     // Stop playback
-    const stopBtn = page.locator('.stop-btn').first()
+    const stopBtn = page.locator('[data-testid="stop-btn"]')
     await stopBtn.click()
     await page.waitForTimeout(500)
   })
@@ -52,7 +52,7 @@ test.describe('Practice Playback', () => {
     await page.waitForTimeout(500)
 
     // Initial state should show Play button
-    const playBtn = page.locator('button:has-text("Play")').first()
+    const playBtn = page.locator('[data-testid="play-btn"]')
     await expect(playBtn).toBeVisible()
 
     // Click Play
@@ -60,15 +60,15 @@ test.describe('Practice Playback', () => {
     await page.waitForTimeout(500)
 
     // Should now show Pause button
-    const pauseBtn = page.locator('button:has-text("Pause")').first()
+    const pauseBtn = page.locator('[data-testid="pause-btn"]')
     await expect(pauseBtn).toBeVisible()
 
     // Click Pause
     await pauseBtn.click()
     await page.waitForTimeout(500)
 
-    // Should show Continue button
-    const continueBtn = page.locator('button:has-text("Continue")').first()
+    // Should show Continue (resume) button
+    const continueBtn = page.locator('[data-testid="resume-btn"]')
     await expect(continueBtn).toBeVisible()
   })
 
@@ -77,14 +77,14 @@ test.describe('Practice Playback', () => {
     await page.waitForTimeout(500)
 
     // Click Play
-    await page.locator('.play-btn').first().click()
+    await page.locator('[data-testid="play-btn"]').click()
     await page.waitForTimeout(800)
 
     // Canvas should be visible during playback (playhead drawn on it)
     await expect(page.locator('#canvas-container canvas')).toBeVisible()
 
-    // Click Pause (the .stop-btn is actually the pause button)
-    await page.locator('.stop-btn').first().click()
+    // Click Pause
+    await page.locator('[data-testid="pause-btn"]').click()
     await page.waitForTimeout(500)
 
     // Canvas should still be visible when paused (playhead drawn on it)
@@ -96,17 +96,17 @@ test.describe('Practice Playback', () => {
     await page.waitForTimeout(500)
 
     // Play
-    await page.locator('.play-btn').first().click()
+    await page.locator('[data-testid="play-btn"]').click()
     await page.waitForTimeout(800)
 
-    // Pause (the pause button has .stop-btn class)
-    const pauseBtn = page.locator('.stop-btn').first()
+    // Pause
+    const pauseBtn = page.locator('[data-testid="pause-btn"]')
     await expect(pauseBtn).toBeVisible()
     await pauseBtn.click()
     await page.waitForTimeout(800)
 
-    // After pausing, a Continue button (also .play-btn) should appear
-    const continueBtn = page.locator('.play-btn').first()
+    // After pausing, a Continue (resume) button should appear
+    const continueBtn = page.locator('[data-testid="resume-btn"]')
     await expect(continueBtn).toBeVisible()
   })
 })

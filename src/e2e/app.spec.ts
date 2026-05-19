@@ -425,8 +425,8 @@ test.describe('MercuryPitch App', () => {
   test('Practice tab shows transport controls', async ({ page }) => {
     await page.locator('#tab-singing').click()
     await page.waitForTimeout(500)
-    // Transport controls use class 'play-btn' in the app
-    await expect(page.locator('.play-btn').first()).toBeVisible({
+    // Transport controls
+    await expect(page.locator('[data-testid="play-btn"]')).toBeVisible({
       timeout: 5000,
     })
   })
@@ -434,9 +434,9 @@ test.describe('MercuryPitch App', () => {
   test('Practice mode buttons exist', async ({ page }) => {
     await page.locator('#tab-singing').click()
     await page.waitForTimeout(500)
-    // Mode buttons are within a mode-group div
-    await expect(page.locator('.mode-group')).toBeVisible()
-    await expect(page.locator('.mode-btn').first()).toBeVisible()
+    // Mode buttons (Once / Repeat / Practice)
+    await expect(page.locator('#btn-once')).toBeVisible()
+    await expect(page.locator('#btn-repeat')).toBeVisible()
   })
 
   test('Editor shows instrument selector', async ({ page }) => {

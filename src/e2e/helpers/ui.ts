@@ -37,8 +37,7 @@ export async function dismissOverlays(page: Page) {
     }
   }, appVersion)
 
-  // Navigate to singing tab via hash to ensure app state is synced
-  await page.goto('/#/singing')
+  // Wait for overlay hiding to take effect
   await page.waitForTimeout(500)
 }
 
@@ -60,21 +59,9 @@ export async function switchTab(
     | 'community'
     | 'analysis',
 ) {
-  // Use hash navigation as it's the most reliable way to trigger the app's router
-  // and works even if the internal store bridge is not available.
-  await page.evaluate((name) => {
-    window.location.hash = `#/${name}`
-
-    // Force sync activeTab if bridge is available, as hashchange might not
-    // trigger if we're already on that hash but out of sync.
-    const pp = (window as any).__pp
-    if (pp?.appStore?.setActiveTab) {
-      pp.appStore.setActiveTab(name)
-    }
-  }, tabName)
-
-  // Wait for the tab to be marked as active in the DOM
+  // Click the tab button directly — no bridge dependency
   const tabButton = page.locator(`#tab-${tabName}`)
+  await tabButton.click()
   await expect(tabButton).toHaveClass(/active/, { timeout: 5000 })
 }
 

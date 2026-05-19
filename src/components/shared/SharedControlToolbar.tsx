@@ -421,6 +421,7 @@ export const SharedControlToolbar: Component<SharedControlToolbarProps> = (
           class={[styles.ctrlBtn, styles.metronomeBtn].join(' ')}
           classList={{ [styles.active]: props.metronomeEnabled() }}
           onClick={() => props.onMetronomeToggle()}
+          data-testid="metronome-btn"
           title="Toggle metronome"
           aria-label="Toggle metronome"
         >

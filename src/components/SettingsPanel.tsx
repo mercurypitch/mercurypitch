@@ -873,6 +873,7 @@ export const SettingsPanel: Component = () => {
             </div>
             <button
               class={styles.dangerBtn}
+              data-testid="danger-reset-btn"
               onClick={() => setShowResetConfirm(true)}
             >
               Reset
@@ -882,7 +883,7 @@ export const SettingsPanel: Component = () => {
           {/* Reset Confirmation Modal */}
           <Show when={showResetConfirm()}>
             <div class={styles.dangerConfirmOverlay}>
-              <div class={styles.dangerConfirmBox}>
+              <div class={styles.dangerConfirmBox} data-testid="danger-confirm-box">
                 <h4 class={styles.dangerConfirmTitle}>Confirm Reset</h4>
                 <p class={styles.dangerConfirmText}>
                   Are you sure you want to reset all data? This will clear all
@@ -892,12 +893,14 @@ export const SettingsPanel: Component = () => {
                 <div class={styles.dangerConfirmActions}>
                   <button
                     class={styles.dangerBtnSecondary}
+                    data-testid="danger-cancel-btn"
                     onClick={() => setShowResetConfirm(false)}
                   >
                     Cancel
                   </button>
                   <button
                     class={styles.dangerBtnPrimary}
+                    data-testid="danger-confirm-btn"
                     onClick={() => {
                       void handleResetStorage()
                     }}
@@ -1008,7 +1011,7 @@ export const SettingsPanel: Component = () => {
               MercuryPitch
             </p>
             <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-bottom: 1rem;">
-              <p class={styles.aboutVersion} style="margin: 0;">
+              <p class={styles.aboutVersion} style="margin: 0;" data-testid="about-version">
                 v{APP_VERSION}-{COMMIT_SHA}
               </p>
               <Show when={IS_DEV}>
@@ -1042,7 +1045,7 @@ export const SettingsPanel: Component = () => {
               stems from any song, or jam in real-time. Practice with instant
               visual feedback and powerful vocal analysis tools.
             </p>
-            <div class={styles.aboutFeatures}>
+            <div class={styles.aboutFeatures} data-testid="about-features">
               <span
                 class={[styles.featurePill, styles.pillDetection].join(' ')}
               >

@@ -998,8 +998,15 @@ const DEV_FEATURES_KEY = 'pitchperfect_dev_features'
 
 // Initialize to IS_DEV defaults — initFeatureFlagsFromDb() overrides
 // with persisted DB values on startup, eliminating the localStorage race.
-const initialAdvanced = IS_DEV
-const initialDev = IS_DEV
+// Also check localStorage so E2E tests can pre-seed flags via addInitScript.
+const initialAdvanced =
+  IS_DEV ||
+  (typeof localStorage !== 'undefined' &&
+    localStorage.getItem(ADVANCED_FEATURES_KEY) === 'true')
+const initialDev =
+  IS_DEV ||
+  (typeof localStorage !== 'undefined' &&
+    localStorage.getItem(DEV_FEATURES_KEY) === 'true')
 
 const [advancedFeaturesEnabledState, setAdvancedFeaturesEnabledState] =
   createSignal(initialAdvanced)

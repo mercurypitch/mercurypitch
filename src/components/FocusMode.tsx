@@ -131,7 +131,7 @@ export const FocusMode: Component<FocusModeProps> = (props) => {
       {/* Top stats bar */}
       <div class={styles.focusTopbar} data-testid="focus-topbar">
         <div class={styles.focusTopbarLeft}>
-          <span class={styles.focusKeyBadge}>{keyDisplay()}</span>
+          <span class={styles.focusKeyBadge} data-testid="focus-key-badge">{keyDisplay()}</span>
           <Show when={isSession()}>
             <span class={styles.focusSessionBadge}>
               Run {sessionItem() + 1}

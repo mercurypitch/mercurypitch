@@ -19,7 +19,7 @@ test.describe('Focus Mode', () => {
   })
 
   test('Focus mode button is visible on practice tab', async ({ page }) => {
-    const focusBtn = page.locator('.focus-btn')
+    const focusBtn = page.locator('[data-testid="focus-btn"]')
     await expect(focusBtn).toBeVisible()
     await expect(focusBtn).toHaveAttribute(
       'title',
@@ -28,50 +28,57 @@ test.describe('Focus Mode', () => {
   })
 
   test('Entering focus mode shows focus-mode view', async ({ page }) => {
-    await page.locator('.focus-btn').click()
+    await page.locator('[data-testid="focus-btn"]').click()
     await page.waitForTimeout(500)
 
-    // FocusMode component should render with .focus-mode class
-    await expect(page.locator('.focus-mode')).toBeVisible()
+    // FocusMode component should render
+    await expect(page.locator('[data-testid="focus-mode"]')).toBeVisible()
   })
 
   test('Focus mode shows exit button', async ({ page }) => {
-    await page.locator('.focus-btn').click()
+    await page.locator('[data-testid="focus-btn"]').click()
     await page.waitForTimeout(500)
 
     // Focus mode toolbar should have exit button
-    const exitBtn = page.locator('.focus-exit')
+    const exitBtn = page.locator('[data-testid="focus-exit"]')
     await expect(exitBtn).toBeVisible()
   })
 
   test('Exiting focus mode removes focus-mode view', async ({ page }) => {
-    await page.locator('.focus-btn').click()
+    await page.locator('[data-testid="focus-btn"]').click()
     await page.waitForTimeout(500)
 
     // Verify we're in focus mode
-    await expect(page.locator('.focus-mode')).toBeVisible()
+    await expect(page.locator('[data-testid="focus-mode"]')).toBeVisible()
 
     // Exit via the exit button
-    await page.locator('.focus-exit').click()
+    await page.locator('[data-testid="focus-exit"]').click()
     await page.waitForTimeout(500)
 
     // Focus mode should no longer be visible
-    await expect(page.locator('.focus-mode')).not.toBeVisible()
+    await expect(page.locator('[data-testid="focus-mode"]')).not.toBeVisible()
   })
 
   test('Focus mode shows play button', async ({ page }) => {
-    await page.locator('.focus-btn').click()
+    await page.locator('[data-testid="focus-btn"]').click()
     await page.waitForTimeout(500)
 
     // Focus mode has its own play button
-    await expect(page.locator('.focus-play')).toBeVisible()
+    await expect(page.locator('[data-testid="focus-play"]')).toBeVisible()
   })
 
   test('Focus mode key badge shows current key', async ({ page }) => {
-    await page.locator('.focus-btn').click()
+    await page.locator('[data-testid="focus-btn"]').click()
     await page.waitForTimeout(500)
 
+    // Ensure focus mode is fully rendered
+    await expect(
+      page.locator('[data-testid="focus-mode"]'),
+    ).toBeVisible({ timeout: 5000 })
+
     // Focus mode top bar shows key badge
-    await expect(page.locator('.focus-key-badge')).toBeVisible()
+    await expect(
+      page.locator('[data-testid="focus-key-badge"]'),
+    ).toBeVisible({ timeout: 3000 })
   })
 })

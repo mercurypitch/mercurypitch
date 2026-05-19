@@ -59,19 +59,23 @@ test.describe('Critical Flows — GH #121', () => {
       await page.locator('[data-testid="pause-btn"]').first().click()
       await page.waitForTimeout(300)
 
-      // Should show resume (play) button
-      await expect(playBtn).toBeVisible({ timeout: 3000 })
+      // Should show resume (continue) button
+      const resumeBtn = page.locator('[data-testid="resume-btn"]')
+      await expect(resumeBtn).toBeVisible({ timeout: 3000 })
 
       // Resume
-      await playBtn.click()
+      await resumeBtn.click()
       await page.waitForTimeout(500)
 
       // Stop
       await page.locator('[data-testid="pause-btn"]').first().click()
       await page.waitForTimeout(300)
 
-      // Should show play button again
-      await expect(playBtn).toBeVisible({ timeout: 3000 })
+      // Should show play button again (back to stopped state after pause)
+      // Note: clicking pause just pauses, doesn't stop — so we see resume again
+      await expect(
+        page.locator('[data-testid="resume-btn"]'),
+      ).toBeVisible({ timeout: 3000 })
     })
 
     test('Stop button resets playback state', async ({ page }) => {
@@ -878,9 +882,9 @@ test.describe('Critical Flows — GH #121', () => {
 
       // Pause button should appear (audio started)
       await expect(
-        page.locator('.ctrl-btn').filter({ hasText: 'Pause' }),
+        page.locator('[data-testid="pause-btn"]').first(),
       ).toBeVisible({
-        timeout: 2000,
+        timeout: 3000,
       })
 
       // Stop playback

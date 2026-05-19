@@ -22,7 +22,7 @@ test.describe('Playback', () => {
     await switchTab(page, 'singing')
     await page.waitForTimeout(500)
 
-    await expect(page.locator('.play-btn').first()).toBeVisible()
+    await expect(page.locator('[data-testid="play-btn"]')).toBeVisible()
 
     const practicePanel = page.locator('#practice-panel')
     await expect(practicePanel).toBeVisible()
@@ -89,17 +89,17 @@ test.describe('Playback', () => {
     await page.waitForTimeout(500)
 
     // Play button should be visible again (fresh state)
-    await expect(page.locator('.play-btn').first()).toBeVisible()
+    await expect(page.locator('[data-testid="play-btn"]')).toBeVisible()
   })
 
   test('Metronome does not block playback', async ({ page }) => {
     await switchTab(page, 'singing')
     await page.waitForTimeout(500)
 
-    await expect(page.locator('.play-btn').first()).toBeVisible()
+    await expect(page.locator('[data-testid="play-btn"]')).toBeVisible()
 
     // Play
-    await page.locator('.play-btn').first().click()
+    await page.locator('[data-testid="play-btn"]').click()
     await page.waitForTimeout(500)
 
     // Pause button confirms playback started
