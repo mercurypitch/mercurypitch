@@ -59,6 +59,7 @@ const SessionEditor = lazy(async () =>
   })),
 )
 import { SessionLibraryModal } from '@/components/SessionLibraryModal'
+import { SessionCelebration } from '@/components/SessionCelebration'
 import { SessionPlayer } from '@/components/SessionPlayer'
 import { SettingsPanel } from '@/components/SettingsPanel'
 import type { PracticeSubMode } from '@/components/shared/SharedControlToolbar'
@@ -92,7 +93,7 @@ import { buildScaleMelody, buildSessionPlaybackMelody, } from '@/lib/session-bui
 import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
 import { buildFingerprintIndex, loadStemFingerprints, } from '@/lib/shazam/melody-fingerprints'
 import { storageGet } from '@/lib/storage'
-import { dismissWelcome, openWalkthroughChapter, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPlaybackSpeed, setScaleType, showSelection, walkthroughModalOpen, } from '@/stores'
+import { celebrationData, dismissCelebration, dismissWelcome, openWalkthroughChapter, pendingDrill, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPendingDrill, setPlaybackSpeed, setScaleType, showSelection, walkthroughModalOpen, } from '@/stores'
 import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionActive, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, toggleMicWaveVisible, } from '@/stores'
 import { advancedFeaturesEnabled, initGroupStore, initSessionStore, } from '@/stores/app-store'
 import { setJamRoomToJoin } from '@/stores/jam-store'
@@ -248,7 +249,18 @@ const AppShell: Component<AppProps> = (props) => {
 
   // ── Exercises ────────────────────────────────────────────────
   const [selectedExercise, setSelectedExercise] = createSignal<ExerciseType | null>(null)
-  const clearExercise = () => setSelectedExercise(null)
+  const clearExercise = () => {
+    setSelectedExercise(null)
+    setPendingDrill(null)
+  }
+
+  // Auto-launch exercise drill from challenge "Practice" button
+  createEffect(() => {
+    const drill = pendingDrill()
+    if (drill && activeTab() === TAB_EXERCISES) {
+      setSelectedExercise(drill.exercise)
+    }
+  })
 
   // ── Guide Selection dialog ──────────────────────────────────
   const [showGuideSelection, setShowGuideSelection] = createSignal(false)
@@ -1836,6 +1848,11 @@ const AppShell: Component<AppProps> = (props) => {
             />
           </Suspense>
         </Show>
+
+        <SessionCelebration
+          data={celebrationData()}
+          onClose={dismissCelebration}
+        />
       </div>
     </PlaybackProvider>
   )

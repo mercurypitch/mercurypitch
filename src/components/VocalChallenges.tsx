@@ -7,10 +7,11 @@ import { createMemo, createSignal, For, onMount, Show } from 'solid-js'
 import type { Achievement as DBAchievement, BadgeDefinition as DBBadgeDefinition, ChallengeDefinition as DBChallengeDefinition, ChallengeProgress as DBChallengeProgress, UserAchievement as DBUserAchievement, UserBadge as DBUserBadge, } from '@/db/entities'
 import { getUserId } from '@/db/seed'
 import { loadAchievementDefinitions, loadBadgeDefinitions, loadChallengeDefinitions, loadChallengeProgress, loadUserAchievements, loadUserBadges, saveChallengeProgress, } from '@/db/services/challenges-service'
+import { generateChallengeDrill } from '@/features/challenges/challenge-drill-generator'
 import { TAB_SINGING } from '@/features/tabs/constants'
 import { storageGet, storageRemove, storageSet } from '@/lib/storage'
 import { getSessionHistory } from '@/stores'
-import { setActiveTab } from '@/stores/ui-store'
+import { launchDrill, setActiveTab } from '@/stores/ui-store'
 import { IconBadge, IconBoltChallenge, iconByName, IconChart, IconCheckSolid, IconCloseSimple, IconCrown, IconDiamond, IconEagle, IconFireChallenge, IconGuitarChallenge, IconKeyboardChallenge, IconLeaf, IconLockSimple, IconMicChallenge, IconMoon, IconMusicChallenge, IconPaper, IconRefreshSimple, IconRocket, IconSparkle, IconStarChallenge, IconStopwatch, IconTarget, IconVolume, renderIcon, } from './hidden-features-icons'
 
 // (SVG icons imported from ./hidden-features-icons)
@@ -710,6 +711,26 @@ export const VocalChallenges: Component = () => {
                 {challenge.status === 'not-started' && 'Start Challenge'}
                 {challenge.status === 'locked' && 'Locked'}
               </button>
+
+              <Show when={challenge.status !== 'locked'}>
+                <button
+                  class="challenge-practice-btn"
+                  onClick={() => {
+                    const drill = generateChallengeDrill(
+                      challenge.type,
+                      challenge.name,
+                    )
+                    launchDrill({
+                      exercise: drill.exercise,
+                      notes: drill.notes,
+                      challengeName: drill.challengeName,
+                    })
+                  }}
+                  title={generateChallengeDrill(challenge.type, challenge.name).tip}
+                >
+                  Practice
+                </button>
+              </Show>
             </div>
           )}
         </For>

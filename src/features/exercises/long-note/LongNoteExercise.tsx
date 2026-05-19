@@ -1,6 +1,7 @@
-import { type Component, createSignal, onCleanup } from 'solid-js'
+import { type Component, createEffect, createSignal, onCleanup } from 'solid-js'
 import type { AudioEngine } from '@/lib/audio-engine'
 import type { PracticeEngine } from '@/lib/practice-engine'
+import { showCelebration } from '@/stores/ui-store'
 import { useBaseExercise } from '../use-base-exercise'
 import { useLongNoteController } from './use-long-note-controller'
 
@@ -40,6 +41,19 @@ const LongNoteExercise: Component<LongNoteExerciseProps> = (props) => {
   }
 
   onCleanup(() => base.reset())
+
+  // Trigger celebration modal when result changes
+  createEffect(() => {
+    const r = base.result()
+    if (r && r.type === 'long-note') {
+      showCelebration({
+        score: r.score,
+        exerciseType: r.type,
+        metrics: r.metrics,
+        bestWindow: r.bestWindow,
+      })
+    }
+  })
 
   const state = base.state()
   const result = base.result()

@@ -1,6 +1,7 @@
-import { type Component, createSignal, onCleanup } from 'solid-js'
+import { type Component, createEffect, createSignal, onCleanup } from 'solid-js'
 import type { AudioEngine } from '@/lib/audio-engine'
 import type { PracticeEngine } from '@/lib/practice-engine'
+import { showCelebration } from '@/stores/ui-store'
 import { useBaseExercise } from '../use-base-exercise'
 import { useVibratoController } from './use-vibrato-controller'
 
@@ -50,6 +51,17 @@ const VibratoExercise: Component<VibratoExerciseProps> = (props) => {
   onCleanup(() => {
     if (vizInterval) clearInterval(vizInterval)
     base.reset()
+  })
+
+  createEffect(() => {
+    const r = base.result()
+    if (r && r.type === 'vibrato') {
+      showCelebration({
+        score: r.score,
+        exerciseType: r.type,
+        metrics: r.metrics,
+      })
+    }
   })
 
   const state = base.state()

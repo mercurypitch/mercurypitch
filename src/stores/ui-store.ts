@@ -1,6 +1,7 @@
 import { createSignal } from 'solid-js'
 import type { ActiveTab } from '@/features/tabs/constants'
-import { DEFAULT_TAB } from '@/features/tabs/constants'
+import { DEFAULT_TAB, TAB_EXERCISES } from '@/features/tabs/constants'
+import type { ExerciseType } from '@/features/exercises/types'
 import { APP_VERSION } from '@/lib/defaults'
 import { createPersistedSignal } from '@/lib/storage'
 import { exposeForE2E } from '@/lib/test-utils'
@@ -91,4 +92,38 @@ export function userProfile(): { name: string; email?: string } {
   return {
     name: 'User',
   }
+}
+
+// ── Practice Drill Launch ──────────────────────────────────
+
+export interface PendingDrill {
+  exercise: ExerciseType
+  notes: string[]
+  challengeName: string
+}
+
+export const [pendingDrill, setPendingDrill] = createSignal<PendingDrill | null>(null)
+
+export function launchDrill(drill: PendingDrill): void {
+  setPendingDrill(drill)
+  setActiveTab(TAB_EXERCISES)
+}
+
+// ── Session Celebration ──────────────────────────────────────
+
+export interface CelebrationData {
+  score: number
+  exerciseType: string
+  metrics: Record<string, number>
+  bestWindow?: { startMs: number; endMs: number; score: number }
+}
+
+export const [celebrationData, setCelebrationData] = createSignal<CelebrationData | null>(null)
+
+export function showCelebration(data: CelebrationData): void {
+  setCelebrationData(data)
+}
+
+export function dismissCelebration(): void {
+  setCelebrationData(null)
 }
