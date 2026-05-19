@@ -10,10 +10,10 @@ import { TierSelector } from '@/components/TierSelector'
 import { APP_VERSION, COMMIT_SHA, IS_DEV } from '@/lib/defaults'
 import { adsr, applySensitivityPreset, gridLinesVisible, playbackSpeed, reverbConfig, sensitivityPreset, setAttack, setBand, setDecay, setDetectionThreshold, setGridLinesVisible, setMinAmplitude, setMinConfidence, setPlaybackSpeed, setRelease, setReverbType, setReverbWetness, setSensitivity, setShowFocusBall, setShowPitchDisplay, setShowPlaybackBall, setShowPlaybackSetup, setShowPlayhead, setShowStats, setSustain, setTheme, settings, setTonicAnchor, showFocusBall, showPitchDisplay, showPlaybackBall, showPlaybackSetupInfo, showPlayhead, showStats, theme, } from '@/stores'
 import { showConsoleLog, toggleConsoleLog } from '@/stores/console-store'
-import type { PitchAlgorithm } from '@/stores/settings-store'
+import type { PitchAlgorithm, VocalRangePreset } from '@/stores/settings-store'
 import type { PitchBufferSize } from '@/stores/settings-store'
 import { characterSounds, colorCodeNotes, flameMode, selectedCharacter, setCharacterSounds, setColorCodeNotes, setFlameMode, setShowAccuracyPercent, setShowPracticeResultPopup, setShowSidebarNoteList, showAccuracyPercent, showPracticeResultPopup, showSidebarNoteList, } from '@/stores/settings-store'
-import { pitchAlgorithm, setPitchAlgorithm } from '@/stores/settings-store'
+import { pitchAlgorithm, setPitchAlgorithm, setVocalRangePreset, VOCAL_RANGES,vocalRangePreset } from '@/stores/settings-store'
 import { PITCH_BUFFER_DESCRIPTIONS, PITCH_BUFFER_LABELS, PITCH_BUFFER_SIZES, pitchBufferSize, setPitchBufferSize, } from '@/stores/settings-store'
 import styles from './SettingsPanel.module.css'
 
@@ -111,6 +111,34 @@ export const SettingsPanel: Component = () => {
               <option value="quiet">Quiet Room (Studio)</option>
               <option value="home">Some Noise (At Home)</option>
               <option value="noisy">High Noise (Outside)</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Vocal Range Preset Section */}
+        <div class={styles.settingsSection}>
+          <h3 class={styles.settingsSectionTitle}>Singing Voice Range</h3>
+          <div class={styles.settingsDivider} />
+          <p class={styles.settingsDesc}>
+            Set your natural singing voice range. This will automatically adjust the default octave for new exercises.
+          </p>
+
+          <div class={styles.settingsRow}>
+            <label for="vocal-range-select">Voice Preset</label>
+            <select
+              id="vocal-range-select"
+              value={vocalRangePreset()}
+              onChange={(e) => {
+                setVocalRangePreset(e.currentTarget.value as VocalRangePreset)
+              }}
+            >
+              <For each={Object.entries(VOCAL_RANGES)}>
+                {([key, range]) => (
+                  <option value={key}>
+                    {range.label} (Octave {range.minOctave}-{range.maxOctave})
+                  </option>
+                )}
+              </For>
             </select>
           </div>
         </div>
