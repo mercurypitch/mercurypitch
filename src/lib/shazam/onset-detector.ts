@@ -39,8 +39,8 @@ function median(values: number[]): number {
   const sorted = [...values].sort((a, b) => a - b)
   const mid = Math.floor(sorted.length / 2)
   return sorted.length % 2 === 0
-    ? Math.round((sorted[mid - 1] + sorted[mid]) / 2)
-    : Math.round(sorted[mid])
+    ? (sorted[mid - 1] + sorted[mid]) / 2
+    : sorted[mid]
 }
 
 /**
@@ -177,18 +177,25 @@ export function segmentNotes(
   const noteDurations: number[] = []
   const onsetTimes: number[] = []
 
-  // Collect MIDI values between each onset
+  // Collect MIDI values between each onset using a single-pass
+  // frame pointer (frames are sorted by time, so no need to rescan).
+  let frameIdx = 0
   for (let oi = 0; oi < onsets.length; oi++) {
     const onset = onsets[oi]
     const nextOnsetTime =
       oi < onsets.length - 1 ? onsets[oi + 1].time : Infinity
 
+    // Advance past frames before this onset
+    while (frameIdx < frames.length && frames[frameIdx].time < onset.time) {
+      frameIdx++
+    }
+
     const midis: number[] = []
-    for (const frame of frames) {
-      if (frame.time >= onset.time && frame.time < nextOnsetTime) {
-        const m = toMidi(frame.pitch)
-        if (m !== null && Number.isFinite(m)) midis.push(m)
-      }
+    let scanIdx = frameIdx
+    while (scanIdx < frames.length && frames[scanIdx].time < nextOnsetTime) {
+      const m = toMidi(frames[scanIdx].pitch)
+      if (m !== null && Number.isFinite(m)) midis.push(m)
+      scanIdx++
     }
 
     if (midis.length > 0) {

@@ -35,7 +35,7 @@ export function FingerprintInspector() {
     return all.slice().sort((a, b) => {
       const aStem = a.melodyId.startsWith('stem:')
       const bStem = b.melodyId.startsWith('stem:')
-      if (aStem !== bStem) return aStem ? 1 : -1
+      if (aStem !== bStem) return aStem ? -1 : 1
       return a.name.localeCompare(b.name)
     })
   })

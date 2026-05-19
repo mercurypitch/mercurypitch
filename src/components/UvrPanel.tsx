@@ -16,7 +16,7 @@ import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
 import { cancelUvrSession, completeUvrSession, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, devFeaturesEnabled, getAllUvrSessions, getAllUvrSessionsReactive, getUvrProcessingMode, getUvrSession, getUvrSessionByHash, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrProcessingMode, startUvrSession, updateUvrSessionOutputs, uvrModelError, uvrModelStatus, uvrProcessingMode, } from '@/stores/app-store'
 import { showNotification } from '@/stores/notifications-store'
 import { StemMixer, UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrSettings, UvrUploadControl, } from '.'
-import { CheckCircle, ImportFile, Music, Settings, Trash2, X } from './icons'
+import { CheckCircle, ImportFile, Music, Settings, SingMic, Trash2, X } from './icons'
 
 const ShazamListen = lazy(async () =>
   import('@/components/ShazamListen').then((m) => ({
@@ -151,6 +151,8 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     instrumental?: boolean
     midi?: boolean
   }>()
+  const [mixerInitialSeekSec, setMixerInitialSeekSec] = createSignal<number | undefined>(undefined)
+  const [mixerAutoPlay, setMixerAutoPlay] = createSignal(false)
 
   // Computed session state
   const session = () => currentUvrSession()
@@ -558,6 +560,8 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
         : undefined,
     )
     setMixerSessionId(s.sessionId)
+    // Reset auto-play unless explicitly set by Shazam match flow
+    // (caller should set mixerAutoPlay/mixerInitialSeekSec before calling this)
     setCurrentView('mixer')
   }
 
@@ -744,26 +748,35 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
             <button
               class="view-tab"
               classList={{
-                active:
-                  currentView() === 'upload' ||
-                  currentView() === 'shazam-listen',
+                active: currentView() === 'upload',
               }}
               onClick={() => {
-                if (devFeaturesEnabled()) {
-                  const next =
-                    currentView() === 'upload' ? 'shazam-listen' : 'upload'
-                  setCurrentView(next)
-                  props.onViewChange?.(next)
-                } else {
-                  setCurrentView('upload')
-                  props.onViewChange?.('upload')
-                }
+                setCurrentView('upload')
+                props.onViewChange?.('upload')
                 props.onSessionChange?.(null)
               }}
+              data-testid="uvr-tab-upload"
             >
               <ImportFile />
-              <span>Sessions</span>
+              <span>Upload</span>
             </button>
+            <Show when={devFeaturesEnabled()}>
+              <button
+                class="view-tab view-tab-sing"
+                classList={{
+                  active: currentView() === 'shazam-listen',
+                }}
+                onClick={() => {
+                  setCurrentView('shazam-listen')
+                  props.onViewChange?.('shazam-listen')
+                  props.onSessionChange?.(null)
+                }}
+                data-testid="uvr-tab-sing"
+              >
+                <SingMic />
+                <span>Sing</span>
+              </button>
+            </Show>
             <button
               class="view-tab"
               classList={{ active: showSettings() }}
@@ -828,24 +841,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 <Music /> See Guide
               </button>
             </div>
-            <Show when={devFeaturesEnabled()}>
-              <div style="margin-bottom: 12px;">
-                <span
-                  role="button"
-                  tabindex="0"
-                  class="view-tab"
-                  style="cursor: pointer; font-size: 13px;"
-                  onClick={() => setCurrentView('shazam-listen')}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ')
-                      setCurrentView('shazam-listen')
-                  }}
-                  data-testid="shazam-switch-to-listen"
-                >
-                  Sing to find a melody instead
-                </span>
-              </div>
-            </Show>
+
             <UvrUploadControl
               onFileSelect={(file) => {
                 void handleFileSelect(file)
@@ -1036,7 +1032,13 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
               songTitle={currentUvrSession()?.originalFile?.name ?? 'Unknown'}
               practiceMode={mixerPracticeMode()}
               requestedStems={mixerRequestedStems()}
-              onBack={() => setCurrentView(prevView())}
+              initialSeekSec={mixerInitialSeekSec()}
+              autoPlay={mixerAutoPlay()}
+              onBack={() => {
+                setMixerAutoPlay(false)
+                setMixerInitialSeekSec(undefined)
+                setCurrentView(prevView())
+              }}
             />
           </div>
         </Show>
@@ -1057,6 +1059,9 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                   topMatch.sessionId !== undefined &&
                   topMatch.confidence >= threshold
                 ) {
+                  // Set auto-play with match offset for stem mixer
+                  setMixerInitialSeekSec(topMatch.matchOffsetSec)
+                  setMixerAutoPlay(true)
                   void handleOpenMixerFromHistory(topMatch.sessionId, {
                     vocal: true,
                   })
@@ -1071,6 +1076,8 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                   candidate.source === 'stem' &&
                   candidate.sessionId !== undefined
                 ) {
+                  setMixerInitialSeekSec(candidate.matchOffsetSec)
+                  setMixerAutoPlay(true)
                   void handleOpenMixerFromHistory(candidate.sessionId, {
                     vocal: true,
                   })
@@ -1095,7 +1102,9 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
               onOpenMelody={(melodyId) => {
                 props.onSelectMelody?.(melodyId)
               }}
-              onOpenStemMixer={(sessionId) => {
+              onOpenStemMixer={(sessionId, matchOffsetSec) => {
+                setMixerInitialSeekSec(matchOffsetSec)
+                setMixerAutoPlay(matchOffsetSec !== undefined)
                 void handleOpenMixerFromHistory(sessionId, { vocal: true })
                 props.onOpenStemMixer?.(sessionId)
               }}

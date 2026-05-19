@@ -15,7 +15,7 @@ test.describe.skip('Shazam Sing', () => {
       localStorage.setItem('pitchperfect_welcome_version', version)
       localStorage.setItem('pitchperfect_active_tab', 'karaoke')
       localStorage.setItem('pitchperfect_focus_mode', 'false')
-      // Enable dev features so shazam-switch-to-listen link is visible
+      // Enable dev features so the Sing tab is visible
       localStorage.setItem('pitchperfect_dev_features', 'true')
     }, appVersion)
     // Load the app and navigate to karaoke tab via tab click
@@ -34,12 +34,12 @@ test.describe.skip('Shazam Sing', () => {
       timeout: 10000,
     })
     await expect(
-      page.locator('[data-testid="shazam-switch-to-listen"]'),
+      page.locator('[data-testid="uvr-tab-sing"]'),
     ).toBeVisible()
   })
 
-  test('sing-to-find link switches to shazam-listen view', async ({ page }) => {
-    await page.locator('[data-testid="shazam-switch-to-listen"]').click()
+  test('sing tab switches to shazam-listen view', async ({ page }) => {
+    await page.locator('[data-testid="uvr-tab-sing"]').click()
 
     await expect(page.locator('[data-testid="shazam-listen"]')).toBeVisible({
       timeout: 10000,
@@ -54,7 +54,7 @@ test.describe.skip('Shazam Sing', () => {
   }) => {
     // First go to shazam-listen
     await page
-      .locator('[data-testid="shazam-switch-to-listen"]')
+      .locator('[data-testid="uvr-tab-sing"]')
       .dispatchEvent('click')
     await page.waitForSelector('[data-testid="shazam-listen"]', {
       timeout: 10000,
@@ -73,7 +73,7 @@ test.describe.skip('Shazam Sing', () => {
   test('mic button is enabled when idle, stop is disabled, cancel is enabled', async ({
     page,
   }) => {
-    await page.locator('[data-testid="shazam-switch-to-listen"]').click()
+    await page.locator('[data-testid="uvr-tab-sing"]').click()
     await expect(page.locator('[data-testid="shazam-mic-btn"]')).toBeEnabled({
       timeout: 10000,
     })
@@ -83,17 +83,17 @@ test.describe.skip('Shazam Sing', () => {
     await expect(page.locator('[data-testid="shazam-cancel"]')).toBeEnabled()
   })
 
-  test('Sessions tab toggles between shazam-listen and upload', async ({
+  test('Upload tab switches back from shazam-listen to upload', async ({
     page,
   }) => {
     // Start at upload, go to shazam-listen
-    await page.locator('[data-testid="shazam-switch-to-listen"]').click()
+    await page.locator('[data-testid="uvr-tab-sing"]').click()
     await page.waitForSelector('[data-testid="shazam-listen"]', {
       timeout: 10000,
     })
 
-    // Click Sessions tab -> should go back to upload
-    await page.locator('.view-tab:has-text("Sessions")').dispatchEvent('click')
+    // Click Upload tab -> should go back to upload
+    await page.locator('[data-testid="uvr-tab-upload"]').dispatchEvent('click')
     await page.waitForSelector('.upload-section', { timeout: 10000 })
     await expect(page.locator('.upload-section')).toBeVisible()
   })

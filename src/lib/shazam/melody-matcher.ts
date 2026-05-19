@@ -17,6 +17,9 @@ const DEFAULT_MATCHER_OPTIONS: MatcherOptions = {
   maxResults: 5,
 }
 
+const isDebug = (): boolean =>
+  localStorage.getItem('pitchperfect_shazam_debug') === 'true'
+
 /**
  * Match a captured pitch contour against all melodies in the fingerprint index.
  *
@@ -52,6 +55,15 @@ export function matchPitchContour(
   }
 
   const candidates: MatchCandidate[] = []
+  const debug = isDebug()
+
+  if (debug) {
+    // eslint-disable-next-line no-console
+    console.group('[Shazam Matcher] Matching contour')
+    console.log('Query notes:', noteSeq.length, 'IOIs:', ioiSeq.length, 'Duration:', `${contour.durationSec.toFixed(2)}s`)
+    console.log('Note sequence (MIDI):', `${noteSeq.slice(0, 20).map(n => n.toFixed(1)).join(', ')}${noteSeq.length > 20 ? '...' : ''}`)
+    console.log('Fingerprints to compare:', fingerprints.length)
+  }
 
   for (const fp of fingerprints) {
     // ── Source filter ─────────────────────────────────────
@@ -62,32 +74,31 @@ export function matchPitchContour(
     }
 
     // ── Early termination filters ────────────────────────
-    // Skip when both sides are short enough that subsequence DTW won't help.
-    // When one side is much longer, let subsequence DTW try to find the
-    // query within the reference (e.g. 10-note singing in an 800-note stem).
     const shorterLen = Math.min(fp.noteCount, noteSeq.length)
     if (shorterLen > 0) {
       const noteRatio =
         Math.max(fp.noteCount, noteSeq.length) / Math.max(1, shorterLen)
-      // Only reject when both are short AND still wildly different —
-      // if either side is long enough for subsequence DTW, let it try.
-      if (noteRatio > 3 && shorterLen < 20) continue
+      if (noteRatio > 3 && shorterLen < 20) {
+        if (debug) console.log(`  [SKIP] ${fp.name}: note ratio ${noteRatio.toFixed(1)}x (${fp.noteCount} vs ${noteSeq.length})`)
+        continue
+      }
     }
 
-    // Duration difference by factor > 5
-    if (fp.durationSec > 0 && contour.durationSec > 0) {
-      const durRatio =
-        Math.max(fp.durationSec, contour.durationSec) /
-        Math.max(0.1, Math.min(fp.durationSec, contour.durationSec))
-      if (durRatio > 5) continue
-    }
+    // Note: no duration-ratio filter here. Subsequence DTW is designed to find
+    // a short query (e.g. 8s of singing) within a long reference (e.g. 60s stem).
+    // Filtering by duration ratio would defeat the whole purpose of subsequence DTW.
 
     // ── Multi-feature DTW matching ──────────────────────
 
     // 1. Absolute pitch match (MIDI semitones)
     let pitchScore = 0
+    let pitchMatchStartIdx = -1
+    let pitchMatchPath: [number, number][] = []
     if (fp.pitchSequence.length > 0 && noteSeq.length > 0) {
-      pitchScore = bestMatch(noteSeq, fp.pitchSequence)
+      const pm = bestMatchWithOffset(noteSeq, fp.pitchSequence)
+      pitchScore = pm.score
+      pitchMatchStartIdx = pm.startIndex
+      pitchMatchPath = pm.path
     }
 
     // 2. Interval match (transposition-invariant)
@@ -101,7 +112,7 @@ export function matchPitchContour(
         contourIntervals.push(noteSeq[i] - noteSeq[i - 1])
       }
       if (contourIntervals.length > 0 && fp.intervalSequence.length > 0) {
-        intervalScore = bestMatch(contourIntervals, fp.intervalSequence)
+        intervalScore = bestMatchWithOffset(contourIntervals, fp.intervalSequence).score
       }
     }
 
@@ -109,7 +120,7 @@ export function matchPitchContour(
     let chromaScore = 0
     if (fp.chromaSequence.length > 0 && noteSeq.length > 0) {
       const contourChroma = noteSeq.map((m) => m % 12)
-      chromaScore = bestMatch(contourChroma, fp.chromaSequence)
+      chromaScore = bestMatchWithOffset(contourChroma, fp.chromaSequence).score
     }
 
     // 4. Rhythm match (IOI-based, tempo-normalized)
@@ -118,7 +129,7 @@ export function matchPitchContour(
       const contourIOIs = normalizeIOIs(ioiSeq, contour.durationSec)
       const fpIOIs = normalizeIOIs(fp.ioiSequence, fp.durationSec)
       if (contourIOIs.length > 0 && fpIOIs.length > 0) {
-        rhythmScore = bestMatch(contourIOIs, fpIOIs)
+        rhythmScore = bestMatchWithOffset(contourIOIs, fpIOIs).score
       }
     }
 
@@ -160,6 +171,34 @@ export function matchPitchContour(
     }
 
     const isStem = fp.melodyId.startsWith('stem:')
+
+    if (debug) {
+      console.log(`  [SCORE] ${fp.name}: pitch=${pitchScore.toFixed(3)} interval=${intervalScore.toFixed(3)} chroma=${chromaScore.toFixed(3)} rhythm=${rhythmScore.toFixed(3)} length=${lengthBonus.toFixed(3)} => ${confidence}%${hummingNormalized ? ' (humming adj)' : ''}`)
+    }
+
+    // Compute match time offset from subsequence DTW start index
+    let matchOffsetSec: number | undefined
+    if (pitchMatchStartIdx >= 0 && fp.ioiSequence.length > 0) {
+      // Sum IOIs up to the start index to get the time offset
+      let offsetSec = fp.firstNoteStartSec ?? 0
+      for (let i = 0; i < Math.min(pitchMatchStartIdx, fp.ioiSequence.length); i++) {
+        offsetSec += fp.ioiSequence[i]
+      }
+      matchOffsetSec = offsetSec
+      
+      if (debug) {
+        console.log(`  [OFFSET] ${fp.name}: matchStartIdx=${pitchMatchStartIdx}, firstNoteStart=${fp.firstNoteStartSec ?? 0}, offsetSec=${offsetSec.toFixed(2)}s`)
+        if (pitchMatchPath.length > 0) {
+          const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+          const toName = (m: number) => `${NOTE_NAMES[m % 12]}${Math.floor(m / 12) - 1}`
+          const queryNotes = pitchMatchPath.map(([q]) => toName(Math.round(noteSeq[q])))
+          const refNotes = pitchMatchPath.map(([, r]) => toName(Math.round(fp.pitchSequence[r])))
+          console.log(`  [NOTES] Query: ${queryNotes.join(' ')}`)
+          console.log(`  [NOTES] Match: ${refNotes.join(' ')}`)
+        }
+      }
+    }
+
     candidates.push({
       melodyId: fp.melodyId,
       name: fp.name,
@@ -168,13 +207,26 @@ export function matchPitchContour(
       source: isStem ? 'stem' : 'melody',
       sessionId: isStem ? fp.melodyId.slice(5) : undefined,
       hummingNormalized,
+      matchOffsetSec,
     })
   }
 
   // Sort by confidence descending
   candidates.sort((a, b) => b.confidence - a.confidence)
 
-  return candidates.slice(0, opts.maxResults ?? 5)
+  const result = candidates.slice(0, opts.maxResults ?? 5)
+
+  if (debug) {
+    if (result.length > 0) {
+      console.log('Top matches:', result.map(c => `${c.name} (${c.confidence}%)`).join(', '))
+    } else {
+      console.log('No matches above threshold')
+    }
+    // eslint-disable-next-line no-console
+    console.groupEnd()
+  }
+
+  return result
 }
 
 /** Like {@link matchPitchContour} but also returns whether humming normalization was applied. */
@@ -191,10 +243,13 @@ export function matchPitchContourWithMeta(
 // ── Internal helpers ─────────────────────────────────────────
 
 /**
- * Try both classic DTW and subsequence DTW, return the better score.
- * Subsequence DTW handles partial matching (user sings only the chorus).
+ * Try both classic DTW and subsequence DTW, return the better score
+ * and the start index into the reference for subsequence matches.
  */
-function bestMatch(query: number[], reference: number[]): number {
+function bestMatchWithOffset(
+  query: number[],
+  reference: number[],
+): { score: number; startIndex: number; path: [number, number][] } {
   const classic = dtwMatch(query, reference)
   const classicScore = distanceToScore(classic.normalizedDistance)
 
@@ -202,10 +257,14 @@ function bestMatch(query: number[], reference: number[]): number {
   if (reference.length > query.length) {
     const sub = dtwMatchSubsequence(query, reference)
     const subScore = distanceToScore(sub.normalizedDistance)
-    return Math.max(classicScore, subScore)
+    if (subScore > classicScore) {
+      // Find the earliest reference index in the path
+      const startIdx = sub.path.length > 0 ? sub.path[0][1] : 0
+      return { score: subScore, startIndex: startIdx, path: sub.path }
+    }
   }
 
-  return classicScore
+  return { score: classicScore, startIndex: 0, path: classic.path }
 }
 
 /** Normalize IOI sequence to [0, 1] range relative to total duration */

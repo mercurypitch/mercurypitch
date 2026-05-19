@@ -106,7 +106,9 @@ export function dtwMatchSubsequence(
     return { distance: Infinity, normalizedDistance: 1, path: [], matchEnd: m }
   }
 
-  const band = bandWidth ?? Math.max(1, Math.ceil(Math.max(n, m) * 0.1))
+  // Subsequence DTW needs no band constraint — the query must be
+  // able to match anywhere in the reference sequence.
+  const band = bandWidth ?? m
 
   // Accumulated cost matrix
   const cost = new Float64Array(n * m)
@@ -203,8 +205,11 @@ function reconstructPath(
   const path: [number, number][] = []
   let i = n - 1
   let j = m - 1
+  // Guard against infinite loops from uninitialized backpointers
+  const maxIter = n + m
+  let iter = 0
 
-  while (i >= 0 && j >= 0) {
+  while (i >= 0 && j >= 0 && iter++ < maxIter) {
     path.unshift([i, j])
     const ptr = backptr[i * m + j]
     if (ptr === 0) {
@@ -229,10 +234,13 @@ function reconstructPathFrom(
   const path: [number, number][] = []
   let i = startI
   let j = startJ
+  // Guard against infinite loops from uninitialized backpointers
+  const maxIter = startI + startJ + 2
+  let iter = 0
 
-  while (i >= 0 && j >= 0) {
+  while (i >= 0 && j >= 0 && iter++ < maxIter) {
     path.unshift([i, j])
-    if (i === 0 && j === 0) break
+    if (i === 0) break
 
     const ptr = backptr[i * m + j]
     if (ptr === 0) {

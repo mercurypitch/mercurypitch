@@ -23,7 +23,7 @@ interface ShazamResultsProps {
   liveContour?: LivePitchContour | null
   hummingNormalized?: boolean
   onOpenMelody?: (melodyId: string) => void
-  onOpenStemMixer?: (sessionId: string) => void
+  onOpenStemMixer?: (sessionId: string, matchOffsetSec?: number) => void
   onTryAgain: () => void
 }
 
@@ -134,7 +134,7 @@ export function ShazamResults(props: ShazamResultsProps) {
                       <button
                         class={styles.openBtn}
                         onClick={() =>
-                          props.onOpenStemMixer?.(candidate.sessionId!)
+                          props.onOpenStemMixer?.(candidate.sessionId!, candidate.matchOffsetSec)
                         }
                       >
                         Open in Mixer

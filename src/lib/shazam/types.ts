@@ -16,6 +16,8 @@ export interface MelodyFingerprint {
   durationSec: number
   /** Number of notes */
   noteCount: number
+  /** The absolute start time of the first note in the audio file */
+  firstNoteStartSec?: number
   /** Octave-invariant pitch contour (MIDI mod 12) for octave-agnostic matching */
   chromaSequence: number[]
   /** Interval contour (delta between consecutive notes) for transposition-invariant matching */
@@ -114,16 +116,19 @@ export interface DtwResult {
 export interface MatchCandidate {
   melodyId: string
   name: string
-  /** 0–100 overall confidence */
+  /** 0-100 overall confidence */
   confidence: number
-  /** Individual feature scores (0–1, higher = better) */
+  /** Individual feature scores (0-1, higher = better) */
   breakdown: MatchBreakdown
-  /** Source of the match — melody library or user-uploaded stem */
+  /** Source of the match -- melody library or user-uploaded stem */
   source?: 'melody' | 'stem'
   /** UVR session ID when source === 'stem' */
   sessionId?: string
   /** Whether humming normalization was applied to boost chroma/pitch weights */
   hummingNormalized?: boolean
+  /** Estimated offset in the reference where the match begins (seconds).
+   *  Derived from the subsequence DTW best-start index. */
+  matchOffsetSec?: number
 }
 
 /** Per-feature match scores */

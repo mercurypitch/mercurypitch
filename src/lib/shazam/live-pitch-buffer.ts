@@ -1,5 +1,5 @@
 // ============================================================
-// Live Pitch Buffer — Mic capture + pitch detection loop
+// Live Pitch Buffer -- Mic capture + pitch detection loop
 // Phase 2 of Shazam Sing
 //
 // Wraps the AudioEngine + PitchDetector into a simple start/stop
@@ -12,14 +12,17 @@ import { PitchDetector } from '@/lib/pitch-detector'
 import { detectOnsets, segmentNotes } from './onset-detector'
 import type { BufferState, LivePitchContour, TimestampedPitch } from './types'
 
-/** Default auto-stop silence duration in seconds */
-const AUTO_STOP_SILENCE_SEC = 3.0
+/** How long to wait for the first voiced frame before giving up (seconds) */
+const INITIAL_WAIT_SEC = 7.0
 
-/** Minimum capture duration before auto-stop is allowed */
-const MIN_CAPTURE_SEC = 0.5
+/** Auto-stop after this many seconds of silence once singing has started */
+const MID_SESSION_SILENCE_SEC = 5.0
+
+/** Minimum capture duration (after first voice) before auto-stop is allowed */
+const MIN_CAPTURE_SEC = 1.0
 
 export interface LivePitchBufferOptions {
-  /** Auto-stop after this many seconds of continuous silence (default: 3.0) */
+  /** Auto-stop after this many seconds of continuous silence (default: 5.0) */
   autoStopSilenceSec?: number
   /** Called on each frame with the latest pitch (for live visualization) */
   onFrame?: (pitch: TimestampedPitch) => void
@@ -39,6 +42,10 @@ export class LivePitchBuffer {
   private rafId: number | null = null
   private captureStart = 0
   private lastVoicedTime = 0
+  /** Whether we have heard any voiced frame at all */
+  private hasHeardVoice = false
+  /** Timestamp of the first voiced frame (for elapsed calculation) */
+  private firstVoiceTime = 0
 
   constructor(audioEngine: AudioEngine, options: LivePitchBufferOptions = {}) {
     this.audioEngine = audioEngine
@@ -48,7 +55,7 @@ export class LivePitchBuffer {
       sensitivity: 7,
     })
     this.options = {
-      autoStopSilenceSec: options.autoStopSilenceSec ?? AUTO_STOP_SILENCE_SEC,
+      autoStopSilenceSec: options.autoStopSilenceSec ?? MID_SESSION_SILENCE_SEC,
       onFrame: options.onFrame ?? (() => {}),
       onStateChange: options.onStateChange ?? (() => {}),
       onAutoStop: options.onAutoStop ?? (() => {}),
@@ -93,7 +100,9 @@ export class LivePitchBuffer {
     this.setState('listening')
     this.frames = []
     this.captureStart = Date.now()
-    this.lastVoicedTime = Date.now()
+    this.lastVoicedTime = 0
+    this.hasHeardVoice = false
+    this.firstVoiceTime = 0
 
     this.tick()
     return true
@@ -125,7 +134,6 @@ export class LivePitchBuffer {
     }
   }
 
-  /** Cancel capture without producing a contour. */
   cancel(): void {
     this.cancelLoop()
     if (this.audioEngine.isMicActive()) {
@@ -135,7 +143,12 @@ export class LivePitchBuffer {
     this.setState('idle')
   }
 
-  // ── Private ────────────────────────────────────────────────
+  /** Get the accumulated pitch frames so far (for live matching). */
+  getCurrentFrames(): TimestampedPitch[] {
+    return this.frames
+  }
+
+  // -- Private ------------------------------------------------
 
   private setState(state: BufferState): void {
     this.state = state
@@ -154,24 +167,52 @@ export class LivePitchBuffer {
 
     const timeData = this.audioEngine.getTimeData()
     const detected = this.detector.detect(timeData)
-    const elapsed = (Date.now() - this.captureStart) / 1000
+    const wallElapsed = (Date.now() - this.captureStart) / 1000
+    const isVoiced = detected.frequency > 0 && detected.clarity > 0
+
+    // -- Phase 1: Waiting for first voice ----------------------
+    // Discard frames entirely until the user starts singing.
+    // If they stay silent too long, auto-stop gracefully.
+    if (!this.hasHeardVoice) {
+      if (isVoiced) {
+        this.hasHeardVoice = true
+        this.firstVoiceTime = Date.now()
+        this.lastVoicedTime = Date.now()
+        // Fall through to record this first voiced frame
+      } else {
+        // Still waiting -- fire onFrame for visualization (shows silence)
+        // but don't store the frame for matching.
+        const frame: TimestampedPitch = { time: wallElapsed, pitch: detected }
+        this.options.onFrame(frame)
+
+        if (wallElapsed >= INITIAL_WAIT_SEC) {
+          this.options.onAutoStop()
+          return
+        }
+        this.rafId = requestAnimationFrame(this.tick)
+        return
+      }
+    }
+
+    // -- Phase 2: Recording (voice has been heard) -------------
+    const sinceFirstVoice = (Date.now() - this.firstVoiceTime) / 1000
 
     const frame: TimestampedPitch = {
-      time: elapsed,
+      time: sinceFirstVoice,
       pitch: detected,
     }
     this.frames.push(frame)
     this.options.onFrame(frame)
 
-    // Track last voiced frame for auto-stop
-    if (detected.frequency > 0 && detected.clarity > 0) {
+    // Track last voiced frame for mid-session silence detection
+    if (isVoiced) {
       this.lastVoicedTime = Date.now()
     }
 
-    // Auto-stop on prolonged silence
+    // Auto-stop on prolonged mid-session silence
     const silenceDuration = (Date.now() - this.lastVoicedTime) / 1000
     if (
-      elapsed >= MIN_CAPTURE_SEC &&
+      sinceFirstVoice >= MIN_CAPTURE_SEC &&
       silenceDuration >= this.options.autoStopSilenceSec
     ) {
       this.options.onAutoStop()

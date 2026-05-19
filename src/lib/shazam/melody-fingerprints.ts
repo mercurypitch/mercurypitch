@@ -4,6 +4,7 @@
 // sequences optimized for DTW matching.
 // ============================================================
 
+import { createSignal } from 'solid-js'
 import { getAllStemFingerprintData } from '@/db/services/uvr-service'
 import { getAllMelodies } from '@/stores/melody-store'
 import type { MelodyData } from '@/types'
@@ -11,8 +12,16 @@ import type { FingerprintError, FingerprintIndex, FingerprintResult, MelodyFinge
 
 const SECONDS_PER_MINUTE = 60
 
-/** In-memory fingerprint index — rebuild on app init and library mutations */
+/** In-memory fingerprint index -- rebuild on app init and library mutations */
 let _index: FingerprintIndex = new Map()
+
+/**
+ * Reactive version counter. Bumped on every mutation so SolidJS
+ * createMemo/createEffect consumers (e.g. the Shazam pill badge)
+ * automatically re-evaluate when the index changes.
+ */
+const [_indexVersion, _bumpVersion] = createSignal(0)
+const bumpIndex = () => _bumpVersion((v) => v + 1)
 
 /**
  * Convert beat positions to seconds given a BPM.
@@ -111,6 +120,7 @@ export function buildFingerprintIndex(): FingerprintResult {
   }
 
   _index = fingerprints
+  bumpIndex()
   return { fingerprints, errors }
 }
 
@@ -121,6 +131,8 @@ export function getFingerprintIndex(): FingerprintIndex {
 
 /** Get all fingerprints as an array (convenience for matching loops). */
 export function getFingerprintArray(): MelodyFingerprint[] {
+  // Read version so reactive consumers re-run when index changes
+  void _indexVersion()
   return Array.from(_index.values())
 }
 
@@ -132,15 +144,19 @@ export function isIndexBuilt(): boolean {
 /** Add a single stem fingerprint to the runtime index. Overwrites existing entry for same melodyId. */
 export function addStemFingerprint(fp: MelodyFingerprint): void {
   _index.set(fp.melodyId, fp)
+  bumpIndex()
 }
 
 /** Remove a stem fingerprint from the runtime index by session ID. */
 export function removeStemFingerprint(sessionId: string): void {
   _index.delete(`stem:${sessionId}`)
+  bumpIndex()
 }
 
 /** Check if a stem fingerprint exists in the runtime index by session ID. */
 export function hasStemFingerprint(sessionId: string): boolean {
+  // Read version so reactive consumers (createMemo) track changes
+  void _indexVersion()
   return _index.has(`stem:${sessionId}`)
 }
 
@@ -152,6 +168,7 @@ export async function loadStemFingerprints(): Promise<number> {
     for (const fp of fingerprints) {
       _index.set(fp.melodyId, fp)
     }
+    if (fingerprints.length > 0) bumpIndex()
     return fingerprints.length
   } catch {
     return 0
