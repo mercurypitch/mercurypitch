@@ -6,17 +6,20 @@
 // contour is matched against the melody fingerprint index.
 // ============================================================
 
-import { createSignal, For, onCleanup, onMount, Show } from 'solid-js'
+import { createEffect, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import { AudioEngine } from '@/lib/audio-engine'
 import { audioRegistry } from '@/lib/audio-registry'
 import { IS_DEV } from '@/lib/defaults'
 import type { DetectedPitch } from '@/lib/pitch-detector'
 import { LivePitchBuffer } from '@/lib/shazam/live-pitch-buffer'
+import type { LyricsCatalogEntry } from '@/lib/shazam/lyrics-matcher'
+import { matchTranscriptToLyrics, resolveSeekPosition, } from '@/lib/shazam/lyrics-matcher'
 import { matchPitchContourWithMeta } from '@/lib/shazam/melody-matcher'
 import { detectOnsets, segmentNotes } from '@/lib/shazam/onset-detector'
 import type { LivePitchContour, MatchCandidate, TimestampedPitch, } from '@/lib/shazam/types'
 import type { SpeechRecognizer } from '@/lib/speech-recognition'
 import { createSpeechRecognizer } from '@/lib/speech-recognition'
+import type { WhisperSegment } from '@/lib/whisper-service'
 import { WhisperService } from '@/lib/whisper-service'
 import { FingerprintInspector } from './FingerprintInspector'
 import { LivePitchDebug } from './LivePitchDebug'
@@ -59,6 +62,24 @@ export function ShazamListen(props: ShazamListenProps) {
   const [includeStems, setIncludeStems] = createSignal(
     localStorage.getItem('pitchperfect_shazam_include_stems') !== 'false',
   )
+  const [whisperGain, setWhisperGain] = createSignal(
+    Number(localStorage.getItem('pitchperfect_whisper_gain')) || 2.0,
+  )
+  const [whisperIntervalSec, setWhisperIntervalSec] = createSignal(
+    Number(localStorage.getItem('pitchperfect_whisper_interval')) || 5,
+  )
+  const [whisperBufferSecs, setWhisperBufferSecs] = createSignal(0)
+
+  // Persist config
+  createEffect(() => {
+    localStorage.setItem('pitchperfect_whisper_gain', whisperGain().toString())
+  })
+  createEffect(() => {
+    localStorage.setItem(
+      'pitchperfect_whisper_interval',
+      whisperIntervalSec().toString(),
+    )
+  })
   const [latestFrame, setLatestFrame] = createSignal<DetectedPitch | null>(null)
 
   const debugEnabled = (): boolean =>
@@ -98,13 +119,15 @@ export function ShazamListen(props: ShazamListenProps) {
     return SR !== undefined
   })()
 
+  const isFirefox = navigator.userAgent.toLowerCase().includes('firefox')
+
   const [speechEnabled, setSpeechEnabled] = createSignal(false)
   const [speechText, setSpeechText] = createSignal('')
   const [speechIsInterim, setSpeechIsInterim] = createSignal(false)
   let speechRecognizer: SpeechRecognizer | null = null
 
   const [speechEngine, setSpeechEngine] = createSignal<'web' | 'whisper'>(
-    'whisper',
+    isFirefox ? 'web' : 'whisper',
   )
   const [whisperStatus, setWhisperStatus] = createSignal('idle')
   let whisperService: WhisperService | null = null
@@ -142,15 +165,21 @@ export function ShazamListen(props: ShazamListenProps) {
   }
 
   let whisperAudioCtx: AudioContext | null = null
-  let whisperWorkletNode: AudioWorkletNode | null = null
+  let whisperScriptNode: ScriptProcessorNode | null = null
+  let whisperGainNode: GainNode | null = null
   let whisperSource: MediaStreamAudioSourceNode | null = null
   let whisperAccumulated: Float32Array = new Float32Array(0)
+  let whisperSegments: WhisperSegment[] = []
 
   function stopWhisperRecording() {
-    if (whisperWorkletNode) {
-      whisperWorkletNode.disconnect()
-      whisperWorkletNode.port.close()
-      whisperWorkletNode = null
+    if (whisperScriptNode) {
+      whisperScriptNode.disconnect()
+      whisperScriptNode.onaudioprocess = null
+      whisperScriptNode = null
+    }
+    if (whisperGainNode) {
+      whisperGainNode.disconnect()
+      whisperGainNode = null
     }
     if (whisperSource) {
       whisperSource.disconnect()
@@ -172,70 +201,71 @@ export function ShazamListen(props: ShazamListenProps) {
     if (!micStream) return
 
     whisperAccumulated = new Float32Array(0)
-
-    // Browser automatically resamples to 16kHz
+    setWhisperBufferSecs(0) // Browser automatically resamples to 16kHz
     whisperAudioCtx = new AudioContext({ sampleRate: 16000 })
 
-    // Register an inline AudioWorklet processor that forwards PCM to main thread
-    const workletCode = `
-      class WhisperCapture extends AudioWorkletProcessor {
-        process(inputs) {
-          const ch = inputs[0]?.[0];
-          if (ch && ch.length > 0) this.port.postMessage(ch);
-          return true;
-        }
-      }
-      registerProcessor('whisper-capture', WhisperCapture);
-    `
-    const blob = new Blob([workletCode], { type: 'application/javascript' })
-    const url = URL.createObjectURL(blob)
-    try {
-      await whisperAudioCtx.audioWorklet.addModule(url)
-    } finally {
-      URL.revokeObjectURL(url)
-    }
-
     whisperSource = whisperAudioCtx.createMediaStreamSource(micStream)
-    whisperWorkletNode = new AudioWorkletNode(
-      whisperAudioCtx,
-      'whisper-capture',
-    )
+    whisperGainNode = whisperAudioCtx.createGain()
+    whisperGainNode.gain.value = whisperGain()
 
-    whisperWorkletNode.port.onmessage = (e: MessageEvent<Float32Array>) => {
-      const input = e.data
+    // ScriptProcessorNode is required over AudioWorklet here because
+    // Chrome has a known bug where AudioWorklet + MediaStreamSource
+    // with cross-context resampling outputs pure silence.
+    whisperScriptNode = whisperAudioCtx.createScriptProcessor(4096, 1, 1)
+
+    whisperScriptNode.onaudioprocess = (e) => {
+      const input = e.inputBuffer.getChannelData(0)
       const newBuffer = new Float32Array(
         whisperAccumulated.length + input.length,
       )
       newBuffer.set(whisperAccumulated, 0)
       newBuffer.set(input, whisperAccumulated.length)
       whisperAccumulated = newBuffer
+      setWhisperBufferSecs(whisperAccumulated.length / 16000)
     }
 
-    whisperSource.connect(whisperWorkletNode)
-    whisperWorkletNode.connect(whisperAudioCtx.destination)
+    whisperSource.connect(whisperGainNode)
+    whisperGainNode.connect(whisperScriptNode)
+    // Must connect to destination so the onaudioprocess fires
+    whisperScriptNode.connect(whisperAudioCtx.destination)
 
-    // Transcribe every 5 seconds
+    // Ensure AudioContext is running (some browsers suspend it)
+    if (whisperAudioCtx.state === 'suspended') {
+      void whisperAudioCtx.resume()
+    }
+
+    // Transcribe periodically
     whisperIntervalId = setInterval(() => {
       void processWhisperChunks()
-    }, 5000)
+    }, whisperIntervalSec() * 1000)
   }
+
+  let isTranscribing = false
 
   async function processWhisperChunks() {
     if (
       whisperAccumulated.length === 0 ||
       !whisperService ||
-      whisperStatus() !== 'ready'
+      whisperStatus() !== 'ready' ||
+      isTranscribing
     )
       return
 
+    isTranscribing = true
     try {
       // Copy the accumulated data so we can transcribe without blocking
       const audioData = new Float32Array(whisperAccumulated)
 
       const result = await whisperService.transcribe(audioData)
       setSpeechText(result.text)
+      // Accumulate timestamped segments for lyrics matching
+      if (result.chunks.length > 0) {
+        whisperSegments = result.chunks
+      }
     } catch (err) {
       console.error('[Whisper] Transcribe error:', err)
+    } finally {
+      isTranscribing = false
     }
   }
 
@@ -307,7 +337,7 @@ export function ShazamListen(props: ShazamListenProps) {
         // state changes handled by listenState signal
       },
       onAutoStop: () => {
-        handleStop()
+        void handleStop()
       },
     })
 
@@ -366,7 +396,7 @@ export function ShazamListen(props: ShazamListenProps) {
     }
   }
 
-  function handleStop() {
+  async function handleStop() {
     if (speechRecognizer) {
       const spoken = speechRecognizer.stop()
       speechRecognizer = null
@@ -375,7 +405,12 @@ export function ShazamListen(props: ShazamListenProps) {
     }
     if (speechEngine() === 'whisper') {
       stopWhisperRecording()
-      void processWhisperChunks()
+      // Wait for any ongoing transcription to finish
+      while (isTranscribing) {
+        await new Promise((r) => setTimeout(r, 100))
+      }
+      // Final transcription of any remaining audio
+      await processWhisperChunks()
     }
     if (!buffer) return
     const contour: LivePitchContour = buffer.stop()
@@ -426,6 +461,55 @@ export function ShazamListen(props: ShazamListenProps) {
       return
     }
 
+    // If we have Whisper transcript segments, try lyrics-based matching
+    // to potentially find a better seek position for stem sessions
+    if (whisperSegments.length > 0) {
+      const catalog = buildLyricsCatalog()
+      if (catalog.length > 0) {
+        const lyricsResults = matchTranscriptToLyrics(
+          whisperSegments,
+          catalog,
+          3,
+        )
+        if (lyricsResults.length > 0) {
+          console.log(
+            '[ShazamListen] Lyrics match:',
+            lyricsResults[0].songName,
+            `${lyricsResults[0].confidence}%`,
+            'at',
+            `${lyricsResults[0].matchOffsetSec.toFixed(1)}s`,
+          )
+          // For each stem candidate, resolve melody vs lyrics offset
+          for (const candidate of candidates) {
+            if (
+              candidate.source !== 'stem' ||
+              candidate.sessionId === undefined
+            )
+              continue
+            const lyricsMatch = lyricsResults.find(
+              (lr) => lr.songId === candidate.sessionId,
+            )
+            if (lyricsMatch === undefined) continue
+
+            const resolved = resolveSeekPosition(
+              candidate.confidence,
+              candidate.matchOffsetSec,
+              lyricsMatch.confidence,
+              lyricsMatch.matchOffsetSec,
+            )
+            if (resolved.source === 'lyrics') {
+              console.log(
+                `[ShazamListen] Using lyrics offset ${resolved.offsetSec?.toFixed(1)}s for ${candidate.name} (lyrics ${lyricsMatch.confidence}% > melody ${candidate.confidence}%)`,
+              )
+              candidate.matchOffsetSec = resolved.offsetSec
+            }
+          }
+        }
+      }
+    }
+    // Reset segments for next session
+    whisperSegments = []
+
     // Auto-jump if auto-mode is on and top match meets threshold
     if (autoMode() && candidates[0].confidence >= autoThreshold()) {
       props.onAutoJump?.(candidates[0])
@@ -433,6 +517,38 @@ export function ShazamListen(props: ShazamListenProps) {
     }
 
     props.onMatch({ candidates, contour, hummingNormalized })
+  }
+
+  /**
+   * Build a lyrics catalog from session data stored in localStorage.
+   * Sessions with synced LRC lyrics become searchable via Whisper transcript.
+   */
+  function buildLyricsCatalog(): LyricsCatalogEntry[] {
+    const catalog: LyricsCatalogEntry[] = []
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i)
+        if (key === null || !key.startsWith('lyrics_v1_')) continue
+        const sessionId = key.replace('lyrics_v1_', '')
+        const raw = localStorage.getItem(key)
+        if (raw === null) continue
+        const data = JSON.parse(raw) as Record<string, unknown>
+        if (data.format !== 'lrc' || typeof data.text !== 'string') continue
+        if (data.text.length < 20) continue
+
+        catalog.push({
+          songId: sessionId,
+          songName:
+            typeof data.filename === 'string'
+              ? data.filename.replace(/\.lrc$/i, '')
+              : sessionId,
+          lrcContent: data.text,
+        })
+      }
+    } catch {
+      // localStorage may be inaccessible
+    }
+    return catalog
   }
 
   function handleCancel() {
@@ -747,10 +863,10 @@ export function ShazamListen(props: ShazamListenProps) {
                     toggleSpeech() // toggle off and on to reinit
                   }}
                 >
-                  <Show when={speechSupported}>
-                    <option value="web">Web Speech API</option>
+                  <option value="web">Web Speech API</option>
+                  <Show when={!isFirefox}>
+                    <option value="whisper">Whisper (Offline)</option>
                   </Show>
-                  <option value="whisper">Whisper (Offline)</option>
                 </select>
                 <Show
                   when={
@@ -898,6 +1014,29 @@ export function ShazamListen(props: ShazamListenProps) {
             latestFrame={latestFrame}
             elapsed={elapsed}
             frameCount={frameCount}
+            {...(speechEngine() === 'whisper'
+              ? {
+                  whisperGain,
+                  setWhisperGain: (val: number) => {
+                    setWhisperGain(val)
+                    if (whisperGainNode) {
+                      whisperGainNode.gain.value = val
+                    }
+                  },
+                  whisperIntervalSec,
+                  setWhisperIntervalSec: (val: number) => {
+                    setWhisperIntervalSec(val)
+                    if (whisperIntervalId) {
+                      clearInterval(whisperIntervalId)
+                      whisperIntervalId = setInterval(() => {
+                        void processWhisperChunks()
+                      }, val * 1000)
+                    }
+                  },
+                  whisperStatus,
+                  whisperBufferSecs,
+                }
+              : {})}
           />
           <FingerprintInspector />
         </div>
@@ -943,7 +1082,7 @@ export function ShazamListen(props: ShazamListenProps) {
       <div class={styles.controls}>
         <button
           class={styles.stopBtn}
-          onClick={handleStop}
+          onClick={() => void handleStop()}
           disabled={listenState() !== 'listening'}
           data-testid="shazam-stop-btn"
         >

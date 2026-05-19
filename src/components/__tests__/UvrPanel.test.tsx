@@ -107,14 +107,6 @@ describe('UvrPanel Component', () => {
       expect(screen.getByText('Upload Audio')).toBeInTheDocument()
     })
 
-    it('renders header with correct title and subtitle', () => {
-      render(() => <UvrPanel {...defaultProps} />)
-      expect(screen.getByText(/Vocal Separation/)).toBeInTheDocument()
-      expect(
-        screen.getByText(/Separate vocals and create MIDI/),
-      ).toBeInTheDocument()
-    })
-
     it('renders header tabs', () => {
       render(() => <UvrPanel {...defaultProps} />)
       expect(screen.getByText('Guide')).toBeInTheDocument()

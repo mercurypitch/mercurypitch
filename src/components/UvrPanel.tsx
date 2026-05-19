@@ -329,7 +329,10 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
             })
           }
           // Auto-extract stem fingerprint for Shazam matching
-          void indexStemFingerprint(sessionId, file.name)
+          // Delay slightly to ensure heavy WebGPU/WASM thread yields before doing AudioContext work
+          setTimeout(() => {
+            void indexStemFingerprint(sessionId, file.name)
+          }, 500)
           setCurrentView('results')
         },
         onError: (message) => {
@@ -691,14 +694,44 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     <div class="uvr-panel">
       {/* Header */}
       <div class="panel-header">
-        <div class="header-left">
-          <div>
-            <h3>Karaoke | Vocal Separation</h3>
-            <p class="header-subtitle">
-              {allSessions().length > 0
-                ? `${allSessions().length} session${allSessions().length !== 1 ? 's' : ''} · ${allSessions().filter((s) => s.status === 'completed').length} done`
-                : 'Separate vocals and create MIDI'}
-            </p>
+        <div
+          class="header-left"
+          style="display: flex; align-items: center; gap: 1.5rem;"
+        >
+          <h3 style="margin: 0; white-space: nowrap;">Shazam Sing</h3>
+          <div class="uvr-view-tabs">
+            <Show when={devFeaturesEnabled()}>
+              <button
+                class="view-tab view-tab-sing"
+                classList={{
+                  active: currentView() === 'shazam-listen',
+                }}
+                onClick={() => {
+                  setCurrentView('shazam-listen')
+                  props.onViewChange?.('shazam-listen')
+                  props.onSessionChange?.(null)
+                }}
+                data-testid="uvr-tab-sing"
+              >
+                <SingMic />
+                <span>Sing</span>
+              </button>
+            </Show>
+            <button
+              class="view-tab"
+              classList={{
+                active: currentView() === 'upload',
+              }}
+              onClick={() => {
+                setCurrentView('upload')
+                props.onViewChange?.('upload')
+                props.onSessionChange?.(null)
+              }}
+              data-testid="uvr-tab-upload"
+            >
+              <ImportFile />
+              <span>Upload</span>
+            </button>
           </div>
         </div>
         <div class="header-actions">
@@ -749,36 +782,12 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
           <div class="uvr-view-tabs">
             <button
               class="view-tab"
-              classList={{
-                active: currentView() === 'upload',
-              }}
-              onClick={() => {
-                setCurrentView('upload')
-                props.onViewChange?.('upload')
-                props.onSessionChange?.(null)
-              }}
-              data-testid="uvr-tab-upload"
+              classList={{ active: showGuide() }}
+              onClick={() => setShowGuide(!showGuide())}
             >
-              <ImportFile />
-              <span>Upload</span>
+              <Music />
+              <span>Guide</span>
             </button>
-            <Show when={devFeaturesEnabled()}>
-              <button
-                class="view-tab view-tab-sing"
-                classList={{
-                  active: currentView() === 'shazam-listen',
-                }}
-                onClick={() => {
-                  setCurrentView('shazam-listen')
-                  props.onViewChange?.('shazam-listen')
-                  props.onSessionChange?.(null)
-                }}
-                data-testid="uvr-tab-sing"
-              >
-                <SingMic />
-                <span>Sing</span>
-              </button>
-            </Show>
             <button
               class="view-tab"
               classList={{ active: showSettings() }}
@@ -786,14 +795,6 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
             >
               <Settings />
               <span>Settings</span>
-            </button>
-            <button
-              class="view-tab"
-              classList={{ active: showGuide() }}
-              onClick={() => setShowGuide(!showGuide())}
-            >
-              <Music />
-              <span>Guide</span>
             </button>
           </div>
         </div>

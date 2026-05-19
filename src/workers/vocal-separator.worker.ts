@@ -11,6 +11,7 @@ import wasmUrl from 'onnxruntime-web/ort-wasm-simd-threaded.jsep.wasm?url'
 import mjsUrlCpu from 'onnxruntime-web/ort-wasm-simd-threaded.mjs?url'
 import wasmUrlCpu from 'onnxruntime-web/ort-wasm-simd-threaded.wasm?url'
 import { computeChunkRanges, overlapAdd, UVR_CHUNK_CONFIG, } from '../lib/audio-chunker'
+import { IS_DEV } from '../lib/defaults'
 import { getCachedModel, setCachedModel } from '../lib/model-cache'
 import { stftForward, stftInverse } from '../lib/stft-engine'
 // ---------------------------------------------------------------------------
@@ -165,14 +166,16 @@ async function loadModel(modelPath: string): Promise<void> {
       }
     }
     activeProviders.push('wasm')
-    console.log('[vocal-separator] provider detection:', {
-      uaPrefix: navigator.userAgent.slice(0, 80),
-      maxTouchPoints: navigator.maxTouchPoints,
-      userAgentDataMobile: uaData?.mobile,
-      isLinuxFirefox,
-      isMobile,
-      providers: activeProviders.join(','),
-    })
+    if (IS_DEV) {
+      console.log('[vocal-separator] provider detection:', {
+        uaPrefix: navigator.userAgent.slice(0, 80),
+        maxTouchPoints: navigator.maxTouchPoints,
+        userAgentDataMobile: uaData?.mobile,
+        isLinuxFirefox,
+        isMobile,
+        providers: activeProviders.join(','),
+      })
+    }
   }
 
   session = await ort.InferenceSession.create(buffer, {

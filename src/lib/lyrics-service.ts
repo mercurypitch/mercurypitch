@@ -1,6 +1,6 @@
 // ============================================================
 // Lyrics Service — fetch, parse, and sync lyrics
-// ============================================================
+import { IS_DEV } from './defaults'
 
 export interface LrcLine {
   time: number // seconds
@@ -251,7 +251,9 @@ async function fetchSearchLrclib(query: string): Promise<LyricsSearchMatch[]> {
   const params = new URLSearchParams()
   params.set('q', query)
 
-  console.log(`[Lyrics Service] -> Fetching search API: q="${query}"`)
+  if (IS_DEV) {
+    console.log(`[Lyrics Service] -> Fetching search API: q="${query}"`)
+  }
   const { signal, clear } = createTimeoutSignal(25000)
 
   try {
@@ -266,26 +268,34 @@ async function fetchSearchLrclib(query: string): Promise<LyricsSearchMatch[]> {
     )
     clear()
 
-    console.log(
-      `[Lyrics Service] <- Search API status: ${resp.status} for q="${query}"`,
-    )
+    if (IS_DEV) {
+      console.log(
+        `[Lyrics Service] <- Search API status: ${resp.status} for q="${query}"`,
+      )
+    }
 
     if (!resp.ok) {
-      console.warn(
-        `[Lyrics Service] Search API error response: ${resp.statusText}`,
-      )
+      if (IS_DEV) {
+        console.warn(
+          `[Lyrics Service] Search API error response: ${resp.statusText}`,
+        )
+      }
       return []
     }
 
     const data = await resp.json()
     if (!Array.isArray(data)) {
-      console.warn(`[Lyrics Service] Search API returned non-array data.`)
+      if (IS_DEV) {
+        console.warn(`[Lyrics Service] Search API returned non-array data.`)
+      }
       return []
     }
 
-    console.log(
-      `[Lyrics Service] <- Search API returned ${data.length} results.`,
-    )
+    if (IS_DEV) {
+      console.log(
+        `[Lyrics Service] <- Search API returned ${data.length} results.`,
+      )
+    }
 
     return data
       .filter((item: Record<string, unknown>) => typeof item.id === 'number')
