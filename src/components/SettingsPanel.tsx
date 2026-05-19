@@ -7,13 +7,15 @@ import { createMemo, createSignal, For, Show } from 'solid-js'
 import { ChangelogModal } from '@/components/ChangelogModal'
 import { ConsoleLog } from '@/components/ConsoleLog'
 import { TierSelector } from '@/components/TierSelector'
+import { VocalRangeSelector } from '@/components/VocalRangeSelector'
+import { VoiceTypeDetectorModal } from '@/components/VoiceTypeDetectorModal'
 import { APP_VERSION, COMMIT_SHA, IS_DEV } from '@/lib/defaults'
 import { adsr, applySensitivityPreset, gridLinesVisible, playbackSpeed, reverbConfig, sensitivityPreset, setAttack, setBand, setDecay, setDetectionThreshold, setGridLinesVisible, setMinAmplitude, setMinConfidence, setPlaybackSpeed, setRelease, setReverbType, setReverbWetness, setSensitivity, setShowFocusBall, setShowPitchDisplay, setShowPlaybackBall, setShowPlaybackSetup, setShowPlayhead, setShowStats, setSustain, setTheme, settings, setTonicAnchor, showFocusBall, showPitchDisplay, showPlaybackBall, showPlaybackSetupInfo, showPlayhead, showStats, theme, } from '@/stores'
 import { showConsoleLog, toggleConsoleLog } from '@/stores/console-store'
-import type { PitchAlgorithm, VocalRangePreset } from '@/stores/settings-store'
+import type { PitchAlgorithm } from '@/stores/settings-store'
 import type { PitchBufferSize } from '@/stores/settings-store'
 import { characterSounds, colorCodeNotes, flameMode, selectedCharacter, setCharacterSounds, setColorCodeNotes, setFlameMode, setShowAccuracyPercent, setShowPracticeResultPopup, setShowSidebarNoteList, showAccuracyPercent, showPracticeResultPopup, showSidebarNoteList, } from '@/stores/settings-store'
-import { pitchAlgorithm, setPitchAlgorithm, setVocalRangePreset, VOCAL_RANGES,vocalRangePreset } from '@/stores/settings-store'
+import { pitchAlgorithm, setPitchAlgorithm } from '@/stores/settings-store'
 import { PITCH_BUFFER_DESCRIPTIONS, PITCH_BUFFER_LABELS, PITCH_BUFFER_SIZES, pitchBufferSize, setPitchBufferSize, } from '@/stores/settings-store'
 import styles from './SettingsPanel.module.css'
 
@@ -21,7 +23,7 @@ export const SettingsPanel: Component = () => {
   const s = () => settings()
   const [showResetConfirm, setShowResetConfirm] = createSignal(false)
   const [showChangelog, setShowChangelog] = createSignal(false)
-
+  const [showVoiceDetector, setShowVoiceDetector] = createSignal(false)
   const bandValues = createMemo(() => {
     const bands = s().bands
     return {
@@ -123,23 +125,16 @@ export const SettingsPanel: Component = () => {
             Set your natural singing voice range. This will automatically adjust the default octave for new exercises.
           </p>
 
-          <div class={styles.settingsRow}>
-            <label for="vocal-range-select">Voice Preset</label>
-            <select
-              id="vocal-range-select"
-              value={vocalRangePreset()}
-              onChange={(e) => {
-                setVocalRangePreset(e.currentTarget.value as VocalRangePreset)
-              }}
+          <div style="display: flex; flex-direction: column; gap: 12px; align-items: center; width: 100%;">
+            <VocalRangeSelector class={styles.settingsTierSelector} />
+            <button 
+              onClick={() => setShowVoiceDetector(true)}
+              style="background: transparent; border: 1px solid var(--border-color); color: var(--text-secondary); padding: 8px 16px; border-radius: 6px; font-size: 0.85rem; cursor: pointer; transition: all 0.2s;"
+              onMouseOver={(e) => { e.currentTarget.style.color = 'var(--text-primary)'; e.currentTarget.style.background = 'var(--bg-secondary)'; }}
+              onMouseOut={(e) => { e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.background = 'transparent'; }}
             >
-              <For each={Object.entries(VOCAL_RANGES)}>
-                {([key, range]) => (
-                  <option value={key}>
-                    {range.label} (Octave {range.minOctave}-{range.maxOctave})
-                  </option>
-                )}
-              </For>
-            </select>
+              Don't know? Find my voice
+            </button>
           </div>
         </div>
 
@@ -1142,6 +1137,9 @@ export const SettingsPanel: Component = () => {
               open={showChangelog()}
               onClose={() => setShowChangelog(false)}
             />
+            <Show when={showVoiceDetector()}>
+              <VoiceTypeDetectorModal onClose={() => setShowVoiceDetector(false)} />
+            </Show>
             <p class={styles.aboutCredits}>Vocal Pitch Practice — Redefined.</p>
             <div class={styles.aboutLinks}>
               <a

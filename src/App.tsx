@@ -96,8 +96,9 @@ import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPr
 import { advancedFeaturesEnabled, devFeaturesEnabled } from '@/stores/app-store'
 import { setJamRoomToJoin } from '@/stores/jam-store'
 import { melodyStore } from '@/stores/melody-store'
-import { getSession, templateToSession } from '@/stores/session-store'
-import { selectedCharacter, showPracticeResultPopup, } from '@/stores/settings-store'
+import { getSession, setSelectedMelodyIds, templateToSession, userSession } from '@/stores/session-store'
+import { selectedCharacter, showPracticeResultPopup, VOCAL_RANGES,vocalRangePreset,  } from '@/stores/settings-store'
+import type { PlaybackSession } from '@/types'
 import type { ActiveTab, MelodyItem, PlaybackMode, SpacedRestMode, } from '@/types'
 import { Walkthrough, WalkthroughControl } from './components'
 import { LyricsUploaderStyles, StemMixerStyles } from './components'
@@ -400,6 +401,34 @@ const AppShell: Component<AppProps> = (props) => {
     sessionMelodyIds,
     sessionCurrentMelodyIndex,
   } = sessionSequencer
+
+  // ── Auto-select melody for vocal range ──────────────────────
+  // If the user is on the default session, auto-select the major scale
+  // corresponding to their chosen vocal range preset (Soprano, Tenor, etc.)
+  createEffect(
+    on(
+      [vocalRangePreset, userSession],
+      ([preset, sessionState]) => {
+        const session = sessionState as PlaybackSession | null | undefined
+        if (session !== null && session !== undefined && session.id === 'default') {
+          const defaultOctave = VOCAL_RANGES[preset].defaultOctave
+          const targetMelodyId = `scale-major-c${defaultOctave}`
+          const match = session.items.find(
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (item) => item.type === 'melody' && (item as any).melodyId === targetMelodyId
+          )
+          
+          if (match !== undefined) {
+            // Load it into the piano roll without starting playback
+            loadAndPlayMelodyForSession(match.id)
+            // Select it in the sidebar
+            setSelectedMelodyIds([match.id])
+          }
+        }
+      },
+      { defer: false }
+    )
+  )
 
   // ── Editor controller ──────────────────────────────────────
   // Handlers (handleShare, handleExportMIDI, handleImportMIDI) are exposed

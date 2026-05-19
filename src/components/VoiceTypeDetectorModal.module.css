@@ -1,0 +1,188 @@
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modalContent {
+  background: var(--bg-primary, #1c1f26);
+  border: 1px solid var(--border-color, #3a4050);
+  border-radius: 12px;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-color, #3a4050);
+}
+
+.modalHeader h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary, #ffffff);
+}
+
+.closeBtn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary, #8b949e);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.closeBtn:hover {
+  background: var(--bg-secondary, #2d333b);
+  color: var(--text-primary, #ffffff);
+}
+
+.modalBody {
+  padding: 30px 24px;
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.centerContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 16px;
+}
+
+.centerContainer p {
+  color: var(--text-secondary, #8b949e);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.iconCircle {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(120, 200, 255, 0.1);
+  color: var(--accent-color, #58a6ff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.successIcon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(63, 185, 80, 0.1);
+  color: #3fb950;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.actionBtn {
+  background: var(--accent-color, #58a6ff);
+  color: #ffffff;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 8px;
+}
+
+.actionBtn:hover {
+  background: var(--accent-hover, #79b8ff);
+  transform: translateY(-1px);
+}
+
+.secondaryBtn {
+  background: var(--bg-secondary, #2d333b);
+  color: var(--text-primary, #ffffff);
+  border: 1px solid var(--border-color, #3a4050);
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 8px;
+}
+
+.secondaryBtn:hover {
+  background: var(--bg-hover, #3a4050);
+}
+
+.progressBar {
+  width: 100%;
+  height: 8px;
+  background: var(--bg-secondary, #2d333b);
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 12px 0;
+}
+
+.progressFill {
+  height: 100%;
+  background: var(--accent-color, #58a6ff);
+  transition: width 0.1s linear;
+}
+
+.helperText {
+  font-size: 0.8rem !important;
+  opacity: 0.8;
+}
+
+.resultBadge {
+  background: rgba(120, 200, 255, 0.15);
+  color: var(--accent-color, #58a6ff);
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: 700;
+  font-size: 1.1rem;
+  margin: 4px 0 12px;
+  border: 1px solid rgba(120, 200, 255, 0.3);
+}
+
+.resultActions {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  justify-content: center;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
