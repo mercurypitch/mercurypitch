@@ -6,7 +6,7 @@ import { createSignal } from 'solid-js'
 import { buildMultiOctaveScale } from '@/lib/scale-data'
 import type { MelodyData, MelodyItem, MelodyNote, PlaybackSession, ScaleDegree, SessionItem, UnifiedLibrary, } from '@/types'
 import { addItemToSession, deleteSession as deleteSessionStore, deleteSessionItem, generateSessionItemId, getDefaultSession, getInternalSession, getItemsAtBeat, getSession, getSessionCount, getSessionItem, getSessionItems, getSessionItemsOrdered, getUserSessionCount, saveSession as saveSessionStore, updateSessionItem, } from './session-store'
-import { VOCAL_RANGES,vocalRangePreset } from './settings-store'
+import { VOCAL_RANGES, vocalRangePreset } from './settings-store'
 
 export const STORAGE_KEY_LIBRARY = 'pitchperfect_library'
 const STORAGE_KEY_SEEDED = 'pitchperfect_seeded'
@@ -670,7 +670,12 @@ const DEFAULT_BPM = 80
 // ============================================================
 
 export const [currentScale, setCurrentScale] = createSignal<ScaleDegree[]>(
-  buildMultiOctaveScale(DEFAULT_KEY, VOCAL_RANGES[vocalRangePreset()].defaultOctave, 2, DEFAULT_SCALE_TYPE),
+  buildMultiOctaveScale(
+    DEFAULT_KEY,
+    VOCAL_RANGES[vocalRangePreset()].defaultOctave,
+    2,
+    DEFAULT_SCALE_TYPE,
+  ),
 )
 
 // Octave state - use function wrapper to avoid circular dependencies

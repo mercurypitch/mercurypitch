@@ -643,8 +643,15 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     autoPlayHandled = true
 
     const seekSec = props.initialSeekSec
-    console.log('[StemMixer] Auto-play triggered. seekSec=', seekSec, 'autoPlay=', props.autoPlay, 'duration=', audio.duration())
-    
+    console.log(
+      '[StemMixer] Auto-play triggered. seekSec=',
+      seekSec,
+      'autoPlay=',
+      props.autoPlay,
+      'duration=',
+      audio.duration(),
+    )
+
     if (seekSec !== undefined && seekSec >= 0 && audio.duration() > 0) {
       const target = Math.min(seekSec, audio.duration() - 0.5)
       console.log(`[StemMixer] Seeking to match offset: ${target.toFixed(2)}s`)

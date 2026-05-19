@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createEffect, createMemo, createSignal, onCleanup, onMount } from 'solid-js'
+import { createEffect, createMemo, createSignal, onCleanup, onMount, } from 'solid-js'
 import type { ArcState } from '@/lib/arc-physics'
 import { BALL_RADIUS, buildPlayable, computeArcCy, computeArcEndBeat, computeBallPos, computeInitialArc, isBackwardsSeek, } from '@/lib/arc-physics'
 import { AudioEngine } from '@/lib/audio-engine'
@@ -706,7 +706,12 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       if (note.midi) notesMidi.push(note.midi)
     }
     for (const item of melody) {
-      if (item.isRest !== true && item.note !== undefined && item.note !== null && item.note.midi !== undefined) {
+      if (
+        item.isRest !== true &&
+        item.note !== undefined &&
+        item.note !== null &&
+        item.note.midi !== undefined
+      ) {
         notesMidi.push(item.note.midi)
       }
     }
@@ -725,11 +730,11 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     // Absolute constraints: C1 (24) to C7 (96) max view
     const VIEW_MIN = 24
     const VIEW_MAX = 96
-    
+
     // Add small padding (e.g., 2 semitones) so notes aren't flush against the absolute edge of the window
     const viewMin = Math.max(VIEW_MIN, minMidi - 2)
     const viewMax = Math.min(VIEW_MAX, maxMidi + 2)
-    
+
     return { minMidi: viewMin, maxMidi: viewMax }
   })
 
@@ -737,7 +742,8 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     if (!Number.isFinite(freq) || freq <= 0) return h / 2
     const bounds = verticalBounds()
     const midi = 69 + 12 * Math.log2(freq / 440)
-    const pct = (midi - bounds.minMidi) / Math.max(1, bounds.maxMidi - bounds.minMidi)
+    const pct =
+      (midi - bounds.minMidi) / Math.max(1, bounds.maxMidi - bounds.minMidi)
     const y = h - pct * (h - 40) - 20
     return Number.isFinite(y) ? y : h / 2
   }
@@ -986,17 +992,17 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
         if (isOffscreen) {
           const r = 4
           const ry = renderY - boxHalf
-          
+
           ctx.beginPath()
           ctx.roundRect(x1, ry, bw, boxH, r)
-          
+
           // Same styling as piano roll offscale
           ctx.fillStyle = 'rgba(120,120,120,0.4)'
           ctx.fill()
           ctx.strokeStyle = 'rgba(139,148,158,0.5)'
           ctx.lineWidth = 1
           ctx.stroke()
-          
+
           // Hatch pattern
           ctx.save()
           ctx.beginPath()
@@ -1021,7 +1027,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
             ctx.fillText(item.note.name, x1 + bw / 2, ry + boxH / 2)
             ctx.textBaseline = 'alphabetic'
           }
-          
+
           // Small triangle indicator pointing offscreen
           ctx.fillStyle = 'rgba(139,148,158,0.8)'
           ctx.beginPath()

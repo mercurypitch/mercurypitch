@@ -21,11 +21,25 @@ export const PITCH_BUFFER_DESCRIPTIONS: Record<PitchBufferSize, string> = {
 
 export type SensitivityPreset = 'quiet' | 'home' | 'noisy'
 export type AccuracyTier = 'learning' | 'singer' | 'professional'
-export type VocalRangePreset = 'soprano' | 'mezzo-soprano' | 'alto' | 'tenor' | 'baritone' | 'bass'
+export type VocalRangePreset =
+  | 'soprano'
+  | 'mezzo-soprano'
+  | 'alto'
+  | 'tenor'
+  | 'baritone'
+  | 'bass'
 
-export const VOCAL_RANGES: Record<VocalRangePreset, { label: string; minOctave: number; maxOctave: number; defaultOctave: number }> = {
+export const VOCAL_RANGES: Record<
+  VocalRangePreset,
+  { label: string; minOctave: number; maxOctave: number; defaultOctave: number }
+> = {
   soprano: { label: 'Soprano', minOctave: 4, maxOctave: 6, defaultOctave: 4 },
-  'mezzo-soprano': { label: 'Mezzo-Soprano', minOctave: 3, maxOctave: 5, defaultOctave: 4 },
+  'mezzo-soprano': {
+    label: 'Mezzo-Soprano',
+    minOctave: 3,
+    maxOctave: 5,
+    defaultOctave: 4,
+  },
   alto: { label: 'Alto', minOctave: 3, maxOctave: 5, defaultOctave: 3 },
   tenor: { label: 'Tenor', minOctave: 3, maxOctave: 5, defaultOctave: 3 },
   baritone: { label: 'Baritone', minOctave: 2, maxOctave: 4, defaultOctave: 2 },

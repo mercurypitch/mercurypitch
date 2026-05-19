@@ -122,16 +122,23 @@ export const SettingsPanel: Component = () => {
           <h3 class={styles.settingsSectionTitle}>Singing Voice Range</h3>
           <div class={styles.settingsDivider} />
           <p class={styles.settingsDesc}>
-            Set your natural singing voice range. This will automatically adjust the default octave for new exercises.
+            Set your natural singing voice range. This will automatically adjust
+            the default octave for new exercises.
           </p>
 
           <div style="display: flex; flex-direction: column; gap: 12px; align-items: center; width: 100%;">
             <VocalRangeSelector class={styles.settingsTierSelector} />
-            <button 
+            <button
               onClick={() => setShowVoiceDetector(true)}
               style="background: transparent; border: 1px solid var(--border-color); color: var(--text-secondary); padding: 8px 16px; border-radius: 6px; font-size: 0.85rem; cursor: pointer; transition: all 0.2s;"
-              onMouseOver={(e) => { e.currentTarget.style.color = 'var(--text-primary)'; e.currentTarget.style.background = 'var(--bg-secondary)'; }}
-              onMouseOut={(e) => { e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.background = 'transparent'; }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.color = 'var(--text-primary)'
+                e.currentTarget.style.background = 'var(--bg-secondary)'
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.color = 'var(--text-secondary)'
+                e.currentTarget.style.background = 'transparent'
+              }}
             >
               Don't know? Find my voice
             </button>
@@ -1138,7 +1145,9 @@ export const SettingsPanel: Component = () => {
               onClose={() => setShowChangelog(false)}
             />
             <Show when={showVoiceDetector()}>
-              <VoiceTypeDetectorModal onClose={() => setShowVoiceDetector(false)} />
+              <VoiceTypeDetectorModal
+                onClose={() => setShowVoiceDetector(false)}
+              />
             </Show>
             <p class={styles.aboutCredits}>Vocal Pitch Practice — Redefined.</p>
             <div class={styles.aboutLinks}>

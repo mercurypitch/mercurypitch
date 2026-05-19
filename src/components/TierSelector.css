@@ -176,49 +176,145 @@
 /* Vocal Range Selector Accents */
 
 /* Soprano: Pink */
-.welcome-tier-soprano { border-color: rgba(236, 72, 153, 0.35); }
-.welcome-tier-soprano .tier-icon-wrap { background: rgba(236, 72, 153, 0.08); border-color: rgba(236, 72, 153, 0.2); }
-.welcome-tier-soprano .tier-icon-wrap svg { color: #ec4899; }
-.welcome-tier-soprano.tier-active { border-color: #ec4899; background: rgba(236, 72, 153, 0.12); box-shadow: 0 0 14px rgba(236, 72, 153, 0.15); }
-.welcome-tier-soprano.tier-active .tier-icon-wrap { background: rgba(236, 72, 153, 0.2); border-color: rgba(236, 72, 153, 0.5); }
-.welcome-tier-soprano.tier-active .tier-icon-wrap svg { opacity: 1; }
+.welcome-tier-soprano {
+  border-color: rgba(236, 72, 153, 0.35);
+}
+.welcome-tier-soprano .tier-icon-wrap {
+  background: rgba(236, 72, 153, 0.08);
+  border-color: rgba(236, 72, 153, 0.2);
+}
+.welcome-tier-soprano .tier-icon-wrap svg {
+  color: #ec4899;
+}
+.welcome-tier-soprano.tier-active {
+  border-color: #ec4899;
+  background: rgba(236, 72, 153, 0.12);
+  box-shadow: 0 0 14px rgba(236, 72, 153, 0.15);
+}
+.welcome-tier-soprano.tier-active .tier-icon-wrap {
+  background: rgba(236, 72, 153, 0.2);
+  border-color: rgba(236, 72, 153, 0.5);
+}
+.welcome-tier-soprano.tier-active .tier-icon-wrap svg {
+  opacity: 1;
+}
 
 /* Mezzo: Orange */
-.welcome-tier-mezzo { border-color: rgba(249, 115, 22, 0.35); }
-.welcome-tier-mezzo .tier-icon-wrap { background: rgba(249, 115, 22, 0.08); border-color: rgba(249, 115, 22, 0.2); }
-.welcome-tier-mezzo .tier-icon-wrap svg { color: #f97316; }
-.welcome-tier-mezzo.tier-active { border-color: #f97316; background: rgba(249, 115, 22, 0.12); box-shadow: 0 0 14px rgba(249, 115, 22, 0.15); }
-.welcome-tier-mezzo.tier-active .tier-icon-wrap { background: rgba(249, 115, 22, 0.2); border-color: rgba(249, 115, 22, 0.5); }
-.welcome-tier-mezzo.tier-active .tier-icon-wrap svg { opacity: 1; }
+.welcome-tier-mezzo {
+  border-color: rgba(249, 115, 22, 0.35);
+}
+.welcome-tier-mezzo .tier-icon-wrap {
+  background: rgba(249, 115, 22, 0.08);
+  border-color: rgba(249, 115, 22, 0.2);
+}
+.welcome-tier-mezzo .tier-icon-wrap svg {
+  color: #f97316;
+}
+.welcome-tier-mezzo.tier-active {
+  border-color: #f97316;
+  background: rgba(249, 115, 22, 0.12);
+  box-shadow: 0 0 14px rgba(249, 115, 22, 0.15);
+}
+.welcome-tier-mezzo.tier-active .tier-icon-wrap {
+  background: rgba(249, 115, 22, 0.2);
+  border-color: rgba(249, 115, 22, 0.5);
+}
+.welcome-tier-mezzo.tier-active .tier-icon-wrap svg {
+  opacity: 1;
+}
 
 /* Alto: Green */
-.welcome-tier-alto { border-color: rgba(34, 197, 94, 0.35); }
-.welcome-tier-alto .tier-icon-wrap { background: rgba(34, 197, 94, 0.08); border-color: rgba(34, 197, 94, 0.2); }
-.welcome-tier-alto .tier-icon-wrap svg { color: #22c55e; }
-.welcome-tier-alto.tier-active { border-color: #22c55e; background: rgba(34, 197, 94, 0.12); box-shadow: 0 0 14px rgba(34, 197, 94, 0.15); }
-.welcome-tier-alto.tier-active .tier-icon-wrap { background: rgba(34, 197, 94, 0.2); border-color: rgba(34, 197, 94, 0.5); }
-.welcome-tier-alto.tier-active .tier-icon-wrap svg { opacity: 1; }
+.welcome-tier-alto {
+  border-color: rgba(34, 197, 94, 0.35);
+}
+.welcome-tier-alto .tier-icon-wrap {
+  background: rgba(34, 197, 94, 0.08);
+  border-color: rgba(34, 197, 94, 0.2);
+}
+.welcome-tier-alto .tier-icon-wrap svg {
+  color: #22c55e;
+}
+.welcome-tier-alto.tier-active {
+  border-color: #22c55e;
+  background: rgba(34, 197, 94, 0.12);
+  box-shadow: 0 0 14px rgba(34, 197, 94, 0.15);
+}
+.welcome-tier-alto.tier-active .tier-icon-wrap {
+  background: rgba(34, 197, 94, 0.2);
+  border-color: rgba(34, 197, 94, 0.5);
+}
+.welcome-tier-alto.tier-active .tier-icon-wrap svg {
+  opacity: 1;
+}
 
 /* Tenor: Blue */
-.welcome-tier-tenor { border-color: rgba(59, 130, 246, 0.35); }
-.welcome-tier-tenor .tier-icon-wrap { background: rgba(59, 130, 246, 0.08); border-color: rgba(59, 130, 246, 0.2); }
-.welcome-tier-tenor .tier-icon-wrap svg { color: #3b82f6; }
-.welcome-tier-tenor.tier-active { border-color: #3b82f6; background: rgba(59, 130, 246, 0.12); box-shadow: 0 0 14px rgba(59, 130, 246, 0.15); }
-.welcome-tier-tenor.tier-active .tier-icon-wrap { background: rgba(59, 130, 246, 0.2); border-color: rgba(59, 130, 246, 0.5); }
-.welcome-tier-tenor.tier-active .tier-icon-wrap svg { opacity: 1; }
+.welcome-tier-tenor {
+  border-color: rgba(59, 130, 246, 0.35);
+}
+.welcome-tier-tenor .tier-icon-wrap {
+  background: rgba(59, 130, 246, 0.08);
+  border-color: rgba(59, 130, 246, 0.2);
+}
+.welcome-tier-tenor .tier-icon-wrap svg {
+  color: #3b82f6;
+}
+.welcome-tier-tenor.tier-active {
+  border-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.12);
+  box-shadow: 0 0 14px rgba(59, 130, 246, 0.15);
+}
+.welcome-tier-tenor.tier-active .tier-icon-wrap {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.5);
+}
+.welcome-tier-tenor.tier-active .tier-icon-wrap svg {
+  opacity: 1;
+}
 
 /* Baritone: Purple */
-.welcome-tier-baritone { border-color: rgba(168, 85, 247, 0.35); }
-.welcome-tier-baritone .tier-icon-wrap { background: rgba(168, 85, 247, 0.08); border-color: rgba(168, 85, 247, 0.2); }
-.welcome-tier-baritone .tier-icon-wrap svg { color: #a855f7; }
-.welcome-tier-baritone.tier-active { border-color: #a855f7; background: rgba(168, 85, 247, 0.12); box-shadow: 0 0 14px rgba(168, 85, 247, 0.15); }
-.welcome-tier-baritone.tier-active .tier-icon-wrap { background: rgba(168, 85, 247, 0.2); border-color: rgba(168, 85, 247, 0.5); }
-.welcome-tier-baritone.tier-active .tier-icon-wrap svg { opacity: 1; }
+.welcome-tier-baritone {
+  border-color: rgba(168, 85, 247, 0.35);
+}
+.welcome-tier-baritone .tier-icon-wrap {
+  background: rgba(168, 85, 247, 0.08);
+  border-color: rgba(168, 85, 247, 0.2);
+}
+.welcome-tier-baritone .tier-icon-wrap svg {
+  color: #a855f7;
+}
+.welcome-tier-baritone.tier-active {
+  border-color: #a855f7;
+  background: rgba(168, 85, 247, 0.12);
+  box-shadow: 0 0 14px rgba(168, 85, 247, 0.15);
+}
+.welcome-tier-baritone.tier-active .tier-icon-wrap {
+  background: rgba(168, 85, 247, 0.2);
+  border-color: rgba(168, 85, 247, 0.5);
+}
+.welcome-tier-baritone.tier-active .tier-icon-wrap svg {
+  opacity: 1;
+}
 
 /* Bass: Cyan */
-.welcome-tier-bass { border-color: rgba(6, 182, 212, 0.35); }
-.welcome-tier-bass .tier-icon-wrap { background: rgba(6, 182, 212, 0.08); border-color: rgba(6, 182, 212, 0.2); }
-.welcome-tier-bass .tier-icon-wrap svg { color: #06b6d4; }
-.welcome-tier-bass.tier-active { border-color: #06b6d4; background: rgba(6, 182, 212, 0.12); box-shadow: 0 0 14px rgba(6, 182, 212, 0.15); }
-.welcome-tier-bass.tier-active .tier-icon-wrap { background: rgba(6, 182, 212, 0.2); border-color: rgba(6, 182, 212, 0.5); }
-.welcome-tier-bass.tier-active .tier-icon-wrap svg { opacity: 1; }
+.welcome-tier-bass {
+  border-color: rgba(6, 182, 212, 0.35);
+}
+.welcome-tier-bass .tier-icon-wrap {
+  background: rgba(6, 182, 212, 0.08);
+  border-color: rgba(6, 182, 212, 0.2);
+}
+.welcome-tier-bass .tier-icon-wrap svg {
+  color: #06b6d4;
+}
+.welcome-tier-bass.tier-active {
+  border-color: #06b6d4;
+  background: rgba(6, 182, 212, 0.12);
+  box-shadow: 0 0 14px rgba(6, 182, 212, 0.15);
+}
+.welcome-tier-bass.tier-active .tier-icon-wrap {
+  background: rgba(6, 182, 212, 0.2);
+  border-color: rgba(6, 182, 212, 0.5);
+}
+.welcome-tier-bass.tier-active .tier-icon-wrap svg {
+  opacity: 1;
+}

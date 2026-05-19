@@ -1,4 +1,4 @@
-import type {AutomaticSpeechRecognitionPipeline} from '@huggingface/transformers';
+import type { AutomaticSpeechRecognitionPipeline } from '@huggingface/transformers'
 import { env, pipeline } from '@huggingface/transformers'
 
 // Disable local models to fetch from HF hub
@@ -15,21 +15,32 @@ async function loadModel() {
   loadingPromise = (async () => {
     try {
       self.postMessage({ type: 'status', status: 'loading' })
-      
+
       // Use Xenova/whisper-tiny which is multilingual
-      whisperPipeline = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny', {
-        device: 'webgpu', // Try WebGPU first if supported
-        dtype: 'fp32',
-      })
-      
+      whisperPipeline = await pipeline(
+        'automatic-speech-recognition',
+        'Xenova/whisper-tiny',
+        {
+          device: 'webgpu', // Try WebGPU first if supported
+          dtype: 'fp32',
+        },
+      )
+
       self.postMessage({ type: 'status', status: 'ready' })
     } catch (err) {
-      console.error('Failed to load whisper pipeline with WebGPU, falling back to WASM', err)
+      console.error(
+        'Failed to load whisper pipeline with WebGPU, falling back to WASM',
+        err,
+      )
       // Fallback to WASM
-      whisperPipeline = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny', {
-        device: 'wasm',
-        dtype: 'q8',
-      })
+      whisperPipeline = await pipeline(
+        'automatic-speech-recognition',
+        'Xenova/whisper-tiny',
+        {
+          device: 'wasm',
+          dtype: 'q8',
+        },
+      )
       self.postMessage({ type: 'status', status: 'ready' })
     }
   })()
@@ -71,10 +82,14 @@ self.addEventListener('message', (e) => {
           text,
           chunks,
         })
-        
+
         self.postMessage({ type: 'status', status: 'ready' })
       } catch (err: unknown) {
-        self.postMessage({ type: 'error', id, message: err instanceof Error ? err.message : String(err) })
+        self.postMessage({
+          type: 'error',
+          id,
+          message: err instanceof Error ? err.message : String(err),
+        })
         self.postMessage({ type: 'status', status: 'ready' })
       }
     }

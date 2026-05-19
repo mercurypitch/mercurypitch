@@ -16,7 +16,7 @@ import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
 import { cancelUvrSession, completeUvrSession, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, devFeaturesEnabled, getAllUvrSessions, getAllUvrSessionsReactive, getUvrProcessingMode, getUvrSession, getUvrSessionByHash, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrProcessingMode, startUvrSession, updateUvrSessionOutputs, uvrModelError, uvrModelStatus, uvrProcessingMode, } from '@/stores/app-store'
 import { showNotification } from '@/stores/notifications-store'
 import { StemMixer, UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrSettings, UvrUploadControl, } from '.'
-import { CheckCircle, ImportFile, Music, Settings, SingMic, Trash2, X } from './icons'
+import { CheckCircle, ImportFile, Music, Settings, SingMic, Trash2, X, } from './icons'
 
 const ShazamListen = lazy(async () =>
   import('@/components/ShazamListen').then((m) => ({
@@ -151,7 +151,9 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     instrumental?: boolean
     midi?: boolean
   }>()
-  const [mixerInitialSeekSec, setMixerInitialSeekSec] = createSignal<number | undefined>(undefined)
+  const [mixerInitialSeekSec, setMixerInitialSeekSec] = createSignal<
+    number | undefined
+  >(undefined)
   const [mixerAutoPlay, setMixerAutoPlay] = createSignal(false)
 
   // Computed session state
