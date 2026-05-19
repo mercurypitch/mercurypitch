@@ -27,7 +27,9 @@ test.describe('Shazam Sing', () => {
     await expect(page.locator('[data-testid="uvr-upload"]')).toBeVisible({
       timeout: 10000,
     })
-    await expect(page.locator('[data-testid="shazam-switch-to-listen"]')).toBeVisible()
+    await expect(
+      page.locator('[data-testid="shazam-switch-to-listen"]'),
+    ).toBeVisible()
   })
 
   test('sing-to-find link switches to shazam-listen view', async ({ page }) => {
@@ -36,7 +38,9 @@ test.describe('Shazam Sing', () => {
     await expect(page.locator('[data-testid="shazam-listen"]')).toBeVisible({
       timeout: 10000,
     })
-    await expect(page.locator('[data-testid="shazam-upload-link"]')).toBeVisible()
+    await expect(
+      page.locator('[data-testid="shazam-upload-link"]'),
+    ).toBeVisible()
   })
 
   test('upload link in shazam-listen switches back to upload view', async ({
@@ -46,7 +50,9 @@ test.describe('Shazam Sing', () => {
     await page
       .locator('[data-testid="shazam-switch-to-listen"]')
       .dispatchEvent('click')
-    await page.waitForSelector('[data-testid="shazam-listen"]', { timeout: 10000 })
+    await page.waitForSelector('[data-testid="shazam-listen"]', {
+      timeout: 10000,
+    })
 
     // Click the "Upload audio instead" link
     await page
@@ -76,7 +82,9 @@ test.describe('Shazam Sing', () => {
   }) => {
     // Start at upload, go to shazam-listen
     await page.locator('[data-testid="shazam-switch-to-listen"]').click()
-    await page.waitForSelector('[data-testid="shazam-listen"]', { timeout: 10000 })
+    await page.waitForSelector('[data-testid="shazam-listen"]', {
+      timeout: 10000,
+    })
 
     // Click Sessions tab -> should go back to upload
     await page.locator('.view-tab:has-text("Sessions")').dispatchEvent('click')
