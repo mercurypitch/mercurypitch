@@ -67,7 +67,7 @@ ROLL TOOLBAR — GRID RIBBON REFACTOR (NON-DESTRUCTIVE)
 Keeps your existing styles, only adjusts layout
 ========================================================= */
 
-/* 🔥 MAIN TOOLBAR: force ONE horizontal row */
+/* MAIN TOOLBAR: force ONE horizontal row */
 .roll-toolbar {
   display: grid;
   grid-auto-flow: column;
@@ -90,7 +90,7 @@ Keeps your existing styles, only adjusts layout
   -webkit-overflow-scrolling: touch;
 }
 
-/* 📦 GROUP CONTAINER (NEW) */
+/* GROUP CONTAINER (NEW) */
 .roll-group {
   display: grid;
   grid-template-rows: repeat(3, auto);
@@ -114,12 +114,12 @@ Keeps your existing styles, only adjusts layout
   width: 1px;
 }
 
-/* 🧩 Two-column groups (for complex sections like Musical / Effects / IO) */
+/* Two-column groups (for complex sections like Musical / Effects / IO) */
 .roll-group-2col {
   grid-template-columns: repeat(2, max-content);
 }
 
-/* 🧠 Ensure inner elements behave nicely inside grid cells */
+/* Ensure inner elements behave nicely inside grid cells */
 .roll-group > * {
   align-self: center;
 }
@@ -135,7 +135,7 @@ Keeps your existing styles, only adjusts layout
   font-size: 0.62rem;
 }
 
-/* 🔧 Keep internal flex layouts working inside grid */
+/* Keep internal flex layouts working inside grid */
 .roll-durations,
 .roll-octave-group,
 .roll-octaves-group,
@@ -153,12 +153,12 @@ Keeps your existing styles, only adjusts layout
   gap: 4px;
 }
 
-/* 🧼 Prevent labels from stretching weirdly */
+/* Prevent labels from stretching weirdly */
 .roll-toolbar label {
   white-space: nowrap;
 }
 
-/* 🎯 Optional polish: subtle panel depth (Word-like feel) */
+/* Optional polish: subtle panel depth (Word-like feel) */
 .roll-group {
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
 }
@@ -709,4 +709,83 @@ Keeps your existing styles, only adjusts layout
 
 .roll-grid-container.piano-roll-scrollable {
   overflow-y: hidden;
+}
+
+/* Interval selection modal for slide/ease effects */
+.roll-interval-modal {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+.roll-interval-content {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  max-width: 300px;
+  text-align: center;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+.roll-interval-content h3 {
+  margin: 0 0 10px 0;
+  font-size: 0.8rem;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+.roll-interval-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin: 10px 0;
+}
+.roll-interval-btn {
+  padding: 6px 0;
+  font-size: 0.7rem;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition:
+    background 0.1s,
+    color 0.1s;
+}
+.roll-interval-btn:hover {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.roll-interval-cancel,
+.roll-interval-remove {
+  margin-top: 8px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  padding: 4px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.7rem;
+}
+.roll-interval-cancel:hover,
+.roll-interval-remove:hover {
+  color: var(--text-primary);
+  border-color: var(--text-secondary);
+}
+.roll-interval-remove {
+  margin-left: 8px;
+  color: var(--red);
+  border-color: rgba(255, 107, 107, 0.3);
+}
+.roll-interval-remove:hover {
+  background: rgba(255, 107, 107, 0.1);
+  color: var(--red);
+  border-color: var(--red);
 }
