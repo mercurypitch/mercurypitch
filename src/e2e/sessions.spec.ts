@@ -101,7 +101,7 @@ test.describe('Practice Sessions', () => {
     await page.waitForTimeout(300)
     await activateSessionPlayer(page)
 
-    await expect(page.locator('.session-skip-btn')).toBeVisible()
+    await expect(page.locator('[data-testid="session-skip-btn"]')).toBeVisible()
   })
 
   test('SessionPlayer shows end button', async ({ page }) => {
@@ -109,7 +109,7 @@ test.describe('Practice Sessions', () => {
     await page.waitForTimeout(300)
     await activateSessionPlayer(page)
 
-    await expect(page.locator('.session-end-btn')).toBeVisible()
+    await expect(page.locator('[data-testid="session-end-btn"]')).toBeVisible()
   })
 
   test('Skip button is clickable', async ({ page }) => {
@@ -117,7 +117,7 @@ test.describe('Practice Sessions', () => {
     await page.waitForTimeout(300)
     await activateSessionPlayer(page)
 
-    const skipBtn = page.locator('.session-skip-btn')
+    const skipBtn = page.locator('[data-testid="session-skip-btn"]')
     await expect(skipBtn).toBeVisible()
     await skipBtn.click()
     await page.waitForTimeout(200)
@@ -128,7 +128,7 @@ test.describe('Practice Sessions', () => {
     await page.waitForTimeout(300)
     await activateSessionPlayer(page)
 
-    const endBtn = page.locator('.session-end-btn')
+    const endBtn = page.locator('[data-testid="session-end-btn"]')
     await expect(endBtn).toBeVisible()
     await endBtn.click()
     await page.waitForTimeout(200)
@@ -264,7 +264,7 @@ test.describe('Practice Sessions', () => {
     await page.waitForTimeout(300)
     await activateSessionPlayer(page)
 
-    const endBtn = page.locator('.session-end-btn')
+    const endBtn = page.locator('[data-testid="session-end-btn"]')
     await endBtn.click()
     await page.waitForTimeout(500)
 
@@ -541,17 +541,17 @@ test.describe('Practice Sessions', () => {
     await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
-    const modeGroup = page.locator('.mode-group')
-    await expect(modeGroup).toBeVisible()
+    // Mode buttons (Once / Repeat / Practice)
+    await expect(page.locator('#btn-once')).toBeVisible()
   })
 
   test('Practice mode buttons are clickable', async ({ page }) => {
     await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
-    const modeBtns = page.locator('.mode-btn')
-    const count = await modeBtns.count()
-    expect(count).toBeGreaterThanOrEqual(0)
+    await expect(page.locator('#btn-once')).toBeVisible()
+    await expect(page.locator('#btn-repeat')).toBeVisible()
+    await expect(page.locator('#btn-session')).toBeVisible()
   })
 
   // ==========================================
@@ -560,10 +560,10 @@ test.describe('Practice Sessions', () => {
 
   test('Metronome button is visible', async ({ page }) => {
     await switchTab(page, 'singing')
-    await page.waitForTimeout(300)
+    await page.waitForTimeout(500)
 
-    const metronomeBtn = page.locator('.metronome-btn')
-    await expect(metronomeBtn).toBeVisible()
+    const metronomeBtn = page.locator('[data-testid="metronome-btn"]')
+    await expect(metronomeBtn).toBeVisible({ timeout: 5000 })
   })
 
   test('Mic button is visible', async ({ page }) => {
@@ -578,7 +578,7 @@ test.describe('Practice Sessions', () => {
     await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
-    const playBtn = page.locator('.play-btn').first()
+    const playBtn = page.locator('[data-testid="play-btn"]')
     await expect(playBtn).toBeVisible()
   })
 
@@ -586,15 +586,23 @@ test.describe('Practice Sessions', () => {
     await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
-    const pauseBtn = page.locator('.stop-btn').first()
-    await expect(pauseBtn).toBeVisible()
+    // Start playback first so the pause button renders
+    await page.locator('[data-testid="play-btn"]').click()
+    await page.waitForTimeout(500)
+
+    const pauseBtn = page.locator('[data-testid="pause-btn"]')
+    await expect(pauseBtn).toBeVisible({ timeout: 3000 })
+
+    // Stop playback
+    await pauseBtn.click()
+    await page.waitForTimeout(300)
   })
 
   test('Transport stop button is visible', async ({ page }) => {
     await switchTab(page, 'singing')
     await page.waitForTimeout(300)
 
-    const stopBtn = page.locator('.stop-btn.stop').first()
+    const stopBtn = page.locator('[data-testid="stop-btn"]')
     await expect(stopBtn).toBeVisible()
   })
 

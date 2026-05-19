@@ -216,12 +216,13 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
   }
 
   return (
-    <div class={styles.sessionEditor}>
+    <div class={styles.sessionEditor} data-testid="session-editor">
       <div
         class={styles.sessionEditorHeader}
+        data-testid="session-editor-header"
         onClick={() => setExpanded(!expanded())}
       >
-        <div class={styles.sessionEditorTitle}>
+        <div class={styles.sessionEditorTitle} data-testid="session-editor-title">
           <svg viewBox="0 0 24 24" width="20" height="20">
             <path
               fill="currentColor"
@@ -297,7 +298,7 @@ export const SessionEditor: Component<SessionEditorProps> = (props) => {
       </div>
 
       <Show when={expanded()}>
-        <div class={styles.sessionEditorContent}>
+        <div class={styles.sessionEditorContent} data-testid="session-editor-content">
           <div class={styles.melodyLibrarySection}>
             <h4 class={styles.sectionTitle}>Melody Library</h4>
             <MelodyPillList

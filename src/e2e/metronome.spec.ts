@@ -34,7 +34,7 @@ test.describe('Metronome', () => {
   })
 
   test('Play button is visible on practice tab', async ({ page }) => {
-    await expect(page.locator('.play-btn').first()).toBeVisible()
+    await expect(page.locator('[data-testid="play-btn"]')).toBeVisible()
   })
 
   test('Practice mode buttons exist', async ({ page }) => {

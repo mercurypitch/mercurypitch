@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { dismissOverlays } from './helpers/ui'
 
 /**
  * CSS Module Refactor -- Visual Regression Audit
@@ -31,9 +32,14 @@ async function getStyles(
 
 test.describe('CSS Module Refactor - Style Verification', () => {
   test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      ;(window as any).E2E_TEST_MODE = true
+    })
     await page.goto('/', { waitUntil: 'networkidle' })
+    await page.waitForSelector('#app-tabs', { timeout: 10000 })
+    await dismissOverlays(page)
     // Wait for SolidJS to render
-    await page.waitForTimeout(1500)
+    await page.waitForTimeout(500)
   })
 
   test('sidebar has correct base layout', async ({ page }) => {

@@ -1349,6 +1349,7 @@ const AppShell: Component<AppProps> = (props) => {
                         [styles.activeViewBtn]:
                           editorView() === 'session-editor',
                       }}
+                      data-testid="view-session-editor"
                       onClick={() => setEditorView('session-editor')}
                     >
                       Session Editor

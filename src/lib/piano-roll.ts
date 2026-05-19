@@ -1313,9 +1313,6 @@ export class PianoRollEditor {
               <button class="roll-tool-btn" data-tool="select" title="Select notes" aria-label="Select notes">
                 <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/></svg>
               </button>
-              <button class="roll-tool-btn" data-tool="browse" title="Browse notes" aria-label="Browse notes">
-                <svg viewBox="0 0 24 24" width="14" height="14"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/><path fill="currentColor" d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5z" opacity="0.3"/></svg>
-              </button>
   <!-- EDIT -->
     <div class="roll-undo-group">
               <button id="roll-undo-btn" class="roll-undo-btn" title="Undo (Ctrl+Z)" aria-label="Undo" disabled>

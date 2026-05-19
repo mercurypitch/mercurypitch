@@ -201,17 +201,18 @@ test.describe('Settings Panel', () => {
 
   test('Reset button is visible in Danger Zone', async ({ page }) => {
     await switchTab(page, 'settings')
-    const resetBtn = page.locator('.danger-btn').first()
+    const resetBtn = page.locator('[data-testid="danger-reset-btn"]')
+    await resetBtn.scrollIntoViewIfNeeded()
     await expect(resetBtn).toBeVisible()
     await expect(resetBtn).toContainText('Reset')
   })
 
   test('Clicking Reset opens confirmation modal', async ({ page }) => {
     await switchTab(page, 'settings')
-    const resetBtn = page.locator('.danger-btn:has-text("Reset")')
+    const resetBtn = page.locator('[data-testid="danger-reset-btn"]')
     await resetBtn.click()
     await page.waitForTimeout(200)
-    const confirmBox = page.locator('.danger-confirm-box')
+    const confirmBox = page.locator('[data-testid="danger-confirm-box"]')
     await expect(confirmBox).toBeVisible()
   })
 
@@ -219,10 +220,10 @@ test.describe('Settings Panel', () => {
     page,
   }) => {
     await switchTab(page, 'settings')
-    await page.locator('.danger-btn:has-text("Reset")').click()
+    await page.locator('[data-testid="danger-reset-btn"]').click()
     await page.waitForTimeout(200)
-    const cancelBtn = page.locator('.danger-btn-secondary')
-    const confirmBtn = page.locator('.danger-btn-primary')
+    const cancelBtn = page.locator('[data-testid="danger-cancel-btn"]')
+    const confirmBtn = page.locator('[data-testid="danger-confirm-btn"]')
     await expect(cancelBtn).toBeVisible()
     await expect(confirmBtn).toBeVisible()
     await expect(confirmBtn).toContainText('Reset All Data')
@@ -230,11 +231,11 @@ test.describe('Settings Panel', () => {
 
   test('Cancelling reset closes modal without resetting', async ({ page }) => {
     await switchTab(page, 'settings')
-    await page.locator('.danger-btn:has-text("Reset")').click()
+    await page.locator('[data-testid="danger-reset-btn"]').click()
     await page.waitForTimeout(200)
-    await page.locator('.danger-btn-secondary').click()
+    await page.locator('[data-testid="danger-cancel-btn"]').click()
     await page.waitForTimeout(200)
-    const confirmBox = page.locator('.danger-confirm-box')
+    const confirmBox = page.locator('[data-testid="danger-confirm-box"]')
     await expect(confirmBox).not.toBeVisible()
   })
 
@@ -244,14 +245,15 @@ test.describe('Settings Panel', () => {
 
   test('About section shows app name', async ({ page }) => {
     await switchTab(page, 'settings')
-    const nameEl = page.locator('.about-name')
+    const nameEl = page.locator('[data-testid="about-name"]')
     await expect(nameEl).toBeVisible()
     await expect(nameEl).toContainText('MercuryPitch')
   })
 
   test('About section shows version', async ({ page }) => {
     await switchTab(page, 'settings')
-    const versionEl = page.locator('.about-version')
+    const versionEl = page.locator('[data-testid="about-version"]')
+    await versionEl.scrollIntoViewIfNeeded()
     await expect(versionEl).toBeVisible()
     const text = await versionEl.textContent()
     expect(text).toMatch(/v\d+\.\d+\.\d+/i)
@@ -267,7 +269,10 @@ test.describe('Settings Panel', () => {
 
   test('About section lists features as pills', async ({ page }) => {
     await switchTab(page, 'settings')
-    const pills = page.locator('.feature-pill')
+    // Feature pills are inside the about-features container
+    const featuresContainer = page.locator('[data-testid="about-features"]')
+    await featuresContainer.scrollIntoViewIfNeeded()
+    const pills = featuresContainer.locator('span')
     const count = await pills.count()
     expect(count).toBeGreaterThanOrEqual(1)
   })

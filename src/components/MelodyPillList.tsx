@@ -48,6 +48,7 @@ export const MelodyPillList: Component<MelodyPillListProps> = (props) => {
         <input
           type="text"
           class={styles.searchInput}
+          data-testid="melody-search-input"
           placeholder="Search melodies..."
           value={searchQuery()}
           onInput={(e) => setSearchQuery(e.currentTarget.value)}
