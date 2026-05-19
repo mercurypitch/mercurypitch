@@ -114,6 +114,7 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
   function reset(): void {
     running = false
     cancelAnimationFrame(animId)
+    practiceEngine.stopMic()
     setState({ status: 'idle', currentScore: 0, elapsedMs: 0, metrics: {} })
     setPitchHistory([])
     setCurrentPitch(null)
@@ -136,6 +137,7 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
   onCleanup(() => {
     running = false
     cancelAnimationFrame(animId)
+    practiceEngine.stopMic()
   })
 
   return {

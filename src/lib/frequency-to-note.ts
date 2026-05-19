@@ -74,6 +74,18 @@ export function midiToNoteName(midi: number): string {
 }
 
 /**
+ * Convert note string (e.g., "A3", "C#4") to MIDI note number.
+ */
+export function noteToMidi(note: string): number {
+  const noteNames: NoteName[] = [
+    'C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B',
+  ]
+  const name = note.slice(0, -1)
+  const octave = parseInt(note.slice(-1))
+  return noteNames.indexOf(name as NoteName) + (octave + 1) * 12
+}
+
+/**
  * Convert MIDI note number to frequency (Hz)
  */
 export function midiToFrequency(midi: number): number {

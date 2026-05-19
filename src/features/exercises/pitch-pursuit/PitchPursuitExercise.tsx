@@ -111,7 +111,7 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
 
       <div class="exercise-canvas-area">
         {base.state().status === 'idle' && (
-          <div style="text-align:center;color:var(--text-secondary);display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;min-height:280px">
+          <div class="exercise-idle-placeholder">
             <IconGame size={48} />
             <p>Notes fall from above. Sing the matching pitch before they reach the target line.</p>
             <p style="font-size:0.8rem;margin-top:8px;opacity:0.7">12 notes · Hit within ±50 cents</p>
@@ -129,7 +129,7 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
                 Combo: {met().combo ?? 0}x
               </div>
               <div style="font-size:0.8rem;color:var(--text-secondary)">
-                {currentNote() ? <><IconMic size={14} /> {currentNote()!.name}</> : '...'}
+                {(() => { const n = currentNote(); return n ? <><IconMic size={14} /> {n.name}</> : '...' })()}
               </div>
             </div>
 
@@ -164,7 +164,7 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
 
         {isComplete() && base.result() && (
           <div class="exercise-result-overlay">
-            <div class="exercise-result-score" style={`color:${base.result()!.score >= 80 ? '#22c55e' : base.result()!.score >= 50 ? '#eab308' : '#ef4444'}`}>
+            <div class="exercise-result-score" classList={{ 'exercise-result-score-good': base.result()!.score >= 80, 'exercise-result-score-ok': base.result()!.score >= 50 && base.result()!.score < 80, 'exercise-result-score-poor': base.result()!.score < 50 }}>
               {base.result()!.score}%
             </div>
             <div class="exercise-result-label">

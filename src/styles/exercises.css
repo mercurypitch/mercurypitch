@@ -171,6 +171,23 @@
   font-size: 0.72rem;
 }
 
+/* ── Idle Placeholder ──────────────────────────────────────── */
+
+.exercise-idle-placeholder {
+  text-align: center;
+  color: var(--text-secondary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 280px;
+}
+
+.exercise-idle-placeholder p {
+  margin: 6px 0;
+}
+
 /* ── Exercise Runner (shared) ─────────────────────────────── */
 
 .exercise-runner {
@@ -445,6 +462,37 @@
   height: 100%;
 }
 
+.slide-pitch-dot {
+  position: absolute;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+  transform: translate(-50%, -50%);
+  transition: left 0.1s linear;
+  z-index: 3;
+  box-shadow: 0 0 10px rgba(99, 102, 241, 0.6);
+}
+
+.slide-pitch-label {
+  position: absolute;
+  top: 30%;
+  transform: translate(-50%, -50%);
+  font-size: 0.7rem;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.slide-note-display {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
 .slide-metrics {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -488,6 +536,18 @@
 .exercise-result-score {
   font-size: 3rem;
   font-weight: 800;
+}
+
+.exercise-result-score-good {
+  color: #22c55e;
+}
+
+.exercise-result-score-ok {
+  color: #eab308;
+}
+
+.exercise-result-score-poor {
+  color: #ef4444;
 }
 
 .exercise-result-label {

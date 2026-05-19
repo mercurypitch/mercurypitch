@@ -1,6 +1,7 @@
 import { type Component, createEffect, createSignal, onCleanup } from 'solid-js'
 import type { AudioEngine } from '@/lib/audio-engine'
 import type { PracticeEngine } from '@/lib/practice-engine'
+import { noteToMidi } from '@/lib/frequency-to-note'
 import { showCelebration } from '@/stores/ui-store'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { useBaseExercise } from '../use-base-exercise'
@@ -14,13 +15,6 @@ interface LongNoteExerciseProps {
 }
 
 const NOTE_OPTIONS = ['C3', 'D3', 'E3', 'F3', 'G3', 'A3', 'B3', 'C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5']
-
-function noteToMidi(note: string): number {
-  const names = ['C', 'D', 'E', 'F', 'G', 'A', 'B']
-  const name = note.slice(0, -1)
-  const octave = parseInt(note.slice(-1))
-  return names.indexOf(name) * 1 + (octave + 1) * 12
-}
 
 const LongNoteExercise: Component<LongNoteExerciseProps> = (props) => {
   const [targetNote, setTargetNote] = createSignal('A3')
@@ -84,7 +78,7 @@ const LongNoteExercise: Component<LongNoteExerciseProps> = (props) => {
 
       <div class="exercise-canvas-area">
         {base.state().status === 'idle' && (
-          <div style="text-align:center;color:var(--text-secondary)">
+          <div class="exercise-idle-placeholder">
             <IconTarget size={48} />
             <p>Hold a steady pitch. The longer and steadier, the better.</p>
           </div>
@@ -121,7 +115,7 @@ const LongNoteExercise: Component<LongNoteExerciseProps> = (props) => {
 
         {isComplete() && base.result() && (
           <div class="exercise-result-overlay">
-            <div class="exercise-result-score" style={`color:${base.result()!.score >= 80 ? '#22c55e' : base.result()!.score >= 50 ? '#eab308' : '#ef4444'}`}>
+            <div class="exercise-result-score" classList={{ 'exercise-result-score-good': base.result()!.score >= 80, 'exercise-result-score-ok': base.result()!.score >= 50 && base.result()!.score < 80, 'exercise-result-score-poor': base.result()!.score < 50 }}>
               {base.result()!.score}%
             </div>
             <div class="exercise-result-label">Duration: {base.result()!.metrics.durationSec}s · Stability: {base.result()!.metrics.pitchStabilityCents}¢</div>

@@ -1,7 +1,7 @@
 import { type Component, createEffect, createSignal, onCleanup } from 'solid-js'
 import type { AudioEngine } from '@/lib/audio-engine'
 import type { PracticeEngine } from '@/lib/practice-engine'
-import { midiToNoteName } from '@/lib/frequency-to-note'
+import { midiToNoteName, noteToMidi } from '@/lib/frequency-to-note'
 import { showCelebration } from '@/stores/ui-store'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { useBaseExercise } from '../use-base-exercise'
@@ -15,13 +15,6 @@ interface SlideExerciseProps {
 }
 
 const NOTE_OPTIONS = ['C3', 'D3', 'E3', 'F3', 'G3', 'A3', 'B3', 'C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5']
-
-function noteToMidi(note: string): number {
-  const names = ['C', 'D', 'E', 'F', 'G', 'A', 'B']
-  const name = note.slice(0, -1)
-  const octave = parseInt(note.slice(-1))
-  return names.indexOf(name) * 1 + (octave + 1) * 12
-}
 
 const CLASSIFICATION_LABELS: Record<number, string> = {
   '-1': 'No slide detected',
@@ -104,7 +97,7 @@ const SlideExercise: Component<SlideExerciseProps> = (props) => {
 
       <div class="exercise-canvas-area">
         {base.state().status === 'idle' && (
-          <div style="text-align:center;color:var(--text-secondary)">
+          <div class="exercise-idle-placeholder">
             <IconSlide size={48} />
             <p>Slide cleanly from one note to another. No scooping, no overshoot.</p>
           </div>
@@ -112,48 +105,22 @@ const SlideExercise: Component<SlideExerciseProps> = (props) => {
 
         {isActive() && (
           <>
-            <div style="display:flex;align-items:center;gap:12px;font-size:1.2rem;font-weight:700;margin-bottom:8px">
+            <div class="slide-note-display">
               <span>{fromNote()}</span>
               <span style="color:var(--text-secondary)">→</span>
               <span>{toNote()}</span>
             </div>
             <div class="slide-viz">
-              <div
-                class="slide-target-start"
-                style="left:10%;top:50%"
-              />
-              <div
-                class="slide-target-end"
-                style="left:90%;top:50%"
-              />
-              <div
-                style={{
-                  position: 'absolute',
-                  left: `${pitchPosPct()}%`,
-                  top: '50%',
-                  width: '14px',
-                  height: '14px',
-                  'border-radius': '50%',
-                  background: 'var(--accent)',
-                  transform: 'translate(-50%, -50%)',
-                  transition: 'left 0.1s linear',
-                  'z-index': '3',
-                  'box-shadow': '0 0 10px rgba(99, 102, 241, 0.6)',
-                }}
-              />
-              {currentMidi() > 0 && (
-                <div style={{
-                  position: 'absolute',
-                  left: `${pitchPosPct()}%`,
-                  top: '30%',
-                  transform: 'translate(-50%, -50%)',
-                  'font-size': '0.7rem',
-                  color: 'var(--accent)',
-                  'font-weight': '600',
-                }}>
-                  {midiToNoteName(Math.round(currentMidi()))}
-                </div>
-              )}
+              <div class="slide-target-start" style="left:10%;top:50%" />
+              <div class="slide-target-end" style="left:90%;top:50%" />
+              <div class="slide-pitch-trace">
+                <div class="slide-pitch-dot" style={`left:${pitchPosPct()}%`} />
+                {currentMidi() > 0 && (
+                  <div class="slide-pitch-label" style={`left:${pitchPosPct()}%`}>
+                    {midiToNoteName(Math.round(currentMidi()))}
+                  </div>
+                )}
+              </div>
             </div>
             <div class="slide-metrics" style="margin-top:12px">
               <div class="slide-metric">
@@ -188,7 +155,7 @@ const SlideExercise: Component<SlideExerciseProps> = (props) => {
 
         {isComplete() && base.result() && (
           <div class="exercise-result-overlay">
-            <div class="exercise-result-score" style={`color:${base.result()!.score >= 80 ? '#22c55e' : base.result()!.score >= 50 ? '#eab308' : '#ef4444'}`}>
+            <div class="exercise-result-score" classList={{ 'exercise-result-score-good': base.result()!.score >= 80, 'exercise-result-score-ok': base.result()!.score >= 50 && base.result()!.score < 80, 'exercise-result-score-poor': base.result()!.score < 50 }}>
               {base.result()!.score}%
             </div>
             <div class="exercise-result-label">

@@ -104,7 +104,7 @@ const VibratoExercise: Component<VibratoExerciseProps> = (props) => {
 
       <div class="exercise-canvas-area">
         {base.state().status === 'idle' && (
-          <div style="text-align:center;color:var(--text-secondary)">
+          <div class="exercise-idle-placeholder">
             <IconWave size={48} />
             <p>Sustain a note with vibrato. Aim for 4-7 Hz rate with 10-50 cents depth.</p>
           </div>
@@ -153,7 +153,7 @@ const VibratoExercise: Component<VibratoExerciseProps> = (props) => {
 
         {isComplete() && base.result() && (
           <div class="exercise-result-overlay">
-            <div class="exercise-result-score" style={`color:${base.result()!.score >= 80 ? '#22c55e' : base.result()!.score >= 50 ? '#eab308' : '#ef4444'}`}>
+            <div class="exercise-result-score" classList={{ 'exercise-result-score-good': base.result()!.score >= 80, 'exercise-result-score-ok': base.result()!.score >= 50 && base.result()!.score < 80, 'exercise-result-score-poor': base.result()!.score < 50 }}>
               {base.result()!.score}%
             </div>
             <div class="exercise-result-label">
